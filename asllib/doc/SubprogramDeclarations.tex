@@ -700,8 +700,8 @@ The function
   \overname{\TTypeError}{\TypeErrorConfig}
   \end{array}
 \]
-annotates a subprogram definition $\funcsig$ in the global static environment $\genv$,
-yielding a new subprogram definition $\newfuncsig$, a modified static environment
+annotates a subprogram definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
+yielding a new subprogram definition $\newfuncsig$, a modified \staticenvironmentterm{}
 $\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
@@ -739,9 +739,9 @@ The function
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffect}{\vses})
   \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates the signature of a function definition $\funcsig$ in the global static environment $\genv$,
+annotates the signature of a function definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding a new function definition $\newfuncsig$,
-a modified static environment $\newtenv$, and
+a modified \staticenvironmentterm{} $\newtenv$, and
 an inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
@@ -764,7 +764,7 @@ is not a constrained expression.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\tenv$ is the static environment which comprises of the global static environment $\genv$ and an empty local environment;
+  \item $\tenv$ is the \staticenvironmentterm{} which comprises of the \globalstaticenvironmentterm{} $\genv$ and an empty local environment;
   \item applying $\annotatelimitexpr$ to $\funcsig.\funcrecurselimit$ in $\tenvone$ yields \\
         $(\vrecurselimit, \vsesrecurselimit)$\ProseOrTypeError;
   \item annotating and declaring the parameters $\funcsig.\funcparameters$ in $\tenv$ using \\
@@ -1038,7 +1038,7 @@ The function
 \extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\uniqueparameters}
   \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the static environment $\tenv$.
+returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{The Parameters of a Function}
@@ -1598,7 +1598,7 @@ The function
 \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
 \end{array}
 \]
-annotates the \optional\ return type $\vreturntype$ in the context of the static environment
+annotates the \optional\ return type $\vreturntype$ in the context of the \staticenvironmentterm{}
 $\tenvwithparams$, where all parameters have been declared,
 and the \sideeffectsetterm\ $\vsesin$.
 The result is $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared)
@@ -1608,8 +1608,8 @@ and the inferred \sideeffectsetterm\ $\vses$.
 
 \ExampleDef{Annotating Subprogram Return Types}
 In \listingref{MatchFuncRes}, the subprogram \verb|proc| has no return type.
-Annotating its return type does not modify the static environment, and the optional annotated return type is $\None$.
-In contrast, the subprogram \verb|returns_value| updates the static environment by
+Annotating its return type does not modify the \staticenvironmentterm{}, and the optional annotated return type is $\None$.
+In contrast, the subprogram \verb|returns_value| updates the \staticenvironmentterm{} by
 binding $\funcreturntype$ to $\unconstrainedinteger$ and returning $\unconstrainedinteger$
 as the optional return type.
 
@@ -1750,8 +1750,8 @@ The function
 \]
 checks that a subprogram defined by $\funcsig$
 and associated with the \sideeffectsetterm\ $\vsesfuncsig$
-can be added to the static environment $\tenv$,
-resulting in an annotated function definition $\newfuncdef$ and new static environment $\newtenv$.
+can be added to the \staticenvironmentterm{} $\tenv$,
+resulting in an annotated function definition $\newfuncdef$ and new \staticenvironmentterm{} $\newtenv$.
 \ProseOtherwiseTypeError
 
 See \ExampleRef{Updating the Static Environment for a Subprogram}.
@@ -1952,7 +1952,7 @@ of overloaded subprograms (that is, other subprograms that share the same name)
 and the environment $\newtenv$, which is updated with $\newname$.
 \ProseOtherwiseTypeError
 
-The function $\addnewfunc$ updates the $\overloadedsubprograms$ map in the static environment,
+The function $\addnewfunc$ updates the $\overloadedsubprograms$ map in the \staticenvironmentterm{},
 and must be followed by $\addsubprogram$, which updates the $\subprograms$ map (see \TypingRuleRef{AddSubprogram}).
 
 \ExampleDef{Updating the Static Environment for a Subprogram}
@@ -1961,12 +1961,12 @@ contains two subprograms named \verb|add_10| with the signatures
 \verb|func add_10(x: integer) => integer| and
 \verb|func add_10(x: real) => real|, which for brevity we will refer to by
 $I$ and $R$, respectively.
-These subprograms are added to the static environment
+These subprograms are added to the \staticenvironmentterm{}
 based on the dependency ordering \\
 (see \TypingRuleRef{DeclDependencies}).
 In this case, there is no ordering between these two subprograms.
 Assuming $I$ is processed before $R$, adding $I$ to the
-static environment, the static environment has
+\staticenvironmentterm{}, the \staticenvironmentterm{} has
 $\overloadedsubprograms(\addten) = \bot$
 and is then updated by binding $\addten$ to $\{\addten\}$ in $\overloadedsubprograms$.
 Then, processing $R$, results in
@@ -2105,7 +2105,7 @@ The function
   \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether the annotated body statement $\vs$ of the function definition $\vf$
-obeys the control-flow requirements in the static environment $\tenv$.
+obeys the control-flow requirements in the \staticenvironmentterm{} $\tenv$.
 
 \ExampleDef{Ensuring All Terminating Paths Terminate Correctly}
 In \listingref{CheckControlFlow}, every evaluation of the function body for\\
@@ -2231,7 +2231,7 @@ The function
   \typearrow\overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
 \]
 returns in $\absconfigs$ a superset of the set of \Proseabstractconfigurations{} (defined next),
-that an evaluation of $\vs$ in any environment consisting of the static environment $\tenv$ yields.
+that an evaluation of $\vs$ in any environment consisting of the \staticenvironmentterm{} $\tenv$ yields.
 
 \hypertarget{def-abstractconfigurations}{}
 \hypertarget{def-absabnormal}{}
@@ -2285,7 +2285,7 @@ can be added, for example, an \unreachablestatementterm.
   \item \AllApplyCase{s\_call}
   \begin{itemize}
     \item $\vs$ is a \callstatementterm{} consisting of the call record $\call$, that is, $\SCall(\call)$;
-    \item \Proseeqdef{$\vf$}{the $\func$ AST node bound to $\call.\callname$ in the global static environment
+    \item \Proseeqdef{$\vf$}{the $\func$ AST node bound to $\call.\callname$ in the \globalstaticenvironmentterm
           map $\subprograms$};
     \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$, if $\vf$ has the\\
           \texttt{noreturn} qualifier, and the set consisting of $\AbsContinuing$ and \\

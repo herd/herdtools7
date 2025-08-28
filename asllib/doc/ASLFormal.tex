@@ -452,7 +452,7 @@ The free variables appearing in the premises and conclusion are interpreted \und
 That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
 %
 For example, the rule \TypingRuleRef{EBinop} applies to any choice of values for the free variables
-$\tenv$ (a static environment),
+$\tenv$ (a \staticenvironmentterm{}),
 $\veone$, $\vetwo$, $\veone'$, $\vetwo'$ (expressions),
 $\vt$, $\vtone$, and $\vttwo$ (types).
 
@@ -638,7 +638,7 @@ shown here:
   In \SemanticsRuleRef{ECond}, we know from the definition of $\evalexpr$ that
   $\mcond$ is a pair datatype.
   Therefore, writing $\mcond \eqname (\nvbool(\vb), \vgone)$ allows us to name each component of this pair
-  and then refer to it, while \hyperlink{def-ignore}{ignoring} the static environment component.
+  and then refer to it, while \hyperlink{def-ignore}{ignoring} the \staticenvironmentterm{} component.
   Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
   head of the list $h$ and its tail $t$.
   Given that a variable $v$ represents a list, we write $v \eqname v_{1..k}$ to list its elements and allow
@@ -730,8 +730,8 @@ $\evalexpr{ \envone, \vetwo } \evalarrow \ResultExpr(\vmtwo, \newenv)$.
 Similarly, $\vg$ requires first assigning values to $\vgone$ and $\vgtwo$,
 which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 
-\section{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
 \hypertarget{def-shortcircuitrulemacro}{}
+\section{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
 \emph{\Shortcircuitrulemacros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
 Specifically, they allow us to capture situations where
 transitions have two alternative output configurations.

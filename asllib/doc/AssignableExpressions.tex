@@ -694,7 +694,7 @@ In \listingref{semantics-leglobalvar},
 \AllApply
 \begin{itemize}
     \item $\vle$ denotes a variable, $\LEVar(\vx)$;
-    \item view $\env$ as an environment where $\tenv$ is the static environment and $\denv$ is the dynamic environment;
+    \item view $\env$ as an environment where $\tenv$ is the \staticenvironmentterm{} and $\denv$ is the dynamic environment;
     \item \OneApplies
     \begin{itemize}
         \item \AllApplyCase{local}
@@ -951,7 +951,7 @@ The helper function
 \aslto
 (\overname{\lexpr}{\newle} \times \overname{\TSideEffectSet}{\vses})
 \]
-annotates an array update in the static environment $\tenv$
+annotates an array update in the \staticenvironmentterm{} $\tenv$
 where $\size$ is the array index,
 $\telem$ is the type of array elements,
 $\rhsty$ is the type of the \rhsexpression{},
@@ -1654,7 +1654,7 @@ The helper function
 \foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\Field^*}{\vbasefields} \aslsep \overname{\bitfield^*}{\vlefields})
 \aslto (\overname{\N}\vlength \times \overname{(\N \times N)^*}{\vslices})
 \]
-accepts a static environment $\tenv$, the list of all fields $\vbasefields$ for a \recordtypeterm{},
+accepts a \staticenvironmentterm{} $\tenv$, the list of all fields $\vbasefields$ for a \recordtypeterm{},
 and a list of fields $\vlefields$ that are the subset of $\vbasefields$ about to be assigned to,
 and yields the total width across $\vlefields$ and the ranges corresponding to $\vlefields$
 in terms of pairs where the first component is the start position and the second component is
@@ -1833,7 +1833,7 @@ All of the collection field assignable expressions in
     slices given in $\vslices$ from the bitvector value $\vv$ (the rule
     \TypingRuleRef{LESetFields} ensures that the length of $\fields$ and
     $\vslices$ is the same);
-  \item view $\env$ as an environment where $\tenv$ is the static environment
+  \item view $\env$ as an environment where $\tenv$ is the \staticenvironmentterm{}
     and $\denv$ is the dynamic environment;
   \item $\vbase$ is bound in the global dynamic environment ($G^\denv.\storage$);
   \item $\record$ is the value of $\vbase$ in the global component of $\env$ ;

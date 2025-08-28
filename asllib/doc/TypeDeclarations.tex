@@ -174,7 +174,7 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
         and \optional\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
   \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
         as per \\
-        \TypingRuleRef{DeclaredType} yields the modified global static environment \\
+        \TypingRuleRef{DeclaredType} yields the modified \globalstaticenvironmentterm{} \\
         $\newgenv$, annotated type $\ttyp$, and annotated \optional{} field initializers $\vsp$\ProseOrTypeError;
   \item define $\newd$ as $\vd$.
 \end{itemize}
@@ -208,7 +208,7 @@ The function
 \]
 declares a type named $\name$ with type $\tty$ and \optional\ additional fields
 over another type $\vs$
-in the global static environment $\genv$, resulting in the modified global static environment $\newgenv$, annotated type $\vttwo$, and annotated \optional{} additional fields $\vsp$.
+in the \globalstaticenvironmentterm{} $\genv$, resulting in the modified \globalstaticenvironmentterm{} $\newgenv$, annotated type $\vttwo$, and annotated \optional{} additional fields $\vsp$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Type Declarations}
@@ -223,8 +223,8 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \AllApply
 \begin{itemize}
   \item checking that $\name$ is not already declared in the global environment of $\genv$ yields $\True$\ProseOrTypeError;
-  \item define $\tenv$ as the static environment whose global component is $\genv$ and its local component is the empty local
-        static environment;
+  \item define $\tenv$ as the \staticenvironmentterm{} whose global component is $\genv$ and its local component is the empty local
+        \staticenvironmentterm{};
   \item annotating the \optional\ extra fields $\vs$ for $\tty$ in $\tenv$ yields via \\ $\annotateextrafields$
         yields the modified environment $\tenvone$, type $\vtone$, and annotated \optional{} extra fields $\vsp$\ProseOrTypeError;
   \item annotating $\vtone$ in $\tenvone$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
@@ -425,7 +425,7 @@ annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and lea
 \ProseOtherwiseTypeError
 
 \ExampleDef{Annotating Optional Types}
-The following are examples of annotating a type inside an \optional{} with the empty static environment:
+The following are examples of annotating a type inside an \optional{} with the empty \staticenvironmentterm{}:
 \[
 \begin{array}{rcl}
 \annotatetypeopt(\emptytenv, \None) &\typearrow& \None\\
@@ -476,7 +476,7 @@ for the type and annotated expression in $\vres$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Annotating Optional Expressions}
-The following are examples of annotating an expression inside an \optional{} with the empty static environment:
+The following are examples of annotating an expression inside an \optional{} with the empty \staticenvironmentterm{}:
 \[
 \begin{array}{rcl}
 \annotateexpropt(\emptytenv, \None) &\typearrow& (\None, \None)\\
@@ -520,7 +520,7 @@ The helper function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
 \]
-retrieves the type associated with the identifier $\id$ in the static environment $\tenv$.
+retrieves the type associated with the identifier $\id$ in the \staticenvironmentterm{} $\tenv$.
 If the identifier is not associated with a declared type, the result is a \typingerrorterm.
 
 \ExampleDef{Retrieving the Type Declared for an Identifier}
@@ -577,14 +577,14 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 )
 \]
-updates the static environment $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
+updates the \staticenvironmentterm{} $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Declaring Enumeration Labels}
 
 In \listingref{typing-tenum}, the declaration of the \verb|Color| enumeration type
-updates the static environment with the following constant variables:
+updates the \staticenvironmentterm{} with the following constant variables:
 
 \begin{center}
 \begin{tabular}{lll}
@@ -635,12 +635,12 @@ The function
               \overname{\globalstaticenvs}{\newgenv} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 adds a constant given by the identifier $\name$, type $\tty$, and literal $\vv$ to the
-global static environment $\genv$, yielding the modified environment $\newgenv$.
+\globalstaticenvironmentterm{} $\genv$, yielding the modified environment $\newgenv$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Declaring a Global Constant}
 In \listingref{DeclareConst}, declaring the constant \PI{}
-in the empty global static environment yields the following global static environment:
+in the empty \globalstaticenvironmentterm{} yields the following \globalstaticenvironmentterm:
 \[
 \begin{array}{l}
   \declareconst(G^{\emptytenv}, \PI, \TReal, \lreal(157 / 50)) \typearrow \\

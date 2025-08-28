@@ -35,7 +35,7 @@ desired form varies according to the functions utilizing this value).
 \section{Equivalence Definitions\label{sec:Equivalence Definitions}}
 \begin{definition}[Expression Equivalence]
 \hypertarget{def-equivalentexprsterm}{}
-We say that $\veone$ and $\vetwo$ are \emph{\equivalentexprsterm{}} in the static environment $\tenv$
+We say that $\veone$ and $\vetwo$ are \emph{\equivalentexprsterm{}} in the \staticenvironmentterm{} $\tenv$
 if for every dynamic environment $\denv$
 and environment $\env = (\tenv, \denv)$, the following condition holds:
 \[
@@ -45,7 +45,7 @@ and environment $\env = (\tenv, \denv)$, the following condition holds:
 
 \begin{definition}[Type Equivalence]
 \hypertarget{def-equivalenttypesterm}{}
-We say that $\vt$ and $\vs$ are \emph{\equivalenttypesterm{}} in the static environment $\tenv$
+We say that $\vt$ and $\vs$ are \emph{\equivalenttypesterm{}} in the \staticenvironmentterm{} $\tenv$
 if both types have the same AST label,
 and for every dynamic environment $\denv$
 and environment $\env = (\tenv, \denv)$, the following condition holds:
@@ -56,7 +56,7 @@ and environment $\env = (\tenv, \denv)$, the following condition holds:
 
 \begin{definition}[Constraint Equivalence]
 \hypertarget{def-equivalentconstraintsterm}{}
-We say that $\vcone$ and $\vctwo$ are \emph{\equivalentconstraintsterm{}} in the static environment $\tenv$
+We say that $\vcone$ and $\vctwo$ are \emph{\equivalentconstraintsterm{}} in the \staticenvironmentterm{} $\tenv$
 if for every dynamic environment $\denv$
 and environment $\env = (\tenv, \denv)$, the following condition holds:
 \[
@@ -301,7 +301,7 @@ The function
 \[
 \normalize(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\expr}{\newe} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-\hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the static environment $\tenv$,
+\hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
 yielding an expression $\newe$.
 \ProseOtherwiseTypeError
 
@@ -913,7 +913,8 @@ The function
   \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
   \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-conservatively checks whether $\veone$ and $\vetwo$ are \equivalentexprsterm{} in environment $\tenv$.
+conservatively checks whether $\veone$ and $\vetwo$ are \equivalentexprsterm{} in
+the \staticenvironmentterm{} $\tenv$.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
 
 \ExampleDef{Expression Equivalence}
@@ -960,7 +961,7 @@ The helper function
   \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-conservatively tests whether the $\veone$ and $\vetwo$ are \equivalentexprsterm{} in the static environment $\tenv$
+conservatively tests whether the $\veone$ and $\vetwo$ are \equivalentexprsterm{} in the \staticenvironmentterm{} $\tenv$
 by attempting to transform both expressions to their \symbolicexpressionterm{} form
 and, if successful, comparing the resulting \symbolicexpressionsterm{} for equality.
 The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
@@ -1067,9 +1068,9 @@ See \ExampleRef{Expression Equivalence}.
           that is, $\ECond(\veoneone, \veonetwo, \veonethree)$;
     \item $\vetwo$ is a conditional expression with expressions $\vetwoone$, $\vetwotwo$, and $\vetwothree$,
           that is, $\ECond(\vetwoone, \vetwotwo, \vetwothree)$;
-    \item testing whether $\veoneone$ and $\vetwoone$ are \equivalentexprsterm{} yields $\vbone$\ProseOrTypeError;
-    \item testing whether $\veonetwo$ and $\vetwotwo$ are \equivalentexprsterm{} yields $\vbtwo$\ProseOrTypeError;
-    \item testing whether $\veonethree$ and $\vetwothree$ are \equivalentexprsterm{} yields $\vbthree$\ProseOrTypeError;
+    \item testing whether $\veoneone$ and $\vetwoone$ are \equivalentexprsterm{} in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\veonetwo$ and $\vetwotwo$ are \equivalentexprsterm{} in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item testing whether $\veonethree$ and $\vetwothree$ are \equivalentexprsterm{} in $\tenv$ yields $\vbthree$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if all of $\vbone$, $\vbtwo$, and $\vbthree$ are $\True$.
   \end{itemize}
 
@@ -1412,7 +1413,8 @@ The function
   \typeequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
    \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-conservatively tests whether $\vtone$ and $\vttwo$ are \equivalenttypesterm{} in environment $\tenv$
+conservatively tests whether $\vtone$ and $\vttwo$ are \equivalenttypesterm{} in
+the \staticenvironmentterm{} $\tenv$
 and yields the result in $\vb$. \ProseOtherwiseTypeError
 
 \ExampleDef{Equivalent Types}
@@ -2675,10 +2677,10 @@ In \listingref{expressions-evar}, the type bound to the global storage element
 \verb|global_non_constant| after annotating the global storage element declarations
 is \verb|integer{19}|,
 %
-the type bound to the local storage element \verb|var_x| in the static environment
+the type bound to the local storage element \verb|var_x| in the \staticenvironmentterm{}
 after annotating the local declaration \verb|var var_x = LOCAL_CONSTANT;| is \verb|integer{7}|.
 %
-Invoking $\typeof$ for the static environment just before annotating the local
+Invoking $\typeof$ for the \staticenvironmentterm{} just before annotating the local
 declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields a \typingerrorterm.
 
 \ProseParagraph

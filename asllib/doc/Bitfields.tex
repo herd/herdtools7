@@ -388,7 +388,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
             $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
-      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in static environment $\tenv$ yields $ (\bitfieldspp, \vsesbitfields)$\ProseOrTypeError;
+      \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in \staticenvironmentterm{} $\tenv$ yields $ (\bitfieldspp, \vsesbitfields)$\ProseOrTypeError;
       \item define $\newfields$ as the nested bitfield with $\slicesone$ and bitfields \\
             $\bitfieldspp$, that is, $\BitFieldNested(\slicesone, \bitfieldspp)$;
       \item define $\vses$ as the union of $\vsesslices$ and $\vsesbitfields$.
@@ -688,7 +688,7 @@ The function
   \overname{\expr}{\ve}
 ) \aslto \overname{\Some{\Z}}{\vzopt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-attempts to transform the expression $\ve$ into a constant integer in the static environment $\tenv$,
+attempts to transform the expression $\ve$ into a constant integer in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.
 If $\isstatic$ is $\True$, then $\ve$ is known to be \staticallyevaluable, and the transformation is
 carried out via static evaluation. Otherwise, the transformation is carried out via normalization.
@@ -749,7 +749,7 @@ The function
 \]
 checks \RequirementRef{BitfieldAlignment}
 for every pair of bitfields in $\vbitfields$, contained in a
-bitvector type of width $\vwidth$ in the static environment $\tenv$.
+bitvector type of width $\vwidth$ in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 \hypertarget{def-tabsfield}{}
@@ -829,7 +829,7 @@ The function
 \]
 returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the list
 of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given by
-$\vabsoluteparent$, in the static environment $\tenv$.
+$\vabsoluteparent$, in the \staticenvironmentterm{} $\tenv$.
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
@@ -863,7 +863,7 @@ The function
 \]
 returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the
 bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \absoluteslice\
-of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the static environment $\tenv$.
+of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the \staticenvironmentterm{} $\tenv$.
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
@@ -995,7 +995,7 @@ The function
 \[
 \slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\N^*}{\indices}
 \]
-returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the static environment $\tenv$.
+returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the \staticenvironmentterm{} $\tenv$.
 
 \ExampleDef{Converting a Slice to a List of Indices}
 The list of indices for the slice \\

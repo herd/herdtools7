@@ -56,7 +56,7 @@ The function
 \overname{\expr}{\veinit} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the expression $\veinit$ which can be used to initialize a storage element
-of type $\vt$ in the static environment $\tenv$.
+of type $\vt$ in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 \TypingRuleDef{BaseValue}
@@ -92,7 +92,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \item \AllApplyCase{t\_enum} \identr{LCCN}
     \begin{itemize}
         \item $\vt$ is the \enumerationtypeterm{} with a list of labels where $\name$ as its \head;
-        \item $\name$ is bound to the literal $\vl$ by the $\constantvalues$ in the global static environment of $\tenv$;
+        \item $\name$ is bound to the literal $\vl$ by the $\constantvalues$ in the \globalstaticenvironmentterm{} of $\tenv$;
         \item $\veinit$ is the literal expression for $\vl$, that is, $\eliteral{\vl}$.
     \end{itemize}
 

@@ -2207,7 +2207,7 @@ The helper function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
-normalized in the static environment $\tenv$.
+normalized in the \staticenvironmentterm{} $\tenv$.
 \ProseOrTypeError
 
 \ExampleDef{Summing Widths}
@@ -2460,7 +2460,7 @@ The helper function
   \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
-are compatible for a type assertion in the static environment $\tenv$, yielding $\True$.
+are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yielding $\True$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Ill-typed ATC Expressions}
@@ -3496,7 +3496,7 @@ which evaluates to
 
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}
-An expression $\ve$ is considered to be side-effect-free in the static environment $\tenv$
+An expression $\ve$ is considered to be side-effect-free in the \staticenvironmentterm{} $\tenv$
 if $\annotateexpr{\tenv, \ve} \typearrow (\Ignore, \Ignore, \vses)$
 and $\vses$ is \readonly{}.
 
