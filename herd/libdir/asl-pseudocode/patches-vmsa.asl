@@ -214,10 +214,16 @@ end;
 // AArch64.DataAbort()
 // ===================
 
+// Get rid of CAS as LOAD execution
+func CheckNotCasAsLoad(a:AccessDescriptor)
+begin
+  CheckProp(!(a.modop == MemAtomicOp_CAS && !a.write));
+end;
 type SilentExit of exception {-};
 
 func AArch64_DataAbort(fault:FaultRecord)
 begin
+  CheckNotCasAsLoad(fault.accessdesc);
   DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
   throw SilentExit {-};
 end;
