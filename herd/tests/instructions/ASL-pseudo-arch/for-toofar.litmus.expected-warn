@@ -1,1 +1,2 @@
-Warning: File "./herd/tests/instructions/ASL-pseudo-arch/for-toofar.litmus": unrolling limit exceeded at for loop at file "./herd/tests/instructions/ASL-pseudo-arch/for-toofar.litmus", line 13 to line 13 pruned, legal outcomes may be missing.
+Warning: File "./herd/tests/instructions/ASL-pseudo-arch/for-toofar.litmus": unrolling limit exceeded at At File ./herd/tests/instructions/ASL-pseudo-arch/for-toofar.litmus, line 13,
+     characters 4 to 14: for loop pruned, legal outcomes may be missing.

@@ -32,6 +32,7 @@ type t = {
   pac : bool ;
   profile_cat: bool ;
   profile_asl: bool ;
+  asl_symb: bool ;
   exc : bool ;  }
 
 val none : t
