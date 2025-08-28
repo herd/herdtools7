@@ -39,6 +39,30 @@ let load_config s =
   LexConf_herd.lex found
 
 
+
+type webOpts = {
+  outputdir : PrettyConf.outputdir_mode;
+  dumpes : bool ;
+  variant : Variant.t -> bool ;
+  through : Model.through ;
+  show : PrettyConf.show ;
+  }
+
+let default : webOpts = {
+  outputdir = PrettyConf.StdoutOutput;
+  dumpes = false;
+  variant = (fun (_v:Variant.t) -> false);
+  through = Model.ThroughNone;
+  show = PrettyConf.ShowAll;
+}
+
+let set_defaults ()  =
+  outputdir := default.outputdir;
+  dumpes := default.dumpes;
+  variant := default.variant;
+  through := default.through;
+  show := default.show
+
 (* Configure parser/models/etc. *)
 let run_herd bell cat litmus cfg =
 
@@ -74,11 +98,8 @@ let run_herd bell cat litmus cfg =
   and litmus_fname = WebInput.set_litmus_str litmus in
   WebInput.register_autoloader ();
   (* web options *)
-  outputdir := PrettyConf.StdoutOutput;
-  dumpes := false;
-  variant := (fun (_v:Variant.t) -> false);
+  set_defaults ();
   load_config cfg_fname;
-  show := PrettyConf.ShowAll;
   (* Do not overide default or config settings by default arguments *)
   begin match cat with
   | "" -> ()
