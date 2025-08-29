@@ -1916,13 +1916,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
-        | W,Some (Pte (Set _),None) ->
+        | R,Some (Pte (TTHM _),None) ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some r,init,cs,st
+        | W,Some (Pte (Set _|SetOne _|SetZero _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
             None,init,cs,st
         | W,Some (Pte (SetRel _),None) ->
             let init,cs,st =
               emit_set_pteval true st p init e.C.pte (Misc.add_pte loc) in
+            None,init,cs,st
+        | W,Some (Pte (TTHM _),None) ->
+            let init,cs,st =
+              STR.emit_store st p init loc value None C.evt_null in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -2590,7 +2597,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let r3,st = tempo1 st in
                       let cs,st = calc0_gen csel st vdep r3 r1 in
                       sxtw r2 r3::cs,st in
-                let addi = [addi r2 r2 value] in
+                (* Put the `value` into a resgister,
+                   if it overflows the range of `immediate` number in `MOV` *)
+                let addi,init,st =
+                  match U.emit_const st p init value with
+                  | None,init,st -> [addi r2 r2 value],init,st
+                  | Some r_value,init,st -> [add V32 r2 r2 r_value],init,st
+                in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = match atom with
@@ -2645,13 +2658,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
+          | Some (Pte (Set _|SetOne _|SetZero _),None) ->
               let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
           | Some (Pte (SetRel _),None) ->
               let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc),_))
+          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|TTHM _),_))
             -> assert false
           | Some (Plain _,None) -> assert false
           | Some (Tag,Some _) -> assert false
@@ -2876,5 +2889,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           List.rev_map (fun r -> r,0) rs
     | Some _|None -> fun _ -> []
 
-    include NoInfo
+    let get_archinfo n =
+      (* collect distinct tthm *)
+      C.fold ( fun node acc ->
+        match node.C.edge.E.a1 with
+        | Some(Pte(TTHM e), _) -> WPTESet.union e acc
+        | _ -> acc
+        ) n WPTESet.empty
+      |> WPTESet.map_list ( fun e -> "TTHM",(WPTE.pp_tthm e) )
   end

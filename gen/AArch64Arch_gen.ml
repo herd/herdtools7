@@ -32,8 +32,7 @@ module Make
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
-let do_fullkvm = C.variant Variant_gen.FullKVM
-let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
+let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_sve = C.variant Variant_gen.SVE
 let do_sme = C.variant Variant_gen.SME
@@ -166,7 +165,8 @@ module WPTE = struct
 
   type t = AF | DB | OA | DBM | VALID
 
-  let all= [AF; DB; OA; DBM; VALID;]
+  let all = [AF; DB; OA; DBM; VALID;]
+  let fold f r = List.fold_right f all r
 
   let compare w1 w2 = match w1,w2 with
   | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
@@ -186,16 +186,28 @@ module WPTE = struct
      | AF -> "AF"
      | DB -> "DB"
      | DBM -> "DBM"
-     | VALID -> "VA"
+     | VALID -> "VALID"
      | OA -> "OA"
+
+   let pp_tthm = function
+     | AF -> "HA"
+     | DB -> "HD"
+     | DBM|VALID|OA -> assert false
 end
 
 module WPTESet = MySet.Make(WPTE)
 
 type atom_pte =
   | Read|ReadAcq|ReadAcqPc
-  | Set of  WPTESet.t
-  | SetRel of  WPTESet.t
+  (* Toggle the value between 0 and 1 *)
+  | Set of WPTESet.t
+  | SetRel of WPTESet.t
+  (* Precise value of 0 to 1 *)
+  | SetOne of WPTESet.t
+  (* Precise value of 1 to 0 *)
+  | SetZero of WPTESet.t
+  (* TTHM prelude *)
+  | TTHM of WPTESet.t
 
 type neon_opt = SIMD.atom
 
@@ -219,8 +231,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
-| Pte (Read|ReadAcq|ReadAcqPc),R
-| Pte (Set _|SetRel _),W
+| Pte (Read|ReadAcq|ReadAcqPc|TTHM _),R
+| Pte (Set _|SetRel _| SetOne _| SetZero _|TTHM _),W
 | Instr, R
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
@@ -252,6 +264,9 @@ let is_ifetch a = match a with
      | ReadAcqPc -> "Q"
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
+     | SetOne set -> "One" ^ pp_w_pte set
+     | SetZero set -> "Zero" ^ pp_w_pte set
+     | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
 
    let pp_pair_opt = function
      | Pa -> ""
@@ -314,32 +329,15 @@ let is_ifetch a = match a with
      else
        r
 
-   let fold_all_subsets f =
-     let rec fold_rec xs k r = match xs with
-       | [] -> if WPTESet.is_empty k then r else f k r
-       | x::xs ->
-          let r = fold_rec xs (WPTESet.add x k) r in
-          fold_rec xs k r in
-     fold_rec WPTE.all WPTESet.empty
-
-   let fold_small_subsets f =
-     let rec fold_rec xs r =
-       match xs with
-       | [] -> r
-       | x::xs ->
-          let sx = WPTESet.singleton x in
-          List.fold_right
-            (fun y r -> f (WPTESet.add y sx) r)
-            xs (f sx (fold_rec xs r)) in
-     fold_rec WPTE.all
-
-   let fold_subsets = if do_fullkvm then  fold_all_subsets else fold_small_subsets
-
    let fold_pte f r =
      if do_kvm then
-       let g fs r = f (Set fs) (f (SetRel fs) r) in
-       let r = fold_subsets g r in
-       f Read (f ReadAcq (f ReadAcqPc r))
+       let fold_wpte f r =
+         List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
+       let g fs r =
+         r |> f (SetRel fs) |> f (Set fs) |> f (SetOne fs) |> f (SetZero fs) in
+       r |> fold_wpte g |> f Read |> f ReadAcq |> f ReadAcqPc
+          |> f (TTHM (WPTESet.singleton WPTE.AF))
+          |> f (TTHM (WPTESet.singleton WPTE.DB))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -507,6 +505,7 @@ let is_ifetch a = match a with
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
+   | Pte (TTHM _),None -> Code.Ord
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
@@ -521,11 +520,20 @@ let is_ifetch a = match a with
 (**************)
 (* Mixed size *)
 (**************)
-
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
    | Some (_,Some (sz,_)) ->
-      Mixed.tr_value sz v
+   (* Use a non-default strategy rather than `Mixed.tr_value`.
+      Here we calculate based per 2-byte, which
+      provides the desired behaviour on atomic operations. *)
+     let v = Code.value_to_int v in
+     let open MachSize in
+     let v = match sz with
+       | Byte|Short -> v
+       | Word ->  v lsl 16 + v
+       | Quad -> v lsl 48 + v lsl 32 + v lsl 16 + v
+       | S128 -> assert false in
+      Code.value_of_int v
 
    module ValsMixed =
      MachMixed.Vals
@@ -565,33 +573,160 @@ let overwrite_value v ao w = match ao with
 
     let default = AArch64PteVal.default
 
+    (* toggle or flip the value of pte field *)
+    let toggle_pte flag_set pteval loc =
+      let open AArch64PteVal in
+      let open WPTE in
+      WPTESet.fold
+      (fun f p ->
+        match f with
+        | AF -> { p with af = 1-p.af; }
+        | DB -> { p with db = 1-p.db; }
+        | DBM -> { p with dbm = 1-p.dbm; }
+        | VALID -> { p with valid = 1-p.valid; }
+        | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      flag_set pteval
+
+    (* Decide the initial pte value for location `loc`
+       and align up with the atom_pte_list *)
+    let init loc pte_atom_list =
+      let open WPTE in
+      let default_pte = default loc in
+      let pte_atom_list = List.filter_map
+        ( fun (atom, _mach_size) -> match atom with
+          | Pte(pte_atom) -> Some(pte_atom)
+          | _ -> None
+        ) pte_atom_list in
+      (* loc_fun is a dummy function that should never be called *)
+      let loc_fun () = Warn.user_error "Adjust initial OA is not supprted" in
+      (* Wrap `toggle_pte`, but not touch `OA` *)
+      let toggle_pte_wrap field_sets pteval =
+        (* NOTE: Remove `OA` on purpose as changing the initial value of
+           physical address is not supprted yet *)
+        let field_sets = WPTESet.remove OA field_sets in
+        let new_pteval = toggle_pte field_sets pteval loc_fun in
+          new_pteval in
+      (* Check if the `field_set` in `pteval` (in `acc`) is of `value`.
+         Upon mismatching  `value`, the initial value needs to change. *)
+      let check_init_pte acc field_set value =
+        let open AArch64PteVal in
+        WPTESet.fold ( fun field (af,db,dbm,valid,pteval) ->
+          match field with
+          | AF -> begin match value = pteval.af,af with
+            (* Either carry the previous `af` or set `af` to Some false,
+               i.e. no need to flip the initial value of `af` *)
+            | true,_ -> (Some (Option.value ~default:false af),db,dbm,valid,pteval)
+            (* Flip the initial `af` *)
+            | false,None -> (Some true,db,dbm,valid,{pteval with af = value})
+            (* Value collide, invalid cycle/anotation specification *)
+            | false,Some _ -> Warn.user_error "Fail to set AF."
+          end
+          | DB -> begin match value = pteval.db,db with
+            | true,_ -> (af,Some (Option.value ~default:false db),dbm,valid,pteval)
+            | false,None -> (af,Some true,dbm,valid,{pteval with db = value})
+            | false,Some _ -> Warn.user_error "Fail to set DB."
+          end
+          | DBM -> begin match value = pteval.dbm, dbm with
+            | true,_ -> (af,db,Some (Option.value ~default:false dbm),valid,pteval)
+            | false,None -> (af,db,Some true,valid,{pteval with dbm = value})
+            | false,Some _ -> Warn.user_error "Fail to set DBM."
+          end
+          | VALID -> begin match value = pteval.valid,valid with
+            | true,_ -> (af,db,dbm,Some (Option.value ~default:false valid),pteval)
+            | false,None -> (af,db,dbm,Some true,{pteval with valid = value})
+            | false,Some _ -> Warn.user_error "Fail to set VALID."
+          end
+          | OA -> Warn.user_error "PTESetOneOA and PTESetZeroOA is not supported."
+        ) field_set acc in
+      (* Direct set the initial value *)
+      let set_init_pte acc field_set =
+        WPTESet.fold ( fun field (af,db,dbm,valid,pteval) ->
+          let open AArch64PteVal in
+          match field with
+          | AF -> (* TTHM=HA *)
+            let expected_af = not (default_pte.af = 0) in
+            let init_af = Option.value ~default:expected_af af in
+            if init_af then (Some expected_af,db,dbm,valid,pteval)
+            else Warn.user_error "Fail to set AF in TTHM=HA."
+          | DB -> (* TTHM=HD *)
+            let expected_db = not (default_pte.db = 0) in
+            let init_db = Option.value ~default:expected_db db in
+            let expected_dbm = not (default_pte.dbm = 1) in
+            let init_dbm = Option.value ~default:expected_dbm dbm in
+            begin match init_db,init_dbm with
+              | true,true -> (af, Some expected_db,Some expected_dbm,valid,pteval)
+              | _ -> Warn.user_error "Fail to set DB and DBM in TTHM=HD."
+            end
+          (* TTHM for DBM, VALID, and OA should never happen *)
+          | DBM|VALID|OA -> assert false
+        ) field_set acc in
+      (* The entire process decides if we want to flip the initial value of fields.
+         Field `valid,af,db,dbm` in accumulator `acc` track if the default
+         value is (not) needed to be flipped.
+         - None, all good,
+         - Some true, must flip
+         - Some false must not flip
+         Conflict initial values cause, i.e. Some true and Some false, warning.
+         The final `pteval` should be throw away as of no meaning. *)
+      let (af,db,dbm,valid,_) =
+        List.fold_left ( fun acc atom_pte ->
+          (* Decide the initial values *)
+          let (af,db,dbm,valid,pteval) = match atom_pte with
+          | SetOne(field_set) -> check_init_pte acc field_set 0
+          | SetZero(field_set) -> check_init_pte acc field_set 1
+          | TTHM(field_set) -> set_init_pte acc field_set
+          | _ -> acc in
+          (* Toggle values for further process *)
+          match atom_pte with
+          | SetOne(field_set)|SetZero(field_set)|Set(field_set)|SetRel(field_set)
+            -> (af,db,dbm,valid,toggle_pte_wrap field_set pteval)
+          | _ -> (af,db,dbm,valid,pteval)
+        ) (None,None,None,None,default_pte) pte_atom_list in
+      (* Create a new WPTESet to adjust the inital value.
+         Collapse None to false as it means no need to change default value *)
+      let adjust_value =
+        WPTESet.empty
+        |> (if Option.value ~default:false af then WPTESet.add AF else Fun.id)
+        |> (if Option.value ~default:false db then WPTESet.add DB else Fun.id)
+        |> (if Option.value ~default:false dbm then WPTESet.add DBM else Fun.id)
+        |> (if Option.value ~default:false valid then WPTESet.add VALID else Fun.id) in
+      toggle_pte adjust_value default_pte loc_fun
+
+    let as_virtual p = AArch64PteVal.as_virtual p
+
     let compare = AArch64PteVal.compare
 
-    let do_setpteval a f p loc =
-      let open AArch64PteVal in
-      let fs = match f with
-        | Set f|SetRel f -> f
+    let do_setpteval a flags pte loc =
+      match flags with
+        (* In the case of `SetOne` and `SetZero`,
+          the `init` function above already ensure and assign
+          a valid inital value, hence here those two
+          will behave the same as `Set`, i.e.e toggle the pte value *)
+        | Set f|SetRel f|SetOne f|SetZero f -> toggle_pte f pte loc
         | Read|ReadAcq|ReadAcqPc ->
-           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      WPTESet.fold
-        (fun f p ->
-          let open WPTE in
-          match f with
-          | AF -> { p with af = 1-p.af; }
-          | DB -> { p with db = 1-p.db; }
-          | DBM -> { p with dbm = 1-p.dbm; }
-          | VALID -> { p with valid = 1-p.valid; }
-          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-      fs p
+          Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
+        (* TODO Change *)
+        | TTHM _ -> pte
 
     let set_pteval a p =
       match a with
       | Pte f,None -> do_setpteval a f p
       | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
 
-    let can_fault pte_val = 
+    let can_fault dir pte_val =
       let open AArch64PteVal in
-      pte_val.valid = 0
+      pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
+
+    let implicit_set_pteval dir machine_feature p =
+      let open WPTE in
+      let open AArch64PteVal in
+      if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton AF))) machine_feature
+        && p.af = 0 then
+          Some ({p with af = 1})
+      else if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton DB))) machine_feature
+        && dir = Code.W && p.db = 0  && p.dbm = 1 then
+          Some ({p with db = 1})
+      else None
 
   end
 
@@ -611,6 +746,12 @@ let overwrite_value v ao w = match ao with
      match a with
      | Some (Pair _,_) -> true
      | Some _|None -> false
+
+  let get_machine_feature = function
+    | Some(Pte(TTHM field), _) ->
+      WPTESet.map_list (fun f -> pp_atom_pte (TTHM(WPTESet.singleton f))) field
+      |> StringSet.of_list
+    | _ -> StringSet.empty
 
 (* End of atoms *)
 
@@ -812,18 +953,18 @@ let is_one_instruction = function
   | LrSc -> false
   | LdOp _ | StOp _ | Swp | Cas -> true
 
-let fold_aop f r =
-  let r = f A_ADD r in
-  let r = f A_EOR r in
-  let r = f A_SET r in
-  let r = f A_CLR r in
-  r
+let fold_aop f r = List.fold_left (Fun.flip f) r
+  [ A_ADD; A_EOR; A_SET; A_CLR ]
+
+let fold_aop_min_max f r = List.fold_left (Fun.flip f) r
+  [ A_ADD; A_EOR; A_SET; A_CLR; A_SMAX; A_SMIN; A_UMAX; A_UMIN ]
 
 let fold_rmw f r =
   let r = f LrSc r in
   let r = f Swp r in
   let r = f Cas r in
-  let r = fold_aop (fun op r -> f (LdOp op) r) r in
+  (* Only LD can be combined by Max and Min *)
+  let r = fold_aop_min_max (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   r
 
@@ -882,10 +1023,10 @@ let get_ie e = match e with
 
 let fold_edge f r = Code.fold_ie (fun ie r -> f (IFF ie) (f (FIF ie) r)) r
 
-let compute_rmw r old co = 
+let compute_rmw r old co =
     let old = Code.value_to_int old in
     let co = Code.value_to_int co in
-    let new_value = match r with 
+    let new_value = match r with
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
@@ -903,6 +1044,93 @@ let compute_rmw r old co =
     end
     | LrSc | Swp | Cas  -> co in
     Code.value_of_int new_value
+
+(* Rule out `rmw_list` that contains the same type of atomic operation *)
+let valid_rmw rmw_list =
+  (* Treat sign and unsign the same *)
+  let convert_sign_to_unsign = function
+    | A_SMAX -> A_UMAX
+    | A_SMIN -> A_UMIN
+    | op -> op in
+  let atomic_list = List.filter_map ( function
+    | LdOp op -> Some ( LdOp ( convert_sign_to_unsign op ) )
+    | StOp op -> Some ( StOp ( convert_sign_to_unsign op ) )
+    | _ -> None ) rmw_list in
+  let module RmwSet =
+    MySet.Make(struct type t = rmw let compare = compare end) in
+  (List.length atomic_list) = (RmwSet.cardinal @@ RmwSet.of_list atomic_list)
+
+(* NOTE Assuming all variants of STR manipulates on
+   bit 4 --- bit 0 (both included), the bit-wise
+   add and max-min manipulates the rest.
+    In summary the initial value given by `init_rmw`
+    and bit assignment, hard-coded in `to_rmw_operand`, is:
+    |<-MINMAX->|  |<--CLR,SET,EOR-->|
+    ------------------------------------------------
+    | 0  1  0  1, 0  1  1  1, 0  0  1  0, 0  0  0  0
+    ------------------------------------------------
+                  |<---ADD--->|       |<---STR---->|
+   The initial bits are assigned only when associated
+   operations appear in the cycle.
+   --- Bitwise and add operations ---
+   CLR, SET and EOR manipulates bit 11 --- bit 5,
+   while ADD on bit 11 --- bit 7.
+   Given a `counter`, `to_rmw_operand` return operand.
+   For CLR SET and EOR, it will be a bit mask,
+   counter = 1 -> 0b1000011
+   counter = 2 -> 0b1000111
+   counter = 3 -> 0b1001111
+   counter = 4 -> 0b1011111
+   counter = 5 -> 0b1111111
+   counter = 6 -> fail
+   --- Min-max operations ---
+   SMAX, UMAX, SMIN, UMIN manipulates bit 15 --- bit 12,
+   For SMAX and UMAX, the operand effectively is `init + counter`
+   while for SMIN and UMIN `init - counter`.
+   This means a new value is always installed.
+   --- Motivation ---
+   This strategy ensures up to counter 5:
+     (1) They all have correct behaviour when mixing with STR.
+     (2) A unique and fresh resulting value after any operation.
+     (3) Eliminate commutitivition on DINSTINCT rmw operations;
+         that is, if `op1` and `op2` are not same type of rmw,
+         applying `op2` followed by `op1` gives a different value from
+         applying `op1` followed by `op2.
+*)
+let init_rmw rmw =
+  let value = match rmw with
+    | LdOp op|StOp op -> begin match op with
+      (* Set the spacial initial values as described above. *)
+      | A_ADD|A_CLR|A_EOR|A_SET -> 0x07_20
+      | A_SMIN|A_UMIN -> 0x5_00_00
+      | _ -> 0
+    end
+    | _ -> 0 in
+  Code.value_of_int value
+
+let to_rmw_operand rmw init counter =
+  let init = Code.value_to_int init in
+  let counter = Code.value_to_int counter in
+  let bit_mask = ((1 lsl (counter + 1)) - 1) + 0x40 in
+  let shift_bit = 5 in
+  let shift_add = 7 in
+  let compare_offset = counter lsl 12 in
+  let value = match rmw with
+    (* Atomic bitwise and min-max operations manipulate
+       particular bits in the number. See above *)
+    | LdOp op|StOp op ->
+    begin
+      if counter >= 6 then
+        Warn.user_error "Counter for rmw operand exceeds.";
+      match op with
+      | A_ADD -> counter lsl shift_add
+      | A_CLR|A_EOR|A_SET -> bit_mask lsl shift_bit
+      | A_SMAX|A_UMAX -> init + compare_offset
+      | A_SMIN|A_UMIN -> init - compare_offset
+    end
+    (* Fail back the default `init + counter` value *)
+    | _ -> init + counter in
+  Code.value_of_int value
 
 include
     ArchExtra_gen.Make
@@ -923,6 +1151,7 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
+      module PteVal_gen = PteVal
     end)
 
 end
