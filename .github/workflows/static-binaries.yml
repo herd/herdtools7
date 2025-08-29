@@ -1,0 +1,46 @@
+name: Build static binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'herdtools7 tag to build'
+        required: true
+        default: 'master'
+
+permissions: read-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ocaml/opam:alpine-3.21-ocaml-5.2
+      options: --user root # GitHub Actions seems to require root
+    env:
+      OPAMROOT: '/home/opam/.opam'
+      OPAMROOTISOK: 1
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Install prerequisites
+        run: |
+          apk add --quiet gmp-dev pkgconfig
+          opam install . --deps-only
+
+      - name: Enable verbose dune output
+        run: |
+          mkdir -p ~/.config/dune
+          echo $'(lang dune 2.7)\n(display short)' > ~/.config/dune/config
+
+      - name: Build
+        run: opam exec -- make build DUNE_PROFILE=static
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: _build/install/default/bin/
