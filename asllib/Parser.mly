@@ -78,12 +78,12 @@ let make_ty_decl_subtype (x, s) =
 let prec =
   let open AST in
   function
-  | `BOR | `BAND | `IMPL | `BEQ -> 1
-  | `EQ | `NE -> 2
+  | `BOR | `BAND | `IMPL | `BEQ -> 0
+  | `EQ | `NE -> 1
+  | `GT | `GE | `LT | `LE -> 2 (* Non assoc *)
   | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
-  | `GT | `GE | `LT | `LE -> 0 (* Non assoc *)
 
 let check_is_associative ~loc (op : AST.binop) =
   match op with
