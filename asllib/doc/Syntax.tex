@@ -588,7 +588,8 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
             |\ & \Tboolean &\\
             |\ & \Tbit &\\
             |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
-            |\ & \PlistZero{\Nty} &\\
+            |\ & \Tlpar \parsesep \Nty \parsesep \Trpar &\\
+            |\ & \Plisttwo{\Nty} &\\
             |\ & \Tidentifier &\\
             |\ & \Tarray \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket \parsesep \Tof \parsesep \Nty &
 \end{flalign*}
