@@ -87,10 +87,20 @@ module Make (Config:Config) (M:Builder.S) =
       List.flatten (List.map (fun e -> expand_edge e []) ess)
 
     let zyva pp_rs =
+      let remove_space_after_comma s =
+        let re = Str.regexp ",[ \t\n\r]*" in
+        Str.global_replace re "," s in
+      let split_by_whitespace s =
+        let re = Str.regexp "[ \t\n\r]+" in
+        Str.split re s in
       try
-        let ess = List.map parse_edges pp_rs in
-        let ess = List.map expand_edges ess in
-        let ess = varatom_ess ess in
+        (* convert to canonical form then parse the input *)
+        let ess = String.concat " " pp_rs
+          |> remove_space_after_comma
+          |> split_by_whitespace
+          |> List.map parse_edges
+          |> List.map expand_edges
+          |> varatom_ess in
         D.all (gen ess)
       with Fatal msg ->
         eprintf "Fatal error: %s\n" msg ;
