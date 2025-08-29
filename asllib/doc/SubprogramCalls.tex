@@ -534,7 +534,7 @@ The function
 ) \aslto
 \overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-transforms the type $\tty$ in the static environment $\tenv$,
+transforms the type $\tty$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, yielding the type $\newty$.
 \ProseOtherwiseTypeError
@@ -641,7 +641,7 @@ The function
   \overname{\expr}{\ve}
 ) \aslto \overname{\newe}{\expr}
 \]
-transforms the expression $\ve$ in the static environment $\tenv$,
+transforms the expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
 \ProseOtherwiseTypeError
@@ -657,7 +657,7 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item transforming $\ve$ in the static environment $\tenv$, by substituting the parameter expressions
+  \item transforming $\ve$ in the \staticenvironmentterm{} $\tenv$, by substituting the parameter expressions
         $\eqs$, yields $\veone$;
   \item symbolically simplifying $\veone$ in $\tenv$ yields $\newe$.
 \end{itemize}
@@ -682,7 +682,7 @@ The function
   \overname{\expr}{\ve}
 ) \aslto \overname{\expr}{\newe}
 \]
-transforms the expression $\ve$ in the static environment $\tenv$,
+transforms the expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\substs$, yielding the expression $\newe$.
 \ProseOtherwiseTypeError
@@ -1050,7 +1050,7 @@ The function
   \overname{\intconstraint}{\vc}
 ) \aslto \overname{\newc}{\intconstraint}
 \]
-transforms the integer constraint $\vc$ in the static environment $\tenv$,
+transforms the integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
 $\eqs$, and then attempting to symbolically simplify the result,
 yielding the integer constraint $\newc$.
@@ -1291,7 +1291,7 @@ The function
     \end{array}
   \end{array}
 \]
-looks up the static environment $\tenv$ for a subprogram associated with $\name$
+looks up the \staticenvironmentterm{} $\tenv$ for a subprogram associated with $\name$
 and the list of argument types $\calleeargtypes$ and determines which one of the following
 cases holds:
 \begin{enumerate}
@@ -1533,7 +1533,7 @@ See \ExampleRef{Argument Clashing}
 
 \ExampleDef{Ill-typed Subprogram Declarations}
 In specification \listingref{TypeClash-bad}, the type \verb|SuperRec| \emph{\Prosetypeclashes} \verb|SubRec|
-in the static environment where both types have been annotated,
+in the \staticenvironmentterm{} where both types have been annotated,
 which is why both declarations of \verb|structured_procedure| clash and thus they are ill-typed.
 \ASLListing{Ill-typed Subprogram Declarations}{TypeClash-bad}{\typingtests/TypingRule.TypeClashes.bad.asl}
 
@@ -1836,10 +1836,10 @@ while calling \\
         \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvparams, \envone)$\ProseOrAbnormal;
   \item evaluating each expression in $\args$ separately in $\envone$ as per \\
         \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvargs, \envtwo)$\ProseOrAbnormal;
-  \item $\envtwo$ consists of the static environment $\tenv$ and the dynamic environment $\denvtwo$;
+  \item $\envtwo$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment $\denvtwo$;
   \item applying $\incrstacksize$ to $G^\denvtwo$ and $\name$ yields $\genv$;
   \item the environment $\envtwo'$ is defined as the environment
-  consisting of the static environment $\tenv$ and the dynamic environment with the global component
+  consisting of the \staticenvironmentterm{} $\tenv$ and the dynamic environment with the global component
   $\genv$ and an empty local component (intuitively, this is because the called subprogram does not have access
   to the local environment of the caller);
   \item \OneApplies
@@ -1851,7 +1851,7 @@ while calling \\
             of the callee)\ProseOrDynErrorDiverging;
       \item applying the helper relation $\readvaluefrom$ to each element of the list $\vms$ yields the list $\vmstwo$;
       \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
-      \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
+      \item define $\newenv$ as the environment where the \staticenvironmentterm{} is $\tenv$ and the dynamic environment consists
             of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
             (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
       \item the entire evaluation results in $\ResultCall(\vmstwo, \newenv)$.
@@ -1861,11 +1861,11 @@ while calling \\
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
             $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrDynErrorDiverging;
-      \item view $\envthrow$ as the environment consisting of the static environment $\tenv$,
+      \item view $\envthrow$ as the environment consisting of the \staticenvironmentterm{} $\tenv$,
             and the dynamic environment whose global component is $\vglobal$;
       \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
       \item applying $\decrstacksize$ to $\vglobal$ and $\name$ yields $\genvtwo$;
-      \item define $\newenv$ as the environment where the static environment is $\tenv$ and the dynamic environment consists
+      \item define $\newenv$ as the environment where the \staticenvironmentterm{} is $\tenv$ and the dynamic environment consists
             of the dynamic global environment $\genvtwo$ and the dynamic local environment is taken from $\denvtwo$
             (that is, we restore the local environment to that of the caller and drop the local environment of the callee).
       \item the entire evaluation results in $\ResultCall(\vmstwo, \newenv)$.
@@ -1949,12 +1949,12 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\env$ consists of the static environment $\tenv$ and the dynamic environment with the global
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment with the global
         component $\genv$ and an empty local component;
   \item finding the function named $\name$ in $\tenv$ (via the $\subprograms$ component of the static global environment of $\tenv$)
         gives the AST $\func$ node with body
         $\vbody$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
-  \item $\envone$ is the environment consisting of the static environment $\tenv$ and the dynamic
+  \item $\envone$ is the environment consisting of the \staticenvironmentterm{} $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
   \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields \\
         $\vgone$\ProseOrDynErrorDiverging;

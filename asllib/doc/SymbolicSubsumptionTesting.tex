@@ -5,7 +5,7 @@ right hand side type is contained in the dynamic domain of the left hand side ty
 for any given dynamic environment.
 
 \begin{definition}[Domain Subset]
-For any given types $\vt$ and $\vs$ and static environment $\tenv$,
+For any given types $\vt$ and $\vs$ and \staticenvironmentterm{} $\tenv$,
 we say that $\vt$ is a \emph{domain subset} of $\vs$ in $\tenv$,
 if the following condition holds:
 \hypertarget{def-domainsubset}{}
@@ -48,11 +48,11 @@ is \emph{sound} if the following condition holds:
 \end{definition}
 
 That is, if a sound domain subset test returns a positive answer, it means that
-$\vt$ is definitely a domain subset of $\vs$ in the static environment $\tenv$.
+$\vt$ is definitely a domain subset of $\vs$ in the \staticenvironmentterm{} $\tenv$.
 This is referred to as a \emph{true positive}.
 However, a negative answer means one of two things:
 \begin{description}
-  \item[True Negative:] indeed, $\vt$ is not a domain subset of $\vs$ in the static environment $\tenv$; or
+  \item[True Negative:] indeed, $\vt$ is not a domain subset of $\vs$ in the \staticenvironmentterm{} $\tenv$; or
   \item[False Negative:] the symbolic reasoning is unable to decide.
 \end{description}
 
@@ -155,7 +155,7 @@ The function
 \]
 conservatively tests whether the set of integers represented by $\sdone$
 is a subset of the set of integers represented by $\sdtwo$,
-in the context of the static environment $\tenv$,
+in the context of the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
 
 \ExampleDef{Conservatively Testing Subsumption Between Two Lists of Symbolic Domains}
@@ -307,7 +307,7 @@ The function
 \[
   \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdomortop}{\vd}
 \]
-transforms a type $\vt$ in a static environment $\tenv$ into a symbolic domain $\vd$.
+transforms a type $\vt$ in a \staticenvironmentterm{} $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtype{} which is an integer.
 
 \ExampleDef{The Symbolic Domain of a Type}
@@ -432,7 +432,7 @@ The function
   \overname{\symdom}{\vd}
 \]
 transforms an integer constraint $\vc$ into a symbolic domain $\vd$
-in the context of the static environment $\tenv$.
+in the context of the \staticenvironmentterm{} $\tenv$.
 It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
 
@@ -569,7 +569,7 @@ The function
 \]
 conservatively tests whether the values represented by the \symbolicdomain\ $\cdone$
 is a subset of the values represented by the \symbolicdomain\ $\cdtwo$ in any environment
-consisting of the static environment $\tenv$, yielding the result in $\vb$.
+consisting of the \staticenvironmentterm{} $\tenv$, yielding the result in $\vb$.
 
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
 That is, $\vsone$ represents a superset of the set of numbers represented by $\visone$.
@@ -757,7 +757,7 @@ The function
 \end{array}
 \]
 conservatively approximates the non-empty list of constraints $\cs$ by a set of integers $\vs$.
-The approximation is over all environments consisting of the static environment $\tenv$.
+The approximation is over all environments consisting of the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 
@@ -817,7 +817,7 @@ The function
 \end{array}
 \]
 conservatively approximates the constraint $\vc$ by a set of integers $\vs$.
-The approximation is over all environments that consist of the static environment $\tenv$.
+The approximation is over all environments that consist of the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 If $\vc$ cannot be overapproximated, the result is $\CannotOverapproximate$.
@@ -1003,7 +1003,7 @@ The function
   \overname{\Z}{\vz} \cup \{\CannotOverapproximate\}
 \]
 approximates the minimal integer represented by the expression $\ve$
-in any environment consisting of the static environment
+in any environment consisting of the \staticenvironmentterm{}
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
 
 \ExampleDef{Approximating the Minimal Value of an Expression}
@@ -1038,7 +1038,7 @@ The function
   \overname{\Z}{\vz} \cup \{\CannotOverapproximate\}
 \]
 approximates the maximal integer represented by the expression $\ve$
-in any environment consisting of the static environment
+in any environment consisting of the \staticenvironmentterm{}
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
 
 \ExampleDef{Approximating the Maximal Value of an Expression}
@@ -1136,7 +1136,7 @@ The function
   \overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \]
 conservatively approximates the expression $\ve$ by a set of integers $\vs$
-in the static environment $\tenv$.
+in the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 
@@ -1427,7 +1427,7 @@ The function
 \overname{\pow{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \]
 conservatively approximates the type $\vt$ by a set of integers $\vs$
-in the static environment $\tenv$.
+in the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 

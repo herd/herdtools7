@@ -3,7 +3,7 @@
 The dynamic semantics of ASL define all valid behaviors of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a typechecker analyzes the \emph{\untypedast} to determine whether it
-is well-typed and, if successful, returns a \emph{static environment} and a \emph{\typedast}.
+is well-typed and, if successful, returns a \emph{\staticenvironmentterm{}} and a \emph{\typedast}.
 Otherwise, it returns a \typingerrorterm{}.
 
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
@@ -197,44 +197,34 @@ The dynamic local environment maps identifiers corresponding to local storage el
 \]
 \end{definition}
 
+\begin{definition}[Well-formed Dynamic Environments]
+A dynamic environment \\
+$\denv\in\dynamicenvs$ is \emph{well-formed} if it satisfies the following invariant:
+\[
+\dom(G^\denv.\storage) \cap \dom(L^\denv) = \emptyset \enspace.
+\]
+That is, the storage elements assigned values in the local dynamic environment
+and the storage elements assigned values in the global dynamic environment
+are mutually exclusive.
+\end{definition}
+In the rest of this reference, we assume all dynamic environments
+are well-formed.
+
 \hypertarget{def-emptydenv}{}
 An empty dynamic environment $\emptydenv$ is defined as follows:
 \[
 \emptydenv \triangleq ([\storage \mapsto \emptyfunc, \stacksize \mapsto \emptyfunc], \emptyfunc) \enspace.
 \]
 
-\paragraph{Static Environments}
-A \emph{static environment} (see \secref{StaticEnvironments}) $\tenv \in \staticenvs$ (also referred to as a \emph{type environment})
-is produced by the typechecker from the untyped AST.
-
-We assume that the static environment supports the following functions:
-\hypertarget{def-findfunc}{}
-\[
-  \begin{array}{rcl}
-    \findfunc       &:& \staticenvs \times \Identifiers \partialto \func\\
-    \typesat  &:& \staticenvs \times (\ty \times \ty) \rightarrow \Bool
-  \end{array}
-\]
-The partial function $\findfunc$ returns the typed AST of the subprogram for a given identifier.
-(Recall that ASL allows subprogram overloading so a name does not uniquely identify
-a specific subprogram.
-However, the typechecker renames each function uniquely so that it can be accessed based
-on its name alone.)
-%
-The function $\typesat(\vt, \vs)$ returns true
-if the type $\vt$ \emph{\typesatisfies} the type $\vs$
-(see \TypingRuleRef{TypeSatisfaction}).
-This is used in matching a raised exception to a corresponding catch clause.
-
 \hypertarget{def-envs}{}
 \begin{definition}[Environments]
-Environments pair static environments with dynamic environments:
+Environments pair \hyperlink{def-staticenvs}{static environments} with dynamic environments:
 $\envs \triangleq \staticenvs \times \dynamicenvs$.
 \end{definition}
 We write $\env \in \envs$ to range over environments.
 %
-From the perspective of the semantics, the static environment is immutable.
-That is, all environments share the same static environment.
+From the perspective of the semantics, the \staticenvironmentterm{} is immutable.
+That is, all environments share the same \staticenvironmentterm{}.
 
 \subsection{Concurrent Execution Graphs\label{sec:concurrentexecutiongraphs}}
 \hypertarget{def-executiongraph}{}
@@ -622,7 +612,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \subsection{Evaluation Order\label{sec:EvaluationOrder}}
 ASL specifies an evaluation order to ensure predictability of side-effects and exceptions.
-In particular, semantic rules use short-circuiting rule macros to
+In particular, semantic rules use \shortcircuitrulemacros{} to
 impose an ordering on premises and their associated side-effects, errors, and exceptions.
 Further, the threading through of environments similarly impose an ordering.
 

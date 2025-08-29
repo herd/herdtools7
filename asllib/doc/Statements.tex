@@ -108,7 +108,7 @@ evaluates a statement $\vs$ in an environment $\env$, resulting in one of four t
 \TypingRuleDef{SPass}
 \ExampleDef{Typing a Pass Statement}
 Annotating the \passstatementterm{} in \listingref{semantics-spass} does
-not modify the static environment.
+not modify the \staticenvironmentterm{}.
 
 \ProseParagraph
 \AllApply
@@ -661,8 +661,8 @@ The helper function
   \right)
 \end{array}
 \]
-annotates the type annotation $\tyopt$ in the static environment $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
-It yields the modified static environment $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.
+annotates the type annotation $\tyopt$ in the \staticenvironmentterm{} $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
+It yields the modified \staticenvironmentterm{} $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
 
 See \ExampleRef{Typing Declaration Statements}.
@@ -868,7 +868,7 @@ The helper function
 \checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
 \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the static environment
+checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the \staticenvironmentterm{}
 $\tenv$.
 If the answer if $\False$, the result is a \typingerrorterm.
 
@@ -1183,9 +1183,9 @@ instances of $\SPass$.
 \TypingRuleDef{SSeq}
 \ExampleDef{Typing Sequencing Statements}
 In \listingref{semantics-sseq}, the statement \verb|let x=3;| is
-annotated first in the static environment where the local static environment is empty.
+annotated first in the \staticenvironmentterm{} where the \localstaticenvironmentterm{} is empty.
 Then, the statement \verb|let y = x + 1;|
-is annotated in the static environment where
+is annotated in the \staticenvironmentterm{} where
 \verb|x| has been declared and associated with the type \verb|integer{3}|,
 and also recorded to be equivalent to $\lint(3)$ (in the $\exprequiv$ map).
 
@@ -1850,7 +1850,7 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 
 \subsection{Typing}
 \TypingRuleDef{SAssert}
-\ExampleDef{Typing Assertion Statements}
+\ExampleDef{Type Assertion Statements}
 The specifications in \listingref{semantics-sasertok} and \listingref{semantics-sassertno}
 are well-typed.
 
@@ -3483,7 +3483,7 @@ since \verb|proc| is not a function but a procedure.
     \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$, that is, \\
           $\SReturn(\veopt)$;
     \item the condition that $\veopt$ is $\None$ if and only if the enclosing subprogram does not have a return type
-          (that is, $\returntype$ in the local static environment is $\None$) does not hold;
+          (that is, $\returntype$ in the \localstaticenvironmentterm{} is $\None$) does not hold;
     \item the result is an error indicating the mismatch between the declared (existence of the) return type
           and the (existence of the) return expression.
   \end{itemize}
@@ -3934,10 +3934,10 @@ $\llabel(s)$      & $s$. \\
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item view $\env$ as the environment consisting of the static environment $\tenv$,
+  \item view $\env$ as the environment consisting of the \staticenvironmentterm{} $\tenv$,
         dynamic environment $\denv$, and console string $\vconsolestream$;
   \item view $\vv$ as a native literal for the literal $\vl$;
-  \item \Proseeqdef{$\newenv$}{the environment consisting of the static environment $\tenv$,
+  \item \Proseeqdef{$\newenv$}{the environment consisting of the \staticenvironmentterm{} $\tenv$,
         dynamic environment $\denv$, and console string
         define as the concatenation of \\
         $\vconsolestream$ and $\literaltostring(\vl)$}.
@@ -4000,7 +4000,7 @@ to implement a custom form of assertion checking.
 The \unreachablestatementterm{} in \listingref{UnreachableStatement} is well-typed.
 
 \ProseParagraph
-Annotating $\SUnreachable$ in the static environment $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
+Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
 
 \FormallyParagraph
 \begin{mathpar}

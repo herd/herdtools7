@@ -9,26 +9,26 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{FindBitfieldOpt} a recursive lookup for a bitfield in a list of bitfields;
   \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
   \item \TypingRuleRef{AssocOpt} looks for the value associated with a key in a list of key-values pairs;
-  \item \TypingRuleRef{WithEmptyLocal} constructs a static environment out of a global static environment;
-  \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the static environment;
-  \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the global static environment;
-  \item \TypingRuleRef{AddLocal} updates a static environment with a local storage element;
-  \item \TypingRuleRef{IsUndefined} checks whether an identifier is defined in a static environment;
-  \item \TypingRuleRef{IsGlobalUndefined} tests whether an identifier is defined in the global static environment;
-  \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is defined in the local static environment;
-  \item \TypingRuleRef{LookupConstant} looks up a static environment for a global constant;
-  \item \TypingRuleRef{AddGlobalConstant} updates a static environment for a global storage element;
+  \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} out of a \globalstaticenvironmentterm;
+  \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{};
+  \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm;
+  \item \TypingRuleRef{AddLocal} updates a \staticenvironmentterm{} with a local storage element;
+  \item \TypingRuleRef{IsUndefined} checks whether an identifier is defined in a \staticenvironmentterm{};
+  \item \TypingRuleRef{IsGlobalUndefined} tests whether an identifier is defined in the \globalstaticenvironmentterm;
+  \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is defined in the \localstaticenvironmentterm;
+  \item \TypingRuleRef{LookupConstant} looks up a \staticenvironmentterm{} for a global constant;
+  \item \TypingRuleRef{AddGlobalConstant} updates a \staticenvironmentterm{} for a global storage element;
   \item \TypingRuleRef{LookupImmutableExpr} looks up the initializing expression associated with an immutable storage element;
-  \item \TypingRuleRef{AddGlobalImmutableExpr} updates a global static environment by associating a global immutable storage element
+  \item \TypingRuleRef{AddGlobalImmutableExpr} updates a \globalstaticenvironmentterm{} by associating a global immutable storage element
         with its initializing expressions;
-  \item \TypingRuleRef{AddLocalImmutableExpr} updates a local static environment by associating a local immutable storage element
+  \item \TypingRuleRef{AddLocalImmutableExpr} updates a \localstaticenvironmentterm{} by associating a local immutable storage element
         with its initializing expressions;
   \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element
         with its initializing expressions based on its \sideeffectdescriptorsetsterm;
-  \item \TypingRuleRef{AddImmutableExpr} conditionally updates a static environment by associating
+  \item \TypingRuleRef{AddImmutableExpr} conditionally updates a \staticenvironmentterm{} by associating
         a local immutable storage element with its initializing expressions;
-  \item \TypingRuleRef{AddSubprogram} updates a static environment with a subprogram;
-  \item \TypingRuleRef{AddType} updates a static environment with a new type.
+  \item \TypingRuleRef{AddSubprogram} updates a \staticenvironmentterm{} with a subprogram;
+  \item \TypingRuleRef{AddType} updates a \staticenvironmentterm{} with a new type.
 \end{itemize}
 
 \TypingRuleDef{CheckNoDuplicates}
@@ -332,16 +332,16 @@ The function
   \withemptylocal(\overname{\globalstaticenvs}{\genv})
   \aslto \overname{\staticenvs}{\tenv}
 \]
-constructs a static environment from the global static environment $\genv$
-and the empty local static environment.
+constructs a \staticenvironmentterm{} from the \globalstaticenvironmentterm{} $\genv$
+and the empty \localstaticenvironmentterm.
 
 \ExampleDef{Constructing a Static Environment with an Empty Local Environment}
-In \listingref{CheckVarNotInGEnv}, the typechecker constructs a static environment
+In \listingref{CheckVarNotInGEnv}, the typechecker constructs a \staticenvironmentterm{}
 with an empty local environment to annotate the \verb|Color| type declaration.
 
 \ProseParagraph
-The result is a static environment where the global component is $\genv$ and the local component
-is the local static environment of $\emptytenv$.
+The result is a \staticenvironmentterm{} where the global component is $\genv$ and the local component
+is the \localstaticenvironmentterm{} of $\emptytenv$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
@@ -396,12 +396,12 @@ The function
   \checkvarnotingenv{\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx}}
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-checks whether $\id$ is already declared in the global static environment $\genv$.
+checks whether $\id$ is already declared in the \globalstaticenvironmentterm{} $\genv$.
 If it is, the result is a \typingerrorterm{}, and otherwise the result is $\True$.
 
 \ExampleDef{Checking Whether an Identifier is Bound in the Global Static Environment}
 In \listingref{CheckVarNotInGEnv}, the typechecker ensures that the following
-identifiers are not bound in the global static environment upon annotating
+identifiers are not bound in the \globalstaticenvironmentterm{} upon annotating
 the respective constructs:
 \begin{itemize}
   \item \verb|Color| is checked for the type declaration;
@@ -446,7 +446,7 @@ The function
   \overname{\staticenvs}{\newtenv}
 \]
 adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
-to the local environment of $\tenv$, resulting in the static environment $\newtenv$.
+to the local environment of $\tenv$, resulting in the \staticenvironmentterm{} $\newtenv$.
 
 \ExampleDef{Adding a Local Storage Element}
 In \listingref{AddLocal},
@@ -488,14 +488,14 @@ The function
 \isundefined(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx})
 \aslto \overname{\Bool}{\vb}
 \]
-checks whether the identifier $\vx$ is defined as a storage element in the static environment $\tenv$.
+checks whether the identifier $\vx$ is defined as a storage element in the \staticenvironmentterm{} $\tenv$.
 
 See \ExampleRef{Checking Whether an Identifier is Associated with a Global Storage Element} and
 \ExampleRef{Checking Whether an Identifier is Associated with a Local Storage Element}.
 
 \ProseParagraph
-$\vb$ is $\True$ if and only if $\vx$ is both undefined in the global static environment of $\tenv$
-(see $\isglobalundefined$) and undefined in the local static environment of $\tenv$ (see $\islocalundefined$).
+$\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvironmentterm{} of $\tenv$
+(see $\isglobalundefined$) and undefined in the \localstaticenvironmentterm{} of $\tenv$ (see $\islocalundefined$).
 
 \FormallyParagraph
 \begin{mathpar}
@@ -514,7 +514,7 @@ The function
 \[
 \isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
-checks whether the identifier $\vx$ is defined in the global static environment $\genv$ when subprogram definitions are ignored (see \RequirementRef{GlobalNamespace}), yielding the result in $\vb$.
+checks whether the identifier $\vx$ is defined in the \globalstaticenvironmentterm{} $\genv$ when subprogram definitions are ignored (see \RequirementRef{GlobalNamespace}), yielding the result in $\vb$.
 
 \ExampleDef{Checking Whether an Identifier is Associated with a Global Storage Element}
 \listingref{isglobalundefined} shows a specification which defines a variable \verb|X| and a subprogram \verb|Y|.
@@ -588,7 +588,7 @@ in annotating statements.
 
 \ProseParagraph
 \ProseEqdef{$\vv$}{the value to which $\vs$ is bound in the $\constantvalues$ map
-of the global static environment and $\bot$ if it is unbound.}
+of the \globalstaticenvironmentterm{} and $\bot$ if it is unbound.}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -608,8 +608,8 @@ The function
   \overname{\literal}{\vv}) \typearrow
   \overname{\globalstaticenvs}{\newgenv}
 \]
-binds the identifier $\name$ to the literal $\vv$ in the global static environment $\genv$,
-yielding the updated global static environment $\newgenv$.
+binds the identifier $\name$ to the literal $\vv$ in the \globalstaticenvironmentterm{} $\genv$,
+yielding the updated \globalstaticenvironmentterm{} $\newgenv$.
 
 \ExampleDef{Binding Global Storage Elements to Constants}
 The specification in \listingref{AddGlobalConstant} is well-typed.
@@ -634,7 +634,7 @@ The function
 \[
 \lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
 \]
-looks up the static environment $\tenv$ for an immutable expression associated with the identifier $\vx$,
+looks up the \staticenvironmentterm{} $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
 
 See \ExampleRef{Remembering Global Immutable Expressions}
@@ -700,7 +700,7 @@ The function
 \]
 binds the identifier $\vx$, which is assumed to name a global storage element,
 to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
-in the static environment $\tenv$,
+in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
 
 \ExampleDef{Remembering Global Immutable Expressions}
@@ -713,7 +713,7 @@ which is why it is able to prove that \verb|'11'| \typesatisfies{}
 
 \ProseParagraph
 \ProseEqdef{$\newtenv$}{
-  the static environment with the same local environment as $\tenv$ and a global environment
+  the \staticenvironmentterm{} with the same local environment as $\tenv$ and a global environment
   where $\exprequiv$ binds $\vx$ to $\ve$.}
 
 \FormallyParagraph
@@ -735,7 +735,7 @@ The function
 \]
 binds the identifier $\vx$, which is assumed to name a local storage element,
 to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
-in the static environment $\tenv$,
+in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
 
 See \ExampleRef{Updating Static Environments for Immutable Expressions}.
@@ -743,7 +743,7 @@ See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item define $\newtenv$ as the static environment with the same global environment as $\tenv$ and a local environment
+  \item define $\newtenv$ as the \staticenvironmentterm{} with the same global environment as $\tenv$ and a local environment
         where $\exprequiv$ binds $\vx$ to $\ve$.
 \end{itemize}
 \FormallyParagraph
@@ -763,7 +763,7 @@ The helper function
 tests whether the \sideeffectsetterm\ $\vses$
 allows an expression with those \sideeffectdescriptorsterm\ to be
 recorded as an immutable expression in the appropriate $\exprequiv$ map component
-of the static environment, so that it can later be used to
+of the \staticenvironmentterm{}, so that it can later be used to
 reason about type satisfaction, yielding the result in $\vb$.
 
 \ExampleDef{Remembering vs. not Remembering Immutable Expressions}
@@ -803,14 +803,14 @@ The function
   \aslto \overname{\staticenvs}{\newtenv} \cup\ \TTypeError
 \end{array}
 \]
-conditionally updates the static environment $\tenv$ for a \localdeclarationitem{} $\ldk$,
+conditionally updates the \staticenvironmentterm{} $\tenv$ for a \localdeclarationitem{} $\ldk$,
 an optional pair $\veopt$ consisting
 of an expression and its associated \sideeffectdescriptorsterm{},
 and an identifier $\vx$,
-yielding the updated static environment $\newtenv$.
+yielding the updated \staticenvironmentterm{} $\newtenv$.
 More precisely, $\addimmutableexpression(\tenv, \ldk, \veopt, \vx)$
 associates an expression with the identifier $\vx$
-in the static environment $\tenv$, if one exists in $\veopt$ and it is \symbolicallyevaluable\ with
+in the \staticenvironmentterm{} $\tenv$, if one exists in $\veopt$ and it is \symbolicallyevaluable\ with
 respect to the \sideeffectsetterm\ $\vsese$,
 along with the local declaration keyword $\ldk$.
 \ProseOtherwiseTypeError
@@ -890,7 +890,7 @@ The function
 \]
 updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
 to the function definition $\funcdef$ and \sideeffectdescriptorsterm\ $\vs$ in $\tenv$,
-resulting in a new static environment $\newtenv$.
+resulting in a new \staticenvironmentterm{} $\newtenv$.
 
 \ExampleDef{Updating a Static Environment for a Subprogram Declaration}
 Consider \listingref{AddSubprogramDecls}
@@ -965,8 +965,8 @@ The function
    \aslto
   \overname{\staticenvs}{\newtenv}
 \]
-binds the type $\tty$ and \purity{} $\vf$ to the identifier $\name$ in the static environment $\tenv$,
-yielding the modified static environment $\newtenv$.
+binds the type $\tty$ and \purity{} $\vf$ to the identifier $\name$ in the \staticenvironmentterm{} $\tenv$,
+yielding the modified \staticenvironmentterm{} $\newtenv$.
 
 \ExampleDef{Adding Types to Environments}
 In \listingref{DeclareType}, the declaration of the enumeration type \verb|Color|

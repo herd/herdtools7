@@ -16,7 +16,7 @@ When an ASL specification is successfully parsed, we refer to the resulting AST 
 A \emph{typechecker} is an implementation of the ASL type system, which accepts an untyped AST and applies the
 rules of the type system to the untyped AST. If it is successful, the specification
 is considered \emph{well-typed} and the result is a pair consisting of
-a \emph{static environment} and a \emph{typed AST},
+a \emph{\staticenvironmentterm{}} and a \emph{typed AST},
 which are used in defining the ASL semantics (\chapref{Semantics}).
 Otherwise, the typechecker returns a \typingerrorterm{}.
 
@@ -35,7 +35,7 @@ Throughout this document we use $\tty$ to denote a type variable, which should n
 \end{itemize}
 
 \section{Static Environments\label{sec:StaticEnvironments}}
-A \emph{static environment} (also called a \emph{type environment}) is what the typing rules operate over:
+A \emph{\staticenvironmentterm{}} (also called a \emph{type environment}) is what the typing rules operate over:
 a structure, which amongst other things, associates types to variables.
 Intuitively, the typing of a specification makes an initial environment evolve, with new types as given by the
 variable declarations of the specification.
@@ -71,9 +71,9 @@ Static environments, denoted as $\staticenvs$, are defined as follows (referring
 
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
 
-A static environment $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the global environment $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
-appearing outside of a given subprogram, and the local environment
+A \staticenvironmentterm{} $\tenv=(G^\tenv, L^\tenv)$ consists of two
+distinct components: the \emph{\globalstaticenvironmentterm} $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
+appearing outside of a given subprogram, and the \emph{\localstaticenvironmentterm}
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
 This separation allows us to typecheck subprograms by using an empty local environment.
 
@@ -108,7 +108,7 @@ The intuitive meaning of each component is as follows:
 
 \hypertarget{def-emptytenv}{}
 \begin{definition}[Empty Static Environment]
-The \emph{empty static environment}, \\ denoted as $\emptytenv$, is defined as follows:
+The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is defined as follows:
 \[
 \emptytenv \triangleq \left(
   \overname{

@@ -124,7 +124,7 @@ the function
   \aslto
   \overname{\slice}{\vsp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a single slice $\vs$ in the static environment $\tenv$,
+annotates a single slice $\vs$ in the \staticenvironmentterm{} $\tenv$,
 resulting in an annotated slice $\vsp$.
 \ProseOtherwiseTypeError
 
@@ -235,7 +235,7 @@ The helper function
   \overname{\expr}{\vwidth} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
-in the static environment $\tenv$.
+in the \staticenvironmentterm{} $\tenv$.
 
 \ExampleDef{The Width of a List of Slices}
 In \listingref{eval-slices}
@@ -350,7 +350,7 @@ The function
   (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates a \symbolicallyevaluable{} integer expression $\ve$ of a constrained integer type in the static environment $\tenv$
+annotates a \symbolicallyevaluable{} integer expression $\ve$ of a constrained integer type in the \staticenvironmentterm{} $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
@@ -569,7 +569,7 @@ The function
 \annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto
 (\overname{\slice^*}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
 \]
-annotates a list of slices $\vslices$ in the static environment $\tenv$, yielding a list of annotated slices (that is,
+annotates a list of slices $\vslices$ in the \staticenvironmentterm{} $\tenv$, yielding a list of annotated slices (that is,
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 

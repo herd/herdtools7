@@ -1,6 +1,6 @@
 \chapter{Global Storage Declarations\label{chap:GlobalStorageDeclarations}}
 
-Global storage declarations introduce storage elements into the global static environment.
+Global storage declarations introduce storage elements into the \globalstaticenvironmentterm.
 
 \ExampleDef{Global Storage Declarations}
 \listingref{GlobalStorageDeclarations} shows some examples of global storage declarations.
@@ -349,8 +349,8 @@ The function
   \cup
   \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates the global storage declaration $\gsd$ in the global static environment $\genv$,
-yielding a modified global static environment $\newgenv$ and annotated global storage declaration $\newgsd$.
+annotates the global storage declaration $\gsd$ in the \globalstaticenvironmentterm{} $\genv$,
+yielding a modified \globalstaticenvironmentterm{} $\newgenv$ and annotated global storage declaration $\newgsd$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Declaring Global Storage}
@@ -478,7 +478,7 @@ The helper function
 \end{array}
 \]
 is used in the context of a declaration of a global storage element with optional type annotation $\tyoptp$
-and optional initializing expression $\initialvalue$, in the static environment $\tenv$.
+and optional initializing expression $\initialvalue$, in the \staticenvironmentterm{} $\tenv$.
 It determines $\typedinitialvalue$, which consists
 of an expression, a type, and a \sideeffectsetterm,
 the annotation of the type in $\tyoptp$ (in case there is a type), and the type
@@ -636,20 +636,20 @@ The helper function
 \end{array}
 \right) \aslto \overname{\staticenvs}{\newtenv}
 \]
-updates the static environment $\tenv$ for the global storage element
+updates the \staticenvironmentterm{} $\tenv$ for the global storage element
 named $\name$ with global declaration keyword $\gdk$,
 and a tuple (obtained via \\
 \TypingRuleRef{AnnotateTyOptInitialValue})
 $\typedinitialvalue$, which consists a type for the initializing value,
 the annotated initializing expression, and the inferred \sideeffectsetterm\ for the initializing value.
-The result is the updated static environment $\newtenv$.
+The result is the updated \staticenvironmentterm{} $\newtenv$.
 \ProseOtherwiseTypeError
 This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
 is the type associated with $\name$.
 
 \ExampleDef{Updating the Global Storage for a Constant}
 The specification in \listingref{UpdateGlobalStorage-constant}
-binds $\vy$ to $\lint(5040)$ in the $\constantvalues$ map of the global static environment.
+binds $\vy$ to $\lint(5040)$ in the $\constantvalues$ map of the \globalstaticenvironmentterm.
 \ASLListing{Updating the global storage for a constant}{UpdateGlobalStorage-constant}{\typingtests/TypingRule.UpdateGlobalStorage.constant.asl}
 
 \ExampleDef{Updating the Global Storage for Configuration Storage Elements}
@@ -670,7 +670,7 @@ is ill-typed, since only a \Prosesingulartype{} can be used for \texttt{config} 
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
     \item \Prosestaticeval{$\tenv$}{$\initialvaluep$}{$\vv$};
     \item applying $\addglobalconstant$ to $G^\tenv$, $\name$ and $\vv$ yields $G'$;
-    \item \Proseeqdef{$\newtenv$}{the static environment whose global component is $G'$ and local component is
+    \item \Proseeqdef{$\newtenv$}{the \staticenvironmentterm{} whose global component is $G'$ and local component is
     the local component of $\tenv$}.
   \end{itemize}
 
@@ -805,7 +805,7 @@ The function
   \aslto
     \overname{\globalstaticenvs}{\newgenv} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns a global static environment $\newgenv$ which is identical to the global static environment $\genv$,
+returns a \globalstaticenvironmentterm{} $\newgenv$ which is identical to the \globalstaticenvironmentterm{} $\genv$,
 except that the identifier $\name$, which is assumed to name a global storage element,
 is bound to the global storage keyword $\keyword$ and type $\declaredt$.
 \ProseOtherwiseTypeError
@@ -826,7 +826,7 @@ static environments:
 \AllApply
 \begin{itemize}
   \item checking that $\name$ is not declared in the global environment of $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\newgenv$ is the global static environment of $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
+  \item $\newgenv$ is the \globalstaticenvironmentterm{} of $\tenv$ with its $\globalstoragetypes$ component updated by binding $\name$ to
         $(\declaredt, \keyword)$.
 \end{itemize}
 \FormallyParagraph

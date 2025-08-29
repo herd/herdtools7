@@ -40,7 +40,7 @@ The predicate
   \subtypesrel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
   \aslto \overname{\Bool}{\vb}
 \]
-defines whether the type $\vtone$ subtypes the type $\vttwo$ in the static environment $\tenv$,
+defines whether the type $\vtone$ subtypes the type $\vttwo$ in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
 
 \ProseParagraph
@@ -56,8 +56,8 @@ yielding the result in $\vb$.
   \begin{itemize}
     \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
     \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
-    \item the global static environment maintains that $\idone$ is a subtype of $\idthree$;
-    \item testing whether the type named $\idthree$ is a subtype of $\vttwo$ in the static environment $\tenv$
+    \item the \globalstaticenvironmentterm{} maintains that $\idone$ is a subtype of $\idthree$;
+    \item testing whether the type named $\idthree$ is a subtype of $\vttwo$ in the \staticenvironmentterm{} $\tenv$
     gives $\vb$.
   \end{itemize}
 
@@ -65,7 +65,7 @@ yielding the result in $\vb$.
   \begin{itemize}
     \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
     \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
-    \item the global static environment maintains that $\idone$ does subtype any named type;
+    \item the \globalstaticenvironmentterm{} maintains that $\idone$ does subtype any named type;
     \item $\vb$ is $\False$.
   \end{itemize}
 
@@ -200,19 +200,19 @@ subtyping.
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array length expression with $\vlengthexprs$, that is \\ $\ArrayLengthExpr(\vlengthexprs)$;
   \item $\vlengtht$ is an array length expression with $\vlengthexprt$, that is \\ $\ArrayLengthExpr(\vlengthexprt)$;
-  \item determining whether expressions $\vlengthexprs$ and $\vlengthexprt$ are equivalent gives $\vb$.
+  \item determining whether $\vlengthexprs$ and $\vlengthexprt$ are \equivalentexprsterm{} gives $\vb$.
   \end{itemize}
 
   \item \AllApplyCase{t\_array\_enum}
   \begin{itemize}
   \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
   \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
-  \item determining whether $\vtys$ and $\vtyt$ are equivalent in $\tenv$ is either $\True$
+  \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
   \item $\vlengths$ is an array with indices taken from the enumeration $\vnames$, that is $\ArrayLengthEnum(\vnames, \Ignore)$;
@@ -747,7 +747,7 @@ of different widths.
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \FormallyParagraph
-Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is equivalent to \verb|integer {1..2}|),
+Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is \typeequivalent{} to \verb|integer {1..2}|),
 the lowest common ancestor is not unique.
 We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
 
@@ -1072,7 +1072,7 @@ The function
   \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 determines the result type $\vt$ of applying the binary operator $\op$
-to operands of type $\vtone$ and $\vttwo$ in the static environment $\tenv$.
+to operands of type $\vtone$ and $\vttwo$ in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Filtering Constraints for Binary Operations}
@@ -1577,7 +1577,7 @@ The helper function
   \aslto \pow{\ty}
 \]
 returns the set of \emph{named supertypes} of a type $\vt$
-in the $\subtypes$ function of a global static environment $\tenv$:
+in the $\subtypes$ function of a \globalstaticenvironmentterm{} $\tenv$:
 \[
   \supers(\tenv, \vt) \triangleq
   \begin{cases}
@@ -1796,7 +1796,7 @@ The function
 \]
 filters the list of constraints $\cs$ by removing values that will definitely result in a dynamic
 error if found on the right-hand-side of a binary operation expression with the operator $\op$
-in any environment consisting of the static environment $\tenv$.
+in any environment consisting of the \staticenvironmentterm{} $\tenv$.
 The result is the filtered list of constraints $\newcs$.
 %
 If the list is empty, the result is either $\CannotUnderapproximate$ or $\CannotOverapproximate$,
@@ -2538,7 +2538,7 @@ The function
 (\overname{\intconstraint^*}{\vcs}, \overname{\precisionlossindicator}{\newprec})
 \end{array}
 \]
-given the static environment $\tenv$ and the constraint $\vc$,
+given the \staticenvironmentterm{} $\tenv$ and the constraint $\vc$,
 expands $\vc$ into the equivalent list of exact constraints if
 $\vc$ matches an ascending range constraint that is not too large,
 and the singleton list for $\vc$ otherwise.
@@ -3015,7 +3015,7 @@ The function
   \getwellconstrainedstructure(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
   \aslto \overname{\ty}{\vtp} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-returns the \wellconstrainedstructure\ of a type $\vt$ in the static environment $\tenv$ --- $\vtp$, which is defined as follows.
+returns the \wellconstrainedstructure\ of a type $\vt$ in the \staticenvironmentterm{} $\tenv$ --- $\vtp$, which is defined as follows.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Obtaining the Well-constrained Structure of a Type}
@@ -3053,7 +3053,7 @@ The function
   \overname{\expr}{\ve} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the expression $\ve$, which represents the width of the bitvector type $\vt$
-in the static environment $\tenv$.
+in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
@@ -3100,7 +3100,7 @@ The function
   \overname{\N}{\vw} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 returns the natural number $\vw$, which represents the width of the bitvector type $\vt$
-in the static environment $\tenv$.
+in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Obtaining the Integer Corresponding to a Bitvector Width}

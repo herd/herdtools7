@@ -161,7 +161,7 @@ yielding the environment $\newenv$.
 
 This relation is used to maintain the invariant that the dynamic environment
 maintains bindings only for identifiers that are in scope. That is, only identifiers
-that would be in the local static environment.
+that would be in the local dynamic environment.
 %
 This invariant is not necessary for correctness.
 Removing identifiers from the dynamic environment does not have any
@@ -183,8 +183,8 @@ exn=TRUE
 
 \AllApply
 \begin{itemize}
-  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
-  \item $\newenv$ consists of the static environment $\tenv$ and the dynamic environment
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
+  \item $\newenv$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment
   with the same global component as $\denv$ --- $G^\denv$, and local component $L^\denv$,
   with the identifier $\name$ removed from its domain.
 \end{itemize}

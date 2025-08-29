@@ -74,8 +74,8 @@ The function
   \aslto (\overname{\decl}{\newd} \times \overname{\globalstaticenvs}{\newgenv})
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a global declaration $\vd$ in the global static environment $\genv$,
-yielding an annotated global declaration $\newd$ and modified global static environment $\newgenv$.
+annotates a global declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
+yielding an annotated global declaration $\newd$ and modified \globalstaticenvironmentterm{} $\newgenv$.
 \ProseOtherwiseTypeError
 
   This function is implemented for each kind of global declarations:
@@ -163,8 +163,8 @@ The relation
 (\overname{\decl^*}{\newdecls} \times \overname{\staticenvs}{\newtenv})
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-annotates a list of declarations $\decls$ in an input global static environment $\genv$,
-yielding an output static environment $\newtenv$ and annotated list of declarations $\newdecls$.
+annotates a list of declarations $\decls$ in an input \globalstaticenvironmentterm{} $\genv$,
+yielding an output \staticenvironmentterm{} $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Typechecking a List of Global Declarations}
@@ -283,8 +283,8 @@ The function
 \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of declaration components $\comps$
-(a list of lists) in the global static environment $\genv$,
-yielding the annotated list of declarations $\newdecls$ and modified global static environment $\newgenv$.
+(a list of lists) in the \globalstaticenvironmentterm{} $\genv$,
+yielding the annotated list of declarations $\newdecls$ and modified \globalstaticenvironmentterm{} $\newgenv$.
 \ProseOtherwiseTypeError
 
 We note that a strongly-connected component containing just a single declaration may contain
@@ -374,9 +374,9 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 annotates a list of mutually recursive declarations
-$\decls$ in the global static environment $\genv$,
+$\decls$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding the annotated list of subprogram declarations $\newdecls$
-and modified global static environment $\newgenv$.
+and modified \globalstaticenvironmentterm{} $\newgenv$.
 
 \ExampleDef{Checking Mutually-recursive Declarations}
 In \ExampleRef{Typechecking a List of Global Declarations},
@@ -410,16 +410,16 @@ since it contains recursive type declarations.
         the annotated subprogram $\vd_\vf$, and the \sideeffectsetterm\ $\vses_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
   \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
         $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
-  \item for tuple in $\envandfstwo$ consisting of a local static environment, an element of $\func$,
+  \item for tuple in $\envandfstwo$ consisting of a \localstaticenvironmentterm, an element of $\func$,
         and a \sideeffectsetterm, $(\lenvtwo, \vf, \vses_\vf)$,
-        applying $\annotatesubprogram$ to $\vf$ and $\vses_\vf$ in the static environment \\
+        applying $\annotatesubprogram$ to $\vf$ and $\vses_\vf$ in the \staticenvironmentterm{} \\
         $(\genvtwo, \lenvtwo)$ yields $(\vnew_\vf, \vsesp_\vf)$\ProseOrTypeError;
   \item define $\newdecls$ as the list of $\DFunc(\vnew_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
   \item define $\vsess$ as the list of $(\vnew_\vf, \vsesp_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
   \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
         and an empty static local environment;
   \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsess$ yields $\tenvthree$;
-  \item define $\newtenv$ as the global static environment of $\tenvthree$.
+  \item define $\newtenv$ as the \globalstaticenvironmentterm{} of $\tenvthree$.
 \end{itemize}
 
 \FormallyParagraph
@@ -459,12 +459,12 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-processes a list of pairs, each consisting of a local static environment and a subprogram declaration, $\envandfs$,
-in the context of a global static environment $\genv$,
+processes a list of pairs, each consisting of a \localstaticenvironmentterm{} and a subprogram declaration, $\envandfs$,
+in the context of a \globalstaticenvironmentterm{} $\genv$,
 declaring each subprogram in the environment consisting of $\genv$ and the static local environment associated with
 each subprogram.
-The result is a modified global static environment $\newgenv$ and list of tuples $\newenvandfs$
-consisting of local static environment, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
+The result is a modified \globalstaticenvironmentterm{} $\newgenv$ and list of tuples $\newenvandfs$
+consisting of \localstaticenvironmentterm, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
 
 \ExampleDef{Updating Static Environments for Subprogram Declarations}
 Applying $\declaresubprograms$ for the subprogram declarations in \listingref{DeclareSubprograms}
@@ -550,7 +550,7 @@ to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
 \ExampleDef{Adding Subprogram Declarations}
 The specification in \listingref{AddSubprogramDecls}
 contains two subprogram declarations,
-which are added to the static environment.
+which are added to the \staticenvironmentterm{}.
 The subprogram with the \integertypeterm{} argument is named \verb|increment|
 and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|.
 \ASLListing{Adding subprogram declarations}{AddSubprogramDecls}{\typingtests/TypingRule.AddSubprogramDecls.asl}
@@ -1405,7 +1405,7 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 
   \item \AllApplyCase{e\_atc}
   \begin{itemize}
-    \item $\ve$ is the typing assertion for expression $\ve$ and type $\tty$;
+    \item $\ve$ is the type assertion for expression $\ve$ and type $\tty$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\usety$ to $\tty$.
   \end{itemize}
 
@@ -2325,7 +2325,7 @@ The relation
   \evalspec(\overname{\staticenvs}{\tenv} \aslsep \overname{\spec}{\vspec}) \;\aslrel\;
    ((\overname{\tint}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig})
 \]
-evaluates the specification $\vspec$ with the static environment $\tenv$,
+evaluates the specification $\vspec$ with the \staticenvironmentterm{} $\tenv$,
 yielding the native integer value $\vv$ and execution graph $\vg$.
 Otherwise, the result is a \dynamicerrorterm{}.
 
@@ -2394,7 +2394,7 @@ The helper relation
   \right)
 \]
 populates the environment $\env$ and output execution graph $\newg$ with the global
-storage declarations in $\typedspec$, starting from the static environment $\tenv$.
+storage declarations in $\typedspec$, starting from the \staticenvironmentterm{} $\tenv$.
 This works by traversing the global storage declarations
 and updating the environment accordingly.
 \ProseOtherwiseDynamicErrorOrDiverging
@@ -2408,7 +2408,7 @@ See \ExampleRef{Evaluating a List of Global Declarations}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item define the environment $\env$ as consisting of the static environment $\tenv$ and the empty dynamic environment $\emptydenv$;
+  \item define the environment $\env$ as consisting of the \staticenvironmentterm{} $\tenv$ and the empty dynamic environment $\emptydenv$;
   \item evaluating the global storage declarations in $\typedspec$ in $\env$ with the empty execution graph
         is $(\newenv, \newg)$\ProseOrDynErrorDiverging.
   \item the result of the entire evaluation is $(\newenv, \newg)$.

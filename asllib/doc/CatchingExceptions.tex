@@ -96,7 +96,7 @@ The function
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates a catcher $\vc$ in the static environment $\tenv$
+annotates a catcher $\vc$ in the \staticenvironmentterm{} $\tenv$
 and \sideeffectsetterm\ $\vsesin$.
 The result is the \sideeffectsetterm\ $\vsesin$, the annotated catcher $\newcatcher$ and the
 \sideeffectsetterm\ $\vses$.
@@ -128,7 +128,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
     \item determining whether $\ttyp$ has the \structure\ of an exception type yields \\ $\True$\ProseOrTypeError;
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
-          (that is, with the local declaration keyword $\LDKLet$), yields the static environment $\tenvp$;
+          (that is, with the local declaration keyword $\LDKLet$), yields the \staticenvironmentterm{} $\tenvp$;
     \item annotating the block $\vstmt$ in $\tenvp$ yields $(\newstmt, \vsesblock)$;
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
@@ -237,9 +237,9 @@ That is, no \dynamicerrorterm{} occurs.
 \AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
-  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
-  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
         and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
   \item evaluating $\vs$ in $\envthrow$ as a block (\SemanticsRuleRef{Block}) yields a (non-error)
         configuration $C$\ProseOrDynErrorDiverging;
@@ -274,9 +274,9 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
-  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
-  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives a statement $\vs$;
   \item applying $\readvaluefrom$ to $\vv$ yields $(\vv, \vgone)$;
   \item declaring a local identifier $\name$ with $(\vv, \vgone)$ in $\envthrow$ gives $(\envtwo, \vgtwo)$;
@@ -322,9 +322,9 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
-  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
-  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
         and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
         (that is, neither of the \texttt{catch} clauses matches the raised exception);
   \item evaluating the \texttt{otherwise} statement $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block})
@@ -363,9 +363,9 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \AllApply
 \begin{itemize}
   \item $\sm$ is $\Throwing((\langle \vv, \vvty \rangle, \sg), \envthrow)$;
-  \item $\env$ consists of the static environment $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the static environment $\tenv$ and dynamic environment \\ $\denvthrow$;
-  \item finding the first catcher with the static environment $\tenv$, the exception type $\vvty$,
+  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
+  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
   (that is, neither of the \texttt{catch} clauses matches the raised exception);
   \item since there no \texttt{otherwise} clause, the result is $\sm$.
@@ -413,7 +413,7 @@ The (recursively-defined) helper relation
   \;\aslrel\; \langle \catcher \rangle \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
-by invoking $\typesat$ with the static environment $\tenv$.
+by invoking $\typesat$ with the \staticenvironmentterm{} $\tenv$.
 
 \ExampleDef{Finding a Catch Clause}
 In \listingref{annotate-catcher}, the second catch clause --- for the exception type ExceptionType2
@@ -436,7 +436,7 @@ resulting in a \dynamicerrorterm{}.
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
-    \item $\vvty$ \subtypesterm\ $\ety$ in the static environment $\tenv$;
+    \item $\vvty$ \subtypesterm\ $\ety$ in the \staticenvironmentterm{} $\tenv$;
     \item the result is the singleton set for $\vc$.
   \end{itemize}
 
@@ -444,7 +444,7 @@ resulting in a \dynamicerrorterm{}.
   \begin{itemize}
     \item $\catchers$ has $\vc$ as its head and $\catchersone$ as its tail;
     \item $\vc$ consists of $(\nameopt, \ety, \vs)$;
-    \item $\vvty$ does not \subtypeterm\ $\ety$ in the static environment $\tenv$;
+    \item $\vvty$ does not \subtypeterm\ $\ety$ in the \staticenvironmentterm{} $\tenv$;
     \item the result of finding a catcher for $\vvty$ with the type environment $\tenv$ in the tail list $\catchersone$
     is $d$;
     \item the result is $d$.

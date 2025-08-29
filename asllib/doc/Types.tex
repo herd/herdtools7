@@ -54,7 +54,7 @@ The function
   \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
   \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
-typechecks a type $\tty$ in a static environment $\tenv$,
+typechecks a type $\tty$ in a \staticenvironmentterm{} $\tenv$,
 resulting in a \typedast\ $\newty$ and a \sideeffectsetterm\ $\vses$.
 The flag $\decl$ indicates whether $\tty$ is a type currently being declared or not,
 and makes a difference only when $\tty$ is an \enumerationtypeterm{} or a \structuredtype.
@@ -451,7 +451,7 @@ The function
 \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates an integer constraint $\vc$ in the static environment $\tenv$ yielding the annotated
+annotates an integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$ yielding the annotated
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
@@ -1291,7 +1291,7 @@ The function
   (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the expression $\ve$ in the static environment $\tenv$ and checks that it is \symbolicallyevaluable,
+annotates the expression $\ve$ in the \staticenvironmentterm{} $\tenv$ and checks that it is \symbolicallyevaluable,
 yielding the type in $\vt$, the annotated expression $\vep$ and the \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
 
@@ -1508,7 +1508,7 @@ collection types in comments.
   \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
         \ProseOrTypeError;
   \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
-  \item checking that the \structure{} of the type $\vtp_i$ in the static environment $\tenv$
+  \item checking that the \structure{} of the type $\vtp_i$ in the \staticenvironmentterm{} $\tenv$
         is a \bitvectortypeterm, for every $i$ in $1..k$, yields $\True$\ProseOrTypeError;
   \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
         corresponding to the type $\tty$) and fields $\fieldsp$;
