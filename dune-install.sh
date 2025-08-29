@@ -29,7 +29,7 @@ cpdir () {
   local from="${1}"
   local to="${2}"
 
-  rm -rf "${to}" && mkdir -p "${to}" && ( cd "${from}" && cp -r . "${to}" )
+  rm -rf "${to}" && mkdir -p "${to}" && ( cp -r "${from}" "${to}" )
 }
 
 # Copy binaries
