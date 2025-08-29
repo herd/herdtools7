@@ -1269,6 +1269,42 @@ let do_set_read_v init =
         (n.evt.loc,vf)::k)
     nss []
 
+  (* find the next node with communication but
+     there are all ordinary write nodes in between. *)
+  let rec find_fault_com = function
+    | [] -> None
+    | hd::tail ->
+      if hd.evt.bank != Ord then None
+      else if E.is_com hd.edge then
+        match tail with
+        | [] -> assert false
+        | next::_ ->
+          if next.evt.bank = Ord then Some next
+          else None
+      else find_fault_com tail
+
+  let propagate_fault by_loc =
+    let rec iter_with_tail f l =
+      match l with
+      | [] -> ()
+      | h::t -> f h t; iter_with_tail f t in
+    (* Collect all the node that might faults *)
+    List.iter
+    ( fun node_list ->
+      iter_with_tail ( fun node tail ->
+        match node.evt.check_fault with
+          | None -> ()
+          | Some (_label, fault_bool) ->
+            (* circulate `tail` back to `node_list` *)
+            match find_fault_com (node :: tail @ node_list) with
+            | Some n ->
+              if n.evt.check_fault = None then
+                let check_fault = Some ((Label.next_label "L", fault_bool)) in
+                n.evt <- { n.evt with check_fault }
+            | None -> ()
+        ) node_list
+    ) by_loc
+
 (* zyva... *)
 
 let finish n =
@@ -1318,6 +1354,7 @@ let finish n =
   end ;
 (* Set load values *)
   let vs = set_read_v by_loc initvals in
+  propagate_fault by_loc;
 (* Set dependency values *)
   (if do_morello then set_dep_v by_loc) ;
   if O.verbose > 1 then begin
