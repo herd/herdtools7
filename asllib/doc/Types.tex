@@ -22,6 +22,7 @@ from the non-terminal $\ty$.
   \item \secref{BooleanType} defines the \booleantypeterm{};
   \item \secref{BitvectorTypes} defines the \bitvectortypeterm{};
   \item \secref{TupleTypes} defines \Tupletypesterm{};
+  \item \secref{ParenthesizedTypes} defines parenthesized types;
   \item \secref{EnumerationTypes} defines \Enumerationtypesterm{};
   \item \secref{ArrayTypes} defines array types;
   \item \secref{RecordTypes} defines record types;
@@ -915,7 +916,7 @@ element index.
 
 \subsection{Syntax}
 \begin{flalign*}
-\Nty \derives\ & \PlistZero{\Nty} &
+\Nty \derives\ & \Plisttwo{\Nty} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -928,7 +929,7 @@ element index.
 \inferrule{
   \buildplist[\buildty](\vtypes) \astarrow \vtypeasts
 }{
-  \buildty(\Nty(\namednode{\vtypes}{\PlistZero{\Nty}})) \astarrow
+  \buildty(\Nty(\namednode{\vtypes}{\Plisttwo{\Nty}})) \astarrow
   \overname{\TTuple(\vtypeasts)}{\vastnode}
 }
 \end{mathpar}
@@ -960,6 +961,28 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 }
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
+
+\section{Parenthesized Types\label{sec:ParenthesizedTypes}}
+A single type inside parentheses is not considered to be a tuple, but rather the element
+inside the parenthesis.
+Parenthesizing a type can be used to improve readability.
+
+\subsection{Syntax}
+\begin{flalign*}
+\Nty \derives\  & \Tlpar \parsesep \Nty \parsesep \Trpar &\\
+\end{flalign*}
+
+\subsection{Abstract Syntax}
+A parenthesized type produces the abstract syntax of the type itself.
+In other words, we ignore the parenthesis.
+
+\ASTRuleDef{ParenType}
+\begin{mathpar}
+  \inferrule{}{
+  \buildexpr(\overname{\Nty(\Tlpar, \punnode{\Nty}, \Trpar)}{\vparsednode}) \astarrow
+  \overname{\astof{\tty}}{\vastnode}
+}
+\end{mathpar}
 
 \section{Enumeration Types\label{sec:EnumerationTypes}}
 \hypertarget{enumerationtypeterm}{}
