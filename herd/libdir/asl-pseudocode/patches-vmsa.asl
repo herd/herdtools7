@@ -204,7 +204,7 @@ func AArch64_MemSwapTableDesc
 begin
    let addr = descpaddr.paddress.address;
    let mem_desc = ReadPteAgainPrimitive{N}(addr,descaccess.write);
-//   __debug__(N,mem_desc,prev_desc);
+// __debug__(N,mem_desc,prev_desc,descaccess.write);
 // For speed, using "if" construct us much more expensive
    CheckProp(mem_desc == prev_desc);
    WritePtePrimitive{N}(addr,new_desc,descaccess.write);
@@ -215,14 +215,27 @@ end;
 // ===================
 
 // Get rid of CAS as LOAD execution
+
+func IsCasWithWrite(a:AccessDescriptor) => boolean
+begin
+  return a.modop == MemAtomicOp_CAS && a.write;
+end;
+
+func IsCasAsLoad(a:AccessDescriptor) => boolean
+begin
+  return a.modop == MemAtomicOp_CAS && !a.write;
+end;
+
 func CheckNotCasAsLoad(a:AccessDescriptor)
 begin
-  CheckProp(!(a.modop == MemAtomicOp_CAS && !a.write));
+  CheckProp(!(IsCasAsLoad(a)));
 end;
+
 type SilentExit of exception {-};
 
 func AArch64_DataAbort(fault:FaultRecord)
 begin
+// __debug__(123,fault.statuscode,fault.accessdesc.write);
   CheckNotCasAsLoad(fault.accessdesc);
   DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
   throw SilentExit {-};
@@ -420,3 +433,50 @@ begin
   return accdesc;
 end;
 
+// AArch64.SetAccessFlag()
+// =======================
+// Determine whether the access flag could be set by HW given the fault status
+
+var ForceNoAFUpdate : boolean;
+
+func
+  AArch64_SetAccessFlag
+    (ha:bit, accdesc:AccessDescriptor, fault:FaultRecord)
+begin
+    if ha == '0' || !AArch64_SettingAccessFlagPermitted(fault) then
+        return FALSE;
+    elsif accdesc.acctype == AccessType_AT then
+        return ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+    elsif accdesc.acctype IN {AccessType_DC, AccessType_IC} then
+        return ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+    else
+        // Set descriptor AF bit
+        let b = !IsCasWithWrite(accdesc) || ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+         ForceNoAFUpdate = !b;
+         return b;
+    end;
+end;
+
+// AArch64.SetDirtyState()
+// =======================
+// Determine whether dirty state is required to be updated by HW given the fault status
+
+func
+  AArch64_SetDirtyState
+    (hd:bits(1), dbm:bits(1),
+     accdesc:AccessDescriptor,
+     fault:FaultRecord, fault_perm:FaultRecord) => boolean
+begin
+  CheckProp(fault_perm.statuscode != Fault_None || !ForceNoAFUpdate);
+  if hd == '0' then
+      return FALSE;
+  elsif !AArch64_SettingDirtyStatePermitted(fault, fault_perm) then
+      return FALSE;
+  elsif accdesc.acctype IN {AccessType_AT, AccessType_IC, AccessType_DC} then
+      return FALSE;
+  elsif !accdesc.write then
+      return FALSE;
+  else
+      return dbm == '1';
+  end;
+end;
