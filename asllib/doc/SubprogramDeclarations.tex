@@ -48,6 +48,13 @@ For example, this could model a register file consisting of 32 registers, each o
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirementDef{NoEmptyBody}
+Subprograms may not have empty bodies.
+To define a subprogram whose body has no effect, a \passstatementterm{} can be used.
+For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body has no effect.
+\ASLListing{A pass statement can be used to define a subprogram body with no effect}{NoEmptyBody}{\definitiontests/GuideRule.NoEmptyBody.asl}
+
 \begin{flalign*}
 \Ndecl  \derives \ & \Npuritykeyword \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs &\\
     &\wrappedline \Nreturntype \parsesep \Nrecurselimit \parsesep \Nfuncbody\\
