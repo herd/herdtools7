@@ -1,7 +1,4 @@
   $ aslref no-return.asl
-  File no-return.asl, line 2, character 5:
-  begin
-       
   ASL Type error: not all control flow paths of the function "main" are
     guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
