@@ -381,14 +381,15 @@ let bitfield :=
 
 (* Also called ty in grammar.bnf *)
 let ty :=
-  annotated (
+  | ~=pared(ty);                                        <>
+  | annotated (
     | INTEGER; c = constraint_kind_opt;                 < T_Int        >
     | REAL;                                             { T_Real       }
     | BOOLEAN;                                          { T_Bool       }
     | STRING;                                           { T_String     }
     | loc=annotated(BIT);                               { t_bit ~loc   }
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits       >
-    | l=plist0(ty);                                     < T_Tuple      >
+    | ~=plist2(ty);                                     < T_Tuple      >
     | name=IDENTIFIER;                                  < T_Named      >
     | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
   )
