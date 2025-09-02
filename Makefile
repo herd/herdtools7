@@ -26,6 +26,7 @@ HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 BENTO                         = _build/default/tools/bento.exe
+ASLREF                        = _build/default/asllib/aslref.exe
 
 all: build
 
@@ -37,9 +38,6 @@ just-build: Version.ml
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
 build: check-deps | just-build
-
-$(BENTO): Version.ml | check-deps
-	dune build -j $(J) --profile $(DUNE_PROFILE) $@
 
 install:
 	sh ./dune-install.sh $(PREFIX)
@@ -830,13 +828,14 @@ herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 	@ $(MAKE) -C $(@D) a64 clean-tmp
 
 clean-asl-pseudocode:
-	@ $(MAKE) -C $(@D)/herd/libdir/asl-pseudocode clean
+	@ $(MAKE) -C herd/libdir/asl-pseudocode clean
 
-asldoc: $(BENTO)
-	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc all
+asldoc: Version.ml
+	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(BENTO) $(ASLREF)
+	@ $(MAKE) $(MFLAGS) -C asllib/doc all BENTO=$(CURDIR)/$(BENTO) ASLREF=$(CURDIR)/$(ASLREF)
 
 clean-asldoc:
-	@ $(MAKE) $(MFLAGS) -C $(@D)/asllib/doc clean
+	@ $(MAKE) $(MFLAGS) -C asllib/doc clean
 
 RUN_TESTS?=false
 $(V).SILENT:
