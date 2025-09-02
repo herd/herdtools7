@@ -76,6 +76,7 @@ ifempty.tex: force
 	@echo "\\\\newif\\ifempty\\\\emptyfalse" >$@
 endif
 
+.PHONY: clean
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f *Lines.tex

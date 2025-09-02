@@ -822,18 +822,22 @@ diy-test-C:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 C diycross7 tests: OK"
 
-.PHONY: asl-pseudocode clean-asl-pseudocode
+.PHONY: asl-pseudocode
 asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
+
 herd/libdir/asl-pseudocode/shared_pseudocode.asl:
 	@ $(MAKE) -C $(@D) a64 clean-tmp
 
+.PHONY: clean-asl-pseudocode
 clean-asl-pseudocode:
 	@ $(MAKE) -C herd/libdir/asl-pseudocode clean
 
+.PHONY: asldoc
 asldoc: Version.ml
 	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(BENTO) $(ASLREF)
 	@ $(MAKE) $(MFLAGS) -C asllib/doc all BENTO=$(CURDIR)/$(BENTO) ASLREF=$(CURDIR)/$(ASLREF)
 
+.PHONY: clean-asldoc
 clean-asldoc:
 	@ $(MAKE) $(MFLAGS) -C asllib/doc clean
 
