@@ -130,15 +130,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             Code.is_same_loc @@ C.E.loc_sd e
           |Insert _|Store|Node _ -> false
           | Id -> assert false in
-        let is_pte_event m =
+        let is_ord_event m =
             let open C.E in
             match m.C.C.evt.C.C.bank with
-            | Code.Pte -> true
+            | Code.Ord -> true
             | _ -> false in
         let check_value m = Option.value m.C.C.evt.C.C.check_value ~default:false in
         let p = C.C.find_non_pseudo_prev n.C.C.prev in
           (* TODO: why need to check the previous node `p` ? *)
-          not (is_pte_event n) && (check_value n) && (valid_edge p || valid_edge n)
+          (not (is_ord_event n) || (check_value n)) && (valid_edge p || valid_edge n)
         else true
 
     let intset2vset is =
