@@ -37,10 +37,6 @@ jobs:
       - name: Install opam dependencies
         run: opam install . --deps-only --yes
 
-      - run: opam exec -- make build DUNE_PROFILE=dev
-
-      - run: opam exec -- make install
-
       - name: Build ASL Reference
         run: opam exec -- make asldoc
 
