@@ -181,6 +181,11 @@ module WPTE = struct
     | Zero p -> "Zero" ^ pp_pte_field p
   let get_pte_field = function
     | Base p | One p | Zero p -> p
+
+  let pp_tthm = function
+    | Base AF -> "HA"
+    | Base DB -> "HD"
+    | _ -> assert false
 end
 
 module WPTESet = MySet.Make(WPTE)
@@ -203,6 +208,8 @@ type atom_pte =
   | Read|ReadAcq|ReadAcqPc
   | Set of WPTESet.t
   | SetRel of WPTESet.t
+  (* TTHM prelude *)
+  | TTHM of WPTESet.t
 
 type neon_opt = SIMD.atom
 
@@ -329,8 +336,8 @@ module Value = struct
           a valid inital value, hence here those two
           will behave the same as `Set`, i.e.e toggle the pte value *)
         | Set f|SetRel f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
-            Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
+        | Read|ReadAcq|ReadAcqPc|TTHM _ ->
+          Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc|TTHM` is not a pteval write"
 
     let set_pteval a p =
       match a with
@@ -400,6 +407,7 @@ let is_ifetch a = match a with
      | ReadAcqPc -> "Q"
      | Set set -> pp_w_pte set
      | SetRel set -> pp_w_pte set ^"L"
+     | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
 
    let pp_pair_opt = function
      | Pa -> ""
@@ -485,10 +493,13 @@ let is_ifetch a = match a with
 
    let fold_pte f r =
      if do_kvm then
+       let open WPTE in
        let fold_singleton_wpte f r =
          List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
        let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
        r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
+          |> f (TTHM (WPTESet.singleton (Base AF)))
+          |> f (TTHM (WPTESet.singleton (Base DB)))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -619,6 +630,10 @@ let is_ifetch a = match a with
      -> let set = WPTESet.union set1 set2 in
         if contain_same_pte_field set then None
         else Some (Pte (SetRel set),None)
+   | ((Pte (TTHM set1), None),(Pte (TTHM set2), None))
+     -> let set = WPTESet.union set1 set2 in
+        if contain_same_pte_field set then None
+        else Some (Pte (TTHM set),None)
 (* Add size when (ordinary) annotation equal *)
    | ((Acq None as a,None),(Acq None,(Some _ as sz)))
    | ((Acq None as a,(Some _ as sz)),(Acq None,None))
@@ -659,6 +674,7 @@ let is_ifetch a = match a with
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
+   | Pte (TTHM _),None -> Code.Ord
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
