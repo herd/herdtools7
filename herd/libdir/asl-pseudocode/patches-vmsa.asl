@@ -214,12 +214,14 @@ end;
 // AArch64.DataAbort()
 // ===================
 
-// Get rid of CAS as LOAD execution
 
-func IsCasWithWrite(a:AccessDescriptor) => boolean
+// Identify writes by their access descriptor.
+func IsWrite(a:AccessDescriptor) => boolean
 begin
-  return a.modop == MemAtomicOp_CAS && a.write;
+  return a.write;
 end;
+
+// Get rid of CAS as LOAD execution
 
 func IsCasAsLoad(a:AccessDescriptor) => boolean
 begin
@@ -451,9 +453,9 @@ begin
         return ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
     else
         // Set descriptor AF bit
-        let b = !IsCasWithWrite(accdesc) || ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
-         ForceNoAFUpdate = !b;
-         return b;
+        let b = !IsWrite(accdesc) || ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+        ForceNoAFUpdate = !b;
+        return b;
     end;
 end;
 
