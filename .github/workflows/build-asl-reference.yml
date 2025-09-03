@@ -2,9 +2,6 @@ name: Build ASL reference
 
 on:
   workflow_dispatch:
-  schedule:
-    # Prime the caches every Monday
-    - cron: 0 1 * * MON
   pull_request:
     paths:
       - 'internal/bento.mll'
@@ -21,18 +18,27 @@ concurrency:
 jobs:
   make-asldoc:
     runs-on: ubuntu-latest
+    container: texlive/texlive:latest-full
+
+    env:
+      OPAMROOTISOK: 1 # Suppress warnings about running opam as root
+
     steps:
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y gcc libgmp-dev pkg-config python3 bzip2
+
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Update apt database
-        run: sudo apt-get update --quiet --yes
+      - name: Set-up OCaml 5.2
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.2
+          opam-disable-sandboxing: true
+          dune-cache: true
 
-      - name: Install opam and texlive
-        run: sudo apt-get install --quiet --yes opam texlive-full
-
-      - name: Make sure opam is well installed
-        run: opam init
+      - name: Mark working directory as "safe"
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Install opam dependencies
         run: opam install . --deps-only --yes
@@ -40,7 +46,8 @@ jobs:
       - name: Build ASL Reference
         run: opam exec -- make asldoc
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload PDF
+        uses: actions/upload-artifact@v4
         with:
          name: ASL Reference Document
          path: asllib/doc/ASLReference.pdf
