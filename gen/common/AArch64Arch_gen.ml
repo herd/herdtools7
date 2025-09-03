@@ -303,19 +303,44 @@ module Value = struct
             let (af,db,dbm,valid,pteval) = acc in
             (af,db,dbm,valid,toggle_pte_field pte_field pteval loc_fun)
         ) field_set acc in
+      (* Direct set the initial value *)
+      let set_init_pte acc field_set =
+        WPTESet.fold ( fun field (af,db,dbm,valid,pteval) ->
+          let open AArch64PteVal in
+          match field with
+          | Base AF -> (* TTHM=HA *)
+            let expected_af = not (default_pte_loc.af = 0) in
+            let init_af = Option.value ~default:expected_af af in
+            let new_pteval = {pteval with af = 1} in
+            if init_af then (Some expected_af,db,dbm,valid,new_pteval)
+            else Warn.user_error "Fail to set AF in TTHM=HA."
+          | Base DB -> (* TTHM=HD *)
+            let expected_db = not (default_pte_loc.db = 0) in
+            let init_db = Option.value ~default:expected_db db in
+            let expected_dbm = not (default_pte_loc.dbm = 1) in
+            let init_dbm = Option.value ~default:expected_dbm dbm in
+            let new_pteval = {pteval with db = 1} in
+            begin match init_db,init_dbm with
+              | true,true -> (af, Some expected_db,Some expected_dbm,valid,new_pteval)
+              | _ -> Warn.user_error "Fail to set DB and DBM in TTHM=HD."
+            end
+          (* TTHM for DBM, VALID, and OA should never happen *)
+          | _ -> assert false
+        ) field_set acc in
       (* The entire process decides if we want to flip the initial value of fields.
          Field `valid,af,db,dbm` in accumulator `acc` track if the default
          value is (not) needed to be flipped.
          - None, all good,
          - Some true, must flip
          - Some false must not flip
-         Conflict initial values cause warning.
+         Conflict initial values cause, i.e. Some true and Some false, warning.
          The final `pteval` should be throw away as of no meaning. *)
       let (af,db,dbm,valid,_) =
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
           | Set(field_set)|SetRel(field_set) -> check_init_pte acc field_set
+          | TTHM(field_set) -> set_init_pte acc field_set
           | _ -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
@@ -374,8 +399,8 @@ let applies_atom (a,_) d = match a,d with
 | Acq _,R
 | AcqPc _,R
 | Rel _,W
-| Pte (Read|ReadAcq|ReadAcqPc),R
-| Pte (Set _|SetRel _),W
+| Pte (Read|ReadAcq|ReadAcqPc|TTHM _),R
+| Pte (Set _|SetRel _|TTHM _),W
 | Instr, R
 | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
   -> true
@@ -384,6 +409,8 @@ let applies_atom (a,_) d = match a,d with
 let is_ifetch a = match a with
 | Some (Instr,_) -> true
 | _ -> false
+
+let is_tthm = function | TTHM _ -> true | _ -> false
 
    let pp_plain = "P"
 (* Annotation A is taken by load aquire *)
