@@ -144,13 +144,6 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | _,_ -> gen relax safe reject size
 end
 
-
-let split s = match s with
-  | None -> None
-  | Some s ->
-  let splitted = LexUtil.split s in
-  Some splitted
-
 let get_arg s =
   raise (Arg.Bad (Printf.sprintf "%s takes no argument, argument %s is present" Config.prog s))
 
@@ -194,7 +187,7 @@ let () =
   end;
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
-  and reject_list = split !Config.rejects in
+  and reject_list = split_cands !Config.rejects in
 
   let () =
     if !Config.verbose > 0 then begin

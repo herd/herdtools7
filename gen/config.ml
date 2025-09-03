@@ -50,7 +50,7 @@ let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
-let rejects = ref None
+let rejects = ref []
 let stdout = ref false
 let cycleonly = ref false
 let metadata = ref true
@@ -310,8 +310,10 @@ let speclist () =
     "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := !safes @[s]),
     "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
-   ("-rejectlist", Arg.String (fun s -> rejects := Some s),
+   ("-reject", Arg.String (fun s -> rejects := !rejects @ [s]),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
+   ("-rejectlist", Arg.String (fun s -> rejects := !rejects @ [s]),
+   "<reject-list> specify a list of relaxation combinations to reject from generation (alias for -reject)")::
    []
 
 let varatom = ref ([] : string list)
