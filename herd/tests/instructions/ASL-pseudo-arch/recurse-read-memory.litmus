@@ -1,0 +1,26 @@
+ASL recurse-read-memory
+
+{
+  x = 1;
+  0: X1= x;
+}
+
+func T0(x:integer) => integer
+recurselimit 10
+begin
+  if x <= 0 then return 0;
+  else return 1+T0(x-1);
+  end;
+end;
+
+func main() => integer
+begin
+  let x = read_register(1);
+  let read = UInt(read_memory{64}(x));
+  let n = T0(read);
+  return 0;
+end;
+
+locations [0:main.0.n;]
+
+

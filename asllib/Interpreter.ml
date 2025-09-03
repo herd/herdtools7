@@ -23,8 +23,6 @@
 open AST
 open ASTUtils
 
-let fatal_from pos = Error.fatal_from pos
-
 (* A bit more informative than assert false *)
 
 let _warn = false
@@ -67,6 +65,9 @@ module type Config = sig
   val unroll : int
   val error_handling_time : Error.error_handling_time
   val empty_branching_effects_optimization : bool
+  val log_nondet_choice : bool
+  val display_call_stack_on_error : bool
+  val track_symbolic_path : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -102,8 +103,50 @@ module Make (B : Backend.S) (C : Config) = struct
   type stmt_eval_type = control_flow_state maybe_exception m
   type func_eval_type = (value_read_from list * IEnv.global) maybe_exception m
 
-  let unsupported_expr e =
-    fatal_from e Error.(UnsupportedExpr (C.error_handling_time, e))
+  (* Error formatting. *)
+
+  let pp_pos fmt (pos, env) =
+    let open Format in
+    if C.display_call_stack_on_error then
+      let pp_sep fmt () = fprintf fmt ",@ " in
+      let pp_stack fmt stack =
+        let stack = List.rev stack in
+        let pp_call fmt call =
+          if is_dummy_annotated call then pp_print_string fmt call.desc
+          else
+            fprintf fmt "@[<2>%s@ (called@ at@ %a)@]" call.desc PP.pp_pos call
+        in
+        pp_print_list ~pp_sep pp_call fmt stack
+      in
+      let pp_spath fmt spath =
+        let spath = List.rev spath in
+        let pp_choice fmt choice =
+          let open IEnv in
+          if is_dummy_annotated choice.location then
+            fprintf fmt "%s<-%B" choice.description choice.decision
+          else
+            fprintf fmt "@[<2>%s<-%B@ decided@ at@ %a@]" choice.description
+              choice.decision PP.pp_pos choice.location
+        in
+        if C.track_symbolic_path && not (list_is_empty spath) then
+          fprintf fmt "@ and symbolic path@ @[<2>@;<2 0>%a@]"
+            (pp_print_list ~pp_sep pp_choice)
+            spath
+      in
+      let stack = env.IEnv.call_stack in
+      let spath = env.IEnv.symbolic_path in
+      fprintf fmt "@[<2>At %a,@ with call-stack:@ @[<2>@;<2 0>%a@]%a@]"
+        PP.pp_pos pos pp_stack stack pp_spath spath
+    else fprintf fmt "@[At %a@]" PP.pp_pos pos
+
+  let fatal_from_no_env pos = Error.fatal_from pos
+
+  let fatal_from_genv pos genv e =
+    if C.display_call_stack_on_error then
+      Format.eprintf "@[<2>%a:@ @]" pp_pos (pos, genv);
+    Error.fatal_from pos e
+
+  let fatal_from pos env e = fatal_from_genv pos env.IEnv.global e
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -139,7 +182,28 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( >>*= ) = B.bind_ctrl
 
   (* Choice *)
-  let choice m v1 v2 = B.choice m (return v1) (return v2)
+  let choice ~pos env m v1 v2 =
+    let next (res, decision, v) =
+      let env =
+        if C.track_symbolic_path && B.is_undetermined v then
+          let open IEnv in
+          let choice =
+            { description = B.debug_value v; location = to_pos pos; decision }
+          in
+          push_symbolic_choice choice env
+        else env
+      in
+      return (env, res)
+    in
+    if C.log_nondet_choice || C.track_symbolic_path then
+      let* v = m in
+      let () =
+        if C.log_nondet_choice && B.is_undetermined v then
+          Format.eprintf "@[<2>%a:@ non-deterministic choice@]@." pp_pos
+            (pos, env.IEnv.global)
+      in
+      B.choice (return v) (next (v1, true, v)) (next (v2, false, v))
+    else B.choice m (return (env, v1)) (return (env, v2))
 
   (*
    * Choice with inserted branching (commit) effect/
@@ -151,16 +215,16 @@ module Make (B : Backend.S) (C : Config) = struct
              as input.
    *)
 
-  let choice_with_branch_effect_msg m_cond msg v1 v2 kont =
-    choice m_cond v1 v2 >>= fun v ->
+  let choice_with_branch_effect_msg ~pos env m_cond msg v1 v2 kont =
+    choice ~pos env m_cond v1 v2 >>= fun v ->
     B.commit msg >>*= fun () -> kont v
 
-  let choice_with_branch_effect m_cond e_cond v1 v2 kont =
+  let choice_with_branch_effect env m_cond e_cond v1 v2 kont =
     let msg =
       if C.empty_branching_effects_optimization then None
       else Some (Format.asprintf "%a@?" PP.pp_expr e_cond)
     in
-    choice_with_branch_effect_msg m_cond msg v1 v2 kont
+    choice_with_branch_effect_msg ~pos:e_cond env m_cond msg v1 v2 kont
 
   (* Exceptions *)
   let bind_exception binder m f =
@@ -189,8 +253,9 @@ module Make (B : Backend.S) (C : Config) = struct
     let stop, env' = IEnv.tick_decr env in
     if stop then
       let msg =
-        Printf.sprintf "%s at %s pruned" loop_name
-          (PP.pp_pos_str_no_char loop_pos)
+        Format.asprintf "%a: %s pruned" pp_pos
+          (loop_pos, env.IEnv.global)
+          loop_name
       in
       B.cutoffT msg env >>= return_continue
     else f env'
@@ -229,7 +294,7 @@ module Make (B : Backend.S) (C : Config) = struct
               let init_expr =
                 match initial_value with
                 | Some e -> e
-                | None -> fatal_from d TypeInferenceNeeded
+                | None -> fatal_from d env TypeInferenceNeeded
               in
               let* eval_res = eval_expr env init_expr in
               match eval_res with
@@ -240,7 +305,7 @@ module Make (B : Backend.S) (C : Config) = struct
                     | Some (_, ty) -> ty
                     | None -> T_Named "implicit" |> add_pos_from d
                   in
-                  fatal_from d (UnexpectedInitialisationThrow (ty, name)))
+                  fatal_from d env (UnexpectedInitialisationThrow (ty, name)))
         in
         let scope = B.Scope.global ~init:true in
         let* () = B.on_write_identifier name scope v in
@@ -327,8 +392,10 @@ module Make (B : Backend.S) (C : Config) = struct
            integer %a.\n\
            %!"
           Z.output z;
-        unsupported_expr loc
-    | None -> fatal_from loc (MismatchType (B.debug_value v, [ integer' ]))
+        fatal_from_no_env loc
+          Error.(UnsupportedExpr (C.error_handling_time, loc))
+    | None ->
+        fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
 
   let sync_list ms =
     let folder m vsm =
@@ -401,7 +468,7 @@ module Make (B : Backend.S) (C : Config) = struct
       [value_ranges] are given by a list of couples [(start, length)].
       If they are overlapping, an error [OverlappingSlices (slices, Dynamic)]
       is thrown. *)
-  let check_non_overlapping_slices slices value_ranges =
+  let check_non_overlapping_slices ~pos env slices value_ranges =
     let check_two_ranges_are_non_overlapping (s1, l1) m (s2, l2) =
       let* () = m in
       let cond =
@@ -414,7 +481,7 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         B.binop `BOR s1l1s2 s2l2s1
       in
-      let* b = choice cond true false in
+      let* _, b = choice ~pos env cond true false in
       if b then return ()
       else
         Error.(
@@ -452,7 +519,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let** v, new_env = eval_expr env e1 in
         let* b = is_val_of_type e1 env v t in
         (if b then return_normal (v, new_env)
-         else fatal_from e1 (Error.MismatchType (B.debug_value v, [ t.desc ])))
+         else
+           fatal_from e1 env (Error.MismatchType (B.debug_value v, [ t.desc ])))
         |: SemanticsRule.ATC
     (* End *)
     (* Begin EvalEVar *)
@@ -464,7 +532,7 @@ module Make (B : Backend.S) (C : Config) = struct
         | Global v ->
             let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
             return_normal (v, env)
-        | NotFound -> fatal_from e @@ Error.UndefinedIdentifier (Dynamic, x))
+        | NotFound -> fatal_from e env @@ Error.UndefinedIdentifier (Dynamic, x))
         |: SemanticsRule.EVar
     (* End *)
     | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
@@ -534,7 +602,8 @@ module Make (B : Backend.S) (C : Config) = struct
           in
           return_normal (v, env) |: SemanticsRule.ECondSimple
         else
-          choice_with_branch_effect m_cond e_cond e1 e2 (eval_expr env1)
+          choice_with_branch_effect env1 m_cond e_cond e1 e2 (fun (env, v) ->
+              eval_expr env v)
           |: SemanticsRule.ECond
     (* End *)
     (* Begin EvalESlice *)
@@ -624,7 +693,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let n_length = v_to_int ~loc:e v_length in
         let () =
           if n_length < 0 then
-            fatal_from e_length (Error.NegativeArrayLength (e_length, n_length))
+            fatal_from e_length env
+              (Error.NegativeArrayLength (e_length, n_length))
         in
         let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
         return_normal (v, new_env) |: SemanticsRule.EArray
@@ -686,7 +756,7 @@ module Make (B : Backend.S) (C : Config) = struct
             "@[<hov 2>An exception was@ thrown@ when@ evaluating@ %a@]@."
             PP.pp_expr e
         in
-        fatal_from e (Error.UnexpectedSideEffect msg)
+        fatal_from e env (Error.UnexpectedSideEffect msg)
     | Throwing (Some (_, ty), _) ->
         let msg =
           Format.asprintf
@@ -694,7 +764,7 @@ module Make (B : Backend.S) (C : Config) = struct
              evaluating@ %a@]@."
             PP.pp_ty ty PP.pp_expr e
         in
-        fatal_from e (Error.UnexpectedSideEffect msg)
+        fatal_from e env (Error.UnexpectedSideEffect msg)
   (* End *)
 
   (* Runtime checks *)
@@ -716,7 +786,7 @@ module Make (B : Backend.S) (C : Config) = struct
              3. You cannot put the parameterized integer type in a compound
                 type.
           *)
-          fatal_from loc Error.UnrespectedParserInvariant
+          fatal_from loc env Error.UnrespectedParserInvariant
       | T_Bits (e, _) ->
           (* The call to [eval_expr_sef] is justified since annotate_type
              checks that all expressions on which a type depends are statically
@@ -747,9 +817,10 @@ module Make (B : Backend.S) (C : Config) = struct
             (i + 1, m)
           in
           List.fold_left fold (0, m_true) tys |> snd
-      | _ -> fatal_from loc TypeInferenceNeeded
+      | _ -> fatal_from loc env TypeInferenceNeeded
     in
-    choice (in_values v ty) true false
+    choice ~pos:loc env (in_values v ty) true false >>= fun (_, res) ->
+    return res
   (* End *)
 
   (* Evaluation of Left-Hand-Side Expressions *)
@@ -776,7 +847,7 @@ module Make (B : Backend.S) (C : Config) = struct
             match ver with
             (* Begin EvalLEUndefIdentOne *)
             | V1 ->
-                fatal_from le @@ Error.UndefinedIdentifier (Dynamic, x)
+                fatal_from le env @@ Error.UndefinedIdentifier (Dynamic, x)
                 |: SemanticsRule.LEUndefIdentV1
             (* End *)
             (* Begin EvalLEUndefIdentZero *)
@@ -793,7 +864,9 @@ module Make (B : Backend.S) (C : Config) = struct
           let* v_rhs = m
           and* slice_ranges = m_slice_ranges
           and* v_bv_lhs = m_bv_lhs in
-          let* () = check_non_overlapping_slices slices slice_ranges in
+          let* () =
+            check_non_overlapping_slices ~pos:le env slices slice_ranges
+          in
           B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
@@ -841,7 +914,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | LE_SetFields (le_record, fields, slices) ->
         let () =
           if List.compare_lengths fields slices != 0 then
-            fatal_from le Error.TypeInferenceNeeded
+            fatal_from le env Error.TypeInferenceNeeded
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
@@ -1041,7 +1114,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_stmt env s] evaluates [s] in [env]. This is either an interruption
       [Returning vs] or a continuation [env], see [eval_res]. *)
-  and eval_stmt (env : env) s : stmt_eval_type =
+  and eval_stmt (env : env) (s : stmt) : stmt_eval_type =
     (if false then
        match s.desc with
        | S_Seq _ -> ()
@@ -1101,14 +1174,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSCond *)
     | S_Cond (e, s1, s2) ->
         let*^ v, env' = eval_expr env e in
-        choice_with_branch_effect v e s1 s2 (eval_block env')
+        choice_with_branch_effect env' v e s1 s2 (fun (env, s) ->
+            eval_block env s)
         |: SemanticsRule.SCond
     (* Begin EvalSAssert *)
     | S_Assert e ->
         let*^ v, env1 = eval_expr env e in
-        let*= b = choice v true false in
-        if b then return_continue env1
-        else fatal_from e @@ Error.AssertionFailed e |: SemanticsRule.SAssert
+        let*= env2, b = choice ~pos:s env1 v true false in
+        if b then return_continue env2
+        else
+          fatal_from e env2 @@ Error.AssertionFailed e |: SemanticsRule.SAssert
     (* End *)
     (* Begin EvalSWhile *)
     | S_While (e, e_limit_opt, body) ->
@@ -1119,7 +1194,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSRepeat *)
     | S_Repeat (body, e, e_limit_opt) ->
         let* limit_opt1 = eval_limit env e_limit_opt in
-        let* limit_opt2 = tick_loop_limit s limit_opt1 in
+        let* limit_opt2 = tick_loop_limit s env limit_opt1 in
         let*> env1 = eval_block env body in
         let env2 = IEnv.tick_push_bis env1 in
         eval_loop s false env2 limit_opt2 e body |: SemanticsRule.SRepeat
@@ -1160,7 +1235,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* () = B.on_write_identifier name scope v in
         return (Throwing (Some ((v, name, scope), t), new_env))
         |: SemanticsRule.SThrow
-    | S_Throw (Some (_e, None)) -> fatal_from s Error.TypeInferenceNeeded
+    | S_Throw (Some (_e, None)) -> fatal_from s env Error.TypeInferenceNeeded
     (* End *)
     (* Begin EvalSTry *)
     | S_Try (s1, catchers, otherwise_opt) ->
@@ -1172,7 +1247,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_init, env1 = eval_expr env e_init in
         let**| new_env = eval_local_decl ldi env1 m_init in
         return_continue new_env |: SemanticsRule.SDecl
-    | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s TypeInferenceNeeded
+    | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s env TypeInferenceNeeded
     (* End *)
     (* Begin EvalSPrint *)
     | S_Print { args = e_list; newline; debug } ->
@@ -1181,7 +1256,7 @@ module Make (B : Backend.S) (C : Config) = struct
           if debug then
             let open Format in
             let pp_value fmt v = B.debug_value v |> pp_print_string fmt in
-            eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." PP.pp_pos s
+            eprintf "@[@<2>%a:@ @[%a@]@ ->@ %a@]@." pp_pos (s, env.IEnv.global)
               (pp_print_list ~pp_sep:pp_print_space PP.pp_expr)
               e_list
               (pp_print_list ~pp_sep:pp_print_space pp_value)
@@ -1193,12 +1268,12 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
-    | S_Unreachable -> fatal_from s Error.UnreachableReached
+    | S_Unreachable -> fatal_from s env Error.UnreachableReached
 
   (* Evaluation of Blocks *)
   (* -------------------- *)
   (* Begin EvalBlock *)
-  and eval_block env stm =
+  and eval_block env (stm : stmt) : stmt_eval_type =
     let block_env = IEnv.push_scope env in
     let*| res = eval_stmt block_env stm in
     match res with
@@ -1225,7 +1300,7 @@ module Make (B : Backend.S) (C : Config) = struct
         match B.v_to_z v_limit with
         | Some limit -> return (Some limit)
         | None ->
-            fatal_from e_limit
+            fatal_from e_limit env
               (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
 
   and check_recurse_limit pos name env e_limit_opt =
@@ -1234,16 +1309,17 @@ module Make (B : Backend.S) (C : Config) = struct
     | None -> return ()
     | Some limit ->
         let stack_size = IEnv.get_stack_size name env in
-        if limit < stack_size then fatal_from pos Error.RecursionLimitReached
+        if limit < stack_size then
+          fatal_from pos env Error.RecursionLimitReached
         else return ()
 
-  and tick_loop_limit loc limit_opt =
+  and tick_loop_limit loc env limit_opt =
     match limit_opt with
     | None -> return None
     | Some limit ->
         let new_limit = Z.pred limit in
         if Z.sign new_limit >= 0 then return (Some new_limit)
-        else fatal_from loc Error.LoopLimitReached
+        else fatal_from loc env Error.LoopLimitReached
 
   (* Begin EvalLoop *)
   and eval_loop loc is_while env limit_opt e_cond body : stmt_eval_type =
@@ -1252,7 +1328,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let loop_desc = (loop_name, loc) in
     (* Continuation in the positive case. *)
     let loop env =
-      let* limit_opt' = tick_loop_limit loc limit_opt in
+      let* limit_opt' = tick_loop_limit loc env limit_opt in
       let*> env1 = eval_block env body in
       eval_loop loc is_while env1 limit_opt' e_cond body
     in
@@ -1266,8 +1342,8 @@ module Make (B : Backend.S) (C : Config) = struct
     let binder = bind_maybe_unroll loop_desc (B.is_undetermined cond) in
     (* Real logic: if condition is validated, we loop,
        otherwise we continue to the next statement. *)
-    choice_with_branch_effect cond_m e_cond loop return_continue
-      (binder (return_continue env))
+    choice_with_branch_effect env cond_m e_cond loop return_continue
+      (fun (env, f) -> binder (return_continue env) f)
     |: SemanticsRule.Loop
   (* End *)
 
@@ -1294,15 +1370,15 @@ module Make (B : Backend.S) (C : Config) = struct
     let loop env =
       let loop_desc = ("for loop", body) in
       bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
-      let* next_limit_opt = tick_loop_limit body limit_opt in
+      let* next_limit_opt = tick_loop_limit body env limit_opt in
       let*| v_step, env2 = step env1 index_name v_start dir in
       eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
         body
     in
     (* Real logic: if the condition holds, we continue to the next
        loop iteration, otherwise we loop. *)
-    choice_with_branch_effect_msg cond_m loop_msg return_continue loop
-      (fun kont -> kont env)
+    choice_with_branch_effect_msg ~pos:body env cond_m loop_msg return_continue
+      loop (fun (env, kont) -> kont env)
     |: SemanticsRule.For
   (* End *)
 
@@ -1392,7 +1468,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ vparams, env1 = eval_expr_list_m env params in
     let*^ vargs, env2 = eval_expr_list_m env1 args in
     let* vargs = vargs and* vparams = vparams in
-    let genv = IEnv.incr_stack_size name env2.global in
+    let genv = IEnv.incr_stack_size ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
     | Throwing (v, env_throw) ->
@@ -1418,7 +1494,7 @@ module Make (B : Backend.S) (C : Config) = struct
     match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
-        fatal_from pos @@ Error.UndefinedIdentifier (Dynamic, name)
+        fatal_from_genv pos genv @@ Error.UndefinedIdentifier (Dynamic, name)
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
@@ -1448,13 +1524,13 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalFBadArity *)
     | Some ({ args = arg_decls; _ }, _)
       when List.compare_lengths args arg_decls <> 0 ->
-        fatal_from pos
+        fatal_from_genv pos genv
         @@ Error.BadArity
              (Dynamic, name, List.length arg_decls, List.length args)
         |: SemanticsRule.FBadArity
     | Some ({ parameters = parameter_decls; _ }, _)
       when List.compare_lengths params parameter_decls <> 0 ->
-        fatal_from pos
+        fatal_from_genv pos genv
         @@ Error.BadParameterArity
              (Dynamic, V1, name, List.length parameter_decls, List.length params)
         |: SemanticsRule.FBadArity
@@ -1511,7 +1587,7 @@ module Make (B : Backend.S) (C : Config) = struct
       length. *)
   and protected_multi_assign ver env pos les monads : env maybe_exception m =
     if List.compare_lengths les monads != 0 then
-      fatal_from pos
+      fatal_from pos env
       @@ Error.BadArity
            (Dynamic, "tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
@@ -1520,6 +1596,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
     let*| env = build_genv env eval_expr static_env ast in
+    let env = IEnv.incr_stack_size ~pos:dummy_annotated "main" env in
     let*| res =
       eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
     in

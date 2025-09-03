@@ -126,6 +126,9 @@ module Make (C : Config) = struct
 
     let error_handling_time = Asllib.Error.Dynamic
     let empty_branching_effects_optimization = false
+    let log_nondet_choice = C.debug.Debug_herd.asl_symb
+    let display_call_stack_on_error = C.debug.Debug_herd.asl_symb
+    let track_symbolic_path = true
 
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end

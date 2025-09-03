@@ -50,11 +50,23 @@ module type S = sig
   (* -------------------------------------------------------------------------*)
   (** {2 Types and constructors.} *)
 
+  type symbolic_choice = {
+    description : string;
+        (** describe the choice made, could be a textual representation of an
+            equation for example. *)
+    decision : bool;  (** which side is taken *)
+    location : unit annotated;  (** Where the choice has been made. *)
+  }
+
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v IMap.t;  (** Binds global variables to their names. *)
     stack_size : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
+    call_stack : identifier annotated list;
+        (** the call stack, with the name of the called program and the
+            position of the call. *)
+    symbolic_path : symbolic_choice list;  (** the symbolic path taken *)
   }
   (** The global part of an environment. *)
 
@@ -156,11 +168,14 @@ module type S = sig
   val get_stack_size : identifier -> env -> Z.t
   (** [get_stack_size name env] returns the [stack_size] for [name]. *)
 
-  val incr_stack_size : identifier -> global -> global
-  (** [incr_stack_size name env] increases the stack size for [name]. *)
+  val incr_stack_size : pos:'a annotated -> identifier -> global -> global
+  (** [incr_stack_size ~pos name env] increases the stack size for [name]. *)
 
   val decr_stack_size : identifier -> global -> global
   (** [decr_stack_size name env] decreases the stack size for [name]. *)
+
+  val push_symbolic_choice : symbolic_choice -> env -> env
+  (** [push_symbolic_choice choice env] registers the choice in the symbolic path. *)
 end
 
 module RunTime (C : RunTimeConf) :
