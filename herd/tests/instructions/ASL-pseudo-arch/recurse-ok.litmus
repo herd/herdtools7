@@ -1,0 +1,20 @@
+ASL recurse-ok
+
+{ }
+
+func T0(x:integer) => integer
+recurselimit 10
+begin
+  if x <= 0 then return 0;
+  else return 1+T0(x-1);
+  end;
+end;
+
+func main() => integer
+begin
+  let n = T0(1);
+  return 0;
+end;
+
+locations [0:main.0.n;]
+

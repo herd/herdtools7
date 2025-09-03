@@ -1,0 +1,10 @@
+Test recurse-ok Required
+States 1
+0:main.0.n=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation recurse-ok Always 1 0
+Hash=cc5ff188bd6e314c5a9160a191b316ac
+

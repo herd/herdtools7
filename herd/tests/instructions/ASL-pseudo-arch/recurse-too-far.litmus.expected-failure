@@ -1,0 +1,5 @@
+Warning: File ./herd/tests/instructions/ASL-pseudo-arch/recurse-too-far.litmus,
+  line 9, characters 16 to 23:
+  else return 1+T0(x-1);
+                ^^^^^^^
+ASL Dynamic error: recursion limit reached.
