@@ -87,7 +87,7 @@ ASL Typing Tests:
   File TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
     let - = 42;
         ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A local declaration must declare a name.
   [1]
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl
@@ -482,6 +482,7 @@ ASL Typing Tests / annotating types:
       constant c3 = 5;
       ^^^^^^^^
   ASL Grammar error: Cannot parse.
+    Local constant declarations are not valid ASL1. Did you mean `let`?.
   [1]
   $ aslref TypingRule.SDecl.bad2.asl
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
