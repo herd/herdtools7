@@ -61,7 +61,7 @@ module type S = sig
   type global = {
     static : StaticEnv.global;  (** References the static environment. *)
     storage : v IMap.t;  (** Binds global variables to their names. *)
-    stack_size : Z.t IMap.t;
+    pending_calls : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
     call_stack : identifier annotated list;
         (** the call stack, with the name of the called program and the
@@ -165,14 +165,14 @@ module type S = sig
   (** [pop_scope old new] restores the variable bindings of [old], with the
       updated values of [new]. *)
 
-  val get_stack_size : identifier -> env -> Z.t
-  (** [get_stack_size name env] returns the [stack_size] for [name]. *)
+  val get_pending_calls : identifier -> env -> Z.t
+  (** [get_pending_calls name env] returns the [pending_calls] for [name]. *)
 
-  val incr_stack_size : pos:'a annotated -> identifier -> global -> global
-  (** [incr_stack_size ~pos name env] increases the stack size for [name]. *)
+  val incr_pending_calls : pos:'a annotated -> identifier -> global -> global
+  (** [incr_pending_calls ~pos name env] increases the stack size for [name]. *)
 
-  val decr_stack_size : identifier -> global -> global
-  (** [decr_stack_size name env] decreases the stack size for [name]. *)
+  val decr_pending_calls : identifier -> global -> global
+  (** [decr_pending_calls name env] decreases the stack size for [name]. *)
 
   val push_symbolic_choice : symbolic_choice -> env -> env
   (** [push_symbolic_choice choice env] registers the choice in the symbolic path. *)
