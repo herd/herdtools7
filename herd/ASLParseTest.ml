@@ -41,12 +41,7 @@ module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
     type token = Asllib.Tokens.token
 
     let lexer =
-        let module Lexer = Asllib.Lexer.Make(struct
-          let allow_double_underscore = false
-          let allow_unknown = false
-          let allow_single_arrows = false
-          let allow_function_like_statements = false
-        end) in
+        let module Lexer = Asllib.Lexer.Make(struct end) in
         Lexer.token
 
     let parser =
