@@ -259,6 +259,13 @@ let binop ==
 
 let field_assign := separated_pair(IDENTIFIER, EQ, expr)
 
+let e_else :=
+  | ELSE; expr
+  | ELSIF [@internal true]; {
+      Error.fatal_here $startpos $endpos @@
+        Error.CannotParse (Some "Use `else if` instead.")
+    }
+
 let expr :=
   annotated (
     (* A union of cexpr, cexpr_cmp, cexpr_add_sub, cepxr mul_div, cexpr_pow,
@@ -267,7 +274,7 @@ let expr :=
     | ~=IDENTIFIER ;                                              < E_Var                >
     | e1=expr; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
-    | IF; e1=expr; THEN; e2=expr; ELSE; e3=expr;                  < E_Cond               >
+    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | ~=call;                                                     < e_call               >
     | e=expr; ~=slices;                                       < E_Slice              >
     | e1=expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
@@ -301,6 +308,10 @@ let expr :=
 let constraint_kind_opt := constraint_kind | { UnConstrained }
 let constraint_kind :=
   | cs=braced(clist1(int_constraint)); { WellConstrained (cs, Precision_Full) }
+  | braced(MINUS); {
+      Error.fatal_here $startpos $endpos @@
+        Error.CannotParse (Some "Pending constraints are written `integer{}`.")
+  }
   | LBRACE; RBRACE; { PendingConstrained }
 
 let int_constraint :=
@@ -316,7 +327,7 @@ let expr_pattern :=
     | ~=IDENTIFIER ;                                              < E_Var                >
     | e1=expr_pattern; op=binop; e2=expr;                             < e_binop              >
     | op=unop; e=expr;                                            < E_Unop               > %prec UNOPS
-    | IF; e1=expr; THEN; e2=expr; ELSE; e3=expr;                  < E_Cond               >
+    | IF; e1=expr; THEN; e2=expr; ~=e_else;                       < E_Cond               >
     | ~=call;                                                     < e_call               >
     | e=expr_pattern; ~=slices;                                       < E_Slice              >
     | e1=expr_pattern; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
@@ -398,6 +409,12 @@ let ty :=
 let ty_decl := ty |
   annotated (
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
+    | RECORD [@internal true];
+      { Error.fatal_here $startpos $endpos @@
+          Error.CannotParse (Some "Empty record types must be declared with empty field list `{-}`.") }
+    | EXCEPTION [@internal true];
+      { Error.fatal_here $startpos $endpos @@
+          Error.CannotParse (Some "Empty exception types must be declared with empty field list `{-}`.") }
     | RECORD; l=fields;                                 < T_Record     >
     | EXCEPTION; l=fields;                              < T_Exception  >
   )
@@ -411,6 +428,9 @@ let as_ty := COLON; ty
 let ty_or_collection :=
   | ty
   | annotated (
+    | COLLECTION [@internal true];
+      { Error.fatal_here $startpos $endpos @@
+          Error.CannotParse (Some "Empty collection types must be declared with empty field list `{-}`.") }
     | COLLECTION; l=fields;                         < T_Collection >
   )
 (* End *)
@@ -470,6 +490,10 @@ let discard_or_identifier :=
   | ~=IDENTIFIER;  <>
 
 let decl_item :=
+  | MINUS [@internal true]           ; {
+      Error.fatal_here $startpos $endpos @@
+        Error.CannotParse (Some "A local declaration must declare a name.")
+    }
   | ~=IDENTIFIER                     ; < LDI_Var >
   | vs=plist2(discard_or_identifier) ; {
       if List.for_all is_local_ignored vs then
@@ -483,6 +507,10 @@ let decl_item :=
 
 let local_decl_keyword ==
   | LET       ; { LDK_Let       }
+  | CONSTANT [@internal true]; {
+      Error.fatal_here $startpos $endpos @@
+        Error.CannotParse (Some "Local constant declarations are not valid ASL1. Did you mean `let`?.")
+  }
   | VAR       ; { LDK_Var       }
 
 let global_keyword_non_config ==
@@ -598,6 +626,12 @@ let elided_param_call :=
 let func_args := plist0(typed_identifier)
 let func_body == delimited(BEGIN, stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)
+let ignored_or_identifier :=
+  | MINUS [@internal true]; {
+      Error.fatal_here $startpos $endpos @@
+        Error.CannotParse (Some "A global declaration must declare a name.")
+    }
+  | IDENTIFIER
 
 let qualifier ==
   ioption(
@@ -671,18 +705,18 @@ let decl :=
       | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
       (* End *)
       (* Begin global_storage *)
-      | keyword=global_keyword_non_config; name=IDENTIFIER;
+      | keyword=global_keyword_non_config; name=ignored_or_identifier;
         ty=ioption(as_ty); EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword; name; ty; initial_value } }
-      | CONFIG; name=IDENTIFIER;
+      | CONFIG; name=ignored_or_identifier;
         ty=as_ty; EQ; initial_value=some(expr);
         { D_GlobalStorage { keyword=GDK_Config; name; ty=Some ty; initial_value } }
-      | keyword=global_keyword; name=IDENTIFIER;
+      | keyword=global_keyword; name=ignored_or_identifier;
         ty=as_ty; EQ; call=annotated(elided_param_call);
         { D_GlobalStorage { keyword; name; ty=Some ty; initial_value=desugar_elided_parameter ty call } }
       (* End *)
       (* Begin global_uninit_var *)
-      | VAR; name=IDENTIFIER; COLON; ty=some(ty_or_collection);
+      | VAR; name=ignored_or_identifier; COLON; ty=some(ty_or_collection);
         { D_GlobalStorage { keyword=GDK_Var; name; ty; initial_value=None}}
       (* End *)
       (* Begin global_pragma *)

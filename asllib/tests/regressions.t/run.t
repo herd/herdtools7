@@ -76,7 +76,7 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A global declaration must declare a name.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -518,7 +518,7 @@ Required tests:
   File no-expression-elsif.asl, line 12, characters 25 to 30:
     let y = if TRUE then 1 elsif FALSE then 2 else 3;   // ERROR
                            ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Use `else if` instead.
   [1]
 
   $ aslref --gnu-errors gnu-errors.asl
@@ -648,24 +648,25 @@ Left-hand sides
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
   $ aslref hyphenated-pending-constraint.asl
-  File hyphenated-pending-constraint.asl, line 3, characters 20 to 21:
+  File hyphenated-pending-constraint.asl, line 3, characters 18 to 21:
       let x: integer{-} = 5;
-                      ^
-  ASL Grammar error: Cannot parse.
+                    ^^^
+  ASL Grammar error: Cannot parse. Pending constraints are written `integer{}`.
   [1]
   $ aslref local_constants.asl
   File local_constants.asl, line 8, characters 4 to 12:
       constant x = 32;
       ^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Local constant declarations are not valid
+    ASL1. Did you mean `let`?.
   [1]
 
 Outdated syntax
   $ aslref outdated-implication.asl
-  File outdated-implication.asl, line 6, characters 23 to 24:
+  File outdated-implication.asl, line 6, characters 21 to 24:
     let z: boolean = x --> z;
-                         ^
-  ASL Grammar error: Cannot parse.
+                       ^^^
+  ASL Grammar error: Cannot parse. Did you mean `==>`?
   [1]
   $ aslref noreturn.asl
   File noreturn.asl, line 31, character 0 to line 34, character 4:
