@@ -1076,7 +1076,7 @@
 \newcommand\globaldynamicenvs[0]{\hyperlink{def-globaldynamicenvs}{\mathbb{GDE}}}
 \newcommand\emptydenv[0]{\hyperlink{def-emptydenv}{\emptyset_{\mathbb{DE}}}}
 \newcommand\storage[0]{\hyperlink{def-storage}{\textsf{storage}}}
-\newcommand\stacksize[0]{\hyperlink{def-stacksize}{\textsf{stack\_size}}}
+\newcommand\pendingcalls[0]{\hyperlink{def-pending-calls}{\textsf{pending\_calls}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\Proseemptygraph[1]{#1 is the empty \executiongraph{}}
@@ -1175,10 +1175,10 @@
 \newcommand\Proseticklooplimit[2]{\hyperlink{def-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
 \newcommand\ticklooplimit[0]{\hyperlink{def-ticklooplimit}{\textfunc{tick\_loop\_limit}}}
 
-\newcommand\getstacksize[0]{\hyperlink{def-getstacksize}{\textfunc{get\_stack\_size}}}
-\newcommand\setstacksize[0]{\hyperlink{def-setstacksize}{\textfunc{set\_stack\_size}}}
-\newcommand\incrstacksize[0]{\hyperlink{def-incrstacksize}{\textfunc{incr\_stack\_size}}}
-\newcommand\decrstacksize[0]{\hyperlink{def-decrstacksize}{\textfunc{decr\_stack\_size}}}
+\newcommand\getpendingcalls[0]{\hyperlink{def-getpendingcalls}{\textfunc{get\_pending\_calls}}}
+\newcommand\setpendingcalls[0]{\hyperlink{def-setpendingcalls}{\textfunc{set\_pending\_calls}}}
+\newcommand\incrpendingcalls[0]{\hyperlink{def-incrpendingcalls}{\textfunc{incr\_pending\_calls}}}
+\newcommand\decrpendingcalls[0]{\hyperlink{def-decrpendingcalls}{\textfunc{decr\_pending\_calls}}}
 \newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
 \newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
 \newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
@@ -2919,7 +2919,7 @@
 \newcommand\vstdasbuiltin[0]{\texttt{std\_as\_builtin}}
 \newcommand\vspp[0]{\texttt{s''}}
 \newcommand\vsstruct[0]{\texttt{s\_struct}}
-\newcommand\vstacksize[0]{\texttt{stack\_size}}
+\newcommand\vpendingcalls[0]{\texttt{pending\_calls}}
 \newcommand\vstart[0]{\texttt{v\_start}}
 \newcommand\vstarte[0]{\texttt{start\_e}}
 \newcommand\vstartep[0]{\texttt{start\_e'}}
