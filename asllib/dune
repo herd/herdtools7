@@ -51,6 +51,7 @@
 
 (library
  (name asllib)
+ (no_dynlink)
  (modules
   (:standard \ aslref bundler))
  (public_name herdtools7.asllib)
