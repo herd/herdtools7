@@ -227,7 +227,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
  * for diy to name tests properly when no familly is given.
  *)
 
-      let find_non_pseudo_prev n = find_node_rev (fun n -> E.is_non_pseudo n.edge.E.edge) n
+      let find_non_pseudo_prev n = find_node_rev (fun n -> not @@ E.is_pseudo n.edge) n
 
       let find_start_proc n =
         let ext_count =
@@ -394,7 +394,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       | Some _ -> true
       | None -> false
 
-      let is_actual_edge e = has_dir e && not (E.is_node e.CE.edge.E.edge)
+      let is_actual_edge e = has_dir e && not (E.is_node e.CE.edge)
 
       let mk_cycle cy =
         let es = CE.mk_cycle cy in

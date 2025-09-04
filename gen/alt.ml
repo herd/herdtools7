@@ -31,6 +31,7 @@ module type AltConfig = sig
   val variant : Variant_gen.t -> bool
   type fence
   val cumul : fence list Config.cumul
+  val same_loc : bool
 end
 
 module Make(C:Builder.S)
@@ -107,16 +108,27 @@ module Make(C:Builder.S)
       r
 
     let choice_default e1 e2 =
-      let r = match e1.edge,e2.edge with
 (*
-  Now accept some internal with internal composition
+  Now accept some internal with internal composition following some principles:
+    - `Po(_)`, `Dp(_)` and `Fenced(_)` should be treated the same.
+    - Symmetric
  *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
-      | Dp (_,Diff,_),Po (Diff,_,_)
-      | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
+      let r = match e1.edge,e2.edge with
+      (* E.g. Rfi Pod** *)
+      | (Ws Int|Rf Int|Fr Int|Insert _),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. Pod** Rfi *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
+      (* E.g. Pod** Pod** *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. ISB Rfi *)
+      | Insert _,(Ws Int|Rf Int|Fr Int)
+      (* E.g. Rfi ISB *)
+      | (Ws Int|Rf Int|Fr Int),Insert _
+      (* E.g. Rfi Pos** *)
+      | Rf Int,(Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))
+      (* E.g. Pos** Rfi *)
+      | ((Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))),Rf Int
+      (* E.g. Amo.Cas *)
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
@@ -270,7 +282,7 @@ module Make(C:Builder.S)
       | [] -> assert false
       | [x] -> x
       | x::xs ->
-          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          if C.E.is_memory_access x then hd_non_insert xs
           else x
     let last_non_insert xs = hd_non_insert (List.rev xs)
 
@@ -320,7 +332,7 @@ module Make(C:Builder.S)
 (* Functional for recursive call of generators *)
 
     let sz (_,es) =
-      if List.for_all (fun e -> is_id e.edge) es then 0 else 1
+      if List.for_all (fun e -> is_id e) es then 0 else 1
 
 
     let rec c_minprocs_es c = function
@@ -412,10 +424,9 @@ module Make(C:Builder.S)
             can_prefix prefix (can_precede safes po_safe) suff
           then begin
             let tr =  prefix@suff in
-(*
-            eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-*)
+            if O.verbose > 2 then
+              eprintf "TRY: '%s'\n"
+                (C.E.pp_edges (List.flatten (List.map snd tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
@@ -551,11 +562,7 @@ module Make(C:Builder.S)
             all_relax k
           else
             choose_relax relax k
-
-    let rec all_int l =
-      match l with
-      | [] -> true
-      | a::s -> (is_int a)&&(all_int s)
+    (* END of zyva *)
 
     let rec count_e ce = function
       | [] -> ce
@@ -621,7 +628,7 @@ module Make(C:Builder.S)
                 (match O.choice with
                 | Default| Sc | Ppo | MixedCheck -> true
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
-                (count_ext le=1 || all_int le || count_changes le < 2) then k
+                (count_ext le=1 || ( not O.same_loc && count_changes le < 2 ) ) then k
               else begin
                   let ok = (* Check for rejected sequenes that span over cycle "cut" *)
                   let rej = (* Keep non-trivial edge sequences only *)
@@ -637,7 +644,7 @@ module Make(C:Builder.S)
                        List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
                      let pss = Misc.cuts max_sz le in
                      not (substring_spanp rej pss) in
-                if ok then
+                if ok then begin
                   let mk_info _es =
                     let ss = build_safe rs res in
                     let info =
@@ -647,6 +654,7 @@ module Make(C:Builder.S)
                       ] in
                     info,C.R.Set.of_list rs in
                   f le mk_info D.no_name D.no_scope k
+                end
                 else k
               end
             with (Normaliser.CannotNormalise _) -> k

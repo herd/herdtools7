@@ -56,6 +56,8 @@ let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
+let get_machine_feature _ = StringSet.empty
+
 let varatom_dir _d f = f None
 
 let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
@@ -276,5 +278,9 @@ let compute_rmw rmw old co =
   | Exch -> co
   | Add -> old+co in
   Code.value_of_int new_value
+
+let valid_rmw _ = true
+let init_rmw _ = Code.value_of_int 0
+let to_rmw_operand _ _ counter = counter
 
 include NoEdge
