@@ -180,17 +180,17 @@ We define the following types of \nativevalues:
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
-\hypertarget{def-stacksize}{}
+\hypertarget{def-pending-calls}{}
 \hypertarget{def-storage}{}
 In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevalues\
 via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
-to the number of calls being evaluated for those subprograms via the $\stacksize$ map.
+to the number of calls being evaluated for those subprograms via the $\pendingcalls$ map.
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevalues:
 \[
 \begin{array}{rcl}
 \dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs
   \hypertarget{def-globaldynamicenvs}{}\\
-\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \stacksize \mapsto (\Identifiers \partialto \N)]
+\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \pendingcalls \mapsto (\Identifiers \partialto \N)]
   \hypertarget{def-localdynamicenvs}{}\\
 \localdynamicenvs   &\triangleq&  (\Identifiers \partialto \vals) \\
 \end{array}
@@ -213,7 +213,7 @@ are well-formed.
 \hypertarget{def-emptydenv}{}
 An empty dynamic environment $\emptydenv$ is defined as follows:
 \[
-\emptydenv \triangleq ([\storage \mapsto \emptyfunc, \stacksize \mapsto \emptyfunc], \emptyfunc) \enspace.
+\emptydenv \triangleq ([\storage \mapsto \emptyfunc, \pendingcalls \mapsto \emptyfunc], \emptyfunc) \enspace.
 \]
 
 \hypertarget{def-envs}{}

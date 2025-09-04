@@ -5,10 +5,10 @@
 This chapter defines the following helper relations for operating on \nativevalues,
 \hyperlink{def-envs}{environments}, and operations involving values and types:
 \begin{itemize}
-  \item \SemanticsRuleRef{GetStackSize} retrieves the value of the $\stacksize$ value from an environment;
-  \item \SemanticsRuleRef{SetStackSize} updates the value of the $\stacksize$ value in an environment;
-  \item \SemanticsRuleRef{IncrStackSize} updates the value of the $\stacksize$ value in an environment by incrementing it by one;
-  \item \SemanticsRuleRef{DecrStackSize} updates the value of the $\stacksize$ value in an environment by decrementing it by one;
+  \item \SemanticsRuleRef{GetPendingCalls} retrieves the value of the $\pendingcalls$ value from an environment;
+  \item \SemanticsRuleRef{SetPendingCalls} updates the value of the $\pendingcalls$ value in an environment;
+  \item \SemanticsRuleRef{IncrPendingCalls} updates the value of the $\pendingcalls$ value in an environment by incrementing it by one;
+  \item \SemanticsRuleRef{DecrPendingCalls} updates the value of the $\pendingcalls$ value in an environment by decrementing it by one;
   \item \SemanticsRuleRef{RemoveLocal} removes a local storage element from a given environment;
   \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraph{} representing a Read Effect for a given identifier;
   \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraph{} representing a Write Effect for a given identifier;
@@ -27,37 +27,37 @@ This chapter defines the following helper relations for operating on \nativevalu
         and also updating a given \executiongraph{} with a corresponding Write Effect and an $\aslpo$ edge.
 \end{itemize}
 
-\SemanticsRuleDef{GetStackSize}
-\hypertarget{def-getstacksize}{}
+\SemanticsRuleDef{GetPendingCalls}
+\hypertarget{def-getpendingcalls}{}
 The function
 \[
-\getstacksize(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto \overname{\vs}{\N}
+\getpendingcalls(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto \overname{\vs}{\N}
 \]
-retrieves the value associated with $\name$ in $\denv.\stacksize$ or $0$ if no value is associated with it.
+retrieves the value associated with $\name$ in $\denv.\pendingcalls$ or $0$ if no value is associated with it.
 
 \ExampleDef{Retrieving the Stack Size}
 In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.
-That is, $\getstacksize(\denv_0, \factorial) \evalarrow 0$.
+That is, $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
-define $\vs$ is $0$ if no value is associated with $\name$ in $\denv.\stacksize$ and the value bound to
-$\name$ in $\denv.\stacksize$ otherwise.
+define $\vs$ is $0$ if no value is associated with $\name$ in $\denv.\pendingcalls$ and the value bound to
+$\name$ in $\denv.\pendingcalls$ otherwise.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vs \eqdef \choice{\name \in \dom(\denv.\stacksize)}{\denv.\stacksize(\name)}{0}
+  \vs \eqdef \choice{\name \in \dom(\denv.\pendingcalls)}{\denv.\pendingcalls(\name)}{0}
 }{
-  \getstacksize(\denv, \name) \evalarrow \vs
+  \getpendingcalls(\denv, \name) \evalarrow \vs
 }
 \end{mathpar}
 
-\SemanticsRuleDef{SetStackSize}
-\hypertarget{def-setstacksize}{}
+\SemanticsRuleDef{SetPendingCalls}
+\hypertarget{def-setpendingcalls}{}
 The function
 \[
-\setstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier} \aslsep \overname{\vv}{\N}) \aslto
+\setpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier} \aslsep \overname{\vv}{\N}) \aslto
 \overname{\newgenv}{\dynamicenvs}
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
@@ -66,86 +66,86 @@ updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the ne
 In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is then set to $1$.
 That is, \\
-$\setstacksize(\denv_0, \factorial, 1) \evalarrow \denv_1$
+$\setpendingcalls(\denv_0, \factorial, 1) \evalarrow \denv_1$
 and\\
-$\getstacksize(\denv_1, \factorial) \evalarrow 1$.
+$\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
 \ProseParagraph
-define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\stacksize$.
+define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pendingcalls$.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \setstacksize(\genv, \name, \vv) \evalarrow \overname{\genv.\stacksize[\name\mapsto\vv]}{\newgenv}
+  \setpendingcalls(\genv, \name, \vv) \evalarrow \overname{\genv.\pendingcalls[\name\mapsto\vv]}{\newgenv}
 }
 \end{mathpar}
 
-\SemanticsRuleDef{IncrStackSize}
-\hypertarget{def-incrstacksize}{}
+\SemanticsRuleDef{IncrPendingCalls}
+\hypertarget{def-incrpendingcalls}{}
 The function
 \[
-\incrstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\incrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
 \overname{\newgenv}{\globaldynamicenvs}
 \]
-increments the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
+increments the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 
 \ExampleDef{Incrementing the Stack Size}
 In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is incremented to $1$.
 That is, \\
-$\incrstacksize(\denv_0, \factorial) \evalarrow \denv_1$
+$\incrpendingcalls(\denv_0, \factorial) \evalarrow \denv_1$
 and\\
-$\getstacksize(\denv_1, \factorial) \evalarrow 1$.
+$\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
-  \item applying $\setstacksize$ to $\name$ and $\vprev + 1$ in $\genv$ yields $\newgenv$.
+  \item applying $\getpendingcalls$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
+  \item applying $\setpendingcalls$ to $\name$ and $\vprev + 1$ in $\genv$ yields $\newgenv$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \getstacksize((\genv, \emptyfunc), \name) \evalarrow \vprev\\
-  \setstacksize(\genv, \name, \vprev + 1) \evalarrow \newgenv
+  \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
+  \setpendingcalls(\genv, \name, \vprev + 1) \evalarrow \newgenv
 }{
-  \incrstacksize(\genv, \name) \evalarrow \newgenv
+  \incrpendingcalls(\genv, \name) \evalarrow \newgenv
 }
 \end{mathpar}
 
-\SemanticsRuleDef{DecrStackSize}
-\hypertarget{def-decrstacksize}{}
+\SemanticsRuleDef{DecrPendingCalls}
+\hypertarget{def-decrpendingcalls}{}
 The function
 \[
-\decrstacksize(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\decrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
 \overname{\newgenv}{\globaldynamicenvs} \cup \overname{\newdenv}{\dynamicenvs}
 \]
-decrements the value associated with $\name$ in $\genv.\stacksize$, yielding the updated global dynamic environment $\newgenv$.
-It is assumed that $\getstacksize((\genv, \emptyfunc), \name)$ yields a positive value.
+decrements the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
+It is assumed that $\getpendingcalls((\genv, \emptyfunc), \name)$ yields a positive value.
 
 \ExampleDef{Decrementing the Stack Size}
 In \listingref{CheckRecurseLimit}, the stack size upon returning from \verb|main| to \verb|factorial|
 with the environment $\env_1 \eqdef (\tenv_1, \denv_1)$ is $1$, and it is decremented to $0$.
 That is, \\
-$\decrstacksize(\denv_1, \factorial) \evalarrow \denv_0$
+$\decrpendingcalls(\denv_1, \factorial) \evalarrow \denv_0$
 and\\
-$\getstacksize(\denv_0, \factorial) \evalarrow 0$.
+$\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item applying $\getstacksize$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
-  \item applying $\setstacksize$ to $\name$ and $\vprev - 1$ in $\genv$ yields $\newgenv$.
+  \item applying $\getpendingcalls$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
+  \item applying $\setpendingcalls$ to $\name$ and $\vprev - 1$ in $\genv$ yields $\newgenv$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \getstacksize((\genv, \emptyfunc), \name) \evalarrow \vprev\\
-  \setstacksize(\genv, \name, \vprev - 1) \evalarrow \newgenv
+  \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
+  \setpendingcalls(\genv, \name, \vprev - 1) \evalarrow \newgenv
 }{
-  \decrstacksize(\genv, \name) \evalarrow \newgenv
+  \decrpendingcalls(\genv, \name) \evalarrow \newgenv
 }
 \end{mathpar}
 

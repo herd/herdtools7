@@ -1298,8 +1298,8 @@ module Make (B : Backend.S) (C : Config) = struct
     match limit_opt with
     | None -> return ()
     | Some limit ->
-        let stack_size = IEnv.get_stack_size name env in
-        if limit < stack_size then
+        let pending_calls = IEnv.get_pending_calls name env in
+        if limit < pending_calls then
           fatal_from pos env Error.RecursionLimitReached
         else return ()
 
@@ -1429,16 +1429,16 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ vparams, env1 = eval_expr_list_m env params in
     let*^ vargs, env2 = eval_expr_list_m env1 args in
     let* vargs = vargs and* vparams = vparams in
-    let genv = IEnv.incr_stack_size ~pos name env2.global in
+    let genv = IEnv.incr_pending_calls ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
     | Throwing (v, v_ty, env_throw) ->
-        let genv2 = IEnv.decr_stack_size name env_throw.global in
+        let genv2 = IEnv.decr_pending_calls name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return (Throwing (v, v_ty, new_env)) |: SemanticsRule.Call
     | Normal (ms, global) ->
         let ms2 = List.map read_value_from ms in
-        let genv2 = IEnv.decr_stack_size name global in
+        let genv2 = IEnv.decr_pending_calls name global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return_normal (ms2, new_env) |: SemanticsRule.Call
   (* End *)
@@ -1557,7 +1557,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let run_typed_env env (static_env : StaticEnv.global) main_name (ast : AST.t)
       : B.value m =
     let*| env = build_genv env eval_expr static_env ast in
-    let env = IEnv.incr_stack_size ~pos:dummy_annotated main_name env in
+    let env = IEnv.incr_pending_calls ~pos:dummy_annotated main_name env in
     let*| res =
       eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
