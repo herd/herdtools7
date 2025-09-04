@@ -74,7 +74,7 @@ let _min_err e1 e2 =
   let open Error in
   let open AST in
   match (e1.desc, e2.desc) with
-  | CannotParse, CannotParse ->
+  | CannotParse _, CannotParse _ ->
       if e1.pos_start.pos_lnum > e2.pos_start.pos_lnum then e1 else e2
   | _ -> e2
 
@@ -142,7 +142,7 @@ let rec loop lexer_state (p1, p2) : 'a I.checkpoint -> AST.t = function
                 Format.eprintf "@[%a:@ Found error.@]@." PP.pp_pos
                   (ASTUtils.annotated () p1 p2 V0))
       in
-      Error.fatal_here p1 p2 Error.CannotParse
+      Error.fatal_here p1 p2 (Error.CannotParse None)
   | I.Accepted ast -> ast
   | I.Rejected -> assert false
 
