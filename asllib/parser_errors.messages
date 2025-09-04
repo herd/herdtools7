@@ -1,0 +1,308 @@
+opn: CASE BITVECTOR_LIT OF WHEN BITVECTOR_LIT ARROW PASS SEMI_COLON OTHERWISE ARROW PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 501.
+##
+## stmt -> CASE expr OF list1(case_alt) OTHERWISE ARROW stmt_list END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## CASE expr OF list1(case_alt) OTHERWISE ARROW stmt_list END
+##
+opn: CASE BITVECTOR_LIT OF WHEN BITVECTOR_LIT ARROW PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 503.
+##
+## stmt -> CASE expr OF list1(case_alt) END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## CASE expr OF list1(case_alt) END
+##
+opn: FOR IDENTIFIER EQ BITVECTOR_LIT DOWNTO BITVECTOR_LIT DO PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 508.
+##
+## stmt -> FOR IDENTIFIER EQ expr direction expr loop_limit DO stmt_list END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## FOR IDENTIFIER EQ expr direction expr loop_limit DO stmt_list END
+##
+opn: IF BITVECTOR_LIT THEN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 519.
+##
+## stmt -> IF expr THEN stmt_list s_else END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## IF expr THEN stmt_list s_else END
+##
+opn: TRY PASS SEMI_COLON CATCH WHEN IDENTIFIER ARROW PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 542.
+##
+## stmt -> TRY stmt_list CATCH list1(catcher) otherwise_opt END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## TRY stmt_list CATCH list1(catcher) otherwise_opt END
+##
+opn: WHILE BITVECTOR_LIT DO PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 547.
+##
+## stmt -> WHILE expr loop_limit DO stmt_list END . SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## WHILE expr loop_limit DO stmt_list END
+##
+spec: READONLY IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 637.
+##
+## decl -> READONLY IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: READONLY IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 642.
+##
+## decl -> READONLY IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: READONLY IMPDEF FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 653.
+##
+## decl -> READONLY IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: READONLY IMPDEF FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 658.
+##
+## decl -> READONLY IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: READONLY FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 668.
+##
+## decl -> READONLY FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: READONLY FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 673.
+##
+## decl -> READONLY FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## READONLY FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: PURE IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 685.
+##
+## decl -> PURE IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: PURE IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 690.
+##
+## decl -> PURE IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: PURE IMPDEF FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 701.
+##
+## decl -> PURE IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: PURE IMPDEF FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 706.
+##
+## decl -> PURE IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: PURE FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 716.
+##
+## decl -> PURE FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: PURE FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 721.
+##
+## decl -> PURE FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## PURE FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: NORETURN IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 736.
+##
+## decl -> NORETURN IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## NORETURN IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: NORETURN IMPDEF FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 746.
+##
+## decl -> NORETURN IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## NORETURN IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: NORETURN FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 755.
+##
+## decl -> NORETURN FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## NORETURN FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 777.
+##
+## decl -> IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPLEMENTATION FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: IMPLEMENTATION FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 782.
+##
+## decl -> IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPLEMENTATION FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN SETTER PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 794.
+##
+## accessors -> SETTER stmt_list END . SEMI_COLON is_readonly GETTER stmt_list END SEMI_COLON [ END ]
+##
+## The known suffix of the stack is as follows:
+## SETTER stmt_list END
+##
+spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN SETTER PASS SEMI_COLON END SEMI_COLON GETTER PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 800.
+##
+## accessors -> SETTER stmt_list END SEMI_COLON is_readonly GETTER stmt_list END . SEMI_COLON [ END ]
+##
+## The known suffix of the stack is as follows:
+## SETTER stmt_list END SEMI_COLON is_readonly GETTER stmt_list END
+##
+spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 805.
+##
+## accessors -> is_readonly GETTER stmt_list END . SEMI_COLON SETTER stmt_list END SEMI_COLON [ END ]
+##
+## The known suffix of the stack is as follows:
+## is_readonly GETTER stmt_list END
+##
+spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PASS SEMI_COLON END SEMI_COLON SETTER PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 809.
+##
+## accessors -> is_readonly GETTER stmt_list END SEMI_COLON SETTER stmt_list END . SEMI_COLON [ END ]
+##
+## The known suffix of the stack is as follows:
+## is_readonly GETTER stmt_list END SEMI_COLON SETTER stmt_list END
+##
+spec: IMPLEMENTATION ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PASS SEMI_COLON END SEMI_COLON SETTER PASS SEMI_COLON END SEMI_COLON END XOR
+##
+## Ends in an error in state: 812.
+##
+## decl -> IMPLEMENTATION ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPLEMENTATION ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END
+##
+spec: IMPDEF FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 823.
+##
+## decl -> IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPDEF FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: IMPDEF FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 828.
+##
+## decl -> IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPDEF FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: IMPDEF ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PASS SEMI_COLON END SEMI_COLON SETTER PASS SEMI_COLON END SEMI_COLON END XOR
+##
+## Ends in an error in state: 839.
+##
+## decl -> IMPDEF ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## IMPDEF ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END
+##
+spec: FUNC IDENTIFIER LPAR RPAR ARROW INTEGER BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 849.
+##
+## decl -> FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## FUNC IDENTIFIER params_opt func_args return_type recurse_limit BEGIN stmt_list END
+##
+spec: FUNC IDENTIFIER LPAR RPAR BEGIN PASS SEMI_COLON END XOR
+##
+## Ends in an error in state: 854.
+##
+## decl -> FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## FUNC IDENTIFIER params_opt func_args recurse_limit BEGIN stmt_list END
+##
+spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PASS SEMI_COLON END SEMI_COLON SETTER PASS SEMI_COLON END SEMI_COLON END XOR
+##
+## Ends in an error in state: 884.
+##
+## decl -> ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END . SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## ACCESSOR IDENTIFIER params_opt func_args BEQ IDENTIFIER as_ty BEGIN accessors END
+##
+
+The `end` keyword must be followed by a semicolon (`;`).

@@ -51,8 +51,8 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
         (_ast_type_to_string ast_type)
         lexbuf.lex_curr_p.pos_fname
   in
-  let cannot_parse lexbuf =
-    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p CannotParse
+  let cannot_parse ?msg lexbuf =
+    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p (CannotParse msg)
   in
   let unknown_symbol lexbuf =
     fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p UnknownSymbol
@@ -63,7 +63,11 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       let module Lexer = Lexer.Make (struct end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with
-      | Parser.Error -> cannot_parse lexbuf
+      | Parser.Error error_state -> (
+          try
+            let msg = Parser_errors.message error_state in
+            cannot_parse ~msg lexbuf
+          with Not_found -> cannot_parse lexbuf)
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
       let as_chunks = parser_config.v0_use_split_chunks in

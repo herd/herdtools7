@@ -321,21 +321,24 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same
+    precedence - parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Operators `<=>` and `==>` have the same
+    precedence - parenthesise to disambiguate.
   [1]
 
   $ aslref binop-non-assoc.asl
   File binop-non-assoc.asl, line 3, characters 6 to 11:
     - = 3 - 2 - 1;
         ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Binary operator `-` is not associative -
+    parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -722,5 +725,21 @@ Bounds checks
   File no_end_semicolon.asl, line 6, characters 2 to 8:
     return 0;
     ^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. The `end` keyword must be followed by a
+    semicolon (`;`).
+    
+  [1]
+  $ aslref discard-locals.asl
+  File discard-locals.asl, line 3, characters 6 to 12:
+    let (-, -) = (1, 2);
+        ^^^^^^
+  ASL Grammar error: Cannot parse. A local declaration must declare at least
+    one name.
+  [1]
+  $ aslref elided-parameter-non-bits.asl
+  File elided-parameter-non-bits.asl, line 3, characters 20 to 27:
+    let x : integer = Zeros{};
+                      ^^^^^^^
+  ASL Grammar error: Cannot parse. Cannot desugar elided parameter: left-hand
+    side must have a `bits(...)` type annotation.
   [1]

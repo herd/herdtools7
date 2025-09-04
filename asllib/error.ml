@@ -48,7 +48,7 @@ type error_desc =
   | ObsoleteSyntax of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
-  | CannotParse
+  | CannotParse of string option
   | UnknownSymbol
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
@@ -168,7 +168,7 @@ let error_label = function
   | ObsoleteSyntax _ -> "ObsoleteSyntax"
   | ConflictingTypes _ -> "ConflictingTypes"
   | AssertionFailed _ -> "AssertionFailed"
-  | CannotParse -> "CannotParse"
+  | CannotParse _ -> "CannotParse"
   | UnknownSymbol -> "UnknownSymbol"
   | NoCallCandidate _ -> "NoCallCandidate"
   | BadTypesForBinop _ -> "BadTypesForBinop"
@@ -414,7 +414,10 @@ module PPrint = struct
           (pp_comma_list pp_type_desc)
           expected
     | AssertionFailed e -> pp_err dynamic "Assertion failed:@ %a." pp_expr e
-    | CannotParse -> pp_err parse "Cannot parse."
+    | CannotParse s -> (
+        match s with
+        | None -> pp_err parse "Cannot parse."
+        | Some s -> pp_err parse "Cannot parse.@ %a" pp_print_text s)
     | UnknownSymbol -> pp_err lexical "Unknown symbol."
     | NoCallCandidate (name, types) ->
         pp_err typing

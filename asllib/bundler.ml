@@ -60,7 +60,7 @@ let build_ast_from_file ?(is_opn = false) f =
   in
   let res =
     try Some (parse Lexer.token lexbuf) with
-    | Parser.Error ->
+    | Parser.Error _ ->
         Printf.eprintf "%s:%a: Cannot parse. Ignoring file.\n" f pp_pos
           lexbuf.Lexing.lex_curr_p;
         None
