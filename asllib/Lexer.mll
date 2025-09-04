@@ -457,6 +457,7 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
+    | "-->"                    { fatal lexbuf (CannotParse (Some "Did you mean `==>`?")) }
     | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
@@ -467,6 +468,7 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NE                              }
     | '-'                      { MINUS                            }
+    | "<->"                    { fatal lexbuf (CannotParse (Some "Did you mean `<=>`?")) }
     | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
@@ -489,7 +491,6 @@ and token = parse
     | "*:"                     { STAR_COLON                       }
     | ';'                      { SEMI_COLON                       }
     | ">="                     { GE                              }
-    | "@looplimit"             { fatal lexbuf (ObsoleteSyntax "Loop limits with @looplimit") }
     | identifier as lxm        { tr_name lxm                      }
     | eof                      { EOF                              }
     | forbidden_real_first     { raise LexerError                 }

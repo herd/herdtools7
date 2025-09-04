@@ -45,7 +45,6 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | NotYetImplemented of string
-  | ObsoleteSyntax of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
@@ -165,7 +164,6 @@ let error_label = function
   | InvalidExpr _ -> "InvalidExpr"
   | MismatchType _ -> "MismatchType"
   | NotYetImplemented _ -> "NotYetImplemented"
-  | ObsoleteSyntax _ -> "ObsoleteSyntax"
   | ConflictingTypes _ -> "ConflictingTypes"
   | AssertionFailed _ -> "AssertionFailed"
   | CannotParse _ -> "CannotParse"
@@ -405,7 +403,6 @@ module PPrint = struct
                provided"
               name expected provided)
     | NotYetImplemented s -> pp_err internal "Not yet implemented: %s" s
-    | ObsoleteSyntax s -> pp_err parse "Obsolete syntax: %s" s
     | ConflictingTypes ([ expected ], provided) ->
         pp_err typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided

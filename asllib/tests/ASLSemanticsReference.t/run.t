@@ -203,7 +203,7 @@ ASL Semantics Tests:
   File SemanticsRule.LDDiscard.asl, line 4, characters 6 to 7:
     var - : integer;
         ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A local declaration must declare a name.
   [1]
 
   $ aslref EvalCatchers.asl

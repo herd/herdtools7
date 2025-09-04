@@ -23,14 +23,14 @@ Examples used to test syntax and AST building rules:
     characters 6 to 7:
     let - = 42;
         ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A local declaration must declare a name.
   [1]
   $ aslref GuideRule.DiscardingGlobalStorageDeclarations.asl
   File GuideRule.DiscardingGlobalStorageDeclarations.asl, line 1,
     characters 4 to 5:
   let - = 42;
       ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A global declaration must declare a name.
   [1]
   $ aslref ASTRule.DesugarLHSAccess.asl
   $ aslref ASTRule.DesugarLHSTuple.asl
