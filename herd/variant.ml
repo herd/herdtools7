@@ -117,7 +117,7 @@ type t =
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
   | ConstPacField
 
-(* Identity function to prompt user to insert variant into list used for help message when adding a new variant*)
+(* Identity function to prompt developers to insert variant into list used for help message when adding a new variant*)
 let (mode_variants, arch_variants) : t list * t list =
   let f = function 
   | Success -> Success
@@ -378,7 +378,7 @@ let pp = function
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
 
-  let descriptions_on = false
+  let under_development = true
   let variant_descriptions = function
   | Success -> "Riscv Model with explicit success dependency"
   | Instr -> "Define instr (or same-instance) relation"
@@ -455,27 +455,26 @@ let arch_tags =
 let mode_help_tags =
   List.map2
     (fun variant description ->
-      let variant_tag = if variant = "T00" then "T [0-9]" else variant in
-      variant_tag ^ ": " ^ description)
-    (List.map pp mode_variants)
+      variant ^ ": " ^ description)
+    mode_tags
     (List.map variant_descriptions mode_variants)
 
  let arch_help_tags =
   List.map2 
     (fun variant  description ->
       variant ^ ": " ^ description)
-    (List.map pp arch_variants)
+    arch_tags
     (List.map variant_descriptions arch_variants)
 
-let help_page =
-  if descriptions_on then
-    Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
+let help_message tags1 tags2 space =
+   Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
     \n Architecture Feature tags:\n  %s \n" 
-    (String.concat "\n  " mode_help_tags) (String.concat "\n  " arch_help_tags) 
+  (String.concat space tags1) (String.concat space tags2) 
+let variants_help_page =
+  if under_development then
+    help_message mode_tags arch_tags ","
   else
-    Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
-    \n Architecture Feature tags:\n  %s \n" 
-    (String.concat ", " mode_tags) (String.concat ", " arch_tags) 
+    help_message mode_help_tags arch_help_tags "\n  "
 
 
 let tags = mode_tags @ arch_tags

@@ -94,14 +94,14 @@ let runmode_options = Arg.align ~limit:40 [
   parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
     ("-switch",
    Arg.Unit (fun () -> Misc.switch := true),
-   "switch something") ;
+   " switch something") ;
   parse_tag "-restrict"
     (fun tag -> match Restrict.parse tag with
     | None -> false
     | Some t -> restrict := t ; true)
     Restrict.tags
     (sprintf "restrict outcomes, default %s" (Restrict.pp !restrict));
-    ]
+    ]  
 
 let filter_options = Arg.align ~limit:40 [
   "-help", Arg.Unit Fun.id, "" ;
@@ -127,26 +127,6 @@ let filter_options = Arg.align ~limit:40 [
    "<name> do not apply check, cumulates") ;
   parse_stringset "-skipchecks" skipchecks "do not apply listed checks, cumulative" ;
   parse_bool "-strictskip" strictskip "retain outcomes allowed by ALL skipped checks" ;
-  parse_stringset "-cycles" cycles  "<name1,...,nameN> show failing checks as cycles, cumulates" ;
-
-(* Model control *)
-  begin
-    let module ParseVariant = ParseTag.MakeS(Opts.OptS) in
-    ParseVariant.parse "-variant" variant
-      "<tag> select architecture variation, use '-help variant' for a list of variants" end ;
-  begin let module ParseMachSize = ParseTag.Make(MachSize.Tag) in
-  ParseMachSize.parse "-machsize" byte "set basic machine size" end ;
-  begin let module ParseEndian = ParseTag.Make(Endian) in
-  ParseEndian.parse_opt "-endian" endian "set endianness" end ;
-  parse_bool "-archcheck" archcheck "check compatibility of test and cat model architectures" ;
-  parse_tag "-optace"
-    (fun tag -> match OptAce.parse tag with
-    | None -> false
-    | Some t -> optace := Some t ; true)
-    OptAce.tags
-    "optimize axiomatic candidate generation, default is iico";
-  "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
-    "<bool> represent init writes as write events, this option should not be used except for debugging model options";
   parse_tag "-show"
     (fun tag -> match PrettyConf.parse_show tag with
     | None -> false
@@ -206,7 +186,7 @@ let graph_content_options = Arg.align ~limit:40 [
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
  "-initwrites", Arg.Bool (fun b -> initwrites := Some b),
     "<bool> represent init writes as write events, this option should not be used except for debugging model options";
-  parse_string_opt "-classes" PP.classes "show classes of this equivalence (no not cumulate)" ;
+  parse_string_opt "-classes" PP.classes "show classes of this equivalence (do not cumulate)" ;
 ]
 let graph_presentation_options = Arg.align ~limit:40 [
   "-help", Arg.Unit Fun.id, "" ;
@@ -308,19 +288,19 @@ let graph_presentation_options = Arg.align ~limit:40 [
     "apply various tricks to enhance edge label placement in pictures" ;
   ]
 
-let setup_options = Arg.align ~limit:40 [
+let setup_options = Arg.align ~limit:40 ([
    "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "";
   ("", Arg.Unit Fun.id, "\n");
   ("-version", Arg.Unit
      (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
-   " show version number and exit") ;
+   " ") ;
   ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
-    "show the default search path for .cat files and ASL pseudocode files");
+    " show the default search path for .cat files and ASL pseudocode files");
   ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
     "<path> set the default search path for .cat files and ASL pseudocode files to <path>");
   ("-v", Arg.Unit (fun _ -> incr verbose),
-   "show various diagnostics, repeat to increase verbosity");
+   " show various diagnostics, repeat to increase verbosity");
   ("-q", Arg.Unit (fun _ -> verbose := -1; debug := Debug_herd.none),
    "<default> do not show diagnostics");
   ("-I", Arg.String (fun s -> includes := !includes @ [s]),
@@ -329,6 +309,10 @@ let setup_options = Arg.align ~limit:40 [
   ("-conf",
    Arg.String load_config,
    "<name> read configuration file <name>") ;
+  ("-web",
+   Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
+  ("-c11",
+   Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
   ("-bell",
    Arg.String (fun x -> Opts.bell := (Some x)),
    "<name> read bell file <name>") ;
@@ -346,23 +330,19 @@ let setup_options = Arg.align ~limit:40 [
     "fork specified viewer to show output graphs" end ;
   ( "-gv",
     Arg.Unit (fun _ -> PP.view := Some View.GV),
-    "alias for -view gv") ;
+    " alias for -view gv") ;
   ( "-evince",
     Arg.Unit (fun _ -> PP.view := Some View.Evince),
-    "alias for -view evince") ;
+    " alias for -view evince") ;
   ( "-preview",
     Arg.Unit (fun _ -> PP.view := Some View.Preview),
-    "alias for -view preview") ;
-  ("-web",
-   Arg.Unit (fun () -> load_config "web.cfg")," alias for -conf web.cfg");
-  ("-c11",
-   Arg.Unit (fun () -> load_config "cpp11.cfg")," alias for -conf cpp11.cfg");
+    " alias for -view preview") ;
   parse_tag "-dotcom"
     (fun tag -> match PrettyConf.parse_dotcom tag with
     | None -> false
     | Some _ as t -> PP.dotcom := t ; true)
     PrettyConf.tags_dotcom
-    "select command to translate dot, default depends on other modes " ;
+    " select command to translate dot, default depends on other modes " ;
   parse_tags
     "-debug"
     (fun tag -> match Debug_herd.parse !debug tag with
@@ -397,11 +377,11 @@ let setup_options = Arg.align ~limit:40 [
   "show complete candidate count in output" ;
   parse_bool "-outcomereads" outcomereads "include all memory reads in outcomes" ;
   parse_bool "-hexa" PP.hexa "print numbers in hexadecimal";
-   ]
+   ])
   let help_options = Arg.align ~limit:40 [
   ("", Arg.Unit Fun.id, "\n");
-  ("-help", Arg.Unit Fun.id, "show option categories");
-  ("--help", Arg.Unit Fun.id, "show all options" )
+  ("-help", Arg.Unit Fun.id, " show option categories");
+  ("--help", Arg.Unit Fun.id, " show all options" )
 ]
 (*Usage messages*)
 let usg_setup = (sprintf "\n Control the command environment: paths, config, input and output handling")
@@ -411,8 +391,8 @@ let usg_graph_content = (sprintf "\n Control what events and edges are included 
 let usg_graph_presentation = (sprintf "\n Control graph layout, sizing, annotations and visual clarity")
 
 let usg_default = String.concat "\n"
-  ["These are common herd options:
-  -variant <variant_name>       Activate variations of models | use '-help variant' for the list of variants
+  ["Common herd options:
+  -variant <variant_name>       Select model variants, Use '-help variant' for the supported list of variants
   -showevents <all|mem|noregs>  Select which events are shown in diagrams,
                                 default: noregs 
   -show <prop|neg|all|cond|wit|none> 
@@ -494,9 +474,9 @@ let () =
     | "graph_content" ->
         Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
     | "graph_presentation" ->
-        Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_content); exit 0
+        Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation); exit 0
     | "variant" ->
-        Printf.printf "%s" (Variant.help_page); exit 0
+        Printf.printf "%s" (Variant.variants_help_page); exit 0
     | "all" ->
         show_long_help ();
     |  _ -> 
