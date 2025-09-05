@@ -16,9 +16,10 @@ install: [make "install" "PREFIX=%{prefix}%"]
 # @todo Add "build-test" field
 depends: [
   "ocaml" {>= "4.08.0"}
-  "dune"  {= "3.19.0" }
-  "menhir" {= "20200123"}
+  "dune"  {>= "3.17" }
+  "menhir" {>= "20240715"}
   "zarith" {>= "1.13"}
+  "ocamlfind" {>= "1.9.8"}
   "conf-which"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
