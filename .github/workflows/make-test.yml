@@ -25,9 +25,12 @@ jobs:
         cfg:
           - ocaml-version: "4.08.1"
             with-fmt: false
+            with-mins: true
+            dune-cache: enabled
             job-name: "OCaml v4.08"
           - ocaml-version: "5.2"
             with-fmt: true
+            with-mins: false
             job-name: "OCaml v5.2, with formatting check"
 
     name: Make test on ${{ matrix.cfg.job-name }}
@@ -47,7 +50,11 @@ jobs:
           ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
           dune-cache: true
 
+      - run: opam install . --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
+        if: ${{ matrix.cfg.with-mins }}
+
       - run: opam install . --deps-only --with-test
+        if: ${{ !matrix.cfg.with-mins }}
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 
