@@ -24,13 +24,11 @@ module Convert (GRAMMAR : MenhirSdk.Cmly_api.GRAMMAR) : sig
   val comments : comment list
   val tokens : token list
   val reserved : decl list
-  val reserved_entry_point : (string * decl list)
+  val reserved_entry_point : string * decl list
 end = struct
-
   let reserved_id_name = "RESERVED_IDENTIFIER"
-  let reserved_keyword_name ="ReservedKeyword"
+  let reserved_keyword_name = "ReservedKeyword"
   let reserved_ep_name = "Reserved"
-
   let comments = [ Comment [ "//" ]; Comment [ "/*"; "*/" ] ]
 
   let tokens =
@@ -39,15 +37,16 @@ end = struct
     let digit : Regex.t = MatchDigit in
     let alpha : Regex.t = MatchLetter in
     let int_lit : Regex.t =
-      Seq [ digit; ZeroOrMore (Choice [ digit ; Char '_' ])]
+      Seq [ digit; ZeroOrMore (Choice [ digit; Char '_' ]) ]
     in
     let hex_alpha : Regex.t = OneOf "abcdefABCDEF" in
     let hex_lit : Regex.t =
-      Seq [
-        Str "0x";
-        Choice [ digit; hex_alpha ];
-        ZeroOrMore (Choice [ Char '_'; digit; hex_alpha ]);
-      ]
+      Seq
+        [
+          Str "0x";
+          Choice [ digit; hex_alpha ];
+          ZeroOrMore (Choice [ Char '_'; digit; hex_alpha ]);
+        ]
     in
     let bit : Regex.t = OneOf "01 " in
     let mk_token terminal acc =
@@ -62,49 +61,48 @@ end = struct
         List.for_all (fun a -> not @@ Attribute.has_label "internal" a) attrs
       in
       let is_external = is_external_term terminal in
-      if (not is_external) || (not is_regular) || String.equal t_name "EOF" then acc
+      if (not is_external) || (not is_regular) || String.equal t_name "EOF" then
+        acc
       else
         let tok =
           match t_name with
           | "STRING_LIT" ->
-              re (
-                Seq [
-                  Char '"';
-                  ZeroOrMore (
-                      Choice
-                        [
-                          Except (MatchAll, OneOf "\"\\");
-                          Seq [Char '\\'; OneOf "nt\"\\" ];
-                        ]);
-                  Char '"';
-                ])
+              re
+                (Seq
+                   [
+                     Char '"';
+                     ZeroOrMore
+                       (Choice
+                          [
+                            Except (MatchAll, OneOf "\"\\");
+                            Seq [ Char '\\'; OneOf "nt\"\\" ];
+                          ]);
+                     Char '"';
+                   ])
           | "INT_LIT" -> re @@ Choice [ int_lit; hex_lit ]
-          | "REAL_LIT" -> re (Seq [int_lit; Char '.'; int_lit])
-          | "BITVECTOR_LIT" ->
-              re (
-                Seq [
-                  Char '\'';
-                  ZeroOrMore bit;
-                  Char '\'';
-                ])
+          | "REAL_LIT" -> re (Seq [ int_lit; Char '.'; int_lit ])
+          | "BITVECTOR_LIT" -> re (Seq [ Char '\''; ZeroOrMore bit; Char '\'' ])
           | "MASK_LIT" ->
-              re (
-                Seq [
-                  Char '\'';
-                  ZeroOrMore (Choice [
-                    bit;
-                    Char 'x';
-                    Seq [Char '('; OneOrMore bit; Char ')']
-                  ]);
-                  Char '\'';
-                ]
-              )
+              re
+                (Seq
+                   [
+                     Char '\'';
+                     ZeroOrMore
+                       (Choice
+                          [
+                            bit;
+                            Char 'x';
+                            Seq [ Char '('; OneOrMore bit; Char ')' ];
+                          ]);
+                     Char '\'';
+                   ])
           | "IDENTIFIER" ->
-              re (
-                Seq [
-                  Choice [ alpha; Char '_' ];
-                  ZeroOrMore (Choice [ alpha; digit; Char '_' ])
-                ])
+              re
+                (Seq
+                   [
+                     Choice [ alpha; Char '_' ];
+                     ZeroOrMore (Choice [ alpha; digit; Char '_' ]);
+                   ])
           | "BOOL_LIT" -> re @@ Choice [ Str "TRUE"; Str "FALSE" ]
           | _ ->
               let asl_tok =
@@ -123,11 +121,7 @@ end = struct
     let reserved_id =
       let name = reserved_id_name in
       let regex : Regex.t =
-        Seq [
-          Str "__";
-          ZeroOrMore (
-            Choice [ alpha; digit; Char '_' ]);
-        ]
+        Seq [ Str "__"; ZeroOrMore (Choice [ alpha; digit; Char '_' ]) ]
       in
       Token { name; regex }
     in
@@ -147,11 +141,19 @@ end = struct
 
   let reserved_entry_point =
     let name = reserved_ep_name in
-    (
-      name,
+    ( name,
       [
-          Decl { ast_name = name ^ "_Token" ; name; terms = [Reference reserved_id_name ] };
-          Decl { ast_name = name ^ "_Keywords" ; name; terms = [Reference reserved_keyword_name ] }
-      ]
-    )
+        Decl
+          {
+            ast_name = name ^ "_Token";
+            name;
+            terms = [ Reference reserved_id_name ];
+          };
+        Decl
+          {
+            ast_name = name ^ "_Keywords";
+            name;
+            terms = [ Reference reserved_keyword_name ];
+          };
+      ] )
 end

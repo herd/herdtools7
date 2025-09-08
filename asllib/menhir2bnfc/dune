@@ -3,6 +3,7 @@
  (modules :standard \ menhir2bnfc)
  (flags -w -9)
  (optional)
+ (package menhir2bnfc)
  (libraries herdtools7.asllib menhirSdk))
 
 (executable
@@ -10,4 +11,5 @@
  (name menhir2bnfc)
  (modules menhir2bnfc)
  (optional)
+ (package menhir2bnfc)
  (libraries menhir2bnfc_lib))

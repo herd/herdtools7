@@ -1,4 +1,4 @@
-(lang dune 2.7)
+(lang dune 3.0)
 (name herdtools7)
 (using menhir 2.0)
 (cram enable)

@@ -52,8 +52,6 @@ module Make (A:Fence.S) =
         | Not_found | Invalid_argument _ ->
             Warn.fatal "bad line: %s" s
 
-      let pp_edges es = String.concat " " (List.map E.pp_edge es)
-
       let rec next_line () =
         let line = read_line () in
         match line with

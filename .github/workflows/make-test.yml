@@ -23,11 +23,13 @@ jobs:
         os:
           - ubuntu-latest
         cfg:
-          - ocaml-version: "4.08.1"
+          - ocaml-version: "ocaml-base-compiler.4.08.1,dune.3.10.0,zarith.1.13,menhir.20220210"
             with-fmt: false
             job-name: "OCaml v4.08"
+            dune-cache: "enabled"
           - ocaml-version: "5.2"
             with-fmt: true
+            dune-cache: "enabled-except-user-rules"
             job-name: "OCaml v5.2, with formatting check"
 
     name: Make test on ${{ matrix.cfg.job-name }}
@@ -35,7 +37,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      DUNE_CACHE: 'enabled-except-user-rules'
+      DUNE_CACHE: ${{ matrix.cfg.dune-cache }}
 
     steps:
       - name: Checkout tree

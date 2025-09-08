@@ -17,5 +17,11 @@
     Top_herd)))
  (js_of_ocaml
   (flags --disable genprim))
- (modules_without_implementation AArch64Sig action arch_herd monad sem XXXMem
-   port))
+ (modules_without_implementation
+  AArch64Sig
+  action
+  arch_herd
+  monad
+  sem
+  XXXMem
+  port))

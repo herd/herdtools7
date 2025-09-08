@@ -1,6 +1,6 @@
 open Asllib
 open Feat
-open Enum
+open! Enum
 
 let binops : AST.binop enum =
   finite

@@ -9,8 +9,6 @@ let begin_command ochan key num =
   fprintf ochan "\\newcommand{%a}{%d}\n" begin_name key num
 let end_command ochan key num =
   fprintf ochan "\\newcommand{%a}{%d}\n" end_name key num
-let outcode ochan code = fprintf ochan "%s\n" code
-
 let get_lineno lexbuf = lexbuf.lex_curr_p.pos_lnum
 let incr_lineno = LexMisc.incr_lineno
 

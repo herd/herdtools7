@@ -21,8 +21,8 @@ Requirements
 ------------
 
 - OCaml (version >= 4.08.0)
-- dune
-- menhir (version >= 20180530)
+- dune (version >= 3.10.0)
+- menhir (version >= 20220210)
 - zarith
 
 We strongly recommend to have this base software installed through the opam
