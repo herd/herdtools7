@@ -38,6 +38,9 @@ jobs:
           mkdir -p ~/.config/dune
           echo $'(lang dune 2.7)\n(display short)' > ~/.config/dune/config
 
+      - name: Patch asllib/dune
+        run: sed -i -e 's/(name asllib)/(name asllib)(no_dynlink)/g' asllib/dune
+
       - name: Build
         run: |
           mkdir /artifacts
