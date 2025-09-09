@@ -31,9 +31,5 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-module ASLScalar = struct
-  include ASLScalar
-  let printable c = c
-end
 module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.ASL) (AddrReg.ASL) (ASLBase.Instr)
-module V = SymbValue.Make (ASLConstant) (ASLOp)
+module V = SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)
