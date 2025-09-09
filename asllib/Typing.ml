@@ -295,8 +295,20 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         (new_env, new_name) |: TypingRule.AddNewFunc
   (* End *)
 
+  let call_type_matches func call_type =
+    func.subprogram_type = call_type
+    ||
+    match (func_version func, func.subprogram_type, call_type) with
+    (* Getters are syntactically identical to functions in V1 - so what
+       looks like a function call may really be a getter call *)
+    | _, ST_Getter, ST_Function -> true
+    (* V0 compatibility: support for calling empty getters/setters *)
+    | V0, ST_EmptyGetter, (ST_Getter | ST_Function) -> true
+    | V0, ST_EmptySetter, ST_Setter -> true
+    | _ -> false
+
   (* Begin SubprogramForName *)
-  let subprogram_for_name ~loc env version name caller_arg_types =
+  let subprogram_for_name ~loc env version name caller_arg_types call_type =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
@@ -307,7 +319,8 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     let get_func_sig name' =
       match IMap.find_opt name' env.global.subprograms with
       | Some (func_sig, ses)
-        when has_arg_clash env caller_arg_types func_sig.args ->
+        when has_arg_clash env caller_arg_types func_sig.args
+             && call_type_matches func_sig call_type ->
           Some (name', func_sig, ses)
       | _ -> None
     in
@@ -329,8 +342,9 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     match C.check with
     | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
     | Warn | Silence -> (
-        fun ~loc env version name caller_arg_types ->
-          try subprogram_for_name ~loc env version name caller_arg_types
+        fun ~loc env version name caller_arg_types call_type ->
+          try
+            subprogram_for_name ~loc env version name caller_arg_types call_type
           with Error.ASLException _ as error -> (
             try
               match IMap.find_opt name env.global.subprograms with
@@ -1631,24 +1645,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let arg_types, args, sess_args = list_split3 args in
     let ses_args = ses_non_conflicting_unions ~loc sess_args in
     let _, name, func_sig, ses_call =
-      Fn.try_subprogram_for_name ~loc env V1 name arg_types
+      Fn.try_subprogram_for_name ~loc env V1 name arg_types call_type
     in
     let ses = SES.union ses_args ses_call in
-    (* Check call and subprogram types match *)
-    let+ () =
-      check_true
-        (func_sig.subprogram_type = call_type
-        ||
-        match (func_version func_sig, func_sig.subprogram_type, call_type) with
-        (* Getters are syntactically identical to functions in V1 - so what
-           looks like a function call may really be a getter call *)
-        | _, ST_Getter, ST_Function -> true
-        (* V0 compatibility: support for calling empty getters/setters *)
-        | V0, ST_EmptyGetter, (ST_Getter | ST_Function) -> true
-        | V0, ST_EmptySetter, ST_Setter -> true
-        | _ -> false)
-      @@ fun () -> fatal_from ~loc (MismatchedReturnValue (Static, name))
-    in
     (* Insert omitted parameter for standard library call *)
     let params = insert_stdlib_param ~loc env func_sig ~params ~arg_types in
     (* Check correct number of parameters/arguments supplied *)
@@ -1731,7 +1730,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let caller_arg_types, args1, sess = list_split3 caller_args_typed in
     let ses1 = ses_non_conflicting_unions ~loc sess in
     let eqs1, name1, callee, ses2 =
-      Fn.try_subprogram_for_name ~loc env V0 name caller_arg_types
+      Fn.try_subprogram_for_name ~loc env V0 name caller_arg_types call_type
     in
     let ses3 = SES.union ses1 ses2 in
     let () =
@@ -3268,7 +3267,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
     let _, _, callee, _ =
-      try Fn.try_subprogram_for_name ~loc env V0 x []
+      try Fn.try_subprogram_for_name ~loc env V0 x [] ST_EmptySetter
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
@@ -3874,7 +3873,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig', _ =
-          try Fn.subprogram_for_name ~loc env V1 func_sig.name arg_types
+          try
+            Fn.subprogram_for_name ~loc env V0 func_sig.name arg_types ST_Getter
           with Error.(ASLException { desc = NoCallCandidate _ }) -> fail ()
         in
         (* Check that func_sig' is a getter *)

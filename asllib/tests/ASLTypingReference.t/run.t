@@ -904,7 +904,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateRetTy.bad.asl, line 15, characters 4 to 17:
       flip{64}(bv); // Illegal: the returned value must be consumed.
       ^^^^^^^^^^^^^
-  ASL Static error: Mismatched use of return value from call to 'flip'.
+  ASL Type error: No subprogram declaration matches the invocation:
+    flip(bits(64)).
   [1]
   $ aslref --no-exec TypingRule.AnnotateCall.asl
   $ aslref --no-exec TypingRule.AnnotateCall2.asl
