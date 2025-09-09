@@ -206,7 +206,7 @@ and type state = A.state =
 
     let fold_var f = function
       | V.Val _ -> Fun.id
-      | V.Var x -> f x
+      | V.Var (x, _) -> f x
 
     let fold_loc f loc =
       match A.undetermined_vars_in_loc_opt loc with
@@ -235,7 +235,7 @@ and type state = A.state =
 (* Perform union-find *)
 
     let uf_cn t cn = match cn with
-    | Assign (V.Var v,Atom (V.Var w)) -> Part.union t v w
+    | Assign (V.Var (v, _),Atom (V.Var (w, _))) -> Part.union t v w
     | _ -> ()
 
     let uf_cns t cns =
@@ -247,8 +247,8 @@ and type state = A.state =
     let subst_atom m v =
       V.map_csym
         (fun x ->
-          try V.Var (Part.Sol.find x m)
-          with Not_found -> V.Var x)
+          try V.Var (Part.Sol.find x m, V.SData.default)
+          with Not_found -> v)
         v
     let subst_expr m = map_expr (subst_atom m)
 
@@ -350,7 +350,7 @@ and type state = A.state =
 
     let simplify_vars_in_var soln x =
       try V.Val (V.Solution.find x soln)
-      with Not_found -> V.Var x
+      with Not_found -> V.Var (x, V.SData.default)
 
     let simplify_vars_in_atom soln v =
       V.map_csym (simplify_vars_in_var soln) v
@@ -374,8 +374,8 @@ and type state = A.state =
     and empty = V.Solution.empty
 
     let solve_cnstrnt cnstr = match cnstr with
-    | Assign (V.Var v,Atom (V.Val i))
-    | Assign (V.Val i,Atom (V.Var v)) ->
+    | Assign (V.Var (v, _),Atom (V.Val i))
+    | Assign (V.Val i,Atom (V.Var (v, _))) ->
         singleton v i
     | Assign (V.Val _,Atom (V.Val _)) ->
     (* By previous application of check_true_false *)
@@ -441,7 +441,7 @@ let get_failed cns =
             let cst = V.Solution.find y solns0 in
             V.Solution.add x (V.Val cst) solns
           with Not_found ->
-            V.Solution.add x (V.Var y) solns)
+            V.Solution.add x (V.Var (y, V.SData.default)) solns)
         m
         (V.Solution.map (fun x -> V.Val x) solns0)
 
@@ -544,7 +544,7 @@ let get_failed cns =
       List.fold_left
         (fun m c ->
           match c with
-          | Assign (V.Var csym,_) -> env_add csym c m
+          | Assign (V.Var (csym, _),_) -> env_add csym c m
           | Assign (V.Val _,_)|Warn _|Failed _ -> m)
        VarEnv.empty cs
 
@@ -606,7 +606,7 @@ let get_failed cns =
                if debug > 1 then
                  Printf.eprintf "%s\n%!" (pp_eq (Assign (v,e))) in
              match v,e with
-             | V.Var x,Atom (V.Val atom) ->
+             | V.Var (x, _),Atom (V.Val atom) ->
                 add_sol x atom sol,[]
              | V.Val c1,Atom (V.Val c2) ->
                 if V.Cst.eq c1 c2 then sol,[]

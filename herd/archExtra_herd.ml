@@ -738,7 +738,7 @@ module Make(C:Config) (I:I) : S with module I = I
                (fun loc ->
                  match look loc|> demote  with
                  | I.V.Val c -> c
-                 | I.V.Var v -> I.V.freeze v)
+                 | I.V.Var (v, _) -> I.V.freeze v)
               locs in
           I.V.Val (Constant.ConcreteVector cs)
 

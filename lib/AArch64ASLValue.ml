@@ -32,5 +32,5 @@ end) : Value.AArch64ASL = struct
     SymbConstant.Make
       (ASLScalar) (AArch64PteVal) (AArch64AddrReg) (AArch64Instr.Std)
   module AArch64Op = AArch64Op.Make(ASLScalar)(ASLOp)
-  include SymbValue.Make (AArch64Cst) (AArch64Op)
+  include SymbValue.Make (AArch64Cst) (SymData.No) (AArch64Op)
 end

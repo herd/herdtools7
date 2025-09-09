@@ -42,12 +42,6 @@ module Instr =
       and to_exec _ = Warn.fatal "ASLValue.to_exec"
     end)
 
-module ASLScalar = struct
-  include ASLScalar
-  let printable c = c
-end
-
 module ASLConstant =
-  SymbConstant.Make
-    (ASLScalar)(AArch64PteVal)(AArch64AddrReg)(Instr)
-module V = SymbValue.Make(ASLConstant)(ASLOp)
+  SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(Instr)
+module V = SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)

@@ -17,5 +17,5 @@
 
 module Make(Instr:Instr.S) = struct
   module Int128Cst = Int128Constant.Make(Instr)
-  include SymbValue.Make(Int128Cst)(ArchOp.No(Int128Cst))
+  include SymbValue.Make(Int128Cst)(SymData.No)(ArchOp.No(Int128Cst))
 end

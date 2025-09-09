@@ -1034,7 +1034,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let nv = V.fresh_var () in
           let nid =
             match nv with
-            | V.Var n -> n
+            | V.Var (n, _) -> n
             | _ -> assert false in
           let eq =
             let op = AArch64Op.Extra1 (ASLOp.ToBV sz) in
@@ -1043,11 +1043,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
 
     let aarch64_to_asl = function
-      | V.Var v -> ASLS.A.V.Var v
+      | V.Var (v, _) -> ASLS.A.V.Var (v, ASLS.A.V.SData.default)
       | V.Val cst -> ASLS.A.V.Val (tr_cst Misc.identity cst)
 
     let asl_to_aarch64 = function
-      | ASLS.A.V.Var v -> V.Var v
+      | ASLS.A.V.Var (v, _) -> V.Var (v, V.SData.default)
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
