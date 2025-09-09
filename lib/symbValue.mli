@@ -20,6 +20,7 @@ val reset_gensym : unit -> unit
 
 module Make : functor
   (Cst : Constant.S)
+  (SData: SymData.S)
   (ArchOp :
      ArchOp.S
    with type scalar = Cst.Scalar.t
@@ -30,6 +31,7 @@ module Make : functor
   Value.S
     with module Cst = Cst
      and module Cst.Scalar = Cst.Scalar
+     and module SData = SData
      and type arch_extra_op1 = ArchOp.extra_op1
      and type 'a arch_constr_op1 = 'a ArchOp.constr_op1
      and type arch_extra_op = ArchOp.extra_op

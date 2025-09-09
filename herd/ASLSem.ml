@@ -177,7 +177,7 @@ module Make (C : Config) = struct
 
     let as_constant = function
       | V.Val c -> c
-      | V.Var id -> Constant.Frozen id
+      | V.Var (id, _) -> Constant.Frozen id
 
     let v_unknown_of_type ~eval_expr_sef:(_: Asllib.AST.expr -> V.v M.t) _t =
       return (V.fresh_var ())
@@ -415,10 +415,10 @@ module Make (C : Config) = struct
       return (V.Val (Constant.ConcreteRecord record))
 
     let create_exception = create_record
-    let freeze = function V.Val c -> V.Val c | V.Var i -> V.Val (V.freeze i)
+    let freeze = function V.Val c -> V.Val c | V.Var (i, _) -> V.Val (V.freeze i)
 
     let unfreeze = function
-      | V.Val (Constant.Frozen i) -> return (V.Var i)
+      | V.Val (Constant.Frozen i) -> return (V.Var (i, V.SData.default))
       | v -> return v
 
     let get_index i v = M.op1 (Op.ArchOp1 (ASLOp.GetIndex i)) v >>= unfreeze
