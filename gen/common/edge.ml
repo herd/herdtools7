@@ -78,13 +78,10 @@ module type S = sig
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_mixed : (atom option -> 'a -> 'a) -> 'a -> 'a
-  val fold_atomo_list : atom list -> (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_atomo_list : atom option list -> (atom option -> 'a -> 'a) -> 'a -> 'a
 
   val fold_edges : (edge -> 'a -> 'a) -> 'a -> 'a
   val iter_edges : (edge -> unit) -> unit
-
-
-  val fold_pp_edges : (string -> 'a -> 'a) -> 'a -> 'a
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
@@ -94,8 +91,8 @@ module type S = sig
   val compare_atomo : atom option -> atom option -> int
   val compare : edge -> edge -> int
 
-  val parse_atom : string -> atom
-  val parse_atoms : string list -> atom list
+  val parse_atom : string -> atom option
+  val parse_atoms : string list -> atom option list
 
   val parse_fence : string -> fence
   val parse_edge : string -> edge
@@ -265,7 +262,7 @@ and type rmw = F.rmw = struct
 
   let plain_edge e = { a1=None; a2=None; edge=e; }
 
-  let pp_arch = function
+  let pp_atom_option = function
     | None -> F.pp_plain
     | Some a -> F.pp_atom a
 
@@ -273,27 +270,9 @@ and type rmw = F.rmw = struct
   | Id -> pp_a a1
   | _ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
 
-  let pp_archs e a1 a2 = match a1, a2 with
-  | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_arch e a1 a2
-
-  let pp_a = function
-    | None -> Code.plain
-    | Some a -> F.pp_atom a
-
-  let pp_atom_option = pp_a
-
   let pp_aa e a1 a2 = match a1, a2 with
-  | None,None when not (is_id e) -> ""
-  | _,_ ->  pp_one_or_two pp_a e a1 a2
-
-  let pp_a_bis = function
-    | None -> "P"
-    | Some a -> F.pp_atom a
-
-  let pp_aa_bis e a1 a2 = match a1,a2 with
   | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_a_bis e a1 a2
+  | _,_ -> pp_one_or_two pp_atom_option e a1 a2
 
   let pp_a_ter = function
     | None -> F.pp_plain
@@ -305,15 +284,6 @@ and type rmw = F.rmw = struct
   | None,None  when not (is_id e) -> ""
   | _,_ -> pp_one_or_two pp_a_ter e a1 a2
 
-  let pp_a_qua = function
-    | None -> "P"
-    | Some a as ao ->
-        if ao = F.pp_as_a then "A"
-        else F.pp_atom a
-
-  let pp_aa_qua e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
   let do_pp_tedge compat = function
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
@@ -342,27 +312,22 @@ and type rmw = F.rmw = struct
   let debug_edge e =
     sprintf
       "{edge=%s, a1=%s, a2=%s}"
-      (do_pp_tedge false e.edge) (pp_a e.a1) (pp_a e.a2)
+      (do_pp_tedge false e.edge) (pp_atom_option e.a1) (pp_atom_option e.a2)
 
-  let do_pp_edge compat pp_aa e =
-    (match e.edge with Id -> "" | _ -> do_pp_tedge compat e.edge) ^
-    pp_aa e.edge e.a1 e.a2
-
-  let pp_edge e = do_pp_edge false pp_archs e
+  let do_pp_edge compat pp_atom_functor e =
+    let annotation = pp_atom_functor e.edge e.a1 e.a2 in
+    let edge = match e.edge with
+    | Id -> ""
+    | _ -> do_pp_tedge compat e.edge in
+    edge ^ annotation
 
   let pp_edge_with_xx compat e = do_pp_edge compat pp_aa e
 
-  let pp_edge_with_p compat e = do_pp_edge compat pp_aa_bis e
-
   let pp_edge_with_a compat e = do_pp_edge compat pp_aa_ter e
 
-  let pp_edge_with_pa compat e = do_pp_edge compat pp_aa_qua e
+  let pp_edge e = pp_edge_with_xx false e
 
-  let compare_atomo a1 a2 = match a1,a2 with
-  | None,None -> 0
-  | None,Some _ -> -1
-  | Some _,None -> 1
-  | Some a1,Some a2 -> F.compare_atom a1 a2
+  let compare_atomo = Option.compare F.compare_atom
 
   let compare e1 e2 = match compare_atomo e1.a1 e2.a1 with
   | 0 ->
@@ -454,8 +419,7 @@ let fold_tedges f r =
 
   let fold_atomo f k = f None (F.fold_atom (fun a k -> f  (Some a) k) k)
   let fold_mixed f k = F.fold_mixed (fun a k -> f  (Some a) k) k
-  let fold_atomo_list aos f k =
-    List.fold_right (fun a k -> f (Some a) k) aos k
+  let fold_atomo_list aos f k = List.fold_right (fun a k -> f a k) aos k
 
   let overlap_atoms a1 a2 =
     match a1,a2 with
@@ -559,19 +523,19 @@ let fold_tedges f r =
 (* Atom lexing *)
 (***************)
 
-  let iter_atom = Misc.fold_to_iter F.fold_atom
+  let iter_atom = Misc.fold_to_iter fold_atomo
 
   let ta = Hashtbl.create  37
 
-  let add_lxm lxm a =
+  let add_lxm_atom lxm a =
     if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
     try
       let old = Hashtbl.find ta lxm in
-      assert (F.compare_atom old a = 0) ;
+      assert (compare_atomo old a = 0) ;
     with Not_found ->
-      if not (F.is_ifetch (Some a)) then Hashtbl.add ta lxm a
+      if not (F.is_ifetch a) then Hashtbl.add ta lxm a
 
-  let () = iter_atom (fun a -> add_lxm (pp_atom a) a)
+  let () = iter_atom (fun a -> add_lxm_atom (pp_atom_option a) a)
 
   let parse_atom s =
     try Hashtbl.find ta s
@@ -598,7 +562,7 @@ let fold_tedges f r =
 
   let t = Hashtbl.create 40000
 
-  let add_lxm lxm e =
+  let add_lxm_edge lxm e =
     if dbg > 1 then eprintf "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
@@ -615,38 +579,24 @@ let fold_tedges f r =
   let iter_ie = Misc.fold_to_iter fold_ie
 
   let four_times_iter_edges compat iter_edges =
-    iter_edges  (fun e -> add_lxm (pp_edge_with_xx compat e) e) ;
-    iter_edges
-      (fun e -> match e.a1,e.a2 with
-      | (None,Some _)
-      | (Some _,None) ->
-          add_lxm (pp_edge_with_p compat e) e
-      | _,_ -> ()) ;
-    iter_edges
-      (fun e -> match e.a1,e.a2 with
-      | (_,(Some _ as a)) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a compat e) e
-      | ((Some _ as a),_) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a compat e) e
-      | _,_ -> ()) ;
+    iter_edges  (fun e -> add_lxm_edge (pp_edge_with_xx compat e) e) ;
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,(Some _ as a))
       | ((Some _ as a),None) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_pa compat e) e
+          add_lxm_edge (pp_edge_with_a compat e) e
       | _,_ -> ())
-
 
   let () =
    four_times_iter_edges false iter_edges;
    fold_sd_extr_extr
       (fun sd e1 e2 () ->
-        add_lxm
+        add_lxm_edge
           (pp_strong sd e1 e2) (plain_edge (Fenced (F.strong,sd,e1,e2)))) () ;
     let fill_opt tag dpo sd e = match dpo with
     | None -> ()
     | Some dp ->
-        add_lxm
+        add_lxm_edge
           (pp_dp_default tag sd e)
           (plain_edge (Dp (dp,sd,e))) in
     fold_sd
@@ -657,25 +607,24 @@ let fold_tedges f r =
         fill_opt "Dp" F.ddw_default sd (Dir W) ;
         fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
         ()) () ;
-    if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
-    if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
+    if not (Hashtbl.mem t "R") then add_lxm_edge "R" (plain_edge (Node R)) ;
+    if not (Hashtbl.mem t "W") then add_lxm_edge "W" (plain_edge (Node W)) ;
 (*Co aka Ws and LxSx aka Rmw*)
    four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
 (* Backward compatibility *)
     if do_self && F.instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
     ()
-
 
   let fold_pp_edges f =
     Hashtbl.fold
       (fun s e k ->
-        if e.a1=None && e.a2=None then
+        if e.a1=None && e.a2=None && e.edge <> Id then
           f s k
         else k)
       t
@@ -1156,9 +1105,8 @@ let fold_tedges f r =
           eprintf "\n%!"
       | Annotations ->
           let es =
-            F.fold_atom
-              (fun a k ->
-                let ao = Some a in
+            fold_atomo
+              (fun ao k ->
                 if F.is_ifetch ao then k
                 else { edge=Id; a1=ao; a2=ao;}::k)
               [] in
