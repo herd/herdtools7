@@ -49,6 +49,7 @@ type args = {
   use_conflicting_side_effects_extension : bool;
   override_mode : override_mode;
   no_primitives : bool;
+  no_stdlib : bool;
   control_flow_analysis : bool;
   allow_empty_structured_type_declarations : bool;
   allow_function_like_statements : bool;
@@ -79,6 +80,7 @@ let parse_args () =
   let override_mode = ref Permissive in
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
+  let no_stdlib = ref false in
   let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
   let control_flow_analysis = ref true in
@@ -189,6 +191,9 @@ let parse_args () =
       ( "--no-primitives",
         Arg.Set no_primitives,
         " Do not use internal definitions for standard library subprograms." );
+      ( "--no-stdlib",
+        Arg.Set no_stdlib,
+        " Do not use ASL's standard library. Implies `--no-primitives`." );
       ( "--no-control-flow-analysis",
         Arg.Clear control_flow_analysis,
         " Do not use control-flow analysis to check that subprograms \
@@ -241,7 +246,8 @@ let parse_args () =
       use_conflicting_side_effects_extension =
         !use_conflincting_side_effects_extension;
       override_mode = !override_mode;
-      no_primitives = !no_primitives;
+      no_primitives = !no_primitives || !no_stdlib;
+      no_stdlib = !no_stdlib;
       control_flow_analysis = !control_flow_analysis;
       allow_empty_structured_type_declarations =
         !allow_empty_structured_type_declarations;
@@ -345,7 +351,7 @@ let () =
 
   let ast =
     let open Builder in
-    let added_stdlib = with_stdlib ast in
+    let added_stdlib = if args.no_stdlib then ast else with_stdlib ast in
     if args.no_primitives then added_stdlib
     else with_primitives Native.DeterministicBackend.primitives added_stdlib
   in
