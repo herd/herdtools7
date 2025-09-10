@@ -295,6 +295,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         (new_env, new_name) |: TypingRule.AddNewFunc
   (* End *)
 
+  (* Begin CallTypeMatches *)
   let call_type_matches func call_type =
     func.subprogram_type = call_type
     ||
@@ -306,6 +307,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     | V0, ST_EmptyGetter, (ST_Getter | ST_Function) -> true
     | V0, ST_EmptySetter, ST_Setter -> true
     | _ -> false
+  (* End *)
 
   (* Begin SubprogramForName *)
   let subprogram_for_name ~loc env version name caller_arg_types call_type =
