@@ -3120,80 +3120,51 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \section{Throw Statements\label{sec:ThrowStatements}}
 \subsection{Syntax}
 \begin{flalign*}
-\Nstmt \derives \ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Tthrow \parsesep \Tsemicolon &
+\Nstmt \derives \ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\stmt \derives\ & \SThrow(\expr?) &
+\stmt \derives\ & \SThrow(\expr) &
 \end{flalign*}
-The option is used to represent an implicit throw: $\None$ represents a usage of \verb|throw;|
 
 \ASTRuleDef{SThrow}
 \begin{mathpar}
-\inferrule[throw\_some]{}{
+\inferrule{}{
   \buildstmt(\overname{\Nstmt(\Tthrow, \Nexpr, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SThrow(\langle\astof{\vexpr}\rangle)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[throw\_none]{}{
-  \buildstmt(\overname{\Nstmt(\Tthrow, \Tsemicolon)}{\vparsednode})
-  \astarrow
-  \overname{\SThrow(\None)}{\vastnode}
+  \overname{\SThrow(\astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
 \TypingRuleDef{SThrow}
-\listingref{semantics-sthrownone} and \listingref{semantics-sthrowsometyped}
-show examples of well-typed \throwstatementsterm.
+\listingref{semantics-sthrowsometyped}
+shows examples of well-typed \throwstatementsterm.
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is a throw statement with no expression, that is, $\SThrow(\None)$;
-    \item $\news$ is $\vs$;
-    \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\langle\ve\rangle)$;
-    \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
-    \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
-    \item view $\vte$ as the named type for $\exnname$;
-    \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
-          $\SThrow(\langle (\vep, \vte) \rangle)$;
-    \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
-  \end{itemize}
+  \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\ve)$;
+  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
+  \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
+  \item view $\vte$ as the named type for $\exnname$;
+  \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
+        $\SThrow(\vep, \vte)$;
+  \item $\newtenv$ is $\tenv$;
+  \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[none]{}{
-  \annotatestmt(\tenv, \overname{\SThrow(\None)}{\vs}) \typearrow
-  (\overname{\SThrow(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}}{\vses})
-}
-\end{mathpar}
-\identr{BRCJ}
-
-\begin{mathpar}
-\inferrule[some]{
+\inferrule{
   \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
   \vte \eqname \TNamed(\exnname)\\
   \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
 }{
-  \annotatestmt(\tenv, \overname{\SThrow(\langle\ve\rangle)}{\vs}) \typearrow
-  (\overname{\SThrow(\langle (\vep, \vte) \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \overname{\SThrow(\ve)}{\vs}) \typearrow
+  (\overname{\SThrow(\vep, \vte)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \identr{NXRC}
@@ -3201,62 +3172,35 @@ show examples of well-typed \throwstatementsterm.
 
 \subsection{Semantics}
 \SemanticsRuleDef{SThrow}
-\ExampleDef{Rethrowing an Exception}
-The specification in \listingref{semantics-sthrownone}
-first catches the exception raised by \\
-\verb|throw MyExceptionType{a=42}|
-and then raises it in the catch clause via \verb|throw;|,
-catching it again in the outer \texttt{try-catch} statement.
-\ASLListing{Rethrowing an exception}{semantics-sthrownone}{\semanticstests/SemanticsRule.SThrowNone.asl}
-
 \ExampleDef{Throwing a Typed Exception}
 The specification in \listingref{semantics-sthrowsometyped}
 terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-  \item $\vs$ is a \texttt{throw} statement that does not provide an expression, $\SThrow(\None)$;
-  \item $\newenv$ is $\env$;
-  \item $\vex$ is $\None$;
-  \item $\newg$ is the empty graph;
-  \item an exception is thrown with $\newenv$.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{throw} statement that provides an expression and a type, \\
-          $\SThrow(\langle(\ve, \vt)\rangle)$;
-    \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-    \item $\name$ is a fresh identifier (which conceptually holds the exception value);
-    \item $\vgtwo$ is a Write Effect to $\name$;
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
-    \item $\vex$ consists of the exception value $\vv$, the name of the variable holding it ---
-          $\name$, and the type annotation for the exception --- $\vt$;
-    \item the result of the entire evaluation is $\Throwing((\vex, \newg), \env)$.
-  \end{itemize}
+  \item $\vs$ is a \texttt{throw} statement, \\
+        $\SThrow(\ve, \vt)$;
+  \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+  \item $\name$ is a fresh identifier (which conceptually holds the exception value);
+  \item $\vgtwo$ is a Write Effect to $\name$;
+  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
+  \item $\vex$ consists of the exception value $\vv$ and the name of the variable holding it ---
+        $\name$;
+  \item the result of the entire evaluation is $\Throwing(\vex, \vt, \newg, \env)$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[none]{}
-{
-  \evalstmt{\env, \SThrow(\None)} \evalarrow \Throwing((\None, \emptygraph), \env)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{
+\inferrule{
   \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\
   \name\in\Identifiers \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
-  \vex \eqdef \langle(\valuereadfrom(\vv, \name),\vt)\rangle
+  \vex \eqdef \valuereadfrom(\vv, \name)
 }{
-  \evalstmt{\env, \SThrow(\langle(\ve, \vt)\rangle)} \evalarrow
-  \Throwing((\vex, \newg), \newenv)
+  \evalstmt{\env, \SThrow(\ve, \vt)} \evalarrow
+  \Throwing(\vex, \vt, \newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}

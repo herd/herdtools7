@@ -2066,10 +2066,9 @@ and the identifiers used by them, appearing in comments to their right.
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{pass\_return\_none\_throw\_none}
+  \item \AllApplyCase{pass\_return\_none}
   \begin{itemize}
-    \item $\vs$ is either a pass statement $\SPass$, a return-nothing statement $\SReturn(\None)$,
-          or a throw-nothing statement ($\SThrow(\None)$);
+    \item $\vs$ is either a pass statement $\SPass$ or a return-nothing statement $\SReturn(\None)$;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
@@ -2134,9 +2133,9 @@ and the identifiers used by them, appearing in comments to their right.
     \item define $\ids$ as the union of applying $\useldi$ to $\ldi$, $\usety$ to $\vt$, and $\useexpr$ to $\ve$.
   \end{itemize}
 
-  \item \AllApplyCase{s\_throw\_some}
+  \item \AllApplyCase{s\_throw}
   \begin{itemize}
-    \item $\vs$ is a \throwstatementsterm{} with an \optional{} expression $\ve$;
+    \item $\vs$ is a \throwstatementsterm{} with an expression $\ve$;
     \item \Proseeqdef{$\ids$}{the result of applying $\useexpr$ to $\ve$}.
   \end{itemize}
 
@@ -2162,8 +2161,8 @@ and the identifiers used by them, appearing in comments to their right.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[pass\_return\_none\_throw\_none]{
-  \vs = \SPass \lor \vs = \SReturn(\None) \lor \vs = \SThrow(\None)
+\inferrule[pass\_return\_none]{
+  \vs = \SPass \lor \vs = \SReturn(\None)
 }{
   \usestmt(\vs) \typearrow \overname{\emptyset}{\ids}
 }
@@ -2234,8 +2233,8 @@ and the identifiers used by them, appearing in comments to their right.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[s\_throw\_some]{}{
-  \usestmt(\overname{\SThrow(\langle\ve\rangle)}\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
+\inferrule[s\_throw]{}{
+  \usestmt(\overname{\SThrow(\ve)}\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 
@@ -2353,7 +2352,7 @@ results in a \dynamicerrorterm.
     \item \AllApplyCase{throwing}
     \begin{itemize}
       \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
-            in $\env$ yields $\Throwing(\vvopt, \Ignore)$, which is an uncaught exception\ProseOrDynErrorDiverging;
+            in $\env$ yields $\Throwing(\Ignore, \Ignore, \Ignore, \Ignore)$, which is an uncaught exception\ProseOrDynErrorDiverging;
       \item the result of the entire evaluation is an error indicating that an exception was not caught.
     \end{itemize}
   \end{itemize}
@@ -2373,7 +2372,7 @@ results in a \dynamicerrorterm.
 \begin{mathpar}
 \inferrule[throwing]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
-  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\vvopt, \Ignore) \OrDynErrorDiverging
+  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }

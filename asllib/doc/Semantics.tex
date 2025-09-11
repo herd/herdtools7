@@ -358,7 +358,7 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   \hypertarget{def-throwing}{}
   \item[Exceptions.] Semantic configurations in
   \[
-    \Throwing(\langle \valuereadfrom(\vals,\Identifiers) \times \ty\rangle \times \XGraphs, \envs)
+    \Throwing(\valuereadfrom(\vals,\Identifiers) \times \ty \times \XGraphs \times \envs)
   \]
   represent thrown exceptions.
   \hypertarget{def-valuereadfrom}{}
@@ -419,7 +419,7 @@ We define the following shorthand notations for types of output semantic configu
                       &            & \ResultSlices(((\vals \times \vals)^* \times \XGraphs), \envs) &  \cup\\
                       &            & \ResultExprList((\vals^* \times \XGraphs), \envs)  & \cup \\
                       &            & \ResultExprListM((\vals\times\XGraphs)^*, \envs) & \\
-    \TThrowing        & \triangleq & \Throwing(\langle\vals \times \ty\rangle \times \XGraphs, \envs) &\\
+    \TThrowing        & \triangleq & \Throwing(\vals \times \ty \times \XGraphs \times \envs) &\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
     \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs) &\\
     \TDynError        & \triangleq & \DynamicError(\Strings) &\\
@@ -441,7 +441,7 @@ We introduce the following shorthand notations for semantic configurations where
 appearing are \hyperlink{def-freshvariables}{fresh}:
 \begin{itemize}
 \hypertarget{def-throwingconfig}{}
-\item $\ThrowingConfig \triangleq \Throwing((\vv, \vg), \newenv)$.
+\item $\ThrowingConfig \triangleq \Throwing(\vv, \vt, \vg, \newenv)$.
       \hypertarget{def-errorconfig}{}
 \item $\DynErrorConfig \triangleq \DynamicError(\vs)$.
       \hypertarget{def-returningconfig}{}
@@ -470,7 +470,7 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \vg & \env \\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \vg & \env \\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
-  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \vg & \env\\
+  \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \vg & \env\\
   \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
   \DynamicError(\vs) & \text{undefined} & \text{undefined}\\
@@ -492,7 +492,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vgp), \env)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
-  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vgp), \env)\\
+  \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vgp, \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
   \DynamicError(\vs) & \text{undefined}\\
@@ -514,7 +514,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
-  \Throwing((\valuereadfrom(\vx,\vv),\vg), \env) & \Throwing((\valuereadfrom(\vx,\vv),\vg), \envp)\\
+  \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
   \DynamicError(\vs) & \text{undefined}\\

@@ -1939,7 +1939,7 @@ while calling \\
     \item \AllApplyCase{throwing}
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with arguments $\vvargs$ and parameters $\vvparams$ in
-            $\denvtwo'$ is $\Throwing(\vv, \envthrow)$\ProseOrDynErrorDiverging;
+            $\denvtwo'$ is $\Throwing(\vv, \vt, \vg, \envthrow)$\ProseOrDynErrorDiverging;
       \item view $\envthrow$ as the environment consisting of the \staticenvironmentterm{} $\tenv$,
             and the dynamic environment whose global component is $\vglobal$;
       \item applying the helper relation $\readvaluefrom$ to $\vms$ yields $\vmstwo$;
@@ -1978,12 +1978,12 @@ while calling \\
   \incrstacksize(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultSubprogram(\vv, \envthrow) \OrDynErrorDiverging\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrstacksize(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
-  \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \newenv)
+  \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}

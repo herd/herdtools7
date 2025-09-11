@@ -786,10 +786,10 @@ yielding the statement $\news$.
 
 \begin{mathpar}
 \inferrule[s\_throw]{
-  \mapopt{\renamelocalsexpr}(\veopt) \astarrow \veoptp
+  \renamelocalsexpr(\ve) \astarrow \vep
 }{
-  \renamelocalsstmt(\overname{\SThrow(\veopt)}{\vs}) \astarrow
-  \overname{\SThrow(\veoptp)}{\news}
+  \renamelocalsstmt(\overname{\SThrow(\ve)}{\vs}) \astarrow
+  \overname{\SThrow(\vep)}{\news}
 }
 \end{mathpar}
 
