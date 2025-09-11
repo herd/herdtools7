@@ -1,0 +1,37 @@
+name: Test build with mininal versions
+
+on:
+  push:
+  workflow_dispatch:
+  # Schedule every Tuesday, early in the morning
+  schedule:
+      - cron: '0 2 * * 2'
+
+# Copy-pasted from https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        ocaml-compiler:
+          - "4.08.1"
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml 4.08
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 4.08.1
+      - run: |
+          opam install . -v -v --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
+          opam exec -- make build DUNE_PROFILE=dev
+          opam exec -- make test DUNE_PROFILE=dev
+          opam exec -- make install
