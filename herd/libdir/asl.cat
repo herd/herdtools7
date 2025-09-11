@@ -79,13 +79,16 @@ let restrict-finals s =
 
 let AArch64_Finals =  restrict-finals(AArch64&Wreg)
 
-(* Compute AArch64 ADDR *)
-let extended_to_addr = (asl_deps; [ADDR]; asl_iico_data) & aarch64
-let to_addr = extended_to_addr \ (aarch64_iico_data; extended_to_addr)
+(* Compute AArch64 ADDR and DATA event sets *)
 
-let AArch64_ADDR = AArch64 & domain (to_addr)
-let to_memwrite = aarch64_iico_data;aarch64_iico_ctrl?;[W]
-let AArch64_DATA = ((AArch64\M) & domain (to_memwrite)) \ AArch64_ADDR
+let AArch64Reg = AArch64\(M|B)
+
+let to_addr = [AArch64Reg]; asl_deps; [ADDR]; asl_iico_data; [AArch64]
+let AArch64_ADDR = domain(to_addr)
+
+let to_memwrite =
+  [AArch64Reg \ AArch64_ADDR]; aarch64_iico_data; aarch64_iico_ctrl?; [W]
+let AArch64_DATA = domain(to_memwrite)
 
 (* Branching events to PC writes are of the branch conditional kind *)
 let AArch64_BCC = domain ([B]; aarch64_iico_ctrl; [WPC])
