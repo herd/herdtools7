@@ -527,6 +527,11 @@ Required tests:
   No files supplied! Run `aslref --help` for information on usage.
   [1]
 
+  $ aslref no-main.asl
+  ASL Dynamic error:
+    no entrypoint supplied. Have you defined `func main() => integer`?
+  [1]
+
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:

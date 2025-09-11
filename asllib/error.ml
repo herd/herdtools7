@@ -107,6 +107,7 @@ type error_desc =
   | PrecisionLostDefining
   | UnexpectedCollection
   | BadPrimitiveArgument of identifier * string
+  | NoEntryPoint
 
 type error = error_desc annotated
 
@@ -217,6 +218,7 @@ let error_label = function
   | PrecisionLostDefining -> "PrecisionLostDefining"
   | UnexpectedCollection -> "UnexpectedCollection"
   | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
+  | NoEntryPoint -> "NoEntryPoint"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -581,6 +583,9 @@ module PPrint = struct
           (pp_print_list pp_pos) impdefs
     | BadPrimitiveArgument (name, reason) ->
         pp_err dynamic "%s (primitive) expected an argument %s" name reason
+    | NoEntryPoint ->
+        pp_err dynamic
+          "no entrypoint supplied. Have you defined `func main() => integer`?"
 
   let pp_warning_desc f w =
     match w.desc with
