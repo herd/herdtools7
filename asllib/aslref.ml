@@ -132,6 +132,9 @@ let parse_args () =
       ( "--format-csv",
         Arg.Unit (fun () -> output_format := Error.CSV),
         " Output the errors in a CSV format." );
+      ( "--gnu-errors",
+        Arg.Unit (fun () -> output_format := Error.GNU),
+        " Output the errors using the GNU convention." );
       ( "--opn",
         Arg.Set_string opn,
         "OPN_FILE Parse the following opn file as main." );
@@ -276,15 +279,6 @@ let parse_args () =
   in
   args
 
-let or_exit f =
-  if Printexc.backtrace_status () then f ()
-  else
-    match Error.intercept f () with
-    | Ok res -> res
-    | Error e ->
-        Format.eprintf "%a@." Error.pp_error e;
-        exit 1
-
 let () =
   let args = parse_args () in
 
@@ -316,6 +310,19 @@ let () =
       allow_empty_structured_type_declarations;
       allow_function_like_statements;
     }
+  in
+
+  let or_exit f =
+    if Printexc.backtrace_status () then f ()
+    else
+      match Error.intercept f () with
+      | Ok res -> res
+      | Error e ->
+          let module EP = Error.ErrorPrinter (struct
+            let output_format = args.output_format
+          end) in
+          EP.eprintln e;
+          exit 1
   in
 
   let extra_main =
@@ -364,7 +371,7 @@ let () =
         Printf.eprintf
           {|"File","Start line","Start col","End line","End col","Exception label","Exception"
 |}
-    | Error.HumanReadable -> ()
+    | Error.HumanReadable | Error.GNU -> ()
   in
 
   let typed_ast, static_env =

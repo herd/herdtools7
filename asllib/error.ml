@@ -670,7 +670,15 @@ let pp_csv pp_desc label =
 let pp_error_csv f e = pp_csv pp_error_desc error_label f e
 let pp_warning_csv f w = pp_csv pp_warning_desc warning_label f w
 
-type output_format = HumanReadable | CSV
+let pp_gnu pp_desc =
+  let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
+  fun f pos ->
+    Printf.fprintf f "aslref: %s:%d:%d: %s" pos.pos_start.pos_fname
+      pos.pos_start.pos_lnum
+      (pos_in_line pos.pos_start)
+      (desc_to_string_inf pp_desc pos)
+
+type output_format = HumanReadable | CSV | GNU
 
 module type ERROR_PRINTER_CONFIG = sig
   val output_format : output_format
@@ -681,11 +689,13 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_error e
     | CSV -> Printf.eprintf "%a\n" pp_error_csv e
+    | GNU -> Printf.eprintf "%a\n" (pp_gnu pp_error_desc) e
 
   let warn w =
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
     | CSV -> Printf.eprintf "%a\n" pp_warning_csv w
+    | GNU -> Printf.eprintf "%a\n" (pp_gnu pp_warning_desc) w
 
   let warn_from ~loc w = ASTUtils.add_pos_from loc w |> warn
 end
