@@ -1549,18 +1549,24 @@ module Make (B : Backend.S) (C : Config) = struct
            (Dynamic, "tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
 
+  let main_name = "main"
+
   (* Begin EvalSpec *)
   let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
       B.value m =
     let*| env = build_genv env eval_expr static_env ast in
-    let env = IEnv.incr_stack_size ~pos:dummy_annotated "main" env in
+    let () =
+      if Option.is_none (IMap.find_opt main_name env.static.subprograms) then
+        Error.(fatal_unknown_pos NoEntryPoint)
+    in
+    let env = IEnv.incr_stack_size ~pos:dummy_annotated main_name env in
     let*| res =
-      eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
+      eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ ->
-        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, "main")))
+        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, main_name)))
     | Throwing ((v, _, _), ty, _genv) ->
         let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
         Error.fatal_unknown_pos (Error.UncaughtException msg))

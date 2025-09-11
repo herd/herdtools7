@@ -1,1 +1,2 @@
-Warning: ASL Dynamic error: Undefined identifier: 'main'
+Warning: ASL Dynamic error: no entrypoint supplied. Have you defined `func main() =>
+  integer`, or did you mean to pass `--no-exec`?
