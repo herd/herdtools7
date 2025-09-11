@@ -271,6 +271,15 @@ let parse_args () =
   in
 
   let () =
+    if ASTUtils.list_is_empty args.files && Option.is_none args.opn then
+      let () =
+        Printf.eprintf
+          "No files supplied! Run `aslref --help` for information on usage."
+      in
+      exit 1
+  in
+
+  let () =
     if !show_version then
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
