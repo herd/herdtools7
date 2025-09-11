@@ -225,7 +225,7 @@ The following table summarises all error codes.
 \item[$\UndefinedIdentifier$]
   \textit{Undefined identifier.}
   An identifier is missing a definition of the appropriate kind.
-  See \TypingRuleRef{SubprogramForName} for an example.
+  See \TypingRuleRef{SubprogramForSignature} for an example.
 
 \hypertarget{def-identifieralreadydeclared}{}
 \item[$\IdentifierAlreadyDeclared$]
@@ -363,7 +363,7 @@ The following table summarises all error codes.
   For example:
   \begin{itemize}
     \item The call does not match any defined subprograms \\
-          (\TypingRuleRef{SubprogramForName}).
+          (\TypingRuleRef{SubprogramForSignature}).
     \item An incorrect number of arguments or parameters was passed \\
       (\TypingRuleRef{AnnotateCallActualsTyped}).
     \item The call site expects a function or getter, but instead finds a procedure or setter, or \textit{vice versa} (\TypingRuleRef{AnnotateCallActualsTyped}).

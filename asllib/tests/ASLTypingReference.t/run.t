@@ -802,18 +802,18 @@ ASL Typing Tests / annotating types:
   ASL Type error: multiple recursive declarations: "other", "base".
   [1]
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
-  $ aslref --no-exec TypingRule.SubprogramForName.asl
+  $ aslref --no-exec TypingRule.SubprogramForSignature.asl
   $ aslref --no-exec TypingRule.InsertStdlibParam.asl
-  $ aslref TypingRule.SubprogramForName.asl
-  $ aslref TypingRule.SubprogramForName.bad.undefined.asl
-  File TypingRule.SubprogramForName.bad.undefined.asl, line 3,
+  $ aslref TypingRule.SubprogramForSignature.asl
+  $ aslref TypingRule.SubprogramForSignature.bad.undefined.asl
+  File TypingRule.SubprogramForSignature.bad.undefined.asl, line 3,
     characters 8 to 17:
       - = add_10(5);
           ^^^^^^^^^
   ASL Static error: Undefined identifier: 'add_10'
   [1]
-  $ aslref TypingRule.SubprogramForName.bad.no_candidates.asl
-  File TypingRule.SubprogramForName.bad.no_candidates.asl, line 8,
+  $ aslref TypingRule.SubprogramForSignature.bad.no_candidates.asl
+  File TypingRule.SubprogramForSignature.bad.no_candidates.asl, line 8,
     characters 8 to 19:
       - = add_10(5.0);
           ^^^^^^^^^^^

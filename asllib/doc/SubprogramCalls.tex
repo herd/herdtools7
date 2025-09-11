@@ -64,7 +64,7 @@ We also define helper functions via respective rules:
   \item \TypingRuleRef{SubstConstraint}
   \item \TypingRuleRef{CheckArgsTypeSat}
   \item \TypingRuleRef{AnnotateRetTy}
-  \item \TypingRuleRef{SubprogramForName}
+  \item \TypingRuleRef{SubprogramForSignature}
   \item \TypingRuleRef{FilterCallCandidates}
   \item \TypingRuleRef{CallTypeMatches}
   \item \TypingRuleRef{HasArgClash}
@@ -204,7 +204,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
         list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
   \item define $\vsesargs$ as the union of $\vsessargs$;
-  \item applying $\subprogramforname$ to match $\name$, $\argtypes$, and $\calltype$ in $\tenv$
+  \item applying $\subprogramforsignature$ to match $\name$, $\argtypes$, and $\calltype$ in $\tenv$
         yields $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
@@ -231,7 +231,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
   \vsesargs \eqdef \bigcup \vsessargs \\
   {
     \begin{array}{r}
-      \subprogramforname(\tenv, \name, \argtypes, \calltype) \typearrow \\
+      \subprogramforsignature(\tenv, \name, \argtypes, \calltype) \typearrow \\
       (\nameone, \funcsig, \vsescall) \OrTypeError
     \end{array}
   }\\
@@ -1263,12 +1263,12 @@ and functions can only be used in call expressions.
 }
 \end{mathpar}
 
-\TypingRuleDef{SubprogramForName}
-\hypertarget{def-subprogramforname}{}
+\TypingRuleDef{SubprogramForSignature}
+\hypertarget{def-subprogramforsignature}{}
 The function
 \[
   \begin{array}{rl}
-    \subprogramforname(
+    \subprogramforsignature(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
     \overname{\ty^*}{\callerargtypes} \aslsep
@@ -1306,20 +1306,20 @@ If the second case holds, the function returns a tuple which comprises:
 
 \ExampleDef{Matching a Subprogram to an Identifier}
 
-\listingref{SubprogramForName} shows an example where all subprogram calls
+\listingref{SubprogramForSignature} shows an example where all subprogram calls
 match subprogram declarations.
-\ASLListing{Successfully matching subprogram names to definitions}{SubprogramForName}{\typingtests/TypingRule.SubprogramForName.asl}
+\ASLListing{Successfully matching subprogram signatures to definitions}{SubprogramForSignature}{\typingtests/TypingRule.SubprogramForSignature.asl}
 
-\listingref{SubprogramForName-undefined} shows an example where
+\listingref{SubprogramForSignature-undefined} shows an example where
 the subprogram call \verb|add_10(5)| is illegal, since no subprogram named \verb|add_10|
 is declared.
-\ASLListing{Subprogram name undefined}{SubprogramForName-undefined}{\typingtests/TypingRule.SubprogramForName.bad.undefined.asl}
+\ASLListing{Subprogram signature undefined}{SubprogramForSignature-undefined}{\typingtests/TypingRule.SubprogramForSignature.bad.undefined.asl}
 
-\listingref{SubprogramForName} shows an example where
+\listingref{SubprogramForSignature} shows an example where
 the subprogram call \verb|add_10(5.0)| is illegal, since, although a subprogram named \verb|add_10|
 is declared, it does not match the required signature (the type of the first argument is
 the \integertypeterm{} rather than the \realtypeterm).
-\ASLListing{Subprogram name does not match signature}{SubprogramForName-no-candidates}{\typingtests/TypingRule.SubprogramForName.bad.no_candidates.asl}
+\ASLListing{Subprogram name does not match signature}{SubprogramForSignature-no-candidates}{\typingtests/TypingRule.SubprogramForSignature.bad.no_candidates.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1355,7 +1355,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \inferrule[undefined]{
   G^\tenv.\overloadedsubprograms(\name) = \bot
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
 
@@ -1368,7 +1368,7 @@ the \integertypeterm{} rather than the \realtypeterm).
     \end{array}
   }
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\BadCall}
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
 
@@ -1384,12 +1384,12 @@ the \integertypeterm{} rather than the \realtypeterm).
 }{
   {
     \begin{array}{r}
-  \subprogramforname(\tenv, \name, \callerargtypes, \calltype) \typearrow \\ (\namep, \callee, \vses)
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \\ (\namep, \callee, \vses)
     \end{array}
   }
 }
 \end{mathpar}
-\CodeSubsection{\SubprogramForNameBegin}{\SubprogramForNameEnd}{../Typing.ml}
+\CodeSubsection{\SubprogramForSignatureBegin}{\SubprogramForSignatureEnd}{../Typing.ml}
 
 \TypingRuleDef{FilterCallCandidates}
 \hypertarget{def-filtercandidates}{}
@@ -1412,12 +1412,12 @@ subprograms whose arguments clash and subprogram types match in $\candidates$.
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
 \ExampleDef{Filtering Subprograms Matching a Call}
-In \listingref{SubprogramForName}, filtering the
+In \listingref{SubprogramForSignature}, filtering the
 set of declared subprograms for the call expression \verb|add_10(5)| yields
 the (singleton list containing the) subprogram \\
 \verb|func add_10(x: integer) => integer|.
 In contrast, filtering the set of declared subprograms for the call expression
-\verb|add_10(5.0)| in \listingref{SubprogramForName-no-candidates},
+\verb|add_10(5.0)| in \listingref{SubprogramForSignature-no-candidates},
 yields an empty list.
 
 \ProseParagraph

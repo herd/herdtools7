@@ -309,8 +309,9 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
     | _ -> false
   (* End *)
 
-  (* Begin SubprogramForName *)
-  let subprogram_for_name ~loc env version name caller_arg_types call_type =
+  (* Begin SubprogramForSignature *)
+  let subprogram_for_signature ~loc env version name caller_arg_types call_type
+      =
     let () =
       if false then Format.eprintf "Trying to rename call to %S@." name
     in
@@ -340,13 +341,14 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         assert false
   (* End *)
 
-  let try_subprogram_for_name =
+  let try_subprogram_for_signature =
     match C.check with
-    | TypeCheckNoWarn | TypeCheck -> subprogram_for_name
+    | TypeCheckNoWarn | TypeCheck -> subprogram_for_signature
     | Warn | Silence -> (
         fun ~loc env version name caller_arg_types call_type ->
           try
-            subprogram_for_name ~loc env version name caller_arg_types call_type
+            subprogram_for_signature ~loc env version name caller_arg_types
+              call_type
           with Error.ASLException _ as error -> (
             try
               match IMap.find_opt name env.global.subprograms with
@@ -1647,7 +1649,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let arg_types, args, sess_args = list_split3 args in
     let ses_args = ses_non_conflicting_unions ~loc sess_args in
     let _, name, func_sig, ses_call =
-      Fn.try_subprogram_for_name ~loc env V1 name arg_types call_type
+      Fn.try_subprogram_for_signature ~loc env V1 name arg_types call_type
     in
     let ses = SES.union ses_args ses_call in
     (* Insert omitted parameter for standard library call *)
@@ -1732,7 +1734,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let caller_arg_types, args1, sess = list_split3 caller_args_typed in
     let ses1 = ses_non_conflicting_unions ~loc sess in
     let eqs1, name1, callee, ses2 =
-      Fn.try_subprogram_for_name ~loc env V0 name caller_arg_types call_type
+      Fn.try_subprogram_for_signature ~loc env V0 name caller_arg_types
+        call_type
     in
     let ses3 = SES.union ses1 ses2 in
     let () =
@@ -3269,7 +3272,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
     let _, _, callee, _ =
-      try Fn.try_subprogram_for_name ~loc env V0 x [] ST_EmptySetter
+      try Fn.try_subprogram_for_signature ~loc env V0 x [] ST_EmptySetter
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
@@ -3876,7 +3879,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         let _, _, func_sig', _ =
           try
-            Fn.subprogram_for_name ~loc env V0 func_sig.name arg_types ST_Getter
+            Fn.subprogram_for_signature ~loc env V0 func_sig.name arg_types
+              ST_Getter
           with Error.(ASLException { desc = NoCallCandidate _ }) -> fail ()
         in
         (* Check that func_sig' is a getter *)
