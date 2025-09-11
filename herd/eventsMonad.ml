@@ -1684,9 +1684,11 @@ Monad type:
         let v = mk_v () in
         make_one_monad v [] E.empty_event_structure
       with
+      (* Do not delay timeout! Time is out *)
+      | Misc.Timeout as exn -> raise exn
       | V.Undetermined ->
          (* Not ready yet add equation *)
-         delay_op mk_c
+          delay_op mk_c
       | exn ->
          if C.debug.Debug_herd.exc then raise exn
          (* Delay failure *)
