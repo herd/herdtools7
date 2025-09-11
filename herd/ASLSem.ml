@@ -625,8 +625,7 @@ module Make (Conf : Config) = struct
       do_read_memory ii addr_m datasize_m aneutral aexp avir
 
     let read_pte ii addr_m =
-      let* addr = addr_m in
-      do_read_memory ii (M.unitT addr)  (M.unitT (V.intToV 64))
+      do_read_memory ii addr_m  (M.unitT (V.intToV 64))
         aneutral (AArch64Explicit.(NExp Other)) apte
 
     let read_memory_gen ii datasize_m addr_m accdesc_m access_m =
