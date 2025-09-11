@@ -444,6 +444,11 @@ Required tests:
   $ aslref constrained-types-example.asl
   $ aslref division.asl
   $ aslref exceptions.asl
+  File exceptions.asl, line 73, characters 32 to 37:
+          when COUNTING => assert FALSE;
+                                  ^^^^^
+  ASL Dynamic error: Assertion failed: FALSE.
+  [1]
   $ aslref func1.asl
   $ aslref func2.asl
   $ aslref func3.asl

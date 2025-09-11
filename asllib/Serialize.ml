@@ -308,10 +308,8 @@ let rec pp_stmt =
         bprintf f "S_Decl (%a, %a, %a, %a)" pp_local_decl_keyboard ldk
           pp_local_decl_item ldi (pp_option pp_ty) ty_opt (pp_option pp_expr)
           e_opt
-    | S_Throw opt ->
-        bprintf f "S_Throw (%a)"
-          (pp_option (pp_pair pp_expr (pp_option pp_ty)))
-          opt
+    | S_Throw expr_ty ->
+        bprintf f "S_Throw (%a)" (pp_pair pp_expr (pp_option pp_ty)) expr_ty
     | S_Try (s, catchers, otherwise) ->
         bprintf f "S_Try (%a, %a, %a)" pp_stmt s (pp_list pp_catcher) catchers
           (pp_option pp_stmt) otherwise

@@ -15,7 +15,6 @@ type MyException of exception { msg: string };
 
 func procedure()
 begin
-    throw; // { }
     return; // { }
 end;
 
