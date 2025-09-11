@@ -566,6 +566,19 @@ faults-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-faults tests: OK"
 
+
+asl-faults-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-faults/shelf.py \
+		-variant asl,strict,d128 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-faults tests: OK"
+
 cata-test:: pick-test-mixed
 pick-test-mixed:
 	@ echo
@@ -617,6 +630,20 @@ vmsa-test:
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
 		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
+
+test-all:: cata-asl-vmsa-test
+cata-asl-vmsa-test: asl-pseudocode
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
+		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		-conf-path catalogue/aarch64-VMSA/cfgs/asl.cfg \
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
 
