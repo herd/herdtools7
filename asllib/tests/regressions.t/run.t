@@ -513,6 +513,11 @@ Required tests:
   ASL Grammar error: Obsolete syntax: Expression-level 'elsif'.
   [1]
 
+  $ aslref --gnu-errors gnu-errors.asl
+  aslref: gnu-errors.asl:1:0: ASL Warning: the recursive function fact has no recursive limit annotation.
+  aslref: :0:-1: ASL Dynamic error: Mismatch type: value 11 does not belong to type integer {0..9}.
+  [1]
+
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:
