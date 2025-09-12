@@ -254,6 +254,8 @@ module NativeBackend (C : Config) = struct
     let bv = as_bitvector bv in
     Bitvector.length bv |> v_of_int
 
+  let fail exn _a = raise exn
+
   module Primitives = struct
     let return_one v = return [ return v ]
 
