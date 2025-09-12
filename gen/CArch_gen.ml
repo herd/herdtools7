@@ -277,4 +277,6 @@ let compute_rmw rmw old co =
   | Add -> old+co in
   Code.value_of_int new_value
 
-include NoEdge
+let valid_rmw _ = true
+let init_rmw _ = Code.value_of_int 0
+let to_rmw_operand _ _ counter = counter
