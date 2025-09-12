@@ -736,8 +736,9 @@ let opn [@internal true] := body=stmt; EOF;
             args = [];
             parameters = [];
             body = SB_ASL body;
-            return_type = None;
-            subprogram_type = ST_Procedure;
+            return_type =
+              Some (T_Int UnConstrained |> add_dummy_annotation ~version);
+            subprogram_type = ST_Function;
             recurse_limit = None;
             qualifier = None;
             override = None;

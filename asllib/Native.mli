@@ -47,5 +47,6 @@ module DeterministicInterpreter (I : Instrumentation.SEMINSTR) :
 val interpret :
   ?instrumentation:bool ->
   StaticEnv.global ->
+  AST.identifier ->
   AST.t ->
   int * Instrumentation.semantics_rule list

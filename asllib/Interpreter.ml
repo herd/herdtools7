@@ -54,9 +54,13 @@ module type S = sig
     IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
 
   val run_typed_env :
-    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
+    (AST.identifier * B.value) list ->
+    StaticEnv.global ->
+    AST.identifier ->
+    AST.t ->
+    B.value B.m
 
-  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
+  val run_typed : StaticEnv.global -> AST.identifier -> AST.t -> B.value B.m
 end
 
 module type Config = sig
@@ -1549,16 +1553,10 @@ module Make (B : Backend.S) (C : Config) = struct
            (Dynamic, "tuple construction", List.length les, List.length monads)
     else multi_assign ver env les monads
 
-  let main_name = "main"
-
   (* Begin EvalSpec *)
-  let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
-      B.value m =
+  let run_typed_env env (static_env : StaticEnv.global) main_name (ast : AST.t)
+      : B.value m =
     let*| env = build_genv env eval_expr static_env ast in
-    let () =
-      if Option.is_none (IMap.find_opt main_name env.static.subprograms) then
-        Error.(fatal_unknown_pos NoEntryPoint)
-    in
     let env = IEnv.incr_stack_size ~pos:dummy_annotated main_name env in
     let*| res =
       eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
@@ -1572,6 +1570,6 @@ module Make (B : Backend.S) (C : Config) = struct
         Error.fatal_unknown_pos (Error.UncaughtException msg))
     |: SemanticsRule.Spec
 
-  let run_typed env ast = run_typed_env [] env ast
+  let run_typed env main_name ast = run_typed_env [] env main_name ast
   (* End *)
 end
