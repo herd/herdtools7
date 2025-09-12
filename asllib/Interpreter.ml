@@ -151,12 +151,19 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let fatal_from_no_env pos = Error.fatal_from pos
 
-  let fatal_from_genv pos genv e =
+  let display_call_stack pos genv =
     if C.display_call_stack_on_error then
-      Format.eprintf "@[<2>%a:@ @]" pp_pos (pos, genv);
+      Format.eprintf "@[<2>%a:@ @]" pp_pos (pos, genv)
+
+  let fatal_from_genv pos genv e =
+    display_call_stack pos genv;
     Error.fatal_from pos e
 
   let fatal_from pos env e = fatal_from_genv pos env.IEnv.global e
+
+  let fail_from pos env e =
+    display_call_stack pos env.IEnv.global;
+    B.fail (Error.ASLException (add_pos_from pos e)) Cutoff
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -1272,7 +1279,7 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
-    | S_Unreachable -> fatal_from s env Error.UnreachableReached
+    | S_Unreachable -> fail_from s env Error.UnreachableReached
 
   (* Evaluation of Blocks *)
   (* -------------------- *)

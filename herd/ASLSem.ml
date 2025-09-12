@@ -912,6 +912,7 @@ module Make (C : Config) = struct
         let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
         let primitives = make_extra_funcs ii_env
+        let fail = M.failT
       end in
       let module ASLInterpreter =
         Asllib.Interpreter.Make (ASLBackend) (ASLInterpreterConfig)
