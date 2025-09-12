@@ -25,8 +25,8 @@ func main() => integer
 begin
   let x = read_register(1);
 
-  T0(x);
   T1(x);
+  T0(x);
 
   return 0;
 end;

@@ -270,7 +270,7 @@ module Make (B : Backend.S) (C : Config) = struct
           (loop_pos, env.IEnv.global)
           loop_name
       in
-      B.cutoffT msg env >>= return_continue
+      B.cutoffT msg Cutoff
     else f env'
 
   let bind_maybe_unroll loop_name undet =
