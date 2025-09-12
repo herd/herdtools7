@@ -1916,6 +1916,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
+        | R,Some (Pte (TTHM _),None) ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some r,init,cs,st
         | W,Some (Pte (Set _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init e.C.pte (Misc.add_pte loc) in
@@ -1923,6 +1926,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Pte (SetRel _),None) ->
             let init,cs,st =
               emit_set_pteval true st p init e.C.pte (Misc.add_pte loc) in
+            None,init,cs,st
+        | W,Some (Pte (TTHM _),None) ->
+            let init,cs,st =
+              STR.emit_store st p init loc value None C.evt_null in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -2564,7 +2571,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
-            | Some (Pte _,None) ->
+            | Some (Pte pte,None) when (not @@ is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init e.C.pte in
                 let cs,st =
                   match vdep with
@@ -2590,7 +2597,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let r3,st = tempo1 st in
                       let cs,st = calc0_gen csel st vdep r3 r1 in
                       sxtw r2 r3::cs,st in
-                let addi = [addi r2 r2 value] in
+                (* Put the `value` into a resgister,
+                   if it overflows the range of `immediate` number in `MOV` *)
+                let addi,init,st =
+                  match U.emit_const st p init value with
+                  | None,init,st -> [addi r2 r2 value],init,st
+                  | Some r_value,init,st -> [add V32 r2 r2 r_value],init,st
+                in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = match atom with
@@ -2598,7 +2611,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> r2,cs2@pseudo addi,init,st in
           let loc = add_tag loc e.C.tag in
           begin match atom with
-          | None ->
+          | None|Some (Pte (TTHM _),None) ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
@@ -2876,5 +2889,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           List.rev_map (fun r -> r,0) rs
     | Some _|None -> fun _ -> []
 
-    include NoInfo
+    let get_archinfo n =
+      (* collect distinct tthm *)
+      let tthm_value = C.fold ( fun node acc ->
+        match node.C.edge.E.a1 with
+        | Some(Pte(TTHM e), _) -> WPTESet.union e acc
+        | _ -> acc
+        ) n WPTESet.empty
+      |> WPTESet.pp_str " " WPTE.pp_tthm in
+      if tthm_value = "" then []
+      else [("TTHM",tthm_value)]
+
   end
