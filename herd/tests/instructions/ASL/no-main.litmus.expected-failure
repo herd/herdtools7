@@ -1,2 +1,2 @@
-Warning: ASL Dynamic error: no entrypoint supplied. Have you defined `func main() =>
+Warning: File "./herd/tests/instructions/ASL/no-main.litmus": ASL Dynamic error: no entrypoint supplied. Have you defined `func main() =>
   integer`, or did you mean to pass `--no-exec`?

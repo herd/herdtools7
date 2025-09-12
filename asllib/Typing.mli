@@ -50,6 +50,10 @@ module type S = sig
 
   val type_check_ast_in_env :
     StaticEnv.global -> AST.t -> AST.t * StaticEnv.global
+
+  val find_main : StaticEnv.global -> AST.identifier
+  (** Returns the identifier of the function with the signature fun main() =>
+      integer, if one exists, and otherwise produces a dynamic error. *)
 end
 
 module Annotate : functor (C : ANNOTATE_CONFIG) -> S

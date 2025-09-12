@@ -149,6 +149,7 @@ end
 module type S = sig
   val type_check_ast : AST.t -> AST.t * global
   val type_check_ast_in_env : global -> AST.t -> AST.t * global
+  val find_main : global -> identifier
 end
 
 module Property (C : ANNOTATE_CONFIG) = struct
@@ -4452,6 +4453,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (List.rev ast_rev, env)
 
   let type_check_ast ast = type_check_ast_in_env empty_global ast
+
+  (* Note: produces a *dynamic* error if the main function cannot be found *)
+  let find_main env =
+    let env = with_empty_local env in
+    let _, main_name, func, _ =
+      try
+        Fn.subprogram_for_signature ~loc:dummy_annotated env V1 "main" []
+          ST_Function
+      with Error.(ASLException _) -> Error.(fatal_unknown_pos NoEntryPoint)
+    in
+    match func.return_type with
+    | Some { desc = T_Int UnConstrained } -> main_name
+    | _ -> Error.(fatal_unknown_pos NoEntryPoint)
 end
 (* End *)
 
@@ -4472,4 +4486,5 @@ let type_and_run ?instrumentation ast =
     |> Builder.with_primitives Native.DeterministicBackend.primitives
     |> TypeCheckDefault.type_check_ast
   in
-  Native.interpret ?instrumentation static_env ast
+  let main_name = TypeCheckDefault.find_main static_env in
+  Native.interpret ?instrumentation static_env main_name ast
