@@ -3755,9 +3755,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let configs1 = approx_stmt tenv s1 in
             let configs2 = approx_stmt tenv s2 in
             union abs_of_expr (union configs1 configs2)
-        | S_Repeat (body, _, _) | S_For { body } | S_While (_, _, body) ->
+        | S_Repeat (body, _, _) ->
             let body_configs = approx_stmt tenv body in
             union abs_of_expr body_configs
+        | S_For { body } | S_While (_, _, body) ->
+            let body_configs = approx_stmt tenv body in
+            union continuing (union abs_of_expr body_configs)
         | S_Try (body, catchers, otherwise) ->
             let body_abs_configs = approx_stmt tenv body in
             let try_abs_configs =
