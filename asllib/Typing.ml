@@ -3141,19 +3141,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
-    | S_Throw (Some (e, _)) ->
+    | S_Throw (e, _) ->
         let t_e, e', ses1 = annotate_expr env e in
         let+ () = check_structure_exception ~loc env t_e in
         let exn_name =
           match t_e.desc with T_Named s -> s | _ -> assert false
         in
         let ses2 = SES.add_thrown_exception exn_name ses1 in
-        (S_Throw (Some (e', Some t_e)) |> here, env, ses2) |: TypingRule.SThrow
-    | S_Throw None ->
-        (* TODO: verify that this is allowed? *)
-        (s, env, SES.throws_exception "TODO") |: TypingRule.SThrow
-        (* End *)
-        (* Begin STry *)
+        (S_Throw (e', Some t_e) |> here, env, ses2) |: TypingRule.SThrow
+    (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
         let s'', ses1 = try_annotate_block env s' in
         let ses2, catchers_and_ses =

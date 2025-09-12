@@ -574,8 +574,7 @@ let stmt :=
           { if Config.allow_function_like_statements then S_Unreachable
             else Error.fatal_here $startpos $endpos @@ Error.ObsoleteSyntax "Function-like unreachable statement." }
       | REPEAT; ~=stmt_list; UNTIL; ~=expr; ~=loop_limit;    < S_Repeat >
-      | THROW; e=expr;                                       { S_Throw (Some (e, None)) }
-      | THROW;                                               { S_Throw None             }
+      | THROW; e=expr;                                       { S_Throw (e, None) }
       | PRAGMA; x=IDENTIFIER; e=clist0(expr);                 < S_Pragma >
     )
   )

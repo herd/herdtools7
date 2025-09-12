@@ -33,7 +33,7 @@ begin
   try throw_undefined_opcode(); assert FALSE;
   catch
     when BAD_OPCODE => assert FALSE;
-    when UNDEFINED_OPCODE => opcode_counter = opcode_counter + 1; throw;
+    when e: UNDEFINED_OPCODE => opcode_counter = opcode_counter + 1; throw e;
   end;
   assert FALSE;
 end;
@@ -66,9 +66,9 @@ begin
     assert FALSE;
   catch
     when BAD_OPCODE => assert FALSE;
-    when COUNTING =>
+    when e: COUNTING =>
       try
-        throw;
+        throw e;
       catch
         when COUNTING => assert FALSE;
         otherwise => assert FALSE;
@@ -97,9 +97,9 @@ begin
   try
     try throw_undefined_opcode ();
     catch
-      when UNDEFINED_OPCODE =>
+      when e: UNDEFINED_OPCODE =>
         local_counter = local_counter + 1;
-        throw;
+        throw e;
     end;
     assert FALSE;
   catch

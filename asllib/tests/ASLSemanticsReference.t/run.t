@@ -109,7 +109,6 @@ ASL Semantics Tests:
   i = 0
   #ones in x = 5
   $ aslref SemanticsRule.SFor.nop.asl
-  $ aslref SemanticsRule.SThrowNone.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
   $ aslref SemanticsRule.SThrowSTry.asl
   aslref cannot find file "SemanticsRule.SThrowSTry.asl"
@@ -128,9 +127,6 @@ ASL Semantics Tests:
   0xd
   0x
   LABEL_B
-  $ aslref SemanticsRule.RethrowImplicit.asl
-  Exception value A
-  Exception value A
   $ aslref SemanticsRule.Loop.asl
   $ aslref SemanticsRule.For.asl
   $ aslref SemanticsRule.Catch.asl

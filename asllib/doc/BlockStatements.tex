@@ -136,9 +136,9 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 
         \item \AllApplyCase{throwing}
         \begin{itemize}
-          \item $\vres$ is $\Throwing((\vv, \newg), \envthrow)$;
+          \item $\vres$ is $\Throwing(\vv, \vt, \newg, \envthrow)$;
           \item \Proseeqdef{$\newenv$}{\Prosepoplocalscope{$\env$}{$\envthrow$}}.
-          \item the result of the entire evaluation is $\Throwing((\vv, \newg), \newenv)$.
+          \item the result of the entire evaluation is $\Throwing(\vv, \vt, \newg, \newenv)$.
         \end{itemize}
       \end{itemize}
 \end{itemize}
@@ -175,11 +175,11 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
   \env \eqname (\tenv,\denv)\\
   \evalstmt{\env, \stm} \evalarrow \vres \OrDynErrorDiverging\\\\
   \commonprefixline \\\\
-  \vres = \Throwing((\vv,\newg), \envthrow) \\
+  \vres = \Throwing(\vv,\vt,\newg, \envthrow) \\
   \envthrow \eqname (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
 }{
-  \evalblock{\env, \stm} \evalarrow \Throwing((\vv,\newg), \newenv)
+  \evalblock{\env, \stm} \evalarrow \Throwing(\vv,\vt,\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}

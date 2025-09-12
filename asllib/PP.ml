@@ -332,9 +332,7 @@ let rec pp_stmt f s =
   | S_Decl (ldk, ldi, Some ty, Some e) ->
       fprintf f "@[<2>%a %a:@ %a =@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_ty ty pp_expr e
-  | S_Throw (Some (e, _ty_annotation)) ->
-      fprintf f "@[<2>throw@ %a;@]" pp_expr e
-  | S_Throw None -> fprintf f "throw;"
+  | S_Throw (e, _ty_annotation) -> fprintf f "@[<2>throw@ %a;@]" pp_expr e
   | S_Try (s, catchers, Some s') ->
       fprintf f
         "@[<hv>@[try@ %a@]@ @[<v 2>catch@ %a@ @[<2>otherwise =>@ %a@]@]@ end@]"

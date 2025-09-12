@@ -48,7 +48,7 @@ module type S = sig
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of (value_read_from * AST.ty) option * IEnv.env
+    | Throwing of value_read_from * AST.ty * IEnv.env
 
   val eval_expr :
     IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
@@ -91,7 +91,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of (value_read_from * ty) option * env
+    | Throwing of value_read_from * ty * env
 
   (** An intermediate result of a statement. *)
   type control_flow_state =
@@ -299,12 +299,7 @@ module Make (B : Backend.S) (C : Config) = struct
               let* eval_res = eval_expr env init_expr in
               match eval_res with
               | Normal (v, env2) -> return (v, env2)
-              | Throwing (exc, _env2) ->
-                  let ty =
-                    match exc with
-                    | Some (_, ty) -> ty
-                    | None -> T_Named "implicit" |> add_pos_from d
-                  in
+              | Throwing (_, ty, _env2) ->
                   fatal_from d env (UnexpectedInitialisationThrow (ty, name)))
         in
         let scope = B.Scope.global ~init:true in
@@ -750,14 +745,7 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_expr_sef env e : B.value m =
     eval_expr env e >>= function
     | Normal (v, _env) -> return v
-    | Throwing (None, _) ->
-        let msg =
-          Format.asprintf
-            "@[<hov 2>An exception was@ thrown@ when@ evaluating@ %a@]@."
-            PP.pp_expr e
-        in
-        fatal_from e env (Error.UnexpectedSideEffect msg)
-    | Throwing (Some (_, ty), _) ->
+    | Throwing (_, ty, _) ->
         let msg =
           Format.asprintf
             "@[<hov 2>An exception of type @[<hv>%a@]@ was@ thrown@ when@ \
@@ -1228,14 +1216,12 @@ module Make (B : Backend.S) (C : Config) = struct
         |> return_continue |: SemanticsRule.SFor
     (* End *)
     (* Begin EvalSThrow *)
-    | S_Throw None -> return (Throwing (None, env)) |: SemanticsRule.SThrow
-    | S_Throw (Some (e, Some t)) ->
+    | S_Throw (e, Some t) ->
         let** v, new_env = eval_expr env e in
         let name = throw_identifier () and scope = B.Scope.global ~init:false in
         let* () = B.on_write_identifier name scope v in
-        return (Throwing (Some ((v, name, scope), t), new_env))
-        |: SemanticsRule.SThrow
-    | S_Throw (Some (_e, None)) -> fatal_from s env Error.TypeInferenceNeeded
+        return (Throwing ((v, name, scope), t, new_env)) |: SemanticsRule.SThrow
+    | S_Throw (_e, None) -> fatal_from s env Error.TypeInferenceNeeded
     (* End *)
     (* Begin EvalSTry *)
     | S_Try (s1, catchers, otherwise_opt) ->
@@ -1281,9 +1267,9 @@ module Make (B : Backend.S) (C : Config) = struct
     | Normal (Continuing env_cont) ->
         let new_env = IEnv.pop_scope env env_cont in
         return_continue new_env
-    | Throwing (v, env_throw) ->
+    | Throwing (v, ty, env_throw) ->
         let new_env = IEnv.pop_scope env env_throw in
-        return (Throwing (v, new_env))
+        return (Throwing (v, ty, new_env))
 
   (* Evaluation of while and repeat loops *)
   (* ------------------------------------ *)
@@ -1385,27 +1371,6 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Catchers *)
   (* ---------------------- *)
   and eval_catchers env catchers otherwise_opt s_m : stmt_eval_type =
-    (* rethrow_implicit handles the implicit throwing logic, that is for
-       statement like:
-          try throw_my_exception ()
-          catch
-            when MyException => throw;
-          end
-       It edits the thrown value only in the case of an implicit throw and
-       we have a explicitely thrown exception in the context. More formally:
-       [rethrow_implicit to_throw m] is:
-         - [m] if [m] is [Normal _]
-         - [m] if [m] is [Throwing (Some _, _)]
-         - [Throwing (Some to_throw, g)] if  [m] is [Throwing (None, g)] *)
-    (* Begin EvalRethrowImplicit *)
-    let rethrow_implicit (v, v_ty) s_m =
-      B.bind_seq s_m @@ function
-      | Throwing (None, env_throw1) ->
-          Throwing (Some (v, v_ty), env_throw1) |> return
-      | (Normal _ | Throwing (Some _, _)) as res ->
-          return res |: SemanticsRule.RethrowImplicit
-      (* End *)
-    in
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
        exception type [t]. *)
     (* Begin EvalFindCatcher *)
@@ -1419,20 +1384,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* If an explicit throw has been made in the [try] block: *)
     B.bind_seq s_m @@ function
     (*  Begin CatchNoThrow *)
-    | (Normal _ | Throwing (None, _)) as res ->
-        return res |: SemanticsRule.CatchNoThrow
+    | Normal _ as res -> return res |: SemanticsRule.CatchNoThrow
     (* End *)
-    | Throwing (Some (v, v_ty), env_throw) -> (
+    | Throwing (v, v_ty, env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
         match List.find_opt (catcher_matches v_ty) catchers with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
             (* Begin EvalCatch *)
             match catcher with
-            | None, _e_ty, s ->
-                eval_block env_throw s
-                |> rethrow_implicit (v, v_ty)
-                |: SemanticsRule.Catch
+            | None, _e_ty, s -> eval_block env_throw s |: SemanticsRule.Catch
             (* Begin EvalCatchNamed *)
             | Some name, _e_ty, s ->
                 (* If the exception is declared to be used in the
@@ -1442,7 +1403,6 @@ module Make (B : Backend.S) (C : Config) = struct
                 in
                 (let*> env3 = eval_block env2 s in
                  IEnv.remove_local name env3 |> return_continue)
-                |> rethrow_implicit (v, v_ty)
                 |: SemanticsRule.CatchNamed
                 (* End *))
         | None -> (
@@ -1450,10 +1410,7 @@ module Make (B : Backend.S) (C : Config) = struct
                return the exception. *)
             match otherwise_opt with
             (* Begin EvalCatchOtherwise *)
-            | Some s ->
-                eval_block env_throw s
-                |> rethrow_implicit (v, v_ty)
-                |: SemanticsRule.CatchOtherwise
+            | Some s -> eval_block env_throw s |: SemanticsRule.CatchOtherwise
             (* Begin EvalCatchNone *)
             | None -> s_m |: SemanticsRule.CatchNone))
   (* End *)
@@ -1471,10 +1428,10 @@ module Make (B : Backend.S) (C : Config) = struct
     let genv = IEnv.incr_stack_size ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
-    | Throwing (v, env_throw) ->
+    | Throwing (v, v_ty, env_throw) ->
         let genv2 = IEnv.decr_stack_size name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
-        return (Throwing (v, new_env)) |: SemanticsRule.Call
+        return (Throwing (v, v_ty, new_env)) |: SemanticsRule.Call
     | Normal (ms, global) ->
         let ms2 = List.map read_value_from ms in
         let genv2 = IEnv.decr_stack_size name global in
@@ -1604,13 +1561,8 @@ module Make (B : Backend.S) (C : Config) = struct
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ ->
         Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, "main")))
-    | Throwing (v_opt, _genv) ->
-        let msg =
-          match v_opt with
-          | None -> "implicitly thrown out of a try-catch."
-          | Some ((v, _, _scope), ty) ->
-              Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v)
-        in
+    | Throwing ((v, _, _), ty, _genv) ->
+        let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
         Error.fatal_unknown_pos (Error.UncaughtException msg))
     |: SemanticsRule.Spec
 

@@ -781,8 +781,7 @@ let rename_locals map_name ast =
         S_While (map_e e, Option.map map_e limit, map_s body)
     | S_Repeat (s, e, limit) ->
         S_Repeat (map_s s, map_e e, Option.map map_e limit)
-    | S_Throw (Some (e, t)) -> S_Throw (Some (map_e e, Option.map map_t t))
-    | S_Throw None -> s.desc
+    | S_Throw (e, t) -> S_Throw (map_e e, Option.map map_t t)
     | S_Try (s1, catchers, otherwise_opt) ->
         S_Try
           ( map_s s1,

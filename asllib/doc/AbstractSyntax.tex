@@ -437,7 +437,7 @@ the local declaration item is
   \hypertarget{ast-srepeat}{} &\\
   |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
   \hypertarget{ast-sthrow}{} &\\
-  |\ & \SThrow(\expr?) &\\
+  |\ & \SThrow(\expr) &\\
   \hypertarget{ast-stry}{} &\\
   |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
   \hypertarget{ast-sprint}{} &\\
@@ -585,7 +585,7 @@ The rules for statements exclude \texttt{pragma} statements, since those are tra
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
 \begin{flalign*}
-\stmt \derives\ & \SThrow((\expr, \overtext{\ty}{exception type})?) &
+\stmt \derives\ & \SThrow(\expr, \overtext{\ty}{exception type}) &
 \end{flalign*}
 
 The rules for slices is replaced by the following:

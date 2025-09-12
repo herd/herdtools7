@@ -5,10 +5,9 @@ begin
     catch
         when Excp =>
             handle_excp();
-            throw; // this will rethrow the handled exception
         when exn: Excp2 =>
             handle_excp2(exn);
-            throw exn; // throws exn, this will have the same result with throw;
+            throw exn;
         otherwise =>
             unhandled();
     end;

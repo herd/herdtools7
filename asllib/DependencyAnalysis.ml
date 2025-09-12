@@ -144,8 +144,7 @@ let rec use_s s =
       use_option use_e limit $ use_s s $ use_e e
   | S_Decl (_, ldi, ty, e) ->
       use_ldi ldi $ use_option use_e e $ use_option use_ty ty
-  | S_Throw (Some (e, _)) -> use_e e
-  | S_Throw None -> Fun.id
+  | S_Throw (e, _) -> use_e e
   | S_Try (s, catchers, s') ->
       use_s s $ use_option use_s s' $ use_catchers catchers
   | S_Print { args; debug = _ } -> use_es args
