@@ -44,8 +44,11 @@
   > func main () => integer begin println(msg); return 0; end;
   > EOF
   $ aslref println6.asl
-  Fatal error: exception End_of_file
-  [2]
+  File println6.asl, line 3, character 0:
+  
+  
+  ASL Lexical error: Unknown symbol.
+  [1]
 
 C-Style comments
   $ cat >comments1.asl <<EOF

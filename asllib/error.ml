@@ -259,7 +259,10 @@ open struct
       if end_bol > start_bol then really_input_string chan (end_bol - start_bol)
       else ""
     in
-    let last_line = input_line chan in
+    let last_line =
+      (* [input_line] raises [End_of_file] if EOF is at the start of the line *)
+      try input_line chan with End_of_file -> ""
+    in
     let () =
       if false then
         Format.eprintf "Got prev_lines = %S and last_line = %S.@." prev_lines

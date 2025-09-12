@@ -442,7 +442,7 @@ let pp_decl f =
           pp_parameters parameters pp_args args pp_typed_identifier new_v
     | ST_EmptySetter ->
         let new_v = match args with [ h ] -> h | _ -> assert false in
-        fprintf f "@[<hv 4>%ssetter %s@ = %a]" override_keyword name
+        fprintf f "@[<hv 4>%ssetter %s@ = %a@]" override_keyword name
           pp_typed_identifier new_v
   in
   let pp_body f = function
