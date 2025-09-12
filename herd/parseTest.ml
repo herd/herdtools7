@@ -44,6 +44,7 @@ module Top (TopConf:RunTest.Config) = struct
             let info = splitted.Splitter.info
             let variant = TopConf.variant
             let mte_precision = TopConf.mte_precision
+            let mte_store_only = TopConf.mte_store_only
             let fault_handling = TopConf.fault_handling
             let sve_vector_length = TopConf.sve_vector_length
             let sme_vector_length = TopConf.sme_vector_length
@@ -62,6 +63,7 @@ module Top (TopConf:RunTest.Config) = struct
         (function | None -> unroll | Some _ as o -> o)
       let fault_handling = TestConf.fault_handling
       let mte_precision = TestConf.mte_precision
+      let mte_store_only = TestConf.mte_store_only
       let sve_vector_length = TestConf.sve_vector_length
       let sme_vector_length = TestConf.sme_vector_length
       let variant = TestConf.variant

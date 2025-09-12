@@ -1,0 +1,13 @@
+AArch64 S00
+variant=memtag,sync,store-only
+{
+int x=1;
+tag(x)=:red;
+0:X0=x:green;
+}
+ P0          ;
+ L0:         ;
+ LDR W1,[X0] ;
+ L1:         ;
+ STR WZR,[X0];
+forall fault(P0:L1,x)
