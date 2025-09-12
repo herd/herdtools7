@@ -105,56 +105,43 @@ let parse_fences fs = List.fold_right parse_fence fs []
         List.fold_left
           (var_relax V.varatom_one) []
 
-  let gen lr ls rl n =
-    let lr = C.R.expand_relax_macros lr
-    and ls = C.R.expand_relax_macros ls
-    and rl = C.R.expand_relax_macros rl in
-    let lr = var_atom lr
-    and ls = var_atom ls
-    and rl = var_atom rl in
+  let gen relax safe reject n =
+    let expand_list l = Option.value ~default:[] l
+                        |> C.R.expand_relax_macros |> var_atom in
+    let relax = expand_list relax
+    and safe = expand_list safe
+    and reject = expand_list reject in
     if O.verbose > 0 then begin
       Printf.eprintf
-        "expanded relax=%s\n" (C.R.pp_relax_list lr)
+        "expanded relax=%s\n" (C.R.pp_relax_list relax)
     end ;
-    M.gen ~relax:lr ~safe:ls ~reject:rl n
+    M.gen ~relax ~safe ~reject n
 
   let er e = ERS [plain_edge e]
 
   let gen_thin n =
-    let lr = [er (Rf Int); er (Rf Ext)]
-    and ls = [PPO] in
-    M.gen ~relax:lr ~safe:ls n
+    let relax = [er (Rf Int); er (Rf Ext)]
+    and safe = [PPO] in
+    M.gen ~relax ~safe n
 
 
   let gen_uni n =
-    let lr = [er (Rf Int); er (Rf Ext)]
-    and ls =
+    let relax = [er (Rf Int); er (Rf Ext)]
+    and safe =
       [er (Ws Int); er (Ws Ext); er (Fr Int);
        er (Fr Ext); er (Po (Same,Irr,Irr))] in
-    M.gen ~relax:lr ~safe:ls n
+    M.gen ~relax ~safe n
 
-  let orl_opt = function
-    | None -> []
-    | Some xs -> xs
-
-  let go n (*size*) orl olr ols (*relax and safe lists*) =
-    let orl = orl_opt orl in
-    match O.choice with
-    | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
-        begin match olr,ols with
-        | None,None -> M.gen n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
-        | Some lr,Some ls -> gen lr ls orl n
-        end
-    | Thin -> gen_thin n
-    | Uni ->
-        begin match olr,ols with
-        | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
-        | Some lr,Some ls -> gen lr ls orl n
-        end
+  let go size reject relax safe =
+    match relax,safe with
+    (* when there  neither `relax` and `safe`, then use the pre-set value *)
+    | None,None -> begin match O.choice with
+      | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck
+        -> M.gen size
+      | Thin -> gen_thin size
+      | Uni -> gen_uni size
+    end
+    | _,_ -> gen relax safe reject size
 end
 
 
