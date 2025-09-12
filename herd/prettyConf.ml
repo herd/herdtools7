@@ -87,20 +87,23 @@ type showevents =
   | MemEvents
   | NonRegEvents
   | MemFenceEvents
+  | NonBranchEvents
 
-let tags_showevents = ["all"; "mem"; "noregs";"memf";]
+let tags_showevents = ["all"; "mem"; "noregs";"memf";"nobranches"]
 
 let pp_showevents = function
   | AllEvents -> "all"
   | MemEvents -> "mem"
   | NonRegEvents -> "noregs"
   | MemFenceEvents -> "memfence"
+  | NonBranchEvents -> "nobranches"
 
 let parse_showevents = function
   | "all"  -> Some AllEvents
   | "mem"|"memory" -> Some MemEvents
-  | "noregs" -> Some NonRegEvents
+  | "noregs"|"noreg" -> Some NonRegEvents
   | "memf"|"memfence"|"memfault" -> Some MemFenceEvents
+  | "nobranches"|"nobranch" -> Some NonBranchEvents
   | _ -> None
 
 
