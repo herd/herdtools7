@@ -448,7 +448,10 @@ let pp = function
   | FPac -> ""
 
 let mode_tags =
-    List.map( fun x-> if x = "T00" then "T [0-9]" else x) (List.map pp mode_variants)
+  let normalise_T00 = function
+    | "T00" -> "T[0-9][0-9]"
+    | s -> s in
+    List.map( normalise_T00) (List.map pp mode_variants)
 let arch_tags =
   List.map pp arch_variants
 

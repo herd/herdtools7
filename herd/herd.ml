@@ -458,45 +458,62 @@ let options = setup_options @
   graph_presentation_options @
   help_options
 
+let is_known_category = function
+  | "setup" 
+  | "runmode" 
+  | "filter"
+  | "graph_content" 
+  | "graph_presentation"
+  | "variant" 
+  | "all" -> true
+  | _ -> false
+
+let display_help = function
+  | "setup" ->
+      Printf.printf "%s" (Arg.usage_string setup_options usg_setup); exit 0
+  | "runmode" ->
+      Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode); exit 0
+  | "filter" ->
+      Printf.printf "%s" (Arg.usage_string filter_options usg_filter); exit 0
+  | "graph_content" ->
+     Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
+  | "graph_presentation" ->
+     Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation); exit 0
+  | "variant" ->
+     Printf.printf "%s" (Variant.variants_help_page); exit 0
+  | "all" ->
+     show_long_help ()
+  |  _ -> 
+      show_short_help ()
+
+let handle_help_or_return () =
+  let inputs = Array.to_list Sys.argv |> List.tl in
+  let has_long_help = List.exists ((=) "--help") inputs in
+  let has_short_help = List.exists ((=) "-help") inputs in
+
+  if has_long_help then  show_long_help () else
+    if has_short_help then 
+      let rest = List.filter (fun s -> s <> "-help") inputs in
+      let (categories, others) = List.partition is_known_category rest in
+      match (categories, others) with
+      | ([], []) -> show_short_help ()         
+      | ([category], []) -> display_help category         
+      | _ -> show_short_help ()              
+  
 (* Parse command line *)
 let () =
-  let argv_len = Array.length Sys.argv in
-  let arg = Sys.argv.(argv_len -1) in
   try
-    if help_exists () then
-    match arg with
-    | "setup" ->
-        Printf.printf "%s" (Arg.usage_string setup_options usg_setup); exit 0
-    | "runmode" ->
-        Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode); exit 0
-    | "filter" ->
-        Printf.printf "%s" (Arg.usage_string filter_options usg_filter); exit 0
-    | "graph_content" ->
-        Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
-    | "graph_presentation" ->
-        Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation); exit 0
-    | "variant" ->
-        Printf.printf "%s" (Variant.variants_help_page); exit 0
-    | "all" ->
-        show_long_help ();
-    |  _ -> 
-        if Array.exists (fun s -> s = "-help") Sys.argv then
-          show_short_help ()
-        else 
-          show_long_help ();
-    else
-      let current = ref 0 in
-      match Arg.parse_argv ~current Sys.argv options get_cmd_arg usg_default with
-      | () -> ()
-      | exception Arg.Bad msg -> 
-          begin
-            let first_line = String.trim msg |> String.split_on_char '\n' |> List.hd in
-            Printf.eprintf "Error: %s\n\n%s\n" first_line usg_default;
-            exit 1
-          end
+    handle_help_or_return ();
+    let current = ref 0 in
+    Arg.parse_argv ~current Sys.argv (Arg.align options) get_cmd_arg usg_default;
   with
+  | Arg.Bad msg -> 
+    begin
+      let first_line = String.trim msg |> String.split_on_char '\n' |> List.hd in
+        Printf.eprintf "Error: %s\n %s \n" first_line usg_default;
+        exit 2
+      end
   | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
-  | Invalid_argument _ -> eprintf "Invalid command line arguments.\n"; exit 1
 
 (* Read generic model, if any *)
 
