@@ -84,3 +84,23 @@
   ASL Type error: not all control flow paths of the function "test0" are
     guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
+
+  $ aslref --no-exec while-noreturn.asl
+  File while-noreturn.asl, line 7, character 2 to line 9, character 6:
+    while b looplimit 10 do
+      throw myexception{-};
+    end;
+  ASL Type error: the function "Foo" is qualified with noreturn but may return
+    on some control flow path.
+  [1]
+
+  $ aslref --no-exec for-noreturn.asl
+  File for-noreturn.asl, line 5, character 2 to line 7, character 6:
+    for i = 1 to 0 do
+      throw myexception{-};
+    end;
+  ASL Type error: the function "Foo" is qualified with noreturn but may return
+    on some control flow path.
+  [1]
+
+  $ aslref --no-exec repeat-noreturn.asl

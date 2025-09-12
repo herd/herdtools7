@@ -2298,12 +2298,19 @@ can be added, for example, an \unreachablestatementterm.
     \item \Proseeqdef{$\absconfigs$}{the union of the sets $\vs_\vc$ for each \Proseabstractconfiguration{} $\vc$ in $\configsone$}.
   \end{itemize}
 
-  \item \AllApplyCase{loop}
+  \item \AllApplyCase{s\_repeat}
   \begin{itemize}
-    \item $\vs$ matches one of the following statements: a \repeatstatementsterm{} with body statement $\vbody$,
-          a \forstatementterm{} with body statement $\vbody$, or a \whilestatementterm{} with body statement $\vbody$;
+    \item $\vs$ is a \repeatstatementsterm{} with body statement $\vbody$;
     \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
     \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$ and $\AbsAbnormal$}.
+  \end{itemize}
+
+  \item \AllApplyCase{s\_while\_for}
+  \begin{itemize}
+    \item $\vs$ matches one of the following statements:
+          a \forstatementterm{} with body statement $\vbody$, or a \whilestatementterm{} with body statement $\vbody$;
+    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
+    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$, $\AbsAbnormal$, and \\ $\AbsContinuing$}.
   \end{itemize}
 
   \item \AllApplyCase{s\_cond}
@@ -2388,11 +2395,18 @@ can be added, for example, an \unreachablestatementterm.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[loop]{
+\inferrule[s\_repeat]{
+  \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs
+}{
+  \approxstmt(\tenv, \overname{\SRepeat(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal\}}{\absconfigs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[s\_while\_for]{
   {
   \left(
   \begin{array}{rcll}
-    \vs &=& \SRepeat(\vbody, \Ignore, \Ignore) &\lor\\
     \vs &=& \SFor \{ \Forbody : \vbody, \ldots \} &\lor\\
     \vs &=& \SWhile(\Ignore, \Ignore, \vbody) &
   \end{array}
@@ -2400,7 +2414,7 @@ can be added, for example, an \unreachablestatementterm.
   }\\
   \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs\\
 }{
-  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal\}}{\absconfigs}
+  \approxstmt(\tenv, \vs) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal, \AbsContinuing\}}{\absconfigs}
 }
 \end{mathpar}
 
@@ -2409,7 +2423,7 @@ can be added, for example, an \unreachablestatementterm.
   \approxstmt(\tenv, \vsone) \typearrow \configsone\\
   \approxstmt(\tenv, \vstwo) \typearrow \configstwo
 }{
-  \approxstmt(\tenv, \overname{\STry(\vbody, \vsone, \vstwo)}{\vs}) \typearrow \overname{\{\AbsAbnormal\} \cup \vsone \cup \vstwo}{\absconfigs}
+  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \overname{\{\AbsAbnormal\} \cup \vsone \cup \vstwo}{\absconfigs}
 }
 \end{mathpar}
 
