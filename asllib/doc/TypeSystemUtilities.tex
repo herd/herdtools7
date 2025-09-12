@@ -354,7 +354,7 @@ is the \localstaticenvironmentterm{} of $\emptytenv$.
 \hypertarget{def-checkvarnotinenv}{}
 The function
 \[
-  \checkvarnotinenv{\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id}}
+  \checkvarnotinenv(\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id})
   \aslto \{\True\} \cup \TTypeError
 \]
 checks whether $\id$ is already declared in $\tenv$. If it is, the result is a \typingerrorterm{},
@@ -384,7 +384,7 @@ is repeated.
   \isundefined(\tenv, \id) \typearrow \vb\\
   \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
 }{
-  \checkvarnotinenv{\tenv, \id} \typearrow \True
+  \checkvarnotinenv(\tenv, \id) \typearrow \True
 }
 \end{mathpar}
 \CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
@@ -393,7 +393,7 @@ is repeated.
 \hypertarget{def-checkvarnotingenv}{}
 The function
 \[
-  \checkvarnotingenv{\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx}}
+  \checkvarnotingenv(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx})
   \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 checks whether $\id$ is already declared in the \globalstaticenvironmentterm{} $\genv$.
@@ -428,7 +428,7 @@ is declared both as a global variable and as an enumeration label.
   \isglobalundefined(\genv, \id) \typearrow \vb\\
   \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
 }{
-  \checkvarnotingenv{\genv, \id} \typearrow \True
+  \checkvarnotingenv(\genv, \id) \typearrow \True
 }
 \end{mathpar}
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
@@ -927,7 +927,7 @@ the subprogram definition node
 \funcname &:& \incrementone, \\
 \funcparameters &:& \emptylist,\\
 \funcargs &:& [(\vx, \TReal)],\\
-\funcbody &:& \SReturn(\AbbrevEBinop{+}{\AbbrevEVar{\vx}}{\ELiteral(\lreal(1/1))}),\\
+\funcbody &:& \SReturn(\AbbrevEBinop{+}{\AbbrevEVar{\vx}}{\ELiteral(\LReal(1/1))}),\\
 \funcreturntype &:& \Some{\TReal},\\
 \funcsubprogramtype &:& \STFunction\\
 \funcrecurselimit    &:& \None\\
