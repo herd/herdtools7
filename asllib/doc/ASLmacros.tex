@@ -294,12 +294,13 @@
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
 \newcommand\Some[1]{\hyperlink{def-some}{\langle}#1\hyperlink{def-some}{\rangle}}
 
-% Set types
+% General types
 \newcommand\N[0]{\hyperlink{def-N}{\mathbb{N}}}
 \newcommand\Npos[0]{\hyperlink{def-Npos}{\mathbb{N}^{+}}}
 \newcommand\Q[0]{\hyperlink{def-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{def-Z}{\mathbb{Z}}}
-\newcommand\Bool[0]{\hyperlink{def-bool}{\mathbb{B}}}
+\newcommand\Bool[0]{\hyperlink{def-Bool}{\mathbb{B}}}
+\newcommand\Bit[0]{\hyperlink{def-bit}{\textsf{bit}}}
 \newcommand\Identifiers[0]{\hyperlink{def-identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{def-strings}{\mathbb{S}}}
 \newcommand\astlabels[0]{\hyperlink{def-astlabels}{\mathbb{L}}}
@@ -318,7 +319,7 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
-\newcommand\booltrans[1]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}(#1)}
+\newcommand\booltrans[0]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\checktransname[0]{\hyperlink{def-checktrans}{\textfunc{check}}}
 \newcommand\checktrans[2]{\checktransname\left(#1, \texttt{#2}\right)}
@@ -367,6 +368,7 @@
 \newcommand\Tas[0]{\verbatimterminal{AS}{as}}
 \newcommand\Tassert[0]{\verbatimterminal{ASSERT}{assert}}
 \newcommand\Tband[0]{\verbatimterminal{BAND}{\&\&}}
+\newcommand\Tbimpl[0]{\verbatimterminal{BAND}{==>}}
 \newcommand\Tbegin[0]{\verbatimterminal{BEGIN}{begin}}
 \newcommand\Tbeq[0]{\verbatimterminal{BEQ}{<=>}}
 \newcommand\Tbit[0]{\verbatimterminal{BIT}{bit}}
@@ -463,7 +465,6 @@
 \newcommand\Twhile[0]{\verbatimterminal{WHILE}{while}}
 \newcommand\Twith[0]{\verbatimterminal{WITH}{with}}
 
-% \newcommand\Tidentifier[1]{\terminal{IDENTIFIER(#1)}}
 \newcommand\Tidentifier[0]{\hyperlink{def-tidentifier}{\terminal{ID}}}
 \newcommand\Tstringlit[0]{\hyperlink{def-tstringlit}{\terminal{STRING\_LIT}}}
 \newcommand\Tmasklit[0]{\hyperlink{def-tmasklit}{\terminal{MASK\_LIT}}}
@@ -564,7 +565,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% AST macros with hyperlinks
-\newcommand\identifier[0]{\hyperlink{ast-identifier}{\textsf{identifier}}} % Boolean inversion
+\newcommand\identifier[0]{\hyperlink{ast-identifier}{\textsf{identifier}}}
 
 \newcommand\BNOT[0]{\hyperlink{ast-bnot}{\textastlabel{BNOT}}} % Boolean inversion
 \newcommand\NEG[0]{\hyperlink{ast-neg}{\textastlabel{NEG}}} % Integer or real negation
@@ -702,12 +703,12 @@
 \newcommand\SUnreachable[0]{\hyperlink{ast-sunreachable}{\textastlabel{S\_Unreachable}}}
 
 % Literal labels
-\newcommand\lint[0]{\hyperlink{ast-lint}{\textastlabel{L\_Int}}}
-\newcommand\lbool[0]{\hyperlink{ast-lbool}{\textastlabel{L\_Bool}}}
-\newcommand\lreal[0]{\hyperlink{ast-lreal}{\textastlabel{L\_Real}}}
-\newcommand\lbitvector[0]{\hyperlink{ast-lbitvector}{\textastlabel{L\_Bitvector}}}
-\newcommand\lstring[0]{\hyperlink{ast-lstring}{\textastlabel{L\_String}}}
-\newcommand\llabel[0]{\hyperlink{ast-llabel}{\textastlabel{L\_Label}}}
+\newcommand\LInt[0]{\hyperlink{ast-lint}{\textastlabel{L\_Int}}}
+\newcommand\LBool[0]{\hyperlink{ast-lbool}{\textastlabel{L\_Bool}}}
+\newcommand\LReal[0]{\hyperlink{ast-lreal}{\textastlabel{L\_Real}}}
+\newcommand\LBitvector[0]{\hyperlink{ast-lbitvector}{\textastlabel{L\_Bitvector}}}
+\newcommand\LString[0]{\hyperlink{ast-lstring}{\textastlabel{L\_String}}}
+\newcommand\LLabel[0]{\hyperlink{ast-llabel}{\textastlabel{L\_Label}}}
 
 % Type labels
 \newcommand\TInt[0]{\hyperlink{ast-tint}{\textastlabel{T\_Int}}}
@@ -1049,9 +1050,9 @@
 \newcommand\aslrel[0]{\bigtimes}
 \newcommand\vals[0]{\hyperlink{def-vals}{\mathbb{V}}}
 \newcommand\nvliterallabel[0]{\hyperlink{def-nvliteral}{\texttt{NV\_Literal}}}
-\newcommand\nvliteral[1]{\nvliterallabel(#1)}
-\newcommand\nvvector[1]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}(#1)}
-\newcommand\nvrecord[1]{\hyperlink{def-nvrecord}{\texttt{NV\_Record}}(#1)}
+\newcommand\nvliteral[0]{\nvliterallabel}
+\newcommand\nvvector[0]{\hyperlink{def-nvvector}{\texttt{NV\_Vector}}}
+\newcommand\nvrecord[0]{\hyperlink{def-nvrecord}{\texttt{NV\_Record}}}
 \newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
 \newcommand\nvbool[0]{\hyperlink{def-nvbool}{\texttt{Bool}}}
 \newcommand\nvreal[0]{\hyperlink{def-nvreal}{\texttt{Real}}}
@@ -1127,37 +1128,30 @@
 \newcommand\TDiverging[0]{\hyperlink{def-tdiverging}{\textsf{TDiverging}}}
 \newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
-\newcommand\evalexprname[0]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}}
-\newcommand\evalexpr[1]{\evalexprname(#1)}
+\newcommand\evalexpr[0]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}}
 \newcommand\Proseevalexpr[3]{
     \hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
-\newcommand\evalexprsefname[0]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}}
-\newcommand\evalexprsef[1]{\evalexprsefname(#1)}
-\newcommand\evallexprname[0]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}}
-\newcommand\evallexpr[1]{\evallexprname(#1)}
+\newcommand\evalexprsef[0]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}}
+\newcommand\evallexpr[0]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}}
 \newcommand\Proseevallexpr[4]{\hyperlink{def-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
-\newcommand\evalexprlist[1]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}(#1)}
+\newcommand\evalexprlist[0]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}}
 \newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
-\newcommand\evalpatternname[0]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}}
-\newcommand\evalpattern[1]{\evalpatternname(#1)}
+\newcommand\evalpattern[0]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}}
 \newcommand\maskmatch[0]{\hyperlink{def-maskmatch}{\textfunc{mask\_match}}}
-\newcommand\evallocaldecl[1]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}(#1)}
+\newcommand\evallocaldecl[0]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}}
 \newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
 \newcommand\writefolder[0]{\hyperlink{def-writefolder}{\textfunc{write\_folder}}}
 \newcommand\evalslices[0]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}}
 \newcommand\evalslice[0]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}}
-\newcommand\evalstmtname[0]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}}
-\newcommand\evalstmt[1]{\evalstmtname(#1)}
-\newcommand\evalblockname[0]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}}
-\newcommand\evalblock[1]{\evalblockname(#1)}
+\newcommand\evalstmt[0]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}}
+\newcommand\evalblock[0]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}}
 \newcommand\poplocalscope[0]{\hyperlink{def-poplocalscope}{\textfunc{pop\_local\_scope}}}
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{def-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
-\newcommand\evalloop[1]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}(#1)}
+\newcommand\evalloop[0]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}}
 \newcommand\evalfor[0]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}}
 \newcommand\evalforloop[0]{\hyperlink{def-evalforloop}{\textfunc{eval\_for\_loop}}}
 \newcommand\evalforstep[0]{\hyperlink{def-evalforstep}{\textfunc{eval\_for\_step}}}
-\newcommand\evalcatchersname[0]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}}
-\newcommand\evalcatchers[1]{\evalcatchersname(#1)}
+\newcommand\evalcatchers[0]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}}
 \newcommand\evalsubprogram[0]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}}
 \newcommand\evalcall[0]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}}
 \newcommand\evalmultiassignment[0]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}}
@@ -1353,6 +1347,8 @@
 \newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
 \newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
 \newcommand\annotatetypeopt[0]{\hyperlink{def-annotatetypeopt}{\textfunc{annotate\_type\_opt}}}
+\newcommand\annotateliteral[0]{\hyperlink{def-annotateliteral}{\textfunc{annotate\_literal}}}
+\newcommand\annotateexpr[0]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}}
 \newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
 \newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
 \newcommand\annotatetyoptinitialvalue[0]{\hyperlink{def-annotatetyoptinitialvalue}{\textfunc{annotate\_ty\_opt\_initial\_value}}}
@@ -1532,8 +1528,8 @@
 % AST abbreviations
 \newcommand\abbrevfont[1]{\scriptscriptstyle{\textsf{#1}}}
 \newcommand{\ETrue}{\hyperlink{def-etrue}{\textsf{E\_True}}}
-\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\lint)}}}
-\newcommand\elint[1]{\ELiteral(\lint(#1))}
+\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\LInt)}}}
+\newcommand\elint[1]{\ELiteral(\LInt(#1))}
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
 \newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
@@ -1757,18 +1753,24 @@
 \newcommand\atcexpressionterm[0]{\hyperlink{def-atceexpressionterm}{asserting type conversion}}
 \newcommand\atcexpression[2]{\hyperlink{def-atceexpressionterm}{asserting type conversion} for the expression #1 and type #2}
 \newcommand\binopexpressionterm[0]{\hyperlink{def-binopexpressionterm}{binary operation expression}}
+\newcommand\binopexpressionsterm[0]{\hyperlink{def-binopexpressionterm}{binary operation expressions}}
 \newcommand\binopexpression[3]{\hyperlink{def-binopexpressionterm}
   {binary operation expression} for the binary operator #1, left-hand-side expression #2, and right-hand-side expression #3}
 \newcommand\unopexpressionterm[0]{\hyperlink{def-unopexpressionterm}{unary operation expression}}
+\newcommand\unopexpressionsterm[0]{\hyperlink{def-unopexpressionterm}{unary operation expressions}}
 \newcommand\unopexpression[2]{\hyperlink{def-unopexpressionterm}
   {unary operation expression} for the unary operator #1 and expression #2}
 \newcommand\callexpressionterm[0]{\hyperlink{def-callexpressionterm}{call expression}}
+\newcommand\callexpressionsterm[0]{\hyperlink{def-callexpressionterm}{call expressions}}
 \newcommand\callexpression[4]{\hyperlink{def-callexpressionterm}
   {call expression} for the subprogram #1, list of parameters #2, list of arguments #3, and subprogram type #4}
-\newcommand\sliceexpression[2]{\hyperlink{def-sliceexpressionterm}{slicing expression} for the bitvector expression #1 and list of slices #2}
+\newcommand\slicingexpressionsterm[0]{\hyperlink{def-slicingexpressionsterm}{slicing expressions}}
+\newcommand\sliceexpression[2]{\hyperlink{def-slicingexpressionsterm}{slicing expression} for the bitvector expression #1 and list of slices #2}
 \newcommand\condexpressionterm[0]{\hyperlink{def-conditionexpressionterm}{conditional expression}}
+\newcommand\condexpressionsterm[0]{\hyperlink{def-conditionexpressionterm}{conditional expressions}}
 \newcommand\condexpression[3]{\hyperlink{def-conditionexpressionterm}
   {conditional expression} for the condition expression #1, left-hand-side expression #2, and right-hand-side expression #3}
+\newcommand\arrayaccessexpressionsterm[0]{\hyperlink{def-arrayaccessexpressionsterm}{array access expressions}}
 \newcommand\getarrayexpression[2]{\hyperlink{def-getarrayexpressionterm}
   {array read expression} for the array base expression #1 and index expression #2}
 \newcommand\getenumarrayexpression[2]{\hyperlink{def-getenumarrayexpression}
@@ -1891,34 +1893,30 @@
 \newcommand\evalsliceexpr[0]{\hyperlink{def-evalsliceexpr}{\textfunc{eval\_slice\_expr}}}
 \newcommand\checkpositionsinwidth[0]{\hyperlink{def-checkpositionsinwidth}{\textfunc{check\_positions\_in\_width}}}
 \newcommand\checkdisjointslices[0]{\hyperlink{def-checkdisjointslices}{\textfunc{check\_disjoint\_slices}}}
-\newcommand\annotatetype[1]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}(#1)}
+\newcommand\annotatetype[0]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}}
 \newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
 \newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
-\newcommand\annotateexpr[1]{\hyperlink{def-annotateexpr}{\textfunc{annotate\_expr}}(#1)}
 \newcommand\Proseannotateexpr[3]{\hyperlink{def-annotateexpr}{annotating} the expression #2 in the static environment #1 yields #3}
 \newcommand\Proseannotatelexpr[4]{\hyperlink{def-annotatelexpr}{annotating}
     the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
 \newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
-\newcommand\annotatelexprname[0]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}}
-\newcommand\annotatelexpr[1]{\annotatelexprname(#1)}
+\newcommand\annotatelexpr[0]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
 \newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textfunc{annotate\_slices}}}
 \newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\textfunc{annotate\_pattern}}}
 \newcommand\annotatelocaldeclitem[0]{\hyperlink{def-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}}
 \newcommand\inheritintegerconstraints[0]{\hyperlink{def-inheritintegerconstraints}{\textfunc{inherit\_integer\_constraints}}}
 \newcommand\annotatestmt[0]{\hyperlink{def-annotatestmt}{\textfunc{annotate\_stmt}}}
-\newcommand\annotateblockname[0]{\hyperlink{def-annotateblock}{\textfunc{annotate\_block}}}
-\newcommand\annotateblock[1]{\annotateblockname(#1)}
+\newcommand\annotateblock[0]{\hyperlink{def-annotateblock}{\textfunc{annotate\_block}}}
 \newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\textfunc{annotate\_call}}}
 \newcommand\annotatecallactualstyped[0]{\hyperlink{def-annotatecallactualstyped}{\textfunc{annotate\_call\_actuals\_typed}}}
-\newcommand\annotatecatchername[0]{\hyperlink{def-annotatecatcher}{\textfunc{annotate\_catcher}}}
-\newcommand\annotatecatcher[1]{\annotatecatchername(#1)}
+\newcommand\annotatecatcher[0]{\hyperlink{def-annotatecatcher}{\textfunc{annotate\_catcher}}}
 \newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
 \newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
 \newcommand\annotatelocaldecltypeannot[0]{\hyperlink{def-annotatelocaldecltypeannot}{\textfunc{annotate\_local\_decl\_type\_annot}}}
-\newcommand\checkvarnotinenv[1]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}(#1)}
-\newcommand\checkvarnotingenv[1]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}(#1)}
+\newcommand\checkvarnotinenv[0]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}}
+\newcommand\checkvarnotingenv[0]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}}
 \newcommand\checknoprecisionloss[1]{\hyperlink{def-checknoprecisionloss}{\textfunc{check\_no\_precision\_loss}}(#1)}
 \newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
@@ -1956,8 +1954,6 @@
 \newcommand\Prosetopologicalorderingcomps[3]{\hyperlink{def-topologicalorderingcomps}{ordering} the set of strongly-connected components #1, with respect to #2, yields the list of strongly-connected components #3}
 \newcommand\annotatedeclcomps[0]{\hyperlink{def-annotatedeclcomps}{\textfunc{annotate\_decl\_comps}}}
 \newcommand\Proseannotatedeclcomps[4]{\hyperlink{def-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
-\newcommand\annotateliteralname[0]{\hyperlink{def-annotateliteral}{\textfunc{annotate\_literal}}}
-\newcommand\annotateliteral[1]{\annotateliteralname(#1)}
 \newcommand\exprequalcase[0]{\hyperlink{def-exprequalcase}{\textfunc{expr\_equal\_case}}}
 \newcommand\exprequalnorm[0]{\hyperlink{def-exprequalnorm}{\textfunc{expr\_equal\_norm}}}
 \newcommand\slicesequal[0]{\hyperlink{def-slicesequal}{\textfunc{slices\_equal}}}

@@ -414,7 +414,7 @@ of an ill-typed global storage declaration due to precision loss.
     \GDty : \tyopt,
     \GDname: \name
   \}\\
-\checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+\checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
 \withemptylocal(\genv) \typearrow \tenv\\
 {
   \begin{array}{l}
@@ -551,8 +551,8 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[some\_some\_config]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
-  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
   \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
@@ -570,10 +570,10 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \begin{mathpar}
 \inferrule[some\_some]{
   \gdk \neq \GDKConfig \\
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   \tstruct(\tenv, \vte) \typearrow \vtep \OrTypeError \\\\
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtpp \OrTypeError \\\\
-  \annotatetype{\tenv, \vtpp} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotatetype(\tenv, \vtpp) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
   \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
@@ -590,7 +590,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 
 \begin{mathpar}
 \inferrule[some\_none]{
-  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \vep \OrTypeError\\\\
   \typedinitialvalue \eqdef (\vtp, \vep, \emptyset)
@@ -607,7 +607,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 
 \begin{mathpar}
 \inferrule[none\_some]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   \checknoprecisionloss{\vte} \typearrow \True \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese) \\
   \checktrans{\lnot\vmustbepure \lor \sesispure(\vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
@@ -649,7 +649,7 @@ is the type associated with $\name$.
 
 \ExampleDef{Updating the Global Storage for a Constant}
 The specification in \listingref{UpdateGlobalStorage-constant}
-binds $\vy$ to $\lint(5040)$ in the $\constantvalues$ map of the \globalstaticenvironmentterm.
+binds $\vy$ to $\LInt(5040)$ in the $\constantvalues$ map of the \globalstaticenvironmentterm.
 \ASLListing{Updating the global storage for a constant}{UpdateGlobalStorage-constant}{\typingtests/TypingRule.UpdateGlobalStorage.constant.asl}
 
 \ExampleDef{Updating the Global Storage for Configuration Storage Elements}
@@ -818,7 +818,7 @@ static environments:
 \begin{array}{rcl}
   \PI &\mapsto& (\TReal, \GDKConstant)\\
   \vx &\mapsto& (\unconstrainedinteger, \GDKVar)\\
-  \vc &\mapsto& (\TInt(\wellconstrained(\AbbrevConstraintExact{\lint(42)})), \GDKConfig)
+  \vc &\mapsto& (\TInt(\wellconstrained(\AbbrevConstraintExact{\LInt(42)})), \GDKConfig)
 \end{array}
 \]
 
@@ -832,7 +832,7 @@ static environments:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
   \newgenv \eqdef \genv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)]
 }{
   \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
@@ -877,7 +877,7 @@ $\nvbitvector(\overbrace{0 \ldots 0}^{32})$,
 \verb|MaxIrq| to $\nvint(480)$, and
 \verb|Regs| to
 \[
-\nvvector{ [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] } \enspace.
+\nvvector( [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] ) \enspace.
 \]
 
 \ASLListing{Evaluating a list of global declarations}{EvalGlobals}{\semanticstests/SemanticsRule.EvalGlobals.asl}
@@ -922,7 +922,7 @@ before having the chance to evaluate \verb|main|.
 \inferrule[non\_empty]{
   \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\langle\ve\rangle, \GDname:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
-  \evalexpr{ \env, \ve} \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
+  \evalexpr( \env, \ve) \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
   \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
 }{

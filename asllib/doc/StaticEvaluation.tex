@@ -31,7 +31,7 @@ are bound in $\tenv$. Therefore, a dynamic environment is constructed from the c
 
 \ExampleDef{Static Evaluation of Expressions}
 In \listingref{static-eval}, the expression \verb|16 * 2| is statically evaluated
-(to $\lint(32)$) in order to determine that the it is a \staticallyevaluable{} expression
+(to $\LInt(32)$) in order to determine that the it is a \staticallyevaluable{} expression
 assigned to a \verb|constant| variable (by \TypingRuleRef{SDecl}.CONSTANT).
 The expressions defining the slices for bitfields \verb|upper| and \verb|lower|,
 and the width of the bitvector type \verb|Word| are also statically evaluated.
@@ -50,7 +50,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
   \begin{itemize}
     \item \AllApplyCase{normal\_literal}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\nvliteral{\vv}, \Ignore)$.
+      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\nvliteral(\vv), \Ignore)$.
     \end{itemize}
 
     \item \AllApplyCase{normal\_non\_literal}
@@ -72,7 +72,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\nvliteral{\vv}, \Ignore), \Ignore)
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\nvliteral(\vv), \Ignore), \Ignore)
 }{
   \staticeval(\tenv, \ve) \typearrow \vv
 }
@@ -81,8 +81,8 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[normal\_non\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vx, \Ignore), \Ignore)\\
-  \vx \neq \nvliteral{\Ignore}
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vx, \Ignore), \Ignore)\\
+  \vx \neq \nvliteral(\Ignore)
 }{
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
@@ -91,7 +91,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[abnormal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr{\env, \ve} \evalarrow C\\
+  \evalexpr(\env, \ve) \evalarrow C\\
   \configdomain{C} \in \{\Throwing, \DynamicError\}
 }{
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
@@ -112,7 +112,7 @@ In \listingref{static-eval}, in order to statically evaluate the expression
 \verb|HALF_WORD_SIZE * 2| defining the width of the \verb|Word| type,
 the \staticenvironmentterm{} $\tenv$, defined as follows:
 \[
-\{ \constantvalues \mapsto \{\vHALFWORDSIZE \mapsto \lint(32)\},\ldots \}
+\{ \constantvalues \mapsto \{\vHALFWORDSIZE \mapsto \LInt(32)\},\ldots \}
 \]
 is transformed into the dynamic environment $\env$, defined as follows:
 \[
@@ -123,7 +123,7 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \AllApply
 \begin{itemize}
   \item define the global dynamic environment $\vglobal$ as the map that binds
-        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral{\vl}$
+        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral(\vl)$
         if $G^\tenv.\constantvalues(\id) = \vl$;
   \item define the local dynamic environment $\vlocal$ as the empty map;
   \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
@@ -132,7 +132,7 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vglobal \eqdef [\id \mapsto \nvliteral{\vl} \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vglobal \eqdef [\id \mapsto \nvliteral(\vl) \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
   \vlocal \eqdef \emptyfunc
 }{
   \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, (\vglobal, \vlocal))}{\env}

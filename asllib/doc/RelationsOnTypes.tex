@@ -322,7 +322,7 @@ subtyping.
   \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
   \typeequal(\tenv, \vtys, \vtyt) \typearrow \True \terminateas \False\\
-  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \booltransarrow \True \terminateas \False\\
+  \booltrans(\astlabel(\vlengths) = \astlabel(\vlengtht)) \booltransarrow \True \terminateas \False\\
   \vlengths \eqname \ArrayLengthExpr(\vlengthexprs)\\
   \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
   \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
@@ -336,7 +336,7 @@ subtyping.
   \makeanonymous(\tenv, \vs) \typearrow \TArray(\vlengths,\vtys) \\
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
   \typeequal(\tenv, \vtys, \vtyt) \typearrow \True\\
-  \booltrans{\astlabel(\vlengths) = \astlabel(\vlengtht)} \typearrow \True \terminateas \False \\
+  \booltrans(\astlabel(\vlengths) = \astlabel(\vlengtht)) \typearrow \True \terminateas \False \\
   \vlengths \eqname \ArrayLengthEnum(\vnames, \Ignore)\\
   \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
@@ -380,7 +380,7 @@ if there is a unique one, as follows:
   \makeanonymous(\tenv, \vt)\typearrow L(\vfieldst) \\
   \vnamess \eqdef \fieldnames(\vfieldss)\\
   \vnamest \eqdef \fieldnames(\vfieldst)\\
-  \booltrans{\vnamess \subseteq \vnamest} \booltransarrow \True \terminateas \False\\
+  \booltrans(\vnamess \subseteq \vnamest) \booltransarrow \True \terminateas \False\\
   (\id,\vtys)\in\vfieldss: \typeequal(\tenv, \vtys, \fieldtype(\vfieldst, \id)) \typearrow \vb_\id\\
   \vb \eqdef \bigwedge_{\id \in \vnamess} \vb_\id
 }{
@@ -622,7 +622,6 @@ The result is a \typingerrorterm{} if a \Proselca{} does not exist or a \typinge
 \pagebreak
 \ASLListing{Lowest common ancestor}{example-lca}{\typingtests/TypingRule.LowestCommonAncestor.asl}
 
-\ExampleDef{Lowest Common Ancestor of Two Bitvectors}
 \listingref{example-lca2} shows an example of a lowest common ancestor of two \bitvectortypesterm{}
 of different widths.
 \ASLListing{Lowest common ancestor of two bitvectors}{example-lca2}{\typingtests/TypingRule.LowestCommonAncestor2.asl}
@@ -2315,7 +2314,7 @@ The function
   \overname{\intconstraint}{\vc}) \aslto
   \overname{\langle\intconstraint\rangle}{\vcopt}
 \]
-returns $\None$ if $\vc$ is an exact constraint for a binary expression for dividing two integer literals
+returns $\None$ if $\vc$ is an exact constraint for a \binopexpressionterm{} for dividing two integer literals
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.
 The result is returned in $\vcopt$.
 This is used to conservatively test whether $\vc$ would always fail dynamically.
@@ -3120,7 +3119,7 @@ which yield $1$, $16$, and $8$, respectively.
 \begin{mathpar}
 \inferrule{
   \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\\\\
-  \staticeval(\tenv, \ewidth) \typearrow \lint(\vw) \OrTypeError
+  \staticeval(\tenv, \ewidth) \typearrow \LInt(\vw) \OrTypeError
 }{
   \getbitvectorconstwidth(\tenv, \vt) \typearrow \vw
 }

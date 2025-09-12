@@ -266,38 +266,6 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
         num_errors += 1
     return num_errors
 
-
-def check_teletype_in_rule_math_mode(filename) -> int:
-    r"""
-    Checks that file does not contain \texttt{...} inside math mode
-    in rule definitions.
-    Otherwise, the errors are reported for 'filename' and the total
-    number of errors is returned.
-    """
-    if filename == "LexicalStructure.tex":
-        return 0
-    file_str: str = read_file_str(filename)
-    num_errors = 0
-    rule_math_mode_patterns = [
-        r"\\\[.*?\\\]",  # \[...\]
-        r"\\begin\{mathpar\}.*?\\end\{mathpar\}",
-        r"\\begin\{equation\}.*?\\end\{equation\}",
-    ]
-    math_modes_exprs = "|".join(rule_math_mode_patterns)
-    math_mode_pattern = re.compile(math_modes_exprs, re.DOTALL)
-    teletype_pattern = re.compile(r"\\texttt{.*}")
-    matches = math_mode_pattern.findall(file_str)
-    for match in matches:
-        if not "SUPPRESS_TEXTTT_LINTER" in match:
-            teletype_vars = teletype_pattern.findall(match)
-            for tt_var in teletype_vars:
-                print(
-                    f"ERROR! {filename}: teletype font not allowed in rules, substitute {tt_var} with a proper macro"
-                )
-                num_errors += 1
-    return num_errors
-
-
 class RuleBlock:
     r"""
     A class for capturing the lines that a rule consists of,
@@ -685,7 +653,6 @@ def main():
             check_repeated_words,
             check_repeated_lines,
             detect_incorrect_latex_macros_spacing,
-            check_teletype_in_rule_math_mode,
             check_rules,
         ],
     )

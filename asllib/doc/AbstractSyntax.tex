@@ -104,7 +104,7 @@ An abstract syntax consists of a set of derivation rules and a start non-termina
 
 The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\spec$.
 %
-Some extra details are given by using the notation $\overname{\textit{symbol}}{\text{detail}}$.
+Some extra details are given by using the notation $\overtext{\textit{symbol}}{\text{detail}}$.
 
 \subsection{Identifiers \label{sec:Identifiers}}
 \hypertarget{ast-identifier}{}
@@ -117,21 +117,21 @@ integers, Booleans, real numbers, bitvectors, and strings.
 
 \hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
 \begin{flalign*}
-\literal \derives\ & \lint(\overtext{n}{$\Z$})
+\literal \derives\ & \LInt(\Z)
 & \hypertarget{ast-lbool}{}
 \\
- |\ & \lbool(\overtext{b}{$\Bool$})
+ |\ & \LBool(\Bool)
  & \hypertarget{ast-lreal}{}
 \\
- |\ & \lreal(\overtext{q}{$\Q$})
+ |\ & \LReal(\Q)
  & \hypertarget{ast-lbitvector}{}
 \\
- |\ & \lbitvector(\overtext{B}{$B \in \{0, 1\}^*$})
+ |\ & \LBitvector(\Bit^*)
  & \hypertarget{ast-lstring}{}
 \\
- |\ & \lstring(\overtext{S}{$S \in \{C \;|\; \texttt{"$C$"}\ \in\ \Strings\}$}) &
+ |\ & \LString(\Strings) &
  \hypertarget{ast-llabel}{} \\
- |\ & \llabel(\overtext{l}{enumeration label})
+ |\ & \LLabel(\overtext{\identifier}{enumeration label})
  & \\
 \end{flalign*}
 
@@ -140,26 +140,26 @@ The following rules correspond to unary operations and binary operations that ca
 
 \hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
 \begin{flalign*}
-\unop \derives\ & \overtext{\BNOT}{\texttt{"!"}} \;|\; \overtext{\NEG}{\texttt{"-"}} \;|\; \overtext{\NOT}{\texttt{"NOT"}}
+\unop \derives\ & \overtext{\BNOT}{\Tbnot} \;|\; \overtext{\NEG}{\Tminus} \;|\; \overtext{\NOT}{\Tnot}
 & \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
 \\
-\binop  \derives\ & \overtext{\BAND}{\texttt{"\&\&"}} \;|\; \overtext{\BOR}{\texttt{"||"}} \;|\; \overtext{\IMPL}{\texttt{"==>"}}
-              \;|\; \overtext{\BEQ}{\texttt{"<=>"}}
+\binop  \derives\ & \overtext{\BAND}{\Tband} \;|\; \overtext{\BOR}{\Tbor} \;|\; \overtext{\IMPL}{\Tbimpl}
+              \;|\; \overtext{\BEQ}{\Tbeq}
               & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
 \\
-        |\ & \overtext{\EQOP}{\texttt{"=="}} \;|\; \overtext{\NEQ}{\texttt{"!="}} \;|\; \overtext{\GT}{\texttt{">"}}
-        \;|\; \overtext{\GEQ}{\texttt{">="}} \;|\; \overtext{\LT}{\texttt{"<"}} \;|\; \overtext{\LEQ}{\texttt{"<="}}
+        |\ & \overtext{\EQOP}{\Teqop} \;|\; \overtext{\NEQ}{\Tneq} \;|\; \overtext{\GT}{\Tgt}
+        \;|\; \overtext{\GEQ}{\Tgeq} \;|\; \overtext{\LT}{\Tlt} \;|\; \overtext{\LEQ}{\Tleq}
         & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
 \\
-        |\ & \overtext{\PLUS}{\texttt{"+"}} \;|\; \overtext{\MINUS}{\texttt{"-"}} \;|\; \overtext{\OR}{\texttt{"OR"}}
-        \;|\; \overtext{\XOR}{\texttt{"XOR"}} \;|\; \overtext{\AND}{\texttt{"AND"}}
+        |\ & \overtext{\PLUS}{\Tplus} \;|\; \overtext{\MINUS}{\Tminus} \;|\; \overtext{\OR}{\Tor}
+        \;|\; \overtext{\XOR}{\Txor} \;|\; \overtext{\AND}{\Tand}
         & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
 \\
-        |\ & \overtext{\MUL}{\texttt{"*"}} \;|\; \overtext{\DIV}{\texttt{"DIV"}} \;|\; \overtext{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overtext{\MOD}{\texttt{"MOD"}} \;|\; \overtext{\SHL}{\shiftleftlexeme}  \;|\; \overtext{\SHR}{\shiftrightlexeme}
+        |\ & \overtext{\MUL}{\Tmul} \;|\; \overtext{\DIV}{\Tdiv} \;|\; \overtext{\DIVRM}{\Tdivrm}
+        \;|\; \overtext{\MOD}{\Tmod} \;|\; \overtext{\SHL}{\shiftleftlexeme}  \;|\; \overtext{\SHR}{\shiftrightlexeme}
         & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{} \hypertarget{ast-bvconcat}{} \hypertarget{ast-strconcat}{}
 \\
-        |\ & \overtext{\RDIV}{\texttt{"/"}} \;|\; \overtext{\POW}{\texttt{"\^{}"}} \;|\; \overtext{\BVCONCAT}{\texttt{"::"}} \;|\; \overtext{\STRCONCAT}{\texttt{"++"}}
+        |\ & \overtext{\RDIV}{\Trdiv} \;|\; \overtext{\POW}{\Tpow} \;|\; \overtext{\BVCONCAT}{\Tcoloncolon} \;|\; \overtext{\STRCONCAT}{\Tplusplus}
         &
 \end{flalign*}
 
@@ -253,13 +253,13 @@ as indicated by respective comments.
 
 \hypertarget{ast-slice}{} \hypertarget{ast-slicesingle}{}
 \begin{flalign*}
-\slice \derives\ & \SliceSingle(\overname{\expr}{\vi})
+\slice \derives\ & \SliceSingle(\overtext{\expr}{\vi})
   & \hypertarget{ast-slicerange}{}\\
-  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi})
+  |\ & \SliceRange(\overtext{\expr}{\vj}, \overtext{\expr}{\vi})
   & \hypertarget{ast-slicelength}{}\\
-  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn})
+  |\ & \SliceLength(\overtext{\expr}{\vi}, \overtext{\expr}{\vn})
   & \hypertarget{ast-slicestar}{}\\
-  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
+  |\ & \SliceStar(\overtext{\expr}{\vi}, \overtext{\expr}{\vn}) &
 \end{flalign*}
 
 \subsection{Subprogram calls \label{sec:SubprogramCalls}}
@@ -679,7 +679,7 @@ We define some builders as relations rather than functions. This is due to the n
 in creating identifiers for auxiliary variables that stand in for instances of \discardvar{} on the left-hand-side
 of assignments and declarations.
 For example, \texttt{- = 5;} will effectively create some auxiliary variable, which will result in
-an AST node such as $\SAssign(\EVar(\texttt{aux-1}), \ELiteral(\lint(5)))$.
+an AST node such as $\SAssign(\EVar(\texttt{aux-1}), \ELiteral(\LInt(5)))$.
 Recall that hyphens are not legal characters in ASL identifiers, which avoids potential clashes with
 user-supplied identifiers. An implementation is free however to choose other naming schemes that
 avoid name clashes, for example, by employing counters.
@@ -906,8 +906,8 @@ We employ the following abbreviations for various AST nodes:
 \textbf{Abbreviation} & \textbf{Meaning}
 \hypertarget{def-etrue}{}\\
 \hline
-$\ETrue$ & $\ELiteral(\lbool(\True))$ \hypertarget{def-elint}{}\\
-$\ELInt{n}$ & literal integer expression: $\ELiteral(\lint(n))$
+$\ETrue$ & $\ELiteral(\LBool(\True))$ \hypertarget{def-elint}{}\\
+$\ELInt{n}$ & literal integer expression: $\ELiteral(\LInt(n))$
 \hypertarget{def-abbrevevar}{}\\
 $\AbbrevEVar{\vx}$ & $\EVar(\vx)$
 \hypertarget{def-abbrevconstraintexact}{}\\

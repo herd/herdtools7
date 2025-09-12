@@ -30,7 +30,7 @@ from the non-terminal $\ty$.
   \item \secref{CollectionTypes} defines collection types;
   \item \secref{NamedTypes} defines named types;
   \item \secref{DeclaredTypes} defines \emph{declared types} and restrictions over them;
-  \item \secref{DomainOfValuesForTypes} defines how values are associated with each type;
+  \item \secref{DomainOfValuesForTypes} defines the semantics of types by associating a value to each type;
   \item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
         in classifying them;
   \item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
@@ -52,7 +52,7 @@ and types that must be declared and named are grammatically derived from $\Ntyde
 \hypertarget{def-annotatetype}{}
 The function
 \[
-  \annotatetype{\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}}
+  \annotatetype(\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty})
   \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
 \]
 typechecks a type $\tty$ in a \staticenvironmentterm{} $\tenv$,
@@ -401,7 +401,7 @@ correspond to \CaseName{pending\_constrained}.
 \inferrule[pending\_constrained]{}{
   {
     \begin{array}{r}
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\pendingconstrained)}{\tty}} \typearrow
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\pendingconstrained)}{\tty}) \typearrow
   \TypeErrorVal{\UnexpectedType}
     \end{array}
   }
@@ -417,7 +417,7 @@ correspond to \CaseName{pending\_constrained}.
 }{
   {
     \begin{array}{r}
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}} \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}) \typearrow \\
   (\overname{\TInt(\wellconstrained(\newconstraints, \PrecisionFull))}{\newty}, \vses)
     \end{array}
   }
@@ -429,7 +429,7 @@ correspond to \CaseName{pending\_constrained}.
   \tty \eqname \TInt(\parameterized(\name))\\
   \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \vses)
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \vses)
 }
 \end{mathpar}
 
@@ -437,7 +437,7 @@ correspond to \CaseName{pending\_constrained}.
 \inferrule[unconstrained]{
   \tty \eqname \unconstrainedinteger
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \tty} \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
@@ -559,7 +559,7 @@ See \ExampleRef{Well-typed Real Types} for examples of well-typed \realtypeterm{
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}} \typearrow (\overname{\TReal}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}) \typearrow (\overname{\TReal}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
@@ -612,7 +612,7 @@ See \ExampleRef{Well-typed String Types} for examples of well-typed \stringtypes
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}} \typearrow (\overname{\TString}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}) \typearrow (\overname{\TString}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
@@ -659,7 +659,7 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 \begin{mathpar}
 \inferrule{}
 {
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}} \typearrow (\overname{\TBool}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}) \typearrow (\overname{\TBool}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
@@ -766,7 +766,7 @@ bv=0x14, rotated twice=0x05
 \begin{mathpar}
 \inferrule[bit]{}{
   \buildty(\Nty(\Tbit)) \astarrow
-  \overname{\TBits(\ELiteral(\lint(1)), \emptylist)}{\vastnode}
+  \overname{\TBits(\ELiteral(\LInt(1)), \emptylist)}{\vastnode}
 }
 \end{mathpar}
 
@@ -811,7 +811,7 @@ to be \constrainedintegers.
       \item checking that $\seswidth$ is \pure{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
       \item annotating the bitfields $\bitfields$ yields \\
             $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
-      \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\lint(\vwidth)$};
+      \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\LInt(\vwidth)$};
       \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
       \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
             $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, \\
@@ -833,7 +833,7 @@ to be \constrainedintegers.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[with\_bitfields]{
-  \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
@@ -845,13 +845,13 @@ to be \constrainedintegers.
     (\bitfieldsp, \vsesbitfields) \OrTypeError
   \end{array}
   }\\
-  \staticeval(\tenv, \ewidthp) \typearrow \lint(\vwidth) \OrTypeError\\\\
+  \staticeval(\tenv, \ewidthp) \typearrow \LInt(\vwidth) \OrTypeError\\\\
   \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \seswidth \cup \vsesbitfields
 }{
   {
     \begin{array}{r}
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)) \typearrow \\
   (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \vses)
     \end{array}
   }
@@ -860,7 +860,7 @@ to be \constrainedintegers.
 
 \begin{mathpar}
 \inferrule[no\_bitfields]{
-  \annotateexpr{\tenv, \ewidth} \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
@@ -868,7 +868,7 @@ to be \constrainedintegers.
 }{
   {
     \begin{array}{r}
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)} \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)) \typearrow \\
   (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{\seswidth}{\seswidth})
     \end{array}
   }
@@ -957,10 +957,10 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \inferrule{
   k \geq 2\\
   \tys \eqname \tty_{1..k}\\
-  i=1..k: \annotatetype{\False, \tenv, \tty_i} \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)} \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
@@ -1086,9 +1086,9 @@ show examples of ill-typed enumeration type declarations.
 \begin{mathpar}
 \inferrule{
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
-  \vl \in \vli: \checkvarnotingenv{G^\tenv, \vl} \typearrow \True \OrTypeError
+  \vl \in \vli: \checkvarnotingenv(G^\tenv, \vl) \typearrow \True \OrTypeError
 }{
-  \annotatetype{\True, \tenv, \TEnum(\vli)} \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\True, \tenv, \TEnum(\vli)) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
@@ -1195,24 +1195,24 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vlabels \rangle
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
   (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[expr\_not\_enum]{
-  \annotatetype{\False, \tenv, \vt} \typearrow (\vtp, \vsest) \OrTypeError\\\\
+  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None\\
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
   \vses \eqdef \vsest \cup \vsesindex
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}} \typearrow
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
   (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
 }
 \end{mathpar}
@@ -1340,7 +1340,7 @@ expressions and classifies them as either \symbolicallyevaluable{} or not.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
 }{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
@@ -1444,11 +1444,11 @@ is ill-typed, since the field \verb|v| repeats.
   L \in \{\TRecord, \TException\}\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
-  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\True, \tenv, \overname{L(\fields)}{\tty}} \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
+  \annotatetype(\True, \tenv, \overname{L(\fields)}{\tty}) \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
@@ -1549,12 +1549,12 @@ collection types in comments.
 \inferrule{
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
-  i=1..k: \annotatetype{\False, \tenv, \vt_i} \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
   i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype{\False, \tenv, \overname{\TCollection(\fields)}{\tty}} \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
+  \annotatetype(\False, \tenv, \overname{\TCollection(\fields)}{\tty}) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 
@@ -1631,7 +1631,7 @@ show examples of ill-typed named types.
   G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
   \vses \eqdef \{\ \GlobalEffectTerm(\vpurity), \Immutability(\True) \}
 }{
-  \annotatetype{\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}} \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
@@ -1680,7 +1680,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
 \inferrule{
   \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}
 }{
-  \annotatetype{\False, \tenv, \tty} \typearrow \TypeErrorVal{\UnexpectedType}
+  \annotatetype(\False, \tenv, \tty) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}

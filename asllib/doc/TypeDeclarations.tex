@@ -251,10 +251,10 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[enum]{
-  \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
-  \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
   \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
@@ -268,10 +268,10 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 
 \begin{mathpar}
 \inferrule[not\_enum]{
-  \checkvarnotingenv{\genv, \name} \typearrow \True \OrTypeError\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
-  \annotatetype{\True, \tenvone, \vtone} \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\\\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
   \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
@@ -457,7 +457,7 @@ The following are examples of annotating a type inside an \optional{} with the e
 }
 \and
 \inferrule[some]{
-  \annotatetype{\tenv, \vt} \typearrow \vtone \OrTypeError
+  \annotatetype(\tenv, \vt) \typearrow \vtone \OrTypeError
 }{
   \annotatetypeopt(\tenv, \overname{\langle\vt\rangle}{\tyopt}) \typearrow\overname{\langle\vtone\rangle}{\tyoptp}
 }
@@ -480,7 +480,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 \[
 \begin{array}{rcl}
 \annotateexpropt(\emptytenv, \None) &\typearrow& (\None, \None)\\
-\annotateexpropt(\emptytenv, \Some{\lint(5)}) &\typearrow& (\Some{\lint(5)}, \Some{\TInt(\wellconstrained(\AbbrevConstraintExact{\lint(5)}))})
+\annotateexpropt(\emptytenv, \Some{\LInt(5)}) &\typearrow& (\Some{\LInt(5)}, \Some{\TInt(\wellconstrained(\AbbrevConstraintExact{\LInt(5)}))})
 \end{array}
 \]
 
@@ -508,7 +508,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 }
 \and
 \inferrule[some]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vt, \vep)\OrTypeError
+  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep)\OrTypeError
 }{
   \annotateexpropt(\tenv, \overname{\langle\ve\rangle}{\expropt}) \typearrow \overname{(\langle\vt\rangle, \langle\vep\rangle)}{\vres}
 }
@@ -590,9 +590,9 @@ updates the \staticenvironmentterm{} with the following constant variables:
 \begin{tabular}{lll}
 \textbf{identifier} & \textbf{associated type} & \textbf{associated constant value}\\
 \hline
-$\RedLabel$ & $\TNamed(\ColorType)$ & $\llabel(\RedLabel)$\\
-$\GreenLabel$ & $\TNamed(\ColorType)$ & $\llabel(\GreenLabel)$\\
-$\BlueLabel$ & $\TNamed(\ColorType)$ & $\llabel(\BlueLabel)$\\
+$\RedLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\RedLabel)$\\
+$\GreenLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\GreenLabel)$\\
+$\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{tabular}
 \end{center}
 
@@ -601,7 +601,7 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\llabel(\BlueLabel)$\\
 \begin{itemize}
   \item $\ids$ is the (non-empty) list of labels $\id_{1..k}$;
   \item $\tenv_0$ is $\tenv$;
-  \item declaring the constant $\id_i$ with the type $\TNamed(\name)$ and literal $\llabel(\id_i)$ in $\tenv_{i-1}$
+  \item declaring the constant $\id_i$ with the type $\TNamed(\name)$ and literal $\LLabel(\id_i)$ in $\tenv_{i-1}$
         via $\declareconst$
         yields $\tenv_i$, for $i=1 $ to $k$ (if $k>1$)\ProseOrTypeError;
   \item $\newtenv$ is $\tenv_k$.
@@ -614,7 +614,7 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\llabel(\BlueLabel)$\\
   \tenv_0 \eqdef \tenv\\
   {
   \begin{array}{r}
-    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \llabel(\id_\vi)) \typearrow \\
+    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \LLabel(\id_\vi)) \typearrow \\
     \tenv_{\vi} \OrTypeError
   \end{array}
   }
@@ -643,11 +643,11 @@ In \listingref{DeclareConst}, declaring the constant \PI{}
 in the empty \globalstaticenvironmentterm{} yields the following \globalstaticenvironmentterm:
 \[
 \begin{array}{l}
-  \declareconst(G^{\emptytenv}, \PI, \TReal, \lreal(157 / 50)) \typearrow \\
+  \declareconst(G^{\emptytenv}, \PI, \TReal, \LReal(157 / 50)) \typearrow \\
   G^{\emptytenv}\left[
     \begin{array}{l}
     \globalstoragetypes\mapsto\{\PI\mapsto(\TReal, \GDKConstant)\},\\
-    \constantvalues[\PI\mapsto\lreal(157 / 50)]
+    \constantvalues[\PI\mapsto\LReal(157 / 50)]
     \end{array}
   \right]
 \end{array}

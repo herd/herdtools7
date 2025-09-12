@@ -54,11 +54,11 @@ annotates a statement $\vs$ in an environment $\tenv$, resulting in $\news$ ---
 the \typedast\ for $\vs$, which is also known as the \emph{annotated statement} ---
 a modified environment $\newtenv$, and \sideeffectsetterm\ $\vses$. \ProseOtherwiseTypeError
 
-\paragraph{Semantics:} Statements are evaluated by $\evalstmtname$.
+\paragraph{Semantics:} Statements are evaluated by $\evalstmt$.
 The relation
 \hypertarget{def-evalstmt}{}
 \[
-  \evalstmt{\overname{\envs}{\env} \aslsep \overname{\stmt}{\vs}} \;\aslrel\;
+  \evalstmt(\overname{\envs}{\env} \aslsep \overname{\stmt}{\vs}) \;\aslrel\;
   \left(
   \begin{array}{cl}
   \overname{\TReturning}{\Returning((\vvs,\newg), \newenv)} & \cup\\
@@ -140,7 +140,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \evalstmt{\env, \SPass} \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
+  \evalstmt(\env, \SPass) \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
@@ -185,8 +185,8 @@ is well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vre} \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
-  \annotatelexpr{\tenv, \vle, \vtre} \typearrow (\vleone, \vsesle) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
+  \annotatelexpr(\tenv, \vle, \vtre) \typearrow (\vleone, \vsesle) \OrTypeError\\\\
   \vses \eqdef \vsesre \cup \vsesle
 }{
   \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow
@@ -260,7 +260,7 @@ from a subprogram call are as follows:
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultCall(\vms, \envone) \OrAbnormal\\\\
   \evalmultiassignment(\envone, \vles, \vms) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
-  \evalstmt{\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))} \\
+  \evalstmt(\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))) \\
   \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
@@ -301,10 +301,10 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
   \end{array}
   \right)
   }\\
-  \evalexpr{\env, \vre} \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
-  \evallexpr{\envone, \vle, \vm} \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
+  \evalexpr(\env, \vre) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
+  \evallexpr(\envone, \vle, \vm) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
-  \evalstmt{\env, \SAssign(\vle, \vre)} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt(\env, \SAssign(\vle, \vre)) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
@@ -606,7 +606,7 @@ since immutable local storage elements require an initializing expression.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[some]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   {
   \begin{array}{r}
   \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow \\
@@ -625,7 +625,7 @@ since immutable local storage elements require an initializing expression.
 \inferrule[none]{
   \checktrans{\tyopt = \langle\Ignore\rangle}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
   \tyopt \eqname \langle\vt\rangle \\
-  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vses) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
   \news \eqdef \SDecl(\LDKVar, \ldi, \langle\vtp\rangle, \langle\veinit\rangle)
@@ -705,7 +705,7 @@ See \ExampleRef{Typing Declaration Statements}.
 \inferrule[some]{
   \tstruct(\tenv, \vte) \typearrow \vtep \OrTypeError \\
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
-  \annotatetype{\tenv, \vtp} \typearrow (\vtpp, \vses) \OrTypeError\\\\
+  \annotatetype(\tenv, \vtp) \typearrow (\vtpp, \vses) \OrTypeError\\\\
   \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \langle \vep \rangle, \ldip) \typearrow \newtenv \OrTypeError
 }{
@@ -946,16 +946,16 @@ In \listingref{semantics-sdeclnone},
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[some]{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
-  \evallocaldecl{\envone, \ldi, \vm} \evalarrow \ResultLexpr(\newg, \newenv)\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
+  \evallocaldecl(\envone, \ldi, \vm) \evalarrow \ResultLexpr(\newg, \newenv)\\
 }{
-  \evalstmt{\env, \SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \evalstmt{\env, \SDecl(\Ignore, \ldi, \Ignore, \None)} \evalarrow \DynamicErrorVal{UninitialisedDecl}
+  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \None)) \evalarrow \DynamicErrorVal{UninitialisedDecl}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
@@ -1187,7 +1187,7 @@ annotated first in the \staticenvironmentterm{} where the \localstaticenvironmen
 Then, the statement \verb|let y = x + 1;|
 is annotated in the \staticenvironmentterm{} where
 \verb|x| has been declared and associated with the type \verb|integer{3}|,
-and also recorded to be equivalent to $\lint(3)$ (in the $\exprequiv$ map).
+and also recorded to be equivalent to $\LInt(3)$ (in the $\exprequiv$ map).
 
 \ProseParagraph
 \AllApply
@@ -1235,12 +1235,12 @@ evaluates \texttt{let y = x + 1}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalstmt{\env, \vsone} \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\\\\
-  \evalstmt{\envone, \vstwo} \evalarrow C \OrAbnormal\\\\
+  \evalstmt(\env, \vsone) \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\\\\
+  \evalstmt(\envone, \vstwo) \evalarrow C \OrAbnormal\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\newg}
 }{
-  \evalstmt{\env, \SSeq(\vsone, \vstwo)} \evalarrow D
+  \evalstmt(\env, \SSeq(\vsone, \vstwo)) \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
@@ -1337,7 +1337,7 @@ can only be used for procedures, not functions.
 \end{array}
 }
 }{
-  \evalstmt{\env, \overname{\SCall(\vcall)}{\vs}} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt(\env, \overname{\SCall(\vcall)}{\vs}) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
@@ -1432,10 +1432,10 @@ an \atcexpressionterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
   \checktypesat(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vsone} \typearrow (\vsonep, \vsesone) \OrTypeError\\\\
-  \annotateblock{\tenv, \vstwo} \typearrow (\vstwop, \vsestwo) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vsonep, \vsesone) \OrTypeError\\\\
+  \annotateblock(\tenv, \vstwo) \typearrow (\vstwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsescond \cup \vsesone \cup \vsestwo
 }{
   \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
@@ -1480,14 +1480,14 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\\\\
   \vv \eqname \nvbool(\vb)\\
   \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
-  \evalblock{\envone, \vsp} \evalarrow C \OrAbnormal\\\\
+  \evalblock(\envone, \vsp) \evalarrow C \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vg}
 }{
-  \evalstmt{\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}} \evalarrow D
+  \evalstmt(\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
@@ -1872,7 +1872,7 @@ since the expression needs to be both of a \booleantypeterm{} and \readonly{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
   \checktrans{\sesisreadonly(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsese
@@ -1920,19 +1920,19 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\\\\
   \vv \eqname \nvbool(\True)
 }{
-  \evalstmt{\env, \SAssert(\ve)} \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt(\env, \SAssert(\ve)) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
   \inferrule[error]{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
   \vv \eqname \nvbool(\False)
 }{
-  \evalstmt{\env, \SAssert(\ve)} \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
+  \evalstmt(\env, \SAssert(\ve)) \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
@@ -2033,10 +2033,10 @@ is ill-typed, since the loop limit is not a \constrainedinteger.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vsone} \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   \annotatestmt(\tenv, \overname{\SWhile(\veone, \vlimitone, \vsone)}{\vs}) \typearrow
@@ -2142,11 +2142,11 @@ the output configuration $C$.
 \begin{mathpar}
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\\\\
-  \evalloop{\env, \True, \vlimitopt, \ve, \vbody} \evalarrow C \OrDynErrorDiverging\\\\
+  \evalloop(\env, \True, \vlimitopt, \ve, \vbody) \evalarrow C \OrDynErrorDiverging\\\\
   \vgtwo \eqdef \ordered{\vgone}{\asldata}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
 }{
-  \evalstmt{\env, \overname{\SWhile(\ve, \velimitopt, \vbody)}{\vs}} \evalarrow D
+  \evalstmt(\env, \overname{\SWhile(\ve, \velimitopt, \vbody)}{\vs}) \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
@@ -2155,12 +2155,12 @@ the output configuration $C$.
 The relation
 \hypertarget{def-evalloop}{}
 \[
-  \evalloop{
+  \evalloop(
     \overname{\envs}{\env} \aslsep
     \overname{\Bool}{\iswhile} \aslsep
     \overname{\N?}{\vlimitopt} \aslsep
     \overname{\expr}{\econd} \aslsep
-    \overname{\stmt}{\vbody}}
+    \overname{\stmt}{\vbody})
   \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -2173,7 +2173,7 @@ The relation
 \]
 to evaluate both \texttt{while} statements and \texttt{repeat} statements.
 
-More specifically, $\evalloop{\env, \iswhile, \velimitopt, \econd, \vbody}$
+More specifically, $\evalloop(\env, \iswhile, \velimitopt, \econd, \vbody)$
 evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
 or until $\econd$ holds when $\iswhile$ is $\False$.
 If the number of iterations exceeds the optional value specified by $\vlimitopt$,
@@ -2221,30 +2221,30 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \begin{mathpar}
 \inferrule[exit]{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\\\\
   \condm \eqname (\nvbool(\vb), \newg)\\
   \vb \neq \iswhile
 }{
-  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[continue]{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\\\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\\\\
-  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\\\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\\\\
   {
     \begin{array}{r}
-      \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \\
+      \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \\
       \Continuing(\vgthree, \newenv) \OrAbnormal, \ReturningConfig\\
     \end{array}
   }\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
-  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
@@ -2303,7 +2303,7 @@ of the \whilestatementterm.
 
 \begin{mathpar}
 \inferrule[some]{
-  \evalexprsef{\env, \velimit} \evalarrow (\nvint(\vv), \vg) \OrDynErrorDiverging
+  \evalexprsef(\env, \velimit) \evalarrow (\nvint(\vv), \vg) \OrDynErrorDiverging
 }{
   \evallimit(\env, \overname{\langle\velimit\rangle}{\velimitopt}) \evalarrow (\overname{\langle\vv\rangle}{\vvopt}, \vg)
 }
@@ -2426,9 +2426,9 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateblock{\tenv, \vsone} \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
-  \annotateexpr{\tenv, \veone} \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
@@ -2492,12 +2492,12 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\\\\
   \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\\\\
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\\\\
-  \evalloop{\envone, \False, \vlimitopttwo, \ve, \vbody} \evalarrow C\\
+  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\\\\
+  \evalloop(\envone, \False, \vlimitopttwo, \ve, \vbody) \evalarrow C\\
   \vgthree \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\graphof{C}}}\\
   D \eqdef \withgraph{C}{\vgthree}
 }{
-  \evalstmt{\env, \overname{\SRepeat(\ve, \vbody, \velimitopt)}{\vs}} \evalarrow D
+  \evalstmt(\env, \overname{\SRepeat(\ve, \vbody, \velimitopt)}{\vs}) \evalarrow D
 }
 \end{mathpar}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
@@ -2646,8 +2646,8 @@ show examples of ill-typed \texttt{for} loops.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vstarte} \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vende} \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
   \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
   \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
@@ -2661,9 +2661,9 @@ show examples of ill-typed \texttt{for} loops.
     \end{array}
   }\\\\
   \tty \eqdef \TInt(\cs)\\
-  \checkvarnotinenv{\tenv, \vindexname} \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \vindexname) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
-  \annotateblock{\tenvp, \vbody} \typearrow (\vbodyp, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenvp, \vbody) \typearrow (\vbodyp, \vsesblock) \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsescond
 }{
   {
@@ -2864,7 +2864,7 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
 }{
   {
   \begin{array}{r}
-  \evalstmtname\left(\env,
+  \evalstmt\left(\env,
   \overname{
   \SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
@@ -3057,7 +3057,7 @@ Advancing the loop counter one step towards the end of its range is achieved via
 Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vbody} \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
+  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
   \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
   {
     \begin{array}{r}
@@ -3158,7 +3158,7 @@ shows examples of well-typed \throwstatementsterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
   \vte \eqname \TNamed(\exnname)\\
   \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
@@ -3193,13 +3193,13 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\
+  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \name\in\Identifiers \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
   \vex \eqdef \valuereadfrom(\vv, \name)
 }{
-  \evalstmt{\env, \SThrow(\ve, \vt)} \evalarrow
+  \evalstmt(\env, \SThrow(\ve, \vt)) \evalarrow
   \Throwing(\vex, \vt, \newg, \newenv)
 }
 \end{mathpar}
@@ -3321,8 +3321,8 @@ the \trystatementsterm{} are all well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[no\_otherwise]{
-  \annotateblock{\tenv, \vsp} \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
   \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_vi\\\\
   \commonprefixline\\\\
@@ -3336,12 +3336,12 @@ the \trystatementsterm{} are all well-typed.
 }
 \and
 \inferrule[otherwise]{
-  \annotateblock{\tenv, \vsp} \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher{\tenv, \catchers[\vi]} \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
   \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_i\\\\
   \commonprefixline\\\\
-  \annotateblock{\tenv, \otherwise} \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenv, \otherwise) \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
   \vsesotherwise \eqdef \vsesblock\\
   \vsesthree \eqdef \vsestwo \\\\
@@ -3374,10 +3374,10 @@ does not result in any Assertion error, and the specification terminates with th
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalblock{\env, \vsone} \evalarrow \sm \OrDynErrorDiverging\\\\
-  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow C
+  \evalblock(\env, \vsone) \evalarrow \sm \OrDynErrorDiverging\\\\
+  \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow C
 }{
-  \evalstmt{\env, \STry(\vsone, \catchers, \otherwiseopt)} \evalarrow C
+  \evalstmt(\env, \STry(\vsone, \catchers, \otherwiseopt)) \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
@@ -3474,7 +3474,7 @@ since \verb|proc| is not a function but a procedure.
 \begin{mathpar}
 \inferrule[some]{
   L^\tenv.\returntype = \langle \vt \rangle\\
-  \annotateexpr{\tenv, \ve} \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
   \annotatestmt(\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}) \typearrow
@@ -3535,18 +3535,18 @@ In \listingref{semantics-sreturntuple},
 \begin{mathpar}
 \inferrule[none]{}
 {
-  \evalstmt{\env, \SReturn(\None)} \evalarrow \Returning((\emptylist, \emptygraph), \env)
+  \evalstmt(\env, \SReturn(\None)) \evalarrow \Returning((\emptylist, \emptygraph), \env)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[one]{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \wid \in \Identifiers\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evalstmt{\env, \SReturn(\langle\ve\rangle)} \evalarrow \Returning(([\vv], \newg), \newenv)
+  \evalstmt(\env, \SReturn(\langle\ve\rangle)) \evalarrow \Returning(([\vv], \newg), \newenv)
 }
 \end{mathpar}
 
@@ -3555,7 +3555,7 @@ In \listingref{semantics-sreturntuple},
   \evalexprlistm(\env, \es) \evalarrow \ResultExprListM(\ms, \newenv) \OrAbnormal\\
   \writefolder(\ms) \evalarrow (\vvs, \newg)
 }{
-  \evalstmt{\env, \SReturn(\langle\ETuple(\es)\rangle)} \evalarrow \Returning((\vvs, \newg), \newenv)
+  \evalstmt(\env, \SReturn(\langle\ETuple(\es)\rangle)) \evalarrow \Returning((\vvs, \newg), \newenv)
 }
 \end{mathpar}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
@@ -3614,7 +3614,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vEs = [\ve] \concat \vesone\\
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\\
   \evalexprlistm(\envone, \vesone) \evalarrow \ResultExprListM(\vmsone, \newenv) \OrAbnormal
 }{
   \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
@@ -3737,7 +3737,7 @@ empty \executiongraph{}.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{%
-    \vi\in\listrange(\vargs): \annotateexpr{\vargs[i], \tenv} \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
+    \vi\in\listrange(\vargs): \annotateexpr(\vargs[i], \tenv) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
     \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
     \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
@@ -3803,7 +3803,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
   n \eqdef \listlen{\vlist}\\
   \newenv \eqdef \env_{n + 1}
 }{
-  \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \newenv)
+  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \newenv)
 }
 \end{mathpar}
 
@@ -3812,10 +3812,10 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
 
 \begin{mathpar}
 \inferrule[println]{
-  \evalstmt{\env, \SPrint(\elist, \False)} \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
+  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
   \outputtoconsole(\envone, \nvstring(\vnewline)) \evalarrow \newenv
 }{
-  \evalstmt{\env, \SPrint(\elist, \True)} \evalarrow \Continuing(\vg, \newenv)
+  \evalstmt(\env, \SPrint(\elist, \True)) \evalarrow \Continuing(\vg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
@@ -3851,7 +3851,7 @@ The helper function $\literaltostring : \literal \aslto \Strings$,
 which defines how a literal is represented by a string,
 is defined by \taref{literaltostringtable}.
 %
-Please note that surrounding quotations mark for $\lstring(S)$ are not included
+Please note that surrounding quotations mark for $\LString(S)$ are not included
 in $\literaltostring(S)$, so they will appear in the printed string.
 
 \begin{table}
@@ -3859,19 +3859,19 @@ in $\literaltostring(S)$, so they will appear in the printed string.
 \begin{tabular}{rl}
 \textbf{literal $\vl$} & \textbf{$\literaltostring(\vl)$} \\
 \hline
-$\lint(n)$        & $n$ in decimal format, without any leading zeros, \\
+$\LInt(n)$        & $n$ in decimal format, without any leading zeros, \\
                   & preceded by a ``\texttt{-}'' sign if $n$ is negative. \\
-$\lbool(\True)$   & \texttt{TRUE} \\
-$\lbool(\False)$  & \texttt{FALSE} \\
-$\lreal(q)$       & $q$ as an irreducible fraction of positive integers, \\
+$\LBool(\True)$   & \texttt{TRUE} \\
+$\LBool(\False)$  & \texttt{FALSE} \\
+$\LReal(q)$       & $q$ as an irreducible fraction of positive integers, \\
                   & preceded by a ``\texttt{-}'' sign when $q$ is negative, \\
                   & with the denominator omitted if it is equal to 1. \\
-$\lbitvector(b)$  & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading \\
+$\LBitvector(b)$  & $b$ in hexadecimal, preceded by ``\texttt{0x}'', with enough leading \\
                   & zeros to make the number of hexadecimal digits printed \\
                   & equal to the width of $b$ divided by 4, and rounded up to \\
                   & the following integer.\\
-$\lstring(S)$     & $S$. \\
-$\llabel(s)$      & $s$. \\
+$\LString(S)$     & $S$. \\
+$\LLabel(s)$      & $s$. \\
 \end{tabular}
 \end{table}
 
@@ -3893,7 +3893,7 @@ $\llabel(s)$      & $s$. \\
   \env \eqname (\tenv, \denv, \vconsolestream)\\
   \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
 }{
-  \outputtoconsole(\env, \nvliteral{\vl}) \evalarrow (\newenv)
+  \outputtoconsole(\env, \nvliteral(\vl)) \evalarrow (\newenv)
 }
 \end{mathpar}
 
@@ -3963,7 +3963,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorCo
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \evalstmt{\env, \SUnreachable} \evalarrow \DynamicErrorVal{\UnreachableError}
+  \evalstmt(\env, \SUnreachable) \evalarrow \DynamicErrorVal{\UnreachableError}
 }
 \end{mathpar}
 
@@ -4015,7 +4015,7 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  i\in\listrange(\vargs): \annotateexpr{\tenv, \vargs[i]} \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
+  i\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i\in\listrange(\vargs)} \vxs_i
 }{
   \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)

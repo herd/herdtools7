@@ -17,12 +17,12 @@ Therefore, ASL specifies an evaluation order to ensure that the side-effects/exc
   \item \FormalRelationsRef{Expressions} defines the formal relations for expressions;
   \item \secref{LiteralExpressions} defines \literalexpressionsterm;
   \item \secref{VariablExpressions} defines \variableexpressionsterm;
-  \item \secref{BinaryExpressions} defines binary expressions;
-  \item \secref{UnaryExpressions} defines unary expressions;
-  \item \secref{ConditionalExpressions} defines conditional expressions;
-  \item \secref{CallExpressions} defines call expressions;
-  \item \secref{SlicingExpressions} defines slicing expressions;
-  \item \secref{ArrayAccessExpressions} defines array access expressions;
+  \item \secref{BinaryExpressions} defines \binopexpressionsterm;
+  \item \secref{UnaryExpressions} defines \unopexpressionsterm;
+  \item \secref{ConditionalExpressions} defines \condexpressionsterm;
+  \item \secref{CallExpressions} defines \callexpressionsterm;
+  \item \secref{SlicingExpressions} defines \slicingexpressionsterm;
+  \item \secref{ArrayAccessExpressions} defines \arrayaccessexpressionsterm;
   \item \secref{FieldReadingExpressions} defines field reading expressions;
   \item \secref{MultiFieldReadingExpressions} defines multi-field reading expressions;
   \item \secref{AssertingTypeConversionExpressions} defines asserting type conversion expressions;
@@ -53,19 +53,24 @@ transforms an expression parse node $\vparsednode$ into an expression AST node $
 
 \paragraph{Typing:}
 All expressions have a unique type (which can be a \tupletypeterm{}).
+
 \hypertarget{def-annotateexpr}{}
-The function
+The relation
 \[
-  \annotateexpr{\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}}
-  \aslto (\overname{\ty}{\vt} \times \overname{\expr}{\newe} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+\annotateexpr(\overname{\staticenvs}{\texttt{tenv}}, \overname{\expr}{\texttt{e}})
+\;\bigtimes\;
+\left(\begin{array}{ll}
+(\overname{\ty}{\texttt{t}}, \overname{\expr}{\texttt{new\_e}}, \overname{\pow{\TSideEffect}}{\texttt{ses}}) & \cup \\
+ \TTypeError & \\
+\end{array}\right)
 \]
-specifies how to annotate an expression $\ve$ in
-an environment \tenv.  The result of annotating the expression
-$\ve$ in \tenv\ is the tuple $(\vt, \newe, \vses)$, where $\vt$ is the type inferred
-for $\ve$,
-$\newe$ is the \typedast\ for $\ve$, also known as the \emph{annotated expression}, and
-$\vses$ is the \sideeffectsetterm\ inferred for $\ve$.
+annotates the expression $\texttt{e}$ in the
+\staticenvironmentterm{} $\texttt{tenv}$,
+ resulting in the following:
+ $\texttt{t}$ is the type inferred for $\texttt{e}$;
+ $\texttt{new\_e}$ is the \typedast{} for $\texttt{e}$, also known as the
+\emph{annotated expression};
+ and $\texttt{ses}$ is the \sideeffectsetterm{} inferred for $\texttt{e}$.
 \ProseOtherwiseTypeError
 
 The annotation rewrites the input expression in the following case, making the annotation of statements simpler:
@@ -75,7 +80,7 @@ variables with constant values are substituted by their constant values.
 The relation
 \hypertarget{def-evalexpr}{}
 \[
-  \evalexpr{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
+  \evalexpr(\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}) \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultExpr((\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) & \cup\\
@@ -123,17 +128,18 @@ is annotated with the type \verb|integer{3}|.
 \AllApply
 \begin{itemize}
 \item $\ve$ is the literal expression $\vv$;
-\item $\vt$ is the type of the literal $\vv$;
-\item define $\newe$ as $\ve$;
-\item define $\vses$ as the empty set.
+\item annotating the literal $\vv$ in the \staticenvironmentterm{} $\tenv$ yields is the type $\vt$;
+\item \Proseeqdef{$\newe$}{$\ve$};
+\item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateliteral{\tenv, \vv} \typearrow \vt
+  \ve = \ELiteral(\vv)\\
+  \annotateliteral(\tenv, \vv) \typearrow \vt
 }{
-  \annotateexpr{\tenv, \overname{\ELiteral(\vv)}{\ve}} \typearrow (\vt, \overname{\ELiteral(\vv)}{\newe}, \overname{\emptyset}{\vses})
+  \annotateexpr(\tenv, \ve) \typearrow (\vt, \overname{\ve}{\newe}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
@@ -154,7 +160,7 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \evalexpr{\env, \overname{\ELiteral(\vl)}{\ve}} \evalarrow \ResultExpr((\overname{\nvliteral{\vl}}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \overname{\ELiteral(\vl)}{\ve}) \evalarrow \ResultExpr((\overname{\nvliteral(\vl)}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
@@ -239,7 +245,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
   \sesldk(k) \typearrow \vses
 }{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
 }
 \end{mathpar}
 
@@ -249,7 +255,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
   G^\tenv.\constantvalues(\vx) = \vv
 }{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\eliteral{\vv}}{\newe}, \overname{\emptyset}{\vses})
+  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\eliteral{\vv}}{\newe}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 
@@ -260,7 +266,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
   \sesgdk(k) \typearrow \vses
 }{
-  \annotateexpr{\tenv, \overname{\EVar(\vx)}{\ve}} \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
 }
 \end{mathpar}
 
@@ -269,7 +275,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   L^\tenv.\localstoragetypes(\vx) = \bot \\
   G^\tenv.\globalstoragetypes(\vx) = \bot
 }{
-  \annotateexpr{\tenv,\overname{\EVar(\vx)}{\ve}} \typearrow \TypeErrorVal{\UndefinedIdentifier}
+  \annotateexpr(\tenv,\overname{\EVar(\vx)}{\ve}) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
 
@@ -315,7 +321,7 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
   \env \eqname (\Ignore, \denv)\\
   \vx \in \dom(L^\denv)
 }{
-  \evalexpr{\env, \EVar(\vx)} \evalarrow \ResultExpr((\overname{L^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{L^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 
@@ -324,7 +330,7 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
   \env \eqname (\Ignore, \denv)\\
   \vx \in \dom(G^\denv.\storage)
 }{
-  \evalexpr{\env, \EVar(\vx)} \evalarrow \ResultExpr((\overname{G^\denv.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{G^\denv.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
@@ -337,6 +343,7 @@ and
 \TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
 both in the Chapter ``Typing of Global Declarations''.
 
+\hypertarget{def-binopexpressionterm}{}
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 Binary expressions apply a binary operator to two sub-expressions.
 
@@ -571,12 +578,12 @@ is equal to the width of the \bitvectortypeterm{} of the return type.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotateexpr{\tenv, \vetwo} \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\\\\
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateexpr{\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}} \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
@@ -600,10 +607,10 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \falsep \eqdef \ELiteral(\lbool(\False))\\
-  \evalexpr{\env, \ECond(\veone, \vetwo, \falsep)} \evalarrow C
+  \falsep \eqdef \ELiteral(\LBool(\False))\\
+  \evalexpr(\env, \ECond(\veone, \vetwo, \falsep)) \evalarrow C
 }{
-\evalexpr{\env, \EBinop(\BAND, \veone, \vetwo)} \evalarrow C
+\evalexpr(\env, \EBinop(\BAND, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
@@ -648,10 +655,10 @@ In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \truep \eqdef \ELiteral(\lbool(\True))\\
-  \evalexpr{\env, \ECond(\veone, \truep, \vetwo)} \evalarrow C
+  \truep \eqdef \ELiteral(\LBool(\True))\\
+  \evalexpr(\env, \ECond(\veone, \truep, \vetwo)) \evalarrow C
 }{
-\evalexpr{\env, \EBinop(\BOR, \veone, \vetwo)} \evalarrow C
+\evalexpr(\env, \EBinop(\BOR, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
@@ -696,10 +703,10 @@ the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, acco
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \truep \eqdef \ELiteral(\lbool(\True))\\
-  \evalexpr{\env, \ECond(\veone, \vetwo, \truep)} \evalarrow C
+  \truep \eqdef \ELiteral(\LBool(\True))\\
+  \evalexpr(\env, \ECond(\veone, \vetwo, \truep)) \evalarrow C
 }{
-\evalexpr{\env, \EBinop(\IMPL, \veone, \vetwo)} \evalarrow C
+\evalexpr(\env, \EBinop(\IMPL, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
@@ -726,7 +733,6 @@ However, note that relying on this short-circuit evaluation can be confusing
 for readers of ASL specifications and as a consequence it is recommended that
 an if-statement is used to achieve the same effect.
 
-\hypertarget{def-binopexpressionterm}{}
 \SemanticsRuleDef{Binop}
 \ExampleDef{Evaluation of Binary Expressions}
 In \listingref{semantics-binopassert},
@@ -755,14 +761,14 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
-  \evalexpr{ \env, \veone} \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
-  \evalexpr{ \envone, \vetwo } \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
   \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalexpr{ \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} } \evalarrow
+  \evalexpr( \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} ) \evalarrow
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -812,10 +818,10 @@ of well-typed unary operation expressions.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\vtpp, \vepp, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vtpp, \vepp, \vses) \OrTypeError\\\\
   \applyunoptype(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
 }{
-  \annotateexpr{\tenv, \EUnop(\op, \vep)} \typearrow (\vt, \EUnop(\op, \vepp), \vses)
+  \annotateexpr(\tenv, \EUnop(\op, \vep)) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
@@ -837,11 +843,11 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{ \env, \veone} \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\\\\
   \unoprel(\op, \vvone) \evalarrow \vv
 }
 {
-  \evalexpr{ \env, \EUnop(\op, \veone) } \evalarrow
+  \evalexpr( \env, \EUnop(\op, \veone) ) \evalarrow
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -887,7 +893,7 @@ The specification in \listingref{ECond} is well-typed and shows
 an example of typing a conditional expression.
 \ASLListing{Typing conditional expressions}{ECond}{\typingtests/TypingRule.ECond.asl}
 
-\ExampleRef{Lowest Common Ancestor} shows more examples of typing conditional expressions.
+\ExampleRef{Lowest Common Ancestor Examples} shows more examples of typing conditional expressions.
 
 \ProseParagraph
 \AllApply
@@ -903,15 +909,15 @@ an example of typing a conditional expression.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \econd} \typearrow (\tcond, \econd', \vsescond) \OrTypeError\\\\
-  \annotateexpr{\tenv, \etrue} \typearrow (\ttrue, \etrue', \vsestrue) \OrTypeError\\\\
-  \annotateexpr{\tenv, \efalse} \typearrow (\tfalse, \efalse', \vsesfalse) \OrTypeError\\\\
+  \annotateexpr(\tenv, \econd) \typearrow (\tcond, \econd', \vsescond) \OrTypeError\\\\
+  \annotateexpr(\tenv, \etrue) \typearrow (\ttrue, \etrue', \vsestrue) \OrTypeError\\\\
+  \annotateexpr(\tenv, \efalse) \typearrow (\tfalse, \efalse', \vsesfalse) \OrTypeError\\\\
   \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError\\\\
   \vses \eqdef \vsescond \cup \vsestrue \cup \vsesfalse
 }{
   {
     \begin{array}{r}
-  \annotateexpr{\ECond(\econd, \etrue, \efalse)} \typearrow \\
+  \annotateexpr(\ECond(\econd, \etrue, \efalse)) \typearrow \\
   (\vt, \ECond(\econdp, \etruep, \efalsep), \vses)
     \end{array}
   }
@@ -956,13 +962,13 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr{\envone, \vep} \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
-  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+  \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -1105,7 +1111,7 @@ and the inferred types of the expressions, as type annotations on the left-hand-
 \inferrule{
   \annotatecall(\vcall) \typearrow (\vcallp, \langle \vt \rangle, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\ECall(\vcall)}{\ve}} \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\ECall(\vcall)}{\ve}) \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
@@ -1147,7 +1153,7 @@ and the values they evaluate to, as assertions on the values assigned.
   \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \ResultExpr(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [(\vv, \vg)]
 }{
-  \evalexpr{\env, \ECall(\vcall)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 
@@ -1156,15 +1162,15 @@ and the values they evaluate to, as assertions on the values assigned.
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultExpr(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
-  \vv \eqdef \nvvector{\vv_{1..k}}
+  \vv \eqdef \nvvector(\vv_{1..k})
 }{
-  \evalexpr{\env, \ECall(\vcall)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
+\hypertarget{def-slicingexpressionsterm}{}
 \section{Slicing Expressions\label{sec:SlicingExpressions}}
-\hypertarget{def-sliceexpressionterm}{}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
 The details of the various types of bitvector slices are deferred to \chapref{BitvectorSlicing}.
@@ -1231,7 +1237,7 @@ and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expres
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp, \vsesone) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
   \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
@@ -1239,7 +1245,7 @@ and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expres
   \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow
+  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow
   (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\ESlice(\vepp, \slicesp)}{\newe}, \vses)
 }
 \end{mathpar}
@@ -1267,11 +1273,11 @@ is an \integertypeterm{} nor a \bitvectortypeterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \vtp\\
   \astlabel(\vtp) \not\in \{\TInt, \TBits\}
 }{
-  \annotateexpr{\tenv, \overname{\ESlice(\vep, \slices)}{\ve}} \typearrow \TypeErrorVal{\BadSlices}
+  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow \TypeErrorVal{\BadSlices}
 }
 \end{mathpar}
 \CodeSubsection{\ESliceError}{\ESliceErrorEnd}{../Typing.ml}
@@ -1306,21 +1312,22 @@ resulting bitvector --- and the execution graph $\vgone$;
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ebv} \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\\\\
+  \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\\\\
   \mbv \eqname (\vbv,\vgone) \\
   \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
   \mpositions \eqname (\positions, \vgtwo) \\
   \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalexpr{\env, \ESlice(\ebv, \slices)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ESlice(\ebv, \slices)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
-\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
+\hypertarget{def-arrayaccessexpressionsterm}{}
 \hypertarget{def-getarrayexpressionterm}{}
 \hypertarget{def-getenumarrayexpression}{}
+\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
 the same way. The type system infers the kind of array and outputs a typed AST node differentiating
@@ -1381,7 +1388,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ebase} \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\\\\
   \checktrans{\astlabel(\tanonbase) = \TArray}{ExpectedArrayType} \typearrow \True \OrTypeError\\\\
   \tanonbase \eqname \TArray(\size, \telem)\\
@@ -1391,7 +1398,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
     \end{array}
   }
 }{
-  \annotateexpr{\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr(\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
@@ -1438,7 +1445,7 @@ See \ExampleRef{Array Access Expressions}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \eindex} \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
+  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
   \typeofarraylength(\size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesindex \cup \vsesbase \\
@@ -1489,15 +1496,15 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \earray} \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
-  \evalexpr{\envone, \eindex} \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
+  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvint(\vi)\\
   \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
-  \evalexpr{\env, \EGetArray(\earray, \eindex)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \EGetArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
@@ -1526,15 +1533,15 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \earray} \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
-  \evalexpr{\envone, \eindex} \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
+  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvlabel(\vl)\\
   \getfield(\vl, \varray) \evalarrow \vv\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
-  \evalexpr{\env, \EGetEnumArray(\earray, \eindex)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \EGetEnumArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
@@ -1584,7 +1591,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
@@ -1592,7 +1599,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 }{
   {
     \begin{array}{r}
-      \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \\
+      \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \\
       (\vt, \EGetField(\vetwo, \fieldname), \overname{\vsesone}{\vses})
     \end{array}
   }
@@ -1620,13 +1627,13 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
 }{
-  \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \TypeErrorVal{\BadField}
+  \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
@@ -1650,12 +1657,12 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{\BadField}
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadBitFieldBegin}{\EGetBadBitFieldEnd}{../Typing.ml}
@@ -1682,7 +1689,7 @@ All of the collection field expressions in
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vetwo = \EVar(\vbase) \\
   \vtetwo = \TCollection(\fields)\\
@@ -1690,7 +1697,7 @@ All of the collection field expressions in
 }{
   {
     \begin{array}{r}
-      \annotateexpr{\tenv, \EGetField(\veone, \fieldname)} \typearrow \\
+      \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \\
       (\vt, \EGetCollectionFields(\vbase, [\fieldname]), \overname{\vsesone}{\vses})
     \end{array}
   }
@@ -1721,14 +1728,14 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr{\tenv, \vethree} \typearrow (\vt, \newe, \vses) \OrTypeError
+  \annotateexpr(\tenv, \vethree) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
@@ -1757,7 +1764,7 @@ which refers to the bitfield \verb|info|, which is nested in the bitfield
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\\\
   {
@@ -1766,11 +1773,11 @@ which refers to the bitfield \verb|info|, which is nested in the bitfield
     \end{array}
   }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \vtefour \eqname \TBits(\width, \Ignore)\\
   \vt \eqdef \TBits(\width, \bitfieldsp)
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
 }
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
@@ -1797,15 +1804,15 @@ which includes the type annotation \verb|bits(4)|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr{\tenv, \vethree} \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \checktypesat(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
 }
 \end{mathpar}
 \CodeSubsection{\EGetBitFieldTypedBegin}{\EGetBitFieldTypedEnd}{../Typing.ml}
@@ -1835,7 +1842,7 @@ for its verbatim string.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TTuple(\tys)\\
   \fieldname = \itemprefix \stringconcat \num\\
@@ -1845,7 +1852,7 @@ for its verbatim string.
   \vt \eqdef \tys[\vindex]\\
   \newe \eqdef \EGetItem(\vetwo, \vindex)
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow (\vt, \newe, \overname{\vsesone}{\vses})
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vsesone}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
@@ -1868,11 +1875,11 @@ for its verbatim string.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}} \typearrow \TypeErrorVal{\UnexpectedType}
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
@@ -1894,10 +1901,10 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \erecord} \evalarrow \ResultExpr((\vrecord, \vg), \newenv)  \OrAbnormal\\
+  \evalexpr(\env, \erecord) \evalarrow \ResultExpr((\vrecord, \vg), \newenv)  \OrAbnormal\\
   \getfield(\fieldname, \vrecord) \evalarrow \vv
 }{
-  \evalexpr{\env, \EGetField(\erecord, \fieldname)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \EGetField(\erecord, \fieldname)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
@@ -1922,10 +1929,10 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \etuple} \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \etuple) \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\\\\
   \getindex(\vvtuple, \vindex) \evalarrow \vv
 }{
-  \evalexpr{\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
@@ -2019,26 +2026,26 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[bits]{
-  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
   \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
-  \annotateexpr{\tenv, \veslice} \typearrow (\vt, \newe, \vses) \OrTypeError
+  \annotateexpr(\tenv, \veslice) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[record]{
-  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
   \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
   \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
 }{
   {
   \begin{array}{r}
-    \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
+    \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow \\
     (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetFields(\ebaseannot, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
   \end{array}
   }
@@ -2047,7 +2054,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \begin{mathpar}
 \inferrule[collection]{
-  \annotateexpr{\tenv, \ebase} \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
   \ebaseannot = \EVar(\vbase)\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
   \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
@@ -2055,7 +2062,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 }{
   {
   \begin{array}{r}
-    \annotateexpr{\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}} \typearrow \\
+    \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow \\
     (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetCollectionFields(\vbase, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
   \end{array}
   }
@@ -2064,11 +2071,11 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \veone} \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\\\\
   \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
 }{
-  \annotateexpr{\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}} \typearrow \TypeErrorVal{\UnexpectedType}
+  \annotateexpr(\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
@@ -2275,11 +2282,11 @@ yields the bitvector value \verb|'001010'|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \erecord} \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \erecord) \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\\\\
   \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname\\
   \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \typearrow \vv
 }{
-  \evalexpr{\env, \overname{\EGetFields(\erecord, \vfieldnames)}{\ve}} \evalarrow
+  \evalexpr(\env, \overname{\EGetFields(\erecord, \vfieldnames)}{\ve}) \evalarrow
   ((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -2317,7 +2324,7 @@ All of the collection field expressions in
   \vg \eqdef \left\{ \fieldname\in\vfieldnames: \ReadEffect(\vbase + \ttdotstr + \fieldname) \right\} \\
   \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \evalarrow \vv \\
 }{
-  \evalexpr{\env, \overname{\EGetCollectionFields(\vbase, \vfieldnames)}{\ve}} \evalarrow
+  \evalexpr(\env, \overname{\EGetCollectionFields(\vbase, \vfieldnames)}{\ve}) \evalarrow
   ((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -2433,16 +2440,16 @@ as it is applied to unrelated kinds of types.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \vepp, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vt, \vepp, \vsese) \OrTypeError\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \vsesp \eqdef \vsesty \cup \vsese \\
   \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
   (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
-  \annotateexpr{\tenv, \overname{\EATC(\vep, \tty)}{\ve}} \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
+  \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
@@ -2607,20 +2614,20 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \evalexpr{\env, \veone} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynErrorDiverging\\\\
   \vb \eqname \nvbool(\True)\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \and
 \inferrule[error]{
-  \evalexpr{\env, \veone} \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
+  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
   \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
   \vb \eqname \nvbool(\False)
 }{
-  \evalexpr{\env, \EATC(\veone, \vt)} \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
+  \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
 }
 \end{mathpar}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
@@ -2906,11 +2913,11 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \veone} \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\\\\
   \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow (\vpatp, \vsespat) \OrTypeError\\\\
   \vses \eqdef \vsese \cup \vsespat
 }{
-  \annotateexpr{\tenv, \overname{\EPattern(\veone, \vpat)}{\ve}} \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\EPattern(\veone, \vpat)}{\ve}) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
@@ -2940,11 +2947,11 @@ succeed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\\\\
   \evalpattern{\env, \vvone, \vp} \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evalexpr{\env, \EPattern(\ve, \vp)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \EPattern(\ve, \vp)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
@@ -3002,11 +3009,11 @@ Note that there are two important consequences of producing an arbitrary value w
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \tty} \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
   \vses \eqdef \vsesty \cup \{ \LocalEffect(\SEReadonly), \GlobalEffect(\SEReadonly), \Immutability(\False) \}
 }{
-  \annotateexpr{\tenv, \EArbitrary(\tty)} \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
+  \annotateexpr(\tenv, \EArbitrary(\tty)) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
@@ -3062,7 +3069,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
   \dynamicdomain(\env, \vt) \neq \emptyset\\
   \vv \in \dynamicdomain(\env, \vt)
 }{
-  \evalexpr{\env, \overname{\EArbitrary (\vt)}{\ve}} \evalarrow \ResultExpr((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \overname{\EArbitrary (\vt)}{\ve}) \evalarrow \ResultExpr((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 
@@ -3070,7 +3077,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
   \inferrule[error]{
   \dynamicdomain(\env, \vt) = \emptyset
 }{
-  \evalexpr{\env, \overname{\EArbitrary (\vt)}{\ve}} \evalarrow \DynamicErrorVal{\ArbitraryEmptyType}
+  \evalexpr(\env, \overname{\EArbitrary (\vt)}{\ve}) \evalarrow \DynamicErrorVal{\ArbitraryEmptyType}
 }
 \end{mathpar}
 \CodeSubsection{\EvalEArbitraryBegin}{\EvalEArbitraryEnd}{../Interpreter.ml}
@@ -3192,7 +3199,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \ve_\name)]\\
   \vses \eqdef \bigcup_{(\name, \Ignore) \in \fields} \vxs_\name\\
 }{
-  \annotateexpr{\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}} \typearrow
+  \annotateexpr(\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}) \typearrow
   (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
 }
 \end{mathpar}
@@ -3231,7 +3238,7 @@ See \listingref{semantics-erecord} for an example.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \vep} \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
   \checktrans{\fieldtype(\fieldtypes, \name) \neq \bot}{\BadField} \typearrow \True \OrTypeError\\\\
   \fieldtype(\fieldtypes, \name) = \tspecp\\
   \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
@@ -3245,7 +3252,7 @@ See \listingref{semantics-erecord} for an example.
 \ExampleDef{Evaluation of Record Construction Expressions}
 In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
-$\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
+$\nvrecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 
 \ProseParagraph
 \AllApply
@@ -3267,9 +3274,9 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
   \fields \eqdef \ve_{1..k} \\
   \evalexprlist{\env, \fields} \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
   \vvfields \eqname \vv_{1..k}\\
-  \vv \eqdef \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}}
+  \vv \eqdef \nvrecord(\{i=1..k: \id_i\mapsto \vv_i\})
 }{
-  \evalexpr{\env, \ERecord(\Ignore, \efields)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ERecord(\Ignore, \efields)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
@@ -3327,19 +3334,19 @@ $\nvrecord{\va\mapsto\nvint(3), \vb\mapsto\nvint(42)}$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[parenthesized]{
-  \annotateexpr{\tenv, \vep} \typearrow (\vt, \newe, \vses) \OrTypeError
+  \annotateexpr(\tenv, \vep) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
-  \annotateexpr{\tenv, \overname{\ETuple(\vep)}{\ve}} \typearrow (\vt, \newe, \vses)
+  \annotateexpr(\tenv, \overname{\ETuple(\vep)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[list]{
   |\vli| > 1\\
-  i=1..k: \annotateexpr{\tenv, \vle[i]} \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotateexpr(\tenv, \vle[i]) \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotateexpr{\tenv, \overname{\ETuple(\vli)}{\ve}} \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
+  \annotateexpr(\tenv, \overname{\ETuple(\vli)}{\ve}) \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
@@ -3364,9 +3371,9 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \begin{mathpar}
 \inferrule{
   \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
-  \vv \eqdef \nvvector{\vlist}
+  \vv \eqdef \nvvector(\vlist)
 }{
-  \evalexpr{\env, \ETuple(\elist)} \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ETuple(\elist)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
@@ -3419,7 +3426,7 @@ the variable \verb|int_arr| is initialized with an array construction expression
 represented as \verb|array[[4]] of 0|),
 which evaluates to
 \[
-\nvvector{[\nvint(0), \nvint(0), \nvint(0), \nvint(0)]} \enspace.
+\nvvector([\nvint(0), \nvint(0), \nvint(0), \nvint(0)]) \enspace.
 \]
 
 \ProseParagraph
@@ -3439,16 +3446,16 @@ which evaluates to
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \evalue} \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
   \evalexprsef{\env, \elength} \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
   \vlength \eqname \nvint(\nlength)\\
   \checktrans{\nlength \geq 0}{\NegativeArrayLength} \checktransarrow \True \OrDynError\\\\
-  \vv \eqdef \nvvector{i=1..\nlength: \vvalue}\\
+  \vv \eqdef \nvvector(i=1..\nlength: \vvalue)\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   {
   \begin{array}{r}
-  \evalexpr{\env, \overname{\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}}{\ve}} \evalarrow \\
+  \evalexpr(\env, \overname{\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}}{\ve}) \evalarrow \\
   \ResultExpr((\vv, \vg), \newenv)
   \end{array}
   }
@@ -3463,7 +3470,7 @@ the variable \verb|big_little_arr| is initialized with an array construction exp
 represented as \verb|array[[Labels]] of '0000'|),
 which evaluates to
 \[
-\nvrecord{\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}} \enspace.
+\nvrecord(\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}) \enspace.
 \]
 
 \ProseParagraph
@@ -3480,12 +3487,12 @@ which evaluates to
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \evalue} \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\\\\
-  \vv \eqdef \nvrecord{\vl\in\vlabels: [\vl\mapsto \vvalue]}
+  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\\\\
+  \vv \eqdef \nvrecord(\vl\in\vlabels: [\vl\mapsto \vvalue])
 }{
   {
   \begin{array}{r}
-    \evalexpr{\env, \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}}{\ve}} \evalarrow\\
+    \evalexpr(\env, \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}}{\ve}) \evalarrow\\
     \ResultExpr((\vv, \vg), \newenv)
   \end{array}
   }
@@ -3497,7 +3504,7 @@ which evaluates to
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}
 An expression $\ve$ is considered to be side-effect-free in the \staticenvironmentterm{} $\tenv$
-if $\annotateexpr{\tenv, \ve} \typearrow (\Ignore, \Ignore, \vses)$
+if $\annotateexpr(\tenv, \ve) \typearrow (\Ignore, \Ignore, \vses)$
 and $\vses$ is \readonly{}.
 
 \subsection{Semantics}
@@ -3518,7 +3525,7 @@ specializes the expression evaluation relation for side-effect-free expressions
 by omitting throwing configurations as possible output configurations.
 
 \ExampleDef{Evaluating a Side-effect-free Expression}
-Evaluating the literal expression $\lint(1)$ in any environment $\env$,
+Evaluating the literal expression $\LInt(1)$ in any environment $\env$,
 yields \\
 $\ResultExprSEF(\nvint(1), \emptygraph)$.
 
@@ -3529,7 +3536,7 @@ which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv,\vg), \env) \OrDynErrorDiverging
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv,\vg), \env) \OrDynErrorDiverging
 }{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vv, \vg)
 }
@@ -3597,7 +3604,7 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vle = [\ve] \concat \vle1\\
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\\\\
   \evalexprlist{\envone, \vle1} \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo \\
   \vv \eqdef [\vvone] \concat \vvs

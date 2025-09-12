@@ -1731,7 +1731,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
-  \booltrans{n = k} \booltransarrow \True \terminateas \False\\
+  \booltrans(n = k) \booltransarrow \True \terminateas \False\\
   i=1..k: \typeclashes(\tenv, \vt_i, \vs_i) \typearrow \vb_i\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_i
 }{
@@ -1788,8 +1788,8 @@ is annotated as
 \[
 \left[
 \begin{array}{lll}
-(\TInt(\wellconstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\lint(10)},& \emptyset),\\
-(\TReal,& \eliteral{\lreal(20)},& \emptyset)
+(\TInt(\wellconstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\LInt(10)},& \emptyset),\\
+(\TReal,& \eliteral{\LReal(20)},& \emptyset)
 \end{array}
 \right]
 \]
@@ -1825,7 +1825,7 @@ is annotated as
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \annotateexpr{\tenv, \ve} \typearrow \typedexpr \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow \typedexpr \OrTypeError\\\\
   \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprsone \OrTypeError
 }{
   \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\typedexpr] \concat \typedexprsone}{\typedexprs}
@@ -2076,7 +2076,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
   \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
   \assignargs((\envtwo, \vgtwo), \paramnames, \paramdecls) \evalarrow (\envthree, \vgthree)\\
-  \evalstmt{\envthree, \vbody} \evalarrow \vres \OrAbnormal\\
+  \evalstmt(\envthree, \vbody) \evalarrow \vres \OrAbnormal\\
   \matchfuncres(\vres) \evalarrow C\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\vgthree}}\\
 }{

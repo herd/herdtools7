@@ -94,8 +94,8 @@ defined for each bitfield.
 
 \paragraph{Semantics:} Bitfields are not directly associated with a dynamic semantics.
   Their semantics is given as part of slicing expressions
-  by $\evalexprname$ (see \secref{SlicingExpressions}) and
-  $\evallexprname$ (see \secref{BitvectorSliceAssignmentExpressions}).
+  by $\evalexpr$ (see \secref{SlicingExpressions}) and
+  $\evallexpr$ (see \secref{BitvectorSliceAssignmentExpressions}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef{Bitfields}
@@ -206,7 +206,7 @@ is $16$.
 \inferrule{
   \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
   \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
-  \staticeval(\tenv, \ewidth) \typearrow \lint(\width) \OrTypeError\\\\
+  \staticeval(\tenv, \ewidth) \typearrow \LInt(\width) \OrTypeError\\\\
   \vf\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
   \newfields \eqdef [\vf\in\fields: \vfp]\\
   \vses \eqdef \bigcup_{\vf\in\fields}{\vxs_\vf}
@@ -447,7 +447,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 \inferrule[type]{
   \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
   \commonprefixline\\\\
-  \annotatetype{\tenv, \vt} \typearrow (\vtp, \vsesty) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsesty) \OrTypeError\\\\
   \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError\\\\
   \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\\\\
   \checkpositionsinwidth(\tenv, \slicesone, \width, \positions) \typearrow \True \OrTypeError\\\\
@@ -1016,8 +1016,8 @@ $[7, 6, 5]$.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{
-  \staticeval(\tenv, \vi) \typearrow \lint(\vz_\vi)\\
-  \staticeval(\tenv, \vw) \typearrow \lint(\vz_\vw)\\
+  \staticeval(\tenv, \vi) \typearrow \LInt(\vz_\vi)\\
+  \staticeval(\tenv, \vw) \typearrow \LInt(\vz_\vw)\\
   \vstart \eqdef \vz_\vi\\
   \vend \eqdef \vz_\vi + \vz_\vw - 1\\
 }{
