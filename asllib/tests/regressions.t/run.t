@@ -478,6 +478,13 @@ Required tests:
   $ aslref approx-expr-binop.asl
   $ aslref asciistr.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
+  $ aslref --no-exec accessor-overloading-1.asl
+  $ aslref accessor-overloading-2.asl
+  nullary setter
+  unary getter
+  unary getter
+  unary getter
+  unary setter
   $ aslref empty-function.asl
   File empty-function.asl, line 3, characters 0 to 3:
   end;

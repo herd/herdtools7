@@ -64,8 +64,9 @@ We also define helper functions via respective rules:
   \item \TypingRuleRef{SubstConstraint}
   \item \TypingRuleRef{CheckArgsTypeSat}
   \item \TypingRuleRef{AnnotateRetTy}
-  \item \TypingRuleRef{SubprogramForName}
+  \item \TypingRuleRef{SubprogramForSignature}
   \item \TypingRuleRef{FilterCallCandidates}
+  \item \TypingRuleRef{CallTypeMatches}
   \item \TypingRuleRef{HasArgClash}
   \item \TypingRuleRef{ExpressionList}
 \end{itemize}
@@ -203,11 +204,9 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
         list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
   \item define $\vsesargs$ as the union of $\vsessargs$;
-  \item applying $\subprogramforname$ to match $\name$ and $\argtypes$ in $\tenv$
-        yields \\ $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
+  \item applying $\subprogramforsignature$ to match $\name$, $\argtypes$, and $\calltype$ in $\tenv$
+        yields $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
-  \item checking that either the $\subprogramtype$ of $\funcsig$ equals $\calltype$,
-        or the $\subprogramtype$ of $\funcsig$ is $\STGetter$ and $\calltype$ is $\STFunction$ yields $\True$\ProseTerminateAs{\BadCall};
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
   \item checking that the lengths of $\funcsig.\funcparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
   \item checking that the lengths of $\funcsig.\funcargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
@@ -230,17 +229,12 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
   \vsesargs \eqdef \bigcup \vsessargs \\
-  \subprogramforname(\tenv, \name, \argtypes) \typearrow
-  (\nameone, \funcsig, \vsescall) \OrTypeError \\
   {
-    \checktrans{
-    \left(
-    \begin{array}{l}
-      \funcsig.\funcsubprogramtype = \calltype \; \lor \\
-      (\funcsig.\funcsubprogramtype = \STGetter \; \land \\ \quad \calltype = \STFunction)
+    \begin{array}{r}
+      \subprogramforsignature(\tenv, \name, \argtypes, \calltype) \typearrow \\
+      (\nameone, \funcsig, \vsescall) \OrTypeError
     \end{array}
-    \right)}{\BadCall} \checktransarrow \True \OrTypeError
-  }\\\\
+  }\\
   \vses \eqdef \vsesargs \cup \vsescall\\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
   \equallength(\funcsig.\funcparameters, \paramsone) \typearrow \paramaritymatch \\\\
@@ -1269,34 +1263,31 @@ and functions can only be used in call expressions.
 }
 \end{mathpar}
 
-\TypingRuleDef{SubprogramForName}
-\hypertarget{def-subprogramforname}{}
+\TypingRuleDef{SubprogramForSignature}
+\hypertarget{def-subprogramforsignature}{}
 The function
 \[
   \begin{array}{rl}
-    \subprogramforname(
+    \subprogramforsignature(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
-    \overname{\ty^*}{\callerargtypes}
+    \overname{\ty^*}{\callerargtypes} \aslsep
+    \overname{\subprogramtype}{\calltype}
     )
-    \aslto &
-    \begin{array}{l}
-      (
-      \overname{\Strings}{\namep} \aslsep
-      \overname{\func}{\callee} \aslsep
-      \overname{\TSideEffectSet}{\vses}
-      )\
-    \\
+    \aslto & \\
+    (
+    \overname{\Strings}{\namep} \aslsep
+    \overname{\func}{\callee} \aslsep
+    \overname{\TSideEffectSet}{\vses}
+    )\
     \cup\ \overname{\TTypeError}{\TypeErrorConfig}
-    \end{array}
   \end{array}
 \]
-looks up the \staticenvironmentterm{} $\tenv$ for a subprogram associated with $\name$
-and the list of argument types $\calleeargtypes$ and determines which one of the following
+looks up the \staticenvironmentterm{} $\tenv$ for a subprogram associated with $\name$, the list of argument types $\calleeargtypes$, and a subprogram type matching $\calltype$, and determines which one of the following
 cases holds:
 \begin{enumerate}
-  \item there is no declared subprogram that matches $\name$ and $\calleeargtypes$;
-  \item there is exactly one subprogram that matches $\name$ and $\calleeargtypes$;
+  \item there is no declared subprogram that matches $\name$, $\calleeargtypes$, and $\calltype$;
+  \item there is exactly one subprogram that matches $\name$, $\calleeargtypes$, and $\calltype$;
 \end{enumerate}
 If more than one subprogram that matches $\name$ and $\calleeargtypes$,
 this is detected by the rule \TypingRuleRef{DeclareSubprograms},
@@ -1315,20 +1306,20 @@ If the second case holds, the function returns a tuple which comprises:
 
 \ExampleDef{Matching a Subprogram to an Identifier}
 
-\listingref{SubprogramForName} shows an example where all subprogram calls
+\listingref{SubprogramForSignature} shows an example where all subprogram calls
 match subprogram declarations.
-\ASLListing{Successfully matching subprogram names to definitions}{SubprogramForName}{\typingtests/TypingRule.SubprogramForName.asl}
+\ASLListing{Successfully matching subprogram signatures to definitions}{SubprogramForSignature}{\typingtests/TypingRule.SubprogramForSignature.asl}
 
-\listingref{SubprogramForName-undefined} shows an example where
+\listingref{SubprogramForSignature-undefined} shows an example where
 the subprogram call \verb|add_10(5)| is illegal, since no subprogram named \verb|add_10|
 is declared.
-\ASLListing{Subprogram name undefined}{SubprogramForName-undefined}{\typingtests/TypingRule.SubprogramForName.bad.undefined.asl}
+\ASLListing{Subprogram signature undefined}{SubprogramForSignature-undefined}{\typingtests/TypingRule.SubprogramForSignature.bad.undefined.asl}
 
-\listingref{SubprogramForName} shows an example where
+\listingref{SubprogramForSignature} shows an example where
 the subprogram call \verb|add_10(5.0)| is illegal, since, although a subprogram named \verb|add_10|
 is declared, it does not match the required signature (the type of the first argument is
 the \integertypeterm{} rather than the \realtypeterm).
-\ASLListing{Subprogram name does not match signature}{SubprogramForName-no-candidates}{\typingtests/TypingRule.SubprogramForName.bad.no_candidates.asl}
+\ASLListing{Subprogram name does not match signature}{SubprogramForSignature-no-candidates}{\typingtests/TypingRule.SubprogramForSignature.bad.no_candidates.asl}
 
 \ProseParagraph
 \OneApplies
@@ -1344,7 +1335,7 @@ the \integertypeterm{} rather than the \realtypeterm).
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
-          in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields an empty set\ProseOrTypeError;
+          and call type $\calltype$ in $\tenv$ (see \\ \TypingRuleRef{FilterCallCandidates}) yields an empty set\ProseOrTypeError;
     \item the result is a \typingerrorterm{} indicating that the call given by $\name$ and \\ $\callerargtypes$
           does not match any defined subprogram.
   \end{itemize}
@@ -1353,7 +1344,7 @@ the \integertypeterm{} rather than the \realtypeterm).
   \begin{itemize}
     \item $\tenv$ binds $\name$ via $\overloadedsubprograms$ map to $\renamingset$ and $\vses$;
     \item filtering the subprograms in $\renamingset$ with the caller argument types $\callerargtypes$
-          in $\tenv$ (see \TypingRuleRef{FilterCallCandidates}) yields \\
+          and call type $\calltype$ in $\tenv$ (see \\ \TypingRuleRef{FilterCallCandidates}) yields \\
           $\matchingrenamings$\ProseOrTypeError;
     \item $\matchingrenamings$ contains a single element --- $(\namep, \callee)$\ProseOrTypeError;
   \end{itemize}
@@ -1364,7 +1355,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \inferrule[undefined]{
   G^\tenv.\overloadedsubprograms(\name) = \bot
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
 
@@ -1373,11 +1364,11 @@ the \integertypeterm{} rather than the \realtypeterm).
   G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
-      \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \emptyset \OrTypeError
+      \filtercallcandidates(\tenv, \callerargtypes, \calltype, \renamingset) \typearrow \emptyset \OrTypeError
     \end{array}
   }
 }{
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \TypeErrorVal{\BadCall}
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
 
@@ -1386,19 +1377,19 @@ the \integertypeterm{} rather than the \realtypeterm).
   G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
-      \filtercallcandidates(\tenv, \callerargtypes, \renamingset) \typearrow \\ \matchingrenamings \OrTypeError
+      \filtercallcandidates(\tenv, \callerargtypes, \renamingset, \calltype) \typearrow \\ \matchingrenamings \OrTypeError
     \end{array}
   }\\\\
   \matchingrenamings = [(\namep, \callee)]
 }{
   {
     \begin{array}{r}
-  \subprogramforname(\tenv, \name, \callerargtypes) \typearrow \\ (\namep, \callee, \vses)
+  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \\ (\namep, \callee, \vses)
     \end{array}
   }
 }
 \end{mathpar}
-\CodeSubsection{\SubprogramForNameBegin}{\SubprogramForNameEnd}{../Typing.ml}
+\CodeSubsection{\SubprogramForSignatureBegin}{\SubprogramForSignatureEnd}{../Typing.ml}
 
 \TypingRuleDef{FilterCallCandidates}
 \hypertarget{def-filtercandidates}{}
@@ -1407,25 +1398,26 @@ The helper function
   \filtercallcandidates(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty^*}{\formaltypes} \aslsep
+    \overname{\subprogramtype}{\calltype}
     \overname{\pow{\Strings}}{\candidates}
     )
   \aslto \overname{(\Strings\times\func)^*}{\matches}
 \]
 iterates over the list of unique subprogram names in $\candidates$ and checks whether
-their lists of arguments clash with the types in $\formaltypes$ in $\tenv$.
+their lists of arguments clash with the types in $\formaltypes$ and their subprogram types match $\calltype$ in $\tenv$.
 The result is the set of pairs consisting of the names and function definitions of the
-subprograms whose arguments clash in $\candidates$.
+subprograms whose arguments clash and subprogram types match in $\candidates$.
 \ProseOtherwiseTypeError
 
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
 \ExampleDef{Filtering Subprograms Matching a Call}
-In \listingref{SubprogramForName}, filtering the
+In \listingref{SubprogramForSignature}, filtering the
 set of declared subprograms for the call expression \verb|add_10(5)| yields
 the (singleton list containing the) subprogram \\
 \verb|func add_10(x: integer) => integer|.
 In contrast, filtering the set of declared subprograms for the call expression
-\verb|add_10(5.0)| in \listingref{SubprogramForName-no-candidates},
+\verb|add_10(5.0)| in \listingref{SubprogramForSignature-no-candidates},
 yields an empty list.
 
 \ProseParagraph
@@ -1442,9 +1434,10 @@ yields an empty list.
     \item $\candidates$ is a list with \head\ $\name$ and \tail\ $\candidatesone$;
     \item the function definition associated with $\name$ in $\tenv$ is $\funcdef$;
     \item determining whether there is an argument clash between $\formaltypes$ and the arguments in $\funcdef$
-          (that is, $\funcdef.\funcargs$) yields $\vb$\ProseOrTypeError;
-    \item filtering the call candidates in $\candidatesone$ with $\formaltypes$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
-    \item if $\vb$ is $\True$ then $\matches$ is the list with \head\ $(\name,\funcdef)$ and \tail\ $\matchesone$,
+          (that is, $\funcdef.\funcargs$) yields $\vbone$\ProseOrTypeError;
+  \item determining whether $\funcdef$ is compatible with $\calltype$ via $\calltypematches$ yields $\vbtwo$;
+    \item filtering the call candidates in $\candidatesone$ with $\formaltypes$ and $\calltype$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
+    \item if $\vbone$ and $\vbtwo$ are both $\True$ then $\matches$ is the list with \head\ $(\name,\funcdef)$ and \tail\ $\matchesone$,
           and otherwise it is $\matchesone$.
   \end{itemize}
 \end{itemize}
@@ -1453,7 +1446,7 @@ yields an empty list.
 \begin{mathpar}
 \inferrule[no\_candidates]
 {}{
-  \filtercallcandidates(\tenv, \formaltypes, \overname{\emptylist}{\candidates}) \typearrow \overname{\emptylist}{\matches}
+  \filtercallcandidates(\tenv, \formaltypes, \calltype, \overname{\emptylist}{\candidates}) \typearrow \overname{\emptylist}{\matches}
 }
 \end{mathpar}
 
@@ -1461,13 +1454,99 @@ yields an empty list.
 \inferrule[candidates\_exist]
 {
   \funcdef \eqdef G^\tenv.\subprograms(\name) \\
-  \hasargclash(\tenv, \formaltypes, \funcdef.\funcargs) \typearrow \vb \OrTypeError\\\\
-  \filtercallcandidates(\tenv, \formaltypes, \candidatesone) \typearrow \matchesone \OrTypeError\\\\
-  \matches \eqdef \choice{\vb}{\;[(\name,\funcdef)] \concat \matchesone}{\;\matchesone}
+  \hasargclash(\tenv, \formaltypes, \funcdef.\funcargs) \typearrow \vbone \OrTypeError\\\\
+  \calltypematches(\funcdef, \calltype) \typearrow \vbtwo \\\\
+  {
+  \begin{array}{r}
+    \filtercallcandidates(\tenv, \formaltypes, \calltype, \candidatesone) \typearrow \\ \matchesone \OrTypeError
+  \end{array}
+  }\\\\
+  \matches \eqdef \choice{\vbone \land \vbtwo}{\;[(\name,\funcdef)] \concat \matchesone}{\;\matchesone}
 }{
-  \filtercallcandidates(\tenv, \formaltypes, \overname{[\name] \concat \candidatesone}{\candidates}) \typearrow \matches
+  {
+    \begin{array}{r}
+      \filtercallcandidates(\tenv, \formaltypes, \calltype, \overname{[\name] \concat \candidatesone}{\candidates}) \\ \typearrow \matches
+    \end{array}
+  }
 }
 \end{mathpar}
+
+\TypingRuleDef{CallTypeMatches}
+\hypertarget{def-calltypematches}{}
+The function
+\[
+  \calltypematches(
+    \overname{\func}{\funcdef} \aslsep
+    \overname{\subprogramtype}{\calltype}
+  )
+  \aslto \overname{\Bool}{\vb}
+\]
+checks whether a function definition $\funcdef$ is compatible with the subprogram type expected by a function call, $\calltype$, yielding the result in $\vb$.
+
+\ExampleDef{Matching call types}
+The table below shows keywords used to define functions, and their possible compatible call types.
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Keyword used to define function} & \textbf{Compatible call types} \\
+\hline
+\verb|func|                            & $\STFunction$, $\STProcedure$ \\
+\verb|getter| (inside \verb|accessor|) & $\STFunction$, $\STGetter$    \\
+\verb|setter| (inside \verb|accessor|) & $\STSetter$                   \\
+\end{tabular}
+\end{center}
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{equal}
+  \begin{itemize}
+    \item $\funcdef.\funcsubprogramtype$ is equal to $\calltype$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{getter\_func}
+  \begin{itemize}
+    \item $\funcdef.\funcsubprogramtype$ is $\STGetter$;
+    \item $\calltype$ is $\STFunction$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{no\_match}
+  \begin{itemize}
+    \item $\funcdef.\funcsubprogramtype$ is not equal to $\calltype$;
+    \item either $\funcdef.\funcsubprogramtype$ is not $\STGetter$, or $\calltype$ is not $\STFunction$;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[equal]{
+  \funcdef.\funcsubprogramtype = \calltype
+}{
+  \calltypematches(\func, \calltype) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[getter\_func]{
+  \funcdef.\funcsubprogramtype = \STGetter \\
+  \calltype = \STFunction
+}{
+  \calltypematches(\func, \calltype) \typearrow \overname{\True}{\vb}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[no\_match]{
+  \funcdef.\funcsubprogramtype \neq \calltype \\
+  (\funcdef.\funcsubprogramtype \neq \STGetter \lor \calltype \neq \STFunction)
+}{
+  \calltypematches(\func, \calltype) \typearrow \overname{\False}{\vb}
+}
+\end{mathpar}
+\CodeSubsection{\CallTypeMatchesBegin}{\CallTypeMatchesEnd}{../Typing.ml}
 
 \TypingRuleDef{HasArgClash}
 \hypertarget{def-hasargclash}{}
