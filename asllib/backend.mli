@@ -187,4 +187,7 @@ module type S = sig
 
   val primitives : (AST.func * primitive) list
   (** The list of primitives that a backend provides. *)
+
+  val fail : exn -> 'a -> 'a m
+  (** In case of failure, wrap up monadic constructs with this function. *)
 end

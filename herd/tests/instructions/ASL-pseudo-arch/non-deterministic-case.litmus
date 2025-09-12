@@ -1,0 +1,27 @@
+ASL non-deterministic
+
+{
+  x = 3;
+  0: X1 = x;
+}
+
+// Non deterministically returns 0, 1, 2, or 3
+func g() => integer
+begin
+  let b = read_memory{64}(read_register(1));
+  case b[0+:2] of
+    when '00' => return 0;
+    when '01' => return 1;
+    when '10' => return 2;
+    when '11' => return 3;
+  end;
+end;
+
+func main() => integer
+begin
+  let z = g();
+  return 0;
+end;
+
+locations [0:main.0.z;]
+
