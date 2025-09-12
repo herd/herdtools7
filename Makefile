@@ -230,6 +230,7 @@ test.kvm:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 KVM instructions tests: OK"
 
+test:: test-asl-vmsa
 test-asl-vmsa:: test.kvm.asl
 test.kvm.asl: asl-pseudocode
 	@ echo
