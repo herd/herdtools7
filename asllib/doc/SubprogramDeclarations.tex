@@ -2303,7 +2303,8 @@ can be added, for example, an \unreachablestatementterm.
     \item $\vs$ matches one of the following statements: a \repeatstatementsterm{} with body statement $\vbody$,
           a \forstatementterm{} with body statement $\vbody$, or a \whilestatementterm{} with body statement $\vbody$;
     \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
-    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$ and $\AbsAbnormal$}.
+    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$, $\AbsAbnormal$, \\
+          and $\AbsContinuing$}.
   \end{itemize}
 
   \item \AllApplyCase{s\_cond}
@@ -2400,7 +2401,12 @@ can be added, for example, an \unreachablestatementterm.
   }\\
   \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs\\
 }{
-  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal\}}{\absconfigs}
+  {
+  \begin{array}{r}
+  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \\
+  \overname{\bodyconfigs \cup \{\AbsAbnormal,\AbsContinuing\}}{\absconfigs}
+  \end{array}
+  }
 }
 \end{mathpar}
 

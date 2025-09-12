@@ -3753,7 +3753,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             union abs_of_expr (union configs1 configs2)
         | S_Repeat (body, _, _) | S_For { body } | S_While (_, _, body) ->
             let body_configs = approx_stmt tenv body in
-            union abs_of_expr body_configs
+            union (union abs_of_expr body_configs) continuing
         | S_Try (body, catchers, otherwise) ->
             let body_abs_configs = approx_stmt tenv body in
             let try_abs_configs =
