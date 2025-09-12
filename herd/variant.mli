@@ -118,6 +118,8 @@ type t =
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
   | ConstPacField
+(* 128 bit mode for asl,vmsa *)
+  | D128
 
 
 val compare : t -> t -> int

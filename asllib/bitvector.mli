@@ -31,11 +31,17 @@ val length : t -> int
 (* --------------------------------------------------------------------------*)
 (** {2 Constructors} *)
 
+val zero : t
+(** A length 1 bitvector with a 0 bit inside. *)
+
+val is_zero : t -> bool
+(** zero predicate *)
+
 val one : t
 (** A length 1 bitvector with a 1 bit inside. *)
 
-val zero : t
-(** A length 1 bitvector with a 0 bit inside. *)
+val is_one : t -> bool
+(** one predicate *)
 
 val empty : t
 (** A length 0 bitvector. *)

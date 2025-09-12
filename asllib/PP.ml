@@ -115,6 +115,7 @@ let binop_to_string : binop -> string = function
   | `POW -> "^"
   | `BV_CONCAT -> "::"
   | `STR_CONCAT -> "++"
+  | `BIC -> "BIC"
 
 let unop_to_string = function BNOT -> "!" | NEG -> "-" | NOT -> "NOT"
 

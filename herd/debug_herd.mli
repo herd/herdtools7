@@ -17,7 +17,7 @@
 (** Debug tags *)
 
 type t = {
-  solver : bool ;
+  solver : int ;
   lexer : bool ;
   top : bool ;
   mem : bool ;
@@ -33,6 +33,7 @@ type t = {
   profile_cat: bool ;
   profile_asl: bool ;
   asl_symb: bool ;
+  profile_mem: bool ;
   exc : bool ;  }
 
 val none : t
