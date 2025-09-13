@@ -7,8 +7,9 @@ an interpreter running in batch mode,
 a Verilog simulator, and a Linux process (native executable).
 
 \RequirementDef{RuntimeDefaultEntry}
-The default entry point of a specification is the \texttt{main} function, which has the signature
+A specification must define a function \vmain{}, which has the signature
 \verb|func main() => integer|.
+This is the entry point to the specification.
 
 See for example \listingref{main0}.
 
@@ -18,7 +19,7 @@ throwing an exception)
 the runtime should pass the return value to the hosting environment.
 %
 An ASL runtime for native executables may use the return value
-of \texttt{main} as the exit status of the process.
+of \vmain{} as the exit status of the process.
 %
 By convention a return value of zero indicates success and a return value of
 one indicates failure.

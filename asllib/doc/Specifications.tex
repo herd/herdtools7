@@ -2338,11 +2338,12 @@ results in a \dynamicerrorterm.
 \AllApply
 \begin{itemize}
   \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
+  \item the subprogram \verb|main() => integer| can be found in $\tenv$ via $\subprogramforsignature$\ProseTerminateAs{\NoEntryPoint} with name $\namep$;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{normal}
     \begin{itemize}
-      \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
+      \item evaluating the subprogram $\namep$ with an empty list of actual arguments and empty list of parameters
             in $\env$ yields \\
             $\ResultSubprogram([(\vv, \vgtwo)], \Ignore)$\ProseOrDynErrorDiverging;
       \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
@@ -2351,7 +2352,7 @@ results in a \dynamicerrorterm.
 
     \item \AllApplyCase{throwing}
     \begin{itemize}
-      \item evaluating the subprogram \texttt{main} with an empty list of actual arguments and empty list of parameters
+      \item evaluating the subprogram $\namep$ with an empty list of actual arguments and empty list of parameters
             in $\env$ yields $\Throwing(\Ignore, \Ignore, \Ignore, \Ignore)$, which is an uncaught exception\ProseOrDynErrorDiverging;
       \item the result of the entire evaluation is an error indicating that an exception was not caught.
     \end{itemize}
@@ -2362,7 +2363,13 @@ results in a \dynamicerrorterm.
 \begin{mathpar}
 \inferrule[normal]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
-  \evalsubprogram(\env, \vmain, \emptylist, \emptylist)\evalarrow \ResultSubprogram([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
+  {
+    \begin{array}{r}
+      \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
+      (\namep, \{\funcreturntype = \Some{\TInt(\unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+    \end{array}
+  }\\\\
+  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultSubprogram([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -2372,7 +2379,13 @@ results in a \dynamicerrorterm.
 \begin{mathpar}
 \inferrule[throwing]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
-  \evalsubprogram(\env, \vmain, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
+  {
+    \begin{array}{r}
+      \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
+      (\namep, \{\funcreturntype = \Some{\TInt(\unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+    \end{array}
+  }\\\\
+  \evalsubprogram(\env, \namep, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }

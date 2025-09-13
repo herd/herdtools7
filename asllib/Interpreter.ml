@@ -54,9 +54,13 @@ module type S = sig
     IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
 
   val run_typed_env :
-    (AST.identifier * B.value) list -> StaticEnv.global -> AST.t -> B.value B.m
+    (AST.identifier * B.value) list ->
+    StaticEnv.global ->
+    AST.identifier ->
+    AST.t ->
+    B.value B.m
 
-  val run_typed : StaticEnv.global -> AST.t -> B.value B.m
+  val run_typed : StaticEnv.global -> AST.identifier -> AST.t -> B.value B.m
 end
 
 module type Config = sig
@@ -1550,22 +1554,22 @@ module Make (B : Backend.S) (C : Config) = struct
     else multi_assign ver env les monads
 
   (* Begin EvalSpec *)
-  let run_typed_env env (static_env : StaticEnv.global) (ast : AST.t) :
-      B.value m =
+  let run_typed_env env (static_env : StaticEnv.global) main_name (ast : AST.t)
+      : B.value m =
     let*| env = build_genv env eval_expr static_env ast in
-    let env = IEnv.incr_stack_size ~pos:dummy_annotated "main" env in
+    let env = IEnv.incr_stack_size ~pos:dummy_annotated main_name env in
     let*| res =
-      eval_subprogram env "main" dummy_annotated ~params:[] ~args:[]
+      eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ ->
-        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, "main")))
+        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, main_name)))
     | Throwing ((v, _, _), ty, _genv) ->
         let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
         Error.fatal_unknown_pos (Error.UncaughtException msg))
     |: SemanticsRule.Spec
 
-  let run_typed env ast = run_typed_env [] env ast
+  let run_typed env main_name ast = run_typed_env [] env main_name ast
   (* End *)
 end
