@@ -33,8 +33,8 @@ subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|
 \paragraph{Syntax:} Exception catchers are grammatically derived from $\Ncatcher$.
 \paragraph{Abstract Syntax:} Exception catchers are derived in the abstract syntax by $\catcher$
   and generated using $\buildcatcher$.
-\paragraph{Typing:} Exception catchers are annotated by $\annotatecatchername$.
-\paragraph{Semantics:} Exception catchers are evaluated via $\evalcatchersname$.
+\paragraph{Typing:} Exception catchers are annotated by $\annotatecatcher$.
+\paragraph{Semantics:} Exception catchers are evaluated via $\evalcatchers$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef{Exception Catchers}
@@ -87,11 +87,11 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \begin{array}{r}
-  \annotatecatcher{
+  \annotatecatcher(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\TSideEffectSet}{\vsesin} \aslsep
     \overname{\catcher}{\vc}
-  } \aslto \\
+  ) \aslto \\
   (\overname{\TSideEffectSet}{\vsesin} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
   \cup \overname{\TTypeError}{\TypeErrorConfig}
 \end{array}
@@ -139,14 +139,14 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \begin{mathpar}
 \inferrule[none]{
   \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
-  \annotatetype{\tenv, \vt} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
-  \annotateblock{\tenv, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenv, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
   \newcatcher \eqdef (\overname{\None}{\nameopt}, \ttyp, \newstmt)\\\\
   \commonsuffixline\\\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesin, \newcatcher, \vses)
+  \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
@@ -155,16 +155,16 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \begin{mathpar}
 \inferrule[some]{
   \vc = (\overname{\langle\name\rangle}{\nameopt}, \tty, \vstmt)\\
-  \annotatetype{\tenv, \vt} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
-  \checkvarnotinenv{\tenv, \name} \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \name) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
-  \annotateblock{\tenvp, \vstmt} \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenvp, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
   \newcatcher \eqdef (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)\\\\
   \commonsuffixline\\\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
-  \annotatecatcher{\tenv, \vsesin, \vc} \typearrow (\vsesin, \newcatcher, \vses)
+  \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
 
@@ -184,8 +184,8 @@ of evaluating a \trystatementterm{} and its type is defined as follows:
 The relation
 \hypertarget{def-evalcatchers}{}
 \[
-  \evalcatchers{\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
-   \aslsep \overname{\TOutConfig}{\sm}} \;\aslrel\;
+  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+   \aslsep \overname{\TOutConfig}{\sm}) \;\aslrel\;
   \left(
     \begin{array}{cl}
       \TReturning   & \cup\\
@@ -254,10 +254,10 @@ That is, no \dynamicerrorterm{} occurs.
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
-  \evalblock{\envthrow, \vs} \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
-  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{C}{\newg}
+  \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
@@ -296,13 +296,13 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
   \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
-  \evalblock{\envtwo, \vs} \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \envthree \eqdef \environof{C}\\
   \removelocal(\envthree, \name) \evalarrow \envfour\\
   D \eqdef \withenviron{C}{\envfour}\\
   \newg \eqdef \ordered{\sg}{\aslpo}{ \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\graphof{D}} }
 }{
-  \evalcatchers{\env, \catchers, \otherwiseopt, \sm} \evalarrow \withgraph{D}{\newg}
+  \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{D}{\newg}
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
@@ -335,10 +335,10 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
-  \evalblock{\envthrow, \vs} \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
-  \evalcatchers{\env, \catchers, \langle\vs\rangle, \sm} \evalarrow \withgraph{C}{\vg}
+  \evalcatchers(\env, \catchers, \langle\vs\rangle, \sm) \evalarrow \withgraph{C}{\vg}
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
@@ -368,7 +368,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
   \env \eqname (\tenv, \denv)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None
 }{
-  \evalcatchers{\env, \catchers, \None, \sm} \evalarrow \sm
+  \evalcatchers(\env, \catchers, \None, \sm) \evalarrow \sm
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
@@ -390,7 +390,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \inferrule{
   \sm \in \TNormal
 }{
-  \evalcatchers{\env, \catchers, \Ignore, \sm} \evalarrow \sm
+  \evalcatchers(\env, \catchers, \Ignore, \sm) \evalarrow \sm
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchNoThrowBegin}{\EvalCatchNoThrowEnd}{../Interpreter.ml}

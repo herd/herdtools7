@@ -954,7 +954,7 @@ since \verb|A| is also declared as a global storage element.
   (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
   \tty \eqdef \TInt(\parameterized(\vx))\\\\
   \commonsuffixline\\\\
-  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
@@ -963,9 +963,9 @@ since \verb|A| is also declared as a global storage element.
 \and
 \inferrule[type\_annotated]{
   \ttyp \neq \unconstrainedinteger\\
-  \annotatetype{\False, \tenv, \ttyp} \typearrow \tty \OrTypeError\\\\
+  \annotatetype(\False, \tenv, \ttyp) \typearrow \tty \OrTypeError\\\\
   \commonsuffixline\\\\
-  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
@@ -1558,8 +1558,8 @@ as \collectiontypesterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotatetype{\tenv, \tty} \typearrow (\ttyp, \vses) \OrTypeError \\\\
-  \checkvarnotinenv{\newtenv, \vx} \typearrow \True \OrTypeError\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vses) \OrTypeError \\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
   \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
 }{
   \annotateonearg(\tenv, \newtenv, (\vx, \tty))
@@ -1636,14 +1636,14 @@ as return types.
 }
 \and
 \inferrule[has\_return\_type]{
-  \annotatetype{\tenvwithparams, \tty} \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \newreturntype \eqdef \langle\ttyp\rangle\\
+  \annotatetype(\tenvwithparams, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
+  \newreturntype \eqdef \Some{\ttyp}\\
   \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])\\
   \vses \eqdef \vsesin \cup\ \vsesty
 }{
   {
   \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\langle\tty\rangle}{\returntype}, \vsesin) \typearrow \\
+  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\Some{\tty}}{\returntype}, \vsesin) \typearrow \\
   (\newtenv, \newreturntype, \vses)
   \end{array}
   }
@@ -2063,7 +2063,7 @@ and an example of a well-typed function --- \verb|flip_bits|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateblock{\tenv, \vf.\funcbody} \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
+  \annotateblock(\tenv, \vf.\funcbody) \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
   \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
@@ -2223,7 +2223,7 @@ that an evaluation of $\vs$ in any environment consisting of the \staticenvironm
 \hypertarget{def-abscontinuing}{}
 The set of \Proseabstractconfigurations{} consists of symbols that represent
 subsets of the set of dynamic configurations that may be returned by
-$\evalstmt{(\tenv, \cdot), \vs}$:
+$\evalstmt((\tenv, \cdot), \vs)$:
 \begin{itemize}
   \item $\AbsContinuing$ represents $\TContinuing$;
   \item $\AbsReturning$ represents $\TReturning$; and

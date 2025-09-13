@@ -57,11 +57,11 @@ This is used to annotate both single local storage declarations and tuples of lo
 \paragraph{Semantics:} The relation
 \hypertarget{def-evallocaldecl}{}
 \[
-  \evallocaldecl{
+  \evallocaldecl(
     \overname{\envs}{\env} \aslsep
     \overname{\localdeclitem}{\ldi} \aslsep
     \overname{\overname{\vals}{\vv}\times\overname{\XGraphs}{\vgone}}{\vm}
-    } \;\aslrel\;
+    ) \;\aslrel\;
     \ResultLDI(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv})
 \]
 evaluates a \localdeclarationitem\ $\ldi$ in an environment
@@ -212,7 +212,7 @@ with the type inferred type \texttt{integer{3}}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checkvarnotinenv{\tenv, \vx} \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\\\\
   \checknoprecisionloss{\tty} \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
@@ -317,7 +317,7 @@ to the evaluation of \texttt{3} in $\env$.
   \declarelocalidentifier(\env, \vx, \vv)\evalarrow(\newenv, \vgtwo)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evallocaldecl{\env, \LDIVar(\vx), \vm} \evalarrow \ResultLDI(\newg, \newenv)
+  \evallocaldecl(\env, \LDIVar(\vx), \vm) \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
@@ -351,7 +351,7 @@ to the evaluation of \texttt{3} in $\env$.
   {
     \begin{array}{r}
       i=k..1: \hfill \\
-      \quad \checkvarnotinenv{\newtenv_i, \vids_i} \typearrow \True \OrTypeError\\
+      \quad \checkvarnotinenv(\newtenv_i, \vids_i) \typearrow \True \OrTypeError\\
       \quad \addlocal(\tenv, \vids_i, \vt_i, \ldk) \typearrow \newtenv_{i-1}
     \end{array}
   }\\\\
@@ -397,7 +397,7 @@ evaluation of \texttt{3} in $\env$.
   \liv \eqname [i=1..k: (\vv_i, \vg)]\\
   \ldituplefolder(\env, \vids, \liv) \evalarrow C
 }{
-  \evallocaldecl{\env, \LDITuple(\vids), \vm} \evalarrow C
+  \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
 }
 \end{mathpar}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
