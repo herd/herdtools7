@@ -1,7 +1,6 @@
 name: Test build with mininal versions
 
 on:
-  push:
   workflow_dispatch:
   # Schedule every Tuesday, early in the morning
   schedule:
@@ -31,7 +30,5 @@ jobs:
         with:
           ocaml-compiler: 4.08.1
       - run: |
-          opam install . -v -v --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
-          opam exec -- make build DUNE_PROFILE=dev
-          opam exec -- make test DUNE_PROFILE=dev
-          opam exec -- make install
+          opam install . --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
+          opam exec -- make build test install DUNE_PROFILE=dev
