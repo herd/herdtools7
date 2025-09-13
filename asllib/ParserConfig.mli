@@ -20,26 +20,5 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
+module type CONFIG = sig end
 (** The CONFIG module signature for the ASL1 Parser *)
-module type CONFIG = sig
-  val allow_no_end_semicolon : bool
-  (** Allow no semicolon after [end]. *)
-
-  val allow_expression_elsif : bool
-  (** Allow [elsif] at the expression level. *)
-
-  val allow_storage_discards : bool
-  (** Allow storage declarations to discard their right-hand sides. *)
-
-  val allow_hyphenated_pending_constraint : bool
-  (** Allow pending constrained integer types to be denoted by a hyphen. *)
-
-  val allow_local_constants : bool
-  (** Allow declarations of local constant storage. *)
-
-  val allow_empty_structured_type_declarations : bool
-  (** Allow declarations of structured types with implicitly empty fields. *)
-
-  val allow_function_like_statements : bool
-  (** Allow function-like unreachable and printing statements. *)
-end
