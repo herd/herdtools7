@@ -93,7 +93,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
   let show_all_events = match PC.showevents with
   | AllEvents -> true
-  | MemEvents|NonRegEvents|MemFenceEvents -> false
+  | MemEvents|NonRegEvents|MemFenceEvents|NonBranchEvents -> false
 
 
 (* Printing the program with the nice_prog field *)
@@ -1520,6 +1520,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | MemEvents ->  E.is_mem
   | NonRegEvents -> (fun e -> not (E.is_reg_any e))
   | MemFenceEvents -> let open Misc in E.is_mem ||| E.is_barrier ||| E.is_fault
+  | NonBranchEvents -> (fun e -> not (E.is_commit e))
 
   let select_event = let open Misc in select_event &&& select_non_init
 
