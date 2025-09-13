@@ -29,6 +29,7 @@ type flags = {
   shelf_path : path ;
   kinds_path : path ;
   conf_path  : path ;
+  index_path : path option ;
   variants   : string list ;
 }
 
@@ -84,16 +85,22 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
       List.map kind_of_log (Log.of_string_list stdout)
   | _, _, stderr ->
-      failwith (Printf.sprintf "Herd returned stderr: %s" (String.concat "\n" stderr))
+      let lines = String.concat "\n" stderr in
+      let msg = Printf.sprintf "Herd returned stderr:\n%s" lines in
+      raise (Error msg)
 
 
 (* Shelves. *)
 
-let first_of_shelf shelf_path =
+let first_of_shelf shelf_path index_path =
   let shelf = Shelf.of_file shelf_path in
   let shelf_dir = Filename.dirname shelf_path in
   let tests =
-    List.map (Filename.concat shelf_dir) shelf.Shelf.tests in
+    match index_path with
+    | None ->
+        List.map (Filename.concat shelf_dir) shelf.Shelf.tests
+    | Some f ->
+        Index.of_file f in
   one_of_shelf shelf, shelf_dir, tests
 
 (* Helpers. *)
@@ -109,7 +116,8 @@ let exit_1_if_any_files_missing ~description paths =
 (* Commands. *)
 
 let show_tests ?j ?timeout flags =
-  let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
+  let cat, shelf_dir, tests =
+    first_of_shelf flags.shelf_path flags.index_path in
 
   let prepend path = Filename.concat shelf_dir path in
 
@@ -129,7 +137,8 @@ let show_tests ?j ?timeout flags =
     |> Printf.printf "%s\n"
 
 let run_tests ?j ?timeout flags =
-  let cat, shelf_dir, tests = first_of_shelf flags.shelf_path in
+  let cat, shelf_dir, tests =
+    first_of_shelf flags.shelf_path flags.index_path in
 
   exit_1_if_any_files_missing ~description:"test" tests ;
   exit_1_if_any_files_missing ~description:"kinds.txt file" [flags.kinds_path] ;
@@ -172,7 +181,7 @@ let run_tests ?j ?timeout flags =
 
 let promote_tests ?j flags =
   let cat, shelf_dir, tests =
-    first_of_shelf flags.shelf_path in
+    first_of_shelf flags.shelf_path flags.index_path in
   exit_1_if_any_files_missing ~description:"tests" tests ;
 
   let kinds =
@@ -199,6 +208,7 @@ let () =
   let shelf_path = ref "" in
   let kinds_path = ref "" in
   let conf_path = ref "" in
+  let index_path = ref None in
 
   (* Optional arguments. *)
   let variants = ref [] in
@@ -214,7 +224,9 @@ let () =
     Args.is_file  ("-kinds-path",   Arg.Set_string kinds_path,    "path to directory of kinds files to test against") ;
     Args.is_file  ("-conf-path",   Arg.Set_string conf_path,    "path to configuration files (overrides cfg of shelf)") ;
     Args.is_file ("-shelf-path",  Arg.Set_string shelf_path,   "path to shelf.py to test") ;
-                  "-variant",     Args.append_string variants, "variant to pass to herd7" ;
+    Args.is_file ("-index-path",  Arg.String (fun p -> index_path := Some p),
+                  "path to index file of tests") ;
+    "-variant",  Args.append_string variants, "variant to pass to herd7" ;
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
 
@@ -240,6 +252,7 @@ let () =
     kinds_path = !kinds_path ;
     conf_path = !conf_path ;
     variants = !variants ;
+    index_path = !index_path ;
     } in
   try
     let j = !j in
