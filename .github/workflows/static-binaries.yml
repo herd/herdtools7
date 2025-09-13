@@ -20,6 +20,8 @@ jobs:
       OPAMROOT: '/home/opam/.opam' # Ensure opam directory is found as root
       OPAMROOTISOK: 1 # Suppress warnings about running opam as root
 
+    name: Static binaries for tag ${{ github.event.inputs.tag }}
+
     steps:
       - name: Checkout tree
         uses: actions/checkout@v4
@@ -36,17 +38,20 @@ jobs:
           mkdir -p ~/.config/dune
           echo $'(lang dune 2.7)\n(display short)' > ~/.config/dune/config
 
+      - name: Patch asllib/dune
+        run: sed -i -e 's/(name asllib)/(name asllib)(no_dynlink)/g' asllib/dune
+
       - name: Build
         run: |
-          mkdir binaries
+          mkdir /artifacts
           opam exec -- make build PREFIX=binaries DUNE_PROFILE=static
-          opam exec -- make install PREFIX=binaries DUNE_PROFILE=static
+          opam exec -- make install PREFIX=/artifacts DUNE_PROFILE=static
 
-      # NOTE: --set-libdir will need to be passed to various binaries, including `herd7` and `litmus7`
+      # NOTE: -set-libdir will need to be passed to various binaries, including `herd7` and `litmus7`
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: |
-            binaries/bin
-            binaries/share
+            /artifacts/bin
+            /artifacts/share

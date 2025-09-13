@@ -6,7 +6,10 @@
    (:standard -w +a-3-4-29-33-41-45-60-67-70)))
  (dev
   (flags
-   (:standard -warn-error +A -w +a-3-4-29-33-41-45-60-67-70))))
+   (:standard -warn-error +A -w +a-3-4-29-33-41-45-60-67-70)))
+ (static
+  (flags
+   (:standard -cclib -static -w +a-3-4-9-29-33-41-45-60-67-70))))
 
 (alias
  (name default)
