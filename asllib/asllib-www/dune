@@ -11,7 +11,5 @@
  (flags (:standard -w -40-42-44-48))
  (preprocess (pps js_of_ocaml-ppx))
  (modules
-   jaslref
    aslref
-   (:standard \ jaslref))
-(modules_without_implementation aST backend parserConfig))
+   jaslref))

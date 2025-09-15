@@ -231,7 +231,7 @@ let parse_args () =
   in
   let () = Arg.parse speclist anon_fun usage_msg in
 
-  let args : args =
+  let args =
     {
       exec = !exec;
       files = !target_files;
@@ -319,10 +319,6 @@ let make_parser_config (args : args) : Builder.parser_config =
       args.allow_empty_structured_type_declarations;
     Builder.allow_function_like_statements         = args.allow_function_like_statements;
   }
-
-(*--------------------------------------------------------------------------*)
-(*  External API – used by the browser‐side wrapper (jaslref.ml)            *)
-(*--------------------------------------------------------------------------*)
 
 let run_with ~(read_file : string -> string) (args : args) : unit =
   (* Build the parser configuration from [args]. *)

@@ -23,17 +23,16 @@ let install_channel_flushers () =
 let run_asl code version exec =
     install_channel_flushers ();
 
-    let code = Js.to_string code
-    and version = Js.to_string version
-    and exec = Js.to_bool   exec in
+    let _code = Js.to_string code
+    and _version = Js.to_string version
+    and _exec = Js.to_bool exec in
 
-    (* Build the “args” record expected by AslRef *)
-    let open Aslref in
     let argv =
-    { exec ;
+    {
+        exec = _exec;
         files =
           [
-            ((if String.equal version "v0" then NormalV0 else NormalV1),
+            ((if String.equal _version "v0" then NormalV0 else NormalV1),
              "web-input.asl")
           ];
         opn = None;
@@ -52,7 +51,7 @@ let run_asl code version exec =
         print_typed = false;
         show_rules = false;
         strictness =
-        (if String.equal version "v0" then Silence else TypeCheck);
+        (if String.equal _version "v0" then Silence else TypeCheck);
         output_format = Asllib.Error.HumanReadable;
         use_field_getter_extension = false;
         use_fine_grained_side_effects = false;
@@ -67,16 +66,16 @@ let run_asl code version exec =
 
     let () =
       try
-        Js_of_ocaml.Sys_js.create_file ~name:"web-input.asl" ~content:code
+        Js_of_ocaml.Sys_js.create_file ~name:"web-input.asl" ~content:_code
       with Sys_error _ ->
-        Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:code
+        Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:_code
     in
 
     (* Minimal in-memory file-system for the lexer/parser. *)
     let module WebFS = struct
       module StringMap = Map.Make (String)
 
-      let files = ref (StringMap.singleton "web-input.asl" code)
+      let files = ref (StringMap.singleton "web-input.asl" _code)
 
       let find name =
         match StringMap.find_opt name !files with
@@ -86,7 +85,7 @@ let run_asl code version exec =
 
     try
       run_with ~read_file:WebFS.find argv;
-      if not exec then Printf.printf "ASL: type-check completed.\n%!"
+      if not _exec then Printf.printf "ASL: type-check completed.\n%!"
     with
     | Asllib.Error.ASLException e ->
         Printf.eprintf "%s\n%!" (Asllib.Error.error_to_string e)
