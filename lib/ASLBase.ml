@@ -221,21 +221,8 @@ let asl_generic_parser version lexer lexbuf =
 let stmts_from_string s =
   let open Asllib in
   let lexbuf = Lexing.from_string s in
-  let module Parser = Parser.Make(struct
-    let allow_no_end_semicolon = false
-    let allow_expression_elsif = false
-    let allow_storage_discards = false
-    let allow_hyphenated_pending_constraint = false
-    let allow_local_constants = false
-    let allow_empty_structured_type_declarations = false
-    let allow_function_like_statements = false
-  end) in
-  let module Lexer = Lexer.Make(struct
-    let allow_double_underscore = false
-    let allow_unknown = false
-    let allow_single_arrows = false
-    let allow_function_like_statements = false
-  end) in
+  let module Parser = Parser.Make(struct end) in
+  let module Lexer = Lexer.Make(struct end) in
   try Parser.stmts Lexer.token lexbuf
   with e ->
     Warn.fatal "Internal parsing of \"%s\" failed with %s" s
