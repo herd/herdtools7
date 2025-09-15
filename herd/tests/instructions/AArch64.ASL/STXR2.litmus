@@ -1,0 +1,17 @@
+AArch64 STXR2
+{
+[p]=x;
+x=1;
+y=2;
+0:X3=x;
+0:X1=p;
+1:X1=p;
+1:X0=y;
+}
+ P0             |  P1          ;
+ LDXR W4,[X3]   |  STR X0,[X1] ;
+ MOV W7,#4      |              ;
+ LDR X0,[X1]    |              ;
+ STXR W5,W7,[X0]|              ;
+locations [x;]
+~exists (0:X4=1 /\ [y]=4)

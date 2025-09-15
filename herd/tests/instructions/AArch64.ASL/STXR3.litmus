@@ -1,0 +1,12 @@
+AArch64 STXR3
+{
+x=1;
+0:X3=x;
+}
+ P0             ;
+ LDXR W4,[X3]   ;
+ MOV W7,#4      ;
+ STXR W5,W7,[X3];
+ MOV W7,#5      ;
+ STXR W9,W7,[X3];
+~exists (0:X4=1 /\ [x]=5)
