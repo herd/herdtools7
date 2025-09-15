@@ -45,7 +45,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty}{\vt} \aslsep
     \overname{\pattern}{\vp}) \aslto
-    (\overname{\pattern}{\newp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+    (\overname{\pattern}{\newp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a pattern $\vp$ in a \staticenvironmentterm{} $\tenv$ given a type $\vt$,
 resulting in $\newp$, which is the typed AST node for $\vp$
@@ -56,7 +56,7 @@ and the inferred \sideeffectsetterm\ $\vses$.
 The relation
 \hypertarget{def-evalpattern}{}
 \[
-  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
+  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultPattern(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg}) & \cup\\
@@ -285,7 +285,7 @@ whereas \\
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\EQOP, \vv, \vvone) \evalarrow \vb
+  \binoprel(\EQ, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -393,9 +393,9 @@ range given by \texttt{3..42}.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
-  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vbone\\
+  \binoprel(\GE, \vv, \vvone) \evalarrow \vbone\\
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
-  \binoprel(\LEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
+  \binoprel(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
   \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -443,7 +443,7 @@ that is, $\PatternLeq(\ve)$;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} (\BadOperands) is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\LEQ$ operator),
+      are inappropriate for the $\LE$ operator),
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
 \end{itemize}
@@ -491,7 +491,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\LEQ, \vv, \vvone) \evalarrow \vb
+  \binoprel(\LE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -537,7 +537,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\GEQ$ operator),
+      are inappropriate for the $\GE$ operator),
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
 \end{itemize}
@@ -584,7 +584,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vb
+  \binoprel(\GE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -599,7 +599,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\pattern \derives\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant}) &
+\pattern \derives\ & \PatternMask(\overtext{\{\texttt{0},\texttt{1},\texttt{x}\}^*}{mask constant}) &
 \end{flalign*}
 
 \ASTRuleDef{PMask}
