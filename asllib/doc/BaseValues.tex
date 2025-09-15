@@ -53,7 +53,7 @@ which negates the possibility of having a \basevalueterm.
 The function
 \[
 \basevalue(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-\overname{\expr}{\veinit} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\overname{\expr}{\veinit} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the expression $\veinit$ which can be used to initialize a storage element
 of type $\vt$ in the \staticenvironmentterm{} $\tenv$.
@@ -217,7 +217,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}{
-    \basevalue(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \TypeErrorVal{\NoBaseValue}
+    \basevalue(\tenv, \overname{\TInt(\Parameterized(\id))}{\vt}) \typearrow \TypeErrorVal{\NoBaseValue}
 }
 \end{mathpar}
 
@@ -228,7 +228,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \checktrans{\vzminlist \neq \emptyset}{\NoBaseValue} \typearrow \True \OrTypeError\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
 }{
-    \basevalue(\tenv, \overname{\TInt(\wellconstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\LInt(\vzmin))}{\veinit}
+    \basevalue(\tenv, \overname{\TInt(\WellConstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\LInt(\vzmin))}{\veinit}
 }
 \end{mathpar}
 
@@ -303,7 +303,7 @@ The function
 \[
     \constraintabsmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto
     \overname{\Z^*}{\vzs}
-    \cup \overname{\TTypeError}{\TypeErrorVal{\NoBaseValue}}
+    \cup \overname{\typeerror}{\TypeErrorVal{\NoBaseValue}}
 \]
 returns a single element list containing the integer closest to $0$ that satisfies the constraint $\vc$ in $\tenv$, if one exists,
 and an empty list if the constraint represents an empty set.

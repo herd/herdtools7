@@ -2,7 +2,7 @@
 \chapter{Semantics Utility Rules\label{chap:SemanticsUtilityRules}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-This chapter defines the following helper relations for operating on \nativevalues,
+This chapter defines the following helper relations for operating on \nativevaluesterm{},
 \hyperlink{def-envs}{environments}, and operations involving values and types:
 \begin{itemize}
   \item \SemanticsRuleRef{GetPendingCalls} retrieves the value of the $\pendingcalls$ value from an environment;
@@ -12,18 +12,18 @@ This chapter defines the following helper relations for operating on \nativevalu
   \item \SemanticsRuleRef{RemoveLocal} removes a local storage element from a given environment;
   \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraph{} representing a Read Effect for a given identifier;
   \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraph{} representing a Write Effect for a given identifier;
-  \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevalues;
-  \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalue{};
-  \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalue{};
-  \item \SemanticsRuleRef{GetIndex} reads a vector \nativevalue{} at a given index;
-  \item \SemanticsRuleRef{SetIndex} updates a vector \nativevalue{} at a given index;
-  \item \SemanticsRuleRef{GetField} reads a given field in a \nativevalue{} record;
-  \item \SemanticsRuleRef{SetField} updates a given field in a \nativevalue{} record;
-  \item \SemanticsRuleRef{DeclareLocalIdentifier} updates an environment by associating an identifier with a given \nativevalue{}
+  \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevaluesterm{};
+  \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalueterm{};
+  \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalueterm{};
+  \item \SemanticsRuleRef{GetIndex} reads a vector \nativevalueterm{} at a given index;
+  \item \SemanticsRuleRef{SetIndex} updates a vector \nativevalueterm{} at a given index;
+  \item \SemanticsRuleRef{GetField} reads a given field in a \nativevalueterm{} record;
+  \item \SemanticsRuleRef{SetField} updates a given field in a \nativevalueterm{} record;
+  \item \SemanticsRuleRef{DeclareLocalIdentifier} updates an environment by associating an identifier with a given \nativevalueterm{}
         and also generating an \executiongraph{} with a corresponding Write Effect;
-  \item \SemanticsRuleRef{DeclareLocalIdentifierM} updates an environment by associating an identifier with a given \nativevalue{}
+  \item \SemanticsRuleRef{DeclareLocalIdentifierM} updates an environment by associating an identifier with a given \nativevalueterm{}
         and also updating a given \executiongraph{} with a corresponding Write Effect and an $\asldata$ edge;
-  \item \SemanticsRuleRef{DeclareLocalIdentifierMM} updates an environment by associating an identifier with a given \nativevalue{}
+  \item \SemanticsRuleRef{DeclareLocalIdentifierMM} updates an environment by associating an identifier with a given \nativevalueterm{}
         and also updating a given \executiongraph{} with a corresponding Write Effect and an $\aslpo$ edge.
 \end{itemize}
 
@@ -154,7 +154,7 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 The relation
 \hypertarget{def-removelocal}{}
 \[
-  \removelocal(\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\name}) \;\aslrel\; \overname{\envs}{\newenv}
+  \removelocal(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
 removes the binding of the identifier $\name$ from the local storage of the environment $\env$,
 yielding the environment $\newenv$.
@@ -206,7 +206,7 @@ exn=TRUE
 The relation
 \hypertarget{def-readidentifier}{}
 \[
-  \readidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
+  \readidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
 creates an \executiongraph{} that represents the reading of the value $\vv$ into a storage element
 given by the identifier $\name$.
@@ -237,7 +237,7 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 The relation
 \hypertarget{def-writeidentifier}{}
 \[
-  \writeidentifier(\overname{\Identifiers}{\name}\aslsep\overname{\vals}{\vv}) \;\aslrel\; \XGraphs
+  \writeidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
 creates an \executiongraph{} that represents the writing of the value $\vv$ into
 the storage element given by an identifier $\name$.
@@ -268,7 +268,7 @@ The relation
 \[
   \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
 \]
-transforms a (possibly empty) list of bitvector \nativevalues\ $\vvs$ into a single bitvector
+transforms a (possibly empty) list of bitvector \nativevaluesterm{}$\vvs$ into a single bitvector
 $\newvs$.
 
 \ExampleDef{Concatenating Bitvectors}
@@ -282,17 +282,17 @@ the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypet
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item \Proseemptylist{$\vvs$};
-    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for the empty sequence of bits}.
+    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for the empty sequence of bits}.
   \end{itemize}
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vvs$ is a \Proselist{$\vv$}{$\vvs'$};
-    \item view $\vv$ as the \nativevalue{} bitvector for the sequence of bits $\bv$;
+    \item view $\vv$ as the \nativevalueterm{} bitvector for the sequence of bits $\bv$;
     \item applying $\concatbitvectors$ to $\vvs'$ yields the
-          \nativevalue{} bitvector for the sequence of bits $\bv$;
+          \nativevalueterm{} bitvector for the sequence of bits $\bv$;
     \item \Proseeqdef{$\vres$}{the concatenation of $\bv$ and $\bv'$};
-    \item \Proseeqdef{$\newvs$}{the \nativevalue{} bitvector for sequence of bits $\vres$}.
+    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for sequence of bits $\vres$}.
   \end{itemize}
 \end{itemize}
 
@@ -623,12 +623,12 @@ reads the value $\vr$ from the vector of values $\vvec$ at the index $\vi$.
 The specification in \listingref{GetIndex} shows examples of accessing indices of native vectors:
 \begin{itemize}
   \item evaluating \verb|assert arr[[3]] == 3| involves \\
-        $\getindex(3, \nvvector(\nvint(0), \nvint(3), \nvint(0))) \evalarrow \nvint(3)$;
+        $\getindex(3, \NVVector(\nvint(0), \nvint(3), \nvint(0))) \evalarrow \nvint(3)$;
   \item evaluating \verb|assert (5, 7).item0 == 5| involves \\
-        $\getindex(0, \nvvector(\nvint(5), \nvint(7))) \evalarrow \nvint(5)$;
+        $\getindex(0, \NVVector(\nvint(5), \nvint(7))) \evalarrow \nvint(5)$;
   \item evaluating \verb|(5, 7) as (integer, integer)| involves \\
-        $\getindex(0, \nvvector(\nvint(5), \nvint(7))) \evalarrow \nvint(5)$ and\\
-        $\getindex(1, \nvvector(\nvint(5), \nvint(7))) \evalarrow \nvint(7)$ to check the asserting type conversion.
+        $\getindex(0, \NVVector(\nvint(5), \nvint(7))) \evalarrow \nvint(5)$ and\\
+        $\getindex(1, \NVVector(\nvint(5), \nvint(7))) \evalarrow \nvint(7)$ to check the asserting type conversion.
 \end{itemize}
 \ASLListing{Reading a vector at an index}{GetIndex}{\semanticstests/SemanticsRule.GetIndex.asl}
 
@@ -669,7 +669,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 The relation
 \hypertarget{def-setindex}{}
 \[
-  \setindex(\overname{\N}{\vi} \aslsep \overname{\vals}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
+  \setindex(\overname{\N}{\vi} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
   (\overname{\tvector}{\vres} \cup \overname{\TDynError}{\DynamicErrorVal{\BadIndex}})
 \]
 overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
@@ -680,8 +680,8 @@ In \listingref{GetIndex}, evaluating the statement \verb|arr[[1]] = 3;|
 involves the following premise:
 \[
 \begin{array}{r}
-\setindex(1, \nvint(3), \nvvector(\nvint(0), \nvint(0), \nvint(0))) \evalarrow\\
-\nvvector(\nvint(0), \nvint(3), \nvint(0)) \enspace.
+\setindex(1, \nvint(3), \NVVector(\nvint(0), \nvint(0), \nvint(0))) \evalarrow\\
+\NVVector(\nvint(0), \nvint(3), \nvint(0)) \enspace.
 \end{array}
 \]
 
@@ -729,7 +729,7 @@ involves the following premise:
 The relation
 \hypertarget{def-getfield}{}
 \[
-  \getfield(\overname{\Identifiers}{\name} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \vals
+  \getfield(\overname{\Identifier}{\name} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \nativevalue
 \]
 retrieves the value corresponding to the field name $\name$ from the record value $\record$.
 
@@ -737,16 +737,16 @@ retrieves the value corresponding to the field name $\name$ from the record valu
 In \listingref{GetField}, there are the following examples of reading a record field:
 \begin{itemize}
   \item evaluating the expression \verb|color_to_int[[RED]]| involves\\
-        $\getfield(\RED, \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))) \evalarrow \nvint(0)$;
+        $\getfield(\RED, \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))) \evalarrow \nvint(0)$;
   \item evaluating the expression \verb|r.RED| involves\\
-        $\getfield(\RED, \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))) \evalarrow \nvint(0)$.
+        $\getfield(\RED, \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))) \evalarrow \nvint(0)$.
 \end{itemize}
 \ASLListing{Reading a record field}{GetField}{\semanticstests/SemanticsRule.GetField.asl}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \record \eqname \nvrecord(\fieldmap)
+  \record \eqname \NVRecord(\fieldmap)
 }{
   \getfield(\name, \record) \evalarrow \fieldmap(\name)
 }
@@ -758,7 +758,7 @@ The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\n
 The function
 \hypertarget{def-setfield}{}
 \[
-  \setfield(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslto\; \trecord
+  \setfield(\overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslto\; \trecord
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
 
@@ -772,10 +772,10 @@ In \listingref{GetField}, there are the following examples of writing to a recor
           \begin{array}{l}
           \GREEN, \\
           \nvint(1),\\
-          \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(0), \BLUE\mapsto \nvint(0))
+          \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(0), \BLUE\mapsto \nvint(0))
           \end{array}
           \right) \evalarrow\\
-        \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(0)) \enspace;
+        \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(0)) \enspace;
         \end{array}
         $
   \item evaluating the statement \verb|r.BLUE = -1;| involves\\
@@ -785,10 +785,10 @@ In \listingref{GetField}, there are the following examples of writing to a recor
           \begin{array}{l}
           \BLUE, \\
           \nvint(-1),\\
-          \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))
+          \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(2))
           \end{array}
           \right) \evalarrow\\
-        \nvrecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(-1)) \enspace.
+        \NVRecord(\RED\mapsto \nvint(0), \GREEN\mapsto \nvint(1), \BLUE\mapsto \nvint(-1)) \enspace.
         \end{array}
         $
 \end{itemize}
@@ -796,10 +796,10 @@ In \listingref{GetField}, there are the following examples of writing to a recor
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \record \eqname \nvrecord(\fieldmap)\\
+  \record \eqname \NVRecord(\fieldmap)\\
   \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
 }{
-  \setfield(\name, \vv, \record) \evalarrow \nvrecord(\fieldmapp)
+  \setfield(\name, \vv, \record) \evalarrow \NVRecord(\fieldmapp)
 }
 \end{mathpar}
 The typechecker ensures that the field $\name$ exists in $\record$.
@@ -809,7 +809,7 @@ The typechecker ensures that the field $\name$ exists in $\record$.
 The relation
 \hypertarget{def-declarelocalidentifier}{}
 \[
-  \declarelocalidentifier(\overname{\envs}{\env} \aslsep \overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv}) \;\aslrel\;
+  \declarelocalidentifier(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv}) \;\aslrel\;
   (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\vg})
 \]
 associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
@@ -835,8 +835,8 @@ as well as producing the \executiongraph{} $\WriteEffect(\vx)$.
 The relation
 \[
   \declarelocalidentifierm(\overname{\envs}{\env} \aslsep
-   \overname{\Identifiers}{\vx} \aslsep
-   \overname{(\overname{\vals}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
+   \overname{\Identifier}{\vx} \aslsep
+   \overname{(\overname{\nativevalue}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
   (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 declares the local identifier $\vx$ in the environment $\env$, in the context
@@ -871,8 +871,8 @@ See \ExampleRef{Evaluating Local Declarations}.
 The relation
 \[
   \declarelocalidentifiermm(\overname{\envs}{\env} \aslsep
-   \overname{\Identifiers}{\vx} \aslsep
-   \overname{(\overname{\vals}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
+   \overname{\Identifier}{\vx} \aslsep
+   \overname{(\overname{\nativevalue}{\vv}\times\overname{\XGraphs}{\vg})}{\vm}) \;\aslrel\;
   (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 declares the local identifier $\vx$ in the environment $\env$,

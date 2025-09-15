@@ -13,7 +13,7 @@ The function
 \[
   \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
   \overname{\literal}{\vv} \cup
-  \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\typeerror}{\TypeErrorConfig}
 \]
 evaluates an expression $\ve$
 in the \staticenvironmentterm{} $\tenv$, returning a literal $\vv$.
@@ -50,7 +50,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
   \begin{itemize}
     \item \AllApplyCase{normal\_literal}
     \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\nvliteral(\vv), \Ignore)$.
+      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\NVLiteral(\vv), \Ignore)$.
     \end{itemize}
 
     \item \AllApplyCase{normal\_non\_literal}
@@ -72,7 +72,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\nvliteral(\vv), \Ignore), \Ignore)
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\NVLiteral(\vv), \Ignore), \Ignore)
 }{
   \staticeval(\tenv, \ve) \typearrow \vv
 }
@@ -82,7 +82,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \inferrule[normal\_non\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vx, \Ignore), \Ignore)\\
-  \vx \neq \nvliteral(\Ignore)
+  \vx \neq \NVLiteral(\Ignore)
 }{
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
@@ -123,7 +123,7 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \AllApply
 \begin{itemize}
   \item define the global dynamic environment $\vglobal$ as the map that binds
-        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\nvliteral(\vl)$
+        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\NVLiteral(\vl)$
         if $G^\tenv.\constantvalues(\id) = \vl$;
   \item define the local dynamic environment $\vlocal$ as the empty map;
   \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
@@ -132,7 +132,7 @@ is transformed into the dynamic environment $\env$, defined as follows:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vglobal \eqdef [\id \mapsto \nvliteral(\vl) \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vglobal \eqdef [\id \mapsto \NVLiteral(\vl) \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
   \vlocal \eqdef \emptyfunc
 }{
   \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, (\vglobal, \vlocal))}{\env}

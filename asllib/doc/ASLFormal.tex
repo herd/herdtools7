@@ -25,28 +25,39 @@ We use $\triangleq$ to define mathematical concepts.
 
 We define the following sets:
 \begin{itemize}
-\item \hypertarget{def-N}{
-    $\N$ is the set of natural numbers, including $0$.
-}
+\item
+% BEGIN_GENERATED_ELEMENT(N)
+\hypertarget{type-N}{}
+$\N$
+% END_GENERATED_ELEMENT
+is the set of natural numbers, including $0$.
 
 \item \hypertarget{def-Npos}{
     $\Npos$ is the set of positive natural numbers (that is, excluding $0$).
 }
 
 \item
-\hypertarget{def-Z}{
-    $\Z$ is the set of integers.
-}
+% BEGIN_GENERATED_ELEMENT(Z)
+\hypertarget{type-Z}{}
+$\Z$
+% END_GENERATED_ELEMENT
+is the set of integers.
 
 \item
-\hypertarget{def-Q}{
-    $\Q$ is the set of rationals.
-}
+% BEGIN_GENERATED_ELEMENT(Q)
+\hypertarget{type-Q}{}
+$\Q$
+% END_GENERATED_ELEMENT
+is the set of rational numbers.
 
-\hypertarget{def-Bool}{}
 \hypertarget{def-false}{}
 \hypertarget{def-true}{}
-\item $\Bool$ is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
+\item
+% BEGIN_GENERATED_ELEMENT(Bool)
+\hypertarget{type-Bool}{}
+$\Bool$
+% END_GENERATED_ELEMENT
+is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
 We employ these literals to represent the corresponding mathematical truth values,
 which are used to denote whether logical assertions hold or not.
 \hypertarget{def-land}{}
@@ -73,20 +84,33 @@ For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \lan
 and $a \lor b \triangleq \lor\{a, b\}$.
 Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
-\hypertarget{def-bit}{}
-\item $\Bit$ stands for $\{0,1\}$. That is, a single bit.
+\item
+% BEGIN_GENERATED_ELEMENT(Bit)
+\hypertarget{type-Bit}{}
+$\Bit$
+% END_GENERATED_ELEMENT
+is the set $\{0,1\}$. That is, a single bit.
 
 \item
-\hypertarget{def-identifier}{}
-    $\Identifiers$ is the set of all ASL identifiers.
+% BEGIN_GENERATED_ELEMENT(Identifier)
+\hypertarget{type-Identifier}{}
+$\Identifier$
+% END_GENERATED_ELEMENT
+is the set of all ASL identifiers.
 
 \item
-\hypertarget{def-astlabels}{}
-    $\astlabels$ is the set of all labels of Abstract Syntax Tree (AST) nodes.
+% BEGIN_GENERATED_ELEMENT(Strings)
+\hypertarget{type-Strings}{}
+$\Strings$
+% END_GENERATED_ELEMENT
+is the set of all ASCII strings.
 
 \item
-\hypertarget{def-strings}{}
-    $\Strings$ is the set of all ASCII strings.
+% BEGIN_GENERATED_ELEMENT(ASTLabels)
+\hypertarget{type-ASTLabels}{}
+$\ASTLabels$
+% END_GENERATED_ELEMENT
+is the set of all labels of Abstract Syntax Tree (AST) nodes.
 \end{itemize}
 
 We utilize the notation $\overname{a}{b}$ to enable us to name the mathematical term $a$ as $b$ so that
@@ -256,16 +280,18 @@ to denote the sequence of expressions $V(1) \ldots V(k)$.
 The notation $a \in A: V(a)$, where $A$ is a set and $V$ is an expression parameterized by the free variable $a$,
 stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of the elements of $A$.
 
-We write $T^*$ to denote a the type of a possibly-empty list of elements of type $T$,
-and $T^+$ for a non-empty list of elements of type $T$.
+\hypertarget{def-kleenestar}{}
+\hypertarget{def-kleeneplus}{}
+We write $\KleeneStar{T}$ to denote a the type of a possibly-empty list of elements of type $T$,
+and $\KleenePlus{T}$ for a non-empty list of elements of type $T$.
 
 \hypertarget{def-inlist}{}
 We slightly abuse notation by employing the notation for set membership to lists.
-Formally, the notation $e \inlist L$ where $e \in T$ and $L \in T^*$ stands for $\exists i\in\N.\ L[i]=e$.
+Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ stands for $\exists i\in\N.\ L[i]=e$.
 
 \hypertarget{def-listset}{}
 \begin{definition}[Listing a Set]
-The parametric relation $\listset : \pow{T} \times T^*$
+The parametric relation $\listset : \pow{T} \times \KleeneStar{T}$
 lists the elements of a set in an arbitrary order:
 \[
 \begin{array}{c}
@@ -278,7 +304,7 @@ lists the elements of a set in an arbitrary order:
 
 \hypertarget{def-concat}{}
 \begin{definition}[List Concatenation]
-The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenates two lists:
+The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \rightarrow \KleeneStar{T}$ concatenates two lists:
 \[
     \begin{array}{rcl}
     \emptylist \concat L &\triangleq& L\\
@@ -291,7 +317,7 @@ The parametric function $\concat : T^* \cartimes T^* \rightarrow T^*$ concatenat
 \hypertarget{def-concatlist}{}
 \begin{definition}[Concatenation of a List of Lists]
 The parametric function\\
-$\concatlist : \left(T^*\right)^* \rightarrow T^*$ concatenates a list of lists:
+$\concatlist : \KleeneStar{\left(\KleeneStar{T}\right)} \rightarrow \KleeneStar{T}$ concatenates a list of lists:
 \[
   \begin{array}{rcl}
     \concatlist(\emptylist) &\triangleq& \emptylist\\
@@ -314,7 +340,7 @@ compares the length of two lists:
 
 \hypertarget{def-listprefix}{}
 \begin{definition}[List Prefix]
-The parametric function $\listprefix : \overname{T^*}{\vlone} \cartimes \overname{T^*}{\vltwo} \rightarrow \Bool$ checks whether
+The parametric function $\listprefix : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
 the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 \[
 \listprefix(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
@@ -323,7 +349,7 @@ the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 
 \hypertarget{def-listrange}{}
 \begin{definition}[Indices of a List]
-The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-based) list of indices for a given list:
+The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}$ returns the ($1$-based) list of indices for a given list:
 \[
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
@@ -336,7 +362,7 @@ The parametric function $\listrange : T^* \rightarrow \N^*$ returns the ($1$-bas
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
 \[
-\unziplist : (T_1 \cartimes T_2)^* \rightarrow (T_1^* \cartimes T_2^*)
+\unziplist : \KleeneStar{(T_1 \cartimes T_2)} \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2})
 \]
 transforms a list of pairs into the corresponding pair of lists:
 \[
@@ -351,7 +377,7 @@ transforms a list of pairs into the corresponding pair of lists:
 \begin{definition}[Unzipping a List of Triples]
 The parametric function
 \[
-\unziplistthree : (T_1 \cartimes T_2 \cartimes T_3)^* \rightarrow (T_1^* \cartimes T_2^* \cartimes T_3^*)
+\unziplistthree : \KleeneStar{(T_1 \cartimes T_2 \cartimes T_3)} \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2} \cartimes \KleeneStar{T_3})
 \]
 transforms a list of triples into the corresponding triple of lists:
 \[
@@ -367,7 +393,7 @@ transforms a list of triples into the corresponding triple of lists:
 \begin{definition}[Finding unique elements of a list]
 The parametric function
 \[
-\uniquelist : \overname{T^*}{l} \rightarrow T^*
+\uniquelist : \overname{\KleeneStar{T}}{l} \rightarrow \KleeneStar{T}
 \]
 retains only the first occurrence of each element of the list $l$.
 It relies on the helper function $\uniquep$:
@@ -406,14 +432,14 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 \begin{definition}[Optional Data Type]
 \hypertarget{def-none}{}
 \hypertarget{def-some}
-The notation $\Some{\cdot}$ stands for either an empty set or a singleton set,
+The notation $\some{\cdot}$ stands for either an empty set or a singleton set,
 where $\None\triangleq\langle\rangle$ denotes an empty set
-and $\Some{v}$ denotes a set containing the single element $v$.
+and $\some{v}$ denotes a set containing the single element $v$.
 %
-The notation $\Some{T}$, where $T$ denotes a mathematical type, stands for
-$\{ \None \} \cup \{\Some{v} \;|\; v \in T\}$.
+The notation $\some{T}$, where $T$ denotes a mathematical type, stands for
+$\{ \None \} \cup \{\some{v} \;|\; v \in T\}$.
 %
-We refer to $\Some{T}$ as the \emph{optional data type for the parameter
+We refer to $\some{T}$ as the \emph{optional data type for the parameter
 type $T$}, or shortly as an \emph{\optional}.
 \end{definition}
 
@@ -686,7 +712,7 @@ allows us to deconstruct a given \func\ node by matching only the $\funcbody$ an
 
 Recall that a subset of AST nodes are either labels or labelled tuples.
 \hypertarget{def-astlabel}{}
-The partial function $\astlabel$ returns the label $\vl\in\astlabels$ of an AST node, when it exists.
+The partial function $\astlabel$ returns the label $\vl\in\ASTLabels$ of an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed$.
 
 \section{How to Parse Inference Rules Efficiently\label{sec:How to Parse Inference Rules Efficiently}}
@@ -950,7 +976,7 @@ We now present judgments used conventionally in this reference.
 The function
 \[
 \checktransname(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}\ \cup\ \overname{\TDynError}{\DynErrorConfig}
+\cup\ \overname{\typeerror}{\TypeErrorConfig}\ \cup\ \overname{\TDynError}{\DynErrorConfig}
 \]
 takes a Boolean value $\vb$ and an error code $\vcode$
 and returns $\True$ when $\vb$ is $\True$.
@@ -1017,7 +1043,7 @@ and applies it to an optional value $A?$:
 \inferrule[Some]{
   f(v) \longrightarrow v'
 }{
-  \mapopt{f}(\overname{\Some{v}}{\vvopt}) \longrightarrow{r} \Some{v'}
+  \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow{r} \some{v'}
 }
 \and
 \inferrule[None]{}{

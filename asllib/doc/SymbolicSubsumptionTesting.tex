@@ -166,7 +166,7 @@ is performed by testing whether each member of
   \begin{array}{l}
     \Finite(\{2,3,4\}),\\
     \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
-    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\ADD}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))\\
   \end{array}
 \right]\right)
 \]
@@ -185,7 +185,7 @@ In this example, this is true as the following hold:
   \item $\Finite(\{2,3,4\})$ is subsumed by $\Finite(\{1,2,3,4,5,6, 9\})$,
   \item $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$ (as a constraint for \verb|x|)
         is subsumed by the same element (as a constraint for \verb|y|), and
-  \item $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))$
+  \item $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\ADD}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))$
         is subsumed by \\
         $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$.
 \end{itemize}
@@ -366,7 +366,7 @@ is
 
 \begin{mathpar}
 \inferrule[int\_parameterized]{}{
-  \symdomoftype(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \\
+  \symdomoftype(\tenv, \overname{\TInt(\Parameterized(\id))}{\vt}) \typearrow \\
   \overname{\Subdomains([\ConstrainedDom(\ConstraintExact(\EVar(\id)))])}{\vd}
 }
 \end{mathpar}
@@ -376,7 +376,7 @@ is
   \vi\in\listrange(\vcs): \symdomofconstraint(\tenv, \vcs[\vi]) \typearrow \vd_\vi\\
   \vc \eqdef \vi\in\listrange(\vcs) \vd_\vi
 }{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\Subdomains(\vis)}{\vd}
+  \symdomoftype(\tenv, \overname{\TInt(\WellConstrained(\vcs))}{\vt}) \typearrow \overname{\Subdomains(\vis)}{\vd}
 }
 \end{mathpar}
 
@@ -1473,7 +1473,7 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
-  \vt = \TInt(\wellconstrained(\cs))\\
+  \vt = \TInt(\WellConstrained(\cs))\\
   \approxconstraints(\tenv, \vapprox, \cs) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs
@@ -1515,7 +1515,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \begin{itemize}
   \item \AllApplyCase{extremities}
   \begin{itemize}
-    \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\PLUS$, $\MINUS$, $\SHR$, or $\SHL$;
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\ADD$, $\SUB$, $\SHR$, or $\SHL$;
     \item applying $\applybinopextremities$ to every pair of constraints \\
           $\csone[\vi]$ and $\cstwo[\vj]$ where $\vi\in\listrange(\csone)$ and
           $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
@@ -1543,7 +1543,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[extremities]{
-  \op \in \{\DIV, \DIVRM, \MUL, \PLUS, \MINUS, \SHR, \SHL\}\\
+  \op \in \{\DIV, \DIVRM, \MUL, \ADD, \SUB, \SHR, \SHL\}\\
   {
     \begin{array}{r}
       \vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \\
@@ -1721,7 +1721,7 @@ contains an \exactconstraintterm.
 
   \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\PLUS$, or $\MINUS$;
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\ADD$, or $\SUB$;
     \item define $\extpairs$ as the list consisting of $(\va, \vb)$.
   \end{itemize}
 \end{itemize}
@@ -1735,7 +1735,7 @@ contains an \exactconstraintterm.
 
 \begin{mathpar}
 \inferrule[other]{
-  \op \in \{\DIV, \DIVRM, \SHR, \SHL, \PLUS, \MINUS\}
+  \op \in \{\DIV, \DIVRM, \SHR, \SHL, \ADD, \SUB\}
 }{
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \overname{[(\va, \vb)]}{\extpairs}
 }
@@ -1766,13 +1766,13 @@ contains a \rangeconstraintterm{}.
 \begin{itemize}
   \item \AllApplyCase{plus}
   \begin{itemize}
-    \item $\op$ is $\PLUS$;
+    \item $\op$ is $\ADD$;
     \item define $\extpairs$ as the list consisting of $(\vc, \vd)$.
   \end{itemize}
 
   \item \AllApplyCase{minus}
   \begin{itemize}
-    \item $\op$ is $\MINUS$;
+    \item $\op$ is $\SUB$;
     \item define $\extpairs$ as the list consisting of $(\vd, \vc)$.
   \end{itemize}
 
@@ -1798,13 +1798,13 @@ contains a \rangeconstraintterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[plus]{}{
-  \possibleextremitiesright(\overname{\PLUS}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
+  \possibleextremitiesright(\overname{\ADD}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[minus]{}{
-  \possibleextremitiesright(\overname{\MINUS}{\op}, \vc, \vd) \typearrow \overname{[(\vd, \vc)]}{\extpairs}
+  \possibleextremitiesright(\overname{\SUB}{\op}, \vc, \vd) \typearrow \overname{[(\vd, \vc)]}{\extpairs}
 }
 \end{mathpar}
 
@@ -1872,7 +1872,7 @@ inferred for \texttt{z} is\\
       \vb & \vc = \ConstraintRange(\Ignore, \vb)
     \end{cases}
   }\\
-  \veminusone \eqdef \EBinop(\MINUS, \veupper, \ELInt{1})
+  \veminusone \eqdef \EBinop(\SUB, \veupper, \ELInt{1})
 }{
   \constraintmod(\vc) \typearrow \overname{\ConstraintRange(\ELInt{0}, \veminusone)}{\newc}
 }

@@ -2,6 +2,7 @@ ifempty.tex
 ifcode.tex
 comment.cut
 *Lines.tex
+generated_elements.tex
 *.bbl
 *.blg
 *.dvi

@@ -35,7 +35,7 @@ This chapter defines functions and relations used by the type system.
 \hypertarget{def-checknoduplicates}{}
 The function
 \[
-  \checknoduplicates(\overname{\identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \TTypeError
+  \checknoduplicates(\overname{\Identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \typeerror
 \]
 checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
 is $\True$ and otherwise the result is a \typingerrorterm{}.
@@ -147,7 +147,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \hypertarget{def-findbitfieldopt}{}
 The function
 \[
-  \findbitfieldopt(\overname{\identifier}{\name} \aslsep \overname{\bitfield^*}{\bitfields})
+  \findbitfieldopt(\overname{\Identifier}{\name} \aslsep \overname{\bitfield^*}{\bitfields})
   \aslto \overname{\langle\bitfield\rangle}{\vr}
 \]
 returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
@@ -261,7 +261,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 }
 \and
 \inferrule[expr]{}{
-  \typeofarraylength(\ArrayLengthExpr(\Ignore)) \typearrow \TInt(\unconstrained)
+  \typeofarraylength(\ArrayLengthExpr(\Ignore)) \typearrow \TInt(\Unconstrained)
 }
 \end{mathpar}
 \CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
@@ -270,7 +270,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \hypertarget{def-assocopt}{}
 The function
 \[
-  \assocopt(\overname{(\identifier\times T)^*}{\vli} \aslsep \overname{\identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
+  \assocopt(\overname{(\Identifier\times T)^*}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 
@@ -281,8 +281,8 @@ of the type \\
 \verb|record{i: integer, b: boolean}|, respectively:
 \[
 \begin{array}{rcl}
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vi) &\typearrow& \Some{\unconstrainedinteger}\\
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vb) &\typearrow& \Some{\TBool}\\
+\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vi) &\typearrow& \some{\unconstrainedinteger}\\
+\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vb) &\typearrow& \some{\TBool}\\
 \end{array}
 \]
 
@@ -355,7 +355,7 @@ is the \localstaticenvironmentterm{} of $\emptytenv$.
 The function
 \[
   \checkvarnotinenv(\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id})
-  \aslto \{\True\} \cup \TTypeError
+  \aslto \{\True\} \cup \typeerror
 \]
 checks whether $\id$ is already declared in $\tenv$. If it is, the result is a \typingerrorterm{},
 and otherwise the result is $\True$.
@@ -394,7 +394,7 @@ is repeated.
 The function
 \[
   \checkvarnotingenv(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx})
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether $\id$ is already declared in the \globalstaticenvironmentterm{} $\genv$.
 If it is, the result is a \typingerrorterm{}, and otherwise the result is $\True$.
@@ -439,7 +439,7 @@ The function
 \[
   \addlocal(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\id} \aslsep
+    \overname{\Identifier}{\id} \aslsep
     \overname{\ty}{\tty} \aslsep
     \overname{\localdeclkeyword}{\ldk})
   \aslto
@@ -485,7 +485,7 @@ the following local storage elements are added:
 \hypertarget{def-isundefined}{}
 The function
 \[
-\isundefined(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx})
+\isundefined(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vx})
 \aslto \overname{\Bool}{\vb}
 \]
 checks whether the identifier $\vx$ is defined as a storage element in the \staticenvironmentterm{} $\tenv$.
@@ -512,7 +512,7 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvi
 \hypertarget{def-isglobalundefined}{}
 The function
 \[
-\isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
+\isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
 checks whether the identifier $\vx$ is defined in the \globalstaticenvironmentterm{} $\genv$ when subprogram definitions are ignored (see \RequirementRef{GlobalNamespace}), yielding the result in $\vb$.
 
@@ -543,7 +543,7 @@ $\globalstoragetypes$, and $\declaredtypes$.
 \hypertarget{def-islocalundefined}{}
 The function
 \[
-\islocalundefined(\overname{\localstaticenvs}{\lenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\Bool}{\vb}
+\islocalundefined(\overname{\localstaticenvs}{\lenv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
 checks whether $\vx$ is declared as a local storage element in the static local environment $\lenv$, yielding the result in $\vb$.
 
@@ -573,7 +573,7 @@ Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoraget
 \hypertarget{def-lookupconstant}{}
 The function
 \[
-  \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vs})
+  \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vs})
   \;\aslto\; \overname{\literal}{\vv}\ \cup\ \{\bot\}
 \]
 looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
@@ -604,7 +604,7 @@ The function
 \[
 \addglobalconstant(
   \overname{\globalstaticenvs}{\genv} \aslsep
-  \overname{\identifier}{\name} \aslsep
+  \overname{\Identifier}{\name} \aslsep
   \overname{\literal}{\vv}) \typearrow
   \overname{\globalstaticenvs}{\newgenv}
 \]
@@ -632,7 +632,7 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 \hypertarget{def-lookupimmutableexpr}{}
 The function
 \[
-\lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
+\lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
 \]
 looks up the \staticenvironmentterm{} $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
@@ -695,7 +695,7 @@ The function
 \[
 \addglobalimmutableexpr(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\vx}
+  \overname{\Identifier}{\vx}
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a global storage element,
@@ -730,7 +730,7 @@ The function
 \[
 \addlocalimmutableexpr(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\vx}
+  \overname{\Identifier}{\vx}
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a local storage element,
@@ -799,8 +799,8 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\localdeclkeyword}{\ldk} \aslsep
   \overname{\langle\overname{\expr}{\ve}\times\overname{\TSideEffectSet}{\vsese}\rangle}{\veopt} \aslsep
-  \overname{\identifier}{\vx}) \\
-  \aslto \overname{\staticenvs}{\newtenv} \cup\ \TTypeError
+  \overname{\Identifier}{\vx}) \\
+  \aslto \overname{\staticenvs}{\newtenv} \cup\ \typeerror
 \end{array}
 \]
 conditionally updates the \staticenvironmentterm{} $\tenv$ for a \localdeclarationitem{} $\ldk$,
@@ -906,7 +906,7 @@ the subprogram definition node
 \funcparameters &:& \emptylist,\\
 \funcargs &:& [(\vx, \unconstrainedinteger)],\\
 \funcbody &:& \SReturn(\AbbrevEBinop{+}{\AbbrevEVar{\vx}}{\ELInt{1}}),\\
-\funcreturntype &:& \Some{\unconstrainedinteger},\\
+\funcreturntype &:& \some{\unconstrainedinteger},\\
 \funcsubprogramtype &:& \STFunction\\
 \funcrecurselimit    &:& \None\\
 \funcbuiltin &:& \False\\
@@ -928,7 +928,7 @@ the subprogram definition node
 \funcparameters &:& \emptylist,\\
 \funcargs &:& [(\vx, \TReal)],\\
 \funcbody &:& \SReturn(\AbbrevEBinop{+}{\AbbrevEVar{\vx}}{\ELiteral(\LReal(1/1))}),\\
-\funcreturntype &:& \Some{\TReal},\\
+\funcreturntype &:& \some{\TReal},\\
 \funcsubprogramtype &:& \STFunction\\
 \funcrecurselimit    &:& \None\\
 \funcbuiltin &:& \False\\
@@ -959,7 +959,7 @@ The function
 \[
   \addtype(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\name} \aslsep
+    \overname{\Identifier}{\name} \aslsep
     \overname{\ty}{\tty} \aslsep
     \overname{\TPurity}{\vf})
    \aslto

@@ -294,6 +294,7 @@ catchers
 catches
 catching
 categories
+category
 caught
 cause
 caused
@@ -689,6 +690,7 @@ enclosing
 encoded
 encoding
 encountered
+encounters
 end
 endian
 ending

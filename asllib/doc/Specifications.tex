@@ -72,7 +72,7 @@ The function
     \overname{\decl}{\vd}
   )
   \aslto (\overname{\decl}{\newd} \times \overname{\globalstaticenvs}{\newgenv})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a global declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding an annotated global declaration $\newd$ and modified \globalstaticenvironmentterm{} $\newgenv$.
@@ -103,9 +103,11 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Abstract Syntax of Specifications\label{sec:Abstract Syntax of Specifications}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BEGIN_GENERATED_ELEMENT(spec)[remove_hypertargets]
 \begin{flalign*}
-\spec \derives\ & \decl^* &
+\spec \derives\ & \KleeneStar{\overtext{\decl}{declarations}}
 \end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{AST}
 \hypertarget{build-ast}{}
@@ -161,7 +163,7 @@ The relation
   \overname{\decl^*}{\decls}
 ) \aslrel
 (\overname{\decl^*}{\newdecls} \times \overname{\staticenvs}{\newtenv})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of declarations $\decls$ in an input \globalstaticenvironmentterm{} $\genv$,
 yielding an output \staticenvironmentterm{} $\newtenv$ and annotated list of declarations $\newdecls$.
@@ -280,7 +282,7 @@ The function
 \annotatedeclcomps(\overname{\globalstaticenvs}{\genv} \aslsep \overname{(\decl^*)^*}{\comps})
 \aslto
 (\overname{\globalstaticenvs}{\newgenv} \times \overname{\decl^*}{\newdecls})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of declaration components $\comps$
 (a list of lists) in the \globalstaticenvironmentterm{} $\genv$,
@@ -371,7 +373,7 @@ The function
     \overname{\decl^*}{\newdecls} \times
     \overname{\globalstaticenvs}{\newgenv}
   )
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of mutually recursive declarations
 $\decls$ in the \globalstaticenvironmentterm{} $\genv$,
@@ -456,7 +458,7 @@ The function
   ) \aslto \\
   \overname{\globalstaticenvs}{\newgenv} \times
   \overname{(\localstaticenvs\times\func\times\TSideEffectSet)^*}{\newenvandfs}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 processes a list of pairs, each consisting of a \localstaticenvironmentterm{} and a subprogram declaration, $\envandfs$,
@@ -643,7 +645,7 @@ Implementations may wish to emit user-configurable warnings to check either:
 The function
 \[
 \overridesubprograms(\overname{\decl^*}{\decls}) \aslto \overname{\decl^*}{\declsp}
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 overrides subprograms in a list of declarations $\decls$, yielding the new list of declarations $\declsp$.
 \ProseOtherwiseTypeError{}
@@ -682,7 +684,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 \hypertarget{def-checkimplementationsunique}{}
 The function
 \[
-\checkimplementationsunique(\overname{\func^*}{\vimpls}) \aslto \{\True\} \cup \TTypeError
+\checkimplementationsunique(\overname{\func^*}{\vimpls}) \aslto \{\True\} \cup \typeerror
 \]
 checks that the \Proseimplementationsubprograms{} $\vimpls$ have unique signatures.
 \ProseOtherwiseTypeError{}
@@ -777,7 +779,7 @@ The function
 \[
 \processoverrides(\overname{\func^*}{\vimpdefs} \aslsep \overname{\func^*}{\vimpls}) \aslto
 (\overname{\func^*}{\vimpdefsp} \times \overname{\func^*}{\vdiscarded})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$ and the discarded subprograms $\vdiscarded$.
 \ProseOtherwiseTypeError{}
@@ -866,7 +868,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 \begin{mathpar}
 \inferrule[non\_empty]{
   \renamesubprograms(\vt) \typearrow \vtp \\
-  \name \in \Identifiers \text{ is fresh} \\
+  \name \in \Identifier \text{ is fresh} \\
   \vhp \eqdef \vh[\funcname \mapsto \name] \\
 }{
   \renamesubprograms(\overname{[\vh] \concat \vt}{\vdiscarded}) \typearrow \overname{[\vhp] \concat \vtp}{\vrenameddiscarded}
@@ -895,7 +897,7 @@ We distinguish between subprogram identifiers, and all other identifiers (storag
 We use the following type to track \defusedependenciesterm{} between subprogram identifiers and other identifiers:
 \hypertarget{ast-defusename}{} \hypertarget{ast-subprogram}{} \hypertarget{ast-other}{}
 \begin{flalign*}
-\defusename \derives\ & \Subprogram(\identifier) \;|\; \Other(\identifier) &
+\defusename \derives\ & \Subprogram(\Identifier) \;|\; \Other(\Identifier) &
 \end{flalign*}
 
 \TypingRuleDef{BuildDependencies}
@@ -1282,7 +1284,7 @@ used by them appearing as comments to their right.
 
 \begin{mathpar}
 \inferrule[int\_no\_constraints]{
-  \astlabel(\vc) \in \{\unconstrained, \parameterized\}
+  \astlabel(\vc) \in \{\Unconstrained, \Parameterized\}
 }{
   \usety(\overname{\TInt(\vc)}{\vt}) \typearrow \overname{\emptyset}{\ids}
 }
@@ -1290,7 +1292,7 @@ used by them appearing as comments to their right.
 
 \begin{mathpar}
 \inferrule[int\_well\_constrained]{}{
-  \usety(\overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\bigcup_{\vc \in \vcs} \useconstraint(\vc)}{\ids}
+  \usety(\overname{\TInt(\WellConstrained(\vcs))}{\vt}) \typearrow \overname{\bigcup_{\vc \in \vcs} \useconstraint(\vc)}{\ids}
 }
 \end{mathpar}
 
@@ -1329,7 +1331,7 @@ used by them appearing as comments to their right.
 \hypertarget{def-usesubtypes}{}
 The function
 \[
-\usesubtypes(\overname{\langle(\overname{\identifier}{\vx}\times\overname{\Field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
+\usesubtypes(\overname{\langle(\overname{\Identifier}{\vx}\times\overname{\field^*}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the \optional\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
@@ -2345,7 +2347,7 @@ results in a \dynamicerrorterm.
     \begin{itemize}
       \item evaluating the subprogram $\namep$ with an empty list of actual arguments and empty list of parameters
             in $\env$ yields \\
-            $\ResultSubprogram([(\vv, \vgtwo)], \Ignore)$\ProseOrDynErrorDiverging;
+            $\ResultCall([(\vv, \vgtwo)], \Ignore)$\ProseOrDynErrorDiverging;
       \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
       \item the result of the entire evaluation is $(\vv, \vg)$.
     \end{itemize}
@@ -2366,10 +2368,10 @@ results in a \dynamicerrorterm.
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\funcreturntype = \Some{\TInt(\unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+      (\namep, \{\funcreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
   }\\\\
-  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultSubprogram([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
+  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultCall([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -2382,7 +2384,7 @@ results in a \dynamicerrorterm.
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\funcreturntype = \Some{\TInt(\unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+      (\namep, \{\funcreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
   }\\\\
   \evalsubprogram(\env, \namep, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
