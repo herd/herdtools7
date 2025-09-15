@@ -158,7 +158,7 @@ The function
   \annotatecallactualstyped\left(
     \begin{array}{c}
       \overname{\staticenvs}{\tenv} \aslsep\\
-      \overname{\identifier}{\name} \aslsep\\
+      \overname{\Identifier}{\name} \aslsep\\
       \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\params} \aslsep\\
       \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\typedargs} \aslsep\\
       \overname{\subprogramtype}{\calltype}
@@ -167,7 +167,7 @@ The function
   \begin{array}{c}
   (\overname{\call}{\vcall} \aslsep
   \overname{\langle \ty \rangle}{\rettyopt})\\
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
 is similar to $\annotatecall$, except that it accepts the annotated versions of
@@ -334,7 +334,7 @@ parameters elided, and the equivalent calls with all parameters included.
   \caninsertstdlibparam = \True\\\\
   \argtypes \eqname [\vt] \concat \Ignore\\
   \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\\\\
-  \paramtype \eqdef \TInt(\wellconstrained([\AbbrevConstraintExact{\vwidth}]))\\
+  \paramtype \eqdef \TInt(\WellConstrained([\AbbrevConstraintExact{\vwidth}]))\\
   \paramsone \eqdef \params \concat [(\paramtype, \vwidth, \emptyset)]
 }{
   \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \paramsone
@@ -386,12 +386,12 @@ func Ones{N}() => bits(N)
 \begin{itemize}
   \item $\funcsig$ is in the standard library;
   \item \Proseeqdef{$\declaredparam$}{
-    $\Some{\vn}$ if the list of parameters in $\funcsig$ contains a single parameter whose name is $\vn$
+    $\some{\vn}$ if the list of parameters in $\funcsig$ contains a single parameter whose name is $\vn$
     or the list contains two parameters and the second parameter name is $\vn$;
     and $\None$ otherwise
   };
   \item \Proseeqdef{$\vb$}{$\True$ if and only if
-        $\declaredparam$ is $\Some{\vn}$ and the first argument of $\funcsig$
+        $\declaredparam$ is $\some{\vn}$ and the first argument of $\funcsig$
         has a \bitvectortypeterm{} where the width is defined as the variable expression for $\vn$}.
 \end{itemize}
 
@@ -401,12 +401,12 @@ func Ones{N}() => bits(N)
   \funcsig.\funcbuiltin\\\\
   {
     \declaredparam \eqdef \begin{cases}
-      \Some{\vn} & \text{if }\funcsig.\funcparameters = [(\vn, \Ignore)]\\
-      \Some{\vn} & \text{if }\funcsig.\funcparameters = [\Ignore, (\vn, \Ignore)]\\
+      \some{\vn} & \text{if }\funcsig.\funcparameters = [(\vn, \Ignore)]\\
+      \some{\vn} & \text{if }\funcsig.\funcparameters = [\Ignore, (\vn, \Ignore)]\\
       \None      & \text{else}
     \end{cases}
   }\\
-  \vb \eqdef \declaredparam = \Some{\vn} \land
+  \vb \eqdef \declaredparam = \some{\vn} \land
   \funcsig.\funcargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
 }{
   \canommitstdlibparam(\funcsig) \typearrow \vb
@@ -420,10 +420,10 @@ The function
 \begin{array}{r}
 \checkparamstypesat(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier\times\langle\ty\rangle)^*}{\funcsigparams} \aslsep
+  \overname{(\Identifier\times\langle\ty\rangle)^*}{\funcsigparams} \aslsep
   \overname{(\ty\times\expr\times\TSideEffectSet)^*}{\params}
   ) \aslto \\
-  \{\True\}\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 checks that annotated parameters $\params$ are correct with respect to the declared parameters $\funcsigparams$.
@@ -441,8 +441,8 @@ the typechecker checks that the type of \verb|FOUR|, which is \verb|integer{4}| 
 \verb|integer{0..64}|.
 The parameter \verb|N| is not annotated with a type --- its type is
 determined to be \\
-$\TInt(\parameterized(\texttt{N}))$ --- and there is no need to check that
-the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\parameterized(\texttt{N}))$.
+$\TInt(\Parameterized(\texttt{N}))$ --- and there is no need to check that
+the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\Parameterized(\texttt{N}))$.
 
 \ASLListing{Checking that expression types type-satisfy parameters}{CheckParamsTypeSat}{\typingtests/TypingRule.CheckParamsTypeSat.asl}
 
@@ -468,7 +468,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\p
       \item \AllApplyCase{parameterized}
       \begin{itemize}
         \item $\tyactual$ is a \parameterizedintegertype{} for the parameter $\vx$, that is, \\
-              $\langle\TInt(\parameterized(\vx))\rangle$.
+              $\langle\TInt(\Parameterized(\vx))\rangle$.
       \end{itemize}
 
       \item \AllApplyCase{other}
@@ -496,7 +496,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\p
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
-  \tydeclopt = \langle\TInt(\parameterized(\vx))\rangle\\\\
+  \tydeclopt = \langle\TInt(\Parameterized(\vx))\rangle\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
@@ -509,7 +509,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\p
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
   \tydeclopt \eqname \langle\tydecl\rangle\\
-  \tydecl \neq \TInt(\parameterized(\vx))\\
+  \tydecl \neq \TInt(\Parameterized(\vx))\\
   \checktypesat(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
@@ -523,10 +523,10 @@ The function
 \[
 \renametyeqs(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
   \overname{\ty}{\tty}
 ) \aslto
-\overname{\ty}{\newty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\overname{\ty}{\newty} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 transforms the type $\tty$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
@@ -566,7 +566,7 @@ requires substituting \verb|8| for \verb|N| in the types
     \item $\tty$ is a \parameterizedintegertype\ for the parameter $\name$;
     \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
     \item define $\newty$ as the well-constrained integer type with the single constraint for $\ve$, that is,
-          $\TInt(\wellconstrained(\ConstraintExact(\ve)))$.
+          $\TInt(\WellConstrained(\ConstraintExact(\ve)))$.
   \end{itemize}
 
   \item \AllApplyCase{t\_tuple}
@@ -597,17 +597,17 @@ requires substituting \verb|8| for \verb|N| in the types
 \inferrule[t\_int\_wellconstrained]{
   \vi\in\listrange(\constraints): \substconstraint(\tenv, \constraints[\vi]) \typearrow \newc_\vi\\
   \newconstraints \eqdef [\vi\in\listrange(\constraints): \newc_\vi]\\
-  \newty \eqdef \TInt(\wellconstrained(\newconstraints))
+  \newty \eqdef \TInt(\WellConstrained(\newconstraints))
 }{
-  \renametyeqs(\tenv, \eqs, \overname{\TInt(\wellconstrained(\constraints))}{\tty}) \typearrow
+  \renametyeqs(\tenv, \eqs, \overname{\TInt(\WellConstrained(\constraints))}{\tty}) \typearrow
   \newty
 }
 \and
 \inferrule[t\_int\_parameterized]{
   \substexprnormalize(\eqs, \EVar(\name)) \typearrow \ve\\
-  \newty \eqdef \TInt(\wellconstrained(\ConstraintExact(\ve)))
+  \newty \eqdef \TInt(\WellConstrained(\ConstraintExact(\ve)))
 }{
-  \renametyeqs(\tenv, \eqs, \overname{\TInt(\parameterized(\name))}{\tty}) \typearrow \newty
+  \renametyeqs(\tenv, \eqs, \overname{\TInt(\Parameterized(\name))}{\tty}) \typearrow \newty
 }
 \and
 \inferrule[t\_tuple]{
@@ -631,7 +631,7 @@ The function
 \[
 \substexprnormalize(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
   \overname{\expr}{\ve}
 ) \aslto \overname{\newe}{\expr}
 \]
@@ -672,7 +672,7 @@ The function
 \[
 \substexpr(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier\times\expr)^*}{\substs} \aslsep
+  \overname{(\Identifier\times\expr)^*}{\substs} \aslsep
   \overname{\expr}{\ve}
 ) \aslto \overname{\expr}{\newe}
 \]
@@ -1040,7 +1040,7 @@ The function
 \[
 \substconstraint(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
   \overname{\intconstraint}{\vc}
 ) \aslto \overname{\newc}{\intconstraint}
 \]
@@ -1101,11 +1101,11 @@ The function
 \begin{array}{r}
   \checkargstypesat(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{(\identifier\times\ty)^*}{\funcsigargs} \aslsep
+    \overname{(\Identifier\times\ty)^*}{\funcsigargs} \aslsep
     \overname{\ty^*}{\argtypes} \aslsep
-    \overname{(\identifier\times\expr)^*}{\eqs}
+    \overname{(\Identifier\times\expr)^*}{\eqs}
   ) \aslto \\
-  \{\True\}\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 checks that the types $\argtypes$ \typesatisfy\ the types of the corresponding
@@ -1178,10 +1178,10 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\subprogramtype}{\calltype} \aslsep
   \overname{\langle\ty\rangle}{\funcsigrettyopt}
-  \overname{(\identifier\times\expr)^*}{\eqsthree}
+  \overname{(\Identifier\times\expr)^*}{\eqsthree}
 ) \aslto \\
 \overname{\langle\ty\rangle}{\rettyopt}
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the \optional\ return type $\funcsigrettyopt$ given with the subprogram type
@@ -1280,7 +1280,7 @@ The function
     \overname{\func}{\callee} \aslsep
     \overname{\TSideEffectSet}{\vses}
     )\
-    \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+    \cup\ \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
 looks up the \staticenvironmentterm{} $\tenv$ for a subprogram associated with $\name$, the list of argument types $\calleeargtypes$, and a subprogram type matching $\calltype$, and determines which one of the following
@@ -1555,9 +1555,9 @@ The function
   \hasargclash(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty^*}{\formaltys} \aslsep
-    \overname{(\identifier\times\ty)^*}{\vargs}
+    \overname{(\Identifier\times\ty)^*}{\vargs}
   )
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether a list of types $\formaltys$ clashes with the list of types appearing
 in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
@@ -1597,7 +1597,7 @@ the arguments of procedures -- that do not clash and types that do clash
 The helper function
 \[
   \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines whether a type $\vt$ \emph{\Prosetypeclashes} with a type $\vs$ in environment $\tenv$,
 returning the result $\vb$.
@@ -1775,7 +1775,7 @@ The helper function
 \[
   \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs})
   \aslto \overname{(\ty \times \expr \times \TSideEffectSet)^*}{\typedexprs}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of expressions $\exprs$ from left to right, yielding a list of tuples \\
 $\typedexprs$,
@@ -1788,7 +1788,7 @@ is annotated as
 \[
 \left[
 \begin{array}{lll}
-(\TInt(\wellconstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\LInt(10)},& \emptyset),\\
+(\TInt(\WellConstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\LInt(10)},& \emptyset),\\
 (\TReal,& \eliteral{\LReal(20)},& \emptyset)
 \end{array}
 \right]
@@ -1807,11 +1807,11 @@ is annotated as
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\exprs$ has $\ve$ as its \head\ expression and $\exprsone$ as its \tail;
-    \item annotating $\ve$ in $\tenv$ yields the pair $\typedexpr$ consisting of a type
+    \item annotating $\ve$ in $\tenv$ yields the pair $\vtypedexpr$ consisting of a type
           and an expression\ProseOrTypeError;
     \item annotating the expression list $\exprsone$ in $\tenv$ yields
           $\typedexprs$\ProseOrTypeError;
-    \item \Proseeqdef{$\typedexprs$}{the \Proselist{$\typedexpr$}{$\typedexprs$}}.
+    \item \Proseeqdef{$\typedexprs$}{the \Proselist{$\vtypedexpr$}{$\typedexprs$}}.
   \end{itemize}
 \end{itemize}
 
@@ -1825,10 +1825,10 @@ is annotated as
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \annotateexpr(\tenv, \ve) \typearrow \typedexpr \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow \vtypedexpr \OrTypeError\\\\
   \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprsone \OrTypeError
 }{
-  \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\typedexpr] \concat \typedexprsone}{\typedexprs}
+  \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\vtypedexpr] \concat \typedexprsone}{\typedexprs}
 }
 \end{mathpar}
 
@@ -1880,12 +1880,12 @@ The relation
 \hypertarget{def-evalcall}{}
 \[
   \evalcall(\overname{\envs}{\env} \aslsep
-  \overname{\Identifiers}{\name} \aslsep
+  \overname{\Identifier}{\name} \aslsep
   \overname{\expr^*}{\params} \aslsep
   \overname{\expr^*}{\args}) \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultCall(\overbracket{(\vals\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
+  \ResultCall(\overbracket{(\nativevalue\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
   \overname{\TDynError}{\DynErrorConfig} & \cup \\
   \overname{\TDiverging}{\DivergingConfig} & \\
   \end{array}
@@ -1926,7 +1926,7 @@ while calling \\
     \item \AllApplyCase{normal}
     \begin{itemize}
       \item evaluating the subprogram named $\name$ with parameters $\vvparams$ and arguments $\vvargs$ in
-            $\denvtwo'$ is $\ResultSubprogram(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
+            $\denvtwo'$ is $\ResultCall(\vms, (\vglobal, \Ignore))$ (that is, we ignore the local environment
             of the callee)\ProseOrDynErrorDiverging;
       \item applying the helper relation $\readvaluefrom$ to each element of the list $\vms$ yields the list $\vmstwo$;
       \item applying $\decrpendingcalls$ to $\vglobal$ and $\name$ yields $\genvtwo$;
@@ -1961,7 +1961,7 @@ while calling \\
   \incrpendingcalls(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultSubprogram(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\\\\
+  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\\\\
   \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vms)]\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
@@ -1995,15 +1995,15 @@ The relation
   \evalsubprogram\left(
   \begin{array}{cl}
   \overname{\envs}{\env} & \aslsep\\
-  \overname{\Identifiers}{\name} & \aslsep\\
-  \overname{(\vals \times \XGraphs)^*}{\params} & \aslsep\\
-  \overname{(\vals \times \XGraphs)^*}{\args} &
+  \overname{\Identifier}{\name} & \aslsep\\
+  \overname{(\nativevalue \times \XGraphs)^*}{\params} & \aslsep\\
+  \overname{(\nativevalue \times \XGraphs)^*}{\args} &
   \end{array}
   \right)
   \;\aslrel\;
   \left(
   \begin{array}{cl}
-  \ResultSubprogram(\overname{(\vals^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
+  \ResultCall(\overname{(\nativevalue^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig} & \cup\\
   \overname{\TDynError}{\DynErrorConfig} & \cup\\
   \overname{\TDiverging}{\DivergingConfig} &
@@ -2094,7 +2094,7 @@ return statement.
 \hypertarget{def-checkrecurselimit}{}
 The helper relation
 \[
-  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\identifier}{\name} \aslsep \overname{\expr?}{\velimitopt}) \aslto
+  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\expr?}{\velimitopt}) \aslto
   \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
@@ -2176,7 +2176,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \hypertarget{def-readvaluefrom}{}
 The helper relation
 \[
-  \readvaluefrom(\valuereadfrom(\vals \aslsep \Identifiers)) \;\aslrel\; (\vals \times \XGraphs)
+  \readvaluefrom(\valuereadfrom(\nativevalue \aslsep \Identifier)) \;\aslrel\; (\nativevalue \times \XGraphs)
 \]
 generates an execution graph for reading the given value to a variable given
 by the identifier, and pairs it with the given value.
@@ -2206,8 +2206,8 @@ The relation
 \[
   \assignargs(
     (\overname{\envs}{\env}\times\overname{\XGraphs}{\vgone})\aslsep
-    \overname{\Identifiers^*}{\vids} \aslsep
-    \overname{(\vals\times\XGraphs)^*} {\actuals}) \;\aslrel\;
+    \overname{\Identifier^*}{\vids} \aslsep
+    \overname{(\nativevalue\times\XGraphs)^*} {\actuals}) \;\aslrel\;
               (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 updates the pair consisting of the environments $\env$ and \executiongraph\ $\vgone$
@@ -2265,7 +2265,7 @@ The helper relation
 \hypertarget{def-matchfuncres}{}
 \[
     \matchfuncres(\TContinuing \cup \TReturning) \;\aslrel\;
-                  \ResultSubprogram(((\Identifiers\times\vals)^*\times\XGraphs)\aslsep\envs)
+                  \ResultCall(((\Identifier\times\nativevalue)^*\times\XGraphs)\aslsep\envs)
 \]
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.
@@ -2289,7 +2289,7 @@ with the same value and a fresh identifier for it.
   \begin{itemize}
     \item the given configuration is $\Continuing(\vg, \env)$. This happens when,
     for example, the subprogram called is either a setter or a procedure;
-    \item the result is $\ResultSubprogram((\emptylist, \vg), \env)$.
+    \item the result is $\ResultCall((\emptylist, \vg), \env)$.
   \end{itemize}
 
   \item \AllApplyCase{returning}
@@ -2298,7 +2298,7 @@ with the same value and a fresh identifier for it.
     \item $\xs$ is the list $\vv_i$, for $i=1..k$;
     \item define the list of fresh identifiers $\id_i$, for $i=1..k$;
     \item define $\vvs$ to be $(\vv_i, \id_i)$, for $i=1..k$;
-    \item the result is $\ResultSubprogram((\vvs, \emptygraph), \retenv)$.
+    \item the result is $\ResultCall((\vvs, \emptygraph), \retenv)$.
   \end{itemize}
 \end{itemize}
 
@@ -2306,15 +2306,15 @@ with the same value and a fresh identifier for it.
 \begin{mathpar}
   \inferrule[continuing]{}
   {
-    \matchfuncres(\Continuing(\vg, \env)) \evalarrow \ResultSubprogram((\emptylist, \vg), \env)
+    \matchfuncres(\Continuing(\vg, \env)) \evalarrow \ResultCall((\emptylist, \vg), \env)
   }
   \and
   \inferrule[returning]{
     \xs \eqname [i=1..k: \vv_i]\\
-    i=1..k: \id_i \in \Identifiers\text{ is fresh}\\
+    i=1..k: \id_i \in \Identifier\text{ is fresh}\\
     \vvs \eqdef [i=1..k: (\vv_i, \id_i)]
   }
   {
-    \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultSubprogram((\vvs, \emptygraph), \retenv)
+    \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultCall((\vvs, \emptygraph), \retenv)
   }
 \end{mathpar}

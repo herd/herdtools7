@@ -7,7 +7,7 @@ to be implemented.
 
 We define the concept of a \emph{dynamic domain} of a type
 and the \emph{static domain} of a type.
-Intuitively, domains assign potentially infinite sets of \nativevalues\ to types.
+Intuitively, domains assign potentially infinite sets of \nativevaluesterm{} to types.
 Dynamic domains are used by the semantics to evaluate expressions of the form \texttt{ARBITRARY: t}
 by choosing a single value from the dynamic domain of $\vt$ (\SemanticsRuleRef{EArbitrary}).
 Static domains are used to define subtype satisfaction (\TypingRuleRef{SubtypeSatisfaction})
@@ -18,7 +18,7 @@ via a conservative subsumption test as defined in \chapref{SymbolicDomainSubsetT
 The dynamic domain is defined via the partial function
 \[
   \dynamicdomain : \overname{\envs}{\env} \times \overname{\ty}{\vt}
-  \partialto \overname{\pow{\vals}}{\vd}
+  \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 which assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
 %
@@ -44,7 +44,7 @@ function $\annotatetype$.
 Evaluation is defined by the relation $\evalexprsef\empty$.
 which evaluates side-effect-free expressions and either returns
 a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
-In the first case, $\vv$ is a \nativevalue\ and $\vg$
+In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
 In the latter case (which can occur if, for example, an expression attempts to divide
@@ -61,7 +61,7 @@ As part of the definition, we also associate dynamic domains to integer constrai
 by overloading $\dynamicdomain$:
 \[
   \dynamicdomain : \overname{\envs}{\env} \times \overname{\intconstraint}{\vc}
-  \partialto \overname{\pow{\vals}}{\vd}
+  \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 
 \ProseParagraph
@@ -99,7 +99,7 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{t\_int\_well\_constrained}
   \begin{itemize}
-    \item $\vt$ is the well-constrained integer type $\TInt(\wellconstrained(\vc_{1..k}))$;
+    \item $\vt$ is the well-constrained integer type $\TInt(\WellConstrained(\vc_{1..k}))$;
     \item $\vd$ is the union of the dynamic domains of each of the constraints $\vc_{1..k}$ in $\env$.
   \end{itemize}
 
@@ -142,8 +142,8 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\parameterized(\id))$;
-    \item the \nativevalue\ associated with $\id$ in the local dynamic environment is the native integer value for $n$;
+    \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\Parameterized(\id))$;
+    \item the \nativevalueterm{} associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
 
@@ -166,7 +166,7 @@ by overloading $\dynamicdomain$:
   \begin{itemize}
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $0$;
-    \item $\vd$ is the set containing the single \nativevalue\ for an empty bitvector.
+    \item $\vd$ is the set containing the single \nativevalueterm{} for an empty bitvector.
   \end{itemize}
 
   \item \AllApplyCase{t\_bits\_non\_empty}
@@ -174,7 +174,7 @@ by overloading $\dynamicdomain$:
     \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
     \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
     \item $k$ is greater than $0$;
-    \item $\vd$ is the set containing all \nativevalues\ for bitvectors of size exactly $k$.
+    \item $\vd$ is the set containing all \nativevaluesterm{} for bitvectors of size exactly $k$.
   \end{itemize}
 
   \item \AllApplyCase{t\_tuple}
@@ -263,7 +263,7 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[t\_int\_well\_constrained]{}{
-  \dynamicdomain(\env, \overname{\TInt(\wellconstrained(\vc_{1..k}))}{\vt}) = \overname{\bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)}{\vd}
+  \dynamicdomain(\env, \overname{\TInt(\WellConstrained(\vc_{1..k}))}{\vt}) = \overname{\bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)}{\vd}
 }
 \end{mathpar}
 
@@ -306,13 +306,13 @@ by overloading $\dynamicdomain$:
 }
 \end{mathpar}
 
-The notation $L^\denv(\id)$ denotes the \nativevalue\ associated with the identifier $\id$
+The notation $L^\denv(\id)$ denotes the \nativevalueterm{} associated with the identifier $\id$
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
   \inferrule[t\_int\_parameterized]{
   L^\denv(\id) = \nvint(n)
 }{
-  \dynamicdomain(\env, \overname{\TInt(\parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
+  \dynamicdomain(\env, \overname{\TInt(\Parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \end{mathpar}
 
@@ -350,7 +350,7 @@ in the \emph{local dynamic environment} of $\denv$.
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
   \dynamicdomain(\env, \overname{\TTuple(\vt_{1..k})}{\vt}) =
-  \overname{\{ \nvvector(\vv_{1..k}) \;|\; \vv_i \in D_i \}}{\vd}
+  \overname{\{ \NVVector(\vv_{1..k}) \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 
@@ -375,7 +375,7 @@ in the \emph{local dynamic environment} of $\denv$.
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) =
-  \overname{\{ \nvvector(\vv_{1..k}) \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
+  \overname{\{ \NVVector(\vv_{1..k}) \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
 }
 \end{mathpar}
 
@@ -388,7 +388,7 @@ in the \emph{local dynamic environment} of $\denv$.
   {
   \begin{array}{c}
     \dynamicdomain(\env, \overname{\TArray(\ArrayLengthEnum(\id, k), \telem)}{\vt}) =\\
-    \overname{\{ \nvrecord(\{i=1..k: \vl_i\mapsto \vv_i\}) \;|\; \vv_i \in D_\telem \}}{\vd}
+    \overname{\{ \NVRecord(\{i=1..k: \vl_i\mapsto \vv_i\}) \;|\; \vv_i \in D_\telem \}}{\vd}
   \end{array}
   }
 }
@@ -400,7 +400,7 @@ in the \emph{local dynamic environment} of $\denv$.
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
   \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i))]}{\vt}) = \\
-  \overname{\{ \nvrecord(\{i=1..k: \id_i\mapsto \vv_i\}) \;|\; \vv_i \in D_i \}}{\vd}
+  \overname{\{ \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\}) \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 

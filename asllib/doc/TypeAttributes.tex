@@ -221,7 +221,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 The predicate
 \[
   \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
-  \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 tests whether the type $\tty$ is a \emph{\Prosesingulartype} in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
@@ -258,7 +258,7 @@ type C of B;
 The predicate
 \[
   \isaggregate(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
-  \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 tests whether the type $\tty$ is an \emph{aggregate type} in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
@@ -458,7 +458,7 @@ A type $\tty$ is primitive if it is not non-primitive.
 \hypertarget{def-structure}{}
 The function
 \[
-  \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the type formed by
 recursively replacing named types by their type definition in the \staticenvironmentterm{} $\tenv$.
@@ -560,7 +560,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \hypertarget{def-underlyingtype}{}
 The function
 \[
-  \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the \emph{\underlyingtype} --- $\vt$ --- of the type $\tty$ in the \staticenvironmentterm{} $\tenv$ or a \typingerrorterm{}.
 Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
@@ -624,7 +624,7 @@ or a \parameterizedintegertype.
 \hypertarget{def-checkconstrainedinteger}{}
 The function
 \[
-  \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the type $\vt$ is a \constrainedinteger{} type.
 If so, the result is $\True$, otherwise the result is a \typingerrorterm.
@@ -667,16 +667,16 @@ is a \constrainedinteger{} type.
 \begin{mathpar}
 \inferrule[well-constrained]{}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\wellconstrained(\Ignore))) \typearrow \True
+  \checkconstrainedinteger(\tenv, \TInt(\WellConstrained(\Ignore))) \typearrow \True
 }
 \and
 \inferrule[parameterized]{}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\parameterized(\Ignore))) \typearrow \True
+  \checkconstrainedinteger(\tenv, \TInt(\Parameterized(\Ignore))) \typearrow \True
 }
 \and
 \inferrule[unconstrained]{
-  \astlabel(\vc) = \unconstrained \;\lor\; \astlabel(\vc) = \pendingconstrained
+  \astlabel(\vc) = \Unconstrained \;\lor\; \astlabel(\vc) = \PendingConstrained
 }{
   \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \TypeErrorVal{\UnexpectedType}
 }

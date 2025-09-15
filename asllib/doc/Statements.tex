@@ -48,7 +48,7 @@ The function
 \[
   \annotatestmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
   (\overname{\stmt}{\news} \times \overname{\staticenvs}{\newtenv} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a statement $\vs$ in an environment $\tenv$, resulting in $\news$ ---
 the \typedast\ for $\vs$, which is also known as the \emph{annotated statement} ---
@@ -379,7 +379,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \inferrule[non\_empty]{
   \vlhsaccess.\lhsaccessaccess \neq \emptylist \lor
   \vlhsaccess.\lhsaccessslices \neq \emptylist \\\\
-  \vx \in \Identifiers \text{ is fresh} \\\\
+  \vx \in \Identifier \text{ is fresh} \\\\
   \desugarlhsaccess(\vx, \vlhsaccess) \astarrow \lhs \\
   \vmodify \eqdef \SAssign(\lhs, \rhs) \\
   \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
@@ -396,14 +396,14 @@ The helper function
 \[
 \desugarsettersetfields(
   \overname{\call}{\vcall} \aslsep
-  \overname{\identifier^*}{\vfields} \aslsep
+  \overname{\Identifier^*}{\vfields} \aslsep
   \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
 \]
 builds a statement $\news$ from an assignment of $\rhs$ to a setter invocation $\vcall.\callname$ with concatenated field accesses given by $\vfields$.
 
 \begin{mathpar}
 \inferrule{
-  \vx \in \Identifiers \text{ is fresh} \\\\
+  \vx \in \Identifier \text{ is fresh} \\\\
   \lhs \eqdef \LESetFields(\LEVar(\vx), \vfields) \\
   \vmodify \eqdef \SAssign(\lhs, \rhs) \\
   \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
@@ -420,7 +420,7 @@ The helper function
 \[
 \readmodifywrite(
   \overname{\call}{\vcall} \aslsep
-  \overname{\identifier}{\vx} \aslsep
+  \overname{\Identifier}{\vx} \aslsep
   \overname{\stmt}{\vmodify}) \aslto \overname{\stmt}{\news}
 \]
 builds a sequence of statements to read from the getter invocation $\vcall.\callname$, modify the resulting value using $\vmodify$, and write it to a setter invocation $\vcall.\callname$.
@@ -656,7 +656,7 @@ The helper function
   \begin{array}{cl}
     \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
     & \cup \\
-    \overname{\TTypeError}{\TypeErrorConfig} &
+    \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
   \right)
 \end{array}
@@ -718,7 +718,7 @@ See \ExampleRef{Typing Declaration Statements}.
 The helper function
 \[
 \inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
-\aslto \overname{\ty}{\lhsp} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\aslto \overname{\ty}{\lhsp} \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
 In particular, each occurrence of \pendingconstrainedintegertype{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertype{} on the right-hand side.
@@ -767,7 +767,7 @@ in the \CaseName{int} below.
   \checknoprecisionloss{\rhs} \typearrow \True \OrTypeError\\\\
   \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
 }{
-  \inheritintegerconstraints(\overname{\TInt(\pendingconstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
+  \inheritintegerconstraints(\overname{\TInt(\PendingConstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
 }
 \end{mathpar}
 
@@ -789,7 +789,7 @@ in the \CaseName{int} below.
 
 \begin{mathpar}
 \inferrule[other]{
-  \lhs \neq \TInt(\pendingconstrained) \lor \astlabel(\lhs) \neq \TTuple \lor \astlabel(\rhs) \neq \TTuple
+  \lhs \neq \TInt(\PendingConstrained) \lor \astlabel(\lhs) \neq \TTuple \lor \astlabel(\rhs) \neq \TTuple
 }{
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
@@ -800,7 +800,7 @@ in the \CaseName{int} below.
 The helper function
 \[
   \checknoprecisionloss{\overname{\ty}{\vt}}
-  \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the type $\vt$ is the result of a precision loss in its
 constraint computation (see for example \TypingRuleRef{ApplyBinopTypes}).
@@ -839,13 +839,13 @@ constant types would result in more than $2^17$ elements, see
   \inferrule[Well-Constrained]{%
     \checktrans{p = \PrecisionFull}{PrecisionLostDefining}
   }{%
-    \checknoprecisionloss{\overname{\TInt(\wellconstrained(\Ignore, p))}{\vt}} \typearrow \True
+    \checknoprecisionloss{\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}} \typearrow \True
   }
 \end{mathpar}
 
 \begin{mathpar}
   \inferrule[Integer]{%
-    \astlabel(\vc) \neq \wellconstrained
+    \astlabel(\vc) \neq \WellConstrained
   }{%
     \checknoprecisionloss{\overname{\TInt(\vc)}{\vt}} \typearrow \True
   }
@@ -866,7 +866,7 @@ constant types would result in more than $2^17$ elements, see
 The helper function
 \[
 \checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
-\typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+\typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the \staticenvironmentterm{}
 $\tenv$.
@@ -1049,7 +1049,7 @@ The helper function
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto
-\overname{\Some{\expr}}{\vexpr}
+\overname{\some{\expr}}{\vexpr}
 \cup\ \overname{\TBuildError}{\ParseErrorConfig}
 \]
 builds an expression $\vexpr$ from an assignment of the call $\vcall$ to the left-hand side with type annotation $\vt$, where the call has an elided parameter.
@@ -1068,7 +1068,7 @@ if they can be copied from the type annotation in declaration statements.
 }{
   \desugarelidedparameter(\ldk, \ldi, \vt, \vcall)
   \astarrow
-  \Some{\ECall(\vcallp)}
+  \some{\ECall(\vcallp)}
 }
 \end{mathpar}
 
@@ -1088,7 +1088,7 @@ if they can be copied from the type annotation in declaration statements.
           \wrappedline\ \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
         \end{array}
       \right)
-    \right) \astarrow \\ \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \Some{\vasty}, \vexpr)}{\vastnode}
+    \right) \astarrow \\ \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \some{\vasty}, \vexpr)}{\vastnode}
     \end{array}
   }
 }
@@ -1602,9 +1602,15 @@ The untyped AST contains non-terminals for \casealternativesterm, which exist
 only as a data type used by $\desugarcasestmt$ and do not later appear in the untyped
 AST:
 
+% BEGIN_GENERATED_ELEMENT(case_alt)[remove_hypertargets]
 \begin{flalign*}
-\casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
+\casealt \derives\ & \left\{\begin{array}{lll}
+\text{pattern} &:& \pattern\\
+\text{where} &:& \some{\expr}\\
+\text{stmt} &:& \stmt
+\end{array}\right\}
 \end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{SCase}
 To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,
@@ -1736,7 +1742,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \begin{mathpar}
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
-  \vx \in \Identifiers \text{ is fresh}\\
+  \vx \in \Identifier \text{ is fresh}\\
   \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\vezero\rangle)\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
@@ -2054,7 +2060,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\langle\expr\rangle}{\ve} \aslsep
   ) \aslto
-  (\langle\overname{\expr}{\vep}\rangle \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  (\langle\overname{\expr}{\vep}\rangle \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
 yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
@@ -2516,11 +2522,17 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+% BEGIN_GENERATED_ELEMENT(for_direction)[remove_hypertargets]
 \begin{flalign*}
-\fordirection \derives\ & \UP \;|\; \DOWN &\\
+\fordirection \derives\ & \UP\\
+|\ & \DOWN
+\end{flalign*}
+% END_GENERATED_ELEMENT
+
+\begin{flalign*}
 \stmt \derives\ & \SFor\left\{
       \begin{array}{rcl}
-      \Forindexname  &:& \identifier,\\
+      \Forindexname  &:& \Identifier,\\
       \Forstarte     &:& \expr,\\
       \Fordir        &:& \fordirection,\\
       \Forende       &:& \expr,\\
@@ -2703,7 +2715,7 @@ The function
     \overname{\expr}{\vetwop} \aslsep
     \overname{\dir}{\dir}
   ) \aslto
-  \overname{\constraintkind}{\vis} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\constraintkind}{\vis} \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 infers the integer constraints for a \texttt{for} loop index variable from the following:
 \begin{itemize}
@@ -2735,7 +2747,7 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
   \begin{itemize}
     \item both of $\structone$ and $\structtwo$ are integer types;
     \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
-    \item define $\vis$ as $\unconstrained$.
+    \item define $\vis$ as $\Unconstrained$.
   \end{itemize}
 
   \item \AllApplyCase{well\_constrained}
@@ -2764,7 +2776,7 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
   \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
   \structone = \unconstrainedinteger \lor \structtwo = \unconstrainedinteger\\
 }{
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\unconstrained}{\vis}
+  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\Unconstrained}{\vis}
 }
 \end{mathpar}
 
@@ -2774,8 +2786,8 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
   \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\\
   \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
   \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
-  \icsup \eqdef \wellconstrained([\ConstraintRange(\eonen, \etwon)])\\
-  \icsdown \eqdef \wellconstrained([\ConstraintRange(\etwon, \eonen)])\\
+  \icsup \eqdef \WellConstrained([\ConstraintRange(\eonen, \etwon)])\\
+  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\\
   \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
@@ -2888,7 +2900,7 @@ The relation
   \evalfor\left(
   \begin{array}{cl}
     \overname{\envs}{\env}                      & \aslsep\\
-    \overname{\Identifiers}{\vindexname}        & \aslsep\\
+    \overname{\Identifier}{\vindexname}        & \aslsep\\
     \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
     \overname{\tint}{\vstart}                   & \aslsep\\
     \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
@@ -2921,7 +2933,7 @@ The helper relation
   \evalforstep\left(
   \begin{array}{cl}
   \overname{\envs}{\env}                      & \aslsep\\
-  \overname{\Identifiers}{\vindexname}        & \aslsep\\
+  \overname{\Identifier}{\vindexname}        & \aslsep\\
   \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
   \overname{\tint}{\vstart}                   & \aslsep\\
   \overname{\{\UP,\DOWN\}}{\dir}              &
@@ -2949,7 +2961,7 @@ The helper relation
   \evalforloop\left(
     \begin{array}{cl}
     \overname{\envs}{\env} \aslsep &\\
-    \overname{\Identifiers}{\vindexname} \aslsep &\\
+    \overname{\Identifier}{\vindexname} \aslsep &\\
     \overname{\langle\tint\rangle}{\vlimitopt} \aslsep &\\
     \overname{\tint}{\vstart} \aslsep &\\
     \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
@@ -2974,7 +2986,7 @@ iterations.
 \subsubsection{Stepping the Index Variable}
 \AllApply
 \begin{itemize}
-  \item $\opfordir$ is either $\PLUS$ when $\dir$ is $\UP$ or $\MINUS$ when $\dir$ is $\DOWN$;
+  \item $\opfordir$ is either $\ADD$ when $\dir$ is $\UP$ or $\SUB$ when $\dir$ is $\DOWN$;
   \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
   \item applying the binary operator $\opfordir$ to $\vstart$ and the native integer for $1$ is $\vstep$;
   \item the execution graph for writing $\vstep$ into the identifier $\vindexname$ gives $\vgtwo$;
@@ -3037,7 +3049,7 @@ or an abnormal configuration.
 Advancing the loop counter one step towards the end of its range is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
-  \opfordir \eqdef \choice{\dir = \UP}{\PLUS}{\MINUS}\\
+  \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
   \binoprel(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
   \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
@@ -3194,7 +3206,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \begin{mathpar}
 \inferrule{
   \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
-  \name\in\Identifiers \text{ is fresh}\\
+  \name\in\Identifier \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
   \vex \eqdef \valuereadfrom(\vv, \name)
@@ -3542,7 +3554,7 @@ In \listingref{semantics-sreturntuple},
 \begin{mathpar}
 \inferrule[one]{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
-  \wid \in \Identifiers\text{ is fresh}\\
+  \wid \in \Identifier\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
@@ -3567,7 +3579,7 @@ The helper relation
 \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
 \left(
 \begin{array}{cl}
-\ResultExprListM(\overname{(\vals\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
+\ResultExprListM(\overname{(\nativevalue\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
 \overname{\TThrowing}{\ThrowingConfig} & \cup \\
 \overname{\TDynError}{\DynErrorConfig} & \cup \\
 \overname{\TDiverging}{\DivergingConfig}
@@ -3625,7 +3637,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \hypertarget{def-writefolder}{}
 The helper relation
 \[
-  \writefolder(\overname{(\vals\times\XGraphs)^*}{\vms}) \aslrel (\overname{\vals^*}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
+  \writefolder(\overname{(\nativevalue\times\XGraphs)^*}{\vms}) \aslrel (\overname{\nativevalue^*}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
 \]
 concatenates the input values in $\vms$ and generates an execution graph
 by composing the graphs in $\vms$ with Write Effects for the respective values.
@@ -3651,7 +3663,7 @@ empty \executiongraph{}.
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vms$ is a list with \head{} $\vm$ and \tail{} $\vmsone$;
-    \item view $\vm$ as the \nativevalue{} $\vv$ and the \executiongraph{} $\vg$;
+    \item view $\vm$ as the \nativevalueterm{} $\vv$ and the \executiongraph{} $\vg$;
     \item \Proseeqdef{$\wid$}{a fresh identifier};
     \item applying $\writeidentifier$ to $\wid$ and $\vv$ yields $\vgone$;
     \item applying $\writefolder$ to $\vms$ and $\vgone$ yields the pair $(\vvsone, \vgtwo)$;
@@ -3672,7 +3684,7 @@ empty \executiongraph{}.
 \inferrule[non\_empty]{
   \vms = [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
-  \wid \in \Identifiers\text{ is fresh}\\
+  \wid \in \Identifier\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgone\\
   \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
   \vvs \eqdef [\vv] \concat \vvsone\\
@@ -3825,7 +3837,7 @@ Not all ASL runtimes support printing to a console (see \RequirementRef{Printing
 Therefore, the semantics is parameterized by the function
 \hypertarget{def-outputtoconsole}{}
 \[
-\outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv}) \aslto
+\outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv}) \aslto
   \overname{\envs}{\newenv}
 \]
 which takes a string and communicates it to a console, where one exists.
@@ -3893,7 +3905,7 @@ $\LLabel(s)$      & $s$. \\
   \env \eqname (\tenv, \denv, \vconsolestream)\\
   \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
 }{
-  \outputtoconsole(\env, \nvliteral(\vl)) \evalarrow (\newenv)
+  \outputtoconsole(\env, \NVLiteral(\vl)) \evalarrow (\newenv)
 }
 \end{mathpar}
 

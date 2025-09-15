@@ -93,30 +93,36 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
 \decl \derives\ & \DFunc(\func) &
 \end{flalign*}
 
+% BEGIN_GENERATED_ELEMENT(func, subprogram_type, qualifier, override_info, typed_identifier)[remove_hypertargets]
 \begin{flalign*}
-\func \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
- \funcname &:& \Strings, \\
- \funcparameters &:& (\identifier, \ty?)^*,\\
- \funcargs &:& \typedidentifier^*,\\
- \funcbody &:& \stmt,\\
- \funcreturntype &:& \ty?,\\
- \funcsubprogramtype &:& \subprogramtype,\\
- \funcrecurselimit    &:& \expr?\\
- \funcbuiltin &:& \Bool\\
- \funcqualifier &:& \Some{\qualifier}\\
- \funcoverride &:& \Some{\overrideinfo}\\
-\end{array}
-\right\}
-} &\\
-\typedidentifier \derives\ & (\identifier, \ty) &\\
-\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
-                |\  & \STGetter \;|\; \STSetter &\\
-\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &\\
-\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
+\func \derives\ & \left\{\begin{array}{lll}
+\text{name} &:& \Strings\\
+\text{parameters} &:& \KleeneStar{(\overtext{\Identifier}{name}, \overtext{\some{\ty}}{type})}\\
+\text{args} &:& \KleeneStar{\typedidentifier}\\
+\text{body} &:& \stmt\\
+\text{return\_type} &:& \some{\ty}\\
+\text{subprogram\_type} &:& \subprogramtype\\
+\text{recurse\_limit} &:& \some{\expr}\\
+\text{builtin} &:& \Bool\\
+\text{qualifier} &:& \some{\qualifier}\\
+\text{override} &:& \some{\overrideinfo}
+\end{array}\right\}
+\\
+\subprogramtype \derives\ & \STProcedure\\
+|\ & \STFunction\\
+|\ & \STGetter\\
+|\ & \STSetter
+\\
+\qualifier \derives\ & \Pure\\
+|\ & \Readonly\\
+|\ & \Noreturn
+\\
+\overrideinfo \derives\ & \Impdef\\
+|\ & \Implementation
+\\
+\typedidentifier \derives\ & (\overtext{\Identifier}{name}, \overtext{\ty}{type})
 \end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{SubprogramDecl}
 This rule defines the cases for $\builddecl$ for subprogram declarations.
@@ -259,7 +265,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \hypertarget{build-recurselimit}{}
 The function
 \[
-\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\Some{\expr}}{\vastnode}
+\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\some{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -283,7 +289,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-typedidentifier}{}
 The function
 \[
-\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \ty)}{\vastnode}
+\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \ty)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -297,7 +303,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
-\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\identifier \times \langle\ty\rangle)}{\vastnode}
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \langle\ty\rangle)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -334,7 +340,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{(\identifier\times\langle\ty\rangle)^*}{\vastnode}
+  \overname{(\Identifier\times\langle\ty\rangle)^*}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -359,7 +365,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
-  \overname{(\identifier\times\ty)^*}{\vastnode}
+  \overname{(\Identifier\times\ty)^*}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -462,10 +468,10 @@ The function
   \desugaraccessorpair\left(
     \begin{array}{l}
     \overname{\overrideinfo}{\voverride} \aslsep \\
-    \overname{\identifier}{\name} \aslsep \\
-    \overname{(\identifier \times \Some{\ty})^*}{\vparameters} \aslsep \\
+    \overname{\Identifier}{\name} \aslsep \\
+    \overname{(\Identifier \times \some{\ty})^*}{\vparameters} \aslsep \\
     \overname{\typedidentifier^*}{\vargs} \aslsep \\
-    \overname{\identifier}{\vsetterarg} \aslsep \\
+    \overname{\Identifier}{\vsetterarg} \aslsep \\
     \overname{\ty}{\tty} \aslsep \\
     \overname{\accessorpair}{\vaccessorpair}
   \end{array}\right) \aslto
@@ -475,7 +481,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
-  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\Some{\Readonly}}{\None} \\\\
+  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \\\\
   {
   \vgetter \eqdef
       \DFunc\left\{
@@ -484,7 +490,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcparameters &:& \vparameters,\\
         \funcargs &:& \vargs,\\
         \funcbody &:& \vaccessorpair.\accessorpairgetter,\\
-        \funcreturntype &:& \Some{\tty},\\
+        \funcreturntype &:& \some{\tty},\\
         \funcsubprogramtype &:& \STGetter,\\
         \funcrecurselimit   &:& \None\\
         \funcbuiltin &:& \False\\
@@ -534,7 +540,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 The function
 \[
 \buildqualifier(\overname{\parsenode{\Nqualifier}}{\vparsednode}) \aslto
-  \overname{\Some{\qualifier}}{\vastnode}
+  \overname{\some{\qualifier}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -546,19 +552,19 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[pure]{}{
-  \buildqualifier(\overname{\Nqualifier(\Tpure)}{\vparsednode}) \astarrow \Some{\Pure}
+  \buildqualifier(\overname{\Nqualifier(\Tpure)}{\vparsednode}) \astarrow \some{\Pure}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[readonly]{}{
-  \buildqualifier(\overname{\Nqualifier(\Treadonly)}{\vparsednode}) \astarrow \Some{\Readonly}
+  \buildqualifier(\overname{\Nqualifier(\Treadonly)}{\vparsednode}) \astarrow \some{\Readonly}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[noreturn]{}{
-  \buildqualifier(\overname{\Nqualifier(\Tnoreturn)}{\vparsednode}) \astarrow \Some{\Noreturn}
+  \buildqualifier(\overname{\Nqualifier(\Tnoreturn)}{\vparsednode}) \astarrow \some{\Noreturn}
 }
 \end{mathpar}
 
@@ -588,7 +594,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildoverride(\overname{\parsenode{\Noverride}}{\vparsednode}) \aslto
-  \overname{\Some{\overrideinfo}}{\vastnode}
+  \overname{\some{\overrideinfo}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -600,13 +606,13 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[impdef]{}{
-  \buildoverride(\overname{\Noverride(\Timpdef)}{\vparsednode}) \astarrow \Some{\Impdef}
+  \buildoverride(\overname{\Noverride(\Timpdef)}{\vparsednode}) \astarrow \some{\Impdef}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[implementation]{}{
-  \buildoverride(\overname{\Noverride(\Timplementation)}{\vparsednode}) \astarrow \Some{\Implementation}
+  \buildoverride(\overname{\Noverride(\Timplementation)}{\vparsednode}) \astarrow \some{\Implementation}
 }
 \end{mathpar}
 
@@ -681,7 +687,7 @@ The function
   \aslto
   \begin{array}{l}
   (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffectSet}{\vses})\ \cup\\
-  \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
 annotates a subprogram definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
@@ -721,7 +727,7 @@ The function
 \[
   \annotatefuncsig(\overname{\globalstaticenvs}{\genv}, \overname{\func}{\funcsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffect}{\vses})
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the signature of a function definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding a new function definition $\newfuncsig$,
@@ -836,11 +842,11 @@ The function
 \begin{array}{r}
 \annotateparams(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc})
+  \overname{(\Identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
+  (\overname{\staticenvs}{\newtenv} \times \overname{(\Identifier\times\ty)^*}{\acc})
 ) \aslto \\
-(\overname{\staticenvs}{\tenvwithparams} \times \overname{\identifier\times\ty}{\paramsone})
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+(\overname{\staticenvs}{\tenvwithparams} \times \overname{\Identifier\times\ty}{\paramsone})
+\cup\ \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates each parameter in $\params$ with respect to $\tenv$,
@@ -900,11 +906,11 @@ The function
 \annotateoneparam(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
+  (\overname{\Identifier}{\vx} \times \overname{\langle\ty\rangle}{\tyopt})
 ) \aslto
 \begin{array}{l}
   (\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})\ \cup\\
-  \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
@@ -952,7 +958,7 @@ since \verb|A| is also declared as a global storage element.
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \langle \unconstrainedinteger\rangle) \\
-  \tty \eqdef \TInt(\parameterized(\vx))\\\\
+  \tty \eqdef \TInt(\Parameterized(\vx))\\\\
   \commonsuffixline\\\\
   \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
@@ -977,7 +983,7 @@ since \verb|A| is also declared as a global storage element.
 \hypertarget{def-checkparamdecls}{}
 The function
 \[
-\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks the validity of the parameters declared in $\funcsig$.
 
@@ -1019,8 +1025,8 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \hypertarget{def-extractparameters}{}
 The function
 \[
-\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\identifier^*}{\uniqueparameters}
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Identifier^*}{\uniqueparameters}
+  \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
@@ -1139,8 +1145,8 @@ in comments above their declarations.
 \hypertarget{def-paramsofty}{}
 The function
 \[
-\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\identifier^*}{\ids}
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\Identifier^*}{\ids}
+\cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the type $\tty$,
 assuming that $\tty$ appears in a function signature.
@@ -1184,7 +1190,7 @@ in \listingref{ParametersOfTy} are as follows:
 
   \item \AllApplyCase{tint\_constrained\_precise}
     \begin{itemize}
-      \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\wellconstrained(\cs))$;
+      \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\WellConstrained(\cs))$;
       \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$\ProseOrTypeError;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
@@ -1195,7 +1201,7 @@ in \listingref{ParametersOfTy} are as follows:
       \begin{itemize}
         \item $\tty$ is one of the following types: \realtypeterm, \stringtypeterm, \booleantypeterm, \arraytypeterm, \namedtypeterm;
         \item $\tty$ is an \unconstrainedintegertype;
-        \item $\tty$ is a \wellconstrainedintegertype{} with a $\False$ precision flag, that is, $\TInt(\wellconstrained(\Ignore, \False))$;
+        \item $\tty$ is a \wellconstrainedintegertype{} with a $\False$ precision flag, that is, $\TInt(\WellConstrained(\Ignore, \False))$;
         \item $\tty$ is a \parameterizedintegertype;
       \end{itemize}
       \item $\ids$ is the empty list.
@@ -1231,7 +1237,7 @@ in \listingref{ParametersOfTy} are as follows:
   \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\tenv, \TInt(\wellconstrained(\cs, \True))) \typearrow \ids
+  \paramsofty(\tenv, \TInt(\WellConstrained(\cs, \True))) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1241,8 +1247,8 @@ in \listingref{ParametersOfTy} are as follows:
   \begin{array}{ll}
   \astlabel(\tty) \in \{ \TReal, \TString, \TBool, \TArray, \TNamed \}  & \lor\\
   \tty = \unconstrainedinteger                                          &\lor\\
-  \tty = \TInt(\wellconstrained(\Ignore, \False))                       & \lor\\
-  \tty = \TInt(\parameterized(\Ignore))                                 &
+  \tty = \TInt(\WellConstrained(\Ignore, \False))                       & \lor\\
+  \tty = \TInt(\Parameterized(\Ignore))                                 &
   \end{array}
   }
 }{
@@ -1262,8 +1268,8 @@ in \listingref{ParametersOfTy} are as follows:
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
-\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\identifier^*}{\ids}
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\Identifier^*}{\ids}
+\cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the expression $\ve$.
 It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
@@ -1399,7 +1405,7 @@ for the expression \verb|A| appearing in the return type.
 \hypertarget{def-paramsofconstraint}{}
 The function
 \[
-\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\identifier^*}{\ids}
+\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\Identifier^*}{\ids}
 \]
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
@@ -1453,12 +1459,12 @@ The function
 \begin{array}{r}
 \annotateargs(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\identifier \times \ty)^*}{\args} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\identifier\times\ty)^*}{\acc} \aslsep
+  \overname{(\Identifier \times \ty)^*}{\args} \aslsep\
+  (\overname{\staticenvs}{\newtenv} \times \overname{(\Identifier\times\ty)^*}{\acc} \aslsep
   \overname{\TSideEffectSet}{\vsesin})
 ) \aslto \\
-(\overname{\staticenvs}{\tenvwithargs} \times \overname{(\identifier\times\ty)^*}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
-\cup\ \overname{\TTypeError}{\TypeErrorConfig}
+(\overname{\staticenvs}{\tenvwithargs} \times \overname{(\Identifier\times\ty)^*}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
+\cup\ \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates each argument in $\args$ with respect to $\tenv$ and a \sideeffectsetterm\ $\vsesin$,
@@ -1521,10 +1527,10 @@ The function
   \annotateonearg(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\identifier}{\vx} \times \overname{\ty}{\tty})
+  (\overname{\Identifier}{\vx} \times \overname{\ty}{\tty})
 ) \aslto\\
 (\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})\ \cup
-\overname{\TTypeError}{\TypeErrorConfig}
+\overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the argument given by the identifier $\vx$ and the type $\tty$
@@ -1579,7 +1585,7 @@ The function
   \overname{\TSideEffectSet}{\vsesin}
 ) & \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
-\cup\ \overname{\TTypeError}{\TypeErrorConfig} &
+\cup\ \overname{\typeerror}{\TypeErrorConfig} &
 \end{array}
 \]
 annotates the \optional\ return type $\vreturntype$ in the context of the \staticenvironmentterm{}
@@ -1637,13 +1643,13 @@ as return types.
 \and
 \inferrule[has\_return\_type]{
   \annotatetype(\tenvwithparams, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \newreturntype \eqdef \Some{\ttyp}\\
+  \newreturntype \eqdef \some{\ttyp}\\
   \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\funcreturntype\mapsto\newreturntype])\\
   \vses \eqdef \vsesin \cup\ \vsesty
 }{
   {
   \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\Some{\tty}}{\returntype}, \vsesin) \typearrow \\
+  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\some{\tty}}{\returntype}, \vsesin) \typearrow \\
   (\newtenv, \newreturntype, \vses)
   \end{array}
   }
@@ -1655,10 +1661,10 @@ as return types.
 The function
 \[
 \checksubprogrampurity(
-  \overname{\Some{\qualifier}}{\vqualifier} \aslsep
+  \overname{\some{\qualifier}}{\vqualifier} \aslsep
   \overname{\TSideEffectSet}{\vses}
 )
-\aslto \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram qualifier $\vqualifier$.
 \ProseOtherwiseTypeError
@@ -1677,20 +1683,20 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 \begin{itemize}
   \item \AllApplyCase{none\_or\_noreturn}
   \begin{itemize}
-    \item $\vqualifier$ is either $\None$ or $\Some{\Noreturn}$;
+    \item $\vqualifier$ is either $\None$ or $\some{\Noreturn}$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{some\_readonly}
   \begin{itemize}
-    \item $\vqualifier$ is $\Some{\Readonly}$;
+    \item $\vqualifier$ is $\some{\Readonly}$;
     \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonly{} yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{some\_pure}
   \begin{itemize}
-    \item $\vqualifier$ is $\Some{\Pure}$;
+    \item $\vqualifier$ is $\some{\Pure}$;
     \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pure{} yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
@@ -1699,7 +1705,7 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none\_or\_noreturn]{
-  \vqualifier = \None \lor \vqualifier = \Some{\Noreturn}
+  \vqualifier = \None \lor \vqualifier = \some{\Noreturn}
 }{
   \checksubprogrampurity(\vqualifier) \typearrow \overname{\True}{\vb}
 }
@@ -1709,7 +1715,7 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 \inferrule[some\_readonly]{
   \sesisreadonly(\vses) \typearrow \True \OrTypeError
 }{
-  \checksubprogrampurity(\overname{\Some{\Readonly}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+  \checksubprogrampurity(\overname{\some{\Readonly}}{\vqualifier}) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
 
@@ -1717,7 +1723,7 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 \inferrule[some\_pure]{
   \sesispure(\vses) \typearrow \True \OrTypeError
 }{
-  \checksubprogrampurity(\overname{\Some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
+  \checksubprogrampurity(\overname{\some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
 
@@ -1730,7 +1736,7 @@ The function
     \overname{\func}{\funcsig} \aslsep
     \overname{\TSideEffectSet}{\vsesfuncsig})
   \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+  \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks that a subprogram defined by $\funcsig$
 and associated with the \sideeffectsetterm\ $\vsesfuncsig$
@@ -1811,7 +1817,7 @@ The function
       \overname{\ty^*}{\formaltypes}
     )
   & \aslto \\
-    \overname{\Bool}{\vb} \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
+    \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
 \]
 checks whether the unique subprogram associated with $\name$
@@ -1919,13 +1925,13 @@ The function
   \begin{array}{rl}
   \addnewfunc(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\name} \aslsep
-    \overname{\Some{\qualifier}}{\vqualifier} \aslsep
+    \overname{\Identifier}{\name} \aslsep
+    \overname{\some{\qualifier}}{\vqualifier} \aslsep
     \overname{\typedidentifier^*}{\formals} \aslsep
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\
   (\overname{\staticenvs}{\newtenv} \times \overname{\Strings}{\newname})
-  \cup\ \overname{\TTypeError}{\TypeErrorConfig} &
+  \cup\ \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
 \]
 ensures that the subprogram given by the identifier $\name$, qualifier $\vqualifier$, list of formals $\formals$,
@@ -2033,7 +2039,7 @@ The function
 \begin{array}{r}
   \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf} \aslsep \overname{\TSideEffectSet}{\vsesfuncsig})
   \aslto \\
-  (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})\ \cup \overname{\TTypeError}{\TypeErrorConfig}
+  (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates a subprogram $\vf$ in an environment $\tenv$ and \sideeffectsetterm\ $\vsesfuncsig$, resulting in an annotated subprogram $\vfp$
@@ -2086,7 +2092,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\func}{\vf} \aslsep
     \overname{\stmt}{\vbody})
-  \typearrow \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the annotated body statement $\vs$ of the function definition $\vf$
 obeys the control-flow requirements in the \staticenvironmentterm{} $\tenv$.
@@ -2185,7 +2191,7 @@ by \verb|noreturn|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[noreturn]{
-  \vf.\funcqualifier = \Some{\Noreturn}
+  \vf.\funcqualifier = \some{\Noreturn}
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsAbnormal\}}{\absconfigs}
 }
@@ -2193,7 +2199,7 @@ by \verb|noreturn|.
 
 \begin{mathpar}
 \inferrule[returning\_proc]{
-  \vf.\funcqualifier \neq \Some{\Noreturn} \land \vf.\funcreturntype = \None
+  \vf.\funcqualifier \neq \some{\Noreturn} \land \vf.\funcreturntype = \None
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
@@ -2201,7 +2207,7 @@ by \verb|noreturn|.
 
 \begin{mathpar}
 \inferrule[func]{
-  \vf.\funcqualifier \neq \Some{\Noreturn} \land \vf.\funcreturntype \neq \None
+  \vf.\funcqualifier \neq \some{\Noreturn} \land \vf.\funcreturntype \neq \None
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
@@ -2362,7 +2368,7 @@ can be added, for example, an \unreachablestatementterm.
   {
   \absconfigs \eqdef
   \begin{cases}
-    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifier = \Some{\Noreturn}\\
+    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifier = \some{\Noreturn}\\
     \{\AbsContinuing, \AbsAbnormal\} & \text{else}
   \end{cases}
   }
@@ -2433,7 +2439,7 @@ can be added, for example, an \unreachablestatementterm.
   {
     \otherwiseconfigs \eqdef \left\{
     \begin{array}{ll}
-    \textbf{if}   & \votherwise=\Some{\otherwises}\textbf{ then}\\
+    \textbf{if}   & \votherwise=\some{\otherwises}\textbf{ then}\\
                   & \approxstmt(\tenv, \otherwises)\\
     \textbf{else} & \emptyset
     \end{array}\right.

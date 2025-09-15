@@ -108,13 +108,13 @@ defined for each bitfield.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Bitfields}
+% BEGIN_GENERATED_ELEMENT(bitfield)[remove_hypertargets]
 \begin{flalign*}
-\bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
-  & \\
-  |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
-  & \\
-  |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
+\bitfield \derives\ & \BitFieldSimple(\overtext{\Identifier}{name}, \overtext{\KleeneStar{\slice}}{slices})\\
+|\ & \BitFieldNested(\overtext{\Identifier}{name}, \overtext{\KleeneStar{\slice}}{slices}, \overtext{\KleeneStar{\bitfield}}{nested bitfields})\\
+|\ & \BitFieldType(\overtext{\Identifier}{name}, \overtext{\KleeneStar{\slice}}{slices}, \overtext{\ty}{type})
 \end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{Bitfields}
 \hypertarget{build-bitfields}{}
@@ -178,7 +178,7 @@ The function
 \[
   \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\bitfield^*}{\fields})
   \aslto (\overname{\bitfield^*}{\newfields} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits in the containing
 bitvector type --- $\ewidth$,
@@ -204,10 +204,10 @@ is $16$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \names \eqdef [\field\in\fields: \bitfieldgetname(\field)]\\
+  \names \eqdef [\vfield\in\fields: \bitfieldgetname(\vfield)]\\
   \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
   \staticeval(\tenv, \ewidth) \typearrow \LInt(\width) \OrTypeError\\\\
-  \vf\in\fields: \annotatebitfield(\tenv, \width, \field) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
+  \vf\in\fields: \annotatebitfield(\tenv, \width, \vfield) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
   \newfields \eqdef [\vf\in\fields: \vfp]\\
   \vses \eqdef \bigcup_{\vf\in\fields}{\vxs_\vf}
 }{
@@ -220,7 +220,7 @@ is $16$.
 \hypertarget{def-bitfieldgetname}{}
 The function
 \[
-  \bitfieldgetname : \overname{\bitfield}{\vbf} \aslto \overname{\identifier}{\name}
+  \bitfieldgetname : \overname{\bitfield}{\vbf} \aslto \overname{\Identifier}{\name}
 \]
 returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 
@@ -356,10 +356,10 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 The function
 \[
   \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\vfield})
-  \aslto (\overname{\bitfield}{\newfield} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto (\overname{\bitfield}{\newfield} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a bitfield --- $\vfield$ --- with an integer --- $\width$ --- indicating the number of bits in
-the bitvector type that contains $\field$,
+the bitvector type that contains $\vfield$,
 in an environment $\tenv$, resulting in an
 annotated bitfield --- $\newfield$ --- or a \typingerrorterm{}, if one is detected.
 
@@ -466,7 +466,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 The function
 \[
   \checkslicesinwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\vwidth} \aslsep \overname{\slice^*}{\vslices})
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
 yielding $\True$. \ProseOtherwiseTypeError
@@ -501,7 +501,7 @@ See
 The function
 \[
   \checkpositionsinwidth(\overname{\Z}{\vwidth} \aslsep \overname{\pow{\Z}}{\positions})
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
 yielding $\True$.
@@ -544,7 +544,7 @@ The function
     \overname{\Bool}{\isstatic},
     \overname{\slice^*}{\vslices}
   )
-  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the list of slices in $\vslices$ in $\positions$.
 In particular, this rule checks that the following properties:
@@ -617,7 +617,7 @@ The function
     \overname{\Bool}{\isstatic},
     \overname{\slice}{\vslice}
   )
-  \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
 if it can be determined via static evaluation or normalization, depending on $\isstatic$,
@@ -637,10 +637,10 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \begin{tabular}{ll}
   \textbf{Slice} & \textbf{Optional Set of Positions}\\
   \hline
-  \verb|4|    & $\Some{\{4\}}$ \\
-  \verb|3:0|  & $\Some{\{0, 1, 2, 3\}}$\\
-  \verb|5+:3| & $\Some{\{5, 6, 7\}}$\\
-  \verb|3*:4| & $\Some{\{12, 13, 14, 15\}}$\\
+  \verb|4|    & $\some{\{4\}}$ \\
+  \verb|3:0|  & $\some{\{0, 1, 2, 3\}}$\\
+  \verb|5+:3| & $\some{\{5, 6, 7\}}$\\
+  \verb|3*:4| & $\some{\{12, 13, 14, 15\}}$\\
   \hline
   \verb|0:3|  & $\BadSlices$\\
   \verb|5+:0| & $\BadSlices$\\
@@ -686,7 +686,7 @@ The function
   \overname{\staticenvs}{\tenv},
   \overname{\Bool}{\isstatic},
   \overname{\expr}{\ve}
-) \aslto \overname{\Some{\Z}}{\vzopt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+) \aslto \overname{\some{\Z}}{\vzopt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 attempts to transform the expression $\ve$ into a constant integer in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.
@@ -725,7 +725,7 @@ it need not be \staticallyevaluable{} (it is indeed not, in this example).
 \inferrule[static]{
   \staticeval(\tenv, \ve) \typearrow \vz \OrTypeError
 }{
-  \evalsliceexpr(\tenv, \overname{\True}{\isstatic}, \ve) \typearrow \overname{\Some{\vz}}{\vzopt}
+  \evalsliceexpr(\tenv, \overname{\True}{\isstatic}, \ve) \typearrow \overname{\some{\vz}}{\vzopt}
 }
 \end{mathpar}
 
@@ -745,7 +745,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\bitfield^*}{\vbitfields} \aslsep
   \overname{\N}{\vwidth}
-) \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks \RequirementRef{BitfieldAlignment}
 for every pair of bitfields in $\vbitfields$, contained in a
@@ -754,7 +754,7 @@ bitvector type of width $\vwidth$ in the \staticenvironmentterm{} $\tenv$.
 
 \hypertarget{def-tabsfield}{}
 We represent \absolutebitfields\ by the type
-$\TAbsField \eqdef (\overname{\identifier^*}{\name}, \overname{\N^*}{\vslice})$,
+$\TAbsField \eqdef (\overname{\Identifier^*}{\name}, \overname{\N^*}{\vslice})$,
 where the component $\name$ is a list of identifiers corresponding to the \absolutename,
 and the component $\vslice$ corresponds to an \absoluteslice\ by listing the indices
 into the containing bitvector type.\footnote{An implementation of the type system may compactly represent the list of indices
@@ -999,7 +999,7 @@ returns the list of indices $\indices$ represented by the bitvector slice $\vs$ 
 
 \ExampleDef{Converting a Slice to a List of Indices}
 The list of indices for the slice \\
-$\SliceLength(\AbbrevEBinop{\PLUS}{\ELInt{1}}{\ELInt{4}}, \ELInt{3})$ is
+$\SliceLength(\AbbrevEBinop{\ADD}{\ELInt{1}}{\ELInt{4}}, \ELInt{3})$ is
 $[7, 6, 5]$.
 
 \ProseParagraph

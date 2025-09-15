@@ -39,9 +39,14 @@ See \ExampleRef{Types} for examples of type declarations.
 \AbstractSyntaxDef{Type Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\decl \derives\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &\\
-\Field \derives\ & (\identifier, \ty) &
+\decl \derives\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\field^*}{with fields})?) &\\
 \end{flalign*}
+
+% BEGIN_GENERATED_ELEMENT(field)[remove_hypertargets]
+\begin{flalign*}
+\field \derives\ & (\overtext{\Identifier}{name}, \overtext{\ty}{type})
+\end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{TypeDecl}
 This rule defines the cases for $\builddecl$ for type declarations.
@@ -78,7 +83,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \hypertarget{build-subtype}{}
 The function
 \[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\identifier \times (\identifier\times \ty)^*)}{\vastnode}
+  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \times (\Identifier\times \ty)^*)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -110,7 +115,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
    \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\langle(\identifier \times \langle (\identifier\times \ty)^* \rangle)\rangle}{\vastnode}
+    \overname{\langle(\Identifier \times \langle (\Identifier\times \ty)^* \rangle)\rangle}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -126,7 +131,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-fields}{}
 The function
 \[
-  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\Field^*}{\vastnode}
+  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\field^*}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -196,14 +201,14 @@ The function
 \[
 \begin{array}{r}
 \declaretype(\overname{\globalstaticenvs}{\genv} \aslsep
-            \overname{\identifier}{\name} \aslsep
+            \overname{\Identifier}{\name} \aslsep
             \overname{\ty}{\tty} \aslsep
-            \overname{\langle(\identifier\times\field^*)\rangle}{\vs}
+            \overname{\langle(\Identifier\times\vfield^*)\rangle}{\vs}
 ) \aslto \\
 (\overname{\globalstaticenvs}{\newgenv} \times
  \overname{\ty}{\vttwo} \times
- \overname{\langle(\identifier\times\field^*)\rangle}{\vsp})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+ \overname{\langle(\Identifier\times\vfield^*)\rangle}{\vsp})
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 declares a type named $\name$ with type $\tty$ and \optional\ additional fields
@@ -290,13 +295,13 @@ The function
 \[
 \begin{array}{r}
 \annotateextrafields(\overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\name} \aslsep
+  \overname{\Identifier}{\name} \aslsep
   \overname{\ty}{\tty} \aslsep
-  \overname{\langle(\overname{\identifier}{\vsuper}\times\overname{\field^*}{\extrafields})\rangle}{\vs}
+  \overname{\langle(\overname{\Identifier}{\vsuper}\times\overname{\vfield^*}{\extrafields})\rangle}{\vs}
 )
 \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newty})
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the type $\tty$ with the \optional\ extra fields $\vs$ in $\tenv$, yielding
@@ -333,7 +338,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
     \item $\extrafields$ is the empty list;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
     \item $\newty$ is $\tty$;
-    \item $\vsp$ is $\Some{\vsuper, \emptylist}$.
+    \item $\vsp$ is $\some{\vsuper, \emptylist}$.
   \end{itemize}
 
   \item \AllApplyCase{no\_super}
@@ -358,7 +363,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
     \item $\vt$ has AST label $L$ and fields $\fields$;
     \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
-    \item $\vsp$ is $\Some{(\vsuper, \emptylist)}$.
+    \item $\vsp$ is $\some{(\vsuper, \emptylist)}$.
   \end{itemize}
 \end{itemize}
 
@@ -375,7 +380,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
-  \vsp \eqdef \Some{(\vsuper, \emptylist)}
+  \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
   \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
 }
@@ -407,7 +412,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \vt \eqname L(\fields)\\
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
-  \vsp \eqdef \Some{(\vsuper, \emptylist)}
+  \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
   \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty, \vsp)
 }
@@ -417,9 +422,9 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \hypertarget{def-annotatetypeopt}{}
 The function
 \[
-\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Some{\overname{\ty}{\vt}}}{\tyopt})
+\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\some{\overname{\ty}{\vt}}}{\tyopt})
 \typearrow \overname{\langle\ty\rangle}{\tyoptp}
-\cup \overname{\TTypeError}{\TypeErrorConfig}
+\cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
 \ProseOtherwiseTypeError
@@ -429,7 +434,7 @@ The following are examples of annotating a type inside an \optional{} with the e
 \[
 \begin{array}{rcl}
 \annotatetypeopt(\emptytenv, \None) &\typearrow& \None\\
-\annotatetypeopt(\emptytenv, \Some{\unconstrainedinteger}) &\typearrow& \Some{\unconstrainedinteger}
+\annotatetypeopt(\emptytenv, \some{\unconstrainedinteger}) &\typearrow& \some{\unconstrainedinteger}
 \end{array}
 \]
 
@@ -467,9 +472,9 @@ The following are examples of annotating a type inside an \optional{} with the e
 \hypertarget{def-annotateexpropt}{}
 The function
 \[
-  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Some{\expr}}{\expropt})
-  \aslto \overname{(\Some{\expr} \times \Some{\ty})}{\vres}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\some{\expr}}{\expropt})
+  \aslto \overname{(\some{\expr} \times \some{\ty})}{\vres}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the \optional\ expression $\expropt$ in $\tenv$ and returns a pair of \optional\ expressions
 for the type and annotated expression in $\vres$.
@@ -480,7 +485,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 \[
 \begin{array}{rcl}
 \annotateexpropt(\emptytenv, \None) &\typearrow& (\None, \None)\\
-\annotateexpropt(\emptytenv, \Some{\LInt(5)}) &\typearrow& (\Some{\LInt(5)}, \Some{\TInt(\wellconstrained(\AbbrevConstraintExact{\LInt(5)}))})
+\annotateexpropt(\emptytenv, \some{\LInt(5)}) &\typearrow& (\some{\LInt(5)}, \some{\TInt(\WellConstrained(\AbbrevConstraintExact{\LInt(5)}))})
 \end{array}
 \]
 
@@ -518,7 +523,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 \hypertarget{def-declaredtype}{}
 The helper function
 \[
-  \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \TTypeError
+  \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \typeerror
 \]
 retrieves the type associated with the identifier $\id$ in the \staticenvironmentterm{} $\tenv$.
 If the identifier is not associated with a declared type, the result is a \typingerrorterm.
@@ -571,10 +576,10 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 The function
 \[
 \declareenumlabels(\overname{\staticenvs}{\tenv} \aslsep
-  \overname{\identifier}{\name} \aslsep
-  \overname{\identifier^+}{\ids} \aslsep
+  \overname{\Identifier}{\name} \aslsep
+  \overname{\Identifier^+}{\ids} \aslsep
   \aslto \overname{\staticenvs}{\newtenv}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 )
 \]
 updates the \staticenvironmentterm{} $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
@@ -628,11 +633,11 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 The function
 \[
 \declareconst(\overname{\globalstaticenvs}{\genv} \aslsep
-              \overname{\identifier}{\name} \aslsep
+              \overname{\Identifier}{\name} \aslsep
               \overname{\ty}{\tty} \aslsep
               \overname{\literal}{vv})
               \aslto
-              \overname{\globalstaticenvs}{\newgenv} \cup \overname{\TTypeError}{\TypeErrorConfig}
+              \overname{\globalstaticenvs}{\newgenv} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 adds a constant given by the identifier $\name$, type $\tty$, and literal $\vv$ to the
 \globalstaticenvironmentterm{} $\genv$, yielding the modified environment $\newgenv$.
