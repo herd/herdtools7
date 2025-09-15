@@ -85,8 +85,8 @@ module type Config = sig
   val libfind : string -> string
 end
 
-module Make (C : Config) = struct
-  module V = ASLValue.V
+module Make (C : Config)(ASLV:Value.ASL) = struct
+  module V = ASLV
 
   module ConfLoc = struct
     include SemExtra.ConfigToArchConfig (C)

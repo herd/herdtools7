@@ -33,7 +33,7 @@
 
 module Make (Conf : RunTest.Config) (ModelConfig : MemCat.Config) = struct
   module ArchConfig = SemExtra.ConfigToArchConfig (Conf)
-  module ASLS = ASLSem.Make (Conf)
+  module ASLS = ASLSem.Make (Conf)(ASLValue.V)
   module ASLA = ASLS.A
 
   module ASLLexParse = struct

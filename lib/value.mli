@@ -146,3 +146,11 @@ module type AArch64ASL =
   (*and type arch_op = ASLOp.op AArch64Op.binop*)
   and type arch_extra_op = ASLOp.op
   and type arch_extra_op1 = ASLOp.op1
+  and type SData.t = SymData.No.t
+
+module type ASL =
+  S
+  with type Cst.Scalar.t = ASLScalar.t
+  and type Cst.Instr.t = ASLBase.instruction
+  and type 'a arch_constr_op1 = 'a ASLOp.constr_op1
+  and type 'a arch_constr_op = 'a ASLOp.constr_op

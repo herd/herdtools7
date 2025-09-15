@@ -86,7 +86,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let debug = Debug_herd.{ debug with monad = false }
     end
 
-    module ASLS = ASLSem.Make (ASLConf)
+    module ASLConstant =
+      SymbConstant.Make (ASLScalar) (PteVal.ASL) (AddrReg.ASL) (ASLBase.Instr)
+    module ASLValue =
+      SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)
+    module ASLS = ASLSem.Make (ASLConf)(ASLValue)
     module ASLE = ASLS.E
     module EMap = ASLE.EventMap
     module ESet = ASLE.EventSet
@@ -816,11 +820,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
 
     let aarch64_to_asl = function
-      | V.Var (v, _) -> ASLS.A.V.Var (v, ASLS.A.V.SData.default)
+      | V.Var (v, d) -> ASLS.A.V.Var (v, d)
       | V.Val cst -> ASLS.A.V.Val (tr_cst Misc.identity cst)
 
     let asl_to_aarch64 = function
-      | ASLS.A.V.Var (v, _) -> V.Var (v, V.SData.default)
+      | ASLS.A.V.Var (v, d) -> V.Var (v,d)
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
