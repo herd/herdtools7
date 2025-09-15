@@ -99,7 +99,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \item \AllApplyCase{t\_int\_unconstrained} \identr{NJDZ}
     \begin{itemize}
         \item $\vt$ is the \unconstrainedintegertype;
-        \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\lint(0))$.
+        \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\LInt(0))$.
     \end{itemize}
 
     \item \AllApplyCase{t\_int\_parameterized} \identr{QGGH}
@@ -176,7 +176,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool]{}{
-    \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\lbool(\False))}{\veinit}
+    \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\LBool(\False))}{\veinit}
 }
 \end{mathpar}
 
@@ -187,7 +187,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \vzopt \eqname \langle\length\rangle\\
     \checktrans{\length \geq 0}{\NoBaseValue} \checktransarrow \True\OrTypeError
 }{
-    \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\lbitvector(i=1..\length: 0))}{\veinit}
+    \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\LBitvector(i=1..\length: 0))}{\veinit}
 }
 \end{mathpar}
 
@@ -211,7 +211,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_int\_unconstrained]{}{
-    \basevalue(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\ELiteral(\lint(0))}{\veinit}
+    \basevalue(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow \overname{\ELiteral(\LInt(0))}{\veinit}
 }
 \end{mathpar}
 
@@ -228,7 +228,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \checktrans{\vzminlist \neq \emptyset}{\NoBaseValue} \typearrow \True \OrTypeError\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
 }{
-    \basevalue(\tenv, \overname{\TInt(\wellconstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\lint(\vzmin))}{\veinit}
+    \basevalue(\tenv, \overname{\TInt(\wellconstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\LInt(\vzmin))}{\veinit}
 }
 \end{mathpar}
 
@@ -243,7 +243,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_real]{}{
-    \basevalue(\tenv, \overname{\TReal}{\vt}) \typearrow \overname{\ELiteral(\lreal(0))}{\veinit}
+    \basevalue(\tenv, \overname{\TReal}{\vt}) \typearrow \overname{\ELiteral(\LReal(0))}{\veinit}
 }
 \end{mathpar}
 
@@ -259,7 +259,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_string]{}{
-    \basevalue(\tenv, \overname{\TString}{\vt}) \typearrow \overname{\ELiteral(\lstring(\emptylist))}{\veinit}
+    \basevalue(\tenv, \overname{\TString}{\vt}) \typearrow \overname{\ELiteral(\LString(\emptylist))}{\veinit}
 }
 \end{mathpar}
 

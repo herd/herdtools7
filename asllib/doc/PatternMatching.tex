@@ -52,7 +52,7 @@ resulting in $\newp$, which is the typed AST node for $\vp$
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError.
 
-\paragraph{Semantics:} Patterns are evaluated by $\evalpatternname$.
+\paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
 The relation
 \hypertarget{def-evalpattern}{}
 \[
@@ -202,7 +202,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
@@ -216,7 +216,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[t\_bits]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
@@ -232,7 +232,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[t\_enum]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
@@ -249,7 +249,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
@@ -451,7 +451,7 @@ that is, $\PatternLeq(\ve)$;
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
@@ -544,7 +544,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr{\tenv, \ve} \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
@@ -1012,7 +1012,7 @@ as the same AST is generated for both.
 
 Pattern expressions are side-effect-free, as guaranteed by the checks to \\
 $\checksymbolicallyevaluable$, and thus in the dynamic semantics
-they are evaluated via $\evalexprsefname$.
+they are evaluated via $\evalexprsef$.
 
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
 \hypertarget{build-exprpattern}{}

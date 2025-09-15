@@ -125,9 +125,9 @@ To formalize this, we define the set of \emph{\nativevalues}, denoted $\vals$
 \ProseParagraph
 The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the following rules:
 \begin{itemize}
-  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral{\vv}$ is a \nativevalue;
-  \item \textsc{tuple values and array values}: if $\vl$ is a list of \nativevalues\ then $\nvvector{\vl}$ is a \nativevalue;
-  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord{\vr}$ is a \nativevalue.
+  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral(\vv)$ is a \nativevalue;
+  \item \textsc{tuple values and array values}: if $\vl$ is a list of \nativevalues\ then $\nvvector(\vl)$ is a \nativevalue;
+  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord(\vr)$ is a \nativevalue.
 \end{itemize}
 
 \FormallyParagraph
@@ -137,26 +137,26 @@ The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the follo
 \begin{mathpar}
   \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
   {\vv \in \literal}
-  { \nvliteral{\vv} \in \vals }
+  { \nvliteral(\vv) \in \vals }
   \and
   \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
-  { \nvvector{\vvl} \in \vals }
+  { \nvvector(\vvl) \in \vals }
   \and
   \inferrule[(Record Values)]
   {\vr : \Identifiers \rightarrowfin \vals}
-  { \nvrecord{\vr} \in \vals }
+  { \nvrecord(\vr) \in \vals }
 \end{mathpar}
 
 We define the following shorthand notations for \nativevalue\ literals:
 \hypertarget{def-nvint}{}
 \[
 \begin{array}{rcl}
-\nvint(z)       &\triangleq& \nvliteral{\lint(z)}           \hypertarget{def-nvbool}{}\\
-\nvbool(b)      &\triangleq& \nvliteral{\lbool(b)}          \hypertarget{def-nvreal}{}\\
-\nvreal(r)      &\triangleq& \nvliteral{\lreal(r)}          \hypertarget{def-nvlabel}{}\\
-\nvlabel(l)     &\triangleq& \nvliteral{\llabel(l)}         \hypertarget{def-nvstring}{}\\
-\nvstring(s)    &\triangleq& \nvliteral{\lstring(s)}        \hypertarget{def-nvbitvector}{}\\
-\nvbitvector(v) &\triangleq& \nvliteral{\lbitvector(v)}\\
+\nvint(z)       &\triangleq& \nvliteral(\LInt(z))           \hypertarget{def-nvbool}{}\\
+\nvbool(b)      &\triangleq& \nvliteral(\LBool(b))          \hypertarget{def-nvreal}{}\\
+\nvreal(r)      &\triangleq& \nvliteral(\LReal(r))          \hypertarget{def-nvlabel}{}\\
+\nvlabel(l)     &\triangleq& \nvliteral(\LLabel(l))         \hypertarget{def-nvstring}{}\\
+\nvstring(s)    &\triangleq& \nvliteral(\LString(s))        \hypertarget{def-nvbitvector}{}\\
+\nvbitvector(v) &\triangleq& \nvliteral(\LBitvector(v))\\
 \end{array}
 \]
 
@@ -169,9 +169,9 @@ We define the following types of \nativevalues:
   \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
   \tlabel     &\triangleq& \{ \nvlabel(l) \;|\; l \in \Identifiers\}                             \hypertarget{def-tlabel}{}\\
   \tstring    &\triangleq& \{ \nvstring(s) \;|\; s \in \Strings\}  \hypertarget{def-tbitvector}{}\\
-  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \{0,1\}^*\}   \hypertarget{def-tvector}{}\\
-  \tvector    &\triangleq& \{ \nvvector{\textit{vals}} \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
-  \trecord  &\triangleq& \{ \nvrecord{\fieldmap} \;|\; \fieldmap \in \Identifiers\rightarrowfin\vals\}\\
+  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \Bit^*\}   \hypertarget{def-tvector}{}\\
+  \tvector    &\triangleq& \{ \nvvector(\textit{vals}) \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
+  \trecord  &\triangleq& \{ \nvrecord(\fieldmap) \;|\; \fieldmap \in \Identifiers\rightarrowfin\vals\}\\
 \end{array}
 \]
 
@@ -330,8 +330,8 @@ which we refer to as \concurrentnativevalues.
 Recall that the ASL dynamic semantics define a relation between input semantic configurations and output semantic configurations.
 Input semantic configuration domains are unique to the semantic relation that employs them.
 For that reason, we name semantic relations by the name of the corresponding configuration domain of the input semantic configuration.
-For example, the semantic relation that employs input semantic configurations with the domain $\evalexprname$
-is named $\evalexprname$.
+For example, the semantic relation that employs input semantic configurations with the domain $\evalexpr$
+is named $\evalexpr$.
 %
 We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
 should be semantically evaluated, yielding an output semantic configuration.
@@ -528,7 +528,7 @@ The semantics of ASL is given by the relation\footnote{The reason that a relatio
 the non-determinism inherent in the \ARBITRARY{} expression.}
 \evalrel.
 The relation \evalrel\ is defined as the disjoint union of the relations defined in this reference:
-$\evalexprname$, $\evalstmtname$, etc.
+$\evalexpr$, $\evalstmt$, etc.
 
 \subsection{Natural Operational Semantics}
 We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
@@ -572,40 +572,40 @@ This is because we are interested in demonstrating the sequential semantics (als
 in this case are all empty).
 
 The example shows (using references to the relevant rules on the right), how the expression for $1+2$ is evaluated
-using the rule for literal expressions, the rule for binary operator (for addition), and the rules for binary expressions.
+using the rule for literal expressions, the rule for binary operator (for addition), and the rules for \binopexpressionsterm{}.
 Similarly, the expression for $4+5$ is evaluated.
-Finally, the transitions for both of the subexpressions are used as premises for the binary expression
+Finally, the transitions for both of the subexpressions are used as premises for the \binopexpressionterm{}
 rule, along with the rule for binary operator (for multiplication), to evaluate the entire expression.
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \veone} \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vetwo} \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
 }{
-  \evalexpr{ \emptyenv, \veonetwo } \evalarrow
+  \evalexpr( \emptyenv, \veonetwo ) \evalarrow
   \ResultExpr(\nvint(3), \emptyenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefour} \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr{\emptyenv, \vefive} \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
 }{
-  \evalexpr{ \emptyenv, \vefourfive } \evalarrow
+  \evalexpr( \emptyenv, \vefourfive ) \evalarrow
   \ResultExpr(\nvint(9), \emptyenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \evalexpr{ \emptyenv, \veonetwo } \evalarrow \ResultExpr(\nvint(3), \emptyenv)\\
-  \evalexpr{ \emptyenv, \vefourfive } \evalarrow \ResultExpr(\nvint(9), \emptyenv)\\
+  \evalexpr( \emptyenv, \veonetwo ) \evalarrow \ResultExpr(\nvint(3), \emptyenv)\\
+  \evalexpr( \emptyenv, \vefourfive ) \evalarrow \ResultExpr(\nvint(9), \emptyenv)\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
 }{
-  \evalexpr{ \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) } \evalarrow
+  \evalexpr( \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) ) \evalarrow
   \ResultExpr(\nvint(27), \emptyenv)
 }
 \end{mathpar}
@@ -619,13 +619,13 @@ Further, the threading through of environments similarly impose an ordering.
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr{\envone, \vep} \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
-  \evalexpr{\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}} \evalarrow
+  \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
@@ -718,15 +718,15 @@ As an example of an inductive rule, consider the following rule,
 obtained by expanding the macro rule for \SemanticsRuleRef{Loop}.CONTINUE:
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone)\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo)\\
-  \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \Continuing(\vgthree, \newenv)\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \Continuing(\vgthree, \newenv)\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
-  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \Continuing(\newg, \newenv)
+  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
@@ -734,15 +734,15 @@ As an example of a co-inductive rule, consider the following expansion
 for the same macro rule:
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \econd} \evalarrow \ResultExpr(\condm, \envone)\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock{\envone, \vbody} \evalarrow \Continuing(\vgtwo, \envtwo)\\
-  \evalloop{\envtwo, \iswhile, \vlimitoptp, \econd, \vbody} \evalarrow \DivergingConfig\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \DivergingConfig\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
-  \evalloop{\env, \iswhile, \vlimitopt, \econd, \vbody} \evalarrow \DivergingConfig
+  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \DivergingConfig
 }
 \end{mathpar}
 
@@ -776,11 +776,11 @@ The root of the infinite \derivationtreeterm{} is the following one:
   {
   \begin{array}{rc}
   L_1:& \evallimit(\env, \None) \evalarrow \None\\
-  V_1:& \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  V_1:& \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
   \end{array}
   }
 }{
-  S_1: \evalstmt{\env, \SWhile(\ETrue, \None, \SPass)} \evalarrow \Diverging
+  S_1: \evalstmt(\env, \SWhile(\ETrue, \None, \SPass)) \evalarrow \Diverging
 }
 \end{mathpar}
 
@@ -789,15 +789,15 @@ and the rest of the \derivationtreeterm{} is given as:
 \inferrule{
   {
   \begin{array}{rc}
-  E_{n+1}:& \evalexpr{\env, \ETrue} \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
+  E_{n+1}:& \evalexpr(\env, \ETrue) \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
   B_{n+1}:& \vb = \True\\
   T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
-          & \left(\inferrule{Q_{n+1}:\evalstmt{\env, \SPass}\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock{\env, \SPass} \evalarrow \Continuing(\env)}\right)\\
-  V_{n+1}:& \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+          & \left(\inferrule{Q_{n+1}:\evalstmt(\env, \SPass)\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock(\env, \SPass) \evalarrow \Continuing(\env)}\right)\\
+  V_{n+1}:& \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
   \end{array}
   }
 }{
-  V_n: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  V_n: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
 }
 \end{mathpar}
 
@@ -807,21 +807,21 @@ which visually looks like the following:
 \inferrule{
   {
   \begin{array}{rc}
-  E_{n+1}:& \evalexpr{\env, \ETrue} \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
+  E_{n+1}:& \evalexpr(\env, \ETrue) \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
   B_{n+1}:& \vb = \True\\
   T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
-  & \left(\inferrule{Q_{n+1}:\evalstmt{\env, \SPass}\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock{\env, \SPass} \evalarrow \Continuing(\env)}\right)\\
+  & \left(\inferrule{Q_{n+1}:\evalstmt(\env, \SPass)\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock(\env, \SPass) \evalarrow \Continuing(\env)}\right)\\
   &
   \left(
   \inferrule{
     E_{n+2}\\ B_{n+2}\\ T_{n+2}\\ P_{n+2}\\ V_{n+2}\\ \inferrule{\vdots}{V_{n+2}}
   }{
-    V_{n+1}: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+    V_{n+1}: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
   }
   \right)
   \end{array}
   }
 }{
-  V_n: \evalloop{\env, \True, \None, \ETrue, \SPass} \evalarrow \Diverging
+  V_n: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
 }
 \end{mathpar}

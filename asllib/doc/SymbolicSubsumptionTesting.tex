@@ -543,7 +543,7 @@ yield $1$ and $6$, respectively.
 \begin{mathpar}
 \inferrule[integer]{
   \normalize(\tenv, \ve) \typearrow \veone\\
-  \staticeval(\tenv, \veone) \typearrow \lint(n)
+  \staticeval(\tenv, \veone) \typearrow \LInt(n)
 }{
   \symdomeval(\tenv, \ve) \typearrow n
 }
@@ -1235,7 +1235,7 @@ needed to annotate the expression \verb|x as bits(N)|.
 
 \begin{mathpar}
 \inferrule[literal\_non\_int]{
-  \astlabel(\vl) \neq \lint\\
+  \astlabel(\vl) \neq \LInt\\
   \approxbottomtop(\vapprox) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ELiteral(\vl)}{\ve}) \typearrow \vs
@@ -1263,7 +1263,7 @@ types.
 \begin{mathpar}
 \inferrule[unop]{
   \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\\\\
-  \vs \eqdef \{ \unopliterals(\op, \lint(\vz)) \;|\; \vz \in \vsp\}
+  \vs \eqdef \{ \unopliterals(\op, \LInt(\vz)) \;|\; \vz \in \vsp\}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
 }
@@ -1611,7 +1611,7 @@ for cases where a binary operation involves two \rangeconstraintsterm.
   \begin{itemize}
     \item $\vcone$ is a constraint for the expression $\va$;
     \item $\vctwo$ is a constraint for the expression $\vc$;
-    \item define $\newcs$ as the list containing the constraint for the binary expression $\AbbrevEBinop{\op}{\va}{\vc}$.
+    \item define $\newcs$ as the list containing the constraint for the \binopexpressionterm{} $\AbbrevEBinop{\op}{\va}{\vc}$.
   \end{itemize}
 
   \item \AllApplyCase{range\_exact}

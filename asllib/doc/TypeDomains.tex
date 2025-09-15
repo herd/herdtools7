@@ -55,7 +55,7 @@ The dynamic domain is empty in cases where evaluating side-effect-free expressio
 results in a \DynamicErrorConfigurationTerm{}.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
-That is, if $\annotatetype{\tenv, \vt} \typearrow \TypeErrorConfig$.
+That is, if $\annotatetype(\tenv, \vt) \typearrow \TypeErrorConfig$.
 
 As part of the definition, we also associate dynamic domains to integer constraints
 by overloading $\dynamicdomain$:
@@ -341,7 +341,7 @@ in the \emph{local dynamic environment} of $\denv$.
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k > 0
 }{
-  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \{0,1\} \}}{\vd}
+  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \Bit \}}{\vd}
 }
 \end{mathpar}
 
@@ -350,7 +350,7 @@ in the \emph{local dynamic environment} of $\denv$.
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
   \dynamicdomain(\env, \overname{\TTuple(\vt_{1..k})}{\vt}) =
-  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_i \in D_i \}}{\vd}
+  \overname{\{ \nvvector(\vv_{1..k}) \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 
@@ -375,7 +375,7 @@ in the \emph{local dynamic environment} of $\denv$.
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) =
-  \overname{\{ \nvvector{\vv_{1..k}} \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
+  \overname{\{ \nvvector(\vv_{1..k}) \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
 }
 \end{mathpar}
 
@@ -388,7 +388,7 @@ in the \emph{local dynamic environment} of $\denv$.
   {
   \begin{array}{c}
     \dynamicdomain(\env, \overname{\TArray(\ArrayLengthEnum(\id, k), \telem)}{\vt}) =\\
-    \overname{\{ \nvrecord{\{i=1..k: \vl_i\mapsto \vv_i\}} \;|\; \vv_i \in D_\telem \}}{\vd}
+    \overname{\{ \nvrecord(\{i=1..k: \vl_i\mapsto \vv_i\}) \;|\; \vv_i \in D_\telem \}}{\vd}
   \end{array}
   }
 }
@@ -400,7 +400,7 @@ in the \emph{local dynamic environment} of $\denv$.
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
   \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i))]}{\vt}) = \\
-  \overname{\{ \nvrecord{\{i=1..k: \id_i\mapsto \vv_i\}} \;|\; \vv_i \in D_i \}}{\vd}
+  \overname{\{ \nvrecord(\{i=1..k: \id_i\mapsto \vv_i\}) \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
 

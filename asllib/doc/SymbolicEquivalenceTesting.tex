@@ -39,7 +39,7 @@ We say that $\veone$ and $\vetwo$ are \emph{\equivalentexprsterm{}} in the \stat
 if for every dynamic environment $\denv$
 and environment $\env = (\tenv, \denv)$, the following condition holds:
 \[
-\{ C \;|\; \evalexpr{\env, \veone} \evalarrow C \} = \{ C \;|\; \evalexpr{\env, \vetwo} \evalarrow C \} \enspace.
+\{ C \;|\; \evalexpr(\env, \veone) \evalarrow C \} = \{ C \;|\; \evalexpr(\env, \vetwo) \evalarrow C \} \enspace.
 \]
 \end{definition}
 
@@ -458,7 +458,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{itemize}
   \item \AllApplyCase{literal\_int}
   \begin{itemize}
-    \item $\ve$ is an integer literal expression for $\vi$, that is, $\ELiteral(\lint(\vi))$;
+    \item $\ve$ is an integer literal expression for $\vi$, that is, $\ELiteral(\LInt(\vi))$;
     \item $\vp$ is the \symbolicexpressionterm{} for $\vi$.
   \end{itemize}
 
@@ -615,7 +615,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_non\_literals}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item at least one of $\veone$ and $\vetwo$ is not a literal expression;
     \item $\vp$ is $\CannotBeTransformed$.
@@ -623,7 +623,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_literals\_non\_int\_result}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, $\DIV$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;
@@ -633,7 +633,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{ebinop\_other\_literals\_int\_result}
   \begin{itemize}
-    \item $\ve$ is a binary expression with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
+    \item $\ve$ is a \binopexpressionterm{} with an operator $\op$ that is other than $\PLUS$, $\MINUS$, $\MUL$, or $\SHL$,
           applied to the operand expressions $\veone$ and $\vetwo$;
     \item $\veone$ is the literal expression for literal $\vlone$;
     \item $\vetwo$ is the literal expression for literal $\vltwo$;
@@ -672,13 +672,13 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[literal\_int]{}
 {
-  \toir(\tenv, \overname{\ELiteral(\lint(\vi))}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
+  \toir(\tenv, \overname{\ELiteral(\LInt(\vi))}{\ve}) \typearrow \overname{\{ \emptyfunc\mapsto \vi \}}{\vp}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[literal\_other]{
-  \astlabel(\vv) \neq \lint
+  \astlabel(\vv) \neq \LInt
 }{
   \toir(\tenv, \overname{\ELiteral(\vv)}{\ve}) \typearrow \CannotBeTransformed
 }
@@ -687,7 +687,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[evar\_constant]{
   \lookupconstant(\tenv, \vs) \typearrow \ELiteral(\vv)\\
-  \vp \eqdef \choice{\vv = \lint(\vi)}{\{ \emptyfunc\mapsto \vi \}}{\CannotBeTransformed}
+  \vp \eqdef \choice{\vv = \LInt(\vi)}{\{ \emptyfunc\mapsto \vi \}}{\CannotBeTransformed}
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
@@ -797,7 +797,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
   \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
-  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\lint(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\LInt(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -824,7 +824,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_shl\_non\_lint\_exponent]{
-    \vetwo \neq \ELiteral(\lint(\Ignore))
+    \vetwo \neq \ELiteral(\LInt(\Ignore))
 }{
   \toir(\tenv, \overname{\EBinop(\SHL, \Ignore, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
@@ -834,7 +834,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[ebinop\_shl\_neg\_shift]{
   \vitwo < 0
 }{
-  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\LInt(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
   \inferrule[ebinop\_shl\_okay]{
@@ -844,7 +844,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
     \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
-  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\lint(\vitwo)))}{\ve}) \typearrow \vp
+  \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\LInt(\vitwo)))}{\ve}) \typearrow \vp
 }
 \end{mathpar}
 
@@ -859,14 +859,14 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[ebinop\_other\_literals\_non\_int\_result]{
   \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \vl\\
-  \vl \neq \lint(\Ignore)
+  \vl \neq \LInt(\Ignore)
 }{
   \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \CannotBeTransformed
 }
 \and
 \inferrule[ebinop\_other\_literals\_int\_result]{
   \op \not\in \{\PLUS, \MINUS, \MUL, \SHL\}\\
-  \binopliterals(\op, \vlone, \vltwo) \typearrow \lint(k)\\
+  \binopliterals(\op, \vlone, \vltwo) \typearrow \LInt(k)\\
   \vp \eqdef \{ \emptyfunc\mapsto k \}
 }{
   \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \vp
@@ -875,7 +875,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[eunop\_neg]{
-  \toir(\tenv, \EBinop(\MUL, \ELiteral(\lint(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \EBinop(\MUL, \ELiteral(\LInt(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
 }{
   \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
 }
@@ -1233,7 +1233,7 @@ See \ExampleRef{Expression Equivalence}.
 \inferrule[e\_call]{
   \veone = \ECall(\nameone, \vargsone, \Ignore)\\
   \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\\\\
-  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
   \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
   i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
@@ -1593,7 +1593,7 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[tstructured]{
   L \in \{\TRecord, \TException\}\\
-  \booltrans{\fieldnames(\vfieldsone) = \fieldnames(\vfieldstwo)} \booltransarrow \True \terminateas \False\\\\
+  \booltrans(\fieldnames(\vfieldsone) = \fieldnames(\vfieldstwo)) \booltransarrow \True \terminateas \False\\\\
   {
     \begin{array}{l}
   \vf \in \fieldnames(\vfieldsone): \\ \typeequal(\tenv, \fieldtype(\vfieldsone, \vf), \fieldtype(\vfieldstwo, \vf)) \typearrow \vb_\vf \OrTypeError
@@ -1776,7 +1776,7 @@ or different nested bitfields.
 \inferrule[bitfield\_simple]{
   \bfone = \BitFieldSimple(\nameone, \slicesone)\\
   \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
-  \booltrans{\nameone = \nametwo} \booltransarrow \vbone\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \vbone\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
@@ -1786,7 +1786,7 @@ or different nested bitfields.
 \inferrule[bitfield\_nested]{
   \bfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
   \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
-  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False\\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\\\\
   \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
 }{
@@ -1796,7 +1796,7 @@ or different nested bitfields.
 \inferrule[bitfield\_typed]{
   \bfone = \BitFieldType(\nameone, \slicesone, \vtone)\\
   \bftwo = \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
-  \booltrans{\nameone = \nametwo} \booltransarrow \True \terminateas \False \\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False \\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\\\\
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -2157,7 +2157,7 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \polynomialtoexpr(\overname{\emptyfunc}{\vp}) \typearrow \overname{\ELiteral(\lint(0))}{\ve}
+  \polynomialtoexpr(\overname{\emptyfunc}{\vp}) \typearrow \overname{\ELiteral(\LInt(0))}{\ve}
 }
 \and
 \inferrule[non\_empty]{
@@ -2165,7 +2165,7 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
   \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
   {
   \ve \eqdef \begin{cases}
-    \ELiteral(\lint(0))   & \text{if }\vsone = 0\\
+    \ELiteral(\LInt(0))   & \text{if }\vsone = 0\\
     \veone                & \text{if }\vsone = 1\\
     \EUnop(\NEG, \veone)  & \text{if }\vsone = -1
   \end{cases}
@@ -2290,7 +2290,7 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \monomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow (\overname{\ELiteral(\lint(0))}{\ve}, \overname{0}{\vs})
+  \monomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow (\overname{\ELiteral(\LInt(0))}{\ve}, \overname{0}{\vs})
 }
 \and
 \inferrule[non\_empty]{
@@ -2316,7 +2316,7 @@ which represents the absolute value of $\ve$ multiplied by $q$, and the sign of 
 \ExampleDef{Transforming Expressions and Rationals}
 The following are examples of inputs and outputs of $\monomialtoexpr$:
 \[
-\monomialtoexpr(\EVar(\vx), 0) \typearrow (\ELiteral(\lint(0)), 0)
+\monomialtoexpr(\EVar(\vx), 0) \typearrow (\ELiteral(\LInt(0)), 0)
 \]
 
 \[
@@ -2374,13 +2374,13 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \inferrule[q\_zero]{
   q = 0\\
 }{
-  \monomialtoexpr(\ve, q) \typearrow (\overname{\ELiteral(\lint(0))}{\newe}, \overname{0}{\vs})
+  \monomialtoexpr(\ve, q) \typearrow (\overname{\ELiteral(\LInt(0))}{\newe}, \overname{0}{\vs})
 }
 \and
 \inferrule[q\_natural]{
   q > 0\\
   q \in \N\\
-  \symmulexpr(\ELiteral(\lint(q)), \ve) \typearrow \newe
+  \symmulexpr(\ELiteral(\LInt(q)), \ve) \typearrow \newe
 }{
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
 }
@@ -2389,8 +2389,8 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
   q > 0\\
   q \not\in \N\\\\
   q \eqname \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\\\\
-  \symmulexpr(\ELiteral(\lint(d)), \ve) \typearrow \vetwo\\
-  \newe \eqdef \EBinop(\DIV, \vetwo, \ELiteral(\lint(n)))
+  \symmulexpr(\ELiteral(\LInt(d)), \ve) \typearrow \vetwo\\
+  \newe \eqdef \EBinop(\DIV, \vetwo, \ELiteral(\LInt(n)))
 }{
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
 }
@@ -2563,7 +2563,7 @@ and the corresponding expressions, in comments.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \unitarymonomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow \overname{\ELiteral(\lint(1))}{\ve}
+  \unitarymonomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow \overname{\ELiteral(\LInt(1))}{\ve}
 }
 \end{mathpar}
 
@@ -2647,8 +2647,8 @@ yielding the result in $\ve$:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[one\_operand]{
-  (\veone = \ELiteral(\lint(1)) \lor \vetwo = \ELiteral(\lint(1)))\\
-  \ve \eqdef \choice{\veone = \ELiteral(\lint(1))}{\vetwo}{\veone}
+  (\veone = \ELiteral(\LInt(1)) \lor \vetwo = \ELiteral(\LInt(1)))\\
+  \ve \eqdef \choice{\veone = \ELiteral(\LInt(1))}{\vetwo}{\veone}
 }{
   \symmulexpr(\veone, \vetwo) \typearrow \ve
 }
@@ -2656,7 +2656,7 @@ yielding the result in $\ve$:
 
 \begin{mathpar}
 \inferrule[no\_one\_operand]{
-  (\veone \neq \ELiteral(\lint(1)) \land \vetwo \neq \ELiteral(\lint(1)))
+  (\veone \neq \ELiteral(\LInt(1)) \land \vetwo \neq \ELiteral(\LInt(1)))
 }{
   \symmulexpr(\veone, \vetwo) \typearrow \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}
 }
