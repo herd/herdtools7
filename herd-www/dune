@@ -6,6 +6,8 @@
  (modes js)
  (optional)
  (libraries herdtools js_of_ocaml zarith_stubs_js)
+ (preprocessor_deps
+  (file notwww.awk))
  (preprocess
   (per_module
    ((pps js_of_ocaml-ppx)
