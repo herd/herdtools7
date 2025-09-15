@@ -271,6 +271,15 @@ let parse_args () =
   in
 
   let () =
+    if ASTUtils.list_is_empty args.files && Option.is_none args.opn then
+      let () =
+        Printf.eprintf
+          "No files supplied! Run `aslref --help` for information on usage."
+      in
+      exit 1
+  in
+
+  let () =
     if !show_version then
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
@@ -374,26 +383,24 @@ let () =
     | Error.HumanReadable | Error.GNU -> ()
   in
 
-  let typed_ast, static_env =
-    let module C = struct
-      let output_format = args.output_format
-      let check = args.strictness
-      let print_typed = args.print_typed || args.print_lisp
-      let use_field_getter_extension = args.use_field_getter_extension
-      let override_mode = args.override_mode
+  let module C = struct
+    let output_format = args.output_format
+    let check = args.strictness
+    let print_typed = args.print_typed || args.print_lisp
+    let use_field_getter_extension = args.use_field_getter_extension
+    let override_mode = args.override_mode
 
-      let fine_grained_side_effects =
-        args.use_fine_grained_side_effects
-        || args.use_conflicting_side_effects_extension
+    let fine_grained_side_effects =
+      args.use_fine_grained_side_effects
+      || args.use_conflicting_side_effects_extension
 
-      let use_conflicting_side_effects_extension =
-        args.use_conflicting_side_effects_extension
+    let use_conflicting_side_effects_extension =
+      args.use_conflicting_side_effects_extension
 
-      let control_flow_analysis = args.control_flow_analysis
-    end in
-    let module T = Annotate (C) in
-    or_exit @@ fun () -> T.type_check_ast ast
-  in
+    let control_flow_analysis = args.control_flow_analysis
+  end in
+  let module T = Annotate (C) in
+  let typed_ast, static_env = or_exit @@ fun () -> T.type_check_ast ast in
 
   let () =
     if args.print_typed then
@@ -412,7 +419,8 @@ let () =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
-      Native.interpret ~instrumentation static_env typed_ast
+      let main_name = T.find_main static_env in
+      Native.interpret ~instrumentation static_env main_name typed_ast
     else (0, [])
   in
 

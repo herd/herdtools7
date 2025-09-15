@@ -929,7 +929,10 @@ module Make (C : Config) = struct
             | _ -> env)
           t.Test_herd.init_state []
       in
-      let exec () = ASLInterpreter.run_typed_env env tenv ast in
+      let exec () =
+        let main_name = TypeCheck.find_main tenv in
+        ASLInterpreter.run_typed_env env tenv main_name ast
+      in
       let* i =
         match Asllib.Error.intercept exec () with
         | Ok m -> m

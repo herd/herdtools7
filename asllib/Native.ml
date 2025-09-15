@@ -526,15 +526,18 @@ let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
   | v -> mismatch_type v [ integer' ]
 
-let interpret ?instrumentation static_env ast =
+let interpret ?instrumentation static_env main_name ast =
   match instrumentation with
   | Some true ->
       let module B = Instrumentation.SemanticsSingleSetBuffer in
       B.reset ();
       let res =
-        DeterministicInterpreterSingleSetInstr.run_typed static_env ast
+        DeterministicInterpreterSingleSetInstr.run_typed static_env main_name
+          ast
       in
       (exit_value res, B.get ())
   | Some false | None ->
-      let res = DeterministicInterpreterNoInstr.run_typed static_env ast in
+      let res =
+        DeterministicInterpreterNoInstr.run_typed static_env main_name ast
+      in
       (exit_value res, [])

@@ -246,8 +246,9 @@ let opn := list(EOL); body=list(stmts); EOF;
           args = [];
           parameters = [];
           body = SB_ASL body;
-          return_type = None;
-          subprogram_type = ST_Procedure;
+          return_type =
+            Some (T_Int UnConstrained |> ASTUtils.add_dummy_annotation ~version);
+          subprogram_type = ST_Function;
           recurse_limit = None;
           override = None;
           qualifier = None;

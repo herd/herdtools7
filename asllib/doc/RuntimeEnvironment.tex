@@ -6,25 +6,24 @@ Examples of a hosting environment include an interactive interpreter,
 an interpreter running in batch mode,
 a Verilog simulator, and a Linux process (native executable).
 
-\RequirementDef{RuntimeDefaultEntry}
-The default entry point of a specification is the \texttt{main} function, which has the signature
+\RequirementDef{EntryPoint}
+The default entry point of a specification is the \vmain{} function, which has the signature
 \verb|func main() => integer|.
+An alternative (non-default) entry point may be specified by the user if
+supported by the runtime. Not all runtimes may support alternative entry points.
 
-See for example \listingref{main0}.
-
-\RequirementDef{RuntimeReturn}
-When evaluation from the entry point returns (without \\
+When evaluation from the entry point returns (without
 throwing an exception)
 the runtime should pass the return value to the hosting environment.
 %
 An ASL runtime for native executables may use the return value
-of \texttt{main} as the exit status of the process.
+of the default entry point (\vmain{}) as the exit status of the process.
 %
 By convention a return value of zero indicates success and a return value of
 one indicates failure.
 %
-An alternative (non-default) entry point may be specified by the user if
-supported by the runtime. Not all runtimes may support alternative entry points.
+
+See for example \listingref{main0}.
 
 \ExampleDef{Returning a Value from the Entry Point}
 In a \linuxbashshell{}, the return status of the specification \texttt{main0.asl},

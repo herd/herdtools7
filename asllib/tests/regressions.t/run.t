@@ -523,6 +523,23 @@ Required tests:
   aslref: :0:-1: ASL Dynamic error: Mismatch type: value 11 does not belong to type integer {0..9}.
   [1]
 
+  $ aslref
+  No files supplied! Run `aslref --help` for information on usage.
+  [1]
+
+  $ aslref no-main.asl
+  ASL Dynamic error: no entrypoint supplied. Have you defined `func main() =>
+    integer`, or did you mean to pass `--no-exec`?
+  [1]
+
+  $ aslref main-wrong-type.asl
+  ASL Dynamic error: no entrypoint supplied. Have you defined `func main() =>
+    integer`, or did you mean to pass `--no-exec`?
+  [1]
+
+  $ aslref overloaded-main.asl
+  correct main executed
+
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:
