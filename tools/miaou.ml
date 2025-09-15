@@ -221,10 +221,15 @@ and cons_seqs (fs:exp list) (es:exp list) =
     module Next : sig
       val reset : unit -> unit
       val next : unit -> int
+      val push : unit -> unit
+      val pop : unit -> unit
     end = struct
       let c = ref 1
+      let s = Stack.create ()
       let reset () = c := 1
       let next () = let r = !c in incr c ; r
+      let push () = Stack.push !c s
+      let pop () = c := Stack.pop s
     end
 
     let pp_evt k = sprintf "E\\textsubscript{%d}" k
@@ -395,7 +400,10 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op (_,(Union|Inter as op),es) ->
          tr_op e1 e2 op es
       | Op (_,(Seq as op),es) ->
-         List (op,intro op,sep op,tr_seq e1 e2 es)
+         Next.push () ;
+         let l = List (op,intro op,sep op,tr_seq e1 e2 es) in
+         Next.pop () ;
+         l
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
