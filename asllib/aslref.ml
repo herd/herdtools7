@@ -321,16 +321,13 @@ let make_parser_config (args : args) : Builder.parser_config =
   }
 
 let run_with ~(read_file : string -> string) (args : args) : unit =
-  (* Build the parser configuration from [args]. *)
   let parser_config = make_parser_config args in
 
-  (* Helper: parse a file whose text we already have. *)
   let parse_string ~filename ~version ~ast_type contents =
     Builder.from_string ~filename ~ast_string:contents ~parser_config ~ast_type
       version
   in
 
-  (* Optional extra main specification from an OPN file. *)
   let extra_main =
     match args.opn with
     | None -> []
@@ -339,29 +336,25 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
         parse_string ~filename:fname ~version:`ASLv1 ~ast_type:`Opn txt
   in
 
-  (* Parse the list of files, applying patches as required. *)
   let ast =
-    let folder (ft, fname) acc =
+    let folder (ft, fname) ast =
       let version =
         match ft with
         | NormalV0 | PatchV0 -> `ASLv0
         | NormalV1 | PatchV1 -> `ASLv1
       in
-      let txt       = read_file fname in
-      let this_ast  =
-        parse_string ~filename:fname ~version ~ast_type:`Ast txt
-      in
+      let txt = read_file fname in
+      let this_ast = parse_string ~filename:fname ~version ~ast_type:`Ast txt in
       match ft with
-      | NormalV0 | NormalV1 -> List.rev_append this_ast acc
-      | PatchV0  | PatchV1  -> ASTUtils.patch ~src:acc ~patches:this_ast
+      | NormalV0 | NormalV1 -> List.rev_append this_ast ast
+      | PatchV0  | PatchV1  -> ASTUtils.patch ~src:ast ~patches:this_ast
     in
-    List.fold_right folder args.files []
+    or_exit @@ fun () -> List.fold_right folder args.files []
   in
+
   let ast = List.rev_append extra_main ast in
 
-  (* Optional printing / serialisation. *)
-  if args.print_ast       then Format.printf "%a@." PP.pp_t ast ;
-  if args.print_serialized then print_string (Serialize.t_to_string ast);
+  let () = if args.print_ast then Format.printf "%a@." PP.pp_t ast in
 
   (* Add stdlib (+ primitives unless disabled). *)
   let ast =
@@ -408,23 +401,31 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
     Lispobj.print_obj Format.std_formatter
       (Lispobj.Cons (lisp_static_env, lisp_ast));
 
-  (* Execute if requested. *)
-  let _, used_rules =
+  let () =
+    if args.print_lisp then
+      let lisp_ast = Lispobj.of_ast typed_ast in
+      let lisp_static_env = Lispobj.of_static_env_global static_env in
+      Lispobj.print_obj Format.std_formatter
+        (Lispobj.Cons (lisp_static_env, lisp_ast))
+  in
+
+  let exit_code, used_rules =
     if args.exec then
-      let instrumentation = args.show_rules in
+      let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
       let main_name = T.find_main static_env in
       Native.interpret ~instrumentation static_env main_name typed_ast
     else (0, [])
   in
 
-  (* Dump instrumentation (rule usage) if requested. *)
-  if args.show_rules then
-    Format.printf "@[<v 3>Used rules:@ %a@]@."
-      (Format.pp_print_list
-          ~pp_sep:Format.pp_print_cut
-          Instrumentation.SemanticsRule.pp)
-      used_rules
+  let () =
+    if args.show_rules then
+      let open Format in
+      printf "@[<v 3>Used rules:@ %a@]@."
+        (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
+        used_rules
+  in
+  ()
 
 let () =
   try
