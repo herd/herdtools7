@@ -2,7 +2,7 @@ AArch64 MP+dmb.sypp+datapt-lrstt-addrpp
 (* PPODA feat. Imp Tag Read *)
 Variant=memtag,sync
 {
-    y=z:green;
+    int *y=z:green;
     0:X1=x; 0:X2=z:red; 0:X3=y;
     1:X1=x; 1:X3=y; 1:X5=z:red;
 }

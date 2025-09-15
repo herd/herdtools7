@@ -1,7 +1,7 @@
 AArch64 MP+dmb.sypp+datapt-lrstt
 Variant=memtag,sync
 {
-    y=x:green;
+    int *y=x:green;
     0:X1=x:green; 0:X2=x:red; 0:X3=y;
     1:X1=x:red; 1:X3=y;
 }
