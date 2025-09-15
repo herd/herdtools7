@@ -3,7 +3,7 @@ Hash=e304328326d20870aae762684ffd84d5
 Variant=memtag,async
 
 {
- int64_t y=z;
+ int *y=z;
  0:X3=x:red; 0:X5=z; 0:X1=x:green; 0:X2=y:green;
  1:X5=z; 1:X1=x:red; 1:X11=x:red; 1:X2=y:green;
 }
