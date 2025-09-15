@@ -1,0 +1,377 @@
+digraph graphname {
+  type_atom [label = "[final] type atom"]
+  value [label = "Value.S"]
+  no_pte [label = "Value.NoPte"]
+  type_atom -> value
+  value -> no_pte
+
+  code [label = "Code"]
+  simd [label = "Atom.SIMD"]
+  simd -> code [label = "type bank" ]
+
+  no_simd [label = "NoSIMD"]
+  simd -> no_simd
+
+  mach_mixed [label = "MachMixed"]
+  atom [label = "Atom.S"]
+  type_atom -> atom
+  value -> atom
+  mach_mixed -> atom
+  code -> atom
+
+  mach_mixed_make [label = "MachMixed.Make"]
+  mach_mixed -> mach_mixed_make
+
+  no_mixed [label = "NoMixed"]
+  mach_mixed_make -> no_mixed
+
+  vals [label = "MachMixed.Vals"]
+  value -> vals
+
+  mach_mixed_no [label = "MachMixed.No"]
+  mach_mixed_util [label = "MachMixed.Util"]
+
+  mach_atom [label = "MachAtom.Make"]
+  no_simd -> mach_atom
+  value -> mach_atom
+  mach_mixed -> mach_atom
+  vals -> mach_atom
+  mach_atom -> type_atom
+
+  rmw [label = "Atom.Rmw"]
+  value -> rmw [label = "type rmw_value"]
+  type_atom -> rmw [label = "type rmw_atom"]
+
+  no_rmw [label = "Rmw.No"]
+  rmw -> no_rmw
+
+  lxsx [label = "Rmw.LxSx"]
+  rmw -> lxsx
+
+  exch [label = "Rmw.Exch"]
+  rmw -> exch
+
+  no_wide [label = "NoWide"]
+
+  fence [label = "Fence.S"]
+  atom -> fence
+  code -> fence
+  rmw -> fence
+
+  typ_base [label = "TypBase"]
+  mach_mixed -> typ_base
+
+  edge_make [label = "Edge.S & Edge.Make"]
+  type_atom -> edge_make
+  value -> edge_make
+  simd -> edge_make
+  fence -> edge_make
+  rmw -> edge_make
+
+  cycle [label = "Cycle.S & Cycle.Make"]
+  edge_make -> cycle
+  simd -> cycle
+  value -> cycle
+  code -> cycle
+
+  special [label = "ArchExtra_gen.I [special reg]"]
+  arch_extra_gen [label = "ArchExtra_gen.S"]
+  value -> arch_extra_gen [label = "module Value_extra"]
+  type_atom -> arch_extra_gen [label = "type arch_extra_atom"]
+  typ_base -> arch_extra_gen
+
+  no_special [label = "NoSpeical"]
+  special -> no_special
+
+  arch_extra_gen_make [label = "ArchExtra_gen.Make"]
+  special -> arch_extra_gen_make
+  arch_extra_gen -> arch_extra_gen_make
+  value -> arch_extra_gen_make
+
+  scope_gen [label = "ScopeGen.S"]
+  scope_gen_make [label = "ScopeGen.Make"]
+  no_scope_gen [label = "ScopeGen.Nogen"]
+  scope_gen -> scope_gen_make
+  scope_gen -> no_scope_gen
+
+  dep [label = "Dep"]
+  c_dep [label = "CDep"]
+  classic_dep [label = "ClassicDep"]
+
+  arch_gen [label = "Arch_gen.S"]
+  fence -> arch_gen
+  scope_gen -> arch_gen
+  arch_extra_gen -> arch_gen
+
+  arch_loc [label = "ArchLoc.S"]
+  value -> arch_loc
+  scope_gen -> arch_loc
+  code -> arch_loc
+
+  relax [label = "Relax.S & Relax.Make"]
+  fence -> relax
+  edge_make -> relax
+
+  arch_run [label = "ArchRun.S"]
+  arch_loc -> arch_run
+  edge_make -> arch_run
+  cycle -> arch_run
+  relax -> arch_run
+
+  builder [label = "Builder.S"]
+  arch_run -> builder
+
+  gen_util [label = "GenUtils.Make"]
+  arch_gen -> gen_util
+  code -> gen_util
+
+  compile_common [label = "CompileCommon.S & CompileCommon.Make"]
+  arch_run -> compile_common
+  edge_make -> compile_common
+  relax -> compile_common
+  cycle -> compile_common
+  arch_gen -> compile_common
+
+  xxx_compile_gen [label = "XXXCompile_gen.S"]
+  compile_common -> xxx_compile_gen
+
+  run_gen [label = "Run_gen.Make"]
+  arch_run -> Run_gen
+
+  final [label = "Final.Make"]
+  arch_run -> final
+  run_gen -> final
+
+  top_utils [label = "TopUtils.Make"]
+  arch_run -> top_utils
+
+  top_gen [label = "Top_gen.Make"]
+  builder -> top_gen
+  xxx_compile_gen -> top_gen
+  final -> top_gen
+  top_utils -> top_gen
+
+  dump_all [label = "DumpAll.Make"]
+  top_gen -> dump_all
+  builder -> dump_all
+
+  diyone [label = "diyone"]
+  top_gen -> diyone
+  builder -> diyone
+  dump_all -> diyone
+
+  alt [label = "Alt.Make"]
+  builder -> alt
+  dump_all -> alt
+
+  diy [label = "diy"]
+  top_gen -> diy
+  alt -> diy
+
+  diycross [label = "diycross"]
+  top_gen -> diycross
+  builder -> diycross
+  dump_all -> diycross
+
+  x86_base [label = "lib/X86Base"]
+
+  x86_arch_gen [label = "x86Arch_gen"]
+  x86_arch_gen -> type_atom
+  x86_base -> x86_arch_gen
+  no_scope_gen -> x86_arch_gen
+  no_simd -> x86_arch_gen
+  mach_mixed_no -> x86_arch_gen
+  no_mixed -> x86_arch_gen
+  no_wide -> x86_arch_gen
+  exch -> x86_arch_gen
+  no_special -> x86_arch_gen
+  arch_extra_gen_make -> x86_arch_gen
+  no_pte -> x86_arch_gen
+
+
+  x86_compile_gen [label = "X86Compile_gen"]
+  x86_arch_gen -> x86_compile_gen
+  compile_common -> x86_compile_gen
+  xxx_compile_gen -> x86_compile_gen
+  x86_compile_gen -> diyone
+  x86_compile_gen -> diy
+  x86_compile_gen -> diycross
+
+  x86_64_base [label = "lib/X86_64Base"]
+
+  x86_64_arch_gen [label = "X86_64Arch_gen"]
+  x86_64_arch_gen -> type_atom
+  x86_64_base -> x86_64_arch_gen
+  no_scope_gen -> x86_64_arch_gen
+  mach_mixed_make -> x86_64_arch_gen
+  no_simd -> x86_64_arch_gen
+  mach_mixed_util -> x86_64_arch_gen
+  vals -> x86_64_arch_gen
+  no_wide -> x86_64_arch_gen
+  exch -> x86_64_arch_gen
+  arch_extra_gen_make -> x86_64_arch_gen
+  no_pte -> x86_64_arch_gen
+
+  x86_64_compile_gen [label = "X86_64Compile_gen"]
+  x86_64_arch_gen -> x86_64_compile_gen
+  compile_common -> x86_64_compile_gen
+  xxx_compile_gen -> x86_64_compile_gen
+  gen_util -> x86_64_compile_gen
+  x86_64_compile_gen -> diyone
+  x86_64_compile_gen -> diy
+  x86_64_compile_gen -> diycross
+
+  ppc_base [label = "lib/PPCBase"]
+
+  ppc_arch_gen [label = "PPCArch_gen"]
+  ppc_base -> ppc_arch_gen
+  mach_atom -> ppc_arch_gen
+  dep -> ppc_arch_gen
+  lxsx -> ppc_arch_gen
+  no_special -> ppc_arch_gen
+  arch_extra_gen_make -> ppc_arch_gen
+  value -> ppc_arch_gen
+
+  ppc_compile_gen [label = "PPCCompile_gen"]
+  ppc_arch_gen -> ppc_compile_gen
+  compile_common -> ppc_compile_gen
+  xxx_compile_gen -> ppc_compile_gen
+  gen_util -> ppc_compile_gen
+  ppc_compile_gen -> diyone
+  ppc_compile_gen -> diy
+  ppc_compile_gen -> diycross
+
+  arm_base [label = "lib/ARMBase"]
+
+  arm_arch_gen [label = "ARMArch_gen"]
+  arm_base -> arm_arch_gen
+  no_scope_gen -> arm_arch_gen
+  mach_atom -> arm_arch_gen
+  dep -> arm_arch_gen
+  lxsx -> arm_arch_gen
+  no_special -> arm_arch_gen
+  arch_extra_gen_make -> arm_arch_gen
+  value -> arm_arch_gen
+
+  arm_compile_gen [label = "ARMCompile_gen"]
+  arm_arch_gen -> arm_compile_gen
+  xxx_compile_gen -> arm_compile_gen
+  compile_common -> arm_compile_gen
+  gen_util -> arm_compile_gen
+  arm_compile_gen -> diyone
+  arm_compile_gen -> diy
+  arm_compile_gen -> diycross
+
+  aarch64_base [label = "lib/AArch64Base"]
+
+  aarch64_arch_gen [label = "AArch64Arch_gen"]
+  aarch64_arch_gen -> type_atom
+  arch_extra_gen_make -> aarch64_arch_gen
+  aarch64_base -> aarch64_arch_gen
+  no_scope_gen -> aarch64_arch_gen
+  mach_mixed_util -> aarch64_arch_gen
+  vals -> aarch64_arch_gen
+  value -> aarch64_arch_gen
+  simd -> aarch64_arch_gen
+  mach_mixed_make -> aarch64_arch_gen
+  value -> aarch64_arch_gen
+
+  aarch64_compile_gen [label = "AArch64Compile_gen"]
+  compile_common -> aarch64_compile_gen
+  xxx_compile_gen -> aarch64_compile_gen
+  gen_util -> aarch64_compile_gen
+  aarch64_arch_gen -> aarch64_compile_gen
+  aarch64_compile_gen -> diyone
+  aarch64_compile_gen -> diy
+  aarch64_compile_gen -> diycross
+
+  mips_base [label = "lib/MIPSBase"]
+
+  mips_arch_gen [label = "MIPSArch_gen"]
+  mips_base -> mips_arch_gen
+  mach_atom -> mips_arch_gen
+  lxsx -> mips_arch_gen
+  no_special -> mips_arch_gen
+  no_scope_gen -> mips_arch_gen
+  arch_extra_gen_make -> mips_arch_gen
+  value -> mips_arch_gen
+
+  mips_compile_gen [label = "MIPSCompile_gen"]
+  compile_common -> mips_compile_gen
+  xxx_compile_gen -> mips_compile_gen
+  mips_arch_gen -> mips_compile_gen
+  gen_util -> mips_compile_gen
+  mips_compile_gen -> diyone
+  mips_compile_gen -> diy
+  mips_compile_gen -> diycross
+
+  riscv_base [label = "lib/RISCVBase"]
+
+  riscv_arch_gen [label = "RISCVArch_gen"]
+  riscv_arch_gen -> type_atom
+  riscv_base -> riscv_arch_gen
+  no_scope_gen -> riscv_arch_gen
+  mach_mixed_make -> riscv_arch_gen
+  no_simd -> riscv_arch_gen
+  vals -> riscv_arch_gen
+  dep -> riscv_arch_gen
+  exch -> riscv_arch_gen
+  no_wide -> riscv_arch_gen
+  no_special -> riscv_arch_gen
+  arch_extra_gen_make -> riscv_arch_gen
+  no_pte -> riscv_arch_gen
+
+  riscv_compile_gen [label = "RISCVCompile_gen"]
+  compile_common -> riscv_compile_gen
+  xxx_compile_gen -> riscv_compile_gen
+  riscv_arch_gen -> riscv_compile_gen
+  gen_util -> riscv_compile_gen
+  riscv_compile_gen -> diyone
+  riscv_compile_gen -> diy
+  riscv_compile_gen -> diycross
+
+  bell_base [label = "lib/BellBase"]
+
+  bell_arch_gen [label = "BellArch_gen"]
+  bell_arch_gen -> type_atom
+  bell_base -> bell_arch_gen
+  scope_gen -> bell_arch_gen
+  no_simd -> bell_arch_gen
+  mach_mixed_no -> bell_arch_gen
+  no_mixed -> bell_arch_gen
+  classic_dep -> bell_arch_gen
+  no_rmw -> bell_arch_gen
+  no_special -> bell_arch_gen
+  no_wide -> bell_arch_gen
+  arch_extra_gen_make -> bell_arch_gen
+  no_pte -> bell_arch_gen
+
+  bell_compile [label = "BellCompile"]
+  bell_arch_gen -> bell_compile
+  xxx_compile_gen -> bell_compile
+  compile_common -> bell_compile
+  bell_compile -> diyone
+  bell_compile -> diy
+  bell_compile -> diycross
+
+  C_arch_gen [label = "CArch_gen"]
+  C_arch_gen -> type_atom
+  scope_gen -> c_arch_gen
+  no_simd -> c_arch_gen
+  mach_mixed_no -> c_arch_gen
+  no_mixed -> c_arch_gen
+  no_wide -> c_arch_gen
+  c_dep -> c_arch_gen
+  no_pte -> c_arch_gen
+
+  c_compile_gen [label = "CCompile_gen"]
+  c_arch_gen -> c_compile_gen
+  builder -> c_compile_gen
+  relax -> c_compile_gen
+  cycle -> c_compile_gen
+  top_utils -> c_compile_gen
+  final -> c_compile_gen
+  c_compile_gen -> diyone
+  c_compile_gen -> diy
+  c_compile_gen -> diycross
+}
