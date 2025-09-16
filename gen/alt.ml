@@ -169,6 +169,7 @@ module Make(C:Builder.S)
                 | (Same,Same) | (Diff,Same) | (Same,Diff)
                   -> true
                 | Diff,Diff -> false
+                | _ -> assert false
                 end
             | Ext,Ext -> false
             | (Ext,Int) | (Int,Ext)
@@ -584,9 +585,7 @@ module Make(C:Builder.S)
 
     let count_ext es = count_e 0 es
 
-    let change_loc e = match loc_sd e with
-    | Same -> false
-    | Diff -> true
+    let change_loc e = not @@ Code.is_same_loc @@ loc_sd e
 
     let count_p p =
       let rec do_rec c = function
@@ -685,7 +684,7 @@ module Make(C:Builder.S)
     let fold_ie f k = f (Int) (f (Ext) k)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
-    let fold_sd f k = f (Same) (f Diff k)
+    let fold_sd = Code.fold_sd
     let fold_sd_dir2 f =
       fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))

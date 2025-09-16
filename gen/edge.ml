@@ -392,9 +392,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
   | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
-  let do_is_diff e = match do_loc_sd e with
-  | Same -> false
-  | Diff -> true
+  let do_is_diff e = not @@ Code.is_same_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
   let r = fold_ie (fun ie -> f (Ws ie)) r in
@@ -445,6 +443,9 @@ let fold_tedges f r =
     not (F.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
+    (* `do_is_diff` is safe to call when `e` is not
+       wildcard `*`/Both location. *)
+    Code.is_both_loc @@ do_loc_sd e ||
     do_is_diff e || do_disjoint ||
     (overlap_atoms a1 a2 &&
      not (do_strict_overlap && same_access_atoms a1 a2))
@@ -728,6 +729,10 @@ let fold_tedges f r =
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
 
+  let expand_loc sd f acc = match sd with
+  | Same|Diff -> f sd acc
+  | Both -> f Same (f Diff acc)
+
   let expand_dir d f acc = match d with
   | Dir _|NoDir -> f d acc
   | Irr -> f (Dir W) (f (Dir R) acc)
@@ -749,10 +754,12 @@ let fold_tedges f r =
         expand_atom2 e.a1 e.a2 ( fun a1 a2 -> f {e with a1; a2} )
     | Po(sd,e1,e2) ->
         expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
-          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Po(sd,d1,d2); a1; a2}))
+          expand_dir2 e1 e2 (fun d1 d2 ->
+            expand_loc sd ( fun new_sd -> f {edge=Po(new_sd,d1,d2); a1; a2})))
     | Fenced(fe,sd,e1,e2) ->
         expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
-          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Fenced(fe,sd,d1,d2); a1; a2}))
+          expand_dir2 e1 e2 (fun d1 d2 ->
+            expand_loc sd ( fun new_sd -> f {edge=Fenced(fe,new_sd,d1,d2); a1; a2})))
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
@@ -960,9 +967,7 @@ let fold_tedges f r =
 
 (* compact *)
 
-  let seq_sd e1 e2 = match loc_sd e1,loc_sd e2 with
-  | Same,Same -> Same
-  | _,_ -> Diff
+  let seq_sd e1 e2 = Code.seq_sd (loc_sd e1) (loc_sd e2)
 
   let fst_dp e1 e2 k = match e1.edge with
   | Dp (d,_,_) ->
