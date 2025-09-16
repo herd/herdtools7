@@ -184,4 +184,6 @@ illustrative_tests = [
     "tests/Z6.3+fence+fence+acquire.litmus",
     "tests/amo-sequence-1.litmus",
     "tests/amo-sequence-2.litmus",
+    "tests/successful-cmpxchg-atomicity.litmus",
+    "tests/xchg-atomicity.litmus",
 ]
