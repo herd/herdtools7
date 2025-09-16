@@ -163,22 +163,26 @@ type capa_opt = capa option
 
 module WPTE = struct
 
-  type pte_field = AF | DB | OA | DBM | VALID
-  let all_pte_field = [AF; DB; OA; DBM; VALID;]
+  type pte_field = ANYPTE | AF | DB | OA | DBM | VALID
+  let all_concrete_fields = [AF; DB; OA; DBM; VALID]
+  let all_pte_fields = ANYPTE :: all_concrete_fields
   let compare_pte_field w1 w2 = match w1,w2 with
-  | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
+  | (ANYPTE, ANYPTE) | (AF,AF) | (DB,DB) | (OA,OA) | (DBM,DBM) | (VALID,VALID)
     -> 0
+  | (ANYPTE,(AF|DB|OA|DBM|VALID))
   | (AF,(DB|OA|DBM|VALID))
   | (DB,(OA|DBM|VALID))
   | (OA,(DBM|VALID))
   | (DBM,VALID)
     -> -1
+  | ((AF|DB|OA|DBM|VALID),ANYPTE)
   | ((DB|OA|DBM|VALID),AF)
   | ((OA|DBM|VALID),DB)
   | ((DBM|VALID),OA)
   | (VALID,DBM)
     -> 1
   let pp_pte_field = function
+    | ANYPTE -> "*"
     | AF -> "AF"
     | DB -> "DB"
     | DBM -> "DBM"
@@ -192,7 +196,7 @@ module WPTE = struct
           (* Precise value of 1 to 0 *)
           | Zero of pte_field
   let all =
-    List.map ( fun field -> [Base field; One field; Zero field;] ) all_pte_field
+    List.map ( fun field -> [Base field; One field; Zero field;] ) all_pte_fields
     |> List.flatten
   let compare w1 w2 = match w1,w2 with
   | (Base p1,Base p2) | (One p1,One p2) | (Zero p1,Zero p2)
@@ -203,7 +207,6 @@ module WPTE = struct
   | ((One _|Zero _), Base _)
   | (Zero _, One _)
     -> 1
-  let fold f r = List.fold_left f all r
   let pp = function
     | Base p -> pp_pte_field p
     | One p -> "One" ^ pp_pte_field p
@@ -212,12 +215,45 @@ module WPTE = struct
     | Base p | One p | Zero p -> p
 
   let pp_tthm = function
+    | Base ANYPTE -> "*"
     | Base AF -> "HA"
     | Base DB -> "HD"
     | _ -> assert false
+
+  (* expand potentially `ANYPTE/*` in `pte` to `concrete_field` *)
+  let expand_pte_field concrete_fields field =
+    match field with
+    | ANYPTE -> concrete_fields
+    | _ -> [field]
+
+  let expand_pte concrete_fields pte =
+    match pte with
+    | Base e
+      -> List.map ( fun p -> Base p ) @@ expand_pte_field concrete_fields e
+    | One e
+      -> List.map ( fun p -> One p ) @@ expand_pte_field concrete_fields e
+    | Zero e
+      -> List.map ( fun p -> Zero p ) @@ expand_pte_field concrete_fields e
 end
 
 module WPTESet = MySet.Make(WPTE)
+
+let expand_pte_set concrete_fields pte_set f acc =
+  (* Given the input set of pte, `pte_set`,
+   the resulting list of sets, `expand_set`, e.g.
+   {ANYPTE,AF} -> [{AF,AF}, {DB,AF}, {OA,AF}, ...] *)
+  let expand_set = WPTESet.fold ( fun pte set_list ->
+    let expand_pte_fields = WPTE.expand_pte concrete_fields pte in
+    (* cross product between `expand_pte` and `set_list` *)
+    List.concat @@
+      List.map ( fun pte_field ->
+        List.map ( fun set ->
+          WPTESet.add pte_field set
+        ) set_list
+      ) expand_pte_fields
+  ) pte_set [WPTESet.empty] in
+  (* apply the function `f` to `expand_set` *)
+  List.fold_left (fun a e -> f e a) acc expand_set
 
 (* Check the `set` contains the same field.
    This rules out the situation where the set contains,
@@ -239,6 +275,31 @@ type atom_pte =
   | SetRel of WPTESet.t
   (* TTHM prelude *)
   | TTHM of WPTESet.t
+
+let update_atom_pte pte fields =
+  match pte with
+  | Read|ReadAcq|ReadAcqPc -> pte
+  | Set (_) -> Set(fields)
+  | SetRel (_) -> SetRel(fields)
+  | TTHM (_) -> TTHM(fields)
+
+let expand_atom_pte pte f acc =
+  match pte with
+  | Read|ReadAcq|ReadAcqPc -> f pte acc
+  | Set (fields)|SetRel(fields) ->
+    expand_pte_set WPTE.all_concrete_fields fields
+      ( fun set a ->
+        let new_pte = update_atom_pte pte set in
+        f new_pte a
+      ) acc
+  |TTHM(fields) ->
+    let open WPTE in
+    expand_pte_set [AF; DB;] fields
+      ( fun set a ->
+        let new_pte = update_atom_pte pte set in
+        f new_pte a
+      ) acc
+
 
 type neon_opt = SIMD.atom
 
@@ -369,6 +430,7 @@ let is_tthm = function | TTHM _ -> true | _ -> false
        r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
           |> f (TTHM (WPTESet.singleton (Base AF)))
           |> f (TTHM (WPTESet.singleton (Base DB)))
+          |> f (TTHM (WPTESet.singleton (Base ANYPTE)))
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -459,6 +521,12 @@ let is_tthm = function | TTHM _ -> true | _ -> false
 
 
    let varatom_dir _d f r = f None r
+
+   let expand_atom atom f acc =
+     match atom with
+     | Some (Pte pte, sz) ->
+        expand_atom_pte pte (fun p a -> f (Some((Pte p, sz))) a) acc
+     | _ -> f atom acc
 
    let merge_atoms a1 a2 = match a1,a2 with
 (* Plain and Instr do not merge *)
@@ -620,6 +688,7 @@ let overwrite_value v ao w = match ao with
       | DBM -> { pteval with dbm = 1-pteval.dbm; }
       | VALID -> { pteval with valid = 1-pteval.valid; }
       | OA -> { pteval with oa=OutputAddress.PHY (loc ()); }
+      | ANYPTE -> assert false
 
     (* toggle or flip the value of pte field *)
     let toggle_pte flag_set pteval loc =
@@ -669,7 +738,8 @@ let overwrite_value v ao w = match ao with
           | false,None -> (af,db,dbm,Some true,{pteval with valid = value})
           | false,Some _ -> Warn.user_error "Fail to set VALID."
         end
-        | OA -> Warn.user_error "precisely set OA is not supported." in
+        | OA -> Warn.user_error "precisely set OA is not supported."
+        | ANYPTE -> assert false in
       (* Check if the `field_set` is possible against `pteval` (in `acc`). *)
       let check_init_pte acc field_set =
         let open AArch64PteVal in
