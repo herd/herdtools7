@@ -730,24 +730,33 @@ let fold_tedges f r =
   | Irr ->
     let expand_dir_list = F.expand_dp_dir dp in
     List.fold_left (fun acc sd -> f (Dir sd) acc) acc expand_dir_list
+  let expand_atom2 a1 a2 f =
+    F.expand_atom a1 ( fun new_a1 ->
+      F.expand_atom a2 ( fun new_a2 ->
+        f new_a1 new_a2 ))
 
   let do_expand_edge e f acc =
     match e.edge with
-    | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Leave _|Back _
-      -> f e acc
+    | Id -> F.expand_atom e.a1 ( fun a1 -> f {e with a1; a2=a1} ) acc
+    | Insert _|Store|Node _|Rf _ | Fr _ | Ws _
+    | Hat |Leave _|Back _ ->
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 -> f {e with a1; a2} ) acc
     | Rmw rmw ->
         let expand_rmw_list = F.expand_rmw rmw in
-        List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
+        List.fold_left ( fun acc new_rmw ->
+          expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+            f {edge=Rmw(new_rmw); a1; a2}) acc
+        ) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
-      expand_dp_dir dp expr (fun new_expr ->
-        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
+      expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+        expand_dp_dir dp expr (fun new_expr ->
+          expand_loc sd ( fun new_sd -> f {edge=Dp(dp,new_sd,new_expr); a1; a2}))) acc
     | Po(sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);})) acc
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Po(sd,d1,d2); a1; a2})) acc
     | Fenced(fe,sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);})) acc
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Fenced(fe,sd,d1,d2); a1; a2})) acc
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
@@ -757,8 +766,8 @@ let fold_tedges f r =
           try
             let suf = match suf with
             | [] -> [e]
-            | f::_ ->
-                if can_precede e f then e::suf
+            | hd::_ ->
+                if can_precede e hd then e::suf
                 else raise Exit in
             do_expand_edges es f suf k
           with Exit -> k)

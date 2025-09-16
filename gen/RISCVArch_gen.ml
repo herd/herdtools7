@@ -123,6 +123,7 @@ module Make
      | MO _|Mixed _ -> false
 
    let varatom_dir _ f k = f None k
+   let expand_atom atom f acc = f atom acc
 
    let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 

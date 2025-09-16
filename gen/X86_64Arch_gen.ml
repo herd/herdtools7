@@ -106,6 +106,7 @@ module Make
         | Atomic  -> true
 
       let varatom_dir _d f = f None
+      let expand_atom atom f acc = f atom acc
 
       let check_nt a sz =
         apply_mix (fun c _ -> Some c) a sz None
