@@ -191,7 +191,7 @@ type atom_pte =
 
 type neon_opt = SIMD.atom
 
-type pair_idx = Both
+type pair_idx = UnspecLoc
 
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
@@ -303,7 +303,7 @@ let is_ifetch a = match a with
      | PaI -> "I"
 
    and pp_pair_idx = function
-     | Both -> ""
+     | UnspecLoc -> ""
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -420,9 +420,9 @@ let is_ifetch a = match a with
           let f opt idx r =
             f (Pair (opt,idx)) r in
           r |>
-          f Pa Both |>
-          f PaN Both |>
-          f PaI Both
+          f Pa UnspecLoc |>
+          f PaN UnspecLoc |>
+          f PaI UnspecLoc
 
       let fold_acc_opt o f r =
         let r = f (Acq o) r in
@@ -555,7 +555,7 @@ let is_ifetch a = match a with
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
    | Neon n,None -> Code.VecReg n
-   | Pair (_,Both),_ -> Code.Pair
+   | Pair (_,UnspecLoc),_ -> Code.Pair
    | Instr,_ -> Code.Instr
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_

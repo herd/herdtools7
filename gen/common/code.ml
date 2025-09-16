@@ -70,7 +70,7 @@ type dir = W | R
 type ie = Int|Ext
 
 (* Change of location across edge *)
-type sd = Same|Diff
+type sd = Same|Diff|UnspecLoc
 
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
@@ -92,14 +92,25 @@ let pp_extr = function
 let pp_sd = function
   | Same -> "s"
   | Diff -> "d"
+  | UnspecLoc -> "*"
+
+let is_same_loc = function
+  | Same -> true
+  | Diff -> false
+  | UnspecLoc -> assert false
+
+let is_both_loc = function
+  | UnspecLoc -> true
+  | _ -> false
 
 let seq_sd sd1 sd2 =
   match sd1,sd2 with
+  | UnspecLoc,_|_, UnspecLoc -> assert false
   | Same,Same -> Same
   | Diff,_|_,Diff -> Diff
 
 let fold_ie f r = f Ext (f Int r)
-let fold_sd f r = f Diff (f Same r)
+let fold_sd f r = f UnspecLoc (f Diff (f Same r))
 let fold_extr f r = f (Dir W) (f (Dir R) (f Irr r))
 let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
 let fold_sd_extr_extr f =

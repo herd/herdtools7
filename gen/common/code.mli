@@ -43,7 +43,7 @@ type dir = W | R
 type ie = Int|Ext
 
 (* Change of location across edge *)
-type sd = Same|Diff
+type sd = Same|Diff|UnspecLoc
 
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
@@ -56,6 +56,8 @@ val pp_dir : dir -> string
 val pp_extr : extr -> string
 val pp_sd : sd -> string
 val seq_sd : sd -> sd -> sd
+val is_same_loc : sd -> bool
+val is_both_loc : sd -> bool
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
