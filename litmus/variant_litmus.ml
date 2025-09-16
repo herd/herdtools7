@@ -30,11 +30,28 @@ type t =
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 
-let compare = compare
+let (mode_variants, arch_variants) : t list * t list =
+  let f = function 
+  | Self -> Self
+  | FaultHandling p -> FaultHandling p 
+  | S128 -> S128
+  | Mixed -> Mixed
+  | Vmsa -> Vmsa
+  | Telechat -> Telechat
+  | SVE -> SVE
+  | SME -> SME
+  | MemTag -> MemTag
+  | MTEPrecision p -> MTEPrecision p
+  | NoInit -> NoInit
+  | Pac -> Pac
+  | FPac -> FPac
+  | ConstPacField -> ConstPacField
+in
+(List.map f [Self; FaultHandling Fault.Handling.default; S128; Mixed; Vmsa;
+ Telechat; NoInit],
+ List.map f [SVE; SME; MemTag; MTEPrecision Precision.default; Pac; FPac; ConstPacField])
 
-let tags =
-  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"pac"
-  ::"const-pac-field"::"fpac"::"memtag"::Fault.Handling.tags@Precision.tags
+let compare = compare
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -102,3 +119,16 @@ let set_mte_store_only _ _ = false
 let set_sve_length _ _ = None
 let set_sme_length _ _ = None
 let check_tag tag = [tag]
+
+let mode_tags =
+  List.map pp mode_variants
+
+let arch_tags =
+  List.map pp arch_variants
+
+let tags = 
+  mode_tags @ arch_tags
+
+
+let helper_message =
+  Printf.sprintf "<tags> where:\n Mode tags:\n  {%s}\n Arch tags:\n {%s}" (String.concat "," mode_tags) (String.concat "," arch_tags) 
