@@ -1,5 +1,6 @@
 (* asllib-www/jaslref.ml *)
 
+open Aslref
 open Js_of_ocaml
 
 let dbg = false

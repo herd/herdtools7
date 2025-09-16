@@ -409,7 +409,7 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
         (Lispobj.Cons (lisp_static_env, lisp_ast))
   in
 
-  let exit_code, used_rules =
+  let _, used_rules =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->

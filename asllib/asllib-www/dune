@@ -1,15 +1,11 @@
 (copy_files
- (files ../*.{ml,mli}))
+ (files ../aslref.ml))
 
 (executable
  (name jaslref)
  (modes js)
  (libraries
-   js_of_ocaml
    asllib
    zarith_stubs_js)
  (flags (:standard -w -40-42-44-48))
- (preprocess (pps js_of_ocaml-ppx))
- (modules
-   aslref
-   jaslref))
+ (preprocess (pps js_of_ocaml-ppx)))
