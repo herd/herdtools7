@@ -119,20 +119,101 @@ type t =
   | ConstPacField
 (* 128 bit mode for asl,vmsa *)
   | D128
-  
-let tags =
-  ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
-    Precision.tags @ Fault.Handling.tags @
-   ["CutOff"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
-    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
-    "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
-    "pac"; "fpac"; "const-pac-field";
-    "d128";
-   ]
+
+(* Identity function to prompt developers to insert variant into list used for help message when adding a new variant*)
+let (mode_variants, arch_variants) : t list * t list =
+  let f = function 
+  | Success -> Success
+  | Instr -> Instr
+  | SpecialX0 -> SpecialX0
+  | NoRMW -> NoRMW
+  | AcqRelAsFence -> AcqRelAsFence
+  | BackCompat ->BackCompat
+  | FullScDepend -> FullScDepend
+  | SplittedRMW -> SplittedRMW
+  | SwitchDepScWrite -> SwitchDepScWrite
+  | SwitchDepScResult -> SwitchDepScResult
+  | LrScDiffOk -> LrScDiffOk
+  | Mixed -> Mixed
+  | Unaligned -> Unaligned
+  | DontCheckMixed -> DontCheckMixed
+  | NotWeakPredicated -> NotWeakPredicated
+  | LKMMVersion `lkmmv1 -> LKMMVersion `lkmmv1
+  | LKMMVersion `lkmmv2 -> LKMMVersion `lkmmv2
+  | MemTag -> MemTag
+  | MTEPrecision p -> MTEPrecision p
+  | MTEStoreOnly -> MTEStoreOnly
+  | FaultHandling p -> FaultHandling p 
+  | CutOff -> CutOff
+  | Morello -> Morello
+  | Neon -> Neon
+  | SVE -> SVE
+  | SVELength k ->  SVELength k 
+  | SME -> SME
+  | SMELength k ->  SMELength k 
+  | Deps -> Deps
+  | Instances -> Instances
+  | VMSA -> VMSA
+  | ETS -> ETS
+  | ETS2 -> ETS2
+  | ETS3 -> ETS3
+  | ExS -> ExS
+  | EIS -> EIS
+  | EOS -> EOS
+  | NoPteBranch -> NoPteBranch
+  | PTE2 -> PTE2
+  | PhantomOnLoad -> PhantomOnLoad
+  | OptRfRMW -> OptRfRMW
+  | ConstrainedUnpredictable -> ConstrainedUnpredictable
+  | Exp -> Exp
+  | Ifetch -> Ifetch
+  | DIC -> DIC
+  | IDC -> IDC
+  | CosOpt -> CosOpt
+  | Test -> Test
+  | T n -> T n 
+  | ASL -> ASL
+  | ASL_AArch64 -> ASL_AArch64
+  | ASLVersion `ASLv0 ->  ASLVersion `ASLv0
+  | ASLVersion `ASLv1 -> ASLVersion `ASLv1
+  | S128 -> S128
+  | Strict -> Strict
+  | Warn -> Warn
+  | ASLType `Warn -> ASLType `Warn 
+  | ASLType `Silence ->  ASLType `Silence 
+  | ASLType `TypeCheck -> ASLType `TypeCheck
+  | ASL_AArch64_UDF -> ASL_AArch64_UDF 
+  | Telechat -> Telechat
+  | NV2 -> NV2
+  | OldSolver -> OldSolver
+  | OOTA -> OOTA
+  | Pac -> Pac
+  | ConstPacField -> ConstPacField
+  | FPac -> FPac
+  | D128 -> D128
+
+in 
+  (*Modes of operation*)
+ (List.map f 
+ [ Success;  Instr;  SpecialX0;  NoRMW;  AcqRelAsFence;
+   BackCompat;  FullScDepend;  SplittedRMW; SwitchDepScWrite;
+   SwitchDepScResult; LrScDiffOk; Mixed; Unaligned; DontCheckMixed; NotWeakPredicated;
+   LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
+  CutOff; Morello; Neon;  Deps; Instances; VMSA; 
+  SVE; SVELength 128; SME; SMELength 128;
+  NoPteBranch; PTE2;
+  PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
+  Exp; Ifetch; CosOpt; Test; T 0; ASL;
+  ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1; S128; D128; Strict; Warn;
+  ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
+  Telechat; OldSolver; OOTA; ], 
+  (*Architectural Features*)
+  List.map f 
+  [MemTag; MTEStoreOnly; MTEPrecision Precision.default; FaultHandling  Fault.Handling.default;
+  ETS; ETS2; ETS3; ExS; EIS; EOS;
+  DIC; IDC; NV2;
+  Pac; ConstPacField; FPac])
+
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -244,10 +325,10 @@ let pp = function
   | AcqRelAsFence -> "acqrelasfence"
   | BackCompat ->"backcompat"
   | FullScDepend -> "FullScDepend"
-  | SplittedRMW -> "SplittedRWM"
+  | SplittedRMW -> "SplittedRMW"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | SwitchDepScResult -> "SwitchDepScResult"
-  | LrScDiffOk -> " LrScDiffOk"
+  | LrScDiffOk -> "LrScDiffOk"
   | Mixed -> "mixed"
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
@@ -306,6 +387,111 @@ let pp = function
   | FPac -> "fpac"
   | D128 -> "d128"
 
+  let under_development = true
+  let variant_descriptions = function
+  | Success -> "Riscv Model with explicit success dependency"
+  | Instr -> "Define instr (or same-instance) relation"
+  | SpecialX0 -> ""
+  | NoRMW -> ""
+  | AcqRelAsFence -> ""
+  | BackCompat ->""
+  | FullScDepend -> ""
+  | SplittedRMW -> ""
+  | SwitchDepScWrite -> ""
+  | SwitchDepScResult -> ""
+  | LrScDiffOk -> ""
+  | Mixed -> ""
+  | Unaligned -> ""
+  | DontCheckMixed -> ""
+  | NotWeakPredicated -> ""
+  | LKMMVersion `lkmmv1 -> ""
+  | LKMMVersion `lkmmv2 -> ""
+  | MemTag -> ""
+  | MTEPrecision _ -> ""
+  | MTEStoreOnly -> ""
+  | FaultHandling _-> ""
+  | CutOff -> ""
+  | Morello -> ""
+  | Neon -> ""
+  | SVE -> ""
+  | SVELength _ -> ""
+  | SME -> ""
+  | SMELength _ -> ""
+  | Deps -> ""
+  | Instances -> ""
+  | VMSA -> ""
+  | ETS -> ""
+  | ETS2 -> ""
+  | ETS3 -> ""
+  | ExS -> ""
+  | EIS -> ""
+  | EOS -> ""
+  | NoPteBranch -> ""
+  | PTE2 -> ""
+  | PhantomOnLoad -> ""
+  | OptRfRMW -> ""
+  | ConstrainedUnpredictable -> ""
+  | Exp -> ""
+  | Ifetch -> ""
+  | DIC -> ""
+  | IDC -> ""
+  | CosOpt -> ""
+  | Test -> ""
+  | T _ -> ""
+  | ASL -> ""
+  | ASL_AArch64 -> ""
+  | ASLVersion `ASLv0 -> ""
+  | ASLVersion `ASLv1 -> ""
+  | S128 -> ""
+  | Strict -> ""
+  | Warn -> ""
+  | ASLType `Warn -> ""
+  | ASLType `Silence -> ""
+  | ASLType `TypeCheck -> ""
+  | ASL_AArch64_UDF -> ""
+  | Telechat -> ""
+  | NV2 -> ""
+  | OldSolver -> ""
+  | OOTA -> ""
+  | Pac -> ""
+  | ConstPacField -> ""
+  | FPac -> ""
+  | D128 -> ""
+
+let mode_tags =
+  let normalise_T00 = function
+    | "T00" -> "T[0-9][0-9]"
+    | s -> s in
+      List.map( normalise_T00) (List.map pp mode_variants)
+let arch_tags =
+  List.map pp arch_variants
+
+let mode_help_tags =
+  List.map2
+    (fun variant description ->
+      variant ^ ": " ^ description)
+    mode_tags
+    (List.map variant_descriptions mode_variants)
+
+ let arch_help_tags =
+  List.map2 
+    (fun variant  description ->
+      variant ^ ": " ^ description)
+    arch_tags
+    (List.map variant_descriptions arch_variants)
+
+let help_message tags1 tags2 space =
+   Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
+    \n Architecture Feature tags:\n  %s \n" 
+  (String.concat space tags1) (String.concat space tags2) 
+let variants_help_page =
+  if under_development then
+    help_message mode_tags arch_tags ","
+  else
+    help_message mode_help_tags arch_help_tags "\n  "
+
+
+let tags = mode_tags @ arch_tags
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0
 
