@@ -127,10 +127,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Back _|Leave _ -> true
           | Rmw rmw -> C.A.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->
-              begin match C.E.loc_sd e with
-              | Code.Same -> true
-              | Code.Diff -> false
-              end
+            Code.is_same_loc @@ C.E.loc_sd e
           |Insert _|Store|Node _ -> false
           | Id -> assert false in
         let is_pte_event m =
