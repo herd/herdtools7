@@ -580,9 +580,7 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
     let allsame cy =
       List.for_all
-        (fun e -> match E.loc_sd e with
-        | Same -> true
-        | Diff -> false)
+        (fun e -> Code.is_same_loc @@ E.loc_sd e)
         cy
 
     let family cy =
