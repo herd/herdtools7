@@ -60,4 +60,6 @@ module type S = sig
 (* Typing of pair accesses is different, so check them *)
   val is_pair : atom option -> bool
   val get_machine_feature : atom option -> StringSet.t
+  (* expand and resolve wildcard "*" *)
+  val expand_atom : atom option -> (atom option -> 'a -> 'a) -> 'a -> 'a
 end

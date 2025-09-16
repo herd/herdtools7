@@ -196,6 +196,8 @@ let varatom_dir = match varatom with
         fold_from at
       with Not_found -> no_varatom
 
+let expand_atom atom f acc = f atom acc
+
 let merge_atoms a1 a2 = if a2 = a1 then Some a1 else None
 
 let overlap_atoms _ _ = true
