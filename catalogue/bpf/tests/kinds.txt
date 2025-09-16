@@ -173,3 +173,5 @@ C-LB-LWR+R-A+OB-OB-BPF Forbidden
 Z6.3+fence+fence+acquire Forbidden
 amo-sequence-1 Forbidden
 amo-sequence-2 Forbidden
+successful-cmpxchg-atomicity Forbidden
+xchg-atomicity Forbidden

@@ -86,6 +86,3 @@ acyclic pb as Propagation
 
 (* Atomicity *)
 empty rmw & (fre;coe) as Atomic
-
-(* Atomic fetch as a fence *)
-acyclic po_amo_fetch | com

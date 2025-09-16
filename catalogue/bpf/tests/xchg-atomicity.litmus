@@ -1,0 +1,11 @@
+BPF xchg-atomicity
+(*
+ * Result: Never
+ *)
+{
+ 0:r1=x;
+ 1:r1=x; 1:r2=1;
+}
+ P0                   | P1                       ;
+ *(u64 *)(r1 + 0) = 2 | r2 = xchg_64(r1 + 0, r2) ;
+exists (1:r2=0 /\ [x]=1)

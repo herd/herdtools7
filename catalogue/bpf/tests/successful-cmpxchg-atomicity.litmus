@@ -1,0 +1,11 @@
+BPF successful-cmpxchg-atomicity
+(*
+ * Result: Never
+ *)
+{
+ 0:r1=x;
+ 1:r1=x; 1:r2=1;
+}
+ P0                   | P1                              ;
+ *(u64 *)(r1 + 0) = 2 | r0 = cmpxchg_64(r1 + 0, r0, r2) ;
+exists (1:r0=0 /\ [x]=1)
