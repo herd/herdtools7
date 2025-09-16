@@ -73,7 +73,7 @@ let opts =
        let reducetag = check_tag
      end in
      let module P = ParseTag.MakeS(Opt) in
-   P.parse "-variant" Option.variant "select a variation" end ;
+   P.parse "-variant" Option.variant Variant_litmus.helper_message end ;
    begin let module P = ParseTag.Make(Barrier) in
    P.parse "-barrier" Option.barrier "set type of barriers" end ;
    "-delay", Arg.Int set_delay,
