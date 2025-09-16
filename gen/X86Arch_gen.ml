@@ -55,6 +55,7 @@ let fold_atom f k =  fold_non_mixed f k
 let worth_final _ = true
 
 let varatom_dir _d f = f None
+let expand_atom atom f acc = f atom acc
 
 let atom_to_bank _ = Code.Ord
 

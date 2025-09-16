@@ -728,24 +728,31 @@ let fold_tedges f r =
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
 
-  let expand_dir d f = match d with
-  | Dir _|NoDir -> f d
-  | Irr -> fun k -> f (Dir W) (f (Dir R) k)
+  let expand_dir d f acc = match d with
+  | Dir _|NoDir -> f d acc
+  | Irr -> f (Dir W) (f (Dir R) acc)
 
   let expand_dir2 e1 e2 f =
     expand_dir e1
       (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
 
+  let expand_atom2 a1 a2 f =
+    F.expand_atom a1 ( fun new_a1 ->
+      F.expand_atom a2 ( fun new_a2 ->
+        f new_a1 new_a2 ))
+
   let do_expand_edge e f =
     match e.edge with
-    | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Rmw _|Dp _|Leave _|Back _
-      -> f e
+    | Id -> F.expand_atom e.a1 ( fun a1 -> f {e with a1; a2=a1} )
+    | Insert _|Store|Node _|Rf _ | Fr _ | Ws _
+    | Hat |Rmw _|Dp _|Leave _|Back _ ->
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 -> f {e with a1; a2} )
     | Po(sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Po(sd,d1,d2); a1; a2}))
     | Fenced(fe,sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Fenced(fe,sd,d1,d2);})
-
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Fenced(fe,sd,d1,d2); a1; a2}))
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
@@ -755,8 +762,8 @@ let fold_tedges f r =
           try
             let suf = match suf with
             | [] -> [e]
-            | f::_ ->
-                if can_precede e f then e::suf
+            | hd::_ ->
+                if can_precede e hd then e::suf
                 else raise Exit in
             do_expand_edges es f suf k
           with Exit -> k)
