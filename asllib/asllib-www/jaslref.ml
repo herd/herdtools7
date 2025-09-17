@@ -28,7 +28,7 @@ let run_asl code version exec =
     and _version = Js.to_string version
     and _exec = Js.to_bool exec in
 
-    let argv =
+    let argv : args =
     {
         exec = _exec;
         files =
@@ -59,6 +59,7 @@ let run_asl code version exec =
         use_conflicting_side_effects_extension = false;
         override_mode = Permissive;
         no_primitives = false;
+        no_stdlib = false;
         control_flow_analysis = true;
         allow_empty_structured_type_declarations = false;
         allow_function_like_statements = false;
@@ -72,20 +73,8 @@ let run_asl code version exec =
         Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:_code
     in
 
-    (* Minimal in-memory file-system for the lexer/parser. *)
-    let module WebFS = struct
-      module StringMap = Map.Make (String)
-
-      let files = ref (StringMap.singleton "web-input.asl" _code)
-
-      let find name =
-        match StringMap.find_opt name !files with
-        | Some s -> s
-        | None -> failwith ("File not found: " ^ name)
-    end in
-
     try
-      run_with ~read_file:WebFS.find argv;
+      run_with argv;
       if not _exec then Printf.printf "ASL: type-check completed.\n%!"
     with
     | Asllib.Error.ASLException e ->

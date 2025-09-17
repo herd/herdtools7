@@ -269,13 +269,13 @@ let parse_args () =
     let ensure_exists s =
       if running_in_jsoo then ()
       else if Sys.file_exists s then ()
-      else (
-        Printf.eprintf "%s cannot find file %S\n%!" prog s;
+      else
+        let () = Printf.eprintf "%s cannot find file %S\n%!" prog s in
         (* Arg.usage speclist usage_msg; *)
-        exit 1)
+        exit 1
     in
     List.iter (fun (_, s) -> ensure_exists s) args.files;
-    if not running_in_jsoo then Option.iter ensure_exists args.opn
+    Option.iter ensure_exists args.opn
   in
 
   let () =
@@ -284,7 +284,7 @@ let parse_args () =
         Printf.eprintf
           "No files supplied! Run `aslref --help` for information on usage."
       in
-      exit 1
+      if running_in_jsoo then raise (Exit 1) else exit 1
   in
 
   let () =
@@ -292,48 +292,60 @@ let parse_args () =
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
       in
-      exit 0
+      if running_in_jsoo then raise (Exit 0) else exit 0
   in
   args
 
-let or_exit f =
-  if Printexc.backtrace_status () then f ()
-  else
-    match Error.intercept f () with
-    | Ok res -> res
-    | Error e ->
-        Format.eprintf "%a@." Error.pp_error e;
-        if running_in_jsoo then raise (Exit 1) else exit 1
+let run_with (args : args) : unit =
+  let parser_config =
+    let allow_no_end_semicolon = args.allow_no_end_semicolon in
+    let allow_expression_elsif = args.allow_expression_elsif in
+    let allow_double_underscore = args.allow_double_underscore in
+    let allow_unknown = args.allow_unknown in
+    let allow_storage_discards = args.allow_storage_discards in
+    let allow_hyphenated_pending_constraint =
+      args.allow_hyphenated_pending_constraint
+    in
+    let allow_local_constants = args.allow_local_constants in
+    let allow_single_arrows = args.allow_single_arrows in
+    let allow_empty_structured_type_declarations =
+      args.allow_empty_structured_type_declarations
+    in
+    let allow_function_like_statements = args.allow_function_like_statements in
+    let open Builder in
+    {
+      allow_no_end_semicolon;
+      allow_expression_elsif;
+      allow_double_underscore;
+      allow_unknown;
+      allow_storage_discards;
+      allow_hyphenated_pending_constraint;
+      allow_local_constants;
+      allow_single_arrows;
+      allow_empty_structured_type_declarations;
+      allow_function_like_statements;
+    }
+  in
 
-let make_parser_config (args : args) : Builder.parser_config =
-  {
-    Builder.allow_no_end_semicolon                 = args.allow_no_end_semicolon;
-    Builder.allow_expression_elsif                 = args.allow_expression_elsif;
-    Builder.allow_double_underscore                = args.allow_double_underscore;
-    Builder.allow_unknown                          = args.allow_unknown;
-    Builder.allow_storage_discards                 = args.allow_storage_discards;
-    Builder.allow_hyphenated_pending_constraint    = args.allow_hyphenated_pending_constraint;
-    Builder.allow_local_constants                  = args.allow_local_constants;
-    Builder.allow_single_arrows                    = args.allow_single_arrows;
-    Builder.allow_empty_structured_type_declarations =
-      args.allow_empty_structured_type_declarations;
-    Builder.allow_function_like_statements         = args.allow_function_like_statements;
-  }
-
-let run_with ~(read_file : string -> string) (args : args) : unit =
-  let parser_config = make_parser_config args in
-
-  let parse_string ~filename ~version ~ast_type contents =
-    Builder.from_string ~filename ~ast_string:contents ~parser_config ~ast_type
-      version
+  let or_exit f =
+    if Printexc.backtrace_status () then f ()
+    else
+      match Error.intercept f () with
+      | Ok res -> res
+      | Error e ->
+          let module EP = Error.ErrorPrinter (struct
+            let output_format = args.output_format
+          end) in
+          EP.eprintln e;
+          if running_in_jsoo then raise (Exit 1) else exit 1
   in
 
   let extra_main =
     match args.opn with
     | None -> []
     | Some fname ->
-        let txt = read_file fname in
-        parse_string ~filename:fname ~version:`ASLv1 ~ast_type:`Opn txt
+        or_exit @@ fun () ->
+        Builder.from_file ~ast_type:`Opn ~parser_config `ASLv1 fname
   in
 
   let ast =
@@ -343,11 +355,10 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
         | NormalV0 | PatchV0 -> `ASLv0
         | NormalV1 | PatchV1 -> `ASLv1
       in
-      let txt = read_file fname in
-      let this_ast = parse_string ~filename:fname ~version ~ast_type:`Ast txt in
+      let this_ast = Builder.from_file ~parser_config version fname in
       match ft with
       | NormalV0 | NormalV1 -> List.rev_append this_ast ast
-      | PatchV0  | PatchV1  -> ASTUtils.patch ~src:ast ~patches:this_ast
+      | PatchV1 | PatchV0 -> ASTUtils.patch ~src:ast ~patches:this_ast
     in
     or_exit @@ fun () -> List.fold_right folder args.files []
   in
@@ -356,7 +367,10 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
 
   let () = if args.print_ast then Format.printf "%a@." PP.pp_t ast in
 
-  (* Add stdlib (+ primitives unless disabled). *)
+  let () =
+    if args.print_serialized then print_string (Serialize.t_to_string ast)
+  in
+
   let ast =
     let open Builder in
     let added_stdlib = if args.no_stdlib then ast else with_stdlib ast in
@@ -364,8 +378,10 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
     else with_primitives Native.DeterministicBackend.primitives added_stdlib
   in
 
-  (* CSV header if needed. *)
-  let () = match args.output_format with
+  let () = if false then Format.eprintf "%a@." PP.pp_t ast in
+
+  let () =
+    match args.output_format with
     | Error.CSV ->
         Printf.eprintf
           {|"File","Start line","Start col","End line","End col","Exception label","Exception"
@@ -392,14 +408,10 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
   let module T = Annotate (C) in
   let typed_ast, static_env = or_exit @@ fun () -> T.type_check_ast ast in
 
-  (* Optional pretty-printing of typed AST / Lisp object. *)
-  if args.print_typed then
-    Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t typed_ast ;
-  if args.print_lisp  then
-    let lisp_ast        = Lispobj.of_ast typed_ast
-    and lisp_static_env = Lispobj.of_static_env_global static_env in
-    Lispobj.print_obj Format.std_formatter
-      (Lispobj.Cons (lisp_static_env, lisp_ast));
+  let () =
+    if args.print_typed then
+      Format.printf "@[<v 2>Typed AST:@ %a@]@." PP.pp_t typed_ast
+  in
 
   let () =
     if args.print_lisp then
@@ -430,13 +442,6 @@ let run_with ~(read_file : string -> string) (args : args) : unit =
 let () =
   try
     let args = parse_args () in
-    let read_file filename =
-      let ic = open_in_bin filename in
-      let finally () = close_in_noerr ic in
-      Fun.protect ~finally @@ fun () ->
-        let len = in_channel_length ic in
-        really_input_string ic len
-    in
-    run_with ~read_file args
+    run_with args
   with Exit n ->
     if running_in_jsoo then () else exit n
