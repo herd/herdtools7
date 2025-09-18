@@ -284,7 +284,7 @@ let parse_args () =
         Printf.eprintf
           "No files supplied! Run `aslref --help` for information on usage."
       in
-      if running_in_jsoo then raise (Exit 1) else exit 1
+      raise (Exit 1)
   in
 
   let () =
@@ -292,7 +292,7 @@ let parse_args () =
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
       in
-      if running_in_jsoo then raise (Exit 0) else exit 0
+      raise (Exit 0)
   in
   args
 
@@ -337,7 +337,7 @@ let run_with (args : args) : unit =
             let output_format = args.output_format
           end) in
           EP.eprintln e;
-          if running_in_jsoo then raise (Exit 1) else exit 1
+          raise (Exit 1)
   in
 
   let extra_main =
