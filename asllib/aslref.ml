@@ -443,5 +443,4 @@ let () =
   try
     let args = parse_args () in
     run_with args
-  with Exit n ->
-    if running_in_jsoo then () else exit n
+  with Exit n -> if running_in_jsoo then () else exit n
