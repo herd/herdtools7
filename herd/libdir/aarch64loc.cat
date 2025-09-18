@@ -17,5 +17,5 @@ let scl = loc
   | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
   | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
  
-let va-loc = (tr-ib; same-low-order-bits; tr-ib^-1) & loc
+let va-loc = ([Imp & TTD & R]; tr-ib; same-low-order-bits; tr-ib^-1; [Imp & TTD & R]) & loc
 let po-va-loc = po & va-loc
