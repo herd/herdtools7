@@ -31,6 +31,12 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
+module ASLSymData = struct
+  type t = NoData | Bitvector of { length: int }
+
+  let default = NoData
+end
+
 module ASLConstant =
   SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(ASLBase.Instr)
-module V = SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)
+module V = SymbValue.Make(ASLConstant)(ASLSymData)(ASLOp)
