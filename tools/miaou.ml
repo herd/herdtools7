@@ -328,7 +328,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
              | Pos s -> sprintf "\\Variant{%s}" s
              | Neg s -> sprintf "\\NotVariant{%s}" s)
             a |> String.concat " and ")
-        d |> String.concat "{} or "
+        d |> String.concat " or "
 
     let pp_vc vc = variant_dnf false vc |> pp_dnf
 
