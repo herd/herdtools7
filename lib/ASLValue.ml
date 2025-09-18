@@ -32,4 +32,11 @@
 (******************************************************************************)
 
 module ASLConstant = SymbConstant.Make (ASLScalar) (PteVal.ASL) (AddrReg.ASL) (ASLBase.Instr)
-module V = SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)
+
+module ASLSymData = struct
+  type t = NoData | Bitvector of { length: int }
+
+  let default = NoData
+end
+
+module V = SymbValue.Make(ASLConstant)(ASLSymData)(ASLOp)
