@@ -42,6 +42,13 @@ module Instr =
       and to_exec _ = Warn.fatal "ASLValue.to_exec"
     end)
 
+module ASLSymData = struct
+  type t = NoData | Bitvector of { length: int }
+
+  let default = NoData
+end
+
 module ASLConstant =
   SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(Instr)
-module V = SymbValue.Make(ASLConstant)(SymData.No)(ASLOp)
+
+module V = SymbValue.Make(ASLConstant)(ASLSymData)(ASLOp)
