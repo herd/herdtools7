@@ -27,10 +27,10 @@ jobs:
             with-fmt: false
             job-name: "OCaml v4.08"
             dune-cache: "enabled"
-          - ocaml-version: "ocaml-base-compiler.5.2,dune,zarith,menhir"
+          - ocaml-version: "dune,zarith,menhir"
             with-fmt: true
             dune-cache: "enabled-except-user-rules"
-            job-name: "OCaml v5.2, with formatting check"
+            job-name: "OCaml latest lts"
 
     name: Make test on ${{ matrix.cfg.job-name }}
 
@@ -72,7 +72,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: ocaml-base-compiler.5.2,ocamlformat.0.26.2
+          ocaml-compiler: ocamlformat.0.26.2
           dune-cache: true
 
       - run: opam exec -- dune fmt
