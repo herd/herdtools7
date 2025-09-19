@@ -1,0 +1,11 @@
+AArch64 A028
+(* Checks that the write of the SWPL instruction is release *)
+{
+0:X1=x; 0:X2=y;
+1:X2=y; 1:X1=x;
+}
+ P0           | P1              ;
+ MOV W0,#1    | MOV W0,#2       ;
+ STR W0,[X1]  | SWPL W0,W4,[X2] ;
+ STLR W0,[X2] | LDAR W3,[X1]    ;
+~exists (1:X4=1 /\ 1:X3=0 /\ [y]=2)

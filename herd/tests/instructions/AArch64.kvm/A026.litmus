@@ -1,0 +1,17 @@
+AArch64 A026
+(* Some bitwise operations on PTE's *)
+{
+int x;
+0:X2=(oa:PA(x));
+}
+  P0                 ;
+ MOV  X1,#1          ;
+ BIC X3,X2,X1,LSL 10 ; (* Clear AF *)
+ ORR X4,X3,X1,LSL 10 ; (* Set AF   *)
+ ANDS X5,X4,X1,LSL 6 ; (* Test DB  *)
+ CSET W6,NE          ;
+forall
+   0:X2=(oa:PA(x))
+/\ 0:X3=(oa:PA(x),af:0)
+/\ 0:X4=(oa:PA(x),db:1)
+/\ 0:X6=1
