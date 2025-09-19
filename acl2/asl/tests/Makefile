@@ -58,7 +58,6 @@ ASLSemanticsReference.t/SemanticsRule.EBinopImplExFalso.asl \
 ASLSemanticsReference.t/SemanticsRule.EBinopOrTrue.asl \
 ASLSemanticsReference.t/SemanticsRule.SAssertOk.asl \
 ASLSemanticsReference.t/SemanticsRule.LEDiscard.asl \
-ASLSemanticsReference.t/SemanticsRule.LDDiscard.asl \
 ASLSemanticsReference.t/SemanticsRule.EConcat2.asl \
 ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond2.asl \
@@ -235,6 +234,7 @@ ASLSemanticsReference.t/SemanticsRule.EArbitraryIntegerRange3-42-42.asl \
 ASLSemanticsReference.t/SemanticsRule.SAssertNo.asl \
 ASLSemanticsReference.t/SemanticsRule.ATCVariousErrors.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond3.asl \
+ASLSemanticsReference.t/SemanticsRule.LDDiscard.asl \
 
 
 PASSING_TARGETS := $(patsubst %.asl,%.pass,$(PASSING_TESTS))
@@ -245,7 +245,7 @@ all : $(PASSING_TARGETS)
 FAILING_TARGETS := $(patsubst %.asl,%.pass,$(FAILING_TESTS))
 failing : $(FAILING_TARGETS)
 
-TESTDIR := $(shell cd ../../tests; pwd)
+TESTDIR := $(shell cd ../../../asllib/tests; pwd)
 
 BINDIR := $(shell cd ../bin; pwd)
 

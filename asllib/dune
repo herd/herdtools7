@@ -51,8 +51,6 @@
     --compile-errors
     %{msg}))))
 
-(data_only_dirs acl2)
-
 (rule
  (deps
   (:v1 libdir/stdlib.asl)

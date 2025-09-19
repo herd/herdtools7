@@ -1,5 +1,7 @@
 (dirs :standard \ catalogue carpenter)
 
+(data_only_dirs acl2)
+
 (env
  (release
   (flags

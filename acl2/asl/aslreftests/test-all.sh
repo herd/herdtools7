@@ -11,7 +11,7 @@ rm -rf _build
 rm -rf tests-copy
 
 mkdir -p tests-copy
-cp -rp ../../tests/*.t tests-copy
+cp -rp ../../../asllib/tests/*.t tests-copy
 
 for f in `find tests-copy -name '*.t'`; do
     if [ -f $f ]; then
