@@ -57,8 +57,23 @@ jobs:
 
       - run: opam exec -- make install
 
-      - run: opam install ocamlformat.0.26.2
-        if: ${{ matrix.cfg.with-fmt }}
+  check-fmt:
+    name: check format
+
+    runs-on: ubuntu-latest
+
+    env:
+      DUNE_CACHE: enabled-except-user-rules
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ocaml-base-compiler.5.2,ocamlformat.0.26.2
+          dune-cache: true
 
       - run: opam exec -- dune fmt
-        if: ${{ matrix.cfg.with-fmt }}
+
