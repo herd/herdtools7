@@ -35,10 +35,10 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml .5.2
+      - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 5.2
+          ocaml-compiler: dune,zarith,menhir,conf-which,feat,qcheck,re,logs,cmdliner
           dune-cache: true
 
       - name: Update apt database
