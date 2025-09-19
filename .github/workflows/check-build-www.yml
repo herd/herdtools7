@@ -4,6 +4,9 @@ on:
   workflow_dispatch:
   schedule:     
       - cron: '0 8 * * 0'
+  pull_request:
+    paths:
+      - ".github/workflows/check-build-www.yml"
 
 jobs:
   build:

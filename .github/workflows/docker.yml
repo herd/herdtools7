@@ -6,6 +6,9 @@ on:
         description: 'herdtools7 tag to build'
         required: true
         default: 'master'
+  pull_request:
+    paths:
+      - ".github/workflows/docker.yml"
 
 env:
   REGISTRY: ghcr.io

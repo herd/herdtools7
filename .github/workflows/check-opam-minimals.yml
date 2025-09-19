@@ -5,6 +5,9 @@ on:
   # Schedule every Tuesday, early in the morning
   schedule:
       - cron: '0 2 * * 2'
+  pull_request:
+    paths:
+      - ".github/workflows/check-opam-minimals.yml"
 
 # Copy-pasted from https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency:

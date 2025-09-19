@@ -7,6 +7,9 @@ on:
         description: 'herdtools7 tag to build'
         required: true
         default: 'master'
+  pull_request:
+    paths:
+      - ".github/workflows/static-binaries.yml"
 
 permissions: read-all
 

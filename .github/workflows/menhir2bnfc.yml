@@ -38,7 +38,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: dune,zarith,menhir,conf-which
+          ocaml-compiler: dune,zarith,menhir,conf-which,feat,qcheck,re,logs,cmdliner
           dune-cache: true
 
       - name: Update apt database
