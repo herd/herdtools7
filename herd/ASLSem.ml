@@ -127,7 +127,7 @@ module Make (Conf : Config) = struct
       match Conf.C.unroll with None -> Opts.unroll_default `ASL | Some u -> u
 
     let recursive_unroll = function
-      | "AArch64_S1Translate" when C.variant (Variant.ASL_AArch64) -> Some 1
+      | "AArch64_S1Translate" when variant (Variant.ASL_AArch64) -> Some 1
       | _ -> Some (Opts.unroll_default `ASL)
 
     let error_handling_time = Asllib.Error.Dynamic
