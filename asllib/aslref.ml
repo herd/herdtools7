@@ -421,7 +421,7 @@ let run_with (args : args) : unit =
         (Lispobj.Cons (lisp_static_env, lisp_ast))
   in
 
-  let _, used_rules =
+  let exit_code, used_rules =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       or_exit @@ fun () ->
@@ -437,7 +437,7 @@ let run_with (args : args) : unit =
         (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
-  ()
+  if exit_code != 0 then raise (Exit exit_code)
 
 let () =
   try
