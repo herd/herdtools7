@@ -27,7 +27,7 @@ jobs:
             with-fmt: false
             job-name: "OCaml v4.08"
             dune-cache: "enabled"
-          - ocaml-version: "5.2"
+          - ocaml-version: "ocaml-base-compiler.5.2,dune,zarith,menhir"
             with-fmt: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml v5.2, with formatting check"
@@ -43,7 +43,7 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml ${{ matrix.cfg.ocaml-version }}
+      - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
