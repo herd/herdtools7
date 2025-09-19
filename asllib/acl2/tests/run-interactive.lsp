@@ -32,5 +32,3 @@
       (state (f-put-global ':status status state)))
    (mv status orac state))
  :msg "ASL run: ~st sec, ~sa bytes.~%")
-
-

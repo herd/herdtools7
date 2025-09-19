@@ -109,7 +109,7 @@
          
 
 
-(def-asl-subprogram floorlog2-correct
+(def-asl-subprogram-stdlib floorlog2-correct
   :function "FloorLog2"
   :args (x)
   :hyps (and (< 0 x.val)
@@ -269,7 +269,7 @@
       
 
 
-(def-asl-subprogram ceillog2-correct
+(def-asl-subprogram-stdlib ceillog2-correct
   :function "CeilLog2"
   :args (x)
   :hyps (and (< 0 x.val)

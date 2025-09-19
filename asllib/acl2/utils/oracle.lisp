@@ -146,6 +146,8 @@
        (char-ranges-width (cdr x)))))
 
 (fty::defprod char-spec
+  :parents (orac)
+  :short "Specifies allowed ranges of characters to generate"
   ((width posp
           :reqfix (pos-fix (char-ranges-width ranges))
           :rule-classes :type-prescription)
@@ -170,6 +172,128 @@
   (oracle-xosh-string-len :type (integer 0 *) :initially 10)
   (oracle-xosh-char-spec :type (satisfies char-spec-p) :initially (96 (32 . 128))))
 
+(defxdoc orac
+  :parents (std/stobjs) ;; ???
+  :short "Single-threaded object designed for producing \"nondeterminstic\" values, in
+proofs and testing."
+  :long "<p>Many projects need to model nondeterministic processes. Since ACL2 is a
+language of (deterministic) functions, the only reasonable way to model this is
+using an \"oracle\", an object passed down through the program that, every time
+it is used, provides a new value that nothing can be proved about, including
+correlation with previous values. An example of this is the ACL2 state's oracle
+field, accessed using @(see read-acl2-oracle). Logically, this is some unknown
+object, and every time @('read-acl2-oracle') is called it returns that object's
+@('car') and replaces the oracle field of the state with its @('cdr'), ensuring
+the next object read has no (logical) correlation with any previous
+ones. However, this isn't convenient for testing; the ACL2 oracle can't
+actually be used in execution, and a similar scheme using car/cdr on another
+object would require all the values read to be listed ahead of time.</p>
+
+<p>The @('orac') is a stobj that offers both logical nondeterminism and
+practical execution. In one mode, it produces values about which nothing can be
+proven, for use in reasoning; in another, it produces pseudorandom values
+useful for testing.</p>
+
+<h3>Stobj Structure and Functions</h3>
+
+<p>The stobj is defined as follows:</p>
+
+@(def orac)
+
+<p>The fields are accessed/updated using the default stobj naming convention,
+e.g. @('(oracle-mode orac)') to access and @('(update-oracle-mode val orac)')
+to update. The fields are used as follows:</p>
+
+<ul>
+<li>@('oracle-mode'): controls the mode of operation of the stobj; see the
+@('Modes') section below.</li>
+
+<li>@('oracle-st'): contains the logical state used by the logically
+nondeterministic modes (see the discussion of modes 2 and 3 below).</li>
+
+<li>@('oracle-xosh'): contains the pseudorandom number generator state (a @(see
+xoshiro) stobj) for use in the pseudorandom mode (see the discussion of mode 0
+below).</li>
+
+<li>@('oracle-xosh-int-low'), @('oracle-xosh-int-width') control the bounds of
+pseudorandom generation of unconstrained integers; see the discussion of
+@('orac-read-int') below.</li>
+
+<li>@('oracle-xosh-string-len'), @('oracle-xosh-char-spec') control
+pseudorandom generation of strings; see the discussion of @('orac-read-string')
+below.</li>
+</ul>
+
+<h3>Modes</h3>
+<p>The @('orac') offers four modes of operation, determined by its
+@('oracle-mode') field. The modes are as follows:</p>
+
+<ul>
+
+<li>Mode=0: use pseudorandom values. A sub-stobj of @(see xoshiro) stobj type
+provides pseudorandom numbers generated with the \"xoshiro128++\" pseudo-random
+number generation algorithm, and these pseudorandom numbers are transformed
+into objects of the correct types.</li>
+
+<li>Mode=1: use deterministic values. Produces a constant default value for the
+required type.</li>
+
+<li>Mode=2: Logically nondeterminstic using constrained functions. For each
+read, calls a constrained function that takes one argument and produces two
+return values, whose only constraint is that the first return value is of a
+particular type. The argument given to these functions is the @('oracle-st')
+field of the stobj, and this field is then updated with the second return value
+from the constrained function (of which nothing is known logically). This is a
+more general version of mode 3.</li>
+
+<li>Mode=3: car/cdr style nondeterminism. For each read, the @('car') of the
+@('oracle-st') field is fixed to the necessary type and returned, and the
+@('oracle-st') is replaced with its @('cdr'), similar to the operation of @(see
+read-acl2-oracle). This is a refinement of mode 2, but still sufficient to
+produce any finite sequence of values.</li>
+</ul>
+
+<h3>Read functions</h3>
+
+<p>The following functions read values of the various supported types from the
+@('orac'):</p>
+
+<ul>
+
+<li>@('orac-read'): produces a natural number less than a given limit</li>
+<li>@('orac-read-u32'): produces an unsigned 32-bit number (particularly
+efficient in pseudorandom mode)</li>
+<li>@('orac-read-bits'): produces an unsigned N-bit number</li>
+<li>@('orac-read-int'): produces an unbounded integer (see below for how to
+control the behavior in pseudorandom mode)</li>
+<li>@('orac-read-rational')</li>
+<li>@('orac-read-string')</li>
+</ul>
+
+<h3>Restrictions in pseudorandom mode</h3>
+
+<p>In pseudorandom mode (oracle-mode=0), we can't produce unbounded values for
+@('orac-read-int'), @('orac-read-rational'), and @('orac-read-string'). Stobj
+fields of the stobj control the artificial bounds on these.</p>
+
+<ul>
+
+<li>For @('orac-read-int'), we generate an integer greater than or equal to
+@('oracle-xosh-int-low') and within @('oracle-xosh-int-width'), i.e. less than
+@('oracle-xosh-int-low + oracle-xosh-int-width').</li>
+
+<li>For @('orac-read-rational'), the numerator is generated as in
+@('orac-read-int'), and the denominator is between 1 and
+@('oracle-xosh-int-width') (inclusive).</li>
+
+<li>For @('orac-read-string'), the length of the string is random up to
+@('oracle-xosh-string-len') (inclusive) and each character is constrained by
+@('oracle-xosh-char-spec') (see @(see char-spec)).</li>
+
+</ul>")
+
+(local (xdoc::set-default-parents orac))
+
 
 (define orac-st-read ((limit posp) st)
   :returns (mv (val natp :rule-classes :type-prescription)
@@ -190,6 +314,7 @@
 
 
 (define orac-read ((limit posp) orac)
+  :short "Read a natural number less than @('limit') from the @(see orac)."
   :returns (mv (val natp :rule-classes :type-prescription)
                (new-orac))
   (b* ((limit (mbe :logic (pos-fix limit) :exec limit)))
@@ -215,7 +340,8 @@
     :rule-classes :linear))
 
 (define orac-read-u32 (orac)
-    :returns (mv (val natp :rule-classes :type-prescription)
+  :short "Read a 32-bit unsigned integer from the @(see orac)."
+  :returns (mv (val natp :rule-classes :type-prescription)
                (new-orac))
   (case (oracle-mode orac)
     (0 (stobj-let ((xoshiro (oracle-xosh orac)))
@@ -239,6 +365,7 @@
 
 
 (define orac-read-bits ((nbits natp) orac)
+  :short "Read an unsigned integer of @('nbits') bits from the @(see orac)."
   :returns (mv (val natp :rule-classes :type-prescription)
                (new-orac))
   (case (oracle-mode orac)
@@ -282,6 +409,7 @@
     (mv val new-st)))
 
 (define orac-read-int (orac)
+  :short "Read an unbounded integer from the @(see orac)."
   :returns (mv (val integerp :rule-classes :type-prescription)
                (new-orac))
   (case (oracle-mode orac)
@@ -315,6 +443,7 @@
     (mv val new-st)))
 
 (define orac-read-rational (orac)
+  :short "Read a rational number from the @(see orac)."
   :returns (mv (val rationalp :rule-classes :type-prescription)
                (new-orac))
   (case (oracle-mode orac)
@@ -372,7 +501,8 @@
 (define xoshiro-gen-string ((len natp) (cs char-spec-p) xoshiro)
   :returns (mv (str stringp :rule-classes :type-prescription)
                new-xoshiro)
-  (b* (((mv chars xoshiro) (xoshiro-gen-string-aux len cs xoshiro)))
+  (b* (((mv random-len xoshiro) (xoshiro-gen-range (+ 1 (lnfix len)) xoshiro))
+       ((mv chars xoshiro) (xoshiro-gen-string-aux random-len cs xoshiro)))
     (mv (coerce chars 'string) xoshiro)))
     
 
@@ -388,6 +518,7 @@
     (mv val new-st)))
 
 (define orac-read-string (orac)
+  :short "Read a string from the @(see orac)."
   :returns (mv (val stringp :rule-classes :type-prescription)
                (new-orac))
   (case (oracle-mode orac)

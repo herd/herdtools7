@@ -70,7 +70,7 @@
             :hints(("Goal" :in-theory (enable bitops::part-select-width-low)))))))
 
 
-(def-asl-subprogram uint-correct
+(def-asl-subprogram-stdlib uint-correct
   :function "UInt"
   :params (n)
   :args (val)

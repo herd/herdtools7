@@ -143,7 +143,7 @@
                                             clk))))))))
 
 (local
- (def-asl-subprogram ilog2-correct-lemma
+ (def-asl-subprogram-stdlib ilog2-correct-lemma
    :function "ILog2"
    :args (val)
    :safe-clock (ilog2-safe-clock val.val)
@@ -161,7 +161,7 @@
                          (acl2::ilog2 x)))
          :hints (("goal" :in-theory (enable acl2::ilog2-spec-is-rational-exponent)))))
 
-(def-asl-subprogram ilog2-correct
+(def-asl-subprogram-stdlib ilog2-correct
   :function "ILog2"
   :args (val)
   :safe-clock (ilog2-safe-clock val.val)

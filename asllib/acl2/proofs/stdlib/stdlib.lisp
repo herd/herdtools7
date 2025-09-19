@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -26,14 +26,16 @@
 (include-book "std/util/defconsts" :dir :System)
 
 ; (depends-on "stdlib-ast.lsp")
+; (depends-on "stdlib-prim-ast.lsp")
 (defconsts (*stdlib-static-env* *stdlib-ast* state)
-  (b* (((mv err obj state) (acl2::read-file "stdlib-ast.lsp" state)))
+  (b* (((mv err static-env ast state) (read-ast-file "stdlib-ast.lsp")))
     (and err (er hard? 'static-env err))
-    (and (not (and (consp obj)
-                   (consp (car obj))
-                   (not (cdr obj))))
-         (er hard? 'static-env "Object read should have been a singleton list containing a cons"))
-    (mv (caar obj) (cdar obj) state)))
+    (mv static-env ast state)))
+
+(defconsts (*stdlib-prim-static-env* *stdlib-prim-ast* state)
+  (b* (((mv err static-env ast state) (read-ast-file "stdlib-prim-ast.lsp")))
+    (and err (er hard? 'static-env-prim err))
+    (mv static-env ast state)))
 
 (make-event
 `(define stdlib-static-env ()
@@ -49,3 +51,17 @@
    ///
    (in-theory (disable (stdlib-ast)))))
 
+
+(make-event
+`(define stdlib-prim-static-env ()
+   :returns (static-env static_env_global-p)
+   *stdlib-prim-static-env*
+   ///
+   (in-theory (disable (stdlib-prim-static-env)))))
+
+(make-event
+`(define stdlib-prim-ast ()
+   :returns (ast ast-p)
+   *stdlib-prim-ast*
+   ///
+   (in-theory (disable (stdlib-prim-ast)))))

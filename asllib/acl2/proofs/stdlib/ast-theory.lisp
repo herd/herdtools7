@@ -34,7 +34,7 @@
   (implies (func-ses-imap-p x)
            (alistp x)))
 
-(defthm val-imap-p-of-fal-extract
-  (implies (val-imap-p x)
-           (val-imap-p (acl2::fal-extract keys x)))
-  :hints(("Goal" :in-theory (enable acl2::fal-extract))))
+;; (defthm val-imap-p-of-fal-extract
+;;   (implies (val-imap-p x)
+;;            (val-imap-p (acl2::fal-extract keys x)))
+;;   :hints(("Goal" :in-theory (enable acl2::fal-extract))))

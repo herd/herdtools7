@@ -131,7 +131,7 @@
 
 
 
-(def-asl-subprogram roundtowardszero-correct
+(def-asl-subprogram-stdlib roundtowardszero-correct
   :function "RoundTowardsZero"
   :args (val)
   :safe-clock (+ 1 (ilog2-safe-clock (abs val.val)))
@@ -182,7 +182,7 @@
    (local (in-theory (disable abs)))))
 
 
-(def-asl-subprogram roundup-correct
+(def-asl-subprogram-stdlib roundup-correct
   :function "RoundUp"
   :args (val)
   :safe-clock (+ 2 (ilog2-safe-clock (abs val.val)))
@@ -192,7 +192,7 @@
   :prepwork ((local (in-theory (disable abs)))))
 
 
-(def-asl-subprogram rounddown-correct
+(def-asl-subprogram-stdlib rounddown-correct
   :function "RoundDown"
   :args (val)
   :safe-clock (+ 2 (ilog2-safe-clock (abs val.val)))
