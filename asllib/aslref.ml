@@ -55,6 +55,13 @@ type args = {
   allow_function_like_statements : bool;
 }
 
+exception Exit of int
+
+let running_in_jsoo : bool =
+  match Sys.backend_type with
+  | Sys.Other s when s = "js_of_ocaml" -> true
+  | _ -> false
+
 let parse_args () =
   let show_rules = ref false in
   let target_files = ref [] in
@@ -260,7 +267,8 @@ let parse_args () =
 
   let () =
     let ensure_exists s =
-      if Sys.file_exists s then ()
+      if running_in_jsoo then ()
+      else if Sys.file_exists s then ()
       else
         let () = Printf.eprintf "%s cannot find file %S\n%!" prog s in
         (* Arg.usage speclist usage_msg; *)
@@ -276,7 +284,7 @@ let parse_args () =
         Printf.eprintf
           "No files supplied! Run `aslref --help` for information on usage."
       in
-      exit 1
+      raise (Exit 1)
   in
 
   let () =
@@ -284,13 +292,11 @@ let parse_args () =
       let () =
         Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
       in
-      exit 0
+      raise (Exit 0)
   in
   args
 
-let () =
-  let args = parse_args () in
-
+let run_with (args : args) : unit =
   let parser_config =
     let allow_no_end_semicolon = args.allow_no_end_semicolon in
     let allow_expression_elsif = args.allow_expression_elsif in
@@ -331,7 +337,7 @@ let () =
             let output_format = args.output_format
           end) in
           EP.eprintln e;
-          exit 1
+          raise (Exit 1)
   in
 
   let extra_main =
@@ -431,5 +437,10 @@ let () =
         (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
+  if exit_code != 0 then raise (Exit exit_code)
 
-  exit exit_code
+let () =
+  try
+    let args = parse_args () in
+    run_with args
+  with Exit n -> if running_in_jsoo then () else exit n
