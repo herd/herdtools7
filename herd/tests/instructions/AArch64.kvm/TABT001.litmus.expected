@@ -1,0 +1,10 @@
+Test MLPT001 Allowed
+States 1
+[x]=0;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists ([x]=1)
+Observation MLPT001 Never 0 4
+Hash=10377b667c81a3dedda970b619d9552e
+

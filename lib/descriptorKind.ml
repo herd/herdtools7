@@ -2,7 +2,7 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
 (* Copyright 2021-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
@@ -14,13 +14,18 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** All sorts of accesses, redundant with symbol hidden in location,
-   when symbol is known, which may not be the case *)
+type t = Page | Block | Table
 
-type t = REG | VIR | PHY | PTE | TLB | TAG | PHY_PTE | TTD
+let of_string dt =
+  match dt with
+  | "Page"|"page" -> Page
+  | "Block"|"block" -> Block
+  | "Table"|"table" -> Table
+  | _ -> assert false
 
-val pp : t -> string
+let dtype2string dt =
+  match dt with
+  | Page -> "Page"
+  | Block -> "Block"
+  | Table -> "Table"
 
-val is_physical : t -> bool
-
-val compatible : t -> t -> bool

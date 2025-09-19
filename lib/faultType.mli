@@ -29,6 +29,7 @@ module type AArch64Sig = sig
     | Translation (* valid: 0 *)
     | AccessFlag  (* af: 0 *)
     | Permission  (* db: 0 *)
+    | TLBConflictAbort  (* improper TLB maintenance *)
 
   type t =
     | MMU of mmu_t
