@@ -1,6 +1,10 @@
 name: Build WWW
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/build-www.yml"
 
 jobs:
   build:
@@ -13,7 +17,7 @@ jobs:
       - name: Set-up OCaml 5
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 5
+          ocaml-compiler: dune,zarith,menhir,conf-which,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js
       - run: |
           opam install dune menhir zarith js_of_ocaml js_of_ocaml-ppx zarith_stubs_js
           opam exec -- make Version.ml
