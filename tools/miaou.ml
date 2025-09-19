@@ -400,10 +400,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op (_,(Union|Inter as op),es) ->
          tr_op e1 e2 op es
       | Op (_,(Seq as op),es) ->
-         Next.push () ;
-         let l = List (op,intro op,sep op,tr_seq e1 e2 es) in
-         Next.pop () ;
-         l
+         List (op,intro op,sep op,tr_seq e1 e2 es)
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
@@ -460,7 +457,13 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op1 (_,ToId,e) -> tr_evts_not e1 @@ flatten_if_not e
       | e -> notItem (tr_rel e1 e2 e)
 
-    and tr_op e1 e2 op es = List.map (tr_rel e1 e2) es |> mk_list op
+    and tr_op e1 e2 op es =
+      let f e = match op with
+      | Union ->
+         Next.push (); let t = tr_rel e1 e2 e in Next.pop () ; t
+      | _ ->
+         tr_rel e1 e2 e in
+      List.map f es |> mk_list op
 
     and tr_plus e1 e2 loc = function
       | Var (_,id) ->
