@@ -13,3 +13,4 @@ workxxx*
 *.fasl
 Makefile-tmp
 /bin/
+/manual/

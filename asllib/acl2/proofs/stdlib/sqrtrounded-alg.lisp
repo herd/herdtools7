@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -26,7 +26,7 @@
 (include-book "ilog2-alg")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (include-book "centaur/misc/multiply-out" :dir :System))
+(local (include-book "centaur/misc/multiply-out" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
 (local (in-theory (disable floor mod
                            numerator-/x)))
@@ -63,7 +63,7 @@
                                   (+ mant (expt 2 (- fracbits))))))
                   (and (< (* sqrt-down sqrt-down) x)
                        (< x (* sqrt-up sqrt-up))))))))
-  
+
   ;; Uniqueness argument:
 
   ;; Lemma 1: If x is an N-bit float, and x+delta / x-delta is the inc/decrement
@@ -120,8 +120,8 @@
              (and stable-under-simplificationp
                   '(:nonlinearp t)))
      :rule-classes :linear)
-                   
-   
+
+
    (defthmd sqrt-rounded-correctness-condition-in-terms-of-incr-mant
      (equal (sqrt-rounded-correctness-condition x fracbits sqrt)
             (if (equal x 0)
@@ -161,7 +161,7 @@
                           (< (rational-significand-int x fracbits) (* 2 (expt 2 fracbits)))))
             :hints(("Goal" :in-theory (enable rational-significand-int)))
             :rule-classes :linear))
-   
+
    (local (defthm increment-significand-not-greater-than-next-exponent
             (implies (and (integerp (* (rational-significand x)
                                        (expt 2 fracbits)))
@@ -329,7 +329,7 @@
    ;; (local (defund yy () (if (and (rationalp (y)) (< 0 (y)))
    ;;                          (y)
    ;;                        1)))
-   
+
    (local (defthmd y-in-terms-of-rational-significand
             (implies (and (syntaxp (and (or (equal y 'y)
                                             (equal y 'x))
@@ -349,7 +349,7 @@
 
 
    (local (in-theory (disable incr-mant)))
-   
+
    (defthm incr-mant-minus1-none-between
      (implies (and (rationalp x)
                    ;; (< 0 x)
@@ -399,7 +399,7 @@
                             (* 2 (expt 2 (rational-exponent x)))))
             :hints (("goal" :use ((:instance exponents-add (r 2) (i 1) (j (rational-exponent x))))
                      :in-theory (disable exponents-add)))))
-                              
+
    (defthm incr-mant-plus1-none-between
      (implies (and (rationalp x)
                    (< 0 x)
@@ -442,7 +442,7 @@
      :otf-flg t)
 
 
-   
+
 
    (local (defthmd mod-1-of-nonneg-exponent
             (implies (natp n)
@@ -458,7 +458,7 @@
    (local (defthm equal-times-2-mod
             (implies (equal (* 2 (mod x 1)) 1)
                      (equal (mod x 1) 1/2))))
-   
+
    (defthm low-bit-of-incr-mant-minus1
      (implies (and (rationalp x)
                    (< 0 x)
@@ -485,8 +485,8 @@
 
 
 (defsection sqrt-rounded-unique
-  
-  
+
+
   (local (defthm exact-square-root-unique
            (implies (and (rationalp sqrt1)
                          (<= 0 sqrt1)
@@ -506,23 +506,23 @@
                     (equal (mod x y)
                            (* y (mod (/ x y) 1))))
            :hints(("Goal" :in-theory (enable mod rfix)))))
-  
+
   (local (defthm mod-1-of-nonpos-exp
            (implies (and (integerp e)
                          (<= e 0))
                     (equal (mod 1 (expt 2 e)) 0))
            :hints(("Goal" :in-theory (enable mod-divide-out)))))
-  
+
   (local (defthm mod-1-of-expt-fracbits-minus-1
            (implies (posp fracbits)
                     (equal (mod 1 (expt 2 (+ 1 (- fracbits))))
                            0))))
-  
+
   (local (in-theory (disable incr-mant-plus1-none-between
                              incr-mant-minus1-none-between)))
 
   (local (defstub foo () nil))
-  
+
   (local
    (defthm sqrt-rounded-correctness-condition-unique-one-direction
      (implies (and (rationalp x)
@@ -584,7 +584,7 @@
                     (rationalp sqrt))
            :hints(("Goal" :in-theory (enable sqrt-rounded-correctness-condition)))
            :rule-classes :forward-chaining))
-  
+
   (defthm sqrt-rounded-correctness-condition-unique
     (implies (and (rationalp x)
                   (<= 0 x)
@@ -611,7 +611,7 @@
 ;;         if (root + prec) ^ 2 <= frac then
 ;;             root = root + prec;
 ;;         end;
-;;     end;          
+;;     end;
 (define sqrtrounded-loop ((frac rationalp)
                           (root rationalp)
                           (prec rationalp)
@@ -640,18 +640,18 @@
                   (< 0 prec))
              (< 0 new-root))
     :rule-classes :type-prescription)
-  
+
   (defret <fn>-prec-nonzero
     (implies (and (rationalp prec)
                   (not (equal prec 0)))
              (not (equal new-prec 0)))
     :rule-classes :type-prescription)
-  
+
   ;; (defret <fn>-prec-result
   ;;   (implies (and (integerp n) (integerp fracbits))
   ;;            (equal new-prec
   ;;                   (* prec (expt 2 (nfix (- fracbits n)))))))
-    
+
   (defret sqrtrounded-loop-in-range
     (implies (and (rationalp frac)
                   (< 0 frac)
@@ -668,7 +668,7 @@
                   (< frac (* (+ new-root new-prec)
                              (+ new-root new-prec)))))
     :rule-classes :linear)
-  
+
   (defret <fn>-precision
     (implies (and (integerp n)
                   (integerp fracbits)
@@ -681,7 +681,7 @@
 
 
   (local (in-theory (disable (force))))
-  
+
   (local
    (defret <fn>-root-mod-prec-lemma
      (implies (and (rationalp root)
@@ -752,7 +752,7 @@
                                (:instance ilog2-correct (value x)))
                   :expand ((expt 2 (+ 1 (ilog2 x))))
                   :in-theory (disable exponents-add)))))
-  
+
 
 
 (define sqrtrounded-normalize ((value rationalp))
@@ -801,7 +801,7 @@
     :hints(("Goal" :use <fn>-correct
             :in-theory (disable <fn> <fn>-correct)))))
 
-(local (defthm rational-significand-of-in-range 
+(local (defthm rational-significand-of-in-range
          (implies (and (rationalp x)
                        (<= 1 x)
                        (< x 2))
@@ -854,14 +854,14 @@
            (implies (and (integerp x)
                          (integerp y))
                     (integerp (+ x y)))))
-  
+
   (defret <fn>-significant-bits
     (implies (and (rationalp frac)
                   (posp fracbits))
              (integerp (* (expt 2 fracbits) root)))
     :hints(("Goal" :in-theory (enable exponents-add-unrestricted)
             :do-not-induct t)))
-  
+
   (defret <fn>-rounded-to-odd
     (implies (and (rationalp frac)
                   (<= 1 frac)
@@ -967,7 +967,7 @@
           ;;         if (root + prec) ^ 2 <= frac then
           ;;             root = root + prec;
           ;;         end;
-          ;;     end;          
+          ;;     end;
           (mv-let (root prec)
             (sqrtrounded-loop frac root prec n fracbits)
             ;;     // prec == 2^(1-fracbits)
@@ -991,7 +991,7 @@
                                0
                              (mv-let (frac exp)
                                (sqrtrounded-normalize value)
-                               
+
                                (let* ((root (sqrtrounded-root frac fracbits)))
                                  (* (expt 2 (/ exp 2)) root))))))
            :hints(("Goal" :in-theory (enable sqrtrounded-normalize
@@ -999,7 +999,7 @@
                                              exponents-add-unrestricted)))))
 
   (local (in-theory (disable sqrtrounded)))
-  
+
 
   ;; (local (defthm rational-significand-factor-out-expt
   ;;          (implies (and (rationalp x)
@@ -1052,7 +1052,7 @@
   ;;                   :in-theory (disable rational-exponent-of-expt-2-prod)))))
 
   (local (include-book "centaur/misc/collect-like-terms" :dir :system))
-  
+
   (local (defthm expt-2-half-squared
            (implies (integerp (* 1/2 n))
                     (equal (* (expt 2 (* 1/2 n))
@@ -1072,7 +1072,7 @@
                            (* (expt 2 n) z)))
            :hints (("goal" :use expt-2-half-squared
                     :in-theory (disable expt-2-half-squared)))))
-  
+
 
   ;; (local (defthm linear-lemma
   ;;          (implies (and (rationalp x)
@@ -1093,7 +1093,7 @@
                     (< 1 (* 2 x y)))
            :hints (("goal" :nonlinearp t))
            :rule-classes :linear))
-  
+
   (defthm sqrtrounded-correct
     (implies (and (rationalp value)
                   (<= 0 value)
@@ -1107,4 +1107,3 @@
                                      collect-like-terms)
                   :use ((:instance sqrtrounded-root-is-in-range
                          (frac (mv-nth 0 (sqrtrounded-normalize value))))))))))
-

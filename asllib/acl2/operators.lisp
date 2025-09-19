@@ -30,7 +30,7 @@
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 (local (in-theory (disable (tau-system) unsigned-byte-p)))
-
+(local (std::add-default-post-define-hook :fix))
 (def-eval_result val_result-p val-p)
 
 (fty::def-enumcase binop-case binop-p)
@@ -104,9 +104,9 @@
      (val-case v1)
      (val-case v2))
     ;; int -> int -> int
-    ((:plus :v_int :v_int)       (ev_normal (v_int (+ v1.val v2.val))))
+    ((:add :v_int :v_int)       (ev_normal (v_int (+ v1.val v2.val))))
     ((:mul  :v_int :v_int)       (ev_normal (v_int (* v1.val v2.val))))
-    ((:minus :v_int :v_int)      (ev_normal (v_int (- v1.val v2.val))))
+    ((:sub :v_int :v_int)      (ev_normal (v_int (- v1.val v2.val))))
     ((:div   :v_int :v_int)
      :when (and (< 0 v2.val)
                 (eql (mod v1.val v2.val) 0))
@@ -122,26 +122,26 @@
     ((:shr   :v_int :v_int)      
      :when (<= 0 v2.val)         (ev_normal (v_int (ash v1.val (- v2.val)))))
     ;; int -> int -> bool        
-    ((:eq_op :v_int :v_int)      (ev_normal (v_bool (eql v1.val v2.val))))
-    ((:neq   :v_int :v_int)      (ev_normal (v_bool (not (eql v1.val v2.val)))))
-    ((:leq   :v_int :v_int)      (ev_normal (v_bool (<= v1.val v2.val))))
+    ((:eq :v_int :v_int)      (ev_normal (v_bool (eql v1.val v2.val))))
+    ((:ne   :v_int :v_int)      (ev_normal (v_bool (not (eql v1.val v2.val)))))
+    ((:le   :v_int :v_int)      (ev_normal (v_bool (<= v1.val v2.val))))
     ((:lt    :v_int :v_int)      (ev_normal (v_bool (<  v1.val v2.val))))
-    ((:geq   :v_int :v_int)      (ev_normal (v_bool (>= v1.val v2.val))))
+    ((:ge   :v_int :v_int)      (ev_normal (v_bool (>= v1.val v2.val))))
     ((:gt    :v_int :v_int)      (ev_normal (v_bool (>  v1.val v2.val))))
     ;; bool -> bool -> bool      
     ((:band  :v_bool :v_bool)    (ev_normal (v_bool (and v1.val v2.val))))
     ((:bor  :v_bool :v_bool)     (ev_normal (v_bool (or  v1.val v2.val))))
     ((:beq  :v_bool :v_bool)     (ev_normal (v_bool (iff v1.val v2.val))))
     ((:impl :v_bool :v_bool)     (ev_normal (v_bool (or (not v1.val) v2.val))))
-    ((:eq_op :v_bool :v_bool)    (ev_normal (v_bool (iff v1.val v2.val))))
-    ((:neq   :v_bool :v_bool)    (ev_normal (v_bool (xor v1.val v2.val))))
+    ((:eq :v_bool :v_bool)    (ev_normal (v_bool (iff v1.val v2.val))))
+    ((:ne   :v_bool :v_bool)    (ev_normal (v_bool (xor v1.val v2.val))))
     ;; int -> real -> real,  real -> int -> real
     ((:mul :v_int :v_real)       (ev_normal (v_real (* v1.val v2.val))))
     ((:mul :v_real :v_int)       (ev_normal (v_real (* v1.val v2.val))))
     ;; real -> real -> real      
-    ((:plus :v_real :v_real)     (ev_normal (v_real (+ v1.val v2.val))))
+    ((:add :v_real :v_real)     (ev_normal (v_real (+ v1.val v2.val))))
     ((:mul  :v_real :v_real)     (ev_normal (v_real (* v1.val v2.val))))
-    ((:minus :v_real :v_real)    (ev_normal (v_real (- v1.val v2.val))))
+    ((:sub :v_real :v_real)    (ev_normal (v_real (- v1.val v2.val))))
     ((:rdiv :v_real :v_real)
      :when (not (eql v2.val 0))
                                  (ev_normal (v_real (/ v1.val v2.val))))
@@ -149,16 +149,16 @@
      :when (not (and (eql v1.val 0) (< v2.val 0)))
                                  (ev_normal (v_real (expt v1.val v2.val))))
     ;; real -> real -> bool      
-    ((:eq_op :v_real :v_real)    (ev_normal (v_bool (eql v1.val v2.val))))
-    ((:neq   :v_real :v_real)    (ev_normal (v_bool (not (eql v1.val v2.val)))))
-    ((:leq   :v_real :v_real)    (ev_normal (v_bool (<= v1.val v2.val))))
+    ((:eq :v_real :v_real)    (ev_normal (v_bool (eql v1.val v2.val))))
+    ((:ne   :v_real :v_real)    (ev_normal (v_bool (not (eql v1.val v2.val)))))
+    ((:le   :v_real :v_real)    (ev_normal (v_bool (<= v1.val v2.val))))
     ((:lt    :v_real :v_real)    (ev_normal (v_bool (<  v1.val v2.val))))
-    ((:geq   :v_real :v_real)    (ev_normal (v_bool (>= v1.val v2.val))))
+    ((:ge   :v_real :v_real)    (ev_normal (v_bool (>= v1.val v2.val))))
     ((:gt    :v_real :v_real)    (ev_normal (v_bool (>  v1.val v2.val))))
     ;; bits -> bits -> bool
-    ((:eq_op :v_bitvector :v_bitvector)
+    ((:eq :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bool (eql v1.val v2.val))))
-    ((:neq :v_bitvector :v_bitvector)
+    ((:ne :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bool (not (eql v1.val v2.val)))))
     ;; bits -> bits -> bits
     ((:or  :v_bitvector :v_bitvector)
@@ -167,35 +167,37 @@
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector v1.len (logand v1.val v2.val))))
     ((:xor :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector v1.len (logxor v1.val v2.val))))
-    ((:plus :v_bitvector :v_bitvector)
+    ((:add :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector* v1.len
                                                            (+ v1.val v2.val))))
-    ((:minus :v_bitvector :v_bitvector)
+    ((:sub :v_bitvector :v_bitvector)
      :when (eql v1.len v2.len)    (ev_normal (v_bitvector* v1.len
                                                            (- v1.val v2.val))))
-    ((:concat :v_bitvector :v_bitvector)
+    ((:bv_concat :v_bitvector :v_bitvector)
                                   (ev_normal (v_bitvector (+ v1.len v2.len)
                                                           ;; FIXME check order?
                                                           (logapp v2.len v2.val v1.val))))
     ;; bits -> integer -> bits
-    ((:plus :v_bitvector :v_int)  (ev_normal (v_bitvector* v1.len
+    ((:add :v_bitvector :v_int)  (ev_normal (v_bitvector* v1.len
                                                            (+ v1.val v2.val))))
-    ((:minus :v_bitvector :v_int) (ev_normal (v_bitvector* v1.len
+    ((:sub :v_bitvector :v_int) (ev_normal (v_bitvector* v1.len
                                                            (- v1.val v2.val))))
     ;; string -> string -> bool
-    ((:eq_op :v_string :v_string) (ev_normal (v_bool (equal v1.val v2.val))))
-    ((:neq   :v_string :v_string) (ev_normal (v_bool (not (equal v1.val v2.val)))))
+    ((:eq :v_string :v_string) (ev_normal (v_bool (equal v1.val v2.val))))
+    ((:ne   :v_string :v_string) (ev_normal (v_bool (not (equal v1.val v2.val)))))
 
     ;; * -> * -> string
-    ((:concat - -)                 (ev_normal (v_string (concatenate 'string
+    ((:str_concat - -)                 (ev_normal (v_string (concatenate 'string
                                                                      (val-to-string v1)
                                                                      (val-to-string v2)))))
     
     ;; enum -> enum -> bool
-    ((:eq_op :v_label :v_label)   (ev_normal (v_bool (equal v1.val v2.val))))
-    ((:neq   :v_label :v_label)   (ev_normal (v_bool (not (equal v1.val v2.val)))))
+    ((:eq :v_label :v_label)   (ev_normal (v_bool (equal v1.val v2.val))))
+    ((:ne   :v_label :v_label)   (ev_normal (v_bool (not (equal v1.val v2.val)))))
     ;;  Failure
-    (-                            (ev_error "Unsupported binop" (list op v1 v2) nil))))
+    (-                            (ev_error "Unsupported binop" (list (binop-fix op)
+                                                                      (val-fix v1)
+                                                                      (val-fix v2)) nil))))
 
 
 (fty::def-enumcase unop-case unop-p)
@@ -211,6 +213,7 @@
     ((:neg :v_real)      (ev_normal (v_real (- v.val))))
     ((:bnot :v_bool)     (ev_normal (v_bool (not v.val))))
     ((:not :v_bitvector) (ev_normal (v_bitvector* v.len (lognot v.val))))
-    (-                   (ev_error "bad unop" (list op v) nil))))
+    (-                   (ev_error "bad unop" (list (unop-fix op)
+                                                    (val-fix v)) nil))))
 
 

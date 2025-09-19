@@ -35,7 +35,7 @@
 
 
 
-(def-asl-subprogram sint-correct
+(def-asl-subprogram-stdlib sint-correct
   :function "SInt"
   :params (n)
   :args (x)

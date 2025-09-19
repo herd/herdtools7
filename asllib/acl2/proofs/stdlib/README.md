@@ -29,10 +29,10 @@ Understanding What Is Proved
 ----------------------------
 
 The theorems about the stdlib functions are generated via a macro named
-`def-asl-subprogram`. For example:
+`def-asl-subprogram-stdlib`. For example:
 
 ```
-(def-asl-subprogram LowestSetBitNZ-correct
+(def-asl-subprogram-stdlib LowestSetBitNZ-correct
   :function "LowestSetBitNZ"
   :params (n)
   :args (x)
@@ -42,7 +42,7 @@ The theorems about the stdlib functions are generated via a macro named
 ```
 
 The above form generates an ACL2 `defthm` command, that is, a request
-to ACL2 to prove a theorem. The `def-asl-subprogram` form can be read
+to ACL2 to prove a theorem. The `def-asl-subprogram-stdlib` form can be read
 as follows to get a general understanding of what the theorem says:
 
 > The theorem `LowestSetBitNZ-correct` says that if the ASL function
@@ -76,26 +76,27 @@ which prints the following (line numbers added for our reference):
 6.               '("LowestSetBitNZ" "Zeros-1" "IsZero" "LowestSetBit")
 7.               (GLOBAL-ENV->STATIC (ENV->GLOBAL ENV))
 8.               (STDLIB-STATIC-ENV))
-9.          (EQUAL (VAL-KIND N) :V_INT)
-10.         (EQUAL (VAL-KIND X) :V_BITVECTOR)
-11.         (EQUAL X.LEN N.VAL)
-12.         (<= 2 (IFIX CLK)))
-13.        (LET*
-14.         ((RES
-15.             (MV-NTH 0
-16.                     (EVAL_SUBPROGRAM ENV "LowestSetBitNZ" (LIST N)
-17.                                      (LIST X))))
+9.          T
+10.         (EQUAL (VAL-KIND N) :V_INT)
+11.         (EQUAL (VAL-KIND X) :V_BITVECTOR)
+12.         (EQUAL X.LEN N.VAL)
+13.         (<= 2 (IFIX CLK)))
+14.        (B*
+15.         (((MV RES NEW-ORAC)
+16.            (EVAL_SUBPROGRAM ENV "LowestSetBitNZ" (LIST N)
+17.                             (LIST X)))
 18.          (SPEC
 19.           (EV_NORMAL
 20.               (FUNC_RESULT
 21.                    (LIST (V_INT (BITOPS::TRAILING-0-COUNT X.VAL)))
 22.                    (ENV->GLOBAL ENV)))))
-23.         (AND (IMPLIES (EQUAL X.VAL 0)
-24.                       (EQUAL (EVAL_RESULT-KIND RES)
-25.                              :EV_ERROR))
-26.              (IMPLIES (NOT (EQUAL X.VAL 0))
-27.                       (EQUAL RES SPEC))))))
-28.      :HINTS ...)
+23.         (AND (EQUAL NEW-ORAC ORAC)
+24.              (AND (IMPLIES (EQUAL X.VAL 0)
+25.                            (EQUAL (EVAL_RESULT-KIND RES)
+26.                                   :EV_ERROR))
+27.                   (IMPLIES (NOT (EQUAL X.VAL 0))
+28.                            (EQUAL RES SPEC)))))))
+29.      :HINTS ...)
 ```
 
 Line by line:
@@ -108,27 +109,27 @@ Line by line:
    and three supporting functions that match the definitions stored in
    `(stdlib-static-env)`, i.e., the static env resulting from parsing
    and typechecking an empty program
-9. `n` is an integer value (required, as with the following two
+10. `n` is an integer value (required, as with the following two
     hypotheses, by the type signature of LowestSetBitNZ)
-10. `x` is a bitvector value
-11. The length of bitvector `x` equals the value of integer `n`
-12. The interpreter's global recursion limit `clk` (an invisible
+11. `x` is a bitvector value
+12. The length of bitvector `x` equals the value of integer `n`
+13. The interpreter's global recursion limit `clk` (an invisible
     argument to `eval_subprogram`) is at least 2
-13. Bindings for the conclusion:
-14. Bind `res` to the first (`(mv-nth 0 ...)`) value returned from
+14. Bindings for the conclusion:
+15. Bind `res` and `new-orac` to the respective values returned from
     `eval_subprogram` of `LowestSetBitNZ` with parameters `n` and
     arguments `x`
 18. Bind `spec` to the expected result: a normal evaluation pairing a
     single return value, an integer value containing the
     `trailing-0-count` of x's value, with the unchanged global
     environment
-23. If the value of `x` is 0, then the subprogram produces an error.
-16. Otherwise, the result `res` equals the expected result `spec`.
+24. If the value of `x` is 0, then the subprogram produces an error.
+27. Otherwise, the result `res` equals the expected result `spec`.
 
 Notes about this:
  * The environment here is a free variable, and all we assume about it
    is that the listed subprogram definitions match those from the
-   parsed constant static environment from an empty program.   
+   parsed constant static environment from an empty program.
  * `n` and `x` are of a type `val` that is essentially our choice of
    representation for ASLRef's "native value". Its type definition is
    in "asllib/acl2/interp-types.lisp". It is a sum-of-products type;
@@ -162,7 +163,7 @@ In the example above, what is the specification function,
 `LowestSetBitNZ` is supposed to be? Ideally, people familiar with the
 intentions behind the ASL stdlib definitions should review these
 specifications and determine whether they are right. In this case, it
-has two facts in its favor: (1) it was developed independently and for
+has three facts in its favor: (1) it was developed independently and for
 general purposes, not just as a spec for an ASL function, (2) it has a
 straightforward, readable recursive definition, and (3) it makes sense
 to the author of these proofs as a spec for this function. The more
