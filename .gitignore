@@ -23,3 +23,4 @@ asllib/doc/*.synctex.gz
 asllib/doc/*.toc
 asllib/doc/*.fls
 asllib/doc/*.fdb_latexmk
+asllib/doc/generated_elements.tex

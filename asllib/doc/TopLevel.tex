@@ -35,7 +35,7 @@ The relation
     \begin{array}{cc}
         (\overname{\tint}{\vret} \times \overname{\XGraphs}{\vg})   & \cup\\
         \{\ \LexicalErrorConfig, \ParseErrorConfig, \BuildErrorConfig\ \}    & \cup\\
-        \overname{\TTypeError}{\TypeErrorConfig}    & \cup\\
+        \overname{\typeerror}{\TypeErrorConfig}    & \cup\\
         \overname{\TDynError}{\DynErrorConfig}      & \cup\\
         \overname{\TDiverging}{\DivergingConfig} &
     \end{array}
@@ -265,8 +265,8 @@ yielding the subprogram description $\vnewf$.
 \hypertarget{def-renamelocalsargs}{}
 The helper function
 \[
-\renamelocalsargs(\overname{(\identifier\times\ty)^*}{\args}) \aslto
-\overname{(\identifier\times\ty)^*}{\newargs}
+\renamelocalsargs(\overname{(\Identifier\times\ty)^*}{\args}) \aslto
+\overname{(\Identifier\times\ty)^*}{\newargs}
 \]
 renames the local storage elements appearing in the list of arguments
 $\args$, yielding the list of arguments $\newargs$.
@@ -311,8 +311,8 @@ $\args$, yielding the list of arguments $\newargs$.
 \hypertarget{def-renamelocalsnamedargs}{}
 The helper function
 \[
-\renamelocalsnamedargs(\overname{(\identifier\times\langle\ty\rangle)^*}{\params}) \aslto
-\overname{(\identifier\times\langle\ty\rangle)^*}{\newparams}
+\renamelocalsnamedargs(\overname{(\Identifier\times\langle\ty\rangle)^*}{\params}) \aslto
+\overname{(\Identifier\times\langle\ty\rangle)^*}{\newparams}
 \]
 renames the local storage elements appearing in the list of parameters $\params$,
 yielding the list of parameters $\newparams$.
@@ -425,7 +425,7 @@ yielding the type $\newty$.
   {
   \begin{array}{c}
     \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TEnum, \TNamed\}\ \lor\\
-    (\tty = \TInt(\vc) \land \astlabel(\vc) \in \{\unconstrained, \pendingconstrained\})
+    (\tty = \TInt(\vc) \land \astlabel(\vc) \in \{\Unconstrained, \PendingConstrained\})
   \end{array}
   }
 }{
@@ -437,8 +437,8 @@ yielding the type $\newty$.
 \inferrule[t\_int\_parameterized]{}{
   {
   \begin{array}{r}
-  \renamelocalsty(\overname{\TInt(\parameterized(\paramname))}{\tty}) \astarrow\\
-  \TInt(\parameterized(\renamelocalsname(\paramname)))
+  \renamelocalsty(\overname{\TInt(\Parameterized(\paramname))}{\tty}) \astarrow\\
+  \TInt(\Parameterized(\renamelocalsname(\paramname)))
   \end{array}
   }
 }
@@ -448,7 +448,7 @@ yielding the type $\newty$.
 \inferrule[t\_int\_wellconstrained]{
   \newcs \eqdef [\vc\in \vcs: \renamelocalsconstraint(\vcs)]
 }{
-  \renamelocalsty(\overname{\TInt(\wellconstrained(\vcs))}{\tty}) \astarrow \overname{\TInt(\wellconstrained(\newcs))}{\newty}
+  \renamelocalsty(\overname{\TInt(\WellConstrained(\vcs))}{\tty}) \astarrow \overname{\TInt(\WellConstrained(\newcs))}{\newty}
 }
 \end{mathpar}
 
@@ -1413,7 +1413,7 @@ yielding $\vnewslice$.
 \hypertarget{def-renamelocalsname}{}
 The helper function
 \[
-\renamelocalsname(\overname{\identifier}{\name}) \aslto \overname{\identifier}{\newname}
+\renamelocalsname(\overname{\Identifier}{\name}) \aslto \overname{\Identifier}{\newname}
 \]
 renames the local identifier $\name$,
 yielding the identifier $\newname$.

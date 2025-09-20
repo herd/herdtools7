@@ -27,17 +27,37 @@ A \symbolicallyevaluable{} expression is compatible with symbolic reduction and 
 
 We now define configurations used to determine whether expressions are \pure{} and \readonly{} by the side effect analysis, as explained below.
 These are known as \purities{}.
-\hypertarget{def-tpurity}{}
-\hypertarget{def-sepure}{}
-\hypertarget{def-sereadonly}{}
-\hypertarget{def-seimpure}{}
+
+% BEGIN_GENERATED_ELEMENT(TPurity)
+\hypertarget{type-TPurity}{}
+\begin{flalign*}
+\TPurity \triangleq\ & \{\SEPure, \SEReadonly, \SEImpure\}
+\end{flalign*}
+% END_GENERATED_ELEMENT
+
+\BackupOriginalType{
 \[
 \TPurity \triangleq \{ \SEPure,\; \SEReadonly,\; \SEImpure \}
 \]
+}
 \begin{description}
-    \item[$\SEPure$] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
-    \item[$\SEReadonly$] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
-    \item[$\SEImpure$] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
+    \item[
+    % BEGIN_GENERATED_ELEMENT(SE_Pure)
+\hypertarget{constant-SEPure}{} $\SEPure$
+    % END_GENERATED_ELEMENT
+] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
+
+\item[
+  % BEGIN_GENERATED_ELEMENT(SE_Readonly)
+\hypertarget{constant-SEReadonly}{} $\SEReadonly$
+  % END_GENERATED_ELEMENT
+] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
+
+\item[
+  % BEGIN_GENERATED_ELEMENT(SE_Impure)
+\hypertarget{constant-SEImpure}{} $\SEImpure$
+  % END_GENERATED_ELEMENT
+] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
 \end{description}
 
 Formally, \purities{} are totally ordered via $\purityless$ as follows:
@@ -58,25 +78,33 @@ f \puritygeq f' \triangleq \lnot(f \purityless f') \enspace.
 \hypertarget{def-sideeffectdescriptorterm}{}
 We now define \sideeffectdescriptorsterm,
 which are configurations used to describe side effects, as explained below:
-\hypertarget{def-tsideeffect}{}
-\hypertarget{def-localeffect}{}
+% BEGIN_GENERATED_ELEMENT(TSideEffect)
+\hypertarget{type-TSideEffect}{}\hypertarget{type-LocalEffect}{}
+\begin{flalign*}
+\TSideEffect \triangleq\ & \LocalEffect(\overtext{\TPurity}{purity})\hypertarget{type-GlobalEffect}{}\\
+\cup\ & \GlobalEffect(\overtext{\TPurity}{purity})\hypertarget{type-Immutability}{}\\
+\cup\ & \Immutability(\overtext{\Bool}{immutable})
+\end{flalign*}
+% END_GENERATED_ELEMENT
+
+\BackupOriginalType{
 \[
 \TSideEffect \triangleq \left\lbrace
 \begin{array}{ll}
-    \LocalEffect(\overname{\TPurity}{\vp}) & \cup
-    \hypertarget{def-globaleffect}{} \\
-    \GlobalEffect(\overname{\TPurity}{\vp}) & \cup
-    \hypertarget{def-immutability}{} \\
+    \LocalEffect(\overname{\TPurity}{\vp}) & \cup \\
+    \GlobalEffect(\overname{\TPurity}{\vp}) & \cup \\
     \Immutability(\overname{\Bool}{\vimmutable}) &
 \end{array} \right.
 \]
-\hypertarget{def-localeffectterm}{}
+}
+
+\hypertarget{def-term-LocalEffect}{}
 \begin{description}
-    \item[$\LocalEffect$] a \LocalEffectTerm\ describes an evaluation of a construct whose minimum \purity{} for local reads/writes is $\vp$.
-    \hypertarget{def-globaleffectterm}{}
-    \item[$\GlobalEffect$] a \GlobalEffectTerm\ describes an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vp$.
-    \hypertarget{def-immutabilityterm}{}
-    \item[$\Immutability$] an \ImmutabilityTerm\ describes an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
+    \item[$\LocalEffect$] a \LocalEffectTerm{} describes an evaluation of a construct whose minimum \purity{} for local reads/writes is $\vp$.
+    \hypertarget{def-term-GlobalEffect}{}
+    \item[$\GlobalEffect$] a \GlobalEffectTerm{} describes an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vp$.
+    \hypertarget{def-term-Immutability}{}
+    \item[$\Immutability$] an \ImmutabilityTerm{} describes an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
 \end{description}
 
 We now define a few helper functions over \sideeffectdescriptorsterm.
@@ -305,7 +333,7 @@ is \symbolicallyevaluable.
 The function
 \[
   \checksymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
-  \{\True\} \cup \TTypeError
+  \{\True\} \cup \typeerror
 \]
 returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluable.
 \ProseOtherwiseTypeError

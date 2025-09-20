@@ -53,7 +53,7 @@ and types that must be declared and named are grammatically derived from $\Ntyde
 The function
 \[
   \annotatetype(\overname{\Bool}{\vdecl} \aslsep \overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty})
-  \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto (\overname{\ty}{\newty} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 typechecks a type $\tty$ in a \staticenvironmentterm{} $\tenv$,
 resulting in a \typedast\ $\newty$ and a \sideeffectsetterm\ $\vses$.
@@ -65,7 +65,7 @@ and makes a difference only when $\tty$ is an \enumerationtypeterm{} or a \struc
   However, the dynamic semantics of types is given by their \emph{domain of values},
   which is defined in \secref{DomainOfValuesForTypes}.
   In addition, the dynamic semantics of an \atcexpressionterm{}
-  checks whether a \nativevalue{} belongs to the domain of values of a given type
+  checks whether a \nativevalueterm{} belongs to the domain of values of a given type
   (see \SemanticsRuleRef{ATC} and \SemanticsRuleRef{IsValOfType}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,17 +212,19 @@ is a parameterized integer type, \underline{not} an unconstrained integer type.
 \subsection{Abstract Syntax\label{sec:IntegerTypesAST}}
 \begin{flalign*}
 \ty \derives\ & \TInt(\constraintkind)\\
-\constraintkind \derives\ & \unconstrained
-& \\
-|\ & \wellconstrained(\intconstraint^{+})
-& \\
-|\ & \pendingconstrained{}
-& \\
-|\ & \parameterized(\overtext{\identifier}{parameter}) &\\
-\intconstraint \derives\ & \ConstraintExact(\expr)
-& \\
-|\ & \ConstraintRange(\overtext{\expr}{start}, \overtext{\expr}{end})&
 \end{flalign*}
+
+% BEGIN_GENERATED_ELEMENT(constraint_kind, int_constraint)[remove_hypertargets]
+\begin{flalign*}
+\constraintkind \derives\ & \Unconstrained\\
+|\ & \WellConstrained(\overtext{\KleenePlus{\intconstraint}}{constraints})\\
+|\ & \Parameterized(\overtext{\Identifier}{parameter name})\\
+|\ & \PendingConstrained
+\\
+\intconstraint \derives\ & \ConstraintExact(\overtext{\expr}{subexpression})\\
+|\ & \ConstraintRange(\overtext{\expr}{start expression}, \overtext{\expr}{end expression})
+\end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{Ty.TInt}
 \begin{mathpar}
@@ -254,7 +256,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[unconstrained]{}{
   \buildconstraintkindopt(\Nconstraintkindopt(\emptysentence)) \astarrow
-  \overname{\unconstrained}{\vastnode}
+  \overname{\Unconstrained}{\vastnode}
 }
 \end{mathpar}
 
@@ -273,7 +275,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   {
     \begin{array}{r}
   \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\cs}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
-  \overname{\wellconstrained(\vcsasts)}{\vastnode}
+  \overname{\WellConstrained(\vcsasts)}{\vastnode}
     \end{array}
   }
 }
@@ -282,7 +284,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[pending\_constrained]{}{
   \buildconstraintkind(\Nconstraintkind(\Tlbrace, \Trbrace)) \astarrow
-  \overname{\pendingconstrained}{\vastnode}
+  \overname{\PendingConstrained}{\vastnode}
 }
 \end{mathpar}
 
@@ -330,15 +332,15 @@ We use the following helper predicates to classify integer types:
 Those are defined as follows:
 \[
   \begin{array}{rcl}
-  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\unconstrained\\
-  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\parameterized\\
-  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\wellconstrained\\
+  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\Unconstrained\\
+  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\Parameterized\\
+  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\WellConstrained\\
 \end{array}
 \]
 \identd{ZTPP} \identr{WJYH} \identr{HJPN} \identr{CZTX} \identr{TPHR}
 
 \hypertarget{def-unconstrainedinteger}{}
-We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\unconstrained)$
+We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\Unconstrained)$
 for unconstrained integers.
 
 \RequirementDef{ConstraintSymbolicallyConstrained}
@@ -401,7 +403,7 @@ correspond to \CaseName{pending\_constrained}.
 \inferrule[pending\_constrained]{}{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\pendingconstrained)}{\tty}) \typearrow
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\PendingConstrained)}{\tty}) \typearrow
   \TypeErrorVal{\UnexpectedType}
     \end{array}
   }
@@ -417,8 +419,8 @@ correspond to \CaseName{pending\_constrained}.
 }{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\wellconstrained(\constraints))}{\tty}) \typearrow \\
-  (\overname{\TInt(\wellconstrained(\newconstraints, \PrecisionFull))}{\newty}, \vses)
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\WellConstrained(\constraints))}{\tty}) \typearrow \\
+  (\overname{\TInt(\WellConstrained(\newconstraints, \PrecisionFull))}{\newty}, \vses)
     \end{array}
   }
 }
@@ -426,7 +428,7 @@ correspond to \CaseName{pending\_constrained}.
 
 \begin{mathpar}
 \inferrule[parameterized]{
-  \tty \eqname \TInt(\parameterized(\name))\\
+  \tty \eqname \TInt(\Parameterized(\name))\\
   \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \vses)
@@ -449,7 +451,7 @@ The function
 \begin{array}{r}
 \annotateconstraint(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc})
 \aslto (\overname{\intconstraint}{\newc} \times \overname{\TSideEffectSet}{\vses})\ \cup \\
-\overname{\TTypeError}{\TypeErrorConfig}
+\overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates an integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$ yielding the annotated
@@ -1036,7 +1038,7 @@ where an enumeration is used outside of a type definition.
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\ty \derives\ & \TEnum(\overtext{\identifier^{*}}{labels}) &
+\ty \derives\ & \TEnum(\overtext{\Identifier^{*}}{labels}) &
 \end{flalign*}
 
 \ASTRuleDef{TyDecl.TEnum}
@@ -1133,8 +1135,13 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \subsection{Abstract Syntax}
 \begin{flalign*}
 \ty \derives\ & \TArray(\arrayindex, \ty) &\\
-\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
 \end{flalign*}
+
+% BEGIN_GENERATED_ELEMENT(array_index)[remove_hypertargets]
+\begin{flalign*}
+\arrayindex \derives\ & \ArrayLengthExpr(\overtext{\expr}{length})
+\end{flalign*}
+% END_GENERATED_ELEMENT
 
 \ASTRuleDef{Ty.TArray}
 \begin{mathpar}
@@ -1223,7 +1230,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 The function
 \[
 \getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\langle (\overname{\identifier}{\vx}, \overname{\identifier^+}{\vlabels})\rangle
+\langle (\overname{\Identifier}{\vx}, \overname{\Identifier^+}{\vlabels})\rangle
 \]
 tests whether the expression $\ve$ represents a variable of an \enumerationtypeterm{}.
 If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
@@ -1317,7 +1324,7 @@ The function
 \[
 \begin{array}{r}
   \annotatesymbolicallyevaluableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \\
-  (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+  (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the expression $\ve$ in the \staticenvironmentterm{} $\tenv$ and checks that it is \symbolicallyevaluable,
@@ -1353,7 +1360,7 @@ expressions and classifies them as either \symbolicallyevaluable{} or not.
 The function
 \[
   \checkunderlyinginteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-  \{\True\} \cup \TTypeError
+  \{\True\} \cup \typeerror
 \]
 returns $\True$ is $\vt$ is has the \underlyingtype{} of an \integertypeterm{}.
 \ProseOtherwiseTypeError
@@ -1406,7 +1413,7 @@ is ill-typed, since the field \verb|v| repeats.
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\ty \derives\ & \TRecord(\Field^{*}) &
+\ty \derives\ & \TRecord(\field^{*}) &
 \end{flalign*}
 
 \ASTRuleDef{TyDecl.TRecord}
@@ -1469,7 +1476,7 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\ty \derives\ & \TException(\Field^{*}) &
+\ty \derives\ & \TException(\field^{*}) &
 \end{flalign*}
 
 \ASTRuleDef{TyDecl.TException}
@@ -1502,7 +1509,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-  \ty \derives\ & \TCollection(\Field^{*}) &
+  \ty \derives\ & \TCollection(\field^{*}) &
 \end{flalign*}
 
 \ASTRuleDef{TyDecl.TCollection}
@@ -1592,7 +1599,7 @@ due to an assignment between two different named types (\verb|Char| and \verb|By
 
 \subsection{Abstract Syntax}
 \begin{flalign*}
-\ty \derives\ & \TNamed(\overtext{\identifier}{type name}) &
+\ty \derives\ & \TNamed(\overtext{\Identifier}{type name}) &
 \end{flalign*}
 
 \ASTRuleDef{Ty.TNamed}

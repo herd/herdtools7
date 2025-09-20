@@ -1,0 +1,13 @@
+(executable
+ (public_name aslspec)
+ (name main)
+ (flags
+  (:standard -w -40-42-44-48))
+ (libraries str)
+ (optional))
+
+(ocamllex SpecLexer)
+
+(menhir
+ (modules SpecParser)
+ (flags --unused-tokens --explain))

@@ -1,0 +1,3 @@
+# Some basic tests
+  $ aslspec hello.spec
+  $ aslspec type_name.bad
