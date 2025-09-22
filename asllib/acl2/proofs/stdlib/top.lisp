@@ -33,7 +33,7 @@
 (include-book "sqrtrounded")
 (include-book "uint")
 (include-book "shift")
-
+(include-book "no-trace")
 
 ;; Make sure there's a theorem for every stdlib function.
 
@@ -48,5 +48,5 @@
   (cw "## COMPLETION CHECK FAILED                            ##~%")
   (cw "## A routine has been added or removed to/from stdlib.##~%")
   (cw "## Proofs need adjustments                            ##~%")
-  (cw "########################################################")) 
+  (cw "########################################################"))
   )

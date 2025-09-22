@@ -29,51 +29,51 @@
 
 (local (in-theory (disable (tau-system))))
 
-(def-asl-subprogram abs-real-correct
+(def-asl-subprogram-stdlib abs-real-correct
   :function "Abs"
   :args (val)
   :return-values ((v_real (abs val.val))))
 
-(def-asl-subprogram abs-int-correct
+(def-asl-subprogram-stdlib abs-int-correct
   :function "Abs-1"
   :args (val)
   :return-values ((v_int (abs val.val))))
 
 (local (in-theory (disable rfix)))
 
-(def-asl-subprogram min-real-correct
+(def-asl-subprogram-stdlib min-real-correct
   :function "Min"
   :args (a b)
   :return-values ((v_real (min a.val b.val))))
 
-(def-asl-subprogram min-int-correct
+(def-asl-subprogram-stdlib min-int-correct
   :function "Min-1"
   :args (a b)
   :return-values ((v_int (min a.val b.val))))
 
-(def-asl-subprogram max-real-correct
+(def-asl-subprogram-stdlib max-real-correct
   :function "Max"
   :args (a b)
   :return-values ((v_real (max a.val b.val))))
 
-(def-asl-subprogram max-int-correct
+(def-asl-subprogram-stdlib max-int-correct
   :function "Max-1"
   :args (a b)
   :return-values ((v_int (max a.val b.val))))
 
 
-(def-asl-subprogram iseven-correct
+(def-asl-subprogram-stdlib iseven-correct
   :function "IsEven"
   :args (a)
   :return-values ((v_bool (evenp a.val))))
 
 
-(def-asl-subprogram isodd-correct
+(def-asl-subprogram-stdlib isodd-correct
   :function "IsOdd"
   :args (a)
   :return-values ((v_bool (oddp a.val))))
 
-(def-asl-subprogram real-correct
+(def-asl-subprogram-stdlib real-correct
   :function "Real"
   :args (a)
   :return-values ((v_real a.val)))
@@ -86,13 +86,13 @@
                   (equal (nfix x) (ifix x)))
          :hints(("Goal" :in-theory (enable nfix ifix)))))
 
-(def-asl-subprogram zeros-1-correct
+(def-asl-subprogram-stdlib zeros-1-correct
   :function "Zeros-1"
   :params (n)
   :hyps (<= 0 n.val)
   :return-values ((v_bitvector n.val 0)))
 
-(def-asl-subprogram zeros-correct
+(def-asl-subprogram-stdlib zeros-correct
   :function "Zeros"
   :params (n)
   :args (n)
@@ -110,62 +110,62 @@
          :hints(("Goal" :in-theory (acl2::enable* bitops::ihsext-inductions
                                                   bitops::ihsext-recursive-redefs)))))
 
-(def-asl-subprogram ones-1-correct
+(def-asl-subprogram-stdlib ones-1-correct
   :function "Ones-1"
   :params (n)
   :hyps (<= 0 n.val)
   :return-values ((v_bitvector n.val -1)))
 
-(def-asl-subprogram ones-correct
+(def-asl-subprogram-stdlib ones-correct
   :function "Ones"
   :params (n)
   :args (n)
   :hyps (<= 0 n.val)
   :return-values ((v_bitvector n.val -1)))
 
-(def-asl-subprogram replicatebit-1-correct
+(def-asl-subprogram-stdlib replicatebit-1-correct
   :function "ReplicateBit-1"
   :params (n)
   :args (b)
   :hyps (<= 0 n.val)
   :return-values ((v_bitvector n.val (if b.val 0 -1))))
 
-(def-asl-subprogram replicatebit-correct
+(def-asl-subprogram-stdlib replicatebit-correct
   :function "ReplicateBit"
   :params (n)
   :args (b n)
   :hyps (<= 0 n.val)
   :return-values ((v_bitvector n.val (if b.val 0 -1))))
 
-(def-asl-subprogram len-correct
+(def-asl-subprogram-stdlib len-correct
   :function "Len"
   :params (n)
   :args (v)
   :hyps (<= 0 n.val)
   :return-values ((v_int n.val)))
 
-(def-asl-subprogram iszero-correct
+(def-asl-subprogram-stdlib iszero-correct
   :function "IsZero"
   :params (n)
   :args (v)
   :return-values ((v_bool (equal v.val 0))))
 
 
-(def-asl-subprogram isones-correct
+(def-asl-subprogram-stdlib isones-correct
   :function "IsOnes"
   :params (n)
   :args (v)
   :return-values ((v_bool (equal v.val (logmask n.val)))))
 
 
-(def-asl-subprogram zeroextend-1-correct
+(def-asl-subprogram-stdlib zeroextend-1-correct
   :function "ZeroExtend-1"
   :params (n m)
   :args (v)
   :hyps (<= m.val n.val)
   :return-values ((v_bitvector n.val v.val)))
 
-(def-asl-subprogram zeroextend-correct
+(def-asl-subprogram-stdlib zeroextend-correct
   :function "ZeroExtend"
   :params (n m)
   :args (v n)

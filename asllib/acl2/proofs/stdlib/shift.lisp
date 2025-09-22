@@ -62,7 +62,7 @@
                   (equal (loghead n x) 0))
          :hints(("Goal" :in-theory (enable bitops::loghead**)))))
 
-(def-asl-subprogram LSL-correct
+(def-asl-subprogram-stdlib LSL-correct
   :function "LSL"
   :params (n)
   :args (x shift)
@@ -70,7 +70,7 @@
   :return-values ((v_bitvector n.val (ash x.val shift.val)))
   :enable (bitops::loghead-of-ash))
 
-(def-asl-subprogram LSL_C-correct
+(def-asl-subprogram-stdlib LSL_C-correct
   :function "LSL_C"
   :params (n)
   :args (x shift)
@@ -88,7 +88,7 @@
                   :in-theory (disable v_bitvector-requirements
                                       acl2::logtail-identity)))))
 
-(def-asl-subprogram LSR-correct
+(def-asl-subprogram-stdlib LSR-correct
   :function "LSR"
   :params (n)
   :args (x shift)
@@ -112,7 +112,7 @@
                   :in-theory (disable v_bitvector-requirements
                                       bitops::logbitp-of-loghead-out-of-bounds)))))
 
-(def-asl-subprogram LSR_C-correct
+(def-asl-subprogram-stdlib LSR_C-correct
   :function "LSR_C"
   :params (n)
   :args (x shift)
@@ -123,7 +123,7 @@
 
 
 
-(def-asl-subprogram ASR-correct
+(def-asl-subprogram-stdlib ASR-correct
   :function "ASR"
   :params (n)
   :args (x shift)
@@ -134,7 +134,7 @@
            logext
            bitops::logtail-of-logapp-split))
 
-(def-asl-subprogram ASR_C-correct
+(def-asl-subprogram-stdlib ASR_C-correct
   :function "ASR_C"
   :params (n)
   :args (x shift)
@@ -146,7 +146,7 @@
 
 
 
-(def-asl-subprogram ROR-correct
+(def-asl-subprogram-stdlib ROR-correct
   :function "ROR"
   :params (n)
   :args (x shift)
@@ -183,7 +183,7 @@
                                       (loghead shift-mod-n x)))))
             :hints(("Goal" :in-theory (enable rotate-right)))))))
 
-(def-asl-subprogram ROR_C-correct
+(def-asl-subprogram-stdlib ROR_C-correct
   :function "ROR_C"
   :params (n)
   :args (x shift)
@@ -206,7 +206,7 @@
          :hints((bitops::logbitp-reasoning))))
 
 
-(def-asl-subprogram ROL-correct
+(def-asl-subprogram-stdlib ROL-correct
   :function "ROL"
   :params (n)
   :args (x shift)
@@ -214,7 +214,7 @@
              (<= 0 shift.val))
   :return-values ((v_bitvector n.val (bitops::rotate-left x.val n.val shift.val))))
 
-(def-asl-subprogram ROL_C-correct
+(def-asl-subprogram-stdlib ROL_C-correct
   :function "ROL_C"
   :params (n)
   :args (x shift)

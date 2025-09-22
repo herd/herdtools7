@@ -37,7 +37,7 @@
 
 
 
-(def-asl-subprogram aligndownsize-1-correct
+(def-asl-subprogram-stdlib aligndownsize-1-correct
   :function "AlignDownSize-1"
   :args (x size)
   :hyps (and (<= 0 x.val)
@@ -56,7 +56,7 @@
          :hints(("Goal" :in-theory (enable floor ceiling)))))
 
 
-(def-asl-subprogram alignupsize-1-correct
+(def-asl-subprogram-stdlib alignupsize-1-correct
   :function "AlignUpSize-1"
   :args (x size)
   :hyps (and (<= 0 x.val) (< 0 size.val))
@@ -87,7 +87,7 @@
          :hints(("Goal" :in-theory (enable expt)))
          :rule-classes :type-prescription))
 
-(def-asl-subprogram aligndownp2-1-correct
+(def-asl-subprogram-stdlib aligndownp2-1-correct
   :function "AlignDownP2-1"
   :args (x p2)
   :hyps (and (<= 0 x.val) (<= 0 p2.val))
@@ -95,7 +95,7 @@
                             (floor x.val (expt 2 p2.val))))))
 
 
-(def-asl-subprogram alignupp2-1-correct
+(def-asl-subprogram-stdlib alignupp2-1-correct
   :function "AlignUpP2-1"
   :args (x p2)
   :hyps (and (<= 0 x.val) (<= 0 p2.val))
@@ -120,7 +120,7 @@
                                (x (ifix x))))))
          :rule-classes :type-prescription))
 
-(def-asl-subprogram aligndown-correct
+(def-asl-subprogram-stdlib aligndown-correct
   :function "AlignDown"
   :params (n)
   :args (x y)
@@ -159,7 +159,7 @@
     :hints (("goal" :use ((:instance loghead-of-plus-loghead-lemma (c 0))))))))
 
 
-(def-asl-subprogram alignup-correct
+(def-asl-subprogram-stdlib alignup-correct
   :function "AlignUp"
   :params (n)
   :args (x y)
@@ -169,7 +169,7 @@
                                  (ash (+ 1 (logtail y.val x.val)) y.val))))
   :enable (bitops::loghead-of-ash))
 
-(def-asl-subprogram aligndownsize-correct
+(def-asl-subprogram-stdlib aligndownsize-correct
   :function "AlignDownSize"
   :params (n)
   :args (x size)
@@ -178,7 +178,7 @@
                                   (floor x.val size.val)))))
 
 
-(def-asl-subprogram alignupsize-correct
+(def-asl-subprogram-stdlib alignupsize-correct
   :function "AlignUpSize"
   :params (n)
   :args (x size)
@@ -206,7 +206,7 @@
                          (logtail n x)))
          :hints(("Goal" :in-theory (enable logtail)))))
 
-(def-asl-subprogram aligndownp2-correct
+(def-asl-subprogram-stdlib aligndownp2-correct
   :function "AlignDownP2"
   :params (n)
   :args (x p2)
@@ -226,7 +226,7 @@
 
 
 
-(def-asl-subprogram alignupp2-correct
+(def-asl-subprogram-stdlib alignupp2-correct
   :function "AlignUpP2"
   :params (n)
   :args (x p2)
@@ -340,26 +340,26 @@
 
 
 
-(def-asl-subprogram isalignedsize-1-correct
+(def-asl-subprogram-stdlib isalignedsize-1-correct
   :function "IsAlignedSize-1"
   :args (x size)
   :hyps (< 0 size.val)
   :return-values ((v_bool (eql (mod x.val size.val) 0))))
 
-(def-asl-subprogram isalignedsize-correct
+(def-asl-subprogram-stdlib isalignedsize-correct
   :function "IsAlignedSize"
   :params (n)
   :args (x size)
   :hyps (< 0 size.val)
   :return-values ((v_bool (eql (mod x.val size.val) 0))))
 
-(def-asl-subprogram isalignedp2-1-correct
+(def-asl-subprogram-stdlib isalignedp2-1-correct
   :function "IsAlignedP2-1"
   :args (x p2)
   :hyps (<= 0 p2.val)
   :return-values ((v_bool (eql (mod x.val (expt 2 p2.val)) 0))))
 
-(def-asl-subprogram isalignedp2-correct
+(def-asl-subprogram-stdlib isalignedp2-correct
   :function "IsAlignedP2"
   :params (n)
   :args (x p2)

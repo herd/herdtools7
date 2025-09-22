@@ -95,7 +95,7 @@
                                            acl2::rational-exponent-recursive)))
          :rule-classes :type-prescription))
 
-(def-asl-subprogram floorpow2-correct
+(def-asl-subprogram-stdlib floorpow2-correct
   :function "FloorPow2"
   :args (x)
   :safe-clock (+ 1 (acl2::rational-exponent x.val))
@@ -106,7 +106,7 @@
 
 
 
-(def-asl-subprogram ceilpow2-correct
+(def-asl-subprogram-stdlib ceilpow2-correct
   :function "CeilPow2"
   :args (x)
   :safe-clock (+ 2 (acl2::rational-exponent (1- x.val)))
@@ -116,7 +116,7 @@
   :enable (acl2::ceil-pow-2))
 
 
-(def-asl-subprogram ispow2-correct
+(def-asl-subprogram-stdlib ispow2-correct
   :function "IsPow2"
   :args (x)
   :safe-clock (+ 3 (acl2::rational-exponent x.val))
