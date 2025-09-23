@@ -151,7 +151,8 @@ and continue cpt (p1, p2) lexer_state tok =
   let () = if false && _dbg then Format.eprintf "%s@ " (toks tok) in
   loop lexer_state (p1, p2) @@ I.offer cpt (tok, p1, p2)
 
-(** Alternative entry-point for this module. This one take directly a repeatableLexer. *)
+(** Alternative entry-point for this module. This one take directly a
+    repeatableLexer. *)
 let parse_repeatable parse lexer_state lexbuf : AST.t =
   if _dbg then Format.eprintf "@[<v 4>Starting parsing...@ @[<hov 4>";
   let first_checkpoint = parse lexbuf.lex_curr_p in

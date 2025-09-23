@@ -260,7 +260,8 @@ let test_write_slice () =
         Format.(
           eprintf
             "@[<hv 4>Writing %a to positions @[<h>[%a]@]@ into %a@ gave %a@;\
-             <1 4>(%a was expected).@]@." BV.pp_t src
+             <1 4>(%a was expected).@]@."
+            BV.pp_t src
             (pp_print_list ~pp_sep:pp_print_space pp_print_int)
             positions BV.pp_t dst BV.pp_t result BV.pp_t expected)
     in

@@ -744,7 +744,10 @@ module Typed (C : Config.S) = struct
       in
       IMap.fold folder env.StaticEnv.global.declared_types []
       |> protected_oneofl
-    and t_array = None (* TODO *) in
+    and t_array =
+      None
+      (* TODO *)
+    in
     let ty' =
       fix @@ fun ty (is_decl, env, max, n) ->
       let () = if _dbg then Printf.eprintf "Generating ty of size %d\n%!" n in

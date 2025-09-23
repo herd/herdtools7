@@ -64,7 +64,8 @@ val desc : 'a annotated -> 'a
 (** [desc v] is [v.desc] *)
 
 val add_dummy_annotation : ?version:version -> 'a -> 'a annotated
-(** Add a dummy annotation to a value. The default version is [default_version]. *)
+(** Add a dummy annotation to a value. The default version is [default_version].
+*)
 
 val dummy_annotated : unit annotated
 (** A dummy annotation *)
@@ -77,14 +78,14 @@ val to_pos : 'a annotated -> unit annotated
 
 val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
 (** [add_pos_from_pos_of (__POS_OF__ e)] is [annotated s s' e] where [s] and
-      [s'] correspond to [e]'s position in the ocaml file. *)
+    [s'] correspond to [e]'s position in the ocaml file. *)
 
 val add_pos_from : 'a annotated -> 'b -> 'b annotated
 (** [add_pos_from loc v] is [v] with the location data from [loc]. *)
 
 val add_pos_range_from : 'a annotated -> 'a annotated -> 'b -> 'b annotated
-(** [add_pos_range_from loc_from loc_to v] is [v] with the location data
-    given by the range of locations starting at [loc_from] and ending to [loc_to]. *)
+(** [add_pos_range_from loc_from loc_to v] is [v] with the location data given
+    by the range of locations starting at [loc_from] and ending to [loc_to]. *)
 
 val add_pos_from_st : 'a annotated -> 'a -> 'a annotated
 (** [add_pos_from_st a' a] is [a] with the location from [a'].
@@ -230,13 +231,16 @@ val string_starts_with : prefix:string -> string -> bool
 (** A copy of String.starts_with out of stdlib 4.12 *)
 
 val is_global_ignored : identifier -> bool
-(** [is_global_ignored s] is true iff [s] has been created with [global_ignored ()]. *)
+(** [is_global_ignored s] is true iff [s] has been created with
+    [global_ignored ()]. *)
 
 val is_local_ignored : identifier -> bool
-(** [is_local_ignored s] is true iff [s] has been created with [local_ignored ()]. *)
+(** [is_local_ignored s] is true iff [s] has been created with
+    [local_ignored ()]. *)
 
 val is_noreturn : func -> bool
-(** [is_noreturn f] is true iff [f] was declared with the [noreturn] qualifier. *)
+(** [is_noreturn f] is true iff [f] was declared with the [noreturn] qualifier.
+*)
 
 (** {1 Fields, masks and slices handling} *)
 
@@ -247,8 +251,8 @@ val inv_mask : string -> string
 (** Flip all the 0/1 in the mask. Doesn't change the 'x'. *)
 
 val slices_to_positions : ('a -> int) -> ('a * 'a) list -> int list
-(** [slices_to_positions as_int slices] evaluates [slices] and returns a list
-    of all queried positions in the correct order. *)
+(** [slices_to_positions as_int slices] evaluates [slices] and returns a list of
+    all queried positions in the correct order. *)
 
 val canonical_fields : (string * 'a) list -> (string * 'a) list
 (** Sorts the fields of a record to allow an element wise comparison. *)
@@ -260,8 +264,8 @@ val bitfield_get_slices : bitfield -> slice list
 (** Returns the slices corresponding to this bitfield. *)
 
 val bitfield_get_nested : bitfield -> bitfield list
-(** Returns the list of bitfields listed in the given bitfield and an empty list if
-    it is not a nested bitfield. *)
+(** Returns the list of bitfields listed in the given bitfield and an empty list
+    if it is not a nested bitfield. *)
 
 val find_bitfield_opt : string -> bitfield list -> bitfield option
 (** [bitfield_find_opt name bfs] is [Some (bf)] if there exists [bf] in [bfs]
@@ -284,8 +288,7 @@ end
 (** {1 Equality helpers}
 
     Most of those take a [cmp_expr] argument that is the static analyser
-    expression comparison.
-*)
+    expression comparison. *)
 
 val expr_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val literal_equal : literal -> literal -> bool
@@ -315,18 +318,17 @@ val slice_is_single : slice -> bool
 val slice_as_single : slice -> expr
 
 val patch : src:AST.t -> patches:AST.t -> AST.t
-(** [patch ~src ~patches] replaces in [src] the global identifiers defined by [patches]. *)
+(** [patch ~src ~patches] replaces in [src] the global identifiers defined by
+    [patches]. *)
 
 val subst_expr : (identifier * expr) list -> expr -> expr
 (** [subst_expr substs e] replaces the variables used inside [e] by their
     associated expression in [substs], if any.
 
     Warning: constants and statically-evaluated parts are not changed, for
-    example:
-      [E_Slice (E_Var "y", [Slice_Single (E_Var "y")])]
-    will become after [subst_expr [("y", E_Var "x")]]:
-      [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])]
-*)
+    example: [E_Slice (E_Var "y", [Slice_Single (E_Var "y")])] will become after
+    [subst_expr [("y", E_Var "x")]]:
+    [E_Slice (E_Var "x", [Slice_Single (E_Var "y")])] *)
 
 val rename_locals : (identifier -> identifier) -> AST.t -> AST.t
 (** [rename_locals f ast] is [ast] where all instances of variables [x] are
@@ -368,10 +370,8 @@ val list_flat_cross : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
     [f ai bj] in a non-specified order. *)
 
 val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
-(** [list_concat_map f l] gives the same result as
-    [List.concat (List.map f l)]. Tail-recursive.
-    Taken from stdlib 4.10.
-*)
+(** [list_concat_map f l] gives the same result as [List.concat (List.map f l)].
+    Tail-recursive. Taken from stdlib 4.10. *)
 
 val list_fold_lefti : (int -> 'acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
 (** Same as [List.fold_left] but takes a index. *)
@@ -382,13 +382,13 @@ val list_fold_left_map :
     accumulator through calls to [f]. Taken from stdlib 4.11. *)
 
 val list_coalesce_right : ('a -> 'a -> 'a option) -> 'a list -> 'a list
-(** [list_coalesce_right f l] applies the coalescing function [f] to
-  adjacent elements of [l], using it to folding [l] in a right-to-left order.
+(** [list_coalesce_right f l] applies the coalescing function [f] to adjacent
+    elements of [l], using it to folding [l] in a right-to-left order.
 
-  @param [f] is a function that, given two elements, either coalesces them into
-  a single element or returns [None], signalling that the elements cannot be
-  coalesced.
-*)
+    @param [f]
+      is a function that, given two elements, either coalesces them into a
+      single element or returns [None], signalling that the elements cannot be
+      coalesced. *)
 
 val uniq : 'a list -> 'a list
 (** [uniq l] returns the unique elements of [l], in the order they appear *)
@@ -415,8 +415,7 @@ val list_iterated_op : empty:'a -> ('a -> 'a -> 'a) -> 'a list -> 'a
     This considers that applying [op] to 2 elements is longer than iterating on
     the list, in particular that the complexity of [op a b] depends on the size
     of [a] and [b], and the size of [op a b] increases with the size of [a] and
-    the size of [b].
-*)
+    the size of [b]. *)
 
 val transitive_closure : ISet.t IMap.t -> ISet.t IMap.t
 (** Returns the transitive closure of the graph. *)

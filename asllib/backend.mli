@@ -30,8 +30,8 @@ module type SCOPE = sig
   (** The global scope during runtime or init, depending on [init] flag. *)
 
   val new_local : AST.identifier -> t
-  (** [new_local_scope subprogram_name] returns a new identifier for the call
-      to the function named [subprogram_name]. *)
+  (** [new_local_scope subprogram_name] returns a new identifier for the call to
+      the function named [subprogram_name]. *)
 end
 
 (** This module is the signature of any backend of the ASL interpreter. *)
@@ -46,24 +46,25 @@ module type S = sig
   (** A printer for value, should only be used for debugging. *)
 
   val is_undetermined : value -> bool
-  (** [is_undetermined v] returns true when [c] is a non-constant value  *)
+  (** [is_undetermined v] returns true when [c] is a non-constant value *)
 
   val v_of_literal : AST.literal -> value
-  (** [v_of_parsed_v] constructs a value from a parsed value.
-      Note that the preferred method to create records or any complex values
-      is [create_vector], and should be used for constructing complex values. *)
+  (** [v_of_parsed_v] constructs a value from a parsed value. Note that the
+      preferred method to create records or any complex values is
+      [create_vector], and should be used for constructing complex values. *)
 
   val v_of_int : int -> value
-  (** [v_of_int] is used to convert raw integers arising from the interpretation,
-      and not parsed values. *)
+  (** [v_of_int] is used to convert raw integers arising from the
+      interpretation, and not parsed values. *)
 
   val v_to_z : value -> Z.t option
   (** [v_to_z v] returns, if possible, an integer corresponding to the value.
       Should be called only on values of type integer. *)
 
   val v_to_label : value -> string
-  (** [v_to_label v] returns the identifier of the label nested in the literal inside [v].
-      Should be called only on values of type [NV_Literal] where the literal is of type [L_Label]. *)
+  (** [v_to_label v] returns the identifier of the label nested in the literal
+      inside [v]. Should be called only on values of type [NV_Literal] where the
+      literal is of type [L_Label]. *)
 
   (* Monadic operators *)
   (*-------------------*)
@@ -95,8 +96,8 @@ module type S = sig
   val appl_data : 'a m -> ('a -> 'b) -> 'b m
   (** Applicative map.
 
-      Creates a data dependency between the output events and
-      the input events of the argument in the resulting monad. *)
+      Creates a data dependency between the output events and the input events
+      of the argument in the resulting monad. *)
 
   val debugT : string -> 'a m -> 'a m
   (** Print representation of monad on stderr *)
@@ -108,9 +109,8 @@ module type S = sig
   (** choice is a boolean if operator. *)
 
   val delay : 'a m -> ('a -> 'a m -> 'b m) -> 'b m
-  (** delay operator spits monad into result ['a] and
-     hidden structure. This permits deciding on
-     the monad value, while using hidden structure later *)
+  (** delay operator spits monad into result ['a] and hidden structure. This
+      permits deciding on the monad value, while using hidden structure later *)
 
   (** Special operations with vectors *)
   (*  --------------------------------*)
@@ -181,9 +181,8 @@ module type S = sig
   (** Get the length of a bitvector. *)
 
   type primitive = value m list -> value m list -> value m list m
-  (** primitive types that go with this AST.
-      First argument is list of parameters,
-      second argument is list of arguments. *)
+  (** primitive types that go with this AST. First argument is list of
+      parameters, second argument is list of arguments. *)
 
   val primitives : (AST.func * primitive) list
   (** The list of primitives that a backend provides. *)

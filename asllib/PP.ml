@@ -309,7 +309,8 @@ let rec pp_stmt f s =
       fprintf f
         "@[<hv>@[<h>if %a@ then@]@;\
          <1 2>@[<hv>%a@]@ else@;\
-         <1 2>@[<hv>%a@]@ end;@]" pp_expr e pp_stmt s1 pp_stmt s2
+         <1 2>@[<hv>%a@]@ end;@]"
+        pp_expr e pp_stmt s1 pp_stmt s2
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
   | S_While (e, limit, s) ->
       fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end;@]" pp_expr e

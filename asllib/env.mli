@@ -64,8 +64,8 @@ module type S = sig
     pending_calls : Z.t IMap.t;
         (** Current number of recursive calls open for each subprogram. *)
     call_stack : identifier annotated list;
-        (** the call stack, with the name of the called program and the
-            position of the call. *)
+        (** the call stack, with the name of the called program and the position
+            of the call. *)
     symbolic_path : symbolic_choice list;  (** the symbolic path taken *)
   }
   (** The global part of an environment. *)
@@ -94,7 +94,8 @@ module type S = sig
     | Local of 'a
     | Global of 'a
     | NotFound
-        (** Indicates if the value returned was bound in the global or local namespace. *)
+        (** Indicates if the value returned was bound in the global or local
+            namespace. *)
 
   val find : identifier -> env -> v env_result
   (** Fetches an identifier from the environment. *)
@@ -145,11 +146,10 @@ module type S = sig
 
   val tick_decr : env -> bool * env
   (** [tick_decr env] is [(stop, env')] where
-    - if the last counter is lower or equal to 1, [stop] is true and the last
-      counter is discarded.
-    - if the last counter is bigger or equal to 2, [stop] is false and the
-      counter is decremented of 1.
-    *)
+      - if the last counter is lower or equal to 1, [stop] is true and the last
+        counter is discarded.
+      - if the last counter is bigger or equal to 2, [stop] is false and the
+        counter is decremented of 1. *)
 
   (* -------------------------------------------------------------------------*)
   (** {2 Scope handling} *)
@@ -158,8 +158,8 @@ module type S = sig
   (** Returns the local scope of that environment. *)
 
   val push_scope : env -> env
-  (** Push a new scope on the declaration stack. Variables declared here will
-      be stored until the corresponding [pop_scope]. *)
+  (** Push a new scope on the declaration stack. Variables declared here will be
+      stored until the corresponding [pop_scope]. *)
 
   val pop_scope : env -> env -> env
   (** [pop_scope old new] restores the variable bindings of [old], with the
@@ -175,7 +175,8 @@ module type S = sig
   (** [decr_pending_calls name env] decreases the stack size for [name]. *)
 
   val push_symbolic_choice : symbolic_choice -> env -> env
-  (** [push_symbolic_choice choice env] registers the choice in the symbolic path. *)
+  (** [push_symbolic_choice choice env] registers the choice in the symbolic
+      path. *)
 end
 
 module RunTime (C : RunTimeConf) :

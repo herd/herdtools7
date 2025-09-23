@@ -409,18 +409,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* Begin DisjointSlicesToPositions *)
 
-  (** Returns the set of positions represented by [slices],
-  while also checking that different slices do not overlap and that
-  slices are not defined in reverse.
-  Determining the set of positions requires evaluating the expressions
-  comprising the slices.
-  [static] indicates that the expressions defining the slices
-  must be statically evaluable, in which case they are statically
-  evaluated to accurately determine the set of positions.
-  Otherwise, normalization is used in an attempt to reduce them to literals.
-  Slices for which the expressions cannot be reduced to literals do not contribute
-  positions to the final result.
-    *)
+  (** Returns the set of positions represented by [slices], while also checking
+      that different slices do not overlap and that slices are not defined in
+      reverse. Determining the set of positions requires evaluating the
+      expressions comprising the slices. [static] indicates that the expressions
+      defining the slices must be statically evaluable, in which case they are
+      statically evaluated to accurately determine the set of positions.
+      Otherwise, normalization is used in an attempt to reduce them to literals.
+      Slices for which the expressions cannot be reduced to literals do not
+      contribute positions to the final result. *)
   let disjoint_slices_to_positions ~loc ~static env slices =
     let module DI = Diet.Int in
     let exception NonStatic in
@@ -470,8 +467,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   exception NoSingleField
 
-  (** [to_singles env slices] is a list of [Slice_Single] slices
-      for each bit position of each bitfield slice in [slices]. *)
+  (** [to_singles env slices] is a list of [Slice_Single] slices for each bit
+      position of each bitfield slice in [slices]. *)
   let to_singles env =
     let eval e =
       match StaticInterpreter.static_eval env e with
@@ -496,29 +493,27 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     fun slices -> List.fold_right one slices []
 
-  (** Retrieves the slices associated with the given bitfield
-      without recursing into nested bitfields. *)
+  (** Retrieves the slices associated with the given bitfield without recursing
+      into nested bitfields. *)
   let slices_of_bitfield = function
     | BitField_Simple (_, slices)
     | BitField_Nested (_, slices, _)
     | BitField_Type (_, slices, _) ->
         slices
 
-  (** Retrieves the slice of [Slice_Single] slices for each position
-      of the bitfield [field], if it is found in [bf]. *)
+  (** Retrieves the slice of [Slice_Single] slices for each position of the
+      bitfield [field], if it is found in [bf]. *)
   let field_to_single env bf field =
     match find_bitfield_opt field bf with
     | Some bitfield -> to_singles env (slices_of_bitfield bitfield)
     | None -> raise NoSingleField
 
-  (** Checks that all bitfields listed in [fields] are delcared in the
-      bitvector type [ty]. If so, retrieves a list of [Slice_Single] slices for
-      each bit position of each bitfield slice of each bitfield in [fields].
-      [name] is passed along, if the result is not [None] for convenience of
-      use.
+  (** Checks that all bitfields listed in [fields] are delcared in the bitvector
+      type [ty]. If so, retrieves a list of [Slice_Single] slices for each bit
+      position of each bitfield slice of each bitfield in [fields]. [name] is
+      passed along, if the result is not [None] for convenience of use.
 
-      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
-  *)
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension]. *)
   let should_fields_reduce_to_call env name ty fields =
     assert C.use_field_getter_extension;
     match (Types.make_anonymous env ty).desc with
@@ -563,7 +558,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (* CheckStructureBoolean *)
 
-  (** [check_structure_boolean env t1] checks that [t1] has the structure of a boolean. *)
+  (** [check_structure_boolean env t1] checks that [t1] has the structure of a
+      boolean. *)
   let check_structure_boolean ~loc env t1 () =
     match (Types.get_structure env t1).desc with
     | T_Bool -> ()
@@ -837,47 +833,35 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     |: TypingRule.CheckSlicesInWidth
   (* End *)
 
-  (** A module for checking that all bitfields of a given bitvector type
-      that share the same name and exist in the same scope (terms defined
-      below) also define the same slice of the bitvector type.
-  *)
+  (** A module for checking that all bitfields of a given bitvector type that
+      share the same name and exist in the same scope (terms defined below) also
+      define the same slice of the bitvector type. *)
   module CheckCommonBitfieldsAlign : sig
     val check :
       loc:'a annotated -> StaticEnv.env -> bitfield list -> int -> unit
   end = struct
     type range = int * int
     (** [(j, i)] is the list of integers from [j] down to [i], inclusive,
-        matching the slice notation [j:i].
-        Invariant: [j >= i].
-    *)
+        matching the slice notation [j:i]. Invariant: [j >= i]. *)
 
     type absolute_bitfield = {
       name : identifier;
       abs_scope : identifier list;
       abs_slices : range list;
     }
-    (** An absolute bitfield [abs_f] corresponds to a bitfield [f].
-        It consists of the following fields:
+    (** An absolute bitfield [abs_f] corresponds to a bitfield [f]. It consists
+        of the following fields:
         - [name] the name of the bitfield as declared;
-        - [abs_scope] is the list of names of ancestor bitfields, starting from the top; and
-        - [abs_slices] is a list of ranges that represent the sequence of indices,
-          corresponding to the slices defined for [f],
-          relative to the bitvector type that declares [f].
+        - [abs_scope] is the list of names of ancestor bitfields, starting from
+          the top; and
+        - [abs_slices] is a list of ranges that represent the sequence of
+          indices, corresponding to the slices defined for [f], relative to the
+          bitvector type that declares [f].
 
-        For example in
-        [
-          type Nested_Type of bits(3) {
-            [2:1] f1 {
-              [0] f2
-            }
-          };
-        ]
+        For example in [ type Nested_Type of bits(3) { [2:1] f1 { [0] f2 } }; ]
         we have the follwing absolute fields:
-        [
-          {name="f1"; abs_cope=[];      abs_slices=[2:1]}
-          {name="f2"; abs_cope=["f1"];  abs_slices=[1:1]}
-        ]
-    *)
+        [ {name="f1"; abs_cope=[];      abs_slices=[2:1]} {name="f2";
+         abs_cope=["f1"];  abs_slices=[1:1]} ] *)
 
     let safe_range (hi, lo) =
       let () = assert (hi >= lo) in
@@ -918,8 +902,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (lo1 >= lo2 && lo1 <= hi2) || (hi1 <= hi2 && hi1 >= lo2)
 
     (** Returns the range resulting from intersecting [range1] and [range2],
-        assuming they intersect.
-      *)
+        assuming they intersect. *)
     let intersect_ranges ((hi1, lo1) as range1) ((hi2, lo2) as range2) =
       let () = assert (do_ranges_intersect range1 range2) in
       safe_range (min hi1 hi2, max lo1 lo2)
@@ -928,8 +911,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let ranges_equal ranges1 ranges2 = list_equal range_equal ranges1 ranges2
 
     (** Returns the range [(i+w-1, i)], corresponding to
-        [slice = Slice_Length (i, , w)].
-    *)
+        [slice = Slice_Length (i, , w)]. *)
     let slice_to_range env slice : range =
       match slice with
       | Slice_Length (i, w) ->
@@ -1031,9 +1013,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       list_concat_map (select_indices_by_slice absolute_indices) slices
       |> coalesce_ranges
 
-    (** [either_prefix list1 list2] is true if either [list1] is a prefix of [list2] or
-        [list2] is a prefix of [list1].
-    *)
+    (** [either_prefix list1 list2] is true if either [list1] is a prefix of
+        [list2] or [list2] is a prefix of [list1]. *)
     let rec either_prefix list1 list2 =
       match (list1, list2) with
       | [], _ | _, [] -> true
@@ -1052,11 +1033,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let () = List.iter (fun e_t -> f h e_t) t in
           iter_ordered_pairs f t
 
-    (** Returns the list of absolute bitfields for the bitfield [bf]
-        and all bitfields transitively nested unde it,
-        given that [absolute_parent] is the absolute bitfield
-        for the bitfield where [bf] is declared.
-    *)
+    (** Returns the list of absolute bitfields for the bitfield [bf] and all
+        bitfields transitively nested unde it, given that [absolute_parent] is
+        the absolute bitfield for the bitfield where [bf] is declared. *)
     let rec bitfield_to_absolute env bf absolute_parent =
       let { name; abs_scope = parent_scope; abs_slices = parent_abs_slices } =
         absolute_parent
@@ -1077,19 +1056,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       bf_absolute :: bitfields_to_absolute env bf_nested bf_absolute
 
     (** Returns the list of absolute bitfields corresponding to [bitfields],
-        given that [absolute_parent] is the absolute bitfield
-        where [bitfields] are declared.
-        The order of the absolute fields is unimportant.
-    *)
+        given that [absolute_parent] is the absolute bitfield where [bitfields]
+        are declared. The order of the absolute fields is unimportant. *)
     and bitfields_to_absolute env bitfields absolute_parent =
       list_concat_map
         (fun bf -> bitfield_to_absolute env bf absolute_parent)
         bitfields
 
-    (** Tests whether absolute bitfields [f1] and [f2] are aligned.
-        If the two fields don't share a name or don't exist in the same
-        scope, the result is true.
-    *)
+    (** Tests whether absolute bitfields [f1] and [f2] are aligned. If the two
+        fields don't share a name or don't exist in the same scope, the result
+        is true. *)
     let absolute_bitfields_align f1 f2 =
       if String.equal f1.name f2.name && exist_in_same_scope f1 f2 then
         let { abs_slices = indices1 } = f1 in
@@ -1224,7 +1200,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> false
 
   (** Special treatment to infer the single input parameter [N] of a
-    stdlib/primitive function with a first argument of type [bits(N)]. *)
+      stdlib/primitive function with a first argument of type [bits(N)]. *)
   let insert_stdlib_param ~loc env func_sig ~params ~arg_types =
     if
       can_omit_stdlib_param func_sig
@@ -1379,8 +1355,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   in
                   (ArrayLength_Expr e', ses))
           | ArrayLength_Enum (_, _) ->
-              assert (* Enumerated indices only exist in the typed AST. *)
-                     false
+              assert
+                (* Enumerated indices only exist in the typed AST. *)
+                false
         in
         let ses = SES.union ses_t ses_index in
         (T_Array (index', t') |> here, ses) |: TypingRule.TArray
@@ -2378,11 +2355,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (** For an expression of the form [e1.[f1,...,fn]], if [e1] represents a call
-      to a getter then this function returns a list of slices needed to read
-      the bitfields [f1...fn]. Otherwise, the result is [None].
+      to a getter then this function returns a list of slices needed to read the
+      bitfields [f1...fn]. Otherwise, the result is [None].
 
-      It is an ASLRef extension, guarded by [C.use_field_getter_extension].
-  *)
+      It is an ASLRef extension, guarded by [C.use_field_getter_extension]. *)
   and reduce_getfields_to_slices env e1 fields =
     assert (e1.version = V0 && C.use_field_getter_extension);
     match e1.desc with
@@ -2494,8 +2470,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Int (Parameterized id) -> E_Var id |> here
     | T_Int (WellConstrained ([], _) | PendingConstrained) -> assert false
     | T_Int
-        (WellConstrained
-          ((Constraint_Exact e | Constraint_Range (e, _)) :: _, _)) ->
+        (WellConstrained ((Constraint_Exact e | Constraint_Range (e, _)) :: _, _))
+      ->
         e
     | T_Tuple li -> E_Tuple (List.map (base_value_v0 ~loc env) li) |> here
     | T_Exception fields | T_Record fields | T_Collection fields ->
@@ -2515,9 +2491,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
 
-  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for ASLv1,
-      or [base_value_v0 ~loc env e] if running for ASLv0.
-  *)
+  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for
+      ASLv1, or [base_value_v0 ~loc env e] if running for ASLv0. *)
   let base_value ~loc env e =
     match loc.version with
     | V0 -> base_value_v0 ~loc env e
@@ -3414,8 +3389,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | LE_SetArray _ | LE_SetEnumArray _ | LE_SetCollectionFields _ ->
         assert false
 
-  (** [func_sig_types f] returns a list of the types in the signature [f].
-      The return type is first, followed by the argument types in order. *)
+  (** [func_sig_types f] returns a list of the types in the signature [f]. The
+      return type is first, followed by the argument types in order. *)
   let func_sig_types func_sig =
     let arg_types = List.map snd func_sig.args in
     let return_type =
@@ -3465,7 +3440,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let all_parameters = list_concat_map (parameters_of_ty ~env) types in
     uniq all_parameters
 
-  (** The set of variables which could define a parameter in a function signature. *)
+  (** The set of variables which could define a parameter in a function
+      signature. *)
   let extract_parameter_defining ~env f =
     let rec defining_of_ty ~env acc ty =
       match ty.desc with
@@ -3645,16 +3621,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V0 -> annotate_func_sig_v0 ~loc genv func_sig
     | V1 -> annotate_func_sig_v1 ~loc genv func_sig
 
-  (** A module for checking that a subprogram body satisfies
-      control flow requirements.
-  *)
+  (** A module for checking that a subprogram body satisfies control flow
+      requirements. *)
   module ControlFlowAnalysis : sig
     val check_control_flow : env -> func -> stmt -> unit
   end = struct
     module AbsConfig = struct
-      (** Abstract values representing the possible configurations
-        resulting from evaluating statements.
-    *)
+      (** Abstract values representing the possible configurations resulting
+          from evaluating statements. *)
       type t =
         | Abs_Abnormal
           (* evaluation of a statement yielded an a thrown exception or a dynamic error
@@ -3672,10 +3646,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | Abs_Continuing -> "Abs_Continuing"
     end
 
-    (** The abstract domain for this analysis is the powerset lattice
-      * (that is, all subsets) of abstract configurations with union
-      * as the join operator.
-      *)
+    (** The abstract domain for this analysis is the powerset lattice * (that
+        is, all subsets) of abstract configurations with union * as the join
+        operator. *)
     module AbsConfigSet = struct
       include Set.Make (AbsConfig)
 
@@ -3708,14 +3681,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (** [approx_stmt tenv s] returns the approximation of [s] with respect to
         the set of abstract configurations. That is, a superset of the abstract
         configurations that evaluating [s] with any environment consisting of
-        [tenv] would yield.
-        The approximation assumes that evaluating any expression
-        results in either a value, a thrown exception, or a dynamic error.
-        The approximation of each statement is independent of the input environment,
-        which means it is also the fixpoint result, which in turn justifies the
-        soundness of approximating the loop statement and the, potentially recursive
-        subprogram calls.
-    *)
+        [tenv] would yield. The approximation assumes that evaluating any
+        expression results in either a value, a thrown exception, or a dynamic
+        error. The approximation of each statement is independent of the input
+        environment, which means it is also the fixpoint result, which in turn
+        justifies the soundness of approximating the loop statement and the,
+        potentially recursive subprogram calls. *)
     let rec approx_stmt tenv s : AbsConfigSet.t =
       let open AbsConfigSet in
       let abs_of_expr = abnormal in
@@ -3780,14 +3751,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
     (* Begin CheckControlFlow *)
 
-    (** Checks that:
-        1. when [f] has the [noreturn] - that every control flow path through
-          [body] terminates by either throwing an exception or a dynamic error;
-        2. when [f] is a function that does not have the [noreturn] - every control
-          flow path through [body] either throws an exception, returns a value,
-          or results in a dynamic error.
-        3. when [f] is a procedure - no check needed.
-    *)
+    (** Checks that: 1. when [f] has the [noreturn] - that every control flow
+        path through [body] terminates by either throwing an exception or a
+        dynamic error; 2. when [f] is a function that does not have the
+        [noreturn] - every control flow path through [body] either throws an
+        exception, returns a value, or results in a dynamic error. 3. when [f]
+        is a procedure - no check needed. *)
     let check_control_flow tenv (f : func) body =
       let open AbsConfigSet in
       let abs_configs = approx_stmt tenv body in
@@ -4226,8 +4195,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       cycle in the call-graph described by [sess] without static annotations.
 
       The argument [locs] is only used for identifying an location in which to
-      print the error.
-  *)
+      print the error. *)
   let check_recursive_limit_annotations locs sess =
     let call_graph_without_annotated_functions =
       List.filter_map

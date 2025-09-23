@@ -26,13 +26,13 @@ module SB = Native.StaticBackend
 
 val static_eval : StaticEnv.env -> AST.expr -> AST.literal
 (** [static_eval env e] statically evaluates [e] in [env] into a literal.
-    @raise ASLException if the a type error is detected or the expression is
-        not one of the following: [E_Literal], [E_Var], [E_Binop], [E_Unop],
-        [E_Slice], or [E_Cond].
+    @raise ASLException
+      if the a type error is detected or the expression is not one of the
+      following: [E_Literal], [E_Var], [E_Binop], [E_Unop], [E_Slice], or
+      [E_Cond].
     @raise UnsupportedExpr if the given expression cannot evaluate to a literal.
 *)
 
 val static_eval_to_int : StaticEnv.env -> AST.expr -> int
 (** [static_eval_to_int env e] statically evaluates an integer-typed expression
-    [e] in [env] and returns the corresponding integer.
-*)
+    [e] in [env] and returns the corresponding integer. *)

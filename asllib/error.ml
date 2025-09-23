@@ -252,8 +252,8 @@ open struct
     if Int.equal !n n0 then str else String.sub str 0 (!n + 1)
 
   (** [fetch_lines ~start_bol ~end_bol filename] returns a string containing the
-    lines from the line indicated by [start_bol] to (and including) the line
-    indicated by [end_bol], without any spaces at the end. *)
+      lines from the line indicated by [start_bol] to (and including) the line
+      indicated by [end_bol], without any spaces at the end. *)
   let fetch_lines ~start_bol ~end_bol filename =
     with_open filename @@ fun chan ->
     seek_in chan start_bol;
@@ -273,7 +273,7 @@ open struct
     prev_lines ^ last_line |> trim_end
 
   (** [chevrons ~start_col ~end_col] is a line starting with [start_col] spaces
-    and completed with [^] until [end_col] is reached. *)
+      and completed with [^] until [end_col] is reached. *)
   let chevrons ~start_col ~end_col : string =
     if end_col < start_col then raise (Invalid_argument "chevrons");
     String.make start_col ' ' ^ String.make (end_col - start_col) '^'

@@ -44,7 +44,7 @@ module type S = sig
     B.value B.m
   (** [run env0 tenv main_name ast] runs the function main_name of the ast, in
       the typing environment [tenv]. However, the (global) identifiers listed in
-      the A-list [env0] will take their initial values from [env0]  and _not_
+      the A-list [env0] will take their initial values from [env0] and _not_
       from [ast]. *)
 
   val run_typed : StaticEnv.global -> AST.identifier -> AST.t -> B.value B.m

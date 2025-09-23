@@ -21,8 +21,8 @@
 (******************************************************************************)
 
 (** The Typing module is yet a single-entry-point module. It only exports the
-    function [annotate_ast] which fills type-annotations holes in the AST.
-    It should provide enough information to disambiguate any type-dependent
+    function [annotate_ast] which fills type-annotations holes in the AST. It
+    should provide enough information to disambiguate any type-dependent
     behaviour. *)
 
 (** Possible strictness of type-checking. *)

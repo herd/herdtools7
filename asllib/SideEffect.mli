@@ -11,7 +11,8 @@ end
 
 type read = { name : identifier; time_frame : TimeFrame.t; immutable : bool }
 
-(** Data type describing a potential side effect associated with an ASL piece of code. *)
+(** Data type describing a potential side effect associated with an ASL piece of
+    code. *)
 type t =
   | ReadsLocal of read
       (** Reads the local storage element indicated by its argument. *)

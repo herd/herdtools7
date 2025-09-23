@@ -224,7 +224,8 @@ module Domain = struct
 
   (* Begin SymdomOfType *)
 
-  (** [symdom_of_type env ty] constructs the symbolic domain of [ty] in [env]. *)
+  (** [symdom_of_type env ty] constructs the symbolic domain of [ty] in [env].
+  *)
   let symdom_of_type env ty : t =
     let ty = make_anonymous env ty in
     match ty.desc with
@@ -252,7 +253,8 @@ module Domain = struct
     exception CannotUnderApproximate
     (** Raised if under approximation is not possible. *)
 
-    (** Return bottom for Under approximation, or raise CannotOverApproximate for over approximation. *)
+    (** Return bottom for Under approximation, or raise CannotOverApproximate
+        for over approximation. *)
     let bottom_top approx =
       if approx = Over then raise CannotOverApproximate else IntSet.empty
 
@@ -286,7 +288,8 @@ module Domain = struct
             with CannotUnderApproximate -> ([], Precision_Lost []))
     (* End *)
 
-    (** [intset_to_constraints s] converts each interval in [s] into a constraint for that interval. *)
+    (** [intset_to_constraints s] converts each interval in [s] into a
+        constraint for that interval. *)
     let intset_to_constraints s =
       let open IntSet.Interval in
       List.map
@@ -337,7 +340,10 @@ module Domain = struct
     (* Begin ApproxConstraints *)
     and approx_constraints approx env cs =
       let join =
-        let empty = IntSet.empty (* will not be used *) in
+        let empty =
+          IntSet.empty
+          (* will not be used *)
+        in
         match approx with
         | Under -> list_iterated_op ~empty IntSet.inter
         | Over -> list_iterated_op ~empty IntSet.union
@@ -400,7 +406,8 @@ module Domain = struct
   (* Begin SymdomNormalize *)
 
   (** [symdom_normalize symdoms] returns a symbolic domain with at most one
-     [Finite] component, which is the union of the [Finite] components in [symdoms]. *)
+      [Finite] component, which is the union of the [Finite] components in
+      [symdoms]. *)
   let symdom_normalize symdoms =
     let finite_domains, others =
       List.partition (function Finite _ -> true | _ -> false) symdoms
@@ -419,11 +426,10 @@ module Domain = struct
 
   (* Begin SymdomsSubsetUnions *)
 
-  (** [symdom_subset_unions env symdoms1 symdoms2] conservatively tests
-  whether the set of integers represented by the union of symbolic domains
-  in [symdoms1] is a subset of the set of integers represented by
-  the union of symbolic domains in [symdoms2], in the context of [env].
-  *)
+  (** [symdom_subset_unions env symdoms1 symdoms2] conservatively tests whether
+      the set of integers represented by the union of symbolic domains in
+      [symdoms1] is a subset of the set of integers represented by the union of
+      symbolic domains in [symdoms2], in the context of [env]. *)
   let symdom_subset_unions env sd1 sd2 =
     let () =
       if false then

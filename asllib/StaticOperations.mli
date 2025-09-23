@@ -8,9 +8,8 @@ val constraint_binop :
   int_constraint list ->
   int_constraint list ->
   int_constraint list
-(** [constraint_binop op cs1 cs2] is the set of constraints given by the
-    element wise application of [op].
-*)
+(** [constraint_binop op cs1 cs2] is the set of constraints given by the element
+    wise application of [op]. *)
 
 module type CONFIG = sig
   val fail : string -> 'a

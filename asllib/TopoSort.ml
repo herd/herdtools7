@@ -162,7 +162,7 @@ module ASTFold = struct
 
   type t = {
     nodes : Name.t list;
-        (**  [succs(a)] returns the identifiers on which [a] depends. *)
+        (** [succs(a)] returns the identifiers on which [a] depends. *)
     succs : Name.t -> Name.t list;
     decls : AST.decl list Tbl.t;
   }

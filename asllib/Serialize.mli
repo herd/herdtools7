@@ -20,8 +20,7 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-(** This module converts an AST into a valid ocaml string that represents it.
-*)
+(** This module converts an AST into a valid ocaml string that represents it. *)
 
 open AST
 
