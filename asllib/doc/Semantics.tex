@@ -201,7 +201,7 @@ consists of a \emph{dynamic global environment} and a \emph{dynamic local enviro
 \hypertarget{def-storage}{}
 In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevaluesterm{}
 via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
-to the number of calls being evaluated for those subprograms via the $\stacksize$ map.
+to the number of calls being evaluated for those subprograms via the $\pendingcalls$ map.
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevaluesterm{}:
 
 % BEGIN_GENERATED_ELEMENT(dynamic_envs, global_dynamic_envs, local_dynamic_envs)
@@ -212,7 +212,7 @@ The dynamic local environment maps identifiers corresponding to local storage el
 \\
 \globaldynamicenvs \triangleq\ & \left\{\begin{array}{lll}
 \text{storage} &:& \Identifier \partialto \nativevalue\\
-\text{stack\_size} &:& \Identifier \partialto \N
+\text{pending\_calls} &:& \Identifier \partialto \N
 \end{array}\right\}
 \hypertarget{type-localdynamicenvs}{}
 \\
