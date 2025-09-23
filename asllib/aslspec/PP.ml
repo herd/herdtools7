@@ -19,12 +19,14 @@ let rec pp_math_shape fmt layout =
   | Horizontal l -> fprintf fmt "(%a)" (pp_sep_list ~sep:"," pp_math_shape) l
   | Vertical l -> fprintf fmt "[%a]" (pp_sep_list ~sep:"," pp_math_shape) l
 
+let pp_attribute_key fmt key = pp_print_string fmt (AttributeKey.to_str key)
+
 let pp_attribute fmt = function
-  | Attributes.StringAttribute s -> fprintf fmt {|"%s"|} s
-  | Attributes.MathLayoutAttribute layout -> pp_math_shape fmt layout
+  | StringAttribute s -> fprintf fmt {|"%s"|} s
+  | MathLayoutAttribute layout -> pp_math_shape fmt layout
 
 let pp_attribute_key_value fmt (key, value) =
-  fprintf fmt {|%s = %a|} key pp_attribute value
+  fprintf fmt {|%a = %a|} pp_attribute_key key pp_attribute value
 
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()

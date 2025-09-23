@@ -1,5 +1,6 @@
 %{
 open AST
+open AST.AttributeKey
 %}
 
 %type <AST.t> spec
@@ -129,17 +130,17 @@ let type_attributes ==
     LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
 
 let type_attribute :=
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Attributes.prose_description, Attributes.StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Attributes.math_macro, Attributes.StringAttribute macro) }
+    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
+    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, StringAttribute macro) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
 
 let relation_attribute :=
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Attributes.prose_description, Attributes.StringAttribute template) }
-    | PROSE_APPLICATION; EQ; template=STRING; { (Attributes.prose_application, Attributes.StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Attributes.math_macro, Attributes.StringAttribute macro) }
-    | MATH_SHAPE; EQ; ~=math_layout; { (Attributes.math_layout, Attributes.MathLayoutAttribute math_layout) }
+    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
+    | PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
+    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, StringAttribute macro) }
+    | MATH_SHAPE; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let type_variants_with_attributes :=
     | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
