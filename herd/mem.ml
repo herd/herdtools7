@@ -53,8 +53,8 @@ module type S = sig
        overwritable_labels : Label.Set.t ;
      }
 
-(** [glommed_event_structures t] performs "instruction semantics".
- *  Argument [t] is a test.
+(** [glommed_event_structures is_pgm t] performs "instruction semantics".
+ *  Argument [is_pgm] is a boolean, argument [t] is a test.
  *  The function returns a pair whose first component is a record.
  *
  *  It includes a set (list) of "abstract"  event structures. In such
@@ -70,9 +70,13 @@ module type S = sig
  *  `-variant self`, initial values of overwitable code locations
  *  are added.
  *
- *  This modified test *must* be used in the following. *)
-
-  val glommed_event_structures : S.test -> result * S.test
+ *  This modified test *must* be used in the following.
+ *
+ * Argument [is_pgm] is [true]  when the test [t] represents a
+ * complete test and [false] otherwise, typically an AArch64 instruction
+ * expressed in ASL.
+ *)
+  val glommed_event_structures : is_pgm:bool -> S.test -> result * S.test
 
 
 
@@ -317,7 +321,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       Warn.user_error
         "Segmentation fault (kidding, label %s not found)"
 
-    let glommed_event_structures (test:S.test) =
+    let glommed_event_structures ~is_pgm (test:S.test) =
       profile "glommed_event_structures" @@ fun () ->
       let prog = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
@@ -697,7 +701,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = if C.debug.Debug_herd.monad then es else relabel es in
+          let es =
+            if not is_pgm || C.debug.Debug_herd.monad then es
+            else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in

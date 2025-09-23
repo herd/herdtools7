@@ -1396,7 +1396,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let model = build_model_from_file "asl.cat" in
           let { MC.event_structures = rfms; _ }, test_asl =
             profile "run ASL Semantics" @@ fun () ->
-            MC.glommed_event_structures test_asl
+            MC.glommed_event_structures ~is_pgm:false test_asl
           in
           let () =
             if _dbg then
