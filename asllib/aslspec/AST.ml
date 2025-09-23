@@ -56,16 +56,33 @@ type layout =
   | Horizontal of layout list  (** Layout terms horizontally. *)
   | Vertical of layout list  (** Layout terms vertically. *)
 
+(** A module for totally ordered attribute keys. *)
+module AttributeKey = struct
+  type t = Prose_Description | Prose_Application | Math_Macro | Math_Layout
+
+  let compare a b =
+    let key_to_int = function
+      | Prose_Description -> 0
+      | Prose_Application -> 1
+      | Math_Macro -> 2
+      | Math_Layout -> 3
+    in
+    let a_int = key_to_int a in
+    let b_int = key_to_int b in
+    Stdlib.compare a_int b_int
+
+  let to_str = function
+    | Prose_Description -> "prose_description"
+    | Prose_Application -> "prose_application"
+    | Math_Macro -> "math_macro"
+    | Math_Layout -> "math_layout"
+end
+
+type attribute = StringAttribute of string | MathLayoutAttribute of layout
+
 (** A module for key-value attributes. *)
 module Attributes = struct
-  let prose_description = "prose_description"
-  let prose_application = "prose_application"
-  let math_macro = "math_macro"
-  let math_layout = "math_layout"
-
-  type attribute = StringAttribute of string | MathLayoutAttribute of layout
-
-  include Map.Make (String)
+  include Map.Make (AttributeKey)
 
   (* Shadow [Map.t] with a string-to-string map type. *)
   type 'a map = 'a t
@@ -79,7 +96,7 @@ module Attributes = struct
         if mem k acc_map then
           let msg =
             Format.sprintf {| encountered second occurrence of attribute '%s'|}
-              k
+              (AttributeKey.to_str k)
           in
           raise (SpecError msg)
         else add k v acc_map)
@@ -93,7 +110,7 @@ module type HasAttributes = sig
   val attributes : t -> Attributes.t
   val prose_description : t -> string
   val math_macro : t -> string option
-  val attributes_to_list : t -> (string * Attributes.attribute) list
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
 end
 
 (** A datatype for type terms used in the definition of a type,
@@ -102,7 +119,7 @@ end
 module TypeVariant : sig
   include HasAttributes
 
-  val make : type_kind -> type_term -> (string * Attributes.attribute) list -> t
+  val make : type_kind -> type_term -> (AttributeKey.t * attribute) list -> t
   val kind : t -> type_kind
   val term : t -> type_term
   val math_layout : t -> layout option
@@ -118,17 +135,17 @@ end = struct
   open Attributes
 
   let prose_description self =
-    match Attributes.find_opt Attributes.prose_description self.att with
-    | Some (Attributes.StringAttribute s) -> s
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
     | _ -> assert false
 
   let math_macro self =
-    match find_opt math_macro self.att with
+    match find_opt AttributeKey.Math_Macro self.att with
     | Some (StringAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
-    match find_opt math_layout self.att with
+    match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
 
@@ -149,7 +166,7 @@ module Type : sig
     type_kind ->
     string ->
     TypeVariant.t list ->
-    (string * Attributes.attribute) list ->
+    (AttributeKey.t * attribute) list ->
     t
 
   val math_layout : t -> layout option
@@ -185,17 +202,17 @@ end = struct
   open Attributes
 
   let prose_description self =
-    match Attributes.find_opt Attributes.prose_description self.att with
-    | Some (Attributes.StringAttribute s) -> s
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
     | _ -> assert false
 
   let math_macro self =
-    match find_opt math_macro self.att with
+    match find_opt AttributeKey.Math_Macro self.att with
     | Some (StringAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
-    match find_opt math_layout self.att with
+    match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
 
@@ -216,14 +233,14 @@ module Relation : sig
     string ->
     opt_named_type_term list ->
     type_term list ->
-    (string * Attributes.attribute) list ->
+    (AttributeKey.t * attribute) list ->
     t
 
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
   val math_layout : t -> layout option
-  val attributes_to_list : t -> (string * Attributes.attribute) list
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
 end = struct
   type t = {
     name : string;
@@ -242,22 +259,22 @@ end = struct
   open Attributes
 
   let prose_description self =
-    match Attributes.find_opt Attributes.prose_description self.att with
-    | Some (Attributes.StringAttribute s) -> s
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
     | _ -> assert false
 
   let math_macro self =
-    match find_opt math_macro self.att with
+    match find_opt AttributeKey.Math_Macro self.att with
     | Some (StringAttribute s) -> Some s
     | _ -> None
 
   let prose_application self =
-    match find_opt prose_application self.att with
+    match find_opt AttributeKey.Prose_Application self.att with
     | Some (StringAttribute s) -> s
     | _ -> assert false
 
   let math_layout self =
-    match find_opt math_layout self.att with
+    match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
 
@@ -271,8 +288,8 @@ module Constant : sig
   val name : t -> string
   val prose_description : t -> string
   val math_macro : t -> string option
-  val attributes_to_list : t -> (string * Attributes.attribute) list
-  val make : string -> (string * Attributes.attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val make : string -> (AttributeKey.t * attribute) list -> t
 end = struct
   type t = { name : string; att : Attributes.t }
 
@@ -283,12 +300,12 @@ end = struct
   let make name attributes = { name; att = Attributes.of_list attributes }
 
   let prose_description self =
-    match Attributes.find_opt Attributes.prose_description self.att with
-    | Some (Attributes.StringAttribute s) -> s
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
     | _ -> assert false
 
   let math_macro self =
-    match find_opt math_macro self.att with
+    match find_opt AttributeKey.Math_Macro self.att with
     | Some (StringAttribute s) -> Some s
     | _ -> None
 

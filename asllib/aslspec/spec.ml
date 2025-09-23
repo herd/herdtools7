@@ -206,11 +206,11 @@ module Check = struct
   let check_mandatory_attributes_for_definition_node defining_node =
     let attributes = definition_node_attributes defining_node in
     let mandatory_attrs =
-      let open Attributes in
+      let open AttributeKey in
       match defining_node with
       | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
-          [ prose_description ]
-      | Node_Relation _ -> [ prose_description; prose_application ]
+          [ Prose_Description ]
+      | Node_Relation _ -> [ Prose_Description; Prose_Application ]
     in
     List.iter
       (fun attr ->
@@ -218,7 +218,7 @@ module Check = struct
           let name = definition_node_name defining_node in
           let msg =
             Format.sprintf "element '%s' is missing mandatory attribute: '%s'"
-              name attr
+              name (AttributeKey.to_str attr)
           in
           raise (SpecError msg))
       mandatory_attrs
