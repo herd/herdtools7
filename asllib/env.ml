@@ -45,7 +45,7 @@ module type S = sig
   type global = {
     static : StaticEnv.global;
     storage : v IMap.t;
-    stack_size : Z.t IMap.t;
+    pending_calls : Z.t IMap.t;
     call_stack : identifier annotated list;
     symbolic_path : symbolic_choice list;
   }
@@ -75,9 +75,9 @@ module type S = sig
   val get_scope : env -> Scope.t
   val push_scope : env -> env
   val pop_scope : env -> env -> env
-  val get_stack_size : identifier -> env -> Z.t
-  val incr_stack_size : pos:'a annotated -> identifier -> global -> global
-  val decr_stack_size : identifier -> global -> global
+  val get_pending_calls : identifier -> env -> Z.t
+  val incr_pending_calls : pos:'a annotated -> identifier -> global -> global
+  val decr_pending_calls : identifier -> global -> global
   val push_symbolic_choice : symbolic_choice -> env -> env
 end
 
@@ -95,7 +95,7 @@ module RunTime (C : RunTimeConf) = struct
   type global = {
     static : StaticEnv.global;
     storage : C.v IMap.t;
-    stack_size : Z.t IMap.t;
+    pending_calls : Z.t IMap.t;
     call_stack : identifier annotated list;
     symbolic_path : symbolic_choice list;
   }
@@ -118,7 +118,7 @@ module RunTime (C : RunTimeConf) = struct
     {
       static;
       storage;
-      stack_size = IMap.empty;
+      pending_calls = IMap.empty;
       call_stack = [];
       symbolic_path = [];
     }
@@ -254,15 +254,15 @@ module RunTime (C : RunTimeConf) = struct
   (* --------------------------------------------------------------------------*)
   (* Call stack utils *)
 
-  let get_stack_size name env =
-    try IMap.find name env.global.stack_size with Not_found -> Z.zero
+  let get_pending_calls name env =
+    try IMap.find name env.global.pending_calls with Not_found -> Z.zero
 
-  let _incr_stack_size name =
+  let _incr_pending_calls name =
     IMap.update name @@ function
     | None -> Some Z.one
     | Some z -> Some (Z.succ z)
 
-  let _decr_stack_size name =
+  let _decr_pending_calls name =
     IMap.update name @@ function
     | None -> assert false
     | Some z -> Some (Z.pred z)
@@ -272,17 +272,17 @@ module RunTime (C : RunTimeConf) = struct
 
   let _pop_call_stack = function [] -> assert false | _ :: t -> t
 
-  let incr_stack_size ~pos name global =
+  let incr_pending_calls ~pos name global =
     {
       global with
-      stack_size = _incr_stack_size name global.stack_size;
+      pending_calls = _incr_pending_calls name global.pending_calls;
       call_stack = _push_call_stack ~pos name global.call_stack;
     }
 
-  let decr_stack_size name global =
+  let decr_pending_calls name global =
     {
       global with
-      stack_size = _decr_stack_size name global.stack_size;
+      pending_calls = _decr_pending_calls name global.pending_calls;
       call_stack = _pop_call_stack global.call_stack;
     }
 

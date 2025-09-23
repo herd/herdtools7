@@ -49,6 +49,10 @@ module type S = sig
   type 'a maybe_exception =
     | Normal of 'a
     | Throwing of value_read_from * AST.ty * IEnv.env
+    | Cutoff
+  (* the [Cutoff] variant is an implementation only variant, used to
+     short-cut executions that do not comply with loop unrolling parameters.
+  *)
 
   val eval_expr :
     IEnv.env -> AST.expr -> (B.value * IEnv.env) maybe_exception B.m
@@ -67,6 +71,7 @@ module type Config = sig
   module Instr : Instrumentation.SEMINSTR
 
   val unroll : int
+  val recursive_unroll : string -> int option
   val error_handling_time : Error.error_handling_time
   val empty_branching_effects_optimization : bool
   val log_nondet_choice : bool
@@ -96,6 +101,7 @@ module Make (B : Backend.S) (C : Config) = struct
   type 'a maybe_exception =
     | Normal of 'a
     | Throwing of value_read_from * ty * env
+    | Cutoff
 
   (** An intermediate result of a statement. *)
   type control_flow_state =
@@ -145,12 +151,19 @@ module Make (B : Backend.S) (C : Config) = struct
 
   let fatal_from_no_env pos = Error.fatal_from pos
 
-  let fatal_from_genv pos genv e =
+  let display_call_stack pos genv =
     if C.display_call_stack_on_error then
-      Format.eprintf "@[<2>%a:@ @]" pp_pos (pos, genv);
+      Format.eprintf "@[<2>%a:@ @]" pp_pos (pos, genv)
+
+  let fatal_from_genv pos genv e =
+    display_call_stack pos genv;
     Error.fatal_from pos e
 
   let fatal_from pos env e = fatal_from_genv pos env.IEnv.global e
+
+  let fail_from pos env e =
+    display_call_stack pos env.IEnv.global;
+    B.fail (Error.ASLException (add_pos_from pos e)) Cutoff
 
   (*****************************************************************************)
   (*                                                                           *)
@@ -158,6 +171,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (*                                                                           *)
   (*****************************************************************************)
 
+  let zero = B.v_of_int 0
   let one = B.v_of_int 1
   let true_at ~loc = E_Literal (L_Bool true) |> add_pos_from loc
   let false_at ~loc = E_Literal (L_Bool false) |> add_pos_from loc
@@ -232,7 +246,9 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Exceptions *)
   let bind_exception binder m f =
-    binder m (function Normal v -> f v | Throwing _ as res -> return res)
+    binder m (function
+      | Normal v -> f v
+      | (Throwing _ | Cutoff) as res -> return res)
 
   let bind_exception_seq m f = bind_exception B.bind_seq m f
   let ( let**| ) = bind_exception_seq
@@ -261,7 +277,7 @@ module Make (B : Backend.S) (C : Config) = struct
           (loop_pos, env.IEnv.global)
           loop_name
       in
-      B.cutoffT msg env >>= return_continue
+      B.cutoffT msg Cutoff
     else f env'
 
   let bind_maybe_unroll loop_name undet =
@@ -304,8 +320,12 @@ module Make (B : Backend.S) (C : Config) = struct
               match eval_res with
               | Normal (v, env2) -> return (v, env2)
               | Throwing (_, ty, _env2) ->
-                  fatal_from d env (UnexpectedInitialisationThrow (ty, name)))
+                  fatal_from d env (UnexpectedInitialisationThrow (ty, name))
+              | Cutoff ->
+                  Printf.eprintf "Unexpected initialisation cutoff.\n%!";
+                  assert false)
         in
+
         let scope = B.Scope.global ~init:true in
         let* () = B.on_write_identifier name scope v in
         let env3 = IEnv.declare_global name v env2 in
@@ -343,13 +363,13 @@ module Make (B : Backend.S) (C : Config) = struct
   let discard_exception m =
     B.bind_data m @@ function
     | Normal v -> return v
-    | Throwing _ -> assert false
+    | Throwing _ | Cutoff -> assert false
 
   let bind_env m f =
     B.delay m @@ fun res m ->
     match res with
     | Normal (_v, env) -> f (discard_exception m >=> fst, env)
-    | Throwing _ as res ->
+    | (Throwing _ | Cutoff) as res ->
         (* Do not discard [m], otherwise events are lost *)
         m >>= fun _ -> return res
 
@@ -757,6 +777,7 @@ module Make (B : Backend.S) (C : Config) = struct
             PP.pp_ty ty PP.pp_expr e
         in
         fatal_from e env (Error.UnexpectedSideEffect msg)
+    | Cutoff -> assert false
   (* End *)
 
   (* Runtime checks *)
@@ -1258,7 +1279,7 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
-    | S_Unreachable -> fatal_from s env Error.UnreachableReached
+    | S_Unreachable -> fail_from s env Error.UnreachableReached
 
   (* Evaluation of Blocks *)
   (* -------------------- *)
@@ -1267,7 +1288,7 @@ module Make (B : Backend.S) (C : Config) = struct
     let block_env = IEnv.push_scope env in
     let*| res = eval_stmt block_env stm in
     match res with
-    | Normal (Returning _) -> return res
+    | Normal (Returning _) | Cutoff -> return res
     | Normal (Continuing env_cont) ->
         let new_env = IEnv.pop_scope env env_cont in
         return_continue new_env
@@ -1294,14 +1315,27 @@ module Make (B : Backend.S) (C : Config) = struct
               (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
 
   and check_recurse_limit pos name env e_limit_opt =
+    let check_recurse_cutoff pending_calls =
+      match C.recursive_unroll name with
+      | None -> return_normal ()
+      | Some unroll ->
+          let () =
+            if false then
+              Format.eprintf
+                "@[%a@ Got stack size of %a for %S (unroll is set to %d).@]@."
+                PP.pp_pos pos Z.pp_print pending_calls name unroll
+          in
+          if Z.lt (Z.of_int unroll) pending_calls then B.cutoffT name Cutoff
+          else return_normal ()
+    in
+    let pending_calls = IEnv.get_pending_calls name env in
     let* limit_opt = eval_limit env e_limit_opt in
     match limit_opt with
-    | None -> return ()
+    | None -> check_recurse_cutoff pending_calls
     | Some limit ->
-        let stack_size = IEnv.get_stack_size name env in
-        if limit < stack_size then
+        if limit < pending_calls then
           fatal_from pos env Error.RecursionLimitReached
-        else return ()
+        else check_recurse_cutoff pending_calls
 
   and tick_loop_limit loc env limit_opt =
     match limit_opt with
@@ -1388,7 +1422,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* If an explicit throw has been made in the [try] block: *)
     B.bind_seq s_m @@ function
     (*  Begin CatchNoThrow *)
-    | Normal _ as res -> return res |: SemanticsRule.CatchNoThrow
+    | (Normal _ | Cutoff) as res -> return res |: SemanticsRule.CatchNoThrow
     (* End *)
     | Throwing (v, v_ty, env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
@@ -1429,18 +1463,19 @@ module Make (B : Backend.S) (C : Config) = struct
     let*^ vparams, env1 = eval_expr_list_m env params in
     let*^ vargs, env2 = eval_expr_list_m env1 args in
     let* vargs = vargs and* vparams = vparams in
-    let genv = IEnv.incr_stack_size ~pos name env2.global in
+    let genv = IEnv.incr_pending_calls ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
     B.bind_seq res @@ function
     | Throwing (v, v_ty, env_throw) ->
-        let genv2 = IEnv.decr_stack_size name env_throw.global in
+        let genv2 = IEnv.decr_pending_calls name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return (Throwing (v, v_ty, new_env)) |: SemanticsRule.Call
     | Normal (ms, global) ->
         let ms2 = List.map read_value_from ms in
-        let genv2 = IEnv.decr_stack_size name global in
+        let genv2 = IEnv.decr_pending_calls name global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return_normal (ms2, new_env) |: SemanticsRule.Call
+    | Cutoff -> return Cutoff
   (* End *)
 
   (* Evaluation of Subprograms *)
@@ -1509,7 +1544,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (let () = if false then Format.eprintf "Evaluating %s.@." name in
          let scope = B.Scope.new_local name in
          let env1 = IEnv.{ global = genv; local = local_empty_scoped scope } in
-         let* () = check_recurse_limit pos name env1 recurse_limit in
+         let**| () = check_recurse_limit pos name env1 recurse_limit in
          let declare_arg envm x m = declare_local_identifier_mm envm x m in
          let arg_names = List.map fst arg_decls in
          let env2 =
@@ -1557,7 +1592,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let run_typed_env env (static_env : StaticEnv.global) main_name (ast : AST.t)
       : B.value m =
     let*| env = build_genv env eval_expr static_env ast in
-    let env = IEnv.incr_stack_size ~pos:dummy_annotated main_name env in
+    let env = IEnv.incr_pending_calls ~pos:dummy_annotated main_name env in
     let*| res =
       eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
@@ -1567,7 +1602,8 @@ module Make (B : Backend.S) (C : Config) = struct
         Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, main_name)))
     | Throwing ((v, _, _), ty, _genv) ->
         let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
-        Error.fatal_unknown_pos (Error.UncaughtException msg))
+        Error.fatal_unknown_pos (Error.UncaughtException msg)
+    | Cutoff -> return zero)
     |: SemanticsRule.Spec
 
   let run_typed env main_name ast = run_typed_env [] env main_name ast

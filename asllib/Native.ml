@@ -254,6 +254,8 @@ module NativeBackend (C : Config) = struct
     let bv = as_bitvector bv in
     Bitvector.length bv |> v_of_int
 
+  let fail exn _a = raise exn
+
   module Primitives = struct
     let return_one v = return [ return v ]
 
@@ -504,6 +506,7 @@ end
 
 module NativeConfig (I : Instrumentation.SEMINSTR) = struct
   let unroll = 0
+  let recursive_unroll _ = None
   let error_handling_time = Error.Dynamic
   let empty_branching_effects_optimization = true
   let log_nondet_choice = false

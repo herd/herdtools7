@@ -1,0 +1,9 @@
+Test recurse-too-far Required
+States 0
+Loop Ok
+Witnesses
+Positive: 0 Negative: 0
+Condition forall (true)
+Observation recurse-too-far Never 0 0
+Hash=bf14c45f7cc4275b98707a4bdaa28846
+

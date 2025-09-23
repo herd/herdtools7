@@ -1,0 +1,10 @@
+Test recurse-read-memory Required
+States 1
+0:main.0.n=3;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation recurse-read-memory Always 1 0
+Hash=e953130aa9c1f377472928780c22b2f7
+

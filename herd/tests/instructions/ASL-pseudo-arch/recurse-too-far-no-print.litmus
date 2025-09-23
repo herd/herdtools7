@@ -1,9 +1,6 @@
-ASL recurse-read-memory-too-far
+ASL recurse-too-far-no-print
 
-{
-  x = 10;
-  0: X1= x;
-}
+{ }
 
 func T0(x:integer) => integer
 recurselimit 10
@@ -15,12 +12,9 @@ end;
 
 func main() => integer
 begin
-  let x = read_register(1);
-  let read = UInt(read_memory{64}(x));
-  let n = T0(read);
+  let n = T0(10);
+  print(123456);
   return 0;
 end;
 
 locations [0:main.0.n;]
-
-

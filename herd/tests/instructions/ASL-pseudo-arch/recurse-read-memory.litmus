@@ -1,7 +1,7 @@
 ASL recurse-read-memory
 
 {
-  x = 1;
+  x = 3;
   0: X1= x;
 }
 
