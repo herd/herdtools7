@@ -31,7 +31,7 @@ This chapter defines the following helper relations for operating on \nativevalu
 \hypertarget{def-getpendingcalls}{}
 The function
 \[
-\getpendingcalls(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto \overname{\vs}{\N}
+\getpendingcalls(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto \overname{\vs}{\N}
 \]
 retrieves the value associated with $\name$ in $\denv.\pendingcalls$ or $0$ if no value is associated with it.
 
@@ -57,7 +57,7 @@ $\name$ in $\denv.\pendingcalls$ otherwise.
 \hypertarget{def-setpendingcalls}{}
 The function
 \[
-\setpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier} \aslsep \overname{\vv}{\N}) \aslto
+\setpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier} \aslsep \overname{\vv}{\N}) \aslto
 \overname{\newgenv}{\dynamicenvs}
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
@@ -84,7 +84,7 @@ define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pending
 \hypertarget{def-incrpendingcalls}{}
 The function
 \[
-\incrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\incrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto
 \overname{\newgenv}{\globaldynamicenvs}
 \]
 increments the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
@@ -118,7 +118,7 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 \hypertarget{def-decrpendingcalls}{}
 The function
 \[
-\decrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\identifier}) \aslto
+\decrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto
 \overname{\newgenv}{\globaldynamicenvs} \cup \overname{\newdenv}{\dynamicenvs}
 \]
 decrements the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.

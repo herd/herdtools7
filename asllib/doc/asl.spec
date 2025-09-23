@@ -776,10 +776,10 @@ typedef global_dynamic_envs
     } =
     [
         storage: partial Identifier -> native_value,
-        stack_size: partial Identifier -> N
+        pending_calls: partial Identifier -> N
     ]
     {
-        prose_description = "global dynamic environment with storage mapping {storage} and stack size mapping {stacksize}",
+        prose_description = "global dynamic environment with storage mapping {storage} and pending calls mapping {pending_calls}",
     }
 ;
 
