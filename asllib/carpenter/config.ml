@@ -498,8 +498,8 @@ module Parse = struct
       module Syntax = M
     end : S)
 
-  (** [iteri_lines filename cont] calls [cont lineno line] for every line in
-      the file.
+  (** [iteri_lines filename cont] calls [cont lineno line] for every line in the
+      file.
 
       If [cont lineno line], it interrupts the iteration without any error
       message. *)

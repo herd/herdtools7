@@ -24,13 +24,12 @@ end = struct
   (** A map from identifiers. *)
 
   type t = int AtomMap.t
-  (** A unitary monomial.
-      They are unitary in the sense that they do not have any factors:
-      {m 3 \times X^2 } is not unitary, while {m x^2 } is.
+  (** A unitary monomial. They are unitary in the sense that they do not have
+      any factors: {m 3 \times X^2 } is not unitary, while {m x^2 } is.
 
-      Maps each variable to its exponent.
-      For example: {m X^2 + Y^4 } represented by {m X \to 2, Y \to 4 },
-      and {m 1 } is represented by the empty map.
+      Maps each variable to its exponent. For example: {m X^2 + Y^4 }
+      represented by {m X \to 2, Y \to 4 }, and {m 1 } is represented by the
+      empty map.
 
       Invariant: all integer exponents are strictly positive. *)
 
@@ -104,10 +103,8 @@ end = struct
   (** A map from a monomial. *)
 
   type t = Q.t MonomialMap.t
-  (** A polynomial.
-      Maps each monomial to its factor.
-      For example, {m X^2 - X + 4 } is represented by
-      {m X^2 \to 1, X \to -1, 1 \to 4 } *)
+  (** A polynomial. Maps each monomial to its factor. For example,
+      {m X^2 - X + 4 } is represented by {m X^2 \to 1, X \to -1, 1 \to 4 } *)
 
   let equal = MonomialMap.equal Q.equal
 

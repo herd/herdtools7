@@ -26,7 +26,8 @@ module TimeFrame = struct
   let of_gdk =
     let open AST in
     function
-    | GDK_Constant -> Constant | GDK_Config | GDK_Let | GDK_Var -> Execution
+    | GDK_Constant -> Constant
+    | GDK_Config | GDK_Let | GDK_Var -> Execution
 end
 
 type read = { name : identifier; time_frame : TimeFrame.t; immutable : bool }

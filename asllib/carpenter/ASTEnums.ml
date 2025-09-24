@@ -186,7 +186,10 @@ module Make (C : Config.S) = struct
     and e_arbitrary =
       let make_arbitrary name = E_Arbitrary (t_named name) in
       names |> map make_arbitrary
-    and e_pattern = empty (* TODO *) in
+    and e_pattern =
+      empty
+      (* TODO *)
+    in
     [
       (if C.Syntax.e_unop then Some e_unops else None);
       (if C.Syntax.e_binop then Some e_binops else None);

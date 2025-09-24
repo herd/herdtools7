@@ -145,8 +145,8 @@ module RunTime (C : RunTimeConf) = struct
     | [] -> assert false
     | _ :: unroll -> set_unroll env unroll
 
-  (** [tick_decr env] decrements the unrolling stack of env and returns
-      wheather it has poped something or not. *)
+  (** [tick_decr env] decrements the unrolling stack of env and returns wheather
+      it has poped something or not. *)
   let tick_decr env =
     match env.local.unroll with
     | [] -> assert false
@@ -238,8 +238,8 @@ module RunTime (C : RunTimeConf) = struct
   let push_scope env = { env with local = { env.local with declared = [] } }
 
   (** [patch_mem ~t_env ~t_mem to_avoid] is the storage formed with the bindings
-    of [t_env], the memory of [t_mem] except for the cells bound to the
-    variables in [to_avoid]. *)
+      of [t_env], the memory of [t_mem] except for the cells bound to the
+      variables in [to_avoid]. *)
   let patch_mem ~t_env ~t_mem to_avoid =
     List.fold_left (fun t x -> IMap.remove x t) t_env to_avoid
     |> IMap.mapi (fun x _ -> IMap.find x t_mem)

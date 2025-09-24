@@ -148,8 +148,8 @@ let with_empty_local global =
 
 (** [lookup x env] is the value of x as defined in environment.
 
-(* Begin LookupConstant *)
-      @raise Not_found if it is not defined inside. *)
+    (* Begin LookupConstant *)
+    @raise Not_found if it is not defined inside. *)
 let lookup_constant env x =
   try IMap.find x env.local.constant_values
   with Not_found ->

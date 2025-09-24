@@ -54,7 +54,8 @@ type delayed_warning = unit -> unit
 type precision_loss_flag =
   | Precision_Full  (** No loss of precision *)
   | Precision_Lost of delayed_warning list
-      (** A loss of precision comes with a list of warnings that can explain why the loss of precision happened. *)
+      (** A loss of precision comes with a list of warnings that can explain why
+          the loss of precision happened. *)
 
 (* -------------------------------------------------------------------------
 
@@ -107,10 +108,9 @@ type binop =
 
 (** {2 Literals}
 
-    Literals are the values written straight into ASL specifications.
-    There is only literal constructors for a few concepts that could be
-    encapsulated into an ASL value.
-*)
+    Literals are the values written straight into ASL specifications. There is
+    only literal constructors for a few concepts that could be encapsulated into
+    an ASL value. *)
 
 (** Main value type, parametric on its base values *)
 type literal =
@@ -137,8 +137,8 @@ type subprogram_type =
       (** A function is a subprogram with a return type, called from an
           expression. *)
   | ST_Getter
-      (** A getter is a special function called with a syntax similar to
-          slices. *)
+      (** A getter is a special function called with a syntax similar to slices.
+      *)
   | ST_EmptyGetter
       (** An empty getter is a special function called with a syntax similar to
           a variable. This is relevant only for V0. *)
@@ -146,8 +146,8 @@ type subprogram_type =
       (** A setter is a special procedure called with a syntax similar to slice
           assignment. *)
   | ST_EmptySetter
-      (** An empty setter is a special procedure called with a syntax similar
-          to an assignment to a variable. This is relevant only for V0. *)
+      (** An empty setter is a special procedure called with a syntax similar to
+          an assignment to a variable. This is relevant only for V0. *)
 
 (** Expressions. Parametric on the type of literals. *)
 type expr_desc =
@@ -160,17 +160,14 @@ type expr_desc =
   | E_Slice of expr * slice list
   | E_Cond of expr * expr * expr
   | E_GetArray of expr * expr
-      (** [E_GetArray base index] Represents an access to an array given
-        by the expression [base] at index [index].
-        When this node appears in the untyped AST, the index may either
-        be integer-typed or enumeration-typed.
-        When this node appears in the typed AST, the index can only be
-        integer-typed.
-    *)
+      (** [E_GetArray base index] Represents an access to an array given by the
+          expression [base] at index [index]. When this node appears in the
+          untyped AST, the index may either be integer-typed or
+          enumeration-typed. When this node appears in the typed AST, the index
+          can only be integer-typed. *)
   | E_GetEnumArray of expr * expr
-      (** Access an array with an enumeration index.
-        This constructor is only part of the typed AST.
-    *)
+      (** Access an array with an enumeration index. This constructor is only
+          part of the typed AST. *)
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
   | E_GetCollectionFields of identifier * identifier list
@@ -183,17 +180,14 @@ type expr_desc =
           each array cell.
 
           This expression constructor is only part of the typed AST, i.e. it is
-          only built by the type-checker, not any parser.
-      *)
+          only built by the type-checker, not any parser. *)
   | E_EnumArray of { enum : identifier; labels : identifier list; value : expr }
       (** Initial value for an array where the index is the enumeration [enum],
-          which declares the list of labels [labels],
-          and the content of each cell is given by [value].
-          [enum] is only used for pretty-printing.
+          which declares the list of labels [labels], and the content of each
+          cell is given by [value]. [enum] is only used for pretty-printing.
 
           This expression constructor is only part of the typed AST, i.e. it is
-          only built by the type-checker, not any parser.
-      *)
+          only built by the type-checker, not any parser. *)
   | E_Arbitrary of ty
   | E_Pattern of expr * pattern
 
@@ -219,11 +213,11 @@ and slice =
   | Slice_Range of expr * expr
       (** [Slice_Range (j, i)] denotes the slice from [i] to [j - 1]. *)
   | Slice_Length of expr * expr
-      (** [Slice_Length (i, n)] denotes the slice starting at [i] of length
-          [n]. *)
+      (** [Slice_Length (i, n)] denotes the slice starting at [i] of length [n].
+      *)
   | Slice_Star of expr * expr
-      (** [Slice_Start (factor, length)] denotes the slice starting at [factor
-          * length] of length [n]. *)
+      (** [Slice_Start (factor, length)] denotes the slice starting at
+          [factor * length] of length [n]. *)
 (** All positions mentioned above are inclusive. *)
 
 and call = {
@@ -273,11 +267,12 @@ and constraint_kind =
       (** An integer type constrained from ASL syntax: it is the union of each
           constraint in the list. *)
   | PendingConstrained
-      (** An integer type whose constraint will be inferred during type-checking. *)
+      (** An integer type whose constraint will be inferred during
+          type-checking. *)
   | Parameterized of identifier
-      (** A parameterized integer, the default type for parameters of
-          function at compile time, with a unique identifier and the variable
-          bearing its name. *)
+      (** A parameterized integer, the default type for parameters of function
+          at compile time, with a unique identifier and the variable bearing its
+          name. *)
 
 (** Represent static slices on a given bitvector type. *)
 and bitfield =
@@ -315,17 +310,14 @@ type lexpr_desc =
   | LE_Var of identifier
   | LE_Slice of lexpr * slice list
   | LE_SetArray of lexpr * expr
-      (** [LE_SetArray base index] represents a write to an array given
-        by the expression [base] at index [index].
-        When this node appears in the untyped AST, the index may either
-        be integer-typed or enumeration-typed.
-        When this node appears in the typed AST, the index can only be
-        integer-typed.
-    *)
+      (** [LE_SetArray base index] represents a write to an array given by the
+          expression [base] at index [index]. When this node appears in the
+          untyped AST, the index may either be integer-typed or
+          enumeration-typed. When this node appears in the typed AST, the index
+          can only be integer-typed. *)
   | LE_SetEnumArray of lexpr * expr
-      (** Represents a write to an array with an enumeration index.
-        This constructor is only part of the typed AST.
-    *)
+      (** Represents a write to an array with an enumeration index. This
+          constructor is only part of the typed AST. *)
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list * (int * int) list
       (** [LE_SetFields (le, fields, _)] unpacks the various fields. Third
@@ -344,8 +336,7 @@ type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
     the local declaration item:
     {v
       let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
-    v}
-*)
+    v} *)
 type local_decl_item =
   | LDI_Var of identifier
       (** [LDI_Var x] is the variable declaration of the variable [x], used for
@@ -353,8 +344,7 @@ type local_decl_item =
   | LDI_Tuple of identifier list
       (** [LDI_Tuple names] is the tuple declarations of [names], for example:
           {v let (x, y, z) = (1, 2, 3); v}
-          We expect the list to contain at least 2 items.
-      *)
+          We expect the list to contain at least 2 items. *)
 
 (** Statements. Parametric on the type of literals in expressions. *)
 type for_direction = Up | Down
@@ -389,9 +379,8 @@ type stmt_desc =
           type-checking.
 
           [newline] indicates if the print statement should add an extra new
-          line after printing all the arguments.
-          [debug] indicates if the print statement has been made using the
-          ASLRef specific function [__debug].
+          line after printing all the arguments. [debug] indicates if the print
+          statement has been made using the ASLRef specific function [__debug].
       *)
   | S_Unreachable
       (** The unreachable statement, as an explicit node as it has a specific
@@ -405,8 +394,8 @@ and case_alt_desc = { pattern : pattern; where : expr option; stmt : stmt }
 and case_alt = case_alt_desc annotated
 
 and catcher = identifier option * ty * stmt
-(** The optional name of the matched exception, the guard type and the
-    statement to be executed if the guard matches. *)
+(** The optional name of the matched exception, the guard type and the statement
+    to be executed if the guard matches. *)
 
 (* -------------------------------------------------------------------------
 
@@ -429,8 +418,8 @@ type func_qualifier =
       (** A `readonly` subprogram can read mutable state but not modify it. It
           can be called in assertions. *)
   | Noreturn
-      (** A `noreturn` subprogram always terminates by a thrown exception
-          or calling `Unreachable`. *)
+      (** A `noreturn` subprogram always terminates by a thrown exception or
+          calling `Unreachable`. *)
 
 type override_info =
   | Impdef  (** A function which can be overridden *)

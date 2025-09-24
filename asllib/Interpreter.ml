@@ -334,8 +334,9 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Begin EvalBuildGlobalEnv *)
 
-  (** [build_genv penv static_env ast primitives] is the global environment before
-      the start of the evaluation of [ast], with predefined values in [penv]. *)
+  (** [build_genv penv static_env ast primitives] is the global environment
+      before the start of the evaluation of [ast], with predefined values in
+      [penv]. *)
   let build_genv env0 eval_expr (static_env : StaticEnv.global) (ast : AST.t) =
     let () =
       if _dbg then
@@ -481,12 +482,12 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     function [] -> default | x :: li -> List.fold_left folder x li
 
-  (** [check_non_overlapping_slices slices value_ranges] checks that the
-      slice ranges [value_ranges] are non-overlapping.
+  (** [check_non_overlapping_slices slices value_ranges] checks that the slice
+      ranges [value_ranges] are non-overlapping.
 
-      [value_ranges] are given by a list of couples [(start, length)].
-      If they are overlapping, an error [OverlappingSlices (slices, Dynamic)]
-      is thrown. *)
+      [value_ranges] are given by a list of couples [(start, length)]. If they
+      are overlapping, an error [OverlappingSlices (slices, Dynamic)] is thrown.
+  *)
   let check_non_overlapping_slices ~pos env slices value_ranges =
     let check_two_ranges_are_non_overlapping (s1, l1) m (s2, l2) =
       let* () = m in
@@ -525,8 +526,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* ------------------------- *)
 
   (** [eval_expr] specifies how to evaluate an expression [e] in an environment
-      [env]. More precisely, [eval_expr env e] is the monadic evaluation  of
-      [e] in [env]. *)
+      [env]. More precisely, [eval_expr env e] is the monadic evaluation of [e]
+      in [env]. *)
   let rec eval_expr (env : env) (e : expr) : expr_eval_type =
     if false then Format.eprintf "@[<3>Eval@ @[%a@]@]@." PP.pp_expr e;
     match e.desc with
@@ -990,9 +991,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Slices *)
   (* -------------------- *)
 
-  (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that
-      corresponds to the start (included) and the length of each slice in
-      [slices]. *)
+  (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that corresponds
+      to the start (included) and the length of each slice in [slices]. *)
   and eval_slices env :
       slice list -> (B.value_range list * env) maybe_exception m =
     (* Begin EvalSlice *)
@@ -1456,8 +1456,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* ---------------------------- *)
 
   (** [eval_call pos name env ~params ~args] evaluates the call to function
-      [name] with arguments [args] and parameters [params].
-      The arguments/parameters are labelled to avoid confusion. *)
+      [name] with arguments [args] and parameters [params]. The
+      arguments/parameters are labelled to avoid confusion. *)
   (* Begin EvalCall *)
   and eval_call pos name env ~params ~args =
     let*^ vparams, env1 = eval_expr_list_m env params in
@@ -1481,10 +1481,10 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Subprograms *)
   (* ----------------------- *)
 
-  (** [eval_subprogram genv name pos ~params ~args] evaluates the function named [name]
-      in the global environment [genv], with [args] the actual arguments, and
-      [params] the positional parameters.
-      The arguments/parmeters are labelled to avoid confusion. *)
+  (** [eval_subprogram genv name pos ~params ~args] evaluates the function named
+      [name] in the global environment [genv], with [args] the actual arguments,
+      and [params] the positional parameters. The arguments/parmeters are
+      labelled to avoid confusion. *)
   and eval_subprogram (genv : IEnv.global) name pos ~params
       ~(args : B.value m list) : func_eval_type =
     match IMap.find_opt name genv.static.subprograms with

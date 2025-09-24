@@ -8,9 +8,9 @@
        constant x: integer = 4;
        constant y: integer = x + 1;
     v}
-    the type-checker should first type-check [x] and put it in the
-    environment, before type-checking [y], which would otherwise complain about
-    [x] not being defined.
+    the type-checker should first type-check [x] and put it in the environment,
+    before type-checking [y], which would otherwise complain about [x] not being
+    defined.
 
     We also need strongly connected components analysis for mutually recursive
     functions, which are allowed in ASL. For example, the following example
@@ -23,8 +23,7 @@
        begin return if x <= 0 then -x else 1 + f(x); end
     v}
     Those two function should be handled by the type-checker at the same time:
-    both need the declaration of the other to be correctly type-checked.
-*)
+    both need the declaration of the other to be correctly type-checked. *)
 
 (** Entry-point for dependency-ordered iterations on ASTs. *)
 module ASTFold : sig
@@ -52,8 +51,7 @@ end
 
 (** Abstract topological sorting module.
 
-    This implements the Trajan algorithm.
-*)
+    This implements the Trajan algorithm. *)
 module Make (O : OrderedHashedType) : sig
   type succs = O.t -> O.t list
   (** Type of functions returning the successor of a node. *)

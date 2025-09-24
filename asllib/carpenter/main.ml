@@ -191,11 +191,14 @@ let rec on_ast_tree on_ast ast_tree =
   | Some ast1 ->
       (* Generate all the children *)
       QCheck2.Tree.children ast_tree
-      |> (* Lazily execute them *)
+      |>
+      (* Lazily execute them *)
       Seq.map (on_ast_tree on_ast)
-      |> (* Append at the end our previous error *)
+      |>
+      (* Append at the end our previous error *)
       Fun.flip Seq.append (Seq.return (Some ast1))
-      |> (* Find the first child that has an error. *)
+      |>
+      (* Find the first child that has an error. *)
       Seq.find_map Fun.id
 
 let fuzz small (config, instr, type_only, target, o, progress) n =

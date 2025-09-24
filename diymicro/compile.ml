@@ -1,5 +1,5 @@
 (** Transforms a cycle into a test, ie generates instructions, init and final
-conditions, and dumps them to a litmus test *)
+    conditions, and dumps them to a litmus test *)
 
 module A = AArch64_compile
 

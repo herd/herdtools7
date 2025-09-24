@@ -42,14 +42,11 @@ type t = int * string
 (** A bitvector is given by its length in bits and its containing data.
 
     Note that the stored data is a string, but only for performance and
-    immutability of values reasons. This should not be printed as is, and
-    users should use the dedicated printing primitives.
+    immutability of values reasons. This should not be printed as is, and users
+    should use the dedicated printing primitives.
 
-    Invariant:
-    For a value (length, data), we have
-      String.length data = length / 8 + 1
-
-*)
+    Invariant: For a value (length, data), we have String.length data = length /
+    8 + 1 *)
 
 (* Accessors. *)
 let length = fst
@@ -384,7 +381,8 @@ let logxor bv1 bv2 = bitwise_op ( lxor ) bv1 bv2 |> remask
 let equal bv1 bv2 =
   if false then Format.eprintf "@[%a =@ %a@]@." _pp_data bv1 _pp_data bv2;
   length bv1 == length bv2
-  && (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
+  &&
+  (* let bv1 = remask bv1 and bv2 = remask bv2 in *)
   String.equal (data bv1) (data bv2)
 
 let compare bv1 bv2 =

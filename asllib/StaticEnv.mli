@@ -29,12 +29,11 @@ type global = {
   declared_types : (ty * SideEffect.TimeFrame.t) IMap.t;
       (** Maps a type name t to its declaration and its time-frame.
 
-        As expressions on which a type depends need to be statically evaluable,
-        the only effects allowed in a type are statically evaluable, so need to
-        be reading immutable (global) storage elements. This makes it possible
-        only to store the time-frame of the type, and not the whole side-effect
-        set.
-    *)
+          As expressions on which a type depends need to be statically
+          evaluable, the only effects allowed in a type are statically
+          evaluable, so need to be reading immutable (global) storage elements.
+          This makes it possible only to store the time-frame of the type, and
+          not the whole side-effect set. *)
   constant_values : literal IMap.t;
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
@@ -59,7 +58,8 @@ type local = {
   expr_equiv : expr IMap.t;
       (** Maps immutable storage to their oldest equivalent expression. *)
   return_type : ty option;
-      (** Local return type, [None] for procedures, global constants, or setters. *)
+      (** Local return type, [None] for procedures, global constants, or
+          setters. *)
 }
 (** Store all the local environment information at compile-time. *)
 
@@ -78,7 +78,7 @@ val with_empty_local : global -> env
 val lookup_constant : env -> identifier -> literal
 (** [lookup x env] is the value of x as defined in environment.
 
-      @raise Not_found if it is not defined inside. *)
+    @raise Not_found if it is not defined inside. *)
 
 val lookup_constant_opt : env -> identifier -> literal option
 
@@ -100,16 +100,14 @@ val add_global_constant : identifier -> literal -> global -> global
 val add_local_constant : identifier -> literal -> env -> env
 
 val add_local_immutable_expr : identifier -> expr -> env -> env
-(** [add_local_immutable_expr x e env] binds [x] to [e] in [env].
-    [x] is assumed to name an immutable local storage element.
-    [e] is supposed to be the oldest expression corresponding to [x].
-*)
+(** [add_local_immutable_expr x e env] binds [x] to [e] in [env]. [x] is assumed
+    to name an immutable local storage element. [e] is supposed to be the oldest
+    expression corresponding to [x]. *)
 
 val add_global_immutable_expr : identifier -> expr -> env -> env
-(** [add_global_immutable_expr x e env] binds [x] to [e] in [env].
-    [x] is assumed to name an immutable global storage element.
-    [e] is supposed to be the oldest expression corresponding to [x].
-*)
+(** [add_global_immutable_expr x e env] binds [x] to [e] in [env]. [x] is
+    assumed to name an immutable global storage element. [e] is supposed to be
+    the oldest expression corresponding to [x]. *)
 
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
 val add_subtype : identifier -> identifier -> env -> env

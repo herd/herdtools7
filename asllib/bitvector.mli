@@ -20,7 +20,8 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-(** This module provide an interface to ASL bitvector, and main operations on it. *)
+(** This module provide an interface to ASL bitvector, and main operations on
+    it. *)
 
 type t
 (** Represent a bitvector. *)
@@ -53,18 +54,18 @@ val of_string : string -> t
 
 val of_int : int -> t
 (** [of_int i] is the bitvector of length [Sys.int_size] (e.g. 63) that
-    corresponds to [i] in two's complement little-endian, i.e. index 0
-    (for slicing operations corresponds to [i mod 2]. *)
+    corresponds to [i] in two's complement little-endian, i.e. index 0 (for
+    slicing operations corresponds to [i mod 2]. *)
 
 val of_int_sized : int -> int -> t
-(** [of_int n i] is the bitvector of length [n] that corresponds to [i] in
-    two's complement little-endian, i.e. index 0 (for slicing operations
-    corresponds to [i mod 2]. *)
+(** [of_int n i] is the bitvector of length [n] that corresponds to [i] in two's
+    complement little-endian, i.e. index 0 (for slicing operations corresponds
+    to [i mod 2]. *)
 
 val of_int64 : int64 -> t
-(** [of_int i] is the bitvector of length 64 that corresponds to [i] in
-    two's complement little-endian, i.e. index 0 (for slicing operations corresponds to
-    [i mod 2]. *)
+(** [of_int i] is the bitvector of length 64 that corresponds to [i] in two's
+    complement little-endian, i.e. index 0 (for slicing operations corresponds
+    to [i mod 2]. *)
 
 val of_z : int -> Z.t -> t
 (** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
@@ -82,8 +83,8 @@ val to_string : t -> string
     delimited by apostrophes. *)
 
 val to_string_hexa : t -> string
-(** Returns a string representing the bitvector in hexadecimal, indexed from
-    the right and preceded by '0x'. *)
+(** Returns a string representing the bitvector in hexadecimal, indexed from the
+    right and preceded by '0x'. *)
 
 val to_int : t -> int
 (** Returns an integer representing the bitvector, little-endian. Result
@@ -143,30 +144,32 @@ val highest_set_bit : t -> int
 (** Returns the index of the highest set bit. *)
 
 val prefix : t -> int -> t
-(** [prefix src len] returns the prefix of size [len] of bitvector [src].
-    Will crash if [len] is strictly more then the size of [src]. *)
+(** [prefix src len] returns the prefix of size [len] of bitvector [src]. Will
+    crash if [len] is strictly more then the size of [src]. *)
 
 val extract_slice : t -> int list -> t
 (** [extract_slice src positions] returns a bitvector whose [i]-th bit is the
     bit of [src] whose index is the [i]-th element of [positions].
-    @raise Invalid_argument if any index in positions is greater or equal to
-    the length of [src]. *)
+    @raise Invalid_argument
+      if any index in positions is greater or equal to the length of [src]. *)
 
 val write_slice : t -> t -> int list -> t
 (** [write_slice dst src positions] is a copy of [dst] where each bit at index
     [i] in [src] has been written in [dst] at the index given by the [i]-th
     element of [positions].
-    @raise Invalid_argument if [positions] has not the same length as [src],
-    or any of the indexes in [positions] is greater than the length of [dst]. *)
+    @raise Invalid_argument
+      if [positions] has not the same length as [src], or any of the indexes in
+      [positions] is greater than the length of [dst]. *)
 
 val concat : t list -> t
-(** [concat [bv2; bv1; bv0]] is the concatenation of [bv0], [bv1], and [bv2],
-    in this order, i.e. if [bv0] is not empty, the following is true:
+(** [concat [bv2; bv1; bv0]] is the concatenation of [bv0], [bv1], and [bv2], in
+    this order, i.e. if [bv0] is not empty, the following is true:
 
     {[
-    equal (extract_slice (concat [bv1; bv0]) [ 0 ]) (extract_slice bv0 [ 0 ])
-    ]}
- *)
+      equal
+        (extract_slice (concat [ bv1; bv0 ]) [ 0 ])
+        (extract_slice bv0 [ 0 ])
+    ]} *)
 
 val is_zeros : t -> bool
 (** [is_zeros bv] is true if every bit of bv is unset. *)
@@ -175,20 +178,18 @@ val is_ones : t -> bool
 (** [is_ones bv] is true if every bit of bv is set. *)
 
 (* --------------------------------------------------------------------------*)
-(**
-   {2 Bitvector masks}
+(** {2 Bitvector masks}
 
-   Bitvector in ASL can be matched against masks, that have the same syntax
-   than bitvectors, with an extra possible bit: ['x']. This bits indicates that
-   the mask would match against any bit at this position.
+    Bitvector in ASL can be matched against masks, that have the same syntax
+    than bitvectors, with an extra possible bit: ['x']. This bits indicates that
+    the mask would match against any bit at this position.
 
-   For example:
-   {[
-     assert ('01' IN {'01'}) == TRUE;
-     assert ('01' IN {'0x'}) == TRUE;
-     assert ('10' IN {'0x'}) == FALSE;
-   ]}
-*)
+    For example:
+    {[
+      assert ('01' IN {'01'}) == TRUE;
+      assert ('01' IN {'0x'}) == TRUE;
+      assert ('10' IN {'0x'}) == FALSE;
+    ]} *)
 
 type mask
 (** Internal representation of a mask. *)

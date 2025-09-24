@@ -27,10 +27,10 @@ jobs:
             with-fmt: false
             job-name: "OCaml v4.08"
             dune-cache: "enabled"
-          - ocaml-version: "5.2"
+          - ocaml-version: "dune,zarith,menhir"
             with-fmt: true
             dune-cache: "enabled-except-user-rules"
-            job-name: "OCaml v5.2, with formatting check"
+            job-name: "OCaml latest lts"
 
     name: Make test on ${{ matrix.cfg.job-name }}
 
@@ -43,7 +43,7 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml ${{ matrix.cfg.ocaml-version }}
+      - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
@@ -57,8 +57,23 @@ jobs:
 
       - run: opam exec -- make install
 
-      - run: opam install ocamlformat.0.26.2
-        if: ${{ matrix.cfg.with-fmt }}
+  check-fmt:
+    name: check format
+
+    runs-on: ubuntu-latest
+
+    env:
+      DUNE_CACHE: enabled-except-user-rules
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ocamlformat.0.27.0
+          dune-cache: true
 
       - run: opam exec -- dune fmt
-        if: ${{ matrix.cfg.with-fmt }}
+

@@ -22,10 +22,8 @@
 
 (** Type Algebra *)
 
-(**
-   Types are defined as {!type:AST.ty}. This should map pretty-well with the current
-   version of the Language Reference Manual.
-*)
+(** Types are defined as {!type:AST.ty}. This should map pretty-well with the
+    current version of the Language Reference Manual. *)
 
 open AST
 
@@ -61,8 +59,7 @@ val is_non_primitive : ty -> bool
     Usually for all [ty]:
     {[
       is_non_primitive ty = not (is_primitive ty)
-    ]}
-*)
+    ]} *)
 
 (** {1 Relations on types} *)
 
@@ -72,8 +69,8 @@ val make_anonymous : env -> ty -> ty
 (** Replace any named type by its declared type in the environment. *)
 
 val get_structure : env -> ty -> ty
-(** The structure of a type is the primitive type that can hold the same
-    values. *)
+(** The structure of a type is the primitive type that can hold the same values.
+*)
 
 val parameterized_ty : loc:'a annotated -> identifier -> ty
 (** Builds an parameterized integer type from a declared variable. *)
@@ -90,14 +87,14 @@ val get_well_constrained_structure : env -> ty -> ty
 (** {2 Orders on types} *)
 
 val subtypes : env -> ty -> ty -> bool
-(** [subtypes env t1 t2] is true if and only if [t1] is a declared subtype of [t2]. *)
+(** [subtypes env t1 t2] is true if and only if [t1] is a declared subtype of
+    [t2]. *)
 
 val subtypes_names : env -> identifier -> identifier -> bool
 (** [subtypes_names env s1 s2] is true if and only if the type named [s1] is a
     declared subtype of the type named [s2].
 
-    Equivalent to [subtypes env (T_Named s1 |> here) (T_Named s2 |> here)].
-*)
+    Equivalent to [subtypes env (T_Named s1 |> here) (T_Named s2 |> here)]. *)
 
 val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfaction test. *)
@@ -109,9 +106,8 @@ val type_clashes : env -> ty -> ty -> bool
 (** Type-clashing relation.
 
     Notes:
-      - T subtype-satisfies S implies T and S type-clash
-      - This is an equivalence relation
-*)
+    - T subtype-satisfies S implies T and S type-clash
+    - This is an equivalence relation *)
 
 val subprogram_clashes : env -> func -> func -> bool
 (** Subprogram clashing relation. *)
