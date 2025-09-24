@@ -861,30 +861,7 @@ let is_isync = function
   | Barrier ISB -> true
   | _ -> false
 
-let compare_fence b1 b2 = match b1,b2 with
-| (Barrier _,(CacheSync _|Shootdown _))
-| (CacheSync _,Shootdown _)
-  -> -1
-| Barrier b1,Barrier b2 -> barrier_compare b1 b2
-| CacheSync (s1,b1) ,CacheSync (s2,b2)->
-    begin match compare b1 b2 with
-   | 0 -> compare s1 s2
-   | r -> r
-    end
-| Shootdown (dom1,op1,sync1),Shootdown (dom2,op2,sync2) ->
-    begin match compare dom1 dom2 with
-    | 0 ->
-       begin
-         match compare op1 op2 with
-         | 0 -> compare sync1 sync2
-         | r -> r
-       end
-   | r -> r
-    end
-| (Shootdown _,(Barrier _|CacheSync _))
-| (CacheSync _,Barrier _)
-| (CMO _,_) | (_, CMO _)
- -> +1
+let compare_fence = compare
 
 
 let default = Barrier (DMB (SY,FULL))
@@ -908,9 +885,7 @@ let pp_fence f = match f with
    let tlbi = "TLBI" ^ pp_sync sync in
    sprintf "%s%s%s" tlbi
      (add_dot TLBI.short_pp_op op)
-     (match sync with
-      | NoSync -> ""
-      | Sync -> add_dot pp_domain d)
+     (add_dot pp_domain d)
 | CMO (t,loc) ->
   sprintf "%s%s"
     (match t with DC_CVAU -> "DC.CVAU" | IC_IVAU -> "IC.IVAU")
