@@ -1,6 +1,5 @@
-(** A module for querying the AST (of the semantics-specification for ASL)
-    and for checking its correctness.
-*)
+(** A module for querying the AST (of the semantics-specification for ASL) and
+    for checking its correctness. *)
 
 open AST
 module StringMap = Map.Make (String)
@@ -12,10 +11,9 @@ let variant_to_label_opt variant =
       Some label
   | _ -> None
 
-(** Wraps AST nodes that define identifiers that may appear in type terms
-  and expression terms:
-  types, constants, relations, [Label]s, labelled tuples, and labelled records.
-*)
+(** Wraps AST nodes that define identifiers that may appear in type terms and
+    expression terms: types, constants, relations, [Label]s, labelled tuples,
+    and labelled records. *)
 type definition_node =
   | Node_Type of Type.t
   | Node_Relation of Relation.t
@@ -36,12 +34,10 @@ let math_macro_opt_for_node = function
 
 (** Utility functions for handling layouts. *)
 module Layout = struct
-  (** For a relation like [ r(a,b,c) -> A|B|C ]
-    generates a term [ (r(a,b,c), (A,B,C)) ].
-    That is, a pair where the first component is a labelled tuple
-    with the relation name and arguments
-    and the second component is a tuple with all output terms.
-*)
+  (** For a relation like [ r(a,b,c) -> A|B|C ] generates a term
+      [ (r(a,b,c), (A,B,C)) ]. That is, a pair where the first component is a
+      labelled tuple with the relation name and arguments and the second
+      component is a tuple with all output terms. *)
   let relation_to_tuple def =
     let opt_named_output_terms =
       List.map (fun term -> (None, term)) (Relation.output def)
@@ -58,7 +54,7 @@ module Layout = struct
   let rec horizontal_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset t | Option t | List { member_type = t; _ } ->
+    | Powerset { term = t } | Option t | List { member_type = t; _ } ->
         horizontal_for_type_term t
     | Tuple components | LabelledTuple { components; _ } ->
         if List.length components > 1 then
@@ -81,7 +77,7 @@ module Layout = struct
   let rec default_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset t | Option t | List { member_type = t; _ } ->
+    | Powerset { term = t } | Option t | List { member_type = t; _ } ->
         default_for_type_term t
     | Tuple components | LabelledTuple { components; _ } ->
         if List.length components > 1 then
@@ -136,7 +132,9 @@ let elem_name = function
   | Elem_Type def -> Type.name def
   | Elem_Relation def -> Relation.name def
   | Elem_Constant def -> Constant.name def
+  | Elem_Render { render_name } -> render_name
 
+(** Lists nodes that define identifiers and can be referenced. *)
 let list_definition_nodes ast =
   List.fold_left
     (fun acc_nodes elem ->
@@ -154,12 +152,14 @@ let list_definition_nodes ast =
                   Node_TypeVariant variant :: acc_nodes
               | _ -> acc_nodes)
             acc_nodes (Type.variants def)
-      | Elem_Constant def -> Node_Constant def :: acc_nodes)
+      | Elem_Constant def -> Node_Constant def :: acc_nodes
+      (* Although a render defines an identifier, it does not carry semantic
+         meaning, and cannot be referenced elsewhere. *)
+      | Elem_Render _ -> acc_nodes)
     [] ast
 
-(** Generates a map from identifiers to the nodes where they are defined.
-    If two nodes with the same identifier exist, a [SpecError] is raised.
-*)
+(** Generates a map from identifiers to the nodes where they are defined. If two
+    nodes with the same identifier exist, a [SpecError] is raised. *)
 let gen_id_to_definition_node definition_nodes =
   List.fold_left
     (fun acc_map node ->
@@ -175,7 +175,8 @@ type t = {
   id_to_defining_node : definition_node StringMap.t;
       (** Associate identifiers with the AST nodes where they are defined. *)
   defined_ids : string list;
-      (** The list of identifiers defined in the spec in the order they appear. *)
+      (** The list of identifiers defined in the spec in the order they appear.
+      *)
 }
 
 let ast spec = spec.ast
@@ -223,9 +224,8 @@ module Check = struct
           raise (SpecError msg))
       mandatory_attrs
 
-  (** Checks, for each definition node, that all mandatory attributes are present.
-      The parser ensures only allowed attributes are added.
-  *)
+  (** Checks, for each definition node, that all mandatory attributes are
+      present. The parser ensures only allowed attributes are added. *)
   let check_mandatory_allowed_attributes definition_nodes =
     List.iter check_mandatory_attributes_for_definition_node definition_nodes
 
@@ -240,7 +240,7 @@ module Check = struct
     match (term, layout) with
     | Label _, Unspecified -> ()
     | Label _, _ -> raise (SpecError msg)
-    | Powerset term, _ | Option term, _ -> check_layout term layout
+    | Powerset { term }, _ | Option term, _ -> check_layout term layout
     | List { member_type }, _ -> check_layout member_type layout
     | Tuple components, Horizontal cells
     | Tuple components, Vertical cells
@@ -286,7 +286,7 @@ module Check = struct
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids = function
     | Label id -> [ id ]
-    | Powerset term -> referenced_ids term
+    | Powerset { term } -> referenced_ids term
     | Option term -> referenced_ids term
     | Tuple components ->
         List.map snd components |> Utils.list_concat_map referenced_ids
@@ -303,17 +303,21 @@ module Check = struct
         referenced_ids from_type @ referenced_ids to_type
 
   let check_no_undefined_ids_in_elem id_to_defining_node elem =
-    let terms =
+    let referenced_ids_for_list = Utils.list_concat_map referenced_ids in
+    let ids_referenced_by_elem =
       match elem with
       | Elem_Constant _ -> []
       | Elem_Type def ->
           let variants = Type.variants def in
-          List.map TypeVariant.term variants
+          referenced_ids_for_list (List.map TypeVariant.term variants)
       | Elem_Relation def ->
           let input_terms = List.map snd (Relation.input def) in
-          input_terms @ Relation.output def
+          referenced_ids_for_list (input_terms @ Relation.output def)
+      | Elem_Render { pointers } ->
+          Utils.list_concat_map
+            (fun { type_name; variant_names } -> type_name :: variant_names)
+            pointers
     in
-    let referenced_ids = Utils.list_concat_map referenced_ids terms in
     List.iter
       (fun id ->
         if not (StringMap.mem id id_to_defining_node) then
@@ -322,15 +326,15 @@ module Check = struct
               (elem_name elem)
           in
           raise (SpecError msg))
-      referenced_ids
+      ids_referenced_by_elem
 
   let check_no_undefined_ids elements id_to_defining_node =
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
 
-  (** Checks that [type_term] references only top-level types.
-    That is, not constants or type variants.
-    This check assumes that all identifiers in [type_term] are mapped to their defining nodes
-    in [id_to_defining_node]. *)
+  (** Checks that [type_term] references only top-level types. That is, not
+      constants or type variants. This check assumes that all identifiers in
+      [type_term] are mapped to their defining nodes in [id_to_defining_node].
+  *)
   let check_only_top_level_types id_to_defining_node type_term =
     let identifiers_in_type_term = referenced_ids type_term in
     List.iter
@@ -358,9 +362,8 @@ module Check = struct
       elements
 
   (** TODO:
-    - Check that instantiated type terms for labelled type terms and labelled records
-      match their definition (see [tests/type_instance.bad]).
-  *)
+      - Check that instantiated type terms for labelled type terms and labelled
+        records match their definition (see [tests/type_instance.bad]). *)
 end
 
 let from_ast ast =

@@ -1,0 +1,108 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Macros for defining and for rendering generated LaTeX elements
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \BeginDefineConstant{name}{content} - Define a macro for later rendering constants
+%% \RenderConstant{name} - Render the defined constant
+\makeatletter
+\newcommand{\BeginDefineConstant}[2]{%
+  \expandafter\newcommand\csname RenderConstant@#1\endcsname{#2}%
+}
+\newcommand{\RenderConstant}[1]{%
+  \@ifundefined{RenderConstant@#1}{%
+    \textbf{Error: RenderConstant '#1' not defined}%
+  }{%
+    \csname RenderConstant@#1\endcsname%
+  }%
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \BeginDefineType{name}{content} - Define a type macro for later rendering
+%% \RenderType{name}[options] - Render a single type
+%%   Usage:
+%%     \RenderType{typename}                    - Render single type
+%%     \RenderType[remove_hypertargets]{type1}  - Remove \hypertarget{...}{} commands from output   % DO NOT LINT
+%%
+%%   The optional [remove_hypertargets] parameter strips all \hypertarget{...}{}                    % DO NOT LINT
+%%   commands from the rendered content, useful for generating clean text versions.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+\newcommand{\BeginDefineType}[2]{%
+  \expandafter\newcommand\csname RenderType@#1\endcsname{#2}%
+}
+
+% Helper to remove hypertargets from content
+\long\def\remove@hypertargets#1{%
+  \begingroup%
+  \def\hypertarget##1##2{}% Redefine \hypertarget to do nothing
+  #1% Execute the content with \hypertarget disabled
+  \endgroup%
+}
+
+% Main RenderType command with optional parameter
+\newcommand{\RenderType}[2][]{%
+  \@ifundefined{RenderType@#2}{%
+    \textbf{Error: RenderType '#2' not defined}%
+  }{%
+    \expandafter\let\expandafter\@current@content\csname RenderType@#2\endcsname%
+    \def\@rendertype@option{#1}%
+    \def\@test@remove{remove_hypertargets}%
+    \ifx\@rendertype@option\@test@remove%
+      \expandafter\remove@hypertargets\expandafter{\@current@content}%
+    \else%
+      \@current@content%
+    \fi%
+  }%
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \BeginDefineRelation{name}{content} - Define a macro for later rendering relations
+%% \RenderRelation{name} - Render the defined relation
+\makeatletter
+\newcommand{\BeginDefineRelation}[2]{%
+  \expandafter\newcommand\csname RenderRelation@#1\endcsname{#2}%
+}
+\newcommand{\RenderRelation}[1]{%
+  \@ifundefined{RenderRelation@#1}{%
+    \textbf{Error: RenderRelation '#1' not defined}%
+  }{%
+    \csname RenderRelation@#1\endcsname%
+  }%
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \BeginDefineRenderTypes{name}{content} - Define a macro for later rendering
+%% a list of subsets of complex types.
+%% \RenderTypes{name}[options] - Render the list of subsets of complex types.
+%%   Usage:
+%%     \RenderTypes{typename}                    - Render list of types
+%%     \RenderTypes[remove_hypertargets]{type1}  - Remove \hypertarget{...}{} commands from output    % DO NOT LINT
+%%
+%%   The optional [remove_hypertargets] parameter strips all \hypertarget{...}{}                      % DO NOT LINT
+%%   commands from the rendered content, useful for generating clean text versions.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+\newcommand{\BeginDefineRenderTypes}[2]{%
+  \expandafter\newcommand\csname RenderTypes@#1\endcsname{#2}%
+}
+
+% Main RenderTypes command with optional parameter
+\newcommand{\RenderTypes}[2][]{%
+  \@ifundefined{RenderTypes@#2}{%
+    \textbf{Error: RenderTypes '#2' not defined}%
+  }{%
+    \expandafter\let\expandafter\@current@content\csname RenderTypes@#2\endcsname%
+    \def\@rendertypes@option{#1}%
+    \def\@test@remove{remove_hypertargets}%
+    \ifx\@rendertypes@option\@test@remove%
+      \expandafter\remove@hypertargets\expandafter{\@current@content}%
+    \else%
+      \@current@content%
+    \fi%
+  }%
+}
+\makeatother

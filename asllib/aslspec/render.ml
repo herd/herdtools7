@@ -1,16 +1,13 @@
-(** A module for rendering an ASL semantics-specification
-    for inclusion in a LaTeX document.
-*)
+(** A module for rendering an ASL semantics-specification for inclusion in a
+    LaTeX document. *)
 
 open AST
 open Format
 open Text
 open Spec
 
-(** Returns the math macro given for the element defined by [id],
-    unless none is given in which case it generates a math macro name
-    and returns it.
-*)
+(** Returns the math macro given for the element defined by [id], unless none is
+    given in which case it generates a math macro name and returns it. *)
 let get_or_gen_math_macro spec id =
   let node = Spec.defining_node_for_id spec id in
   let math_macro_opt = Spec.math_macro_opt_for_node node in
@@ -21,10 +18,9 @@ let get_or_gen_math_macro spec id =
 let pp_hypertarget fmt target_str =
   fprintf fmt {|\hypertarget{%s}{}|} target_str
 
-(** [hyperlink_target_for_id spec id] returns a string [target] that can be used for the LaTeX
-    [\hypertarget{target}{}] for [id].
-    This is not needed when the [id] is a spec element with a [math_macro] attribute.
-*)
+(** [hyperlink_target_for_id spec id] returns a string [target] that can be used
+    for the LaTeX [\hypertarget{target}{}] for [id]. This is not needed when the
+    [id] is a spec element with a [math_macro] attribute. *)
 let hyperlink_target_for_id spec id =
   let open Spec in
   let name_id = Text.remove_underscores id in
@@ -43,13 +39,13 @@ let hyperlink_target_for_id spec id =
   in
   sprintf "%s-%s" category name_id
 
-(** [vars_of_type_term term] returns the list of term-naming variables
-    that occur at any depth inside [term]. *)
+(** [vars_of_type_term term] returns the list of term-naming variables that
+    occur at any depth inside [term]. *)
 let rec vars_of_type_term term =
   let listed_vars =
     match term with
     | Label var -> [ var ]
-    | Powerset sub_term -> vars_of_type_term sub_term
+    | Powerset { term } -> vars_of_type_term term
     | Option sub_term -> vars_of_type_term sub_term
     | Tuple components | LabelledTuple { components } ->
         vars_of_opt_named_type_terms components
@@ -62,8 +58,8 @@ let rec vars_of_type_term term =
   in
   List.sort_uniq String.compare listed_vars
 
-(** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming variables
-    that occur at any depth inside [opt_named_terms]. *)
+(** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming
+    variables that occur at any depth inside [opt_named_terms]. *)
 and vars_of_opt_named_type_terms opt_named_terms =
   List.map
     (fun (name_opt, term) ->
@@ -78,9 +74,8 @@ and vars_of_named_type_terms named_terms =
 
 (** [substitute_spec_vars_by_latex_vars math_mode s vars] returns a string [s]
     with every variable like [my_var] is substituted into [\texttt{my\_var}],
-    which makes the returned string suitable to typsetting with LaTeX.
-    If [math_mode] is true then the result is surrounded by [$$].
-*)
+    which makes the returned string suitable to typsetting with LaTeX. If
+    [math_mode] is true then the result is surrounded by [$$]. *)
 let substitute_spec_vars_by_latex_vars ~math_mode str vars =
   let open Text in
   let substitutions =
@@ -119,15 +114,16 @@ let pp_constant_definition spec fmt def =
   let name = Constant.name def in
   let macro = get_or_gen_math_macro spec name in
   let hyperlink_target = hyperlink_target_for_id spec name in
-  fprintf fmt {|\hypertarget{%s}{} $%s$|} hyperlink_target macro
+  fprintf fmt
+    {|\BeginDefineConstant{%s}{
+\hypertarget{%s}{} $%s$
+} %% EndDefineConstant|}
+    name hyperlink_target macro
 
-(** [pp_latex_array fmt rows]
-    renders a table of elements using a LaTeX array environment.
-    The elements are assumed to be organized by the (top-level) list
-    [rows] representing the table rows.
-    Each (second-level) list represents a column where the elements
-    are formatting functions invoked with [fmt].
-*)
+(** [pp_latex_array fmt rows] renders a table of elements using a LaTeX array
+    environment. The elements are assumed to be organized by the (top-level)
+    list [rows] representing the table rows. Each (second-level) list represents
+    a column where the elements are formatting functions invoked with [fmt]. *)
 let pp_latex_array fmt rows =
   let () = assert (not (Utils.list_is_empty rows)) in
   let num_columns = List.length (List.hd rows) in
@@ -146,9 +142,8 @@ let pp_latex_array fmt rows =
   let () = fprintf fmt {|\end{array}|} in
   ()
 
-(** [pp_type_term mode spec term] formats [term] into a string
-    suitable for LaTeX math mode.
-*)
+(** [pp_type_term mode spec term] formats [term] into a string suitable for
+    LaTeX math mode. *)
 let rec pp_type_term spec fmt (type_term, layout) =
   let () =
     if false then
@@ -158,9 +153,12 @@ let rec pp_type_term spec fmt (type_term, layout) =
   let layout_contains_vertical = Layout.contains_vertical layout in
   match type_term with
   | Label name -> pp_print_string fmt (get_or_gen_math_macro spec name)
-  | Powerset sub_term ->
+  | Powerset { term = sub_term; finite } ->
       let powerset_macro =
-        if layout_contains_vertical then {|\Pow|} else {|\pow|}
+        if finite then
+          if layout_contains_vertical then {|\Powfin|} else {|\powfin|}
+        else if layout_contains_vertical then {|\Pow|}
+        else {|\pow|}
       in
       fprintf fmt {|%s{%a}|} powerset_macro (pp_type_term spec)
         (sub_term, layout)
@@ -314,8 +312,8 @@ let pp_type_term_union spec fmt (terms, layout) =
           terms_with_layouts
     | Unspecified -> assert false
 
-(** Renders the mathematical formula for the relation signature [def]
-    using [layout] and referencing elements in [spec]. *)
+(** Renders the mathematical formula for the relation signature [def] using
+    [layout] and referencing elements in [spec]. *)
 let pp_relation_math spec layout fmt def =
   (* Reuse the rendering for type terms. *)
   let input_as_labelled_tuple =
@@ -337,6 +335,7 @@ let pp_relation_math spec layout fmt def =
   | _ -> assert false
 
 let pp_relation spec fmt def =
+  let name = Relation.name def in
   let input_terms = Relation.input def in
   let input_vars = vars_of_opt_named_type_terms input_terms in
   let output_vars =
@@ -351,11 +350,13 @@ let pp_relation spec fmt def =
     |> Text.shrink_space_segments
   in
   let layout = Layout.math_layout_for_node (Node_Relation def) in
-  let hyperlink_target = hyperlink_target_for_id spec (Relation.name def) in
-  fprintf fmt {|%a
+  let hyperlink_target = hyperlink_target_for_id spec name in
+  fprintf fmt
+    {|\BeginDefineRelation{%s}{@.%a
 The relation
 \[@.%a@.\]
-%a|} pp_hypertarget hyperlink_target
+%a@.} %% EndDefineRelation|}
+    name pp_hypertarget hyperlink_target
     (pp_relation_math spec layout)
     def pp_print_text instantiated_prose_description
 
@@ -366,124 +367,161 @@ let vars_of_type def =
 
 let pp_variant spec fmt variant =
   let term = TypeVariant.term variant in
-  fprintf fmt "%a" (pp_type_term spec) (term, Layout.default_for_type_term term)
+  let layout =
+    match TypeVariant.math_layout variant with
+    | Some layout -> layout
+    | None -> Layout.default_for_type_term term
+  in
+  fprintf fmt "%a" (pp_type_term spec) (term, layout)
 
-(**
-  A type like `ast t = v1 | v2 | ... | vn` is roughly rendered as
-\hypertarget{ast-t}{}\hypertarget{ast-t}{}
-\begin{flalign*}
-\t \derives\ & <v1-rendering> \hypertarget{ast-v2}{}\\
-|\ & <v2-rendering> \hypertarget{ast-v3}{}\\
-...
-|\ & <vn-rendering>\\
-\end{flalign*}
-  *)
-let pp_type spec fmt def =
+let pp_define_type_wrapper name fmt pp_value value =
+  fprintf fmt {|\BeginDefineType{%s}{@.|} name;
+  pp_value fmt value;
+  fprintf fmt {|@.} %% EndDefineType|}
+
+let pp_type_and_variants spec ?(is_first = true) ?(is_last = true) fmt
+    (def, variants) =
   let name = Type.name def in
   let macro = get_or_gen_math_macro spec name in
   let hyperlink_target = hyperlink_target_for_id spec name in
-  let variants = Type.variants def in
   let equality_symbol, join_symbol =
     match Type.kind def with
     | TypeKind_AST -> ({|\derives|}, "|")
     | TypeKind_Generic -> ({|\triangleq|}, {|\cup|})
   in
+  let first_variant, variants_tail =
+    match variants with
+    | [] -> assert false
+    | first_variant :: variants_tail -> (first_variant, variants_tail)
+  in
+  let variant_hyperlink_targets =
+    List.map
+      (fun variant ->
+        let variant_name_opt = Spec.variant_to_label_opt variant in
+        Option.map
+          (fun variant_name -> hyperlink_target_for_id spec variant_name)
+          variant_name_opt)
+      variants
+  in
+  let hd_hypertarget_opt = List.hd variant_hyperlink_targets in
+  (* Every line containing a variant, includes the hypertarget
+     of the next variant (to make LaTeX hyperlinks point to the right place).
+     Since the hypertarget for the first variant appears above the table,
+     we add one dummy optional to make the lists of
+     hypertargets equal in length to the list of variants second-to-last.
+  *)
+  let tl_variant_hypertarget_opts =
+    Utils.list_tl_or_empty variant_hyperlink_targets @ [ None ]
+  in
+  let second_hypertarget, rest_of_variants_hypertargets =
+    match tl_variant_hypertarget_opts with
+    | [] -> (None, [])
+    | head :: tail -> (head, tail)
+  in
+  let _render_hypertarget_for_type = pp_hypertarget fmt hyperlink_target in
+  let _render_hypertarget_for_first_variant =
+    (Format.pp_print_option pp_hypertarget) fmt hd_hypertarget_opt
+  in
+  let _render_begin_flalign =
+    if is_first then fprintf fmt {|@.\begin{flalign*}|} else ()
+  in
+  let _render_newline = if not is_first then fprintf fmt {|\\|} else () in
+  let _first_line =
+    fprintf fmt {|@.%s %s\ & %a%a|} macro equality_symbol (pp_variant spec)
+      first_variant
+      (Format.pp_print_option pp_hypertarget)
+      second_hypertarget
+  in
+  let _add_latex_line_break_only_if_more_variants =
+    if List.length variants > 1 then fprintf fmt {|\\@.|}
+    else fprintf fmt {|@.|}
+  in
+  let variant_and_hypertargets =
+    List.combine variants_tail rest_of_variants_hypertargets
+  in
+  let num_variants_tail = List.length variant_and_hypertargets in
+  let _render_variants_tail =
+    List.iteri
+      (fun counter (variant_opt, hyptarget_opt) ->
+        let () =
+          fprintf fmt {|@[<h>%s\ & %a@,%a@]|} join_symbol (pp_variant spec)
+            variant_opt
+            (Format.pp_print_option pp_hypertarget)
+            hyptarget_opt
+        in
+        let _add_latex_line_break_except_on_last_line =
+          if counter < num_variants_tail - 1 then fprintf fmt {|\\@.|}
+          else fprintf fmt {||}
+        in
+        ())
+      variant_and_hypertargets
+  in
+  let _end_flalign = if is_last then fprintf fmt {|\end{flalign*}|} else () in
+  ()
+
+let pp_basic_type spec fmt def =
+  let name = Type.name def in
+  let macro = get_or_gen_math_macro spec name in
+  let hyperlink_target = hyperlink_target_for_id spec name in
+  fprintf fmt {|%a$%s$|} pp_hypertarget hyperlink_target macro
+
+let pp_type spec fmt def =
+  let name = Type.name def in
+  let variants = Type.variants def in
   match variants with
   | [] ->
-      (* A basic type as in `typedef N` *)
-      fprintf fmt {|%a
-$%s$|} pp_hypertarget hyperlink_target macro
-  | first_variant :: variants_tail ->
-      (* A type defined by a list of variants *)
-      let variant_hyperlink_targets =
-        List.map
-          (fun variant ->
-            let variant_name_opt = Spec.variant_to_label_opt variant in
-            Option.map
-              (fun variant_name -> hyperlink_target_for_id spec variant_name)
-              variant_name_opt)
-          variants
-      in
-      let hd_hypertarget_opt = List.hd variant_hyperlink_targets in
-      (* Every line containing a variant, includes the hypertarget
-         of the next variant (to make LaTeX hyperlinks point to the right place).
-         Since the hypertarget for the first variant appears above the table,
-         we add one dummy optional to make the lists of
-         hypertargets equal in length to the list of variants second-to-last.
-      *)
-      let tl_variant_hypertarget_opts =
-        Utils.list_tl_or_empty variant_hyperlink_targets @ [ None ]
-      in
-      let second_hypertarget, rest_of_variants_hypertargets =
-        match tl_variant_hypertarget_opts with
-        | [] -> (None, [])
-        | head :: tail -> (head, tail)
-      in
-      let _render_hypertarget_for_type = pp_hypertarget fmt hyperlink_target in
-      let _render_hypertarget_for_first_variant =
-        (Format.pp_print_option pp_hypertarget) fmt hd_hypertarget_opt
-      in
-      let _open_flalign_and_first_line =
-        fprintf fmt {|
-\begin{flalign*}
-%s %s\ & %a%a|} macro equality_symbol
-          (pp_variant spec) first_variant
-          (Format.pp_print_option pp_hypertarget)
-          second_hypertarget
-      in
-      let _add_latex_line_break_only_if_more_variants =
-        if List.length variants > 1 then fprintf fmt {|\\@.|}
-        else fprintf fmt {|@.|}
-      in
-      let variant_and_hypertargets =
-        List.combine variants_tail rest_of_variants_hypertargets
-      in
-      let num_variants_tail = List.length variant_and_hypertargets in
-      let _render_variants_tail =
-        List.iteri
-          (fun counter (variant_opt, hyptarget_opt) ->
-            let () =
-              fprintf fmt {|@[<h>%s\ & %a@,%a@]|} join_symbol (pp_variant spec)
-                variant_opt
-                (Format.pp_print_option pp_hypertarget)
-                hyptarget_opt
-            in
-            let _add_latex_line_break_except_on_last_line =
-              if counter < num_variants_tail - 1 then fprintf fmt {|\\@.|}
-              else fprintf fmt {|@.|}
-            in
-            ())
-          variant_and_hypertargets
-      in
-      let _close_flalign = fprintf fmt {|\end{flalign*}|} in
-      ()
+      (* A basic type like `typedef A` *)
+      pp_define_type_wrapper name fmt (pp_basic_type spec) def
+  | _ :: _ ->
+      (* A complex type like `typedef A = V1 | ... | Vk` *)
+      pp_define_type_wrapper name fmt (pp_type_and_variants spec) (def, variants)
+
+let pp_pointer spec ~is_first ~is_last fmt { type_name; variant_names } =
+  let def =
+    match Spec.defining_node_for_id spec type_name with
+    | Node_Type def -> def
+    | _ -> assert false
+  in
+  let all_type_variants = Type.variants def in
+  let variants =
+    (* If [variant_names] is empty, we use all the variants from the defining type.
+       Otherwise, list the labelelled tuples and records whose label are in [variant_names].
+    *)
+    if Utils.list_is_empty variant_names then all_type_variants
+    else
+      List.map
+        (fun variant_name ->
+          match Spec.defining_node_for_id spec variant_name with
+          | Node_TypeVariant def -> def
+          | _ -> assert false)
+        variant_names
+  in
+  pp_type_and_variants spec ~is_first ~is_last fmt (def, variants)
+
+let pp_pointers spec fmt pointers =
+  let num_pointers = List.length pointers in
+  List.iteri
+    (fun i pointer ->
+      pp_pointer spec ~is_first:(i = 0)
+        ~is_last:(i = num_pointers - 1)
+        fmt pointer)
+    pointers
+
+let pp_render spec fmt { render_name; pointers } =
+  fprintf fmt {|\BeginDefineRenderTypes{%s}{@.%a
+} %% EndDefineRenderTypes|}
+    render_name (pp_pointers spec) pointers
 
 let pp_elem spec fmt = function
+  | Elem_Constant def -> pp_constant_definition spec fmt def
   | Elem_Type def -> pp_type spec fmt def
   | Elem_Relation def -> pp_relation spec fmt def
-  | Elem_Constant def -> pp_constant_definition spec fmt def
+  | Elem_Render def -> pp_render spec fmt def
 
-let pp_elem_block spec fmt elem =
-  let elem_name = Spec.elem_name elem in
-  fprintf fmt
-    {|
-\section*{%s}
-\subsection*{Specification}
-\begin{lstlisting}
-%a
-\end{lstlisting}
-\subsection*{Rendering}
-%% BEGIN_GENERATED_ELEMENT(%s)
-%a
-%% END_GENERATED_ELEMENT@.|}
-    (Text.spec_var_to_latex_var ~font_type:Text elem_name)
-    PP.pp_elem elem elem_name (pp_elem spec) elem
-
-(** Renders a LaTeX document containing all of the elements in [spec].
-    A header and footer are added to enable compiling the generated file
-    separately, for testing and debugging.
-*)
-let render_latex_elements spec =
+(** Renders a LaTeX document containing all of the elements in [spec]. A header
+    and footer are added to enable compiling the generated file separately, for
+    testing and debugging. *)
+let render_latex_debug_elements spec =
   let generated_elements_filename = "generated_elements.tex" in
   let open AST in
   let file_channel = open_out_bin generated_elements_filename in
@@ -496,12 +534,58 @@ let render_latex_elements spec =
           fprintf file_formatter
             {|\documentclass{book}
 \input{ASLmacros.tex}
+\input{rendering_macros.tex}
 \input{generated_macros.tex}
 \begin{document}@.|}
         in
         let _print_elements =
           List.iter
-            (fun elem -> pp_elem_block spec file_formatter elem)
+            (fun elem ->
+              let name = elem_name elem in
+              let latex_name =
+                Text.spec_var_to_latex_var ~font_type:Text.Text name
+              in
+              match elem with
+              | Elem_Constant _ ->
+                  fprintf file_formatter
+                    {|
+\section*{%s}
+\begin{lstlisting}
+%a
+\end{lstlisting}
+\RenderConstant{%s}
+|}
+                    latex_name PP.pp_elem elem name
+              | Elem_Relation _ ->
+                  fprintf file_formatter
+                    {|
+\section*{%s}
+\begin{lstlisting}
+%a
+\end{lstlisting}
+\RenderRelation{%s}
+|}
+                    latex_name PP.pp_elem elem name
+              | Elem_Type _ ->
+                  fprintf file_formatter
+                    {|
+\section*{%s}
+\begin{lstlisting}
+%a
+\end{lstlisting}
+\RenderType{%s}
+|}
+                    latex_name PP.pp_elem elem name
+              | Elem_Render _ ->
+                  fprintf file_formatter
+                    {|
+\section*{%s}
+\begin{lstlisting}
+%a
+\end{lstlisting}
+\RenderTypes{%s}
+|}
+                    latex_name PP.pp_elem elem name)
             (Spec.ast spec)
         in
         let _print_footer = fprintf file_formatter {|@.\end{document}@.|} in
@@ -511,6 +595,7 @@ let render_latex_elements spec =
     "%sWrote LaTeX blocks for aslspec elements into %s\n%s" green
     generated_elements_filename reset_color
 
+(* Renders macro to render the symbol defined by [name]. *)
 let pp_id_macro spec fmt name =
   let hyperlink_target = hyperlink_target_for_id spec name in
   let node = Spec.defining_node_for_id spec name in
@@ -530,12 +615,9 @@ let pp_id_macro spec fmt name =
   if Option.is_some (Spec.math_macro_opt_for_node node) then ()
   else
     let typeset_macro = Text.spec_var_to_latex_var ~font_type name in
-    fprintf fmt {|%% Generated from %s
-\newcommand%s[0]{ \hyperlink{%s}{%s} }
-|}
-      name
+    fprintf fmt {|\newcommand%s[0]{ \hyperlink{%s}{%s} } %% Generated from %s|}
       (get_or_gen_math_macro spec name)
-      hyperlink_target typeset_macro
+      hyperlink_target typeset_macro name
 
 let generate_latex_macros spec =
   let generated_macros_filename = "generated_macros.tex" in
@@ -547,12 +629,48 @@ let generate_latex_macros spec =
       (fun () ->
         let file_formatter = Format.formatter_of_out_channel file_channel in
         let defined_ids = Spec.defined_ids spec in
-        List.iter (fun id -> pp_id_macro spec file_formatter id) defined_ids)
+        let _macros_header =
+          fprintf file_formatter
+            {|%% ==================================================
+%% AUTO-GENERATED - DO NOT EDIT
+%% ==================================================
+
+%% ------------------
+%% Macros for symbols
+%% ------------------
+
+|}
+        in
+        let _generate_symbol_macros =
+          List.iter
+            (fun id ->
+              pp_id_macro spec file_formatter id;
+              fprintf file_formatter "\n")
+            defined_ids
+        in
+        let _elements_header =
+          fprintf file_formatter
+            {|
+%% -------------------
+%% Macros for elements
+%% -------------------
+
+|}
+        in
+        let _print_elements =
+          List.iter
+            (fun elem ->
+              pp_elem spec file_formatter elem;
+              fprintf file_formatter "\n\n")
+            (Spec.ast spec)
+        in
+        let _print_footer = fprintf file_formatter {|@.|} in
+        ())
   in
   Format.fprintf std_formatter "%sGenerated LaTeX macros into %s\n%s" green
     generated_macros_filename reset_color
 
 let render spec =
-  let () = render_latex_elements spec in
   let () = generate_latex_macros spec in
+  let () = render_latex_debug_elements spec in
   ()

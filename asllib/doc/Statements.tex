@@ -91,9 +91,12 @@ evaluates a statement $\vs$ in an environment $\env$, resulting in one of four t
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_pass}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SPass &
 \end{flalign*}
+}
 
 \ASTRuleDef{SPass}
 \begin{mathpar}
@@ -153,9 +156,12 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_assign}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SAssign(\lexpr, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SAssign}
 \begin{mathpar}
@@ -516,9 +522,12 @@ As given by applying the relevant rules to the desugared AST.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_decl}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
 \end{flalign*}
+}
 
 \ASTRuleDef{SDecl}
 \begin{mathpar}
@@ -1108,9 +1117,12 @@ As given by the applying the relevant rules to the desugared AST (see \secref{De
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_seq}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SSeq(\stmt, \stmt) &
 \end{flalign*}
+}
 
 \ASTRuleDef{StmtList}
 \hypertarget{build-stmtlist}{}
@@ -1257,9 +1269,12 @@ Call statements are used to invoke procedures and setters.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_call}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SCall(\call) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SCall}
 \begin{mathpar}
@@ -1354,9 +1369,12 @@ can only be used for procedures, not functions.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_cond}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SCond(\expr, \stmt, \stmt)
 \end{flalign*}
+}
 
 \ASTRuleDef{SCond}
 \begin{mathpar}
@@ -1602,15 +1620,7 @@ The untyped AST contains non-terminals for \casealternativesterm, which exist
 only as a data type used by $\desugarcasestmt$ and do not later appear in the untyped
 AST:
 
-% BEGIN_GENERATED_ELEMENT(case_alt)[remove_hypertargets]
-\begin{flalign*}
-\casealt \derives\ & \left\{\begin{array}{lll}
-\text{pattern} &:& \pattern\\
-\text{where} &:& \some{\expr}\\
-\text{stmt} &:& \stmt
-\end{array}\right\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType[remove_hypertargets]{case_alt}
 
 \ASTRuleDef{SCase}
 To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,
@@ -1841,9 +1851,12 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_assert}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SAssert(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SAssert}
 \begin{mathpar}
@@ -1960,9 +1973,12 @@ the expression \verb|limit_loop()|.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_while}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SWhile}
 \begin{mathpar}
@@ -2385,9 +2401,12 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_repeat}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SRepeat}
 \begin{mathpar}
@@ -2522,17 +2541,13 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-% BEGIN_GENERATED_ELEMENT(for_direction)[remove_hypertargets]
+\RenderTypes[remove_hypertargets]{stmt_for}
+\BackupOriginalAST{
 \begin{flalign*}
-\fordirection \derives\ & \UP\\
-|\ & \DOWN
-\end{flalign*}
-% END_GENERATED_ELEMENT
-
-\begin{flalign*}
+\fordirection \derives\ & \UP \;|\; \DOWN &\\
 \stmt \derives\ & \SFor\left\{
       \begin{array}{rcl}
-      \Forindexname  &:& \Identifier,\\
+      \Forindexname  &:& \identifier,\\
       \Forstarte     &:& \expr,\\
       \Fordir        &:& \fordirection,\\
       \Forende       &:& \expr,\\
@@ -2541,6 +2556,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
       \end{array}
     \right\} &
 \end{flalign*}
+}
 
 \ASTRuleDef{SFor}
 \begin{mathpar}
@@ -3136,9 +3152,12 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_throw}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SThrow(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SThrow}
 \begin{mathpar}
@@ -3228,9 +3247,12 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_try}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{STry}
 \begin{mathpar}
@@ -3402,9 +3424,12 @@ does not result in any Assertion error, and the specification terminates with th
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_return}
+\BackupOriginalAST{
 \begin{flalign*}
   \stmt \derives\ & \SReturn(\expr?) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SReturn}
 \begin{mathpar}
@@ -3703,9 +3728,12 @@ empty \executiongraph{}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_print}
+\BackupOriginalAST{
 \begin{flalign*}
   \stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SPrint}
 \begin{mathpar}
@@ -3938,9 +3966,12 @@ to implement a custom form of assertion checking.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_unreachable}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SUnreachable &
 \end{flalign*}
+}
 
 \ASTRuleDef{SUnreachable}
 \begin{mathpar}
@@ -3990,9 +4021,12 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorCo
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{stmt_pragma}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{SPragma}
 \begin{mathpar}

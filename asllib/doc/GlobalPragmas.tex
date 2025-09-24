@@ -47,10 +47,12 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Global Pragma Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\RenderTypes[remove_hypertargets]{decl_global_pragma}
+\BackupOriginalAST{
 \begin{flalign*}
 \decl \derives\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
 \end{flalign*}
+}
 
 \ASTRuleDef{GlobalPragma}
 \begin{mathpar}

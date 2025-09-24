@@ -38,15 +38,13 @@ See \ExampleRef{Types} for examples of type declarations.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Type Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RenderTypes[remove_hypertargets]{decl_type}
+\BackupOriginalAST{
 \begin{flalign*}
-\decl \derives\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\field^*}{with fields})?) &\\
+\decl \derives\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &\\
+\Field \derives\ & (\identifier, \ty) &
 \end{flalign*}
-
-% BEGIN_GENERATED_ELEMENT(field)[remove_hypertargets]
-\begin{flalign*}
-\field \derives\ & (\overtext{\Identifier}{name}, \overtext{\ty}{type})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{TypeDecl}
 This rule defines the cases for $\builddecl$ for type declarations.

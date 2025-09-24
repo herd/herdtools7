@@ -1,5 +1,4 @@
-(** A module for pretty-printing the AST.
-*)
+(** A module for pretty-printing the AST. *)
 
 open Format
 open AST
@@ -31,14 +30,18 @@ let pp_attribute_key_value fmt (key, value) =
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()
   else
-    fprintf fmt {|{@.%a@.}|}
-      (pp_sep_list ~sep:",@," pp_attribute_key_value)
+    fprintf fmt "{@[<v>@.%a@.@]}"
+      (fun fmt attrs ->
+        pp_sep_list ~sep:",@,"
+          (fun fmt attr -> fprintf fmt "  %a" pp_attribute_key_value attr)
+          fmt attrs)
       attributes
 
 let rec pp_type_term fmt = function
   | Label name -> pp_print_string fmt name
-  | Powerset elt_term ->
-      fprintf fmt "%s(%a)" (tok_str POWERSET) pp_type_term elt_term
+  | Powerset { term; finite } ->
+      let powerset_token = if finite then POWERSET_FINITE else POWERSET in
+      fprintf fmt "%s(%a)" (tok_str powerset_token) pp_type_term term
   | Option elt_term ->
       fprintf fmt "%s(%a)" (tok_str OPTION) pp_type_term elt_term
   | Tuple components -> fprintf fmt "(%a)" pp_opt_named_type_terms components
@@ -98,7 +101,7 @@ let type_kind_to_string = function
 
 let pp_type_definition fmt def =
   let eq_str = if Utils.list_is_empty (Type.variants def) then "" else " = " in
-  fprintf fmt "%s %s@,%a@,%s@,%a;"
+  fprintf fmt "%s %s@,%a@,%s@,@[<v 2>  %a@];"
     (type_kind_to_string (Type.kind def))
     (Type.name def) pp_attribute_key_values
     (Type.attributes_to_list def)
@@ -109,10 +112,23 @@ let pp_constant_definition fmt def =
     pp_attribute_key_values
     (Constant.attributes_to_list def)
 
+let type_subset_pointer fmt { type_name; variant_names } =
+  if Utils.list_is_empty variant_names then fprintf fmt {|%s(-)|} type_name
+  else
+    fprintf fmt {|%s(%a)|} type_name
+      (pp_sep_list ~sep:", " pp_print_string)
+      variant_names
+
+let pp_render_definition fmt { render_name; pointers } =
+  fprintf fmt "%s %s = %a;" (tok_str RENDER) render_name
+    (pp_sep_list ~sep:", " type_subset_pointer)
+    pointers
+
 let pp_elem fmt = function
   | Elem_Type def -> pp_type_definition fmt def
   | Elem_Relation def -> pp_relation_definition fmt def
   | Elem_Constant def -> pp_constant_definition fmt def
+  | Elem_Render def -> pp_render_definition fmt def
 
 let pp_spec fmt spec =
   fprintf fmt "@[<v>%a@]" (pp_sep_list ~sep:"\n\n" pp_elem) spec

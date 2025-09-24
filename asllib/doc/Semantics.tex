@@ -120,14 +120,7 @@ The rest of this section defines the components comprising semantic configuratio
 Semantic evaluation binds values to storage elements when a specification is semantically evaluated.
 To formalize this, we define the set of \emph{\nativevaluesterm} as follows
 (\texttt{NV} stands for Native Value):
-% BEGIN_GENERATED_ELEMENT(native_value)
-\hypertarget{type-nativevalue}{}\hypertarget{type-NVLiteral}{}
-\begin{flalign*}
-\nativevalue \triangleq\ & \NVLiteral(\overtext{\literal}{l})\hypertarget{type-NVVector}{}\\
-\cup\ & \NVVector(\overtext{\KleeneStar{\nativevalue}}{values})\hypertarget{type-NVRecord}{}\\
-\cup\ & \NVRecord(\overtext{\Identifier \partialto \nativevalue}{field to value})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{native_value}
 
 Specifically:
 \begin{itemize}
@@ -150,33 +143,7 @@ We define the following shorthand notations for \nativevalueterm{} literals:
 \]
 
 We define the following types of \nativevaluesterm{}:
-% BEGIN_GENERATED_ELEMENT(tint, tbool, treal, tlabel, tstring, tbitvector, tvector, trecord)
-\hypertarget{type-tint}{}
-\begin{flalign*}
-\tint \triangleq\ & \NVLiteral(\LInt(\overtext{\Z}{v}))
-\hypertarget{type-tbool}{}
-\\
-\tbool \triangleq\ & \NVLiteral(\LBool(\overtext{\Bool}{v}))
-\hypertarget{type-treal}{}
-\\
-\treal \triangleq\ & \NVLiteral(\LReal(\overtext{\Q}{v}))
-\hypertarget{type-tlabel}{}
-\\
-\tlabel \triangleq\ & \NVLiteral(\LLabel(\overtext{\Identifier}{v}))
-\hypertarget{type-tstring}{}
-\\
-\tstring \triangleq\ & \NVLiteral(\LString(\overtext{\Strings}{v}))
-\hypertarget{type-tbitvector}{}
-\\
-\tbitvector \triangleq\ & \NVLiteral(\LBitvector(\overtext{\KleeneStar{\Bit}}{v}))
-\hypertarget{type-tvector}{}
-\\
-\tvector \triangleq\ & \NVVector(\overtext{\KleeneStar{\nativevalue}}{values})
-\hypertarget{type-trecord}{}
-\\
-\trecord \triangleq\ & \NVRecord(\overtext{\Identifier \partialto \nativevalue}{field to value})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderTypes{native_types}
 
 \BackupOriginalType{
 \[
@@ -204,21 +171,8 @@ via the $\storage$ map and identifiers corresponding to subprograms to natural n
 to the number of calls being evaluated for those subprograms via the $\pendingcalls$ map.
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevaluesterm{}:
 
-% BEGIN_GENERATED_ELEMENT(dynamic_envs, global_dynamic_envs, local_dynamic_envs)
-\hypertarget{type-dynamicenvs}{}
-\begin{flalign*}
-\dynamicenvs \triangleq\ & (\overtext{\globaldynamicenvs}{G}, \overtext{\localdynamicenvs}{L})
-\hypertarget{type-globaldynamicenvs}{}
-\\
-\globaldynamicenvs \triangleq\ & \left\{\begin{array}{lll}
-\text{storage} &:& \Identifier \partialto \nativevalue\\
-\text{pending\_calls} &:& \Identifier \partialto \N
-\end{array}\right\}
-\hypertarget{type-localdynamicenvs}{}
-\\
-\localdynamicenvs \triangleq\ & \Identifier \partialto \nativevalue
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderTypes{dynamic_envs_and_components}
+
 \BackupOriginalType{
 \[
 \begin{array}{rcl}
@@ -243,7 +197,7 @@ are mutually exclusive.
 In the rest of this reference, we assume all dynamic environments
 are well-formed.
 
-\hypertarget{def-emptydenv}{}
+\hypertarget{constant-emptydenv}{}
 An empty dynamic environment $\emptydenv$ is defined as follows:
 \[
 \emptydenv \triangleq ([\storage \mapsto \emptyfunc, \pendingcalls \mapsto \emptyfunc], \emptyfunc) \enspace.
@@ -252,12 +206,7 @@ An empty dynamic environment $\emptydenv$ is defined as follows:
 \hypertarget{def-envs}{}
 \begin{definition}[Environments]
 Environments pair \hyperlink{type-staticenvs}{static environments} with dynamic environments:
-% BEGIN_GENERATED_ELEMENT(envs)
-\hypertarget{type-envs}{}
-\begin{flalign*}
-\envs \triangleq\ & (\overtext{\staticenvs}{static}, \overtext{\dynamicenvs}{dynamic})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{envs}
 
 \BackupOriginalType{
 $\envs \triangleq \staticenvs \times \dynamicenvs$.
@@ -281,18 +230,7 @@ and used in~\cite{AlglaveMT14,alglave2016syntax,AlglaveDGHM21}.
 Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \XGraphs$
 is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\xgraph$), and a set of \emph{output nodes} ($O^\xgraph$):
 
-% BEGIN_GENERATED_ELEMENT(XGraphs, Nodes, Labels)
-\hypertarget{type-XGraphs}{}
-\begin{flalign*}
-\XGraphs \triangleq\ & (\overtext{\pow{\Nodes}}{vertices}, \overtext{\pow{(\overtext{\Nodes}{source}, \overtext{\Labels}{label}, \overtext{\Nodes}{target})}}{edges}, \overtext{\pow{\Nodes}}{output nodes})
-\hypertarget{type-Nodes}{}
-\\
-\Nodes \triangleq\ & (\overtext{\N}{node id}, \overtext{\{\Read, \Write\}}{effect type}, \overtext{\Identifier}{storage element})
-\hypertarget{type-Labels}{}
-\\
-\Labels \triangleq\ & \{\asldata, \aslctrl, \aslpo\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderTypes{xgraphs_and_components}
 \BackupOriginalType{
 \[
 \begin{array}{rcl}
@@ -304,13 +242,9 @@ is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\x
 }
 
 The label
-% BEGIN_GENERATED_ELEMENT(Read)
-\hypertarget{constant-Read}{} $\Read$
-% END_GENERATED_ELEMENT
+\RenderConstant{Read}
 stands for a \emph{read effect type}, and the label
-% BEGIN_GENERATED_ELEMENT(Write)
-\hypertarget{constant-Write}{} $\Write$
-% END_GENERATED_ELEMENT
+\RenderConstant{Write}
 stands for a \emph{write effect type}.
 %
 Nodes represent unique Read and Write Effects. Formally, a node $(u,l,\id) \in \Nodes$ associates a unique instance counter $u$
@@ -320,15 +254,15 @@ We say that an Effect \texttt{E1} is \emph{$l$-before} another Effect \texttt{E2
 $g$, when $(\texttt{E1}, l, \texttt{E2}) \in E^g$.
 
 An edge represents an ordering constraint between two effects, which can be one of the following:
-\hypertarget{def-asldata}{}
+\hypertarget{constant-asldata}{}
 \begin{description}
 \item[$\asldata$] Represents a \emph{data dependency}.
 That is, when one effect hands over its data to another effect.
-\hypertarget{def-aslctrl}{}
+\hypertarget{constant-aslctrl}{}
 \item[$\aslctrl$] Represents a \emph{control dependency}.
 That is, when a Read Effect to a variable determines the flow of control (e.g., which condition of a branch is taken),
 which then leads to another Read/Write Effect.
-\hypertarget{def-aslpo}{}
+\hypertarget{constant-aslpo}{}
 \item[$\aslpo$] Represents a \emph{program order}.
 That is, when two Effects are generated by ASL constructs, which are separated by a semicolon in the text of the specification,
 or appear in successive iterations of a loop unrolling.
@@ -344,7 +278,7 @@ and the output nodes are contained in the set of nodes:
   & & O^\xgraph \subseteq N^\xgraph \enspace.
   \end{array}
 \]
-\hypertarget{def-emptygraph}{}
+\hypertarget{constant-emptygraph}{}
 
 We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
 %
@@ -410,28 +344,10 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   expressions, side-effect-free expressions, \assignableexpressions,
   local declaration items, slices, and expression lists
   (which are evaluated in two different ways for the purpose of concurrency):
-% BEGIN_GENERATED_ELEMENT(TNormal)
-\hypertarget{type-TNormal}{}\hypertarget{type-ResultExpr}{}
-\begin{flalign*}
-\TNormal \triangleq\ & \ResultExpr(\overtext{(\nativevalue, \XGraphs)}{value and graph}, \overtext{\envs}{environment})\hypertarget{type-ResultExprSEF}{}\\
-\cup\ & \ResultExprSEF(\overtext{\nativevalue}{value}, \overtext{\XGraphs}{graph})\hypertarget{type-ResultLexpr}{}\\
-\cup\ & \ResultLexpr(\overtext{\XGraphs}{graph}, \overtext{\envs}{environment})\hypertarget{type-ResultLDI}{}\\
-\cup\ & \ResultLDI(\overtext{\XGraphs}{graph}, \overtext{\envs}{environment})\hypertarget{type-ResultSlices}{}\\
-\cup\ & \ResultSlices(\overtext{(\KleeneStar{(\nativevalue, \nativevalue)}, \XGraphs)}{slices and graph}, \overtext{\envs}{environment})\hypertarget{type-ResultExprList}{}\\
-\cup\ & \ResultExprList(\overtext{(\KleeneStar{\nativevalue}, \XGraphs)}{values and graph}, \overtext{\envs}{environment})\hypertarget{type-ResultExprListM}{}\\
-\cup\ & \ResultExprListM(\overtext{\KleeneStar{(\nativevalue, \XGraphs)}}{value graph pairs}, \overtext{\envs}{environment})\hypertarget{type-ResultPattern}{}\\
-\cup\ & \ResultPattern(\overtext{\tbool}{boolean value}, \overtext{\XGraphs}{graph})\hypertarget{type-ResultCall}{}\\
-\cup\ & \ResultCall(\overtext{\KleeneStar{(\nativevalue, \XGraphs)}}{value graph pairs}, \overtext{\envs}{environment})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TNormal}
 
   \item[Exceptions.] Semantic configurations in
-% BEGIN_GENERATED_ELEMENT(TThrowing)
-\hypertarget{type-TThrowing}{}\hypertarget{type-Throwing}{}
-\begin{flalign*}
-\TThrowing \triangleq\ & \Throwing(\overtext{\nativevalue}{exception value}, \overtext{\ty}{exception type}, \overtext{\XGraphs}{graph}, \overtext{\envs}{environment})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TThrowing}
   represent thrown exceptions.
   \hypertarget{def-valuereadfrom}{}
 
@@ -443,49 +359,27 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
   \item[Returned Values.] Semantic configurations in
-% BEGIN_GENERATED_ELEMENT(TReturning)
-\hypertarget{type-TReturning}{}\hypertarget{type-Returning}{}
-\begin{flalign*}
-\TReturning \triangleq\ & \Returning(\overtext{(\KleeneStar{\nativevalue}, \XGraphs)}{values and graph}, \overtext{\envs}{environment})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TReturning}
   represent (tuples of) values being returned by the currently executing subprogram.
   The ASL dynamic semantics propagate these \emph{early return semantic configurations} to the respective call expression/statement.
 
   \item[In-flight Subprogram.] Semantic configurations in
-% BEGIN_GENERATED_ELEMENT(TContinuing)
-\hypertarget{type-TContinuing}{}\hypertarget{type-Continuing}{}
-\begin{flalign*}
-\TContinuing \triangleq\ & \Continuing(\overtext{\XGraphs}{graph}, \overtext{\envs}{environment})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TContinuing}
   represent the fact that a subprogram has more statements to execute.
   The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 
   \item[Dynamic Errors.] Semantic configurations in
-% BEGIN_GENERATED_ELEMENT(TDynError)
-\hypertarget{type-TDynError}{}\hypertarget{type-DynamicError}{}
-\begin{flalign*}
-\TDynError \triangleq\ & \DynamicError(\overtext{\Strings}{error code})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TDynError}
   represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 
   \item[Diverging Configurations.] The following semantic configuration
   represents a diverging evaluation:
-% BEGIN_GENERATED_ELEMENT(Diverging)
-\hypertarget{constant-Diverging}{} $\Diverging$
-% END_GENERATED_ELEMENT
+\RenderConstant{Diverging}
 The corresponding type is:
-% BEGIN_GENERATED_ELEMENT(TDiverging)
-\hypertarget{type-TDiverging}{}
-\begin{flalign*}
-\TDiverging \triangleq\ & \{\Diverging\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType{TDiverging}
 
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.

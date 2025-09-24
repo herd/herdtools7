@@ -103,11 +103,12 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Abstract Syntax of Specifications\label{sec:Abstract Syntax of Specifications}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% BEGIN_GENERATED_ELEMENT(spec)[remove_hypertargets]
+\RenderType[remove_hypertargets]{spec}
+\BackupOriginalAST{
 \begin{flalign*}
-\spec \derives\ & \KleeneStar{\overtext{\decl}{declarations}}
+\spec \derives\ & \decl^* &
 \end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{AST}
 \hypertarget{build-ast}{}

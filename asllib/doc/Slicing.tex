@@ -55,14 +55,15 @@ as exemplified in \listingref{PrefixSlice}. It is \desugared{} by \\
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Bitvector Slices}
-% BEGIN_GENERATED_ELEMENT(slice)[remove_hypertargets]
+\RenderType[remove_hypertargets]{slice}
+\BackupOriginalAST{
 \begin{flalign*}
-\slice \derives\ & \SliceSingle(\overtext{\expr}{index})\\
-|\ & \SliceRange(\overtext{\expr}{upper index}, \overtext{\expr}{lower index})\\
-|\ & \SliceLength(\overtext{\expr}{start index}, \overtext{\expr}{length})\\
-|\ & \SliceStar(\overtext{\expr}{factor}, \overtext{\expr}{scale})
+\slice \derives\ & \SliceSingle(\overname{\expr}{\vi}) &\\
+  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) &\\
+  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &\\
+  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
 \end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{Slice}
 \hypertarget{build-slice}{}

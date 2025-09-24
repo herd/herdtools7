@@ -99,16 +99,15 @@ Declaring a local storage element is done via the following grammar rules:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Local Storage Declarations}
-
-% BEGIN_GENERATED_ELEMENT(local_decl_keyword, local_decl_item)[remove_hypertargets]
+\RenderTypes[remove_hypertargets]{local_decl_keyword_and_item}
+\BackupOriginalAST{
 \begin{flalign*}
-\localdeclkeyword \derives\ & \LDKVar\\
-|\ & \LDKLet
-\\
-\localdeclitem \derives\ & \LDIVar(\overtext{\Identifier}{variable name})\\
-|\ & \LDITuple(\overtext{\KleeneStar{\Identifier}}{variable names})
+\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKLet &\\
+\localdeclitem \derives\
+     & \LDIVar(\identifier) & \\
+  |\ & \LDITuple(\identifier^*) &
 \end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \RequirementDef{DiscardingLocalStorageDeclarations}
 Local storage declarations must bind at least one name.

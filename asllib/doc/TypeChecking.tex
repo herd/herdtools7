@@ -43,29 +43,7 @@ variable declarations of the specification.
 \begin{definition}[Static Environment]
 Static environments, denoted as $\staticenvs$, \\
 are defined as follows (referring to symbols defined by the abstract syntax):
-% BEGIN_GENERATED_ELEMENT(static_envs, global_static_envs, local_static_envs)
-\hypertarget{type-staticenvs}{}
-\begin{flalign*}
-\staticenvs \triangleq\ & (\overtext{\globalstaticenvs}{G}, \overtext{\localstaticenvs}{L})
-\hypertarget{type-globalstaticenvs}{}
-\\
-\globalstaticenvs \triangleq\ & \left\{\begin{array}{lll}
-\text{declared\_types} &:& \Identifier \partialto (\overtext{\ty}{element type}, \overtext{\TPurity}{element purity})\\
-\text{global\_storage\_types} &:& \Identifier \partialto (\overtext{\ty}{element type}, \overtext{\globaldeclkeyword}{declared keyword})\\
-\text{expr\_equiv} &:& \Identifier \partialto \overtext{\expr}{initializer}\\
-\text{subtypes} &:& \overtext{\Identifier}{sub type} \partialto \overtext{\Identifier}{super type}\\
-\text{subprogram} &:& \Identifier \partialto (\func, \overtext{\pow{\TSideEffect}}{side effects})\\
-\text{overloaded\_subprogram} &:& \Identifier \partialto \pow{\Strings}
-\end{array}\right\}
-\hypertarget{type-localstaticenvs}{}
-\\
-\localstaticenvs \triangleq\ & \left\{\begin{array}{lll}
-\text{local\_storage\_types} &:& \Identifier \partialto (\overtext{\ty}{element type}, \overtext{\localdeclkeyword}{declared keyword})\\
-\text{expr\_equiv} &:& \Identifier \partialto \expr\\
-\text{return\_type} &:& \some{\ty}
-\end{array}\right\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderTypes{static_envs_and_components}
 
 \BackupOriginalType{
 \[
@@ -132,7 +110,7 @@ The intuitive meaning of each field appearing above is as follows:
   a function or a getter.
 \end{itemize}
 
-\hypertarget{def-emptytenv}{}
+\hypertarget{constant-emptytenv}{}
 \begin{definition}[Empty Static Environment]
 The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is defined as follows:
 \[
@@ -179,12 +157,7 @@ The output configurations of type system assertions have two flavors:
   \item[Type Errors.] When the type system encounters a \typingerrorterm{},
   for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|,
   the result is a value of the following type:
-  % BEGIN_GENERATED_ELEMENT(type_error)
-\hypertarget{type-typeerror}{}\hypertarget{type-TypeError}{}
-\begin{flalign*}
-\typeerror \triangleq\ & \TypeError(\overtext{\Strings}{error code})
-\end{flalign*}
-  % END_GENERATED_ELEMENT
+\RenderType{type_error}
 
   The ASL type system is designed such that when these \emph{\typingerrorterm{} configurations} appear,
   the typing of the entire specification terminates and outputs a \typingerrorterm{} with a code indicating

@@ -545,9 +545,12 @@ is defined via the following rules:
 \hypertarget{def-discardlexprterm}{}
 \section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_discard}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LEDiscard}
@@ -597,9 +600,12 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \hypertarget{def-varlexprterm}{}
 \section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_var}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LEVar(\Identifier) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LEVar}
@@ -741,9 +747,12 @@ In \listingref{semantics-leglobalvar},
 \ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_destructuring}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LEDestructuring(\lexpr^*) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LEDestructuring}
@@ -892,10 +901,13 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \SemanticsRuleRef{LESetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_setarray_and_typed}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LESetArray(\lexpr, \expr) &\\
 |\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LESetArray}
@@ -1117,9 +1129,12 @@ cell of
 \ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_slice}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LESlice}
@@ -1359,9 +1374,12 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \hypertarget{def-setfieldlexprterm}{}
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_setfield}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LESetField(\lexpr, \Identifier) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LESetBadField}
@@ -1512,9 +1530,12 @@ All of the collection field assignable expressions in
 \ASLListing{Multi-field assignment expression}{lesetfields}{\typingtests/TypingRule.LESetFields.asl}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_setfields}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LESetFields(\lexpr, \Identifier^*) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LESetFields}
@@ -1864,9 +1885,12 @@ All of the collection field assignable expressions in
 
 \section{Bitfield Assignable Expressions\label{sec:BitfieldAssignableExpressions}}
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{lexpr_slice}
+\BackupOriginalAST{
 \begin{flalign*}
 \lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
 \end{flalign*}
+}
 
 \subsection{Typing}
 \TypingRuleDef{LESetBitField}

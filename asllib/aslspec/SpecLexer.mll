@@ -42,9 +42,11 @@ rule token = parse
     | "fun"               { FUN }
     | "partial"           { PARTIAL }
     | "powerset"          { POWERSET }
+    | "powerset_finite"   { POWERSET_FINITE }
     | "prose_application" { PROSE_APPLICATION }
     | "prose_description" { PROSE_DESCRIPTION }
     | "relation"          { RELATION }
+    | "render"            { RENDER }
     | "typedef"           { TYPEDEF }
 
     (* Punctuation and operators *)
@@ -59,6 +61,7 @@ rule token = parse
     | ']'            { RBRACKET }
     | '{'            { LBRACE }
     | '}'            { RBRACE }
+    | '-'            { MINUS }
     | "->"           { ARROW }
 
     | identifier as lxm { IDENTIFIER(lxm) }

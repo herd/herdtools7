@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
-import os, sys, fnmatch
+import sys
 from extended_macros import (
     apply_console_macros,
-    apply_generated_spec_macros,
     get_latex_sources,
     read_file_lines,
     read_file_str,
@@ -20,12 +19,6 @@ cli_parser.add_argument(
     "-cm",
     "--console_macros",
     help="Rewrites *.tex files with extended macros",
-    action="store_true",
-)
-cli_parser.add_argument(
-    "-gen",
-    "--gen_spec_and_exit",
-    help="Replaces the generated blocks in *.tex files with the ones in generated_elements.tex and exits",
     action="store_true",
 )
 cli_parser.add_argument(
@@ -591,7 +584,13 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\texttt{.*?}",
         r"\\listingref{.*?}",
         r"\\appendixref{.*?}",
-    ]
+        r"\\RenderConstant{.*?}",
+        r"\\RenderConstant\[.*?\]{.*?}",
+        r"\\RenderType{.*?}",
+        r"\\RenderType\[.*?\]{.*?}",
+        r"\\RenderRelation{.*?}",
+        r"\\RenderRelation\[.*?\]{.*?}",
+        ]
     asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
 
     num_errors = 0
@@ -657,10 +656,6 @@ def check_per_file(latex_files: list[str], checks):
 
 def main():
     args = cli_parser.parse_args()
-    if args.gen_spec_and_exit:
-        apply_generated_spec_macros()
-        sys.exit(0)
-
     if args.console_macros:
         aslref_path = args.aslref if args.aslref else "aslref"
         apply_console_macros(aslref_path)
@@ -678,7 +673,6 @@ def main():
     num_errors += num_spelling_errors
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
-    num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
