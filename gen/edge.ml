@@ -326,15 +326,9 @@ and type rmw = F.rmw = struct
 
   let pp_edge e = pp_edge_with_xx false e
 
-  let compare_atomo = Option.compare F.compare_atom
+  let compare_atomo = compare
 
-  let compare e1 e2 = match compare_atomo e1.a1 e2.a1 with
-  | 0 ->
-      begin match  compare_atomo e1.a2 e2.a2 with
-      | 0 -> compare e1.edge e2.edge
-      | r -> r
-      end
-  | r -> r
+  let compare = compare
 
   let pp_strong sd e1 e2 =
     sprintf "Fence%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
@@ -740,23 +734,25 @@ let fold_tedges f r =
     | Id -> F.expand_atom e.a1 ( fun a1 -> f {e with a1; a2=a1} ) acc
     | Insert _|Store|Node _|Rf _ | Fr _ | Ws _
     | Hat |Leave _|Back _ ->
-        expand_atom2 e.a1 e.a2 ( fun a1 a2 -> f {e with a1; a2} ) acc
+      expand_atom2 e.a1 e.a2 ( fun a1 a2 -> f {e with a1; a2} ) acc
     | Rmw rmw ->
-        let expand_rmw_list = F.expand_rmw rmw in
-        List.fold_left ( fun acc new_rmw ->
-          expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
-            f {edge=Rmw(new_rmw); a1; a2}) acc
-        ) acc expand_rmw_list
+      let expand_rmw_list = F.expand_rmw rmw in
+      List.fold_left ( fun acc new_rmw ->
+        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+          f {edge=Rmw(new_rmw); a1; a2}) acc
+      ) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
       expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
         expand_dp_dir dp expr (fun new_expr ->
           expand_loc sd ( fun new_sd -> f {edge=Dp(dp,new_sd,new_expr); a1; a2}))) acc
     | Po(sd,e1,e2) ->
-        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
-          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Po(sd,d1,d2); a1; a2})) acc
+      expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+        expand_loc sd ( fun new_sd ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Po(new_sd,d1,d2); a1; a2}))) acc
     | Fenced(fe,sd,e1,e2) ->
-        expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
-          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Fenced(fe,sd,d1,d2); a1; a2})) acc
+      expand_atom2 e.a1 e.a2 ( fun a1 a2 ->
+        expand_loc sd ( fun new_sd ->
+          expand_dir2 e1 e2 (fun d1 d2 -> f {edge=Fenced(fe,new_sd,d1,d2); a1; a2}))) acc
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
