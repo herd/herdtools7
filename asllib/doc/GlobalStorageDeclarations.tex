@@ -82,29 +82,23 @@ as they discard their declared storage elements.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RenderTypes[remove_hypertargets]{decl_global_storage}
+\BackupOriginalAST{
 \begin{flalign*}
 \decl \derives\ & \DGlobalStorage(\globaldecl) &\\
+\globaldecl \derives\ &
+{\left\{
+  \begin{array}{rcl}
+  \GDkeyword &:& \globaldeclkeyword, \\
+  \GDname &:& \identifier,\\
+  \GDty &:& \ty?,\\
+  \GDinitialvalue &:& \expr?
+  \end{array}
+  \right\}
+ } &\\
+ \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
 \end{flalign*}
-
-% BEGIN_GENERATED_ELEMENT(global_decl)[remove_hypertargets]
-\begin{flalign*}
-\globaldecl \derives\ & \left\{\begin{array}{lll}
-\text{keyword} &:& \globaldeclkeyword\\
-\text{name} &:& \Identifier\\
-\text{ty} &:& \some{\ty}\\
-\text{initial\_value} &:& \some{\expr}
-\end{array}\right\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
-
-% BEGIN_GENERATED_ELEMENT(global_decl_keyword)[remove_hypertargets]
-\begin{flalign*}
-\globaldeclkeyword \derives\ & \GDKConstant\\
-|\ & \GDKConfig\\
-|\ & \GDKLet\\
-|\ & \GDKVar
-\end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{GlobalStorageDecl}
 This rule defines the cases for $\builddecl$ for global storage declarations.

@@ -89,40 +89,37 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RenderTypes[remove_hypertargets]{decl_func}
+\BackupOriginalAST{
 \begin{flalign*}
 \decl \derives\ & \DFunc(\func) &
 \end{flalign*}
 
-% BEGIN_GENERATED_ELEMENT(func, subprogram_type, qualifier, override_info, typed_identifier)[remove_hypertargets]
 \begin{flalign*}
-\func \derives\ & \left\{\begin{array}{lll}
-\text{name} &:& \Strings\\
-\text{parameters} &:& \KleeneStar{(\overtext{\Identifier}{name}, \overtext{\some{\ty}}{type})}\\
-\text{args} &:& \KleeneStar{\typedidentifier}\\
-\text{body} &:& \stmt\\
-\text{return\_type} &:& \some{\ty}\\
-\text{subprogram\_type} &:& \subprogramtype\\
-\text{recurse\_limit} &:& \some{\expr}\\
-\text{builtin} &:& \Bool\\
-\text{qualifier} &:& \some{\qualifier}\\
-\text{override} &:& \some{\overrideinfo}
-\end{array}\right\}
-\\
-\subprogramtype \derives\ & \STProcedure\\
-|\ & \STFunction\\
-|\ & \STGetter\\
-|\ & \STSetter
-\\
-\qualifier \derives\ & \Pure\\
-|\ & \Readonly\\
-|\ & \Noreturn
-\\
-\overrideinfo \derives\ & \Impdef\\
-|\ & \Implementation
-\\
-\typedidentifier \derives\ & (\overtext{\Identifier}{name}, \overtext{\ty}{type})
+\func \derives\ &
+{
+\left\{
+  \begin{array}{rcl}
+ \funcname &:& \Strings, \\
+ \funcparameters &:& (\identifier, \ty?)^*,\\
+ \funcargs &:& \typedidentifier^*,\\
+ \funcbody &:& \stmt,\\
+ \funcreturntype &:& \ty?,\\
+ \funcsubprogramtype &:& \subprogramtype,\\
+ \funcrecurselimit    &:& \expr?\\
+ \funcbuiltin &:& \Bool\\
+ \funcqualifier &:& \Some{\qualifier}\\
+ \funcoverride &:& \Some{\overrideinfo}\\
+\end{array}
+\right\}
+} &\\
+\typedidentifier \derives\ & (\identifier, \ty) &\\
+\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
+                |\  & \STGetter \;|\; \STSetter &\\
+\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &\\
+\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
 \end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{SubprogramDecl}
 This rule defines the cases for $\builddecl$ for subprogram declarations.

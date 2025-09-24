@@ -53,21 +53,7 @@ transforms an expression parse node $\vparsednode$ into an expression AST node $
 
 \paragraph{Typing:}
 All expressions have a unique type (which can be a \tupletypeterm{}).
-% BEGIN_GENERATED_ELEMENT(annotate_expr)
-\hypertarget{relation-annotateexpr}{}
-The relation
-\[
-\annotateexpr(\overtext{\staticenvs}{tenv}, \overtext{\expr}{e}) \;\bigtimes\; \left((\overtext{\ty}{t}, \overtext{\expr}{new e}, \overtext{\pow{\TSideEffect}}{ses}) \cup \typeerror\right)
-\]
-annotates the expression $\texttt{e}$ in the \staticenvironmentterm{}
-$\texttt{tenv}$,
- resulting in the following:
- $\texttt{t}$ is the type inferred for $\texttt{e}$;
- $\texttt{new\_e}$ is the \typedast{} for $\texttt{e}$, also known as the
-\emph{annotated expression};
- and $\texttt{ses}$ is the \sideeffectsetterm{} inferred for $\texttt{e}$.
-\ProseOtherwiseTypeError
-% END_GENERATED_ELEMENT
+\RenderRelation{annotate_expr}
 
 \BackupOriginalRelation{
 The relation
@@ -122,9 +108,12 @@ A literal expression represents a literal as an expression.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_literal}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ELiteral(\literal) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ELit}
 \begin{mathpar}
@@ -191,9 +180,12 @@ A variable expression consists of an identifier for a storage element.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_var}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EVar(\overtext{\Identifier}{variable name}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EVAR}
 \begin{mathpar}
@@ -415,9 +407,12 @@ and the effect of operator precedence.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_binop}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EBinop(\binop, \expr, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST
@@ -804,9 +799,12 @@ as well as \texttt{==}).
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_unop}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EUnop(\unop, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EUnop}
 \begin{mathpar}
@@ -877,9 +875,12 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_cond}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
 \end{flalign*}
+}
 
 \ASTRuleDef{ECond}
 \begin{mathpar}
@@ -1018,12 +1019,12 @@ conditional expression evaluates to the \texttt{else} expression.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_call}
+\BackupOriginalAST{
+\hypertarget{ast-expr}{}\hypertarget{ast-ECall}{}
 \begin{flalign*}
-\expr \derives\ & \ECall(\call) &
-\end{flalign*}
-
-% BEGIN_GENERATED_ELEMENT(call)[remove_hypertargets]
-\begin{flalign*}
+\expr \derives\ & \ECall(\overtext{\call}{call descriptor})
+\hypertarget{ast-call}{}\\
 \call \derives\ & \left\{\begin{array}{lll}
 \text{name} &:& \Strings\\
 \text{params} &:& \KleeneStar{\expr}\\
@@ -1031,7 +1032,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \text{call\_type} &:& \subprogramtype
 \end{array}\right\}
 \end{flalign*}
-% END_GENERATED_ELEMENT
+}
 
 \ASTRuleDef{Call}
 \hypertarget{build-call}{}
@@ -1197,9 +1198,12 @@ The well-typed specification in \listingref{Bitvector_slices2} shows examples of
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_slice}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ESlice(\expr, \slice^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ESlice}
 \begin{mathpar}
@@ -1355,9 +1359,12 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getarray}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EGetArray(\expr, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetArray}
 \begin{mathpar}
@@ -1567,9 +1574,12 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getfield}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\Identifier}{field name}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetField}
 \begin{mathpar}
@@ -1958,9 +1968,12 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getfields}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EGetFields(\overtext{\expr}{record}, \overtext{\Identifier^{*}}{field names}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetFields}
 \begin{mathpar}
@@ -2373,9 +2386,12 @@ is a \DynamicErrorConfigurationTerm{}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_atc}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ATC}
 \begin{mathpar}
@@ -2871,9 +2887,12 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_pattern}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EPattern(\expr, \pattern) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EPattern}
 \begin{mathpar}
@@ -2989,9 +3008,12 @@ Note that there are two important consequences of producing an arbitrary value w
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_arbitrary}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EArbitrary(\ty) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EArbitrary}
 \begin{mathpar}
@@ -3111,9 +3133,12 @@ Notice that this rule introduces non-determinism.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_record}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\Identifier, \expr)^{*}}{field initializers}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ERecord}
 \begin{mathpar}
@@ -3305,9 +3330,12 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_tuple}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ETuple(\expr^{+}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ETuple}
 \begin{mathpar}
@@ -3422,10 +3450,13 @@ of array-typed variables. Since there is no syntax to initialize arrays, there a
 no rules for building the AST for such expressions nor rules for typechecking them.
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_array}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &\\
              |\ & \EEnumArray \{\EArrayLabels: \Identifier^+, \EArrayValue: \expr\}
 \end{flalign*}
+}
 
 \subsection{Semantics}
 

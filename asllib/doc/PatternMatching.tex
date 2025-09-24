@@ -77,9 +77,12 @@ resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_all}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternAll &
 \end{flalign*}
+}
 
 \ASTRuleDef{PAll}
 \begin{mathpar}
@@ -139,9 +142,12 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_single}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternSingle(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PSingle}
 \begin{mathpar}
@@ -299,9 +305,12 @@ whereas \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_range}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PRange}
 \begin{mathpar}
@@ -411,9 +420,12 @@ range given by \texttt{3..42}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_leq}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternLeq(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PLeq}
 \begin{mathpar}
@@ -505,9 +517,12 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_geq}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternGeq(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PGeq}
 \begin{mathpar}
@@ -598,9 +613,12 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_mask}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternMask(\overtext{\{\texttt{0},\texttt{1},\texttt{x}\}^*}{mask constant}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PMask}
 \begin{mathpar}
@@ -715,9 +733,12 @@ is defined by the following table:
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_tuple}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternTuple(\pattern^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PTuple}
 \begin{mathpar}
@@ -816,9 +837,12 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_any}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternAny(\pattern^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PatternSet}
 \hypertarget{build-patternset}{}
@@ -938,9 +962,12 @@ any pattern in \verb|{3, 4}|.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_not}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternNot(\pattern) &
 \end{flalign*}
+}
 
 The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 

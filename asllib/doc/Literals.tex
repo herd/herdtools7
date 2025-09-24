@@ -45,16 +45,7 @@ and their corresponding types in comments:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Literals}
-% BEGIN_GENERATED_ELEMENT(literal)[remove_hypertargets]
-\begin{flalign*}
-\literal \derives\ & \LInt(\overtext{\Z}{whole number})\\
-|\ & \LBool(\overtext{\Bool}{boolean value})\\
-|\ & \LReal(\overtext{\Q}{rational number})\\
-|\ & \LBitvector(\overtext{\KleeneStar{\Bit}}{bits})\\
-|\ & \LString(\overtext{\Strings}{string})\\
-|\ & \LLabel(\overtext{\Identifier}{enumeration label})
-\end{flalign*}
-% END_GENERATED_ELEMENT
+\RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
 \hypertarget{build-value}{}
@@ -104,16 +95,7 @@ transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode
 See \ExampleRef{Literals}.
 
 \TypingRuleDef{Lit}
-% BEGIN_GENERATED_ELEMENT(annotate_literal)
-\hypertarget{relation-annotateliteral}{}
-The relation
-\[
-\annotateliteral(\overtext{\staticenvs}{tenv}, \overtext{\literal}{l}) \;\bigtimes\; \overtext{\ty}{t}
-\]
-annotates a literal $\texttt{l}$ in the \staticenvironmentterm{}
-$\texttt{tenv}$, resulting in a type
-$\texttt{t}$.
-% END_GENERATED_ELEMENT
+\RenderRelation{annotate_literal}
 \BackupOriginalRelation{
 The relation
 \[

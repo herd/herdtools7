@@ -28,36 +28,18 @@ A \symbolicallyevaluable{} expression is compatible with symbolic reduction and 
 We now define configurations used to determine whether expressions are \pure{} and \readonly{} by the side effect analysis, as explained below.
 These are known as \purities{}.
 
-% BEGIN_GENERATED_ELEMENT(TPurity)
-\hypertarget{type-TPurity}{}
-\begin{flalign*}
-\TPurity \triangleq\ & \{\SEPure, \SEReadonly, \SEImpure\}
-\end{flalign*}
-% END_GENERATED_ELEMENT
-
+\RenderType{TPurity}
 \BackupOriginalType{
 \[
 \TPurity \triangleq \{ \SEPure,\; \SEReadonly,\; \SEImpure \}
 \]
 }
 \begin{description}
-    \item[
-    % BEGIN_GENERATED_ELEMENT(SE_Pure)
-\hypertarget{constant-SEPure}{} $\SEPure$
-    % END_GENERATED_ELEMENT
-] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
+    \item[\RenderConstant{SE_Pure}] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
 
-\item[
-  % BEGIN_GENERATED_ELEMENT(SE_Readonly)
-\hypertarget{constant-SEReadonly}{} $\SEReadonly$
-  % END_GENERATED_ELEMENT
-] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
+\item[\RenderConstant{SE_Readonly}] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
 
-\item[
-  % BEGIN_GENERATED_ELEMENT(SE_Impure)
-\hypertarget{constant-SEImpure}{} $\SEImpure$
-  % END_GENERATED_ELEMENT
-] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
+\item[\RenderConstant{SE_Impure}] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
 \end{description}
 
 Formally, \purities{} are totally ordered via $\purityless$ as follows:
@@ -78,15 +60,7 @@ f \puritygeq f' \triangleq \lnot(f \purityless f') \enspace.
 \hypertarget{def-sideeffectdescriptorterm}{}
 We now define \sideeffectdescriptorsterm,
 which are configurations used to describe side effects, as explained below:
-% BEGIN_GENERATED_ELEMENT(TSideEffect)
-\hypertarget{type-TSideEffect}{}\hypertarget{type-LocalEffect}{}
-\begin{flalign*}
-\TSideEffect \triangleq\ & \LocalEffect(\overtext{\TPurity}{purity})\hypertarget{type-GlobalEffect}{}\\
-\cup\ & \GlobalEffect(\overtext{\TPurity}{purity})\hypertarget{type-Immutability}{}\\
-\cup\ & \Immutability(\overtext{\Bool}{immutable})
-\end{flalign*}
-% END_GENERATED_ELEMENT
-
+\RenderType{TSideEffect}
 \BackupOriginalType{
 \[
 \TSideEffect \triangleq \left\lbrace

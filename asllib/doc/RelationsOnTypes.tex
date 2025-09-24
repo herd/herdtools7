@@ -176,8 +176,8 @@ subtyping.
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
   \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
-  \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomain{} $\ds$;
-  \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomain{} $\dt$;
+  \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomainterm{} $\ds$;
+  \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomainterm{} $\dt$;
   \item applying $\symdomsubsetunions$ to $\tenv$, $\ds$, and $\dt$ yields $\vb$.
   \end{itemize}
 
@@ -193,7 +193,7 @@ subtyping.
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
   \item determining whether the bitfields $\bfss$ are included in the bitfields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether the \symbolicdomain{} of $\ws$ subsumes the \symbolicdomain{} of $\wt$ in $\tenv$ yields $\vb$.
+  \item determining whether the \symbolicdomainterm{} of $\ws$ subsumes the \symbolicdomainterm{} of $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_array\_expr}

@@ -44,7 +44,6 @@ ASLReference.pdf: control\
 
 generated_spec: asl.spec
 	dune exec -- aslspec --render asl.spec;
-	python3 doclint.py --gen_spec_and_exit
 
 ASLASTLines.tex: ../AST.mli
 	$(BENTO) $< > $@

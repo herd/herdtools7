@@ -22,8 +22,10 @@ open AST.AttributeKey
 %token MATH_SHAPE
 %token OPTION
 %token POWERSET
+%token POWERSET_FINITE
 %token PROSE_APPLICATION
 %token PROSE_DESCRIPTION
+%token RENDER
 %token RELATION
 %token TYPEDEF
 
@@ -40,6 +42,7 @@ open AST.AttributeKey
 %token RBRACKET
 %token LBRACE
 %token RBRACE
+%token MINUS
 
 %%
 
@@ -106,6 +109,7 @@ let elem :=
     | type_definition
     | relation_definition
     | constant_definition
+    | render_definition
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
@@ -132,6 +136,7 @@ let type_attributes ==
 let type_attribute :=
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
     | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, StringAttribute macro) }
+    | MATH_SHAPE; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
@@ -160,7 +165,8 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 
 let type_term :=
     | name=IDENTIFIER; { Label name }
-    | POWERSET; LPAR; member_type=type_term; RPAR; { Powerset member_type }
+    | POWERSET; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=false} }
+    | POWERSET_FINITE; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=true} }
     | OPTION; LPAR; member_type=type_term; RPAR; { Option member_type }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { Tuple components }
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label; components} }
@@ -185,3 +191,10 @@ let math_layout :=
     | IDENTIFIER; LPAR; inner=clist0(math_layout); RPAR; { Horizontal inner }
     | LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
+
+let render_definition :=
+    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer); SEMI; { Elem_Render (make_render name pointers) }
+
+let type_subset_pointer :=
+    | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
+    | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }

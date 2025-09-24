@@ -312,6 +312,7 @@
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
 \newcommand\Pow[1]{\hyperlink{def-pow}{\mathcal{P}}\left(#1\right)} % DO NOT LINT
+\newcommand\Powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)} % DO NOT LINT
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}(#1)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
@@ -584,14 +585,8 @@
 % Special macros for the typed AST:
 % We currently do not distinguish between untyped expressions and typed
 % expressions and so we typeset them both with the same symbol.
-\newcommand\typedexpr[0]{\hyperlink{ast-typedexpr}{\expr}}
-\newcommand\typedlexpr[0]{\hyperlink{ast-typedlexpr}{\lexpr}}
-\newcommand\typedstmt[0]{\hyperlink{ast-typedstmt}{\stmt}}
 \newcommand\typedSThrow[0]{\hyperlink{ast-typedSThrow}{\SThrow}}
-\newcommand\typedslice[0]{\hyperlink{ast-typedslice}{\slice}}
 \newcommand\typedSliceLength[0]{\hyperlink{ast-typedSliceLength}{\SliceLength}}
-\newcommand\typedarrayindex[0]{\hyperlink{ast-typedarrayindex}{\arrayindex}}
-\newcommand\typedconstraintkind[0]{\hyperlink{ast-typedconstraintkind}{\constraintkind}}
 \newcommand\typedWellConstrained[0]{\hyperlink{ast-typedWellConstrained}{\WellConstrained}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -843,7 +838,7 @@
 \newcommand\localstaticenvironmentterm[0]{\hyperlink{type-localstaticenvs}{local static environment}}
 \newcommand\globalstaticenvs[0]{\hyperlink{type-globalstaticenvs}{\mathbb{GSE}}}
 \newcommand\globalstaticenvironmentterm[0]{\hyperlink{type-globalstaticenvs}{global static environment}}
-\newcommand\emptytenv[0]{\hyperlink{def-emptytenv}{\emptyset_{\mathbb{SE}}}}
+\newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\emptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
 \newcommand\ProsetypesatTrue[3]{#2 \typesatisfies{} #3 in the static environment #1}
@@ -893,15 +888,15 @@
 \newcommand\dynamicenvs[0]{\hyperlink{type-dynamicenvs}{\mathbb{DE}}}
 \newcommand\localdynamicenvs[0]{\hyperlink{type-localdynamicenvs}{\mathbb{LDE}}}
 \newcommand\globaldynamicenvs[0]{\hyperlink{type-globaldynamicenvs}{\mathbb{GDE}}}
-\newcommand\emptydenv[0]{\hyperlink{def-emptydenv}{\emptyset_{\mathbb{DE}}}}
+\newcommand\emptydenv[0]{\hyperlink{constant-emptydenv}{\emptyset_{\mathbb{DE}}}}
 \newcommand\storage[0]{\hyperlink{def-storage}{\textsf{storage}}}
 \newcommand\pendingcalls[0]{\hyperlink{def-pending-calls}{\textsf{pending\_calls}}}
 \newcommand\xgraph[0]{\textsf{g}}
-\newcommand\emptygraph[0]{{\hyperlink{def-emptygraph}{\emptyset_\xgraph}}}
+\newcommand\emptygraph[0]{{\hyperlink{constant-emptygraph}{\emptyset_\xgraph}}}
 \newcommand\Proseemptygraph[1]{#1 is the empty \executiongraph{}}
-\newcommand\asldata[0]{\hyperlink{def-asldata}{\mathtt{asl\_data}}}
-\newcommand\aslctrl[0]{\hyperlink{def-aslctrl}{\mathtt{asl\_ctrl}}}
-\newcommand\aslpo[0]{\hyperlink{def-aslpo}{\mathtt{asl\_po}}}
+\newcommand\asldata[0]{\hyperlink{constant-asldata}{\mathtt{asl\_data}}}
+\newcommand\aslctrl[0]{\hyperlink{constant-aslctrl}{\mathtt{asl\_ctrl}}}
+\newcommand\aslpo[0]{\hyperlink{constant-aslpo}{\mathtt{asl\_po}}}
 
 \newcommand\Nodes[0]{\hyperlink{type-Nodes}{\mathcal{N}}}
 \newcommand\Read[0]{\hyperlink{constant-Read}{\text{Read}}}
@@ -1473,7 +1468,7 @@
 \newcommand\structure[0]{\hyperlink{def-structure}{structure}}
 \newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
 \newcommand\underlyingtypes[0]{\hyperlink{def-underlyingtype}{underlying types}}
-\newcommand\symbolicdomain[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
+\newcommand\symbolicdomainterm[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
 \newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
 \newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
 \newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
@@ -1780,14 +1775,6 @@
 \newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
 
 % Symbolic domain subsumption
-\newcommand\symdom[0]{\hyperlink{def-symdom}{\textsf{symdom}}}
-\newcommand\symdomortop[0]{\hyperlink{def-symdomortop}{\textsf{symdom\_or\_top}}}
-
-\newcommand\Finite[0]{\hyperlink{def-finite}{\textsf{Finite}}}
-\newcommand\Top[0]{\hyperlink{def-top}{\textsf{Top}}}
-\newcommand\ConstrainedDom[0]{\hyperlink{def-constraineddom}{\textsf{ConstrainedDom}}}
-\newcommand\Subdomains[0]{\hyperlink{def-subdomains}{\textsf{Subdomains}}}
-
 \newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
 \newcommand\symdomofwidthexpr[0]{\hyperlink{def-symdomofwidthexpr}{\textfunc{symdom\_of\_width\_expr}}}
 \newcommand\symdomofconstraint[0]{\hyperlink{def-symdomofconstraint}{\textfunc{symdom\_of\_constraint}}}

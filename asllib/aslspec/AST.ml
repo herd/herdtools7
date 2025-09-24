@@ -1,47 +1,46 @@
-(** A module for representing the abstract syntax trees
-    of the domain-specific language, which defines the
-    semantics-specification for ASL.
-*)
+(** A module for representing the abstract syntax trees of the domain-specific
+    language, which defines the semantics-specification for ASL. *)
 
 exception SpecError of string
 
 type type_kind = TypeKind_Generic | TypeKind_AST
 
-(** Terms for constructing types out of other types,
-  with [Label t] being the leaf case.
+(** Terms for constructing types out of other types, with [Label t] being the
+    leaf case.
 
-  In the context of a type definition, a [Label] variant
-  defines a new label - a type representing just this
-  single label. In other contexts, for example a type
-  variant appearing in the signature of a relation,
-  this can either refer to a type name of a label
-  defined as a type variant.
-*)
+    In the context of a type definition, a [Label] variant defines a new label -
+    a type representing just this single label. In other contexts, for example a
+    type variant appearing in the signature of a relation, this can either refer
+    to a type name of a label defined as a type variant. *)
 type type_term =
   | Label of string
-      (** Either a set containing the single value named by the given string
-       or a reference to a type with the given name. *)
-  | Powerset of type_term
-      (** A set containing all subsets of the given type. *)
+      (** Either a set containing the single value named by the given string or
+          a reference to a type with the given name. *)
+  | Powerset of { term : type_term; finite : bool }
+      (** A set containing all subsets of the given type. If [finite] is true
+          then only the finite subsets are included. *)
   | Option of type_term
-      (** Either the empty set of a set containing a single value of the given type. *)
+      (** Either the empty set of a set containing a single value of the given
+          type. *)
   | Tuple of opt_named_type_term list
-      (** A set containing all tuples formed by the given components.
-        A tuple containing a single term is a special case - its domain is the domain
-        of that term.
-    *)
+      (** A set containing all tuples formed by the given components. A tuple
+          containing a single term is a special case - its domain is the domain
+          of that term. *)
   | LabelledTuple of { label : string; components : opt_named_type_term list }
-      (** A set containing all labelled tuples formed by the given components. *)
+      (** A set containing all labelled tuples formed by the given components.
+      *)
   | Record of named_type_term list
       (** A set containing all records formed by the given fields. *)
   | LabelledRecord of { label : string; fields : named_type_term list }
       (** A set containing all labelled records formed by the given fields. *)
   | List of { maybe_empty : bool; member_type : type_term }
-      (** A set containing all sequences of the given member type. If [maybe_empty] is true, the list may also be empty. *)
+      (** A set containing all sequences of the given member type. If
+          [maybe_empty] is true, the list may also be empty. *)
   | ConstantsSet of string list
       (** A set containing all constants formed by the given names. *)
   | Function of { from_type : type_term; to_type : type_term; total : bool }
-      (** A set containing all functions formed by the given types. If [total] is true, the function is total, otherwise it is partial. *)
+      (** A set containing all functions formed by the given types. If [total]
+          is true, the function is total, otherwise it is partial. *)
 
 and named_type_term = string * type_term
 (** A term associated with a variable name. *)
@@ -52,7 +51,8 @@ and opt_named_type_term = string option * type_term
 (** Specifies how to layout a term. *)
 type layout =
   | Unspecified
-      (** No specific layout, appropriate for atomic terms and terms with singleton lists. *)
+      (** No specific layout, appropriate for atomic terms and terms with
+          singleton lists. *)
   | Horizontal of layout list  (** Layout terms horizontally. *)
   | Vertical of layout list  (** Layout terms vertically. *)
 
@@ -88,8 +88,8 @@ module Attributes = struct
   type 'a map = 'a t
   type t = attribute map
 
-  (** Shadow [of_list] by raising a [SpecError] exception on pairs
-     containing the same key. *)
+  (** Shadow [of_list] by raising a [SpecError] exception on pairs containing
+      the same key. *)
   let of_list pairs =
     List.fold_left
       (fun acc_map (k, v) ->
@@ -113,9 +113,8 @@ module type HasAttributes = sig
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
 end
 
-(** A datatype for type terms used in the definition of a type,
-    with associated attributes.
-*)
+(** A datatype for type terms used in the definition of a type, with associated
+    attributes. *)
 module TypeVariant : sig
   include HasAttributes
 
@@ -153,8 +152,7 @@ end = struct
   let attributes self = self.att
 end
 
-(** A datatype for a type definition.
-*)
+(** A datatype for a type definition. *)
 module Type : sig
   include HasAttributes
 
@@ -220,8 +218,7 @@ end = struct
   let attributes self = self.att
 end
 
-(** A datatype for a relation definition.
-*)
+(** A datatype for a relation definition. *)
 module Relation : sig
   include HasAttributes
 
@@ -313,9 +310,22 @@ end = struct
   let attributes self = self.att
 end
 
+type type_subset_pointer = { type_name : string; variant_names : string list }
+type render = { render_name : string; pointers : type_subset_pointer list }
+
+let make_render render_name pointer_pairs =
+  {
+    render_name;
+    pointers =
+      List.map
+        (fun (type_name, variant_names) -> { type_name; variant_names })
+        pointer_pairs;
+  }
+
 type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
+  | Elem_Render of render
 
 type t = elem list

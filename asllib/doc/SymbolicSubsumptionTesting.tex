@@ -95,20 +95,22 @@ that we refer to as \emph{symbolic domains} and then checking subsumption over t
 
 We define the \emph{symbolic domain} datatype, reusing $\intconstraint$ from the untyped AST,
 as follows:
-\hypertarget{def-symdom}{}
-\hypertarget{def-finite}{}
+
+\RenderTypes{symbolic_domains}
+\BackupOriginalType{
 \[
   \begin{array}{rcl}
-  \symdom       &\derives & \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-constraineddom}{}\\
-                &|        & \ConstrainedDom(\intconstraint) \hypertarget{def-symdomortop}{} \hypertarget{def-top}{}\\
-  \symdomortop  &\derives & \Top \hypertarget{def-subdomains}{}\\
+  \symdom       &\derives & \Finite(\powfin{\Z} \setminus \emptyset) \\
+                &|        & \ConstrainedDom(\intconstraint) \\
+  \symdomortop  &\derives & \Top\\
                 &|        & \Subdomains(\symdom^+)
   \end{array}
 \]
+}
 
 \begin{itemize}
   \item We refer to an element of the form $\Finite(S)$ as a \emph{symbolic finite set integer domain},
-        which represents the non-empty set of integers $S$;
+        which represents the (non-empty) set of integers $S$;
   \item We refer to an element of the form $\ConstrainedDom(\vc)$ as a \emph{symbolic constrained integer domain},
         which represents the set of integers given by the constraint $\vcs$; and
   \item We refer to an element of the form $\Top$ as a \emph{symbolic unconstrained integer domain},
@@ -263,9 +265,9 @@ where all symbolic finite set integer domains are merged into a single symbolic 
 whose set of integers is the union of the sets of integers in the merged symbolic finite set integer domains.
 
 \ExampleDef{Normalizing Symbolic Domains}
-In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomain{} for the type\\
+In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomainterm{} for the type\\
 \verb|integer{1..6, 5..N, 9, N*2}| (see \ExampleRef{The Symbolic Domain of a Type})
-merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdomain{}
+merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdomainterm{}
 \[
 \Subdomains\left(\left[
   \begin{array}{l}
@@ -311,7 +313,7 @@ transforms a type $\vt$ in a \staticenvironmentterm{} $\tenv$ into a symbolic do
 It assumes its input type has an \underlyingtype{} which is an integer.
 
 \ExampleDef{The Symbolic Domain of a Type}
-In \listingref{SymdomOfConstraint}, the \symbolicdomain{} for the type
+In \listingref{SymdomOfConstraint}, the \symbolicdomainterm{} for the type
 \verb|integer{1..6, 5..N, 9, N*2}|
 is
 \[
@@ -439,13 +441,13 @@ to integers.
 \ExampleDef{The Symbolic Domain of a Constraint}
 In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|:
 \begin{itemize}
-  \item the \symbolicdomain{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
-  \item the \symbolicdomain{} for the constraint \verb|9| is $\Finite(\{9\})$,
-  \item the \symbolicdomain{} for the constraint \verb|N*2| is \\
+  \item the \symbolicdomainterm{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
+  \item the \symbolicdomainterm{} for the constraint \verb|9| is $\Finite(\{9\})$,
+  \item the \symbolicdomainterm{} for the constraint \verb|N*2| is \\
         $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$,
         since the premise \\
         $\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$ yields $\Top$,
-  \item the \symbolicdomain{} for the constraint \verb|5..N| is \\
+  \item the \symbolicdomainterm{} for the constraint \verb|5..N| is \\
         $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$,
         since the premise \\
         $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yields $\Top$.
@@ -567,8 +569,8 @@ The function
   ) \aslto
   \overname{\Bool}{\vb}
 \]
-conservatively tests whether the values represented by the \symbolicdomain\ $\cdone$
-is a subset of the values represented by the \symbolicdomain\ $\cdtwo$ in any environment
+conservatively tests whether the values represented by the \symbolicdomainterm\ $\cdone$
+is a subset of the values represented by the \symbolicdomainterm\ $\cdtwo$ in any environment
 consisting of the \staticenvironmentterm{} $\tenv$, yielding the result in $\vb$.
 
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
@@ -587,12 +589,12 @@ test is unable to conclude subsumption.
 
 \ExampleDef{Conservatively Testing Whether One Symbolic Domain is a Subset of Another}
 In \listingref{SymdomOfWidthExpr}, typechecking the assignment \verb|x=y;|
-involves test whether the \symbolicdomain{} for \verb|2..4| is a subset of the
-\symbolicdomain{} for \verb|1..6|, which $\True$.
-Similarly for testing whether the \symbolicdomain{} for \verb|N+N|
-is a subset of the \symbolicdomain{} for \verb|N*2| also yields $\True$.
-In contrast, testing whether the \symbolicdomain{} for \verb|5..N|
-is a subset of the \symbolicdomain{} for \verb|N*2| yields $\False$.
+involves test whether the \symbolicdomainterm{} for \verb|2..4| is a subset of the
+\symbolicdomainterm{} for \verb|1..6|, which $\True$.
+Similarly for testing whether the \symbolicdomainterm{} for \verb|N+N|
+is a subset of the \symbolicdomainterm{} for \verb|N*2| also yields $\True$.
+In contrast, testing whether the \symbolicdomainterm{} for \verb|5..N|
+is a subset of the \symbolicdomainterm{} for \verb|N*2| yields $\False$.
 
 \hypertarget{def-Under}{}
 \hypertarget{def-Over}{}

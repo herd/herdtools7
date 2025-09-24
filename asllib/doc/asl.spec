@@ -129,8 +129,12 @@ ast binop { prose_description = "binary operator", } =
     { prose_description = "string concatenation operator", }
 ;
 
-// Untyped AST
+render unop_and_binop = unop(-), binop(-);
+
 ast expr { prose_description = "expression", } =
+////////////////////////////////////////////////
+// Unyped AST
+////////////////////////////////////////////////
     | E_Literal(value: literal)
     { prose_description = "literal expression for {value}", }
     | E_Var(name: Identifier)
@@ -164,7 +168,58 @@ ast expr { prose_description = "expression", } =
     { prose_description = "an arbitrary value choice expression for {type}", }
     | E_Pattern(discriminant: expr, pattern: pattern)
     { prose_description = "a pattern expression for {discriminant} and {pattern}", }
+
+////////////////////////////////////////////////
+// Typed AST
+////////////////////////////////////////////////
+    | E_GetItem(base: expr, index: N)
+    { prose_description = "an access to tuple expression {base} of the component at index {index}", }
+    | E_Array[length: expr, value: expr]
+    { prose_description = "array construction {base} of the component at index {index}", }
+    | E_EnumArray[labels: list1(Identifier), value: expr]
+    { prose_description = "array construction {base} of the component at index {index}", }
+    | E_GetEnumArray(base: expr, key: expr)
+    { prose_description = "access to enumeration-indexed array {base} with key expression {key}", }
+    | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
+    { prose_description = "access to the list of fields given by {field_names} of the collection variable named {collection_name}", }
 ;
+
+render untyped_expr = expr(
+    E_Literal,
+    E_Var,
+    E_ATC,
+    E_Binop,
+    E_Unop,
+    E_Call,
+    E_Slice,
+    E_Cond,
+    E_GetArray,
+    E_GetField,
+    E_GetFields,
+    E_Record,
+    E_Tuple,
+    E_Arbitrary,
+    E_Pattern,
+);
+
+render expr_literal = expr(E_Literal);
+render expr_var = expr(E_Var);
+render expr_atc = expr(E_ATC);
+render expr_binop = expr(E_Binop);
+render expr_unop = expr(E_Unop);
+render expr_call = expr(E_Call), call(-);
+render expr_slice = expr(E_Slice);
+render expr_cond = expr(E_Cond);
+render expr_getarray = expr(E_GetArray);
+render expr_getfield = expr(E_GetField);
+render expr_getfields = expr(E_GetFields);
+render expr_record = expr(E_Record);
+render expr_tuple = expr(E_Tuple);
+render expr_arbitrary = expr(E_Arbitrary);
+render expr_pattern = expr(E_Pattern);
+
+render typed_expr = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
+render expr_array = expr(E_Array, E_EnumArray);
 
 constant zero_bit
 { prose_description = "\texttt{0}", math_macro = \zerobit };
@@ -198,6 +253,9 @@ ast pattern { prose_description = "pattern", } =
 
 ast slice
 { prose_description = "slice", } =
+////////////////////////////////////////
+// Untyped AST
+////////////////////////////////////////
     | Slice_Single(index: expr)
     { prose_description = "slice at position {index}", }
     | Slice_Range(upper_index: expr, lower_index: expr)
@@ -206,7 +264,25 @@ ast slice
     { prose_description = "slice from position {start_index} of {length} elements", }
     | Slice_Star(factor: expr, scale: expr)
     { prose_description = "slice from position {factor}*{scale} of {scale} elements", }
+
+////////////////////////////////////////
+// Typed AST
+////////////////////////////////////////
+    | typed_Slice_Length(start_index: expr, length: expr)
+    {
+        prose_description = "slice from position {start_index} of {length} elements",
+        math_macro = \typedSliceLength,
+    }
 ;
+
+render untyped_slice = slice(
+    Slice_Single,
+    Slice_Range,
+    Slice_Length,
+    Slice_Star,
+);
+
+render typed_slice = slice(typed_Slice_Length);
 
 ast call { prose_description = "call descriptor", } =
     [   name: Strings,
@@ -216,6 +292,8 @@ ast call { prose_description = "call descriptor", } =
     ]
     { prose_description = "call of {call_type} subprogram {name}with parameters {params}, arguments {args}", }
 ;
+
+render calls = expr(E_Call), stmt(S_Call);
 
 ast ty { prose_description = "type", } =
     | T_Int(kind: constraint_kind)
@@ -245,6 +323,9 @@ ast ty { prose_description = "type", } =
 ;
 
 ast constraint_kind { prose_description = "constraint kind", } =
+//////////////////////////////////////////////////
+// Untyped AST
+//////////////////////////////////////////////////
     | Unconstrained
     { prose_description = "no constraint", }
     | WellConstrained(constraints: list1(int_constraint))
@@ -253,7 +334,34 @@ ast constraint_kind { prose_description = "constraint kind", } =
     { prose_description = "parameter constraint for {parameter_name}", }
     | PendingConstrained
     { prose_description = "pending constraint", }
+
+//////////////////////////////////////////////////
+// Typed AST
+//////////////////////////////////////////////////
+    | typed_WellConstrained(constraints: list1(int_constraint), precision_loss: precision_loss_indicator)
+    {
+        prose_description = "list of constraints {constraints} with a \Proseprecisionlossindicator{} {precision_loss}",
+        math_macro = \typedWellConstrained,
+        math_layout = [_,_],
+    }
 ;
+
+render untyped_constraint_kind = constraint_kind(
+    Unconstrained,
+    WellConstrained,
+    Parameterized,
+    PendingConstrained,
+);
+render typed_constraint_kind = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
+
+ast precision_loss_indicator { prose_description = "\Proseprecisionlossindicator{}", } =
+    | Precision_Full
+    { prose_description = "no precision loss", }
+    | Precision_Lost
+    { prose_description = "some precision loss", }
+;
+
+render ty_int_constraint_and_kind = ty(T_Int), int_constraint(-), constraint_kind(-);
 
 ast int_constraint { prose_description = "integer constraint", } =
     | Constraint_Exact(subexpression: expr)
@@ -272,9 +380,21 @@ ast bitfield { prose_description = "bitfield", } =
 ;
 
 ast array_index { prose_description = "array index", } =
+//////////////////////////////////////////////////
+// Untyped AST
+//////////////////////////////////////////////////
     ArrayLength_Expr(length: expr)
     { prose_description = "integer length expression {length}", }
+
+//////////////////////////////////////////////////
+// Typed AST
+//////////////////////////////////////////////////
+    | ArrayLengthEnum(enumeration_name: Identifier, enumeration_labels: list1(Identifier))
+    { prose_description = "index for the enumeration {enumeration_name} with labels {enumeration_labels}", }
 ;
+
+render untyped_array_index = array_index(ArrayLength_Expr);
+render typed_array_index = array_index(ArrayLengthEnum);
 
 ast field { prose_description = "field", } =
     (name: Identifier, type: ty)
@@ -287,6 +407,9 @@ ast typed_identifier { prose_description = "typed identifier", } =
 ;
 
 ast lexpr { prose_description = "\assignableexpression{}", } =
+////////////////////////////////////////////////
+// Untyped AST
+////////////////////////////////////////////////
     | LE_Discard
     { prose_description = "discarding \assignableexpression{}", }
     | LE_Var(var: Identifier)
@@ -301,13 +424,64 @@ ast lexpr { prose_description = "\assignableexpression{}", } =
     { prose_description = "assignable multi-field write expression for {base} and field names {field_names}", }
     | LE_Destructuring(subexpressions: list0(lexpr))
     { prose_description = "multi-assignment for the list of \assignableexpressions{} {subexpressions}", }
+
+////////////////////////////////////////////////
+// Typed AST
+////////////////////////////////////////////////
+
+    | LE_SetEnumArray(base: lexpr, index: expr)
+    { prose_description = "assignable expression for the enumeration-indexed array {base} at index {index}", }
+    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
+    { prose_description = "assignable expression for the collection named {collection_name} and field names {field_names}", }
 ;
 
+render untyped_lexpr = lexpr(
+    LE_Discard,
+    LE_Var,
+    LE_Slice,
+    LE_SetArray,
+    LE_SetField,
+    LE_SetFields,
+    LE_Destructuring,
+);
+render typed_lexpr = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+
+render lexpr_discard = lexpr(LE_Discard);
+render lexpr_var = lexpr(LE_Var);
+render lexpr_slice = lexpr(LE_Slice);
+render lexpr_setarray = lexpr(LE_SetArray);
+render lexpr_setfield = lexpr(LE_SetField);
+render lexpr_setfields = lexpr(LE_SetFields);
+render lexpr_destructuring = lexpr(LE_Destructuring);
+render lexpr_setarray_and_typed = lexpr(LE_SetArray, LE_SetEnumArray);
+
+render pattern_all = pattern(Pattern_All);
+render pattern_single = pattern(Pattern_Single);
+render pattern_range = pattern(Pattern_Range);
+render pattern_leq = pattern(Pattern_Leq);
+render pattern_geq = pattern(Pattern_Geq);
+render pattern_mask = pattern(Pattern_Mask);
+render pattern_tuple = pattern(Pattern_Tuple);
+render pattern_any = pattern(Pattern_Any);
+render pattern_not = pattern(Pattern_Not);
+
+render ty_real = ty(T_Real);
+render ty_string = ty(T_String);
+render ty_bool = ty(T_Bool);
+render ty_bits = ty(T_Bits);
+render ty_tuple = ty(T_Tuple);
+render ty_enum = ty(T_Enum);
+render ty_array = ty(T_Array);
+render ty_record = ty(T_Record);
+render ty_exception = ty(T_Exception);
+render ty_collection = ty(T_Collection);
+render ty_named = ty(T_Named);
+
 ast local_decl_keyword { prose_description = "local declaration keyword", } =
-| LDK_Var
-{ prose_description = "local variable", }
-| LDK_Let
-{ prose_description = "local immutable variable", }
+    | LDK_Var
+    { prose_description = "local variable", }
+    | LDK_Let
+    { prose_description = "local immutable variable", }
 ;
 
 ast local_decl_item { prose_description = "local declaration item", } =
@@ -317,6 +491,8 @@ ast local_decl_item { prose_description = "local declaration item", } =
   { prose_description = "local declaration item for the list of variables {variable_names}", }
 ;
 
+render local_decl_keyword_and_item = local_decl_keyword(-), local_decl_item(-);
+
 ast for_direction { prose_description = "direction" } =
     | UP
     { prose_description = "upward", }
@@ -325,6 +501,9 @@ ast for_direction { prose_description = "direction" } =
 ;
 
 ast stmt { prose_description = "statement" } =
+////////////////////////////////////////////////
+// Untyped AST
+////////////////////////////////////////////////
   | S_Pass
   { prose_description = "pass statement", }
   | S_Seq(first: stmt, second: stmt)
@@ -381,7 +560,53 @@ ast stmt { prose_description = "statement" } =
   { prose_description = "pragma statement for the pragma name {pragma_name} and list of arguments {arguments}", }
   | S_Unreachable
   { prose_description = "unreachable statement", }
+
+////////////////////////////////////////////////
+// Typed AST
+////////////////////////////////////////////////
+   | typed_S_Throw(exception: expr, exception_type: ty)
+    {
+        prose_description = "throw statement with exception expression {exception} and inferred type {exception_type}",
+        math_macro = \typedSThrow,
+    }
 ;
+
+render untyped_stmt = stmt(
+    S_Pass,
+    S_Seq,
+    S_Decl,
+    S_Assign,
+    S_Call,
+    S_Return,
+    S_Cond,
+    S_Assert,
+    S_For,
+    S_While,
+    S_Repeat,
+    S_Throw,
+    S_Try,
+    S_Print,
+    S_Pragma,
+    S_Unreachable,
+);
+render typed_stmt = stmt(typed_S_Throw);
+
+render stmt_pass = stmt(S_Pass);
+render stmt_seq = stmt(S_Seq);
+render stmt_decl = stmt(S_Decl);
+render stmt_assign = stmt(S_Assign);
+render stmt_call = stmt(S_Call);
+render stmt_return = stmt(S_Return);
+render stmt_cond = stmt(S_Cond);
+render stmt_assert = stmt(S_Assert);
+render stmt_for = stmt(S_For), for_direction(-);
+render stmt_while = stmt(S_While);
+render stmt_repeat = stmt(S_Repeat);
+render stmt_throw = stmt(S_Throw);
+render stmt_try = stmt(S_Try);
+render stmt_print = stmt(S_Print);
+render stmt_pragma = stmt(S_Pragma);
+render stmt_unreachable = stmt(S_Unreachable);
 
 ast case_alt { prose_description = "case alternative" } =
     [ pattern: pattern, where: option(expr), stmt: stmt ]
@@ -490,87 +715,14 @@ ast decl { prose_description = "global declaration", } =
         arguments {arguments}", }
 ;
 
+render decl_global_storage = decl(D_GlobalStorage), global_decl(-), global_decl_keyword(-);
+render decl_func = decl(D_Func), func(-) ,subprogram_type(-), qualifier(-), override_info(-), typed_identifier(-);
+render decl_type = decl(D_TypeDecl), field(-);
+render decl_global_pragma = decl(D_Pragma);
+
 ast spec { prose_description = "specification", } =
  list0((declarations: decl))
   { prose_description = "list of declarations {declarations}", }
-;
-
-////////////////////////////////////////////////////////////////////////////////
-// Typed AST
-////////////////////////////////////////////////////////////////////////////////
-
-ast typed_expr {
-    prose_description = "typed expression",
-    math_macro = \typedexpr,
-} =
-    | E_GetItem(base: typed_expr, index: N)
-    { prose_description = "an access to tuple expression {base} of the component at index {index}", }
-    | E_Array[length: typed_expr, value: typed_expr]
-    { prose_description = "array construction {base} of the component at index {index}", }
-    | E_EnumArray[labels: list1(Identifier), value: typed_expr]
-    { prose_description = "array construction {base} of the component at index {index}", }
-    | E_GetEnumArray(base: typed_expr, key: typed_expr)
-    { prose_description = "access to enumeration-indexed array {base} with key expression {key}", }
-    | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
-    { prose_description = "access to the list of fields given by {field_names} of the collection variable named {collection_name}", }
-;
-
-ast typed_lexpr {
-    prose_description = "typed \assignableexpression{}",
-    math_macro = \typedlexpr,
-} =
-    | LE_SetEnumArray(base: typed_lexpr, index: typed_expr)
-    { prose_description = "assignable expression for the enumeration-indexed array {base} at index {index}", }
-    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
-    { prose_description = "assignable expression for the collection named {collection_name} and field names {field_names}", }
-;
-
-ast typed_stmt {
-    prose_description = "typed statement",
-    math_macro = \typedstmt,
-} =
-    typed_S_Throw(exception: typed_expr, exception_type: ty)
-    {
-        prose_description = "throw statement with exception expression {exception} and inferred type {exception_type}",
-        math_macro = \typedSThrow,
-    }
-;
-
-ast typed_slice {
-    prose_description = "typed slice",
-    math_macro = \typedslice,
-} =
-    typed_Slice_Length(start_index: typed_expr, length: typed_expr)
-    {
-        prose_description = "slice from position {start_index} of {length} elements",
-        math_macro = \typedSliceLength,
-    }
-;
-
-ast typed_array_index {
-    prose_description = "typed array index",
-    math_macro = \typedarrayindex,
-} =
-    ArrayLengthEnum(enumeration_name: Identifier, enumeration_labels: list1(Identifier))
-    { prose_description = "index for the enumeration {enumeration_name} with labels {enumeration_labels}", }
-;
-
-ast precision_loss_indicator { prose_description = "\Proseprecisionlossindicator{}", } =
-    | Precision_Full
-    { prose_description = "no precision loss", }
-    | Precision_Lost
-    { prose_description = "some precision loss", }
-;
-
-ast typed_constraint_kind {
-        prose_description = "typed constraint kind",
-        math_macro = \typedconstraintkind,
-    } =
-    typed_WellConstrained(constraints: list1(int_constraint), precision_loss: precision_loss_indicator)
-    {
-        prose_description = "list of constraints {constraints} with a \Proseprecisionlossindicator{} {precision_loss}",
-        math_macro = \typedWellConstrained,
-    }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -616,6 +768,8 @@ typedef local_static_envs
     ]
     {  prose_description = "local static environment", }
 ;
+
+render static_envs_and_components = static_envs(-), global_static_envs(-), local_static_envs(-);
 
 constant empty_tenv {
     prose_description = "empty static environment",
@@ -758,6 +912,8 @@ typedef trecord
    }
 ;
 
+render native_types = tint(-), tbool(-), treal(-), tlabel(-), tstring(-), tbitvector(-), tvector(-), trecord(-);
+
 typedef dynamic_envs
     {
         prose_description = "dynamic environment",
@@ -793,6 +949,8 @@ typedef local_dynamic_envs
         prose_description = "local dynamic environment as a partial mapping from identifiers to native values",
     }
 ;
+
+render dynamic_envs_and_components = dynamic_envs(-), global_dynamic_envs(-), local_dynamic_envs(-);
 
 constant empty_denv
     {
@@ -861,7 +1019,25 @@ typedef XGraphs
     }
 ;
 
+render xgraphs_and_components = XGraphs(-), Nodes(-), Labels(-);
+
 constant empty_graph { prose_description = "empty execution graph", math_macro = \emptygraph, };
+
+ast symdom { prose_description = "\symbolicdomain{}", } =
+    | Finite(powerset_finite(Z))
+    { prose_description = "symbolic finite set integer domain", }
+    | ConstrainedDom(int_constraint)
+    { prose_description = "symbolic constrained integer domain", }
+;
+
+ast symdom_or_top { prose_description = "symbolic integer set", } =
+    | Top
+    { prose_description = "symbolic unconstrained integer domain", }
+    | Subdomains(list1(symdom))
+    { prose_description = "symbolic subdomains", }
+;
+
+render symbolic_domains = symdom(-), symdom_or_top(-);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dynamic Semantics Configurations
