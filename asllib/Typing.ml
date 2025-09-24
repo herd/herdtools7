@@ -927,20 +927,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
     (** Merges all adjacent ranges.
 
-        Example 1: {[(10, 4); (3, 2); (1, 0)]} is coalesced into {[(10,0)]}.
-        Example 2: for {[(1, 0); (3, 2)]} there is no coalescing
-        and the result is the input - {[(1, 0); (3, 2)]}.
-    *)
+        Example 1: [[(10, 4); (3, 2); (1, 0)]] is coalesced into [[(10,0)]].
+        Example 2: for [[(1, 0); (3, 2)]] there is no coalescing and the result
+        is the input - [[(1, 0); (3, 2)]]. *)
     let coalesce_ranges ranges =
       list_coalesce_right merge_ranges_if_adjacent ranges
 
-    (** Viewing [ranges] as one long list of integers --- the flat list,
-       the result associates each range of [ranges] with a range
-       corresponding to its respective indices in the flat list.
+    (** Viewing [ranges] as one long list of integers --- the flat list, the
+        result associates each range of [ranges] with a range corresponding to
+        its respective indices in the flat list.
 
-       Example 1: if {ranges=[(6, 3); (2, 1)]}, the result is
-          {[(5, 2); (1, 0)]}
-    *)
+        Example 1: if [ranges=[(6, 3); (2, 1)]], the result is
+        [[(5, 2); (1, 0)]] *)
     let ranges_to_relative_ranges ranges =
       let relative_ranges, _ =
         List.fold_right
@@ -955,34 +953,30 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
     (** [absolute_indices] represents a list of indices into the containing
         vector, given by ranges. We can think of the "flat list" as the
-        concatenation of the individual lists for each range.
-        For example the flat list for [(20, 16); (13, 12); (9, 6)]
-        is [20, 19, 18, 17, 16, 13, 12, 9, 8, 7, 6].
-        [slice] is a list of ranges where each range consists of indices into
-        the flat list.
-        The result is a list of sub-ranges formed by selecting from each
-        range in [absolute_indices] the integers indicated by [slice], and
-        filtering out empty ranges.
+        concatenation of the individual lists for each range. For example the
+        flat list for [(20, 16); (13, 12); (9, 6)] is
+        [20, 19, 18, 17, 16, 13, 12, 9, 8, 7, 6]. [slice] is a list of ranges
+        where each range consists of indices into the flat list. The result is a
+        list of sub-ranges formed by selecting from each range in
+        [absolute_indices] the integers indicated by [slice], and filtering out
+        empty ranges.
 
-        To compute the result, we use the notion of relative ranges,
-        which associate to each range in [absolute_indices] the range of its
-        indices in the flat list. For example, the relative ranges for
+        To compute the result, we use the notion of relative ranges, which
+        associate to each range in [absolute_indices] the range of its indices
+        in the flat list. For example, the relative ranges for
         [(20, 16); (13, 12); (9, 6)] are [(10, 6); (5, 4); (3, 0)].
 
-        Example 1: if {absolute_indices = [(20, 16); (13, 12); (9, 6)]}
-          and {slice = (4, 2)} then the result is {[(12, 12); (9, 8)]}.
-          To see this, consider the flat list for [absolute_indices], which is
-          [20, 19, 18, 17, 16, 13, 12, 9, 8, 7, 6].
-          The integers of the flat list at positions [4, 3, 2] correspond
-          to [12, 9, 8]. The integer [12] comes from the range {(13, 12)}
-          and the integers [9, 8] come from the range {(9, 8)}.
-          Therefore, the result is {[(12, 12); (9, 8)]}.
+        Example 1: if [absolute_indices = [(20, 16); (13, 12); (9, 6)]] and
+        [slice = (4, 2)] then the result is [[(12, 12); (9, 8)]]. To see this,
+        consider the flat list for [absolute_indices], which is
+        [20, 19, 18, 17, 16, 13, 12, 9, 8, 7, 6]. The integers of the flat list
+        at positions [4, 3, 2] correspond to [12, 9, 8]. The integer [12] comes
+        from the range [(13, 12)] and the integers [9, 8] come from the range
+        [(9, 8)]. Therefore, the result is [[(12, 12); (9, 8)]].
 
-        Example 2: if {absolute_indices = [(21,18); (9,4)]} and {slice=(7,6)}
-          the flat list is [21, 20, 19, 18, 9, 8, 7, 6, 5, 4]
-          the relative ranges are {[(9,6); (5,0)]}
-          and the result is {[(19, 18)]}.
-    *)
+        Example 2: if [absolute_indices = [(21,18); (9,4)]] and [slice=(7,6)]
+        the flat list is [21, 20, 19, 18, 9, 8, 7, 6, 5, 4] the relative ranges
+        are [[(9,6); (5,0)]] and the result is [[(19, 18)]]. *)
     let select_indices_by_slice absolute_indices slice =
       let relative_ranges = ranges_to_relative_ranges absolute_indices in
       List.fold_right2
@@ -999,16 +993,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             acc_ranges)
         absolute_indices relative_ranges []
 
-    (** Viewing [absolute_indices] as one long list of integers ---
-      the flat list, the result is the list of integers selected from the flat
-      list via the indices represented by the ranges in [slices].
-      The result list is represented by the smallest list of ranges.
+    (** Viewing [absolute_indices] as one long list of integers --- the flat
+        list, the result is the list of integers selected from the flat list via
+        the indices represented by the ranges in [slices]. The result list is
+        represented by the smallest list of ranges.
 
-      Example 1: if {absolute_indices = [(12,9); (7,2)]} and
-        {slices = [(5, 2)]}, the flat list is [12, 10, 9, 7, 6, 5, 4, 3, 2]
-        the selected elements of ranges are then [7, 6, 5, 4],
-        which can be represented by the single range {(7, 4)}.
-      *)
+        Example 1: if [absolute_indices = [(12,9); (7,2)]] and
+        [slices = [(5, 2)]], the flat list is [12, 10, 9, 7, 6, 5, 4, 3, 2] the
+        selected elements of ranges are then [7, 6, 5, 4], which can be
+        represented by the single range [(7, 4)]. *)
     let select_indices_by_slices ~absolute_indices ~slices =
       list_concat_map (select_indices_by_slice absolute_indices) slices
       |> coalesce_ranges
@@ -1023,9 +1016,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let exist_in_same_scope abs_f1 abs_f2 =
       either_prefix abs_f1.abs_scope abs_f2.abs_scope
 
-    (** {iter_ordered_pairs f [e_1;...;e_k]} applies [f e_i e_j]
-        to every [1 <= i < j <= k].
-    *)
+    (** [iter_ordered_pairs f [e_1;...;e_k]] applies [f e_i e_j] to every
+        [1 <= i < j <= k]. *)
     let rec iter_ordered_pairs f l =
       match l with
       | [] | [ _ ] -> ()
@@ -1179,8 +1171,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () = if false then check_common_bitfields_align_unit_tests ()
   end
 
-  (** Check for a standard library declaration name{n}(bits(n), ...) or
-    name{m,n}(bits(n), ...). *)
+  (** Check for a standard library declaration [name{n}(bits(n), ...)] or
+      [name{m,n}(bits(n), ...)]. *)
   let can_omit_stdlib_param func_sig =
     func_sig.builtin
     &&
@@ -2388,13 +2380,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       of the type [t] in [env].
 
       The base value expression can be used to initialize variables of type [t]
-      in [env].
-      This expression is side-effect free, and is a literal for singular types.
-      If a base value cannot be statically determined (e.g. for parameterized
-      integer types), a type error is thrown, at the ~location [loc].
-      Note however that a bit vector with width [N] can always be generated
-      using {[0[:N]]}.
-  *)
+      in [env]. This expression is side-effect free, and is a literal for
+      singular types. If a base value cannot be statically determined (e.g. for
+      parameterized integer types), a type error is thrown, at the ~location
+      [loc]. Note however that a bit vector with width [N] can always be
+      generated using [0[:N]]. *)
   let rec base_value_v1 ~loc env t : expr =
     let here = add_pos_from ~loc in
     let lit v = here (E_Literal v) in

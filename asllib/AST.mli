@@ -340,7 +340,8 @@ type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
 type local_decl_item =
   | LDI_Var of identifier
       (** [LDI_Var x] is the variable declaration of the variable [x], used for
-          example in: {v let x = 42; v}. *)
+          example in:
+          {v let x = 42; v} *)
   | LDI_Tuple of identifier list
       (** [LDI_Tuple names] is the tuple declarations of [names], for example:
           {v let (x, y, z) = (1, 2, 3); v}
