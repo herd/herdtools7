@@ -43,10 +43,8 @@ let binop_values pos t (op : binop) v1 v2 =
   | `DIV, L_Int v1, L_Int v2 when is_strict_positive v2 && Z.divisible v1 v2 ->
       L_Int (Z.divexact v1 v2)
   | `DIVRM, L_Int v1, L_Int v2 when is_strict_positive v2 ->
-      L_Int (Z.fdiv v1 v2) (* Division rounded towards minus infinity. *)
-  | `MOD, L_Int v1, L_Int v2 when is_strict_positive v2 ->
-      L_Int Z.(sub v1 (mul v2 (fdiv v1 v2)))
-      (* We cannot use any rem function in Z as we need the rounded towards minus infinity reminder. *)
+      L_Int (Z.ediv v1 v2) (* Division rounded towards minus infinity. *)
+  | `MOD, L_Int v1, L_Int v2 when is_strict_positive v2 -> L_Int Z.(erem v1 v2)
   | `POW, L_Int v1, L_Int v2 when is_positive v2 -> L_Int Z.(pow v1 (to_int v2))
   | `SHL, L_Int v1, L_Int v2 when is_positive v2 ->
       L_Int Z.(shift_left v1 (to_int v2))
