@@ -14,5 +14,9 @@ begin
   assert -5 DIVRM 3 == -2;
   assert -5 MOD 3 == 1;
 
+  assert 0 MOD 6 == 0;
+  assert 0 DIVRM 6 == 0;
+  assert 0 DIV 6 == 0;
+
   return 0;
 end;
