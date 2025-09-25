@@ -263,27 +263,20 @@ module Make (C : Config) = struct
       in
       an
 
-    let get_length = function
-      | V.Var (_, SData.Bitvector { length }) -> Some length
-      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
-        Some (Asllib.Bitvector.length bv)
-      | _ -> None
+    let set_sdata sdata v =
+      return (ASLValue.set_sdata sdata v)
 
     let set_length length v =
+      return (ASLValue.set_sdata (SData.full_unspecified length) v)
+
+    let set_length_opt length =
       match length with
-      | None -> return v
-      | Some length ->
-        match v with
-        | V.Var (s, SData.NoData) ->
-          V.Var (s, SData.Bitvector { length }) |> return
-        | V.Var (_, SData.Bitvector { length = l2 }) as res ->
-          assert (Int.equal l2 length);
-          return res
-        | V.Val _ as res -> return res
+      | None -> return
+      | Some length -> set_length length
 
     let to_bv sz v =
       let length = MachSize.nbits sz in
-      M.op1 (Op.ArchOp1 (ASLOp.ToBV length)) v >>= set_length (Some length)
+      M.op1 (Op.ArchOp1 (ASLOp.ToBV length)) v >>= set_length length
 
     let to_int_unsigned = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
     let to_int_signed = M.op1 (Op.ArchOp1 ASLOp.ToIntS)
@@ -323,6 +316,16 @@ module Make (C : Config) = struct
       | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
       | b -> M.choiceT b m2 m3
 
+    let logand v1 v2 =
+      match (v1, v2) with
+      | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
+        when Asllib.Bitvector.is_ones bv ->
+          return v
+      | v, V.Val (Constant.Concrete (ASLScalar.S_BitVector bv))
+        when Asllib.Bitvector.is_ones bv ->
+          return v
+      | _ -> M.op Op.And v1 v2
+
     let logor v1 v2 =
       match (v1, v2) with
       | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)), v
@@ -332,6 +335,11 @@ module Make (C : Config) = struct
         when Asllib.Bitvector.is_zeros bv ->
           return v
       | _ -> M.op Op.Or v1 v2
+
+    let bitwise_op op sop v1 v2 =
+      match ASLValue.get_sdata v1, ASLValue.get_sdata v2 with
+      | Some s1, Some s2 -> op v1 v2 >>= set_sdata (sop s1 s2)
+      | _ -> op v1 v2
 
     let boolop herdop shortcut v1 v2 =
       match (v1, v2) with
@@ -349,39 +357,37 @@ module Make (C : Config) = struct
         when Asllib.Bitvector.length bv = 0 ->
           return v
       | _ ->
-        let length =
-        match get_length v1, get_length v2 with
-        | None, _ | _, None -> None
-        | Some l1, Some l2 ->
-          Some (l1 + l2)
-        in
-        M.op (Op.ArchOp ASLOp.Concat) v1 v2 >>= set_length length
+        (match ASLValue.get_sdata v1, ASLValue.get_sdata v2 with
+        | Some s1, Some s2 ->
+          M.op (Op.ArchOp ASLOp.Concat) v1 v2
+          >>= set_sdata (SData.concat s1 s2)
+        | _ -> M.op (Op.ArchOp ASLOp.Concat) v1 v2)
 
-    let bitwise_op op v1 v2 =
-      let length =
-        match get_length v1, get_length v2 with
-        | None, Some l | Some l, None -> Some l
-        | None, None -> None
-        | Some l1, Some l2 ->
-          assert (Int.equal l1 l2);
-          Some l1
-      in
-      op v1 v2 >>= set_length length
+    let binop_eq v1 v2 =
+      let open SData in
+      match v1, v2 with
+      | V.Var (s1, sdata1), V.Var (s2, sdata2) ->
+        if Int.equal s1 s2 then return V.v_true else
+        (match SData.equal_opt sdata1 sdata2 with
+         | Some true -> return V.v_true
+         | Some false -> return V.v_false
+         | None -> M.op Op.Eq v1 v2)
+      | _ -> M.op Op.Eq v1 v2
 
     let binop =
       let open AST in
       let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
       and v_false = V.Val (Constant.Concrete (ASLScalar.S_Bool false)) in
       function
-      | `AND -> bitwise_op (M.op Op.And)
+      | `AND -> bitwise_op logand SData.logand
       | `BAND -> boolop Op.And (fun b v -> if b then v else v_false)
       | `BEQ -> M.op Op.Eq
       | `BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
       | `DIV -> M.op Op.Div
       | `MOD -> M.op Op.Rem
       | `DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
-      | `XOR -> bitwise_op (M.op Op.Xor)
-      | `EQ -> M.op Op.Eq
+      | `XOR -> M.op Op.Xor (* TODO *)
+      | `EQ -> binop_eq
       | `GT -> M.op Op.Gt
       | `GE -> M.op Op.Ge
       | `LT -> M.op Op.Lt
@@ -389,7 +395,7 @@ module Make (C : Config) = struct
       | `SUB -> M.op Op.Sub
       | `MUL -> M.op Op.Mul
       | `NE -> M.op Op.Ne
-      | `OR -> bitwise_op logor
+      | `OR -> bitwise_op logor SData.logor
       | `ADD -> M.op Op.Add
       | `SHL -> M.op Op.ShiftLeft
       | `SHR -> M.op Op.ShiftRight
@@ -398,12 +404,18 @@ module Make (C : Config) = struct
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
 
+    let lognot v =
+      let* res = M.op1 Op.Inv v in
+      match ASLValue.get_sdata v with
+      | None -> return res
+      | Some sdata -> set_sdata (SData.lognot sdata) res
+
     let unop op =
       let open AST in
       match op with
       | BNOT -> M.op1 (Op.ArchOp1 ASLOp.BoolNot)
       | NEG -> M.op Op.Sub V.zero
-      | NOT -> M.op1 Op.Inv
+      | NOT -> lognot
 
     let ternary = function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool true)) -> fun m1 _ -> m1 ()
@@ -479,23 +491,29 @@ module Make (C : Config) = struct
       | [] -> length = 0
       | h :: t -> (h + 1 = length) && (is_all_positions h t)
 
-    let read_from_bitvector ~loc:_ positions bvs =
-      let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
+    let read_from_bitvector ~loc:_ slices bvs =
+      let positions = Asllib.ASTUtils.slices_to_positions v_as_int slices in
+      let* res = M.op1 (Op.ArchOp1 (ASLOp.BVSlice positions)) bvs in
       match bvs with
-      | V.Var (_, SData.Bitvector { length })
-        when is_all_positions length positions -> return bvs
-      | _ ->
-        M.op1 (Op.ArchOp1 (ASLOp.BVSlice positions)) bvs
-        >>= set_length (Some (List.length positions))
+      | V.Val _ -> return res
+      | V.Var (_, SData.NoData) -> set_length (List.length positions) res
+      | V.Var (_, SData.Bitvector bv_data) ->
+        if is_all_positions (ASLValue.BVData.length bv_data) positions then return bvs else
+          match ASLValue.find_sub_symbolic bv_data positions with
+          | Some v -> return v
+          | None ->
+            let res_bv_data = ASLValue.BVData.extract_slice bv_data positions in
+            set_sdata (SData.Bitvector res_bv_data) res
 
-    let write_to_bitvector positions w v =
+    let write_to_bitvector positions v_src v_dst =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
-      match v with
-      | V.Var (_, SData.Bitvector { length })
-        when is_all_positions length positions -> return w
+      let* res = M.op (Op.ArchOp (ASLOp.BVSliceSet positions)) v_dst v_src in
+      match ASLValue.get_length v_dst with
+      | Some l when is_all_positions l positions -> return v_src
       | _ ->
-        M.op (Op.ArchOp (ASLOp.BVSliceSet positions)) v w
-        >>= set_length (get_length v)
+        match ASLValue.write_slice ~v_src ~v_dst positions with
+        | None -> return res
+        | Some sdata -> set_sdata sdata res
 
     let concat_bitvectors bvs =
       let bvs =
@@ -518,7 +536,7 @@ module Make (C : Config) = struct
             let exception None_found in
             try
               List.fold_left (fun acc elt ->
-                  match get_length elt with
+                  match ASLValue.get_length elt with
                   | None -> raise None_found
                   | Some l -> l + acc
                   ) 0 bvs
@@ -526,19 +544,20 @@ module Make (C : Config) = struct
             with
             None_found -> None
           in
-          List.fold_left folder (return h) t >>= set_length length
+          List.fold_left folder (return h) t >>= set_length_opt length
 
-     let bitvector_length = function
-       | V.Var (_, SData.Bitvector { length }) ->
+    let bitvector_length v =
+      match ASLValue.get_length v with
+      | Some length ->
          return (V.intToV length)
-       | v -> M.op1 (Op.ArchOp1 ASLOp.BVLength) v
+      | None -> M.op1 (Op.ArchOp1 ASLOp.BVLength) v
 
     let v_unknown_of_type ~(eval_expr_sef:Asllib.AST.expr -> V.v M.t) t =
       match t.Asllib.AST.desc with
       | Asllib.AST.T_Bits (e, _) ->
         let* v_length = eval_expr_sef e in
         let length = v_to_int_opt v_length in
-        V.fresh_var () |> set_length length
+        V.fresh_var () |> set_length_opt length
       | _ -> return (V.fresh_var ())
 
     (**************************************************************************)
@@ -954,7 +973,7 @@ module Make (C : Config) = struct
         type 'a m = 'a M.t
         type primitive = primitive_t
 
-        let debug_value = V.pp_v
+        let debug_value = ASLValue.debug_value
         let is_undetermined = function V.Var _ -> true | V.Val _ -> false
         let v_of_int = V.intToV
         let v_of_literal = v_of_literal
