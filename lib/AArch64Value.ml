@@ -22,5 +22,5 @@ end) : Value.AArch64 = struct
   module NoCst = SymbConstant.Make (Int64Scalar) (PteVal.No) (AddrReg.No) (AArch64I)
   module NoArchOp = ArchOp.No(NoCst)
   module AArch64Op = AArch64Op.Make(Int64Scalar)(NoArchOp)
-  include SymbValue.Make (AArch64Cst) (AArch64Op)
+  include SymbValue.Make (AArch64Cst) (SymData.No) (AArch64Op)
 end

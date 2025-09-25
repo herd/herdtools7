@@ -1,0 +1,6 @@
+At File ./herd/tests/instructions/ASL-pseudo-arch/bitvector-symbolics.litmus,
+     line 24, characters 2 to 21:
+working -> S3 (with length 128)
+At File ./herd/tests/instructions/ASL-pseudo-arch/bitvector-symbolics.litmus,
+     line 25, characters 2 to 22:
+working2 -> S6 (with length 128)
