@@ -219,7 +219,7 @@ val mask_of_string : string -> mask
 val mask_of_bitvector : t -> mask
 (** Build a mask that matches a bitvector. *)
 
-val mask_of_bitvector_and_specified : t -> t -> mask
+val mask_of_bitvector_and_specified : data:t -> specified:t -> mask
 (** Build a mask from a bitvector containing data and a bitvector setting the
     specified bits. *)
 
@@ -292,3 +292,5 @@ val mask_can_be_equal : mask -> mask -> bool
 val mask_inverse : mask -> mask
 (** [mask_inverse m] is the mask matching bitvectors [bv'] that are the result
     of the bitwise inversion of a bitvector [bv] matching [m]. *)
+
+val build_mask : ?set:int list -> ?unset:int list -> int -> mask

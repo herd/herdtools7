@@ -1,0 +1,14 @@
+At File ./herd/tests/instructions/ASL-pseudo-arch/bitvector-symbolics.litmus,
+     line 26, characters 2 to 21:
+working ->
+S4 (with length 128, fixed_bits: 0xffffffffffffffff0000000000001000,
+  and [at [63..0]:
+         S5 (with length 64, fixed_bits: 0x0000000000001000,
+           and no known sub symbolics)])
+At File ./herd/tests/instructions/ASL-pseudo-arch/bitvector-symbolics.litmus,
+     line 27, characters 2 to 22:
+working2 ->
+S8 (with length 128, fixed_bits: 0xffffffffffffffff0000000000001000,
+  and [at [63..0]:
+         S5 (with length 64, fixed_bits: 0x0000000000001000,
+           and no known sub symbolics)])
