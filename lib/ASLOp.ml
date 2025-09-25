@@ -274,7 +274,7 @@ let do_op1 op cst =
                 Some (Constant.Concrete (ASLScalar.bv_of_bit af))
             | [9;8;] ->
               (* Sharability domain -> inner sharable *)
-              Some (Constant.Concrete (ASLScalar.bv_of_string "10"))
+              Some (Constant.Concrete (ASLScalar.bv_of_string "11"))
             | [7;6;] -> (* AP *)
                 let db =  1-pte.AArch64PteVal.db in
                 let el0 = pte.AArch64PteVal.el0 in
@@ -285,6 +285,9 @@ let do_op1 op cst =
             | [4;3;2;] ->
               (* memattr *)
                 Some (Constant.Concrete (ASLScalar.zeros 3))
+            | [1;] ->
+                (* Leaf *)
+                Some (Constant.Concrete (ASLScalar.zeros 1))
             | [0;]  ->
               (* Valid *)
                 let valid = pte.AArch64PteVal.valid in
@@ -304,6 +307,7 @@ let do_op1 op cst =
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [55] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [54] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [55; 54; 53; 52; 51; 50; 49; 48;]
             | [63; 62; 61; 60; 59; 58; 57; 56; ]
               -> Some (Constant.Concrete (ASLScalar.zeros 8))
             | [63; 62; 61; 60; 59; 58; 57; 56;
