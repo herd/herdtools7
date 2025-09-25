@@ -1,0 +1,36 @@
+ASL bitvector-symbolics
+
+{
+x = 42;
+0: X0 = x }
+
+func id{N}(x: bits(N)) => bits(N)
+begin
+  return x;
+end;
+
+func main () => integer
+begin
+  var working: bits(128);
+
+  let x = read_register(0);
+  let val_x = read_memory{64}(x);
+  working[63:0] = val_x;
+
+  working[12] = '1';
+
+  var working2: bits(128);
+  working2[63:0] = id{64}(working[63:0]);
+  working2[127:64] = Zeros{64};
+
+  __debug__(working);
+  __debug__(working2);
+  if (working != working2) then
+    assert FALSE;
+  end;
+
+  return 0;
+end;
+
+locations [0: main.0.working; 0: main.0.working2];
+

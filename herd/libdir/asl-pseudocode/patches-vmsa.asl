@@ -1,12 +1,3 @@
-// AArch64.S1Enabled()
-// ===================
-// Determine if stage 1 is enabled for the access type for this translation regime
-// Stage 1 is the only translation regime implemented
-
-func AArch64_S1Enabled(regime : Regime,acctype : AccessType) => boolean
-begin
-  return TRUE;
-end;
 
 // AArch64.PAMax()
 // ===============
@@ -19,22 +10,7 @@ begin
     return 48;
 end;
 
-// AArch64.DecodeDescriptorType()
-// ==============================
-// Determine whether the descriptor is a page, block or table
-// Simplify: invalid or Leaf
-
-func AArch64_DecodeDescriptorType {N}
-  (descriptor:bits(N), d128:bit, ds:bit, tgx:TGx, level:integer)
-    =>
-  DescriptorType
-begin
-  if descriptor[0] == '0' then
-    return DescriptorType_Invalid;
-  else
-    return DescriptorType_Leaf;
-  end;
-end;
+constant FINAL_LEVEL: integer = 1;
 
 // AArch64.S1SLTTEntryAddress()
 // ============================
@@ -49,26 +25,6 @@ begin
     descaddress.address = ComputePtePrimitive(ia);
     descaddress.paspace = tablebase.paspace;
     return descaddress;
-end;
-
-// AArch64.MAIRAttr()
-// ==================
-// Retrieve the memory attribute encoding indexed in the given MAIR
-// Temporary ? Origin does not work for unknown index!
-
-func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
-begin
-  return Zeros{8};
-end;
-
-// DecodeShareability()
-// ====================
-// Decode shareability of target memory region
-// Temporary: return maximal sharability
-
-func DecodeShareability(sh:bits(2)) => Shareability
-begin
-  return Shareability_OSH;
 end;
 
 // AArch64.S1AMECFault()
@@ -95,29 +51,10 @@ begin
   return FALSE;
 end;
 
-// AArch64.GetVARange()
-// ====================
-// Determines if the VA that is to be translated lies in LOWER or UPPER address range.
-// No hesitation, return LOWER
-
-func AArch64_GetVARange(va:bits(64)) => VARange
+func AArch64_S1StartLevel(walkparams: S1TTWParams) => integer
 begin
-  return VARange_LOWER;
+  return 1;
 end;
-
-// AArch64.VAIsOutOfRange()
-// ========================
-// Check bits not resolved by translation are identical and of accepted value
-
-func AArch64_VAIsOutOfRange(va_in:bits(64),acctype:AccessType,
-                               regime:Regime, walkparams:S1TTWParams)
-=>
-boolean
-begin
-  return FALSE;
-end;
-
-
 
 // AArch64.S1DirectBasePermissions()
 // =================================
@@ -154,7 +91,7 @@ end;
 
 func StageOA(ia:bits(64),d128:bit,tgx:TGx,walkstate:TTWState) => FullAddress
 begin
-var oa : FullAddress;
+  var oa : FullAddress;
   oa.paspace = walkstate.baseaddress.paspace;
   oa.address = walkstate.baseaddress.address + OffsetPrimitive(ia);
   return oa;
@@ -224,20 +161,6 @@ begin
 end;
 
 
-// S1TranslationRegime()
-// =====================
-// Stage 1 translation regime for the given Exception level
-
-func S1TranslationRegime(el:bits(2)) => bits(2)
-begin
-  return EL1;
-end;
-
-func S1TranslationRegime() => bits(2)
-begin
-  return EL1;
-end;
-
 // PEErrorState()
 // ==============
 // Returns the error state of the PE on taking an error exception:
@@ -292,6 +215,8 @@ begin
   walkparams.d128 = if D128 then '1' else '0'; // Much faster!
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
+  walkparams.ps = '101'; // AddressSize: 48
+  walkparams.mair = Ones{8}; // MemAttributes: Normal, WB
   return walkparams;
 end;
 
@@ -317,32 +242,6 @@ begin
   return FALSE;
 end;
 
-// S1DecodeMemAttrs()
-// ==================
-// Decode MAIR-format memory attributes assigned in stage 1
-// Luc: for speed (?) handle the case of Mormal memory, untagged, WB, ISH
-
-func
-  S1DecodeMemAttrs
-  (attr_in:bits(8), sh:bits(2), s1aarch64:boolean,
-  walparams:S1TTWParams,acctype:AccessType)
-  => MemoryAttributes
-begin
-  var memattrs : MemoryAttributes;
-  memattrs.memtype = MemType_Normal;
-  memattrs.outer.attrs     = MemAttr_WB;
-  memattrs.outer.hints     = MemHint_RWA;
-  memattrs.outer.transient = FALSE;
-  memattrs.inner.attrs     = MemAttr_WB;
-  memattrs.inner.hints     = MemHint_RWA;
-  memattrs.inner.transient = FALSE;
-  memattrs.xs              = '0';
-  memattrs.tags = MemTag_Untagged;
-  memattrs.notagaccess = FALSE;
-  memattrs.shareability = Shareability_ISH;
-  return memattrs;
-end;
-
 // AArch64.CheckDebug()
 // ====================
 // Called on each access to check for a debug exception or entry to Debug state.
@@ -352,30 +251,6 @@ func AArch64_CheckDebug
 => FaultRecord
 begin
     return NoFault(accdesc, vaddress);
-end;
-
-// AArch64.BlocknTFaults()
-// =======================
-// Identify whether the nT bit in a block descriptor is effectively set
-// causing a translation fault
-
-func AArch64_BlocknTFaults{N}(d128:bit,descriptor:bits(N)) => boolean
-begin
-  return FALSE;
-end;
-
-// EL2Enabled()
-// ============
-// Returns TRUE if EL2 is present and executing
-// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
-// - with the PE in Realm state when Realm EL2 is implemented, or
-// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
-// - when EL3 is not implemented.
-
-// Luc: Petty optimisation
-func EL2Enabled() => boolean
-begin
-  return FALSE;
 end;
 
 // CreateAccDescAtomicOp()

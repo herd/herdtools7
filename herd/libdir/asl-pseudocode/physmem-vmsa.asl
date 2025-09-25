@@ -56,6 +56,7 @@ begin
     return (ret_status, value);
 
   elsif accdesc.acctype == AccessType_TTW then
+    assert (size IN {64, 128});
 
     let value = ReadPtePrimitive{size}(desc.paddress.address);
     return (ret_status, value);

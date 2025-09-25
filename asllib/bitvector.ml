@@ -61,6 +61,7 @@ let data = snd
 (* Constant. *)
 let code_0 = Char.code '0'
 let char_0 = Char.chr 0
+let char_1 = Char.chr 1
 let char_ff = Char.chr 0xff
 
 (* Mask for the last character, given by [length mod 8]. *)
@@ -76,9 +77,18 @@ let read_bit i c = Char.chr (read_bit_raw i c + code_0)
 (* [set_bit_raw i dst b] sets the [i]-th bit of [dst] to [b]. *)
 let set_bit_raw i dst b = dst land lnot (1 lsl i) lor (b lsl i)
 
-(* [set_bit src_pos dst_pos src dst] sets the [dst_pos]-th bit of [pos] to the [src_pos]-th bit of [src]. *)
+(* [set_bit src_pos dst_pos src dst] sets the [dst_pos]-th bit of [dst] to the [src_pos]-th bit of [src]. *)
 let set_bit src_pos dst_pos src dst =
   read_bit_raw src_pos src |> set_bit_raw dst_pos dst |> Char.chr
+
+let set_bit_at pos (length, data) =
+  if pos < 0 || length <= pos then
+    raise (Invalid_argument "bitvector.set_bit_at");
+  let i = pos / 8 and j = pos mod 8 in
+  let c = set_bit 0 j char_1 (String.get data i |> Char.code) in
+  let res = Bytes.of_string data in
+  Bytes.set res i c;
+  (length, Bytes.unsafe_to_string res)
 
 (* Debug printer. *)
 let _pp_data f (length, data) =
@@ -730,14 +740,13 @@ let raise_bv_op bv_op length d1 d2 =
   assert (Int.equal l2 length);
   res
 
-let mask_of_bitvector_and_specified (length1, data1) (length2, data2) =
-  if length1 != length2 then
+let mask_of_bitvector_and_specified ~data:(length, data)
+    ~specified:(length', specified) =
+  if length != length' then
     raise (Invalid_argument "mask_of_bitvector_and_specified");
-  let length = length1 in
   let logand' = raise_bv_op logand length in
-  let specified = data2
-  and set = logand' data1 data2
-  and unset = logand' (lognot (length, data1) |> snd) data2 in
+  let set = logand' data specified
+  and unset = logand' (lognot (length, data) |> snd) specified in
   { length; set; unset; specified; initial_string = "<computed>" }
 
 let mask_intersection m1 m2 =
@@ -871,3 +880,14 @@ let mask_undetermined_positions2 m1 m2 =
 
 let mask_inverse m =
   { m with set = m.unset; unset = m.set; initial_string = "<computed>" }
+
+let build_mask ?(set = []) ?(unset = []) length =
+  let logor' = raise_bv_op logor length in
+  let set =
+    List.fold_left (fun acc pos -> set_bit_at pos acc) (zeros length) set |> snd
+  and unset =
+    List.fold_left (fun acc pos -> set_bit_at pos acc) (zeros length) unset
+    |> snd
+  in
+  let specified = logor' set unset in
+  { set; unset; length; specified; initial_string = "<computed>" }

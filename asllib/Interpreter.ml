@@ -446,7 +446,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let** ms, acc = fold_parm_list fold acc es in
         return_normal (m :: ms, acc)
 
-  let lexpr_is_var le =
+  let _lexpr_is_var le =
     match le.desc with LE_Var _ | LE_Discard -> true | _ -> false
 
   let declare_local_identifier env name v =
@@ -1158,8 +1158,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSAssignCall *)
     | S_Assign
         ( { desc = LE_Destructuring les; _ },
-          { desc = E_Call { name; params; args }; _ } )
-      when List.for_all lexpr_is_var les ->
+          { desc = E_Call { name; params; args }; _ } ) ->
         (* pass [params] and [args] as labelled arguments to avoid confusion *)
         let**| vms, env1 = eval_call (to_pos s) name env ~params ~args in
         let**| new_env = protected_multi_assign s.version env1 s les vms in

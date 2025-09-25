@@ -60,7 +60,6 @@ module type S =
    printing them. *)
       val printable : v -> v
 
-
 (* produce a fresh variable *)
       val fresh_var : unit -> v
       val from_var : csym -> v

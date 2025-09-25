@@ -190,6 +190,9 @@ val minus_one_expr : expr
 val expr_of_rational : Q.t -> expr
 (** [expr_of_rational q] is the rational literal for [q]. *)
 
+val expr_of_bool : bool -> expr
+(** [expr_of_bool b] is the boolean literal for [b]. *)
+
 val mul_expr : expr -> expr -> expr
 (** [mul_expr e1 e2] is an expression representing [e1 * e2]. *)
 

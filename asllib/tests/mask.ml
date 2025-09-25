@@ -11,7 +11,7 @@ let gen_mask_and_matching_bv ~size =
   let open Gen in
   let* specified = gen_bv ~size in
   let+ data = gen_bv ~size in
-  (BV.mask_of_bitvector_and_specified specified data, data)
+  (BV.mask_of_bitvector_and_specified ~specified ~data, data)
 
 let gen_positions ~size =
   let open Gen in
