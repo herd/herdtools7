@@ -52,6 +52,13 @@ type t = int * string
 let length = fst
 let data = snd
 
+exception Bitvector_invariant_failed
+
+let length_invariant (length, data) =
+  let n = length / 8 and m = length mod 8 in
+  if Int.equal (String.length data) (if m = 0 then n else n + 1) then ()
+  else raise Bitvector_invariant_failed
+
 (* --------------------------------------------------------------------------
 
                                     Helpers
@@ -112,6 +119,22 @@ let remask (length, data) =
     let () = Bytes.set buf n new_c in
     let data = Bytes.unsafe_to_string buf in
     (length, data)
+
+let foldi_bits f (length, data) acc =
+  let state = ref acc in
+  let n = length / 8 and m = length mod 8 in
+  for i = 0 to n - 1 do
+    let c = String.get data i in
+    for j = 0 to 7 do
+      state := f ((i * 8) + j) (read_bit_raw j c) !state
+    done
+  done;
+  (if m <> 0 then
+     let c = String.get data n in
+     for j = 0 to 7 do
+       state := f ((n * 8) + j) (read_bit_raw j c) !state
+     done);
+  !state
 
 (* --------------------------------------------------------------------------
 
@@ -459,8 +482,10 @@ let extract_slice (_length_src, data_src) positions =
     raise (Invalid_argument (Printf.sprintf "extract_sliced (%s)" msg))
 
 let write_slice (length_dst, data_dst) (length_src, data_src) positions =
-  let min x y = if x <= y then x else y in
-  let length_src = min (List.length positions) length_src in
+  assert (Int.equal length_src (List.length positions));
+  List.iter (fun pos -> assert (0 <= pos && pos < length_dst)) positions;
+  length_invariant (length_dst, data_dst);
+  length_invariant (length_src, data_src);
   let result = Bytes.of_string data_dst in
   (* Same effect as [List.rev positions], since we build those from the end. *)
   let copy_bit_here i pos = copy_bit result data_src (length_src - 1 - i) pos in
@@ -601,6 +626,10 @@ let is_zeros bv =
 let is_one = equal one
 let is_ones bv = length bv |> ones |> equal bv
 
+let is_set_at (length, data) k =
+  if k < 0 || length <= k then raise (Invalid_argument "is_set_at");
+  String.get data (k / 8) |> read_bit_raw (k mod 8) |> Int.equal 1
+
 type mask = {
   length : int;
   set : string;
@@ -689,3 +718,141 @@ let mask_to_canonical_string mask =
 let mask_set mask = (mask.length, mask.set)
 let mask_unset mask = (mask.length, mask.unset)
 let mask_specified mask = (mask.length, mask.specified)
+
+let raise_bv_op bv_op length d1 d2 =
+  let bv1 = (length, d1) and bv2 = (length, d2) in
+  let l2, res = bv_op bv1 bv2 in
+  assert (Int.equal l2 length);
+  res
+
+let mask_intersection m1 m2 =
+  if not (Int.equal m1.length m2.length) then
+    raise (Invalid_argument "mask_intersection");
+  let length = m1.length in
+  let logand' = raise_bv_op logand length in
+  let logor' = raise_bv_op logor length in
+  let double_specified = logand' m1.specified m2.specified in
+  assert (
+    String.equal
+      (logand' double_specified m1.set)
+      (logand' double_specified m2.set));
+  assert (
+    String.equal
+      (logand' double_specified m1.unset)
+      (logand' double_specified m2.unset));
+  {
+    length;
+    specified = logor' m1.specified m2.specified;
+    set = logor' m1.set m2.set;
+    unset = logor' m1.unset m2.unset;
+    initial_string = "<computed>";
+  }
+
+let mask_and m1 m2 =
+  if not (Int.equal m1.length m2.length) then
+    raise (Invalid_argument "mask_and");
+  let length = m1.length in
+  let logand' = raise_bv_op logand length in
+  let logor' = raise_bv_op logor length in
+  let double_specified = logand' m1.specified m2.specified in
+  {
+    length;
+    specified = logor' (logor' m1.unset m2.unset) double_specified;
+    set = logand' m1.set m2.set;
+    unset = logor' m1.unset m2.unset;
+    initial_string = "<computed>";
+  }
+
+let mask_or m1 m2 =
+  if not (Int.equal m1.length m2.length) then
+    raise (Invalid_argument "mask_and");
+  let length = m1.length in
+  let logand' = raise_bv_op logand length in
+  let logor' = raise_bv_op logor length in
+  let double_specified = logand' m1.specified m2.specified in
+  {
+    length;
+    specified = logor' (logor' m1.set m2.set) double_specified;
+    set = logor' m1.set m2.set;
+    unset = logand' m1.unset m2.unset;
+    initial_string = "<computed>";
+  }
+
+let mask_concat bvs =
+  let length = List.fold_left (fun acc m -> acc + m.length) 0 bvs in
+  let concat' f =
+    let l, d = concat (List.map (fun m -> (m.length, f m)) bvs) in
+    assert (Int.equal l length);
+    d
+  in
+  {
+    length;
+    specified = concat' (fun m -> m.specified);
+    set = concat' (fun m -> m.set);
+    unset = concat' (fun m -> m.unset);
+    initial_string = "<computed>";
+  }
+
+let mask_extract_slice mask positions =
+  let lset, set = extract_slice (mask_set mask) positions
+  and lunset, unset = extract_slice (mask_unset mask) positions
+  and lspecified, specified = extract_slice (mask_specified mask) positions in
+  let length =
+    assert (Int.equal lset lunset && Int.equal lset lspecified);
+    lset
+  in
+  { length; set; unset; specified; initial_string = "computed" }
+
+let mask_write_slice mask_dst mask_src positions =
+  assert (Int.equal mask_src.length (List.length positions));
+  let lset, set = write_slice (mask_set mask_dst) (mask_set mask_src) positions
+  and lunset, unset =
+    write_slice (mask_unset mask_dst) (mask_unset mask_src) positions
+  and lspecified, specified =
+    write_slice (mask_specified mask_dst) (mask_specified mask_src) positions
+  in
+  let length =
+    assert (Int.equal lset lunset && Int.equal lset lspecified);
+    lset
+  in
+  { length; set; unset; specified; initial_string = "computed" }
+
+let mask_is_fully_specified mask = is_ones (mask.length, mask.specified)
+
+let mask_full_unspecified length =
+  let _, zeros' = zeros length in
+  {
+    length;
+    set = zeros';
+    unset = zeros';
+    specified = zeros';
+    initial_string = "<computed>";
+  }
+
+let mask_can_be_equal m1 m2 =
+  if not (Int.equal m1.length m2.length) then
+    raise (Invalid_argument "mask_equal");
+  let length = m1.length in
+  let logand' = raise_bv_op logand length in
+  let equal' d1 d2 = equal (length, d1) (length, d2) in
+  let double_specified = logand' m1.specified m2.specified in
+  equal' (logand' m1.set double_specified) (logand' m2.set double_specified)
+  && equal'
+       (logand' m1.unset double_specified)
+       (logand' m2.unset double_specified)
+
+let unset_positions bv =
+  foldi_bits (fun i b acc -> if Int.equal b 0 then i :: acc else acc) bv []
+
+let mask_undetermined_positions m = unset_positions (m.length, m.specified)
+
+let mask_undetermined_positions2 m1 m2 =
+  if not (Int.equal m1.length m2.length) then
+    raise (Invalid_argument "mask_equal");
+  let length = m1.length in
+  let logand' = raise_bv_op logand length in
+  let double_specified = logand' m1.specified m2.specified in
+  unset_positions (length, double_specified)
+
+let mask_inverse m =
+  { m with set = m.unset; unset = m.set; initial_string = "<computed>" }
