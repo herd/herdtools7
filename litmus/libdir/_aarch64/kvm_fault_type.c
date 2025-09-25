@@ -11,6 +11,7 @@ enum fault_type_t {
   FaultMMUTranslation,
   FaultMMUAccessFlag,
   FaultMMUPermission,
+  FaultMMUTLBConflictAbort,
   FaultTagCheck,
   FaultUnsupported,
   FaultUnknown,
@@ -28,6 +29,7 @@ static const char *fault_type_names[] = {
   "MMU:Translation",
   "MMU:AccessFlag",
   "MMU:Permission",
+  "MMU:TLBConflictAbort",
   "TagCheck",
   "Unsupported",
 };

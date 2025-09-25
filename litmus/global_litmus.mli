@@ -15,8 +15,17 @@
 (****************************************************************************)
 
 (** Global locations for litmus *)
+type stage =
+  | Stage1
+  | Stage2
 
-type t = Addr of string | Pte of string | Phy of string
+type level =
+  | Lv2
+  | Lv3
+
+type t =
+  | Addr of string | Pte of string | Phy of string
+  | Ttd of { stage: stage; level: level ; s: string}
 
 val pp_old : t -> string
 val pp : t -> string

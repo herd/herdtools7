@@ -187,7 +187,9 @@ type t = {
   db : int;
   dbm : int;
   el0 : int;
+  contig : int;
   attrs: Attrs.t;
+  dt: DescriptorKind.t;
   }
 
 let eq_props p1 p2 =
@@ -196,6 +198,7 @@ let eq_props p1 p2 =
   Misc.int_eq p1.dbm p2.dbm &&
   Misc.int_eq p1.valid p2.valid &&
   Misc.int_eq p1.el0 p2.el0 &&
+  Misc.int_eq p1.contig p2.contig &&
   Attrs.eq p1.attrs p2.attrs
 
 (* Let us abstract... *)
@@ -211,18 +214,33 @@ let writable ha hd p =
 let get_attrs {attrs;_ } = Attrs.as_list attrs
 
 (* For ordinary tests not to fault, the dirty bit has to be set. *)
-
 let prot_default =
   { oa=OutputAddress.PHY "";
-    valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
+    valid=1; af=1; db=1; dbm=0; el0=1; contig=0; attrs=Attrs.default; dt=DescriptorKind.Page }
 
 let default s = { prot_default with  oa=OutputAddress.PHY s; }
+let default_pmd s = { prot_default with  oa=OutputAddress.PTE s; dt=DescriptorKind.Table }
 
 (* Page table entries for pointers into the page table
    have el0 flag unset. Namely, page table access from
    EL0 is disallowed. This correspond to expected behaviour:
    user code cannot access the page table. *)
 let of_pte s = { prot_default with  oa=OutputAddress.PTE s; el0=0; }
+
+let is_page p =
+  match p.dt with
+  | DescriptorKind.Page -> true
+  | DescriptorKind.Block | DescriptorKind.Table -> false
+
+let is_block p =
+  match p.dt with
+  | DescriptorKind.Block -> true
+  | DescriptorKind.Page | DescriptorKind.Table -> false
+
+let is_table p =
+  match p.dt with
+  | DescriptorKind.Table -> true
+  | DescriptorKind.Page | DescriptorKind.Block -> false
 
 let pp_field ok pp eq ac p k =
   let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
@@ -237,6 +255,7 @@ and pp_af hexa ok = pp_int_field hexa ok "af" (fun p -> p.af)
 and pp_db hexa ok = pp_int_field hexa ok "db" (fun p -> p.db)
 and pp_dbm hexa ok = pp_int_field hexa ok "dbm" (fun p -> p.dbm)
 and pp_el0 hexa ok = pp_int_field hexa ok "el0" (fun p -> p.el0)
+and pp_contig hexa ok = pp_int_field hexa ok "contig" (fun p -> p.contig)
 and pp_attrs compat ok = pp_field ok
     (fun a -> sprintf (if compat then "%s" else "attrs:(%s)") (Attrs.pp a)) Attrs.eq (fun p -> p.attrs)
 
@@ -251,6 +270,7 @@ let is_default_attrs t = Attrs.is_default t.attrs
    (2) Fields from el0 (included) are printed if non-default. *)
 
 let pp_fields hexa showall p k =
+  let k = pp_contig hexa false p k in
   let k = pp_el0 hexa false p k in
   let k = pp_valid hexa showall p k in
   let k = pp_dbm hexa showall p k in
@@ -288,12 +308,13 @@ let add_field k v p =
   | "dbm" -> { p with dbm = my_int_of_string k v }
   | "valid" -> { p with valid = my_int_of_string k v }
   | "el0" -> { p with el0 = my_int_of_string k v }
+  | "contig" -> { p with contig = my_int_of_string k v }
   | _ ->
       Warn.user_error "Illegal AArch64 page table entry property %s" k
 
 let tr p =
   let open ParsedPteVal in
-  let r = {prot_default with attrs=Attrs.of_list (StringSet.elements p.p_attrs)} in
+  let r = {prot_default with attrs=Attrs.of_list (StringSet.elements p.p_attrs); dt = p.p_dt} in
   let r =
     match p.p_oa with
     | None -> r
@@ -311,6 +332,8 @@ let lex_compare c1 c2 x y  = match c1 x y with
 
 let compare =
   let cmp = (fun p1 p2 -> Misc.int_compare p1.el0 p2.el0) in
+  let cmp =
+    lex_compare (fun p1 p2 -> Misc.int_compare p1.contig p2.contig) cmp in
   let cmp =
     lex_compare (fun p1 p2 -> Misc.int_compare p1.valid p2.valid) cmp in
   let cmp =
@@ -330,10 +353,10 @@ let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && eq_props p1 p2
 (* For litmus *)
 
 (* Those lists must of course match one with the other *)
-let fields = ["af";"db";"dbm";"valid";"el0";]
+let fields = ["af";"db";"dbm";"valid";"el0";"contig";]
 and default_fields =
   let p = prot_default in
-  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
+  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;p.contig;] in
   List.map (Printf.sprintf "%i") ds
 
 let norm =
@@ -358,22 +381,23 @@ let norm =
 
 let dump_pack pp_oa p =
   sprintf
-    "pack_pack(%s,%d,%d,%d,%d,%d)"
+    "pack_pack(%s,%d,%d,%d,%d,%d,%d)"
     (pp_oa (OutputAddress.pp_old p.oa))
-    p.af p.db p.dbm p.valid p.el0
+    p.af p.db p.dbm p.valid p.el0 p.contig
 
 let as_physical p = OutputAddress.as_physical p.oa
-
+let as_pte p = OutputAddress.as_pte p.oa
 let as_flags p =
   if is_default p then None
   else
     let add b s k = if b<>0 then s::k else k in
     let msk =
-      add p.el0 "msk_el0"
-        (add p.valid "msk_valid"
-           (add p.af "msk_af"
-              (add p.dbm "msk_dbm"
-                 (add p.db "msk_db" [])))) in
+      add p.contig "msk_contig"
+        (add p.el0 "msk_el0"
+          (add p.valid "msk_valid"
+            (add p.af "msk_af"
+                (add p.dbm "msk_dbm"
+                  (add p.db "msk_db" []))))) in
     let msk = String.concat "|" msk in
     Some msk
 

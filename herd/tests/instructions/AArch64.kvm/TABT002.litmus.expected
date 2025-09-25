@@ -1,0 +1,10 @@
+Test MLPT001 Allowed
+States 1
+  ~Fault(P0:L0,x,MMU:TLBConflictAbort);
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists (fault(P0:L0,x,MMU:TLBConflictAbort))
+Observation MLPT001 Never 0 4
+Hash=27f65c8df93b2abf8758275fe386e324
+

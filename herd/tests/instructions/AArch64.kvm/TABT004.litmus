@@ -1,0 +1,12 @@
+AArch64 TABT004
+Variant=vmsa
+{
+uint64_t x;
+0:X0=x;
+0:X4 = TTD(x,S1,LV2);
+0:X1 = (oa:PA(x),valid:0,dt:Block);
+}
+P0           ;
+STR X1, [X4] ;
+LDR X7, [X0] ;
+exists(fault(P0,x,MMU:Translation))

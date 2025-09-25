@@ -100,6 +100,7 @@ end = struct
     | Symbolic (Physical _) -> Access.PHY
     | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
+    | Symbolic (System (TTD _,_)) -> Access.TTD
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Label _ -> Access.VIR
     | Tag _
@@ -596,7 +597,9 @@ end = struct
              let open Constant in
              begin
                match A.symbol loc with
-               | Some (System (PTE,_)) -> true
+               | Some (System (PTE,_))
+               | Some (System (TTD {stage = S1; level = LV3},_))
+                   -> true
                | _ -> false
              end
           | None -> false in

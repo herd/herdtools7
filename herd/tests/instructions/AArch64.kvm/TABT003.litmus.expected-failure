@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.kvm/TABT003.litmus": access_of_location_std on non-standard symbol 'TTD(s1, lv2, y)'

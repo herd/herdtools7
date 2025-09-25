@@ -573,7 +573,7 @@ module
   | Val
     (Symbolic
        (Virtual {offset=o;_}|Physical (_,o)|TagAddr (_,_,o))) -> intToV o
-  | Val (Symbolic (System ((PTE|PTE2|TLB),_))) -> zero
+  | Val (Symbolic (System ((PTE|PTE2|TLB|TTD _),_))) -> zero
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
