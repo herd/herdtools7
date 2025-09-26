@@ -40,33 +40,37 @@ a structure, which amongst other things, associates types to variables.
 Intuitively, the typing of a specification makes an initial environment evolve, with new types as given by the
 variable declarations of the specification.
 
-\begin{definition}
-\hypertarget{def-staticenvs}{}
-Static environments, denoted as $\staticenvs$, are defined as follows (referring to symbols defined by the abstract syntax):
+\begin{definition}[Static Environment]
+Static environments, denoted as $\staticenvs$, \\
+are defined as follows (referring to symbols defined by the abstract syntax):
+\RenderTypes{static_envs_and_components}
+
+\BackupOriginalType{
 \[
 \begin{array}{rcl}
-\staticenvs 	          &\triangleq& \globalstaticenvs \times \localstaticenvs \hypertarget{def-globalstaticenvs}{}\\
+\staticenvs 	          &\triangleq& \globalstaticenvs \times \localstaticenvs \\
 \\
 \globalstaticenvs &\triangleq& \left[
 \begin{array}{lcl}
-  \declaredtypes        &\mapsto& \identifier \partialto \ty \times \TPurity\\
-  \globalstoragetypes   &\mapsto& \identifier \partialto \ty \times \globaldeclkeyword,\\
-  \exprequiv            &\mapsto& \identifier \partialto \expr,\\
-  \subtypes             &\mapsto& \identifier \partialto \identifier,\\
-  \subprograms          &\mapsto& \identifier \partialto \func \times \TSideEffectSet,\\
-  \overloadedsubprograms  &\mapsto& \identifier \partialto \pow{\Strings}
+  \declaredtypes        &\mapsto& \Identifier \partialto \ty \times \TPurity\\
+  \globalstoragetypes   &\mapsto& \Identifier \partialto \ty \times \globaldeclkeyword,\\
+  \exprequiv            &\mapsto& \Identifier \partialto \expr,\\
+  \subtypes             &\mapsto& \Identifier \partialto \Identifier,\\
+  \subprograms          &\mapsto& \Identifier \partialto \func \times \TSideEffectSet,\\
+  \overloadedsubprograms  &\mapsto& \Identifier \partialto \pow{\Strings}
 \end{array}
 \right]\\
-\hypertarget{def-localstaticenvs}{}\\
+\\
 \localstaticenvs &\triangleq& \left[
 \begin{array}{lcl}
-  \localstoragetypes    &\mapsto& \identifier \partialto \ty \times \globaldeclkeyword,\\
-  \exprequiv            &\mapsto& \identifier \partialto \expr,\\
+  \localstoragetypes    &\mapsto& \Identifier \partialto \ty \times \localdeclkeyword,\\
+  \exprequiv            &\mapsto& \Identifier \partialto \expr,\\
   \returntype           &\mapsto& \langle \ty \rangle
 \end{array}
 \right]\\
 \end{array}
 \]
+}
 \end{definition}
 
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
@@ -77,10 +81,10 @@ appearing outside of a given subprogram, and the \emph{\localstaticenvironmentte
 $L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
 This separation allows us to typecheck subprograms by using an empty local environment.
 
-The intuitive meaning of each component is as follows:
+The intuitive meaning of each field appearing above is as follows:
 \begin{itemize}
   \hypertarget{def-declaredtypes}{}
-  \item $\declaredtypes$ assigns types to their declared names and \purity{};
+  \item $\declaredtypes$ assigns to names of storage elements and enumeration labels their inferred types and \purity{};
   \hypertarget{def-constantvalues}{}
   \item $\constantvalues$ assigns literals to their declaring (global constant) identifiers;
   \hypertarget{def-globalstoragetypes}{}
@@ -106,7 +110,7 @@ The intuitive meaning of each component is as follows:
   a function or a getter.
 \end{itemize}
 
-\hypertarget{def-emptytenv}{}
+\hypertarget{constant-emptytenv}{}
 \begin{definition}[Empty Static Environment]
 The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is defined as follows:
 \[
@@ -150,22 +154,23 @@ The output configurations of type system assertions have two flavors:
   Configurations are typically tuples with different combinations
   of \emph{static environments}, types, and Boolean values.
 
-  \hypertarget{def-typeerror}{}
-  \item[Type Errors.] Configurations in $\TypeError(\Strings)$
-  represent \typingerrorsterm{}, for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|.
+  \item[Type Errors.] When the type system encounters a \typingerrorterm{},
+  for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|,
+  the result is a value of the following type:
+\RenderType{type_error}
+
   The ASL type system is designed such that when these \emph{\typingerrorterm{} configurations} appear,
-  the typing of the entire specification terminates by outputting them.
+  the typing of the entire specification terminates and outputs a \typingerrorterm{} with a code indicating
+  the category of error (see \chapref{Errors} for the list of all error codes organized by category).
 \end{description}
 
-We define the mathematical type of \typingerrorterm{} configurations
-(which is needed to define the types of functions in the ASL type system)
-as follows:
-\hypertarget{def-ttypeerror}{}
+\BackupOriginalType{
 \[
-  \TTypeError \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \Strings \}
+  \typeerror \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \Strings \}
 \]
-\hypertarget{def-typeerrorconfig}{}
-as well as define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for \typingerrorterm{} configurations.
+}
+\hypertarget{type-TypeErrorconfig}{}
+We define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for \typingerrorterm{} configurations with any code.
 
 When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
 we do not repeat the\ProseOrTypeError, but rather include it only in the first rule.

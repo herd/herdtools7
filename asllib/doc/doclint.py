@@ -1,7 +1,12 @@
 #!/usr/bin/python3
 
-import os, sys, fnmatch
-from extended_macros import apply_all_macros, get_latex_sources
+import sys
+from extended_macros import (
+    apply_console_macros,
+    get_latex_sources,
+    read_file_lines,
+    read_file_str,
+)
 import re
 from dataclasses import dataclass
 from typing import List, Set
@@ -11,8 +16,8 @@ import pathlib
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
-    "-m",
-    "--macros",
+    "-cm",
+    "--console_macros",
     help="Rewrites *.tex files with extended macros",
     action="store_true",
 )
@@ -32,16 +37,7 @@ cli_parser.add_argument(
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
 DO_NOT_LINT_STR = "DO NOT LINT"
-
-
-def read_file_lines(filename: str) -> List[str]:
-    with open(filename, "r", encoding="utf-8") as file:
-        return file.readlines()
-
-
-def read_file_str(filename: str) -> List[str]:
-    with open(filename, "r", encoding="utf-8") as file:
-        return file.read()
+GENERATED_ELEMENTS_FILENAME = "generated_elements.tex"
 
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
@@ -75,7 +71,9 @@ def check_unused_latex_macros(latex_files: list[str]):
     macro_use_pattern = re.compile(r"(?<!\\newcommand)\\[a-zA-Z]+")
     num_errors = 0
     for latex_source in latex_files:
-        source_str = read_file_str(latex_source)
+        lines = read_file_lines(latex_source)
+        lines = [line for line in lines if "DO NOT LINT" not in line]
+        source_str = "\n".join(lines)
         for def_match in re.findall(macro_def_pattern, source_str):
             # print(f"found macro definition {def_match}")
             defined_macros.add(def_match)
@@ -134,28 +132,50 @@ def check_undefined_references_and_multiply_defined_labels():
     or multiply-defined labels.
     """
     num_errors = 0
-    log_str = read_file_str("./ASLReference.log")
-    if "LaTeX Warning: There were undefined references." in log_str:
-        print(
-            f"ERROR: There are undefined references (see ./ASLReference.log)",
-            file=sys.stderr,
-        )
-        num_errors += 1
-    if "LaTeX Warning: There were multiply-defined labels." in log_str:
-        print(
-            f"ERROR: There are multiply-defined labels (see ./ASLReference.log)",
-            file=sys.stderr,
-        )
-        num_errors += 1
-    if "destination with the same identifier" in log_str:
-        print(
-            f"ERROR: There are multiply-defined \\hypertarget labels \
-                (see 'destination with the same identifier' in \
-                ./ASLReference.log)",
-            file=sys.stderr,
-        )
-        num_errors += 1
-    return num_errors
+    log_filepath = "./ASLReference.log"
+    try:
+        log_str = read_file_str(log_filepath)
+        if "LaTeX Warning: There were undefined references." in log_str:
+            print(
+                f"ERROR: There are undefined references (see {log_filepath})",
+                file=sys.stderr,
+            )
+            num_errors += 1
+        if "LaTeX Warning: There were multiply-defined labels." in log_str:
+            print(
+                f"ERROR: There are multiply-defined labels (see {log_filepath})",
+                file=sys.stderr,
+            )
+            num_errors += 1
+        if "has been referenced but does not exist" in log_str:
+            print(
+                f"ERROR: A reference is made to a non-existent label (see {log_filepath})",
+                file=sys.stderr,
+            )
+            num_errors += 1
+        if "destination with the same identifier" in log_str:
+            print(
+                f"ERROR: There are multiply-defined \\hypertarget labels \
+                    (see 'destination with the same identifier' in \
+                    {log_filepath})",
+                file=sys.stderr,
+            )
+            num_errors += 1
+        # There are 3 known instances of "Warning", which are considered benign.
+        # Any others, that have not been detected earlier, thereby increasing
+        # `num_errors` are caught here.
+        if num_errors == 0 and len(
+            re.findall(r"warning", log_str, flags=re.IGNORECASE)
+        ) > 3:
+            print(
+                f"ERROR: There are unrecognized instances of 'warning' in {log_filepath})",
+                file=sys.stderr,
+            )
+            num_errors += 1
+        return num_errors
+    except FileNotFoundError:
+        print(f"Unable to open {log_filepath}", file=sys.stderr)
+        return 1
 
 
 def check_repeated_lines(filename: str) -> int:
@@ -265,6 +285,7 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
         print(f'{filename}: LaTeX macro running into next word "{match}"')
         num_errors += 1
     return num_errors
+
 
 class RuleBlock:
     r"""
@@ -563,7 +584,13 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\texttt{.*?}",
         r"\\listingref{.*?}",
         r"\\appendixref{.*?}",
-    ]
+        r"\\RenderConstant{.*?}",
+        r"\\RenderConstant\[.*?\]{.*?}",
+        r"\\RenderType{.*?}",
+        r"\\RenderType\[.*?\]{.*?}",
+        r"\\RenderRelation{.*?}",
+        r"\\RenderRelation\[.*?\]{.*?}",
+        ]
     asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
 
     num_errors = 0
@@ -629,9 +656,9 @@ def check_per_file(latex_files: list[str], checks):
 
 def main():
     args = cli_parser.parse_args()
-    aslref_path = args.aslref if args.aslref else "aslref"
-    if args.macros:
-        apply_all_macros(aslref_path)
+    if args.console_macros:
+        aslref_path = args.aslref if args.aslref else "aslref"
+        apply_console_macros(aslref_path)
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
