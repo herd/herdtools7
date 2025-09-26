@@ -53,7 +53,8 @@
   mlog2name
   mcat2includes
   bento
-  miaou)
+  miaou
+  cat2lisp)
  (public_names
   mfind7
   moutcomes7
@@ -93,6 +94,7 @@
   mlog2name7
   mcat2includes7
   bento
-  miaou7)
+  miaou7
+  cat2lisp)
  (libraries herdtools unix str)
  (modules_without_implementation arch_tools))
