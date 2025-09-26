@@ -40,7 +40,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let next_reg x = ARM.alloc_reg x
 
    module Extra = struct
-     let use_symbolic = true
      type reg = ARM.reg
      type instruction = ARM.pseudo
      let mov r v = Instruction (I_MOVI (r,v,AL))

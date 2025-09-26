@@ -43,7 +43,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
 
     module Extra = struct
-      let use_symbolic = true
       type reg = MIPS.reg
       type instruction = MIPS.pseudo
       let mov r v = Instruction (li r v)
