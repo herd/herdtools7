@@ -101,8 +101,8 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
 \left\{
   \begin{array}{rcl}
  \funcname &:& \Strings, \\
- \funcparameters &:& (\identifier, \ty?)^*,\\
- \funcargs &:& \typedidentifier^*,\\
+ \funcparameters &:& \KleeneStar{(\identifier, \ty?)},\\
+ \funcargs &:& \KleeneStar{\typedidentifier},\\
  \funcbody &:& \stmt,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype,\\
@@ -337,7 +337,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{(\Identifier\times\langle\ty\rangle)^*}{\vastnode}
+  \overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -362,7 +362,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
-  \overname{(\Identifier\times\ty)^*}{\vastnode}
+  \overname{\KleeneStar{(\Identifier\times\ty)}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -466,13 +466,13 @@ The function
     \begin{array}{l}
     \overname{\overrideinfo}{\voverride} \aslsep \\
     \overname{\Identifier}{\name} \aslsep \\
-    \overname{(\Identifier \times \some{\ty})^*}{\vparameters} \aslsep \\
-    \overname{\typedidentifier^*}{\vargs} \aslsep \\
+    \overname{\KleeneStar{(\Identifier \times \some{\ty})}}{\vparameters} \aslsep \\
+    \overname{\KleeneStar{\typedidentifier}}{\vargs} \aslsep \\
     \overname{\Identifier}{\vsetterarg} \aslsep \\
     \overname{\ty}{\tty} \aslsep \\
     \overname{\accessorpair}{\vaccessorpair}
   \end{array}\right) \aslto
-  \overname{\decl^*}{\vastnode}
+  \overname{\KleeneStar{\decl}}{\vastnode}
 \]
 transforms an $\accessorpair$ into an AST node $\vastnode$.
 
@@ -839,8 +839,8 @@ The function
 \begin{array}{r}
 \annotateparams(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier \times \langle\ty\rangle)^*}{\params} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\Identifier\times\ty)^*}{\acc})
+  \overname{\KleeneStar{(\Identifier \times \langle\ty\rangle)}}{\params} \aslsep\
+  (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc})
 ) \aslto \\
 (\overname{\staticenvs}{\tenvwithparams} \times \overname{\Identifier\times\ty}{\paramsone})
 \cup\ \overname{\typeerror}{\TypeErrorConfig}
@@ -1022,7 +1022,7 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \hypertarget{def-extractparameters}{}
 The function
 \[
-\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Identifier^*}{\uniqueparameters}
+\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\KleeneStar{\Identifier}}{\uniqueparameters}
   \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the \staticenvironmentterm{} $\tenv$.
@@ -1102,7 +1102,7 @@ are unsupported inside \bitvectortypesterm{} of arguments.
 \hypertarget{def-funcsigtypes}{}
 The function
 \[
-\funcsigtypes(\overname{\func}{\funcsig}) \aslto \overname{\ty^*}{\tys}
+\funcsigtypes(\overname{\func}{\funcsig}) \aslto \overname{\KleeneStar{\ty}}{\tys}
 \]
 returns the list of types $\tys$ in the subprogram signature $\funcsig$.
 Their ordering is return type first (if any), followed by argument types left-to-right.
@@ -1142,7 +1142,7 @@ in comments above their declarations.
 \hypertarget{def-paramsofty}{}
 The function
 \[
-\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\Identifier^*}{\ids}
+\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
 \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the type $\tty$,
@@ -1265,7 +1265,7 @@ in \listingref{ParametersOfTy} are as follows:
 \hypertarget{def-paramsofexpr}{}
 The function
 \[
-\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\Identifier^*}{\ids}
+\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
 \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the expression $\ve$.
@@ -1402,7 +1402,7 @@ for the expression \verb|A| appearing in the return type.
 \hypertarget{def-paramsofconstraint}{}
 The function
 \[
-\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\Identifier^*}{\ids}
+\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
 \]
 finds the list of parameters in the constraint $\vc$.
 It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
@@ -1456,11 +1456,11 @@ The function
 \begin{array}{r}
 \annotateargs(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier \times \ty)^*}{\args} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{(\Identifier\times\ty)^*}{\acc} \aslsep
+  \overname{\KleeneStar{(\Identifier \times \ty)}}{\args} \aslsep\
+  (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc} \aslsep
   \overname{\TSideEffectSet}{\vsesin})
 ) \aslto \\
-(\overname{\staticenvs}{\tenvwithargs} \times \overname{(\Identifier\times\ty)^*}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
+(\overname{\staticenvs}{\tenvwithargs} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
 \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -1811,7 +1811,7 @@ The function
       \overname{\Strings}{\name} \aslsep
       \overname{\subprogramtype}{\subpgmtype} \aslsep
       \overname{\qualifier}{\vqualifier} \aslsep
-      \overname{\ty^*}{\formaltypes}
+      \overname{\KleeneStar{\ty}}{\formaltypes}
     )
   & \aslto \\
     \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig} &
@@ -1924,7 +1924,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Identifier}{\name} \aslsep
     \overname{\some{\qualifier}}{\vqualifier} \aslsep
-    \overname{\typedidentifier^*}{\formals} \aslsep
+    \overname{\KleeneStar{\typedidentifier}}{\formals} \aslsep
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\
   (\overname{\staticenvs}{\newtenv} \times \overname{\Strings}{\newname})

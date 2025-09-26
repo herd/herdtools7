@@ -188,7 +188,7 @@ adds two polynomials:
 
 The overloaded function
 \[
-  \addpolynomials : \polynomial^* \rightarrow \polynomial
+  \addpolynomials : \KleeneStar{\polynomial} \rightarrow \polynomial
 \]
 adds a list of polynomials:
 \begin{mathpar}
@@ -408,9 +408,9 @@ The function
 \[
 \reduceconstraints(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\intconstraint^*}{\cs}
+  \overname{\KleeneStar{\intconstraint}}{\cs}
 ) \aslto
-\overname{\intconstraint^*}{\newcs}
+\overname{\KleeneStar{\intconstraint}}{\newcs}
 \]
 \symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
@@ -1646,7 +1646,7 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
 \hypertarget{def-bitfieldsequal}{}
 The function
 \[
-  \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^*}{\bfone} \aslsep \overname{\bitfield^*}{\bftwo})
+  \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\bitfield}}{\bfone} \aslsep \overname{\KleeneStar{\bitfield}}{\bftwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
@@ -1809,7 +1809,7 @@ or different nested bitfields.
 \hypertarget{def-constraintsequal}{}
 The function
 \[
-  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\csone} \aslsep \overname{\intconstraint^*}{\cstwo})
+  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep \overname{\KleeneStar{\intconstraint}}{\cstwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
@@ -1922,7 +1922,7 @@ corresponding constraint on the left-hand-side of that assignment.
 \hypertarget{def-slicesequal}{}
 The function
 \[
-  \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slicesone} \aslsep \overname{\slice^*}{\slicestwo})
+  \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\slicesone} \aslsep \overname{\KleeneStar{\slice}}{\slicestwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
@@ -2254,7 +2254,7 @@ via the lexicographic ordering.
 \hypertarget{def-monomialstoexpr}{}
 The function
 \[
-\monomialstoexpr(\overname{(\overname{\unitarymonomial}{\vm}\times\overname{\Q}{q})^*}{\monoms}) \aslto
+\monomialstoexpr(\overname{\KleeneStar{(\overname{\unitarymonomial}{\vm}\times\overname{\Q}{q})}}{\monoms}) \aslto
 (\overname{\expr}{\ve},\overname{\{-1,0,1\}}{\vs})
 \]
 transforms a list consisting of pairs of unitary monomials and rational factors $\monoms$ (so, general monomials),
@@ -2505,7 +2505,7 @@ The following are some examples of inputs and outputs for symbolic addition:
 \hypertarget{def-unitarymonomialstoexpr}{}
 The function
 \[
-\unitarymonomialstoexpr(\overname{(\Identifier\times\N)^*}{\monoms}) \aslto \overname{\expr}{\ve}
+\unitarymonomialstoexpr(\overname{\KleeneStar{(\Identifier\times\N)}}{\monoms}) \aslto \overname{\expr}{\ve}
 \]
 transforms a list of single-variable unitary monomials $\monoms$ into an expression $\ve$.
 Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.

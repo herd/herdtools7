@@ -182,7 +182,7 @@ of evaluating a \trystatementterm{} and its type is defined as follows:
 The relation
 \hypertarget{def-evalcatchers}{}
 \[
-  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\catcher}}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
    \aslsep \overname{\TOutConfig}{\sm}) \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -397,7 +397,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \hypertarget{def-findcatcher}{}
 The (recursively-defined) helper relation
 \[
-  \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\catcher^*}{\catchers})
+  \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\KleeneStar{\catcher}}{\catchers})
   \;\aslrel\; \langle \catcher \rangle \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),

@@ -392,12 +392,12 @@ We define the following shorthand notations for types of output semantic configu
                       &            & \ResultExprSEF(\nativevalue, \XGraphs)  & \cup \\
                       &            & \ResultLexpr(\XGraphs, \envs) & \cup\\
                       &            & \ResultLDI(\XGraphs, \envs)  & \cup \\
-                      &            & \ResultSlices(((\nativevalue \times \nativevalue)^* \times \XGraphs), \envs) &  \cup\\
-                      &            & \ResultExprList((\nativevalue^* \times \XGraphs), \envs)  & \cup \\
-                      &            & \ResultExprListM((\nativevalue\times\XGraphs)^*, \envs) & \\
+                      &            & \ResultSlices((\KleeneStar{(\nativevalue \times \nativevalue)} \times \XGraphs), \envs) &  \cup\\
+                      &            & \ResultExprList((\KleeneStar{\nativevalue} \times \XGraphs), \envs)  & \cup \\
+                      &            & \ResultExprListM(\KleeneStar{(\nativevalue\times\XGraphs)}, \envs) & \\
     \TThrowing        & \triangleq & \Throwing(\nativevalue \times \ty \times \XGraphs \times \envs) &\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
-    \TReturning       & \triangleq & \Returning((\nativevalue^* \times \XGraphs), \envs) &\\
+    \TReturning       & \triangleq & \Returning((\KleeneStar{\nativevalue} \times \XGraphs), \envs) &\\
     \TDynError        & \triangleq & \DynamicError(\Strings) &\\
     \TDiverging       & \triangleq & \{ \Diverging \}&\\
   \end{array}

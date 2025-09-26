@@ -402,7 +402,7 @@ The helper function
 \[
 \desugarsettersetfields(
   \overname{\call}{\vcall} \aslsep
-  \overname{\Identifier^*}{\vfields} \aslsep
+  \overname{\KleeneStar{\Identifier}}{\vfields} \aslsep
   \overname{\expr}{\rhs}) \aslto \overname{\stmt}{\news}
 \]
 builds a statement $\news$ from an assignment of $\rhs$ to a setter invocation $\vcall.\callname$ with concatenated field accesses given by $\vfields$.
@@ -1145,7 +1145,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{def-stmtfromlist}{}
 The helper function
 \[
-\stmtfromlist(\overname{\stmt^*}{\vstmts}) \aslto \overname{\stmt}{\news}
+\stmtfromlist(\overname{\KleeneStar{\stmt}}{\vstmts}) \aslto \overname{\stmt}{\news}
 \]
 builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
 
@@ -1731,7 +1731,7 @@ The relation
 \[
 \desugarcasestmt(
   \overname{\expr}{\vezero},
-  \overname{\casealt^*}{\vcases},
+  \overname{\KleeneStar{\casealt}}{\vcases},
   \overname{\stmt}{\votherwise}) \;\aslrel\; \overname{\stmt}{\news}
 \]
 transforms a \casediscriminantterm\ $\vezero$, a list of \casealternativesterm\ $\vcases$,
@@ -1767,7 +1767,7 @@ The function
 \[
 \casestocond(
   \overname{\expr}{\ve} \aslsep
-  \overname{\casealt^*}{\vcases} \aslsep
+  \overname{\KleeneStar{\casealt}}{\vcases} \aslsep
   \overname{\stmt}{\votherwise})
 \;\aslrel\; \overname{\stmt}{\news}
 \]
@@ -3250,7 +3250,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \RenderTypes[remove_hypertargets]{stmt_try}
 \BackupOriginalAST{
 \begin{flalign*}
-\stmt \derives\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise}) &
+\stmt \derives\ & \STry(\stmt, \KleeneStar{\catcher}, \overtext{\stmt?}{otherwise}) &
 \end{flalign*}
 }
 
@@ -3601,10 +3601,10 @@ In \listingref{semantics-sreturntuple},
 \hypertarget{def-evalexprlistm}{}
 The helper relation
 \[
-\evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vEs}) \;\aslrel\;
+\evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vEs}) \;\aslrel\;
 \left(
 \begin{array}{cl}
-\ResultExprListM(\overname{(\nativevalue\times\XGraphs)^* }{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
+\ResultExprListM(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
 \overname{\TThrowing}{\ThrowingConfig} & \cup \\
 \overname{\TDynError}{\DynErrorConfig} & \cup \\
 \overname{\TDiverging}{\DivergingConfig}
@@ -3662,7 +3662,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \hypertarget{def-writefolder}{}
 The helper relation
 \[
-  \writefolder(\overname{(\nativevalue\times\XGraphs)^*}{\vms}) \aslrel (\overname{\nativevalue^*}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
+  \writefolder(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms}) \aslrel (\overname{\KleeneStar{\nativevalue}}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
 \]
 concatenates the input values in $\vms$ and generates an execution graph
 by composing the graphs in $\vms$ with Write Effects for the respective values.
@@ -3731,7 +3731,7 @@ empty \executiongraph{}.
 \RenderTypes[remove_hypertargets]{stmt_print}
 \BackupOriginalAST{
 \begin{flalign*}
-  \stmt \derives\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}) &
+  \stmt \derives\ & \SPrint(\overtext{\KleeneStar{\expr}}{args}, \overtext{\Bool}{newline}) &
 \end{flalign*}
 }
 
@@ -4024,7 +4024,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorCo
 \RenderTypes[remove_hypertargets]{stmt_pragma}
 \BackupOriginalAST{
 \begin{flalign*}
-\stmt \derives\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args}) &
+\stmt \derives\ & \SPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args}) &
 \end{flalign*}
 }
 

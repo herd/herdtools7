@@ -329,11 +329,11 @@ The following rules define the types of left-hand side of assignments:
 \begin{flalign*}
 \lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} & \\
   |\ & \LEVar(\Identifier) & \\
-  |\ & \LESlice(\lexpr, \slice^*) & \\
+  |\ & \LESlice(\lexpr, \KleeneStar{\slice}) & \\
   |\ & \LESetArray(\lexpr, \expr) & \\
   |\ & \LESetField(\lexpr, \Identifier) & \\
-  |\ & \LESetFields(\lexpr, \Identifier^*) & \\
-  |\ & \LEDestructuring(\lexpr^*) & \\
+  |\ & \LESetFields(\lexpr, \KleeneStar{\Identifier}) & \\
+  |\ & \LEDestructuring(\KleeneStar{\lexpr}) & \\
 \end{flalign*}
 }
 
@@ -364,7 +364,7 @@ the local declaration item is
   & \\
   |\ & \LDIVar(\Identifier)
   & \\
-  |\ & \LDITuple(\Identifier^*) &
+  |\ & \LDITuple(\KleeneStar{\Identifier}) &
 \end{flalign*}
 }
 \subsection{Statements \label{sec:Statements}}
@@ -395,9 +395,9 @@ the local declaration item is
   |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) & \\
   |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) & \\
   |\ & \SThrow(\expr) &\\ & \\
-  |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise}) & \\
-  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline}) & \\
-  |\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args}) & \\
+  |\ & \STry(\stmt, \KleeneStar{\catcher}, \overtext{\stmt?}{otherwise}) & \\
+  |\ & \SPrint(\overtext{\KleeneStar{\expr}}{args}, \overtext{\Bool}{newline}) & \\
+  |\ & \SPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args}) & \\
   |\ & \SUnreachable
 \end{flalign*}
 }
@@ -455,8 +455,8 @@ the local declaration item is
 \left\{
   \begin{array}{rcl}
  \funcname &:& \Strings, \\
- \funcparameters &:& (\Identifier, \ty?)^*,\\
- \funcargs &:& \typedidentifier^*,\\
+ \funcparameters &:& \KleeneStar{(\Identifier, \ty?)},\\
+ \funcargs &:& \KleeneStar{\typedidentifier},\\
  \funcbody &:& \stmt,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype\\
@@ -503,8 +503,8 @@ Declaration keyword for global storage elements:
 \begin{flalign*}
 \decl \derives\ & \DFunc(\func) & \\
   |\ & \DGlobalStorage(\globaldecl) & \\
-  |\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\field^*}{with fields})?) & \\
-  |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
+  |\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\KleeneStar{\field}}{with fields})?) & \\
+  |\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
 \end{flalign*}
 }
 
@@ -513,7 +513,7 @@ Declaration keyword for global storage elements:
 
 \BackupOriginalAST{
 \begin{flalign*}
-\spec \derives\ & \decl^* &
+\spec \derives\ & \KleeneStar{\decl} &
 \end{flalign*}
 }
 

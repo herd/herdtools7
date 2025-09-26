@@ -260,7 +260,7 @@ transforms a parse node $\vparsednode$ into a pair of AST nodes, $\vbase$ and $\
 The function
 \[
   \buildaccess(\overname{\parsenode{\Naccess}}{\vparsednode}) \;\aslto
-  \overname{\fieldorarrayaccess^*}{\vastnode}
+  \overname{\KleeneStar{\fieldorarrayaccess}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -396,7 +396,7 @@ transforms an $\lhsaccess$ on an identifier $\name$ into an AST node $\vlexpr$.
 \hypertarget{def-desugarlhstuple}{}
 The function
 \[
-  \desugarlhstuple(\overname{\langle\lhsaccess\rangle^*}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhstuple(\overname{\KleeneStar{\langle\lhsaccess\rangle}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
 
@@ -440,7 +440,7 @@ is defined via the following rules:
 \hypertarget{def-desugarlhsfieldstuple}{}
 The function
 \[
-  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\langle\Identifier\rangle^*}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\langle\Identifier\rangle}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
 
@@ -463,7 +463,7 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \hypertarget{def-filteroptionlist}{}
 The parametric function
 \[
-  \filteroptionlist(\overname{\langle T \rangle^*}{\vvopts}) \aslto \overname{T^*}{\vvs}
+  \filteroptionlist(\overname{\KleeneStar{\langle T \rangle}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
 \]
 filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\langle v \rangle$ to $v$.
 
@@ -750,7 +750,7 @@ In \listingref{semantics-leglobalvar},
 \RenderTypes[remove_hypertargets]{lexpr_destructuring}
 \BackupOriginalAST{
 \begin{flalign*}
-\lexpr \derives\ & \LEDestructuring(\lexpr^*) &
+\lexpr \derives\ & \LEDestructuring(\KleeneStar{\lexpr}) &
 \end{flalign*}
 }
 
@@ -830,7 +830,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 The helper relation
 \hypertarget{def-evalmultiassign}{}
 \[
-  \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vlelist} \aslsep \overname{(\nativevalue \times \XGraphs)^*}{\vmlist}) \;\aslrel\;
+  \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vlelist} \aslsep \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\vmlist}) \;\aslrel\;
   \ResultLexpr(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
   \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
@@ -1132,7 +1132,7 @@ cell of
 \RenderTypes[remove_hypertargets]{lexpr_slice}
 \BackupOriginalAST{
 \begin{flalign*}
-\lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
+\lexpr \derives\ & \LESlice(\lexpr, \KleeneStar{\slice}) &
 \end{flalign*}
 }
 
@@ -1190,7 +1190,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
 \hypertarget{def-checkdisjointslices}{}
 The function
 \[
-\checkdisjointslices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\slices})
+\checkdisjointslices(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\slices})
 \aslto \True \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 tests whether the list of slices $\slices$ do not overlap in $\tenv$, yielding $\True$.
@@ -1283,7 +1283,7 @@ getter invocation
 The helper function
 \[
   \checknonoverlappingslices(
-    \overname{(\tint\times\tint)^*}{\valueranges}
+    \overname{\KleeneStar{(\tint\times\tint)}}{\valueranges}
   ) \aslto \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the sets of integers represented by the list of ranges $\valueranges$
@@ -1533,7 +1533,7 @@ All of the collection field assignable expressions in
 \RenderTypes[remove_hypertargets]{lexpr_setfields}
 \BackupOriginalAST{
 \begin{flalign*}
-\lexpr \derives\ & \LESetFields(\lexpr, \Identifier^*) &
+\lexpr \derives\ & \LESetFields(\lexpr, \KleeneStar{\Identifier}) &
 \end{flalign*}
 }
 
@@ -1672,8 +1672,8 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 \hypertarget{def-foldbitvectorfields}{}
 The helper function
 \[
-\foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\field^*}{\vbasefields} \aslsep \overname{\bitfield^*}{\vlefields})
-\aslto (\overname{\N}\vlength \times \overname{(\N \times N)^*}{\vslices})
+\foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\field}}{\vbasefields} \aslsep \overname{\KleeneStar{\bitfield}}{\vlefields})
+\aslto (\overname{\N}\vlength \times \overname{\KleeneStar{(\N \times N)}}{\vslices})
 \]
 accepts a \staticenvironmentterm{} $\tenv$, the list of all fields $\vbasefields$ for a \recordtypeterm{},
 and a list of fields $\vlefields$ that are the subset of $\vbasefields$ about to be assigned to,
@@ -1777,8 +1777,8 @@ The helper function
   \assignbitvectorfields(
     \overname{\tbitvector}{\vbitvector} \aslsep
     \overname{\trecord}{\record} \aslsep
-    \overname{\Identifier^*}{\fields} \aslsep
-    \overname{{(\N\times\N)}^*}{\vslices}) \aslto
+    \overname{\KleeneStar{\Identifier}}{\fields} \aslsep
+    \overname{{\KleeneStar{(\N\times\N)}}}{\vslices}) \aslto
     \overname{\trecord}{\vres}
 \]
 updates the list of fields $\fields$ of $\record$ with the slices given by
@@ -1888,7 +1888,7 @@ All of the collection field assignable expressions in
 \RenderTypes[remove_hypertargets]{lexpr_slice}
 \BackupOriginalAST{
 \begin{flalign*}
-\lexpr \derives\ & \LESlice(\lexpr, \slice^*) &
+\lexpr \derives\ & \LESlice(\lexpr, \KleeneStar{\slice}) &
 \end{flalign*}
 }
 

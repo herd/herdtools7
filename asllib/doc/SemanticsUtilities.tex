@@ -266,7 +266,7 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \hypertarget{def-concatbitvector}{}
 The relation
 \[
-  \concatbitvectors(\overname{\tbitvector^*}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
+  \concatbitvectors(\overname{\KleeneStar{\tbitvector}}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
 \]
 transforms a (possibly empty) list of bitvector \nativevaluesterm{}$\vvs$ into a single bitvector
 $\newvs$.
@@ -322,7 +322,7 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 The relation
 \[
   \slicestopositions(\overname{\KleenePlus{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})}}{\slices}) \;\aslrel\;
-  (\overname{\N^*}{\positions} \cup\ \overname{\TDynError}{\BadIndex})
+  (\overname{\KleeneStar{\N}}{\positions} \cup\ \overname{\TDynError}{\BadIndex})
 \]
 returns the list of positions (indices) specified by the slices $\slices$,
 if all slices consist of only non-negative integers.
@@ -431,7 +431,7 @@ The slice \verb|42+:0| has maximum position 42.
 \hypertarget{def-readfrombitvector}{}
 The relation
 \[
-  \readfrombitvector(\overname{\Nvalue}{\vv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
+  \readfrombitvector(\overname{\Nvalue}{\vv} \aslsep \overname{\KleeneStar{(\tint\times\tint)}}{\slices}) \;\aslrel\;
   \overname{\tbitvector}{\vnew} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
@@ -528,7 +528,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \hypertarget{def-writetobitvector}{}
 The relation
 \[
-  \writetobitvector(\overname{(\tint\times\tint)^*}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
+  \writetobitvector(\overname{\KleeneStar{(\tint\times\tint)}}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
   \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.

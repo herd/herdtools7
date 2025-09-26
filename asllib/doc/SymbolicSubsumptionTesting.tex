@@ -1098,7 +1098,7 @@ $\CannotOverapproximate$ if $\vapprox$ is $\Over$.}
 \hypertarget{def-intsettoconstraints}{}
 The function
 \[
-\intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\intconstraint^*}{\cs}
+\intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\KleeneStar{\intconstraint}}{\cs}
 \]
 converts a finite set of integers $\vs$ into an equivalent list of constraints.
 
@@ -1497,8 +1497,8 @@ The function
 \[
 \constraintbinop(
   \overname{\binop}{\op} \aslsep
-  \overname{\intconstraint^*}{\csone} \aslsep
-  \overname{\intconstraint^*}{\cstwo}
+  \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep
+  \overname{\KleeneStar{\intconstraint}}{\cstwo}
 )
 \aslto \overname{\constraintkind}{\newcs}
 \]
@@ -1591,7 +1591,7 @@ The function
 \applybinopextremities(
   \overname{\binop}{\op} \aslsep
   \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}
-) \aslto \overname{\intconstraint^*}{\newcs}
+) \aslto \overname{\KleeneStar{\intconstraint}}{\newcs}
 \]
 yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
 range constraints for cases where the binary operation $\op$ yields a \dynamicerrorterm{}.
@@ -1699,7 +1699,7 @@ The function
 \possibleextremitiesleft(
   \overname{\binop}{\op} \aslsep
   \overname{\expr}{\va} \aslsep \overname{\expr}{\vb}
-) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+) \aslto \overname{\KleeneStar{(\expr\times\expr)}}{\extpairs}
 \]
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\va$ and $\vb$, which are needed to form constraints
@@ -1750,7 +1750,7 @@ The function
 \possibleextremitiesright(
   \overname{\binop}{\op} \aslsep
   \overname{\expr}{\vc} \aslsep \overname{\expr}{\vd}
-) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+) \aslto \overname{\KleeneStar{(\expr\times\expr)}}{\extpairs}
 \]
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\vc$ and $\vd$, which are needed to form constraints

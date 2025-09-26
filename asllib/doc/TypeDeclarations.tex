@@ -41,7 +41,7 @@ See \ExampleRef{Types} for examples of type declarations.
 \RenderTypes[remove_hypertargets]{decl_type}
 \BackupOriginalAST{
 \begin{flalign*}
-\decl \derives\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) &\\
+\decl \derives\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\KleeneStar{\Field}}{with fields})?) &\\
 \Field \derives\ & (\identifier, \ty) &
 \end{flalign*}
 }
@@ -81,7 +81,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \hypertarget{build-subtype}{}
 The function
 \[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \times (\Identifier\times \ty)^*)}{\vastnode}
+  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \times \KleeneStar{(\Identifier\times \ty)})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -113,7 +113,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
    \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\langle(\Identifier \times \langle (\Identifier\times \ty)^* \rangle)\rangle}{\vastnode}
+    \overname{\langle(\Identifier \times \langle \KleeneStar{(\Identifier\times \ty)} \rangle)\rangle}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -129,7 +129,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-fields}{}
 The function
 \[
-  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\field^*}{\vastnode}
+  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\field}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -201,11 +201,11 @@ The function
 \declaretype(\overname{\globalstaticenvs}{\genv} \aslsep
             \overname{\Identifier}{\name} \aslsep
             \overname{\ty}{\tty} \aslsep
-            \overname{\langle(\Identifier\times\vfield^*)\rangle}{\vs}
+            \overname{\langle(\Identifier\times\KleeneStar{\vfield})\rangle}{\vs}
 ) \aslto \\
 (\overname{\globalstaticenvs}{\newgenv} \times
  \overname{\ty}{\vttwo} \times
- \overname{\langle(\Identifier\times\vfield^*)\rangle}{\vsp})
+ \overname{\langle(\Identifier\times\KleeneStar{\vfield})\rangle}{\vsp})
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -295,7 +295,7 @@ The function
 \annotateextrafields(\overname{\staticenvs}{\tenv} \aslsep
   \overname{\Identifier}{\name} \aslsep
   \overname{\ty}{\tty} \aslsep
-  \overname{\langle(\overname{\Identifier}{\vsuper}\times\overname{\vfield^*}{\extrafields})\rangle}{\vs}
+  \overname{\langle(\overname{\Identifier}{\vsuper}\times\overname{\KleeneStar{\vfield}}{\extrafields})\rangle}{\vs}
 )
 \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newty})

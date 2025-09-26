@@ -105,7 +105,7 @@ Declaring a local storage element is done via the following grammar rules:
 \localdeclkeyword \derives\ & \LDKVar \;|\; \LDKLet &\\
 \localdeclitem \derives\
      & \LDIVar(\identifier) & \\
-  |\ & \LDITuple(\identifier^*) &
+  |\ & \LDITuple(\KleeneStar{\identifier}) &
 \end{flalign*}
 }
 
@@ -409,7 +409,7 @@ evaluation of \texttt{3} in $\env$.
 \hypertarget{def-ldituplefolder}{}
 The helper semantic relation
 \[
-    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\Identifier^*}{\vids} \aslsep \overname{(\nativevalue \times \XGraphs)^*}{\liv}) \;\aslrel\;
+    \ldituplefolder(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\Identifier}}{\vids} \aslsep \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\liv}) \;\aslrel\;
      \ResultLDI(\overname{\XGraphs}{\vg} \aslsep \overname{\envs}{\newenv})
 \]
 is defined as follows.

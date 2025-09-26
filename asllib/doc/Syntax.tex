@@ -31,7 +31,7 @@ of the grammar and return a parse error otherwise.
 \end{itemize}
 
 \section{Inlined Derivations\label{sec:InlinedDerivations}}
-Context-free grammars consist of a list of \emph{derivations} $N \derives S^*$
+Context-free grammars consist of a list of \emph{derivations} $N \derives \KleeneStar{S}$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
 which correspond to tokens.
 We refer to a list of such symbols as a \emph{sentence}.
@@ -705,7 +705,7 @@ We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse : (\Token^* \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
+\aslparse : (\KleeneStar{\Token} \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
 \]
 \hypertarget{def-parseerror}{}
 where $\ParseErrorConfig$ stands for a \emph{parse error}.

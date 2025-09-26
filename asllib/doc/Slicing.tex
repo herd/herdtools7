@@ -234,7 +234,7 @@ are all well-typed.
 \hypertarget{def-sliceswidth}{}
 The helper function
 \[
-  \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice^*}{\vslices}) \aslto
+  \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\vslices}) \aslto
   \overname{\expr}{\vwidth} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
@@ -569,8 +569,8 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \hypertarget{def-annotateslices}{}
 The function
 \[
-\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\slice^*}{\vslices}) \aslto
-(\overname{\slice^*}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
+\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\slice}}{\vslices}) \aslto
+(\overname{\KleeneStar{\slice}}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
 \]
 annotates a list of slices $\vslices$ in the \staticenvironmentterm{} $\tenv$, yielding a list of annotated slices (that is,
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
@@ -608,10 +608,10 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 The relation
 \hypertarget{def-evalslices}{}
 \[
-  \evalslices(\overname{\envs}{\env} \aslsep \overname{\slice^*}{\slices}) \;\aslrel\;
+  \evalslices(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\slice}}{\slices}) \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultSlices((\overname{(\nativevalue \times \nativevalue)^*}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
+  \ResultSlices((\overname{\KleeneStar{(\nativevalue \times \nativevalue)}}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
   \overname{\TDynError}{\DynErrorConfig}    & \cup\\
   \overname{\TDiverging}{\DivergingConfig}  & \\

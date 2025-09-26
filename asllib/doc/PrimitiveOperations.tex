@@ -1447,7 +1447,7 @@ and argument types of its operand literals:
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
 \hypertarget{def-bintounsigned}{}
-The function $\bintounsigned : \Bit^* \rightarrow \N$ converts a non-empty sequence of bits
+The function $\bintounsigned : \KleeneStar{\Bit} \rightarrow \N$ converts a non-empty sequence of bits
 into a natural number:
 \[
   \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n a_i \cdot 2^{a_i}
@@ -1458,7 +1458,7 @@ and an empty sequence of bits into $0$:
 \]
 
 \hypertarget{def-inttobits}{}
-The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \Bit^*$
+The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \KleeneStar{\Bit}$
 converts an integer \texttt{val} to its two's complement little endian representation
 of \texttt{width} bits.
 

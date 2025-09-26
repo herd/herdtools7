@@ -2111,8 +2111,8 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
 The helper function
 \[
-  \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\bitfield^*}{\vbitfields})
-  \aslto \overname{\slice^*}{\vslices} \cup \overname{\typeerror}{\TypeErrorConfig}
+  \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\vbitfields})
+  \aslto \overname{\KleeneStar{\slice}}{\vslices} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the slices associated with the bitfield named $\name$ in the list of bitfields $\vbitfields$
 in $\vslices$.
@@ -2184,7 +2184,7 @@ The helper function
   \getbitfieldwidth(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Identifier}{\name} \aslsep
-    \overname{\field^*}{\tfields})
+    \overname{\KleeneStar{\field}}{\tfields})
   \aslto \overname{\expr}{\ewidth} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the expression $\ewidth$ that describes the width of the bitfield named $\name$
@@ -2236,7 +2236,7 @@ yields the literal expression for \verb|2|.
 % NOTE: the implementation handles just two expressions, here we fold over a list.
 The helper function
 \[
-  \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs}) \typearrow \overname{\expr}{\ewidth}
+  \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs}) \typearrow \overname{\expr}{\ewidth}
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
@@ -3252,7 +3252,7 @@ The function
   \annotatefieldinit(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{(\Identifier\times\expr)}{(\name, \vep)} \aslsep
-    \overname{\vfield^*}{\fieldtypes}
+    \overname{\KleeneStar{\vfield}}{\fieldtypes}
   ) \aslto \\
   (\overname{\Identifier}{\name} \times \overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})
 \end{array}
@@ -3593,10 +3593,10 @@ since side-effect-free expressions do not modify the environment.
 \hypertarget{def-evalexprlist}{}
 The relation
 \[
-  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
+  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vle}} \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultExprList((\overname{\nativevalue^*}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
+  \ResultExprList((\overname{\KleeneStar{\nativevalue}}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
   \overname{\TDynError}{\DynErrorConfig}    & \cup\\
   \overname{\TDiverging}{\DivergingConfig}  & \\

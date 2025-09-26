@@ -117,7 +117,7 @@ untyped AST, renaming local storage elements accordingly.
 \hypertarget{def-renamelocals}{}
 The helper function
 \[
-\renamelocals(\overname{\decl^*}{\vdecls}) \aslto \overname{\decl^*}{\vnewdecls}
+\renamelocals(\overname{\KleeneStar{\decl}}{\vdecls}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecls}
 \]
 renames the local storage elements appearing in $\vdecls$,
 yielding the list of declarations $\vnewdecls$.
@@ -145,7 +145,7 @@ yielding the list of declarations $\vnewdecls$.
 \hypertarget{def-renamelocalsdecl}{}
 The helper function
 \[
-\renamelocalsdecl(\overname{\decl}{\vdecl}) \aslto \overname{\decl^*}{\vnewdecl}
+\renamelocalsdecl(\overname{\decl}{\vdecl}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecl}
 \]
 renames the local storage elements appearing in $\vdecl$,
 yielding the declaration $\vnewdecl$.
@@ -265,8 +265,8 @@ yielding the subprogram description $\vnewf$.
 \hypertarget{def-renamelocalsargs}{}
 The helper function
 \[
-\renamelocalsargs(\overname{(\Identifier\times\ty)^*}{\args}) \aslto
-\overname{(\Identifier\times\ty)^*}{\newargs}
+\renamelocalsargs(\overname{\KleeneStar{(\Identifier\times\ty)}}{\args}) \aslto
+\overname{\KleeneStar{(\Identifier\times\ty)}}{\newargs}
 \]
 renames the local storage elements appearing in the list of arguments
 $\args$, yielding the list of arguments $\newargs$.
@@ -311,8 +311,8 @@ $\args$, yielding the list of arguments $\newargs$.
 \hypertarget{def-renamelocalsnamedargs}{}
 The helper function
 \[
-\renamelocalsnamedargs(\overname{(\Identifier\times\langle\ty\rangle)^*}{\params}) \aslto
-\overname{(\Identifier\times\langle\ty\rangle)^*}{\newparams}
+\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\params}) \aslto
+\overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\newparams}
 \]
 renames the local storage elements appearing in the list of parameters $\params$,
 yielding the list of parameters $\newparams$.

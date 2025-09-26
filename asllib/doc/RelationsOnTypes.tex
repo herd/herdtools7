@@ -1656,14 +1656,14 @@ The function
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^*}{\csone} \aslsep\\
-  \overname{\intconstraint^*}{\cstwo}
+  \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep\\
+  \overname{\KleeneStar{\intconstraint}}{\cstwo}
   \end{array}
 \right) \aslto
 \begin{array}{r}
 \left(
   \begin{array}{c}
-  \overname{\intconstraint^*}{\annotatedcs} \aslsep\\
+  \overname{\KleeneStar{\intconstraint}}{\annotatedcs} \aslsep\\
   \overname{\precisionlossindicator}{\vp}
   \end{array}
 \right)
@@ -1787,7 +1787,7 @@ The function
     \overname{\{\Over,\Under\}}{\vapprox} \aslsep
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\binop}{\op} \aslsep
-    \overname{\intconstraint^*}{\cs})
+    \overname{\KleeneStar{\intconstraint}}{\cs})
 \aslto \\
 \overname{\KleenePlus{\intconstraint}}{\newcs}
 \cup \{\CannotUnderapproximate, \CannotOverapproximate\}
@@ -2120,12 +2120,12 @@ The function
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep\\
-  \overname{\intconstraint^*}{\cs}
+  \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right)
 \aslto
 \begin{array}{ll}
-\overname{\intconstraint^*}{\newcs} & \cup\\
+\overname{\KleeneStar{\intconstraint}}{\newcs} & \cup\\
 \{\CannotUnderapproximate, \CannotOverapproximate\}
 \end{array}
 \]
@@ -2225,11 +2225,11 @@ The function
   \begin{array}{c}
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^*}{\cs}
+  \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right) \aslto
   \begin{array}{ll}
-  \overname{\intconstraint^*}{\vres} & \cup\\
+  \overname{\KleeneStar{\intconstraint}}{\vres} & \cup\\
   \{\CannotUnderapproximate, \CannotOverapproximate\} &
   \end{array}
 \]
@@ -2467,8 +2467,8 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 \hypertarget{def-explodeintervals}{}
 The function
 \[
-\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\cs})
-\aslto \left( \overname{\intconstraint^*}{\newcs} \aslsep \overname{\precisionlossindicator}{\vp} \right)
+\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\intconstraint}}{\cs})
+\aslto \left( \overname{\KleeneStar{\intconstraint}}{\newcs} \aslsep \overname{\precisionlossindicator}{\vp} \right)
 \]
 applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$, and returns
 a pair consisting of the list of exploded constraints in $\newcs$ and a
@@ -2534,7 +2534,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\intconstraint}{\vc})
 \aslto \\
-(\overname{\intconstraint^*}{\vcs}, \overname{\precisionlossindicator}{\newprec})
+(\overname{\KleeneStar{\intconstraint}}{\vcs}, \overname{\precisionlossindicator}{\newprec})
 \end{array}
 \]
 given the \staticenvironmentterm{} $\tenv$ and the constraint $\vc$,
@@ -2679,7 +2679,7 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 \hypertarget{def-bitfieldsincluded}{}
 The predicate
 \[
-  \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\bitfield^*}{\bfsone} \aslsep \overname{\bitfield^*}{\bfstwo})
+  \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\bitfield}}{\bfsone} \aslsep \overname{\KleeneStar{\bitfield}}{\bfstwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,

@@ -50,7 +50,7 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 \RenderTypes[remove_hypertargets]{decl_global_pragma}
 \BackupOriginalAST{
 \begin{flalign*}
-\decl \derives\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
+\decl \derives\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
 \end{flalign*}
 }
 

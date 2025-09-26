@@ -162,8 +162,8 @@ The function
     \begin{array}{c}
       \overname{\staticenvs}{\tenv} \aslsep\\
       \overname{\Identifier}{\name} \aslsep\\
-      \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\params} \aslsep\\
-      \overname{(\ty \times\expr \times \TSideEffectSet)^*}{\typedargs} \aslsep\\
+      \overname{\KleeneStar{(\ty \times\expr \times \TSideEffectSet)}}{\params} \aslsep\\
+      \overname{\KleeneStar{(\ty \times\expr \times \TSideEffectSet)}}{\typedargs} \aslsep\\
       \overname{\subprogramtype}{\calltype}
     \end{array}
   \right) \aslto
@@ -273,10 +273,10 @@ The function
 \[
 \insertstdlibparam(
   \overname{\func}{\funcsig} \aslsep
-  \overname{(\ty\times\expr)^*}{\params} \aslsep
-  \overname{\ty^*}{\argtypes}
+  \overname{\KleeneStar{(\ty\times\expr)}}{\params} \aslsep
+  \overname{\KleeneStar{\ty}}{\argtypes}
   ) \aslto \\
-  \overname{(\ty\times\expr\times\TSideEffectSet)^*}{\paramsone}
+  \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\paramsone}
 \]
 inserts the (optionally) omitted input parameter of a standard library function call.
 
@@ -423,8 +423,8 @@ The function
 \begin{array}{r}
 \checkparamstypesat(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier\times\langle\ty\rangle)^*}{\funcsigparams} \aslsep
-  \overname{(\ty\times\expr\times\TSideEffectSet)^*}{\params}
+  \overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\funcsigparams} \aslsep
+  \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\params}
   ) \aslto \\
   \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
@@ -526,7 +526,7 @@ The function
 \[
 \renametyeqs(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
   \overname{\ty}{\tty}
 ) \aslto
 \overname{\ty}{\newty} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -634,7 +634,7 @@ The function
 \[
 \substexprnormalize(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
   \overname{\expr}{\ve}
 ) \aslto \overname{\newe}{\expr}
 \]
@@ -675,7 +675,7 @@ The function
 \[
 \substexpr(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier\times\expr)^*}{\substs} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\expr)}}{\substs} \aslsep
   \overname{\expr}{\ve}
 ) \aslto \overname{\expr}{\newe}
 \]
@@ -1043,7 +1043,7 @@ The function
 \[
 \substconstraint(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{(\Identifier\times\expr)^*}{\eqs} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
   \overname{\intconstraint}{\vc}
 ) \aslto \overname{\newc}{\intconstraint}
 \]
@@ -1104,9 +1104,9 @@ The function
 \begin{array}{r}
   \checkargstypesat(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{(\Identifier\times\ty)^*}{\funcsigargs} \aslsep
-    \overname{\ty^*}{\argtypes} \aslsep
-    \overname{(\Identifier\times\expr)^*}{\eqs}
+    \overname{\KleeneStar{(\Identifier\times\ty)}}{\funcsigargs} \aslsep
+    \overname{\KleeneStar{\ty}}{\argtypes} \aslsep
+    \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs}
   ) \aslto \\
   \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
@@ -1181,7 +1181,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\subprogramtype}{\calltype} \aslsep
   \overname{\langle\ty\rangle}{\funcsigrettyopt}
-  \overname{(\Identifier\times\expr)^*}{\eqsthree}
+  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqsthree}
 ) \aslto \\
 \overname{\langle\ty\rangle}{\rettyopt}
 \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -1274,7 +1274,7 @@ The function
     \subprogramforsignature(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Strings}{\name} \aslsep
-    \overname{\ty^*}{\callerargtypes} \aslsep
+    \overname{\KleeneStar{\ty}}{\callerargtypes} \aslsep
     \overname{\subprogramtype}{\calltype}
     )
     \aslto & \\
@@ -1400,11 +1400,11 @@ The helper function
 \[
   \filtercallcandidates(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\ty^*}{\formaltypes} \aslsep
+    \overname{\KleeneStar{\ty}}{\formaltypes} \aslsep
     \overname{\subprogramtype}{\calltype}
     \overname{\pow{\Strings}}{\candidates}
     )
-  \aslto \overname{(\Strings\times\func)^*}{\matches}
+  \aslto \overname{\KleeneStar{(\Strings\times\func)}}{\matches}
 \]
 iterates over the list of unique subprogram names in $\candidates$ and checks whether
 their lists of arguments clash with the types in $\formaltypes$ and their subprogram types match $\calltype$ in $\tenv$.
@@ -1557,8 +1557,8 @@ The function
 \[
   \hasargclash(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\ty^*}{\formaltys} \aslsep
-    \overname{(\Identifier\times\ty)^*}{\vargs}
+    \overname{\KleeneStar{\ty}}{\formaltys} \aslsep
+    \overname{\KleeneStar{(\Identifier\times\ty)}}{\vargs}
   )
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
@@ -1776,8 +1776,8 @@ way around.
 \hypertarget{def-annotateexprs}{}
 The helper function
 \[
-  \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs})
-  \aslto \overname{(\ty \times \expr \times \TSideEffectSet)^*}{\typedexprs}
+  \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs})
+  \aslto \overname{\KleeneStar{(\ty \times \expr \times \TSideEffectSet)}}{\typedexprs}
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of expressions $\exprs$ from left to right, yielding a list of tuples \\
@@ -1884,11 +1884,11 @@ The relation
 \[
   \evalcall(\overname{\envs}{\env} \aslsep
   \overname{\Identifier}{\name} \aslsep
-  \overname{\expr^*}{\params} \aslsep
-  \overname{\expr^*}{\args}) \;\aslrel\;
+  \overname{\KleeneStar{\expr}}{\params} \aslsep
+  \overname{\KleeneStar{\expr}}{\args}) \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultCall(\overbracket{(\nativevalue\times\XGraphs)^*}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
+  \ResultCall(\overbracket{\KleeneStar{(\nativevalue\times\XGraphs)}}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
   \overname{\TDynError}{\DynErrorConfig} & \cup \\
   \overname{\TDiverging}{\DivergingConfig} & \\
   \end{array}
@@ -1999,14 +1999,14 @@ The relation
   \begin{array}{cl}
   \overname{\envs}{\env} & \aslsep\\
   \overname{\Identifier}{\name} & \aslsep\\
-  \overname{(\nativevalue \times \XGraphs)^*}{\params} & \aslsep\\
-  \overname{(\nativevalue \times \XGraphs)^*}{\args} &
+  \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\params} & \aslsep\\
+  \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\args} &
   \end{array}
   \right)
   \;\aslrel\;
   \left(
   \begin{array}{cl}
-  \ResultCall(\overname{(\nativevalue^* \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
+  \ResultCall(\overname{(\KleeneStar{\nativevalue} \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig} & \cup\\
   \overname{\TDynError}{\DynErrorConfig} & \cup\\
   \overname{\TDiverging}{\DivergingConfig} &
@@ -2209,8 +2209,8 @@ The relation
 \[
   \assignargs(
     (\overname{\envs}{\env}\times\overname{\XGraphs}{\vgone})\aslsep
-    \overname{\Identifier^*}{\vids} \aslsep
-    \overname{(\nativevalue\times\XGraphs)^*} {\actuals}) \;\aslrel\;
+    \overname{\KleeneStar{\Identifier}}{\vids} \aslsep
+    \overname{\KleeneStar{(\nativevalue\times\XGraphs)}} {\actuals}) \;\aslrel\;
               (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
 updates the pair consisting of the environments $\env$ and \executiongraph\ $\vgone$
@@ -2268,7 +2268,7 @@ The helper relation
 \hypertarget{def-matchfuncres}{}
 \[
     \matchfuncres(\TContinuing \cup \TReturning) \;\aslrel\;
-                  \ResultCall(((\Identifier\times\nativevalue)^*\times\XGraphs)\aslsep\envs)
+                  \ResultCall((\KleeneStar{(\Identifier\times\nativevalue)}\times\XGraphs)\aslsep\envs)
 \]
 converts continuing configurations and returning configurations
 into corresponding normal configurations that can be returned by a subprogram evaluation.

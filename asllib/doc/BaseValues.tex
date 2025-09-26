@@ -302,7 +302,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 The function
 \[
     \constraintabsmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto
-    \overname{\Z^*}{\vzs}
+    \overname{\KleeneStar{\Z}}{\vzs}
     \cup \overname{\typeerror}{\TypeErrorVal{\NoBaseValue}}
 \]
 returns a single element list containing the integer closest to $0$ that satisfies the constraint $\vc$ in $\tenv$, if one exists,
@@ -384,7 +384,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \hypertarget{def-listminabs}{}
 The function
 \[
-\listminabs(\overname{\Z^*}{\vl}) \aslto \overname{\Z}{\vz}
+\listminabs(\overname{\KleeneStar{\Z}}{\vl}) \aslto \overname{\Z}{\vz}
 \]
 returns $\vz$ --- the integer closest to $0$ among the list
 of integers in the list $\vl$. The result is biased towards positive integers. That is,

@@ -35,7 +35,7 @@ This chapter defines functions and relations used by the type system.
 \hypertarget{def-checknoduplicates}{}
 The function
 \[
-  \checknoduplicates(\overname{\Identifier^*}{\id_{1..k}}) \aslto \{\True\} \cup \typeerror
+  \checknoduplicates(\overname{\KleeneStar{\Identifier}}{\id_{1..k}}) \aslto \{\True\} \cup \typeerror
 \]
 checks whether a non-empty list of identifiers contains a duplicate identifier. If it does not, the result
 is $\True$ and otherwise the result is a \typingerrorterm{}.
@@ -90,7 +90,7 @@ thus resulting in a \typingerrorterm.
 \hypertarget{def-sort}{}
 The parametric function
 \[
-\sort(\overname{T^*}{\vlone}, \overname{(T\times T)\rightarrow \{-1,0,1\}}{\compare}) \typearrow \overname{T^*}{\vltwo}
+\sort(\overname{\KleeneStar{T}}{\vlone}, \overname{(T\times T)\rightarrow \{-1,0,1\}}{\compare}) \typearrow \overname{\KleeneStar{T}}{\vltwo}
 \]
 sorts a list of elements of type $T$ --- $\vlone$ --- using the comparison function $\compare$,
 resulting in the sorted list $\vltwo$.
@@ -147,7 +147,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \hypertarget{def-findbitfieldopt}{}
 The function
 \[
-  \findbitfieldopt(\overname{\Identifier}{\name} \aslsep \overname{\bitfield^*}{\bitfields})
+  \findbitfieldopt(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\bitfields})
   \aslto \overname{\langle\bitfield\rangle}{\vr}
 \]
 returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
@@ -270,7 +270,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \hypertarget{def-assocopt}{}
 The function
 \[
-  \assocopt(\overname{(\Identifier\times T)^*}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
+  \assocopt(\overname{\KleeneStar{(\Identifier\times T)}}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \langle \overname{T}{\vv} \rangle
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 

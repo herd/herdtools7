@@ -114,7 +114,7 @@ defined for each bitfield.
 \hypertarget{build-bitfields}{}
 The function
 \[
-  \buildbitfields(\overname{\parsenode{\Nbitfields}}{\vparsednode}) \;\aslto\; \overname{\bitfield^*}{\vastnode}
+  \buildbitfields(\overname{\parsenode{\Nbitfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\bitfield}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -170,8 +170,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{def-annotatebitfields}{}
 The function
 \[
-  \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\bitfield^*}{\fields})
-  \aslto (\overname{\bitfield^*}{\newfields} \times \overname{\TSideEffectSet}{\vses})
+  \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\KleeneStar{\bitfield}}{\fields})
+  \aslto (\overname{\KleeneStar{\bitfield}}{\newfields} \times \overname{\TSideEffectSet}{\vses})
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits in the containing
@@ -259,7 +259,7 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 \hypertarget{def-bitfieldgetslices}{}
 The function
 \[
-  \bitfieldgetslices : \overname{\bitfield}{\vbf} \aslto \overname{\slice^*}{\vslices}
+  \bitfieldgetslices : \overname{\bitfield}{\vbf} \aslto \overname{\KleeneStar{\slice}}{\vslices}
 \]
 returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
 
@@ -306,7 +306,7 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
 \hypertarget{def-bitfieldgetnested}{}
 The function
 \[
-  \bitfieldgetnested : \overname{\bitfield}{\vbf} \aslto \overname{\bitfield^*}{\vnested}
+  \bitfieldgetnested : \overname{\bitfield}{\vbf} \aslto \overname{\KleeneStar{\bitfield}}{\vnested}
 \]
 returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
 and an empty list if there are none.
@@ -459,7 +459,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 \hypertarget{def-checkslicesinwidth}{}
 The function
 \[
-  \checkslicesinwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\vwidth} \aslsep \overname{\slice^*}{\vslices})
+  \checkslicesinwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\vwidth} \aslsep \overname{\KleeneStar{\slice}}{\vslices})
   \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
@@ -536,7 +536,7 @@ The function
   \disjointslicestopositions(
     \overname{\staticenvs}{\tenv},
     \overname{\Bool}{\isstatic},
-    \overname{\slice^*}{\vslices}
+    \overname{\KleeneStar{\slice}}{\vslices}
   )
   \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
@@ -737,7 +737,7 @@ The function
 \[
 \checkcommonbitfieldsalign(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\bitfield^*}{\vbitfields} \aslsep
+  \overname{\KleeneStar{\bitfield}}{\vbitfields} \aslsep
   \overname{\N}{\vwidth}
 ) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
@@ -748,7 +748,7 @@ bitvector type of width $\vwidth$ in the \staticenvironmentterm{} $\tenv$.
 
 \hypertarget{def-tabsfield}{}
 We represent \absolutebitfields\ by the type
-$\TAbsField \eqdef (\overname{\Identifier^*}{\name}, \overname{\N^*}{\vslice})$,
+$\TAbsField \eqdef (\overname{\KleeneStar{\Identifier}}{\name}, \overname{\KleeneStar{\N}}{\vslice})$,
 where the component $\name$ is a list of identifiers corresponding to the \absolutename,
 and the component $\vslice$ corresponds to an \absoluteslice\ by listing the indices
 into the containing bitvector type.\footnote{An implementation of the type system may compactly represent the list of indices
@@ -906,7 +906,7 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 The function
 \[
 \selectindicesbyslices(\overname{\KleenePlus{\N}}{\indices}, \overname{\KleenePlus{\N}}{\sliceindices})
-\aslto \overname{\N^*}{\vabsslice}
+\aslto \overname{\KleeneStar{\N}}{\vabsslice}
 \]
 considers the list $\indices$ as a list of indices into a bitvector type (essentially, a slice of it),
 and the list $\sliceindices$ as a list of indices into $\indices$ (a slice of a slice),
@@ -987,7 +987,7 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 \hypertarget{def-slicetoindices}{}
 The function
 \[
-\slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\N^*}{\indices}
+\slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\KleeneStar{\N}}{\indices}
 \]
 returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the \staticenvironmentterm{} $\tenv$.
 
