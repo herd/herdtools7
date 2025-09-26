@@ -48,7 +48,10 @@ module Make(Cfg:Config)(A:Arch_gen.S)
             hence `A.alloc_reg st` will never return `r0`. Given this assumption,
             it is safe to bind `r0` to `loc` (`loc` = `loc0`) here. *)
          let same_loc_match = List.find_opt ( function
-           | (Reg (_,_),Some (A.S loc0)) -> Misc.string_eq loc0 loc
+           | (Reg (_,_),Some (A.S loc0)) ->
+             (* Only when NOT using symbolic register,
+                we unify the register use cross procedures *)
+             not Extra.use_symbolic && Misc.string_eq loc0 loc
            | _ -> false ) init in
          match exact_match,same_loc_match with
          | Some (Reg (_,r),Some _), _ -> r,init,st
