@@ -540,6 +540,13 @@ Required tests:
   $ aslref overloaded-main.asl
   correct main executed
 
+  $ aslref -0 asl0-error-handling-time.asl
+  File asl0-error-handling-time.asl, line 2, characters 8 to 9:
+    if reg[1] == '1' then 62 else 63 +: 1 field,
+          ^
+  ASL Static error: Undefined identifier: 'reg'
+  [1]
+
 Base values
   $ aslref base_values.asl
   File base_values.asl, line 5, characters 2 to 28:
