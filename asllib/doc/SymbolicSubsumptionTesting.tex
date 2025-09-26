@@ -257,7 +257,7 @@ In this example, this is true as the following hold:
 \hypertarget{def-symdomnormalize}{}
 The function
 \[
-\symdomnormalize(\overname{\symdom^+}{\symdoms}) \aslto \overname{\symdom^+}{\newsymdoms}
+\symdomnormalize(\overname{\KleenePlus{\symdom}}{\symdoms}) \aslto \overname{\KleenePlus{\symdom}}{\newsymdoms}
 \]
 transforms the list of symbolic domain $\symdoms$ into an equivalent list of symbolic domains $\newsymdoms$
 (in the sense that they both represent the same set of integers)
@@ -754,7 +754,7 @@ The function
 \approxconstraints(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\intconstraint^+}{\cs}) \aslto\\
+  \overname{\KleenePlus{\intconstraint}}{\cs}) \aslto\\
   \overname{\powfin{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \end{array}
 \]
@@ -1322,13 +1322,13 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^+}{\vsone} \aslsep\\
-  \overname{\intconstraint^+}{\vstwo}
+  \overname{\KleenePlus{\intconstraint}}{\vsone} \aslsep\\
+  \overname{\KleenePlus{\intconstraint}}{\vstwo}
   \end{array}
 \right)
 \aslto \left(
   \begin{array}{c}
-  \overname{\intconstraint^+}{\vs} \aslsep\\
+  \overname{\KleenePlus{\intconstraint}}{\vs} \aslsep\\
   \overname{\precisionlossindicator}{\plf}
   \end{array}
   \right)
@@ -1885,7 +1885,7 @@ inferred for \texttt{z} is\\
 \hypertarget{def-constraintpow}{}
 The function
 \[
-\constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\intconstraint^+}{\newcs}
+\constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\KleenePlus{\intconstraint}}{\newcs}
 \]
 yields a list of range constraints $\newcs$ that are needed to calculate the result of
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.

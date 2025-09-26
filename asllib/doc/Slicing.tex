@@ -550,7 +550,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \hypertarget{build-slices}{}
 The function
 \[
-  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\slice^+}{\vastnode}
+  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\KleenePlus{\slice}}{\vastnode}
 \]
 transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
 

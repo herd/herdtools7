@@ -1789,7 +1789,7 @@ The function
     \overname{\binop}{\op} \aslsep
     \overname{\intconstraint^*}{\cs})
 \aslto \\
-\overname{\intconstraint^+}{\newcs}
+\overname{\KleenePlus{\intconstraint}}{\newcs}
 \cup \{\CannotUnderapproximate, \CannotOverapproximate\}
 \end{array}
 \]
@@ -2717,7 +2717,7 @@ not included in \verb|FlaggedPacket|.
 \hypertarget{def-membfs}{}
 The function
 \[
-  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^+}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
+  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleenePlus{\bitfield}}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
   \aslto \overname{\Bool}{\vb}
 \]
 checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.

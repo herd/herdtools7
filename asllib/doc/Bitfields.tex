@@ -817,7 +817,7 @@ The function
 \[
 \bitfieldstoabsolute(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\bitfield^+}{\vbitfields} \aslsep
+  \overname{\KleenePlus{\bitfield}}{\vbitfields} \aslsep
   \overname{\TAbsField}{\vabsoluteparent}
 ) \aslto \overname{\pow{\TAbsField}}{\vabsbitfields}
 \]
@@ -905,7 +905,7 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 \hypertarget{def-selectindicesbyslices}{}
 The function
 \[
-\selectindicesbyslices(\overname{\N^+}{\indices}, \overname{\N^+}{\sliceindices})
+\selectindicesbyslices(\overname{\KleenePlus{\N}}{\indices}, \overname{\KleenePlus{\N}}{\sliceindices})
 \aslto \overname{\N^*}{\vabsslice}
 \]
 considers the list $\indices$ as a list of indices into a bitvector type (essentially, a slice of it),

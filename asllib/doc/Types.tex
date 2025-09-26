@@ -1248,7 +1248,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 The function
 \[
 \getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\langle (\overname{\Identifier}{\vx}, \overname{\Identifier^+}{\vlabels})\rangle
+\langle (\overname{\Identifier}{\vx}, \overname{\KleenePlus{\Identifier}}{\vlabels})\rangle
 \]
 tests whether the expression $\ve$ represents a variable of an \enumerationtypeterm{}.
 If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
