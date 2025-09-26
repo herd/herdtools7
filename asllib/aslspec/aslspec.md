@@ -150,6 +150,10 @@ For example:
 
 Type renders do not support any attributes.
 
+# A note on attributes
+A string with an unspecified attribute name, for example, `"description"` is shorthand
+for `prose_description = "description"`.
+
 # Using definitions in LaTeX
 Each kind of definition produces a definition of a LaTeX macro:
 - A type `T` produces a macro `\RenderType{T}`

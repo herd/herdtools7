@@ -22,17 +22,20 @@ type type_term =
   | Option of type_term
       (** Either the empty set of a set containing a single value of the given
           type. *)
-  | Tuple of opt_named_type_term list
-      (** A set containing all tuples formed by the given components. A tuple
-          containing a single term is a special case - its domain is the domain
-          of that term. *)
-  | LabelledTuple of { label : string; components : opt_named_type_term list }
-      (** A set containing all labelled tuples formed by the given components.
-      *)
-  | Record of named_type_term list
-      (** A set containing all records formed by the given fields. *)
-  | LabelledRecord of { label : string; fields : named_type_term list }
-      (** A set containing all labelled records formed by the given fields. *)
+  | LabelledTuple of {
+      label_opt : string option;
+      components : opt_named_type_term list;
+    }
+      (** A set containing all optionally-labelled tuples formed by the given
+          components. An unlabelled tuple containing a single term is a special
+          case - its domain is the domain of that term; this serves to reference
+          types defined elsewhere. *)
+  | LabelledRecord of {
+      label_opt : string option;
+      fields : named_type_term list;
+    }
+      (** A set containing all optionally-labelled records formed by the given
+          fields. *)
   | List of { maybe_empty : bool; member_type : type_term }
       (** A set containing all sequences of the given member type. If
           [maybe_empty] is true, the list may also be empty. *)
@@ -48,18 +51,47 @@ and named_type_term = string * type_term
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
 
-(** Specifies how to layout a term. *)
+(** [make_tuple components] Constructs an unlabelled tuple for the tuple
+    components [components]. *)
+let make_tuple components = LabelledTuple { label_opt = None; components }
+
+(** [make_labelled_tuple label components] Constructs a tuple labelled [label]
+    and tuple components [components]. *)
+let make_labelled_tuple label components =
+  LabelledTuple { label_opt = Some label; components }
+
+(** [make_record fields] Constructs an unlabelled record with fields [fields].
+*)
+let make_record fields = LabelledRecord { label_opt = None; fields }
+
+(** [make_labelled_record label fields] Constructs a record labelled [label] and
+    fields [fields]. *)
+let make_labelled_record label fields =
+  LabelledRecord { label_opt = Some label; fields }
+
+(** Specifies how to layout a compound term. *)
 type layout =
   | Unspecified
       (** No specific layout, appropriate for atomic terms and terms with
           singleton lists. *)
-  | Horizontal of layout list  (** Layout terms horizontally. *)
-  | Vertical of layout list  (** Layout terms vertically. *)
+  | Horizontal of layout list
+      (** Specifies a horizontal layout for terms where the layout for each term
+          is specified individually. *)
+  | Vertical of layout list
+      (** Specifies a vertical layout for terms where the layout for each term
+          is specified individually. *)
 
 (** A module for totally ordered attribute keys. *)
 module AttributeKey = struct
-  type t = Prose_Description | Prose_Application | Math_Macro | Math_Layout
+  type t =
+    | Prose_Description  (** A description of the element in prose. *)
+    | Prose_Application
+        (** A description of the element in prose describing its application in
+            an inference rule premise. *)
+    | Math_Macro  (** A LaTeX macro for the element. *)
+    | Math_Layout  (** The layout of the element in a mathematical context. *)
 
+  (* A total ordering on attribute keys. *)
   let compare a b =
     let key_to_int = function
       | Prose_Description -> 0
@@ -71,6 +103,8 @@ module AttributeKey = struct
     let b_int = key_to_int b in
     Stdlib.compare a_int b_int
 
+  (** Converts an attribute key with the same string as the corresponding token.
+  *)
   let to_str = function
     | Prose_Description -> "prose_description"
     | Prose_Application -> "prose_application"
@@ -78,17 +112,19 @@ module AttributeKey = struct
     | Math_Layout -> "math_layout"
 end
 
+(** A value associated with an attribute key. *)
 type attribute = StringAttribute of string | MathLayoutAttribute of layout
 
-(** A module for key-value attributes. *)
+(** A module for associating attributes with attribute keys. *)
 module Attributes = struct
   include Map.Make (AttributeKey)
 
-  (* Shadow [Map.t] with a string-to-string map type. *)
   type 'a map = 'a t
+  (** Shadows [Map.t] with a string-to-string map type. *)
+
   type t = attribute map
 
-  (** Shadow [of_list] by raising a [SpecError] exception on pairs containing
+  (** Shadows [of_list] by raising a [SpecError] exception on pairs containing
       the same key. *)
   let of_list pairs =
     List.fold_left
@@ -116,11 +152,12 @@ end
 (** A datatype for type terms used in the definition of a type, with associated
     attributes. *)
 module TypeVariant : sig
-  include HasAttributes
+  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
 
   val make : type_kind -> type_term -> (AttributeKey.t * attribute) list -> t
-  val kind : t -> type_kind
-  val term : t -> type_term
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
   val math_layout : t -> layout option
 end = struct
   type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
@@ -128,10 +165,9 @@ end = struct
   let make type_kind term attribute_pairs =
     { type_kind; term; att = Attributes.of_list attribute_pairs }
 
-  let kind self = self.type_kind
-  let term self = self.term
-
   open Attributes
+
+  let attributes_to_list self = bindings self.att
 
   let prose_description self =
     match Attributes.find_opt AttributeKey.Prose_Description self.att with
@@ -147,9 +183,6 @@ end = struct
     match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
-
-  let attributes_to_list self = bindings self.att
-  let attributes self = self.att
 end
 
 (** A datatype for a type definition. *)
@@ -180,8 +213,7 @@ end = struct
     (* The [type_kind] of the variants is the [type_kind] given above. *)
     let variants_with_parent_type_kind =
       List.map
-        (fun variant ->
-          let term = TypeVariant.term variant in
+        (fun ({ TypeVariant.term } as variant) ->
           let attribute_pairs = TypeVariant.attributes_to_list variant in
           TypeVariant.make type_kind term attribute_pairs)
         variants

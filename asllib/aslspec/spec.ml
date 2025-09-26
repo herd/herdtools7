@@ -5,10 +5,10 @@ open AST
 module StringMap = Map.Make (String)
 
 (** Returns the label of a type variant, if it consists of a label. *)
-let variant_to_label_opt variant =
-  match TypeVariant.term variant with
-  | Label label | LabelledTuple { label } | LabelledRecord { label } ->
-      Some label
+let variant_to_label_opt { TypeVariant.term } =
+  match term with
+  | Label label -> Some label
+  | LabelledTuple { label_opt } | LabelledRecord { label_opt } -> label_opt
   | _ -> None
 
 (** Wraps AST nodes that define identifiers that may appear in type terms and
@@ -42,12 +42,10 @@ module Layout = struct
     let opt_named_output_terms =
       List.map (fun term -> (None, term)) (Relation.output def)
     in
-    Tuple
+    make_tuple
       [
-        ( None,
-          LabelledTuple
-            { label = Relation.name def; components = Relation.input def } );
-        (None, Tuple opt_named_output_terms);
+        (None, make_labelled_tuple (Relation.name def) (Relation.input def));
+        (None, make_tuple opt_named_output_terms);
       ]
 
   (** Creates a horizontal layout for [term]. *)
@@ -56,12 +54,12 @@ module Layout = struct
     | Label _ -> Unspecified
     | Powerset { term = t } | Option t | List { member_type = t; _ } ->
         horizontal_for_type_term t
-    | Tuple components | LabelledTuple { components; _ } ->
+    | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
             (List.map (fun (_, t) -> horizontal_for_type_term t) components)
         else Unspecified
-    | Record fields | LabelledRecord { fields; _ } ->
+    | LabelledRecord { fields; _ } ->
         if List.length fields > 1 then
           Horizontal
             (List.map (fun (_, t) -> horizontal_for_type_term t) fields)
@@ -79,12 +77,12 @@ module Layout = struct
     | Label _ -> Unspecified
     | Powerset { term = t } | Option t | List { member_type = t; _ } ->
         default_for_type_term t
-    | Tuple components | LabelledTuple { components; _ } ->
+    | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
             (List.map (fun (_, t) -> default_for_type_term t) components)
         else Unspecified
-    | Record fields | LabelledRecord { fields; _ } ->
+    | LabelledRecord { fields; _ } ->
         if List.length fields > 1 then
           Vertical (List.map (fun (_, t) -> default_for_type_term t) fields)
         else Unspecified
@@ -114,15 +112,15 @@ module Layout = struct
         match Relation.math_layout def with
         | Some layout -> layout
         | None -> default_for_type_term (relation_to_tuple def))
-    | Node_TypeVariant def -> (
+    | Node_TypeVariant ({ TypeVariant.term } as def) -> (
         match TypeVariant.math_layout def with
         | Some layout -> layout
-        | None -> default_for_type_term (TypeVariant.term def))
+        | None -> default_for_type_term term)
 end
 
 let definition_node_attributes = function
   | Node_Type def -> Type.attributes def
-  | Node_TypeVariant def -> TypeVariant.attributes def
+  | Node_TypeVariant { TypeVariant.att } -> att
   | Node_Relation def -> Relation.attributes def
   | Node_Constant def -> Constant.attributes def
 
@@ -146,11 +144,16 @@ let list_definition_nodes ast =
              but labelled types nested further in are considered as type references.
           *)
           List.fold_left
-            (fun acc_nodes variant ->
-              match TypeVariant.term variant with
-              | Label _ | LabelledTuple _ | LabelledRecord _ ->
+            (fun acc_nodes ({ TypeVariant.term } as variant) ->
+              match term with
+              | Label _
+              | LabelledTuple { label_opt = Some _ }
+              | LabelledRecord { label_opt = Some _ } ->
                   Node_TypeVariant variant :: acc_nodes
-              | _ -> acc_nodes)
+              | LabelledTuple { label_opt = None }
+              | LabelledRecord { label_opt = None }
+              | _ ->
+                  acc_nodes)
             acc_nodes (Type.variants def)
       | Elem_Constant def -> Node_Constant def :: acc_nodes
       (* Although a render defines an identifier, it does not carry semantic
@@ -158,9 +161,9 @@ let list_definition_nodes ast =
       | Elem_Render _ -> acc_nodes)
     [] ast
 
-(** Generates a map from identifiers to the nodes where they are defined. If two
+(** Creates a map from identifiers to the nodes where they are defined. If two
     nodes with the same identifier exist, a [SpecError] is raised. *)
-let gen_id_to_definition_node definition_nodes =
+let make_id_to_definition_node definition_nodes =
   List.fold_left
     (fun acc_map node ->
       let name = definition_node_name node in
@@ -201,8 +204,9 @@ module Check = struct
       in
       raise (SpecError msg)
 
-  let check_defining_names defined_ids =
-    List.iter check_definition_name defined_ids
+  (** [check_defining_names ids] ensures that all identifiers in [ids] do not
+      contain digits. *)
+  let check_defining_names ids = List.iter check_definition_name ids
 
   let check_mandatory_attributes_for_definition_node defining_node =
     let attributes = definition_node_attributes defining_node in
@@ -226,7 +230,7 @@ module Check = struct
 
   (** Checks, for each definition node, that all mandatory attributes are
       present. The parser ensures only allowed attributes are added. *)
-  let check_mandatory_allowed_attributes definition_nodes =
+  let check_mandatory_attributes definition_nodes =
     List.iter check_mandatory_attributes_for_definition_node definition_nodes
 
   let rec check_layout term layout =
@@ -242,8 +246,6 @@ module Check = struct
     | Label _, _ -> raise (SpecError msg)
     | Powerset { term }, _ | Option term, _ -> check_layout term layout
     | List { member_type }, _ -> check_layout member_type layout
-    | Tuple components, Horizontal cells
-    | Tuple components, Vertical cells
     | LabelledTuple { components }, Horizontal cells
     | LabelledTuple { components }, Vertical cells ->
         if List.length components <> List.length cells then
@@ -252,8 +254,6 @@ module Check = struct
           List.iter2
             (fun (_, term) cell -> check_layout term cell)
             components cells
-    | Record fields, Horizontal cells
-    | Record fields, Vertical cells
     | LabelledRecord { fields }, Horizontal cells
     | LabelledRecord { fields }, Vertical cells ->
         if List.length fields <> List.length cells then raise (SpecError msg)
@@ -275,8 +275,8 @@ module Check = struct
         check_layout (Label (Type.name def)) (math_layout_for_node node)
     | Node_Constant def ->
         check_layout (Label (Constant.name def)) (math_layout_for_node node)
-    | Node_TypeVariant def ->
-        check_layout (TypeVariant.term def) (math_layout_for_node node)
+    | Node_TypeVariant { TypeVariant.term } ->
+        check_layout term (math_layout_for_node node)
     | Node_Relation def ->
         check_layout (relation_to_tuple def) (math_layout_for_node node)
 
@@ -288,15 +288,19 @@ module Check = struct
     | Label id -> [ id ]
     | Powerset { term } -> referenced_ids term
     | Option term -> referenced_ids term
-    | Tuple components ->
-        List.map snd components |> Utils.list_concat_map referenced_ids
-    | LabelledTuple { label; components } ->
-        label
-        :: (List.map snd components |> Utils.list_concat_map referenced_ids)
-    | Record fields ->
-        List.map snd fields |> Utils.list_concat_map referenced_ids
-    | LabelledRecord { label; fields } ->
-        label :: (List.map snd fields |> Utils.list_concat_map referenced_ids)
+    | LabelledTuple { label_opt; components } -> (
+        let component_ids =
+          List.map snd components |> Utils.list_concat_map referenced_ids
+        in
+        match label_opt with
+        | None -> component_ids
+        | Some label -> label :: component_ids)
+    | LabelledRecord { label_opt; fields } -> (
+        match label_opt with
+        | None -> List.map snd fields |> Utils.list_concat_map referenced_ids
+        | Some label ->
+            label
+            :: (List.map snd fields |> Utils.list_concat_map referenced_ids))
     | List { member_type } -> referenced_ids member_type
     | ConstantsSet constant_names -> constant_names
     | Function { from_type; to_type } ->
@@ -309,7 +313,8 @@ module Check = struct
       | Elem_Constant _ -> []
       | Elem_Type def ->
           let variants = Type.variants def in
-          referenced_ids_for_list (List.map TypeVariant.term variants)
+          referenced_ids_for_list
+            (List.map (fun { TypeVariant.term } -> term) variants)
       | Elem_Relation def ->
           let input_terms = List.map snd (Relation.input def) in
           referenced_ids_for_list (input_terms @ Relation.output def)
@@ -328,6 +333,8 @@ module Check = struct
           raise (SpecError msg))
       ids_referenced_by_elem
 
+  (** [check_no_undefined_ids elements id_to_defining_node] checks that all
+      identifiers referenced in [elements] are keys in [id_to_defining_node]. *)
   let check_no_undefined_ids elements id_to_defining_node =
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
 
@@ -370,9 +377,9 @@ let from_ast ast =
   let definition_nodes = list_definition_nodes ast in
   let defined_ids = List.map definition_node_name definition_nodes in
   let () = Check.check_defining_names defined_ids in
-  let id_to_defining_node = gen_id_to_definition_node definition_nodes in
+  let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
-  let () = Check.check_mandatory_allowed_attributes definition_nodes in
+  let () = Check.check_mandatory_attributes definition_nodes in
   let () = Check.check_math_layout definition_nodes in
   let () =
     Check.check_only_top_level_types_in_relations id_to_defining_node ast
@@ -380,6 +387,9 @@ let from_ast ast =
   let defined_ids = List.rev defined_ids in
   { ast; id_to_defining_node; defined_ids }
 
+(** [defining_node_for_id self id] returns the defining node for the element
+    with identifier [id] that is given in the specification. If no such element
+    exists, a [SpecError] is raised. *)
 let defining_node_for_id self id =
   try StringMap.find id self.id_to_defining_node
   with Not_found ->

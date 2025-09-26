@@ -19,7 +19,7 @@ open AST.AttributeKey
 %token LIST0
 %token LIST1
 %token MATH_MACRO
-%token MATH_SHAPE
+%token MATH_LAYOUT
 %token OPTION
 %token POWERSET
 %token POWERSET_FINITE
@@ -135,17 +135,19 @@ let type_attributes ==
 
 let type_attribute :=
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
+    | template=STRING; { (Prose_Description, StringAttribute template) }
     | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, StringAttribute macro) }
-    | MATH_SHAPE; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
 
 let relation_attribute :=
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
+    | template=STRING; { (Prose_Description, StringAttribute template) }
     | PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
     | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, StringAttribute macro) }
-    | MATH_SHAPE; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let type_variants_with_attributes :=
     | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
@@ -168,12 +170,12 @@ let type_term :=
     | POWERSET; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=false} }
     | POWERSET_FINITE; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=true} }
     | OPTION; LPAR; member_type=type_term; RPAR; { Option member_type }
-    | LPAR; components=tclist1(opt_named_type_term); RPAR; { Tuple components }
-    | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label; components} }
+    | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
+    | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = Some label; components} }
     | LIST0; LPAR; member_type=type_term; RPAR; { List { maybe_empty=true; member_type} }
     | LIST1; LPAR; member_type=type_term; RPAR; { List { maybe_empty=false; member_type}}
-    | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { Record fields }
-    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET; { LabelledRecord {label; fields} }
+    | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_record fields }
+    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_labelled_record label fields }
     | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
     | FUN; from_type=type_term; ARROW; to_type=type_term; { Function {from_type; to_type; total = true}}
     | PARTIAL; from_type=type_term; ARROW; to_type=type_term; { Function {from_type; to_type; total = false}}

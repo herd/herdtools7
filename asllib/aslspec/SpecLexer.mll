@@ -37,7 +37,7 @@ rule token = parse
     | "list0"             { LIST0 }
     | "list1"             { LIST1 }
     | "math_macro"        { MATH_MACRO }
-    | "math_layout"       { MATH_SHAPE }
+    | "math_layout"       { MATH_LAYOUT }
     | "option"            { OPTION }
     | "fun"               { FUN }
     | "partial"           { PARTIAL }

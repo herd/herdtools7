@@ -9,6 +9,7 @@ open Spec
 (** Returns the math macro given for the element defined by [id], unless none is
     given in which case it generates a math macro name and returns it. *)
 let get_or_gen_math_macro spec id =
+  assert (not (String.equal id ""));
   let node = Spec.defining_node_for_id spec id in
   let math_macro_opt = Spec.math_macro_opt_for_node node in
   match math_macro_opt with
@@ -31,8 +32,8 @@ let hyperlink_target_for_id spec id =
         match Type.kind def with
         | TypeKind_Generic -> "type"
         | TypeKind_AST -> "ast")
-    | Node_TypeVariant def -> (
-        match TypeVariant.kind def with
+    | Node_TypeVariant { TypeVariant.type_kind } -> (
+        match type_kind with
         | TypeKind_Generic -> "type"
         | TypeKind_AST -> "ast")
     | Node_Constant _ -> "constant"
@@ -47,10 +48,8 @@ let rec vars_of_type_term term =
     | Label var -> [ var ]
     | Powerset { term } -> vars_of_type_term term
     | Option sub_term -> vars_of_type_term sub_term
-    | Tuple components | LabelledTuple { components } ->
-        vars_of_opt_named_type_terms components
-    | Record fields | LabelledRecord { fields } ->
-        vars_of_named_type_terms fields
+    | LabelledTuple { components } -> vars_of_opt_named_type_terms components
+    | LabelledRecord { fields } -> vars_of_named_type_terms fields
     | List { member_type } -> vars_of_type_term member_type
     | ConstantsSet _ -> []
     | Function { from_type; to_type } ->
@@ -168,26 +167,23 @@ let rec pp_type_term spec fmt (type_term, layout) =
       in
       fprintf fmt {|%s{%a}|} optional_macro (pp_type_term spec)
         (sub_term, layout)
-  | Tuple components -> (
-      match components with
-      | [] -> assert false
-      | [ term ] -> fprintf fmt "%a" (pp_opt_named_type_term spec) (term, layout)
-      | _ :: _ ->
-          fprintf fmt "%a"
-            (pp_parenthesized Parens layout_contains_vertical
-               (pp_opt_named_type_terms spec))
-            (components, layout))
-  | LabelledTuple { label; components } ->
-      fprintf fmt "%s%a"
-        (get_or_gen_math_macro spec label)
+  | LabelledTuple { label_opt; components } ->
+      let label =
+        match label_opt with
+        | Some label -> get_or_gen_math_macro spec label
+        | None -> ""
+      in
+      fprintf fmt "%s%a" label
         (pp_parenthesized Parens layout_contains_vertical
            (pp_opt_named_type_terms spec))
         (components, layout)
-  | Record fields -> pp_record_fields spec fmt (fields, layout)
-  | LabelledRecord { label; fields } ->
-      fprintf fmt {|%s%a|}
-        (get_or_gen_math_macro spec label)
-        (pp_record_fields spec) (fields, layout)
+  | LabelledRecord { label_opt; fields } ->
+      let label =
+        match label_opt with
+        | Some label -> get_or_gen_math_macro spec label
+        | None -> ""
+      in
+      fprintf fmt {|%s%a|} label (pp_record_fields spec) (fields, layout)
   | List { maybe_empty; member_type } ->
       let iteration_macro =
         if maybe_empty then {|\KleeneStar|} else {|\KleenePlus|}
@@ -317,7 +313,8 @@ let pp_type_term_union spec fmt (terms, layout) =
 let pp_relation_math spec layout fmt def =
   (* Reuse the rendering for type terms. *)
   let input_as_labelled_tuple =
-    LabelledTuple { label = Relation.name def; components = Relation.input def }
+    LabelledTuple
+      { label_opt = Some (Relation.name def); components = Relation.input def }
   in
   (* If a layout is unspecified, expand one level to a 2-element horizontal layout. *)
   let layout = Layout.horizontal_for_list layout [ (); () ] in
@@ -360,13 +357,12 @@ The relation
     (pp_relation_math spec layout)
     def pp_print_text instantiated_prose_description
 
-let vars_of_type_variant variant = vars_of_type_term (TypeVariant.term variant)
+let vars_of_type_variant { TypeVariant.term } = vars_of_type_term term
 
 let vars_of_type def =
   List.map vars_of_type_variant (Type.variants def) |> List.concat
 
-let pp_variant spec fmt variant =
-  let term = TypeVariant.term variant in
+let pp_variant spec fmt ({ TypeVariant.term } as variant) =
   let layout =
     match TypeVariant.math_layout variant with
     | Some layout -> layout
@@ -374,6 +370,10 @@ let pp_variant spec fmt variant =
   in
   fprintf fmt "%a" (pp_type_term spec) (term, layout)
 
+(** [pp_define_type_wrapper name fmt pp_value value] renders a wrapper around
+    the rendering of a type definition for the type. The wrapper uses the LaTeX
+    macro [\BeginDefineType{name}{...}] to define the type [name] with the
+    content rendered by [pp_value fmt value]. *)
 let pp_define_type_wrapper name fmt pp_value value =
   fprintf fmt {|\BeginDefineType{%s}{@.|} name;
   pp_value fmt value;
@@ -607,9 +607,7 @@ let pp_id_macro spec fmt name =
     match node with
     | Node_Relation _ -> Text.TextIT
     | Node_Type _ -> Text.TextSF
-    | Node_TypeVariant def ->
-        let kind = TypeVariant.kind def in
-        font_for_type_kind kind
+    | Node_TypeVariant { TypeVariant.type_kind } -> font_for_type_kind type_kind
     | Node_Constant _ -> Text.TextSF
   in
   if Option.is_some (Spec.math_macro_opt_for_node node) then ()

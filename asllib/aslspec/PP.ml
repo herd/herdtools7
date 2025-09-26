@@ -44,11 +44,12 @@ let rec pp_type_term fmt = function
       fprintf fmt "%s(%a)" (tok_str powerset_token) pp_type_term term
   | Option elt_term ->
       fprintf fmt "%s(%a)" (tok_str OPTION) pp_type_term elt_term
-  | Tuple components -> fprintf fmt "(%a)" pp_opt_named_type_terms components
-  | LabelledTuple { label; components } ->
-      fprintf fmt "%s(%a)" label pp_opt_named_type_terms components
-  | Record fields -> fprintf fmt "[%a]" pp_named_type_terms fields
-  | LabelledRecord { label; fields } ->
+  | LabelledTuple { label_opt; components } ->
+      fprintf fmt "%s(%a)"
+        (Option.value label_opt ~default:"")
+        pp_opt_named_type_terms components
+  | LabelledRecord { label_opt; fields } ->
+      let label = Option.value label_opt ~default:"" in
       fprintf fmt "%s[%a]" label pp_named_type_terms fields
   | List { maybe_empty; member_type } ->
       let list_label = if maybe_empty then tok_str LIST0 else tok_str LIST1 in
@@ -76,9 +77,8 @@ and pp_named_type_terms fmt named_terms =
 and pp_opt_named_type_terms fmt opt_named_terms =
   (pp_sep_list ~sep:", " pp_opt_named_type_term) fmt opt_named_terms
 
-let pp_type_term_with_attributes fmt variant =
-  let module TV = TypeVariant in
-  fprintf fmt "%a@.%a" pp_type_term (TV.term variant) pp_attribute_key_values
+let pp_type_term_with_attributes fmt ({ TypeVariant.term } as variant) =
+  fprintf fmt "%a@.%a" pp_type_term term pp_attribute_key_values
     (TypeVariant.attributes_to_list variant)
 
 let pp_variants_with_attributes fmt variants =
