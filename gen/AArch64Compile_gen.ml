@@ -208,7 +208,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let movi_reg r1 i = I_MOVI_V (r1,i,S_NOEXT)
 
     module Extra = struct
-      let use_symbolic = false
       type reg = A64.reg
       type instruction = A64.pseudo
 

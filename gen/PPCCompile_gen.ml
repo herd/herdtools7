@@ -155,7 +155,6 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
 
     module Extra = struct
-      let use_symbolic = false
       type reg = PPC.reg
       type instruction = PPC.pseudo
       let mov r v = PPC.Instruction (PPC.Pli (r,v))

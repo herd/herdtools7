@@ -109,7 +109,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     and sc mo r1 r2 r3 = AV.StoreConditional (wloc,mo,r1,r2,r3)
 
     module Extra = struct
-      let use_symbolic = false
       type reg = AV.reg
       type instruction = AV.pseudo
 

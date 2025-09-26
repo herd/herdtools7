@@ -23,7 +23,6 @@ end
 
 
 module type Extra = sig
-  val use_symbolic : bool
   type reg
   type instruction
   val mov : reg -> int -> instruction
@@ -48,7 +47,8 @@ module Make(Cfg:Config)(A:Arch_gen.S)
             hence `A.alloc_reg st` will never return `r0`. Given this assumption,
             it is safe to bind `r0` to `loc` (`loc` = `loc0`) here. *)
          let same_loc_match = List.find_opt ( function
-           | (Reg (_,_),Some (A.S loc0)) -> Misc.string_eq loc0 loc
+           | (Reg (_,_),Some (A.S loc0)) ->
+             Misc.string_eq loc0 loc
            | _ -> false ) init in
          match exact_match,same_loc_match with
          | Some (Reg (_,r),Some _), _ -> r,init,st
@@ -56,10 +56,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
            r,(Reg (p,r),Some (A.S loc))::init,st
          | None, None ->
            (* no previous register assignment, so add new *)
-           let r,st =
-             if Extra.use_symbolic then
-               A.symb_reg (Printf.sprintf "%s%i" loc p),st
-             else A.alloc_reg st in
+           let r,st = A.alloc_reg st in
            r,(Reg (p,r),Some (A.S loc))::init,st
          | _,_ -> Warn.user_error "Unexpected error in `next_init`."
 

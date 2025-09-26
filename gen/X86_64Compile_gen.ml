@@ -102,7 +102,6 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       I_EFF (I_INC,size_to_inst_size sz,Effaddr_rm64 (Rm64_reg r))
 
     module Extra = struct
-      let use_symbolic = false
       type reg = X86_64.reg
       type instruction = X86_64.pseudo
 

@@ -24,7 +24,6 @@ module type Config = sig
 end
 
 module type Extra = sig
-  val use_symbolic : bool
   type reg
   type instruction
   val mov : reg -> int -> instruction
