@@ -404,7 +404,7 @@ let max_set = IntSet.max_elt
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
-  let check_writes env_wide atoms =
+  let check_writes env_wide atoms proc init cos =
 
     let call_build_observers p i x vs =
       if StringMap.mem x env_wide then
@@ -456,8 +456,7 @@ let max_set = IntSet.max_elt
               match vs with
               | [] -> i,[],[]
               | [[(v,_)]] -> i,[],add_look_loc x v []
-              | [[(v1,_);(v2,_)]] ->
-                  let v = if O.same_loc then v1 else v2 in
+              | [[(_,_);(v,_)]] ->
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept|Three|Four|Infinity
@@ -468,8 +467,7 @@ let max_set = IntSet.max_elt
                   end
               | _ ->
                   let vs_flat = List.flatten vs in
-                  let v,_ = if O.same_loc then List.hd vs_flat
-                            else Misc.last vs_flat in
+                  let v,_ = Misc.last vs_flat in
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Three ->
@@ -494,7 +492,7 @@ let max_set = IntSet.max_elt
           let i,cs,fs =
             check_rec (p+List.length c) i xvs in
           i,c@cs,f@fs in
-    check_rec
+    check_rec proc init cos
 
   let compile_store st p init n =
     let ro,init,c,st = call_emit_access st p init n in
@@ -664,7 +662,7 @@ let max_set = IntSet.max_elt
     let env_pair =
       if StringMap.is_empty env_wide then StringSet.empty
       else C.get_pair n in
-    let splitted =  C.split_procs n in
+    let splitted = C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
@@ -786,38 +784,7 @@ let max_set = IntSet.max_elt
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
             if O.variant Variant_gen.NoFault then
               F.FaultSet.empty,F.FaultSet.empty
-            else if do_memtag then
-              let tagchange =
-                (* Get all tag writes. *)
-                List.fold_left
-                  (fun tags n ->
-                     let evt = n.C.evt in
-                     match evt.C.dir,evt.C.loc,evt.C.bank with
-                     | Some W,Data x,Tag -> StringSet.add x tags
-                     | _ -> tags)
-                  StringSet.empty ns in
-              let neg_flts = List.fold_left
-                (fun flts n ->
-                   match n.C.evt.C.loc,n.C.evt.C.bank with
-                   | Data x,Ord when StringSet.mem x tagchange ->
-                     let proc = n.C.evt.C.proc in
-                     let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                     F.FaultSet.add flt flts
-                   | _ -> flts) F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
-            else if do_morello then
-              let neg_flts = List.fold_left
-               (fun flts n ->
-                  let evt = n.C.evt in
-                  let proc = n.C.evt.C.proc in
-                  match n.C.prev.C.edge.edge,evt.C.loc,evt.C.bank with
-                  | Dp (dp,_,_),Data x,(CapaTag|CapaSeal) when A.is_addr dp ->
-                    let flt = ((proc, Label.Set.empty), Some (A.Loc x), None, None) in
-                    F.FaultSet.add flt flts
-                  | _ -> flts)
-               F.FaultSet.empty ns in
-               F.FaultSet.empty,neg_flts
-           else if do_kvm then
+           else if do_memtag || do_kvm || do_morello then
              List.fold_left
                (fun (pos_flts,neg_flts) n ->
                   let e = n.C.evt in
@@ -850,7 +817,7 @@ let max_set = IntSet.max_elt
               F.run evts m
           | Cycle -> F.check f
           | Observe -> F.observe f in
-        let i = if do_kvm then A.complete_init O.hexa initvals i else i in
+        let i = A.complete_init O.hexa initvals i in
         (i,c,fc flts,env),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
