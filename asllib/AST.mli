@@ -329,7 +329,7 @@ type lexpr_desc =
 
 and lexpr = lexpr_desc annotated
 
-type local_decl_keyword = LDK_Var | LDK_Constant | LDK_Let
+type local_decl_keyword = LDK_Var | LDK_Let
 
 (** A left-hand side of a declaration statement. In the following example of a
     declaration statement, [(2, 3, 4): (integer, integer, integer {0..32})] is
