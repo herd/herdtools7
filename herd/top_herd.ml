@@ -379,7 +379,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let run start_time test =
 
       let { MC.event_structures=rfms; MC.overwritable_labels=owls; },test =
-        MC.glommed_event_structures test in
+        MC.glommed_event_structures ~is_pgm:true test in
 
       let cstr = T.find_our_constraint test in
 

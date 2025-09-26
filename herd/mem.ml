@@ -53,8 +53,8 @@ module type S = sig
        overwritable_labels : Label.Set.t ;
      }
 
-(** [glommed_event_structures t] performs "instruction semantics".
- *  Argument [t] is a test.
+(** [glommed_event_structures is_pgm t] performs "instruction semantics".
+ *  Argument [is_pgm] is a boolean, argument [t] is a test.
  *  The function returns a pair whose first component is a record.
  *
  *  It includes a set (list) of "abstract"  event structures. In such
@@ -70,9 +70,13 @@ module type S = sig
  *  `-variant self`, initial values of overwitable code locations
  *  are added.
  *
- *  This modified test *must* be used in the following. *)
-
-  val glommed_event_structures : S.test -> result * S.test
+ *  This modified test *must* be used in the following.
+ *
+ * Argument [is_pgm] is [true]  when the test [t] represents a
+ * complete test and [false] otherwise, typically an AArch64 instruction
+ * expressed in ASL.
+ *)
+  val glommed_event_structures : is_pgm:bool -> S.test -> result * S.test
 
 
 
@@ -139,6 +143,13 @@ end
 
 open Printf
 
+let end_profile t0 msg : unit =
+  let t1 = Sys.time () in
+  if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
+  then
+    Printf.eprintf "mem took %fs to evaluate %s.\n%!" (t1 -. t0)
+      msg
+
 module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
   struct
     module S = S
@@ -169,6 +180,18 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       match C.unroll with
       | None -> Opts.unroll_default A.arch
       | Some u -> u
+
+  let _profile = C.debug.Debug_herd.profile_asl
+  let start_profile = if _profile then Sys.time else fun () -> 0.
+  let end_profile = if _profile then end_profile else fun _ _ -> ()
+
+  let profile msg f =
+    if _profile then
+      let t0 = start_profile () in
+      let res = f () in
+      let () = end_profile t0 msg in
+      res
+    else f ()
 
 (*****************************)
 (* Event structure generator *)
@@ -298,7 +321,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       Warn.user_error
         "Segmentation fault (kidding, label %s not found)"
 
-    let glommed_event_structures (test:S.test) =
+    let glommed_event_structures ~is_pgm (test:S.test) =
+      profile "glommed_event_structures" @@ fun () ->
       let prog = test.Test_herd.program in
       let starts = test.Test_herd.start_points in
       let code_segment = test.Test_herd.code_segment in
@@ -489,6 +513,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* Call instruction semantics proper *)
         let wrap re_exec fetch_proc proc inst addr env m poi =
+          profile "build semantics" @@ fun () ->
         let ii =
            { A.program_order_index = poi;
              proc = proc; fetch_proc; inst = inst;
@@ -500,11 +525,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
              in_handler = re_exec;
            } in
         if dbg then
-          Printf.eprintf "%s env=%s\n"
+          Printf.eprintf "%s env=%s\n%!"
             (A.dump_instruction ii.A.inst)
             (A.pp_reg_state ii.A.env.A.regs) ;
         if dbg && not (Label.Set.is_empty ii.A.labels) then
-          eprintf "Instruction %s has labels {%s}\n"
+          eprintf "Instruction %s has labels {%s}\n%!"
             (A.dump_instruction inst)
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
@@ -611,6 +636,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
 (* As name suggests, add events of one thread *)
       let add_events_for_a_processor env (proc,code,fh_code) evts =
+        profile (Printf.sprintf "Build semantics for proc %s" (Proc.pp proc)) @@ fun () ->
         let env =
           if A.opt_env then A.build_reg_state proc A.reg_defaults env
           else A.reg_state_empty in
@@ -675,7 +701,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           W.warn "%i abstract event structures\n%!" i ;
           []
       | (vcl,es)::xs ->
-          let es = if C.debug.Debug_herd.monad then es else relabel es in
+          let es =
+            if not is_pgm || C.debug.Debug_herd.monad then es
+            else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
@@ -832,7 +860,10 @@ let match_reg_events es =
       PP.show_es_rfm test es rfm ;
       ()
 
-    let solve_regs test es csn =
+    let debug_solver = C.debug.Debug_herd.solver > 0
+
+    let do_solve_regs test es csn =
+
       let rfm = match_reg_events es in
       let csn =
         S.RFMap.fold
@@ -851,11 +882,11 @@ let match_reg_events es =
                   (A.V.pp_v v_stored) ;
                 assert false)
           rfm csn in
-      if  C.debug.Debug_herd.solver then
+      if  debug_solver then
         prerr_endline "++ Solve  registers" ;
       match VC.solve csn with
       | VC.NoSolns ->
-         if C.debug.Debug_herd.solver then
+         if debug_solver then
            pp_nosol "register" test es rfm ;
          None
       | VC.Maybe (sol,csn) ->
@@ -863,6 +894,19 @@ let match_reg_events es =
             (E.simplify_vars_in_event_structure sol es,
              S.simplify_vars_in_rfmap sol rfm,
              csn)
+
+    let solve_regs test es csn =
+      match do_solve_regs test es csn with
+      | Some (es,rfm,cns) as r ->
+          if debug_solver && C.verbose > 0 then begin
+            let module PP = Pretty.Make(S) in
+            prerr_endline "Reg solved, direct" ;
+            Printf.eprintf "++++ Remaing equations:\n%s\n++++++\n%!"
+              (VC.pp_cnstrnts cns) ;
+            PP.show_es_rfm test es rfm
+          end ;
+          r
+      | None ->  None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -1012,7 +1056,8 @@ let match_reg_events es =
             eprintf "Pairing {%a} with {%a}\n"
               E.debug_event load
               pp_read_froms stores)
-          m
+          m;
+        eprintf "%!"
       end ;
 (* Check for loads that cannot feed on some write *)
       if not do_deps && not asl then begin
@@ -1095,11 +1140,11 @@ let match_reg_events es =
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
-            if C.debug.Debug_herd.solver then
+            if debug_solver then
               prerr_endline "++ Solve memory" ;
             match VC.solve cns with
             | VC.NoSolns ->
-               if C.debug.Debug_herd.solver then begin
+               if debug_solver then begin
                  let rfm = add_some_mem loads stores rfm in
                  pp_nosol "memory" test es rfm
                end ;
@@ -1113,7 +1158,7 @@ let match_reg_events es =
                 kont es rfm cs res
           with
           | Contradiction ->  (* May  be raised by add_mem_eqs *)
-             if C.debug.Debug_herd.solver then
+             if debug_solver then
                begin
                  let rfm = add_some_mem loads stores rfm in
                  pp_nosol "memory" test es rfm
@@ -1135,7 +1180,7 @@ let match_reg_events es =
          In other words, it is not possible to make
          such event structures concrete.
          This occurs with cyclic rfmaps *)
-      if C.debug.Debug_herd.solver then begin
+      if debug_solver then begin
           let module PP = Pretty.Make(S) in
           prerr_endline "Unsolvable system" ;
           PP.show_es_rfm test es rfm ;
@@ -1344,7 +1389,7 @@ let match_reg_events es =
         List.map
           (fun (x,rs,wss) -> rs,MatchRf.find_rfs_sca x rs wss)
           ms in
-      if C.debug.Debug_herd.solver || C.debug.Debug_herd.mem then begin
+      if debug_solver || C.debug.Debug_herd.mem then begin
         eprintf "+++++++++++++++++++++++\n" ;
         List.iter
           (fun (rs,wss) -> eprintf "[%a] ->\n" debug_events rs ;
@@ -1694,7 +1739,7 @@ let match_reg_events es =
              loc_stores []
         | OptAce.False|OptAce.Iico ->
            U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
-      if C.debug.Debug_herd.solver && Misc.consp possible_finals then begin
+      if debug_solver && Misc.consp possible_finals then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun ws ->  eprintf "[%a]\n" debug_events ws)
@@ -1763,7 +1808,7 @@ let match_reg_events es =
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 
-      if C.debug.Debug_herd.solver && Misc.consp wsss then begin
+      if debug_solver && Misc.consp wsss then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun wss ->
@@ -1872,7 +1917,7 @@ let match_reg_events es =
                 rfm ws in
             let fsc = compute_final_state test rfm es.E.events in
             if check_filter test fsc && worth_going test fsc then begin
-              if C.debug.Debug_herd.solver then begin
+              if debug_solver then begin
                 let module PP = Pretty.Make(S) in
                 let fsc,_ = fsc in eprintf "Final rfmap, final state=%s\n%!" (S.A.dump_state fsc);
                 PP.show_es_rfm test es rfm ;
@@ -1899,7 +1944,7 @@ let match_reg_events es =
                  } in
                 kont conc ofail res
               else begin
-                if C.debug.Debug_herd.solver then begin
+                if debug_solver then begin
                   let conc =
                     {
                      S.str = es ;
@@ -2081,7 +2126,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
       match solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
-          if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+          if debug_solver && C.verbose > 0 then begin
             let module PP = Pretty.Make(S) in
             prerr_endline "Reg solved" ;
             PP.show_es_rfm test es rfm ;
@@ -2114,7 +2159,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
                      && not (mixed || memtag || morello)
                   then
                     check_sizes test es ;
-                  if C.debug.Debug_herd.solver && C.verbose > 0 then begin
+                  if debug_solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;
                     PP.show_es_rfm test es rfm
