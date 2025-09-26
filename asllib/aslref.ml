@@ -415,8 +415,8 @@ let run_with (args : args) : unit =
 
   let () =
     if args.print_lisp then
-      let lisp_ast = Lispobj.of_ast typed_ast in
-      let lisp_static_env = Lispobj.of_static_env_global static_env in
+      let lisp_ast = ToLisp.of_ast typed_ast in
+      let lisp_static_env = ToLisp.of_static_env_global static_env in
       Lispobj.print_obj Format.std_formatter
         (Lispobj.Cons (lisp_static_env, lisp_ast))
   in
