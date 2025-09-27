@@ -87,40 +87,38 @@ let pp_variants_with_attributes fmt variants =
 let pp_variants fmt variants =
   (pp_sep_list ~sep:" | " pp_type_term) fmt variants
 
-let pp_relation_definition fmt relation =
+let pp_relation_definition fmt ({ Relation.name; input; output } as relation) =
   let module Rel = Relation in
-  fprintf fmt "%s %s(%a) -> %a@.%a;" (tok_str RELATION) (Rel.name relation)
+  fprintf fmt "%s %s(%a) -> %a@.%a;" (tok_str RELATION) name
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
-    (Rel.input relation) pp_variants (Rel.output relation)
-    pp_attribute_key_values
+    input pp_variants output pp_attribute_key_values
     (Rel.attributes_to_list relation)
 
 let type_kind_to_string = function
   | TypeKind_Generic -> tok_str TYPEDEF
   | TypeKind_AST -> tok_str AST
 
-let pp_type_definition fmt def =
-  let eq_str = if Utils.list_is_empty (Type.variants def) then "" else " = " in
+let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
+  let eq_str = if Utils.list_is_empty variants then "" else " = " in
   fprintf fmt "%s %s@,%a@,%s@,@[<v 2>  %a@];"
-    (type_kind_to_string (Type.kind def))
-    (Type.name def) pp_attribute_key_values
+    (type_kind_to_string type_kind)
+    name pp_attribute_key_values
     (Type.attributes_to_list def)
-    eq_str pp_variants_with_attributes (Type.variants def)
+    eq_str pp_variants_with_attributes variants
 
-let pp_constant_definition fmt def =
-  fprintf fmt "%s %s %a;" (tok_str CONSTANT) (Constant.name def)
-    pp_attribute_key_values
+let pp_constant_definition fmt ({ Constant.name } as def) =
+  fprintf fmt "%s %s %a;" (tok_str CONSTANT) name pp_attribute_key_values
     (Constant.attributes_to_list def)
 
-let type_subset_pointer fmt { type_name; variant_names } =
+let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
   if Utils.list_is_empty variant_names then fprintf fmt {|%s(-)|} type_name
   else
     fprintf fmt {|%s(%a)|} type_name
       (pp_sep_list ~sep:", " pp_print_string)
       variant_names
 
-let pp_render_definition fmt { render_name; pointers } =
-  fprintf fmt "%s %s = %a;" (tok_str RENDER) render_name
+let pp_render_definition fmt { TypesRender.name; pointers } =
+  fprintf fmt "%s %s = %a;" (tok_str RENDER) name
     (pp_sep_list ~sep:", " type_subset_pointer)
     pointers
 

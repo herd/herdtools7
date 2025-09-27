@@ -295,8 +295,7 @@
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
-\newcommand\Some[1]{\hyperlink{def-some}{\left\langle}#1\hyperlink{def-some}{\right\rangle}} % DO NOT LINT
-\newcommand\some[1]{\hyperlink{def-some}{\langle}#1\hyperlink{def-some}{\rangle}}
+\newcommand\some[1]{\hyperlink{def-some}{\textsf{Some}}\left({#1}\right)}
 \newcommand\KleeneStar[1]{{#1}^{\hyperlink{def-kleenestar}{*}}}
 \newcommand\KleenePlus[1]{{#1}^{\hyperlink{def-kleeneplus}{+}}}
 
@@ -310,10 +309,8 @@
 \newcommand\Strings[0]{\hyperlink{type-Strings}{\mathbb{S}}}
 \newcommand\ASTLabels[0]{\hyperlink{type-ASTLabels}{\mathbb{L}}}
 
-\newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}(#1)}
-\newcommand\Pow[1]{\hyperlink{def-pow}{\mathcal{P}}\left(#1\right)} % DO NOT LINT
-\newcommand\Powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)} % DO NOT LINT
-\newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}(#1)}
+\newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}\left(#1\right)}
+\newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
 \newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}

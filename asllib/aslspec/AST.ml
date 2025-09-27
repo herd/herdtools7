@@ -1,5 +1,6 @@
-(** A module for representing the abstract syntax trees of the domain-specific
-    language, which defines the semantics-specification for ASL. *)
+(** A module for representing the abstract syntax trees of aslspec --- the
+    domain-specific language that defines the semantics-specification for ASL.
+*)
 
 exception SpecError of string
 
@@ -139,18 +140,7 @@ module Attributes = struct
       empty pairs
 end
 
-(** A module signature for a datatype with attributes. *)
-module type HasAttributes = sig
-  type t
-
-  val attributes : t -> Attributes.t
-  val prose_description : t -> string
-  val math_macro : t -> string option
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-end
-
-(** A datatype for type terms used in the definition of a type, with associated
-    attributes. *)
+(** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
   type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
 
@@ -158,7 +148,10 @@ module TypeVariant : sig
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
   val prose_description : t -> string
   val math_macro : t -> string option
+
   val math_layout : t -> layout option
+  (** The layout of the type term when rendered in the context of its containing
+      type. *)
 end = struct
   type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
 
@@ -187,11 +180,12 @@ end
 
 (** A datatype for a type definition. *)
 module Type : sig
-  include HasAttributes
-
-  val kind : t -> type_kind
-  val name : t -> string
-  val variants : t -> TypeVariant.t list
+  type t = {
+    name : string;
+    type_kind : type_kind;
+    variants : TypeVariant.t list;
+    att : Attributes.t;
+  }
 
   val make :
     type_kind ->
@@ -200,11 +194,16 @@ module Type : sig
     (AttributeKey.t * attribute) list ->
     t
 
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
+
   val math_layout : t -> layout option
+  (** The layout used when rendered as a stand-alone type definition. *)
 end = struct
   type t = {
-    type_kind : type_kind;
     name : string;
+    type_kind : type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
   }
@@ -225,11 +224,9 @@ end = struct
       att = Attributes.of_list attribute_pairs;
     }
 
-  let kind self = self.type_kind
-  let name self = self.name
-  let variants self = self.variants
-
   open Attributes
+
+  let attributes_to_list self = Attributes.bindings self.att
 
   let prose_description self =
     match Attributes.find_opt AttributeKey.Prose_Description self.att with
@@ -245,18 +242,16 @@ end = struct
     match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
-
-  let attributes_to_list self = Attributes.bindings self.att
-  let attributes self = self.att
 end
 
 (** A datatype for a relation definition. *)
 module Relation : sig
-  include HasAttributes
-
-  val name : t -> string
-  val input : t -> opt_named_type_term list
-  val output : t -> type_term list
+  type t = {
+    name : string;
+    input : opt_named_type_term list;
+    output : type_term list;
+    att : Attributes.t;
+  }
 
   val make :
     string ->
@@ -265,11 +260,13 @@ module Relation : sig
     (AttributeKey.t * attribute) list ->
     t
 
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
+
   val math_layout : t -> layout option
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  (** The layout used when rendered as a stand-alone relation definition. *)
 end = struct
   type t = {
     name : string;
@@ -278,12 +275,10 @@ end = struct
     att : Attributes.t;
   }
 
-  let name self = self.name
-  let input self = self.input
-  let output self = self.output
-
   let make name input output attributes =
     { name; input; output; att = Attributes.of_list attributes }
+
+  let attributes_to_list self = Attributes.bindings self.att
 
   open Attributes
 
@@ -306,23 +301,20 @@ end = struct
     match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
     | _ -> None
-
-  let attributes_to_list self = Attributes.bindings self.att
-  let attributes self = self.att
 end
 
+(** A datatype for a constant definition. *)
 module Constant : sig
-  include HasAttributes
+  type t = { name : string; att : Attributes.t }
 
-  val name : t -> string
+  val make : string -> (AttributeKey.t * attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
   val prose_description : t -> string
   val math_macro : t -> string option
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val make : string -> (AttributeKey.t * attribute) list -> t
 end = struct
   type t = { name : string; att : Attributes.t }
 
-  let name self = self.name
+  let attributes_to_list self = Attributes.bindings self.att
 
   open Attributes
 
@@ -337,27 +329,34 @@ end = struct
     match find_opt AttributeKey.Math_Macro self.att with
     | Some (StringAttribute s) -> Some s
     | _ -> None
-
-  let attributes_to_list self = Attributes.bindings self.att
-  let attributes self = self.att
 end
 
-type type_subset_pointer = { type_name : string; variant_names : string list }
-type render = { render_name : string; pointers : type_subset_pointer list }
+(** A datatype for grouping (subsets of) type definitions. *)
+module TypesRender : sig
+  type type_subset_pointer = { type_name : string; variant_names : string list }
+  type render = { name : string; pointers : type_subset_pointer list }
 
-let make_render render_name pointer_pairs =
-  {
-    render_name;
-    pointers =
-      List.map
-        (fun (type_name, variant_names) -> { type_name; variant_names })
-        pointer_pairs;
-  }
+  val make : string -> (string * string list) list -> render
+end = struct
+  type type_subset_pointer = { type_name : string; variant_names : string list }
+  type render = { name : string; pointers : type_subset_pointer list }
 
+  let make name pointer_pairs =
+    {
+      name;
+      pointers =
+        List.map
+          (fun (type_name, variant_names) -> { type_name; variant_names })
+          pointer_pairs;
+    }
+end
+
+(** The top-level elements of a specification. *)
 type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
-  | Elem_Render of render
+  | Elem_Render of TypesRender.render
 
 type t = elem list
+(** A specification is a list of top-level elements. *)

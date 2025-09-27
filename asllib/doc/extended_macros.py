@@ -41,7 +41,6 @@ def get_latex_sources(exclude) -> list[str]:
             "ASLRefALP2.1ChangeLog.tex",
             "ASLRefALP2ChangeLog.tex",
             "generated_macros.tex",
-            "generated_elements.tex",
             "rendering_macros.tex",
         ]
         for excluded_file in excluded_files:

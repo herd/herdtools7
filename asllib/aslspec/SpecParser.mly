@@ -1,6 +1,18 @@
 %{
 open AST
 open AST.AttributeKey
+
+let check_definition_name name =
+let () = assert (String.length name > 0) in
+let id_regexp = Str.regexp "^[A-Za-z_]+$" in
+if not (Str.string_match id_regexp name 0) then
+    let msg =
+    Format.sprintf
+        "element-defining identifiers must contain only letters and \
+        underscores: %s"
+        name
+    in
+    raise (SpecError msg)
 %}
 
 %type <AST.t> spec
@@ -116,9 +128,11 @@ let type_kind := TYPEDEF; { TypeKind_Generic }
 
 let type_definition :=
     | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; SEMI;
-    { Elem_Type (Type.make type_kind type_name [] type_attributes) }
+    {   check_definition_name type_name;
+        Elem_Type (Type.make type_kind type_name [] type_attributes) }
     | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes; SEMI;
-    { Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
+    {   check_definition_name type_name;
+        Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
     | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes; SEMI;
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError msg) }
@@ -126,9 +140,12 @@ let type_definition :=
 let relation_definition :=
     RELATION; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
     attributes=relation_attributes; SEMI;
-    { Elem_Relation (Relation.make name input output attributes) }
+    {   check_definition_name name;
+        Elem_Relation (Relation.make name input output attributes) }
 
-let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes; SEMI; { Elem_Constant (Constant.make name att) }
+let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes; SEMI;
+    {   check_definition_name name;
+        Elem_Constant (Constant.make name att) }
 
 let type_attributes ==
     LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
@@ -166,16 +183,20 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
     { TypeVariant.make TypeKind_Generic type_term [] }
 
 let type_term :=
-    | name=IDENTIFIER; { Label name }
+    | name=IDENTIFIER; { check_definition_name name; Label name }
     | POWERSET; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=false} }
     | POWERSET_FINITE; LPAR; member_type=type_term; RPAR; { Powerset {term=member_type; finite=true} }
     | OPTION; LPAR; member_type=type_term; RPAR; { Option member_type }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
-    | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = Some label; components} }
+    | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
+    {   check_definition_name label;
+        LabelledTuple {label_opt = Some label; components} }
     | LIST0; LPAR; member_type=type_term; RPAR; { List { maybe_empty=true; member_type} }
     | LIST1; LPAR; member_type=type_term; RPAR; { List { maybe_empty=false; member_type}}
     | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_record fields }
-    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_labelled_record label fields }
+    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET;
+    {   check_definition_name label;
+        make_labelled_record label fields }
     | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
     | FUN; from_type=type_term; ARROW; to_type=type_term; { Function {from_type; to_type; total = true}}
     | PARTIAL; from_type=type_term; ARROW; to_type=type_term; { Function {from_type; to_type; total = false}}
@@ -195,7 +216,9 @@ let math_layout :=
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
 
 let render_definition :=
-    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer); SEMI; { Elem_Render (make_render name pointers) }
+    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer); SEMI;
+    {   check_definition_name name;
+        Elem_Render (TypesRender.make name pointers) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }

@@ -21,10 +21,11 @@ type definition_node =
   | Node_Constant of Constant.t
 
 let definition_node_name = function
-  | Node_Type def -> Type.name def
-  | Node_Relation def -> Relation.name def
+  | Node_Type { Type.name }
+  | Node_Relation { Relation.name }
+  | Node_Constant { Constant.name } ->
+      name
   | Node_TypeVariant def -> Option.get (variant_to_label_opt def)
-  | Node_Constant def -> Constant.name def
 
 let math_macro_opt_for_node = function
   | Node_Type def -> Type.math_macro def
@@ -38,13 +39,11 @@ module Layout = struct
       [ (r(a,b,c), (A,B,C)) ]. That is, a pair where the first component is a
       labelled tuple with the relation name and arguments and the second
       component is a tuple with all output terms. *)
-  let relation_to_tuple def =
-    let opt_named_output_terms =
-      List.map (fun term -> (None, term)) (Relation.output def)
-    in
+  let relation_to_tuple { Relation.name; input; output } =
+    let opt_named_output_terms = List.map (fun term -> (None, term)) output in
     make_tuple
       [
-        (None, make_labelled_tuple (Relation.name def) (Relation.input def));
+        (None, make_labelled_tuple name input);
         (None, make_tuple opt_named_output_terms);
       ]
 
@@ -119,18 +118,20 @@ module Layout = struct
 end
 
 let definition_node_attributes = function
-  | Node_Type def -> Type.attributes def
-  | Node_TypeVariant { TypeVariant.att } -> att
-  | Node_Relation def -> Relation.attributes def
-  | Node_Constant def -> Constant.attributes def
+  | Node_Type { Type.att }
+  | Node_TypeVariant { TypeVariant.att }
+  | Node_Relation { Relation.att }
+  | Node_Constant { Constant.att } ->
+      att
 
 type string_map = String.t StringMap.t
 
 let elem_name = function
-  | Elem_Type def -> Type.name def
-  | Elem_Relation def -> Relation.name def
-  | Elem_Constant def -> Constant.name def
-  | Elem_Render { render_name } -> render_name
+  | Elem_Type { Type.name }
+  | Elem_Relation { Relation.name }
+  | Elem_Constant { Constant.name } ->
+      name
+  | Elem_Render { name } -> name
 
 (** Lists nodes that define identifiers and can be referenced. *)
 let list_definition_nodes ast =
@@ -138,7 +139,7 @@ let list_definition_nodes ast =
     (fun acc_nodes elem ->
       match elem with
       | Elem_Relation def -> Node_Relation def :: acc_nodes
-      | Elem_Type def ->
+      | Elem_Type ({ Type.variants } as def) ->
           let acc_nodes = Node_Type def :: acc_nodes in
           (* Labelled types directly under this type are considered defined here,
              but labelled types nested further in are considered as type references.
@@ -154,7 +155,7 @@ let list_definition_nodes ast =
               | LabelledRecord { label_opt = None }
               | _ ->
                   acc_nodes)
-            acc_nodes (Type.variants def)
+            acc_nodes variants
       | Elem_Constant def -> Node_Constant def :: acc_nodes
       (* Although a render defines an identifier, it does not carry semantic
          meaning, and cannot be referenced elsewhere. *)
@@ -176,10 +177,9 @@ let make_id_to_definition_node definition_nodes =
 type t = {
   ast : AST.t;  (** The original AST as parsed. *)
   id_to_defining_node : definition_node StringMap.t;
-      (** Associate identifiers with the AST nodes where they are defined. *)
+      (** Associates identifiers with the AST nodes where they are defined. *)
   defined_ids : string list;
-      (** The list of identifiers defined in the spec in the order they appear.
-      *)
+      (** The list of identifiers defined in the spec in order of appearance. *)
 }
 
 let ast spec = spec.ast
@@ -195,42 +195,29 @@ module Check = struct
     in
     find_with_set StringSet.empty strs
 
-  let check_definition_name name =
-    let () = assert (String.length name > 0) in
-    if Utils.string_exists (fun c -> '0' <= c && c <= '9') name then
-      let msg =
-        Format.sprintf
-          "element-defining identifiers must not contain digits: %s" name
-      in
-      raise (SpecError msg)
-
-  (** [check_defining_names ids] ensures that all identifiers in [ids] do not
-      contain digits. *)
-  let check_defining_names ids = List.iter check_definition_name ids
-
-  let check_mandatory_attributes_for_definition_node defining_node =
-    let attributes = definition_node_attributes defining_node in
-    let mandatory_attrs =
-      let open AttributeKey in
-      match defining_node with
-      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
-          [ Prose_Description ]
-      | Node_Relation _ -> [ Prose_Description; Prose_Application ]
-    in
-    List.iter
-      (fun attr ->
-        if not (Attributes.mem attr attributes) then
-          let name = definition_node_name defining_node in
-          let msg =
-            Format.sprintf "element '%s' is missing mandatory attribute: '%s'"
-              name (AttributeKey.to_str attr)
-          in
-          raise (SpecError msg))
-      mandatory_attrs
-
   (** Checks, for each definition node, that all mandatory attributes are
       present. The parser ensures only allowed attributes are added. *)
   let check_mandatory_attributes definition_nodes =
+    let check_mandatory_attributes_for_definition_node defining_node =
+      let attributes = definition_node_attributes defining_node in
+      let mandatory_attrs =
+        let open AttributeKey in
+        match defining_node with
+        | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
+            [ Prose_Description ]
+        | Node_Relation _ -> [ Prose_Description; Prose_Application ]
+      in
+      List.iter
+        (fun attr ->
+          if not (Attributes.mem attr attributes) then
+            let name = definition_node_name defining_node in
+            let msg =
+              Format.sprintf "element '%s' is missing mandatory attribute: '%s'"
+                name (AttributeKey.to_str attr)
+            in
+            raise (SpecError msg))
+        mandatory_attrs
+    in
     List.iter check_mandatory_attributes_for_definition_node definition_nodes
 
   let rec check_layout term layout =
@@ -268,19 +255,19 @@ module Check = struct
         check_layout to_type (List.nth cells 1)
     | _ -> ()
 
-  let check_math_layout_for_definition_node node =
-    let open Layout in
-    match node with
-    | Node_Type def ->
-        check_layout (Label (Type.name def)) (math_layout_for_node node)
-    | Node_Constant def ->
-        check_layout (Label (Constant.name def)) (math_layout_for_node node)
-    | Node_TypeVariant { TypeVariant.term } ->
-        check_layout term (math_layout_for_node node)
-    | Node_Relation def ->
-        check_layout (relation_to_tuple def) (math_layout_for_node node)
-
   let check_math_layout definition_nodes =
+    let check_math_layout_for_definition_node node =
+      let open Layout in
+      match node with
+      | Node_Type { Type.name } ->
+          check_layout (Label name) (math_layout_for_node node)
+      | Node_Constant { Constant.name } ->
+          check_layout (Label name) (math_layout_for_node node)
+      | Node_TypeVariant { TypeVariant.term } ->
+          check_layout term (math_layout_for_node node)
+      | Node_Relation def ->
+          check_layout (relation_to_tuple def) (math_layout_for_node node)
+    in
     List.iter check_math_layout_for_definition_node definition_nodes
 
   (** Returns all the identifiers referencing nodes that define identifiers. *)
@@ -306,36 +293,36 @@ module Check = struct
     | Function { from_type; to_type } ->
         referenced_ids from_type @ referenced_ids to_type
 
-  let check_no_undefined_ids_in_elem id_to_defining_node elem =
-    let referenced_ids_for_list = Utils.list_concat_map referenced_ids in
-    let ids_referenced_by_elem =
-      match elem with
-      | Elem_Constant _ -> []
-      | Elem_Type def ->
-          let variants = Type.variants def in
-          referenced_ids_for_list
-            (List.map (fun { TypeVariant.term } -> term) variants)
-      | Elem_Relation def ->
-          let input_terms = List.map snd (Relation.input def) in
-          referenced_ids_for_list (input_terms @ Relation.output def)
-      | Elem_Render { pointers } ->
-          Utils.list_concat_map
-            (fun { type_name; variant_names } -> type_name :: variant_names)
-            pointers
-    in
-    List.iter
-      (fun id ->
-        if not (StringMap.mem id id_to_defining_node) then
-          let msg =
-            Format.sprintf "Undefined reference to '%s' in '%s'" id
-              (elem_name elem)
-          in
-          raise (SpecError msg))
-      ids_referenced_by_elem
-
   (** [check_no_undefined_ids elements id_to_defining_node] checks that all
       identifiers referenced in [elements] are keys in [id_to_defining_node]. *)
   let check_no_undefined_ids elements id_to_defining_node =
+    let check_no_undefined_ids_in_elem id_to_defining_node elem =
+      let referenced_ids_for_list = Utils.list_concat_map referenced_ids in
+      let ids_referenced_by_elem =
+        match elem with
+        | Elem_Constant _ -> []
+        | Elem_Type { Type.variants } ->
+            referenced_ids_for_list
+              (List.map (fun { TypeVariant.term } -> term) variants)
+        | Elem_Relation { Relation.input; output } ->
+            let input_terms = List.map snd input in
+            referenced_ids_for_list (input_terms @ output)
+        | Elem_Render { pointers } ->
+            Utils.list_concat_map
+              (fun { TypesRender.type_name; variant_names } ->
+                type_name :: variant_names)
+              pointers
+      in
+      List.iter
+        (fun id ->
+          if not (StringMap.mem id id_to_defining_node) then
+            let msg =
+              Format.sprintf "Undefined reference to '%s' in '%s'" id
+                (elem_name elem)
+            in
+            raise (SpecError msg))
+        ids_referenced_by_elem
+    in
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
 
   (** Checks that [type_term] references only top-level types. That is, not
@@ -360,11 +347,11 @@ module Check = struct
   let check_only_top_level_types_in_relations id_to_defining_node elements =
     List.iter
       (function
-        | Elem_Relation rel ->
+        | Elem_Relation { Relation.input } ->
             List.iter
               (fun (_, type_term) ->
                 check_only_top_level_types id_to_defining_node type_term)
-              (Relation.input rel)
+              input
         | _ -> ())
       elements
 
@@ -376,7 +363,6 @@ end
 let from_ast ast =
   let definition_nodes = list_definition_nodes ast in
   let defined_ids = List.map definition_node_name definition_nodes in
-  let () = Check.check_defining_names defined_ids in
   let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
   let () = Check.check_mandatory_attributes definition_nodes in
