@@ -32,11 +32,11 @@ val length : t -> int
 (* --------------------------------------------------------------------------*)
 (** {2 Constructors} *)
 
-val one : t
-(** A length 1 bitvector with a 1 bit inside. *)
-
 val zero : t
 (** A length 1 bitvector with a 0 bit inside. *)
+
+val one : t
+(** A length 1 bitvector with a 1 bit inside. *)
 
 val empty : t
 (** A length 0 bitvector. *)
@@ -128,6 +128,12 @@ val logxor : t -> t -> t
 
 val equal : t -> t -> bool
 (** [equal b1 b2] is [true] if and only if [b1] and [b2] are bitwise equal. *)
+
+val is_zero : t -> bool
+(** Specific predicate: [is_zero t] is [equal t zero]. *)
+
+val is_one : t -> bool
+(** Specific predicate: [is_zero t] is [equal t one]. *)
 
 val compare : t -> t -> int
 (** The comparison function for bitvectors, with the same specification as

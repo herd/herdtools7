@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2021-present Institut National de Recherche en Informatique et *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
 (* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,36 +14,21 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type S = sig
-  type t
+type nexp =  AF|DB|AFDB|IFetch|Other
+type explicit = Exp | NExp of nexp
 
-  val sets : (string * t list) list
+let pp = function
+  | Exp -> "Exp"
+  | NExp Other-> "NExp"
+  | NExp IFetch-> "IFetch"
+  | NExp AF-> "NExpAF"
+  | NExp DB-> "NExpDB"
+  | NExp AFDB-> "NExpAFDB"
 
-  val pp : t -> string (* Pretty print *)
-  val parse : MiscParser.fault_type -> t
-  val compare : t -> t -> int
-end
+let is_explicit_annot = function
+  | Exp -> true
+  | NExp _ -> false
 
-module type AArch64Sig = sig
-  type mmu_t =
-    | Translation (* valid: 0 *)
-    | AccessFlag  (* af: 0 *)
-    | Permission  (* db: 0 *)
-    | Exclusive   (* memattr <> sharedWB *)
-
-  type t =
-    | MMU of mmu_t
-    | TagCheck
-    | UndefinedInstruction
-    | SupervisorCall
-    | PacCheck of PAC.key
-
-  include S with type t := t
-end
-
-module AArch64 : AArch64Sig
-
-module No : S
-
-(* For parse disambiguation  *)
-val is : string -> bool
+and is_not_explicit_annot = function
+  | NExp _ -> true
+  | Exp -> false

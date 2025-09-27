@@ -880,6 +880,8 @@ let match_reg_events es =
                   (A.pp_location loc)
                   (A.V.pp_v v_loaded)
                   (A.V.pp_v v_stored) ;
+                let module PP = Pretty.Make(S) in
+                PP.show_es_rfm test es rfm ;
                 assert false)
           rfm csn in
       if  debug_solver then
@@ -2123,7 +2125,7 @@ Please use `-variant self` as an argument to herd7 to enable it."
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      match solve_regs test es cs with
+      match do_solve_regs test es cs with
       | None -> res
       | Some (es,rfm,cs) ->
           if debug_solver && C.verbose > 0 then begin
