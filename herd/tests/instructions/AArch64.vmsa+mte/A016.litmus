@@ -1,0 +1,11 @@
+AArch64 A016
+TTHM=HD
+variant=memtag,precise,store-only,vmsa
+{
+ [PTE(x)]=(oa:PA(x),db:0,dbm:1,attrs:(TaggedNormal));
+ 0:X9=x:red;
+}
+ P0             ;
+MOV W0,#1       ;
+CAS W0,WZR,[X9] ;
+exists ~fault(P0,x) /\ PTE(x)=(oa:PA(x),db:1,dbm:1,attrs:(TaggedNormal))
