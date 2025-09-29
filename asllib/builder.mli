@@ -40,6 +40,7 @@ type parser_config = {
   allow_single_arrows : bool;
   allow_empty_structured_type_declarations : bool;
   allow_function_like_statements : bool;
+  v0_use_split_chunks : bool;
 }
 
 val default_parser_config : parser_config

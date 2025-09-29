@@ -21,23 +21,24 @@
 (******************************************************************************)
 
 {
-let dump _n start k =
-  start,
-  String.concat ""
-    (List.rev_map (fun line -> Printf.sprintf "%s\n" line) k)
+let dump n st lines =
+  let lines = List.rev lines in
+  let block = String.concat "" lines in
+  let () = if false then Format.eprintf "For block %d, got: %S@." n block in
+  st, block
 
-let get_lnum lb = lb.Lexing.lex_curr_p.Lexing.pos_lnum
+let get_st lb = (lb.Lexing.lex_start_p, lb.Lexing.lex_curr_p)
 }
 
 rule main n st k = parse
-| "//" ' '+ '='+ '\n'
-    { let new_st = get_lnum lexbuf in
+| ("//" ' '+ '='+ '\n') as line
+    { let new_st = get_st lexbuf in
       Lexing.new_line lexbuf ;
-      let  chunk = dump n st k in
-      fun () -> Seq.Cons (chunk,main (n+1) new_st [""] lexbuf)
+      let chunk = dump n st k in
+      fun () -> Seq.Cons (chunk, main (n+1) new_st [line] lexbuf)
     }
-| "//" [^'\n']* '\n'  { Lexing.new_line lexbuf ; main n st (""::k) lexbuf }
-| [^'\n']* as line '\n' {  Lexing.new_line lexbuf ; main n st (line::k) lexbuf }
+| ("//" [^'\n']* '\n') as line { Lexing.new_line lexbuf ; main n st (line::k) lexbuf }
+| ([^'\n']* '\n') as line { Lexing.new_line lexbuf ; main n st (line::k) lexbuf }
 | [^'\n']* as line eof
     {
      let k =
@@ -52,6 +53,6 @@ rule main n st k = parse
 
 {
 
- let split lexbuf = main 1 (get_lnum lexbuf) [] lexbuf
+ let split lexbuf = main 1 (get_st lexbuf) [] lexbuf
 
 }

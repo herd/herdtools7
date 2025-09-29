@@ -22,4 +22,5 @@
 
 (** Split (ASL) lexbuffer at "// =======..." limits *)
 
-val split : Lexing.lexbuf -> (int * string) Seq.t
+val split :
+  Lexing.lexbuf -> ((Lexing.position * Lexing.position) * string) Seq.t

@@ -53,6 +53,7 @@ type args = {
   control_flow_analysis : bool;
   allow_empty_structured_type_declarations : bool;
   allow_function_like_statements : bool;
+  v0_use_split_chunks : bool;
 }
 
 exception Exit of int
@@ -94,6 +95,7 @@ let parse_args () =
   let allow_single_arrows = ref false in
   let allow_empty_structured_type_declarations = ref false in
   let allow_function_like_statements = ref false in
+  let v0_use_split_chunks = ref false in
 
   let speclist =
     [
@@ -215,6 +217,10 @@ let parse_args () =
       ( "--allow-function-like-statements",
         Arg.Set allow_function_like_statements,
         " Allow function-like unreachable statements and `print`/`println`." );
+      ( "--v0-use-chunks",
+        Arg.Set v0_use_split_chunks,
+        " While lexing v0 files, split the files along separator comment \
+         lines. Error display might be impacted." );
     ]
     |> Arg.align ?limit:None
   in
@@ -262,6 +268,7 @@ let parse_args () =
       allow_empty_structured_type_declarations =
         !allow_empty_structured_type_declarations;
       allow_function_like_statements = !allow_function_like_statements;
+      v0_use_split_chunks = !v0_use_split_chunks;
     }
   in
 
@@ -313,6 +320,7 @@ let run_with (args : args) : unit =
       args.allow_empty_structured_type_declarations
     in
     let allow_function_like_statements = args.allow_function_like_statements in
+    let v0_use_split_chunks = args.v0_use_split_chunks in
     let open Builder in
     {
       allow_no_end_semicolon;
@@ -325,6 +333,7 @@ let run_with (args : args) : unit =
       allow_single_arrows;
       allow_empty_structured_type_declarations;
       allow_function_like_statements;
+      v0_use_split_chunks;
     }
   in
 
