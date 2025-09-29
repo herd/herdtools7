@@ -1109,6 +1109,13 @@ let is_valid_rmw rmw_list =
   List.length atomic_st_list = List.length (Util.List.uniq ~eq:atomic_op_equal atomic_st_list)
 end
 
+let free_registers =
+  if do_sme then
+    (* Reserve SME's slice index register *)
+    List.filter ( fun r -> r != Ireg R12) allowed_for_symb
+  else
+    allowed_for_symb
+
 include
     ArchExtra_gen.Make
     (struct
@@ -1119,7 +1126,7 @@ include
         | _ -> false
 
       let pp_reg = pp_reg
-      let free_registers = allowed_for_symb
+      let free_registers = free_registers
 
       type special = reg
       type special2 = reg
