@@ -16,4 +16,7 @@
  (enabled_if
   (>= %{ocaml_version} 4.14))
  (package menhir2bnfc)
- (libraries menhir2bnfc_lib))
+ (libraries menhir2bnfc_lib)
+ (promote
+  (until-clean)
+  (into .)))
