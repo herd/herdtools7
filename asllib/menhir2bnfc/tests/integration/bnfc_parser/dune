@@ -4,7 +4,11 @@
  (deps
   (:par %{workspace_root}/asllib/Parser.cmly))
  (action
-  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf)))
+  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf))
+ (mode
+  (promote
+   (until-clean)
+   (into ../../../))))
 
 (rule
  (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)
