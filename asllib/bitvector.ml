@@ -52,13 +52,6 @@ type t = int * string
 let length = fst
 let data = snd
 
-exception Bitvector_invariant_failed
-
-let length_invariant (length, data) =
-  let n = length / 8 and m = length mod 8 in
-  if Int.equal (String.length data) (if m = 0 then n else n + 1) then ()
-  else raise Bitvector_invariant_failed
-
 (* --------------------------------------------------------------------------
 
                                     Helpers
@@ -363,6 +356,16 @@ let of_z sz z =
 
 let of_int_sized sz i = of_z sz (Z.of_int i)
 
+let of_bytes length bytes =
+  let data_length = (length + 7) / 8 in
+  let bytes_length = Bytes.length bytes in
+  if bytes_length = data_length then remask (length, Bytes.to_string bytes)
+  else if bytes_length > data_length then
+    remask (length, Bytes.sub_string bytes 0 data_length)
+  else raise (Invalid_argument "of_bytes")
+
+let to_bytes (_length, data) = Bytes.of_string data
+
 (* --------------------------------------------------------------------------
 
                                     Operations
@@ -465,12 +468,14 @@ let copy_bit dst src pos_src pos_dst =
   Bytes.set dst (pos_dst / 8) new_char_dst
 
 let prefix (len, s) dst_len =
-  assert (dst_len <= len);
+  if not (dst_len <= len) then raise (Invalid_argument "prefix");
   let sz8 = (dst_len + 7) / 8 in
   let dst_s = String.sub s 0 sz8 in
   (dst_len, dst_s)
 
-let extract_slice (_length_src, data_src) positions =
+let extract_slice (length_src, data_src) positions =
+  if not (List.for_all (fun pos -> 0 <= pos && pos < length_src) positions) then
+    raise (Invalid_argument "extract_slice");
   try
     let length = List.length positions in
     let result = create_data_bytes length in
@@ -482,10 +487,10 @@ let extract_slice (_length_src, data_src) positions =
     raise (Invalid_argument (Printf.sprintf "extract_sliced (%s)" msg))
 
 let write_slice (length_dst, data_dst) (length_src, data_src) positions =
-  assert (Int.equal length_src (List.length positions));
-  List.iter (fun pos -> assert (0 <= pos && pos < length_dst)) positions;
-  length_invariant (length_dst, data_dst);
-  length_invariant (length_src, data_src);
+  if not (Int.equal length_src (List.length positions)) then
+    raise (Invalid_argument "write_slice");
+  if not (List.for_all (fun pos -> 0 <= pos && pos < length_dst) positions) then
+    raise (Invalid_argument "write_slice");
   let result = Bytes.of_string data_dst in
   (* Same effect as [List.rev positions], since we build those from the end. *)
   let copy_bit_here i pos = copy_bit result data_src (length_src - 1 - i) pos in
@@ -724,6 +729,16 @@ let raise_bv_op bv_op length d1 d2 =
   let l2, res = bv_op bv1 bv2 in
   assert (Int.equal l2 length);
   res
+
+let mask_of_bitvector_and_specified (length1, data1) (length2, data2) =
+  if length1 != length2 then
+    raise (Invalid_argument "mask_of_bitvector_and_specified");
+  let length = length1 in
+  let logand' = raise_bv_op logand length in
+  let specified = data2
+  and set = logand' data1 data2
+  and unset = logand' (lognot (length, data1) |> snd) data2 in
+  { length; set; unset; specified; initial_string = "<computed>" }
 
 let mask_intersection m1 m2 =
   if not (Int.equal m1.length m2.length) then
