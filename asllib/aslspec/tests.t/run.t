@@ -4,7 +4,7 @@
   $ aslspec relations.spec
 
   $ aslspec type_name.bad
-  Fatal error: exception Dune__exe__Main.ParseError("Spec error: element-defining identifiers must contain only letters and underscores: t2 around type_name.bad line 2 column 1")
+  Fatal error: exception Dune__exe__Main.ParseError("Spec error: illegal element-defining identifier: t2 around type_name.bad line 2 column 1")
   [2]
   $ aslspec type_instance.bad
 

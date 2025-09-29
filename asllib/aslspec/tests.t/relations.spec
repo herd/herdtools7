@@ -13,7 +13,7 @@ ast expr { prose_description = "expression" } =
 ;
 
 // A relation associates a tuple of types (the input) with an output type.
-relation annotate_expr(input: expr) -> (inferred_type: type)
+relation annotate_expr'(input: expr) -> (inferred_type: type)
 {
     prose_description = "infers the type {inferred_type} for the expression {input}",
     prose_application = "annotating the expression {input} yields the type {inferred_type}",

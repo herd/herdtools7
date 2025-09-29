@@ -9,7 +9,7 @@ let count_new_lines str =
   !count
 }
 
-let identifier = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let identifier = ['a'-'z' 'A'-'Z' '_' ] ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 let latex_macro = ['\\'] ['a'-'z' 'A'-'Z']+
 
 rule token = parse
