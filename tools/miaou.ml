@@ -221,10 +221,15 @@ and cons_seqs (fs:exp list) (es:exp list) =
     module Next : sig
       val reset : unit -> unit
       val next : unit -> int
+      val push : unit -> unit
+      val pop : unit -> unit
     end = struct
       let c = ref 1
+      let s = Stack.create ()
       let reset () = c := 1
       let next () = let r = !c in incr c ; r
+      let push () = Stack.push !c s
+      let pop () = c := Stack.pop s
     end
 
     let pp_evt k = sprintf "E\\textsubscript{%d}" k
@@ -323,7 +328,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
              | Pos s -> sprintf "\\Variant{%s}" s
              | Neg s -> sprintf "\\NotVariant{%s}" s)
             a |> String.concat " and ")
-        d |> String.concat "{} or "
+        d |> String.concat " or "
 
     let pp_vc vc = variant_dnf false vc |> pp_dnf
 
@@ -452,7 +457,13 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op1 (_,ToId,e) -> tr_evts_not e1 @@ flatten_if_not e
       | e -> notItem (tr_rel e1 e2 e)
 
-    and tr_op e1 e2 op es = List.map (tr_rel e1 e2) es |> mk_list op
+    and tr_op e1 e2 op es =
+      let f e = match op with
+      | Union ->
+         Next.push (); let t = tr_rel e1 e2 e in Next.pop () ; t
+      | _ ->
+         tr_rel e1 e2 e in
+      List.map f es |> mk_list op
 
     and tr_plus e1 e2 loc = function
       | Var (_,id) ->
