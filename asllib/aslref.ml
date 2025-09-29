@@ -279,6 +279,14 @@ let parse_args () =
   in
 
   let () =
+    if !show_version then
+      let () =
+        Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
+      in
+      raise (Exit 0)
+  in
+
+  let () =
     if ASTUtils.list_is_empty args.files && Option.is_none args.opn then
       let () =
         Printf.eprintf
@@ -287,13 +295,6 @@ let parse_args () =
       raise (Exit 1)
   in
 
-  let () =
-    if !show_version then
-      let () =
-        Printf.printf "aslref version %s rev %s\n%!" Version.version Version.rev
-      in
-      raise (Exit 0)
-  in
   args
 
 let run_with (args : args) : unit =

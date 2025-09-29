@@ -552,7 +552,9 @@ module Make (B : Backend.S) (C : Config) = struct
         | Global v ->
             let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
             return_normal (v, env)
-        | NotFound -> fatal_from e env @@ Error.UndefinedIdentifier (Dynamic, x))
+        | NotFound ->
+            fatal_from e env
+            @@ Error.UndefinedIdentifier (C.error_handling_time, x))
         |: SemanticsRule.EVar
     (* End *)
     | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
@@ -861,7 +863,8 @@ module Make (B : Backend.S) (C : Config) = struct
             match ver with
             (* Begin EvalLEUndefIdentOne *)
             | V1 ->
-                fatal_from le env @@ Error.UndefinedIdentifier (Dynamic, x)
+                fatal_from le env
+                @@ Error.UndefinedIdentifier (C.error_handling_time, x)
                 |: SemanticsRule.LEUndefIdentV1
             (* End *)
             (* Begin EvalLEUndefIdentZero *)
@@ -1490,7 +1493,8 @@ module Make (B : Backend.S) (C : Config) = struct
     match IMap.find_opt name genv.static.subprograms with
     (* Begin EvalFUndefIdent *)
     | None ->
-        fatal_from_genv pos genv @@ Error.UndefinedIdentifier (Dynamic, name)
+        fatal_from_genv pos genv
+        @@ Error.UndefinedIdentifier (C.error_handling_time, name)
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
@@ -1522,13 +1526,20 @@ module Make (B : Backend.S) (C : Config) = struct
       when List.compare_lengths args arg_decls <> 0 ->
         fatal_from_genv pos genv
         @@ Error.BadArity
-             (Dynamic, name, List.length arg_decls, List.length args)
+             ( C.error_handling_time,
+               name,
+               List.length arg_decls,
+               List.length args )
         |: SemanticsRule.FBadArity
     | Some ({ parameters = parameter_decls; _ }, _)
       when List.compare_lengths params parameter_decls <> 0 ->
         fatal_from_genv pos genv
         @@ Error.BadParameterArity
-             (Dynamic, V1, name, List.length parameter_decls, List.length params)
+             ( C.error_handling_time,
+               V1,
+               name,
+               List.length parameter_decls,
+               List.length params )
         |: SemanticsRule.FBadArity
     (* End *)
     (* Begin EvalFCall *)
@@ -1585,7 +1596,10 @@ module Make (B : Backend.S) (C : Config) = struct
     if List.compare_lengths les monads != 0 then
       fatal_from pos env
       @@ Error.BadArity
-           (Dynamic, "tuple construction", List.length les, List.length monads)
+           ( C.error_handling_time,
+             "tuple construction",
+             List.length les,
+             List.length monads )
     else multi_assign ver env les monads
 
   (* Begin EvalSpec *)
@@ -1599,7 +1613,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (match res with
     | Normal ([ v ], _genv) -> read_value_from v
     | Normal _ ->
-        Error.(fatal_unknown_pos (MismatchedReturnValue (Dynamic, main_name)))
+        Error.(
+          fatal_unknown_pos
+            (MismatchedReturnValue (C.error_handling_time, main_name)))
     | Throwing ((v, _, _), ty, _genv) ->
         let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
         Error.fatal_unknown_pos (Error.UncaughtException msg)
