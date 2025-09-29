@@ -113,9 +113,8 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
-      let parse = select_type ~opn:Gparser0.opn ~ast:Gparser0.ast ast_type
-      and lexer0 = Lexer0.token () in
-      try parse lexer0 lexbuf with Parser0.Error -> cannot_parse lexbuf)
+      let parse = select_type ~opn:Gparser0.opn ~ast:Gparser0.ast ast_type in
+      try parse Lexer0.token lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
 let from_lexbuf' ast_type parser_config version lexbuf () =
   from_lexbuf ast_type parser_config version lexbuf

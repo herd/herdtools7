@@ -162,9 +162,8 @@ let parse_repeatable parse lexer_state lexbuf : AST.t =
   let () = if _dbg then Format.eprintf "@]@." in
   res
 
-let ast_chunk lexbuf =
-  let lexer = Lexer0.token () in
-  let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
+let ast_chunk mk_lexer lexbuf =
+  let lexer_state = RL.of_lexer_lexbuf is_eof (mk_lexer ()) lexbuf in
   let r = parse_repeatable Parser0.Incremental.spec lexer_state lexbuf in
   if false then Printf.eprintf "Chunk of size %d\n" (List.length r);
   r
@@ -176,37 +175,29 @@ let ast_chunk lexbuf =
 
 let as_chunks = true
 
-let ast (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
+let ast (mk_lexer : unit -> (lexbuf -> token)) (lexbuf : lexbuf) : AST.t =
   if as_chunks then
-    let fname = lexbuf.Lexing.lex_curr_p.Lexing.pos_fname in
     let asts =
       Seq.fold_left
-        (fun k (start, chunk) ->
-          if false then
-            Printf.eprintf "Chunk (line %d, file %s) ***\n%s\n***\n%!" start
-              fname chunk;
+        (fun k ((lex_start_p, lex_curr_p), chunk) ->
           let lexbuf = Lexing.from_string chunk in
-          let lcp = lexbuf.Lexing.lex_curr_p in
-          let lcp =
-            { lcp with Lexing.pos_fname = fname; Lexing.pos_lnum = start }
-          in
-          let lexbuf = { lexbuf with lex_curr_p = lcp } in
-          let ast = ast_chunk lexbuf in
+          let lexbuf = { lexbuf with lex_start_p; lex_curr_p } in
+          let ast = ast_chunk mk_lexer lexbuf in
           ast :: k)
         [] (Splitasl.split lexbuf)
     in
     List.concat (List.rev asts)
   else
-    let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
+    let lexer_state = RL.of_lexer_lexbuf is_eof (mk_lexer ()) lexbuf in
     parse_repeatable Parser0.Incremental.spec lexer_state lexbuf
 
-let opn (lexer : lexbuf -> token) (lexbuf : lexbuf) : AST.t =
+let opn (mk_lexer : unit -> (lexbuf -> token)) (lexbuf : lexbuf) : AST.t =
   let () =
     if _dbg then
       Format.eprintf "Starting parsing opn in file %s@."
         lexbuf.lex_curr_p.pos_fname
   in
-  let lexer_state = RL.of_lexer_lexbuf is_eof lexer lexbuf in
+  let lexer_state = RL.of_lexer_lexbuf is_eof (mk_lexer ()) lexbuf in
   let res = parse_repeatable Parser0.Incremental.opn lexer_state lexbuf in
   let () = if _dbg then Format.eprintf "Parsed opn.@." in
   res
