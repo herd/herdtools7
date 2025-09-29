@@ -71,6 +71,10 @@ val of_z : int -> Z.t -> t
 (** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
     two's complement little-endian. *)
 
+val of_bytes : int -> Bytes.t -> t
+(** [of_bytes length bytes] is the bitvector represented by the [length]
+    rightmost bits in [bytes], read in little-endian. *)
+
 (* --------------------------------------------------------------------------*)
 (** {2 Exports} *)
 
@@ -101,6 +105,7 @@ val to_int64_signed : t -> int64
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > 64]. *)
 
+val to_bytes : t -> Bytes.t
 val to_z_unsigned : t -> Z.t
 val to_z_signed : t -> Z.t
 val printable : t -> Z.t
@@ -213,6 +218,10 @@ val mask_of_string : string -> mask
 
 val mask_of_bitvector : t -> mask
 (** Build a mask that matches a bitvector. *)
+
+val mask_of_bitvector_and_specified : t -> t -> mask
+(** Build a mask from a bitvector containing data and a bitvector setting the
+    specified bits. *)
 
 val matches : t -> mask -> bool
 (** [matches mask bv] is true iff [bv] matches [mask]. *)
