@@ -1,11 +1,24 @@
-(executable
+(test
  (name parser_cmp)
  (modules parser_cmp)
- (optional)
- (libraries bnfc_parser herdtools7.asllib))
+ (package menhir2bnfc)
+ (build_if
+  (and %{bin-available:menhir2bnfc} %{bin-available:bnfc}))
+ (libraries bnfc_parser herdtools7.asllib)
+ (deps
+  (source_tree %{workspace_root}/asllib/tests))
+ (action
+  (chdir
+   %{workspace_root}
+   (run %{test} -q asllib/tests))))
 
 (test
  (name cmp_binops)
  (modules cmp_binops)
  (package menhir2bnfc)
+ (build_if
+  (and
+   %{lib-available:feat}
+   %{bin-available:menhir2bnfc}
+   %{bin-available:bnfc}))
  (libraries bnfc_parser herdtools7.asllib feat))

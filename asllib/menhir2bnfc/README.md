@@ -18,7 +18,7 @@ dune build asllib/menhir2bnfc
 
 To run the bnfc parser tests run:
 ```
-dune build @bnfc_test
+dune runtest asllib/menhir2bnfc
 ```
 You should now have a `_build/default/asllib/menhir2bnfc/tests/integration/bnfc_parser/grammar.cf` file built.
 If all you're looking for an aslref bnfc file - that's it.
@@ -40,7 +40,7 @@ You should now have a bnfc compliant grammar.cf file!
 
 ## Tests
 
-The `dune build @bnfc_test` builds a menhir parser from the bnfc grammar
+The `dune runtest asllib/menhir2bnfc` builds a menhir parser from the bnfc grammar
 and runs it against all files under `asllib/tests/**/*.asl`
 
 Failing tests are recorded in `asllib/menhir2bnfc/tests/integration/parser_cmp.expected`
