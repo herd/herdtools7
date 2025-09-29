@@ -124,10 +124,6 @@ Check that variables starting with `__` are reserved:
   $ aslref reserved0.asl
   ASL Lexical error: "__reserved" is a reserved keyword.
   [1]
-  $ aslref --allow-double-underscore reserved0.asl
-  0x1
-  1
-  2
 
 Forbidden patterns
   $ cat >forbiddenhex01.asl <<EOF

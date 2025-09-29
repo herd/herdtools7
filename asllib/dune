@@ -25,11 +25,31 @@
 (menhir
  (modules Tokens Parser)
  (merge_into Parser)
- (flags --cmly --external-tokens Tokens))
+ (flags --cmly --external-tokens Tokens --exn-carries-state))
 
 (menhir
  (modules Parser0)
  (flags --unused-tokens --table))
+
+(rule
+ (target parser_errors.ml)
+ (deps
+  (:tokens Tokens.mly)
+  (:parser Parser.mly)
+  (:msg parser_errors.messages))
+ (action
+  (with-stdout-to
+   %{target}
+   (run
+    menhir
+    --external-tokens
+    Tokens
+    %{tokens}
+    %{parser}
+    --base
+    %{parser}
+    --compile-errors
+    %{msg}))))
 
 (data_only_dirs acl2)
 

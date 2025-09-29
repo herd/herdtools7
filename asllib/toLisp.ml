@@ -345,11 +345,7 @@ let rec of_lexpr_desc x =
 and of_lexpr x = of_annotated of_lexpr_desc x
 
 let of_local_decl_keyword x =
-  key
-    (match x with
-    | LDK_Var -> "LDK_VAR"
-    | LDK_Constant -> "LDK_CONSTANT"
-    | LDK_Let -> "LDK_LET")
+  key (match x with LDK_Var -> "LDK_VAR" | LDK_Let -> "LDK_LET")
 
 let of_local_decl_item x =
   tagged_list_of_list
@@ -546,7 +542,6 @@ let of_static_env_global (x : StaticEnv.global) =
 let of_static_env_local (x : StaticEnv.local) =
   aslsym_alist
     [
-      ("CONSTANT_VALUES", of_imap of_literal x.constant_values);
       ( "STORAGE_TYPES",
         of_imap
           (fun (ty, kw) -> Cons (of_ty ty, of_local_decl_keyword kw))

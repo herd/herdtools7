@@ -27,37 +27,10 @@ let _debug = false
 type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
-
-type parser_config = {
-  allow_no_end_semicolon : bool;
-  allow_expression_elsif : bool;
-  allow_double_underscore : bool;
-  allow_unknown : bool;
-  allow_storage_discards : bool;
-  allow_hyphenated_pending_constraint : bool;
-  allow_local_constants : bool;
-  allow_single_arrows : bool;
-  allow_empty_structured_type_declarations : bool;
-  allow_function_like_statements : bool;
-  v0_use_split_chunks : bool;
-}
-
+type parser_config = { v0_use_split_chunks : bool }
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
-let default_parser_config =
-  {
-    allow_no_end_semicolon = false;
-    allow_expression_elsif = false;
-    allow_double_underscore = false;
-    allow_unknown = false;
-    allow_storage_discards = false;
-    allow_hyphenated_pending_constraint = false;
-    allow_local_constants = false;
-    allow_single_arrows = false;
-    allow_empty_structured_type_declarations = false;
-    allow_function_like_statements = false;
-    v0_use_split_chunks = false;
-  }
+let default_parser_config = { v0_use_split_chunks = false }
 
 let select_type ~opn ~ast = function
   | Some `Opn -> opn
@@ -78,41 +51,23 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
         (_ast_type_to_string ast_type)
         lexbuf.lex_curr_p.pos_fname
   in
-  let cannot_parse lexbuf =
-    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p CannotParse
+  let cannot_parse ?msg lexbuf =
+    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p (CannotParse msg)
   in
   let unknown_symbol lexbuf =
     fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p UnknownSymbol
   in
   match version with
   | `ASLv1 -> (
-      let module Parser = Parser.Make (struct
-        let allow_no_end_semicolon = parser_config.allow_no_end_semicolon
-        let allow_expression_elsif = parser_config.allow_expression_elsif
-        let allow_storage_discards = parser_config.allow_storage_discards
-
-        let allow_function_like_statements =
-          parser_config.allow_function_like_statements
-
-        let allow_hyphenated_pending_constraint =
-          parser_config.allow_hyphenated_pending_constraint
-
-        let allow_local_constants = parser_config.allow_local_constants
-
-        let allow_empty_structured_type_declarations =
-          parser_config.allow_empty_structured_type_declarations
-      end) in
-      let module Lexer = Lexer.Make (struct
-        let allow_double_underscore = parser_config.allow_double_underscore
-        let allow_unknown = parser_config.allow_unknown
-        let allow_single_arrows = parser_config.allow_single_arrows
-
-        let allow_function_like_statements =
-          parser_config.allow_function_like_statements
-      end) in
+      let module Parser = Parser.Make (struct end) in
+      let module Lexer = Lexer.Make (struct end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with
-      | Parser.Error -> cannot_parse lexbuf
+      | Parser.Error error_state -> (
+          try
+            let msg = Parser_errors.message error_state in
+            cannot_parse ~msg lexbuf
+          with Not_found -> cannot_parse lexbuf)
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
       let as_chunks = parser_config.v0_use_split_chunks in

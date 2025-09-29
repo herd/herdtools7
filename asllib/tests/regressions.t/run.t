@@ -76,7 +76,7 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error: Obsolete syntax: Discarded storage declaration.
+  ASL Grammar error: Cannot parse. A global declaration must declare a name.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -321,21 +321,24 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same
+    precedence - parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Operators `<=>` and `==>` have the same
+    precedence - parenthesise to disambiguate.
   [1]
 
   $ aslref binop-non-assoc.asl
   File binop-non-assoc.asl, line 3, characters 6 to 11:
     - = 3 - 2 - 1;
         ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Binary operator `-` is not associative -
+    parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -512,10 +515,10 @@ Required tests:
   [1]
 
   $ aslref no-expression-elsif.asl
-  File no-expression-elsif.asl, line 12, characters 25 to 50:
+  File no-expression-elsif.asl, line 12, characters 25 to 30:
     let y = if TRUE then 1 elsif FALSE then 2 else 3;   // ERROR
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Grammar error: Obsolete syntax: Expression-level 'elsif'.
+                           ^^^^^
+  ASL Grammar error: Cannot parse. Use `else if` instead.
   [1]
 
   $ aslref --gnu-errors gnu-errors.asl
@@ -601,8 +604,8 @@ Getters/setters
   [1]
 
 ASLRef Field getter extension
-  $ aslref --use-field-getter-extension setter_bitfields.asl
-  $ aslref --use-field-getter-extension pstate-exp.asl
+  $ aslref --v0-use-field-getter-extension setter_bitfields.asl
+  $ aslref --v0-use-field-getter-extension pstate-exp.asl
   $ aslref --no-exec atc-in-types.asl
   $ aslref single-slice.asl
 
@@ -644,33 +647,26 @@ Left-hand sides
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
-  $ aslref --allow-hyphenated-pending-constraint hyphenated-pending-constraint.asl
   $ aslref hyphenated-pending-constraint.asl
   File hyphenated-pending-constraint.asl, line 3, characters 18 to 21:
       let x: integer{-} = 5;
                     ^^^
-  ASL Grammar error: Obsolete syntax: Hyphenated pending constraint.
+  ASL Grammar error: Cannot parse. Pending constraints are written `integer{}`.
   [1]
   $ aslref local_constants.asl
   File local_constants.asl, line 8, characters 4 to 12:
       constant x = 32;
       ^^^^^^^^
-  ASL Grammar error: Obsolete syntax: Local constant declaration.
+  ASL Grammar error: Cannot parse. Local constant declarations are not valid
+    ASL1. Did you mean `let`?.
   [1]
-  $ aslref --allow-local-constants local_constants.asl
 
 Outdated syntax
-  $ aslref --allow-single-arrows outdated-implication.asl
-  File outdated-implication.asl, line 6, characters 25 to 26:
-    let z: boolean = x --> z;
-                           ^
-  ASL Static error: Undefined identifier: 'z'
-  [1]
   $ aslref outdated-implication.asl
   File outdated-implication.asl, line 6, characters 21 to 24:
     let z: boolean = x --> z;
                        ^^^
-  ASL Grammar error: Obsolete syntax: implication with -->
+  ASL Grammar error: Cannot parse. Did you mean `==>`?
   [1]
   $ aslref noreturn.asl
   File noreturn.asl, line 31, character 0 to line 34, character 4:
@@ -725,4 +721,26 @@ Bounds checks
   $ aslref bounds-checks-write-zero-width-slice.asl
   ASL Dynamic error: Mismatch type:
     value 100 does not belong to type integer {0..3}.
+  [1]
+  $ aslref no_end_semicolon.asl
+  File no_end_semicolon.asl, line 6, characters 2 to 8:
+    return 0;
+    ^^^^^^
+  ASL Grammar error: Cannot parse. The `end` keyword must be followed by a
+    semicolon (`;`).
+    
+  [1]
+  $ aslref discard-locals.asl
+  File discard-locals.asl, line 3, characters 6 to 12:
+    let (-, -) = (1, 2);
+        ^^^^^^
+  ASL Grammar error: Cannot parse. A local declaration must declare at least
+    one name.
+  [1]
+  $ aslref elided-parameter-non-bits.asl
+  File elided-parameter-non-bits.asl, line 3, characters 20 to 27:
+    let x : integer = Zeros{};
+                      ^^^^^^^
+  ASL Grammar error: Cannot parse. Cannot desugar elided parameter: left-hand
+    side must have a `bits(...)` type annotation.
   [1]

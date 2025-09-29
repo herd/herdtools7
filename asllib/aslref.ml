@@ -29,14 +29,6 @@ type args = {
   exec : bool;
   files : (file_type * string) list;
   opn : string option;
-  allow_no_end_semicolon : bool;
-  allow_expression_elsif : bool;
-  allow_double_underscore : bool;
-  allow_unknown : bool;
-  allow_storage_discards : bool;
-  allow_hyphenated_pending_constraint : bool;
-  allow_local_constants : bool;
-  allow_single_arrows : bool;
   print_ast : bool;
   print_lisp : bool;
   print_serialized : bool;
@@ -50,9 +42,6 @@ type args = {
   override_mode : override_mode;
   no_primitives : bool;
   no_stdlib : bool;
-  control_flow_analysis : bool;
-  allow_empty_structured_type_declarations : bool;
-  allow_function_like_statements : bool;
   v0_use_split_chunks : bool;
 }
 
@@ -67,13 +56,6 @@ let parse_args () =
   let show_rules = ref false in
   let target_files = ref [] in
   let exec = ref true in
-  let allow_no_end_semicolon = ref false in
-  let allow_expression_elsif = ref false in
-  let allow_double_underscore = ref false in
-  let allow_unknown = ref false in
-  let allow_storage_discards = ref false in
-  let allow_hyphenated_pending_constraint = ref false in
-  let allow_local_constants = ref false in
   let print_ast = ref false in
   let print_serialized = ref false in
   let print_typed = ref false in
@@ -91,41 +73,12 @@ let parse_args () =
   let no_stdlib = ref false in
   let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
-  let control_flow_analysis = ref true in
-  let allow_single_arrows = ref false in
-  let allow_empty_structured_type_declarations = ref false in
-  let allow_function_like_statements = ref false in
   let v0_use_split_chunks = ref false in
 
   let speclist =
     [
       ("--exec", Arg.Set exec, " Execute the asl program (default).");
       ("--no-exec", Arg.Clear exec, " Don't execute the asl program.");
-      ( "--allow-no-end-semicolon",
-        Arg.Set allow_no_end_semicolon,
-        " Allow block statements to terminate with 'end' instead of 'end;'." );
-      ( "--allow-expression-elsif",
-        Arg.Set allow_expression_elsif,
-        " Allow 'elsif' at the expression level." );
-      ( "--allow-double-underscore",
-        Arg.Set allow_double_underscore,
-        " Allow the usage of variables beginning with double underscores \
-         ('__')." );
-      ( "--allow-unknown",
-        Arg.Set allow_unknown,
-        " Allow the usage of 'UNKNOWN' instead of 'ARBITRARY'." );
-      ( "--allow-storage-discards",
-        Arg.Set allow_storage_discards,
-        " Allow storage declarations that discard their right-hand sides." );
-      ( "--allow-hyphenated-pending-constraint",
-        Arg.Set allow_hyphenated_pending_constraint,
-        " Allow pending constraints to be denoted by a hyphen." );
-      ( "--allow-local-constants",
-        Arg.Set allow_local_constants,
-        " Allow declarations of local constant storage." );
-      ( "--allow-single-arrows",
-        Arg.Set allow_single_arrows,
-        " Allow single arrows to denote boolean implication or equivalence." );
       ( "--print",
         Arg.Set print_ast,
         " Print the parsed AST to stdout before executing it." );
@@ -163,7 +116,7 @@ let parse_args () =
         Arg.Unit (set_strictness TypeCheckNoWarn),
         " Perform type-checking, fatal on any type-checking error, but don't \
          show any warnings." );
-      ( "--use-field-getter-extension",
+      ( "--v0-use-field-getter-extension",
         Arg.Set use_field_getter_extension,
         " Instruct the type-checker to use the field getter extension." );
       ( "--use-fine-grained-side-effects-extension",
@@ -206,17 +159,6 @@ let parse_args () =
       ( "--no-stdlib",
         Arg.Set no_stdlib,
         " Do not use ASL's standard library. Implies `--no-primitives`." );
-      ( "--no-control-flow-analysis",
-        Arg.Clear control_flow_analysis,
-        " Do not use control-flow analysis to check that subprograms \
-         return/throw/execute `Unreachable()`." );
-      ( "--allow-empty-structured-type-declarations",
-        Arg.Set allow_empty_structured_type_declarations,
-        " Allow declarations of structured types with implicitly empty fields."
-      );
-      ( "--allow-function-like-statements",
-        Arg.Set allow_function_like_statements,
-        " Allow function-like unreachable statements and `print`/`println`." );
       ( "--v0-use-chunks",
         Arg.Set v0_use_split_chunks,
         " While lexing v0 files, split the files along separator comment \
@@ -242,14 +184,6 @@ let parse_args () =
       exec = !exec;
       files = !target_files;
       opn = (match !opn with "" -> None | s -> Some s);
-      allow_no_end_semicolon = !allow_no_end_semicolon;
-      allow_expression_elsif = !allow_expression_elsif;
-      allow_double_underscore = !allow_double_underscore;
-      allow_unknown = !allow_unknown;
-      allow_storage_discards = !allow_storage_discards;
-      allow_hyphenated_pending_constraint = !allow_hyphenated_pending_constraint;
-      allow_local_constants = !allow_local_constants;
-      allow_single_arrows = !allow_single_arrows;
       print_ast = !print_ast;
       print_serialized = !print_serialized;
       print_typed = !print_typed;
@@ -264,10 +198,6 @@ let parse_args () =
       override_mode = !override_mode;
       no_primitives = !no_primitives || !no_stdlib;
       no_stdlib = !no_stdlib;
-      control_flow_analysis = !control_flow_analysis;
-      allow_empty_structured_type_declarations =
-        !allow_empty_structured_type_declarations;
-      allow_function_like_statements = !allow_function_like_statements;
       v0_use_split_chunks = !v0_use_split_chunks;
     }
   in
@@ -306,35 +236,9 @@ let parse_args () =
 
 let run_with (args : args) : unit =
   let parser_config =
-    let allow_no_end_semicolon = args.allow_no_end_semicolon in
-    let allow_expression_elsif = args.allow_expression_elsif in
-    let allow_double_underscore = args.allow_double_underscore in
-    let allow_unknown = args.allow_unknown in
-    let allow_storage_discards = args.allow_storage_discards in
-    let allow_hyphenated_pending_constraint =
-      args.allow_hyphenated_pending_constraint
-    in
-    let allow_local_constants = args.allow_local_constants in
-    let allow_single_arrows = args.allow_single_arrows in
-    let allow_empty_structured_type_declarations =
-      args.allow_empty_structured_type_declarations
-    in
-    let allow_function_like_statements = args.allow_function_like_statements in
     let v0_use_split_chunks = args.v0_use_split_chunks in
     let open Builder in
-    {
-      allow_no_end_semicolon;
-      allow_expression_elsif;
-      allow_double_underscore;
-      allow_unknown;
-      allow_storage_discards;
-      allow_hyphenated_pending_constraint;
-      allow_local_constants;
-      allow_single_arrows;
-      allow_empty_structured_type_declarations;
-      allow_function_like_statements;
-      v0_use_split_chunks;
-    }
+    { v0_use_split_chunks }
   in
 
   let or_exit f =
@@ -412,8 +316,6 @@ let run_with (args : args) : unit =
 
     let use_conflicting_side_effects_extension =
       args.use_conflicting_side_effects_extension
-
-    let control_flow_analysis = args.control_flow_analysis
   end in
   let module T = Annotate (C) in
   let typed_ast, static_env = or_exit @@ fun () -> T.type_check_ast ast in

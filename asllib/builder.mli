@@ -28,25 +28,11 @@ type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
-
-type parser_config = {
-  allow_no_end_semicolon : bool;
-  allow_expression_elsif : bool;
-  allow_double_underscore : bool;
-  allow_unknown : bool;
-  allow_storage_discards : bool;
-  allow_hyphenated_pending_constraint : bool;
-  allow_local_constants : bool;
-  allow_single_arrows : bool;
-  allow_empty_structured_type_declarations : bool;
-  allow_function_like_statements : bool;
-  v0_use_split_chunks : bool;
-}
+type parser_config = { v0_use_split_chunks : bool }
 
 val default_parser_config : parser_config
-(** The default parser configuration. It sets the following:
-    allow_no_end_semicolon = false allow_double_underscore = false allow_unknown
-    = false *)
+(** The default parser configuration. It sets [v0_use_split_chunks] to [false].
+*)
 
 val from_file_result :
   ?ast_type:ast_type ->
