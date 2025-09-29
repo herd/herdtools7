@@ -78,9 +78,8 @@ let compare_parsers file =
   in
   if Bool.equal aslref bnfc then Pass else Fail { aslref; bnfc }
 
-(**
-   Taken from https://gist.github.com/lindig/be55f453026c65e761f4e7012f8ab9b5 (ty Chris)
-*)
+(** Taken from https://gist.github.com/lindig/be55f453026c65e761f4e7012f8ab9b5
+    (ty Chris) *)
 let dir_contents files =
   let rec loop result = function
     | f :: fs when Sys.is_directory f ->

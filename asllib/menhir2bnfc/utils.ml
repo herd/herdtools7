@@ -14,8 +14,7 @@ module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
 (** A copy of Ocaml's List.find_index from stdlib 5.1
-    https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml
- *)
+    https://github.com/ocaml/ocaml/blob/trunk/stdlib/list.ml *)
 let list_find_index p =
   let rec aux i = function
     | [] -> None
