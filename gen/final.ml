@@ -78,7 +78,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val run : C.C.event list list -> C.A.location C.C.EventMap.t -> faults * faults -> final
 
     val dump_final : out_channel -> final -> unit
-    val dump_state : fenv -> string
 
 (* Complement init environemt *)
     val extract_ptes : fenv -> C.A.location list
@@ -252,7 +251,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     (* Represent faults, i.e.,
        a /\ b /\ c,
        or the negation of faults, i.e.
-       ~(a \/ ~b \/ ~c *)
+       ~a /\ ~b /\ ~c *)
     type faults = FaultSet.t
 
     type cond_final =
@@ -275,10 +274,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
 
     let dump_val = function
-      | I i ->
-          let i = Code.value_to_int i in
-          if O.hexa then sprintf "0x%x" i
-          else sprintf "%i" i
+      | I i -> Code.pp_v ~hexa:O.hexa i
       | S s -> s
       | P p -> C.A.PteVal.pp p
 
@@ -294,64 +290,50 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
              else C.A.pp_location_brk in
            sprintf "%s=%s" (pp_loc r) (dump_val v)
 
-    let dump_state fs =
-      String.concat " /\\ "
-        (List.map
-           (fun (r,vs) ->
-             match VSet.as_singleton vs with
-             | Some v ->
-                 dump_atom r v
-             | None ->
-                 let pp =
-                   VSet.pp_str " \\/ "
-                     (fun v -> dump_atom r v)
-                     vs in
-                 sprintf "(%s)" pp)
-           fs)
+    let dump_state_list fs =
+      List.map ( fun (r,vs) ->
+        match VSet.as_singleton vs with
+        | Some v -> dump_atom r v
+        | None ->
+          let pp = VSet.pp_str " \\/ " (fun v -> dump_atom r v) vs in
+          sprintf "(%s)" pp
+      ) fs
 
     let dump_flts pos_flts neg_flts =
-      let neg_string = if FaultSet.is_empty neg_flts then
-        ""
-      else begin
-        let pp = String.concat " \\/ " (FaultSet.map_list pp_fault neg_flts) in
-        if FaultSet.is_singleton neg_flts then sprintf "~%s" pp
-        else sprintf "~(%s)" pp
-      end in
-        let pos_string = String.concat " /\\ " (FaultSet.map_list pp_fault pos_flts) in
-        match neg_string,pos_string with
-        |"",_|_,"" -> pos_string ^ neg_string
-        |_,_ -> pos_string ^ " /\\ " ^ neg_string
+      (* print ~a /\ ~b /\ ~c *)
+      ( FaultSet.map_list pp_fault neg_flts |> List.map ((^) "~") ) @
+      (* print  a /\ b /\ c *)
+      ( FaultSet.map_list pp_fault pos_flts )
 
     let dump_locations chan locs =
       fprintf chan "locations [%s]\n" (String.concat " " locs)
 
     let dump_final chan (f,pos_flts,neg_flts) =
-      let loc_flts = [] in
+      let flts = dump_flts pos_flts neg_flts in
       match f with
       | Exists fs ->
-          let ppfs = dump_state fs
-          and ppflts = dump_flts pos_flts neg_flts in
-          let cc = match ppfs,ppflts with
-          | "","" -> ""
-          | "",_ -> "(" ^ ppflts ^ ")"
-          | _,"" -> "(" ^ ppfs ^ ")"
-          | _,_ -> sprintf "(%s) /\\ %s" ppfs ppflts in
-          if cc <> "" then
-            fprintf chan "%sexists %s\n" (if !Config.neg then "~" else "") cc
+          let exist_list = (dump_state_list fs) @ flts in
+          begin match exist_list with
+            | [] -> Warn.fatal "There is no `exist` condition check."
+            | _ ->
+              let exist_string = String.concat " /\\ " exist_list in
+              let if_neg = if !Config.neg then "~" else "" in
+              fprintf chan "%sexists (%s)\n" if_neg exist_string
+          end
       | Forall ffs ->
-          fprintf chan "forall\n" ;
-          fprintf chan "%s%s\n" (Run.dump_cond ffs)
-            (match dump_flts pos_flts neg_flts with
-            | "" -> ""
-            | pp -> " /\\ "^pp)
+          fprintf chan "forall %s%s\n" (Run.dump_cond ffs)
+            (match flts with
+            | [] -> ""
+            | pp -> " /\\ " ^ (String.concat " /\\ " pp))
       | Locations locs ->
           dump_locations chan
-            (List.fold_right
-               (fun loc k -> sprintf "%s;" (C.A.pp_location loc)::k)
-               locs loc_flts) ;
-          begin match dump_flts pos_flts neg_flts with
-          | "" -> ()
-          | pp -> if not do_kvm then fprintf chan "forall %s\n" pp
+            (List.map
+               (fun loc -> sprintf "%s;" (C.A.pp_location loc))
+               locs) ;
+          begin match flts with
+          | [] -> ()
+          | pp -> if not do_kvm then fprintf chan "forall %s\n"
+                (String.concat " /\\ " pp)
           end
 
 (* Extract ptes *)
