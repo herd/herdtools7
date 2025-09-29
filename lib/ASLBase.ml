@@ -204,8 +204,11 @@ let memoize f =
         let () = Hashtbl.add table k r in
         r
 
+let parser_config =
+  Asllib.Builder.{ default_parser_config with v0_use_split_chunks = true }
+
 let do_build_ast_from_file ?ast_type version fname =
-  match Asllib.Builder.from_file_multi_version ?ast_type version fname with
+  match Asllib.Builder.from_file_multi_version ?ast_type ~parser_config version fname with
   | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ast
 

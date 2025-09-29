@@ -39,6 +39,7 @@ type parser_config = {
   allow_single_arrows : bool;
   allow_empty_structured_type_declarations : bool;
   allow_function_like_statements : bool;
+  v0_use_split_chunks : bool;
 }
 
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
@@ -55,6 +56,7 @@ let default_parser_config =
     allow_single_arrows = false;
     allow_empty_structured_type_declarations = false;
     allow_function_like_statements = false;
+    v0_use_split_chunks = false;
   }
 
 let select_type ~opn ~ast = function
@@ -113,7 +115,10 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
       | Parser.Error -> cannot_parse lexbuf
       | Lexer.LexerError -> unknown_symbol lexbuf)
   | `ASLv0 -> (
-      let parse = select_type ~opn:Gparser0.opn ~ast:Gparser0.ast ast_type in
+      let as_chunks = parser_config.v0_use_split_chunks in
+      let parse =
+        select_type ~opn:Gparser0.opn ~ast:(Gparser0.ast ~as_chunks) ast_type
+      in
       try parse Lexer0.token lexbuf with Parser0.Error -> cannot_parse lexbuf)
 
 let from_lexbuf' ast_type parser_config version lexbuf () =

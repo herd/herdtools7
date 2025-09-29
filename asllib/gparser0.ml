@@ -173,10 +173,9 @@ let ast_chunk mk_lexer lexbuf =
 
 (* Set [as_chunks] to false parsing ASL files as a whole *)
 
-let as_chunks = true
-
-let ast (mk_lexer : unit -> (lexbuf -> token)) (lexbuf : lexbuf) : AST.t =
-  if as_chunks then
+let ast ?(as_chunks = false) (mk_lexer : unit -> lexbuf -> token) :
+    lexbuf -> AST.t =
+  if as_chunks then fun lexbuf ->
     let asts =
       Seq.fold_left
         (fun k ((lex_start_p, lex_curr_p), chunk) ->
@@ -187,11 +186,11 @@ let ast (mk_lexer : unit -> (lexbuf -> token)) (lexbuf : lexbuf) : AST.t =
         [] (Splitasl.split lexbuf)
     in
     List.concat (List.rev asts)
-  else
+  else fun lexbuf ->
     let lexer_state = RL.of_lexer_lexbuf is_eof (mk_lexer ()) lexbuf in
     parse_repeatable Parser0.Incremental.spec lexer_state lexbuf
 
-let opn (mk_lexer : unit -> (lexbuf -> token)) (lexbuf : lexbuf) : AST.t =
+let opn (mk_lexer : unit -> lexbuf -> token) (lexbuf : lexbuf) : AST.t =
   let () =
     if _dbg then
       Format.eprintf "Starting parsing opn in file %s@."
