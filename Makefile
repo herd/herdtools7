@@ -230,6 +230,19 @@ test.kvm:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 KVM instructions tests: OK"
 
+test:: test-asl-vmsa
+test-asl-vmsa:: test.kvm.asl
+test.kvm.asl: asl-pseudocode
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
+		-conf ./herd/tests/instructions/AArch64.kvm/asl-vmsa.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 KVM (ASL) instructions tests: OK"
+
 test:: test-c
 test-local:: test-c
 test-c:
@@ -255,7 +268,7 @@ test-ppc:
 
 test:: test-asl
 test-local:: test-asl
-test-asl:
+test-asl: asl-pseudocode
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-nohash \
@@ -554,6 +567,19 @@ faults-test:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64-faults tests: OK"
 
+
+asl-faults-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-faults/shelf.py \
+		-variant asl,strict,d128 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue aarch64-faults tests: OK"
+
 cata-test:: pick-test-mixed
 pick-test-mixed:
 	@ echo
@@ -605,6 +631,19 @@ vmsa-test:
 		-libdir-path ./herd/libdir \
 		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
 		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
+
+cata-asl-vmsa-test: asl-pseudocode
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
+		-shelf-path catalogue/aarch64-VMSA/shelf.py \
+		-conf-path catalogue/aarch64-VMSA/cfgs/asl.cfg \
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
 

@@ -38,10 +38,15 @@ type t = {
   attrs : Attrs.t;
   }
 
+(* Identity translations *)
+val fromExtra : t -> t
+val toExtra : t -> t
+
+(* Basic *)
 val compare : t -> t -> int
 val eq : t -> t -> bool
 
-(* Accessors, setters *)
+(* Accessors, Setters *)
 val is_af : t -> bool
 
 val same_oa : t -> t -> bool
@@ -77,3 +82,11 @@ val dump_pack : (string -> string) -> t -> string
 val as_physical : t -> string option
 val as_flags : t -> string option
 val attrs_as_kvm_symbols : t -> string list
+
+(***************************************)
+(* PTE operation as bitwise operations *)
+(***************************************)
+
+val orop : t -> int64 -> t option
+val andnot2 : t -> int64 -> t option
+val andop : t -> int64 -> int64 option

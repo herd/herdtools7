@@ -80,8 +80,8 @@ let prec =
   function
   | `BOR | `BAND | `IMPL | `BEQ -> 0
   | `EQ | `NE -> 1
-  | `GT | `GE | `LT | `LE -> 2 (* Non assoc *)
-  | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT -> 3
+  | `GT | `GE | `LT | `LE -> 2  (* Non assoc *)
+  | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT | `BIC -> 3
   | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
   | `POW -> 5
 

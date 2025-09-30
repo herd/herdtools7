@@ -59,6 +59,7 @@ val ing2 : 'a -> 'b -> unit
 (* raise Not_found *)
 val not_found : unit -> 'a
 
+val some : 'a -> 'a option
 val is_none : 'a option -> bool
 val is_some : 'a option -> bool
 val as_some : 'a option -> 'a

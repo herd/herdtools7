@@ -37,7 +37,7 @@ type 'op binop =
 module
    Make
      (S:Scalar.S)
-     (Extra:ArchOp.S with type scalar = S.t) : ArchOp.S
+     (Extra:ArchOp.WithTr with type scalar = S.t) : ArchOp.S
    with type extra_op1 = Extra.op1
     and type 'a constr_op1 = 'a unop
     and type extra_op = Extra.op
@@ -159,8 +159,10 @@ module
       | _ -> None
 
     let exit _ = raise Exit
-    let toExtra cst = Constant.map Misc.identity exit exit exit cst
-    and fromExtra cst = Constant.map Misc.identity exit exit exit cst
+
+    let trToExtra cst = Constant.map Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg exit cst
+    and trFromExtra cst =
+      Constant.map Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg exit cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
@@ -194,11 +196,11 @@ module
       | AddPAC (true, key) -> addOnePAC key
       | AddPAC (false, key) -> addPAC key
       | Extra op -> fun c1 c2 ->
-          try
-            match Extra.do_op op (toExtra c1) (toExtra c2) with
-            | None -> None
-            | Some cst -> Some (fromExtra cst)
-          with Exit -> None
+        try
+          match Extra.do_op op (trToExtra c1) (trToExtra c2) with
+          | None -> None
+          | Some cst -> Some (trFromExtra cst)
+        with Exit -> None
 
 
     let do_op1 = function
@@ -218,9 +220,9 @@ module
       | Extra1 op1 ->
          fun cst ->
            try
-             match Extra.do_op1 op1 (toExtra cst) with
+             match Extra.do_op1 op1 (trToExtra cst) with
              | None -> None
-             | Some cst -> Some (fromExtra cst)
+             | Some cst -> Some (trFromExtra cst)
            with Exit -> None
 
 
@@ -229,60 +231,11 @@ module
       if S.equal (S.of_int 12) c then Some (Symbolic (System (TLB,s)))
       else None
 
-    let mask_valid = S.one
-    let mask_el0 = S.shift_left S.one 6
-    let mask_db = S.shift_left S.one 7
-    let mask_af = S.shift_left S.one 10
-    let mask_dbm = S.shift_left S.one 51
-    let mask_all_neg =
-      S.lognot
-        (S.logor mask_el0
-           (S.logor
-              (S.logor mask_valid  mask_db)
-              (S.logor  mask_af  mask_dbm)))
-
-    let is_zero v = S.equal S.zero v
-    let is_set v m = not (is_zero (S.logand v m))
-
-    let orop p m =
-      if is_set m mask_all_neg then None
-      else
-        let p = if is_set m mask_valid then { p with valid=1; } else p in
-        let p = if is_set m mask_el0 then { p with el0=1; } else p in
-        let p = if is_set m mask_db then { p with db=0; } else p in
-        let p = if is_set m mask_af then { p with af=1; } else p in
-        let p = if is_set m mask_dbm then { p with dbm=1; } else p in
-        Some p
-
-    and andnot2 p m =
-      if is_set m mask_all_neg then None
-      else
-        let p = if is_set m mask_valid then { p with valid=0; } else p in
-        let p = if is_set m mask_el0 then { p with el0=0; } else p in
-        let p = if is_set m mask_db then { p with db=1; } else p in
-        let p = if is_set m mask_af then { p with af=0; } else p in
-        let p = if is_set m mask_dbm then { p with dbm=0; } else p in
-        Some p
-
-    and andop p m =
-      let r = S.zero in
-      let r =
-        if is_set m mask_valid && p.valid=1
-        then S.logor r mask_valid else r  in
-      let r =
-        if is_set m mask_el0 && p.el0=1
-        then S.logor r mask_el0 else r  in
-      let r =
-        if is_set m mask_db && p.db=0;
-        then S.logor r mask_db else r  in
-      let r =
-        if is_set m mask_af &&  p.af=1;
-        then S.logor r mask_af else r  in
-      let r =
-        if is_set m mask_dbm && p.dbm=1
-        then S.logor r mask_dbm else r  in
-      Some r
-
+    let orop p m = AArch64PteVal.orop p @@ S.to_int64 m
+    and andnot2 p m = AArch64PteVal.andnot2 p @@ S.to_int64 m
+    and andop p m  =
+      AArch64PteVal.andop p @@ S.to_int64 m
+      |> Misc.app_opt S.of_int64
 
     let mask c sz =
       let open MachSize in

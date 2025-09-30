@@ -31,6 +31,8 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
+let _dbg = false
+
 module BV = Asllib.Bitvector
 module AST = Asllib.AST
 
@@ -45,6 +47,7 @@ let unique_zero = false
 let zero = S_Int Z.zero
 let one = S_Int Z.one
 let zeros sz = S_BitVector (BV.zeros sz)
+let bv_of_string s = S_BitVector (BV.of_string s)
 
 (*
  * Integer dump is made assuming a 64bits basis.
@@ -62,12 +65,21 @@ let norm_signed z =
 
 let z_format_hexa z = "0x" ^ Z.format "%x" z
 
+let pp_bv bv =
+  let pp =  BV.to_string bv in
+  if _dbg then
+    if String.length pp > 6 then
+      "'..."
+      ^ String.sub pp (String.length pp - 4) 3 ^ "'"
+    else pp
+  else pp
+
 let pp hexa = function
   | S_Int i -> if hexa then z_format_hexa (norm_unsigned i) else Z.format "%d" i
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
   | S_BitVector bv ->
-      if hexa then z_format_hexa (BV.to_z_unsigned bv) else BV.to_string bv
+      if hexa then z_format_hexa (BV.to_z_unsigned bv) else  pp_bv bv
   | S_Label s -> s
 
 let pp_unsigned hexa = function
@@ -77,7 +89,7 @@ let pp_unsigned hexa = function
   | S_Bool true -> "TRUE"
   | S_Bool false -> "FALSE"
   | S_BitVector bv ->
-      if hexa then z_format_hexa (BV.to_z_unsigned bv) else BV.to_string bv
+      if hexa then z_format_hexa (BV.to_z_unsigned bv) else pp_bv bv
   | S_Label s -> s
 
 let of_string s =
@@ -88,6 +100,7 @@ let of_string s =
     | "FALSE" -> S_Bool false
     | _ -> S_BitVector (BV.of_string s))
 
+let of_bool b = S_Bool b
 let of_int i = S_Int (Z.of_int i)
 
 let to_int = function
@@ -95,7 +108,7 @@ let to_int = function
   | S_Bool true -> 1
   | S_Bool false -> 0
   | S_BitVector bv -> BV.to_int_signed bv
-  | S_Label _ -> Warn.fatal "Trying to convert a label to int"
+  | S_Label s -> Warn.fatal "Trying to convert label %s to int" s
 
 let of_int64 i = S_Int (Z.of_int64 i)
 
@@ -104,7 +117,7 @@ let to_int64 = function
   | S_Bool true -> Int64.one
   | S_Bool false -> Int64.zero
   | S_BitVector bv -> BV.to_int64_signed bv
-  | S_Label _ -> Warn.fatal "Trying to convert a label to int"
+  | S_Label s -> Warn.fatal "Trying to convert label %s to int64" s
 
 let as_bool = function
   | S_Bool b -> Some b
@@ -146,19 +159,27 @@ let unsigned_compare s1 s2 =
     | S_Label s1, S_Label s2 -> String.equal s1 s2
     | _ -> false
 
-    let zop_expressive pp_op op s1 s2 =
-    match (s1, s2) with
-    | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
-    | S_BitVector bv1, S_Int i2 ->
-        let sz = BV.length bv1 in
-        S_BitVector (bv1 |> BV.to_z_unsigned |> op i2 |> BV.of_z sz)
-    | S_BitVector bv1, S_BitVector bv2 when BV.length bv1 = BV.length bv2 ->
-        let z1 = BV.to_z_unsigned bv1 and z2 = BV.to_z_unsigned bv2 in
-        let z = op z1 z2 in
-        S_BitVector (BV.of_z (BV.length bv1) z)
-    | _ ->
-        Warn.fatal "ASLScalar invalid op: %s %s %s" (pp false s1) pp_op
-          (pp false s2)
+let is_zero = function
+  | S_Int i -> Z.equal Z.zero i
+  | S_BitVector bv -> BV.is_zeros bv
+  | S_Bool _|S_Label _ -> false
+
+let zop_expressive pp_op op s1 s2 =
+  match (s1, s2) with
+  | S_Int i1, S_Int i2 -> S_Int (op i1 i2)
+  | S_BitVector bv1, S_Int i2 ->
+      let sz = BV.length bv1 in
+      S_BitVector (bv1 |> BV.to_z_unsigned |> op i2 |> BV.of_z sz)
+  | S_BitVector bv1, S_BitVector bv2
+       when BV.length bv1=BV.length bv2
+    ->
+     let z1 = BV.to_z_unsigned bv1
+     and z2 = BV.to_z_unsigned bv2 in
+     let z = op z1 z2 in
+     S_BitVector (BV.of_z (BV.length bv1) z)
+  | _ ->
+     Warn.fatal "ASLScalar invalid op: %s %s %s"
+       (pp false s1) pp_op (pp false s2)
 
 let add = zop_expressive "add" Z.add
 and sub = zop_expressive "sub" Z.sub
@@ -278,6 +299,12 @@ let sxt sz = function S_Int i -> S_Int (do_sxt sz i) | s -> s
 let get_tag _t = assert false
 let set_tag _b _t = assert false
 
+let as_int = function
+  | S_Int z -> Z.to_int z |> Misc.some
+  | S_Bool false -> Some 0
+  | S_Bool true -> Some 1
+  | S_BitVector _|S_Label _ -> None
+
 let convert_to_int_signed = function
   | S_Int _ as s -> s
   | S_Bool false -> S_Int Z.zero
@@ -285,19 +312,23 @@ let convert_to_int_signed = function
   | S_BitVector bv -> S_Int (BV.to_z_signed bv)
   | S_Label s -> Warn.fatal "ASLScalar invalid op: label %S convert to int" s
 
-  let convert_to_int_unsigned = function
+let convert_to_int_unsigned = function
   | S_Int _ as s -> s
   | S_Bool false -> S_Int Z.zero
   | S_Bool true -> S_Int Z.one
   | S_BitVector bv -> S_Int (BV.to_z_unsigned bv)
   | S_Label s -> Warn.fatal "ASLScalar invalid op: label %S convert to int" s
 
-  let convert_to_bool = function
-  | S_Int i -> S_Bool (not (Z.equal i Z.zero))
-  | S_Bool b -> S_Bool b
-  | S_BitVector _ as s ->
-      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false s)
-  | S_Label s -> Warn.fatal "ASLScalar invalid op: label %S convert to bool" s
+let convert_to_bool c =
+  match as_bool c with
+  | Some b -> S_Bool b
+  | None ->
+      Warn.fatal "ASLScalar invalid op: to_bool %s" (pp false c)
+
+(** Convert to label *)
+let as_label = function
+| S_Label s -> Some s
+| S_Int _|S_Bool _|S_BitVector _ -> None
 
 (** Convert to bitvector of known size *)
 let convert_to_bv sz = function
@@ -316,6 +347,8 @@ let convert_to_bv sz = function
 
 (** Transform to bitvector, size fixed to 64 if transformation occurs. *)
 let as_bv = function S_BitVector _ as bv -> bv | v -> convert_to_bv 64 v
+
+let int64_to_bv v = of_int64 v |>  convert_to_bv 64
 
 let try_extract_slice s positions =
   match s with
@@ -351,6 +384,35 @@ let try_write_slice positions dst src =
 
 let empty = S_BitVector BV.empty
 let zeros_size_one = S_BitVector (BV.zeros 1)
+
+let bv_of_bool b =  S_BitVector (if b then BV.one else BV.zero)
+
+let bv_of_int x = S_BitVector (BV.of_int x)
+
+let do_bv_of_bit = function
+  | 0 -> BV.zero
+  | 1 -> BV.one
+  | _ -> assert false
+
+let bv_of_bit b =  S_BitVector (do_bv_of_bit b)
+
+and bit_of_bv s =
+  let bv =
+    match s with
+    | S_BitVector bv -> bv
+    | S_Bool true -> BV.one
+    | S_Bool false -> BV.zero
+    | S_Label _ as sc ->
+        Warn.fatal  "bit_of_bv on illegal input %s" (pp false sc)
+    | S_Int z ->
+        if Z.equal Z.zero z then BV.zero else BV.one in
+  if BV.is_zero bv then 0
+  else if BV.is_one bv then 1
+  else  Warn.fatal  "bit_of_bv on illegal input %s" (BV.to_string bv)
+
+let bv_of_bits bs =
+  let bv = List.map do_bv_of_bit bs |> BV.concat in
+  S_BitVector bv
 
 let printable_z z = norm_signed z
 

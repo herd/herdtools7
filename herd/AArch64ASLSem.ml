@@ -21,10 +21,20 @@ let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"
 
-let return_0 =
+let return_i i =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  add_dummy_annotation (S_Return (Some (expr_of_int 0)))
+  add_dummy_annotation (S_Return (Some (expr_of_int i)))
+
+let return_0 = return_i 0
+
+let catch_silent_exit body =
+  let open Asllib.AST in
+  let open Asllib.ASTUtils in
+  let exit_type : Asllib.AST.ty =
+    add_dummy_annotation (T_Named "SilentExit") in
+  let catcher = (None,exit_type,return_0) in
+  add_dummy_annotation (S_Try (body,[catcher],None))
 
 let end_profile t0 msg : unit =
   let t1 = Sys.time () in
@@ -71,19 +81,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         [ aarch64_iico_ctrl; aarch64_iico_data; aarch64_iico_order ]
 
     module ASLConf = struct
-      include TopConf.C
+      module C = struct
+        include TopConf.C
+        module PC = struct
+          include TopConf.C.PC
 
-      module PC = struct
-        include TopConf.C.PC
-
-        let doshow = aarch64_iico
-        let showevents = PrettyConf.AllEvents
-        let showpo = true
-        let showraw = aarch64_iico
+          let doshow = aarch64_iico
+          let showevents = PrettyConf.AllEvents
+          let showpo = true
+          let showraw = aarch64_iico
+        end
+        let variant = function Variant.ASL_AArch64 -> true | c -> variant c
+        let debug = Debug_herd.{ TopConf.C.debug with monad = false }
       end
 
-      let variant = function Variant.ASL_AArch64 -> true | c -> variant c
-      let debug = Debug_herd.{ debug with monad = false }
+      let libfind = TopConf.C.libfind
+      let dirty = TopConf.dirty
+
     end
 
     module ASLS = ASLSem.Make (ASLConf)
@@ -94,7 +108,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     module ASLTH = Test_herd.Make (ASLS.A)
 
     module MCConf = struct
-      include ASLConf
+      include ASLConf.C
 
       let byte = SZ.byte
       let dirty = TopConf.dirty
@@ -797,9 +811,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr
-        (fun _ -> Warn.fatal "Cannot translate PTE")
-        (fun _ -> Warn.fatal "Cannot translate PAR_EL1")
+      Constant.map tr Misc.identity Misc.identity
         (fun _ -> Warn.fatal "Cannot translate instruction")
 
     let aarch64_to_asl_bv_cst sz = function
@@ -859,7 +871,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
            proc_state_fields
          |> StringMap.from_bindings)
 
-    let build_pstate_val ii =
+    let build_pstate_val is_el0 ii =
       let fields_to_update =
         [
           ("N", AArch64Base.PSTATE.N);
@@ -878,7 +890,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | None -> (fields, eqs))
           (Lazy.force pstate_default_fields, []) fields_to_update
       in
+      let pstate_updated_fields =
+        StringMap.add "EL"
+          ((Constant.Concrete
+                (ASLScalar.bv_of_string
+                   (if is_el0 then "00" else "01"))))
+          pstate_updated_fields in
       (ASLS.A.V.Val (Constant.ConcreteRecord pstate_updated_fields), eqs)
+
+    let is_vmsa = TopConf.C.variant Variant.VMSA
+    let is_d128 = is_vmsa && TopConf.C.variant Variant.D128
 
     let build_test_init ii =
       let state_add loc v st =
@@ -893,14 +914,31 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         add_reg_if_present reg (ASLBase.ArchReg reg)
       in
       let global_loc name = ASLBase.(ASLLocalId (Scope.Global true, name)) in
-      let pstate_val, eqs = build_pstate_val ii in
+      let is_el0 =
+        not is_vmsa ||
+        List.exists (Proc.equal ii.A.proc) TopConf.procs_user in
+      let pstate_val, eqs = build_pstate_val is_el0 ii in
       let st =
         ASLS.A.state_empty
         |> state_add (global_loc "PSTATE") pstate_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
+        |> (if is_vmsa then
+              state_add (global_loc "D128")
+                (ASLS.A.V.scalarToV (ASLScalar.of_bool is_d128))
+            else Fun.id)
       in
+      let () =
+        if _dbg then
+          let open Printf in
+          eprintf
+            "State: {%s}\n%!"
+          @@ ASLS.A.pp_nice_state
+            st ", "
+            (fun loc v ->
+               sprintf "%s -> %s"
+                 (ASLS.A.pp_location loc) (ASLS.A.V.pp true v)) in
       (st, eqs)
 
     let fake_test ii fname decode =
@@ -928,6 +966,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
               let s = stmt_from_list [ decode; s; return_0 ] in
+              let s =
+                if is_vmsa then  catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
         in
@@ -1055,6 +1095,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_op1 =
         let open Op in
         function
+        | ArchOp1 ASLOp.OA ->
+          fun acc v ->
+            (M.VC.Unop (Op.ArchOp1 (AArch64Op.OA), tr_v v), acc)
         | ArchOp1 op -> tr_arch_op1 op
         | op ->
             (* convert the type of `op` from `'a Op.op1` to `'b Op.op1` *)
@@ -1094,15 +1137,25 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in
             fun acc v -> (M.VC.Unop (new_op, tr_v v), acc)
 
-      let tr_action is_bcc e ii =
-        let exp = AArch64.Exp in
-        function
-        | ASLS.Act.Access (dir, loc, v, sz, a) -> (
+      let tr_action is_bcc e ii act =
+        let () =
+          if  _dbg then
+            Printf.eprintf "tr_action %s\n%!"
+              (ASLS.Act.pp_action act) in
+        match act with
+        | ASLS.Act.Access (dir, loc, v, sz, (a, exp, acc)) -> (
             match tr_loc ii loc with
             | None -> None
             | Some loc ->
-                let ac = Act.access_of_location_std loc in
-                Some (Act.Access (dir, loc, tr_v v, a, exp, sz, ac)))
+               Some (Act.Access (dir, loc, tr_v v, a, exp, sz, acc)))
+        | ASLS.Act.Fault (_,loc,d,a,t) ->
+          let is_sync_exc_entry = true in
+          (* Assume handler is entered. See also AArch64Sem.ml *)
+            Option.bind
+              (tr_loc ii loc)
+              (fun loc ->
+                 (Act.Fault (ii,Some loc,d,a,is_sync_exc_entry,Some t,None))
+                 |> Misc.some)
         | ASLS.Act.Barrier b -> Some (Act.Barrier b)
         | ASLS.Act.Branching txt ->
            let ct = if is_bcc e then Act.Bcc else Act.Pred in
@@ -1129,7 +1182,36 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
       let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
-      let event_to_monad ii is_bcc get_port event =
+
+      let dirty =
+        match TopConf.dirty with
+        | None -> DirtyBit.soft
+        | Some d -> d
+
+      let check_spurious ii =
+        (*
+         * Explicit loads or stores yield a potential spurious update of
+         * the AF flag. When the hardware feature is active, of course.
+         *)
+        if dirty.DirtyBit.ha ii.A.proc then
+          let dir_ok =
+            let open Dir in
+            if TopConf.C.variant Variant.PhantomOnLoad then
+              (function R -> true | W -> false)
+            else
+              (function W -> true | R -> false) in
+          fun act ->
+            match act with
+            | Act.Access
+                (dir,A.Location_global loc,_,_,
+                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE))
+              when dir_ok dir
+              ->
+                Some loc
+            | _ -> None
+        else  fun _ -> None
+
+      let event_to_monad ii check_spurious is_bcc get_port event =
         let { ASLE.action; ASLE.iiid; _ } = event in
         let () =
           if _dbg then
@@ -1154,7 +1236,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               |> M.as_port (get_port event)
               |> M.force_once
             in
-            Some (event, m)
+            let check_af = check_spurious action' in
+            Some (event, (check_af,m))
 
       let rel_to_monad event_to_monad_map comb rel =
         let one_pair (e1, e2) =
@@ -1204,9 +1287,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           fun e -> ASLE.EventSet.mem e bcc in
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
-        let event_to_monad_map =
-          Seq.filter_map (event_to_monad ii is_bcc get_port) events
-          |> EMap.of_seq
+        let check_spurious = check_spurious ii in
+        let spurious_locs,event_to_monad_map =
+          let seq =
+            Seq.filter_map (event_to_monad ii check_spurious is_bcc get_port) events in
+          let locs =
+            Seq.filter_map (fun (_,(loc,_))  -> loc) seq
+            |> List.of_seq
+          and map =
+            Seq.map (fun (e,(_,m)) -> (e,m)) seq
+            |> EMap.of_seq in
+          locs,map
         in
         let events_m =
           let folder _e1 m1 acc = m1 ||| acc in
@@ -1229,7 +1320,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let one_event bds event =
             match event.ASLE.action with
             | ASLS.Act.Access
-                (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
+              (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
               ->
                let v = tr_v v in
                let () =
@@ -1279,12 +1370,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 finals None in
           match Misc.seq_opt A.V.as_int pc with
           | Some v -> B.Jump (B.Addr v,bds)
-          | None -> B.Next bds
+          | None ->
+              (* All ASL Faults are faults, no SVC interruption for now *)
+              let is_fault =  List.exists ASLE.is_fault event_list in
+              if is_fault then B.fault bds else B.Next bds
         in
         let () =
           if _dbg then
             match branch with
-            | B.Next bds ->
+            | B.Next (_::_ as bds)
+            | B.Jump (_,(_::_ as bds))
+            | B.Fault (_,(_::_ as bds))
+              ->
                 let pp =
                   List.map
                     (fun (r, v) ->
@@ -1293,7 +1390,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                     bds
                 in
                 let pp = String.concat "; " pp in
-                Printf.eprintf "Next [%s]\n%!" pp
+                Printf.eprintf "%s [%s]\n%!"
+                  (match branch with
+                   | B.Next _ -> "Next"
+                   | B.Jump _ -> "Jump"
+                   | B.Fault _ -> "Fault"
+                   | _ -> assert false)
+                  pp
             | _ -> ()
         in
         let constraints =
@@ -1304,8 +1407,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           M.restrict (tr_cnstrnts cs)
         in
         let () = if _dbg then Printf.eprintf "\n" in
+        let m_spurious =
+          (*
+           * At most one spurious setaf operation per relevant location
+           * is probably sufficient. Anyway, it is unlikely that a given
+           * value appears more than once in the spurious_locs list.
+           *)
+          List.fold_left
+            (fun m loc ->
+               M.altT (AArch64Mixed.spurious_setaf loc) (M.unitT ()) ||| m)
+            (M.unitT ()) @@ List.sort_uniq A.V.compare spurious_locs in
         let* () =
-          events_m ||| iico_data ||| iico_ctrl
+          m_spurious ||| events_m ||| iico_data ||| iico_ctrl
           ||| iico_order ||| constraints ||| M.restrict eqs_test
         in
         M.addT (A.next_po_index ii.A.program_order_index) (return branch)
@@ -1313,13 +1426,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let check_event_structure model =
       let module MemConfig = struct
-        include ASLConf
+        include ASLConf.C
 
         let model = model
         let bell_model_info = None
-        let debug = ASLConf.debug.Debug_herd.barrier
-        let debug_files = ASLConf.debug.Debug_herd.files
-        let profile = ASLConf.debug.Debug_herd.profile_cat
+        let debug = ASLConf.C.debug.Debug_herd.barrier
+        let debug_files = ASLConf.C.debug.Debug_herd.files
+        let profile = ASLConf.C.debug.Debug_herd.profile_cat
         let showsome = true
         let skipchecks = StringSet.empty
         let strictskip = true
@@ -1384,7 +1497,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       in
       MC.solve_regs test es cs
 
-    let build_semantics test_aarch64 ii =
+    let asl_build_semantics test_aarch64 ii =
       let () =
         if _dbg then
           Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
@@ -1452,6 +1565,16 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | [] -> Warn.fatal "No possible ASL execution."
           | h :: t -> List.fold_left M.altT h t)
 
-    let spurious_setaf _ = assert false
+    let build_semantics test ii =
+      let open AArch64Base in
+      match ii.A.inst with
+      | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0)) (* Specific -> get TLBI key *)
+      | I_OP3 (V64,SUBS,ZR,_,
+               OpExt.(Imm (0,0)|Reg(_,LSL 0))) (* Register or zero comparison *)
+      | I_DC _|I_IC _ | I_TLBI _ ->
+          AArch64Mixed.build_semantics test ii
+      | _ -> asl_build_semantics test ii
+
+    let spurious_setaf v = AArch64Mixed.spurious_setaf v
   end
 end

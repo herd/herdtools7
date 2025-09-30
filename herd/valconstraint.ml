@@ -666,8 +666,10 @@ let get_failed cns =
                 (pp_cnstrnt c1) (pp_cnstrnt c2))
             r
         end ;
+(*
         eprintf "** Equations **\n%!" ;
         eprintf "%s\n" (pp_cnstrnts cs) ; flush stderr ;
+*)
         eprintf "** Equations ordered**\n%!" ;
         debug_topo stderr ns r
       end ;

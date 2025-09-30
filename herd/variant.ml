@@ -116,7 +116,9 @@ type t =
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
   | ConstPacField
-
+(* 128 bit mode for asl,vmsa *)
+  | D128
+  
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
@@ -127,7 +129,9 @@ let tags =
     "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
     "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
     "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
-    "pac"; "fpac"; "const-pac-field";]
+    "pac"; "fpac"; "const-pac-field";
+    "d128";
+   ]
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -192,6 +196,7 @@ let parse s = match Misc.lowercase s with
 | "pac" -> Some Pac
 | "const-pac-field" -> Some ConstPacField
 | "fpac" -> Some FPac
+| "d128" -> Some D128
 | s ->
   let (>>=) o f = match o with
     | Some _ -> o
@@ -296,6 +301,7 @@ let pp = function
   | Pac -> "pac"
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
+  | D128 -> "d128"
 
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0

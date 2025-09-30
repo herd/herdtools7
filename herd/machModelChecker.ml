@@ -503,24 +503,32 @@ module Make
                  "DATA",MU.is_data_port conc.S.str;
                 ])) in
       let m =
-        if kvm then begin
+        if kvm && not asl then begin
+            let get_pte_val_attrs e =
+              Option.bind
+                (match E.read_of e with
+                 | Some _ as v -> v
+                 | _ -> E.written_of e)
+                (function
+                  | S.A.V.Val (Constant.PteVal v) ->
+                      Some (S.A.V.Cst.PteVal.get_attrs v)
+                  | _ -> None) in
             let attrs_of_evt e =
-              let pteval_v =
-                match E.read_of e with
-                | Some _ as v -> v
-                | _ -> E.written_of e in
-              let open Constant in
-              match pteval_v with
-              | Some (S.A.V.Val (PteVal v)) ->
-                 S.A.V.Cst.PteVal.get_attrs v
-              | _ -> assert false in
-            let pte_accesses =
-              E.EventSet.filter
-                (fun e -> E.Act.is_pte_access e.E.action)
-                (Lazy.force mem_evts) in
+              match get_pte_val_attrs e with
+              | Some attr -> attr
+              | None ->
+                  Warn.fatal
+                    "attrs_of_evt, pte expected, on event %s"
+                    (E.debug_event_str e) in
+              let pte_accesses =
+                E.EventSet.filter
+                  (fun e ->
+                     E.Act.is_pte_access e.E.action
+                     && Misc.is_some (get_pte_val_attrs e))
+                  (Lazy.force mem_evts) in
             let attr_evts =
               E.EventSet.filter
-                (fun e -> (attrs_of_evt e) <> []) pte_accesses in
+                (fun e -> attrs_of_evt e <> []) pte_accesses in
             let evts_map =
               E.EventSet.fold
                 (fun e evts_map ->
@@ -544,7 +552,7 @@ module Make
                k,lazy (E.EventSet.filter (fun e -> a e.E.action) evts))
              E.Act.arch_sets) in
     let m = (* To be deprecated *)
-      if kvm then
+      if kvm && not asl then
           let mevt = match I.get_set m "PTEV" with
             | Some mevt -> mevt
             | None -> (* Must exists *) assert false in
