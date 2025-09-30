@@ -580,14 +580,14 @@ module CoSt = struct
   let fault_update st =
     let check_fault, st = read_and_unset_check_fault st in
     let pte_val = get_pte_value st in
-    let fault =
-      if not check_fault || do_no_fault then None
+    let fault = match () with
+    | _ when (not check_fault || do_no_fault) -> None
       (* Need to check fault *)
-      else if do_kvm then label_pte_fault pte_val
+    | _ when do_kvm -> label_pte_fault pte_val
       (* In variants `memtag` and `morello`, the cycles are constructed such that
          no fault occurs *)
-      else if do_memtag || do_morello then Some ((Label.next_label "L"), false)
-      else None in
+    | _ when do_memtag || do_morello -> Some ((Label.next_label "L"), false)
+    |_ -> None in
     fault, st
 
   let set_tcell st e = match e.bank with
@@ -1164,7 +1164,7 @@ let do_set_read_v init =
         let st =
           match bank with
           | Tag|CapaTag|CapaSeal ->
-             CoSt.set_check_fault @@ CoSt.set_co st bank (Code.value_to_int n.evt.v)
+             CoSt.set_co st bank (Code.value_to_int n.evt.v) |> CoSt.set_check_fault
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
                memory access to a non-instruction value *)
