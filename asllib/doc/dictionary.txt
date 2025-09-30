@@ -48,6 +48,7 @@ address
 addressed
 adds
 adheres
+adjusted
 admits
 advance
 advised
@@ -192,6 +193,7 @@ axiomatically
 back
 background
 backslash
+bare
 barring
 base
 based
@@ -867,6 +869,7 @@ followed
 following
 follows
 for
+forbid
 forbidden
 forbids
 form
@@ -1672,6 +1675,7 @@ refinement
 refinements
 refines
 refining
+reflect
 reflected
 reflects
 regardless

@@ -1,0 +1,22 @@
+\section{BET2}
+
+The following changes have been made.
+
+\subsection{ASL-871: forbid \texttt{throw;}}
+
+The bare \texttt{throw;} statement (without an expression that evaluates to the thrown exception) is no longer permitted.
+The \texttt{throw e;} statement is still permitted.
+
+\subsection{ASL-873: empty function bodies}
+
+Subprogram bodies without any statements are now forbidden.
+A \texttt{pass;} statement should be used to indicate an ``empty'' subprogram body.
+
+\subsection{ASL-875: grammar of tuple types}
+
+The grammar of tuple types has been adjusted to forbid ``empty'' tuple types (e.g. \texttt{()}).
+
+\subsection{ASL-876: binary operator precedence}
+
+\RequirementRef{OperatorPrecedence} has been updated to reflect the precedence in the ASLRef implementation.
+In particular, ``relational'' operators are higher priority than ``equality-inequality'' and ``boolean'' operators.
