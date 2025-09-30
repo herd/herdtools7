@@ -18,3 +18,10 @@ relation annotate_expr'(input: expr) -> (inferred_type: type)
     prose_description = "infers the type {inferred_type} for the expression {input}",
     prose_application = "annotating the expression {input} yields the type {inferred_type}",
 };
+
+relation annotate_plus(input: Plus(lhs: expr, rhs: expr)) -> (inferred_type: type)
+{
+    prose_description = "infers the type {inferred_type} for the plus expression {input}",
+    prose_application = "annotating the plus expression {input} yields the type {inferred_type}",
+};
+

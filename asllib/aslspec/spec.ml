@@ -51,7 +51,8 @@ module Layout = struct
   let rec horizontal_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset { term = t } | Option t | List { member_type = t; _ } ->
+    | Powerset { term = _, t } | Option (_, t) | List { member_type = _, t; _ }
+      ->
         horizontal_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
@@ -65,16 +66,17 @@ module Layout = struct
         else Unspecified
     | ConstantsSet names ->
         Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
-    | Function { from_type; to_type; _ } ->
+    | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
         Horizontal
           [
-            horizontal_for_type_term from_type; horizontal_for_type_term to_type;
+            horizontal_for_type_term from_term; horizontal_for_type_term to_term;
           ]
 
   let rec default_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset { term = t } | Option t | List { member_type = t; _ } ->
+    | Powerset { term = _, t } | Option (_, t) | List { member_type = _, t; _ }
+      ->
         default_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
@@ -87,9 +89,9 @@ module Layout = struct
         else Unspecified
     | ConstantsSet names ->
         Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
-    | Function { from_type; to_type; _ } ->
+    | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
         Horizontal
-          [ default_for_type_term from_type; default_for_type_term to_type ]
+          [ default_for_type_term from_term; default_for_type_term to_term ]
 
   let horizontal_for_list layout terms =
     match layout with
@@ -231,8 +233,8 @@ module Check = struct
     match (term, layout) with
     | Label _, Unspecified -> ()
     | Label _, _ -> raise (SpecError msg)
-    | Powerset { term }, _ | Option term, _ -> check_layout term layout
-    | List { member_type }, _ -> check_layout member_type layout
+    | Powerset { term = _, t }, _ | Option (_, t), _ -> check_layout t layout
+    | List { member_type = _, t }, _ -> check_layout t layout
     | LabelledTuple { components }, Horizontal cells
     | LabelledTuple { components }, Vertical cells ->
         if List.length components <> List.length cells then
@@ -249,10 +251,11 @@ module Check = struct
     | ConstantsSet names, Horizontal cells ->
         if List.length names <> List.length cells then raise (SpecError msg)
         else List.iter2 (fun _ cell -> check_layout (Label "") cell) names cells
-    | Function { from_type; to_type }, Horizontal cells ->
+    | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
+        Horizontal cells ) ->
         if List.length cells <> 2 then raise (SpecError msg)
-        else check_layout from_type (List.nth cells 0);
-        check_layout to_type (List.nth cells 1)
+        else check_layout from_term (List.nth cells 0);
+        check_layout to_term (List.nth cells 1)
     | _ -> ()
 
   let check_math_layout definition_nodes =
@@ -273,8 +276,8 @@ module Check = struct
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids = function
     | Label id -> [ id ]
-    | Powerset { term } -> referenced_ids term
-    | Option term -> referenced_ids term
+    | Powerset { term = _, t } -> referenced_ids t
+    | Option (_, term) -> referenced_ids term
     | LabelledTuple { label_opt; components } -> (
         let component_ids =
           List.map snd components |> Utils.list_concat_map referenced_ids
@@ -288,10 +291,10 @@ module Check = struct
         | Some label ->
             label
             :: (List.map snd fields |> Utils.list_concat_map referenced_ids))
-    | List { member_type } -> referenced_ids member_type
+    | List { member_type = _, term } -> referenced_ids term
     | ConstantsSet constant_names -> constant_names
-    | Function { from_type; to_type } ->
-        referenced_ids from_type @ referenced_ids to_type
+    | Function { from_type = _, from_term; to_type = _, to_term } ->
+        referenced_ids from_term @ referenced_ids to_term
 
   (** [check_no_undefined_ids elements id_to_defining_node] checks that all
       identifiers referenced in [elements] are keys in [id_to_defining_node]. *)
@@ -325,36 +328,6 @@ module Check = struct
     in
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
 
-  (** Checks that [type_term] references only top-level types. That is, not
-      constants or type variants. This check assumes that all identifiers in
-      [type_term] are mapped to their defining nodes in [id_to_defining_node].
-  *)
-  let check_only_top_level_types id_to_defining_node type_term =
-    let identifiers_in_type_term = referenced_ids type_term in
-    List.iter
-      (fun id ->
-        match StringMap.find id id_to_defining_node with
-        | Node_Type _ -> ()
-        | _ ->
-            let msg =
-              Format.asprintf
-                "Identifier '%s' in '%a' does not refer to a top-level type" id
-                PP.pp_type_term type_term
-            in
-            raise (SpecError msg))
-      identifiers_in_type_term
-
-  let check_only_top_level_types_in_relations id_to_defining_node elements =
-    List.iter
-      (function
-        | Elem_Relation { Relation.input } ->
-            List.iter
-              (fun (_, type_term) ->
-                check_only_top_level_types id_to_defining_node type_term)
-              input
-        | _ -> ())
-      elements
-
   (** TODO:
       - Check that instantiated type terms for labelled type terms and labelled
         records match their definition (see [tests/type_instance.bad]). *)
@@ -367,9 +340,6 @@ let from_ast ast =
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
   let () = Check.check_mandatory_attributes definition_nodes in
   let () = Check.check_math_layout definition_nodes in
-  let () =
-    Check.check_only_top_level_types_in_relations id_to_defining_node ast
-  in
   let defined_ids = List.rev defined_ids in
   { ast; id_to_defining_node; defined_ids }
 

@@ -17,10 +17,10 @@ type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Powerset of { term : type_term; finite : bool }
+  | Powerset of { term : opt_named_type_term; finite : bool }
       (** A set containing all subsets of the given type. If [finite] is true
           then only the finite subsets are included. *)
-  | Option of type_term
+  | Option of opt_named_type_term
       (** Either the empty set of a set containing a single value of the given
           type. *)
   | LabelledTuple of {
@@ -37,12 +37,16 @@ type type_term =
     }
       (** A set containing all optionally-labelled records formed by the given
           fields. *)
-  | List of { maybe_empty : bool; member_type : type_term }
+  | List of { maybe_empty : bool; member_type : opt_named_type_term }
       (** A set containing all sequences of the given member type. If
           [maybe_empty] is true, the list may also be empty. *)
   | ConstantsSet of string list
       (** A set containing all constants formed by the given names. *)
-  | Function of { from_type : type_term; to_type : type_term; total : bool }
+  | Function of {
+      from_type : opt_named_type_term;
+      to_type : opt_named_type_term;
+      total : bool;
+    }
       (** A set containing all functions formed by the given types. If [total]
           is true, the function is total, otherwise it is partial. *)
 
@@ -114,7 +118,10 @@ module AttributeKey = struct
 end
 
 (** A value associated with an attribute key. *)
-type attribute = StringAttribute of string | MathLayoutAttribute of layout
+type attribute =
+  | StringAttribute of string
+  | MathMacroAttribute of string
+  | MathLayoutAttribute of layout
 
 (** A module for associating attributes with attribute keys. *)
 module Attributes = struct
