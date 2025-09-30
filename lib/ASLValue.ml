@@ -31,10 +31,63 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-module ASLScalar = struct
-  include ASLScalar
-  let printable c = c
-end
 module ASLConstant =
-  SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(ASLBase.Instr)
-module V = SymbValue.Make(ASLConstant)(ASLOp)
+  SymbConstant.Make (ASLScalar) (AArch64PteVal) (AArch64AddrReg) (ASLBase.Instr)
+
+module V = SymbValue.Make (ASLConstant) (ASLSymData) (ASLOp)
+module BVData = ASLSymData.BVData
+
+let get_sdata = function
+  | V.Var (_, sdata) -> Some sdata
+  | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
+      Some (ASLSymData.Bitvector (BVData.of_bitvector bv))
+  | _ -> None
+
+let get_bv_data = function
+  | V.Var (_, ASLSymData.Bitvector sdata) -> Some sdata
+  | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
+      Some (BVData.of_bitvector bv)
+  | _ -> None
+
+let to_fully_determined_opt = function
+  | ASLSymData.NoData -> None
+  | ASLSymData.Bitvector bv_data -> (
+      match BVData.to_fully_determined_opt bv_data with
+      | Some bv -> Some (V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)))
+      | None -> None)
+
+let set_sdata sdata = function
+  | V.Val _ as v -> v
+  | V.Var (s, sdata') -> (
+      match to_fully_determined_opt sdata with
+      | Some v -> v
+      | None -> V.Var (s, ASLSymData.merge sdata sdata'))
+
+let get_length = function
+  | V.Var (_, sdata) -> ASLSymData.get_length sdata
+  | V.Val (Constant.Concrete (ASLScalar.S_BitVector bv)) ->
+      Some (Asllib.Bitvector.length bv)
+  | _ -> None
+
+let set_length length = set_sdata (ASLSymData.full_unspecified length)
+
+let debug_value c =
+  match c with
+  | V.Var (_, ASLSymData.NoData) -> V.pp_v c
+  | V.Var (s, sdata) -> Printf.sprintf "S%d %s" s (ASLSymData.pp sdata)
+  | _ -> V.pp_v c
+
+let find_sub_symbolic bv_data positions =
+  match BVData.find_sub_symbolic positions bv_data with
+  | Some (_, s, bv_data') -> Some (V.Var (s, ASLSymData.Bitvector bv_data'))
+  | None -> None
+
+let write_slice positions ~v_src ~v_dst =
+  let src_symb = match v_src with V.Var (s, _) -> Some s | _ -> None in
+  match (get_bv_data v_src, get_bv_data v_dst) with
+  | Some bv_data_src, Some bv_data_dst ->
+      Some
+        (ASLSymData.Bitvector
+           (BVData.write_slice ~src:bv_data_src ?src_symb ~dst:bv_data_dst
+              positions))
+  | _ -> None

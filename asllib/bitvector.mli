@@ -71,6 +71,10 @@ val of_z : int -> Z.t -> t
 (** [of_int sz i] is the bitvector of length [sz] that corresponds to [i] in
     two's complement little-endian. *)
 
+val of_bytes : int -> Bytes.t -> t
+(** [of_bytes length bytes] is the bitvector represented by the [length]
+    rightmost bits in [bytes], read in little-endian. *)
+
 (* --------------------------------------------------------------------------*)
 (** {2 Exports} *)
 
@@ -101,6 +105,7 @@ val to_int64_signed : t -> int64
 (** Returns an integer representing the bitvector, little-endian. Result
     unspecified if [length > 64]. *)
 
+val to_bytes : t -> Bytes.t
 val to_z_unsigned : t -> Z.t
 val to_z_signed : t -> Z.t
 val printable : t -> Z.t
@@ -183,7 +188,11 @@ val is_zeros : t -> bool
 val is_ones : t -> bool
 (** [is_ones bv] is true if every bit of bv is set. *)
 
+val is_set_at : t -> int -> bool
+(** [is_set_at t k] is [true] if [t] has bit set at index [k]. *)
+
 (* --------------------------------------------------------------------------*)
+
 (** {2 Bitvector masks}
 
     Bitvector in ASL can be matched against masks, that have the same syntax
@@ -210,6 +219,10 @@ val mask_of_string : string -> mask
 val mask_of_bitvector : t -> mask
 (** Build a mask that matches a bitvector. *)
 
+val mask_of_bitvector_and_specified : t -> t -> mask
+(** Build a mask from a bitvector containing data and a bitvector setting the
+    specified bits. *)
+
 val matches : t -> mask -> bool
 (** [matches mask bv] is true iff [bv] matches [mask]. *)
 
@@ -227,3 +240,55 @@ val mask_unset : mask -> t
 
 val mask_specified : mask -> t
 (** [mask_specified m]'s set bits are those require set or unset by [m]. *)
+
+val mask_intersection : mask -> mask -> mask
+(** [mask_intersection m1 m2] is the mask that matches the bitvectors that are
+    matched by [m1] and [m2]. *)
+
+val mask_and : mask -> mask -> mask
+(** [mask_and m1 m2] is the mask that matches the bitvectors resulting of the
+    bitwise [`AND] operations on a bitvector matching [m1] and a bitvector
+    matching [m2]. *)
+
+val mask_or : mask -> mask -> mask
+(** [mask_or m1 m2] is the mask that matches the bitvectors resulting of the
+    bitwise [`OR] operations on a bitvector matching [m1] and a bitvector
+    matching [m2]. *)
+
+val mask_concat : mask list -> mask
+(** [mask_or m1 m2] is the mask that matches the bitvectors resulting of a
+    concatenation of a bitvector matching [m1] and a bitvector matching [m2]. *)
+
+val mask_extract_slice : mask -> int list -> mask
+(** [mask_extract_slice m positions] is the mask that matches the bitvector
+    [bv'] resulting of the [bv' = extract_slice bv positions] for a bitvector
+    [bv] that matches [m]. *)
+
+val mask_write_slice : mask -> mask -> int list -> mask
+(** [mask_write_slice m1 m2 positions] is the mask that maatches the bitvectors
+    [bv'] resulting of the operation [bv' = write_slice bv1 bv2 positions] for
+    the bitvectors [bv1] matching [m1] and [bv2] matching [m2]. *)
+
+val mask_is_fully_specified : mask -> bool
+(** [mask_is_fully_specified m] is true if there is only one bitvector matching
+    [m]. In which case, this bitvector is given by [mask_set]. *)
+
+val mask_full_unspecified : int -> mask
+(** [mask_full_unspecified length] is the mask that matches all bitvectors of
+    sie [length]. *)
+
+val mask_undetermined_positions : mask -> int list
+(** [mask_undetermined_positions m] is the list of positions that are left
+    unspecified in [m], sorted by decreasing order. *)
+
+val mask_undetermined_positions2 : mask -> mask -> int list
+(** [mask_undetermined_positions2 m1 m2] is the list of positions that are left
+    unspecified in [m1] or in [m2], sorted by decreasing order. *)
+
+val mask_can_be_equal : mask -> mask -> bool
+(** [mask_can_be_equal m1 m2] is [true] if there is a bitvector that matches
+    both [m1] and [m2]. *)
+
+val mask_inverse : mask -> mask
+(** [mask_inverse m] is the mask matching bitvectors [bv'] that are the result
+    of the bitwise inversion of a bitvector [bv] matching [m]. *)
