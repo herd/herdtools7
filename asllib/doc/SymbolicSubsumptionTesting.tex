@@ -95,20 +95,22 @@ that we refer to as \emph{symbolic domains} and then checking subsumption over t
 
 We define the \emph{symbolic domain} datatype, reusing $\intconstraint$ from the untyped AST,
 as follows:
-\hypertarget{def-symdom}{}
-\hypertarget{def-finite}{}
+
+\RenderTypes{symbolic_domains}
+\BackupOriginalType{
 \[
   \begin{array}{rcl}
-  \symdom       &\derives & \Finite(\powfin{\Z} \setminus \emptyset) \hypertarget{def-constraineddom}{}\\
-                &|        & \ConstrainedDom(\intconstraint) \hypertarget{def-symdomortop}{} \hypertarget{def-top}{}\\
-  \symdomortop  &\derives & \Top \hypertarget{def-subdomains}{}\\
+  \symdom       &\derives & \Finite(\powfin{\Z} \setminus \emptyset) \\
+                &|        & \ConstrainedDom(\intconstraint) \\
+  \symdomortop  &\derives & \Top\\
                 &|        & \Subdomains(\symdom^+)
   \end{array}
 \]
+}
 
 \begin{itemize}
   \item We refer to an element of the form $\Finite(S)$ as a \emph{symbolic finite set integer domain},
-        which represents the non-empty set of integers $S$;
+        which represents the (non-empty) set of integers $S$;
   \item We refer to an element of the form $\ConstrainedDom(\vc)$ as a \emph{symbolic constrained integer domain},
         which represents the set of integers given by the constraint $\vcs$; and
   \item We refer to an element of the form $\Top$ as a \emph{symbolic unconstrained integer domain},
@@ -166,7 +168,7 @@ is performed by testing whether each member of
   \begin{array}{l}
     \Finite(\{2,3,4\}),\\
     \ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN})),\\
-    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))\\
+    \ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\ADD}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))\\
   \end{array}
 \right]\right)
 \]
@@ -185,7 +187,7 @@ In this example, this is true as the following hold:
   \item $\Finite(\{2,3,4\})$ is subsumed by $\Finite(\{1,2,3,4,5,6, 9\})$,
   \item $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$ (as a constraint for \verb|x|)
         is subsumed by the same element (as a constraint for \verb|y|), and
-  \item $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\PLUS}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))$
+  \item $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\ADD}{\AbbrevEVar{\vN}}{\AbbrevEVar{\vN}}))$
         is subsumed by \\
         $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$.
 \end{itemize}
@@ -255,7 +257,7 @@ In this example, this is true as the following hold:
 \hypertarget{def-symdomnormalize}{}
 The function
 \[
-\symdomnormalize(\overname{\symdom^+}{\symdoms}) \aslto \overname{\symdom^+}{\newsymdoms}
+\symdomnormalize(\overname{\KleenePlus{\symdom}}{\symdoms}) \aslto \overname{\KleenePlus{\symdom}}{\newsymdoms}
 \]
 transforms the list of symbolic domain $\symdoms$ into an equivalent list of symbolic domains $\newsymdoms$
 (in the sense that they both represent the same set of integers)
@@ -263,9 +265,9 @@ where all symbolic finite set integer domains are merged into a single symbolic 
 whose set of integers is the union of the sets of integers in the merged symbolic finite set integer domains.
 
 \ExampleDef{Normalizing Symbolic Domains}
-In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomain{} for the type\\
+In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomainterm{} for the type\\
 \verb|integer{1..6, 5..N, 9, N*2}| (see \ExampleRef{The Symbolic Domain of a Type})
-merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdomain{}
+merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdomainterm{}
 \[
 \Subdomains\left(\left[
   \begin{array}{l}
@@ -311,7 +313,7 @@ transforms a type $\vt$ in a \staticenvironmentterm{} $\tenv$ into a symbolic do
 It assumes its input type has an \underlyingtype{} which is an integer.
 
 \ExampleDef{The Symbolic Domain of a Type}
-In \listingref{SymdomOfConstraint}, the \symbolicdomain{} for the type
+In \listingref{SymdomOfConstraint}, the \symbolicdomainterm{} for the type
 \verb|integer{1..6, 5..N, 9, N*2}|
 is
 \[
@@ -366,7 +368,7 @@ is
 
 \begin{mathpar}
 \inferrule[int\_parameterized]{}{
-  \symdomoftype(\tenv, \overname{\TInt(\parameterized(\id))}{\vt}) \typearrow \\
+  \symdomoftype(\tenv, \overname{\TInt(\Parameterized(\id))}{\vt}) \typearrow \\
   \overname{\Subdomains([\ConstrainedDom(\ConstraintExact(\EVar(\id)))])}{\vd}
 }
 \end{mathpar}
@@ -376,7 +378,7 @@ is
   \vi\in\listrange(\vcs): \symdomofconstraint(\tenv, \vcs[\vi]) \typearrow \vd_\vi\\
   \vc \eqdef \vi\in\listrange(\vcs) \vd_\vi
 }{
-  \symdomoftype(\tenv, \overname{\TInt(\wellconstrained(\vcs))}{\vt}) \typearrow \overname{\Subdomains(\vis)}{\vd}
+  \symdomoftype(\tenv, \overname{\TInt(\WellConstrained(\vcs))}{\vt}) \typearrow \overname{\Subdomains(\vis)}{\vd}
 }
 \end{mathpar}
 
@@ -439,13 +441,13 @@ to integers.
 \ExampleDef{The Symbolic Domain of a Constraint}
 In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|:
 \begin{itemize}
-  \item the \symbolicdomain{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
-  \item the \symbolicdomain{} for the constraint \verb|9| is $\Finite(\{9\})$,
-  \item the \symbolicdomain{} for the constraint \verb|N*2| is \\
+  \item the \symbolicdomainterm{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
+  \item the \symbolicdomainterm{} for the constraint \verb|9| is $\Finite(\{9\})$,
+  \item the \symbolicdomainterm{} for the constraint \verb|N*2| is \\
         $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$,
         since the premise \\
         $\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$ yields $\Top$,
-  \item the \symbolicdomain{} for the constraint \verb|5..N| is \\
+  \item the \symbolicdomainterm{} for the constraint \verb|5..N| is \\
         $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$,
         since the premise \\
         $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yields $\Top$.
@@ -567,8 +569,8 @@ The function
   ) \aslto
   \overname{\Bool}{\vb}
 \]
-conservatively tests whether the values represented by the \symbolicdomain\ $\cdone$
-is a subset of the values represented by the \symbolicdomain\ $\cdtwo$ in any environment
+conservatively tests whether the values represented by the \symbolicdomainterm\ $\cdone$
+is a subset of the values represented by the \symbolicdomainterm\ $\cdtwo$ in any environment
 consisting of the \staticenvironmentterm{} $\tenv$, yielding the result in $\vb$.
 
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
@@ -587,12 +589,12 @@ test is unable to conclude subsumption.
 
 \ExampleDef{Conservatively Testing Whether One Symbolic Domain is a Subset of Another}
 In \listingref{SymdomOfWidthExpr}, typechecking the assignment \verb|x=y;|
-involves test whether the \symbolicdomain{} for \verb|2..4| is a subset of the
-\symbolicdomain{} for \verb|1..6|, which $\True$.
-Similarly for testing whether the \symbolicdomain{} for \verb|N+N|
-is a subset of the \symbolicdomain{} for \verb|N*2| also yields $\True$.
-In contrast, testing whether the \symbolicdomain{} for \verb|5..N|
-is a subset of the \symbolicdomain{} for \verb|N*2| yields $\False$.
+involves test whether the \symbolicdomainterm{} for \verb|2..4| is a subset of the
+\symbolicdomainterm{} for \verb|1..6|, which $\True$.
+Similarly for testing whether the \symbolicdomainterm{} for \verb|N+N|
+is a subset of the \symbolicdomainterm{} for \verb|N*2| also yields $\True$.
+In contrast, testing whether the \symbolicdomainterm{} for \verb|5..N|
+is a subset of the \symbolicdomainterm{} for \verb|N*2| yields $\False$.
 
 \hypertarget{def-Under}{}
 \hypertarget{def-Over}{}
@@ -752,7 +754,7 @@ The function
 \approxconstraints(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\intconstraint^+}{\cs}) \aslto\\
+  \overname{\KleenePlus{\intconstraint}}{\cs}) \aslto\\
   \overname{\powfin{\Z}}{\vs} \cup \{\CannotOverapproximate\}
 \end{array}
 \]
@@ -1096,7 +1098,7 @@ $\CannotOverapproximate$ if $\vapprox$ is $\Over$.}
 \hypertarget{def-intsettoconstraints}{}
 The function
 \[
-\intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\intconstraint^*}{\cs}
+\intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\KleeneStar{\intconstraint}}{\cs}
 \]
 converts a finite set of integers $\vs$ into an equivalent list of constraints.
 
@@ -1320,13 +1322,13 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^+}{\vsone} \aslsep\\
-  \overname{\intconstraint^+}{\vstwo}
+  \overname{\KleenePlus{\intconstraint}}{\vsone} \aslsep\\
+  \overname{\KleenePlus{\intconstraint}}{\vstwo}
   \end{array}
 \right)
 \aslto \left(
   \begin{array}{c}
-  \overname{\intconstraint^+}{\vs} \aslsep\\
+  \overname{\KleenePlus{\intconstraint}}{\vs} \aslsep\\
   \overname{\precisionlossindicator}{\plf}
   \end{array}
   \right)
@@ -1473,7 +1475,7 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
-  \vt = \TInt(\wellconstrained(\cs))\\
+  \vt = \TInt(\WellConstrained(\cs))\\
   \approxconstraints(\tenv, \vapprox, \cs) \typearrow \vs \terminateas \CannotOverapproximate
 }{
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs
@@ -1495,8 +1497,8 @@ The function
 \[
 \constraintbinop(
   \overname{\binop}{\op} \aslsep
-  \overname{\intconstraint^*}{\csone} \aslsep
-  \overname{\intconstraint^*}{\cstwo}
+  \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep
+  \overname{\KleeneStar{\intconstraint}}{\cstwo}
 )
 \aslto \overname{\constraintkind}{\newcs}
 \]
@@ -1515,7 +1517,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \begin{itemize}
   \item \AllApplyCase{extremities}
   \begin{itemize}
-    \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\PLUS$, $\MINUS$, $\SHR$, or $\SHL$;
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\MUL$, $\ADD$, $\SUB$, $\SHR$, or $\SHL$;
     \item applying $\applybinopextremities$ to every pair of constraints \\
           $\csone[\vi]$ and $\cstwo[\vj]$ where $\vi\in\listrange(\csone)$ and
           $\vj\in\listrange(\cstwo)$, yields $\vc_{\vi,\vj}$;
@@ -1543,7 +1545,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[extremities]{
-  \op \in \{\DIV, \DIVRM, \MUL, \PLUS, \MINUS, \SHR, \SHL\}\\
+  \op \in \{\DIV, \DIVRM, \MUL, \ADD, \SUB, \SHR, \SHL\}\\
   {
     \begin{array}{r}
       \vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \\
@@ -1589,7 +1591,7 @@ The function
 \applybinopextremities(
   \overname{\binop}{\op} \aslsep
   \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}
-) \aslto \overname{\intconstraint^*}{\newcs}
+) \aslto \overname{\KleeneStar{\intconstraint}}{\newcs}
 \]
 yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
 range constraints for cases where the binary operation $\op$ yields a \dynamicerrorterm{}.
@@ -1697,7 +1699,7 @@ The function
 \possibleextremitiesleft(
   \overname{\binop}{\op} \aslsep
   \overname{\expr}{\va} \aslsep \overname{\expr}{\vb}
-) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+) \aslto \overname{\KleeneStar{(\expr\times\expr)}}{\extpairs}
 \]
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\va$ and $\vb$, which are needed to form constraints
@@ -1721,7 +1723,7 @@ contains an \exactconstraintterm.
 
   \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\PLUS$, or $\MINUS$;
+    \item $\op$ is either $\DIV$, $\DIVRM$, $\SHR$, $\SHL$, $\ADD$, or $\SUB$;
     \item define $\extpairs$ as the list consisting of $(\va, \vb)$.
   \end{itemize}
 \end{itemize}
@@ -1735,7 +1737,7 @@ contains an \exactconstraintterm.
 
 \begin{mathpar}
 \inferrule[other]{
-  \op \in \{\DIV, \DIVRM, \SHR, \SHL, \PLUS, \MINUS\}
+  \op \in \{\DIV, \DIVRM, \SHR, \SHL, \ADD, \SUB\}
 }{
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \overname{[(\va, \vb)]}{\extpairs}
 }
@@ -1748,7 +1750,7 @@ The function
 \possibleextremitiesright(
   \overname{\binop}{\op} \aslsep
   \overname{\expr}{\vc} \aslsep \overname{\expr}{\vd}
-) \aslto \overname{(\expr\times\expr)^*}{\extpairs}
+) \aslto \overname{\KleeneStar{(\expr\times\expr)}}{\extpairs}
 \]
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\vc$ and $\vd$, which are needed to form constraints
@@ -1766,13 +1768,13 @@ contains a \rangeconstraintterm{}.
 \begin{itemize}
   \item \AllApplyCase{plus}
   \begin{itemize}
-    \item $\op$ is $\PLUS$;
+    \item $\op$ is $\ADD$;
     \item define $\extpairs$ as the list consisting of $(\vc, \vd)$.
   \end{itemize}
 
   \item \AllApplyCase{minus}
   \begin{itemize}
-    \item $\op$ is $\MINUS$;
+    \item $\op$ is $\SUB$;
     \item define $\extpairs$ as the list consisting of $(\vd, \vc)$.
   \end{itemize}
 
@@ -1798,13 +1800,13 @@ contains a \rangeconstraintterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[plus]{}{
-  \possibleextremitiesright(\overname{\PLUS}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
+  \possibleextremitiesright(\overname{\ADD}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[minus]{}{
-  \possibleextremitiesright(\overname{\MINUS}{\op}, \vc, \vd) \typearrow \overname{[(\vd, \vc)]}{\extpairs}
+  \possibleextremitiesright(\overname{\SUB}{\op}, \vc, \vd) \typearrow \overname{[(\vd, \vc)]}{\extpairs}
 }
 \end{mathpar}
 
@@ -1872,7 +1874,7 @@ inferred for \texttt{z} is\\
       \vb & \vc = \ConstraintRange(\Ignore, \vb)
     \end{cases}
   }\\
-  \veminusone \eqdef \EBinop(\MINUS, \veupper, \ELInt{1})
+  \veminusone \eqdef \EBinop(\SUB, \veupper, \ELInt{1})
 }{
   \constraintmod(\vc) \typearrow \overname{\ConstraintRange(\ELInt{0}, \veminusone)}{\newc}
 }
@@ -1883,7 +1885,7 @@ inferred for \texttt{z} is\\
 \hypertarget{def-constraintpow}{}
 The function
 \[
-\constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\intconstraint^+}{\newcs}
+\constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\KleenePlus{\intconstraint}}{\newcs}
 \]
 yields a list of range constraints $\newcs$ that are needed to calculate the result of
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.

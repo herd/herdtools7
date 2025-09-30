@@ -1,7 +1,7 @@
 \chapter{Expressions\label{chap:Expressions}}
 
 \hypertarget{def-rhsexpression}{}
-Expressions calculate \nativevalues{} from other \nativevalues{}.
+Expressions calculate \nativevaluesterm{} from other \nativevaluesterm{}.
 We will often refer to expressions defined in this chapter as \rhsexpressions{} to distinguish them
 from \assignableexpressions, which are defined in \chapref{AssignableExpressions}.
 
@@ -53,15 +53,16 @@ transforms an expression parse node $\vparsednode$ into an expression AST node $
 
 \paragraph{Typing:}
 All expressions have a unique type (which can be a \tupletypeterm{}).
+\RenderRelation{annotate_expr}
 
-\hypertarget{def-annotateexpr}{}
+\BackupOriginalRelation{
 The relation
 \[
 \annotateexpr(\overname{\staticenvs}{\texttt{tenv}}, \overname{\expr}{\texttt{e}})
 \;\bigtimes\;
 \left(\begin{array}{ll}
 (\overname{\ty}{\texttt{t}}, \overname{\expr}{\texttt{new\_e}}, \overname{\pow{\TSideEffect}}{\texttt{ses}}) & \cup \\
- \TTypeError & \\
+ \typeerror & \\
 \end{array}\right)
 \]
 annotates the expression $\texttt{e}$ in the
@@ -72,6 +73,7 @@ annotates the expression $\texttt{e}$ in the
 \emph{annotated expression};
  and $\texttt{ses}$ is the \sideeffectsetterm{} inferred for $\texttt{e}$.
 \ProseOtherwiseTypeError
+}
 
 The annotation rewrites the input expression in the following case, making the annotation of statements simpler:
 variables with constant values are substituted by their constant values.
@@ -83,7 +85,7 @@ The relation
   \evalexpr(\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}) \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultExpr((\overname{\vals}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) & \cup\\
+  \ResultExpr((\overname{\nativevalue}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig} & \cup \\
   \overname{\TDynError}{\DynErrorConfig} & \cup \\
   \overname{\TDiverging}{\DivergingConfig} & \\
@@ -91,7 +93,7 @@ The relation
   \right)
 \]
 evaluates the expression $\ve$ in an environment $\env$ and terminates normally with
-a \nativevalue{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
+a \nativevalueterm{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
 \ProseOtherwiseAbnormal
 
 \hypertarget{def-literalexpressionterm}{}
@@ -106,9 +108,12 @@ A literal expression represents a literal as an expression.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_literal}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ELiteral(\literal) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ELit}
 \begin{mathpar}
@@ -147,20 +152,20 @@ is annotated with the type \verb|integer{3}|.
 \subsection{Semantics}
 \SemanticsRuleDef{ELit}
 \ExampleDef{Evaluation of Literal Expressions}
-In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalue\ $\nvint(3)$.
+In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalueterm{} $\nvint(3)$.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
 \item $\ve$ is the literal expression for $\vl$, that is, $\ELiteral(\vl)$
-\item $\vv$ is the \nativevalue\ corresponding to $\vl$;
+\item $\vv$ is the \nativevalueterm{} corresponding to $\vl$;
 \item $\vg$ is the empty graph, as literals do not yield any Read and Write Effects;
 \item $\newenv$ is $\env$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \evalexpr(\env, \overname{\ELiteral(\vl)}{\ve}) \evalarrow \ResultExpr((\overname{\nvliteral(\vl)}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \overname{\ELiteral(\vl)}{\ve}) \evalarrow \ResultExpr((\overname{\NVLiteral(\vl)}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
@@ -175,9 +180,12 @@ A variable expression consists of an identifier for a storage element.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_var}
+\BackupOriginalAST{
 \begin{flalign*}
-\expr \derives\ & \EVar(\overtext{\identifier}{variable name}) &
+\expr \derives\ & \EVar(\overtext{\Identifier}{variable name}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EVAR}
 \begin{mathpar}
@@ -378,7 +386,7 @@ The operator classes and precedence order is defined by the following table:
 \end{center}
 
 The set of \emph{associative binary operators} consists of the following:
-$\PLUS$,
+$\ADD$,
 $\MUL$,
 $\BAND$,
 $\BOR$,
@@ -399,9 +407,12 @@ and the effect of operator precedence.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_binop}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EBinop(\binop, \expr, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST
@@ -457,13 +468,13 @@ which assigns a precedence level to each binary operator $\op$, as defined below
     4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
     3 & \text{if }\op \in \left\{
         \begin{array}{l}
-          \PLUS, \MINUS, \OR, \XOR, \\
+          \ADD, \SUB, \OR, \XOR, \\
           \AND, \BVCONCAT, \STRCONCAT
         \end{array}
         \right\}\\
-    2 & \text{if }\op \in \{\EQOP, \NEQ\}\\
+    2 & \text{if }\op \in \{\EQ, \NE\}\\
     1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
-    0 & \text{if }\op \in \{\GT, \GEQ, \LT, \LEQ\}\\
+    0 & \text{if }\op \in \{\GT, \GE, \LT, \LE\}\\
   \end{cases}
   }
 }
@@ -481,8 +492,8 @@ Surrounding $\ve$ by parenthesis fixes the error.
 
 For example, \texttt{a + b + c} is considered legal, since the same binary operator (\texttt{+})
 is used, whereas \texttt{a - b - c} and \texttt{a + b - c} are considered illegal.
-For the first, this is because $\MINUS$ is not associative.
-For the second, this is because $\PLUS$ and $\MINUS$ have the
+For the first, this is because $\SUB$ is not associative.
+For the second, this is because $\ADD$ and $\SUB$ have the
 same precedence ($3$). To fix these, we can surround one of the subexpressions with parenthesis,
 for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 
@@ -525,7 +536,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
   {
   \checktrans{\op \in \left\{
     \begin{array}{l}
-      \PLUS, \MUL, \BAND, \BOR, \AND, \OR, \\
+      \ADD, \MUL, \BAND, \BOR, \AND, \OR, \\
       \XOR, \BEQ, \BVCONCAT, \STRCONCAT
     \end{array}
     \right\}}{\BinopPrecedence} \checktransarrow \True \OrBuildError
@@ -774,7 +785,7 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \end{mathpar}
 \CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
-The rule above applies to many binary operators, including $\EQOP$ (which is used for \texttt{<=>}
+The rule above applies to many binary operators, including $\EQ$ (which is used for \texttt{<=>}
 as well as \texttt{==}).
 
 \subsubsection{Comments}
@@ -788,9 +799,12 @@ as well as \texttt{==}).
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_unop}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EUnop(\unop, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EUnop}
 \begin{mathpar}
@@ -861,9 +875,12 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_cond}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
 \end{flalign*}
+}
 
 \ASTRuleDef{ECond}
 \begin{mathpar}
@@ -1002,23 +1019,20 @@ conditional expression evaluates to the \texttt{else} expression.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_call}
+\BackupOriginalAST{
+\hypertarget{ast-expr}{}\hypertarget{ast-ECall}{}
 \begin{flalign*}
-\expr \derives\ & \ECall(\call) &
+\expr \derives\ & \ECall(\overtext{\call}{call descriptor})
+\hypertarget{ast-call}{}\\
+\call \derives\ & \left\{\begin{array}{lll}
+\text{name} &:& \Strings\\
+\text{params} &:& \KleeneStar{\expr}\\
+\text{args} &:& \KleeneStar{\expr}\\
+\text{call\_type} &:& \subprogramtype
+\end{array}\right\}
 \end{flalign*}
-
-\begin{flalign*}
-\call \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
- \callname &:& \Strings, \\
- \callparams &:& \expr, \\
- \callargs &:& \expr, \\
- \callcalltype &:& \subprogramtype
-\end{array}
-\right\}
-} &
-\end{flalign*}
+}
 
 \ASTRuleDef{Call}
 \hypertarget{build-call}{}
@@ -1141,7 +1155,7 @@ and the values they evaluate to, as assertions on the values assigned.
     \begin{itemize}
       \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
       \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
-      \item $\vv$ is the \nativevalue\  vector of values $\vv_i$, for $i=1..k$;
+      \item $\vv$ is the \nativevalueterm{}  vector of values $\vv_i$, for $i=1..k$;
       \item the resulting configuration is $\ResultExpr((\vv, \vg), \newenv)$.
     \end{itemize}
   \end{itemize}
@@ -1162,7 +1176,7 @@ and the values they evaluate to, as assertions on the values assigned.
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultExpr(\vms, \newenv) \OrAbnormal\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
-  \vv \eqdef \nvvector(\vv_{1..k})
+  \vv \eqdef \NVVector(\vv_{1..k})
 }{
   \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
@@ -1184,9 +1198,12 @@ The well-typed specification in \listingref{Bitvector_slices2} shows examples of
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_slice}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ESlice(\expr, \slice^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ESlice}
 \begin{mathpar}
@@ -1342,9 +1359,12 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getarray}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EGetArray(\expr, \expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetArray}
 \begin{mathpar}
@@ -1554,9 +1574,12 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getfield}
+\BackupOriginalAST{
 \begin{flalign*}
-\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name}) &
+\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\Identifier}{field name}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetField}
 \begin{mathpar}
@@ -1945,9 +1968,12 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_getfields}
+\BackupOriginalAST{
 \begin{flalign*}
-\expr \derives\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names}) &
+\expr \derives\ & \EGetFields(\overtext{\expr}{record}, \overtext{\Identifier^{*}}{field names}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EGetFields}
 \begin{mathpar}
@@ -2085,8 +2111,8 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
 The helper function
 \[
-  \findbitfieldsslices(\overname{\identifier}{\name} \aslsep \overname{\bitfield^*}{\vbitfields})
-  \aslto \overname{\slice^*}{\vslices} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\vbitfields})
+  \aslto \overname{\KleeneStar{\slice}}{\vslices} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the slices associated with the bitfield named $\name$ in the list of bitfields $\vbitfields$
 in $\vslices$.
@@ -2157,9 +2183,9 @@ The helper function
 \[
   \getbitfieldwidth(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\identifier}{\name} \aslsep
-    \overname{\Field^*}{\tfields})
-  \aslto \overname{\expr}{\ewidth} \cup \overname{\TTypeError}{\TypeErrorConfig}
+    \overname{\Identifier}{\name} \aslsep
+    \overname{\KleeneStar{\field}}{\tfields})
+  \aslto \overname{\expr}{\ewidth} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the expression $\ewidth$ that describes the width of the bitfield named $\name$
 in the list of fields $\tfields$.
@@ -2210,8 +2236,8 @@ yields the literal expression for \verb|2|.
 % NOTE: the implementation handles just two expressions, here we fold over a list.
 The helper function
 \[
-  \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr^*}{\exprs}) \typearrow \overname{\expr}{\ewidth}
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs}) \typearrow \overname{\expr}{\ewidth}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
 normalized in the \staticenvironmentterm{} $\tenv$.
@@ -2221,7 +2247,7 @@ normalized in the \staticenvironmentterm{} $\tenv$.
 Summing the list of expression \verb|2, 3|,
 yields the expression \verb|2+3|,
 (in AST terms, \\
-$\AbbrevEBinop{\PLUS}{\ELInt{2}}{\ELInt{2}}$).
+$\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
 
 \ProseParagraph
 \OneApplies
@@ -2236,7 +2262,7 @@ $\AbbrevEBinop{\PLUS}{\ELInt{2}}{\ELInt{2}}$).
   \begin{itemize}
     \item $\exprs$ is the list with \head\ $\ve$ and \tail\ $\exprsone$;
     \item applying $\widthplus$ to $\exprsone$ yields $\ewidthone$;
-    \item applying $\normalize$ to the binary operation for $\PLUS$ and $\ve$ and $\ewidthone$ yields $\ewidth$\ProseOrTypeError.
+    \item applying $\normalize$ to the binary operation for $\ADD$ and $\ve$ and $\ewidthone$ yields $\ewidth$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
 
@@ -2250,7 +2276,7 @@ $\AbbrevEBinop{\PLUS}{\ELInt{2}}{\ELInt{2}}$).
 \begin{mathpar}
 \inferrule[non\_empty]{
   \widthplus(\exprsone) \typearrow \ewidthone\\
-  \normalize(\tenv, \EBinop(\PLUS, \ve, \ewidthone)) \typearrow \ewidth \OrTypeError
+  \normalize(\tenv, \EBinop(\ADD, \ve, \ewidthone)) \typearrow \ewidth \OrTypeError
 }{
   \widthplus(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \ewidth
 }
@@ -2360,9 +2386,12 @@ is a \DynamicErrorConfigurationTerm{}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_atc}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ATC}
 \begin{mathpar}
@@ -2464,7 +2493,7 @@ as it is applied to unrelated kinds of types.
 The helper function
 \[
   \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
-  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
 are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yielding $\True$.
@@ -2637,7 +2666,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \hypertarget{def-isvaloftype}{}
 The relation
 \[
-  \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
+  \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
   \left(
   \begin{array}{ll}
   (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) & \cup \\
@@ -2686,7 +2715,7 @@ of the type \verb|integer{4, 5, 6}| fails.
   \item \AllApplyCase{int\_wellconstrained}
   \begin{itemize}
     \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
-    \item $\vv$ is the \nativevalue\  integer for $n$;
+    \item $\vv$ is the \nativevalueterm{}  integer for $n$;
     \item the evaluation of every constraint $\vc_i$ with $n$ in environment $\env$
           yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrDynErrorDiverging;
     \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
@@ -2725,7 +2754,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 
 \begin{mathpar}
 \inferrule[int\_unconstrained]{}{
-  \isvaloftype(\env, \vv, \overname{\TInt(\unconstrained)}{\vt}) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
+  \isvaloftype(\env, \vv, \overname{\TInt(\Unconstrained)}{\vt}) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
 }
 \end{mathpar}
 
@@ -2736,7 +2765,7 @@ of the type \verb|integer{4, 5, 6}| fails.
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
 }{
-  \isvaloftype(\env, \vv, \overname{\TInt(\wellconstrained(\vc_{1..k}))}{\vt}) \evalarrow (\vb, \vg)
+  \isvaloftype(\env, \vv, \overname{\TInt(\WellConstrained(\vc_{1..k}))}{\vt}) \evalarrow (\vb, \vg)
 }
 \end{mathpar}
 
@@ -2819,7 +2848,7 @@ that expressions appearing in types are all side-effect-free.
 \inferrule[Constraint\_Exact\_Sat]{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
 }{
-  \isconstaintsat(\env, \overname{\constraintexact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
+  \isconstaintsat(\env, \overname{\ConstraintExact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
 }
 \end{mathpar}
 
@@ -2830,7 +2859,7 @@ that expressions appearing in types are all side-effect-free.
   \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \isconstaintsat(\env, \overname{\constraintrange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
+  \isconstaintsat(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
 }
 \end{mathpar}
 
@@ -2858,9 +2887,12 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_pattern}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EPattern(\expr, \pattern) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EPattern}
 \begin{mathpar}
@@ -2976,9 +3008,12 @@ Note that there are two important consequences of producing an arbitrary value w
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_arbitrary}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EArbitrary(\ty) &
 \end{flalign*}
+}
 
 \ASTRuleDef{EArbitrary}
 \begin{mathpar}
@@ -3098,9 +3133,12 @@ Notice that this rule introduces non-determinism.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_record}
+\BackupOriginalAST{
 \begin{flalign*}
-\expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers}) &
+\expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\Identifier, \expr)^{*}}{field initializers}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ERecord}
 \begin{mathpar}
@@ -3141,7 +3179,7 @@ Notice that this rule introduces non-determinism.
 \hypertarget{build-fieldassign}{}
 The function
 \[
-  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\identifier\times\expr)}{\vastnode}
+  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\Identifier\times\expr)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -3164,7 +3202,7 @@ and an example (in comment) where the same field is initialized twice, which is 
         that is, $\ERecord(\tty, \vfields)$;
   \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
   \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\ttyanon$ is a \structuredtype\ with a list of $\field$ elements (consisting of a field name and a field type);
+  \item $\ttyanon$ is a \structuredtype\ with a list of $\vfield$ elements (consisting of a field name and a field type);
   \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
         $\initializedfields$;
   \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
@@ -3172,12 +3210,12 @@ and an example (in comment) where the same field is initialized twice, which is 
         yields $\True$\ProseOrTypeError;
   \item checking that the list $\initializedfields$ does not contain duplicates yields \\
         $\True$\ProseOrTypeError;
-  \item applying $\annotatefieldinit$ to annotate each $\field$ element $(\name,\vep)$ of \\
+  \item applying $\annotatefieldinit$ to annotate each $\vfield$ element $(\name,\vep)$ of \\
         $\vfields$ in $\tenv$ yields $(\name,\ve_\name,\vxs_\name)$\ProseOrTypeError;
-  \item define $\fieldsp$ as the list containing $(\name,\ve_\name)$ for each $\field$ element $(\name,\vep)$ of $\vfields$;
+  \item define $\fieldsp$ as the list containing $(\name,\ve_\name)$ for each $\vfield$ element $(\name,\vep)$ of $\vfields$;
   \item $\vt$ is $\tty$;
   \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
-  \item define $\vsess$ as the union of the \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\field$ element $(\name,\Ignore)$ of $\vfields$.
+  \item define $\vsess$ as the union of the \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\vfield$ element $(\name,\Ignore)$ of $\vfields$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -3213,10 +3251,10 @@ The function
 \begin{array}{r}
   \annotatefieldinit(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{(\identifier\times\expr)}{(\name, \vep)} \aslsep
-    \overname{\field^*}{\fieldtypes}
+    \overname{(\Identifier\times\expr)}{(\name, \vep)} \aslsep
+    \overname{\KleeneStar{\vfield}}{\fieldtypes}
   ) \aslto \\
-  (\overname{\identifier}{\name} \times \overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})
+  (\overname{\Identifier}{\name} \times \overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})
 \end{array}
 \]
 annotates a field initializers $(\name, \vep)$ in a record expression
@@ -3252,7 +3290,7 @@ See \listingref{semantics-erecord} for an example.
 \ExampleDef{Evaluation of Record Construction Expressions}
 In \listingref{semantics-erecord},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
-$\nvrecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
+$\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 
 \ProseParagraph
 \AllApply
@@ -3262,7 +3300,7 @@ $\nvrecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \item the expressions associated with the fields are $\ve_{1..k}$;
 \item evaluating the expressions of $\fields$ in order yields \\
       $\ResultExprList((\vvfields,\vg), \newenv)$\ProseOrAbnormal;
-\item $\vvfields$ is a list of \nativevalues\ $\vv_{1..k}$;
+\item $\vvfields$ is a list of \nativevaluesterm{} $\vv_{1..k}$;
 \item $\vv$ is the native record that maps $\id_i$ to $\vv_i$, for $i=1..k$.
 \end{itemize}
 
@@ -3274,7 +3312,7 @@ $\nvrecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \fields \eqdef \ve_{1..k} \\
   \evalexprlist{\env, \fields} \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
   \vvfields \eqname \vv_{1..k}\\
-  \vv \eqdef \nvrecord(\{i=1..k: \id_i\mapsto \vv_i\})
+  \vv \eqdef \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\})
 }{
   \evalexpr(\env, \ERecord(\Ignore, \efields)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
@@ -3292,9 +3330,12 @@ $\nvrecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_tuple}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \ETuple(\expr^{+}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{ETuple}
 \begin{mathpar}
@@ -3371,7 +3412,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \begin{mathpar}
 \inferrule{
   \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
-  \vv \eqdef \nvvector(\vlist)
+  \vv \eqdef \NVVector(\vlist)
 }{
   \evalexpr(\env, \ETuple(\elist)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
@@ -3409,10 +3450,13 @@ of array-typed variables. Since there is no syntax to initialize arrays, there a
 no rules for building the AST for such expressions nor rules for typechecking them.
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{expr_array}
+\BackupOriginalAST{
 \begin{flalign*}
 \expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &\\
-             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\}
+             |\ & \EEnumArray \{\EArrayLabels: \Identifier^+, \EArrayValue: \expr\}
 \end{flalign*}
+}
 
 \subsection{Semantics}
 
@@ -3426,7 +3470,7 @@ the variable \verb|int_arr| is initialized with an array construction expression
 represented as \verb|array[[4]] of 0|),
 which evaluates to
 \[
-\nvvector([\nvint(0), \nvint(0), \nvint(0), \nvint(0)]) \enspace.
+\NVVector([\nvint(0), \nvint(0), \nvint(0), \nvint(0)]) \enspace.
 \]
 
 \ProseParagraph
@@ -3450,7 +3494,7 @@ which evaluates to
   \evalexprsef{\env, \elength} \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
   \vlength \eqname \nvint(\nlength)\\
   \checktrans{\nlength \geq 0}{\NegativeArrayLength} \checktransarrow \True \OrDynError\\\\
-  \vv \eqdef \nvvector(i=1..\nlength: \vvalue)\\
+  \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   {
@@ -3470,7 +3514,7 @@ the variable \verb|big_little_arr| is initialized with an array construction exp
 represented as \verb|array[[Labels]] of '0000'|),
 which evaluates to
 \[
-\nvrecord(\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}) \enspace.
+\NVRecord(\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}) \enspace.
 \]
 
 \ProseParagraph
@@ -3488,7 +3532,7 @@ which evaluates to
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\\\\
-  \vv \eqdef \nvrecord(\vl\in\vlabels: [\vl\mapsto \vvalue])
+  \vv \eqdef \NVRecord(\vl\in\vlabels: [\vl\mapsto \vvalue])
 }{
   {
   \begin{array}{r}
@@ -3515,7 +3559,7 @@ The helper relation
   \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultExprSEF(\overname{\vals}{\vv}\aslsep\overname{\XGraphs}{\vg}) & \cup \\
+  \ResultExprSEF(\overname{\nativevalue}{\vv}\aslsep\overname{\XGraphs}{\vg}) & \cup \\
   \overname{\TDynError}{\DynErrorConfig} & \cup \\
   \overname{\TDiverging}{\DivergingConfig} & \\
   \end{array}
@@ -3549,10 +3593,10 @@ since side-effect-free expressions do not modify the environment.
 \hypertarget{def-evalexprlist}{}
 The relation
 \[
-  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\expr^*}{\vle}} \;\aslrel\;
+  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vle}} \;\aslrel\;
   \left(
   \begin{array}{ll}
-  \ResultExprList((\overname{\vals^*}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
+  \ResultExprList((\overname{\KleeneStar{\nativevalue}}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
   \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
   \overname{\TDynError}{\DynErrorConfig}    & \cup\\
   \overname{\TDiverging}{\DivergingConfig}  & \\

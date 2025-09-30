@@ -329,7 +329,7 @@ can be useful for declaring a constant specific to the platform \verb|my_platfor
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[
-\aslscan : \LexSpec \times \REasciichar^* \aslto (\Token^* \cup \{\LexicalErrorConfig\})
+\aslscan : \LexSpec \times \KleeneStar{\REasciichar} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
 \]
 \hypertarget{def-lexicalerrorresult}{}
 which takes a \emph{lexical specification} (explained soon), an ASL specification string
@@ -353,8 +353,8 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
         & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit) \} & \cup\\
         & & \{\ \Tstringchar(c) \;|\; c \in \Lang(\REchar) \} & \cup\\
         & & \{\ \Tstringend \} & \cup\\
-        & & \{\ \Tbitvectorlit(b) \;|\; b\in\Bit^*\ \} & \cup\\
-        & & \{\ \Tmasklit(m) \;|\; m\in\{0,1,x\}^*\ \} & \cup\\
+        & & \{\ \Tbitvectorlit(b) \;|\; b\in\KleeneStar{\Bit}\ \} & \cup\\
+        & & \{\ \Tmasklit(m) \;|\; m\in\KleeneStar{\{0,1,x\}}\ \} & \cup\\
         & & \{\ \Tboollit(\True), \Tboollit(\False)\ \} & \cup \\
         & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} & \cup \\
         & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} & \cup \\
@@ -390,7 +390,7 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{definition}[Lexical Specification]
 A \emph{lexical specification} consists of a list of pairs $[(r_1,a_1),\ldots,(r_k,a_k)] \in \LexSpec$
 where each pair $(r_i,a_i)$ consists of a lexical regular expression $r_i$
-and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \Token^*$.
+and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \KleeneStar{\Token}$.
 \end{definition}
 
 \hypertarget{def-rematch}{}
@@ -670,7 +670,7 @@ $\eof$            & $\eoftoken$ \\
 To scan string literals, we define the following specialized scanning function.
 The function
 \[
-\scanstring : \overname{\REasciichar^*}{\buff} \times \overname{\REasciichar^*}{s} \aslto (\Token^* \cup \{\LexicalErrorConfig\})
+\scanstring : \overname{\KleeneStar{\REasciichar}}{\buff} \times \overname{\KleeneStar{\REasciichar}}{s} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
 \]
 scans string with the $\specstring$ specification while building the final string literal in $\buff$.
 It is defined via the following rules:

@@ -45,9 +45,7 @@ subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Exception Catchers}
-\begin{flalign*}
-\catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
-\end{flalign*}
+\RenderType[remove_hypertargets]{catcher}
 
 \ASTRuleDef{Catcher}
 \hypertarget{build-catcher}{}
@@ -93,7 +91,7 @@ The function
     \overname{\catcher}{\vc}
   ) \aslto \\
   (\overname{\TSideEffectSet}{\vsesin} \times (\overname{\catcher}{\newcatcher}, \overname{\TSideEffectSet}{\vses}))
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates a catcher $\vc$ in the \staticenvironmentterm{} $\tenv$
@@ -184,7 +182,7 @@ of evaluating a \trystatementterm{} and its type is defined as follows:
 The relation
 \hypertarget{def-evalcatchers}{}
 \[
-  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\catcher^*}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\catcher}}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
    \aslsep \overname{\TOutConfig}{\sm}) \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -399,7 +397,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \hypertarget{def-findcatcher}{}
 The (recursively-defined) helper relation
 \[
-  \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\catcher^*}{\catchers})
+  \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\KleeneStar{\catcher}}{\catchers})
   \;\aslrel\; \langle \catcher \rangle \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),

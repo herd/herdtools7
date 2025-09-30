@@ -45,7 +45,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty}{\vt} \aslsep
     \overname{\pattern}{\vp}) \aslto
-    (\overname{\pattern}{\newp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\TTypeError}{\TypeErrorConfig}
+    (\overname{\pattern}{\newp} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates a pattern $\vp$ in a \staticenvironmentterm{} $\tenv$ given a type $\vt$,
 resulting in $\newp$, which is the typed AST node for $\vp$
@@ -56,7 +56,7 @@ and the inferred \sideeffectsetterm\ $\vses$.
 The relation
 \hypertarget{def-evalpattern}{}
 \[
-  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\vals}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
+  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultPattern(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg}) & \cup\\
@@ -77,9 +77,12 @@ resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_all}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternAll &
 \end{flalign*}
+}
 
 \ASTRuleDef{PAll}
 \begin{mathpar}
@@ -139,9 +142,12 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_single}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternSingle(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PSingle}
 \begin{mathpar}
@@ -285,7 +291,7 @@ whereas \\
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\EQOP, \vv, \vvone) \evalarrow \vb
+  \binoprel(\EQ, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -299,9 +305,12 @@ whereas \\
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_range}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PRange}
 \begin{mathpar}
@@ -393,9 +402,9 @@ range given by \texttt{3..42}.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
-  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vbone\\
+  \binoprel(\GE, \vv, \vvone) \evalarrow \vbone\\
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
-  \binoprel(\LEQ, \vv, \vvtwo) \evalarrow \vbtwo\\
+  \binoprel(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
   \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -411,9 +420,12 @@ range given by \texttt{3..42}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_leq}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternLeq(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PLeq}
 \begin{mathpar}
@@ -443,7 +455,7 @@ that is, $\PatternLeq(\ve)$;
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} (\BadOperands) is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\LEQ$ operator),
+      are inappropriate for the $\LE$ operator),
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything less than or equal to $\vep$.
 \end{itemize}
@@ -491,7 +503,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\LEQ, \vv, \vvone) \evalarrow \vb
+  \binoprel(\LE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -505,9 +517,12 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_geq}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternGeq(\expr) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PGeq}
 \begin{mathpar}
@@ -537,7 +552,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\GEQ$ operator),
+      are inappropriate for the $\GE$ operator),
       which short-circuits the entire rule;
 \item $\newp$ is the pattern which matches anything greater than or equal to $\vep$.
 \end{itemize}
@@ -584,7 +599,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\GEQ, \vv, \vvone) \evalarrow \vb
+  \binoprel(\GE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -598,9 +613,12 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_mask}
+\BackupOriginalAST{
 \begin{flalign*}
-\pattern \derives\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant}) &
+\pattern \derives\ & \PatternMask(\overtext{\KleeneStar{\{\texttt{0},\texttt{1},\texttt{x}\}}}{mask constant}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PMask}
 \begin{mathpar}
@@ -715,9 +733,12 @@ is defined by the following table:
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_tuple}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternTuple(\pattern^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PTuple}
 \begin{mathpar}
@@ -816,9 +837,12 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_any}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternAny(\pattern^{*}) &
 \end{flalign*}
+}
 
 \ASTRuleDef{PatternSet}
 \hypertarget{build-patternset}{}
@@ -938,9 +962,12 @@ any pattern in \verb|{3, 4}|.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
+\RenderTypes[remove_hypertargets]{pattern_not}
+\BackupOriginalAST{
 \begin{flalign*}
 \pattern \derives\ & \PatternNot(\pattern) &
 \end{flalign*}
+}
 
 The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 

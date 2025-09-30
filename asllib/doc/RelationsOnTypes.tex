@@ -112,7 +112,7 @@ yielding the result in $\vb$.
 The predicate
 \[
   \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result in $\vb$.
@@ -176,8 +176,8 @@ subtyping.
   \begin{itemize}
   \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
   \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
-  \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomain{} $\ds$;
-  \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomain{} $\dt$;
+  \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomainterm{} $\ds$;
+  \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomainterm{} $\dt$;
   \item applying $\symdomsubsetunions$ to $\tenv$, $\ds$, and $\dt$ yields $\vb$.
   \end{itemize}
 
@@ -193,7 +193,7 @@ subtyping.
   \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
   \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
   \item determining whether the bitfields $\bfss$ are included in the bitfields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item determining whether the \symbolicdomain{} of $\ws$ subsumes the \symbolicdomain{} of $\wt$ in $\tenv$ yields $\vb$.
+  \item determining whether the \symbolicdomainterm{} of $\ws$ subsumes the \symbolicdomainterm{} of $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_array\_expr}
@@ -350,7 +350,7 @@ subtyping.
 { \makeanonymous(\tenv, \vs) \typearrow\TTuple(\vlis)\\
   \makeanonymous(\tenv, \vt) \typearrow\TTuple(\vlit)\\
   \equallength(\vlis, \vlit) \typearrow\True \terminateas \False\\
-  \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \TTypeError\\
+  \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \typeerror\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_\vi
 }{
   \subtypesat(\tenv, \vt, \vs) \typearrow \vb
@@ -396,7 +396,7 @@ if there is a unique one, as follows:
 The predicate
 \[
   \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$.
@@ -554,7 +554,7 @@ since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
 We also define
 \[
   \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 which is the same as $\typesat$, but yields a \typingerrorterm{} when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
 
@@ -611,7 +611,7 @@ We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it 
 The function
 \[
   \lca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\ty}{\tty} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the \Proselca{} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
 The result is a \typingerrorterm{} if a \Proselca{} does not exist or a \typingerrorterm{} is detected.
@@ -836,11 +836,11 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 \inferrule[t\_int\_wellconstrained]
 {
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \vt = \TInt(\wellconstrained(\cst, \vpone))\\
-  \vs = \TInt(\wellconstrained(\css, \vptwo))\\
+  \vt = \TInt(\WellConstrained(\cst, \vpone))\\
+  \vs = \TInt(\WellConstrained(\css, \vptwo))\\
   \vp \eqdef \precisionjoin(\vpone, \vptwo)
 }{
-  \lca(\tenv, \vt, \vs) \typearrow \overname{\TInt(\wellconstrained(\cst \concat \css, \vp))}{\tty}
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TInt(\WellConstrained(\cst \concat \css, \vp))}{\tty}
 }
 \end{mathpar}
 
@@ -904,7 +904,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\
 The function
 \[
   \applyunoptype(\overname{\staticenvs}{\tenv} \aslsep \overname{\unop}{\op} \aslsep \overname{\ty}{\vt})
-  \aslto \overname{\ty}{\vs} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\ty}{\vs} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines the result type of applying a unary operator when the type of its operand is known.
 Similarly, we determine the negation of integer constraints.
@@ -952,7 +952,7 @@ Similarly, we determine the negation of integer constraints.
   \item obtaining the \wellconstrainedstructure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$ and \Proseprecisionlossindicator{} $\vp$\ProseOrTypeError;
   \item negating the constraints in $\vcs$ (see $\negateconstraint$) yields $\vcsnew$;
   \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$ and \Proseprecisionlossindicator{} $\vp$, that is, \\
-  $\TInt(\wellconstrained(\vcsnew, \vp))$;
+  $\TInt(\WellConstrained(\vcsnew, \vp))$;
 \end{itemize}
 
 \item \AllApplyCase{not\_t\_bits}
@@ -1000,11 +1000,11 @@ Similarly, we determine the negation of integer constraints.
 
 \begin{mathpar}
 \inferrule[neg\_t\_int\_well\_constrained]{
-  \getwellconstrainedstructure(\tenv, \vt) \typearrow \TInt(\wellconstrained(\vcs))\\
+  \getwellconstrainedstructure(\tenv, \vt) \typearrow \TInt(\WellConstrained(\vcs))\\
   \vc \in \vcs: \negateconstraint(\vc) \typearrow \vneg_\vc\\
   \vcsnew \eqdef [\vc \in \vcs: \vneg_\vc]
 }{
-  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\wellconstrained(\vcsnew))}{\vs}
+  \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TInt(\WellConstrained(\vcsnew))}{\vs}
 }
 \end{mathpar}
 
@@ -1050,7 +1050,7 @@ constraints and range constraints.
 \inferrule[exact]{}
 {
   \negateconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow
-  \overname{\ConstraintExact(\EUnop(\MINUS, \ve))}{\newc}
+  \overname{\ConstraintExact(\EUnop(\SUB, \ve))}{\newc}
 }
 \end{mathpar}
 
@@ -1058,7 +1058,7 @@ constraints and range constraints.
 \inferrule[range]{}
 {
   \negateconstraint(\overname{\ConstraintRange(\vstart, \vend)}{\vc}) \typearrow \\
-  \overname{\ConstraintRange(\EUnop(\MINUS, \vend), \EUnop(\MINUS, \vstart))}{\newc}
+  \overname{\ConstraintRange(\EUnop(\SUB, \vend), \EUnop(\SUB, \vstart))}{\newc}
 }
 \end{mathpar}
 
@@ -1068,7 +1068,7 @@ The function
 \[
   \applybinoptypes(\overname{\staticenvs}{\tenv} \aslsep \overname{\binop}{\op} \aslsep \overname{\ty}{\vtone}
   \aslsep \overname{\ty}{\vttwo})
-  \aslto \overname{\ty}{\vt} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines the result type $\vt$ of applying the binary operator $\op$
 to operands of type $\vtone$ and $\vttwo$ in the \staticenvironmentterm{} $\tenv$.
@@ -1120,14 +1120,14 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{boolean}
   \begin{itemize}
-    \item $\op$ is $\AND$, $\OR$, $\EQOP$ or $\IMPL$;
+    \item $\op$ is $\AND$, $\OR$, $\EQ$ or $\IMPL$;
     \item both $\vtone$ and $\vttwo$ are $\TBool$;
     \item $\vt$ is $\TBool$.
   \end{itemize}
 
   \item \AllApplyCase{bits\_arith}
   \begin{itemize}
-    \item $\op$ is one of $\AND$, $\OR$, $\XOR$, $\PLUS$, and $\MINUS$;
+    \item $\op$ is one of $\AND$, $\OR$, $\XOR$, $\ADD$, and $\SUB$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
     \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item checking whether $\vtone$ and $\vttwo$ have the \structure\ of bitvector types
@@ -1137,7 +1137,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{bits\_int}
   \begin{itemize}
-    \item $\op$ is either $\PLUS$ or $\MINUS$;
+    \item $\op$ is either $\ADD$ or $\SUB$;
     \item $\vtone$ is a bitvector type with width expression $\vw$;
     \item $\vttwo$ is an integer type;
     \item $\vt$ is the bitvector type of width $\vw$ and empty list of bitfields, that is, \\ $\TBits(\vw, \emptylist)$.
@@ -1169,22 +1169,22 @@ range constraints. More precisely, they are a superset of the values for \verb|(
     \begin{array}{lll}
       \mathbf{\op} & \mathbf{\vtone} & \mathbf{\vttwo} \\
       \hline
-      \LEQ  & \TInt    & \TInt\\
-      \GEQ  & \TInt    & \TInt\\
+      \LE  & \TInt    & \TInt\\
+      \GE  & \TInt    & \TInt\\
       \GT   & \TInt    & \TInt\\
       \LT   & \TInt    & \TInt\\
-      \LEQ  & \TReal   & \TReal\\
-      \GEQ  & \TReal   & \TReal\\
+      \LE  & \TReal   & \TReal\\
+      \GE  & \TReal   & \TReal\\
       \GT   & \TReal   & \TReal\\
       \LT   & \TReal   & \TReal\\
-      \EQOP & \TInt    & \TInt\\
-      \NEQ  & \TInt    & \TInt\\
-      \EQOP & \TBool   & \TBool\\
-      \NEQ  & \TBool   & \TBool\\
-      \EQOP & \TReal   & \TReal\\
-      \NEQ  & \TReal   & \TReal\\
-      \EQOP & \TString & \TString\\
-      \NEQ  & \TString & \TString
+      \EQ & \TInt    & \TInt\\
+      \NE  & \TInt    & \TInt\\
+      \EQ & \TBool   & \TBool\\
+      \NE  & \TBool   & \TBool\\
+      \EQ & \TReal   & \TReal\\
+      \NE  & \TReal   & \TReal\\
+      \EQ & \TString & \TString\\
+      \NE  & \TString & \TString
     \end{array}
     \]
     \item $\vt$ is $\TBool$.
@@ -1192,7 +1192,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{eq\_neq\_bits}
   \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item $\op$ is either $\EQ$ or $\NE$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
     \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
     \item checking whether the bitwidth of $\vtoneanon$ and $\vttwoanon$ is the same yields $\True$\ProseOrTypeError;
@@ -1201,7 +1201,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{eq\_neq\_enum}
   \begin{itemize}
-    \item $\op$ is either $\EQOP$ or $\NEQ$;
+    \item $\op$ is either $\EQ$ or $\NE$;
     \item $\vtone$ is $\TEnum(\vlione)$;
     \item $\vttwo$ is $\TEnum(\vlitwo)$;
     \item checking whether $\vlione$ is equal to $\vlitwo$ yields $\True$\ProseOrTypeError;
@@ -1210,14 +1210,14 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{arith\_t\_int\_unconstrained}
   \begin{itemize}
-    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
+    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}$;
     \item both $\vtone$ and $\vttwo$ are integer types and at least one them is the unconstrained integer type;
     \item $\vt$ is the unconstrained integer type;
   \end{itemize}
 
   \item \AllApplyCase{arith\_t\_int\_parameterized}
   \begin{itemize}
-    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}$;
+    \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}$;
     \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertype;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
@@ -1226,7 +1226,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{arith\_t\_int\_wellconstrained}
   \begin{itemize}
-    \item $\op$ is one of $\{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
+    \item $\op$ is one of $\{\MUL, \POW, \ADD, \SUB, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
     \item $\vtone$ is the well-constrained integer type with constraints $\csone$ and \Proseprecisionlossindicator{} $\vpone$;
     \item $\vttwo$ is the well-constrained integer type with constraints $\cstwo$ and \Proseprecisionlossindicator{} $\vptwo$;
     \item applying $\annotateconstraintbinop$ to $\op$, $\csone$, and $\cstwo$ in $\tenv$ yields $\vc$ and $\vpthree$;
@@ -1241,8 +1241,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
     \begin{array}{lll}
       \mathbf{\op} & \mathbf{\vtone} & \mathbf{\vttwo} \\
       \hline
-      \PLUS  & \TReal    & \TReal\\
-      \MINUS & \TReal    & \TReal\\
+      \ADD  & \TReal    & \TReal\\
+      \SUB & \TReal    & \TReal\\
       \MUL   & \TReal    & \TReal\\
       \POW   & \TReal    & \TInt\\
       \RDIV  & \TReal    & \TReal
@@ -1264,37 +1264,37 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       \hline
       \AND     & \TBool  & \TBool\\
       \OR      & \TBool  & \TBool\\
-      \EQOP    & \TBool  & \TBool\\
+      \EQ    & \TBool  & \TBool\\
       \IMPL    & \TBool  & \TBool\\
       %
       \AND     & \TBits  & \TBits\\
       \OR      & \TBits  & \TBits\\
       \XOR     & \TBits  & \TBits\\
-      \PLUS    & \TBits  & \TBits\\
-      \MINUS   & \TBits  & \TBits\\
+      \ADD    & \TBits  & \TBits\\
+      \SUB   & \TBits  & \TBits\\
       \BVCONCAT& \TBits  & \TBits\\
       %
       \STRCONCAT& \vlone  & \vltwo\\
       %
-      \PLUS    & \TBits  & \TInt\\
-      \MINUS   & \TBits  & \TInt\\
+      \ADD    & \TBits  & \TInt\\
+      \SUB   & \TBits  & \TInt\\
       %
-      \LEQ     & \TInt     & \TInt\\
-      \GEQ     & \TInt     & \TInt\\
+      \LE     & \TInt     & \TInt\\
+      \GE     & \TInt     & \TInt\\
       \GT      & \TInt     & \TInt\\
       \LT      & \TInt     & \TInt\\
-      \LEQ     & \TReal    & \TReal\\
-      \GEQ     & \TReal    & \TReal\\
+      \LE     & \TReal    & \TReal\\
+      \GE     & \TReal    & \TReal\\
       \GT      & \TReal    & \TReal\\
       \LT      & \TReal    & \TReal\\
-      \EQOP    & \TInt     & \TInt\\
-      \NEQ     & \TInt     & \TInt\\
-      \EQOP    & \TBool    & \TBool\\
-      \NEQ     & \TBool    & \TBool\\
-      \EQOP    & \TReal    & \TReal\\
-      \NEQ     & \TReal    & \TReal\\
-      \EQOP    & \TString  & \TString\\
-      \NEQ     & \TString  & \TString\\
+      \EQ    & \TInt     & \TInt\\
+      \NE     & \TInt     & \TInt\\
+      \EQ    & \TBool    & \TBool\\
+      \NE     & \TBool    & \TBool\\
+      \EQ    & \TReal    & \TReal\\
+      \NE     & \TReal    & \TReal\\
+      \EQ    & \TString  & \TString\\
+      \NE     & \TString  & \TString\\
       %
       \MUL     & \TInt  & \TInt\\
       \DIV     & \TInt  & \TInt\\
@@ -1303,16 +1303,16 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       \SHL     & \TInt  & \TInt\\
       \SHR     & \TInt  & \TInt\\
       \POW     & \TInt  & \TInt\\
-      \PLUS    & \TInt  & \TInt\\
-      \MINUS   & \TInt  & \TInt\\
-      \PLUS    & \TReal & \TReal\\
-      \MINUS   & \TReal & \TReal\\
+      \ADD    & \TInt  & \TInt\\
+      \SUB   & \TInt  & \TInt\\
+      \ADD    & \TReal & \TReal\\
+      \SUB   & \TReal & \TReal\\
       \MUL     & \TReal & \TReal\\
       \RDIV    & \TReal & \TReal\\
       \POW     & \TReal & \TInt\\
       %
-      \PLUS    & \TReal & \TReal\\
-      \MINUS   & \TReal & \TReal\\
+      \ADD    & \TReal & \TReal\\
+      \SUB   & \TReal & \TReal\\
       \MUL     & \TReal & \TReal\\
       \POW     & \TReal & \TInt\\
       \RDIV    & \TReal & \TReal\\
@@ -1336,7 +1336,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[boolean]{
-  \op \in  \{\BAND, \BOR, \IMPL, \EQOP\}
+  \op \in  \{\BAND, \BOR, \IMPL, \EQ\}
 }{
   \applybinoptypes(\tenv, \op, \overname{\TBool}{\vtone}, \overname{\TBool}{\vttwo}) \typearrow \overname{\TBool}{\vt}
 }
@@ -1344,7 +1344,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[bits\_arith]{
-  \op \in  \{\AND, \OR, \XOR, \PLUS, \MINUS\}\\
+  \op \in  \{\AND, \OR, \XOR, \ADD, \SUB\}\\
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo})
@@ -1354,7 +1354,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[bits\_int]{
-  \op \in  \{\PLUS, \MINUS\}}{
+  \op \in  \{\ADD, \SUB\}}{
   \applybinoptypes(\tenv, \op, \overname{\TBits(\vw, \Ignore)}{\vtone}, \overname{\TInt(\Ignore)}{\vttwo}) \typearrow
   \overname{\TBits(\vw, \emptylist)}{\vt}
 }
@@ -1362,7 +1362,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[bits\_concat]{
-  \vw \eqdef \EBinop(\PLUS, \vwone, \vwtwo) \\
+  \vw \eqdef \EBinop(\ADD, \vwone, \vwtwo) \\
   \normalize(\tenv, \vw) \typearrow \vwp
 }{
   \applybinoptypes(\tenv, \BVCONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
@@ -1386,22 +1386,22 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   {
     (\op, \vtone, \vttwo) \in \left\{
       \begin{array}{lclcl}
-        (\LEQ     &,& \TInt     &,& \TInt)\\
-        (\GEQ     &,& \TInt     &,& \TInt)\\
+        (\LE     &,& \TInt     &,& \TInt)\\
+        (\GE     &,& \TInt     &,& \TInt)\\
         (\GT      &,& \TInt     &,& \TInt)\\
         (\LT      &,& \TInt     &,& \TInt)\\
-        (\LEQ     &,& \TReal    &,& \TReal)\\
-        (\GEQ     &,& \TReal    &,& \TReal)\\
+        (\LE     &,& \TReal    &,& \TReal)\\
+        (\GE     &,& \TReal    &,& \TReal)\\
         (\GT      &,& \TReal    &,& \TReal)\\
         (\LT      &,& \TReal    &,& \TReal)\\
-        (\EQOP    &,& \TInt     &,& \TInt)\\
-        (\NEQ     &,& \TInt     &,& \TInt)\\
-        (\EQOP    &,& \TBool    &,& \TBool)\\
-        (\NEQ     &,& \TBool    &,& \TBool)\\
-        (\EQOP    &,& \TReal    &,& \TReal)\\
-        (\NEQ     &,& \TReal    &,& \TReal)\\
-        (\EQOP    &,& \TString  &,& \TString)\\
-        (\NEQ     &,& \TString  &,& \TString)\\
+        (\EQ    &,& \TInt     &,& \TInt)\\
+        (\NE     &,& \TInt     &,& \TInt)\\
+        (\EQ    &,& \TBool    &,& \TBool)\\
+        (\NE     &,& \TBool    &,& \TBool)\\
+        (\EQ    &,& \TReal    &,& \TReal)\\
+        (\NE     &,& \TReal    &,& \TReal)\\
+        (\EQ    &,& \TString  &,& \TString)\\
+        (\NE     &,& \TString  &,& \TString)\\
       \end{array}
       \right\}
   }
@@ -1412,7 +1412,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[eq\_neq\_bits]{
-  \op \in  \{\EQOP, \NEQ\}\\
+  \op \in  \{\EQ, \NE\}\\
   \checkbitsequalwidth(\tenv, \vtoneanon, \vttwoanon) \typearrow \True \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow \overname{\TBool}{\vt}
@@ -1421,7 +1421,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[eq\_neq\_enum]{
-  \op \in  \{\EQOP, \NEQ\}\\
+  \op \in  \{\EQ, \NE\}\\
   \checktrans{\vlione = \vlitwo}{DifferentEnumLabels} \checktransarrow \True \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \overname{\TEnum(\vlione)}{\vtone}, \overname{\TEnum(\vlitwo)}{\vttwo}) \typearrow \overname{\TBool}{\vt}
@@ -1430,8 +1430,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[arith\_t\_int\_unconstrained]{
-  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
-  \vcone = \unconstrained \lor \vctwo = \unconstrained
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}\\
+  \vcone = \Unconstrained \lor \vctwo = \Unconstrained
 }{
   \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone}, \overname{\TInt(\vctwo)}{\vttwo}) \typearrow \unconstrainedinteger
 }
@@ -1439,9 +1439,9 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[arith\_t\_int\_parameterized]{
-  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \PLUS, \MINUS\}\\
-  \astlabel(\vcone) = \parameterized \lor \astlabel(\vctwo) = \parameterized\\
-  \astlabel(\vcone) \neq \unconstrained \land \astlabel(\vctwo) \neq \unconstrained\\
+  \op \in  \{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}\\
+  \astlabel(\vcone) = \Parameterized \lor \astlabel(\vctwo) = \Parameterized\\
+  \astlabel(\vcone) \neq \Unconstrained \land \astlabel(\vctwo) \neq \Unconstrained\\
   \towellconstrained(\vtone) \typearrow \vtonewellconstrained\\
   \towellconstrained(\vttwo) \typearrow \vttwowellconstrained\\
   \applybinoptypes(\tenv, \vtonewellconstrained, \vttwowellconstrained) \typearrow \vt \OrTypeError
@@ -1452,15 +1452,15 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[arith\_t\_int\_wellconstrained]{
-  \op \in  \{\MUL, \POW, \PLUS, \MINUS, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
-  \vcone = \wellconstrained(\cstwo, \vpone)\\
-  \vctwo = \wellconstrained(\csone, \vptwo)\\
+  \op \in  \{\MUL, \POW, \ADD, \SUB, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
+  \vcone = \WellConstrained(\cstwo, \vpone)\\
+  \vctwo = \WellConstrained(\csone, \vptwo)\\
   \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow (\cs, \vpthree) \OrTypeError\\\\
   \vp = \precisionjoin(\vpone, \precisionjoin(\vptwo, \vpthree))
 }{
       \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone},
         \overname{\TInt(\vctwo)}{\vttwo}) \typearrow
-        \overname{\TInt(\wellconstrained(\cs, \vp))}{\vt}
+        \overname{\TInt(\WellConstrained(\cs, \vp))}{\vt}
 }
 \end{mathpar}
 
@@ -1470,8 +1470,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   {
     \left\{
     \begin{array}{lclcl}
-      (\PLUS  &,& \TReal &,& \TReal)\\
-      (\MINUS &,& \TReal &,& \TReal)\\
+      (\ADD  &,& \TReal &,& \TReal)\\
+      (\SUB &,& \TReal &,& \TReal)\\
       (\MUL   &,& \TReal &,& \TReal)\\
       (\POW   &,& \TReal &,& \TInt)\\
       (\RDIV  &,& \TReal &,& \TReal)
@@ -1494,35 +1494,35 @@ range constraints. More precisely, they are a superset of the values for \verb|(
     \begin{array}{lclcl}
       (\AND     &,& \TBool  &,& \TBool)\\
       (\OR      &,& \TBool  &,& \TBool)\\
-      (\EQOP    &,& \TBool  &,& \TBool)\\
+      (\EQ    &,& \TBool  &,& \TBool)\\
       (\IMPL    &,& \TBool  &,& \TBool)\\
       %
       (\AND     &,& \TBits  &,& \TBits)\\
       (\OR      &,& \TBits  &,& \TBits)\\
       (\XOR     &,& \TBits  &,& \TBits)\\
-      (\PLUS    &,& \TBits  &,& \TBits)\\
-      (\MINUS   &,& \TBits  &,& \TBits)\\
+      (\ADD    &,& \TBits  &,& \TBits)\\
+      (\SUB   &,& \TBits  &,& \TBits)\\
       (\BVCONCAT&,& \TBits  &,& \TBits)\\
       %
-      (\PLUS    &,& \TBits  &,& \TInt)\\
-      (\MINUS   &,& \TBits  &,& \TInt)\\
+      (\ADD    &,& \TBits  &,& \TInt)\\
+      (\SUB   &,& \TBits  &,& \TInt)\\
       %
-      (\LEQ     &,& \TInt     &,& \TInt)\\
-      (\GEQ     &,& \TInt     &,& \TInt)\\
+      (\LE     &,& \TInt     &,& \TInt)\\
+      (\GE     &,& \TInt     &,& \TInt)\\
       (\GT      &,& \TInt     &,& \TInt)\\
       (\LT      &,& \TInt     &,& \TInt)\\
-      (\LEQ     &,& \TReal    &,& \TReal)\\
-      (\GEQ     &,& \TReal    &,& \TReal)\\
+      (\LE     &,& \TReal    &,& \TReal)\\
+      (\GE     &,& \TReal    &,& \TReal)\\
       (\GT      &,& \TReal    &,& \TReal)\\
       (\LT      &,& \TReal    &,& \TReal)\\
-      (\EQOP    &,& \TInt     &,& \TInt)\\
-      (\NEQ     &,& \TInt     &,& \TInt)\\
-      (\EQOP    &,& \TBool    &,& \TBool)\\
-      (\NEQ     &,& \TBool    &,& \TBool)\\
-      (\EQOP    &,& \TReal    &,& \TReal)\\
-      (\NEQ     &,& \TReal    &,& \TReal)\\
-      (\EQOP    &,& \TString  &,& \TString)\\
-      (\NEQ     &,& \TString  &,& \TString)\\
+      (\EQ    &,& \TInt     &,& \TInt)\\
+      (\NE     &,& \TInt     &,& \TInt)\\
+      (\EQ    &,& \TBool    &,& \TBool)\\
+      (\NE     &,& \TBool    &,& \TBool)\\
+      (\EQ    &,& \TReal    &,& \TReal)\\
+      (\NE     &,& \TReal    &,& \TReal)\\
+      (\EQ    &,& \TString  &,& \TString)\\
+      (\NE     &,& \TString  &,& \TString)\\
       %
       (\MUL   &,& \TInt  &,& \TInt)\\
       (\DIV   &,& \TInt  &,& \TInt)\\
@@ -1531,16 +1531,16 @@ range constraints. More precisely, they are a superset of the values for \verb|(
       (\SHL   &,& \TInt  &,& \TInt)\\
       (\SHR   &,& \TInt  &,& \TInt)\\
       (\POW   &,& \TInt  &,& \TInt)\\
-      (\PLUS  &,& \TInt  &,& \TInt)\\
-      (\MINUS &,& \TInt  &,& \TInt)\\
-      (\PLUS  &,& \TReal &,& \TReal)\\
-      (\MINUS &,& \TReal &,& \TReal)\\
+      (\ADD  &,& \TInt  &,& \TInt)\\
+      (\SUB &,& \TInt  &,& \TInt)\\
+      (\ADD  &,& \TReal &,& \TReal)\\
+      (\SUB &,& \TReal &,& \TReal)\\
       (\MUL   &,& \TReal &,& \TReal)\\
       (\RDIV  &,& \TReal &,& \TReal)\\
       (\POW   &,& \TReal &,& \TInt)\\
       %
-      (\PLUS  &,& \TReal &,& \TReal)\\
-      (\MINUS &,& \TReal &,& \TReal)\\
+      (\ADD  &,& \TReal &,& \TReal)\\
+      (\SUB &,& \TReal &,& \TReal)\\
       (\MUL   &,& \TReal &,& \TReal)\\
       (\POW   &,& \TReal &,& \TInt)\\
       (\RDIV  &,& \TReal &,& \TReal)
@@ -1565,7 +1565,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 The function
 \[
   \namedlca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\ty}{\tty} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\ty}{\tty} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the lowest common named super type --- $\tty$ --- of the types $\vt$ and $\vs$ in $\tenv$.
 
@@ -1656,18 +1656,18 @@ The function
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^*}{\csone} \aslsep\\
-  \overname{\intconstraint^*}{\cstwo}
+  \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep\\
+  \overname{\KleeneStar{\intconstraint}}{\cstwo}
   \end{array}
 \right) \aslto
 \begin{array}{r}
 \left(
   \begin{array}{c}
-  \overname{\intconstraint^*}{\annotatedcs} \aslsep\\
+  \overname{\KleeneStar{\intconstraint}}{\annotatedcs} \aslsep\\
   \overname{\precisionlossindicator}{\vp}
   \end{array}
 \right)
-\\ \cup\ \overname{\TTypeError}{\TypeErrorConfig}
+\\ \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 annotates the application of the binary operation $\op$ to the lists of integer constraints
@@ -1679,16 +1679,16 @@ based on $\vapprox$ (this function is invoked in the context of approximating li
 \ProseOtherwiseTypeError\
 
 The operator $\op$ is assumed to be only one of the operators in the following set:
-$\{\SHL, \SHR, \POW, \MOD, \DIVRM, \MINUS, \MUL, \PLUS, \DIV\}$.
+$\{\SHL, \SHR, \POW, \MOD, \DIVRM, \SUB, \MUL, \ADD, \DIV\}$.
 The rule employs $\binopisexploding$ to decide whether range constraints can be maintained
 as range constraints or have to be converted to a list of exact constraints.
 
 \ExampleDef{Annotating Constraints for Binary Operations}
-Applying $\PLUS$ to
+Applying $\ADD$ to
 $\{\AbbrevConstraintRange{\ELInt{2}}{\ELInt{4}}\}$ and
 $\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in\\
 $\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,
-since $\binopisexploding(\PLUS) \typearrow \False$
+since $\binopisexploding(\ADD) \typearrow \False$
 while applying $\MUL$ to the same lists of constraints results in
 $\{\AbbrevConstraintExact{\ELInt{4}}, \AbbrevConstraintExact{\ELInt{6}}, \AbbrevConstraintExact{\ELInt{8}}\}$,
 since $\binopisexploding(\MUL) \typearrow \True$.
@@ -1787,9 +1787,9 @@ The function
     \overname{\{\Over,\Under\}}{\vapprox} \aslsep
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\binop}{\op} \aslsep
-    \overname{\intconstraint^*}{\cs})
+    \overname{\KleeneStar{\intconstraint}}{\cs})
 \aslto \\
-\overname{\intconstraint^+}{\newcs}
+\overname{\KleenePlus{\intconstraint}}{\newcs}
 \cup \{\CannotUnderapproximate, \CannotOverapproximate\}
 \end{array}
 \]
@@ -1832,7 +1832,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 
   \item \AllApplyCase{no\_filtering}
   \begin{itemize}
-    \item $\op$ is one of $\MINUS$, $\MUL$, and $\PLUS$;
+    \item $\op$ is one of $\SUB$, $\MUL$, and $\ADD$;
     \item $\newcs$ is $\cs$.
   \end{itemize}
 \end{itemize}
@@ -1862,7 +1862,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 
 \begin{mathpar}
 \inferrule[no\_filtering]{
-  \op \in \{\MINUS, \MUL, \PLUS\}
+  \op \in \{\SUB, \MUL, \ADD\}
 }{
   \binopfilterrhs(\vapprox, \op, \cs) \typearrow \overname{\cs}{\newcs}
 }
@@ -2120,12 +2120,12 @@ The function
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
   \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep\\
-  \overname{\intconstraint^*}{\cs}
+  \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right)
 \aslto
 \begin{array}{ll}
-\overname{\intconstraint^*}{\newcs} & \cup\\
+\overname{\KleeneStar{\intconstraint}}{\newcs} & \cup\\
 \{\CannotUnderapproximate, \CannotOverapproximate\}
 \end{array}
 \]
@@ -2225,11 +2225,11 @@ The function
   \begin{array}{c}
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\binop}{\op} \aslsep\\
-  \overname{\intconstraint^*}{\cs}
+  \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right) \aslto
   \begin{array}{ll}
-  \overname{\intconstraint^*}{\vres} & \cup\\
+  \overname{\KleeneStar{\intconstraint}}{\vres} & \cup\\
   \{\CannotUnderapproximate, \CannotOverapproximate\} &
   \end{array}
 \]
@@ -2444,8 +2444,8 @@ the following are examples of $\getliteraldivopt$ applications that are used
 for generating the constraints for \verb|z|:
 \[
 \begin{array}{rcl}
-\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{14}}{\ELInt{2}}) &\typearrow& \Some{(14, 2)}\\
-\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{7}}{\ELInt{2}}) &\typearrow& \Some{(7, 2)}\\
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{14}}{\ELInt{2}}) &\typearrow& \some{(14, 2)}\\
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{7}}{\ELInt{2}}) &\typearrow& \some{(7, 2)}\\
 \getliteraldivopt(\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{2}}) &\typearrow& \None\\
 \end{array}
 \]
@@ -2467,8 +2467,8 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 \hypertarget{def-explodeintervals}{}
 The function
 \[
-\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint^*}{\cs})
-\aslto \left( \overname{\intconstraint^*}{\newcs} \aslsep \overname{\precisionlossindicator}{\vp} \right)
+\explodeintervals(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\intconstraint}}{\cs})
+\aslto \left( \overname{\KleeneStar{\intconstraint}}{\newcs} \aslsep \overname{\precisionlossindicator}{\vp} \right)
 \]
 applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$, and returns
 a pair consisting of the list of exploded constraints in $\newcs$ and a
@@ -2534,7 +2534,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\intconstraint}{\vc})
 \aslto \\
-(\overname{\intconstraint^*}{\vcs}, \overname{\precisionlossindicator}{\newprec})
+(\overname{\KleeneStar{\intconstraint}}{\vcs}, \overname{\precisionlossindicator}{\newprec})
 \end{array}
 \]
 given the \staticenvironmentterm{} $\tenv$ and the constraint $\vc$,
@@ -2660,7 +2660,7 @@ The function
 \]
 determines whether the binary operation $\op$ should lead to applying $\explodeintervals$
 when the $\op$ is applied to a pair of constraint lists.
-It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\PLUS$, $\DIV$, $\MINUS$, $\MOD$, $\SHR$,
+It is assumed that $\op$ is one of $\MUL$, $\SHL$, $\POW$, $\ADD$, $\DIV$, $\SUB$, $\MOD$, $\SHR$,
 and $\DIVRM$.
 
 See \ExampleRef{Annotating Constraints for Binary Operations}.
@@ -2679,8 +2679,8 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 \hypertarget{def-bitfieldsincluded}{}
 The predicate
 \[
-  \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\bitfield^*}{\bfsone} \aslsep \overname{\bitfield^*}{\bfstwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\bitfield}}{\bfsone} \aslsep \overname{\KleeneStar{\bitfield}}{\bfstwo})
+  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a \typingerrorterm{}, if one is detected.
@@ -2717,7 +2717,7 @@ not included in \verb|FlaggedPacket|.
 \hypertarget{def-membfs}{}
 The function
 \[
-  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield^+}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
+  \membfs(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleenePlus{\bitfield}}{\bfstwo} \aslsep \overname{\bitfield}{\vbfone})
   \aslto \overname{\Bool}{\vb}
 \]
 checks whether the bitfield $\vbf$ exists in $\bfstwo$ in the context of $\tenv$, returning the result in $\vb$.
@@ -2904,8 +2904,8 @@ is ill-typed.
 \TypingRuleDef{CheckStructure}
 The function
 \[
-  \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\astlabels}{\vl}) \aslto
-  \{\True\} \cup \TTypeError
+  \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ASTLabels}{\vl}) \aslto
+  \{\True\} \cup \typeerror
 \]
 returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a \typingerrorterm{} otherwise.
 
@@ -2964,7 +2964,7 @@ The following table shows examples of applying $\towellconstrained$ to various t
 \begin{array}{rl}
 \textbf{input type}           & \textbf{output type}\\
 \hline
-\TInt(\parameterized(\vx))    & \TInt(\wellconstrained(\ConstraintExact(\EVar(\vx))))\\
+\TInt(\Parameterized(\vx))    & \TInt(\WellConstrained(\ConstraintExact(\EVar(\vx))))\\
 \TInt(\unconstrainedinteger)  & \TInt(\unconstrainedinteger)\\
 \TReal                        & \TReal\\
 \end{array}
@@ -2977,7 +2977,7 @@ The following table shows examples of applying $\towellconstrained$ to various t
   \begin{itemize}
     \item $\vt$ is a \parameterizedintegertype\ for the variable $\vv$;
     \item $\vtp$ is the well-constrained integer constrained by the variable expression for $\vv$,
-    that is, $\TInt(\wellconstrained(\constraintexact(\EVar(\vv))))$.
+    that is, $\TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))$.
   \end{itemize}
 
   \item \AllApplyCase{t\_int\_other, other}
@@ -2991,11 +2991,11 @@ The following table shows examples of applying $\towellconstrained$ to various t
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}
 {
-  \towellconstrained(\TInt(\parameterized(\vv))) \typearrow\\ \TInt(\wellconstrained(\constraintexact(\EVar(\vv))))
+  \towellconstrained(\TInt(\Parameterized(\vv))) \typearrow\\ \TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))
 }
 \and
 \inferrule[t\_int\_other]{
-  \astlabel(\vi) \neq \parameterized
+  \astlabel(\vi) \neq \Parameterized
 }{
   \towellconstrained(\TInt(\vi)) \typearrow \vt
 }
@@ -3012,7 +3012,7 @@ The following table shows examples of applying $\towellconstrained$ to various t
 The function
 \[
   \getwellconstrainedstructure(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
-  \aslto \overname{\ty}{\vtp} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \aslto \overname{\ty}{\vtp} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the \wellconstrainedstructure\ of a type $\vt$ in the \staticenvironmentterm{} $\tenv$ --- $\vtp$, which is defined as follows.
 \ProseOtherwiseTypeError
@@ -3021,7 +3021,7 @@ returns the \wellconstrainedstructure\ of a type $\vt$ in the \staticenvironment
 In \listingref{GetWellConstrainedStructure},
 annotating the expression \verb|-N| involves obtaining the well-constrained structure of the
 type of \verb|N|, which yields \\
-$\TInt(\wellconstrained([\ConstraintExact(\EVar(\vN))]))$.
+$\TInt(\WellConstrained([\ConstraintExact(\EVar(\vN))]))$.
 Similarly, the for expression \verb|-x|,
 obtaining the well-constrained structure of the type for $\vx$ yields \\
 $\unconstrainedinteger$.
@@ -3049,7 +3049,7 @@ $\unconstrainedinteger$.
 The function
 \[
   \getbitvectorwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-  \overname{\expr}{\ve} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\expr}{\ve} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the expression $\ve$, which represents the width of the bitvector type $\vt$
 in the \staticenvironmentterm{} $\tenv$.
@@ -3096,7 +3096,7 @@ See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
 The function
 \[
   \getbitvectorconstwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
-  \overname{\N}{\vw} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\N}{\vw} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the natural number $\vw$, which represents the width of the bitvector type $\vt$
 in the \staticenvironmentterm{} $\tenv$.
@@ -3134,7 +3134,7 @@ The function
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\ty}{\vtone} \aslsep
     \overname{\ty}{\vttwo}) \aslto
-  \{\True\} \cup \TTypeError
+  \{\True\} \cup \typeerror
 \]
 tests whether the types $\vtone$ and $\vttwo$ are bitvector types of the same width.
 If the answer is positive, the result is $\True$. \ProseOtherwiseTypeError

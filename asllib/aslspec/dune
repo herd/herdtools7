@@ -1,0 +1,21 @@
+(executable
+ (public_name aslspec)
+ (name main)
+ (flags
+  (:standard -w -40-42-44-48))
+ (libraries str)
+ (optional))
+
+(ocamllex SpecLexer)
+
+(menhir
+ (modules SpecParser)
+ (flags --unused-tokens --explain))
+
+(rule
+ (target TokenStrings.ml)
+ (deps SpecLexer.mll extract_tokens.py)
+ (action
+  (with-stdout-to
+   %{target}
+   (run python3 extract_tokens.py SpecLexer.mll))))

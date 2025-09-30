@@ -82,6 +82,8 @@ as they discard their declared storage elements.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RenderTypes[remove_hypertargets]{decl_global_storage}
+\BackupOriginalAST{
 \begin{flalign*}
 \decl \derives\ & \DGlobalStorage(\globaldecl) &\\
 \globaldecl \derives\ &
@@ -96,6 +98,7 @@ as they discard their declared storage elements.
  } &\\
  \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
 \end{flalign*}
+}
 
 \ASTRuleDef{GlobalStorageDecl}
 This rule defines the cases for $\builddecl$ for global storage declarations.
@@ -177,7 +180,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
       \builddecl(\overname{\Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow
     \end{array}
   } \\
-  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \Some{\astof{\vt}}, \GDinitialvalue: \Some{\astof{\vexpr}}\})}{\vastnode}
+  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \some{\astof{\vt}}, \GDinitialvalue: \some{\astof{\vexpr}}\})}{\vastnode}
 }
 \end{mathpar}
 
@@ -220,7 +223,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
       \builddecl(\overname{\Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)}{\vparsednode}) \astarrow
     \end{array}
   } \\
-  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \Some{\astof{\tty}}, \GDinitialvalue: \vexpr\})}{\vastnode}
+  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \some{\astof{\tty}}, \GDinitialvalue: \vexpr\})}{\vastnode}
 }
 \end{mathpar}
 
@@ -347,7 +350,7 @@ The function
   \aslto
   (\overname{\globalstaticenvs}{\newgenv} \aslsep \overname{\globaldecl}{\newgsd})
   \cup
-  \overname{\TTypeError}{\TypeErrorConfig}
+  \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the global storage declaration $\gsd$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding a modified \globalstaticenvironmentterm{} $\newgenv$ and annotated global storage declaration $\newgsd$.
@@ -474,7 +477,7 @@ The helper function
   ) \\ \aslto
   (\overname{(\expr\times \ty \times \TSideEffectSet)}{\typedinitialvalue}
   \times \overname{\langle\ty\rangle}{\tyoptp} \times \overname{\ty}{\declaredt})
-  \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
 is used in the context of a declaration of a global storage element with optional type annotation $\tyoptp$
@@ -630,7 +633,7 @@ The helper function
 \left(
 \begin{array}{c}
   \overname{\staticenvs}{\tenv} \aslsep\\
-    \overname{\identifier}{\name} \aslsep\\
+    \overname{\Identifier}{\name} \aslsep\\
     \overname{\globaldeclkeyword}{\gdk} \aslsep\\
     \overname{(\ty\times\expr\times\TSideEffectSet)}{\typedinitialvalue}
 \end{array}
@@ -798,12 +801,12 @@ The function
 \[
   \addglobalstorage(
     \overname{\globalstaticenvs}{\genv} \aslsep
-    \overname{\identifier}{\name} \aslsep
+    \overname{\Identifier}{\name} \aslsep
     \overname{\globaldeclkeyword}{\keyword} \aslsep
     \overname{\ty}{\declaredt}
   )
   \aslto
-    \overname{\globalstaticenvs}{\newgenv} \cup \overname{\TTypeError}{\TypeErrorConfig}
+    \overname{\globalstaticenvs}{\newgenv} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns a \globalstaticenvironmentterm{} $\newgenv$ which is identical to the \globalstaticenvironmentterm{} $\genv$,
 except that the identifier $\name$, which is assumed to name a global storage element,
@@ -818,7 +821,7 @@ static environments:
 \begin{array}{rcl}
   \PI &\mapsto& (\TReal, \GDKConstant)\\
   \vx &\mapsto& (\unconstrainedinteger, \GDKVar)\\
-  \vc &\mapsto& (\TInt(\wellconstrained(\AbbrevConstraintExact{\LInt(42)})), \GDKConfig)
+  \vc &\mapsto& (\TInt(\WellConstrained(\AbbrevConstraintExact{\LInt(42)})), \GDKConfig)
 \end{array}
 \]
 
@@ -854,7 +857,7 @@ This section defines the following relations:
 The relation
 \hypertarget{def-evalglobals}{}
 \[
-  \evalglobals(\overname{\decl^*}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
+  \evalglobals(\overname{\KleeneStar{\decl}}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
   \;\aslrel\;
   \left(
   \begin{array}{cl}
@@ -877,7 +880,7 @@ $\nvbitvector(\overbrace{0 \ldots 0}^{32})$,
 \verb|MaxIrq| to $\nvint(480)$, and
 \verb|Regs| to
 \[
-\nvvector( [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] ) \enspace.
+\NVVector( [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] ) \enspace.
 \]
 
 \ASLListing{Evaluating a list of global declarations}{EvalGlobals}{\semanticstests/SemanticsRule.EvalGlobals.asl}
@@ -936,7 +939,7 @@ before having the chance to evaluate \verb|main|.
 The relation
 \hypertarget{def-declareglobal}{}
 \[
-  \declareglobal(\overname{\Identifiers}{\name} \aslsep \overname{\vals}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
+  \declareglobal(\overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
 updates the environment $\env$ by mapping $\name$ to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
 

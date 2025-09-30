@@ -47,10 +47,12 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Global Pragma Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\RenderTypes[remove_hypertargets]{decl_global_pragma}
+\BackupOriginalAST{
 \begin{flalign*}
-\decl \derives\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
+\decl \derives\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
 \end{flalign*}
+}
 
 \ASTRuleDef{GlobalPragma}
 \begin{mathpar}
@@ -80,7 +82,7 @@ The function
     \overname{\decl}{\vd}
   )
   \aslto
-  \{\True\} \cup \overname{\TTypeError}{\TypeErrorConfig}
+  \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 typechecks a global pragma declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding $\True$.

@@ -33,7 +33,7 @@ generate a \typedast.
   \begin{itemize}
     \item \secref{Identifiers} defines the AST for identifiers;
     \item \secref{ASTLiterals} defines the AST for literal values;
-    \item \secref{BasicOperations} defines the AST for basic operations;
+    \item \secref{Operators} defines the AST for operators;
     \item \secref{Expressions} defines the AST for expressions;
     \item \secref{Patterns} defines the AST for patterns;
     \item \secref{Slices} defines the AST for slices;
@@ -43,7 +43,7 @@ generate a \typedast.
     \item \secref{BitFields} defines the AST for bitfields;
     \item \secref{ArrayIndices} defines the AST for array indices;
     \item \secref{FieldsAndTypedIdentifiers} defines the AST for fields and typed identifiers;
-    \item \secref{LeftHandSideExpressions} defines the AST for assignable expressions;
+    \item \secref{AssignableExoressions} defines the AST for assignable expressions;
     \item \secref{LocalDeclarations} defines the AST for local declarations;
     \item \secref{Statements} defines the AST for statements;
     \item \secref{CaseAlternatives} defines the AST for case alternatives;
@@ -107,61 +107,70 @@ The abstract syntax of ASL is given in terms of the derivation rules below and t
 Some extra details are given by using the notation $\overtext{\textit{symbol}}{\text{detail}}$.
 
 \subsection{Identifiers \label{sec:Identifiers}}
-\hypertarget{ast-identifier}{}
-Identifiers in the AST, denoted $\identifier$ are simply strings representing ASL identifiers.
+Identifiers in the AST, denoted $\Identifier$ are simply strings representing ASL identifiers.
 Those are obtained directly from the values of identifier tokens, $\Tidentifier(s)$.
 
 \subsection{Literal Values \label{sec:ASTLiterals}}
 The following rules correspond to literal values of the following ASL data types:
 integers, Booleans, real numbers, bitvectors, and strings.
 
-\hypertarget{ast-literal}{} \hypertarget{ast-lint}{}
-\begin{flalign*}
-\literal \derives\ & \LInt(\Z)
-& \hypertarget{ast-lbool}{}
-\\
- |\ & \LBool(\Bool)
- & \hypertarget{ast-lreal}{}
-\\
- |\ & \LReal(\Q)
- & \hypertarget{ast-lbitvector}{}
-\\
- |\ & \LBitvector(\Bit^*)
- & \hypertarget{ast-lstring}{}
-\\
- |\ & \LString(\Strings) &
- \hypertarget{ast-llabel}{} \\
- |\ & \LLabel(\overtext{\identifier}{enumeration label})
- & \\
-\end{flalign*}
+\RenderType{literal}
 
-\subsection{Basic Operations\label{sec:BasicOperations}}
-The following rules correspond to unary operations and binary operations that can be applied to expressions.
+\subsection{Operators\label{sec:Operators}}
+The following rules correspond to unary operators and binary operators,
+which can be used in unary expressions and binary expressions.
 
-\hypertarget{ast-unop}{} \hypertarget{ast-bnot}{} \hypertarget{ast-neg}{} \hypertarget{ast-not}{}
-\begin{flalign*}
-\unop \derives\ & \overtext{\BNOT}{\Tbnot} \;|\; \overtext{\NEG}{\Tminus} \;|\; \overtext{\NOT}{\Tnot}
-& \hypertarget{ast-binop}{} \hypertarget{ast-bor}{} \hypertarget{ast-impl}{} \hypertarget{ast-beq}{} \hypertarget{ast-band}{}
-\\
-\binop  \derives\ & \overtext{\BAND}{\Tband} \;|\; \overtext{\BOR}{\Tbor} \;|\; \overtext{\IMPL}{\Tbimpl}
-              \;|\; \overtext{\BEQ}{\Tbeq}
-              & \hypertarget{ast-eqop}{} \hypertarget{ast-neq}{} \hypertarget{ast-gt}{} \hypertarget{ast-geq}{} \hypertarget{ast-lt}{} \hypertarget{ast-leq}{}
-\\
-        |\ & \overtext{\EQOP}{\Teqop} \;|\; \overtext{\NEQ}{\Tneq} \;|\; \overtext{\GT}{\Tgt}
-        \;|\; \overtext{\GEQ}{\Tgeq} \;|\; \overtext{\LT}{\Tlt} \;|\; \overtext{\LEQ}{\Tleq}
-        & \hypertarget{ast-plus}{} \hypertarget{ast-minus}{} \hypertarget{ast-or}{} \hypertarget{ast-xor}{} \hypertarget{ast-and}{}
-\\
-        |\ & \overtext{\PLUS}{\Tplus} \;|\; \overtext{\MINUS}{\Tminus} \;|\; \overtext{\OR}{\Tor}
-        \;|\; \overtext{\XOR}{\Txor} \;|\; \overtext{\AND}{\Tand}
-        & \hypertarget{ast-mul}{} \hypertarget{ast-div}{} \hypertarget{ast-divrm}{} \hypertarget{ast-mod}{} \hypertarget{ast-shl}{} \hypertarget{ast-shr}{}
-\\
-        |\ & \overtext{\MUL}{\Tmul} \;|\; \overtext{\DIV}{\Tdiv} \;|\; \overtext{\DIVRM}{\Tdivrm}
-        \;|\; \overtext{\MOD}{\Tmod} \;|\; \overtext{\SHL}{\shiftleftlexeme}  \;|\; \overtext{\SHR}{\shiftrightlexeme}
-        & \hypertarget{ast-rdiv}{} \hypertarget{ast-pow}{} \hypertarget{ast-bvconcat}{} \hypertarget{ast-strconcat}{}
-\\
-        |\ & \overtext{\RDIV}{\Trdiv} \;|\; \overtext{\POW}{\Tpow} \;|\; \overtext{\BVCONCAT}{\Tcoloncolon} \;|\; \overtext{\STRCONCAT}{\Tplusplus}
-        &
-\end{flalign*}
+\RenderType{unop}
+
+The following table shows the token associated to each unary operator:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{unary operator} & \textbf{operator token}\\
+\hline
+\BNOT{} & \Tbnot\\
+\NEG{}  & \Tminus\\
+\NOT{}  & \Tnot\\
+\hline
+\end{tabular}
+\end{center}
+
+\RenderType{binop}
+
+The following table shows the token associated to each binary operator:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{binary operator} & \textbf{operator token}\\
+\hline
+\BAND{}       & \Tband\\
+\BOR{}        & \Tbor\\
+\IMPL{}       & \Tbimpl\\
+\BEQ{}        & \Tbeq\\
+\EQ{}         & \Teqop\\
+\NE{}        & \Tneq\\
+\GT{}         & \Tgt\\
+\GE{}        & \Tgeq\\
+\LT{}         & \Tlt\\
+\LE{}        & \Tleq\\
+\ADD{}       & \Tplus\\
+\SUB{}      & \Tminus\\
+\OR{}         & \Tor\\
+\XOR{}        & \Txor\\
+\AND{}        & \Tand\\
+\MUL{}        & \Tmul\\
+\DIV{}        & \Tdiv\\
+\DIVRM{}      & \Tdivrm\\
+\MOD{}        & \Tmod\\
+\SHL{}        & \shiftleftlexeme\\
+\SHR{}        & \shiftrightlexeme\\
+\RDIV{}       & \Trdiv\\
+\POW{}        & \Tpow\\
+\BVCONCAT{}   & \Tcoloncolon\\
+\STRCONCAT{}  & \Tplusplus\\
+\hline
+\end{tabular}
+\end{center}
 
 \subsection{Expressions \label{sec:Expressions}}
 The following rules correspond to various types of expressions:
@@ -170,38 +179,7 @@ call expressions, slicing expressions, conditional expressions, array access exp
 record and exception construction expressions, tuple expressions, arbitrary-value expressions,
 and pattern matching expressions.
 
-\hypertarget{ast-expr}{} \hypertarget{ast-eliteral}{}
-\begin{flalign*}
-\expr \derives\ & \ELiteral(\literal)
-& \hypertarget{ast-evar}{}\\
-	|\ & \EVar(\overtext{\identifier}{variable name})
-  &\hypertarget{ast-eatc}{}\\
-	|\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type})
-  &\hypertarget{ast-ebinop}{}\\
-	|\ & \EBinop(\binop, \expr, \expr)
-  &\hypertarget{ast-eunop}{}\\
-	|\ & \EUnop(\unop, \expr)
-  &\hypertarget{ast-ecall}{}\\
-	|\ & \ECall(\call)
-  &\hypertarget{ast-eslice}{}\\
-	|\ & \ESlice(\expr, \slice^{*})
-  &\hypertarget{ast-econd}{}\\
-	|\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
-  &\hypertarget{ast-egetarray}{}\\
-  |\ & \EGetArray(\overtext{\expr}{base}, \overtext{\expr}{index})
-  &\hypertarget{ast-egetfield}{}\\
-	|\ & \EGetField(\overtext{\expr}{record}, \overtext{\identifier}{field name})
-  &\hypertarget{ast-egetfields}{}\\
-	|\ & \EGetFields(\overtext{\expr}{record}, \overtext{\identifier^{*}}{field names})
-  &\hypertarget{ast-erecord}{}\\
-	|\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\identifier, \expr)^{*}}{field initializers})
-  &\hypertarget{ast-etuple}{}\\
-	|\ & \ETuple(\expr^{+})
-  &\hypertarget{ast-earbitrary}{}\\
-	|\ & \EArbitrary(\ty)
-  &\hypertarget{ast-epattern}{}\\
-	|\ & \EPattern(\expr, \pattern)
-\end{flalign*}
+\RenderTypes{untyped_expr}
 
 \listingref{expr1} and \listingref{expr2} exemplify the different kinds of expressions,
 as indicated by respective comments.
@@ -227,43 +205,25 @@ as indicated by respective comments.
 \end{itemize}
 
 \subsection{Patterns \label{sec:Patterns}}
-
-\hypertarget{ast-pattern}{} \hypertarget{ast-patternall}{}
-\begin{flalign*}
-\pattern \derives\ & \PatternAll
-  & \hypertarget{ast-patternany}{}\\
-  |\ & \PatternAny(\pattern^{*})
-  & \hypertarget{ast-patterngeq}{}\\
-  |\ & \PatternGeq(\expr)
-  & \hypertarget{ast-patternleq}{}\\
-  |\ & \PatternLeq(\expr)
-  & \hypertarget{ast-patternmask}{}\\
-  |\ & \PatternMask(\overtext{\{0,1,x\}^*}{mask constant})
-  & \hypertarget{ast-patternnot}{}\\
-  |\ & \PatternNot(\pattern)
-  & \hypertarget{ast-patternrange}{}\\
-  |\ & \PatternRange(\overtext{\expr}{lower}, \overtext{\expr}{upper})
-  & \hypertarget{ast-patternsingle}{}\\
-  |\ & \PatternSingle(\expr)
-  & \hypertarget{ast-patterntuple}{}\\
-  |\ & \PatternTuple(\pattern^{*}) &
-\end{flalign*}
+\hypertarget{constant-zerobit}{}
+\hypertarget{constant-onebit}{}
+\hypertarget{constant-xbit}{}
+\RenderType{pattern}
 
 \subsection{Slices \label{sec:Slices}}
-
-\hypertarget{ast-slice}{} \hypertarget{ast-slicesingle}{}
+\RenderTypes{untyped_slice}
+\BackupOriginalAST{
 \begin{flalign*}
-\slice \derives\ & \SliceSingle(\overtext{\expr}{\vi})
-  & \hypertarget{ast-slicerange}{}\\
-  |\ & \SliceRange(\overtext{\expr}{\vj}, \overtext{\expr}{\vi})
-  & \hypertarget{ast-slicelength}{}\\
-  |\ & \SliceLength(\overtext{\expr}{\vi}, \overtext{\expr}{\vn})
-  & \hypertarget{ast-slicestar}{}\\
+\slice \derives\ & \SliceSingle(\overtext{\expr}{\vi}) &\\
+  |\ & \SliceRange(\overtext{\expr}{\vj}, \overtext{\expr}{\vi}) &\\
+  |\ & \SliceLength(\overtext{\expr}{\vi}, \overtext{\expr}{\vn}) &\\
   |\ & \SliceStar(\overtext{\expr}{\vi}, \overtext{\expr}{\vn}) &
 \end{flalign*}
+}
 
 \subsection{Subprogram calls \label{sec:SubprogramCalls}}
-\hypertarget{ast-call}{}
+\RenderType{call}
+\BackupOriginalAST{
 \begin{flalign*}
 \call \derives\ &
 {
@@ -277,109 +237,115 @@ as indicated by respective comments.
 \right\}
 } &
 \end{flalign*}
+}
 
 \subsection{Types \label{sec:Types}}
 
-\hypertarget{ast-ty}{} \hypertarget{ast-tint}{}
+\RenderType{ty}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\ty \derives\ & \TInt(\constraintkind)
-\hypertarget{ast-treal}{}\\
-  |\ & \TReal
-  & \hypertarget{ast-tstring}{}\\
-  |\ & \TString
-  & \hypertarget{ast-tbool}{}\\
-  |\ & \TBool
-  & \hypertarget{ast-tbits}{}\\
-  |\ & \TBits(\overtext{\expr}{width}, \bitfield^{*})
-  & \hypertarget{ast-ttuple}{}\\
-  |\ & \TTuple(\ty^{*})
-  & \hypertarget{ast-tarray}{}\\
-  |\ & \TArray(\arrayindex, \ty)
-  & \hypertarget{ast-tnamed}{}\\
-  |\ & \TNamed(\overtext{\identifier}{type name}) &
-  & \hypertarget{ast-tenum}{}\\
-  |\ & \TEnum(\overtext{\identifier^{*}}{labels})\\
-  & \hypertarget{ast-trecord}{}\\
-  |\ & \TRecord(\Field^{*})
-  & \hypertarget{ast-texception}{}\\
-  |\ & \TException(\Field^{*})
-  & \hypertarget{ast-tcollection}{}\\
-  |\ & \TCollection(\Field^{*})
+\ty \derives\ & \TInt(\constraintkind)\\
+  |\ & \TReal & \\
+  |\ & \TString & \\
+  |\ & \TBool & \\
+  |\ & \TBits(\overtext{\expr}{width}, \bitfield^{*}) & \\
+  |\ & \TTuple(\ty^{*}) & \\
+  |\ & \TArray(\arrayindex, \ty) & \\
+  |\ & \TNamed(\overtext{\Identifier}{type name}) & & \\
+  |\ & \TEnum(\overtext{\Identifier^{*}}{labels})\\ & \\
+  |\ & \TRecord(\field^{*}) & \\
+  |\ & \TException(\field^{*}) & \\
+  |\ & \TCollection(\field^{*})
 \end{flalign*}
+}
 
 \subsection{Constraints \label{sec:Constraints}}
-
-\hypertarget{ast-constraintkind}{} \hypertarget{ast-unconstrained}{}
+\RenderTypes{untyped_constraint_kind}
+\BackupOriginalAST{
 \begin{flalign*}
-  \constraintkind \derives\ & \unconstrained
-  & \hypertarget{ast-wellconstrained}{}\\
-  |\ & \wellconstrained(\intconstraint^{+})
-  & \hypertarget{ast-pendingconstrained}{}\\
-  |\ & \pendingconstrained{}
-  & \hypertarget{ast-parameterized}{}\\
-  |\ & \parameterized(\overtext{\identifier}{parameter}) &
+  \constraintkind \derives\ & \Unconstrained & \\
+  |\ & \WellConstrained(\intconstraint^{+}) & \\
+  |\ & \PendingConstrained{} & \\
+  |\ & \Parameterized(\overtext{\Identifier}{parameter}) &
 \end{flalign*}
+}
 
-\hypertarget{ast-intconstraint}{} \hypertarget{ast-constraintexact}{}
+\RenderType{int_constraint}
+\BackupOriginalAST{
 \begin{flalign*}
-\intconstraint \derives\ & \ConstraintExact(\expr)
-  & \hypertarget{ast-constraintrange}{}\\
+\intconstraint \derives\ & \ConstraintExact(\expr) & \\
   |\ & \ConstraintRange(\overtext{\expr}{start}, \overtext{\expr}{end})&
 \end{flalign*}
+}
 
 \subsection{Bit Fields \label{sec:BitFields}}
 
-\hypertarget{ast-bitfield}{} \hypertarget{ast-bitfieldsimple}{}
+\RenderType{bitfield}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\bitfield \derives\ & \BitFieldSimple(\identifier, \slice^{*})
-  & \hypertarget{ast-bitfieldnested}{}\\
-  |\ & \BitFieldNested(\identifier, \slice^{*}, \bitfield^{*})
-  & \hypertarget{ast-bitfieldtype}{}\\
-  |\ & \BitFieldType(\identifier, \slice^{*}, \ty) &
+\bitfield \derives\ & \BitFieldSimple(\Identifier, \slice^{*}) & \\
+  |\ & \BitFieldNested(\Identifier, \slice^{*}, \bitfield^{*}) & \\
+  |\ & \BitFieldType(\Identifier, \slice^{*}, \ty) &
 \end{flalign*}
+}
 
 \subsection{Array Indices \label{sec:ArrayIndices}}
-
-\hypertarget{ast-arrayindex}{} \hypertarget{ast-arraylengthexpr}{}
+\hypertarget{ast-ArrayLengthEnum}{}
+\RenderTypes{untyped_array_index}
+\BackupOriginalAST{
 The AST type for array indices is given by the following derivation:
 \begin{flalign*}
 \arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
 \end{flalign*}
+}
 
 \subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
 
 The following rule corresponds to a field of a record-like structure:
-\hypertarget{ast-field}{}
+\RenderType{field}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\Field \derives\ & (\identifier, \ty) &
+\field \derives\ & (\Identifier, \ty) &
 \end{flalign*}
+}
 
 The following rule corresponds to an identifier with its associated type:
-\hypertarget{ast-typedidentifier}{}
+\RenderType{typed_identifier}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\typedidentifier \derives\ & (\identifier, \ty) &
+\typedidentifier \derives\ & (\Identifier, \ty) &
 \end{flalign*}
+}
 
-\subsection{Left-hand Side Expressions \label{sec:LeftHandSideExpressions}}
-
+\subsection{Assignable Expressions \label{sec:AssignableExoressions}}
 The following rules define the types of left-hand side of assignments:
-\hypertarget{ast-lexpr}{} \hypertarget{ast-lediscard}{}
+\RenderTypes{untyped_lexpr}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} & \hypertarget{ast-levar}{}\\
-  |\ & \LEVar(\identifier) & \hypertarget{ast-leslice}{}\\
-  |\ & \LESlice(\lexpr, \slice^*) & \hypertarget{ast-lesetarray}{}\\
-  |\ & \LESetArray(\lexpr, \expr) & \hypertarget{ast-lesetfield}{}\\
-  |\ & \LESetField(\lexpr, \identifier) & \hypertarget{ast-lesetfields}{}\\
-  |\ & \LESetFields(\lexpr, \identifier^*) & \hypertarget{ast-ledestructuring}{}\\
-  |\ & \LEDestructuring(\lexpr^*) & \\
+\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} & \\
+  |\ & \LEVar(\Identifier) & \\
+  |\ & \LESlice(\lexpr, \KleeneStar{\slice}) & \\
+  |\ & \LESetArray(\lexpr, \expr) & \\
+  |\ & \LESetField(\lexpr, \Identifier) & \\
+  |\ & \LESetFields(\lexpr, \KleeneStar{\Identifier}) & \\
+  |\ & \LEDestructuring(\KleeneStar{\lexpr}) & \\
 \end{flalign*}
+}
 
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
 
-\hypertarget{ast-localdeclkeyword}{} \hypertarget{ast-ldkvar}{} \hypertarget{ast-ldklet}{}
+\RenderType{local_decl_keyword}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \localdeclkeyword \derives\ & \LDKVar \;|\; \LDKLet &
 \end{flalign*}
+}
 
 A local declaration item is the left-hand side of a declaration statements.
 In the following example of a declaration statement:
@@ -391,150 +357,165 @@ the local declaration item is
 (x, -, z): (integer, integer, integer {0..32})
 \end{lstlisting}
 
-\hypertarget{ast-localdeclitem}{}
+\RenderType{local_decl_item}
+\BackupOriginalAST{
 \begin{flalign*}
 \localdeclitem \derives\ &
-  & \hypertarget{ast-ldivar}{}\\
-  |\ & \LDIVar(\identifier)
-  & \hypertarget{ast-ldituple}{}\\
-  |\ & \LDITuple(\identifier^*) &
+  & \\
+  |\ & \LDIVar(\Identifier)
+  & \\
+  |\ & \LDITuple(\KleeneStar{\Identifier}) &
 \end{flalign*}
-
+}
 \subsection{Statements \label{sec:Statements}}
-
-\hypertarget{ast-fordirection}{} \hypertarget{ast-up}{} \hypertarget{ast-down}{}
+\RenderTypes{untyped_stmt}
+\RenderType{for_direction}
+\BackupOriginalAST{
 \begin{flalign*}
 \fordirection \derives\ & \UP \;|\; \DOWN &\\
-\hypertarget{ast-stmt}{} \hypertarget{ast-spass}{}\\
-\stmt \derives\ & \SPass
-\hypertarget{ast-sseq}{} &\\
-  |\ & \SSeq(\stmt, \stmt)
-  \hypertarget{ast-sdecl}{} &\\
-  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
-  \hypertarget{ast-sassign}{} &\\
-  |\ & \SAssign(\lexpr, \expr)
-  \hypertarget{ast-scall}{} &\\
-  |\ & \SCall(\call)
-  \hypertarget{ast-sreturn}{} &\\
-  |\ & \SReturn(\expr?)
-  \hypertarget{ast-scond}{} &\\
-  |\ & \SCond(\expr, \stmt, \stmt)
-  \hypertarget{ast-sassert}{} &\\
-  |\ & \SAssert(\expr)
-  \hypertarget{ast-sfor}{} &\\
+\\
+\stmt \derives\ & \SPass &\\
+  |\ & \SSeq(\stmt, \stmt) & \\
+  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?) & \\
+  |\ & \SAssign(\lexpr, \expr) & \\
+  |\ & \SCall(\call) & \\
+  |\ & \SReturn(\expr?) & \\
+  |\ & \SCond(\expr, \stmt, \stmt) & \\
+  |\ & \SAssert(\expr) & \\
   |\ & \SFor\left\{
     \begin{array}{rcl}
-    \Forindexname  &:& \identifier,\\
+    \Forindexname  &:& \Identifier,\\
     \Forstarte     &:& \expr,\\
     \Fordir        &:& \fordirection,\\
     \Forende       &:& \expr,\\
     \Forbody       &:& \stmt,\\
     \Forlimit      &:& \expr?
     \end{array}
-  \right\}
-  \hypertarget{ast-swhile}{} &\\
-  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body})
-  \hypertarget{ast-srepeat}{} &\\
-  |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit})
-  \hypertarget{ast-sthrow}{} &\\
-  |\ & \SThrow(\expr) &\\
-  \hypertarget{ast-stry}{} &\\
-  |\ & \STry(\stmt, \catcher^*, \overtext{\stmt?}{otherwise})
-  \hypertarget{ast-sprint}{} &\\
-  |\ & \SPrint(\overtext{\expr^*}{args}, \overtext{\Bool}{newline})
-  \hypertarget{ast-spragma}{} &\\
-  |\ & \SPragma(\Tidentifier, \overtext{\expr^*}{args})
-  \hypertarget{ast-sunreachable}{} &\\
+  \right\} & \\
+  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) & \\
+  |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) & \\
+  |\ & \SThrow(\expr) &\\ & \\
+  |\ & \STry(\stmt, \KleeneStar{\catcher}, \overtext{\stmt?}{otherwise}) & \\
+  |\ & \SPrint(\overtext{\KleeneStar{\expr}}{args}, \overtext{\Bool}{newline}) & \\
+  |\ & \SPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args}) & \\
   |\ & \SUnreachable
 \end{flalign*}
+}
 
 \subsection{Case Alternatives \label{sec:CaseAlternatives}}
 
-\hypertarget{ast-casealt}{}
+\RenderType{case_alt}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
-\end{flalign*}
+}
 
 \subsection{Exception Catchers \label{sec:ExceptionCatchers}}
-\hypertarget{ast-catcher}{}
+\RenderType{catcher}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\catcher \derives\ & (\overtext{\identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
+\catcher \derives\ & (\overtext{\Identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
 \end{flalign*}
+}
 
 \subsection{Subprograms \label{sec:Subprograms}}
-\hypertarget{ast-subprogramtype}{} \hypertarget{ast-stprocedure}{} \hypertarget{ast-stfunction}{}
+\RenderType{subprogram_type}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\subprogramtype \derives\ & \STProcedure \;|\; \STFunction
-\hypertarget{ast-stgetter}{} \hypertarget{ast-stsetter}{} &\\
+\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
                 |\  & \STGetter \;|\; \STSetter &
 \end{flalign*}
+}
 
-\hypertarget{ast-qualifier}{} \hypertarget{ast-pure}{} \hypertarget{ast-readonly}{} \hypertarget{ast-noreturn}{}
+\RenderType{qualifier}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &
 \end{flalign*}
+}
 
-\hypertarget{ast-overrideinfo}{} \hypertarget{ast-impdef}{}
+\RenderType{override_info}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\overrideinfo \derives\ & \Impdef \hypertarget{ast-implementation}{} \;|\; \Implementation &
+\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
 \end{flalign*}
+}
 
-\hypertarget{ast-func}{}
+\RenderType{func}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \func \derives\ &
 {
 \left\{
   \begin{array}{rcl}
  \funcname &:& \Strings, \\
- \funcparameters &:& (\identifier, \ty?)^*,\\
- \funcargs &:& \typedidentifier^*,\\
+ \funcparameters &:& \KleeneStar{(\Identifier, \ty?)},\\
+ \funcargs &:& \KleeneStar{\typedidentifier},\\
  \funcbody &:& \stmt,\\
  \funcreturntype &:& \ty?,\\
  \funcsubprogramtype &:& \subprogramtype\\
  \funcrecurselimit    &:& \expr?\\
  \funcbuiltin &:& \Bool\\
- \funcqualifier &:& \Some{\qualifier}\\
- \funcoverride &:& \Some{\overrideinfo}\\
+ \funcqualifier &:& \some{\qualifier}\\
+ \funcoverride &:& \some{\overrideinfo}\\
 \end{array}
 \right\}
 } &
 \end{flalign*}
+}
 
 \subsection{Global Declarations \label{sec:GlobalDeclarations}}
 Declaration keyword for global storage elements:
-\hypertarget{ast-globaldeclkeyword}{} \hypertarget{ast-gdkconstant}{} \hypertarget{ast-gdkconfig}{} \hypertarget{ast-gdklet}{} \hypertarget{ast-gdkvar}{}
+\RenderType{global_decl_keyword}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
 \end{flalign*}
+}
 
-\hypertarget{ast-globaldecl}{}
+\RenderType{global_decl}
+
+\BackupOriginalAST{
 \begin{flalign*}
 \globaldecl \derives\ &
 {\left\{
   \begin{array}{rcl}
   \GDkeyword &:& \globaldeclkeyword, \\
-  \GDname &:& \identifier,\\
+  \GDname &:& \Identifier,\\
   \GDty &:& \ty?,\\
   \GDinitialvalue &:& \expr?
   \end{array}
   \right\}
  } &
 \end{flalign*}
+}
 
-\hypertarget{ast-decl}{}
-\hypertarget{ast-dfunc}{}
+\RenderType{decl}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\decl \derives\ & \DFunc(\func) & \hypertarget{ast-dglobalstorage}{}\\
-  |\ & \DGlobalStorage(\globaldecl) & \hypertarget{ast-dtypedecl}{}\\
-  |\ & \DTypeDecl(\identifier, \ty, (\identifier, \overtext{\Field^*}{with fields})?) & \hypertarget{ast-dpragma}{}\\
-  |\ & \DPragma(\Tidentifier, \overtext{\expr^*}{args})
+\decl \derives\ & \DFunc(\func) & \\
+  |\ & \DGlobalStorage(\globaldecl) & \\
+  |\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\KleeneStar{\field}}{with fields})?) & \\
+  |\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
 \end{flalign*}
+}
 
 \subsection{Specifications \label{sec:Specifications}}
-\hypertarget{ast-spec}{}
+\RenderType{spec}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\spec \derives\ & \decl^* &
+\spec \derives\ & \KleeneStar{\decl} &
 \end{flalign*}
+}
 
 \section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
 
@@ -542,21 +523,32 @@ The derivation rules for the typed abstract syntax are the same as the rules for
 except for the following differences.
 
 The rules for expressions have the following extra derivation rules:
-\hypertarget{ast-egetitem}{}
+\RenderTypes[remove_hypertargets]{typed_expr}
+\BackupOriginalAST{
 \begin{flalign*}
-\expr \derives\ & \EGetItem(\expr, \N) &\\ \hypertarget{ast-earray}{}
-             |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \hypertarget{ast-eenumarray}{}\\
-             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \hypertarget{ast-egetenumarray}{}\\
-             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) &\hypertarget{ast-egetcollectionfields}{}\\
+\expr \derives\ & \EGetItem(\expr, \N) &\\ {}
+             |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \\
+             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \\
+             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \\
              |\ & \EGetCollectionFields(\overtext{\identifier}{collection}, \overtext{\identifier^{*}}{field names}) & \\
 \end{flalign*}
+}
 
 The rules for left-hand-side expressions have the following extra derivation rules:
-\hypertarget{ast-lesetenumarray}{}%
+\hypertarget{ast-LESetCollectionFields}{}
+\hypertarget{ast-LESetEnumArray}{}
+\hypertarget{ast-EGetCollectionFields}{}
+\hypertarget{ast-EGetEnumArray}{}
+\hypertarget{ast-EEnumArray}{}
+\hypertarget{ast-EArray}{}
+\hypertarget{ast-EGetItem}{}
+\RenderTypes[remove_hypertargets]{typed_lexpr}
+\BackupOriginalAST{
 \begin{flalign*}
-  \lexpr \derives\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) & \hypertarget{ast-lesetcollectionfields}{}\\
-                |\ & \LESetCollectionFields(\overtext{\identifier}{collection}, \overtext{\identifier^{*}}{field names}) &\\
+  \lexpr \derives\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) & \\
+                |\ & \LESetCollectionFields(\overtext{\Identifier}{collection}, \overtext{\Identifier^{*}}{field names}) &\\
 \end{flalign*}
+}
 
 The intention for each AST node type above is as follows:
 \begin{itemize}
@@ -584,32 +576,49 @@ The rules for statements exclude \texttt{pragma} statements, since those are tra
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
+\hypertarget{ast-typedSThrow}{}
+\RenderTypes[remove_hypertargets]{typed_stmt}
+\BackupOriginalAST{
 \begin{flalign*}
 \stmt \derives\ & \SThrow(\expr, \overtext{\ty}{exception type}) &
 \end{flalign*}
+}
 
-The rules for slices is replaced by the following:
+The rules for slices is replaced by the following single derivation:
+\hypertarget{ast-typedSliceLength}{}
+\RenderTypes[remove_hypertargets]{typed_slice}
+
+\BackupOriginalAST{
 \begin{flalign*}
-\slice \derives\ & \SliceLength(\expr, \expr) &
+\slice \derives\ & \SliceLength(\overtext{\expr}{start index}, \overtext{\expr}{length}) &
 \end{flalign*}
+}
+
 This reflects the fact that all other slicing constructs are syntactic sugar
-for $\SliceLength$.
+for \\
+$\SliceLength$.
 
 The following extra rule enables expressing array indices based on enumeration:
-\hypertarget{ast-arraylengthenum}{}
+\RenderTypes[remove_hypertargets]{typed_array_index}
+\BackupOriginalAST{
 \begin{flalign*}
-\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\identifier}{name of enumeration}, \overtext{\identifier^+}{enumeration labels}) &
+\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\Identifier}{name of enumeration}, \overtext{\Identifier^+}{enumeration labels}) &
 \end{flalign*}
+}
 
 The rules for constraint kinds refine the well-constrained kind by a precision
 indicator, which indicates whether precision has been lost during the typing of
 binary operations over well-constrained integer types (see \TypingRuleRef{IntervalTooLarge}).
+\hypertarget{ast-typedWellConstrained}{}
+\RenderTypes[remove_hypertargets]{typed_constraint_kind}
+\RenderType{precision_loss_indicator}
+\BackupOriginalAST{
 \begin{flalign*}
-  \hypertarget{ast-precisionlossindicator}{} \hypertarget{precision-full}{}%
-  \precisionlossindicator \derives\ & \PrecisionFull & \hypertarget{precision-lost}{}\\
-                                 |\ & \PrecisionLost & \\
-          \constraintkind \derives\ & \wellconstrained(\intconstraint^{+}, \precisionlossindicator) & \\
+\precisionlossindicator \derives\ & \PrecisionFull & \\
+                                |\ & \PrecisionLost & \\
+        \constraintkind \derives\ & \WellConstrained(\intconstraint^{+}, \precisionlossindicator) & \\
 \end{flalign*}
+}
 
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field

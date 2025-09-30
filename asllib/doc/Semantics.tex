@@ -28,7 +28,7 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem}.
   \item \secref{Sequential Semantics and Dynamic Semantics} explains how this reference defines both the
         sequential semantics and concurrent semantics for ASL;
   \item \secref{Dynamic Semantics Configurations} defines the configurations used by the dynamic semantics;
-  \item \secref{nativevalues} defines the concept of \nativevalues{};
+  \item \secref{nativevalues} defines the concept of \nativevaluesterm{};
   \item \secref{Semantic Evaluation} explains how the dynamic semantics rules are used to evaluate specifications; and
   \item \secref{Semantics of Diverging Specifications} defines the semantics of diverging specifications.
 \end{itemize}
@@ -110,91 +110,78 @@ The rest of this section defines the components comprising semantic configuratio
     \item Native values.
     \item Static Environments, which consist of the information inferred
             by the typechecker for the specification.
-    \item Dynamic Environments (\defref{dynamicenvironments}) associate \nativevalues\ to variables.
+    \item Dynamic Environments (\defref{dynamicenvironments}) associate \nativevaluesterm{} to variables.
     \item Concurrent Execution Graphs (\secref{concurrentexecutiongraphs}) track Read and Write Effects over variables.
 \end{itemize}
 
-\hypertarget{def-vals}{}
 \hypertarget{def-nativevalue}{}
 \hypertarget{def-nativevalues}{}
 \section{Native Values\label{sec:nativevalues}}
 Semantic evaluation binds values to storage elements when a specification is semantically evaluated.
-To formalize this, we define the set of \emph{\nativevalues}, denoted $\vals$
-(\texttt{NV} stands for Native Value).
+To formalize this, we define the set of \emph{\nativevaluesterm} as follows
+(\texttt{NV} stands for Native Value):
+\RenderType{native_value}
 
-\ProseParagraph
-The set of \nativevalues\ $\vals$ is the minimal set satisfying all of the following rules:
+Specifically:
 \begin{itemize}
-  \item \textsc{basis set}: if $\vv$ is a literal then $\nvliteral(\vv)$ is a \nativevalue;
-  \item \textsc{tuple values and array values}: if $\vl$ is a list of \nativevalues\ then $\nvvector(\vl)$ is a \nativevalue;
-  \item \textsc{record values}: if $\vr$ is a finite function from identifiers to \nativevalues\ then $\nvrecord(\vr)$ is a \nativevalue.
+  \item $\NVLiteral(\vv)$ represents integer literal, real literal, Boolean literal, string literals, and bitvector literals;
+  \item $\NVVector(\vl)$ represents tuples and \intarraysterm{}; and
+  \item $\NVRecord(\vr)$ represents records and \enumarraysterm{}.
 \end{itemize}
 
-\FormallyParagraph
-\hypertarget{def-nvliteral}{}
-\hypertarget{def-nvvector}{}
-\hypertarget{def-nvrecord}{}
-\begin{mathpar}
-  \inferrule[(Basis Set: Integers, Reals, Booleans, Strings, and Bitvectors)]
-  {\vv \in \literal}
-  { \nvliteral(\vv) \in \vals }
-  \and
-  \inferrule[(Tuple Values and Array Values)]{\vvl \in \vals^*}
-  { \nvvector(\vvl) \in \vals }
-  \and
-  \inferrule[(Record Values)]
-  {\vr : \Identifiers \rightarrowfin \vals}
-  { \nvrecord(\vr) \in \vals }
-\end{mathpar}
-
-We define the following shorthand notations for \nativevalue\ literals:
+We define the following shorthand notations for \nativevalueterm{} literals:
 \hypertarget{def-nvint}{}
 \[
 \begin{array}{rcl}
-\nvint(z)       &\triangleq& \nvliteral(\LInt(z))           \hypertarget{def-nvbool}{}\\
-\nvbool(b)      &\triangleq& \nvliteral(\LBool(b))          \hypertarget{def-nvreal}{}\\
-\nvreal(r)      &\triangleq& \nvliteral(\LReal(r))          \hypertarget{def-nvlabel}{}\\
-\nvlabel(l)     &\triangleq& \nvliteral(\LLabel(l))         \hypertarget{def-nvstring}{}\\
-\nvstring(s)    &\triangleq& \nvliteral(\LString(s))        \hypertarget{def-nvbitvector}{}\\
-\nvbitvector(v) &\triangleq& \nvliteral(\LBitvector(v))\\
+\nvint(z)       &\triangleq& \NVLiteral(\LInt(z))           \hypertarget{def-nvbool}{}\\
+\nvbool(b)      &\triangleq& \NVLiteral(\LBool(b))          \hypertarget{def-nvreal}{}\\
+\nvreal(r)      &\triangleq& \NVLiteral(\LReal(r))          \hypertarget{def-nvlabel}{}\\
+\nvlabel(l)     &\triangleq& \NVLiteral(\LLabel(l))         \hypertarget{def-nvstring}{}\\
+\nvstring(s)    &\triangleq& \NVLiteral(\LString(s))        \hypertarget{def-nvbitvector}{}\\
+\nvbitvector(v) &\triangleq& \NVLiteral(\LBitvector(v))\\
 \end{array}
 \]
 
-We define the following types of \nativevalues:
-\hypertarget{def-tint}{}
+We define the following types of \nativevaluesterm{}:
+\RenderTypes{native_types}
+
+\BackupOriginalType{
 \[
 \begin{array}{rcl}
-  \tint       &\triangleq& \{ \nvint(z) \;|\; z \in \Z\}                                        \hypertarget{def-tbool}{}\\
-  \tbool      &\triangleq& \{ \nvbool(\True), \nvbool(\False) \}                                \hypertarget{def-treal}{}\\
-  \treal      &\triangleq& \{ \nvreal(r) \;|\; r \in \Q\}                                       \hypertarget{def-tstring}{}\\
-  \tlabel     &\triangleq& \{ \nvlabel(l) \;|\; l \in \Identifiers\}                             \hypertarget{def-tlabel}{}\\
-  \tstring    &\triangleq& \{ \nvstring(s) \;|\; s \in \Strings\}  \hypertarget{def-tbitvector}{}\\
-  \tbitvector &\triangleq& \{ \nvbitvector(\textit{bits}) \;|\; \textit{bits} \in \Bit^*\}   \hypertarget{def-tvector}{}\\
-  \tvector    &\triangleq& \{ \nvvector(\textit{vals}) \;|\; \textit{vals} \in \vals^*\}        \hypertarget{def-trecord}{}\\
-  \trecord  &\triangleq& \{ \nvrecord(\fieldmap) \;|\; \fieldmap \in \Identifiers\rightarrowfin\vals\}\\
+  \tint       &\triangleq& \nvint(\Z) \\
+  \tbool      &\triangleq& \nvbool(\Bool) \\
+  \treal      &\triangleq& \nvreal(\Q) \\
+  \tlabel     &\triangleq& \nvlabel(\Identifier) \\
+  \tstring    &\triangleq& \nvstring(\Strings)  \\
+  \tbitvector &\triangleq& \nvbitvector(\KleeneStar{\Bit}) \\
+  \tvector    &\triangleq& \NVVector(\KleeneStar{\nativevalue}) \\
+  \trecord    &\triangleq& \NVRecord(\Identifier\rightarrowfin\nativevalue)\\
 \end{array}
 \]
+}
 
-\hypertarget{def-dynamicenvs}{}
 \begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
 \hypertarget{def-pending-calls}{}
 \hypertarget{def-storage}{}
-In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevalues\
+In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevaluesterm{}
 via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
 to the number of calls being evaluated for those subprograms via the $\pendingcalls$ map.
-The dynamic local environment maps identifiers corresponding to local storage elements to \nativevalues:
+The dynamic local environment maps identifiers corresponding to local storage elements to \nativevaluesterm{}:
+
+\RenderTypes{dynamic_envs_and_components}
+
+\BackupOriginalType{
 \[
 \begin{array}{rcl}
-\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs
-  \hypertarget{def-globaldynamicenvs}{}\\
-\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifiers \partialto \vals),\; \pendingcalls \mapsto (\Identifiers \partialto \N)]
-  \hypertarget{def-localdynamicenvs}{}\\
-\localdynamicenvs   &\triangleq&  (\Identifiers \partialto \vals) \\
+\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs \\
+\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifier \partialto \nativevalue),\; \stacksize \mapsto (\Identifier \partialto \N)] \\
+\localdynamicenvs   &\triangleq&  (\Identifier \partialto \nativevalue) \\
 \end{array}
 \]
+}
 \end{definition}
 
 \begin{definition}[Well-formed Dynamic Environments]
@@ -210,7 +197,7 @@ are mutually exclusive.
 In the rest of this reference, we assume all dynamic environments
 are well-formed.
 
-\hypertarget{def-emptydenv}{}
+\hypertarget{constant-emptydenv}{}
 An empty dynamic environment $\emptydenv$ is defined as follows:
 \[
 \emptydenv \triangleq ([\storage \mapsto \emptyfunc, \pendingcalls \mapsto \emptyfunc], \emptyfunc) \enspace.
@@ -218,8 +205,12 @@ An empty dynamic environment $\emptydenv$ is defined as follows:
 
 \hypertarget{def-envs}{}
 \begin{definition}[Environments]
-Environments pair \hyperlink{def-staticenvs}{static environments} with dynamic environments:
+Environments pair \hyperlink{type-staticenvs}{static environments} with dynamic environments:
+\RenderType{envs}
+
+\BackupOriginalType{
 $\envs \triangleq \staticenvs \times \dynamicenvs$.
+}
 \end{definition}
 We write $\env \in \envs$ to range over environments.
 %
@@ -236,34 +227,42 @@ The graphs resulting from executing an ASL specification are converted into
 \emph{candidate execution graphs}, which are introduced, defined,
 and used in~\cite{AlglaveMT14,alglave2016syntax,AlglaveDGHM21}.
 
-\hypertarget{def-xgraphs}{}
 Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \XGraphs$
 is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\xgraph$), and a set of \emph{output nodes} ($O^\xgraph$):
-\hypertarget{def-nodes}{}
+
+\RenderTypes{xgraphs_and_components}
+\BackupOriginalType{
 \[
 \begin{array}{rcl}
-\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Labels \times \Nodes} \times \pow{\Nodes}  \hypertarget{def-read}{}\hypertarget{def-write}{}\\
-\Nodes   &\triangleq& \N \times \{ \Read, \Write \} \times \Identifiers \hypertarget{def-labels}{}\\
+\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Labels \times \Nodes} \times \pow{\Nodes}\\
+\Nodes   &\triangleq& \N \times \{ \Read, \Write \} \times \Identifier\\
 \Labels  &\triangleq& \{ \asldata, \aslctrl, \aslpo \}
 \end{array}
 \]
+}
 
-Nodes represent unique Read and Write Effects. Formally, a node $(u,l,\id) \in \Nodes$ associates a unique instance counter $u$
-to an \emph{ordering label} $l$, which specifies whether it represents a Read Effect of a Write Effect to a variable named $\id$.
+The label
+\RenderConstant{Read}
+stands for a \emph{read effect type}, and the label
+\RenderConstant{Write}
+stands for a \emph{write effect type}.
 %
-We say that en Effect \texttt{E1} is \emph{$l$-before} another Effect \texttt{E2}, for $l\in \Labels$ and a given execution graph
+Nodes represent unique Read and Write Effects. Formally, a node $(u,l,\id) \in \Nodes$ associates a unique instance counter $u$
+to an \emph{ordering label} $l$, which specifies whether it represents a Read Effect or a Write Effect to a storage element named $\id$.
+%
+We say that an Effect \texttt{E1} is \emph{$l$-before} another Effect \texttt{E2}, for $l\in \Labels$ and a given execution graph
 $g$, when $(\texttt{E1}, l, \texttt{E2}) \in E^g$.
 
 An edge represents an ordering constraint between two effects, which can be one of the following:
-\hypertarget{def-asldata}{}
+\hypertarget{constant-asldata}{}
 \begin{description}
 \item[$\asldata$] Represents a \emph{data dependency}.
 That is, when one effect hands over its data to another effect.
-\hypertarget{def-aslctrl}{}
+\hypertarget{constant-aslctrl}{}
 \item[$\aslctrl$] Represents a \emph{control dependency}.
 That is, when a Read Effect to a variable determines the flow of control (e.g., which condition of a branch is taken),
 which then leads to another Read/Write Effect.
-\hypertarget{def-aslpo}{}
+\hypertarget{constant-aslpo}{}
 \item[$\aslpo$] Represents a \emph{program order}.
 That is, when two Effects are generated by ASL constructs, which are separated by a semicolon in the text of the specification,
 or appear in successive iterations of a loop unrolling.
@@ -279,7 +278,7 @@ and the output nodes are contained in the set of nodes:
   & & O^\xgraph \subseteq N^\xgraph \enspace.
   \end{array}
 \]
-\hypertarget{def-emptygraph}{}
+\hypertarget{constant-emptygraph}{}
 
 We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
 %
@@ -322,7 +321,7 @@ to the given ordering label.
 
 \subsection{Concurrent Values\label{sec:ConcurrentValues}}
 \hypertarget{def-concurrentnativevalue}{}
-The ASL dynamic semantics operate over pairs consisting of \nativevalues\ and \executiongraphs,
+The ASL dynamic semantics operate over pairs consisting of \nativevaluesterm{} and \executiongraphs,
 which we refer to as \concurrentnativevalues.
 
 \subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
@@ -345,87 +344,65 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   expressions, side-effect-free expressions, \assignableexpressions,
   local declaration items, slices, and expression lists
   (which are evaluated in two different ways for the purpose of concurrency):
-  \begin{itemize}
-  \item $\ResultExpr((\vals \times \XGraphs), \envs)$,
-  \item $\ResultExprSEF(\vals, \XGraphs)$,
-  \item $\ResultLexpr(\XGraphs, \envs)$,
-  \item $\ResultLDI(\XGraphs, \envs)$,
-  \item $\ResultSlices(((\vals \times \vals)^* \times \XGraphs))$,
-  \item $\ResultExprList((\vals^* \times \XGraphs), \envs)$,
-  \item $\ResultExprListM((\vals\times\XGraphs)^*, \envs)$,
-  \end{itemize}
+\RenderType{TNormal}
 
-  \hypertarget{def-throwing}{}
   \item[Exceptions.] Semantic configurations in
-  \[
-    \Throwing(\valuereadfrom(\vals,\Identifiers) \times \ty \times \XGraphs \times \envs)
-  \]
+\RenderType{TThrowing}
   represent thrown exceptions.
   \hypertarget{def-valuereadfrom}{}
 
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The type $\valuereadfrom(\vals,\Identifiers)$ is a semantic configuration nested inside an exception semantic configuration.
+  The type $\valuereadfrom(\nativevalue,\Identifier)$ is a semantic configuration nested inside an exception semantic configuration.
   The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
-  \hypertarget{def-returning}{}
-  \item[Returned Values.] Semantic configurations in $\Returning((\vals^* \times \XGraphs), \envs)$
+  \item[Returned Values.] Semantic configurations in
+\RenderType{TReturning}
   represent (tuples of) values being returned by the currently executing subprogram.
   The ASL dynamic semantics propagate these \emph{early return semantic configurations} to the respective call expression/statement.
 
-  \hypertarget{def-continuing}{}
-  \item[In-flight Subprogram.] Semantic configurations in $\Continuing(\XGraphs, \envs)$
+  \item[In-flight Subprogram.] Semantic configurations in
+\RenderType{TContinuing}
   represent the fact that a subprogram has more statements to execute.
   The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 
-  \hypertarget{def-error}{}
-  \item[Dynamic Errors.] Semantic configurations in $\DynamicError(\Strings)$
+  \item[Dynamic Errors.] Semantic configurations in
+\RenderType{TDynError}
   represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 
-  \hypertarget{def-diverging}{}
-  \item[Diverging Configurations.] The semantic configuration $\Diverging$
-  represents a diverging evaluation.
+  \item[Diverging Configurations.] The following semantic configuration
+  represents a diverging evaluation:
+\RenderConstant{Diverging}
+The corresponding type is:
+\RenderType{TDiverging}
+
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
 
+\BackupOriginalType{
 We define the following shorthand notations for types of output semantic configurations:
-\hypertarget{def-tnormal}{}
-\hypertarget{def-resultexpr}{}
-\hypertarget{def-resultexprlist}{}
-\hypertarget{def-resultexprlistm}{}
-\hypertarget{def-resultexprsef}{}
-\hypertarget{def-resultlexpr}{}
-\hypertarget{def-resultslices}{}
-\hypertarget{def-resultpattern}{}
-\hypertarget{def-resultldi}{}
-\hypertarget{def-resultsubprogram}{}
-\hypertarget{def-resultcall}{}
-\hypertarget{def-tcontinuing}{}
-\hypertarget{def-tthrowing}{}
-\hypertarget{def-treturning}{}
-\hypertarget{def-tdynerror}{}
-\hypertarget{def-tdiverging}{}
 \[
   \begin{array}{rcll}
-    \TNormal          & \triangleq & \ResultExpr((\vals \times \XGraphs), \envs)\  & \cup \\
-                      &            & \ResultExprSEF(\vals, \XGraphs)  & \cup \\
+    \TNormal          & \triangleq & \ResultExpr((\nativevalue \times \XGraphs), \envs)\  & \cup \\
+                      &            & \ResultExprSEF(\nativevalue, \XGraphs)  & \cup \\
                       &            & \ResultLexpr(\XGraphs, \envs) & \cup\\
                       &            & \ResultLDI(\XGraphs, \envs)  & \cup \\
-                      &            & \ResultSlices(((\vals \times \vals)^* \times \XGraphs), \envs) &  \cup\\
-                      &            & \ResultExprList((\vals^* \times \XGraphs), \envs)  & \cup \\
-                      &            & \ResultExprListM((\vals\times\XGraphs)^*, \envs) & \\
-    \TThrowing        & \triangleq & \Throwing(\vals \times \ty \times \XGraphs \times \envs) &\\
+                      &            & \ResultSlices((\KleeneStar{(\nativevalue \times \nativevalue)} \times \XGraphs), \envs) &  \cup\\
+                      &            & \ResultExprList((\KleeneStar{\nativevalue} \times \XGraphs), \envs)  & \cup \\
+                      &            & \ResultExprListM(\KleeneStar{(\nativevalue\times\XGraphs)}, \envs) & \\
+    \TThrowing        & \triangleq & \Throwing(\nativevalue \times \ty \times \XGraphs \times \envs) &\\
     \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
-    \TReturning       & \triangleq & \Returning((\vals^* \times \XGraphs), \envs) &\\
+    \TReturning       & \triangleq & \Returning((\KleeneStar{\nativevalue} \times \XGraphs), \envs) &\\
     \TDynError        & \triangleq & \DynamicError(\Strings) &\\
     \TDiverging       & \triangleq & \{ \Diverging \}&\\
   \end{array}
 \]
+}
 
 We will say that a semantic transition
 \begin{itemize}
@@ -470,6 +447,8 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \vg & \env \\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \vg & \env \\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
+  \ResultPattern(\vb, \vg) & \vg & \text{undefined}\\
+  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \vg & \env\\
   \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
@@ -481,6 +460,7 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
 \hypertarget{def-withgraph}{}
 Given a semantic configuration $C$, we define $\withgraph{C}{\vgp}$ to be a semantic configuration
 like $C$ where the graph component is substituted with $\vgp$:
+\begin{small}
 \[
 \begin{array}{ll}
   C & \withgraph{C}{\vgp}\\
@@ -492,6 +472,8 @@ like $C$ where the graph component is substituted with $\vgp$:
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vgp), \env)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
+  \ResultPattern(\vb, \vg) & \ResultPattern(\vb, \vgp)\\
+  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vgp, \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
@@ -499,10 +481,12 @@ like $C$ where the graph component is substituted with $\vgp$:
   \Diverging & \text{undefined} \\
 \end{array}
 \]
+\end{small}
 
 \hypertarget{def-withenviron}{}
 Similarly, we define the $\withenviron{C}{\envp}$ to be a semantic configuration
 like $C$ where the environment component, if one exists, is substituted with $\envp$:
+\begin{small}
 \[
 \begin{array}{ll}
   \textbf{Semantic configuration} & \withenviron{C}{\envp}\\
@@ -514,6 +498,8 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
+  \ResultPattern(\vb, \vg) & \text{undefined}\\
+  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \ResultCall([i=1..k: (\vv_i,\vg_i)], \envp)\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
@@ -521,6 +507,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \Diverging & \text{undefined} \\
 \end{array}
 \]
+\end{small}
 
 \section{Semantic Evaluation\label{sec:Semantic Evaluation}}
 \hypertarget{def-evalrel}{}
@@ -555,8 +542,8 @@ to derive a transition from an input semantic configuration with the expression 
 given by the AST
 \[
   \begin{array}{rl}
-  \EBinop(\MUL, &\overname{\EBinop(\PLUS, \overname{\elint{1}}{\veone}, \overname{\elint{2}}{\vetwo})}{\veonetwo}, \\
-                &\overname{\EBinop(\PLUS, \overname{\elint{4}}{\vefour}, \overname{\elint{5}}{\vefive})}{\vefourfive})
+  \EBinop(\MUL, &\overname{\EBinop(\ADD, \overname{\elint{1}}{\veone}, \overname{\elint{2}}{\vetwo})}{\veonetwo}, \\
+                &\overname{\EBinop(\ADD, \overname{\elint{4}}{\vefour}, \overname{\elint{5}}{\vefive})}{\vefourfive})
   \end{array}
 \]
 to an output semantic configuration with the value resulting from the calculation of the expression.
@@ -567,7 +554,7 @@ We annotate subexpressions to allow referring to them.
 We define the empty environment $\emptyenv$ as $(\emptydenv, \emptytenv)$.
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
-where $\vv$ is a \nativevalue\  and $\vg$ is an execution graph, to just $\vv$.
+where $\vv$ is a \nativevalueterm{}  and $\vg$ is an execution graph, to just $\vv$.
 This is because we are interested in demonstrating the sequential semantics (also, the execution graphs
 in this case are all empty).
 
@@ -581,7 +568,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\ADD, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
 }{
   \evalexpr( \emptyenv, \veonetwo ) \evalarrow
   \ResultExpr(\nvint(3), \emptyenv)
@@ -592,7 +579,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\PLUS, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\ADD, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
 }{
   \evalexpr( \emptyenv, \vefourfive ) \evalarrow
   \ResultExpr(\nvint(9), \emptyenv)

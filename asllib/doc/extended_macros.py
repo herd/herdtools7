@@ -3,12 +3,22 @@
 import os, fnmatch, subprocess, shlex
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 import re
+from typing import List
 
 ASLREF_EXE: str = "aslref"
 
-debug = True
+debug = False
+
+
+def read_file_lines(filename: str) -> List[str]:
+    with open(filename, "r", encoding="utf-8") as file:
+        return file.readlines()
+
+
+def read_file_str(filename: str) -> List[str]:
+    with open(filename, "r", encoding="utf-8") as file:
+        return file.read()
 
 
 def yellow_error_message(msg: str) -> str:
@@ -30,6 +40,8 @@ def get_latex_sources(exclude) -> list[str]:
             "ASLmacros.tex",
             "ASLRefALP2.1ChangeLog.tex",
             "ASLRefALP2ChangeLog.tex",
+            "generated_macros.tex",
+            "rendering_macros.tex",
         ]
         for excluded_file in excluded_files:
             latex_files.remove(excluded_file)
@@ -283,16 +295,15 @@ def transform_by_line(filenames: list[str], from_pattern: str, to_pattern: str):
         print(f"Performed {num_changes} line transformations")
 
 
-def apply_all_macros(aslref_path: str):
+def apply_console_macros(aslref_path: str):
     global ASLREF_EXE
     ASLREF_EXE = aslref_path
     if not os.path.isfile(ASLREF_EXE):
         raise Exception(f"Unable to find aslref in path {ASLREF_EXE}")
     else:
         print(f"Using aslref path {ASLREF_EXE}")
-    print("Extended macros: applying all macros... ")
+    print("Extended macros: applying console macros... ")
     pruned_latex_sources = get_latex_sources(True)
-    ConsoleMacro.apply_to_files(pruned_latex_sources)
     transform_by_line(
         pruned_latex_sources,
         r"\\AllApplyCase{(.*?)}:",
@@ -309,11 +320,3 @@ def apply_all_macros(aslref_path: str):
         r"\\OneApplies",
     )
     print("Extended macros: done")
-
-
-def main():
-    apply_all_macros()
-
-
-if __name__ == "__main__":
-    main()
