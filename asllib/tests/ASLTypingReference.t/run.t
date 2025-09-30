@@ -744,7 +744,10 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A `config` identifier must be annotated with
+    a type and given an initialising expression:
+      config name : type = initial_expression;
+    
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl

@@ -306,3 +306,27 @@ spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PA
 ##
 
 The `end` keyword must be followed by a semicolon (`;`).
+
+spec: CONFIG IDENTIFIER XOR
+##
+## Ends in an error in state: 885.
+##
+## decl -> CONFIG ignored_or_identifier . as_ty EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONFIG ignored_or_identifier . as_ty EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONFIG ignored_or_identifier
+##
+spec: CONFIG IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 886.
+##
+## decl -> CONFIG ignored_or_identifier as_ty . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONFIG ignored_or_identifier as_ty . EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONFIG ignored_or_identifier as_ty
+##
+
+A `config` identifier must be annotated with a type and given an initialising expression:
+  config name : type = initial_expression;
