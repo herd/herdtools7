@@ -176,7 +176,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
@@ -242,7 +242,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
@@ -296,7 +296,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let prose_application self =
@@ -334,7 +334,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 end
 
