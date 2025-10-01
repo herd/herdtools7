@@ -16,6 +16,7 @@
 \newcommand{\included}[2]{#1 is included in #2}
 \newcommand{\includedemph}[2]{#1 is \emph{included in} #2}
 \newcommand{\sameloc}[2]{#1 and #2 are to the Same Location}
+\newcommand{\samelocemph}[2]{#1 and #2 are to the \emph{Same Location}}
 
 \newcommand{\sca}[2]{#1 belongs to the same single-copy-atomic class as #2}
 \newcommand{\po}[2]{#1 appears in program order before #2}
@@ -81,6 +82,7 @@
 
 \newcommand{\Tag}[1]{#1 is a Tag Effect}
 \newcommand{\TagCheck}[1]{#1 is a TagCheck Effect}
+\newcommand{\TagM}[1]{#1 is a Tag Memory Effect}
 \newcommand{\ExpTagMRE}{Explicit Tag \MRE{}}
 \newcommand{\ExpTagMWE}{Explicit Tag \MWE{}}
 \newcommand{\ImpTagMRE}{Implicit Tag \MRE{}}
@@ -134,6 +136,9 @@
 \newcommand{\MMU}[1]{#1 is an MMU Effect}
 \newcommand{\MMUFAULT}[1]{#1 is an MMU Fault Effect}
 \newcommand{\TLBUncacheableFAULT}[1]{#1 is a TLBUncacheable Fault Effect}
+\newcommand{\MMUFaultinvalidPA}[1]{#1 is an MMU Fault Effect that does not have a valid Physical Address}
+\newcommand{\MMUFaultvalidPA}[1]{#1 is an MMU Fault Effect that has a valid Physical Address}
+\newcommand{\EvalidPA}[1]{#1 has a valid Physical Address}
 
 %
 \newcommand{\amo}{an atomic operation}
@@ -203,6 +208,7 @@
 \newcommand{\valocemph}[2]{#1 and #2 are to the \emph{Same Virtual Address}}
 \newcommand{\valoc}[2]{#1 and #2 are to the Same Virtual Address}
 \newcommand{\loc}[2]{#1 and #2 are to the same Physical Address}
+\newcommand{\samepa}[2]{#1 and #2 are to the same Physical Address}
 \newcommand{\povaloc}[2]{\po{#1}{#2} and \valoc{#1}{#2}}
 
 \newcommand{\lrsname}{Local read successor}

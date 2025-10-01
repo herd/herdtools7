@@ -8,6 +8,7 @@ AArch32
 catdep
 
 let TagCheck = emptyset
+let Permission = emptyset
 let IC.IVAU = emptyset
 let IC.IALLUIS = emptyset
 let IC.IALLU = emptyset
