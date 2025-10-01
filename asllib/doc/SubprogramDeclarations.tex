@@ -839,7 +839,7 @@ The function
 \begin{array}{r}
 \annotateparams(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier \times \langle\ty\rangle)}}{\params} \aslsep\
+  \overname{\KleeneStar{(\Identifier \times \langle\ty\rangle)}}{\params} \aslsep
   (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc})
 ) \aslto \\
 (\overname{\staticenvs}{\tenvwithparams} \times \overname{\Identifier\times\ty}{\paramsone})
@@ -2220,11 +2220,8 @@ The function
 returns in $\absconfigs$ a superset of the set of \Proseabstractconfigurations{} (defined next),
 that an evaluation of $\vs$ in any environment consisting of the \staticenvironmentterm{} $\tenv$ yields.
 
-\hypertarget{def-abstractconfigurations}{}
-\hypertarget{def-absabnormal}{}
-\hypertarget{def-absreturning}{}
-\hypertarget{def-abscontinuing}{}
-The set of \Proseabstractconfigurations{} consists of symbols that represent
+The type \RenderType{abstract_configuration}
+of \emph{\Proseabstractconfigurations{}} consists of symbols that represent
 subsets of the set of dynamic configurations that may be returned by
 $\evalstmt((\tenv, \cdot), \vs)$:
 \begin{itemize}

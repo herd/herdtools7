@@ -14,7 +14,7 @@ Primitive operations are evaluated both statically and dynamically.
 We define the static evaluation of primitive operations on literals
 via the functions $\unopliterals$ and $\binopliterals$ and then reuse
 those to define the dynamic evaluation of primitive operations
-on \nativevaluesterm{} via $\unoprel$ and $\binoprel$.
+on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 
 \ExampleDef{Primitive Operations}
 \listingref{PrimitiveOperations} shows examples of primitive operations.
@@ -49,10 +49,10 @@ on \nativevaluesterm{} via $\unoprel$ and $\binoprel$.
   (see \TypingRuleRef{BinopLiterals}).
 
 \paragraph{Semantics:} unary operations are dynamically evaluated via
-  $\unoprel$ \\
+  $\evalunop$ \\
   (see \SemanticsRuleRef{UnopValues})
   and binary operations are dynamically evaluated via
-  $\binoprel$ (see \SemanticsRuleRef{BinopValues}).
+  $\evalbinop$ (see \SemanticsRuleRef{BinopValues}).
 
 \SyntaxDef{Primitive Operations}
 \begin{flalign*}
@@ -1628,7 +1628,7 @@ of \texttt{width} bits.
 \hypertarget{def-unoprel}{}
 The function
 \[
-  \unoprel(\overname{\unop}{\op} \aslsep \overname{\nativevalue}{\vv}) \aslto \overname{\nativevalue}{\vw} \cup \TDynError
+  \evalunop(\overname{\unop}{\op} \aslsep \overname{\nativevalue}{\vv}) \aslto \overname{\nativevalue}{\vw} \cup \TDynError
 \]
 evaluates a unary operator $\op$ over a \nativevalueterm{} $\vv$ and returns the \nativevalueterm{} $\vw$ or an error.
 
@@ -1640,7 +1640,7 @@ translates into the application of negation to the \nativevalueterm{} for $1$.
 \inferrule{
   \unopliterals(\NEG, \LInt(1)) \typearrow \LInt(-1)
 }{
-  \unoprel(\NEG, \nvint(1)) \evalarrow \nvint(-1)
+  \evalunop(\NEG, \nvint(1)) \evalarrow \nvint(-1)
 }
 \end{mathpar}
 
@@ -1652,7 +1652,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule{
   \unopliterals(\NEG, \LBool(\True)) \typearrow \TypeErrorVal{\BadOperands}
 }{
-  \unoprel(\NEG, \nvint(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalunop(\NEG, \nvint(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1686,7 +1686,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \unopliterals(\op, l) \typearrow l' \\
   l' \neq \TypeErrorVal{\Ignore}
 }{
-  \unoprel(\op, \overname{\NVLiteral(l)}{\vv}) \evalarrow \overname{\NVLiteral(l')}{\vw}
+  \evalunop(\op, \overname{\NVLiteral(l)}{\vv}) \evalarrow \overname{\NVLiteral(l')}{\vw}
 }
 \end{mathpar}
 
@@ -1694,7 +1694,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule[static\_error]{
   \unopliterals(\op, l) \typearrow \TypeErrorVal{\Ignore} \\
 }{
-  \unoprel(\op, \overname{\NVLiteral(l)}{\vv}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalunop(\op, \overname{\NVLiteral(l)}{\vv}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1702,7 +1702,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule[non\_literal]{
   \astlabel(\vv) \neq \NVLiteral
 }{
-  \unoprel(\op, \vv) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalunop(\op, \vv) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1710,7 +1710,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \hypertarget{def-binoprel}{}
 The function
 \[
-  \binoprel(\overname{\binop}{\op} \aslsep \overname{\nativevalue}{\vvone} \aslsep \overname{\nativevalue}{\vvtwo})
+  \evalbinop(\overname{\binop}{\op} \aslsep \overname{\nativevalue}{\vvone} \aslsep \overname{\nativevalue}{\vvtwo})
   \aslto \overname{\nativevalue}{\vw} \cup \TDynError
 \]
 evaluates a binary operator $\op$ over a pair of \nativevaluesterm{}  --- $\vvone$ and $\vvtwo$ --- and returns the
@@ -1725,7 +1725,7 @@ and the \nativevalueterm{} for $3$.
 \inferrule{
   \binopliterals(\ADD, \LInt(2), \LInt(3)) \typearrow \LInt(5)
 }{
-  \binoprel(\ADD, \nvint(2), \nvint(3)) \evalarrow \nvint(5)
+  \evalbinop(\ADD, \nvint(2), \nvint(3)) \evalarrow \nvint(5)
 }
 \end{mathpar}
 
@@ -1737,7 +1737,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule{
   \binopliterals(\ADD, \LInt(2), \LReal(1/2)) \typearrow \TypeErrorVal{\BadOperands}
 }{
-  \binoprel(\ADD, \nvint(2), \nvreal(1/2)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalbinop(\ADD, \nvint(2), \nvreal(1/2)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1773,7 +1773,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \binopliterals(\op, l_1, l_2) \typearrow l' \\
   l' \neq \TypeErrorVal{\Ignore}
 }{
-  \binoprel(\op, \overname{\NVLiteral(l_1)}{\vvone}, \overname{\NVLiteral(l_2)}{\vvtwo}) \evalarrow \overname{\NVLiteral(l')}{\vw}
+  \evalbinop(\op, \overname{\NVLiteral(l_1)}{\vvone}, \overname{\NVLiteral(l_2)}{\vvtwo}) \evalarrow \overname{\NVLiteral(l')}{\vw}
 }
 \end{mathpar}
 
@@ -1781,7 +1781,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule[static\_error]{
   \binopliterals(\op, l_1, l_2) \typearrow \TypeErrorVal{\Ignore} \\
 }{
-  \binoprel(\op, \overname{\NVLiteral(l_1)}{\vvone}, \overname{\NVLiteral(l_2)}{\vvtwo}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalbinop(\op, \overname{\NVLiteral(l_1)}{\vvone}, \overname{\NVLiteral(l_2)}{\vvtwo}) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 
@@ -1789,6 +1789,6 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule[non\_literal]{
   \astlabel(\vvone) \neq \NVLiteral \lor \astlabel(\vvtwo) \neq \NVLiteral
 }{
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}

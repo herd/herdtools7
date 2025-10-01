@@ -896,10 +896,12 @@ that does not interfere with the variable declaration also named \verb|X|.
 
 We distinguish between subprogram identifiers, and all other identifiers (storage elements and \namedtypes{}).
 We use the following type to track \defusedependenciesterm{} between subprogram identifiers and other identifiers:
-\hypertarget{ast-defusename}{} \hypertarget{ast-subprogram}{} \hypertarget{ast-other}{}
+\RenderType{def_use_name}
+\BackupOriginalType{
 \begin{flalign*}
 \defusename \derives\ & \Subprogram(\Identifier) \;|\; \Other(\Identifier) &
 \end{flalign*}
+}
 
 \TypingRuleDef{BuildDependencies}
 \hypertarget{def-builddependencies}{}
@@ -1178,11 +1180,15 @@ used by each global declaration via comments above it.
 \end{mathpar}
 
 \TypingRuleDef{UseTy}
+We define the following convenience type to allow handling both types and optional types uniformly:
+\RenderType{ty_or_opt}
+
 \hypertarget{def-usety}{}
 The function
 \[
-\usety(\overname{\ty \cup \langle\ty\rangle}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
+\usety(\overname{\tyoropt}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
+
 returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
 
 \ExampleDef{The Identifiers Used by a Type}
@@ -1373,12 +1379,14 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 \end{mathpar}
 
 \TypingRuleDef{UseExpr}
+We define the following convenience type to allow handling both expressions and optional expressions uniformly:
+\RenderType{expr_or_opt}
+
 \hypertarget{def-useexpr}{}
 The function
 \[
-\useexpr(\overname{\expr}{\ve} \cup \langle\overname{\expr}{\ve}\rangle) \aslto \overname{\pow{\defusename}}{\ids}
-\]
-returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
+\useexpr(\ve: \exproropt) \aslto \overname{\pow{\defusename}}{\ids}
+\]returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
 
 \ExampleDef{The Identifiers Used by Expressions}
 The specification in \listingref{UseExpr} shows the identifiers used
@@ -2015,7 +2023,7 @@ appearing in comments to their right.
 \TypingRuleDef{UseLDI}
 \hypertarget{def-useldi}{}
 The function
-\[ \useldi(\overname{\ldi}{\vl}) \aslto \overname{\pow{\defusename}}{\ids} \]
+\[ \useldi(\overname{\localdeclitem}{\vl}) \aslto \overname{\pow{\defusename}}{\ids} \]
 returns the set of identifiers $\ids$ which the \localdeclarationitem{} $\vl$ depends on.
 
 \ExampleDef{The identifiers used by local declaration items}
@@ -2396,7 +2404,7 @@ results in a \dynamicerrorterm.
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{BuildGlobalEnv}
-The helper relation
+The relation
 \hypertarget{def-buildgenv}{}
 \[
   \buildgenv(\overname{\staticenvs}{\tenv}, \overname{\spec}{\typedspec}) \;\aslrel\;

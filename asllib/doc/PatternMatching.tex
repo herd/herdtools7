@@ -291,7 +291,7 @@ whereas \\
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\EQ, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\EQ, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -402,10 +402,10 @@ range given by \texttt{3..42}.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
-  \binoprel(\GE, \vv, \vvone) \evalarrow \vbone\\
+  \evalbinop(\GE, \vv, \vvone) \evalarrow \vbone\\
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
-  \binoprel(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
-  \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
+  \evalbinop(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
+  \evalbinop(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \ResultPattern(\vb, \newg)
@@ -503,7 +503,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\LE, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\LE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -599,7 +599,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\GE, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\GE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -694,7 +694,7 @@ whereas \texttt{match\_false} evaluates to \False, since
 
 \FormallyParagraph
 \hypertarget{def-maskmatch}{}
-The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
+The function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
 checks whether a bit value (second operand) matches a mask value (first operand),
 is defined by the following table:
 \[
@@ -1012,7 +1012,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \vpone} \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
-  \unoprel(\BNOT, \vbone) \evalarrow \vb
+  \evalunop(\BNOT, \vbone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \ResultPattern(\vb, \newg)
 }

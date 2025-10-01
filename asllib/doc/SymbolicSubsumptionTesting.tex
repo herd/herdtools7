@@ -596,17 +596,14 @@ is a subset of the \symbolicdomainterm{} for \verb|N*2| also yields $\True$.
 In contrast, testing whether the \symbolicdomainterm{} for \verb|5..N|
 is a subset of the \symbolicdomainterm{} for \verb|N*2| yields $\False$.
 
-\hypertarget{def-Under}{}
-\hypertarget{def-Over}{}
-\hypertarget{def-cannotoverapproximate}{}
-\hypertarget{def-cannotunderapproximate}{}
 \hypertarget{def-approximationdirectionterm}{}
-In the following rules, we use the symbol $\Over$ to stand for \emph{overapproximation}
-and the symbol $\Under$ to stand for \emph{underapproximation}.
+In the following rules, we use the symbol \RenderConstant{Over} to stand for \emph{overapproximation},
+the symbol \RenderConstant{Under} to stand for \emph{underapproximation},
+and the type \RenderType{approximation_direction}.
 We refer such a symbol as an \approximationdirectionterm.
-We also use the symbol $\CannotOverapproximate$ to mean that a construct
+We also use the symbol \RenderConstant{CannotOverapproximate} to mean that a construct
 (like an expression or a constraint) cannot be precisely overapproximated,
-and $\CannotUnderapproximate$ to mean that a construct cannot be precisely
+and \RenderConstant{CannotUnderapproximate} to mean that a construct cannot be precisely
 underapproximated.
 
 \ProseParagraph
@@ -947,8 +944,8 @@ The function
 \[
 \makeinterval(
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\vzone}{\Z} \aslsep
-  \overname{\vztwo}{\Z}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
+  \overname{\Z}{\vzone} \aslsep
+  \overname{\Z}{\vztwo}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
 \]
 returns the interval between the integers $\vzone$ and $\vztwo$,
 or an approximation based on $\vapprox$.

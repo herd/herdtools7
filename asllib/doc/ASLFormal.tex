@@ -38,8 +38,8 @@ is the set of integers.
 \item \RenderType{Q}
 is the set of rational numbers.
 
-\hypertarget{def-false}{}
-\hypertarget{def-true}{}
+\hypertarget{constant-False}{}
+\hypertarget{constant-True}{}
 \item \RenderType{Bool}
 is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
 We employ these literals to represent the corresponding mathematical truth values,
@@ -88,18 +88,23 @@ defined next, is named $q$.
 
 \hypertarget{def-sign}{}
 \begin{definition}[Sign of a Rational Number]
-  The function $\sign : \overname{\Q}{q} \rightarrow \{-1,0,1\}$ returns the sign of $\vq$:
+\hypertarget{constant-positivesign}{}
+\hypertarget{constant-negativesign}{}
+\hypertarget{constant-equalsign}{}
+\RenderType{Sign}
+
+The function $\sign : \overname{\Q}{q} \rightarrow \Sign$ returns the sign of $\vq$:
 \[
 \sign(q) \triangleq \begin{cases}
-  1 & \text{if }q > 0\\
-  0 & \text{if }q = 0\\
-  -1 & \text{if }q < 0
+  \positivesign & \text{if }q > 0\\
+  \equalsign & \text{if }q = 0\\
+  \negativesign & \text{if }q < 0
 \end{cases}
 \]
 \end{definition}
 
 \begin{definition}[Empty Set]
-  The \emph{empty set} --- the set that does not contain any element --- is denoted as $\emptyset$.
+  The \emph{empty set} --- the set that does not contain any element --- is denoted as \RenderType{empty_set}.
 \end{definition}
 
 \hypertarget{def-cardinality}{}
@@ -135,6 +140,8 @@ The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subset
 We denote the transitive closure of a relation $E = V \times V$ by $\graphtransitive{E}$
 and the reflexive-transitive closure of $E$ by $\graphtransitivereflexive{E}$.
 \end{definition}
+
+We use the symbol \RenderConstant{bot} to denote an undefined, or missing, value.
 
 \hypertarget{def-partialfunc}{}
 \hypertarget{def-dom}{}
@@ -691,7 +698,7 @@ Consider the following examples, which is a simplified version of \SemanticsRule
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -714,7 +721,7 @@ Now, scan the premises in order to see where $\env$, $\op$, $\veone$, and $\vetw
 premises assign values to $\vv$, $\vg$, and $\newenv$.
 %
 In this case, $\vv$ is assigned as the result of the transition judgment
-$\binoprel(\op, \vvone, \vvtwo) \evalarrow \vv$,
+$\evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv$,
 $\vg$ is assigned the expression $\vgone \parallelcomp \vgtwo$,
 and $\newenv$ is assigned as the result of the transition judgment
 $\evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv)$.
@@ -831,7 +838,7 @@ This time, not simplified:
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \DynErrorConfig\\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \DynErrorConfig\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -927,7 +934,7 @@ Expanding the last transition judgment, gives us the case:
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
   \DynErrorConfig

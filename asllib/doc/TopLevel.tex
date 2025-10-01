@@ -115,7 +115,7 @@ untyped AST, renaming local storage elements accordingly.
 
 \ASTRuleDef{RenameLocals}
 \hypertarget{def-renamelocals}{}
-The helper function
+The function
 \[
 \renamelocals(\overname{\KleeneStar{\decl}}{\vdecls}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecls}
 \]
@@ -143,7 +143,7 @@ yielding the list of declarations $\vnewdecls$.
 
 \ASTRuleDef{RenameLocalsDecl}
 \hypertarget{def-renamelocalsdecl}{}
-The helper function
+The function
 \[
 \renamelocalsdecl(\overname{\decl}{\vdecl}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecl}
 \]
@@ -187,7 +187,7 @@ yielding the declaration $\vnewdecl$.
 
 \ASTRuleDef{RenameLocalsFunc}
 \hypertarget{def-renamelocalsfunc}{}
-The helper function
+The function
 \[
 \renamelocalsfunc(\overname{\func}{\vf}) \aslto \overname{\func}{\vnewf}
 \]
@@ -263,7 +263,7 @@ yielding the subprogram description $\vnewf$.
 
 \ASTRuleDef{RenameLocalsArgs}
 \hypertarget{def-renamelocalsargs}{}
-The helper function
+The function
 \[
 \renamelocalsargs(\overname{\KleeneStar{(\Identifier\times\ty)}}{\args}) \aslto
 \overname{\KleeneStar{(\Identifier\times\ty)}}{\newargs}
@@ -309,7 +309,7 @@ $\args$, yielding the list of arguments $\newargs$.
 
 \ASTRuleDef{RenameLocalsNamedArgs}
 \hypertarget{def-renamelocalsnamedargs}{}
-The helper function
+The function
 \[
 \renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\params}) \aslto
 \overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\newparams}
@@ -355,7 +355,7 @@ yielding the list of parameters $\newparams$.
 
 \ASTRuleDef{RenameLocalsTy}
 \hypertarget{def-renamelocalsty}{}
-The helper function
+The function
 \[
 \renamelocalsty(\overname{\ty}{\tty}) \aslto \overname{\ty}{\newty}
 \]
@@ -489,7 +489,7 @@ yielding the type $\newty$.
 
 \ASTRuleDef{RenameLocalsStmt}
 \hypertarget{def-renamelocalsstmt}{}
-The helper function
+The function
 \[
 \renamelocalsstmt(\overname{\stmt}{\vs}) \aslto \overname{\stmt}{\news}
 \]
@@ -838,7 +838,7 @@ yielding the statement $\news$.
 
 \ASTRuleDef{RenameLocalsExpr}
 \hypertarget{def-renamelocalsexpr}{}
-The helper function
+The function
 \[
 \renamelocalsexpr(\overname{\expr}{\ve}) \aslto \overname{\expr}{\newe}
 \]
@@ -1155,7 +1155,7 @@ yielding the expression $\newe$.
 
 \ASTRuleDef{RenameLocalsLexpr}
 \hypertarget{def-renamelocalslexpr}{}
-The helper function
+The function
 \[
 \renamelocalslexpr(\overname{\lexpr}{\vle}) \aslto \overname{\lexpr}{\newle}
 \]
@@ -1275,7 +1275,7 @@ yielding the \assignableexpression\ $\newle$.
 
 \ASTRuleDef{RenameLocalsLDI}
 \hypertarget{def-renamelocalsldi}{}
-The helper function
+The function
 \[
 \renamelocalsldi(\overname{\localdeclitem}{\ldi}) \aslto \overname{\localdeclitem}{\newldi}
 \]
@@ -1317,7 +1317,7 @@ yielding the local declaration item $\newldi$.
 
 \ASTRuleDef{RenameLocalsConstraint}
 \hypertarget{def-renamelocalsconstraint}{}
-The helper function
+The function
 \[
 \renamelocalsconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
 \]
@@ -1363,7 +1363,7 @@ yielding the constraint $\newc$.
 
 \ASTRuleDef{RenameLocalsSlice}
 \hypertarget{def-renamelocalsslice}{}
-The helper function
+The function
 \[
 \renamelocalsslice(\overname{\slice}{\vslice}) \aslto \overname{\slice}{\vnewslice}
 \]
@@ -1411,7 +1411,7 @@ yielding $\vnewslice$.
 
 \ASTRuleDef{RenameLocalsName}
 \hypertarget{def-renamelocalsname}{}
-The helper function
+The function
 \[
 \renamelocalsname(\overname{\Identifier}{\name}) \aslto \overname{\Identifier}{\newname}
 \]
@@ -1430,7 +1430,7 @@ yielding the identifier $\newname$.
 
 \ASTRuleDef{RenameLocalsArrayIndex}
 \hypertarget{def-renamelocalsarrayindex}{}
-The helper function
+The function
 \[
 \renamelocalsarrayindex(\overname{\arrayindex}{\vindex}) \aslto \overname{\arrayindex}{\newindex}
 \]
@@ -1478,7 +1478,7 @@ array index $\vindex$, yielding the array index $\newindex$.
 
 \ASTRuleDef{RenameLocalsPattern}
 \hypertarget{def-renamelocalspattern}{}
-The helper function
+The function
 \[
 \renamelocalspattern(\overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp}
 \]
@@ -1560,7 +1560,7 @@ pattern $\vp$, yielding the pattern $\newp$.
 
 \ASTRuleDef{RenameLocalsCatcher}
 \hypertarget{def-renamelocalscatcher}{}
-The helper function
+The function
 \[
 \renamelocalscatcher(\overname{\catcher}{\vc}) \aslto \overname{\catcher}{\newc}
 \]
@@ -1601,7 +1601,7 @@ catcher clause $\vc$, yielding the catcher clause $\newc$.
 
 \ASTRuleDef{SetBuiltin}
 \hypertarget{def-setbuiltin}{}
-The helper function
+The function
 \[
   \setbuiltin(\overname{\decl}{\vdecl}) \aslto
   \overname{\decl}{\vdeclp}

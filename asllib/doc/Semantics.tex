@@ -346,31 +346,25 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   (which are evaluated in two different ways for the purpose of concurrency):
 \RenderType{TNormal}
 
-  \item[Exceptions.] Semantic configurations in
-\RenderType{TThrowing}
-  represent thrown exceptions.
-  \hypertarget{def-valuereadfrom}{}
+  \item[Exceptions.] Semantic configurations in \RenderType{TThrowing} represent thrown exceptions.
 
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The type $\valuereadfrom(\nativevalue,\Identifier)$ is a semantic configuration nested inside an exception semantic configuration.
+  The type \RenderType{value_read_from} is a semantic configuration nested inside an exception semantic configuration.
   The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
-  \item[Returned Values.] Semantic configurations in
-\RenderType{TReturning}
+  \item[Returned Values.] Semantic configurations in \RenderType{TReturning}
   represent (tuples of) values being returned by the currently executing subprogram.
   The ASL dynamic semantics propagate these \emph{early return semantic configurations} to the respective call expression/statement.
 
-  \item[In-flight Subprogram.] Semantic configurations in
-\RenderType{TContinuing}
+  \item[In-flight Subprogram.] Semantic configurations in \RenderType{TContinuing}
   represent the fact that a subprogram has more statements to execute.
   The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 
-  \item[Dynamic Errors.] Semantic configurations in
-\RenderType{TDynError}
+  \item[Dynamic Errors.] Semantic configurations in \RenderType{TDynError}
   represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
@@ -568,7 +562,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\ADD, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
 }{
   \evalexpr( \emptyenv, \veonetwo ) \evalarrow
   \ResultExpr(\nvint(3), \emptyenv)
@@ -579,7 +573,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
   \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\ADD, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
 }{
   \evalexpr( \emptyenv, \vefourfive ) \evalarrow
   \ResultExpr(\nvint(9), \emptyenv)
@@ -590,7 +584,7 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
   \evalexpr( \emptyenv, \veonetwo ) \evalarrow \ResultExpr(\nvint(3), \emptyenv)\\
   \evalexpr( \emptyenv, \vefourfive ) \evalarrow \ResultExpr(\nvint(9), \emptyenv)\\
-  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\binoprel(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
+  \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\MUL, \nvint(3), \nvint(9)) \evalarrow \nvint(27)}
 }{
   \evalexpr( \emptyenv, \EBinop(\MUL, \veonetwo, \vefourfive) ) \evalarrow
   \ResultExpr(\nvint(27), \emptyenv)

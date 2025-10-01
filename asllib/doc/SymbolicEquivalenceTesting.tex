@@ -20,8 +20,7 @@ In proof-theoretic terms, we say that our equivalence test is \emph{sound} but \
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
-\hypertarget{def-unsupportedexpression}{}
-In this chapter, we use the special value $\CannotBeTransformed$
+In this chapter, we use the special value \RenderConstant{CannotBeTransformed}
 to represent a failure in transforming an expression into a desired form (the specific
 desired form varies according to the functions utilizing this value).
 
@@ -72,12 +71,17 @@ definitions above.
 \section{Symbolic Expressions\label{sec:symbolicexpressions}}
 \hypertarget{def-symbolicexpressionterm}{}
 Our symbolic reduction and equivalence testing rules employ \emph{\symbolicexpressionsterm}, defined below:
+\hypertarget{type-Qnonzero}{}
+\RenderTypes{symbolic_expressions}
+
+\BackupOriginalType{
 \[
   \begin{array}{rcl}
     \polynomial &\triangleq& \unitarymonomial \partialto \Q \setminus \{0\}\\
     \unitarymonomial   &\triangleq& \Identifier \partialto \Npos\\
   \end{array}
 \]
+}
 
 These \symbolicexpressionsterm{} provide a canonical representation for multivariate polynomials
 (that is, polynomials over multiple variables). The motivation for choosing this representation
@@ -89,8 +93,6 @@ We now explain each component of a \symbolicexpressionterm{} and how it can be i
 via the interpretation function $\alpha$.
 We also define operations over \symbolicexpressionsterm{}.
 
-\hypertarget{def-unitarymonomial}{}
-\hypertarget{def-monomial}{}
 \begin{definition}[Unitary Monomial]
 A \emph{Unitary Monomial} is a partial function from identifiers to positive integers\footnote{A unitary monomial has a unit factor,
 for example $x^3$, whereas a non-unitary monomial has a non-unit factor, for example, $2 x^3$.}.
@@ -142,7 +144,6 @@ For example,
   \end{array}
 \]
 
-\hypertarget{def-polynomial}{}
 \begin{definition}[Polynomial]
   \emph{Polynomials} are partial functions from monomials to rationals other than zero.
   Intuitively, each unitary monomial is mapped to its factor in the polynomial.
@@ -956,7 +957,7 @@ comprising the array lengths are equivalent, as details in comments.
 
 \TypingRuleDef{ExprEqualNorm}
 \hypertarget{def-exprequalnorm}{}
-The helper function
+The function
 \[
   \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -1017,7 +1018,7 @@ See \ExampleRef{Expression Equivalence}.
 
 \TypingRuleDef{ExprEqualCase}
 \hypertarget{def-exprequalcase}{}
-The helper function
+The function
 \[
   \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -2182,7 +2183,7 @@ The function
 \comparemonomialbindings(
   (\overname{\monomial}{\vmone}\times\overname{\Q}{\vqone}) \aslsep
   (\overname{\monomial}{\vmtwo}\times\overname{\Q}{\vqtwo})
-) \aslto \overname{\{-1,0,1\}}{\vs}
+) \aslto \overname{\Sign}{\vs}
 \]
 compares two monomial bindings given by $(\vmone, \vqone)$ and $(\vmtwo, \vqtwo)$
 and yields in $\vs$ $-1$ to mean that the first monomial binding should be ordered before the second,
@@ -2255,7 +2256,7 @@ via the lexicographic ordering.
 The function
 \[
 \monomialstoexpr(\overname{\KleeneStar{(\overname{\unitarymonomial}{\vm}\times\overname{\Q}{q})}}{\monoms}) \aslto
-(\overname{\expr}{\ve},\overname{\{-1,0,1\}}{\vs})
+(\overname{\expr}{\ve},\overname{\Sign}{\vs})
 \]
 transforms a list consisting of pairs of unitary monomials and rational factors $\monoms$ (so, general monomials),
 into an expression $\ve$, which represents the absolute value of the sum of all the monomials,
@@ -2308,7 +2309,7 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 The function
 \[
 \monomialtoexpr(\overname{\expr}{\ve} \aslsep \overname{\Q}{q})
-\aslto (\overname{\expr}{\newe} \times \overname{\{-1,0,1\}}{\vs})
+\aslto (\overname{\expr}{\newe} \times \overname{\Sign}{\vs})
 \]
 transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
 which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
@@ -2409,11 +2410,11 @@ The function
 \[
 \symaddexpr(
   \overname{\expr}{\veone} \aslsep
-  \overname{\{-1,0,1\}}{\vsone} \aslsep
+  \overname{\Sign}{\vsone} \aslsep
   \overname{\expr}{\vetwo} \aslsep
-  \overname{\{-1,0,1\}}{\vstwo}
+  \overname{\Sign}{\vstwo}
   )
-  \typearrow (\overname{\expr}{\ve}, \overname{\{-1,0,1\}}{\vs})
+  \typearrow (\overname{\expr}{\ve}, \overname{\Sign}{\vs})
 \]
 symbolically sums the expressions $\veone$ and $\vetwo$
 with respective signs $\vsone$ and $\vstwo$
@@ -2732,7 +2733,7 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 
 \TypingRuleDef{NormalizeOpt}
 \hypertarget{def-normalizeopt}{}
-The helper function
+The function
 \[
 \normalizeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
 \overname{\langle\expr\rangle}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}

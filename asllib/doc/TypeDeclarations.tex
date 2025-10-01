@@ -519,7 +519,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 
 \TypingRuleDef{DeclaredType}
 \hypertarget{def-declaredtype}{}
-The helper function
+The function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \typeerror
 \]
@@ -575,10 +575,9 @@ The function
 \[
 \declareenumlabels(\overname{\staticenvs}{\tenv} \aslsep
   \overname{\Identifier}{\name} \aslsep
-  \overname{KleenePlus{\Identifier}}{\ids} \aslsep
+  \overname{\KleenePlus{\Identifier}}{\ids})
   \aslto \overname{\staticenvs}{\newtenv}
   \cup \overname{\typeerror}{\TypeErrorConfig}
-)
 \]
 updates the \staticenvironmentterm{} $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.

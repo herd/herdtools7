@@ -827,7 +827,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LEMultiAssign}
-The helper relation
+The relation
 \hypertarget{def-evalmultiassign}{}
 \[
   \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vlelist} \aslsep \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\vmlist}) \;\aslrel\;
@@ -950,7 +950,7 @@ are well-typed.
 
 \TypingRuleDef{AnnotateSetArray}
 \hypertarget{def-annotatesetarray}{}
-The helper function
+The function
 \[
 \annotatesetarray\left(
   \begin{array}{c}
@@ -1202,7 +1202,7 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \AllApply
 \begin{itemize}
   \item applying $\disjointslicestopositions$ to $\tenv$,
-  $\False$ (indicating that the expressions comprising $\slices$ need not be \staticallyevaluable), and $\slices$ yields a set of positions\ProseOrTypeError.
+  $\False$ (indicating that the expressions comprising $\slices$ need not be \staticallyevaluableterm), and $\slices$ yields a set of positions\ProseOrTypeError.
   \item the result is $\True$.
 \end{itemize}
 
@@ -1280,7 +1280,7 @@ getter invocation
 
 \SemanticsRuleDef{CheckNonOverlappingSlices}
 \hypertarget{def-checknonoverlappingslices}{}
-The helper function
+The function
 \[
   \checknonoverlappingslices(
     \overname{\KleeneStar{(\tint\times\tint)}}{\valueranges}
@@ -1329,7 +1329,7 @@ writes \verb|1| to the common position $0$.
 
 \SemanticsRuleDef{CheckTwoRangesNonOverlapping}
 \hypertarget{def-checktworangesnonoverlapping}{}
-The helper function
+The function
 \[
 \begin{array}{r}
   \checktworangesnonoverlapping(
@@ -1348,7 +1348,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item evaluating $\ADD$ for $\vsone$ and $\vlone$ via $\binoprel$ yields $\vsonelone$;
+  \item evaluating $\ADD$ for $\vsone$ and $\vlone$ via $\evalbinop$ yields $\vsonelone$;
   \item evaluating $\LE$ for $\vsonelone$ and $\vstwo$ yields $\vsonelonestwo$;
   \item evaluating $\ADD$ for $\vstwo$ and $\vltwo$ yields $\vstwoltwo$;
   \item evaluating $\LE$ for $\vstwoltwo$ and $\vsone$ yields $\vstwoltwosone$;
@@ -1360,11 +1360,11 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \binoprel(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
-  \binoprel(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
-  \binoprel(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
-  \binoprel(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
-  \binoprel(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
+  \evalbinop(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
+  \evalbinop(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
+  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
+  \evalbinop(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
+  \evalbinop(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
   \checktrans{\vb}{\OverlappingSliceAssignment} \checktransarrow \True\OrDynError
 }{
   \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
@@ -1670,7 +1670,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \TypingRuleDef{FoldBitvectorFields}
 \hypertarget{def-foldbitvectorfields}{}
-The helper function
+The function
 \[
 \foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\field}}{\vbasefields} \aslsep \overname{\KleeneStar{\bitfield}}{\vlefields})
 \aslto (\overname{\N}\vlength \times \overname{\KleeneStar{(\N \times N)}}{\vslices})
@@ -1772,7 +1772,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 
 \SemanticsRuleDef{AssignBitvectorFields}
 \hypertarget{def-assignbitvectorfields}{}
-The helper function
+The function
 \[
   \assignbitvectorfields(
     \overname{\tbitvector}{\vbitvector} \aslsep

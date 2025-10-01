@@ -636,7 +636,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
   \overname{\expr}{\ve}
-) \aslto \overname{\newe}{\expr}
+) \aslto \overname{\expr}{\newe}
 \]
 transforms the expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
@@ -1045,7 +1045,7 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
   \overname{\intconstraint}{\vc}
-) \aslto \overname{\newc}{\intconstraint}
+) \aslto \overname{\intconstraint}{\newc}
 \]
 transforms the integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$,
 by substituting parameter names with their corresponding expressions in
@@ -1180,7 +1180,7 @@ The function
 \annotateretty(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\subprogramtype}{\calltype} \aslsep
-  \overname{\langle\ty\rangle}{\funcsigrettyopt}
+  \overname{\langle\ty\rangle}{\funcsigrettyopt} \aslsep
   \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqsthree}
 ) \aslto \\
 \overname{\langle\ty\rangle}{\rettyopt}
@@ -1282,7 +1282,7 @@ The function
     \overname{\Strings}{\namep} \aslsep
     \overname{\func}{\callee} \aslsep
     \overname{\TSideEffectSet}{\vses}
-    )\
+    )
     \cup\ \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
@@ -1396,12 +1396,12 @@ the \integertypeterm{} rather than the \realtypeterm).
 
 \TypingRuleDef{FilterCallCandidates}
 \hypertarget{def-filtercandidates}{}
-The helper function
+The function
 \[
   \filtercallcandidates(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\KleeneStar{\ty}}{\formaltypes} \aslsep
-    \overname{\subprogramtype}{\calltype}
+    \overname{\subprogramtype}{\calltype} \aslsep
     \overname{\pow{\Strings}}{\candidates}
     )
   \aslto \overname{\KleeneStar{(\Strings\times\func)}}{\matches}
@@ -1597,7 +1597,7 @@ the arguments of procedures -- that do not clash and types that do clash
 
 \TypingRuleDef{TypeClash}
 \hypertarget{def-typeclashes}{}
-The helper function
+The function
 \[
   \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -1774,7 +1774,7 @@ way around.
 
 \TypingRuleDef{ExpressionList}
 \hypertarget{def-annotateexprs}{}
-The helper function
+The function
 \[
   \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs})
   \aslto \overname{\KleeneStar{(\ty \times \expr \times \TSideEffectSet)}}{\typedexprs}
@@ -2095,9 +2095,9 @@ return statement.
 
 \SemanticsRuleDef{CheckRecurseLimit}
 \hypertarget{def-checkrecurselimit}{}
-The helper relation
+The relation
 \[
-  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\expr?}{\velimitopt}) \aslto
+  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\some{\expr}}{\velimitopt}) \aslto
   \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
@@ -2177,7 +2177,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \SemanticsRuleDef{ReadValueFrom}
 \hypertarget{def-readvaluefrom}{}
-The helper relation
+The relation
 \[
   \readvaluefrom(\valuereadfrom(\nativevalue \aslsep \Identifier)) \;\aslrel\; (\nativevalue \times \XGraphs)
 \]
@@ -2264,7 +2264,7 @@ these variable values and evaluates to $\nvint(15)$.
 \end{mathpar}
 
 \SemanticsRuleDef{MatchFuncRes}
-The helper relation
+The relation
 \hypertarget{def-matchfuncres}{}
 \[
     \matchfuncres(\TContinuing \cup \TReturning) \;\aslrel\;

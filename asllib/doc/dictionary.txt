@@ -477,6 +477,7 @@ continuing
 contrast
 contributes
 control
+convenience
 convenient
 convention
 conventional
@@ -946,6 +947,7 @@ hand
 handle
 handled
 handles
+handling
 hands
 happens
 hardware

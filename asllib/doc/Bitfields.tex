@@ -214,7 +214,7 @@ is $16$.
 \hypertarget{def-bitfieldgetname}{}
 The function
 \[
-  \bitfieldgetname : \overname{\bitfield}{\vbf} \aslto \overname{\Identifier}{\name}
+  \bitfieldgetname(\overname{\bitfield}{\vbf}) \aslto \overname{\Identifier}{\name}
 \]
 returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
 
@@ -259,7 +259,7 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 \hypertarget{def-bitfieldgetslices}{}
 The function
 \[
-  \bitfieldgetslices : \overname{\bitfield}{\vbf} \aslto \overname{\KleeneStar{\slice}}{\vslices}
+  \bitfieldgetslices(\overname{\bitfield}{\vbf}) \aslto \overname{\KleeneStar{\slice}}{\vslices}
 \]
 returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
 
@@ -306,7 +306,7 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
 \hypertarget{def-bitfieldgetnested}{}
 The function
 \[
-  \bitfieldgetnested : \overname{\bitfield}{\vbf} \aslto \overname{\KleeneStar{\bitfield}}{\vnested}
+  \bitfieldgetnested(\overname{\bitfield}{\vbf}) \aslto \overname{\KleeneStar{\bitfield}}{\vnested}
 \]
 returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
 and an empty list if there are none.
@@ -376,7 +376,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
     \item \AllApplyCase{nested}
     \begin{itemize}
       \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluable), \\
+            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluableterm), \\
             and $\slicesone$
             yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
@@ -393,7 +393,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
       \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluable), \\
+            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluableterm), \\
             and $\slicesone$
             yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
@@ -473,7 +473,7 @@ See
 \AllApply
 \begin{itemize}
     \item applying $\disjointslicestopositions$ to $\tenv$,
-    $\True$ (indicating that the expressions comprising the slices must be \staticallyevaluable), and $\vslices$ checks whether the
+    $\True$ (indicating that the expressions comprising the slices must be \staticallyevaluableterm), and $\vslices$ checks whether the
     slices in $\vslices$ are disjoint and yields the set of their positions\ProseOrTypeError;
     \item applying $\checkpositionsinwidth$ to $\vwidth$ and $\positions$ to check that
     all of the positions fit with the width given by $\vwidth$ yields $\True$\ProseOrError.
@@ -548,7 +548,7 @@ In particular, this rule checks that the following properties:
 \end{itemize}
 Conducting the checks for these properties requires evaluating the expressions comprising the
 slices, either via static evaluation of via normalization.
-The flag $\isstatic$ determines whether the slice is assumed to consist of \staticallyevaluable{}
+The flag $\isstatic$ determines whether the slice is assumed to consist of \staticallyevaluableterm{}
 expressions. If so, the slice expressions are statically evaluated, and otherwise they are
 normalized.
 \ProseOtherwiseTypeError
@@ -684,7 +684,7 @@ The function
 \]
 attempts to transform the expression $\ve$ into a constant integer in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.
-If $\isstatic$ is $\True$, then $\ve$ is known to be \staticallyevaluable, and the transformation is
+If $\isstatic$ is $\True$, then $\ve$ is known to be \staticallyevaluableterm, and the transformation is
 carried out via static evaluation. Otherwise, the transformation is carried out via normalization.
 \ProseOtherwiseTypeError
 
@@ -692,9 +692,9 @@ carried out via static evaluation. Otherwise, the transformation is carried out 
 The specifications in \listingref{EvalSliceExpr} shows two kinds of slices:
 the slice \\
 \verb|static_func{4}(4):0| is used to define a bitfield (\verb|data|)
-and therefore must be \staticallyevaluable,
+and therefore must be \staticallyevaluableterm,
 whereas the slice \verb|N DIV 2:0| is used in an \assignableexpression, which means
-it need not be \staticallyevaluable{} (it is indeed not, in this example).
+it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
 \ASLListing{Expressions in slices}{EvalSliceExpr}{\typingtests/TypingRule.EvalSliceExpr.asl}
 
 \ProseParagraph
@@ -746,9 +746,8 @@ for every pair of bitfields in $\vbitfields$, contained in a
 bitvector type of width $\vwidth$ in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
 
-\hypertarget{def-tabsfield}{}
 We represent \absolutebitfields\ by the type
-$\TAbsField \eqdef (\overname{\KleeneStar{\Identifier}}{\name}, \overname{\KleeneStar{\N}}{\vslice})$,
+\RenderType{TAbsField}
 where the component $\name$ is a list of identifiers corresponding to the \absolutename,
 and the component $\vslice$ corresponds to an \absoluteslice\ by listing the indices
 into the containing bitvector type.\footnote{An implementation of the type system may compactly represent the list of indices

@@ -336,7 +336,7 @@ Setter calls are desugared by \ASTRuleRef{DesugarSetter}.
 
 \ASTRuleDef{MakeSetter}
 \hypertarget{def-makesetter}{}
-The helper function
+The function
 \[
 \makesetter(
   \overname{\call}{\vcall} \aslsep
@@ -360,7 +360,7 @@ constructs a setter call $\vcallp$ using a base call $\vcall$ and right-hand sid
 
 \ASTRuleDef{DesugarSetter}
 \hypertarget{def-desugarsetter}{}
-The helper function
+The function
 \[
 \desugarsetter(
   \overname{\call}{\vcall} \aslsep
@@ -398,7 +398,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 
 \ASTRuleDef{DesugarSetterSetfields}
 \hypertarget{def-desugarsettersetfields}{}
-The helper function
+The function
 \[
 \desugarsettersetfields(
   \overname{\call}{\vcall} \aslsep
@@ -422,7 +422,7 @@ builds a statement $\news$ from an assignment of $\rhs$ to a setter invocation $
 
 \ASTRuleDef{ReadModifyWrite}
 \hypertarget{def-readmodifywrite}{}
-The helper function
+The function
 \[
 \readmodifywrite(
   \overname{\call}{\vcall} \aslsep
@@ -646,7 +646,7 @@ since immutable local storage elements require an initializing expression.
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \hypertarget{def-annotatelocaldecltypeannot}{}
-The helper function
+The function
 \[
 \begin{array}{r}
   \annotatelocaldecltypeannot
@@ -660,14 +660,12 @@ The helper function
     \overname{\localdeclitem}{\ldi}
   \end{array}
   \right)
-  \typearrow \\
-  \left(
+  \aslto \\
   \begin{array}{cl}
     \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
     & \cup \\
     \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
-  \right)
 \end{array}
 \]
 annotates the type annotation $\tyopt$ in the \staticenvironmentterm{} $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
@@ -724,7 +722,7 @@ See \ExampleRef{Typing Declaration Statements}.
 
 \TypingRuleDef{InheritIntegerConstraints}
 \hypertarget{def-inheritintegerconstraints}{}
-The helper function
+The function
 \[
 \inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
 \aslto \overname{\ty}{\lhsp} \cup\ \overname{\typeerror}{\TypeErrorConfig}
@@ -773,7 +771,7 @@ in the \CaseName{int} below.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
-  \checknoprecisionloss{\rhs} \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\\\\
   \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\PendingConstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
@@ -806,9 +804,9 @@ in the \CaseName{int} below.
 
 \TypingRuleDef{CheckNoPrecisionLoss}
 \hypertarget{def-checknoprecisionloss}{}
-The helper function
+The function
 \[
-  \checknoprecisionloss{\overname{\ty}{\vt}}
+  \checknoprecisionloss(\overname{\ty}{\vt})
   \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the type $\vt$ is the result of a precision loss in its
@@ -848,7 +846,7 @@ constant types would result in more than $2^17$ elements, see
   \inferrule[Well-Constrained]{%
     \checktrans{p = \PrecisionFull}{PrecisionLostDefining}
   }{%
-    \checknoprecisionloss{\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}} \typearrow \True
+    \checknoprecisionloss(\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}) \typearrow \True
   }
 \end{mathpar}
 
@@ -856,7 +854,7 @@ constant types would result in more than $2^17$ elements, see
   \inferrule[Integer]{%
     \astlabel(\vc) \neq \WellConstrained
   }{%
-    \checknoprecisionloss{\overname{\TInt(\vc)}{\vt}} \typearrow \True
+    \checknoprecisionloss(\overname{\TInt(\vc)}{\vt}) \typearrow \True
   }
 \end{mathpar}
 
@@ -864,7 +862,7 @@ constant types would result in more than $2^17$ elements, see
   \inferrule[Other]{%
     \astlabel(\vt) \neq \TInt
   }{%
-    \checknoprecisionloss{\vt} \typearrow \True
+    \checknoprecisionloss(\vt) \typearrow \True
   }
 \end{mathpar}
 
@@ -872,7 +870,7 @@ constant types would result in more than $2^17$ elements, see
 
 \TypingRuleDef{CheckCanBeInitializedWith}
 \hypertarget{def-checkcanbeinitializedwith}{}
-The helper function
+The function
 \[
 \checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
 \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -992,7 +990,7 @@ as detailed by \ASTRuleRef{ElidedParamCall} (See also \secref{ParameterElision})
 
 \ASTRuleDef{ElidedParamCall}
 \hypertarget{build-elided-param-call}{}
-The helper function $\buildelidedparamcall$ builds a $\call$ from a parsed \\
+The function $\buildelidedparamcall$ builds a $\call$ from a parsed \\
 $\Nelidedparamcall$.
 
 \begin{mathpar}
@@ -1052,7 +1050,7 @@ $\Nelidedparamcall$.
 
 \ASTRuleDef{DesugarElidedParameter}
 \hypertarget{def-desugarelidedparameter}{}
-The helper function
+The function
 \[
 \desugarelidedparameter(
   \overname{\ty}{\vt} \aslsep
@@ -1143,7 +1141,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \ASTRuleDef{StmtFromList}
 \hypertarget{def-stmtfromlist}{}
-The helper function
+The function
 \[
 \stmtfromlist(\overname{\KleeneStar{\stmt}}{\vstmts}) \aslto \overname{\stmt}{\news}
 \]
@@ -1165,7 +1163,7 @@ builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
 
 \ASTRuleDef{SequenceStmts}
 \hypertarget{def-sequencestmts}{}
-The helper function
+The function
 \[
 \sequencestmts(\overname{\stmt}{\vsone}, \overname{\stmt}{\vstwo}) \aslto \overname{\stmt}{\news}
 \]
@@ -2074,7 +2072,7 @@ The function
 \[
   \annotatelimitexpr(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\langle\expr\rangle}{\ve} \aslsep
+    \overname{\langle\expr\rangle}{\ve}
   ) \aslto
   (\langle\overname{\expr}{\vep}\rangle \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
@@ -2699,7 +2697,7 @@ show examples of ill-typed \texttt{for} loops.
   \annotatestmt\left(\tenv, \overname{\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdir\\
+    \Fordir &:& \vdir\\
     \Forende &:& \vende\\
     \Forbody &:& \vbody\\
     \Forlimit &:& \vlimit
@@ -2707,7 +2705,7 @@ show examples of ill-typed \texttt{for} loops.
   \left(\overname{\SFor\left\{\begin{array}{rcl}
     \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstartep\\
-    \fordirection &:& \vdir\\
+    \Fordir &:& \vdir\\
     \Forende &:& \vendep\\
     \Forbody &:& \vbodyp\\
     \Forlimit &:& \vlimitp
@@ -2729,7 +2727,7 @@ The function
     \overname{\ty}{\structtwo} \aslsep
     \overname{\expr}{\veonep} \aslsep
     \overname{\expr}{\vetwop} \aslsep
-    \overname{\dir}{\dir}
+    \overname{\fordirection}{\dir}
   ) \aslto
   \overname{\constraintkind}{\vis} \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
@@ -2944,7 +2942,7 @@ executing $\vbody$ on each iteration.
 The evaluation utilizes two helper relations: $\evalforstep$ and $\evalforloop$.
 
 \hypertarget{def-evalforstep}{}
-The helper relation
+The relation
 \[
   \evalforstep\left(
   \begin{array}{cl}
@@ -2972,7 +2970,7 @@ and the resulting execution graph.
 \ProseOtherwiseReturningOrAbnormal
 
 \hypertarget{def-evalforloop}{}
-The helper relation
+The relation
 \[
   \evalforloop\left(
     \begin{array}{cl}
@@ -2987,7 +2985,7 @@ The helper relation
     \right) \;\aslrel\;
     \left(
     \begin{array}{cl}
-    \overname{\TContinuing}{\Continuing(\newg, \newenv)} & \cup\\
+    \Continuing(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv}) & \cup\\
     \overname{\TReturning}{\ReturningConfig} & \cup\\
     \overname{\TThrowing}{\ThrowingConfig} & \cup \\
     \overname{\TDynError}{\DynErrorConfig} & \cup\\
@@ -3067,7 +3065,7 @@ Advancing the loop counter one step towards the end of its range is achieved via
 \inferrule{
   \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
-  \binoprel(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
+  \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
   \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
   \env \eqname (\tenv, \denv)\\
   \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vindexname\mapsto\vstep]))\\
@@ -3112,7 +3110,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
   \commonprefixline\\\\
-  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)
+  \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)
 }{
   {
     \begin{array}{r}
@@ -3128,7 +3126,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
   \commonprefixline\\\\
-  \binoprel(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
+  \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
   \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
   \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
   \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
@@ -3599,7 +3597,7 @@ In \listingref{semantics-sreturntuple},
 
 \SemanticsRuleDef{EExprListM}
 \hypertarget{def-evalexprlistm}{}
-The helper relation
+The relation
 \[
 \evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vEs}) \;\aslrel\;
 \left(
@@ -3660,9 +3658,9 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 
 \SemanticsRuleDef{WriteFolder}
 \hypertarget{def-writefolder}{}
-The helper relation
+The relation
 \[
-  \writefolder(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms}) \aslrel (\overname{\KleeneStar{\nativevalue}}{\vvs}, \overname{\XGraphs}{\newg}) \enspace,
+  \writefolder(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms}) \aslrel (\overname{\KleeneStar{\nativevalue}}{\vvs}, \overname{\XGraphs}{\newg})
 \]
 concatenates the input values in $\vms$ and generates an execution graph
 by composing the graphs in $\vms$ with Write Effects for the respective values.
@@ -3887,7 +3885,7 @@ only here to explain the modeling of a console.
 \ExampleRef{Printing Literals} shows the output to the console in a case it is supported.
 
 \hypertarget{def-literaltostring}{}
-The helper function $\literaltostring : \literal \aslto \Strings$,
+The function $\literaltostring : \literal \aslto \Strings$,
 which defines how a literal is represented by a string,
 is defined by \taref{literaltostringtable}.
 %

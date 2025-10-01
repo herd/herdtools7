@@ -232,7 +232,7 @@ are all well-typed.
 
 \TypingRuleDef{SlicesWidth}
 \hypertarget{def-sliceswidth}{}
-The helper function
+The function
 \[
   \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\vslices}) \aslto
   \overname{\expr}{\vwidth} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -280,7 +280,7 @@ The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
 
 \TypingRuleDef{SliceWidth}
 \hypertarget{def-slicewidth}{}
-The helper function
+The function
 \[
   \slicewidth(\overname{\slice}{\vslice}) \aslto
   \overname{\expr}{\vwidth}
@@ -365,7 +365,7 @@ the \unconstrainedintegertype.
 On the other hand, in \listingref{check-constrained-integer}
 all of the \rhsexpressions{} of assignments are both symbolically
 evaluable \underline{and} their \underlyingtypes{} are \constrainedinteger{} types,
-since they consist of \staticallyevaluable{} expressions (literals) and
+since they consist of \staticallyevaluableterm{} expressions (literals) and
 the parameter \verb|N|.
 
 \ProseParagraph
@@ -494,8 +494,8 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \mtop \eqname (\vvsubtop, \vgone)\\
   \evalexpr(\envone, \estart) \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\\\\
   \mstart \eqname (\vstart, \vgtwo)\\
-  \binoprel(\SUB, \vvsubtop, \vstart) \evalarrow \vdiff\\
-  \binoprel(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
+  \evalbinop(\SUB, \vvsubtop, \vstart) \evalarrow \vdiff\\
+  \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
@@ -520,7 +520,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \mfactor \eqname (\vfactor, \vgone)\\
   \evalexpr(\envone, \elength) \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
   \mlength \eqname (\vlength, \vgtwo)\\
-  \binoprel(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
+  \evalbinop(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)

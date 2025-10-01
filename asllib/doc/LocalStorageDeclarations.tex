@@ -216,7 +216,7 @@ with the type inferred type \texttt{integer{3}}.
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checknoprecisionloss{\tty} \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
@@ -228,7 +228,7 @@ with the type inferred type \texttt{integer{3}}.
 
 \TypingRuleDef{CheckIsNotCollection}%
 \hypertarget{def-checkisnotcollection}{}
-The helper function
+The function
 \[
   \checkisnotcollection(\overname{\staticenvs}{\tenv} \aslsep
   \overname{\ty}{\vt})

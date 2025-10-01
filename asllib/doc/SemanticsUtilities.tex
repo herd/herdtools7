@@ -31,7 +31,7 @@ This chapter defines the following helper relations for operating on \nativevalu
 \hypertarget{def-getpendingcalls}{}
 The function
 \[
-\getpendingcalls(\overname{\denv}{\dynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto \overname{\vs}{\N}
+\getpendingcalls(\overname{\dynamicenvs}{\denv} \aslsep \overname{\Identifier}{\name}) \aslto \overname{\N}{\vs}
 \]
 retrieves the value associated with $\name$ in $\denv.\pendingcalls$ or $0$ if no value is associated with it.
 
@@ -57,8 +57,8 @@ $\name$ in $\denv.\pendingcalls$ otherwise.
 \hypertarget{def-setpendingcalls}{}
 The function
 \[
-\setpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier} \aslsep \overname{\vv}{\N}) \aslto
-\overname{\newgenv}{\dynamicenvs}
+\setpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\N}{\vv}) \aslto
+\overname{\dynamicenvs}{\newgenv}
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
 
@@ -84,8 +84,8 @@ define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pending
 \hypertarget{def-incrpendingcalls}{}
 The function
 \[
-\incrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto
-\overname{\newgenv}{\globaldynamicenvs}
+\incrpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name}) \aslto
+\overname{\globaldynamicenvs}{\newgenv}
 \]
 increments the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 
@@ -118,8 +118,8 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 \hypertarget{def-decrpendingcalls}{}
 The function
 \[
-\decrpendingcalls(\overname{\genv}{\globaldynamicenvs} \aslsep \overname{\name}{\Identifier}) \aslto
-\overname{\newgenv}{\globaldynamicenvs} \cup \overname{\newdenv}{\dynamicenvs}
+\decrpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name}) \aslto
+\overname{\globaldynamicenvs}{\newgenv}
 \]
 decrements the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 It is assumed that $\getpendingcalls((\genv, \emptyfunc), \name)$ yields a positive value.
@@ -321,8 +321,8 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \hypertarget{def-slicestopositions}{}
 The relation
 \[
-  \slicestopositions(\overname{\KleenePlus{(\overname{\tint}{\vs_i}\times\overname{\tint}{\vl_i})}}{\slices}) \;\aslrel\;
-  (\overname{\KleeneStar{\N}}{\positions} \cup\ \overname{\TDynError}{\BadIndex})
+  \slicestopositions(\overname{\KleenePlus{(\overname{\tint}{\vs}\times\overname{\tint}{\vl})}}{\slices}) \;\aslrel\;
+  \overname{\KleeneStar{\N}}{\positions} \cup\ \TDynError
 \]
 returns the list of positions (indices) specified by the slices $\slices$,
 if all slices consist of only non-negative integers.
@@ -431,7 +431,7 @@ The slice \verb|42+:0| has maximum position 42.
 \hypertarget{def-readfrombitvector}{}
 The relation
 \[
-  \readfrombitvector(\overname{\Nvalue}{\vv} \aslsep \overname{\KleeneStar{(\tint\times\tint)}}{\slices}) \;\aslrel\;
+  \readfrombitvector(\overname{\nativevalue}{\vv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
   \overname{\tbitvector}{\vnew} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
