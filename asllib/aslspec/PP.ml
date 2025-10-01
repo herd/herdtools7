@@ -21,8 +21,11 @@ let rec pp_math_shape fmt layout =
 let pp_attribute_key fmt key = pp_print_string fmt (AttributeKey.to_str key)
 
 let pp_attribute fmt = function
-  | StringAttribute s -> fprintf fmt {|"%s"|} s
+  | StringAttribute s ->
+      let s = Str.global_replace (Str.regexp "\n") " " s in
+      fprintf fmt "\"@[<hov>%a@]\"" pp_print_text s
   | MathLayoutAttribute layout -> pp_math_shape fmt layout
+  | MathMacroAttribute macro -> pp_print_string fmt macro
 
 let pp_attribute_key_value fmt (key, value) =
   fprintf fmt {|%a = %a|} pp_attribute_key key pp_attribute value
@@ -30,10 +33,10 @@ let pp_attribute_key_value fmt (key, value) =
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()
   else
-    fprintf fmt "{@[<v>@.%a@.@]}"
+    fprintf fmt "{@[<v>@;<0 2>%a@,@]}"
       (fun fmt attrs ->
         pp_sep_list ~sep:",@,"
-          (fun fmt attr -> fprintf fmt "  %a" pp_attribute_key_value attr)
+          (fun fmt attr -> fprintf fmt "%a" pp_attribute_key_value attr)
           fmt attrs)
       attributes
 
@@ -41,9 +44,9 @@ let rec pp_type_term fmt = function
   | Label name -> pp_print_string fmt name
   | Powerset { term; finite } ->
       let powerset_token = if finite then POWERSET_FINITE else POWERSET in
-      fprintf fmt "%s(%a)" (tok_str powerset_token) pp_type_term term
+      fprintf fmt "%s(%a)" (tok_str powerset_token) pp_opt_named_type_term term
   | Option elt_term ->
-      fprintf fmt "%s(%a)" (tok_str OPTION) pp_type_term elt_term
+      fprintf fmt "%s(%a)" (tok_str OPTION) pp_opt_named_type_term elt_term
   | LabelledTuple { label_opt; components } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
@@ -53,15 +56,15 @@ let rec pp_type_term fmt = function
       fprintf fmt "%s[%a]" label pp_named_type_terms fields
   | List { maybe_empty; member_type } ->
       let list_label = if maybe_empty then tok_str LIST0 else tok_str LIST1 in
-      fprintf fmt "%s(%a)" list_label pp_type_term member_type
+      fprintf fmt "%s(%a)" list_label pp_opt_named_type_term member_type
   | ConstantsSet constants ->
       fprintf fmt "%s(%a)" (tok_str CONSTANTS_SET)
         (pp_sep_list ~sep:"," pp_print_string)
         constants
   | Function { from_type; to_type; total } ->
       let keyword = if total then tok_str FUN else tok_str PARTIAL in
-      fprintf fmt "%s %a -> %a" keyword pp_type_term from_type pp_type_term
-        to_type
+      fprintf fmt "%s %a -> %a" keyword pp_opt_named_type_term from_type
+        pp_opt_named_type_term to_type
 
 and pp_named_type_term fmt (name, term) =
   fprintf fmt "%s: %a" name pp_type_term term

@@ -51,17 +51,20 @@ module Make (S : SPEC_VALUE) = struct
   (** [vars_of_type_term term] returns the list of term-naming variables that
       occur at any depth inside [term]. *)
   let rec vars_of_type_term term =
+    let opt_named_term_to_list (var, t) =
+      (match var with Some x -> [ x ] | None -> []) @ vars_of_type_term t
+    in
     let listed_vars =
       match term with
       | Label var -> [ var ]
-      | Powerset { term } -> vars_of_type_term term
-      | Option sub_term -> vars_of_type_term sub_term
+      | Powerset { term } -> opt_named_term_to_list term
+      | Option term -> opt_named_term_to_list term
       | LabelledTuple { components } -> vars_of_opt_named_type_terms components
       | LabelledRecord { fields } -> vars_of_named_type_terms fields
-      | List { member_type } -> vars_of_type_term member_type
+      | List { member_type } -> opt_named_term_to_list member_type
       | ConstantsSet _ -> []
       | Function { from_type; to_type } ->
-          vars_of_type_term from_type @ vars_of_type_term to_type
+          opt_named_term_to_list from_type @ opt_named_term_to_list to_type
     in
     List.sort_uniq String.compare listed_vars
 
@@ -117,9 +120,7 @@ module Make (S : SPEC_VALUE) = struct
     let macro = get_or_gen_math_macro name in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\BeginDefineConstant{%s}{
-\hypertarget{%s}{} $%s$
-} %% EndDefineConstant|}
+      {|\BeginDefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|}
       name hyperlink_target macro
 
   (** [pp_latex_array fmt rows] renders a table of elements using a LaTeX array
@@ -158,10 +159,12 @@ module Make (S : SPEC_VALUE) = struct
     | Label name -> pp_print_string fmt (get_or_gen_math_macro name)
     | Powerset { term = sub_term; finite } ->
         let powerset_macro = if finite then {|\powfin|} else {|\pow|} in
-        fprintf fmt {|%s{%a}|} powerset_macro pp_type_term (sub_term, layout)
+        fprintf fmt {|%s{%a}|} powerset_macro pp_opt_named_type_term
+          (sub_term, layout)
     | Option sub_term ->
         let optional_macro = {|\some|} in
-        fprintf fmt {|%s{%a}|} optional_macro pp_type_term (sub_term, layout)
+        fprintf fmt {|%s{%a}|} optional_macro pp_opt_named_type_term
+          (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
         let label =
           match label_opt with
@@ -183,7 +186,8 @@ module Make (S : SPEC_VALUE) = struct
         let iteration_macro =
           if maybe_empty then {|\KleeneStar|} else {|\KleenePlus|}
         in
-        fprintf fmt {|%s{%a}|} iteration_macro pp_type_term (member_type, layout)
+        fprintf fmt {|%s{%a}|} iteration_macro pp_opt_named_type_term
+          (member_type, layout)
     | ConstantsSet constant_names ->
         fprintf fmt {|%a|}
           (pp_parenthesized Braces layout_contains_vertical
@@ -201,12 +205,13 @@ module Make (S : SPEC_VALUE) = struct
         let output_layout = List.nth layout_list 1 in
         match layout with
         | Horizontal _ ->
-            fprintf fmt {|%a %s %a|} pp_type_term (from_type, input_layout)
-              arrow_symbol pp_type_term (to_type, output_layout)
+            fprintf fmt {|%a %s %a|} pp_opt_named_type_term
+              (from_type, input_layout) arrow_symbol pp_opt_named_type_term
+              (to_type, output_layout)
         | Vertical _ ->
             fprintf fmt {|\begin{array}{c}@.%a %s\\@.%a@.\end{array}@.|}
-              pp_type_term (from_type, input_layout) arrow_symbol pp_type_term
-              (to_type, output_layout)
+              pp_opt_named_type_term (from_type, input_layout) arrow_symbol
+              pp_opt_named_type_term (to_type, output_layout)
         | Unspecified -> assert false)
 
   and pp_named_type_term fmt ((name, term), layout) =
@@ -360,9 +365,9 @@ The relation
       LaTeX macro [\BeginDefineType{name}{...}] to define the type [name] with
       the content rendered by [pp_value fmt value]. *)
   let pp_define_type_wrapper name fmt pp_value value =
-    fprintf fmt {|\BeginDefineType{%s}{@.|} name;
+    fprintf fmt {|\BeginDefineType{%s}{|} name;
     pp_value fmt value;
-    fprintf fmt {|@.} %% EndDefineType|}
+    fprintf fmt {|} %% EndDefineType|}
 
   let pp_type_and_variants ?(is_first = true) ?(is_last = true) fmt
       ({ Type.type_kind; Type.name }, variants) =
@@ -487,7 +492,7 @@ The relation
       pointers
 
   let pp_render fmt { TypesRender.name; pointers } =
-    fprintf fmt {|\BeginDefineRenderTypes{%s}{@.%a
+    fprintf fmt {|\BeginDefineRenderTypes{%s}{%a
 } %% EndDefineRenderTypes|}
       name pp_pointers pointers
 
