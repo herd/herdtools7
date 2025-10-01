@@ -95,6 +95,7 @@ let binop_values pos t (op : binop) v1 v2 =
   | `XOR, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
       L_BitVector (Bitvector.logxor b1 b2)
   | `BIC, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
+      (* Internal usage of BIC operator *)
       L_BitVector (Bitvector.logand b1 (Bitvector.lognot b2))
   | `ADD, L_BitVector b1, L_BitVector b2 when bv_same_length b1 b2 ->
       L_BitVector

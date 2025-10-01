@@ -77,6 +77,9 @@ module type Config = sig
 
   val track_symbolic_path : bool
   (** Keep track of symbolic paths during execution. *)
+
+  val bit_clear_optimisation : bool
+  (** Interpret [a AND NOT b] as [a BIC b]. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B
