@@ -19,3 +19,6 @@
   (with-stdout-to
    %{target}
    (run python3 extract_tokens.py SpecLexer.mll))))
+
+(cram
+ (deps %{bin:aslspec}))
