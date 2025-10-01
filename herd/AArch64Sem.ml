@@ -3601,10 +3601,11 @@ Arguments:
             >>= do_indirect_jump test [] i ii
 
         | I_ERET ->
-           let eret_to_addr = function
-             | M.A.V.Val(Constant.Label (_, l)) -> B.faultRetT l
-             | _ ->
-                Warn.fatal "Cannot determine ERET target" in
+            let eret_to_addr v =
+              match v2tgt v with
+              | Some tgt -> B.faultRetT tgt
+              | _ ->
+                 Warn.fatal "Cannot determine ERET target" in
            let commit_eret ii =
              M.mk_singleton_es (Act.Commit (Act.ExcReturn,None)) ii in
            commit_eret ii >>=
