@@ -306,3 +306,96 @@ spec: ACCESSOR IDENTIFIER LPAR RPAR BEQ IDENTIFIER COLON INTEGER BEGIN GETTER PA
 ##
 
 The `end` keyword must be followed by a semicolon (`;`).
+
+spec: CONFIG IDENTIFIER XOR
+##
+## Ends in an error in state: 885.
+##
+## decl -> CONFIG ignored_or_identifier . as_ty EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONFIG ignored_or_identifier . as_ty EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONFIG ignored_or_identifier
+##
+spec: CONFIG IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 886.
+##
+## decl -> CONFIG ignored_or_identifier as_ty . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONFIG ignored_or_identifier as_ty . EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONFIG ignored_or_identifier as_ty
+##
+
+A `config` identifier must be annotated with a type and given an initialising expression:
+  config name : type = initial_expression;
+
+opn: LET IDENTIFIER XOR
+##
+## Ends in an error in state: 410.
+##
+## stmt -> LET decl_item . EQ expr SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+## stmt -> LET decl_item . as_ty EQ expr SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+## stmt -> LET decl_item . as_ty EQ elided_param_call SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## LET decl_item
+##
+opn: LET IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 414.
+##
+## stmt -> LET decl_item as_ty . EQ expr SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+## stmt -> LET decl_item as_ty . EQ elided_param_call SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## LET decl_item as_ty
+##
+spec: LET IDENTIFIER XOR
+##
+## Ends in an error in state: 775.
+##
+## decl -> LET ignored_or_identifier . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> LET ignored_or_identifier . as_ty EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> LET ignored_or_identifier . as_ty EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## LET ignored_or_identifier
+##
+spec: LET IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 779.
+##
+## decl -> LET ignored_or_identifier as_ty . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> LET ignored_or_identifier as_ty . EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## LET ignored_or_identifier as_ty
+##
+
+Declarations using `let` must have initialising expressions.
+
+spec: CONSTANT IDENTIFIER XOR
+##
+## Ends in an error in state: 874.
+##
+## decl -> CONSTANT ignored_or_identifier . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONSTANT ignored_or_identifier . as_ty EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONSTANT ignored_or_identifier . as_ty EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONSTANT ignored_or_identifier
+##
+spec: CONSTANT IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 878.
+##
+## decl -> CONSTANT ignored_or_identifier as_ty . EQ expr SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+## decl -> CONSTANT ignored_or_identifier as_ty . EQ elided_param_call SEMI_COLON [ VAR TYPE READONLY PURE PRAGMA NORETURN LET IMPLEMENTATION IMPDEF FUNC EOF CONSTANT CONFIG ACCESSOR ]
+##
+## The known suffix of the stack is as follows:
+## CONSTANT ignored_or_identifier as_ty
+##
+
+Declarations using `constant` must have initialising expressions.

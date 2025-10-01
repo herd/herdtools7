@@ -488,7 +488,9 @@ ASL Typing Tests / annotating types:
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
       let y: integer;
                     ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. Declarations using `let` must have
+    initialising expressions.
+    
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
@@ -744,7 +746,10 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error: Cannot parse. A `config` identifier must be annotated with
+    a type and given an initialising expression:
+      config name : type = initial_expression;
+    
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl
