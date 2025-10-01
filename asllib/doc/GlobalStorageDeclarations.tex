@@ -500,8 +500,8 @@ See \ExampleRef{Declaring Global Storage}.
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
     \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
-    \item checking that $\vte$ \typesatisfies\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pure{} yields $\True$\ProseOrTypeError;
+    \item checking that $\vte$ \typesatisfiesterm\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pureterm{} yields $\True$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
@@ -513,12 +513,12 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
     \item $\gdk$ is not $\GDKConfig$;
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
-    \item determining the \structure{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
+    \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
     \item propagating integer constraints from $\vtep$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtpp$\ProseOrTypeError;
     \item annotating the type $\vtpp$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
-    \item checking that $\vte$ \typesatisfies\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pure{} yields $\True$\ProseOrTypeError;
+    \item checking that $\vte$ \typesatisfiesterm\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ and $\vsese$ are \pureterm{} yields $\True$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
     \item define $\declaredt$ as $\vtp$;
@@ -529,7 +529,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\tyoptp$ is the singleton set for the type $\vt$;
     \item $\initialvalue$ is $\None$;
     \item annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ is \pure{} yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsest$ is \pureterm{} yields $\True$\ProseOrTypeError;
     \item obtaining the \basevalueterm\ of $\vtp$ in $\tenv$ yields $\vep$\ProseOrTypeError;
     \item define $\typedinitialvalue$ as $(\vtp, \vep, \emptyset)$;
     \item define $\tyoptp$ as the singleton set for $\vtp$;
@@ -542,7 +542,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\initialvalue$ is the singleton set for the expression $\ve$;
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
     \item \Prosenoprecisionloss{$\vte$};
-    \item checking that if $\vmustbepure$ is $\True$ then $\vsese$ is \pure{} yields $\True$\ProseOrTypeError;
+    \item checking that if $\vmustbepure$ is $\True$ then $\vsese$ is \pureterm{} yields $\True$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item define $\typedinitialvalue$ as $\typede$;
     \item define $\tyoptp$ as $\None$;
@@ -661,7 +661,7 @@ shows well-typed global storage \texttt{config} elements.
 \ASLListing{Updating the global storage for configuration storage elements}{UpdateGlobalStorage-config}{\typingtests/TypingRule.UpdateGlobalStorage.config.asl}
 
 The specification in \listingref{UpdateGlobalStorage-config-bad}
-is ill-typed, since only a \singulartype{} can be used for \texttt{config} storage elements.
+is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} storage elements.
 \ASLListing{An ill-typed configuration storage element}{UpdateGlobalStorage-config-bad}{\typingtests/TypingRule.UpdateGlobalStorage.config.bad.asl}
 
 \ProseParagraph

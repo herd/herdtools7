@@ -369,23 +369,23 @@ yielding the type $\newty$.
   \begin{itemize}
     \item $\tty$ is either one of the following types: the \realtypeterm, the \stringtypeterm,
           the \booleantypeterm, an \enumerationtypeterm, a \namedtypeterm,
-          or $\tty$ is an \unconstrainedintegertype\ or a
-          \pendingconstrainedintegertype.
+          or $\tty$ is an \unconstrainedintegertypeterm\ or a
+          \pendingconstrainedintegertypeterm.
     \item \Proseeqdef{$\newty$}{$\tty$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\tty$ is the \parameterizedintegertype{} for the parameter $\paramname$;
-    \item \Proseeqdef{$\newty$}{is the \parameterizedintegertype{} for the renamed parameter
+    \item $\tty$ is the \parameterizedintegertypeterm{} for the parameter $\paramname$;
+    \item \Proseeqdef{$\newty$}{is the \parameterizedintegertypeterm{} for the renamed parameter
           name obtained by applying $\renamelocalsname$ to $\paramname$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_int\_wellconstrained}
   \begin{itemize}
-    \item $\tty$ is the \wellconstrainedintegertype\ with list of constraints $\vcs$.
+    \item $\tty$ is the \wellconstrainedintegertypeterm\ with list of constraints $\vcs$.
     \item \Proseeqdef{$\newcs$}{the list obtained by applying $\renamelocalsconstraint$ to every constraint in $\vcs$};
-    \item \Proseeqdef{$\newty$}{the \wellconstrainedintegertype\ with list of constraints $\newcs$}.
+    \item \Proseeqdef{$\newty$}{the \wellconstrainedintegertypeterm\ with list of constraints $\newcs$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_bits}
@@ -412,10 +412,10 @@ yielding the type $\newty$.
 
   \item \AllApplyCase{structured}
   \begin{itemize}
-    \item $\tty$ is \structuredtype\ with AST label $L$ list of pairs consisting of identifiers and types $\vli$;
+    \item $\tty$ is \structuredtypeterm\ with AST label $L$ list of pairs consisting of identifiers and types $\vli$;
     \item \Proseeqdef{$\newli$}{the list of pairs $(\name, \renamelocalsty(\vt))$ for each pair
           $(\name, \vt)$ in $\vli$}
-    \item \Proseeqdef{$\newty$}{the \structuredtype\ with AST label $L$ and $\newli$}.
+    \item \Proseeqdef{$\newty$}{the \structuredtypeterm\ with AST label $L$ and $\newli$}.
   \end{itemize}
 \end{itemize}
 

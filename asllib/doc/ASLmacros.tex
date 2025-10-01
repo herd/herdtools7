@@ -848,8 +848,8 @@
 \newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\emptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
-\newcommand\ProsetypesatTrue[3]{#2 \typesatisfies{} #3 in the static environment #1}
-\newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfy{} #3 in the static environment #1}
+\newcommand\ProsetypesatTrue[3]{#2 \typesatisfiesterm{} #3 in the static environment #1}
+\newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfyterm{} #3 in the static environment #1}
 \newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
@@ -900,7 +900,7 @@
 \newcommand\pendingcalls[0]{\hyperlink{def-pending-calls}{\textsf{pending\_calls}}}
 \newcommand\xgraph[0]{\textsf{g}}
 \newcommand\emptygraph[0]{{\hyperlink{constant-emptygraph}{\emptyset_\xgraph}}}
-\newcommand\Proseemptygraph[1]{#1 is the empty \executiongraph{}}
+\newcommand\Proseemptygraph[1]{#1 is the empty \executiongraphterm{}}
 \newcommand\asldata[0]{\hyperlink{constant-asldata}{\mathtt{asl\_data}}}
 \newcommand\aslctrl[0]{\hyperlink{constant-aslctrl}{\mathtt{asl\_ctrl}}}
 \newcommand\aslpo[0]{\hyperlink{constant-aslpo}{\mathtt{asl\_po}}}
@@ -1059,7 +1059,7 @@
 \newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
 
 \newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
-\newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{def-checkconstrainedinteger}{checking} that the type #2 is a \constrainedinteger\ in
+\newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{def-checkconstrainedinteger}{checking} that the type #2 is a \constrainedintegerterm\ in
   the static environment #1 yields $\True$\ProseOrTypeError}
 
 \newcommand\Prosestaticeval[3]{\hyperlink{def-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
@@ -1067,7 +1067,7 @@
 \newcommand\staticenvtoenv[0]{\hyperlink{def-staticenvtoenv}{\textfunc{static\_env\_to\_env}}}
 
 \newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
-\newcommand\Prosemakeanonymous[3]{\hyperlink{def-makeanonymous}{obtaining} the \underlyingtype\ of #2 in the static environment #1 yields #3}
+\newcommand\Prosemakeanonymous[3]{\hyperlink{def-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
 \newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
 \newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
@@ -1099,7 +1099,7 @@
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
 \newcommand\annotatesymbolicallyevaluableexpr[0]{\hyperlink{def-annotatesymbolicallyevaluableexpr}{\textfunc{annotate\_symbolically\_evaluable\_expr}}}
 \newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{def-annotatesymbolicallyevaluableexpr}{annotating} the
-    \symbolicallyevaluable\ expression #2 in the static environment #1 yields #3}
+    \symbolicallyevaluableterm\ expression #2 in the static environment #1 yields #3}
 \newcommand\annotatesymbolicconstrainedinteger[0]{\hyperlink{def-annotatesymbolicconstrainedinteger}{\textfunc{annotate\_symbolic\_constrained\_integer}}}
 \newcommand\checkatc[0]{\hyperlink{def-checkatc}{\textfunc{check\_atc}}}
 \newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
@@ -1108,7 +1108,7 @@
 \newcommand\checkunderlyinginteger[0]{\hyperlink{def-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}}
 \newcommand\issymbolicallyevaluable[0]{\hyperlink{def-issymbolicallyevaluable}{\textfunc{is\_symbolically\_evaluable}}}
 \newcommand\checksymbolicallyevaluable[0]{\hyperlink{def-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}}
-\newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluable\ yields $\True$\ProseOrTypeError}
+\newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluableterm\ yields $\True$\ProseOrTypeError}
 \newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\textfunc{negate\_constraint}}}
 \newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\textfunc{get\_well\_constrained\_structure}}}
 \newcommand\towellconstrained[0]{\hyperlink{def-towellconstrained}{\textfunc{to\_well\_constrained}}}
@@ -1460,38 +1460,38 @@
 \newcommand\collectiontypeterm[0]{\hyperlink{collectiontypeterm}{collection type}}
 \newcommand\collectiontypesterm[0]{\hyperlink{collectiontypeterm}{collection types}}
 \newcommand\recordtypesterm[0]{\hyperlink{recordtypeterm}{record types}}
-\newcommand\unconstrainedintegertype[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
-\newcommand\unconstrainedintegertypes[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer types}}
-\newcommand\parameterizedintegertype[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
-\newcommand\parameterizedintegertypes[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer types}}
-\newcommand\wellconstrainedintegertype[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer type}}
-\newcommand\wellconstrainedintegertypes[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer types}}
-\newcommand\pendingconstrainedintegertype[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer type}}
-\newcommand\pendingconstrainedintegertypes[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer types}}
-\newcommand\structuredtype[0]{\hyperlink{def-structuredtype}{structured type}}
-\newcommand\structure[0]{\hyperlink{def-structure}{structure}}
-\newcommand\underlyingtype[0]{\hyperlink{def-underlyingtype}{underlying type}}
-\newcommand\underlyingtypes[0]{\hyperlink{def-underlyingtype}{underlying types}}
+\newcommand\unconstrainedintegertypeterm[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer type}}
+\newcommand\unconstrainedintegertypesterm[0]{\hyperlink{def-unconstrainedintegertype}{unconstrained integer types}}
+\newcommand\parameterizedintegertypeterm[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer type}}
+\newcommand\parameterizedintegertypesterm[0]{\hyperlink{def-parameterizedintegertype}{parameterized integer types}}
+\newcommand\wellconstrainedintegertypeterm[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer type}}
+\newcommand\wellconstrainedintegertypesterm[0]{\hyperlink{def-wellconstrainedintegertype}{well-constrained integer types}}
+\newcommand\pendingconstrainedintegertypeterm[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer type}}
+\newcommand\pendingconstrainedintegertypesterm[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer types}}
+\newcommand\structuredtypeterm[0]{\hyperlink{def-structuredtype}{structured type}}
+\newcommand\structureterm[0]{\hyperlink{def-structure}{structure}}
+\newcommand\underlyingtypeterm[0]{\hyperlink{def-underlyingtype}{underlying type}}
+\newcommand\underlyingtypesterm[0]{\hyperlink{def-underlyingtype}{underlying types}}
 \newcommand\symbolicdomainterm[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
-\newcommand\typesatisfies[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
-\newcommand\typesatisfy[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
-\newcommand\subtypesatisfies[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
-\newcommand\subtypesatisfy[0]{\hyperlink{def-subtypesat}{subtype-satisfy}}
-\newcommand\typeequivalent[0]{\hyperlink{def-typeequal}{type-equivalent}}
-\newcommand\bitwidthequivalent[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
-\newcommand\constrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
-\newcommand\constrainedintegers[0]{\hyperlink{def-checkconstrainedinteger}{constrained integers}}
+\newcommand\typesatisfiesterm[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
+\newcommand\typesatisfyterm[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
+\newcommand\subtypesatisfiesterm[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
+\newcommand\subtypesatisfyterm[0]{\hyperlink{def-subtypesat}{subtype-satisfy}}
+\newcommand\typeequivalentterm[0]{\hyperlink{def-typeequal}{type-equivalent}}
+\newcommand\bitwidthequivalentterm[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
+\newcommand\constrainedintegerterm[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
+\newcommand\constrainedintegersterm[0]{\hyperlink{def-checkconstrainedinteger}{constrained integers}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
-\newcommand\wellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
-\newcommand\wellconstrainedversion[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
-\newcommand\namedlowestcommonancestor[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
-\newcommand\arrayaccess[0]{\hyperlink{def-arrayaccess}{array access}}
-\newcommand\symbolicallysimplifies[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
-\newcommand\singulartype[0]{\hyperlink{def-issingular}{singular type}}
-\newcommand\singulartypes[0]{\hyperlink{def-issingular}{singular types}}
+\newcommand\wellconstrainedstructureterm[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
+\newcommand\wellconstrainedversionterm[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
+\newcommand\namedlowestcommonancestorterm[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
+\newcommand\arrayaccessterm[0]{\hyperlink{def-arrayaccess}{array access}}
+\newcommand\symbolicallysimplifiesterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
+\newcommand\singulartypeterm[0]{\hyperlink{def-issingular}{singular type}}
+\newcommand\singulartypesterm[0]{\hyperlink{def-issingular}{singular types}}
 
 \newcommand\nativevalueterm[0]{\hyperlink{def-nativevalue}{native value}}
-\newcommand\executiongraph[0]{\hyperlink{def-executiongraph}{execution graph}}
+\newcommand\executiongraphterm[0]{\hyperlink{def-executiongraph}{execution graph}}
 \newcommand\executiongraphs[0]{\hyperlink{def-executiongraph}{execution graphs}}
 \newcommand\nativevaluesterm[0]{\hyperlink{def-nativevalues}{native values}}
 \newcommand\concurrentnativevalue[0]{\hyperlink{def-concurrentnativevalue}{concurrent native value}}
@@ -1636,9 +1636,9 @@
 \newcommand\ImmutabilityTerm[0]{\hyperlink{def-term-Immutability}{immutability side effect descriptor}}
 
 \newcommand\staticallyevaluableterm[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pure[0]{\hyperlink{def-sesispure}{pure}}
-\newcommand\readonly[0]{\hyperlink{def-sesisreadonly}{read-only}}
-\newcommand\symbolicallyevaluable[0]{\hyperlink{def-symbolicallyevaluable}{symbolically evaluable}}
+\newcommand\pureterm[0]{\hyperlink{def-sesispure}{pure}}
+\newcommand\readonlyterm[0]{\hyperlink{def-sesisreadonly}{read-only}}
+\newcommand\symbolicallyevaluableterm[0]{\hyperlink{def-symbolicallyevaluable}{symbolically evaluable}}
 \newcommand\sideeffectdescriptorterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptor}}
 \newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
 \newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}

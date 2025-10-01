@@ -10,8 +10,8 @@ This chapter defines the following helper relations for operating on \nativevalu
   \item \SemanticsRuleRef{IncrPendingCalls} updates the value of the $\pendingcalls$ value in an environment by incrementing it by one;
   \item \SemanticsRuleRef{DecrPendingCalls} updates the value of the $\pendingcalls$ value in an environment by decrementing it by one;
   \item \SemanticsRuleRef{RemoveLocal} removes a local storage element from a given environment;
-  \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraph{} representing a Read Effect for a given identifier;
-  \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraph{} representing a Write Effect for a given identifier;
+  \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraphterm{} representing a Read Effect for a given identifier;
+  \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraphterm{} representing a Write Effect for a given identifier;
   \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevaluesterm{};
   \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalueterm{};
   \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalueterm{};
@@ -20,11 +20,11 @@ This chapter defines the following helper relations for operating on \nativevalu
   \item \SemanticsRuleRef{GetField} reads a given field in a \nativevalueterm{} record;
   \item \SemanticsRuleRef{SetField} updates a given field in a \nativevalueterm{} record;
   \item \SemanticsRuleRef{DeclareLocalIdentifier} updates an environment by associating an identifier with a given \nativevalueterm{}
-        and also generating an \executiongraph{} with a corresponding Write Effect;
+        and also generating an \executiongraphterm{} with a corresponding Write Effect;
   \item \SemanticsRuleRef{DeclareLocalIdentifierM} updates an environment by associating an identifier with a given \nativevalueterm{}
-        and also updating a given \executiongraph{} with a corresponding Write Effect and an $\asldata$ edge;
+        and also updating a given \executiongraphterm{} with a corresponding Write Effect and an $\asldata$ edge;
   \item \SemanticsRuleRef{DeclareLocalIdentifierMM} updates an environment by associating an identifier with a given \nativevalueterm{}
-        and also updating a given \executiongraph{} with a corresponding Write Effect and an $\aslpo$ edge.
+        and also updating a given \executiongraphterm{} with a corresponding Write Effect and an $\aslpo$ edge.
 \end{itemize}
 
 \SemanticsRuleDef{GetPendingCalls}
@@ -208,7 +208,7 @@ The relation
 \[
   \readidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
-creates an \executiongraph{} that represents the reading of the value $\vv$ into a storage element
+creates an \executiongraphterm{} that represents the reading of the value $\vv$ into a storage element
 given by the identifier $\name$.
 The result is an execution graph containing a single Read Effect,
 which denotes reading from $\name$.
@@ -239,7 +239,7 @@ The relation
 \[
   \writeidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
-creates an \executiongraph{} that represents the writing of the value $\vv$ into
+creates an \executiongraphterm{} that represents the writing of the value $\vv$ into
 the storage element given by an identifier $\name$.
 The result is an execution graph containing a single Write Effect,
 which denotes writing into $\name$.
@@ -818,7 +818,7 @@ returns the updated environment $\newenv$ with the execution graph consisting of
 \ExampleDef{Evaluating Local Declarations}
 In \listingref{semantics-levar}, evaluating \verb|var x: integer = 3;|
 binds \verb|x| to $\nvint(3)$ in the environment where \verb|x| is unbound
-as well as producing the \executiongraph{} $\WriteEffect(\vx)$.
+as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -841,7 +841,7 @@ The relation
 \]
 declares the local identifier $\vx$ in the environment $\env$, in the context
 of the value-graph pair $(\vv, \vg)$, yielding a pair consisting
-of the environment $\newenv$ and \executiongraph{} $\newg$.
+of the environment $\newenv$ and \executiongraphterm{} $\newg$.
 
 See \ExampleRef{Evaluating Local Declarations}.
 
@@ -850,7 +850,7 @@ See \ExampleRef{Evaluating Local Declarations}.
 \begin{itemize}
   \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
   \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
-  \item \Proseeqdef{$\newg$}{\executiongraph{} resulting from the ordered composition
+  \item \Proseeqdef{$\newg$}{\executiongraphterm{} resulting from the ordered composition
         of $\vg$ and $\vgone$ with the $\asldata$ edge}.
 \end{itemize}
 
@@ -878,7 +878,7 @@ The relation
 declares the local identifier $\vx$ in the environment $\env$,
 in the context of the value-graph pair $(\vv, \vg)$,
 yielding a pair consisting of an environment $\newenv$
-and an \executiongraph{} $\vgtwo$.
+and an \executiongraphterm{} $\vgtwo$.
 
 See \ExampleRef{Evaluating Local Declarations}.
 

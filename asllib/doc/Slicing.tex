@@ -162,10 +162,10 @@ are all well-typed.
           $\SliceLength(\eoffset, \elength)$;
     \item annotating the expression $\eoffset$ in $\tenv$ yields \\
           $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
-    \item annotating the \symbolicallyevaluable\ \constrainedinteger\ expression $\elength$ in $\tenv$ yields
+    \item annotating the \symbolicallyevaluableterm\ \constrainedintegerterm\ expression $\elength$ in $\tenv$ yields
     $(\elengthp, \vseslength)$\ProseOrTypeError;
-    \item checking that $\vsesoffset$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-    \item checking that $\vseslength$ is \readonly{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
+    \item checking that $\vsesoffset$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
+    \item checking that $\vseslength$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
     \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
     \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
      $\SliceLength(\eoffsetp, \elength')$;
@@ -353,18 +353,18 @@ The function
   (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})\ \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
-annotates a \symbolicallyevaluable{} integer expression $\ve$ of a constrained integer type in the \staticenvironmentterm{} $\tenv$
+annotates a \symbolicallyevaluableterm{} integer expression $\ve$ of a constrained integer type in the \staticenvironmentterm{} $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Annotating Symbolically Evaluable Constrained Integer Expressions}
 In \listingref{typing-annotatesymbolicallyevaluableexpr}, all of the symbolically evaluable
-expressions (as noted by the comments) are not constrained as their \underlyingtypes{} are
-the \unconstrainedintegertype.
+expressions (as noted by the comments) are not constrained as their \underlyingtypesterm{} are
+the \unconstrainedintegertypeterm.
 
 On the other hand, in \listingref{check-constrained-integer}
 all of the \rhsexpressions{} of assignments are both symbolically
-evaluable \underline{and} their \underlyingtypes{} are \constrainedinteger{} types,
+evaluable \underline{and} their \underlyingtypesterm{} are \constrainedintegerterm{} types,
 since they consist of \staticallyevaluableterm{} expressions (literals) and
 the parameter \verb|N|.
 
@@ -372,7 +372,7 @@ the parameter \verb|N|.
 \AllApply
 \begin{itemize}
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether $\vt$ is a symbolically \constrainedinteger{} in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vt$ is a symbolically \constrainedintegerterm{} in $\tenv$ yields $\True$\ProseOrTypeError;
   \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
 \end{itemize}
 
@@ -580,7 +580,7 @@ See \ExampleRef{Bitvector Slices} for example of well-typed bitvector slices.
 
 \ExampleDef{An Ill-typed Bitvector Slice}
 In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-typed, since the expression \\
-\verb|side_effecting()| is not \pure{}.
+\verb|side_effecting()| is not \pureterm{}.
 \ASLListing{An ill-typed bitvector slice}{ImpureBitvectorSlice}{\typingtests/TypingRule.AnnotateSlices.bad-impure.asl}
 
 \ProseParagraph

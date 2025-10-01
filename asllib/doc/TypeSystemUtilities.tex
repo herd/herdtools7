@@ -249,7 +249,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
   \item \AllApplyCase{expr}
   \begin{itemize}
     \item $\size$ is an expression for integer-sized arrays, that is, $\ArrayLengthExpr(\Ignore)$;
-    \item $\vt$ is the \unconstrainedintegertype.
+    \item $\vt$ is the \unconstrainedintegertypeterm.
   \end{itemize}
 \end{itemize}
 
@@ -699,7 +699,7 @@ The function
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a global storage element,
-to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
+to the expression $\ve$, which is assumed to be \symbolicallyevaluableterm,
 in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
 
@@ -707,7 +707,7 @@ resulting in the updated environment $\newtenv$.
 The specification in \listingref{AddGlobalImmutableExpr}
 is well-typed, since it binds \verb|w| to \verb|2|
 before annotating the global storage declaration for \verb|x|,
-which is why it is able to prove that \verb|'11'| \typesatisfies{}
+which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 \verb|bits(2)|.
 \ASLListing{Remembering global immutable expressions}{AddGlobalImmutableExpr}{\typingtests/TypingRule.AddGlobalImmutableExpr.asl}
 
@@ -734,7 +734,7 @@ The function
   \aslsep \overname{\expr}{\ve}) \aslto \overname{\staticenvs}{\newtenv}
 \]
 binds the identifier $\vx$, which is assumed to name a local storage element,
-to the expression $\ve$, which is assumed to be \symbolicallyevaluable,
+to the expression $\ve$, which is assumed to be \symbolicallyevaluableterm,
 in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
 
@@ -810,7 +810,7 @@ and an identifier $\vx$,
 yielding the updated \staticenvironmentterm{} $\newtenv$.
 More precisely, $\addimmutableexpression(\tenv, \ldk, \veopt, \vx)$
 associates an expression with the identifier $\vx$
-in the \staticenvironmentterm{} $\tenv$, if one exists in $\veopt$ and it is \symbolicallyevaluable\ with
+in the \staticenvironmentterm{} $\tenv$, if one exists in $\veopt$ and it is \symbolicallyevaluableterm\ with
 respect to the \sideeffectsetterm\ $\vsese$,
 along with the local declaration keyword $\ldk$.
 \ProseOtherwiseTypeError

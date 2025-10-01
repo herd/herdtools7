@@ -103,20 +103,20 @@ The specifications in \listingref{AnnotateCall} and \listingref{AnnotateCall2} a
 
 \ExampleDef{A Call with an Illegal Parameter Type}
 The specification in \listingref{AnnotateCall-bad} is illegal since
-the type of \verb|wid| --- \verb|integer{2,4,8}| --- does not \subtypesatisfy{}
+the type of \verb|wid| --- \verb|integer{2,4,8}| --- does not \subtypesatisfyterm{}
 the type of the parameter \verb|N| --- \verb|integer{2,4}|.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad}{\typingtests/TypingRule.AnnotateCall.bad.asl}
 
 The specification in \listingref{AnnotateCall-bad2} is illegal since
-expressions passed as parameters need to be \constrainedintegers.
+expressions passed as parameters need to be \constrainedintegersterm.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad2}{\typingtests/TypingRule.AnnotateCall.bad2.asl}
 
 The specification in \listingref{AnnotateCall-bad3} is illegal since
-expressions passed as parameters need to be \constrainedintegers.
+expressions passed as parameters need to be \constrainedintegersterm.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad3}{\typingtests/TypingRule.AnnotateCall.bad3.asl}
 
 The specification in \listingref{AnnotateCall-bad4} is illegal since
-the type of \verb|N| --- \verb|integer{N} --- does not \typesatisfy{} \verb|integer{1,2,3}|.
+the type of \verb|N| --- \verb|integer{N} --- does not \typesatisfyterm{} \verb|integer{1,2,3}|.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad4}{\typingtests/TypingRule.AnnotateCall.bad4.asl}
 
 For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
@@ -191,14 +191,14 @@ is ill-typed, since \\
 
 In \listingref{AnnotateCallActualsTyped-bad3}, the call expression \verb|plus{64}(bv1, w)|
 is ill-typed, since \\
-the type of the argument \verb|w|, which is \verb|integer{0..128}|, does not \typesatisfy{}
+the type of the argument \verb|w|, which is \verb|integer{0..128}|, does not \typesatisfyterm{}
 the type of the formal argument \verb|z| (\verb|integer{0..N}|), with \verb|N| substituted by \verb|64|.
 That is, \\
 \verb|integer{0..64}|.
 \ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad3}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad3.asl}
 
 In \listingref{AnnotateCallActualsTyped-bad4}, the call expression \verb|ones{myWid}()|
-is ill-typed, since \verb|myWid| has the \unconstrainedintegertype.
+is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad4}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad4.asl}
 
 \ProseParagraph
@@ -308,7 +308,7 @@ parameters elided, and the equivalent calls with all parameters included.
     \begin{itemize}
       \item \Proseeqdef{$\vt$}{the \head{} of $\argtypes$};
       \item applying $\getbitvectorwidth$ to $\tenv$ and $\vt$ yields $\vwidth$\ProseOrTypeError;
-      \item \Proseeqdef{$paramtype$}{the \wellconstrainedintegertype{} for the single
+      \item \Proseeqdef{$paramtype$}{the \wellconstrainedintegertypeterm{} for the single
             constraint consisting of the \exactconstraintterm{} for $\vwidth$};
       \item \Proseeqdef{$\paramsone$}{the list whose \head{} is $\params$ and \tail{} is
             the tuple consisting of $\paramtype$, $\vwidth$, and the empty list of \sideeffectdescriptorsetsterm}.
@@ -436,16 +436,16 @@ It assumes that $\funcsigparams$ and $\params$ have the same length.
 \ExampleDef{Checking that Expression Types Type-satisfy Parameters}
 In \listingref{CheckParamsTypeSat},
 annotating the call expression \verb|FlipSlice{FOUR, EIGHT}(bv)|
-requires checking that both expression \verb|FOUR| and \verb|EIGHT| are \symbolicallyevaluable{}
+requires checking that both expression \verb|FOUR| and \verb|EIGHT| are \symbolicallyevaluableterm{}
 and constrained, which they are.
 Since the parameter \verb|M| is annotated with the type \\
 \verb|integer{0..64}|,
-the typechecker checks that the type of \verb|FOUR|, which is \verb|integer{4}| \typesatisfies{}
+the typechecker checks that the type of \verb|FOUR|, which is \verb|integer{4}| \typesatisfiesterm{}
 \verb|integer{0..64}|.
 The parameter \verb|N| is not annotated with a type --- its type is
 determined to be \\
 $\TInt(\Parameterized(\texttt{N}))$ --- and there is no need to check that
-the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\Parameterized(\texttt{N}))$.
+the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TInt(\Parameterized(\texttt{N}))$.
 
 \ASLListing{Checking that expression types type-satisfy parameters}{CheckParamsTypeSat}{\typingtests/TypingRule.CheckParamsTypeSat.asl}
 
@@ -465,20 +465,20 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfies{} $\TInt(\P
           $\params$ is a non-empty list with \head\ \\
           $(\tyactual, \eactual, \vsesactual)$ and \tail\ $\paramsone$;
     \item \Prosechecksymbolicallyevaluable{$\vsesactual$};
-    \item checking that $\tyactual$ represents a \constrainedinteger{} yields $\True$\ProseOrTypeError;
+    \item checking that $\tyactual$ represents a \constrainedintegerterm{} yields $\True$\ProseOrTypeError;
     \item \OneApplies
     \begin{itemize}
       \item \AllApplyCase{parameterized}
       \begin{itemize}
-        \item $\tyactual$ is a \parameterizedintegertype{} for the parameter $\vx$, that is, \\
+        \item $\tyactual$ is a \parameterizedintegertypeterm{} for the parameter $\vx$, that is, \\
               $\langle\TInt(\Parameterized(\vx))\rangle$.
       \end{itemize}
 
       \item \AllApplyCase{other}
       \begin{itemize}
         \item $\tydeclopt$ is not $\None$, that is, $\langle\tydecl\rangle$;
-        \item $\tydecl$ is not the \parameterizedintegertype{} for the parameter $\vx$;
-        \item checking that $\tyactual$ \typesatisfies{} $\tydecl$ in $\tenv$ yields
+        \item $\tydecl$ is not the \parameterizedintegertypeterm{} for the parameter $\vx$;
+        \item checking that $\tyactual$ \typesatisfiesterm{} $\tydecl$ in $\tenv$ yields
               $\True$\ProseOrTypeError;
       \end{itemize}
     \end{itemize}
@@ -566,7 +566,7 @@ requires substituting \verb|8| for \verb|N| in the types
 
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\tty$ is a \parameterizedintegertype\ for the parameter $\name$;
+    \item $\tty$ is a \parameterizedintegertypeterm\ for the parameter $\name$;
     \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
     \item define $\newty$ as the well-constrained integer type with the single constraint for $\ve$, that is,
           $\TInt(\WellConstrained(\ConstraintExact(\ve)))$.
@@ -745,21 +745,21 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
   \item \AllApplyCase{e\_getarray}
   \begin{itemize}
-    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and index expression $\vetwo$,
+    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and index expression $\vetwo$,
           that is, $\EGetArray(\veone, \vetwo)$;
     \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
     \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
-    \item define $\newe$ as the \arrayaccess\ expression for base expression $\veonep$ and index expression $\vetwop$,
+    \item define $\newe$ as the \arrayaccessterm\ expression for base expression $\veonep$ and index expression $\vetwop$,
     that is, $\EGetArray(\veonep, \vetwop)$.
   \end{itemize}
 
   \item \AllApplyCase{e\_getenumarray}
   \begin{itemize}
-    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and an enumeration-typed index expression $\vetwo$,
+    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and an enumeration-typed index expression $\vetwo$,
           that is, $\EGetEnumArray(\veone, \vetwo)$;
     \item applying $\substexpr$ to $\substs$ and $\veone$ in $\tenv$ yields $\veonep$;
     \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
-    \item define $\newe$ as the \arrayaccess\ expression for base expression $\veonep$ and \\
+    \item define $\newe$ as the \arrayaccessterm\ expression for base expression $\veonep$ and \\
           enumeration-typed index expression $\vetwop$,
           that is, $\EGetEnumArray(\veonep, \vetwop)$.
   \end{itemize}
@@ -1111,21 +1111,21 @@ The function
   \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
-checks that the types $\argtypes$ \typesatisfy\ the types of the corresponding
+checks that the types $\argtypes$ \typesatisfyterm\ the types of the corresponding
 formal arguments $\funcsigargs$ with the parameters substituted with their corresponding
 arguments as per $\eqs$ and results in a \typingerrorterm{} otherwise.
 
 \ExampleDef{Checking that Actual Arguments Type-satisfy the Formal Arguments}
 In \listingref{RenameTyEqs}, checking that the call \verb|FlipPrefix{8}(bv, 4)| is well-typed
 requires checking that the types of the arguments --- \verb|bits(8)| and \verb|integer{4}| ---
-\typesatisfy{} the corresponding types of the formal arguments --- \verb|bits(N)| and \verb|integer{0..N}| ---
+\typesatisfyterm{} the corresponding types of the formal arguments --- \verb|bits(N)| and \verb|integer{0..N}| ---
 once the parameter \verb|N| is substituted for \verb|8|.
-That is, that \verb|bits(8)| \typesatisfies{} \verb|bits(8)| and that
-\verb|integer{4}| \typesatisfies{} \verb|integer{0..8}|.
+That is, that \verb|bits(8)| \typesatisfiesterm{} \verb|bits(8)| and that
+\verb|integer{4}| \typesatisfiesterm{} \verb|integer{0..8}|.
 Since both these checks hold, the call is indeed well-typed.
 
 In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
-\verb|integer{9}| does not \typesatisfy{} \verb|integer{0..8}|.
+\verb|integer{9}| does not \typesatisfyterm{} \verb|integer{0..8}|.
 
 \ProseParagraph
 \OneApplies
@@ -1143,7 +1143,7 @@ In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
           $\argtypesone$;
     \item applying $\renametyeqs$ to $\eqs$ and $\tydecl$ in $\tenv$
           to substitute parameter arguments in $\tydecl$ yields $\tydeclp$\ProseOrTypeError;
-    \item checking that $\tyactual$ \typesatisfies\ $\tydeclp$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item checking that $\tyactual$ \typesatisfiesterm\ $\tydeclp$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item applying $\checkargstypesat$ to $\funcsigargsone$, $\argtypesone$, \\
           and $\eqs$ in $\tenv$
           yields $\True$\ProseOrTypeError;
@@ -1631,8 +1631,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \item \AllApplyCase{simple}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields $\vsstruct$\ProseOrTypeError;
     \item both $\vtstruct$ and $\vsstruct$ are one of the following types: \\
           \booleantypesterm{}, \integertypeterm{}, \realtypeterm{}, or \stringtypeterm{};
     \item $\vb$ is $\True$.
@@ -1641,24 +1641,24 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \item \AllApplyCase{t\_enum}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlit$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlis$;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlit$;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlis$;
     \item $\vb$ is $\True$ if and only if $\vlis$ and $\vlit$ are equal.
   \end{itemize}
 
   \item \AllApplyCase{t\_array}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields an array type with element type $\vtys$;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields an array type with element type $\vtyt$;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields an array type with element type $\vtys$;
     \item $\vb$ is $\True$ if and only if $\vtyt$ and $\vtys$ type-clash.
   \end{itemize}
 
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a \tupletypeterm{} with element types $\vt_{1..k}$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a \tupletypeterm{} with element types $\vs_{1..n}$;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields a \tupletypeterm{} with element types $\vt_{1..k}$;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields a \tupletypeterm{} with element types $\vs_{1..n}$;
     \item if $n \neq k$ the rule short-circuits with $\vb=\False$;
     \item $\vb$ is $\True$ if and only if $\vt_i$ type-clashes with $\vs_i$, for all $i=1..k$.
   \end{itemize}
@@ -1666,8 +1666,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \item \AllApplyCase{otherwise\_different\_labels}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields $\vsstruct$;
     \item $\vsstruct$ and $\vtstruct$ have different AST labels;
     \item $\vb$ is $\False$;
   \end{itemize}
@@ -1675,10 +1675,10 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \item \AllApplyCase{otherwise\_structured}
   \begin{itemize}
     \item neither $\vs$ subtypes $\vt$ nor $\vt$ subtypes $\vs$;
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields $\vsstruct$;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields $\vsstruct$;
     \item $\vsstruct$ and $\vtstruct$ have the same AST label;
-    \item $\vtstruct$ (and thus $\vsstruct$) is a \structuredtype;
+    \item $\vtstruct$ (and thus $\vsstruct$) is a \structuredtypeterm;
     \item $\vb$ is $\False$;
   \end{itemize}
 \end{itemize}
@@ -1769,7 +1769,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
 \subsubsection{Comment}
-Note that if $\vt$ \subtypesatisfies{} $\vs$ then $\vt$ and $\vs$ \Prosetypeclash, but not the other
+Note that if $\vt$ \subtypesatisfiesterm{} $\vs$ then $\vt$ and $\vs$ \Prosetypeclash, but not the other
 way around.
 
 \TypingRuleDef{ExpressionList}
@@ -2213,7 +2213,7 @@ The relation
     \overname{\KleeneStar{(\nativevalue\times\XGraphs)}} {\actuals}) \;\aslrel\;
               (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
 \]
-updates the pair consisting of the environments $\env$ and \executiongraph\ $\vgone$
+updates the pair consisting of the environments $\env$ and \executiongraphterm\ $\vgone$
 by assigning the values given by $\actuals$ to the identifiers given by $\vids$,
 yielding the updated pair $(\newenv, \newg)$.
 

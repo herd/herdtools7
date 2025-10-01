@@ -58,7 +58,7 @@ The function
 typechecks a type $\tty$ in a \staticenvironmentterm{} $\tenv$,
 resulting in a \typedast\ $\newty$ and a \sideeffectsetterm\ $\vses$.
 The flag $\decl$ indicates whether $\tty$ is a type currently being declared or not,
-and makes a difference only when $\tty$ is an \enumerationtypeterm{} or a \structuredtype.
+and makes a difference only when $\tty$ is an \enumerationtypeterm{} or a \structuredtypeterm.
 \ProseOtherwiseTypeError
 
 \paragraph{Semantics:} Types are not evaluated dynamically.
@@ -127,10 +127,10 @@ The \emph{\integertypesterm{}} represent mathematical integer value.
 
 There are four kinds of integer types, and we
 use the term \integertypeterm{} to refer to them collectively:
-\emph{\unconstrainedintegertypes},
-\emph{\wellconstrainedintegertypes},
-\emph{\pendingconstrainedintegertypes},
-and \emph{\parameterizedintegertypes}.
+\emph{\unconstrainedintegertypesterm},
+\emph{\wellconstrainedintegertypesterm},
+\emph{\pendingconstrainedintegertypesterm},
+and \emph{\parameterizedintegertypesterm}.
 
 \subsection{Unconstrained Integer Types}
 \hypertarget{def-unconstrainedintegertype}{}
@@ -153,17 +153,17 @@ or a \emph{\rangeconstraintterm}, consisting of a pair of expressions like \text
 
 \ExampleDef{Well-constrained Integer Types}
 \hypertarget{def-wellconstrainedintegertype}{}
-The well-typed specification in \listingref{constrainedintegers1} shows examples of \wellconstrainedintegertypes.
+The well-typed specification in \listingref{constrainedintegers1} shows examples of \wellconstrainedintegertypesterm.
 \ASLListing{Well-typed well-constrained integer types}{constrainedintegers1}{\definitiontests/ConstrainedIntegers1.asl}
 
-The well-typed specification in \listingref{constrainedintegers2} shows examples of \wellconstrainedintegertypes{}
-and \unconstrainedintegertypes{} for \verb|config|s.
+The well-typed specification in \listingref{constrainedintegers2} shows examples of \wellconstrainedintegertypesterm{}
+and \unconstrainedintegertypesterm{} for \verb|config|s.
 \ASLListing{Well-constrained integer types and \texttt{config}s}{constrainedintegers2}{\definitiontests/ConstrainedIntegers2.asl}
 
 The specifications in \listingref{constrainedintegers-bad}
 and \listingref{constrainedintegers-bad2}
 show examples of ill-typed
-assignment between two \wellconstrainedintegertypes{}.
+assignment between two \wellconstrainedintegertypesterm{}.
 \ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad}{\definitiontests/ConstrainedIntegers.bad.asl}
 \ASLListing{Ill-typed well-constrained integer types}{constrainedintegers-bad2}{\definitiontests/ConstrainedIntegers.bad2.asl}
 
@@ -346,10 +346,10 @@ for unconstrained integers.
 
 \RequirementDef{ConstraintSymbolicallyConstrained}
 The expressions appearing in integer constraints must be both
-\symbolicallyevaluable{} and \constrainedinteger{} types.
+\symbolicallyevaluableterm{} and \constrainedintegerterm{} types.
 %
 In \listingref{annotate-constraint-unconstrained}, the constraint
-\verb|x..x+1| is ill-typed, since \texttt{x} is not \symbolicallyevaluable{}.
+\verb|x..x+1| is ill-typed, since \texttt{x} is not \symbolicallyevaluableterm{}.
 \ASLListing{Ill-typed constraint}{annotate-constraint-unconstrained}{\typingtests/TypingRule.AnnotateConstraint.bad.asl}
 
 \TypingRuleDef{TInt}
@@ -368,7 +368,7 @@ correspond to \CaseName{pending\_constrained}.
 \begin{itemize}
   \item \AllApplyCase{pending\_constrained}
     \begin{itemize}
-      \item $\tty$ is a \pendingconstrainedintegertype;
+      \item $\tty$ is a \pendingconstrainedintegertypeterm;
       \item the result is a \typingerrorterm{} (\UnexpectedType).
     \end{itemize}
   \item \AllApplyCase{well\_constrained}
@@ -386,14 +386,14 @@ correspond to \CaseName{pending\_constrained}.
 
     \item \AllApplyCase{parameterized}
     \begin{itemize}
-      \item $\tty$ is a \parameterizedintegertype\ for $\name$;
+      \item $\tty$ is a \parameterizedintegertypeterm\ for $\name$;
       \item define $\vses$ as the \sideeffectsetterm{} containing a $\Pure$ \LocalEffectTerm{} and an \ImmutabilityTerm{} with immutability $\True$.
       \item $\newty$ is the unconstrained integer type.
     \end{itemize}
 
     \item \AllApplyCase{unconstrained}
     \begin{itemize}
-      \item $\tty$ is an \unconstrainedintegertype;
+      \item $\tty$ is an \unconstrainedintegertypeterm;
       \item $\newty$ is the unconstrained integer type;
       \item define $\vses$ as the empty set.
     \end{itemize}
@@ -459,7 +459,7 @@ annotates an integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$ yi
 integer constraint $\newc$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 
-\listingref{annotate-constraint} shows examples of \wellconstrainedintegertypes{}
+\listingref{annotate-constraint} shows examples of \wellconstrainedintegertypesterm{}
 and the resulting annotated constraints in comments.
 The annotated constraints inline the constant \texttt{N} and the right-hand-side
 expressions of \texttt{let} storage elements.
@@ -735,7 +735,7 @@ In \listingref{BitvectorWidthBounds}, any number can be used instead of \verb|2^
 
 \RequirementDef{BitvectorWidthKind}
 The width of a \bitvectortypeterm{} can be either \staticallyevaluableterm{}
-or \emph{constrained}. That is, a \symbolicallyevaluable{} \constrainedinteger{}.
+or \emph{constrained}. That is, a \symbolicallyevaluableterm{} \constrainedintegerterm{}.
 
 \ExampleDef{Symbolic and Constrained Bitwidth}
 \listingref{symbolic_bitwidth} shows an example of a bitvector whose width
@@ -805,7 +805,7 @@ In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitvector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
 The specification in \listingref{typing-tbits-bad} is ill-typed, since widths need
-to be \constrainedintegers.
+to be \constrainedintegersterm.
 \ASLListing{An ill-typed Bitvector type}{typing-tbits-bad}{\typingtests/TypingRule.TBits.bad.asl}
 
 \ExampleRef{A bitvector type with bitfields} shows a well-typed \bitvectortypeterm{} with bitfields.
@@ -823,7 +823,7 @@ to be \constrainedintegers.
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
       \item $\bitfields$ is not empty;
-      \item checking that $\seswidth$ is \pure{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
+      \item checking that $\seswidth$ is \pureterm{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
       \item annotating the bitfields $\bitfields$ yields \\
             $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\LInt(\vwidth)$};
@@ -1139,8 +1139,8 @@ The length of an array cannot be modified.
 % NO_EXAMPLE
 
 \RequirementDef{ArrayLengthExpression}
-The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluable{}
-expression whose \underlyingtype{} is an \integertypeterm{} .
+The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluableterm{}
+expression whose \underlyingtypeterm{} is an \integertypeterm{} .
 
 \ExampleDef{Well-typed Array Types}
 In \listingref{typing-tarray}, all the uses of array types are well-typed.
@@ -1180,9 +1180,9 @@ array types.
 \ExampleDef{Ill-typed Array Types}
 In \listingref{typing-tarray-bad}, the array type for \verb|illegal_array1|
 is ill-typed, since the expression \verb|non_symbolically_evaluable|
-is not \symbolicallyevaluable{}.
+is not \symbolicallyevaluableterm{}.
 \ASLListing{Ill-typed array types}{typing-tarray-bad}{\typingtests/TypingRule.TArray.bad.asl}
-Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_array2| is ill-typed, since the expression \verb|non_constrained| is not a \constrainedinteger{}.
+Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_array2| is ill-typed, since the expression \verb|non_constrained| is not a \constrainedintegerterm{}.
 \ASLListing{Ill-typed array types}{typing-tarray-bad2}{\typingtests/TypingRule.TArray.bad2.asl}
 
 \ProseParagraph
@@ -1207,7 +1207,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
       correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the \symbolicallyevaluable{} \constrainedinteger{} expression $\ve$ yields\\
+      \item annotating the \symbolicallyevaluableterm{} \constrainedintegerterm{} expression $\ve$ yields\\
       $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
       the expression $\vep$ and of elements of type $\vtp$, that is,
@@ -1280,7 +1280,7 @@ enumeration labels from variable expressions.
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlabels$;
+    \item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlabels$;
     \item the result is the pair consisting of $\vx$ and $\vlabels$.
   \end{itemize}
 
@@ -1288,7 +1288,7 @@ enumeration labels from variable expressions.
   \begin{itemize}
     \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
     \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields a type that is not an \enumerationtypeterm{};
+    \item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields a type that is not an \enumerationtypeterm{};
     \item the result is $\None$.
   \end{itemize}
 \end{itemize}
@@ -1331,7 +1331,7 @@ enumeration labels from variable expressions.
 
 \identi{PKXK} \identd{YYDW}%
 \RequirementDef{SymbolicallyEvaluable}
-An expression is \symbolicallyevaluable{} if its evaluation only involves
+An expression is \symbolicallyevaluableterm{} if its evaluation only involves
 the use of immutable values.
 
 See \ExampleRef{Annotating Symbolically Evaluable Expressions}.
@@ -1345,13 +1345,13 @@ The function
   (\overname{\ty}{\vt}\times\overname{\expr}{\vep}\times\overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the expression $\ve$ in the \staticenvironmentterm{} $\tenv$ and checks that it is \symbolicallyevaluable,
+annotates the expression $\ve$ in the \staticenvironmentterm{} $\tenv$ and checks that it is \symbolicallyevaluableterm,
 yielding the type in $\vt$, the annotated expression $\vep$ and the \sideeffectsetterm{} $\vses$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Annotating Symbolically Evaluable Expressions}
 \listingref{typing-annotatesymbolicallyevaluableexpr} shows examples of
-expressions and classifies them as either \symbolicallyevaluable{} or not.
+expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 \ASLListing{Annotating symbolically evaluable Expressions}{typing-annotatesymbolicallyevaluableexpr}
 {\typingtests/TypingRule.AnnotateSymbolicallyEvaluableExpr.asl}
 
@@ -1380,20 +1380,20 @@ The function
   \checkunderlyinginteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
   \{\True\} \cup \typeerror
 \]
-returns $\True$ is $\vt$ is has the \underlyingtype{} of an \integertypeterm{}.
+returns $\True$ is $\vt$ is has the \underlyingtypeterm{} of an \integertypeterm{}.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Checking for an Underlying Integer Type}
 All of the expressions appearing on the right-hand-side of the assignments in
 \listingref{typing-annotatesymbolicallyevaluableexpr}
-have an \integertypeterm{} as their \underlyingtype{}.
-This includes the expression \verb|i - 3|, since the \underlyingtype{}
-of \verb|i| is the \unconstrainedintegertype.
+have an \integertypeterm{} as their \underlyingtypeterm{}.
+This includes the expression \verb|i - 3|, since the \underlyingtypeterm{}
+of \verb|i| is the \unconstrainedintegertypeterm.
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item determining the \underlyingtype{} of $\vt$ yields $\vtp$\ProseOrTypeError;
+  \item determining the \underlyingtypeterm{} of $\vt$ yields $\vtp$\ProseOrTypeError;
   \item checking that $\vtp$ is an \integertypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item the result is $\True$;
 \end{itemize}
@@ -1412,7 +1412,7 @@ of \verb|i| is the \unconstrainedintegertype.
 \section{Record Types\label{sec:RecordTypes}}
 \hypertarget{recordtypeterm}{}
 \identd{WGQS}%
-A record is a \structuredtype{} consisting of a list of field identifiers which denote individual storage elements.
+A record is a \structuredtypeterm{} consisting of a list of field identifiers which denote individual storage elements.
 \identr{DXWN}%
 A record type is described by specifying for each field identifier its type.
 
@@ -1452,7 +1452,7 @@ is ill-typed, since the field \verb|v| repeats.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\tty$ is a \structuredtype\ with AST label $L$;
+  \item $\tty$ is a \structuredtypeterm\ with AST label $L$;
   \item the list of fields of $\tty$ is $\fields$;
   \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
   \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
@@ -1483,7 +1483,7 @@ is ill-typed, since the field \verb|v| repeats.
 
 \section{Exception Types\label{sec:ExceptionTypes}}
 \hypertarget{exceptiontypeterm}{}
-An exception is a \structuredtype{} consisting of a list of field identifiers
+An exception is a \structuredtypeterm{} consisting of a list of field identifiers
 which denote individual storage elements.
 
 \ExampleDef{Well-typed Exception Types}
@@ -1519,7 +1519,7 @@ The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 
 \ASLListing{Collection types}{TCollection}{\typingtests/TypingRule.TCollection.asl}
 
-A collection is a \structuredtype{} consisting of a list of field identifiers
+A collection is a \structuredtypeterm{} consisting of a list of field identifiers
 which denote individual storage elements.
 
 \RequirementDef{CollectionsGlobal}
@@ -1571,7 +1571,7 @@ collection types in comments.
   \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
         \ProseOrTypeError;
   \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
-  \item checking that the \structure{} of the type $\vtp_i$ in the \staticenvironmentterm{} $\tenv$
+  \item checking that the \structureterm{} of the type $\vtp_i$ in the \staticenvironmentterm{} $\tenv$
         is a \bitvectortypeterm, for every $i$ in $1..k$, yields $\True$\ProseOrTypeError;
   \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
         corresponding to the type $\tty$) and fields $\fieldsp$;
@@ -1595,11 +1595,11 @@ collection types in comments.
 \section{Named Types\label{sec:NamedTypes}}
 Named type declarations allow declaring new types names with a given type.
 The intent is that, by default, any named type should not be assignable to or from any other named type, even
-if they coincidentally have the same \structure. Where assignment between named types is desired it is usually
+if they coincidentally have the same \structureterm. Where assignment between named types is desired it is usually
 achieved by grouping related types via a common supertype.
 
 The specification in \listingref{named-types2}, declares two unique types with the same
-\structure. Note that the two types are not related in
+\structureterm. Note that the two types are not related in
 any way and are not interchangeable. See also \TypingRuleRef{TypeSatisfaction}.
 \ASLListing{Well-typed named types}{named-types2}{\definitiontests/NamedTypes2.asl}
 
@@ -1705,7 +1705,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\tty$ is a \structuredtype\ or an \enumerationtypeterm{};
+  \item $\tty$ is a \structuredtypeterm\ or an \enumerationtypeterm{};
   \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
   of $\tty$;
   \item a \typingerrorterm{} is returned, indicating that the use of anonymous form of enumerations, record,

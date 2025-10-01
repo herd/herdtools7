@@ -1225,7 +1225,7 @@ used by them appearing as comments to their right.
 
   \item \AllApplyCase{int\_no\_constraints}
   \begin{itemize}
-    \item $\vt$ is either the unconstrained integer type or a \parameterizedintegertype{} or a \pendingconstrainedintegertype;
+    \item $\vt$ is either the unconstrained integer type or a \parameterizedintegertypeterm{} or a \pendingconstrainedintegertypeterm;
     \item define $\ids$ as the empty set.
   \end{itemize}
 
@@ -1243,7 +1243,7 @@ used by them appearing as comments to their right.
 
   \item \AllApplyCase{structured}
   \begin{itemize}
-    \item $\vt$ is a \structuredtype\ with fields $\fields$;
+    \item $\vt$ is a \structuredtypeterm\ with fields $\fields$;
     \item define $\ids$ as the union of applying $\usety$ to each field type in $\fields$.
   \end{itemize}
 
@@ -1428,13 +1428,13 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 
   \item \AllApplyCase{e\_getarray}
   \begin{itemize}
-    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and index expression $\vetwo$;
+    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 
   \item \AllApplyCase{e\_getenumarray}
   \begin{itemize}
-    \item $\ve$ is the \arrayaccess\ expression for base expression $\veone$ and enumeration-typed index expression $\vetwo$;
+    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and enumeration-typed index expression $\vetwo$;
     \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
   \end{itemize}
 

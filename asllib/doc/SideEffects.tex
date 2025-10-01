@@ -1,14 +1,14 @@
 \chapter{Side Effects\label{chap:SideEffects}}
 
 This chapter defines a static \emph{side effect analysis}.
-The analysis aims to answer which expressions are \pure{}, \readonly{}, or \symbolicallyevaluable{}.
+The analysis aims to answer which expressions are \pureterm{}, \readonlyterm{}, or \symbolicallyevaluableterm{}.
 For pure and read-only, the analysis is \emph{sound}: it proves that a \underline{sufficient condition} holds.
 
 Intuitively, a pure expression is one whose evaluation does not depend on dynamic values.
 In other words, a pure expression can be evaluated during typechecking.
 A read-only expression is one whose evaluation does not affect the evaluation of any further expressions.
 In other words, a read-only expression can be evaluated multiple times (or not at all) with no effect on the overall specification.
-A \symbolicallyevaluable{} expression is compatible with symbolic reduction and equivalence testing (see \chapref{SymbolicEquivalenceTesting}).
+A \symbolicallyevaluableterm{} expression is compatible with symbolic reduction and equivalence testing (see \chapref{SymbolicEquivalenceTesting}).
 
 \ChapterOutline
 \begin{itemize}
@@ -25,7 +25,7 @@ A \symbolicallyevaluable{} expression is compatible with symbolic reduction and 
 \section{Purity\label{sec:Purity}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-We now define configurations used to determine whether expressions are \pure{} and \readonly{} by the side effect analysis, as explained below.
+We now define configurations used to determine whether expressions are \pureterm{} and \readonlyterm{} by the side effect analysis, as explained below.
 These are known as \purities{}.
 
 \RenderType{TPurity}
@@ -35,11 +35,11 @@ These are known as \purities{}.
 \]
 }
 \begin{description}
-    \item[\RenderConstant{SE_Pure}] describes evaluation of a \pure{} construct, one that can be evaluated at type-checking.
+    \item[\RenderConstant{SE_Pure}] describes evaluation of a \pureterm{} construct, one that can be evaluated at type-checking.
 
-\item[\RenderConstant{SE_Readonly}] describes evaluation of a \readonly{} construct, one that can read mutable global storage elements but not modify them.
+\item[\RenderConstant{SE_Readonly}] describes evaluation of a \readonlyterm{} construct, one that can read mutable global storage elements but not modify them.
 
-\item[\RenderConstant{SE_Impure}] describes evaluation of a construct that is neither \pure{} nor \readonly{}.
+\item[\RenderConstant{SE_Impure}] describes evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}.
 \end{description}
 
 Formally, \purities{} are totally ordered via $\purityless$ as follows:
@@ -88,18 +88,18 @@ We now define a few helper functions over \sideeffectdescriptorsterm.
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorterm\ $\vs$ is considered \emph{\pure},
+defines whether a \sideeffectdescriptorterm\ $\vs$ is considered \emph{\pureterm},
 yielding the result in $\vb$.
-Intuitively, a \emph{\pure} \sideeffectdescriptorterm\ helps to establish that
+Intuitively, a \emph{\pureterm} \sideeffectdescriptorterm\ helps to establish that
 an expression can be evaluated during type-checking.
 
 \ExampleDef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}
-The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pure{}, \readonly{}, and \symbolicallyevaluable{}.
+The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pureterm{}, \readonlyterm{}, and \symbolicallyevaluableterm{}.
 Here, \Effect{} stands for either \LocalEffect{} or \GlobalEffect{}.
 
 \begin{center}
 \begin{tabular}{llll}
-\textbf{\sideeffectdescriptorterm{}} & \textbf{\pure{}?} & \textbf{\readonly{}?} & \textbf{\symbolicallyevaluable{}?}\\
+\textbf{\sideeffectdescriptorterm{}} & \textbf{\pureterm{}?} & \textbf{\readonlyterm{}?} & \textbf{\symbolicallyevaluableterm{}?}\\
 \hline
 $\Effect(\SEPure)$      & \True{}  & \True{}  & \True{}  \\
 $\Effect(\SEReadonly)$  & \False{} & \True{}  & \True{}  \\
@@ -111,7 +111,7 @@ $\Immutability(\False)$ & \False{} & \True{}  & \False{} \\
 
 The specification in \listingref{SideEffectIsPure} shows examples of expressions
 and statements, and their corresponding \sideeffectdescriptorsterm{}.
-Notice that the call to \verb|factorial(10)| is \readonly, even though it is recursive.
+Notice that the call to \verb|factorial(10)| is \readonlyterm, even though it is recursive.
 
 \ASLListing{Side effect descriptors and whether they are pure and read-only and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
 
@@ -135,9 +135,9 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \[
     \sideeffectisreadonly(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\readonly},
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\readonlyterm},
 yielding the result in $\vb$.
-Intuitively, a \emph{\readonly} \sideeffectdescriptorterm\ helps to establish that
+Intuitively, a \emph{\readonlyterm} \sideeffectdescriptorterm\ helps to establish that
 an expression evaluates without modifying values of storage elements.
 
 See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
@@ -168,7 +168,7 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \[
     \sideeffectissymbolicallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluable},
+defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluableterm},
 yielding the result in $\vb$.
 Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps establish that
 an expression evaluates without modifying any storage element,
@@ -278,20 +278,20 @@ The function
 \[
   \issymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
 \]
-tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \symbolicallyevaluable,
+tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \symbolicallyevaluableterm,
 yielding the result in $\vb$.
 
 See \ExampleRef{Checking Whether Expressions are Symbolically Evaluable}.
 
 \ExampleDef{Why Symbolically Evaluability Matters}
 The specification in \listingref{SESIsSymbolicallyEvaluable} is well-typed.
-Specifically, it shows how the fact that an expression is \symbolicallyevaluable{}
+Specifically, it shows how the fact that an expression is \symbolicallyevaluableterm{}
 is used to reason about the equivalence of bitwidth expressions.
 \ASLListing{Why Symbolically Evaluability Matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
-is \symbolicallyevaluable.
+is \symbolicallyevaluableterm.
 
 \FormallyParagraph
 \begin{mathpar}
@@ -309,12 +309,12 @@ The function
   \checksymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
   \{\True\} \cup \typeerror
 \]
-returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluable.
+returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluableterm.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Checking Whether Expressions are Symbolically Evaluable}
 In \listingref{CheckSymbolicallyEvaluable},
-the expression \verb|plus_mul{SEVEN, 4}(SEVEN, 4)| is \symbolicallyevaluable.
+the expression \verb|plus_mul{SEVEN, 4}(SEVEN, 4)| is \symbolicallyevaluableterm.
 This is checked in the following constructs:
 \begin{itemize}
     \item the declaration of the \verb|data| bitfield of the \verb|Data| type;
@@ -330,7 +330,7 @@ This is checked in the following constructs:
 \begin{itemize}
   \item applying $\issymbolicallyevaluable$ to $\vses$ yields $\vb$;
   \item the result is $\True$ if $\vb$ is $\True$, otherwise it is a \typingerrorterm{} indicating that the expression
-  is not \symbolicallyevaluable.
+  is not \symbolicallyevaluableterm.
 \end{itemize}
 
 \FormallyParagraph
@@ -350,19 +350,19 @@ The function
 \[
     \sesisreadonly(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
 \]
-tests whether all side effects in the set $\vses$ are \readonly{}, yielding the result in $\vb$.
+tests whether all side effects in the set $\vses$ are \readonlyterm{}, yielding the result in $\vb$.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectisreadonly$ holds for
 every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 
 \ExampleDef{Checking whether expressions are read-only}
-The specification in \listingref{SESIsReadonly} checks whether the following expressions are \readonly{}:
+The specification in \listingref{SESIsReadonly} checks whether the following expressions are \readonlyterm{}:
 \begin{itemize}
     \item \verb|y > x| inside the \assertionstatementterm;
     \item \verb|ARBITRARY : integer{1..1000} > g| inside the \assertionstatementterm,
           since \\
-          \verb|ARBITRARY| expressions are \readonly{};
+          \verb|ARBITRARY| expressions are \readonlyterm{};
     \item \verb|x| and \verb|y| in the \forstatementterm.
 \end{itemize}
 \ASLListing{Read-only expressions}{SESIsReadonly}{\typingtests/TypingRule.SESIsReadonly.asl}
@@ -370,7 +370,7 @@ The specification in \listingref{SESIsReadonly} checks whether the following exp
 The specifications in
 \listingref{SESIsReadonly-bad1} and
 \listingref{SESIsReadonly-bad2},
-are ill-typed due to expressions that are not \readonly{}
+are ill-typed due to expressions that are not \readonlyterm{}
 where read-only expressions are expected (as explained in the comments).
 \ASLListing{Non-read-only expression in assertion}{SESIsReadonly-bad1}{\typingtests/TypingRule.SESIsReadonly.bad1.asl}
 \ASLListing{Non-read-only expression in for loop bounds}{SESIsReadonly-bad2}{\typingtests/TypingRule.SESIsReadonly.bad2.asl}
@@ -390,7 +390,7 @@ The function
 \[
     \sesispure(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
 \]
-tests whether all side effects in the set $\vses$ are \pure{}, yielding the result in $\vb$.
+tests whether all side effects in the set $\vses$ are \pureterm{}, yielding the result in $\vb$.
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for

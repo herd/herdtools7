@@ -917,8 +917,8 @@ The updated environment $\newtenvp$ and annotated parameter type $\tty$ are retu
 
 \ExampleDef{Annotating Subprogram Parameters}
 In \listingref{AnnotateOneParam},
-the parameters \verb|A| and \verb|B| are annotated as \parameterizedintegertypes,
-and \verb|C| is annotated as a \wellconstrainedintegertype.
+the parameters \verb|A| and \verb|B| are annotated as \parameterizedintegertypesterm,
+and \verb|C| is annotated as a \wellconstrainedintegertypeterm.
 The specification demonstrates how \verb|A|, \verb|B|, and \verb|C| exist as local storage elements
 of \verb|parameterized|.
 \ASLListing{Annotating subprogram parameters}{AnnotateOneParam}{\typingtests/TypingRule.AnnotateOneParam.asl}
@@ -934,8 +934,8 @@ since \verb|A| is also declared as a global storage element.
   \begin{itemize}
     \item \AllApplyCase{type\_parameterized}
     \begin{itemize}
-      \item $\tyopt$ is either $\None$ or an \unconstrainedintegertype{};
-      \item $\tty$ is defined as the \parameterizedintegertype\ for the identifier $\vx$.
+      \item $\tyopt$ is either $\None$ or an \unconstrainedintegertypeterm{};
+      \item $\tty$ is defined as the \parameterizedintegertypeterm\ for the identifier $\vx$.
     \end{itemize}
 
     \item \AllApplyCase{type\_annotated}
@@ -1187,7 +1187,7 @@ in \listingref{ParametersOfTy} are as follows:
 
   \item \AllApplyCase{tint\_constrained\_precise}
     \begin{itemize}
-      \item $\tty$ is a \wellconstrainedintegertype, that is, $\TInt(\WellConstrained(\cs))$;
+      \item $\tty$ is a \wellconstrainedintegertypeterm, that is, $\TInt(\WellConstrained(\cs))$;
       \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$\ProseOrTypeError;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
@@ -1197,16 +1197,16 @@ in \listingref{ParametersOfTy} are as follows:
       \item $\tty$ meets one of the following conditions:
       \begin{itemize}
         \item $\tty$ is one of the following types: \realtypeterm, \stringtypeterm, \booleantypeterm, \arraytypeterm, \namedtypeterm;
-        \item $\tty$ is an \unconstrainedintegertype;
-        \item $\tty$ is a \wellconstrainedintegertype{} with a $\False$ precision flag, that is, $\TInt(\WellConstrained(\Ignore, \False))$;
-        \item $\tty$ is a \parameterizedintegertype;
+        \item $\tty$ is an \unconstrainedintegertypeterm;
+        \item $\tty$ is a \wellconstrainedintegertypeterm{} with a $\False$ precision flag, that is, $\TInt(\WellConstrained(\Ignore, \False))$;
+        \item $\tty$ is a \parameterizedintegertypeterm;
       \end{itemize}
       \item $\ids$ is the empty list.
     \end{itemize}
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item $\tty$ either a \structuredtype{} or an \enumerationtypeterm;
+    \item $\tty$ either a \structuredtypeterm{} or an \enumerationtypeterm;
     \item the result is a \typingerrorterm{} ($\BadSubprogramDeclaration$).
   \end{itemize}
 \end{itemize}
@@ -1269,7 +1269,7 @@ The function
 \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 extracts the list of parameters appearing in the expression $\ve$.
-It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertype{} in a function signature.
+It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertypeterm{} in a function signature.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Extracting the Parameters from Expressions}
@@ -1405,7 +1405,7 @@ The function
 \paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
 \]
 finds the list of parameters in the constraint $\vc$.
-It assumes that $\vc$ appears within a \wellconstrainedintegertype{} in a function signature.
+It assumes that $\vc$ appears within a \wellconstrainedintegertypeterm{} in a function signature.
 
 \ExampleDef{The Parameters Extracted from a Constraint}
 In \listingref{ParametersOfTy}, the list of parameters extracted from the constraint
@@ -1669,8 +1669,8 @@ checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram q
 \ExampleDef{Checking subprogram purity}
 In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as follows:
 \begin{itemize}
-  \item the side effects of the body of \verb|foo| are all \pure{};
-  \item the side effects of the body of \verb|bar| are all \readonly{};
+  \item the side effects of the body of \verb|foo| are all \pureterm{};
+  \item the side effects of the body of \verb|bar| are all \readonlyterm{};
   \item the side effects of the body of \verb|goo| are not checked; and
   \item the side effects of the body of \verb|baz| are not checked.
 \end{itemize}
@@ -1687,14 +1687,14 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
   \item \AllApplyCase{some\_readonly}
   \begin{itemize}
     \item $\vqualifier$ is $\some{\Readonly}$;
-    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonly{} yields $\True$\ProseOrTypeError;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonlyterm{} yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{some\_pure}
   \begin{itemize}
     \item $\vqualifier$ is $\some{\Pure}$;
-    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pure{} yields $\True$\ProseOrTypeError;
+    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pureterm{} yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
 \end{itemize}

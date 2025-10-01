@@ -331,7 +331,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \item \AllApplyCase{empty\_fields}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
-    \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
+    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is the empty list;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
@@ -342,7 +342,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \item \AllApplyCase{no\_super}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
-    \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
+    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
     \item $\vsuper$ is not bound to a type in $\tenv$;
@@ -352,12 +352,12 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \item \AllApplyCase{structured}
   \begin{itemize}
     \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
-    \item checking that $\tty$ \subtypesatisfies\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
+    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
     \item $\vsuper$ is bound to a type $\vt$ in $\tenv$;
-    \item checking that $\vt$ is a \structuredtype\ yields $\True$ or a \typingerrorterm{}
-          indicating that a \structuredtype\ was expected, thereby short-circuiting the entire rule;
+    \item checking that $\vt$ is a \structuredtypeterm\ yields $\True$ or a \typingerrorterm{}
+          indicating that a \structuredtypeterm\ was expected, thereby short-circuiting the entire rule;
     \item $\vt$ has AST label $L$ and fields $\fields$;
     \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
     \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;

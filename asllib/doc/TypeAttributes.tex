@@ -223,7 +223,7 @@ The predicate
   \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
   \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-tests whether the type $\tty$ is a \emph{\singulartype} in the \staticenvironmentterm{} $\tenv$,
+tests whether the type $\tty$ is a \emph{\singulartypeterm} in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
 \ProseOtherwiseTypeError
 
@@ -238,7 +238,7 @@ type C of B;
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item obtaining the \underlyingtype\ of $\tty$ in the \staticenvironmentterm{} $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\tty$ in the \staticenvironmentterm{} $\tenv$ yields $\vtone$\ProseOrTypeError;
   \item applying $\isbuiltinsingular$ to $\vtone$ yields $\vb$.
 \end{itemize}
 
@@ -274,7 +274,7 @@ type C of B;
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item obtaining the \underlyingtype\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
   \item $\vtone$ is a builtin aggregate.
 \end{itemize}
 
@@ -293,7 +293,7 @@ type C of B;
 \TypingRuleDef{StructuredType}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
-A \emph{\structuredtype} is any type that consists of a list of field
+A \emph{\structuredtypeterm} is any type that consists of a list of field
 identifiers that denote individual storage elements.
 In ASL there are three such types --- record types, collection types, and
 exception types.
@@ -302,11 +302,11 @@ The predicate
 \[
   \isstructured(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
 \]
-tests whether the type $\tty$ is a \structuredtype\ and yields the result in $\vb$.
+tests whether the type $\tty$ is a \structuredtypeterm\ and yields the result in $\vb$.
 
 \ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
-are each an example of a \structuredtype:
+are each an example of a \structuredtypeterm:
 \begin{lstlisting}
 type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
@@ -371,7 +371,7 @@ The following types are non-primitive:
     \end{itemize}
   \item \AllApplyCase{structured}
     \begin{itemize}
-    \item $\tty$ is a \structuredtype\ with fields $\fields$;
+    \item $\tty$ is a \structuredtypeterm\ with fields $\fields$;
     \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
     \end{itemize}
 \end{itemize}
@@ -460,7 +460,7 @@ The function
 \[
   \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-assigns a type to its \hypertarget{def-tstruct}{\emph{\structure}}, which is the type formed by
+assigns a type to its \hypertarget{def-tstruct}{\emph{\structureterm}}, which is the type formed by
 recursively replacing named types by their type definition in the \staticenvironmentterm{} $\tenv$.
 If a named type is not associated with a declared type in $\tenv$, a \typingerrorterm{} is returned.
 
@@ -502,7 +502,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   \end{itemize}
 \item \AllApplyCase{structured}
   \begin{itemize}
-  \item $\tty$ is a \structuredtype\ with fields $\fields$;
+  \item $\tty$ is a \structuredtypeterm\ with fields $\fields$;
   \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
   \item $\vt$ is a record, a collection or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
   \end{itemize}
@@ -562,7 +562,7 @@ The function
 \[
   \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-returns the \emph{\underlyingtype} --- $\vt$ --- of the type $\tty$ in the \staticenvironmentterm{} $\tenv$ or a \typingerrorterm{}.
+returns the \emph{\underlyingtypeterm} --- $\vt$ --- of the type $\tty$ in the \staticenvironmentterm{} $\tenv$ or a \typingerrorterm{}.
 Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
@@ -575,11 +575,11 @@ type T2 of T1;
 type T3 of (integer, T2);
 \end{lstlisting}
 
-The \underlyingtypes\ of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
+The \underlyingtypesterm\ of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
 
-The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
-\texttt{(integer, T2)}.  Notice how the \underlyingtype{} does not replace
-\texttt{T2} with its own \underlyingtype, in contrast to the \structure{} of
+The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
+\texttt{(integer, T2)}.  Notice how the \underlyingtypeterm{} does not replace
+\texttt{T2} with its own \underlyingtypeterm, in contrast to the \structureterm{} of
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
 \ProseParagraph
@@ -589,7 +589,7 @@ The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
   \begin{itemize}
     \item $\tty$ is a named type $\vx$;
     \item obtaining the type declared for $\vx$ yields $\vtone$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vtone$ is $\vt$.
+    \item the \underlyingtypeterm\ of $\vtone$ is $\vt$.
   \end{itemize}
 
   \item \AllApplyCase{non-named}
@@ -618,21 +618,21 @@ The \underlyingtype{} of \texttt{(integer, T2)} and \texttt{T3} is
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
 \TypingRuleDef{CheckConstrainedInteger}
-A type is a \emph{\constrainedinteger} if it is either a \wellconstrainedintegertype{}
-or a \parameterizedintegertype.
+A type is a \emph{\constrainedintegerterm} if it is either a \wellconstrainedintegertypeterm{}
+or a \parameterizedintegertypeterm.
 
 \hypertarget{def-checkconstrainedinteger}{}
 The function
 \[
   \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-checks whether the type $\vt$ is a \constrainedinteger{} type.
+checks whether the type $\vt$ is a \constrainedintegerterm{} type.
 If so, the result is $\True$, otherwise the result is a \typingerrorterm.
 
 \ExampleDef{Checking for Constrained Integers}
 \listingref{check-constrained-integer}
 shows examples of checking whether a type (used for the width of a bitvector type)
-is a \constrainedinteger{} type.
+is a \constrainedintegerterm{} type.
 \ASLListing{Checking for constrained integers}{check-constrained-integer}{\typingtests/TypingRule.CheckConstrainedInteger.asl}
 
 \ProseParagraph
@@ -646,7 +646,7 @@ is a \constrainedinteger{} type.
 
   \item \AllApplyCase{parameterized}
   \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertype;
+    \item $\vt$ is a \parameterizedintegertypeterm;
     \item the result is $\True$.
   \end{itemize}
 

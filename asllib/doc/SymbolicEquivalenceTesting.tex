@@ -358,7 +358,7 @@ The function
 ) \aslto
 \overname{\intconstraint}{\newc}
 \]
-\symbolicallysimplifies\ an integer constraint $\vc$, yielding the integer constraint $\newc$
+\symbolicallysimplifiesterm\ an integer constraint $\vc$, yielding the integer constraint $\newc$
 
 \ExampleDef{Symbolically Simplifying Constraints}
 The specification in \listingref{ReduceConstraint} shows examples of constraints
@@ -413,7 +413,7 @@ The function
 ) \aslto
 \overname{\KleeneStar{\intconstraint}}{\newcs}
 \]
-\symbolicallysimplifies\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
+\symbolicallysimplifiesterm\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
 
 See \ExampleRef{Symbolically Simplifying Constraints}.
 
@@ -492,7 +492,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item looking up $\vs$ in $\tenv$ for an associated immutable expression via \\
           $\lookupimmutableexpr$ yields $\bot$;
     \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item the \underlyingtypeterm\ of $\vt$ is $\ttyone$\ProseOrTypeError;
     \item $\ttyone$ is an integer type;
     \item $\ttyone$ is a well-constrained integer with the exact constraint $\ve$, that is, \\ $\TInt(\WellConstrained([\ConstraintExact(\ve)]))$;
     \item converting $\ve$ to a \symbolicexpressionterm{} yields $\vp$\ProseTerminateAs{\CannotBeTransformed}.
@@ -503,7 +503,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item $\ve$ is a variable expression with identifier $\vs$, that is, $\EVar(\vs)$;
     \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
     \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item the \underlyingtypeterm\ of $\vt$ is $\ttyone$\ProseOrTypeError;
     \item $\ttyone$ is an integer type;
     \item $\ttyone$ is not a well-constrained integer with a single exact constraint;
     \item $\vp$ is the \symbolicexpressionterm{} for the variable $\vs$, that is, $\{ \{\vs\mapsto 1\}\mapsto 1 \}$.
@@ -515,7 +515,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \item applying $\lookupimmutableexpr$ to $\tenv$ and $\vs$ yields $\bot$;
     \item looking up the constant associated with $\vs$ in $\tenv$ yields $\bot$;
     \item determining the type of $\vs$ yields $\vt$\ProseOrTypeError;
-    \item the \underlyingtype\ of $\vt$ is $\ttyone$\ProseOrTypeError;
+    \item the \underlyingtypeterm\ of $\vt$ is $\ttyone$\ProseOrTypeError;
     \item $\ttyone$ is not an integer type;
     \item the result is $\CannotBeTransformed$.
   \end{itemize}
@@ -1088,9 +1088,9 @@ See \ExampleRef{Expression Equivalence}.
 
   \item \AllApplyCase{e\_getarray}
   \begin{itemize}
-    \item $\veone$ is an \arrayaccess\ expression with array expression $\veoneone$ and position expression $\veonetwo$,
+    \item $\veone$ is an \arrayaccessterm\ expression with array expression $\veoneone$ and position expression $\veonetwo$,
           that is, $\EGetArray(\veoneone, \veonetwo)$;
-    \item $\vetwo$ is an \arrayaccess\ expression with array expression $\vetwoone$ and position expression $\vetwotwo$,
+    \item $\vetwo$ is an \arrayaccessterm\ expression with array expression $\vetwoone$ and position expression $\vetwotwo$,
           that is, $\EGetArray(\vetwoone, \vetwotwo)$;
     \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbone$\ProseOrTypeError;
     \item testing whether $\veonetwo$ is equivalent to $\vetwotwo$ yields $\vbtwo$\ProseOrTypeError;
@@ -1448,8 +1448,8 @@ of \verb|Foo|.
 
   \item \AllApplyCase{tint\_parameterized}
   \begin{itemize}
-    \item $\vtone$ is the \parameterizedintegertype\  with identifier $\vione$, that is, \\ $\TInt(\Parameterized(\vione))$;
-    \item $\vttwo$ is the \parameterizedintegertype\ with identifier $\vitwo$, that is, \\ $\TInt(\Parameterized(\vitwo))$;
+    \item $\vtone$ is the \parameterizedintegertypeterm\  with identifier $\vione$, that is, \\ $\TInt(\Parameterized(\vione))$;
+    \item $\vttwo$ is the \parameterizedintegertypeterm\ with identifier $\vitwo$, that is, \\ $\TInt(\Parameterized(\vitwo))$;
     \item $\vb$ is $\True$ if and only if $\vione$ is equal to $\vitwo$.
   \end{itemize}
 
@@ -1495,8 +1495,8 @@ of \verb|Foo|.
   \item \AllApplyCase{tstructured}
   \begin{itemize}
     \item $L$ is either $\TRecord$ or $\TException$;
-    \item $\vtone$ is a \structuredtype\ with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
-    \item $\vttwo$ is a \structuredtype\ with list of fields $\vfieldstwo$, that is $L(\vfieldstwo)$;
+    \item $\vtone$ is a \structuredtypeterm\ with list of fields $\vfieldsone$, that is $L(\vfieldsone)$;
+    \item $\vttwo$ is a \structuredtypeterm\ with list of fields $\vfieldstwo$, that is $L(\vfieldstwo)$;
     \item checking whether the set of field names in $\vfieldsone$ is equal to the set of field names in $\vfieldstwo$
           yields $\True$ or $\False$, which short-circuits the entire rule;
     \item for each field $\vf$ in the set of fields of $\vfieldsone$, testing whether the type associated with
