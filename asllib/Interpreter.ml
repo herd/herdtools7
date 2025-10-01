@@ -77,6 +77,7 @@ module type Config = sig
   val log_nondet_choice : bool
   val display_call_stack_on_error : bool
   val track_symbolic_path : bool
+  val bit_clear_optimisation : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -596,14 +597,16 @@ module Make (B : Backend.S) (C : Config) = struct
         E_Cond (e1, e2, true_at ~loc:e)
         |> add_pos_from e |> eval_expr env |: SemanticsRule.BinopImpl
     (* End *)
-    (* Begin EvalBinop *)
-    | E_Binop (`AND, e1, { desc = E_Unop (NOT, e2) }) ->
+    | E_Binop (`AND, e1, { desc = E_Unop (NOT, e2) })
+      when C.bit_clear_optimisation ->
+        (* Internal usage of BIC operator *)
         let op = `BIC in
         let*^ m1, env1 = eval_expr env e1 in
         let*^ m2, new_env = eval_expr env1 e2 in
         let* v1 = m1 and* v2 = m2 in
         let* v = B.binop op v1 v2 in
-        return_normal (v, new_env) |: SemanticsRule.Binop
+        return_normal (v, new_env)
+    (* Begin EvalBinop *)
     | E_Binop (op, e1, e2) ->
         let*^ m1, env1 = eval_expr env e1 in
         let*^ m2, new_env = eval_expr env1 e2 in
