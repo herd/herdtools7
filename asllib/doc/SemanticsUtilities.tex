@@ -431,7 +431,7 @@ The slice \verb|42+:0| has maximum position 42.
 \hypertarget{def-readfrombitvector}{}
 The relation
 \[
-  \readfrombitvector(\overname{\nativevalue}{\vv} \aslsep \overname{(\tint\times\tint)^*}{\slices}) \;\aslrel\;
+  \readfrombitvector(\overname{\nativevalue}{\vv} \aslsep \overname{\KleeneStar{(\tint\times\tint)}}{\slices}) \;\aslrel\;
   \overname{\tbitvector}{\vnew} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,

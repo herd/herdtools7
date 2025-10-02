@@ -3,15 +3,11 @@ open AST
 open AST.AttributeKey
 
 let check_definition_name name =
-let () = assert (String.length name > 0) in
-let id_regexp = Str.regexp "^[A-Za-z_']+$" in
-if not (Str.string_match id_regexp name 0) then
-    let msg =
-    Format.sprintf
-        "illegal element-defining identifier: %s"
-        name
-    in
-    raise (SpecError msg)
+   let () = assert (String.length name > 0) in
+   let id_regexp = Str.regexp "^[A-Za-z_']+$" in
+   if not (Str.string_match id_regexp name 0) then
+     let msg = Format.sprintf "illegal element-defining identifier: %s" name in
+     raise (SpecError msg)
 %}
 
 %type <AST.t> spec

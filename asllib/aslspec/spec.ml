@@ -93,7 +93,7 @@ module Layout = struct
         Horizontal
           [ default_for_type_term from_term; default_for_type_term to_term ]
 
-  let horizontal_for_list layout terms =
+  let horizontal_if_unspecified layout terms =
     match layout with
     | Horizontal _ | Vertical _ -> layout
     | _ -> Horizontal (List.init (List.length terms) (fun _ -> Unspecified))

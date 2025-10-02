@@ -16,8 +16,8 @@ typedef empty_set
     math_macro = \emptyset,
 };
 
-constant True { prose_description = "true", math_macro = \True };
-constant False { prose_description = "false", math_macro = \False };
+constant True { "true", math_macro = \True };
+constant False { "false", math_macro = \False };
 
 typedef Bool
 {  "Boolean",
@@ -31,6 +31,11 @@ typedef Bit
 typedef N
 {  "natural number",
     math_macro = \N,
+};
+
+typedef N_pos
+{  "positive natural number",
+    math_macro = \Npos,
 };
 
 typedef Z
@@ -81,7 +86,7 @@ typedef Sign { "sign" } =
     constants_set(negative_sign, positive_sign, equal_sign)
 ;
 typedef Q_nonzero { "non-zero rational", math_macro = \Qnonzero };
-typedef unitary_monomial { "unitary monomial" } = partial Identifier -> list1(N);
+typedef unitary_monomial { "unitary monomial" } = partial Identifier -> N_pos;
 typedef polynomial { "polynomial" } = partial unitary_monomial -> Q_nonzero;
 typedef monomial { "monomial" } = (exponents: unitary_monomial, factor:Q);
 render symbolic_expressions = polynomial(-), unitary_monomial(-),  monomial(-);
@@ -1049,12 +1054,12 @@ typedef Nodes
 
 typedef XGraphs
 {
-    prose_description = "\executiongraphterm{}",
+    "\executiongraphterm{}",
     math_macro = \XGraphs,
 } =
     (vertices: powerset(Nodes), edges: powerset((source: Nodes, label: Labels, target: Nodes)), output_nodes: powerset(Nodes))
     {
-        prose_description = "\executiongraphterm{} with vertices {vertices}, labeled edges {edges}, and output nodes {output_nodes}",
+        "\executiongraphterm{} with vertices {vertices}, labeled edges {edges}, and output nodes {output_nodes}",
     }
 ;
 
@@ -1079,15 +1084,14 @@ ast symdom_or_top { "symbolic integer set" } =
 render symbolic_domains = symdom(-), symdom_or_top(-);
 
 constant Over { "overapproximation" };
-constant Under { "overapproximation" };
+constant Under { "underapproximation" };
 typedef approximation_direction { "approximation direction" } =
     constants_set(Over, Under)
-    { "approximation direction" }
 ;
 
 constant CannotOverapproximate { "cannot overapproximate" };
 
-constant CannotUnderapproximate { "cannot overapproximate" };
+constant CannotUnderapproximate { "cannot underapproximate" };
 
 typedef ty_or_opt { "type or optional type" } =
     | (t:ty)
@@ -1182,7 +1186,7 @@ typedef value_read_from { "value-reading effect" } =
 
 typedef abstract_configuration
 {
-    "\Proseabstractconfiguration{}",
+    "\hyperlink{type-abstractconfiguration}{abstract configuration}",
     math_macro = \AbsConfig
 } =
     | Abs_Continuing
@@ -1190,7 +1194,7 @@ typedef abstract_configuration
     | Abs_Returning
     { "abstract returning configuration" }
     | Abs_Abnormal
-    { "abstract normal configuration" }
+    { "abstract abnormal configuration" }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////

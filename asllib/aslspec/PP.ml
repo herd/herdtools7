@@ -5,9 +5,9 @@ open AST
 open SpecParser
 
 let tok_str = TokenStrings.string_of_token
-let pp_comma fmt () = fprintf fmt ",@ "
-let pp_double_newline fmt () = fprintf fmt "\n@ "
-let pp_comma_list pp_elt fmt = pp_print_list ~pp_sep:pp_comma pp_elt fmt
+
+let pp_comma_list pp_elt fmt =
+  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",@ ") pp_elt fmt
 
 let pp_sep_list ~sep pp_elem elements =
   Format.pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt sep) pp_elem elements
@@ -36,7 +36,7 @@ let pp_attribute_key_values fmt attributes =
     fprintf fmt "{@[<v>@;<0 2>%a@,@]}"
       (fun fmt attrs ->
         pp_sep_list ~sep:",@,"
-          (fun fmt attr -> fprintf fmt "%a" pp_attribute_key_value attr)
+          (fun fmt attr -> pp_attribute_key_value fmt attr)
           fmt attrs)
       attributes
 
@@ -72,27 +72,26 @@ and pp_named_type_term fmt (name, term) =
 and pp_opt_named_type_term fmt (name_opt, term) =
   match name_opt with
   | Some name -> pp_named_type_term fmt (name, term)
-  | None -> fprintf fmt "%a" pp_type_term term
+  | None -> pp_type_term fmt term
 
 and pp_named_type_terms fmt named_terms =
-  (pp_sep_list ~sep:", " pp_named_type_term) fmt named_terms
+  pp_sep_list ~sep:", " pp_named_type_term fmt named_terms
 
 and pp_opt_named_type_terms fmt opt_named_terms =
-  (pp_sep_list ~sep:", " pp_opt_named_type_term) fmt opt_named_terms
+  pp_sep_list ~sep:", " pp_opt_named_type_term fmt opt_named_terms
 
 let pp_type_term_with_attributes fmt ({ TypeVariant.term } as variant) =
   fprintf fmt "%a@.%a" pp_type_term term pp_attribute_key_values
     (TypeVariant.attributes_to_list variant)
 
 let pp_variants_with_attributes fmt variants =
-  (pp_sep_list ~sep:" @,| " pp_type_term_with_attributes) fmt variants
+  pp_sep_list ~sep:" @,| " pp_type_term_with_attributes fmt variants
 
-let pp_variants fmt variants =
-  (pp_sep_list ~sep:" | " pp_type_term) fmt variants
+let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
 
 let pp_relation_definition fmt ({ Relation.name; input; output } as relation) =
   let module Rel = Relation in
-  fprintf fmt "%s %s(%a) -> %a@.%a;" (tok_str RELATION) name
+  fprintf fmt "@[<v>%s %s(%a) -> %a@,%a@];" (tok_str RELATION) name
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
     input pp_variants output pp_attribute_key_values
     (Rel.attributes_to_list relation)
@@ -132,4 +131,4 @@ let pp_elem fmt = function
   | Elem_Render def -> pp_render_definition fmt def
 
 let pp_spec fmt spec =
-  fprintf fmt "@[<v>%a@]" (pp_sep_list ~sep:"\n\n" pp_elem) spec
+  fprintf fmt "@[<v>%a@]" (pp_sep_list ~sep:"@,@," pp_elem) spec
