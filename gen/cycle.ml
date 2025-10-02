@@ -565,6 +565,7 @@ module CoSt = struct
 
   let get_check_value st = st.check_value
 
+  let set_check_fault st = {st with check_fault = true }
 
   (* read the check_fault flag, and reset/clean it *)
   let read_and_unset_check_fault st =
@@ -579,12 +580,14 @@ module CoSt = struct
   let fault_update st =
     let check_fault, st = read_and_unset_check_fault st in
     let pte_val = get_pte_value st in
-    let fault =
-      if check_fault then
-        if do_no_fault then None
-        else if do_kvm then label_pte_fault pte_val
-        else None
-      else None in
+    let fault = match () with
+    | _ when (not check_fault || do_no_fault) -> None
+      (* Need to check fault *)
+    | _ when do_kvm -> label_pte_fault pte_val
+      (* In variants `memtag` and `morello`, the cycles are constructed such that
+         no fault occurs *)
+    | _ when do_memtag || do_morello -> Some ((Label.next_label "L"), false)
+    |_ -> None in
     fault, st
 
   let set_tcell st e = match e.bank with
@@ -876,11 +879,12 @@ let set_same_loc st n0 =
       |(Ord|Tag|CapaTag|CapaSeal|VecReg _|Pair|Instr),Some W -> true
       |_ -> false ) ns
 
-  let exist_pte_value_write ns =
+  let exist_fault_related_write ns =
       List.exists
       ( fun n -> match n.evt.bank,n.evt.dir with
-      |Pte,Some W -> true
+      |(Pte|Tag|CapaTag|CapaSeal),Some W -> true
       |_ -> false ) ns
+
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
@@ -955,7 +959,7 @@ let set_same_loc st n0 =
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
             | Tag|CapaTag|CapaSeal ->
-              let st = CoSt.next_co st bank in
+              let st = CoSt.next_co st bank |> CoSt.set_check_fault in
               let v = CoSt.get_co st bank in
               n.evt <- { n.evt with v = v; check_value; } ;
               let e,st = CoSt.set_tcell st n.evt in
@@ -1038,7 +1042,7 @@ let set_same_loc st n0 =
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
               let check_value = exist_plain_value_write ns in
-              let check_fault = exist_pte_value_write ns in
+              let check_fault = exist_fault_related_write ns in
               let init_st = CoSt.create i sz pte_val check_value check_fault in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               let env = if do_kvm then (Code.as_data loc,Code.value_of_int k)::env else env in
@@ -1160,7 +1164,7 @@ let do_set_read_v init =
         let st =
           match bank with
           | Tag|CapaTag|CapaSeal ->
-             CoSt.set_co st bank (Code.value_to_int n.evt.v)
+             CoSt.set_co st bank (Code.value_to_int n.evt.v) |> CoSt.set_check_fault
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
                memory access to a non-instruction value *)
@@ -1185,7 +1189,7 @@ let do_set_read_v init =
     let sz = get_wide_list ns in
     let pte_val = pte_val_init n.evt.loc in
     let check_value = exist_plain_value_write ns in
-    let check_fault = exist_pte_value_write ns in
+    let check_fault = exist_fault_related_write ns in
     let init_st = CoSt.create init sz pte_val check_value check_fault in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
