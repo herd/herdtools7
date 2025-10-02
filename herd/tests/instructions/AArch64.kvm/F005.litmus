@@ -1,0 +1,10 @@
+AArch64 F005
+EL0=P0
+{
+0:X0=0;
+}
+  P0           | P0.F           ;
+ ADD W0,W0,#1  | ADD W0,W0,#1   ;
+ SVC #0        | ERET           ;
+ ADD W0,W0,#1  |                ;
+forall 0:X0=3
