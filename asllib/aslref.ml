@@ -227,7 +227,7 @@ let parse_args () =
     if ASTUtils.list_is_empty args.files && Option.is_none args.opn then
       let () =
         Printf.eprintf
-          "No files supplied! Run `aslref --help` for information on usage."
+          "No files supplied! Run `aslref --help` for information on usage.\n"
       in
       raise (Exit 1)
   in
