@@ -45,11 +45,14 @@ catdep (* This option tells that the cat file computes dependencies *)
 
 include "aarch64util.cat"
 
-(* Local write or MMU Fault successor *)
-let lwfs =
+(* Local write successor *)
+let lws =
  [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
- | [Exp & M]; (po & same-loc); [MMU & FAULT]
  | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
+
+(* Local MMU Fault successor *)
+let lfs =
+ [Exp & M]; (po & same-loc); [MMU & FAULT]
 
 (* Local read successor *)
 let lrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
