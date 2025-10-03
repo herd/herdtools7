@@ -1,0 +1,13 @@
+AArch64 F007
+EL0=P0
+{
+int x;
+0:X1=PTE(x);
+}
+  P0          |  P0.F          ;
+ MOV W2,#1    | ADD W2,W2,#1   ;
+ LDR X0,[X1]  | MRS X3,ELR_EL1 ;
+ ADD W2,W2,#1 | ADD X3,X3,#4   ;
+              | MSR ELR_EL1,X3 ;
+              | ERET           ;
+forall 0:X2=3;
