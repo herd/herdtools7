@@ -38,18 +38,19 @@
   (:parser Parser.mly)
   (:msg parser_errors.messages))
  (action
-  (with-stdout-to
-   %{target}
-   (run
-    menhir
-    --external-tokens
-    Tokens
-    %{tokens}
-    %{parser}
-    --base
-    %{parser}
-    --compile-errors
-    %{msg}))))
+  (ignore-stderr
+   (with-stdout-to
+    %{target}
+    (run
+     menhir
+     --external-tokens
+     Tokens
+     %{tokens}
+     %{parser}
+     --base
+     %{parser}
+     --compile-errors
+     %{msg})))))
 
 (data_only_dirs acl2)
 
