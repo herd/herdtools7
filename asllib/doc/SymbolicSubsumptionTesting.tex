@@ -28,7 +28,7 @@ $\{\nvint(1), \nvint(2), \nvint(3)\}$ in every dynamic environment, which is a s
 the dynamic domain of \verb|integer{1,2}|, which is $\{\nvint(1), \nvint(2)\}$ in every dynamic environment.
 
 Since dynamic domains are potentially infinite, this requires \emph{symbolic reasoning}.
-Furthermore, since any (\symbolicallyevaluable{}) expressions may appear inside integer and bitvector
+Furthermore, since any (\symbolicallyevaluableterm{}) expressions may appear inside integer and bitvector
 types, domain subset testing is undecidable.
 We therefore approximate domain subset testing \emph{conservatively} via the predicate $\symdomsubsettest(\tenv, \vt, \vs)$.
 
@@ -310,7 +310,7 @@ The function
   \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdomortop}{\vd}
 \]
 transforms a type $\vt$ in a \staticenvironmentterm{} $\tenv$ into a symbolic domain $\vd$.
-It assumes its input type has an \underlyingtype{} which is an integer.
+It assumes its input type has an \underlyingtypeterm{} which is an integer.
 
 \ExampleDef{The Symbolic Domain of a Type}
 In \listingref{SymdomOfConstraint}, the \symbolicdomainterm{} for the type
@@ -338,7 +338,7 @@ is
 
   \item \AllApplyCase{int\_parameterized}
   \begin{itemize}
-    \item $\vt$ is the \parameterizedintegertype\ for the identifier $\id$;
+    \item $\vt$ is the \parameterizedintegertypeterm\ for the identifier $\id$;
     \item define $\vd$ as the singleton list consisting of the
           symbolic constrained integer domain with a single constraint for the variable expression for $\id$,
           that is, \\ $\ConstrainedDom(\ConstraintExact(\EVar(\id)))$.
@@ -508,7 +508,7 @@ The function
   \overname{\expr}{\ve}
 ) \aslto \overname{\Z}{n} \cup \{\Top\}
 \]
-\symbolicallysimplifies\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
+\symbolicallysimplifiesterm\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
 the result of the simplification is not an integer.
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
@@ -596,17 +596,14 @@ is a subset of the \symbolicdomainterm{} for \verb|N*2| also yields $\True$.
 In contrast, testing whether the \symbolicdomainterm{} for \verb|5..N|
 is a subset of the \symbolicdomainterm{} for \verb|N*2| yields $\False$.
 
-\hypertarget{def-Under}{}
-\hypertarget{def-Over}{}
-\hypertarget{def-cannotoverapproximate}{}
-\hypertarget{def-cannotunderapproximate}{}
 \hypertarget{def-approximationdirectionterm}{}
-In the following rules, we use the symbol $\Over$ to stand for \emph{overapproximation}
-and the symbol $\Under$ to stand for \emph{underapproximation}.
+In the following rules, we use the symbol \RenderConstant{Over} to stand for \emph{overapproximation},
+the symbol \RenderConstant{Under} to stand for \emph{underapproximation},
+and the type \RenderType{approximation_direction}.
 We refer such a symbol as an \approximationdirectionterm.
-We also use the symbol $\CannotOverapproximate$ to mean that a construct
+We also use the symbol \RenderConstant{CannotOverapproximate} to mean that a construct
 (like an expression or a constraint) cannot be precisely overapproximated,
-and $\CannotUnderapproximate$ to mean that a construct cannot be precisely
+and \RenderConstant{CannotUnderapproximate} to mean that a construct cannot be precisely
 underapproximated.
 
 \ProseParagraph
@@ -947,8 +944,8 @@ The function
 \[
 \makeinterval(
   \overname{\{\Over, \Under\}}{\vapprox} \aslsep
-  \overname{\vzone}{\Z} \aslsep
-  \overname{\vztwo}{\Z}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
+  \overname{\Z}{\vzone} \aslsep
+  \overname{\Z}{\vztwo}) \aslto \overname{\powfin{\Z} \cup \{ \emptyset, \CannotOverapproximate \}}{\vs}
 \]
 returns the interval between the integers $\vzone$ and $\vztwo$,
 or an approximation based on $\vapprox$.
@@ -1145,7 +1142,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 \ExampleDef{Approximating Expressions}
 The specification in \listingref{ApproxExpr} is well-typed,
 showing how expressions are overapproximated and underapproximated
-for the \subtypesatisfies{} check between \verb|bits(M)| and \verb|bits(N)|,
+for the \subtypesatisfiesterm{} check between \verb|bits(M)| and \verb|bits(N)|,
 needed to annotate the expression \verb|x as bits(N)|.
 \ASLListing{Approximating expressions}{ApproxExpr}{\typingtests/TypingRule.ApproxExpr.asl}
 
@@ -1342,7 +1339,7 @@ $\plf$.
 \ExampleDef{Approximating Binary Expressions Over Constraint Lists}
 The specification in \listingref{ApproxConstraintBinop} is well-typed.
 Typechecking the specification involves checking that the type of
-the expression \verb|(x :: x)| \subtypesatisfies{} \verb|bits(2 * N)|.
+the expression \verb|(x :: x)| \subtypesatisfiesterm{} \verb|bits(2 * N)|.
 This in turn requires:
 \begin{itemize}
 \item overapproximating \verb|2*N| by applying $\approxconstraintbinop$
@@ -1435,7 +1432,7 @@ based on the \approximationdirectionterm\ $\vapprox$.
 
 \ExampleDef{Approximating Types}
 The specification in \listingref{ApproxExpr} is well-typed.
-In order to test whether \verb|bits(M)| --- the type of \verb|x| --- \subtypesatisfies{}
+In order to test whether \verb|bits(M)| --- the type of \verb|x| --- \subtypesatisfiesterm{}
 \verb|bits(N)|, the typechecker overapproximates \verb|M|.
 This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8}|.
 
@@ -1451,13 +1448,13 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 
   \item \AllApplyCase{int\_wellconstrained}
   \begin{itemize}
-    \item $\vt$ is a \wellconstrainedintegertype\ with the list of integer constraints $\cs$;
+    \item $\vt$ is a \wellconstrainedintegertypeterm\ with the list of integer constraints $\cs$;
     \item \Proseapproxconstraints{$\tenv$}{$\vapprox$}{$\cs$}{\\ $\vs$}\ProseTerminateAs{\CannotOverapproximate}.
   \end{itemize}
 
   \item \AllApplyCase{other}
   \begin{itemize}
-    \item $\vt$ is neither a \namedtypeterm\ nor a \wellconstrainedintegertype;
+    \item $\vt$ is neither a \namedtypeterm\ nor a \wellconstrainedintegertypeterm;
     \item applying $\approxbottomtop$ to $\vapprox$ yields $\vs$.
   \end{itemize}
 \end{itemize}

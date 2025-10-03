@@ -216,7 +216,7 @@ with the type inferred type \texttt{integer{3}}.
 \begin{mathpar}
 \inferrule{
   \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checknoprecisionloss{\tty} \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
@@ -228,7 +228,7 @@ with the type inferred type \texttt{integer{3}}.
 
 \TypingRuleDef{CheckIsNotCollection}%
 \hypertarget{def-checkisnotcollection}{}
-The helper function
+The function
 \[
   \checkisnotcollection(\overname{\staticenvs}{\tenv} \aslsep
   \overname{\ty}{\vt})
@@ -334,7 +334,7 @@ to the evaluation of \texttt{3} in $\env$.
 \AllApply
 \begin{itemize}
   \item $\ldi$ denotes a tuple of identifiers $\vids_{1..k}$, that is, $\LDITuple(\vids_{1..k})$;
-  \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
   \item determining whether $\vtp$ is a \tupletypeterm{} yields $\True$\ProseOrTypeError;
   \item determining whether the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
   \item declaring the identifiers in $\vids$ in the \staticenvironmentterm{} $\tenv$ from right to left with their corresponding
@@ -422,7 +422,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item both $\vids$ and $\liv$ are empty lists;
-    \item \Proseeqdef{$\vg$}{the empty \executiongraph};
+    \item \Proseeqdef{$\vg$}{the empty \executiongraphterm};
     \item \Proseeqdef{$\newenv$}{$\env$}.
   \end{itemize}
 

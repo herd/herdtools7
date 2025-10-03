@@ -106,9 +106,9 @@ module Make (S : SPEC_VALUE) = struct
     let left = if large then {|\left|} else "" in
     let right = if large then {|\right|} else "" in
     match parenthesis with
-    | Parens -> fprintf fmt {|%s(%a%s)|} left pp_elem elem right
-    | Braces -> fprintf fmt {|%s\{%a%s\}|} left pp_elem elem right
-    | Brackets -> fprintf fmt {|%s[%a%s]|} left pp_elem elem right
+    | Parens -> fprintf fmt "%s(%a%s)" left pp_elem elem right
+    | Braces -> fprintf fmt "%s{%a%s}" left pp_elem elem right
+    | Brackets -> fprintf fmt "%s[%a%s]" left pp_elem elem right
 
   (** Renders an instance of the constant [name] in a term. *)
   let pp_constant_instance fmt name =
@@ -123,12 +123,12 @@ module Make (S : SPEC_VALUE) = struct
       {|\BeginDefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|}
       name hyperlink_target macro
 
-  (** [pp_latex_array fmt rows] renders a table of elements using a LaTeX array
-      environment. The elements are assumed to be organized by the (top-level)
-      list [rows] representing the table rows. Each (second-level) list
-      represents a column where the elements are formatting functions invoked
-      with [fmt]. *)
-  let pp_latex_array fmt rows =
+  (** [pp_latex_array_rows fmt rows] renders a table of elements using a LaTeX
+      array environment. The elements are assumed to be organized by the
+      (top-level) list [rows] representing the table rows. Each (second-level)
+      list represents a column where the elements are formatting functions
+      invoked with [fmt]. *)
+  let pp_latex_array_rows fmt rows =
     let () = assert (not (Utils.list_is_empty rows)) in
     let num_columns = List.length (List.hd rows) in
     let rows_argument = String.init num_columns (fun _ -> 'l') in
@@ -142,6 +142,31 @@ module Make (S : SPEC_VALUE) = struct
           if row_index < num_rows - 1 then fprintf fmt {|\\@.|}
           else fprintf fmt {|@.|})
         rows
+    in
+    let () = fprintf fmt {|\end{array}|} in
+    ()
+
+  let pp_latex_array alignment fmt pp_funs =
+    let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
+    let num_columns = String.length alignment in
+    let () = assert (List.length pp_funs mod num_columns = 0) in
+    let () = fprintf fmt {|\begin{array}{%s}@.|} alignment in
+    let () =
+      List.iteri
+        (fun cell_index pp_fun ->
+          let () = pp_fun fmt in
+          let () =
+            if cell_index mod num_columns <> 0 then fprintf fmt {| & |} else ()
+          in
+          let () =
+            if
+              cell_index mod num_columns = 0
+              && cell_index < List.length pp_funs - 1
+            then fprintf fmt {|\\@.|}
+            else ()
+          in
+          ())
+        pp_funs
     in
     let () = fprintf fmt {|\end{array}|} in
     ()
@@ -194,7 +219,9 @@ module Make (S : SPEC_VALUE) = struct
              (PP.pp_sep_list ~sep:", " pp_constant_instance))
           constant_names
     | Function { from_type; to_type; total } -> (
-        let layout = Layout.horizontal_for_list layout [ from_type; to_type ] in
+        let layout =
+          Layout.horizontal_if_unspecified layout [ from_type; to_type ]
+        in
         let arrow_symbol = if total then {|\rightarrow|} else {|\partialto|} in
         let layout_list =
           match layout with
@@ -209,9 +236,13 @@ module Make (S : SPEC_VALUE) = struct
               (from_type, input_layout) arrow_symbol pp_opt_named_type_term
               (to_type, output_layout)
         | Vertical _ ->
-            fprintf fmt {|\begin{array}{c}@.%a %s\\@.%a@.\end{array}@.|}
-              pp_opt_named_type_term (from_type, input_layout) arrow_symbol
-              pp_opt_named_type_term (to_type, output_layout)
+            pp_latex_array "c" fmt
+              [
+                (fun fmt ->
+                  pp_opt_named_type_term fmt (from_type, input_layout));
+                (fun fmt -> pp_print_string fmt arrow_symbol);
+                (fun fmt -> pp_opt_named_type_term fmt (to_type, output_layout));
+              ]
         | Unspecified -> assert false)
 
   and pp_named_type_term fmt ((name, term), layout) =
@@ -224,7 +255,7 @@ module Make (S : SPEC_VALUE) = struct
     | Some name -> pp_named_type_term fmt ((name, term), layout)
 
   and pp_opt_named_type_terms fmt (opt_type_terms, layout) =
-    let layout = Layout.horizontal_for_list layout opt_type_terms in
+    let layout = Layout.horizontal_if_unspecified layout opt_type_terms in
     let term_layouts =
       match layout with
       | Horizontal l | Vertical l -> l
@@ -240,14 +271,15 @@ module Make (S : SPEC_VALUE) = struct
             if i < num_terms - 1 then fprintf fmt ", " else ())
           opt_terms_with_layouts
     | Vertical _ ->
-        fprintf fmt {|\begin{array}{c}@.|};
-        List.iteri
-          (fun i (opt_named_term, layout) ->
-            pp_opt_named_type_term fmt (opt_named_term, layout);
-            if i < num_terms - 1 then fprintf fmt {|,\\@.|}
-            else fprintf fmt {|,@.|})
-          opt_terms_with_layouts;
-        fprintf fmt {|\end{array}@.|}
+        let term_pp_funs =
+          List.mapi
+            (fun term_counter term_and_layout ->
+              if term_counter < num_terms - 1 then fun fmt ->
+                fprintf fmt {|%a,@.|} pp_opt_named_type_term term_and_layout
+              else fun fmt -> pp_opt_named_type_term fmt term_and_layout)
+            opt_terms_with_layouts
+        in
+        pp_latex_array "c" fmt term_pp_funs
     | Unspecified -> assert false
 
   and pp_record_fields fmt (fields, layout) =
@@ -277,7 +309,7 @@ module Make (S : SPEC_VALUE) = struct
             fields_with_layouts
         in
         fprintf fmt {|%a|}
-          (pp_parenthesized Brackets true pp_latex_array)
+          (pp_parenthesized Brackets true pp_latex_array_rows)
           row_funs
     | Horizontal _ ->
         let pp_field fmt (field_name, (field_term, layout)) =
@@ -294,7 +326,7 @@ module Make (S : SPEC_VALUE) = struct
     if Utils.is_singleton_list terms then
       fprintf fmt {|%a|} pp_type_term (List.hd terms, layout)
     else
-      let layout = Layout.horizontal_for_list layout terms in
+      let layout = Layout.horizontal_if_unspecified layout terms in
       match layout with
       | Vertical layouts ->
           let terms_with_layouts = List.combine terms layouts in
@@ -317,7 +349,7 @@ module Make (S : SPEC_VALUE) = struct
       LabelledTuple { label_opt = Some name; components = input }
     in
     (* If a layout is unspecified, expand one level to a 2-element horizontal layout. *)
-    let layout = Layout.horizontal_for_list layout [ (); () ] in
+    let layout = Layout.horizontal_if_unspecified layout [ (); () ] in
     let output = output in
     match layout with
     | Horizontal [ input_layout; output_layout ] ->

@@ -20,18 +20,18 @@ end;
 \end{lstlisting}
 
 \noindent
-A subprogram marked \texttt{readonly} or \texttt{pure} identifies a \readonly{} or \pure{} subprogram respectively.
+A subprogram marked \texttt{readonly} or \texttt{pure} identifies a \readonlyterm{} or \pureterm{} subprogram respectively.
 These have the following behaviour:
 \begin{itemize}
-  \item A \readonly{} subprogram does not modify global storage elements or throw exceptions, but can read global storage elements and use non-determinism ($\ARBITRARY$).
+  \item A \readonlyterm{} subprogram does not modify global storage elements or throw exceptions, but can read global storage elements and use non-determinism ($\ARBITRARY$).
     It can only call read-only or pure subprograms.
-  \item A \pure{} subprogram does not read or modify global storage elements, throw exceptions, or use non-determinism. It can only call pure subprograms. It can therefore be considered read-only too.
+  \item A \pureterm{} subprogram does not read or modify global storage elements, throw exceptions, or use non-determinism. It can only call pure subprograms. It can therefore be considered read-only too.
   \item Both pure and read-only subprograms may use assertions (including asserting type conversions), or cause \dynamicerrorsterm{} (e.g.\ divide by zero, calling the \unreachablestatementterm{}, etc.).
 \end{itemize}
 
 \noindent
 These keywords are used as the basis for a more coarse-grained side-effect analysis.
-In particular, they are used to define whether expressions are \pure{} or \readonly{}, and then:
+In particular, they are used to define whether expressions are \pureterm{} or \readonlyterm{}, and then:
 \begin{itemize}
   \item Assertions, \texttt{for}-loop bounds, and slices must involve only read-only subprograms.
   \item \hyperlink{def-staticeval}{Static evaluation} requires pure expressions.
@@ -97,7 +97,7 @@ end;
 
 \subsection{ASL-829: pending constrained integer syntax}
 
-The syntax for the \pendingconstrainedintegertype{} has been changed from \texttt{integer\{-\}}  to \texttt{integer\{\}}.
+The syntax for the \pendingconstrainedintegertypeterm{} has been changed from \texttt{integer\{-\}}  to \texttt{integer\{\}}.
 
 \subsection{ASL-830: local constants}
 
@@ -106,11 +106,11 @@ Local \texttt{constant} declarations are no longer permitted.
 \subsection{ASL-831: side-effects in slices}
 
 Slice expressions are no longer permitted to be side-effecting.
-In the parlance of ASL-796 above, they must be \readonly{}.
+In the parlance of ASL-796 above, they must be \readonlyterm{}.
 
 \subsection{ASL-836: constrained array sizes}
 
-Sizes of arrays must be \constrainedintegers{}.
+Sizes of arrays must be \constrainedintegersterm{}.
 This brings them in line with widths of \bitvectortypesterm{}.
 
 \subsection{ASL-840: parameter eliding for global declarations}

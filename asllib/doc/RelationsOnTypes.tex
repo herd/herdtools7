@@ -122,14 +122,14 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \chap
 
 \ExampleDef{Subtype Satisfaction}
 \listingref{subtypesat1} shows examples
-where the types of the \rhsexpressions{} \subtypesatisfy{}
+where the types of the \rhsexpressions{} \subtypesatisfyterm{}
 the types of the left-hand-side expressions.
 \pagebreak
 \ASLListing{Subtype Satisfaction}{subtypesat1}{\typingtests/TypingRule.SubtypeSatisfaction1.asl}
 
 \listingref{subtypesat-bad1} and \listingref{subtypesat-bad2}
 shows examples of nuanced \typingerrorsterm.
-Specifically where a type consisting of a range of values does not \subtypesatisfy{}
+Specifically where a type consisting of a range of values does not \subtypesatisfyterm{}
 a type consisting of one variable expression.
 \ASLListing{Subtype satisfaction error 1}{subtypesat-bad1}{\typingtests/TypingRule.SubtypeSatisfaction.bad1.asl}
 \ASLListing{Subtype satisfaction error 2}{subtypesat-bad2}{\typingtests/TypingRule.SubtypeSatisfaction.bad2.asl}
@@ -147,14 +147,14 @@ subtyping.
 \begin{itemize}
 \item \AllApplyCase{error1}
   \begin{itemize}
-  \item obtaining the \underlyingtype\ of $\vt$ gives a \typingerrorterm{};
+  \item obtaining the \underlyingtypeterm\ of $\vt$ gives a \typingerrorterm{};
   \item the rule results in a \typingerrorterm{}.
   \end{itemize}
 
 \item \AllApplyCase{error2}
   \begin{itemize}
-    \item obtaining the \underlyingtype\ of $\vt$ gives a type $\vttwo$;
-    \item obtaining the \underlyingtype\ of $\vs$ gives a \typingerrorterm{};
+    \item obtaining the \underlyingtypeterm\ of $\vt$ gives a type $\vttwo$;
+    \item obtaining the \underlyingtypeterm\ of $\vs$ gives a \typingerrorterm{};
     \item the rule results in a \typingerrorterm{}.
     \end{itemize}
 
@@ -167,15 +167,15 @@ subtyping.
 
 \item \AllApplyCase{simple}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
-  \item the \underlyingtype\ of $\vs$, $\vstwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
+  \item the \underlyingtypeterm\ of $\vt$, $\vttwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
+  \item the \underlyingtypeterm\ of $\vs$, $\vstwo$, is either \realtypeterm{}, \stringtypeterm{}, or \booleantypeterm{};
   \item $\vb$ is $\True$ if and only if both $\vttwo$ and $\vstwo$ have the same ASL label.
   \end{itemize}
 
 \item \AllApplyCase{t\_int}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
-  \item the \underlyingtype\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
+  \item the \underlyingtypeterm\ of $\vt$, $\vttwo$, is an \integertypeterm{} (any kind);
+  \item the \underlyingtypeterm\ of $\vs$, $\vstwo$, is an \integertypeterm{} (any kind);
   \item applying $\symdomoftype$ to $\tenv$ and $\vs$ yields the \symbolicdomainterm{} $\ds$;
   \item applying $\symdomoftype$ to $\tenv$ and $\vt$ yields the \symbolicdomainterm{} $\dt$;
   \item applying $\symdomsubsetunions$ to $\tenv$, $\ds$, and $\dt$ yields $\vb$.
@@ -183,23 +183,23 @@ subtyping.
 
 \item \AllApplyCase{t\_enum}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vt$ is an \enumerationtypeterm{} with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
-  \item the \underlyingtype\ of $\vs$ is an \enumerationtypeterm{} with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
+  \item the \underlyingtypeterm\ of $\vt$ is an \enumerationtypeterm{} with list of labels $\vlit$, that is, $\TEnum(\vlit)$;
+  \item the \underlyingtypeterm\ of $\vs$ is an \enumerationtypeterm{} with list of labels $\vlis$, that is, $\TEnum(\vlis)$;
   \item $\vb$ is $\True$ if and only if $\vlit$ is equal to $\vlis$.
   \end{itemize}
 
 \item \AllApplyCase{t\_bits}
   \begin{itemize}
-  \item the \underlyingtype\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
-  \item the \underlyingtype\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
+  \item the \underlyingtypeterm\ of $\vs$ is a bitvector type with width $\ws$ and bit fields $\bfss$, that is $\TBits(\ws, \bfss)$;
+  \item the \underlyingtypeterm\ of $\vt$ is a bitvector type with width $\wt$ and bit fields $\bfst$, that is $\TBits(\wt, \bfst)$;
   \item determining whether the bitfields $\bfss$ are included in the bitfields $\bfst$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item determining whether the \symbolicdomainterm{} of $\ws$ subsumes the \symbolicdomainterm{} of $\wt$ in $\tenv$ yields $\vb$.
   \end{itemize}
 
 \item \AllApplyCase{t\_array\_expr}
   \begin{itemize}
-  \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
-  \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
+  \item $\vs$ has the \underlyingtypeterm\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
+  \item $\vt$ has the \underlyingtypeterm\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
   \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
@@ -210,8 +210,8 @@ subtyping.
 
   \item \AllApplyCase{t\_array\_enum}
   \begin{itemize}
-  \item $\vs$ has the \underlyingtype\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
-  \item $\vt$ has the \underlyingtype\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
+  \item $\vs$ has the \underlyingtypeterm\ of an array with index $\vlengths$ and element type $\vtys$, that is $\TArray(\vlengths, \vtys)$;
+  \item $\vt$ has the \underlyingtypeterm\ of an array with index $\vlengtht$ and element type $\vtyt$, that is $\TArray(\vlengtht, \vtyt)$;
   \item determining whether $\vtys$ and $\vtyt$ are \equivalenttypesterm{} in $\tenv$ is either $\True$
   or $\False$, which short-circuits the entire rule with $\vb=\False$;
   \item either the AST labels of $\vlengths$ and $\vlengtht$ are the same or the rule short-circuits with $\vb=\False$;
@@ -222,23 +222,23 @@ subtyping.
 
 \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-  \item $\vs$ has the \underlyingtype\ of a tuple with type list $\vlis$, that is $\TTuple(\vlis)$;
-  \item $\vt$ has the \underlyingtype\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
+  \item $\vs$ has the \underlyingtypeterm\ of a tuple with type list $\vlis$, that is $\TTuple(\vlis)$;
+  \item $\vt$ has the \underlyingtypeterm\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
   \item equating the lengths of $\vlis$ and $\vlit$ is either $\True$ or $\False$, which short-circuits
   the entire rule with $\vb=\False$;
-  \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ \typesatisfies\ the type $\vlis[\vi]$
+  \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ \typesatisfiesterm\ the type $\vlis[\vi]$
   yields $\vb_\vi$\ProseOrTypeError;
   \item $\vb$ is $\True$ if and only if all $\vb_\vi$ are $\True$;
   \end{itemize}
 
 \item \AllApplyCase{structured}
   \begin{itemize}
-  \item $\vs$ has the \underlyingtype\ $L(\vfieldss)$, which is a \structuredtype;
-  \item $\vt$ has the \underlyingtype\ $L(\vfieldst)$, which is a \structuredtype;
+  \item $\vs$ has the \underlyingtypeterm\ $L(\vfieldss)$, which is a \structuredtypeterm;
+  \item $\vt$ has the \underlyingtypeterm\ $L(\vfieldst)$, which is a \structuredtypeterm;
   \item since both underlying types have the same AST label they are either both record types or both exception types or both collection types;
   \item $\vb$ is $\True$ if and only if for each field in $\vfieldss$ with type $\vtys$
   there exists a field in $\vfieldst$ with type $\vtyt$ such that both $\vtys$ and $\vtyt$
-  are determined to be \typeequivalent\ in $\tenv$.
+  are determined to be \typeequivalentterm\ in $\tenv$.
   \end{itemize}
 \end{itemize}
 
@@ -398,7 +398,7 @@ The predicate
   \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-determines whether a type $\vt$ \emph{\typesatisfies} a type $\vs$ in environment $\tenv$,
+determines whether a type $\vt$ \emph{\typesatisfiesterm} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$.
 \ProseOtherwiseTypeError
 
@@ -424,7 +424,7 @@ type \texttt{pairT}.
 \ASLListing{Type satisfaction example}{typing-typesat3}{\typingtests/TypingRule.TypeSatisfaction3.asl}
 
 The specification in \listingref{typing-typesat-bad1} is ill-typed,
-since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
+since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \ASLListing{Failing type satisfaction example}{typing-typesat-bad1}{\typingtests/TypingRule.TypeSatisfaction.bad1.asl}
 
 \ProseParagraph
@@ -440,7 +440,7 @@ since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
   \begin{itemize}
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item at least one of $\vt$ and $\vs$ is an anonymous type in $\tenv$;
-    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\vt$ \subtypesatisfiesterm\ $\vs$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\vb$ is $\True$.
   \end{itemize}
 
@@ -449,12 +449,12 @@ since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
     \item determining whether $\vs$ is anonymous yields $\vbtwo$;
-    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item determining whether $\vt$ \subtypesatisfiesterm\ $\vs$ in $\tenv$ yields $\vbthree$;
     \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
     \item $\vt$ is a bitvector type with width $\widtht$ and no bitfields;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a bitvector type with width \\
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields a bitvector type with width \\
           $\widths$\ProseOrTypeError;
-    \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalent\ yields $\vb$.
+    \item determining whether $\widtht$ and $\widths$ are \bitwidthequivalentterm\ yields $\vb$.
   \end{itemize}
 
   \item \AllApplyCase{otherwise1}
@@ -462,9 +462,9 @@ since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
     \item determining whether $\vs$ is anonymous yields $\vbtwo$;
-    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item determining whether $\vt$ \subtypesatisfiesterm\ $\vs$ in $\tenv$ yields $\vbthree$;
     \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
     \item at least one of $\vt$ and $\vsstruct$ is not a bitvector type;
   \end{itemize}
 
@@ -473,9 +473,9 @@ since \verb|integer{0..N}| does not \typesatisfy{} \verb|integer{0..M}|.
     \item $\vt$ does not subtype $\vs$ in $\tenv$;
     \item determining whether $\vt$ is anonymous yields $\vbone$;
     \item determining whether $\vs$ is anonymous yields $\vbtwo$;
-    \item determining whether $\vt$ \subtypesatisfies\ $\vs$ in $\tenv$ yields $\vbthree$;
+    \item determining whether $\vt$ \subtypesatisfiesterm\ $\vs$ in $\tenv$ yields $\vbthree$;
     \item $(\vbone \lor \vbtwo) \land \vbthree$ is $\False$;
-    \item obtaining the \structure\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
+    \item obtaining the \structureterm\ of $\vs$ in $\tenv$ yields a $\vsstruct$\ProseOrTypeError;
     \item both $\vt$ and $\vsstruct$ are bitvector types;
     \item the bitvector type $\vt$ has a non-empty list of bitfields;
     \item $\vb$ is $\False$;
@@ -562,11 +562,11 @@ The function assumes that both $\vt$ and $\vs$ are well-typed according to \secr
 
 \ExampleDef{Checking Type Satisfaction}
 In \listingref{typing-typesat1},
-checking whether \verb|(integer, T1)| \typesatisfies{} \verb|pairT|
+checking whether \verb|(integer, T1)| \typesatisfiesterm{} \verb|pairT|
 for the assignment \verb|var pair: pairT = (1, dataT1)| yields $\True$.
 
 In \listingref{typing-typesat3}, checking whether \verb|(intege, T2)|
-\typesatisfies{} \verb|pairT| for the assignment \verb|pair = (1, dataT2);|
+\typesatisfiesterm{} \verb|pairT| for the assignment \verb|pair = (1, dataT2);|
 yields a \typingerrorterm.
 
 \ProseParagraph
@@ -644,9 +644,9 @@ of different widths.
       \begin{itemize}
         \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
         \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
-        \item there is no \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$;
-        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item there is no \namedlowestcommonancestorterm\ of $\namesubs$ and $\namesubt$ in $\tenv$;
+        \item obtaining the \underlyingtypeterm\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ of $\vt$ yields $\vanont$\ProseOrTypeError;
         \item obtaining the lowest common ancestor of $\vanons$ and $\vanont$ in $\tenv$ yields $\tty$\ProseOrTypeError.
       \end{itemize}
 
@@ -654,7 +654,7 @@ of different widths.
       \begin{itemize}
         \item $\vt$ is a named type with identifier $\namesubt$, that is, $\TNamed(\namesubt)$;
         \item $\vs$ is a named type with identifier $\namesubs$, that is, $\TNamed(\namesubs)$;
-        \item the \namedlowestcommonancestor\ of $\namesubs$ and $\namesubt$ in $\tenv$ is \\
+        \item the \namedlowestcommonancestorterm\ of $\namesubs$ and $\namesubt$ in $\tenv$ is \\
               $\name$\ProseOrTypeError;
         \item $\tty$ is the named type with identifier $\name$, that is, $\TNamed(\name)$.
       \end{itemize}
@@ -662,8 +662,8 @@ of different widths.
       \item \AllApplyCase{one\_named1}
       \begin{itemize}
         \item only one of $\vt$ or $\vs$ is a named type;
-        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ of $\vt$ yields $\vanont$\ProseOrTypeError;
         \item $\vanont$ is \typeequal\ to $\vanons$;
         \item $\tty$ is $\vt$ if it is a named type (that is, $\astlabel(\vt)=\TNamed$), and $\vs$ otherwise.
       \end{itemize}
@@ -671,8 +671,8 @@ of different widths.
       \item \AllApplyCase{one\_named2}
       \begin{itemize}
         \item only one of $\vt$ or $\vs$ is a named type;
-        \item obtaining the \underlyingtype\ of $\vs$ yields $\vanons$\ProseOrTypeError;
-        \item obtaining the \underlyingtype\ of $\vt$ yields $\vanont$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ of $\vs$ yields $\vanons$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ of $\vt$ yields $\vanont$\ProseOrTypeError;
         \item $\vanont$ is not \typeequal\ to $\vanons$;
         \item the lowest common ancestor of $\vanont$ and $\vanons$ in $\tenv$ is $\tty$\ProseOrTypeError.
       \end{itemize}
@@ -687,18 +687,18 @@ of different widths.
       \item \AllApplyCase{t\_int\_parameterized}
       \begin{itemize}
         \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
-        \item one of $\vt$ and $\vs$ is a \parameterizedintegertype;
-        \item the \wellconstrainedversion\ of $\vt$ is $\vtone$;
-        \item the \wellconstrainedversion\ of $\vs$ is $\vsone$;
+        \item one of $\vt$ and $\vs$ is a \parameterizedintegertypeterm;
+        \item the \wellconstrainedversionterm\ of $\vt$ is $\vtone$;
+        \item the \wellconstrainedversionterm\ of $\vs$ is $\vsone$;
         \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
       \end{itemize}
 
       \item \AllApplyCase{t\_int\_wellconstrained}
       \begin{itemize}
-        \item $\vt$ is a well-constrained integer type with constraints $\cst$ and \Proseprecisionlossindicator{} $\vpone$;
-        \item $\vs$ is a well-constrained integer type with constraints $\css$ and \Proseprecisionlossindicator{} $\vpone$;
+        \item $\vt$ is a well-constrained integer type with constraints $\cst$ and \precisionlossindicatorterm{} $\vpone$;
+        \item $\vs$ is a well-constrained integer type with constraints $\css$ and \precisionlossindicatorterm{} $\vpone$;
         \item applying $\precisionjoin$ on $\vpone$ and $\vptwo$ yields $\vp$;
-        \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$ and \Proseprecisionlossindicator{} $\vp$.
+        \item $\tty$ is the well-constrained integer type with constraints $\cst \concat \css$ and \precisionlossindicatorterm{} $\vp$.
       \end{itemize}
 
       \item \AllApplyCase{t\_bits}
@@ -746,9 +746,9 @@ of different widths.
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \FormallyParagraph
-Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is \typeequivalent{} to \verb|integer {1..2}|),
+Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is \typeequivalentterm{} to \verb|integer {1..2}|),
 the lowest common ancestor is not unique.
-We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalent\ to the lowest common ancestor of $\vt$ and $\vs$.
+We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentterm\ to the lowest common ancestor of $\vt$ and $\vs$.
 
 \begin{mathpar}
 \inferrule[type\_equal]{
@@ -920,38 +920,38 @@ Similarly, we determine the negation of integer constraints.
 \item \AllApplyCase{bnot\_t\_bool}
   \begin{itemize}
     \item $\op$ is $\BNOT$;
-    \item determining whether $\vt$ \typesatisfies\ $\TBool$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\vt$ \typesatisfiesterm\ $\TBool$ yields $\True$\ProseOrTypeError;
     \item $\vs$ is $\TBool$;
   \end{itemize}
 
 \item \AllApplyCase{neg\_error}
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\False$\ProseOrTypeError;
-  \item determining whether $\vt$ \typesatisfies\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfiesterm\ $\TReal$ yields $\False$\ProseOrTypeError;
+  \item determining whether $\vt$ \typesatisfiesterm\ $\unconstrainedinteger$ yields $\False$\ProseOrTypeError;
   \item the result is a \typingerrorterm{} indicating the $\NEG$ is appropriate only for the \realtypeterm{} and the \integertypeterm{};
 \end{itemize}
 
 \item \AllApplyCase{neg\_t\_real}
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item determining whether $\vt$ \typesatisfies\ $\TReal$ yields $\True$;
+  \item determining whether $\vt$ \typesatisfiesterm\ $\TReal$ yields $\True$;
   \item $\vs$ is $\TReal$;
 \end{itemize}
 
 \item \AllApplyCase{neg\_t\_int\_unconstrained}
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
+  \item obtaining the \wellconstrainedstructureterm\ of $\vt$ yields $\unconstrainedinteger$\ProseOrTypeError;
   \item $\vs$ is $\unconstrainedinteger$;
 \end{itemize}
 
 \item \AllApplyCase{neg\_t\_int\_well\_constrained}
 \begin{itemize}
   \item $\op$ is $\NEG$;
-  \item obtaining the \wellconstrainedstructure\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$ and \Proseprecisionlossindicator{} $\vp$\ProseOrTypeError;
+  \item obtaining the \wellconstrainedstructureterm\ of $\vt$ yields the well-constrained integer type with constraints $\vcs$ and \precisionlossindicatorterm{} $\vp$\ProseOrTypeError;
   \item negating the constraints in $\vcs$ (see $\negateconstraint$) yields $\vcsnew$;
-  \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$ and \Proseprecisionlossindicator{} $\vp$, that is, \\
+  \item $\vs$ is the well-constrained integer type with constraints $\vcsnew$ and \precisionlossindicatorterm{} $\vp$, that is, \\
   $\TInt(\WellConstrained(\vcsnew, \vp))$;
 \end{itemize}
 
@@ -1018,7 +1018,7 @@ Similarly, we determine the negation of integer constraints.
 
 \TypingRuleDef{NegateConstraint}
 \hypertarget{def-negateconstraint}{}
-The helper function
+The function
 \[
   \negateconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
 \]
@@ -1094,7 +1094,7 @@ which leaves only \verb|1| and the final type for \verb|z| is therefore
 
 \ExampleDef{Applying Binary Operations to Constrained Integers}
 \listingref{apply-binop-constraints} shows examples of typing binary operations
-applied to \constrainedinteger{} types.
+applied to \constrainedintegerterm{} types.
 
 Importantly, note that there is no AST for applying binary operations on
 constraints.
@@ -1113,8 +1113,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \item \AllApplyCase{named}
   \begin{itemize}
     \item at least one of $\vtone$ and $\vttwo$ is a \namedtype;
-    \item determining the \underlyingtype\ if $\vtone$ yields $\vtoneanon$\ProseOrTypeError;
-    \item determining the \underlyingtype\ if $\vttwo$ yields $\vttwoanon$\ProseOrTypeError;
+    \item determining the \underlyingtypeterm\ if $\vtone$ yields $\vtoneanon$\ProseOrTypeError;
+    \item determining the \underlyingtypeterm\ if $\vttwo$ yields $\vttwoanon$\ProseOrTypeError;
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtoneanon$}{$\vttwoanon$}{$\vt$\ProseOrTypeError}.
   \end{itemize}
 
@@ -1130,7 +1130,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
     \item $\op$ is one of $\AND$, $\OR$, $\XOR$, $\ADD$, and $\SUB$;
     \item $\vtone$ is a bitvector type with width expression $\vwone$;
     \item $\vttwo$ is a bitvector type with width expression $\vwtwo$;
-    \item checking whether $\vtone$ and $\vttwo$ have the \structure\ of bitvector types
+    \item checking whether $\vtone$ and $\vttwo$ have the \structureterm\ of bitvector types
           of the same width in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\vt$ is the bitvector type of width $\vwone$ and empty list of bitfields, that is, \\ $\TBits(\vwone, \emptylist)$.
   \end{itemize}
@@ -1157,8 +1157,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \begin{itemize}
     \item $\op$ is $\STRCONCAT$;
     \item $\vtone$ and $\vttwo$ are not both bitvector types;
-    \item checking that $\vtone$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
-    \item checking that $\vttwo$ is a \Prosesingulartype{} yields $\True$\ProseOrTypeError;
+    \item checking that $\vtone$ is a \singulartypeterm{} yields $\True$\ProseOrTypeError;
+    \item checking that $\vttwo$ is a \singulartypeterm{} yields $\True$\ProseOrTypeError;
     \item $\vt$ is the string type.
   \end{itemize}
 
@@ -1218,7 +1218,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \item \AllApplyCase{arith\_t\_int\_parameterized}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}$;
-    \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertype;
+    \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertypeterm;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
@@ -1227,11 +1227,11 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \item \AllApplyCase{arith\_t\_int\_wellconstrained}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \POW, \ADD, \SUB, \DIVRM, \DIV, \MOD, \SHL, \SHR\}$;
-    \item $\vtone$ is the well-constrained integer type with constraints $\csone$ and \Proseprecisionlossindicator{} $\vpone$;
-    \item $\vttwo$ is the well-constrained integer type with constraints $\cstwo$ and \Proseprecisionlossindicator{} $\vptwo$;
+    \item $\vtone$ is the well-constrained integer type with constraints $\csone$ and \precisionlossindicatorterm{} $\vpone$;
+    \item $\vttwo$ is the well-constrained integer type with constraints $\cstwo$ and \precisionlossindicatorterm{} $\vptwo$;
     \item applying $\annotateconstraintbinop$ to $\op$, $\csone$, and $\cstwo$ in $\tenv$ yields $\vc$ and $\vpthree$;
     \item defining $\vpthree$ as the $\precisionjoin$ of $\vpone$, $\vptwo$, and $\vpthree$;
-    \item $\vt$ is the well-constrained integer type with constraints $\vc$ and \Proseprecisionlossindicator{} $\vp$\
+    \item $\vt$ is the well-constrained integer type with constraints $\vc$ and \precisionlossindicatorterm{} $\vp$\
   \end{itemize}
 
   \item \AllApplyCase{arith\_real}
@@ -1253,10 +1253,10 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item obtaining the \underlyingtype\ of $\vtone$ in $\tenv$ yields $\vtoneanon$\ProseOrTypeError;
-    \item obtaining the \underlyingtype\ of $\vttwo$ in $\tenv$ yields $\vttwoanon$\ProseOrTypeError;
+    \item obtaining the \underlyingtypeterm\ of $\vtone$ in $\tenv$ yields $\vtoneanon$\ProseOrTypeError;
+    \item obtaining the \underlyingtypeterm\ of $\vttwo$ in $\tenv$ yields $\vttwoanon$\ProseOrTypeError;
     \item the operator and the AST labels of $\vtoneanon$ and $\vttwoanon$ do not match any of the rows in the following table,
-    where $\vlone$ and $\vltwo$ are the AST labels of any \Prosesingulartypes{}:
+    where $\vlone$ and $\vltwo$ are the AST labels of any \singulartypesterm{}:
     \[
     \begin{array}{lll}
       \hline
@@ -1570,7 +1570,7 @@ The function
 returns the lowest common named super type --- $\tty$ --- of the types $\vt$ and $\vs$ in $\tenv$.
 
 \hypertarget{def-supers}{}
-The helper function
+The function
 \[
   \supers(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
   \aslto \pow{\ty}
@@ -2432,7 +2432,7 @@ Specifically, notice the following:
 \hypertarget{def-getliteraldivopt}{}
 The function
 \[
-\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\langle\Z\cartimes\Z\rangle}{\rangeopt}
+\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\langle(\Z\cartimes\Z)\rangle}{\rangeopt}
 \]
 matches the expression $\ve$ to a binary operation expression over the division operation and two literal integer expressions.
 If $\ve$ matches this pattern, the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
@@ -2472,7 +2472,7 @@ The function
 \]
 applies $\explodedinterval$ to each constraint of $\cs$ in $\tenv$, and returns
 a pair consisting of the list of exploded constraints in $\newcs$ and a
-\Proseprecisionlossindicator{} $\vp$.
+\precisionlossindicatorterm{} $\vp$.
 
 \ExampleDef{Exploding Intervals}
 In \listingref{ExplodeIntervals}, annotating the constraints for \verb|y|
@@ -2541,7 +2541,7 @@ given the \staticenvironmentterm{} $\tenv$ and the constraint $\vc$,
 expands $\vc$ into the equivalent list of exact constraints if
 $\vc$ matches an ascending range constraint that is not too large,
 and the singleton list for $\vc$ otherwise.
-The resulting list of constraints and the \Proseprecisionlossindicator{}
+The resulting list of constraints and the \precisionlossindicatorterm{}
 are in $\vcs$ and $\newprec$, respectively.
 
 See \ExampleRef{Intervals too Large to Enumerate}.
@@ -2907,7 +2907,7 @@ The function
   \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ASTLabels}{\vl}) \aslto
   \{\True\} \cup \typeerror
 \]
-returns $\True$ is $\vt$ is has the \structure\ a of type corresponding to the AST label $\vl$ and a \typingerrorterm{} otherwise.
+returns $\True$ is $\vt$ is has the \structureterm\ a of type corresponding to the AST label $\vl$ and a \typingerrorterm{} otherwise.
 
 See \ExampleRef{The Structure of a Type}.
 
@@ -2916,16 +2916,16 @@ See \ExampleRef{The Structure of a Type}.
 \begin{itemize}
   \item \AllApplyCase{okay}
   \begin{itemize}
-    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item determining the \structureterm\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ has the label $\vl$;
     \item the result is $\True$;
   \end{itemize}
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item determining the \structure\ of $\vt$ yields $\vtp$\ProseOrTypeError;
+    \item determining the \structureterm\ of $\vt$ yields $\vtp$\ProseOrTypeError;
     \item $\vtp$ does not have the label $\vl$;
-    \item the result is a \typingerrorterm{} indicating that $\vt$ was expected to have the \structure\ of a type with the AST label $\vl$.
+    \item the result is a \typingerrorterm{} indicating that $\vt$ was expected to have the \structureterm\ of a type with the AST label $\vl$.
   \end{itemize}
 \end{itemize}
 
@@ -2954,8 +2954,8 @@ The function
 \[
   \towellconstrained(\overname{\ty}{\vt}) \aslto \overname{\ty}{\vtp}
 \]
-returns the \wellconstrainedversion\ of a type $\vt$ --- $\vtp$,
-which converts \parameterizedintegertypes{} to \wellconstrainedintegertypes{},
+returns the \wellconstrainedversionterm\ of a type $\vt$ --- $\vtp$,
+which converts \parameterizedintegertypesterm{} to \wellconstrainedintegertypesterm{},
 and leaves all other types as are.
 
 \ExampleDef{Converting Parameterized Integer Types to Well-constrainted Integer Types}
@@ -2975,14 +2975,14 @@ The following table shows examples of applying $\towellconstrained$ to various t
 \begin{itemize}
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertype\ for the variable $\vv$;
+    \item $\vt$ is a \parameterizedintegertypeterm\ for the variable $\vv$;
     \item $\vtp$ is the well-constrained integer constrained by the variable expression for $\vv$,
     that is, $\TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))$.
   \end{itemize}
 
   \item \AllApplyCase{t\_int\_other, other}
   \begin{itemize}
-    \item $\vt$ is not a \parameterizedintegertype\ for the variable $\vv$;
+    \item $\vt$ is not a \parameterizedintegertypeterm\ for the variable $\vv$;
     \item $\vtp$ is $\vt$.
   \end{itemize}
 \end{itemize}
@@ -3014,7 +3014,7 @@ The function
   \getwellconstrainedstructure(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt})
   \aslto \overname{\ty}{\vtp} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-returns the \wellconstrainedstructure\ of a type $\vt$ in the \staticenvironmentterm{} $\tenv$ --- $\vtp$, which is defined as follows.
+returns the \wellconstrainedstructureterm\ of a type $\vt$ in the \staticenvironmentterm{} $\tenv$ --- $\vtp$, which is defined as follows.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Obtaining the Well-constrained Structure of a Type}
@@ -3030,7 +3030,7 @@ $\unconstrainedinteger$.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item the \structure\ of $\vt$ in $\tenv$ is $\vtone$\ProseOrTypeError;
+  \item the \structureterm\ of $\vt$ in $\tenv$ is $\vtone$\ProseOrTypeError;
   \item the well-constrained version of $\vtone$ is $\vtp$.
 \end{itemize}
 
@@ -3062,14 +3062,14 @@ See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
 \begin{itemize}
   \item \AllApplyCase{okay}
   \begin{itemize}
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a bitvector type with width expression $\ve$,
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields a bitvector type with width expression $\ve$,
           that is, $\TBits(\ve, \Ignore)$\ProseOrTypeError;
     \item the result is $\ve$.
   \end{itemize}
 
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item obtaining the \structure\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
+    \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields a type that is not a bitvector type;
     \item the result is a \typingerrorterm{} indicating that a bitvector type was expected.
   \end{itemize}
 \end{itemize}
@@ -3182,13 +3182,13 @@ The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a si
 The function
 \[
     \precisionjoin(
-      \overname{\vpone}{\precisionlossindicator} \aslsep
-      \overname{\vpone}{\precisionlossindicator}
+      \overname{\precisionlossindicator}{\vpone} \aslsep
+      \overname{\precisionlossindicator}{\vptwo}
     )
     \aslto
-    \overname{\vp}{\precisionlossindicator}
+    \overname{\precisionlossindicator}{\vp}
 \]
-returns the \Proseprecisionlossindicator{} $\vp$, denoting whether $\vpone$ or
+returns the \precisionlossindicatorterm{} $\vp$, denoting whether $\vpone$ or
 $\vptwo$ denote a precision loss.
 
 \ExampleDef{Precision join}

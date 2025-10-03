@@ -299,8 +299,8 @@ The following table summarises all error codes.
     \item Expected a structured type (\TypingRuleRef{ERecord}).
     \item Expected a \tupletypeterm{} of a specific length (\TypingRuleRef{LEDestructuring}).
     \item Expected a printable type (\TypingRuleRef{SPrint}).
-    \item Encountered a forbidden \pendingconstrainedintegertype{} (\TypingRuleRef{TInt}).
-    \item An anonymous enumeration or \structuredtype{} was used as a type annotation outside of a type declaration (\TypingRuleRef{TNonDecl}).
+    \item Encountered a forbidden \pendingconstrainedintegertypeterm{} (\TypingRuleRef{TInt}).
+    \item An anonymous enumeration or \structuredtypeterm{} was used as a type annotation outside of a type declaration (\TypingRuleRef{TNonDecl}).
     \item A collection type was used as a type annotation outside of a global variable declaration (\TypingRuleRef{CheckIsNotCollection}).
   \end{itemize}
 
@@ -317,8 +317,8 @@ The following table summarises all error codes.
   For example:
   \begin{itemize}
     \item Bitfields overlap on the left-hand side of an assignment (\TypingRuleRef{LESlice}).
-    \item Bit slices that are \symbolicallyevaluable{} overlap on the left-hand side of an assignment (\TypingRuleRef{DisjointSlicesToPositions}).
-      Note that if the overlapping slices are not \symbolicallyevaluable{}, then this is a \dynamicerrorterm{} ($\OverlappingSliceAssignment$).
+    \item Bit slices that are \symbolicallyevaluableterm{} overlap on the left-hand side of an assignment (\TypingRuleRef{DisjointSlicesToPositions}).
+      Note that if the overlapping slices are not \symbolicallyevaluableterm{}, then this is a \dynamicerrorterm{} ($\OverlappingSliceAssignment$).
     \item A slice expression has an empty list of slices (\TypingRuleRef{ESlice}).
     \item Bitfield slices overlap in a bitvector type declaration \\
       (\TypingRuleRef{DisjointSlicesToPositions}).
@@ -330,11 +330,11 @@ The following table summarises all error codes.
 \hypertarget{def-badfield}{}
 \item[$\BadField$]
   \textit{Bad field.}
-  Invalid usage of a field of a \structuredtype{} or bitfield of a bitvector.
+  Invalid usage of a field of a \structuredtypeterm{} or bitfield of a bitvector.
   For example:
   \begin{itemize}
-    \item An initialization expression for a \structuredtype{} is missing a field (\TypingRuleRef{ERecord}).
-    \item An access (read or write) is made to a non-existent field for a \structuredtype{} or bitfield of a bitvector type (\TypingRuleRef{LESetStructuredField}).
+    \item An initialization expression for a \structuredtypeterm{} is missing a field (\TypingRuleRef{ERecord}).
+    \item An access (read or write) is made to a non-existent field for a \structuredtypeterm{} or bitfield of a bitvector type (\TypingRuleRef{LESetStructuredField}).
   \end{itemize}
 
 \hypertarget{def-badsubprogramdeclaration}{}
@@ -455,10 +455,10 @@ The following table summarises all error codes.
 \hypertarget{def-overlappingsliceassignment}{}
 \item[$\OverlappingSliceAssignment$]
   \textit{Overlapping slice assignment.}
-  Bitvector slices that are not \symbolicallyevaluable{} overlap on the left-hand side of an assignment \\
+  Bitvector slices that are not \symbolicallyevaluableterm{} overlap on the left-hand side of an assignment \\
   (\SemanticsRuleRef{CheckNonOverlappingSlices}).
   Note that overlapping \emph{bitfields} are \typingerrorsterm{},
-  and that if the overlapping slices are \symbolicallyevaluable{} this too is a \typingerrorterm{} ($\BadSlices$).
+  and that if the overlapping slices are \symbolicallyevaluableterm{} this too is a \typingerrorterm{} ($\BadSlices$).
 
 \hypertarget{def-negativearraylength}{}
 \item[$\NegativeArrayLength$]

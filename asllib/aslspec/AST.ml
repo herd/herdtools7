@@ -106,7 +106,7 @@ module AttributeKey = struct
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
-    Stdlib.compare a_int b_int
+    Int.compare a_int b_int
 
   (** Converts an attribute key with the same string as the corresponding token.
   *)
@@ -130,7 +130,14 @@ module Attributes = struct
   type 'a map = 'a t
   (** Shadows [Map.t] with a string-to-string map type. *)
 
-  type t = attribute map
+  type nonrec t = attribute t
+
+  let check_definition_name name =
+    let () = assert (String.length name > 0) in
+    let id_regexp = Str.regexp "^[A-Za-z_']+$" in
+    if not (Str.string_match id_regexp name 0) then
+      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
+      raise (SpecError msg)
 
   (** Shadows [of_list] by raising a [SpecError] exception on pairs containing
       the same key. *)
@@ -176,7 +183,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
@@ -242,7 +249,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let math_layout self =
@@ -296,7 +303,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 
   let prose_application self =
@@ -334,7 +341,7 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
-    | Some (StringAttribute s) -> Some s
+    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 end
 

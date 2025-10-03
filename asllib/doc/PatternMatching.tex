@@ -172,8 +172,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
   \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
   \item \Prosechecksymbolicallyevaluable{$\vses$};
-  \item obtaining the \underlyingtype\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vte$ yields $\testruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vte$ yields $\testruct$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{t\_bool, t\_real, t\_int, t\_string}
@@ -291,7 +291,7 @@ whereas \\
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\EQ, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\EQ, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -342,7 +342,7 @@ whereas \\
   \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\vetwo$}{$(\vtetwo, \vetwop, \vsestwo)$}\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$;
   \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ for $\vt$, $\vteone$, and $\vtetwo$ yields
+  \item obtaining the \underlyingtypeterm\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
   \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a \typingerrorterm{}, which short-circuits the entire rule.
@@ -402,10 +402,10 @@ range given by \texttt{3..42}.
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
-  \binoprel(\GE, \vv, \vvone) \evalarrow \vbone\\
+  \evalbinop(\GE, \vv, \vvone) \evalarrow \vbone\\
   \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
-  \binoprel(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
-  \binoprel(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
+  \evalbinop(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
+  \evalbinop(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \ResultPattern(\vb, \newg)
@@ -451,8 +451,8 @@ range given by \texttt{3..42}.
 that is, $\PatternLeq(\ve)$;
 \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
 \item \Prosechecksymbolicallyevaluable{$\vses$};
-\item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \underlyingtypeterm\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} (\BadOperands) is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\LE$ operator),
@@ -503,7 +503,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\LE, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\LE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -548,8 +548,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
       that is, $\PatternGeq(\ve)$;
 \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
 \item \Prosechecksymbolicallyevaluable{$\vses$};
-\item obtaining the \underlyingtype\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \underlyingtype\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
+\item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+\item obtaining the \underlyingtypeterm\ of $\vte$ in $\tenv$ yields $\testruct$\ProseOrTypeError;
 \item $\vb$ is true if and only if $\vtstruct$ and $\testruct$ are both integer types or both the \realtypeterm{};
 \item if $\vb$ is $\False$ a \typingerrorterm{} is returned (indicating that the types of $\vt$ and $\vte$
       are inappropriate for the $\GE$ operator),
@@ -599,7 +599,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \binoprel(\GE, \vv, \vvone) \evalarrow \vb
+  \evalbinop(\GE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
 }
@@ -643,7 +643,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
   \item $\vp$ is the pattern which matches a mask $\vm$, that is, $\PatternMask(\vm)$;
   \item determining whether $\vt$ has the structure of a bitvector type yields $\True$\ProseOrTypeError;
   \item $\vn$ is the length of mask $\vm$;
-  \item determining whether $\vt$ \typesatisfies\ the bitvector type of length $\vn$ \\
+  \item determining whether $\vt$ \typesatisfiesterm\ the bitvector type of length $\vn$ \\
         (that is, $\TBits(\vn, \emptylist)$), yields $\True$\ProseOrTypeError;
   \item $\newp$ is $\vp$;
   \item define $\vses$ as the empty set.
@@ -694,7 +694,7 @@ whereas \texttt{match\_false} evaluates to \False, since
 
 \FormallyParagraph
 \hypertarget{def-maskmatch}{}
-The helper function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
+The function $\maskmatch : \{0, 1, \vx\} \times \{0,1\} \rightarrow \Bool$,
 checks whether a bit value (second operand) matches a mask value (first operand),
 is defined by the following table:
 \[
@@ -762,7 +762,7 @@ The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
 \AllApply
 \begin{itemize}
   \item $\vp$ is the pattern which matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
-  \item obtaining the \structure\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
+  \item obtaining the \structureterm\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
   \item determining whether $\vtstruct$ is a \tupletypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\vtstruct$ is a \tupletypeterm{} with list of tuple $\vts$;
   \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseTerminateAs{\UnexpectedType};
@@ -1012,7 +1012,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \begin{mathpar}
 \inferrule{
   \evalexprsef{\env, \vpone} \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
-  \unoprel(\BNOT, \vbone) \evalarrow \vb
+  \evalunop(\BNOT, \vbone) \evalarrow \vb
 }{
   \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \ResultPattern(\vb, \newg)
 }

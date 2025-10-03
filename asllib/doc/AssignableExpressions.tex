@@ -625,7 +625,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \begin{itemize}
     \item $\vx$ is declared in $\tenv$ as a local storage element with type $\tty$ and local declaration keyword $k$;
     \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
-    \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\tty$ \typesatisfiesterm\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
     \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
@@ -634,7 +634,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \begin{itemize}
     \item $\vx$ is declared in $\tenv$ as a global storage element with type $\tty$ and global declaration keyword $k$;
     \item checking that $k$ corresponds to a mutable variable, that is, $\GDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
-    \item determining whether $\tty$ \typesatisfies\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\tty$ \typesatisfiesterm\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
     \item \Proseeqdef{$\vses$}{the set containing a \GlobalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
@@ -827,7 +827,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LEMultiAssign}
-The helper relation
+The relation
 \hypertarget{def-evalmultiassign}{}
 \[
   \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vlelist} \aslsep \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\vmlist}) \;\aslrel\;
@@ -846,7 +846,7 @@ See \ExampleRef{Multi-assignments}.
   \item \AllApplyCase{empty}
   \begin{itemize}
     \item both $\vlelist$ and $\vmlist$ are empty lists;
-    \item \Proseeqdef{$\newg$}{the empty \executiongraph};
+    \item \Proseeqdef{$\newg$}{the empty \executiongraphterm};
     \item \Proseeqdef{$\newenv$}{$\env$}.
   \end{itemize}
 
@@ -920,7 +920,7 @@ are well-typed.
 \begin{itemize}
   \item $\vle$ denotes the array access of a left-hand-side expression $\ebase$ by the index $\eindex$, that is, $\LESetArray(\ebase, \eindex)$;
   \item annotating the \rhsexpression{} corresponding to $\ebase$ in $\tenv$ yields \\ $(\tbase, \Ignore, \Ignore)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
   \item checking that $\tanonbase$ is an array type yields $\True$\ProseOrTypeError;
   \item view $\tanonbase$ as an array type of size $\size$ and element type $\telem$, that is, $\TArray(\size, \telem)$;
   \item annotating the left-hand-side expression $\ebase$ with type $\tbase$ in $\tenv$ yields $(\ebasep, \vsesbase)$\ProseOrTypeError;
@@ -950,7 +950,7 @@ are well-typed.
 
 \TypingRuleDef{AnnotateSetArray}
 \hypertarget{def-annotatesetarray}{}
-The helper function
+The function
 \[
 \annotatesetarray\left(
   \begin{array}{c}
@@ -980,12 +980,12 @@ for examples of well-typed assignable array expressions.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item determining that $\telem$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining that $\telem$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the index expression $\eindex$ in $\tenv$ yields \\
         $(\tindexp, \eindexp, \vsesindex)$\ProseOrTypeError;
   \item determining the array length type of $\size$ (via $\typeofarraylength$) yields \\
         $\wantedtindex$;
-  \item determining whether $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields \\
+  \item determining whether $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields \\
         $\True$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesbase$ and $\vsesindex$;
   \item \Proseeqdef{$\newle$}{
@@ -1152,13 +1152,13 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\
         $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields $\tleoneanon$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields $\tleoneanon$\ProseOrTypeError;
   \item checking that $\tleoneanon$ is a bitvector type yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vsesone)$\ProseOrTypeError;
   \item annotating $\slices$ in $\tenv$ yields $(\slicesannotated, \sesslices)$\ProseOrTypeError;
   \item obtaining the width of the slices $\slicesannotated$ in $\tenv$ and simplifying them yields $\vwidth$;
   \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
-  \item checking whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
+  \item checking whether $\vte$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
   \item checking that the slices $\slicesannotated$ are all disjoint yields $\True$\ProseOrTypeError;
   \item checking that $\slicesannotated$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item $\newle$ is the slicing of $\vletwo$ by $\slicesannotated$, that is, $\LESlice(\vletwo, \slicesannotated)$;
@@ -1202,7 +1202,7 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \AllApply
 \begin{itemize}
   \item applying $\disjointslicestopositions$ to $\tenv$,
-  $\False$ (indicating that the expressions comprising $\slices$ need not be \staticallyevaluable), and $\slices$ yields a set of positions\ProseOrTypeError.
+  $\False$ (indicating that the expressions comprising $\slices$ need not be \staticallyevaluableterm), and $\slices$ yields a set of positions\ProseOrTypeError.
   \item the result is $\True$.
 \end{itemize}
 
@@ -1280,7 +1280,7 @@ getter invocation
 
 \SemanticsRuleDef{CheckNonOverlappingSlices}
 \hypertarget{def-checknonoverlappingslices}{}
-The helper function
+The function
 \[
   \checknonoverlappingslices(
     \overname{\KleeneStar{(\tint\times\tint)}}{\valueranges}
@@ -1329,7 +1329,7 @@ writes \verb|1| to the common position $0$.
 
 \SemanticsRuleDef{CheckTwoRangesNonOverlapping}
 \hypertarget{def-checktworangesnonoverlapping}{}
-The helper function
+The function
 \[
 \begin{array}{r}
   \checktworangesnonoverlapping(
@@ -1348,7 +1348,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item evaluating $\ADD$ for $\vsone$ and $\vlone$ via $\binoprel$ yields $\vsonelone$;
+  \item evaluating $\ADD$ for $\vsone$ and $\vlone$ via $\evalbinop$ yields $\vsonelone$;
   \item evaluating $\LE$ for $\vsonelone$ and $\vstwo$ yields $\vsonelonestwo$;
   \item evaluating $\ADD$ for $\vstwo$ and $\vltwo$ yields $\vstwoltwo$;
   \item evaluating $\LE$ for $\vstwoltwo$ and $\vsone$ yields $\vstwoltwosone$;
@@ -1360,11 +1360,11 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \binoprel(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
-  \binoprel(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
-  \binoprel(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
-  \binoprel(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
-  \binoprel(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
+  \evalbinop(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
+  \evalbinop(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
+  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
+  \evalbinop(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
+  \evalbinop(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
   \checktrans{\vb}{\OverlappingSliceAssignment} \checktransarrow \True\OrDynError
 }{
   \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
@@ -1385,7 +1385,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \TypingRuleDef{LESetBadField}
 \ExampleDef{Assigning a Field in an Inappropriate Type}
 In \listingref{typing-lesetbadfield}, the statement \verb|x.RED = 42;| is ill-typed,
-since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtype.
+since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtypeterm.
 \ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
 
 See \RequirementRef{TupleImmutability} for an example of assigning to a tuple type.
@@ -1396,7 +1396,7 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
   \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is, \\ $\LESetField(\vleone, \vfield)$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{tuple}
@@ -1407,7 +1407,7 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
 
     \item \AllApplyCase{structured}
     \begin{itemize}
-      \item $\vt$ is neither a \tupletypeterm{}, nor a \structuredtype, nor a \bitvectortypeterm;
+      \item $\vt$ is neither a \tupletypeterm{}, nor a \structuredtypeterm, nor a \bitvectortypeterm;
       \item the result is an error indicating that the type of $\vle$ conflicts with the requirements
             of a field access expression ($\UnexpectedType$).
     \end{itemize}
@@ -1452,11 +1452,11 @@ are well-typed.
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a record
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a record
     or exception type with fields $\fields$\ProseOrTypeError;
   \item checking that there exists a type associated with the field $\vfield$ in $\fields$ $\True$ \ProseTerminateAs{\BadField};
   \item the type associated with the field $\vfield$ in $\fields$ is $\vt$;
-  \item determining whether $\vte$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vte$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\vfield$ in $\vletwo$, that is, $\LESetField(\vletwo, \vfield)$.
 \end{itemize}
 
@@ -1494,14 +1494,14 @@ All of the collection field assignable expressions in
     in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type
     $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a
     collection type with fields $\fields$\ProseOrTypeError;
   \item $\vletwo$ denotes a left-hand-side variable expression for $\vbase$,
     that is, $\LEVar(\vbase)$;
   \item checking that there exists a type associated with the field $\vfield$
     in $\fields$ $\True$ \ProseTerminateAs{\BadField};
   \item the type associated with the field $\vfield$ in $\fields$ is $\vt$;
-  \item determining whether $\vte$ \typesatisfies\ $\vt$ yields
+  \item determining whether $\vte$ \typesatisfiesterm\ $\vt$ yields
     $\True$\ProseOrTypeError;
   \item $\newle$ is the access to the field $\vfield$ in $\vletwo$, that is,
     $\LESetCollectionFields(\vbase, [\vfield])$.
@@ -1565,7 +1565,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
       \item $\tanonbase$ is a record type with list of fields $\vbasefields$;
       \item applying $\foldbitvectorfields$ to $\vlefields$ and $\vbasefields$ in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
       \item \Proseeqdef{$\vtlhs$}{the bitvector type of length $\vlength$ and no bitfields, that is, $\TBits(\ELInt{\vlength}, \emptylist)$};
-      \item checking that $\vte$ \typesatisfies\ $\vtlhs$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking that $\vte$ \typesatisfiesterm\ $\vtlhs$ in $\tenv$ yields $\True$\ProseOrTypeError;
       \item define $\newle$ as the assignable expression of the list of fields $\vlefields$ to the base expression $\lebase$, that is,
             $\LESetFields(\lebase, \vlefields)$;
       \item \Proseeqdef{$\vses$}{$\vsesbase$}.
@@ -1581,7 +1581,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
         in $\tenv$ yields $(\vlength, \vslices)$ \ProseOrTypeError;
       \item \Proseeqdef{$\vtlhs$}{the bitvector type of length $\vlength$ and
         no bitfields, that is, $\TBits(\ELInt{\vlength}, \emptylist)$};
-      \item checking that $\vte$ \typesatisfies\ $\vtlhs$ in $\tenv$ yields
+      \item checking that $\vte$ \typesatisfiesterm\ $\vtlhs$ in $\tenv$ yields
         $\True$\ProseOrTypeError;
       \item define $\newle$ as the assignable expression of the list of fields
         $\vlefields$ to the collection base expression $\vbase$, that is, \\
@@ -1670,7 +1670,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \TypingRuleDef{FoldBitvectorFields}
 \hypertarget{def-foldbitvectorfields}{}
-The helper function
+The function
 \[
 \foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\field}}{\vbasefields} \aslsep \overname{\KleeneStar{\bitfield}}{\vlefields})
 \aslto (\overname{\N}\vlength \times \overname{\KleeneStar{(\N \times N)}}{\vslices})
@@ -1772,7 +1772,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 
 \SemanticsRuleDef{AssignBitvectorFields}
 \hypertarget{def-assignbitvectorfields}{}
-The helper function
+The function
 \[
   \assignbitvectorfields(
     \overname{\tbitvector}{\vbitvector} \aslsep
@@ -1906,7 +1906,7 @@ are well-typed.
   \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is, \\ $\LESetField(\vleone, \vfield)$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{error\_missing\_field}
@@ -1922,7 +1922,7 @@ are well-typed.
             that is, $\BitFieldSimple(\Ignore, \slices)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vt$ is defined as the bitvector type of width $\vw$ and empty list of bitfields, that is, $\TBits(\vw, \emptylist)$;
-      \item checking whether$\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking whether$\vte$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
       \item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
       \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
@@ -1933,7 +1933,7 @@ are well-typed.
             slices $\slices$ and list of bitfields $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vt$ is defined as the bitvector type of width $\vw$ and list of bitfields $\bitfieldsp$, that is, $\TBits(\vw, \bitfieldsp)$;
-      \item checking whether$\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking whether$\vte$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
       \item $\vlethree$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
       \item annotating the left-hand-side expression $\vlethree$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}
@@ -1944,8 +1944,8 @@ are well-typed.
             slices $\slices$ and a type $\vt$, that is, \\ $\BitFieldType(\Ignore, \vslices, \vt)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vtp$ is defined as the bitvector type of width $\vw$ and an empty list of bitfields, that is, $\TBits(\vw , \emptylist)$;
-      \item checking whether $\vtp$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-      \item checking whether $\vte$ \typesatisfies\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking whether $\vtp$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
+      \item checking whether $\vte$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
       \item $\vletwo$ is defined as the slicing of $\vleone$ by $\slices$, that is, \\ $\LESlice(\vleone, \slices)$;
       \item annotating the left-hand-side expression $\vletwo$ in $\tenv$ yields \\ $(\newle, \vses)$\ProseOrTypeError.
     \end{itemize}

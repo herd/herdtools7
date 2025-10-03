@@ -142,7 +142,7 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertype\ for parameter $\id$, \\ $\TInt(\Parameterized(\id))$;
+    \item $\vt$ is a \parameterizedintegertypeterm\ for parameter $\id$, \\ $\TInt(\Parameterized(\id))$;
     \item the \nativevalueterm{} associated with $\id$ in the local dynamic environment is the native integer value for $n$;
     \item $\vd$ is the set containing the single integer value for $n$.
   \end{itemize}
@@ -227,7 +227,7 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{t\_structured}
   \begin{itemize}
-    \item $\vt$ is a \structuredtype\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    \item $\vt$ is a \structuredtypeterm\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
     where $L\in\{\TRecord, \TException\}$;
     \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
     \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$, for $i=1..k$.

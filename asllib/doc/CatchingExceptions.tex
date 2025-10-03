@@ -114,7 +114,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \begin{itemize}
     \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structure\ of an exception type yields \\ $\True$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields \\ $\True$\ProseOrTypeError;
     \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$;
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
@@ -123,7 +123,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \begin{itemize}
     \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structure\ of an exception type yields \\ $\True$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields \\ $\True$\ProseOrTypeError;
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
           (that is, with the local declaration keyword $\LDKLet$), yields the \staticenvironmentterm{} $\tenvp$;

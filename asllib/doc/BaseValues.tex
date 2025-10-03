@@ -7,8 +7,8 @@ if an initializer is not supplied.
 \RequirementDef{NoBaseValue}
 The following types do not have a \basevalueterm{}:
 \begin{itemize}
-    \item \parameterizedintegertypes{};
-    \item a \wellconstrainedintegertype{} whose list of constraints
+    \item \parameterizedintegertypesterm{};
+    \item a \wellconstrainedintegertypeterm{} whose list of constraints
         represents the empty set;
     \item a \bitvectortypeterm{} whose length is negative.
 \end{itemize}
@@ -35,7 +35,7 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 \end{Verbatim}
 % CONSOLE_END
 
-\listingref{base-values-parameterised} shows a specification that relies on the base value of a \bitvectortypeterm{} whose width is a \parameterizedintegertype{}.
+\listingref{base-values-parameterised} shows a specification that relies on the base value of a \bitvectortypeterm{} whose width is a \parameterizedintegertypeterm{}.
 \ASLListing{Base Value for Parameterized Bitvector Width}{base-values-parameterised}{\typingtests/TypingRule.BaseValue.parameterized.asl}
 
 \ExampleDef{Types Without Base Value}
@@ -98,19 +98,19 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
     \item \AllApplyCase{t\_int\_unconstrained} \identr{NJDZ}
     \begin{itemize}
-        \item $\vt$ is the \unconstrainedintegertype;
+        \item $\vt$ is the \unconstrainedintegertypeterm;
         \item $\veinit$ is the literal expression for $0$, that is, $\ELiteral(\LInt(0))$.
     \end{itemize}
 
     \item \AllApplyCase{t\_int\_parameterized} \identr{QGGH}
     \begin{itemize}
-        \item $\vt$ is the \parameterizedintegertype;
+        \item $\vt$ is the \parameterizedintegertypeterm;
         \item the result is a \typingerrorterm{} indicating the lack of a statically known base value.
     \end{itemize}
 
     \item \AllApplyCase{t\_int\_wellconstrained} \identr{CFTD}
     \begin{itemize}
-        \item $\vt$ is the \wellconstrainedintegertype\ with a list of constraints $\cs$;
+        \item $\vt$ is the \wellconstrainedintegertypeterm\ with a list of constraints $\cs$;
         \item define $\vzminlist$ as the concatenation of lists obtained for each
               constraint $\cs[\vi]$ in $\tenv$, for each $\vi\in\listrange(\cs)$, via $\constraintabsmin$;
         \item checking whether $\vzminlist$ is empty yields $\True$\ProseOrTypeError{\NoBaseValue};
@@ -121,7 +121,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \item \AllApplyCase{t\_named}
     \begin{itemize}
         \item $\vt$ is the \namedtype\ for $\id$;
-        \item obtaining the \underlyingtype\ for $\id$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
+        \item obtaining the \underlyingtypeterm\ for $\id$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
         \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError.
     \end{itemize}
 
@@ -133,7 +133,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
     \item \AllApplyCase{structured} \identr{MBRM} \identr{SVJB}
     \begin{itemize}
-        \item $\vt$ is a \structuredtype\ with list of fields $\fields$;
+        \item $\vt$ is a \structuredtypeterm\ with list of fields $\fields$;
         \item applying $\basevalue$ to $\vtefield$ in $\tenv$ for each $(\name, \vtefield)$ in $\fields$
               yields $\ve_\name$\ProseOrTypeError;
         \item $\veinit$ is the record construction expression assigning each field $\name$

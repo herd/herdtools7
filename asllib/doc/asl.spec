@@ -10,10 +10,20 @@
 // Generic Types
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef empty_set
+{
+    "the empty set",
+    math_macro = \emptyset,
+};
+
+constant True { "true", math_macro = \True };
+constant False { "false", math_macro = \False };
+
 typedef Bool
 {  "Boolean",
     math_macro = \Bool,
-};
+} = constants_set(True, False)
+;
 
 typedef Bit
 { "bit" };
@@ -21,6 +31,11 @@ typedef Bit
 typedef N
 {  "natural number",
     math_macro = \N,
+};
+
+typedef N_pos
+{  "positive natural number",
+    math_macro = \Npos,
 };
 
 typedef Z
@@ -47,6 +62,35 @@ typedef ASTLabels
 { "AST label",
    math_macro = \ASTLabels,
 };
+
+constant bot { "bottom", math_macro = \bot };
+
+typedef TAbsField { "\absolutebitfields", math_macro = \TAbsField } =
+    (name: list0(Identifier), slice: list0(N))
+    { "absolute field named {name} with slice {slice}" }
+;
+
+typedef def_use_name { "subprogram identifier kind" } =
+    | Subprogram(id: Identifier)
+    { "subprogram identifier {id}" }
+    | Other(id: Identifier)
+    { "non-subprogram identifier {id}" }
+;
+
+////////////////////////////////////////////////////////////////////////////////
+// Types for Symbolic Equivalence Testing
+constant negative_sign { "negative sign", math_macro = \negativesign };
+constant positive_sign { "positive sign", math_macro = \positivesign };
+constant equal_sign { "equal sign", math_macro = \equalsign };
+typedef Sign { "sign" } =
+    constants_set(negative_sign, positive_sign, equal_sign)
+;
+typedef Q_nonzero { "non-zero rational", math_macro = \Qnonzero };
+typedef unitary_monomial { "unitary monomial" } = partial Identifier -> N_pos;
+typedef polynomial { "polynomial" } = partial unitary_monomial -> Q_nonzero;
+typedef monomial { "monomial" } = (exponents: unitary_monomial, factor:Q);
+render symbolic_expressions = polynomial(-), unitary_monomial(-),  monomial(-);
+constant CannotBeTransformed { "cannot be transformed", math_macro = \CannotBeTransformed };
 
 ////////////////////////////////////////////////////////////////////////////////
 // Untyped AST
@@ -1010,12 +1054,12 @@ typedef Nodes
 
 typedef XGraphs
 {
-    "\executiongraph{}",
+    "\executiongraphterm{}",
     math_macro = \XGraphs,
 } =
     (vertices: powerset(Nodes), edges: powerset((source: Nodes, label: Labels, target: Nodes)), output_nodes: powerset(Nodes))
     {
-        "\executiongraph{} with vertices {vertices}, labeled edges {edges}, and output nodes {output_nodes}",
+        "\executiongraphterm{} with vertices {vertices}, labeled edges {edges}, and output nodes {output_nodes}",
     }
 ;
 
@@ -1038,6 +1082,30 @@ ast symdom_or_top { "symbolic integer set" } =
 ;
 
 render symbolic_domains = symdom(-), symdom_or_top(-);
+
+constant Over { "overapproximation" };
+constant Under { "underapproximation" };
+typedef approximation_direction { "approximation direction" } =
+    constants_set(Over, Under)
+;
+
+constant CannotOverapproximate { "cannot overapproximate" };
+
+constant CannotUnderapproximate { "cannot underapproximate" };
+
+typedef ty_or_opt { "type or optional type" } =
+    | (t:ty)
+    { "the type {t}" }
+    | option(ty)
+    { "optional type" }
+;
+
+typedef expr_or_opt { "expression or optional expression" } =
+    | (e:expr)
+    { "the expression {e}" }
+    | option(expr)
+    { "optional expression" }
+;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Dynamic Semantics Configurations
@@ -1111,11 +1179,37 @@ typedef TDiverging
     { "diverging execution result" }
 ;
 
+typedef value_read_from { "value-reading effect" } =
+    (v: native_value, id: Identifier)
+    { "{v} is read with {id}" }
+;
+
+typedef abstract_configuration
+{
+    "\hyperlink{type-abstractconfiguration}{abstract configuration}",
+    math_macro = \AbsConfig
+} =
+    | Abs_Continuing
+    { "abstract continuing configuration" }
+    | Abs_Returning
+    { "abstract returning configuration" }
+    | Abs_Abnormal
+    { "abstract abnormal configuration" }
+;
+
+////////////////////////////////////////////////////////////////////////////////
+// Literals Relations
+////////////////////////////////////////////////////////////////////////////////
+
 relation annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 {
     "annotates a literal {l} in the \staticenvironmentterm{} {tenv}, resulting in a type {t}.",
     prose_application = "annotating {l} in {tenv} yields {t}",
 };
+
+////////////////////////////////////////////////////////////////////////////////
+// Expression Relations
+////////////////////////////////////////////////////////////////////////////////
 
 relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: powerset(TSideEffect)) | type_error
 {
@@ -1126,5 +1220,4 @@ relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: 
                         and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError",
     prose_application = "annotating {e} in {tenv} yields
         {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError",
-    math_layout = ((_,_),(_,_)),
 };

@@ -93,7 +93,7 @@ The relation
   \right)
 \]
 evaluates the expression $\ve$ in an environment $\env$ and terminates normally with
-a \nativevalueterm{} $\vv$, an \executiongraph{} $\vg$, and a modified environment $\newenv$.
+a \nativevalueterm{} $\vv$, an \executiongraphterm{} $\vg$, and a modified environment $\newenv$.
 \ProseOtherwiseAbnormal
 
 \hypertarget{def-literalexpressionterm}{}
@@ -565,8 +565,8 @@ whereas \verb|0.0| is a \realtypeterm.
 
 \ExampleDef{Comparing Well-constrained Integers}
 The specification in \listingref{EBinop} is well-typed.
-Specifically, it is legal to compare \wellconstrainedintegertypes{}
-with different lists of constraints and a \wellconstrainedintegertype{} to an \unconstrainedintegertype{}.
+Specifically, it is legal to compare \wellconstrainedintegertypesterm{}
+with different lists of constraints and a \wellconstrainedintegertypeterm{} to an \unconstrainedintegertypeterm{}.
 \ASLListing{Comparing well-constrained integers}{EBinop}{\typingtests/TypingRule.EBinop.asl}
 
 \ExampleDef{Typing Bitvector Concatenation}
@@ -776,7 +776,7 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \binoprel(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} ) \evalarrow
@@ -858,7 +858,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \begin{mathpar}
 \inferrule{
   \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\\\\
-  \unoprel(\op, \vvone) \evalarrow \vv
+  \evalunop(\op, \vvone) \evalarrow \vv
 }
 {
   \evalexpr( \env, \EUnop(\op, \veone) ) \evalarrow
@@ -1084,7 +1084,7 @@ conditional expression evaluates to the \texttt{else} expression.
 \ASTRuleDef{SetCallType}
 \hypertarget{def-setcalltype}{}
 Above, $\STFunction$ is inserted as a default call type for any parsed $\call$.
-The helper function
+The function
 \[
   \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\calltype}) \aslto \overname{\call}{\vcallp}
 \]
@@ -1240,7 +1240,7 @@ and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expres
   \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
         $\ESlice(\vep, \slices)$;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
+  \item obtaining the \structureterm\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
   \item $\structtep$ is either a bitvector or an integer;
   \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
   \item annotating $\slices$ in $\tenv$ yields $(\slicesp, \vsestwo)$\ProseOrTypeError;
@@ -1381,7 +1381,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \hypertarget{def-arrayaccess}{}
 \begin{definition}[Array Access]
 We refer to a \rhsexpression{} of the form \verb|b[[i]]|,
-where $b, i$ are subexpressions, as an \arrayaccess\ expression.
+where $b, i$ are subexpressions, as an \arrayaccessterm\ expression.
 We refer to $b$ and $i$ as the \emph{base}
 and the $\emph{index}$ subexpressions, respectively.
 \end{definition}
@@ -1395,9 +1395,9 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\ve$ denotes the \arrayaccess{} expression with base $\ebase$ and index $\eindex$;
+  \item $\ve$ denotes the \arrayaccessterm{} expression with base $\ebase$ and index $\eindex$;
   \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbase,\ebasep, \vsesbase)$}\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
   \item checking whether $\tanonbase$ is an array type yields $\True$\ProseOrTypeError;
   \item view $\tanonbase$ as the array type with size expression $\size$ and element type $\telem$,
         that is, $\TArray(\size, \telem)$;
@@ -1425,7 +1425,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 
 \TypingRuleDef{AnnotateGetArray}
 \hypertarget{def-annotategetarray}{}
-The helper function
+The function
 \[
 \begin{array}{r}
 \annotategetarray(
@@ -1453,7 +1453,7 @@ See \ExampleRef{Array Access Expressions}.
   \item \Proseannotateexpr{$\tenv$}{$\eindex$}{(\tindexp, \eindexp, \vsesindex)}\ProseOrTypeError;
   \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
         $\wantedtindex$;
-  \item checking that $\tindexp$ \typesatisfies\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item checking that $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesindex$ and $\vsesbase$;
   \item \Proseeqdef{$\newe$}{
     an access to an integer-indexed array for $\ebase$ and $\eindexp$, that is, $\EGetArray(\ebase, \eindexp)$ if $\size$ is an integer-typed array index,
@@ -1604,7 +1604,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a record or exception type with fields $\fields$;
   \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
   \item define $\newe$ as the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$;
@@ -1641,7 +1641,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a record or exception type with fields $\fields$;
   \item the field $\fieldname$ is not associated with any type in $\fields$
   \item the result is a \typingerrorterm{} indicating the missing field.
@@ -1671,7 +1671,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item the field $\fieldname$ is not found in $\bitfields$
   \item the result is a \typingerrorterm{} indicating the missing field.
@@ -1701,7 +1701,7 @@ All of the collection field expressions in
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vetwo$ is a variable expression for $\vbase$, that is, $\EVar(\vbase)$;
   \item $\vtetwo$ is a collection type with fields $\fields$;
   \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
@@ -1741,7 +1741,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
   \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
@@ -1774,7 +1774,7 @@ which refers to the bitfield \verb|info|, which is nested in the bitfield
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and nested bitfields $\bitfieldsp$, that is,
         $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
@@ -1815,13 +1815,13 @@ which includes the type annotation \verb|bits(4)|.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
   \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and typed bitfield with type $\vt$ that is,
         $\BitFieldType(\Ignore, \slices, \vt)$;
   \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
   \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
-  \item determining whether $\vtefour$ \typesatisfies\ $\vt$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vtefour$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
   \item define $\vses$ as $\vsesnew$.
 \end{itemize}
 \FormallyParagraph
@@ -1853,7 +1853,7 @@ for its verbatim string.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is \tupletypeterm{} with list of types $\tys$, that is, $\TTuple(\tys)$;
   \item $\fieldname$ is an identifier consisting of the prefix \itemprefix{} and the suffix $\num$;
   \item $\num$ is lexically an integer numeral with the integer value $\vindex$;
@@ -1891,7 +1891,7 @@ for its verbatim string.
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is neither one of the following types: record, exception, bitvector, or tuple;
   \item the result is an error indicating that the type of $\veone$ is inappropriate for accessing the field $\fieldname$.
 \end{itemize}
@@ -2003,7 +2003,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
         that is, $\EGetFields(\ebase, \vfields)$;
   \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
-  \item obtaining the \underlyingtype\ of $\tbaseannot$ in $\tenv$ yields \\
+  \item obtaining the \underlyingtypeterm\ of $\tbaseannot$ in $\tenv$ yields \\
         $\tbaseannotanon$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
@@ -2109,7 +2109,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \TypingRuleDef{FindBitFieldsSlices}
 \hypertarget{def-findbitfieldsslices}{}
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
-The helper function
+The function
 \[
   \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\vbitfields})
   \aslto \overname{\KleeneStar{\slice}}{\vslices} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -2179,7 +2179,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
 
 \TypingRuleDef{GetBitfieldWidth}
 \hypertarget{def-getbitfieldwidth}{}
-The helper function
+The function
 \[
   \getbitfieldwidth(
     \overname{\staticenvs}{\tenv} \aslsep
@@ -2234,7 +2234,7 @@ yields the literal expression for \verb|2|.
 \TypingRuleDef{WidthPlus}
 \hypertarget{def-widthplus}{}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
-The helper function
+The function
 \[
   \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs}) \typearrow \overname{\expr}{\ewidth}
   \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -2427,8 +2427,8 @@ and the corresponding annotated expressions in comments.
 \ExampleDef{Asserting Type Conversion of Well-constrained Integers}
 The specification in \listingref{typing-atc2} is well-typed,
 showing how to convert one \\
-\wellconstrainedintegertype{} into another
-\wellconstrainedintegertype{}.
+\wellconstrainedintegertypeterm{} into another
+\wellconstrainedintegertypeterm{}.
 \ASLListing{ATC of well-constrained integers}{typing-atc2}{\typingtests/TypingRule.ATC2.asl}
 
 \ExampleDef{Safely Applying Asserting Type Conversion to Bitvectors}
@@ -2452,13 +2452,13 @@ as it is applied to unrelated kinds of types.
 \begin{itemize}
   \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \vsese)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
+  \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
+  \item obtaining the \structureterm\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
   \item define $\vsesp$ as the union of $\vsesty$ and $\vsese$;
-  \item checking whether $\vtstruct$ \subtypesatisfies\ $\vtystruct$ in $\tenv$ yields \\
+  \item checking whether $\vtstruct$ \subtypesatisfiesterm\ $\vtystruct$ in $\tenv$ yields \\
         $\vallwayssucceeds$\ProseOrTypeError\
         (if $\vallwayssucceeds$ holds then the type assertion will always succeed dynamically, and therefore can be omitted);
   \item $\newe$ is $\vepp$ if $\vallwayssucceeds$ is $\True$ and $\EATC(\ttyp, \vepp)$ otherwise;
@@ -2490,7 +2490,7 @@ as it is applied to unrelated kinds of types.
 
 \TypingRuleDef{CheckATC}
 \hypertarget{def-checkatc}{}
-The helper function
+The function
 \[
   \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
   \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -2508,20 +2508,20 @@ are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yie
 \begin{itemize}
   \item \AllApplyCase{equal}
   \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item the result is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{different\_labels\_error}
   \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are different;
     \item the result is a \typingerrorterm{} indicating that the type assertion will always fail.
   \end{itemize}
 
   \item \AllApplyCase{int\_bits}
   \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is either $\TInt$ or $\TBits$;
     \item the result is $\True$.
@@ -2529,7 +2529,7 @@ are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yie
 
   \item \AllApplyCase{tuple}
   \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item $\vtone$ is a \tupletypeterm{} with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
     \item $\vtone$ is a \tupletypeterm{} with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
     \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeAssertionFailure};
@@ -2539,7 +2539,7 @@ are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yie
 
   \item \AllApplyCase{other\_error}
   \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalent\ to $\vttwo$ in $\tenv$ yields $\False$;
+    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
     \item the AST labels of $\vtone$ and $\vttwo$ are the same;
     \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
     \item the result is a \typingerrorterm{} indicating that the type assertion will always fail ($\TypeAssertionFailure$).
@@ -2701,7 +2701,7 @@ of the type \verb|integer{4, 5, 6}| fails.
   \begin{itemize}
     \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
     \item $\vb$ is $\True$ (since \TypingRuleRef{ATC}
-    succeeds in these cases only if the \structure\ of the type of the expression and the \structure\ of the type asserted against are \typeequivalent);
+    succeeds in these cases only if the \structureterm\ of the type of the expression and the \structureterm\ of the type asserted against are \typeequivalentterm);
     \item $\vg$ is the empty graph.
   \end{itemize}
 
@@ -2792,7 +2792,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 
 \subsubsection{Comments}
 Notice that these rules cover all types, including named types ($\TNamed$),
-since the \typedast\ returned from \TypingRuleRef{ATC} is the \structure\ of the type
+since the \typedast\ returned from \TypingRuleRef{ATC} is the \structureterm\ of the type
 given in the specification.
 %
 Parameterized integers (integers with an empty set of constraints)
@@ -2805,7 +2805,7 @@ cannot appear as a type, since ASL syntax does not allow the following:
 
 \SemanticsRuleDef{IsConstraintSat}
 \hypertarget{def-isconstraintsat}{}
-The helper relation
+The relation
 \[
   \isconstaintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
   (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
@@ -2824,7 +2824,7 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
   \begin{itemize}
     \item $\vc$ is a constraint for the expression $\ve$;
     \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $m$ and the \executiongraph\ $\vg$\ProseOrDynErrorDiverging.
+          by the native integer value for $m$ and the \executiongraphterm\ $\vg$\ProseOrDynErrorDiverging.
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
   \end{itemize}
 
@@ -2832,9 +2832,9 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
   \begin{itemize}
     \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
     \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $a$ and the \executiongraph\ $\vgone$\ProseOrDynErrorDiverging.
+          by the native integer value for $a$ and the \executiongraphterm\ $\vgone$\ProseOrDynErrorDiverging.
     \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $b$ and the \executiongraph\ $\vgtwo$\ProseOrDynErrorDiverging.
+          by the native integer value for $b$ and the \executiongraphterm\ $\vgtwo$\ProseOrDynErrorDiverging.
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater or equal to $a$ and less than or equal to $b$};
     \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$}.
   \end{itemize}
@@ -3036,7 +3036,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \begin{itemize}
   \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
-  \item obtaining the \structure\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
+  \item obtaining the \structureterm\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
   \item define $\vses$ as the union of $\vsesty$ and the set containing an \ImmutabilityTerm{} with immutability $\False$, and a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEReadonly$.
@@ -3200,9 +3200,9 @@ and an example (in comment) where the same field is initialized twice, which is 
 \begin{itemize}
   \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
         that is, $\ERecord(\tty, \vfields)$;
-  \item obtaining the \underlyingtype\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
-  \item checking that $\ttyanon$ is a \structuredtype\ yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\ttyanon$ is a \structuredtype\ with a list of $\vfield$ elements (consisting of a field name and a field type);
+  \item obtaining the \underlyingtypeterm\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
+  \item checking that $\ttyanon$ is a \structuredtypeterm\ yields $\True$\ProseTerminateAs{\UnexpectedType};
+  \item $\ttyanon$ is a \structuredtypeterm\ with a list of $\vfield$ elements (consisting of a field name and a field type);
   \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
         $\initializedfields$;
   \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
@@ -3270,7 +3270,7 @@ See \listingref{semantics-erecord} for an example.
   \item annotating the expression $\vep$ in $\tenv$ yields $(\vtp, \vepp, \vses)$\ProseOrTypeError;
   \item checking whether there exists a type associated with $\name$ in $\fieldtypes$ yields $\True$\ProseOrTypeError;
   \item the unique type associated with $\name$ in $\fieldtypes$ is $\tspecp$;
-  \item determining whether $\vtp$ \typesatisfies\ $\tspecp$ in $\tenv$ yields $\True$\ProseOrTypeError;
+  \item determining whether $\vtp$ \typesatisfiesterm\ $\tspecp$ in $\tenv$ yields $\True$\ProseOrTypeError;
 \end{itemize}
 
 \FormallyParagraph
@@ -3549,11 +3549,11 @@ which evaluates to
 \subsection{Typing}
 An expression $\ve$ is considered to be side-effect-free in the \staticenvironmentterm{} $\tenv$
 if $\annotateexpr(\tenv, \ve) \typearrow (\Ignore, \Ignore, \vses)$
-and $\vses$ is \readonly{}.
+and $\vses$ is \readonlyterm{}.
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESideEffectFreeExpr}
-The helper relation
+The relation
 \hypertarget{def-evalexprsef}{}
 \[
   \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
@@ -3593,7 +3593,7 @@ since side-effect-free expressions do not modify the environment.
 \hypertarget{def-evalexprlist}{}
 The relation
 \[
-  \evalexprlist{\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vle}} \;\aslrel\;
+  \evalexprlist(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vle}) \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultExprList((\overname{\KleeneStar{\nativevalue}}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
