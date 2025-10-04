@@ -1,26 +1,38 @@
 (rule
  (target grammar.cf)
+ (enabled_if %{bin-available:menhir2bnfc})
  (deps
-  (:par
-   %{env:ASLLIB_PARSER_CMLY=../../../../../_build/default/asllib/Parser.cmly}))
+  (:par %{workspace_root}/asllib/Parser.cmly))
  (action
-  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf)))
+  (run %{bin:menhir2bnfc} --with-lexer %{par} grammar.cf))
+ (mode
+  (promote
+   (until-clean)
+   (into ../../../))))
 
 (rule
  (targets AbsGrammar.ml LexGrammar.mll ParGrammar.mly)
  (deps
   (:gr grammar.cf))
+ (enabled_if
+  (and %{bin-available:bnfc} %{bin-available:menhir2bnfc}))
  (action
   (run %{bin:bnfc} --ocaml-menhir %{gr})))
 
-(ocamllex LexGrammar)
+(ocamllex
+ (modules LexGrammar)
+ (enabled_if
+  (and %{bin-available:bnfc} %{bin-available:menhir2bnfc})))
 
 (menhir
  (modules ParGrammar)
- (flags --unused-tokens --strict))
+ (flags --unused-tokens --strict)
+ (enabled_if
+  (and %{bin-available:bnfc} %{bin-available:menhir2bnfc})))
 
 (library
  (name bnfc_parser)
+ (optional)
  (modules :standard)
  (flags -w -33)
- (libraries herdtools7.asllib))
+ (libraries menhir2bnfc_lib))

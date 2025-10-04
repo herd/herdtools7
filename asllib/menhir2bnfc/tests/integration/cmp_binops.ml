@@ -53,9 +53,9 @@ let exprs : AST.expr enum =
 
 (** Convert expressions to string.
 
-    Compared to [PP.expr_to_string], this function never puts parentheses
-    around binary operations, whereas [PP.expr_to_string] always puts
-    parentheses around binary operations. *)
+    Compared to [PP.expr_to_string], this function never puts parentheses around
+    binary operations, whereas [PP.expr_to_string] always puts parentheses
+    around binary operations. *)
 let rec expr_to_string =
   let open AST in
   let open Printf in

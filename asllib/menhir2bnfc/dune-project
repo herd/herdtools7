@@ -1,4 +1,4 @@
-(lang dune 3.0)
+(lang dune 3.9)
 (name menhir2bnfc)
 (using menhir 2.0)
 (cram enable)
