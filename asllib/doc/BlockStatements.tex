@@ -42,7 +42,8 @@ as statements $\stmt$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Block Statements}
-\hypertarget{def-annotateblock}{}
+\RenderRelation{annotate_block}
+\BackupOriginalRelation{
 The function
 \[
   \annotateblock(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
@@ -51,6 +52,7 @@ The function
 annotates a block statement $\vs$ in \staticenvironmentterm{} $\tenv$ and returns the annotated
 statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \TypingRuleDef{Block}
 See \ExampleRef{Block Statements}.
@@ -81,8 +83,9 @@ an enclosing block, which has the effect of dropping bindings of the identifiers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Block Statements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RenderRelation{eval_block}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalblock}{}
 \[
   \evalblock(\overname{\envs}{\env} \times \overname{\stmt}{\stm}) \;\aslrel\;
   \left(
@@ -98,6 +101,7 @@ The relation
 evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
 which drops back to the original local environment of $\env$ when the evaluation terminates.
 \ProseOtherwiseAbnormal
+} % END_OF_BACKUP_RELATION
 
 \SemanticsRuleDef{Block}
 See \ExampleRef{Block Statements}.
