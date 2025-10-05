@@ -49,7 +49,8 @@ Therefore, the domain of values for the type \verb|integer{5..0}| is empty,
 which negates the possibility of having a \basevalueterm.
 \ASLListing{No Base Value for an Empty Integer Type}{base-values-bad-empty-type}{\typingtests/TypingRule.BaseValue.bad_empty.asl}
 
-\hypertarget{def-basevalue}{}
+\RenderRelation{base_value}
+\BackupOriginalRelation{
 The function
 \[
 \basevalue(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
@@ -58,6 +59,7 @@ The function
 returns the expression $\veinit$ which can be used to initialize a storage element
 of type $\vt$ in the \staticenvironmentterm{} $\tenv$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \TypingRuleDef{BaseValue}
 See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
@@ -298,7 +300,8 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \end{mathpar}
 
 \TypingRuleDef{ConstraintAbsMin}
-\hypertarget{def-constraintabsmin}{}
+\RenderRelation{constraint_abs_min}
+\BackupOriginalRelation{
 The function
 \[
     \constraintabsmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vc}) \aslto
@@ -308,6 +311,7 @@ The function
 returns a single element list containing the integer closest to $0$ that satisfies the constraint $\vc$ in $\tenv$, if one exists,
 and an empty list if the constraint represents an empty set.
 Otherwise, the result is $\TypeErrorVal{\NoBaseValue}$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Minimal Absolute Value in a Constraint List}
 The minimal absolute value of \verb|{7, -2}| is \verb|-2|.\\
@@ -381,7 +385,8 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \end{mathpar}
 
 \TypingRuleDef{ListMinAbs}
-\hypertarget{def-listminabs}{}
+\RenderRelation{list_min_abs}
+\BackupOriginalRelation{
 The function
 \[
 \listminabs(\overname{\KleeneStar{\Z}}{\vl}) \aslto \overname{\Z}{\vz}
@@ -390,6 +395,7 @@ returns $\vz$ --- the integer closest to $0$ among the list
 of integers in the list $\vl$. The result is biased towards positive integers. That is,
 if two integers $x$ and $y$ have the same absolute value and $x$ is positive and $y$ is negative
 then $x$ is considered closer to $0$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Minimal Absolute Value}
 The minimal absolute value of $[9, -3]$ is $-3$,

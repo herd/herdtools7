@@ -78,12 +78,15 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \end{mathpar}
 
 \ASTRuleDef{Subtype}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-subtype}{}
 The function
 \[
   \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \times \KleeneStar{(\Identifier\times \ty)})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[with\_fields]{}{
@@ -109,6 +112,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Subtypeopt}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-subtypeopt}{}
 The function
 \[
@@ -116,6 +120,8 @@ The function
     \overname{\Option((\Identifier \times \Option(\KleeneStar{(\Identifier\times \ty)})))}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[subtype\_opt]{
@@ -126,12 +132,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Fields}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-fields}{}
 The function
 \[
   \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\field}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[empty]{
@@ -194,7 +203,8 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
 \end{mathpar}
 
 \TypingRuleDef{DeclareType}
-\hypertarget{def-declaretype}{}
+\RenderRelation{declare_type}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -213,6 +223,7 @@ declares a type named $\name$ with type $\tty$ and \optionalterm\ additional fie
 over another type $\vs$
 in the \globalstaticenvironmentterm{} $\genv$, resulting in the modified \globalstaticenvironmentterm{} $\newgenv$, annotated type $\vttwo$, and annotated \optionalterm{} additional fields $\vsp$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Type Declarations}
 \listingref{DeclareType} shows examples of well-typed type declarations
@@ -288,7 +299,8 @@ $\GlobalEffect(\SEPure)$ and $\Immutability(\True)$.
 \identr{DHRC} \identd{YZBQ} \identr{DWSP} \identi{MZXL} \identr{MDZD} \identr{CHKR}
 
 \TypingRuleDef{AnnotateExtraFields}
-\hypertarget{def-annotateextrafields}{}
+\RenderRelation{annotate_extra_fields}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -305,6 +317,7 @@ The function
 annotates the type $\tty$ with the \optionalterm\ extra fields $\vs$ in $\tenv$, yielding
 the modified environment $\newtenv$, type $\newty$, and \optionalterm{} extra fields $\vsp$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Type Declarations with Fields and Without Fields}
 In \listingref{DeclareType} shows type declarations where one type subtypes
@@ -417,7 +430,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \end{mathpar}
 
 \TypingRuleDef{AnnotateTypeOpt}
-\hypertarget{def-annotatetypeopt}{}
+\RenderRelation{annotate_type_opt}
+\BackupOriginalRelation{
 The function
 \[
 \annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option(\overname{\ty}{\vt})}{\tyopt})
@@ -426,6 +440,7 @@ The function
 \]
 annotates the type $\vt$ inside an \optionalterm\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Optional Types}
 The following are examples of annotating a type inside an \optionalterm{} with the empty \staticenvironmentterm{}:
@@ -467,7 +482,8 @@ The following are examples of annotating a type inside an \optionalterm{} with t
 \end{mathpar}
 
 \TypingRuleDef{AnnotateExprOpt}
-\hypertarget{def-annotateexpropt}{}
+\RenderRelation{annotate_expr_opt}
+\BackupOriginalRelation{
 The function
 \[
   \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option(\expr)}{\expropt})
@@ -477,6 +493,7 @@ The function
 annotates the \optionalterm\ expression $\expropt$ in $\tenv$ and returns a pair of \optionalterm\ expressions
 for the type and annotated expression in $\vres$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Optional Expressions}
 The following are examples of annotating an expression inside an \optionalterm{} with the empty \staticenvironmentterm{}:
@@ -522,13 +539,15 @@ The following are examples of annotating an expression inside an \optionalterm{}
 \end{mathpar}
 
 \TypingRuleDef{DeclaredType}
-\hypertarget{def-declaredtype}{}
+\RenderRelation{declared_type}
+\BackupOriginalRelation{
 The function
 \[
   \declaredtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\id}) \aslto \overname{\ty}{\vt} \cup \typeerror
 \]
 retrieves the type associated with the identifier $\id$ in the \staticenvironmentterm{} $\tenv$.
 If the identifier is not associated with a declared type, the result is a \typingerrorterm.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Retrieving the Type Declared for an Identifier}
 
@@ -574,7 +593,8 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 \end{mathpar}
 
 \TypingRuleDef{DeclareEnumLabels}
-\hypertarget{def-declareenumlabels}{}
+\RenderRelation{declare_enum_labels}
+\BackupOriginalRelation{
 The function
 \[
 \declareenumlabels(\overname{\staticenvs}{\tenv} \aslsep
@@ -586,6 +606,7 @@ The function
 updates the \staticenvironmentterm{} $\tenv$ with the identifiers $\ids$ listed by an \enumerationtypeterm{},
 yielding the modified environment $\newtenv$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Declaring Enumeration Labels}
 
@@ -630,7 +651,8 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{mathpar}
 
 \TypingRuleDef{DeclareConst}
-\hypertarget{def-declareconst}{}
+\RenderRelation{declare_const}
+\BackupOriginalRelation{
 The function
 \[
 \declareconst(\overname{\globalstaticenvs}{\genv} \aslsep
@@ -643,6 +665,7 @@ The function
 adds a constant given by the identifier $\name$, type $\tty$, and literal $\vv$ to the
 \globalstaticenvironmentterm{} $\genv$, yielding the modified environment $\newgenv$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Declaring a Global Constant}
 In \listingref{DeclareConst}, declaring the constant \PI{}

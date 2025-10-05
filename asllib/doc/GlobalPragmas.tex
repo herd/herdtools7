@@ -74,7 +74,8 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \TypingRuleDef{CheckGlobalPragma}
-\hypertarget{def-checkglobalpragma}{}
+\RenderRelation{check_global_pragma}
+\BackupOriginalRelation{
 The function
 \[
   \checkglobalpragma(
@@ -87,6 +88,7 @@ The function
 typechecks a global pragma declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding $\True$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Global Pragmas}
 The specification in \listingref{CheckGlobalPragma} shows a well-typed global pragma,

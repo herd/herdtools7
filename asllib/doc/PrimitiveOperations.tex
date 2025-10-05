@@ -85,12 +85,15 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 }
 
 \ASTRuleDef{Unop}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-unop}{}
 The function
 \[
   \buildunop(\overname{\parsenode{\Nunop}}{\vparsednode}) \;\aslto\; \overname{\unop}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[bnot]{}{
@@ -111,12 +114,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Binop}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-binop}{}
 The function
 \[
   \buildbinop(\overname{\parsenode{\Nbinop}}{\vparsednode}) \;\aslto\; \overname{\binop}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[and]{}{
@@ -479,7 +485,8 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \pagebreak
 \TypeRulesDef{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
-\hypertarget{def-unopliterals}{}
+\RenderRelation{unop_literals}
+\BackupOriginalRelation{
 The function
 \[
   \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literal}{\vl}) \aslto
@@ -488,6 +495,7 @@ The function
 statically evaluates a unary operator $\op$ (a terminal derived from the AST non-terminal for unary operators)
 over a literal $\vl$ and returns the resulting literal $\vr$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \hypertarget{def-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
@@ -595,7 +603,8 @@ not_bits: NOT '11 01' = 0x2
 \end{mathpar}
 
 \TypingRuleDef{BinopLiterals}
-\hypertarget{def-binopliterals}{}
+\RenderRelation{binop_literals}
+\BackupOriginalRelation{
 The function
 \[
   \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \aslto
@@ -606,6 +615,7 @@ over a pair of literals $\vlone$ and $\vltwo$
 and returns the resulting literal $\vr$.
 The result is a \typingerrorterm{}, if it is illegal to apply the operator
 to the given values, or a different kind of \typingerrorterm{} is detected.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Boolean Operations}
 \listingref{binary-operations-boolean} shows applications
@@ -1625,12 +1635,14 @@ of \texttt{width} bits.
 \SemanticsRulesDef{Primitive Operations}
 
 \SemanticsRuleDef{UnopValues}
-\hypertarget{def-unoprel}{}
+\RenderRelation{eval_unop}
+\BackupOriginalRelation{
 The function
 \[
   \evalunop(\overname{\unop}{\op} \aslsep \overname{\nativevalue}{\vv}) \aslto \overname{\nativevalue}{\vw} \cup \TDynError
 \]
 evaluates a unary operator $\op$ over a \nativevalueterm{} $\vv$ and returns the \nativevalueterm{} $\vw$ or an error.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Valid Unary Operation}
 The following grounded rule shows how the application of negation
@@ -1707,7 +1719,8 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \end{mathpar}
 
 \SemanticsRuleDef{BinopValues}
-\hypertarget{def-binoprel}{}
+\RenderRelation{eval_binop}
+\BackupOriginalRelation{
 The function
 \[
   \evalbinop(\overname{\binop}{\op} \aslsep \overname{\nativevalue}{\vvone} \aslsep \overname{\nativevalue}{\vvtwo})
@@ -1715,6 +1728,7 @@ The function
 \]
 evaluates a binary operator $\op$ over a pair of \nativevaluesterm{}  --- $\vvone$ and $\vvtwo$ --- and returns the
 \nativevalueterm{}  $\vw$ or an error.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Valid Binary Operation}
 The following grounded rule shows how the application of addition

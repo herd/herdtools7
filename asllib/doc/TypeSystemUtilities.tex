@@ -32,13 +32,15 @@ This chapter defines functions and relations used by the type system.
 \end{itemize}
 
 \TypingRuleDef{CheckNoDuplicates}
-\hypertarget{def-checknoduplicates}{}
+\RenderRelation{check_no_duplicates}
+\BackupOriginalRelation{
 The function
 \[
   \checknoduplicates(\overname{\KleenePlus{\Identifier}}{\ids}) \aslto \{\True\} \cup \typeerror
 \]
 checks whether the non-empty list of identifiers $\ids$ contains a duplicate identifier. If it does not, the result
 is $\True$ and otherwise the result is a \typingerrorterm{}.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking for Absence of Duplicates in an Identifier List}
 In \listingref{typing-tenum}, annotating the \enumerationtypeterm{} \verb|Color|
@@ -144,7 +146,8 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \end{mathpar}
 
 \TypingRuleDef{FindBitfieldOpt}
-\hypertarget{def-findbitfieldopt}{}
+\RenderRelation{find_bitfield_opt}
+\BackupOriginalRelation{
 The function
 \[
   \findbitfieldopt(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\bitfields})
@@ -152,6 +155,7 @@ The function
 \]
 returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
 if there is one. Otherwise, the result is $\None$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Finding Bitfields}
 In \listingref{eget-bitfield}, annotating the expressions
@@ -208,13 +212,15 @@ which does not exist.
 \end{mathpar}
 
 \TypingRuleDef{TypeOfArrayLength}
-\hypertarget{def-typeofarraylength}{}
+\RenderRelation{type_of_array_length}
+\BackupOriginalRelation{
 The function
 \[
   \typeofarraylength(\overname{\arrayindex}{\size}) \aslto
   \overname{\ty}{\vt}
 \]
 returns the type for the array length $\size$ in $\vt$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Retrieving the Type of an Array from an Array Index}
 
@@ -267,12 +273,14 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
 
 \TypingRuleDef{AssocOpt}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{def-assocopt}{}
 The function
 \[
   \assocopt(\overname{\KleeneStar{(\Identifier\times T)}}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \Option(\overname{T}{\vv})
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
+} % END_OF_IGNORED_RELATION
 
 \ExampleDef{Finding a Value Associated with an Identifier}
 In \listingref{eget-record-field}, annotating the expressions \verb|my_record.i|
@@ -326,7 +334,8 @@ In \listingref{eget-bad-record-field}, however, annotating the expression \\
 \section{Static Environment Utilities}
 
 \TypingRuleDef{WithEmptyLocal}
-\hypertarget{def-withemptylocal}{}
+\RenderRelation{with_empty_local}
+\BackupOriginalRelation{
 The function
 \[
   \withemptylocal(\overname{\globalstaticenvs}{\genv})
@@ -334,6 +343,7 @@ The function
 \]
 constructs a \staticenvironmentterm{} from the \globalstaticenvironmentterm{} $\genv$
 and the empty \localstaticenvironmentterm.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Constructing a Static Environment with an Empty Local Environment}
 In \listingref{CheckVarNotInGEnv}, the typechecker constructs a \staticenvironmentterm{}
@@ -351,7 +361,8 @@ is the \localstaticenvironmentterm{} of $\emptytenv$.
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInEnv}
-\hypertarget{def-checkvarnotinenv}{}
+\RenderRelation{check_var_not_in_env}
+\BackupOriginalRelation{
 The function
 \[
   \checkvarnotinenv(\overname{\staticenvs}{\tenv} \aslsep \overname{\Strings}{\id})
@@ -359,6 +370,7 @@ The function
 \]
 checks whether $\id$ is already declared in $\tenv$. If it is, the result is a \typingerrorterm{},
 and otherwise the result is $\True$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether Variables are Bound in the Static Environment}
 See \ExampleRef{Checking Whether an Identifier is Associated with a Global Storage Element} and
@@ -390,7 +402,8 @@ is repeated.
 \CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInGEnv}
-\hypertarget{def-checkvarnotingenv}{}
+\RenderRelation{check_var_not_in_genv}
+\BackupOriginalRelation{
 The function
 \[
   \checkvarnotingenv(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Strings}{\vx})
@@ -398,6 +411,7 @@ The function
 \]
 checks whether $\id$ is already declared in the \globalstaticenvironmentterm{} $\genv$.
 If it is, the result is a \typingerrorterm{}, and otherwise the result is $\True$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether an Identifier is Bound in the Global Static Environment}
 In \listingref{CheckVarNotInGEnv}, the typechecker ensures that the following
@@ -434,7 +448,8 @@ is declared both as a global variable and as an enumeration label.
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \TypingRuleDef{AddLocal}
-\hypertarget{def-addlocal}{}
+\RenderRelation{add_local}
+\BackupOriginalRelation{
 The function
 \[
   \addlocal(
@@ -447,6 +462,7 @@ The function
 \]
 adds the identifier $\id$ as a local storage element with type $\tty$ and local declaration keyword $\ldk$
 to the local environment of $\tenv$, resulting in the \staticenvironmentterm{} $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Adding a Local Storage Element}
 In \listingref{AddLocal},
@@ -482,13 +498,15 @@ the following local storage elements are added:
 \end{mathpar}
 
 \TypingRuleDef{IsUndefined}
-\hypertarget{def-isundefined}{}
+\RenderRelation{is_undefined}
+\BackupOriginalRelation{
 The function
 \[
 \isundefined(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vx})
 \aslto \overname{\Bool}{\vb}
 \]
 checks whether the identifier $\vx$ is defined as a storage element in the \staticenvironmentterm{} $\tenv$.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Checking Whether an Identifier is Associated with a Global Storage Element} and
 \ExampleRef{Checking Whether an Identifier is Associated with a Local Storage Element}.
@@ -509,12 +527,14 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvi
 \CodeSubsection{\IsUndefinedBegin}{\IsUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsGlobalUndefined}
-\hypertarget{def-isglobalundefined}{}
+\RenderRelation{is_global_undefined}
+\BackupOriginalRelation{
 The function
 \[
 \isglobalundefined(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
 checks whether the identifier $\vx$ is defined in the \globalstaticenvironmentterm{} $\genv$ when subprogram definitions are ignored (see \RequirementRef{GlobalNamespace}), yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether an Identifier is Associated with a Global Storage Element}
 \listingref{isglobalundefined} shows a specification which defines a variable \verb|X| and a subprogram \verb|Y|.
@@ -540,12 +560,14 @@ $\globalstoragetypes$, and $\declaredtypes$.
 \CodeSubsection{\IsGlobalUndefinedBegin}{\IsGlobalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsLocalUndefined}
-\hypertarget{def-islocalundefined}{}
+\RenderRelation{is_local_undefined}
+\BackupOriginalRelation{
 The function
 \[
 \islocalundefined(\overname{\localstaticenvs}{\lenv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\Bool}{\vb}
 \]
 checks whether $\vx$ is declared as a local storage element in the static local environment $\lenv$, yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether an Identifier is Associated with a Local Storage Element}
 In \listingref{expressions-evar},
@@ -570,7 +592,8 @@ Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoraget
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupConstant}
-\hypertarget{def-lookupconstant}{}
+\RenderRelation{lookup_constant}
+\BackupOriginalRelation{
 The function
 \[
   \lookupconstant(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vs})
@@ -578,6 +601,7 @@ The function
 \]
 looks up the environment $\tenv$ for a constant $\vv$ associated with an identifier
 $\vs$. The result is $\bot$ if $\vs$ is not associated with any constant.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Looking Up Constants}
 The specification in \listingref{LookupConstant}
@@ -599,7 +623,8 @@ of the \globalstaticenvironmentterm{} and $\bot$ if it is unbound.}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalConstant}
-\hypertarget{def-addglobalconstant}{}
+\RenderRelation{add_global_constant}
+\BackupOriginalRelation{
 The function
 \[
 \addglobalconstant(
@@ -610,6 +635,7 @@ The function
 \]
 binds the identifier $\name$ to the literal $\vv$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding the updated \globalstaticenvironmentterm{} $\newgenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Binding Global Storage Elements to Constants}
 The specification in \listingref{AddGlobalConstant} is well-typed.
@@ -629,13 +655,15 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupImmutableExpr}
-\hypertarget{def-lookupimmutableexpr}{}
+\RenderRelation{lookup_immutable_expr}
+\BackupOriginalRelation{
 The function
 \[
 \lookupimmutableexpr(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vx}) \aslto \overname{\expr}{\ve} \cup \{\bot\}
 \]
 looks up the \staticenvironmentterm{} $\tenv$ for an immutable expression associated with the identifier $\vx$,
 returning $\bot$ if there is none.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Remembering Global Immutable Expressions}
 and \ExampleRef{Updating Static Environments for Immutable Expressions}.
@@ -690,7 +718,8 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalImmutableExpr}
-\hypertarget{def-addglobalimmutableexpr}{}
+\RenderRelation{add_global_immutable_expr}
+\BackupOriginalRelation{
 The function
 \[
 \addglobalimmutableexpr(
@@ -702,6 +731,7 @@ binds the identifier $\vx$, which is assumed to name a global storage element,
 to the expression $\ve$, which is assumed to be \symbolicallyevaluableterm,
 in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Remembering Global Immutable Expressions}
 The specification in \listingref{AddGlobalImmutableExpr}
@@ -725,7 +755,8 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 \CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddLocalImmutableExpr}
-\hypertarget{def-addlocalimmutableexpr}{}
+\RenderRelation{add_local_immutable_expr}
+\BackupOriginalRelation{
 The function
 \[
 \addlocalimmutableexpr(
@@ -737,6 +768,7 @@ binds the identifier $\vx$, which is assumed to name a local storage element,
 to the expression $\ve$, which is assumed to be \symbolicallyevaluableterm,
 in the \staticenvironmentterm{} $\tenv$,
 resulting in the updated environment $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
@@ -755,7 +787,8 @@ See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{ShouldRememberImmutableExpression}
-\hypertarget{def-shouldrememberimmutableexpression}{}
+\RenderRelation{should_remember_immutable_expression}
+\BackupOriginalRelation{
 The function
 \[
   \shouldrememberimmutableexpression(\overname{\TSideEffectSet}{\vses}) \typearrow \overname{\Bool}{\vb}
@@ -765,6 +798,7 @@ allows an expression with those \sideeffectdescriptorsterm\ to be
 recorded as an immutable expression in the appropriate $\exprequiv$ map component
 of the \staticenvironmentterm{}, so that it can later be used to
 reason about type satisfaction, yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Remembering vs. not Remembering Immutable Expressions}
 See \ExampleRef{Updating Static Environments for Immutable Expressions}
@@ -791,7 +825,8 @@ yields $\True$.
 \end{mathpar}
 
 \TypingRuleDef{AddImmutableExpr}
-\hypertarget{def-addimmutableexpression}{}
+\RenderRelation{add_immutable_expression}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -814,6 +849,7 @@ in the \staticenvironmentterm{} $\tenv$, if one exists in $\veopt$ and it is \sy
 respect to the \sideeffectsetterm\ $\vsese$,
 along with the local declaration keyword $\ldk$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Updating Static Environments for Immutable Expressions}
 In \listingref{AddImmutableExpr}, determining that the declarations for \verb|t|
@@ -877,7 +913,8 @@ specification.
 \end{mathpar}
 
 \TypingRuleDef{AddSubprogram}
-\hypertarget{def-addsubprogram}{}
+\RenderRelation{add_subprogram}
+\BackupOriginalRelation{
 The function
 \[
   \addsubprogram(
@@ -891,6 +928,7 @@ The function
 updates the global environment of $\tenv$ by mapping the (unique) subprogram identifier $\name$
 to the function definition $\funcdef$ and \sideeffectdescriptorsterm\ $\vs$ in $\tenv$,
 resulting in a new \staticenvironmentterm{} $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Updating a Static Environment for a Subprogram Declaration}
 Consider \listingref{AddSubprogramDecls}
@@ -954,7 +992,8 @@ binding $\name$ to $\funcdef$.
 \CodeSubsection{\AddSubprogramBegin}{\AddSubprogramEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddType}
-\hypertarget{def-addtype}{}
+\RenderRelation{add_type}
+\BackupOriginalRelation{
 The function
 \[
   \addtype(
@@ -967,6 +1006,7 @@ The function
 \]
 binds the type $\tty$ and \purity{} $\vf$ to the identifier $\name$ in the \staticenvironmentterm{} $\tenv$,
 yielding the modified \staticenvironmentterm{} $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Adding Types to Environments}
 In \listingref{DeclareType}, the declaration of the enumeration type \verb|Color|

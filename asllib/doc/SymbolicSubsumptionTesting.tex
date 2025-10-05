@@ -147,7 +147,8 @@ Other helper rules are as follows:
 \end{itemize}
 
 \TypingRuleDef{SymdomSubsetUnions}
-\hypertarget{def-symdomsubsetunions}{}
+\RenderRelation{symdom_subset_unions}
+\BackupOriginalRelation{
 The function
 \[
 \symdomsubsetunions(
@@ -159,6 +160,7 @@ conservatively tests whether the set of integers represented by $\sdone$
 is a subset of the set of integers represented by $\sdtwo$,
 in the context of the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Conservatively Testing Subsumption Between Two Lists of Symbolic Domains}
 In \listingref{SymdomOfConstraint}, typechecking the assignment \verb|x=y;|
@@ -254,7 +256,8 @@ In this example, this is true as the following hold:
 \end{mathpar}
 
 \TypingRuleDef{SymdomNormalize}
-\hypertarget{def-symdomnormalize}{}
+\RenderRelation{symdom_normalize}
+\BackupOriginalRelation{
 The function
 \[
 \symdomnormalize(\overname{\KleenePlus{\symdom}}{\symdoms}) \aslto \overname{\KleenePlus{\symdom}}{\newsymdoms}
@@ -263,6 +266,7 @@ transforms the list of symbolic domain $\symdoms$ into an equivalent list of sym
 (in the sense that they both represent the same set of integers)
 where all symbolic finite set integer domains are merged into a single symbolic finite set integer domain
 whose set of integers is the union of the sets of integers in the merged symbolic finite set integer domains.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Normalizing Symbolic Domains}
 In \listingref{SymdomOfConstraint}, normalizing the \symbolicdomainterm{} for the type\\
@@ -304,13 +308,15 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
 \end{mathpar}
 
 \TypingRuleDef{SymdomOfType}
-\hypertarget{def-symdomoftype}{}
+\RenderRelation{symdom_of_type}
+\BackupOriginalRelation{
 The function
 \[
   \symdomoftype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto \overname{\symdomortop}{\vd}
 \]
 transforms a type $\vt$ in a \staticenvironmentterm{} $\tenv$ into a symbolic domain $\vd$.
 It assumes its input type has an \underlyingtypeterm{} which is an integer.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Symbolic Domain of a Type}
 In \listingref{SymdomOfConstraint}, the \symbolicdomainterm{} for the type
@@ -397,7 +403,8 @@ is
 \end{mathpar}
 
 \TypingRuleDef{SymdomOfWidthExpr}
-\hypertarget{def-symdomofwidthexpr}{}
+\RenderRelation{symdom_of_width_expr}
+\BackupOriginalRelation{
 The function
 \[
 \symdomofwidthexpr(
@@ -407,6 +414,7 @@ The function
 \]
 assigns a symbolic domain $\vd$ to an \underline{integer typed} expression $\ve$,
 where $\ve$ is assumed to be the expression conveying the width of a \bitvectortypeterm.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Symbolic Domain of a Bitwidth Expression}
 The symbolic domain of the bitwidth expression \verb|2 * x|
@@ -428,7 +436,8 @@ for the exact constraint for the expression $\ve$}.
 \end{mathpar}
 
 \TypingRuleDef{SymdomOfConstraint}
-\hypertarget{def-symdomofconstraint}{}
+\RenderRelation{symdom_of_constraint}
+\BackupOriginalRelation{
 The function
 \[
   \symdomofconstraint(
@@ -441,6 +450,7 @@ transforms an integer constraint $\vc$ into a symbolic domain $\vd$
 in the context of the \staticenvironmentterm{} $\tenv$.
 It produces $\Top$ when the expressions involved in the integer constraints cannot be simplified
 to integers.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Symbolic Domain of a Constraint}
 In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|:
@@ -504,7 +514,8 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
 \end{mathpar}
 
 \TypingRuleDef{SymdomEval}
-\hypertarget{def-symdomeval}{}
+\RenderRelation{symdom_eval}
+\BackupOriginalRelation{
 The function
 \[
 \symdomeval(
@@ -514,6 +525,7 @@ The function
 \]
 \symbolicallysimplifiesterm\ the \underline{integer-typed} expression $\ve$ and returns the resulting integer or $\Top$ if
 the result of the simplification is not an integer.
+} % END_OF_BACKUP_RELATION
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
 and therefore applying $\normalize$ to it does not yield a \typingerrorterm{}.
@@ -563,7 +575,8 @@ yield $1$ and $6$, respectively.
 \end{mathpar}
 
 \TypingRuleDef{SymdomSubset}
-\hypertarget{def-symdomsubset}{}
+\RenderRelation{symdom_subset}
+\BackupOriginalRelation{
 The function
 \[
   \symdomsubset(
@@ -576,7 +589,7 @@ The function
 conservatively tests whether the values represented by the \symbolicdomainterm\ $\cdone$
 is a subset of the values represented by the \symbolicdomainterm\ $\cdtwo$ in any environment
 consisting of the \staticenvironmentterm{} $\tenv$, yielding the result in $\vb$.
-
+} % END_OF_BACKUP_RELATION
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
 That is, $\vsone$ represents a superset of the set of numbers represented by $\visone$.
 Notice that this can always be done as $\N$ overapproximates any set of integers.
@@ -601,13 +614,15 @@ In contrast, testing whether the \symbolicdomainterm{} for \verb|5..N|
 is a subset of the \symbolicdomainterm{} for \verb|N*2| yields $\False$.
 
 \hypertarget{def-approximationdirectionterm}{}
+\hypertarget{constant-CannotOverapproximate}{}
+\hypertarget{constant-CannotUnderapproximate}{}
 In the following rules, we use the symbol \RenderConstant{Over} to stand for \emph{overapproximation},
 the symbol \RenderConstant{Under} to stand for \emph{underapproximation},
-and the type \RenderType{approximation_direction}
+both defined by the following type: \RenderType{approximation_direction}
 We refer such a symbol as an \approximationdirectionterm.
-We also use the symbol \RenderConstant{CannotOverapproximate} to mean that a construct
+We also use the symbol \RenderConstant[remove_hypertargets]{CannotOverapproximate} to mean that a construct
 (like an expression or a constraint) cannot be precisely overapproximated,
-and \RenderConstant{CannotUnderapproximate} to mean that a construct cannot be precisely
+and \RenderConstant[remove_hypertargets]{CannotUnderapproximate} to mean that a construct cannot be precisely
 underapproximated.
 
 \ProseParagraph
@@ -748,7 +763,8 @@ underapproximated.
 \end{mathpar}
 
 \TypingRuleDef{ApproxConstraints}
-\hypertarget{def-approxconstraints}{}
+\RenderRelation{approx_constraints}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -763,6 +779,7 @@ conservatively approximates the non-empty list of constraints $\cs$ by a set of 
 The approximation is over all environments consisting of the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Constraint Lists}
 The specification in \listingref{ApproxConstraints} is well-typed,
@@ -808,7 +825,8 @@ showing how constraint lists are overapproximated.
 \CodeSubsection{\ApproxConstraintsBinopBegin}{\ApproxConstraintsBinopEnd}{../Typing.ml}
 
 \TypingRuleDef{ApproxConstraint}
-\hypertarget{def-approxconstraint}{}
+\RenderRelation{approx_constraint}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -824,6 +842,7 @@ The approximation is over all environments that consist of the \staticenvironmen
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
 If $\vc$ cannot be overapproximated, the result is $\CannotOverapproximate$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Constraints}
 The specification in \listingref{ApproxConstraint} is well-typed,
@@ -943,7 +962,8 @@ showing how constraints are overapproximated and underapproximated.
 \end{mathpar}
 
 \TypingRuleDef{MakeInterval}
-\hypertarget{def-makeinterval}{}
+\RenderRelation{make_interval}
+\BackupOriginalRelation{
 The function
 \[
 \makeinterval(
@@ -953,6 +973,7 @@ The function
 \]
 returns the interval between the integers $\vzone$ and $\vztwo$,
 or an approximation based on $\vapprox$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Intervals}
 The following are examples of over- and under-approximating intervals:
@@ -999,7 +1020,8 @@ The following are examples of over- and under-approximating intervals:
 \end{mathpar}
 
 \TypingRuleDef{ApproxExprMin}
-\hypertarget{def-approxexprmin}{}
+\RenderRelation{approx_expr_min}
+\BackupOriginalRelation{
 The function
 \[
 \approxexprmin(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
@@ -1008,6 +1030,7 @@ The function
 approximates the minimal integer represented by the expression $\ve$
 in any environment consisting of the \staticenvironmentterm{}
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating the Minimal Value of an Expression}
 In \listingref{ApproxExprMin}, approximating the minimal value of
@@ -1034,7 +1057,8 @@ yields $12$.
 \end{mathpar}
 
 \TypingRuleDef{ApproxExprMax}
-\hypertarget{def-approxexprmax}{}
+\RenderRelation{approx_expr_max}
+\BackupOriginalRelation{
 The function
 \[
 \approxexprmax(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
@@ -1043,6 +1067,7 @@ The function
 approximates the maximal integer represented by the expression $\ve$
 in any environment consisting of the \staticenvironmentterm{}
 $\tenv$. The result, yielded in $\vz$ is either an integer or $\CannotOverapproximate$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating the Maximal Value of an Expression}
 In \listingref{ApproxExprMax}, approximating the maximal value of
@@ -1069,7 +1094,8 @@ yields $10$.
 \end{mathpar}
 
 \TypingRuleDef{ApproxBottomTop}
-\hypertarget{def-approxbottomtop}{}
+\RenderRelation{approx_bottom_top}
+\BackupOriginalRelation{
 The function
 \[
 \approxbottomtop(\overname{\{\Under, \Over\}}{\vapprox}) \aslto
@@ -1077,6 +1103,7 @@ The function
 \]
 returns in $\vs$ either the empty set or the set of all integers,
 depending on the \approximationdirectionterm\ $\vapprox$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximation Extremes}
 In \listingref{ApproxBottomTop}, approximating the constraint \verb|a..b|
@@ -1096,12 +1123,14 @@ $\CannotOverapproximate$ if $\vapprox$ is $\Over$.}
 \end{mathpar}
 
 \TypingRuleDef{IntsetToConstraints}
-\hypertarget{def-intsettoconstraints}{}
+\RenderRelation{intset_to_constraints}
+\BackupOriginalRelation{
 The function
 \[
 \intsettoconstraints(\overname{\powfin{\Z}}{\vs}) \aslto \overname{\KleeneStar{\intconstraint}}{\cs}
 \]
 converts a finite set of integers $\vs$ into an equivalent list of constraints.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Integer Sets to Constraint Lists}
 The specification in \listingref{IntsetToConstraints} is well-typed,
@@ -1129,7 +1158,8 @@ showing how an instance of integer sets transformed to constraint lists.
 \end{mathpar}
 
 \TypingRuleDef{ApproxExpr}
-\hypertarget{def-approxexpr}{}
+\RenderRelation{approx_expr}
+\BackupOriginalRelation{
 The function
 \[
 \approxexpr(
@@ -1142,6 +1172,7 @@ conservatively approximates the expression $\ve$ by a set of integers $\vs$
 in the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Expressions}
 The specification in \listingref{ApproxExpr} is well-typed,
@@ -1314,7 +1345,8 @@ types.
 \end{mathpar}
 
 \TypingRuleDef{ApproxConstraintBinop}
-\hypertarget{def-approxconstraintbinop}{}
+\RenderRelation{approx_constraint_binop}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -1339,6 +1371,7 @@ approximates the application of the binary operator $\op$ to lists of constraint
 and $\vstwo$ with the \approximationdirectionterm{} $\vapprox$ in the context of the static
 environment $\tenv$, resulting in the list of constraints $\vs$ and \precisionlossindicator{}
 $\plf$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Binary Expressions Over Constraint Lists}
 The specification in \listingref{ApproxConstraintBinop} is well-typed.
@@ -1420,7 +1453,8 @@ the dynamic semantics.
 \end{mathpar}
 
 \TypingRuleDef{ApproxType}
-\hypertarget{def-approxtype}{}
+\RenderRelation{approx_type}
+\BackupOriginalRelation{
 The function
 \[
 \approxtype(
@@ -1433,6 +1467,7 @@ conservatively approximates the type $\vt$ by a set of integers $\vs$
 in the \staticenvironmentterm{} $\tenv$.
 The approximation is either overapproximation or underapproximation,
 based on the \approximationdirectionterm\ $\vapprox$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Approximating Types}
 The specification in \listingref{ApproxExpr} is well-typed.
@@ -1493,7 +1528,8 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 \end{mathpar}
 
 \TypingRuleDef{ConstraintBinop}
-\hypertarget{def-constraintbinop}{}
+\RenderRelation{constraint_binop}
+\BackupOriginalRelation{
 The function
 \[
 \constraintbinop(
@@ -1505,6 +1541,7 @@ The function
 \]
 symbolically applies the binary operation $\op$ to the lists of integer constraints $\csone$ and $\cstwo$,
 yielding the integer constraints $\newcs$.
+} % END_OF_BACKUP_RELATION
 
 For examples of the generated constraints
 for the modulus operation see \ExampleRef{Generating Modulus Constraints},
@@ -1586,7 +1623,8 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \CodeSubsection{\ConstraintBinopBegin}{\ConstraintBinopEnd}{../Typing.ml}
 
 \TypingRuleDef{ApplyBinopExtremities}
-\hypertarget{def-applybinopextremities}{}
+\RenderRelation{apply_binop_extremities}
+\BackupOriginalRelation{
 The function
 \[
 \applybinopextremities(
@@ -1596,6 +1634,7 @@ The function
 \]
 yields a list of constraints $\newcs$ for the constraints $\vcone$ and $\vctwo$, which are needed to include
 range constraints for cases where the binary operation $\op$ yields a \dynamicerrorterm{}.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Generating Constraints for Binary Operations}
 See \ExampleRef{Generating Range-to-Exact Constraints} and
@@ -1694,7 +1733,8 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 \end{mathpar}
 
 \TypingRuleDef{PossibleExtremitiesLeft}
-\hypertarget{def-possibleextremitiesleft}{}
+\RenderRelation{possible_extremities_left}
+\BackupOriginalRelation{
 The function
 \[
 \possibleextremitiesleft(
@@ -1705,6 +1745,7 @@ The function
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\va$ and $\vb$, which are needed to form constraints
 for cases where applying $\op$ to $\va$ and $\vb$ would lead to a \dynamicerrorterm{}.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Generating Range-to-Exact Constraints}
 The specification in \listingref{PossibleExtremitiesLeft}
@@ -1745,7 +1786,8 @@ contains an \exactconstraintterm.
 \end{mathpar}
 
 \TypingRuleDef{PossibleExtremitiesRight}
-\hypertarget{def-possibleextremitiesright}{}
+\RenderRelation{possible_extremities_right}
+\BackupOriginalRelation{
 The function
 \[
 \possibleextremitiesright(
@@ -1756,6 +1798,7 @@ The function
 yields a list of pairs of expressions $\extpairs$ given the binary operation $\op$
 and pair of expressions $\vc$ and $\vd$, which are needed to form constraints
 for cases where applying $\op$ to $\vc$ and $\vd$ would lead to a \dynamicerrorterm{}.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Generating Exact-to-Range Constraints}
 The specification in \listingref{PossibleExtremitiesRight}
@@ -1834,13 +1877,15 @@ contains a \rangeconstraintterm{}.
 \end{mathpar}
 
 \TypingRuleDef{ConstraintMod}
-\hypertarget{def-constraintmod}{}
+\RenderRelation{constraint_mod}
+\BackupOriginalRelation{
 The function
 \[
 \constraintmod(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
 \]
 yields a range constraint $\newc$ from $0$ to the expression in $\vc$ that is maximal.
 This is needed to apply the modulus operation to a pair of constraints.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Generating Modulus Constraints}
 The specification in \listingref{ConstraintMod}
@@ -1883,13 +1928,15 @@ inferred for \texttt{z} is\\
 \CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}
 
 \TypingRuleDef{ConstraintPow}
-\hypertarget{def-constraintpow}{}
+\RenderRelation{constraint_pow}
+\BackupOriginalRelation{
 The function
 \[
 \constraintpow(\overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vctwo}) \aslto \overname{\KleenePlus{\intconstraint}}{\newcs}
 \]
 yields a list of range constraints $\newcs$ that are needed to calculate the result of
 applying a $\POW$ operation to the constraints $\vcone$ and $\vctwo$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Generating Exponentiation Constraints}
 The specification in \listingref{ConstraintPow}
