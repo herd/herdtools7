@@ -38,7 +38,8 @@ matches a value specified by the \emph{pattern} $p$.
 transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 
 \paragraph{Typing:} Patterns are annotated by $\annotatepattern$.
-\hypertarget{def-annotatepattern}{}
+\RenderRelation{annotate_pattern}
+\BackupOriginalRelation{
 The function
 \[
   \annotatepattern(
@@ -51,10 +52,11 @@ annotates a pattern $\vp$ in a \staticenvironmentterm{} $\tenv$ given a type $\v
 resulting in $\newp$, which is the typed AST node for $\vp$
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError.
-
+} % END_OF_BACKUP_RELATION
 \paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
+\RenderRelation{eval_pattern}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalpattern}{}
 \[
   \evalpattern(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\pattern}{\vp}) \;\aslrel\;
   \left(
@@ -67,6 +69,8 @@ The relation
 \]
 determines whether a value $\vv$ matches the pattern $\vp$ in an environment $\env$
 resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
+} % END_OF_BACKUP_RELATION
+
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
@@ -845,12 +849,15 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 }
 
 \ASTRuleDef{PatternSet}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-patternset}{}
 The function
 \[
   \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[not]{}{
@@ -871,12 +878,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{PatternList}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-patternlist}{}
 The function
 \[
   \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule{
@@ -1042,12 +1052,15 @@ $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-exprpattern}{}
 The function
 \[
   \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
 \]
 transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[literal]{}{
