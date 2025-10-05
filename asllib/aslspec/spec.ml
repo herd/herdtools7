@@ -51,9 +51,7 @@ module Layout = struct
   let rec horizontal_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset { term = _, t } | Option (_, t) | List { member_type = _, t; _ }
-      ->
-        horizontal_for_type_term t
+    | Operator { term = _, t } -> horizontal_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
@@ -75,9 +73,7 @@ module Layout = struct
   let rec default_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Powerset { term = _, t } | Option (_, t) | List { member_type = _, t; _ }
-      ->
-        default_for_type_term t
+    | Operator { term = _, t } -> default_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
@@ -233,8 +229,7 @@ module Check = struct
     match (term, layout) with
     | Label _, Unspecified -> ()
     | Label _, _ -> raise (SpecError msg)
-    | Powerset { term = _, t }, _ | Option (_, t), _ -> check_layout t layout
-    | List { member_type = _, t }, _ -> check_layout t layout
+    | Operator { term = _, t }, _ -> check_layout t layout
     | LabelledTuple { components }, Horizontal cells
     | LabelledTuple { components }, Vertical cells ->
         if List.length components <> List.length cells then
@@ -276,8 +271,7 @@ module Check = struct
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids = function
     | Label id -> [ id ]
-    | Powerset { term = _, t } -> referenced_ids t
-    | Option (_, term) -> referenced_ids term
+    | Operator { term = _, t } -> referenced_ids t
     | LabelledTuple { label_opt; components } -> (
         let component_ids =
           List.map snd components |> Utils.list_concat_map referenced_ids
@@ -291,7 +285,6 @@ module Check = struct
         | Some label ->
             label
             :: (List.map snd fields |> Utils.list_concat_map referenced_ids))
-    | List { member_type = _, term } -> referenced_ids term
     | ConstantsSet constant_names -> constant_names
     | Function { from_type = _, from_term; to_type = _, to_term } ->
         referenced_ids from_term @ referenced_ids to_term

@@ -57,11 +57,9 @@ module Make (S : SPEC_VALUE) = struct
     let listed_vars =
       match term with
       | Label var -> [ var ]
-      | Powerset { term } -> opt_named_term_to_list term
-      | Option term -> opt_named_term_to_list term
+      | Operator { term } -> opt_named_term_to_list term
       | LabelledTuple { components } -> vars_of_opt_named_type_terms components
       | LabelledRecord { fields } -> vars_of_named_type_terms fields
-      | List { member_type } -> opt_named_term_to_list member_type
       | ConstantsSet _ -> []
       | Function { from_type; to_type } ->
           opt_named_term_to_list from_type @ opt_named_term_to_list to_type
@@ -164,6 +162,18 @@ module Make (S : SPEC_VALUE) = struct
     let () = fprintf fmt {|\end{array}|} in
     ()
 
+  (** Renders the operator [op] applied to the argument rendered by
+      [pp_arg fmt arg]. *)
+  let pp_operator op fmt pp_arg =
+    let operator_to_macro = function
+      | Powerset -> "pow"
+      | Powerset_Finite -> "powfin"
+      | List0 -> "KleeneStar"
+      | List1 -> "KleenePlus"
+      | Option -> "some"
+    in
+    fprintf fmt {|\%s{%a}|} (operator_to_macro op) pp_arg
+
   (** [pp_type_term mode term] formats [term] into a string suitable for LaTeX
       math mode. *)
   let rec pp_type_term fmt (type_term, layout) =
@@ -175,14 +185,8 @@ module Make (S : SPEC_VALUE) = struct
     let layout_contains_vertical = Layout.contains_vertical layout in
     match type_term with
     | Label name -> pp_print_string fmt (get_or_gen_math_macro name)
-    | Powerset { term = sub_term; finite } ->
-        let powerset_macro = if finite then {|\powfin|} else {|\pow|} in
-        fprintf fmt {|%s{%a}|} powerset_macro pp_opt_named_type_term
-          (sub_term, layout)
-    | Option sub_term ->
-        let optional_macro = {|\some|} in
-        fprintf fmt {|%s{%a}|} optional_macro pp_opt_named_type_term
-          (sub_term, layout)
+    | Operator { op; term = sub_term } ->
+        pp_operator op fmt pp_opt_named_type_term (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
         let is_type_reference =
           (* Singleton unlabelled tuples are a special case -
@@ -208,12 +212,6 @@ module Make (S : SPEC_VALUE) = struct
           | None -> ""
         in
         fprintf fmt {|%s%a|} label pp_record_fields (fields, layout)
-    | List { maybe_empty; member_type } ->
-        let iteration_macro =
-          if maybe_empty then {|\KleeneStar|} else {|\KleenePlus|}
-        in
-        fprintf fmt {|%s{%a}|} iteration_macro pp_opt_named_type_term
-          (member_type, layout)
     | ConstantsSet constant_names ->
         fprintf fmt {|%a|}
           (pp_parenthesized Braces layout_contains_vertical

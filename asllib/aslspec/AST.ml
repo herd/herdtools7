@@ -6,6 +6,22 @@ exception SpecError of string
 
 type type_kind = TypeKind_Generic | TypeKind_AST
 
+(** A unary operator that transforms one type into another. *)
+type operator =
+  | Powerset
+      (** A set containing all subsets (finite and infinite) of the given type.
+      *)
+  | Powerset_Finite
+      (** A set containing all finite subsets of the given type. *)
+  | List0
+      (** A set containing all (empty and non-empty) sequences of the given
+          member type. *)
+  | List1
+      (** A set containing all non-empty sequences of the given member type. *)
+  | Option
+      (** Either the empty set of a set containing a single value of the given
+          type. *)
+
 (** Terms for constructing types out of other types, with [Label t] being the
     leaf case.
 
@@ -17,12 +33,9 @@ type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Powerset of { term : opt_named_type_term; finite : bool }
-      (** A set containing all subsets of the given type. If [finite] is true
-          then only the finite subsets are included. *)
-  | Option of opt_named_type_term
-      (** Either the empty set of a set containing a single value of the given
-          type. *)
+  | Operator of { op : operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the operator [op] to the
+          type given by [term]. *)
   | LabelledTuple of {
       label_opt : string option;
       components : opt_named_type_term list;
@@ -37,9 +50,6 @@ type type_term =
     }
       (** A set containing all optionally-labelled records formed by the given
           fields. *)
-  | List of { maybe_empty : bool; member_type : opt_named_type_term }
-      (** A set containing all sequences of the given member type. If
-          [maybe_empty] is true, the list may also be empty. *)
   | ConstantsSet of string list
       (** A set containing all constants formed by the given names. *)
   | Function of {
@@ -55,6 +65,10 @@ and named_type_term = string * type_term
 
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
+
+(** [make_operator op term] Constructs an operator term with the given operator
+    and term. *)
+let make_operator op term = Operator { op; term }
 
 (** [make_tuple components] Constructs an unlabelled tuple for the tuple
     components [components]. *)
