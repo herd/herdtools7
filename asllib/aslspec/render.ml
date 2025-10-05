@@ -88,17 +88,28 @@ module Make (S : SPEC_VALUE) = struct
       [math_mode] is true then the result is surrounded by [$$]. *)
   let substitute_spec_vars_by_latex_vars ~math_mode str vars =
     let open Text in
-    let substitutions =
-      List.map
-        (fun var_str ->
+    let substitutions_map =
+      List.fold_left
+        (fun acc_map var_str ->
           let latex_var = spec_var_to_latex_var ~font_type:TextTT var_str in
           let latex_var =
             if math_mode then to_math_mode latex_var else latex_var
           in
-          (spec_var_to_template_var var_str, latex_var))
-        vars
+          let template_var = spec_var_to_template_var var_str in
+          StringMap.add template_var latex_var acc_map)
+        StringMap.empty vars
     in
-    apply_substitutions str substitutions
+    let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+    let blocks = Str.full_split template_var_regexp str in
+    List.fold_left
+      (fun acc block ->
+        match block with
+        | Str.Text txt -> acc ^ txt
+        | Str.Delim var -> (
+            match StringMap.find_opt var substitutions_map with
+            | Some latex_var -> acc ^ latex_var
+            | None -> acc ^ var))
+      "" blocks
 
   type parenthesis = Parens | Braces | Brackets
 
