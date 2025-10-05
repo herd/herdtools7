@@ -6,7 +6,9 @@ let regexp_spaces_segment = Str.regexp "[ \t]+"
 (** An under score escape sequence for LaTeX *)
 let escaped_underscore = {|\_|}
 
-let shrink_space_segments str = Str.global_replace regexp_spaces_segment " " str
+let shrink_whitespace str =
+  let regexp_newline_segment = Str.regexp "[ \n\r]+" in
+  Str.global_replace regexp_newline_segment " " str
 
 let escape_underscores str =
   Str.global_replace regex_underscore escaped_underscore str
