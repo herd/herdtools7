@@ -1689,7 +1689,7 @@ relation select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
 relation absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
          (b: Bool)
 {
-  "tests whether the \absolutebitfields{} {f1} and {f2}
+  "tests whether the \absolutebitfields{} {f} and {g}
   share the same name and exist in the same scope. If
   they do, {b} indicates whether their \absoluteslices\
   are equal. Otherwise, the result is $\True$.",
@@ -1771,7 +1771,7 @@ relation check_global_pragma(genv: global_static_envs, d: decl) ->
 //////////////////////////////////////////////////
 // Relations for Global Storage Declarations
 
-relation declare_global_storage(tenv: global_static_envs, gsd: global_decl) ->
+relation declare_global_storage(genv: global_static_envs, gsd: global_decl) ->
          (new_genv: global_static_envs, new_gsd: global_decl) | type_error
 {
   "annotates the global storage declaration {gsd} in the
@@ -1779,7 +1779,7 @@ relation declare_global_storage(tenv: global_static_envs, gsd: global_decl) ->
   modified \globalstaticenvironmentterm{} {new_genv} and
   annotated global storage declaration {new_gsd}.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {tenv} yields environment {new_genv} and declaration {new_gsd}"
+  prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}"
 };
 
 relation annotate_ty_opt_initial_value(
@@ -1821,7 +1821,7 @@ relation update_global_storage(
   \staticenvironmentterm{} {new_tenv}.
   \ProseOtherwiseTypeError This helper function is
   applied following $\addglobalstorage(\tenv, \name,
-  \gdk, \vt)$ where {t} is the type associated with
+  \gdk, \vt)$ where $\vt$ is the type associated with
   {name}.",
   prose_application = "\hyperlink{relation-updateglobalstorage}{updating} global storage {name} with keyword {gdk} and value {typed_initial_value} in {tenv} yields {new_tenv}"
 };
@@ -1911,7 +1911,7 @@ relation binop_literals(op: binop, v1: literal, v2: literal) ->
 {
   "statically evaluates a binary operator {op} (a
   terminal derived from the AST non-terminal for binary
-  operators) over a pair of literals {l1} and {l2} and
+  operators) over a pair of literals {v1} and {v2} and
   returns the resulting literal {r}. The result is a
   \typingerrorterm{}, if it is illegal to apply the
   operator to the given values, or a different kind of
@@ -2143,7 +2143,7 @@ relation binop_is_exploding(op: binop) ->
 relation mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
          (b: Bool)
 {
-  "checks whether the bitfield {bf} exists in {bfs2} in
+  "checks whether the bitfield {bf1} exists in {bfs2} in
   the context of {tenv}, returning the result in {b}.",
   prose_application = ""
 };
@@ -2297,18 +2297,18 @@ relation slices_to_positions(slices: list1((s: tint, l: tint))) ->
 relation max_pos_of_slice(s: tint, l: tint) ->
          (max_pos: tint)
 {
-  "returns the maximum position specified by the slices
-  {slices}, assuming that all slices consist only of
+  "returns the maximum position specified by the slice
+  starting at {s} of length {l}, assuming that all slices consist only of
   non-negative integers.",
   prose_application = ""
 };
 
 relation read_from_bitvector(v: native_value, slices: list0((tint, tint))) ->
-         (new: tbitvector) | TDynError
+         (new_v: tbitvector) | TDynError
 {
-  "reads from a bitvector {bv}, or an integer seen as a
+  "reads from a bitvector {v}, or an integer seen as a
   bitvector, the indices specified by the list of slices
-  {slices}, thereby concatenating their values.",
+  {slices}, thereby concatenating their values, yielding the new bitvector {new_v}.",
   prose_application = ""
 };
 
@@ -2375,7 +2375,7 @@ relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_val
   "declares the local identifier {x} in the environment
   {env}, in the context of the value-graph pair $(\vv,
   \vg)$, yielding a pair consisting of an environment
-  {new_env} and an \executiongraphterm{} {g2}.",
+  {new_env} and an \executiongraphterm{} {new_g}.",
   prose_application = ""
 };
 
@@ -2401,7 +2401,7 @@ relation ses_gdk(gdk: global_decl_keyword) ->
 };
 
 relation is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
-         (bv: Bool)
+         (b: Bool)
 {
   "tests whether a set of \sideeffectdescriptorsterm\
   {ses} are all \symbolicallyevaluableterm, yielding the
@@ -2713,7 +2713,7 @@ relation use_pattern(p: pattern) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
-  declaration {d} depends on.",
+  pattern {p} depends on.",
   prose_application = ""
 };
 
@@ -2777,7 +2777,7 @@ relation eval_spec(tenv: static_envs, spec: spec) -> (v: tint, g: XGraphs) | TDy
 
 relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: envs, new_g: XGraphs) | TDynError | TDiverging
 {
-   prose_description = "populates the environment {env} and output execution
+   prose_description = "populates {tenv} and output execution
                         graph {new_g} with the global storage declarations in
                         {typed_spec}, starting from the
                         \staticenvironmentterm{} {tenv}. This works by
@@ -3138,7 +3138,7 @@ relation check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier,
   prose_application = ""
 };
 
-relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs3: list0((Identifier, expr))) ->
+relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs: list0((Identifier, expr))) ->
          (ret_ty_opt: option(ty)) | type_error
 {
   "annotates the \optional{} return type
@@ -3520,7 +3520,7 @@ relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(
 relation check_control_flow(tenv: static_envs, f: func, body: stmt) ->
          (constants_set(True)) | type_error
 {
-  "checks whether the annotated body statement {s} of the
+  "checks whether the annotated body statement {body} of the
   function definition {f} obeys the control-flow
   requirements in the \staticenvironmentterm{} {tenv}.",
   prose_application = ""
@@ -3671,7 +3671,7 @@ relation constraints_equal(tenv: static_envs, cs1: list0(int_constraint), cs2: l
   prose_application = ""
 };
 
-relation constraint_equal(tenv: static_envs, c1: int_constraint, s2: int_constraint) ->
+relation constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_constraint) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the constraint {c1} is
@@ -4087,7 +4087,7 @@ relation make_anonymous(tenv: static_envs, ty: ty) ->
   prose_application = ""
 };
 
-relation check_constrained_integer(tenv: static_envs, ty: ty) ->
+relation check_constrained_integer(tenv: static_envs, t: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether the type {t} is a
@@ -4113,7 +4113,7 @@ relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: opt
 };
 
 relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
-         (new_tenv: static_envs, new_ty: ty) | type_error
+         (new_tenv: static_envs, new_ty: ty, s': list0(field)) | type_error
 {
   "annotates the type {ty} with the \optional{} extra
   fields {s} in {tenv}, yielding the modified
@@ -4161,7 +4161,7 @@ relation declare_enum_labels(tenv: static_envs, name: Identifier, ids: list1(Ide
   prose_application = ""
 };
 
-relation declare_const(genv: global_static_envs, name: Identifier, ty: ty, vv: literal) ->
+relation declare_const(genv: global_static_envs, name: Identifier, ty: ty, v: literal) ->
          (new_genv: global_static_envs) | type_error
 {
   "adds a constant given by the identifier {name}, type
@@ -4267,7 +4267,7 @@ relation check_var_not_in_env(tenv: static_envs, id: Strings) ->
   prose_application = ""
 };
 
-relation check_var_not_in_genv(genv: global_static_envs, x: Strings) ->
+relation check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
          (constants_set(True)) | type_error
 {
   "checks whether {id} is already declared in the
