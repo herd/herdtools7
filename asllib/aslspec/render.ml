@@ -118,7 +118,7 @@ module Make (S : SPEC_VALUE) = struct
     let right = if large then {|\right|} else "" in
     match parenthesis with
     | Parens -> fprintf fmt "%s(%a%s)" left pp_elem elem right
-    | Braces -> fprintf fmt "%s{%a%s}" left pp_elem elem right
+    | Braces -> fprintf fmt "%s\\{%a%s\\}" left pp_elem elem right
     | Brackets -> fprintf fmt "%s[%a%s]" left pp_elem elem right
 
   (** Renders an instance of the constant [name] in a term. *)
@@ -134,29 +134,10 @@ module Make (S : SPEC_VALUE) = struct
       {|\BeginDefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|}
       name hyperlink_target macro
 
-  (** [pp_latex_array_rows fmt rows] renders a table of elements using a LaTeX
-      array environment. The elements are assumed to be organized by the
-      (top-level) list [rows] representing the table rows. Each (second-level)
-      list represents a column where the elements are formatting functions
-      invoked with [fmt]. *)
-  let pp_latex_array_rows fmt rows =
-    let () = assert (not (Utils.list_is_empty rows)) in
-    let num_columns = List.length (List.hd rows) in
-    let rows_argument = String.init num_columns (fun _ -> 'l') in
-    let () = fprintf fmt {|\begin{array}{%s}@.|} rows_argument in
-    let () =
-      let num_rows = List.length rows in
-      List.iteri
-        (fun row_index row ->
-          List.iter (fun cell_fun -> cell_fun fmt) row;
-          (* emit a LaTeX line break, except for the last line. *)
-          if row_index < num_rows - 1 then fprintf fmt {|\\@.|}
-          else fprintf fmt {|@.|})
-        rows
-    in
-    let () = fprintf fmt {|\end{array}|} in
-    ()
-
+  (** [pp_latex_array alignment fmt pp_funs] renders a table of elements using a
+      LaTeX array environment. The [alignment] string specifies the alignment of
+      each column and is copied directly to the array environment. The [pp_funs]
+      specify how to format each cell in the array along with [fmt]. *)
   let pp_latex_array alignment fmt pp_funs =
     let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
     let num_columns = String.length alignment in
@@ -167,11 +148,12 @@ module Make (S : SPEC_VALUE) = struct
         (fun cell_index pp_fun ->
           let () = pp_fun fmt in
           let () =
-            if cell_index mod num_columns <> 0 then fprintf fmt {| & |} else ()
+            if (cell_index + 1) mod num_columns <> 0 then fprintf fmt {| & |}
+            else ()
           in
           let () =
             if
-              cell_index mod num_columns = 0
+              (cell_index + 1) mod num_columns = 0
               && cell_index < List.length pp_funs - 1
             then fprintf fmt {|\\@.|}
             else ()
@@ -202,13 +184,10 @@ module Make (S : SPEC_VALUE) = struct
         fprintf fmt {|%s{%a}|} optional_macro pp_opt_named_type_term
           (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
-        let first_label_opt, _ = List.hd components in
         let is_type_reference =
-          (* Singleton unlabelled tuples without a name are a special case -
+          (* Singleton unlabelled tuples are a special case -
            they used to reference type terms, rather than defining them. *)
-          Option.is_none label_opt
-          && Utils.is_singleton_list components
-          && Option.is_none first_label_opt
+          Option.is_none label_opt && Utils.is_singleton_list components
         in
         if is_type_reference then
           pp_opt_named_type_term fmt (List.hd components, layout)
@@ -319,21 +298,21 @@ module Make (S : SPEC_VALUE) = struct
     in
     match layout with
     | Vertical _ ->
-        let row_funs =
-          List.map
+        let field_pp_funs =
+          Utils.list_concat_map
             (fun (field_name, (field_term, layout)) ->
               [
                 (fun fmt ->
                   pp_print_string fmt
                     (Text.spec_var_to_latex_var ~font_type:Text field_name));
-                (fun fmt -> pp_print_string fmt " &:& ");
+                (fun fmt -> pp_print_string fmt " : ");
                 (fun fmt -> pp_type_term fmt (field_term, layout));
               ])
             fields_with_layouts
         in
         fprintf fmt {|%a|}
-          (pp_parenthesized Brackets true pp_latex_array_rows)
-          row_funs
+          (pp_parenthesized Brackets true (pp_latex_array "lcl"))
+          field_pp_funs
     | Horizontal _ ->
         let pp_field fmt (field_name, (field_term, layout)) =
           fprintf fmt {|%s : %a|}
@@ -353,10 +332,19 @@ module Make (S : SPEC_VALUE) = struct
       match layout with
       | Vertical layouts ->
           let terms_with_layouts = List.combine terms layouts in
-          fprintf fmt
-            {|\left(\begin{array}{ll}@[<hv>%a@] & \\@.\end{array}\right)|}
-            (PP.pp_sep_list ~sep:{| & \cup \\@.|} pp_type_term)
-            terms_with_layouts
+          let term_pp_funs =
+            List.mapi
+              (fun term_counter (term, layout) ->
+                [
+                  (fun fmt -> pp_type_term fmt (term, layout));
+                  (if term_counter < List.length terms - 1 then fun fmt ->
+                     pp_print_string fmt {|\cup|}
+                   else fun _fmt -> ());
+                ])
+              terms_with_layouts
+            |> List.concat
+          in
+          pp_latex_array "ll" fmt term_pp_funs
       | Horizontal layouts ->
           let terms_with_layouts = List.combine terms layouts in
           fprintf fmt {|\left(%a\right)|}
@@ -380,10 +368,13 @@ module Make (S : SPEC_VALUE) = struct
           (input_as_labelled_tuple, input_layout)
           pp_type_term_union (output, output_layout)
     | Vertical [ input_layout; output_layout ] ->
-        fprintf fmt {|\begin{array}{c}@.%a\\@.\bigtimes\\@.%a@.\end{array}|}
-          pp_type_term
-          (input_as_labelled_tuple, input_layout)
-          pp_type_term_union (output, output_layout)
+        pp_latex_array "c" fmt
+          [
+            (fun fmt ->
+              pp_type_term fmt (input_as_labelled_tuple, input_layout));
+            (fun fmt -> pp_print_string fmt {|\bigtimes|});
+            (fun fmt -> pp_type_term_union fmt (output, output_layout));
+          ]
     | _ -> assert false
 
   let pp_relation fmt ({ Relation.name; input; output } as def) =

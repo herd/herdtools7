@@ -11,8 +11,8 @@ type type_kind = TypeKind_Generic | TypeKind_AST
 
     In the context of a type definition, a [Label] variant defines a new label -
     a type representing just this single label. In other contexts, for example a
-    type variant appearing in the signature of a relation, this can either refer
-    to a type name of a label defined as a type variant. *)
+    type variant appearing in the signature of a relation, this can refer to a
+    type defined elsewhere. *)
 type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
