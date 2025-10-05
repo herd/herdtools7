@@ -48,38 +48,6 @@ module Make (S : SPEC_VALUE) = struct
     in
     sprintf "%s-%s" category name_id
 
-  (** [vars_of_type_term term] returns the list of term-naming variables that
-      occur at any depth inside [term]. *)
-  let rec vars_of_type_term term =
-    let opt_named_term_to_list (var, t) =
-      (match var with Some x -> [ x ] | None -> []) @ vars_of_type_term t
-    in
-    let listed_vars =
-      match term with
-      | Label var -> [ var ]
-      | Operator { term } -> opt_named_term_to_list term
-      | LabelledTuple { components } -> vars_of_opt_named_type_terms components
-      | LabelledRecord { fields } -> vars_of_named_type_terms fields
-      | ConstantsSet _ -> []
-      | Function { from_type; to_type } ->
-          opt_named_term_to_list from_type @ opt_named_term_to_list to_type
-    in
-    List.sort_uniq String.compare listed_vars
-
-  (** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming
-      variables that occur at any depth inside [opt_named_terms]. *)
-  and vars_of_opt_named_type_terms opt_named_terms =
-    List.map
-      (fun (name_opt, term) ->
-        let term_vars = vars_of_type_term term in
-        match name_opt with Some name -> name :: term_vars | None -> term_vars)
-      opt_named_terms
-    |> List.concat
-
-  and vars_of_named_type_terms named_terms =
-    List.map (fun (name, term) -> (Some name, term)) named_terms
-    |> vars_of_opt_named_type_terms
-
   (** [substitute_spec_vars_by_latex_vars math_mode s vars] returns a string [s]
       with every variable like [my_var] is substituted into [\texttt{my\_var}],
       which makes the returned string suitable to typsetting with LaTeX. If
