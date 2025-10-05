@@ -115,6 +115,7 @@ All the local storage declarations in \listingref{local-storage-discards} are il
 \ASLListing{Illegal local storage declarations that discard all storage elements}{local-storage-discards}{\syntaxtests/GuideRule.DiscardingLocalStorageDeclarations.asl}
 
 \ASTRuleDef{LocalDeclKeyword}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-localdeclkeyword}{}
 The function
 \[
@@ -122,6 +123,8 @@ The function
   \overname{\localdeclkeyword}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 % Transliteration note: simplify this when `--allow-local-constants' is removed.
 
@@ -138,12 +141,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{DeclItem}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-declitem}{}
 The function
 \[
   \builddeclitem(\overname{\parsenode{\Ndeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[var]{}{
@@ -168,6 +174,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{IgnoredOrIdentifier}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-ignoredoridentifier}{}
 The relation
 \[
@@ -175,6 +182,8 @@ The relation
   \overname{\Identifier}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[discard]{
@@ -227,7 +236,8 @@ with the type inferred type \texttt{integer{3}}.
 \identr{YSPM} \identd{FXST}
 
 \TypingRuleDef{CheckIsNotCollection}%
-\hypertarget{def-checkisnotcollection}{}
+\RenderRelation{check_is_not_collection}
+\BackupOriginalRelation{
 The function
 \[
   \checkisnotcollection(\overname{\staticenvs}{\tenv} \aslsep
@@ -236,6 +246,7 @@ The function
 \]
 checks whether the type $\vt$ has the structure of a \collectiontypeterm{}, and if so,
 raises a \typingerrorterm{}. Otherwise, the result is $\True$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Check is not collection}
 In \listingref{checkisnotcollection}, the statement

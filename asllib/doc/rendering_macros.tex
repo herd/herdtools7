@@ -8,11 +8,20 @@
 \newcommand{\DefineConstant}[2]{%
   \expandafter\newcommand\csname RenderConstant@#1\endcsname{#2}%
 }
-\newcommand{\RenderConstant}[1]{%
-  \@ifundefined{RenderConstant@#1}{%
-    \textbf{Error: RenderConstant '#1' not defined}%
+
+% Main RenderConstant command with optional parameter
+\newcommand{\RenderConstant}[2][]{%
+  \@ifundefined{RenderConstant@#2}{%
+    \textbf{Error: RenderConstant '#2' not defined}%
   }{%
-    \csname RenderConstant@#1\endcsname%
+    \expandafter\let\expandafter\@current@content\csname RenderConstant@#2\endcsname%
+    \def\@renderconstant@option{#1}%
+    \def\@test@remove{remove_hypertargets}%
+    \ifx\@renderconstant@option\@test@remove%
+      \expandafter\remove@hypertargets\expandafter{\@current@content}%
+    \else%
+      \@current@content%
+    \fi%
   }%
 }
 \makeatother
