@@ -202,15 +202,26 @@ module Make (S : SPEC_VALUE) = struct
         fprintf fmt {|%s{%a}|} optional_macro pp_opt_named_type_term
           (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
-        let label =
-          match label_opt with
-          | Some label -> get_or_gen_math_macro label
-          | None -> ""
+        let first_label_opt, _ = List.hd components in
+        let is_type_reference =
+          (* Singleton unlabelled tuples without a name are a special case -
+           they used to reference type terms, rather than defining them. *)
+          Option.is_none label_opt
+          && Utils.is_singleton_list components
+          && Option.is_none first_label_opt
         in
-        fprintf fmt "%s%a" label
-          (pp_parenthesized Parens layout_contains_vertical
-             pp_opt_named_type_terms)
-          (components, layout)
+        if is_type_reference then
+          pp_opt_named_type_term fmt (List.hd components, layout)
+        else
+          let label =
+            match label_opt with
+            | Some label -> get_or_gen_math_macro label
+            | None -> ""
+          in
+          fprintf fmt "%s%a" label
+            (pp_parenthesized Parens layout_contains_vertical
+               pp_opt_named_type_terms)
+            (components, layout)
     | LabelledRecord { label_opt; fields } ->
         let label =
           match label_opt with
