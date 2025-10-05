@@ -179,15 +179,15 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
-    | POWERSET; LPAR; ~=opt_named_type_term; RPAR; { Powerset {term=opt_named_type_term; finite=false} }
-    | POWERSET_FINITE; LPAR; ~=opt_named_type_term; RPAR; { Powerset {term=opt_named_type_term; finite=true} }
-    | OPTION; LPAR; ~=opt_named_type_term; RPAR; { Option opt_named_type_term }
+    | POWERSET; LPAR; ~=opt_named_type_term; RPAR; { make_operator Powerset opt_named_type_term }
+    | POWERSET_FINITE; LPAR; ~=opt_named_type_term; RPAR; { make_operator Powerset_Finite opt_named_type_term }
+    | LIST0; LPAR; member_type=opt_named_type_term; RPAR; { make_operator List0 member_type }
+    | LIST1; LPAR; member_type=opt_named_type_term; RPAR; { make_operator List1 member_type }
+    | OPTION; LPAR; ~=opt_named_type_term; RPAR; { make_operator Option opt_named_type_term }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
         LabelledTuple {label_opt = Some label; components} }
-    | LIST0; LPAR; member_type=opt_named_type_term; RPAR; { List { maybe_empty=true; member_type} }
-    | LIST1; LPAR; member_type=opt_named_type_term; RPAR; { List { maybe_empty=false; member_type}}
     | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_record fields }
     | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET;
     {   check_definition_name label;
