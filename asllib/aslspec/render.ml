@@ -258,7 +258,7 @@ module Make (S : SPEC_VALUE) = struct
 
   and pp_named_type_term fmt ((name, term), layout) =
     fprintf fmt {|\overtext{%a}{%s}|} pp_type_term (term, layout)
-      (Text.spec_var_to_prose name)
+      (Text.spec_var_to_latex_var ~font_type:TextTT name)
 
   and pp_opt_named_type_term fmt ((name_opt, term), layout) =
     match name_opt with
@@ -294,6 +294,7 @@ module Make (S : SPEC_VALUE) = struct
     | Unspecified -> assert false
 
   and pp_record_fields fmt (fields, layout) =
+    let layout = Layout.horizontal_if_unspecified layout fields in
     let field_layouts =
       match layout with
       | Horizontal l | Vertical l -> l
@@ -382,8 +383,8 @@ module Make (S : SPEC_VALUE) = struct
       substitute_spec_vars_by_latex_vars ~math_mode:true
         (Relation.prose_description def)
         vars
-      (* not necessary but nice to have: *)
-      |> Text.shrink_space_segments
+      (* necessary to avoid spurious line breaks. *)
+      |> Text.shrink_whitespace
     in
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hyperlink_target_for_id name in
