@@ -1510,24 +1510,27 @@ module Make
         let user =  ProcsUser.is procs_user proc in
         let args0 =
           let open Template in
-          if user then
-            let default_handler = A.default_sync_handler user in
-            { trashed=["tr0"];
-              inputs=
-                (fun k ->
-                   if A.Out.has_asmhandler out then k
-                   else
-                     ([],("default_handler","&"^default_handler))::k)
-                @@
-                [[CType.word,"cpu"],("sp_usr","user_stack[cpu]")];
-              constants=[];
-              clobbers=A.user_handler_clobbers;
-              externs=
-                if A.Out.has_asmhandler out then []
-                else [(CType.quad,default_handler)];
-            }
-          else no_extra_args in
-        Lang.dump_fun ~user
+          if Cfg.is_kvm then begin
+            if user then
+              let default_handler = A.default_sync_handler user in
+              { trashed=["tr0"];
+                inputs=
+                  (fun k ->
+                     if A.Out.has_asmhandler out then k
+                     else
+                       ([],("default_handler","&"^default_handler))::k)
+                  @@
+                  [[CType.word,"cpu"],("sp_usr","user_stack[cpu]")];
+                constants=[];
+                clobbers=A.user_handler_clobbers;
+                externs=
+                  if A.Out.has_asmhandler out then []
+                  else [(CType.quad,default_handler)];
+              }
+            else
+              { no_extra_args with trashed = ["tr0";]; }
+          end else no_extra_args in
+        Lang.dump_fun
           O.out args0 global_env envVolatile proc out
 
 (* Untouched variables, per thread + responsability *)

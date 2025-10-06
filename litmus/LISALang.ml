@@ -23,6 +23,8 @@ module Make(V:Constant.S) = struct
   type arch_reg = A.reg
   type t = A.Out.t
 
+  let has_explicit_handler _ = false
+
   module Tmpl = A.Out
 
   let checkVal f v = f v
@@ -102,8 +104,7 @@ module Make(V:Constant.S) = struct
 
   and compile_out_reg_fun p r = sprintf "*%s" (Tmpl.dump_out_reg p r)
 
-  let dump_fun ?user chan _args0 globEnv _volatileEnv proc t =
-    assert (Misc.is_none user) ;
+  let dump_fun chan _args0 globEnv _volatileEnv proc t =
     let env = t.Tmpl.ty_env in
     let addrs_proc = A.Out.get_addrs_only t in
     let addrs =

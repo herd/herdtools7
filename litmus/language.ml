@@ -17,8 +17,8 @@
 module type S = sig
   type t
 
+  val has_explicit_handler : t ->  bool
   val dump_fun :
-    ?user:bool ->
     out_channel ->
     Template.extra_args ->
     (string * CType.t) list ->

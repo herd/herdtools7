@@ -51,6 +51,8 @@ module RegMap = A.RegMap)
       type arch_reg = Tmpl.arch_reg
       type t = Tmpl.t
 
+      let has_explicit_handler = Tmpl.has_asmhandler
+
       open Printf
 
       let debug = false
@@ -560,13 +562,7 @@ module RegMap = A.RegMap)
 
       let nop_init t = List.exists (fun (_,v) -> A.V.is_nop v) t.Tmpl.init
 
-      let dump_fun ?(user=false) chan args0 globEnv _volatileEnv proc t =
-        let args0 = match t.Tmpl.fhandler with
-          | [] -> args0
-          | _ ->
-             let trashed =
-               if user then ["tr0";"tr1";] else  ["tr0"] in
-             { args0 with Template.trashed=trashed; } in
+      let dump_fun  chan args0 globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let parel1Env = extract_parel1s t in

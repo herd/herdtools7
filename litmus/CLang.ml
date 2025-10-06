@@ -47,6 +47,8 @@ module Make(C:Config)(E:Extra) = struct
 
   type t = CTarget.t
 
+  let has_explicit_handler _ = false
+
   let dump_start chan indent proc =
     if not E.simple then begin
       if C.asmcommentaslabel then
@@ -90,8 +92,7 @@ module Make(C:Config)(E:Extra) = struct
       (List.map
          (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
          env)
-  let dump_fun ?user chan _args0 globEnv _envVolatile proc t =
-    assert (Misc.is_none user) ;
+  let dump_fun chan _args0 globEnv _envVolatile proc t =
     let env = t.CTarget.ty_env in
     if dbg then
       begin
