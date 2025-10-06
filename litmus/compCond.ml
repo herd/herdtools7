@@ -64,7 +64,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
            | Some lbl -> OutUtils.fmt_lbl_var proc lbl
            | None -> "UNKNOWN"
            and loc = match loc with
-           | Some loc -> V.pp O.hexa loc
+           | Some loc -> V.pp_v_old loc
            | None -> "UNKNOWN"
            and ft = match ft with
            | None -> "Unknown"

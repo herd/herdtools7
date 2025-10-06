@@ -449,7 +449,7 @@ module Make
                  let ((p, lbl), loc, ftype) = f in
                  let lbl_cond = match lbl with
                    | None -> ""
-                   | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (sprintf "P%d_%s" p s))
+                   | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p s))
                  and loc_cond = match loc with
                    | None -> ""
                    | Some s -> sprintf " && data_symb == %s" (SkelUtil.data_symb_id (A.V.pp_v_old s))
@@ -976,7 +976,7 @@ module Make
             let ((p, lbl), loc, ft) = f in
             let lbl = match lbl with
               | None -> "UNKNOWN"
-              | Some s -> sprintf "P%d_%s" p s
+              | Some s -> OutUtils.fmt_lbl_var p s
             and loc = match loc with
               | None -> "UNKNOWN"
               | Some s -> A.V.pp_v_old s
