@@ -1,7 +1,10 @@
 # Basic tests
-  $ aslspec hello.spec
-  $ aslspec typedefs.spec
-  $ aslspec relations.spec
+  $ aslspec hello.spec --render; diff generated_macros.tex hello_macros.expected; rm -f generated_macros.tex
+  Generated LaTeX macros into generated_macros.tex
+  $ aslspec typedefs.spec --render; diff generated_macros.tex typedefs_macros.expected; rm -f generated_macros.tex
+  Generated LaTeX macros into generated_macros.tex
+  $ aslspec relations.spec --render; diff generated_macros.tex relations_macros.expected; rm -f generated_macros.tex
+  Generated LaTeX macros into generated_macros.tex
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 2 column 1

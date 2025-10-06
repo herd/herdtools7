@@ -1,0 +1,26 @@
+% ==================================================
+% AUTO-GENERATED - DO NOT EDIT
+% ==================================================
+
+% ------------------
+% Macros for symbols
+% ------------------
+
+\newcommand\t[0]{ \hyperlink{type-t}{\textsf{t}} } % Generated from t
+\newcommand\s[0]{ \hyperlink{type-s}{\textsf{s}} } % Generated from s
+\newcommand\A[0]{ \hyperlink{type-A}{\textsf{A}} } % Generated from A
+\newcommand\B[0]{ \hyperlink{type-B}{\textsf{B}} } % Generated from B
+
+% -------------------
+% Macros for elements
+% -------------------
+
+\BeginDefineType{t}{\hypertarget{type-t}{}$\t$} % EndDefineType
+
+\BeginDefineType{s}{\hypertarget{type-s}{}
+\begin{flalign*}
+\s \triangleq\ & \pow{\t}\hypertarget{type-A}{}\\
+\cup\ & \A\hypertarget{type-B}{}\\
+\cup\ & \B(\s, \s)\end{flalign*}} % EndDefineType
+
+
