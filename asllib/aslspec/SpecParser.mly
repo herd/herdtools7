@@ -181,8 +181,8 @@ let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
     | POWERSET; LPAR; ~=opt_named_type_term; RPAR; { make_operator Powerset opt_named_type_term }
     | POWERSET_FINITE; LPAR; ~=opt_named_type_term; RPAR; { make_operator Powerset_Finite opt_named_type_term }
-    | LIST0; LPAR; member_type=opt_named_type_term; RPAR; { make_operator List0 member_type }
-    | LIST1; LPAR; member_type=opt_named_type_term; RPAR; { make_operator List1 member_type }
+    | LIST0; LPAR; ~=opt_named_type_term; RPAR; { make_operator List0 opt_named_type_term }
+    | LIST1; LPAR; ~=opt_named_type_term; RPAR; { make_operator List1 opt_named_type_term }
     | OPTION; LPAR; ~=opt_named_type_term; RPAR; { make_operator Option opt_named_type_term }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;

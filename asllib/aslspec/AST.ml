@@ -8,19 +8,11 @@ type type_kind = TypeKind_Generic | TypeKind_AST
 
 (** A unary operator that transforms one type into another. *)
 type operator =
-  | Powerset
-      (** A set containing all subsets (finite and infinite) of the given type.
-      *)
-  | Powerset_Finite
-      (** A set containing all finite subsets of the given type. *)
-  | List0
-      (** A set containing all (empty and non-empty) sequences of the given
-          member type. *)
-  | List1
-      (** A set containing all non-empty sequences of the given member type. *)
-  | Option
-      (** Either the empty set of a set containing a single value of the given
-          type. *)
+  | Powerset  (** All subsets (finite and infinite) of the given type. *)
+  | Powerset_Finite  (** All finite subsets of the given type. *)
+  | List0  (** All (empty and non-empty) sequences of the given member type. *)
+  | List1  (** All non-empty sequences of the given member type. *)
+  | Option  (** A set containing at most a single value of the given type. *)
 
 (** Terms for constructing types out of other types, with [Label t] being the
     leaf case.
@@ -88,7 +80,7 @@ let make_record fields = LabelledRecord { label_opt = None; fields }
 let make_labelled_record label fields =
   LabelledRecord { label_opt = Some label; fields }
 
-(** Specifies how to layout a compound term. *)
+(** Specifies a visual layout for a compound term. *)
 type layout =
   | Unspecified
       (** No specific layout, appropriate for atomic terms and terms with
@@ -103,12 +95,15 @@ type layout =
 (** A module for totally ordered attribute keys. *)
 module AttributeKey = struct
   type t =
-    | Prose_Description  (** A description of the element in prose. *)
+    | Prose_Description
+        (** A description of the element in prose with template variables in the
+            format [{var}]. *)
     | Prose_Application
-        (** A description of the element in prose describing its application in
-            an inference rule premise. *)
-    | Math_Macro  (** A LaTeX macro for the element. *)
-    | Math_Layout  (** The layout of the element in a mathematical context. *)
+        (** A description of the element in prose, describing its application in
+            an inference rule premise. Can contain template variables in the
+            format [{var}]. *)
+    | Math_Macro  (** A LaTeX macro name for the element. *)
+    | Math_Layout  (** The visual layout of the element. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -160,8 +155,7 @@ module Attributes = struct
       (fun acc_map (k, v) ->
         if mem k acc_map then
           let msg =
-            Format.sprintf {| encountered second occurrence of attribute '%s'|}
-              (AttributeKey.to_str k)
+            Format.sprintf "Duplicate attribute: '%s'" (AttributeKey.to_str k)
           in
           raise (SpecError msg)
         else add k v acc_map)

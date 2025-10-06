@@ -129,14 +129,14 @@ let parse_command_line_args_and_execute () =
 
 (** Main entry point. Runs aslspec for the command-line options. *)
 let () =
-  try parse_command_line_args_and_execute () with
-  | CLI.CLIError msg ->
-      Format.eprintf "%sUsage Error: %s%s\n" Text.red msg Text.reset_color;
-      exit 1
-  | ParseError msg ->
-      Format.eprintf "%sSyntax Error: %s%s\n" Text.red msg Text.reset_color;
-      exit 1
-  | AST.SpecError msg ->
-      Format.eprintf "%sSpecification Error: %s%s\n" Text.red msg
-        Text.reset_color;
-      exit 1
+  try parse_command_line_args_and_execute () |> fun () -> exit 0
+  with error ->
+    let error_type, msg =
+      match error with
+      | CLI.CLIError msg -> ("Usage Error", msg)
+      | ParseError msg -> ("Syntax Error", msg)
+      | AST.SpecError msg -> ("Specification Error", msg)
+      | _ -> raise error
+    in
+    Format.eprintf "%s%s: %s%s\n" Text.red error_type msg Text.reset_color;
+    exit 1

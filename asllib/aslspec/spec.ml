@@ -3,6 +3,7 @@
 
 open AST
 module StringMap = Map.Make (String)
+module StringSet = Set.Make (String)
 
 (** [vars_of_type_term term] returns the list of term-naming variables that
     occur at any depth inside [term]. *)
@@ -27,7 +28,7 @@ let rec vars_of_type_term term =
     variables that occur at any depth inside [t], plus [var] if it is [Some x].
 *)
 and opt_named_term_to_var_list (var, t) =
-  (match var with Some x -> [ x ] | None -> []) @ vars_of_type_term t
+  Option.to_list var @ vars_of_type_term t
 
 (** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming
     variables that occur at any depth inside [opt_named_terms]. *)
@@ -141,7 +142,7 @@ module Layout = struct
   let horizontal_if_unspecified layout terms =
     match layout with
     | Horizontal _ | Vertical _ -> layout
-    | _ -> Horizontal (List.init (List.length terms) (fun _ -> Unspecified))
+    | _ -> Horizontal (List.map (fun _ -> Unspecified) terms)
 
   let rec contains_vertical = function
     | Unspecified -> false
@@ -170,8 +171,6 @@ let definition_node_attributes = function
   | Node_Relation { Relation.att }
   | Node_Constant { Constant.att } ->
       att
-
-type string_map = String.t StringMap.t
 
 let elem_name = function
   | Elem_Type { Type.name }
@@ -222,7 +221,7 @@ let make_id_to_definition_node definition_nodes =
     StringMap.empty definition_nodes
 
 type t = {
-  ast : AST.t;  (** The original AST as parsed. *)
+  ast : AST.t;  (** The original AST as parsed *)
   id_to_defining_node : definition_node StringMap.t;
       (** Associates identifiers with the AST nodes where they are defined. *)
   defined_ids : string list;
@@ -395,13 +394,13 @@ module Check = struct
         raises a [SpecError] detailing the unmatched variables. *)
     let check_prose_template_for_vars template vars =
       let open Text in
-      (* Associate each [var] with [{var}] *)
-      let substitutions_map =
+      (* Populate with [{var}] for each [var]. *)
+      let template_vars =
         List.fold_left
           (fun acc_map var_str ->
             let template_var = spec_var_to_template_var var_str in
-            StringMap.add template_var "" acc_map)
-          StringMap.empty vars
+            StringSet.add template_var acc_map)
+          StringSet.empty vars
       in
       let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
       (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
@@ -418,7 +417,7 @@ module Check = struct
             match block with
             | Str.Text _ -> acc
             | Str.Delim var -> (
-                match StringMap.find_opt var substitutions_map with
+                match StringSet.find_opt var template_vars with
                 | Some _ -> acc
                 | None -> var :: acc))
           [] blocks
@@ -439,11 +438,8 @@ module Check = struct
       let vars = vars_of_node defining_node in
       let () = check_prose_template_for_vars prose_description vars in
       match defining_node with
-      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
-          check_prose_template_for_vars prose_description vars
+      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ -> ()
       | Node_Relation def ->
-          let prose_description = Relation.prose_description def in
-          let () = check_prose_template_for_vars prose_description vars in
           let prose_application = Relation.prose_application def in
           let () = check_prose_template_for_vars prose_application vars in
           ()

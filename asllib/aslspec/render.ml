@@ -113,18 +113,9 @@ module Make (S : SPEC_VALUE) = struct
       List.iteri
         (fun cell_index pp_fun ->
           let () = pp_fun fmt in
-          let () =
-            if (cell_index + 1) mod num_columns <> 0 then fprintf fmt {| & |}
-            else ()
-          in
-          let () =
-            if
-              (cell_index + 1) mod num_columns = 0
-              && cell_index < List.length pp_funs - 1
-            then fprintf fmt {|\\@.|}
-            else ()
-          in
-          ())
+          if (cell_index + 1) mod num_columns <> 0 then fprintf fmt {| & |}
+          else if cell_index < List.length pp_funs - 1 then fprintf fmt {|\\@.|}
+          else ())
         pp_funs
     in
     let () = fprintf fmt {|\end{array}|} in
@@ -195,8 +186,11 @@ module Make (S : SPEC_VALUE) = struct
           | Horizontal l | Vertical l -> l
           | Unspecified -> assert false
         in
-        let input_layout = List.nth layout_list 0 in
-        let output_layout = List.nth layout_list 1 in
+        let input_layout, output_layout =
+          match layout_list with
+          | [ input_layout; output_layout ] -> (input_layout, output_layout)
+          | _ -> (* Layout is expected to be valid. *) assert false
+        in
         match layout with
         | Horizontal _ ->
             fprintf fmt {|%a %s %a|} pp_opt_named_type_term
@@ -392,7 +386,7 @@ The relation
     in
     let first_variant, variants_tail =
       match variants with
-      | [] -> assert false
+      | [] -> (* Expected to be called with non-empty list *) assert false
       | first_variant :: variants_tail -> (first_variant, variants_tail)
     in
     let variant_hyperlink_targets =
