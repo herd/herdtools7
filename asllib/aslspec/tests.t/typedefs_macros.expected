@@ -21,13 +21,13 @@
 % Macros for elements
 % -------------------
 
-\BeginDefineType{Int}{\hypertarget{type-Int}{}$\Int$} % EndDefineType
+\DefineType{Int}{\hypertarget{type-Int}{}$\Int$} % EndDefineType
 
-\BeginDefineConstant{One}{\hypertarget{constant-One}{} $\One$} % EndDefineConstant
+\DefineConstant{One}{\hypertarget{constant-One}{} $\One$} % EndDefineConstant
 
-\BeginDefineConstant{Two}{\hypertarget{constant-Two}{} $\Two$} % EndDefineConstant
+\DefineConstant{Two}{\hypertarget{constant-Two}{} $\Two$} % EndDefineConstant
 
-\BeginDefineType{B}{\hypertarget{type-B}{}\hypertarget{type-C}{}
+\DefineType{B}{\hypertarget{type-B}{}\hypertarget{type-C}{}
 \begin{flalign*}
 \B \triangleq\ & \C\\
 \cup\ & \pow{\Int}\\
@@ -46,7 +46,7 @@
 \hypertarget{type-LRec}{}\\
 \cup\ & \LRec\left[\text{f} : \Rec(\Int, \Int, \Int)\right]\end{flalign*}} % EndDefineType
 
-\BeginDefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
 \begin{flalign*}
 \expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
 |\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType

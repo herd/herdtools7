@@ -2,10 +2,10 @@
 %% Macros for defining and for rendering generated LaTeX elements
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% \BeginDefineConstant{name}{content} - Define a macro for later rendering constants
+%% \DefineConstant{name}{content} - Define a macro for later rendering constants
 %% \RenderConstant{name} - Render the defined constant
 \makeatletter
-\newcommand{\BeginDefineConstant}[2]{%
+\newcommand{\DefineConstant}[2]{%
   \expandafter\newcommand\csname RenderConstant@#1\endcsname{#2}%
 }
 \newcommand{\RenderConstant}[1]{%
@@ -18,7 +18,7 @@
 \makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% \BeginDefineType{name}{content} - Define a type macro for later rendering
+%% \DefineType{name}{content} - Define a type macro for later rendering
 %% \RenderType{name}[options] - Render a single type
 %%   Usage:
 %%     \RenderType{typename}                    - Render single type
@@ -29,7 +29,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \makeatletter
-\newcommand{\BeginDefineType}[2]{%
+\newcommand{\DefineType}[2]{%
   \expandafter\newcommand\csname RenderType@#1\endcsname{#2}%
 }
 
@@ -59,10 +59,10 @@
 \makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% \BeginDefineRelation{name}{content} - Define a macro for later rendering relations
+%% \DefineRelation{name}{content} - Define a macro for later rendering relations
 %% \RenderRelation{name} - Render the defined relation
 \makeatletter
-\newcommand{\BeginDefineRelation}[2]{%
+\newcommand{\DefineRelation}[2]{%
   \expandafter\newcommand\csname RenderRelation@#1\endcsname{#2}%
 }
 \newcommand{\RenderRelation}[1]{%
@@ -75,7 +75,7 @@
 \makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% \BeginDefineRenderTypes{name}{content} - Define a macro for later rendering
+%% \DefineRenderTypes{name}{content} - Define a macro for later rendering
 %% a list of subsets of complex types.
 %% \RenderTypes{name}[options] - Render the list of subsets of complex types.
 %%   Usage:
@@ -86,7 +86,7 @@
 %%   commands from the rendered content, useful for generating clean text versions.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \makeatletter
-\newcommand{\BeginDefineRenderTypes}[2]{%
+\newcommand{\DefineRenderTypes}[2]{%
   \expandafter\newcommand\csname RenderTypes@#1\endcsname{#2}%
 }
 

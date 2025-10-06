@@ -19,17 +19,17 @@
 % Macros for elements
 % -------------------
 
-\BeginDefineType{type}{\hypertarget{ast-type}{}\hypertarget{ast-Int}{}
+\DefineType{type}{\hypertarget{ast-type}{}\hypertarget{ast-Int}{}
 \begin{flalign*}
 \type \derives\ & \Int\hypertarget{ast-String}{}\\
 |\ & \String\end{flalign*}} % EndDefineType
 
-\BeginDefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
 \begin{flalign*}
 \expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
 |\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType
 
-\BeginDefineRelation{annotate_expr'}{
+\DefineRelation{annotate_expr'}{
 \hypertarget{relation-annotateexpr'}{}
 The relation
 \[
@@ -39,7 +39,7 @@ infers the type $\texttt{inferred\_type}$ for the expression
 $\texttt{input}$
 } % EndDefineRelation
 
-\BeginDefineRelation{annotate_plus}{
+\DefineRelation{annotate_plus}{
 \hypertarget{relation-annotateplus}{}
 The relation
 \[

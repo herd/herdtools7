@@ -15,9 +15,9 @@
 % Macros for elements
 % -------------------
 
-\BeginDefineType{t}{\hypertarget{type-t}{}$\t$} % EndDefineType
+\DefineType{t}{\hypertarget{type-t}{}$\t$} % EndDefineType
 
-\BeginDefineType{s}{\hypertarget{type-s}{}
+\DefineType{s}{\hypertarget{type-s}{}
 \begin{flalign*}
 \s \triangleq\ & \pow{\t}\hypertarget{type-A}{}\\
 \cup\ & \A\hypertarget{type-B}{}\\

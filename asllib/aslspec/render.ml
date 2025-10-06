@@ -97,8 +97,8 @@ module Make (S : SPEC_VALUE) = struct
     let macro = get_or_gen_math_macro name in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\BeginDefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|}
-      name hyperlink_target macro
+      {|\DefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|} name
+      hyperlink_target macro
 
   (** [pp_latex_array alignment fmt pp_funs] renders a table of elements using a
       LaTeX array environment. The [alignment] string specifies the alignment of
@@ -351,7 +351,7 @@ module Make (S : SPEC_VALUE) = struct
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\BeginDefineRelation{%s}{@.%a
+      {|\DefineRelation{%s}{@.%a
 The relation
 \[@.%a@.\]
 %a@.} %% EndDefineRelation|}
@@ -368,10 +368,10 @@ The relation
 
   (** [pp_define_type_wrapper name fmt pp_value value] renders a wrapper around
       the rendering of a type definition for the type. The wrapper uses the
-      LaTeX macro [\BeginDefineType{name}{...}] to define the type [name] with
-      the content rendered by [pp_value fmt value]. *)
+      LaTeX macro [\DefineType{name}{...}] to define the type [name] with the
+      content rendered by [pp_value fmt value]. *)
   let pp_define_type_wrapper name fmt pp_value value =
-    fprintf fmt {|\BeginDefineType{%s}{|} name;
+    fprintf fmt {|\DefineType{%s}{|} name;
     pp_value fmt value;
     fprintf fmt {|} %% EndDefineType|}
 
@@ -498,9 +498,9 @@ The relation
       pointers
 
   let pp_render fmt { TypesRender.name; pointers } =
-    fprintf fmt {|\BeginDefineRenderTypes{%s}{%a
-} %% EndDefineRenderTypes|}
-      name pp_pointers pointers
+    fprintf fmt {|\DefineRenderTypes{%s}{%a
+} %% EndDefineRenderTypes|} name
+      pp_pointers pointers
 
   let pp_elem fmt = function
     | Elem_Constant def -> pp_constant_definition fmt def
