@@ -99,8 +99,8 @@ let parse_command_line_args_and_execute () =
     List.map (fun filename -> parse_spec_from_file filename) config.spec_files
     |> List.concat
   in
-  let spec = Spec.from_ast ast in
   if config.pp then pp_std ast;
+  let spec = Spec.from_ast ast in
   if config.render then
     let generated_macros_filename = !arg_render_filename in
     let open AST in

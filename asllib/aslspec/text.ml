@@ -19,15 +19,17 @@ let underscore_to_space str = Str.global_replace regex_underscore " " str
 type font_type = Text | TextTT | TextSF | TextSC | TextIT
 
 let spec_var_to_latex_var ~font_type var_str =
-  let font =
-    match font_type with
-    | Text -> "text"
-    | TextTT -> "texttt"
-    | TextSF -> "textsf"
-    | TextSC -> "textsc"
-    | TextIT -> "textit"
-  in
-  Format.sprintf {|\%s{%s}|} font (escape_underscores var_str)
+  if String.equal var_str "_" then "\\Ignore"
+  else
+    let font =
+      match font_type with
+      | Text -> "text"
+      | TextTT -> "texttt"
+      | TextSF -> "textsf"
+      | TextSC -> "textsc"
+      | TextIT -> "textit"
+    in
+    Format.sprintf {|\%s{%s}|} font (escape_underscores var_str)
 
 let spec_var_to_prose var_str = underscore_to_space var_str
 let to_math_mode str = "$" ^ str ^ "$"

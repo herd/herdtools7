@@ -6,6 +6,58 @@ open Format
 open Text
 open Spec
 
+let extend_args_with_layouts args layout =
+  let layout = Layout.horizontal_if_unspecified layout args in
+  let args_layout =
+    match layout with
+    | Horizontal l | Vertical l -> l
+    | Unspecified -> assert false
+  in
+  assert (List.compare_lengths args args_layout = 0);
+  List.combine args args_layout
+
+let field_name_to_latex field_name =
+  Text.spec_var_to_latex_var ~font_type:Text field_name
+
+(** [pp_latex_array alignment fmt pp_fun_rows] renders a table of elements using
+    a LaTeX array environment. The [alignment] string specifies the alignment of
+    each column and is copied directly to the array environment. The
+    [pp_fun_rows] is a list of lists, where the outer list represents the array
+    rows and the inner lists represent the columns. *)
+let pp_latex_array alignment fmt pp_fun_rows =
+  let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
+  let num_columns = String.length alignment in
+  let pp_elt = fun fmt pp_fun -> pp_fun fmt in
+  let pp_one_row fmt pp_funs =
+    let () = assert (List.compare_length_with pp_funs num_columns = 0) in
+    pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt " & ") pp_elt fmt pp_funs
+  in
+  fprintf fmt "@[<v>\\begin{array}{%s}@ %a@ \\end{array}@]" alignment
+    (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt {|\\@ |}) pp_one_row)
+    pp_fun_rows
+
+let pp_sep_elements ~sep pp_elem layout fmt elements =
+  let layout = Layout.horizontal_if_unspecified layout elements in
+  let elements_with_layouts = extend_args_with_layouts elements layout in
+  match layout with
+  | Horizontal _ ->
+      pp_print_list
+        ~pp_sep:(fun fmt () -> fprintf fmt sep)
+        pp_elem fmt elements_with_layouts
+  | Vertical _ ->
+      let elem_pp_funs =
+        List.map
+          (fun elem_with_layout ->
+            [
+              (fun fmt ->
+                pp_elem fmt elem_with_layout;
+                pp_print_string fmt ",");
+            ])
+          elements_with_layouts
+      in
+      pp_latex_array "l" fmt elem_pp_funs
+  | Unspecified -> assert false
+
 (** * A signature for modules that provide a specification to the Make functor.
 *)
 module type SPEC_VALUE = sig
@@ -103,23 +155,6 @@ module Make (S : SPEC_VALUE) = struct
       {|\DefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|} name
       hyperlink_target macro
 
-  (** [pp_latex_array alignment fmt pp_fun_rows] renders a table of elements
-      using a LaTeX array environment. The [alignment] string specifies the
-      alignment of each column and is copied directly to the array environment.
-      The [pp_fun_rows] is a list of lists, where the outer list represents the
-      array rows and the inner lists represent the columns. *)
-  let pp_latex_array alignment fmt pp_fun_rows =
-    let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
-    let num_columns = String.length alignment in
-    let pp_elt = fun fmt pp_fun -> pp_fun fmt in
-    let pp_one_row fmt pp_funs =
-      let () = assert (List.compare_length_with pp_funs num_columns = 0) in
-      pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt " & ") pp_elt fmt pp_funs
-    in
-    fprintf fmt "@[<v>\\begin{array}{%s}@ %a@ \\end{array}@]" alignment
-      (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt {|\\@ |}) pp_one_row)
-      pp_fun_rows
-
   (** Renders the operator [op] applied to the argument rendered by
       [pp_arg fmt arg]. *)
   let pp_operator op fmt pp_arg =
@@ -176,37 +211,27 @@ module Make (S : SPEC_VALUE) = struct
              (PP.pp_sep_list ~sep:", " pp_constant_instance))
           constant_names
     | Function { from_type; to_type; total } -> (
+        let arrow_symbol = if total then {|\rightarrow|} else {|\partialto|} in
         let layout =
           Layout.horizontal_if_unspecified layout [ from_type; to_type ]
         in
-        let arrow_symbol = if total then {|\rightarrow|} else {|\partialto|} in
-        let layout_list =
-          match layout with
-          | Horizontal l | Vertical l -> l
-          | Unspecified -> assert false
-        in
-        let input_layout, output_layout =
-          match layout_list with
-          | [ input_layout; output_layout ] -> (input_layout, output_layout)
-          | _ -> (* Layout is expected to be valid. *) assert false
+        let from_type_with_layout, to_type_with_layout =
+          Utils.list_match_two_elements
+            (extend_args_with_layouts [ from_type; to_type ] layout)
         in
         match layout with
         | Horizontal _ ->
             fprintf fmt {|%a %s %a|} pp_opt_named_type_term
-              (from_type, input_layout) arrow_symbol pp_opt_named_type_term
-              (to_type, output_layout)
+              from_type_with_layout arrow_symbol pp_opt_named_type_term
+              to_type_with_layout
         | Vertical _ ->
             pp_latex_array "c" fmt
               [
                 [
-                  (fun fmt ->
-                    pp_opt_named_type_term fmt (from_type, input_layout));
+                  (fun fmt -> pp_opt_named_type_term fmt from_type_with_layout);
                 ];
                 [ (fun fmt -> pp_print_string fmt arrow_symbol) ];
-                [
-                  (fun fmt ->
-                    pp_opt_named_type_term fmt (to_type, output_layout));
-                ];
+                [ (fun fmt -> pp_opt_named_type_term fmt to_type_with_layout) ];
               ]
         | Unspecified -> assert false)
 
@@ -220,35 +245,7 @@ module Make (S : SPEC_VALUE) = struct
     | Some name -> pp_named_type_term fmt ((name, term), layout)
 
   and pp_opt_named_type_terms fmt (opt_type_terms, layout) =
-    let layout = Layout.horizontal_if_unspecified layout opt_type_terms in
-    let term_layouts =
-      match layout with
-      | Horizontal l | Vertical l -> l
-      | Unspecified -> assert false
-    in
-    let opt_terms_with_layouts = List.combine opt_type_terms term_layouts in
-    let num_terms = List.length opt_type_terms in
-    match layout with
-    | Horizontal _ ->
-        List.iteri
-          (fun i (opt_named_term, layout) ->
-            pp_opt_named_type_term fmt (opt_named_term, layout);
-            if i < num_terms - 1 then fprintf fmt ", " else ())
-          opt_terms_with_layouts
-    | Vertical _ ->
-        let term_pp_funs =
-          List.mapi
-            (fun term_counter term_and_layout ->
-              [
-                (fun fmt ->
-                  if term_counter < num_terms - 1 then
-                    fprintf fmt {|%a,@|} pp_opt_named_type_term term_and_layout
-                  else pp_opt_named_type_term fmt term_and_layout);
-              ])
-            opt_terms_with_layouts
-        in
-        pp_latex_array "c" fmt term_pp_funs
-    | Unspecified -> assert false
+    pp_sep_elements ~sep:", " pp_opt_named_type_term layout fmt opt_type_terms
 
   and pp_record_fields fmt (fields, layout) =
     let layout = Layout.horizontal_if_unspecified layout fields in
@@ -270,8 +267,7 @@ module Make (S : SPEC_VALUE) = struct
             (fun (field_name, (field_term, layout)) ->
               [
                 (fun fmt ->
-                  pp_print_string fmt
-                    (Text.spec_var_to_latex_var ~font_type:Text field_name));
+                  pp_print_string fmt (field_name_to_latex field_name));
                 (fun fmt -> pp_print_string fmt ":");
                 (fun fmt -> pp_type_term fmt (field_term, layout));
               ])
@@ -283,7 +279,7 @@ module Make (S : SPEC_VALUE) = struct
     | Horizontal _ ->
         let pp_field fmt (field_name, (field_term, layout)) =
           fprintf fmt {|%s : %a|}
-            (Text.spec_var_to_latex_var ~font_type:Text field_name)
+            (field_name_to_latex field_name)
             pp_type_term (field_term, layout)
         in
         fprintf fmt {|%a|}
@@ -296,9 +292,9 @@ module Make (S : SPEC_VALUE) = struct
       fprintf fmt {|%a|} pp_type_term (List.hd terms, layout)
     else
       let layout = Layout.horizontal_if_unspecified layout terms in
+      let terms_with_layouts = extend_args_with_layouts terms layout in
       match layout with
-      | Vertical layouts ->
-          let terms_with_layouts = List.combine terms layouts in
+      | Vertical _ ->
           let term_pp_funs =
             List.mapi
               (fun term_counter (term, layout) ->
@@ -311,8 +307,7 @@ module Make (S : SPEC_VALUE) = struct
               terms_with_layouts
           in
           pp_latex_array "ll" fmt term_pp_funs
-      | Horizontal layouts ->
-          let terms_with_layouts = List.combine terms layouts in
+      | Horizontal _ ->
           fprintf fmt {|\left(%a\right)|}
             (PP.pp_sep_list ~sep:{| \cup |} pp_type_term)
             terms_with_layouts
@@ -332,8 +327,6 @@ module Make (S : SPEC_VALUE) = struct
       | RelationProperty_Relation -> {|\bigtimes|}
       | RelationProperty_Function -> {|\longrightarrow|}
     in
-
-    let output = output in
     match layout with
     | Horizontal [ input_layout; output_layout ] ->
         fprintf fmt {|%a \;%s\; %a|} pp_type_term
@@ -501,16 +494,222 @@ The %s
         pp_pointer ~is_first:(i = 0) ~is_last:(i = num_pointers - 1) fmt pointer)
       pointers
 
-  let pp_render fmt { TypesRender.name; pointers } =
+  let pp_render_types fmt { TypesRender.name; pointers } =
     fprintf fmt {|\DefineRenderTypes{%s}{%a
 } %% EndDefineRenderTypes|} name
       pp_pointers pointers
+
+  module RenderRule = struct
+    open Rule
+
+    let infix_operator_to_string = function
+      | Operator_Assign -> "\\eqdef"
+      | Operator_Equal -> "="
+      | Operator_Iff -> "\\leftrightarrow"
+      | _ -> assert false
+
+    let prefix_operator_to_string = function
+      | Operator_List -> "\\LIST"
+      | Operator_Size -> "\\listlen"
+      | Operator_Union -> "\\cup"
+      | Operator_Some -> "\\some"
+      | _ -> ""
+
+    let pp_field_path fmt path =
+      let latex_path =
+        List.map (fun field_name -> field_name_to_latex field_name) path
+      in
+      pp_print_list
+        ~pp_sep:(fun fmt () -> fprintf fmt ".")
+        pp_print_string fmt latex_path
+
+    let rec pp_expr fmt (expr, layout) =
+      match expr with
+      | Var name ->
+          pp_print_string fmt
+            (Text.spec_var_to_latex_var ~font_type:Text.TextTT name)
+      | Application { lhs = Operator op; args = [ lhs; rhs ] }
+        when is_infix_operator op ->
+          let layout = Layout.horizontal_if_unspecified layout [ lhs; rhs ] in
+          let operands_with_layouts =
+            extend_args_with_layouts [ lhs; rhs ] layout
+          in
+          let lhs_with_layout, rhs_with_layout =
+            Utils.list_match_two_elements operands_with_layouts
+          in
+          fprintf fmt {|%a %s %a|} pp_expr lhs_with_layout
+            (infix_operator_to_string op)
+            pp_expr rhs_with_layout
+      | Application { lhs = Operator op; args } when is_prefix_operator op ->
+          let args_with_layouts = extend_args_with_layouts args layout in
+          fprintf fmt {|%s{%a}|}
+            (prefix_operator_to_string op)
+            (PP.pp_sep_list ~sep:", " pp_expr)
+            args_with_layouts
+      | Application { lhs; args } ->
+          let pp_lhs fmt lhs =
+            match lhs with
+            | Tuple ->
+                () (* Effectively, no left-hand-side so nothing to render. *)
+            | Relation name -> pp_print_string fmt (get_or_gen_math_macro name)
+            | TupleLabel name ->
+                pp_print_string fmt (get_or_gen_math_macro name)
+            | Fields path -> pp_field_path fmt path
+            | Operator _ | Unresolved _ -> assert false
+          in
+          fprintf fmt {|%a%a|} pp_lhs lhs
+            (pp_parenthesized Parens true
+               (pp_sep_elements ~sep:"," pp_expr layout))
+            args
+      | Record { label; fields } -> (
+          let layout = Layout.vertical_if_unspecified layout fields in
+          let field_exprs = List.map snd fields in
+          let field_exprs_with_layouts =
+            extend_args_with_layouts field_exprs layout
+          in
+          let field_names_and_exprs_with_layouts =
+            List.combine (List.map fst fields) field_exprs_with_layouts
+          in
+          match layout with
+          | Horizontal _ ->
+              fprintf fmt {|%s%a|}
+                (get_or_gen_math_macro label)
+                (pp_parenthesized Brackets true
+                   (PP.pp_sep_list ~sep:", "
+                      (fun fmt (field, expr_with_layout) ->
+                        fprintf fmt {|%s : %a|}
+                          (field_name_to_latex field)
+                          pp_expr expr_with_layout)))
+                field_names_and_exprs_with_layouts
+          | Vertical _ ->
+              let field_pp_funs =
+                List.map
+                  (fun (field_name, (field_expr, layout)) ->
+                    [
+                      (fun fmt ->
+                        pp_print_string fmt (field_name_to_latex field_name));
+                      (fun fmt -> pp_print_string fmt ":");
+                      (fun fmt -> pp_expr fmt (field_expr, layout));
+                    ])
+                  field_names_and_exprs_with_layouts
+              in
+              fprintf fmt {|%s%a|}
+                (get_or_gen_math_macro label)
+                (pp_parenthesized Braces true (pp_latex_array "lcl"))
+                field_pp_funs
+          | Unspecified -> assert false)
+      | ListIndex { var; index } ->
+          fprintf fmt {|%s[%s]|}
+            (Text.spec_var_to_latex_var ~font_type:TextTT var)
+            (Text.spec_var_to_latex_var ~font_type:TextTT index)
+      | FieldPath path -> pp_field_path fmt path
+
+    let arrow_macro_for_category_opt category_opt =
+      let open Relation in
+      let macro_name =
+        match category_opt with
+        | Some RelationCategory_Typing -> "typearrow"
+        | Some RelationCategory_Semantics -> "semanticsarrow"
+        | None -> "rightarrow"
+      in
+      "\\" ^ macro_name
+
+    let rec pp_judgment_form fmt (form, layout) =
+      match form with
+      | Expr expr -> pp_expr fmt (expr, layout)
+      | Transition { lhs; rhs } -> (
+          let arrow_macro =
+            match lhs with
+            | Application { lhs = Relation name; _ } ->
+                let { Relation.category } = Spec.relation_for_id S.spec name in
+                arrow_macro_for_category_opt category
+            | _ ->
+                (* TODO: shouldn't happen once all relations are defined, but for now
+                the following code is a safe fallback. Once all relations have been
+                defined: assert false *)
+                arrow_macro_for_category_opt None
+          in
+          let layout = Layout.horizontal_if_unspecified layout [ lhs; rhs ] in
+          let lhs_with_layout, rhs_with_layout =
+            Utils.list_match_two_elements
+              (extend_args_with_layouts [ lhs; rhs ] layout)
+          in
+          match layout with
+          | Horizontal _ ->
+              fprintf fmt {|%a \;%s\; %a|} pp_expr lhs_with_layout arrow_macro
+                pp_expr rhs_with_layout
+          | Vertical _ ->
+              pp_latex_array "r" fmt
+                [
+                  [
+                    (fun fmt ->
+                      pp_expr fmt lhs_with_layout;
+                      pp_print_string fmt arrow_macro);
+                  ];
+                  [ (fun fmt -> pp_expr fmt rhs_with_layout) ];
+                ]
+          | _ -> assert false)
+      | Indexed { index; list; body } ->
+          fprintf fmt {|%s \in %s \;:\; %a|} index list pp_judgment_form
+            (body, layout)
+      | Output _ ->
+          assert false (* Was supposed to be resolved into a transition. *)
+
+    let pp_judgment fmt ({ Rule.form } as judgment) =
+      let layout = Rule.judgment_layout judgment in
+      fprintf fmt "{%a}" pp_judgment_form (form, layout)
+
+    let pp_case_name_opt fmt name_opt =
+      match name_opt with
+      | None -> ()
+      | Some name -> fprintf fmt "[%s]" (Text.escape_underscores name)
+
+    let pp_math_expanded_rule fmt { ExpandRules.name_opt; judgments } =
+      let premises, conclusion = Utils.split_last judgments in
+      fprintf fmt
+        {|\begin{mathpar}@.\inferrule%a{@.%a@.}{@.%a@.}@.\end{mathpar}|}
+        pp_case_name_opt name_opt
+        (pp_print_list
+           ~pp_sep:(fun fmt () -> fprintf fmt "\\\\\\\\@.")
+           pp_judgment)
+        premises pp_judgment conclusion
+
+    let pp_math_expanded_rules fmt expanded_rules =
+      pp_print_list
+        ~pp_sep:(fun fmt () -> fprintf fmt "@.@.")
+        pp_math_expanded_rule fmt expanded_rules
+
+    let pp_render_rule fmt { RuleRender.name; relation_name; path } =
+      let { Relation.rule_opt; category } =
+        Spec.relation_for_id S.spec relation_name
+      in
+      let rule = Option.get rule_opt in
+      let expanded_rules = ExpandRules.expand category rule in
+      let expanded_subset =
+        List.filter
+          (fun { ExpandRules.name_opt; _ } ->
+            match name_opt with
+            | None -> true
+            | Some expanded_path ->
+                Utils.string_starts_with ~prefix:path expanded_path)
+          expanded_rules
+      in
+      fprintf fmt
+        {|\DefineRule{%s}{
+\ProseParagraph
+
+\FormallyParagraph
+%a
+} %% EndDefineRule|}
+        name pp_math_expanded_rules expanded_subset
+  end
 
   let pp_elem fmt = function
     | Elem_Constant def -> pp_constant_definition fmt def
     | Elem_Type def -> pp_type fmt def
     | Elem_Relation def -> pp_relation fmt def
-    | Elem_Render def -> pp_render fmt def
+    | Elem_RenderTypes def -> pp_render_types fmt def
+    | Elem_RenderRule def -> RenderRule.pp_render_rule fmt def
 
   (** Renders a LaTeX document containing all of the elements in [S.spec]. A
       header and footer are added to enable compiling the generated file
@@ -562,7 +761,7 @@ The %s
 \RenderType{%s}
 |}
                 latex_name PP.pp_elem elem name
-          | Elem_Render _ ->
+          | Elem_RenderTypes _ ->
               fprintf fmt
                 {|
 \section*{%s}
@@ -570,6 +769,16 @@ The %s
 %a
 \end{lstlisting}
 \RenderTypes{%s}
+|}
+                latex_name PP.pp_elem elem name
+          | Elem_RenderRule _ ->
+              fprintf fmt
+                {|
+\section*{%s}
+\begin{lstlisting}
+%a
+\end{lstlisting}
+\RenderRule{%s}
 |}
                 latex_name PP.pp_elem elem name)
         (Spec.ast S.spec)
