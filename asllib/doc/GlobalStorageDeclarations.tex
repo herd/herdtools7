@@ -637,6 +637,10 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 
 \TypingRuleDef{UpdateGlobalStorage}
 \RenderRelation{update_global_storage}
+
+This helper function is applied following
+$\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$ is the type associated with
+$\name$.
 \BackupOriginalRelation{
 The function
 \[
