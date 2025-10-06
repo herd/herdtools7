@@ -19,15 +19,19 @@ let check_definition_name name =
 
 (* Keyword tokens *)
 %token AST
+%token CASE
+%token COLON_EQ
 %token CONSTANT
 %token CONSTANTS_SET
 %token FUN
-%token PARTIAL
+%token INDEX
+%token LATEX
 %token LIST0
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token OPTION
+%token PARTIAL
 %token POWERSET
 %token POWERSET_FINITE
 %token PROSE_APPLICATION
@@ -40,6 +44,7 @@ let check_definition_name name =
 %token ARROW
 %token COMMA
 %token COLON
+%token DOT
 %token EQ
 %token SEMI
 %token VDASH
@@ -50,6 +55,10 @@ let check_definition_name name =
 %token LBRACE
 %token RBRACE
 %token MINUS
+%token MINUS_MINUS
+
+%nonassoc EQ
+%left LBRACKET DOT LPAR
 
 %%
 
@@ -134,9 +143,9 @@ let type_definition :=
 
 let relation_definition :=
     RELATION; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
-    attributes=relation_attributes; SEMI;
+    ~=relation_attributes; ~=opt_relation_rule; SEMI;
     {   check_definition_name name;
-        Elem_Relation (Relation.make name input output attributes) }
+        Elem_Relation (Relation.make name input output relation_attributes opt_relation_rule) }
 
 let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes; SEMI;
     {   check_definition_name name;
@@ -146,20 +155,30 @@ let type_attributes ==
     LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
 
 let type_attribute :=
+    | prose_description_attribute
+    | math_macro_attribute
+    | math_layout_attribute
+
+let prose_description_attribute ==
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
     | template=STRING; { (Prose_Description, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_macro_attribute ==
+    MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_layout_attribute ==
     | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
 
 let relation_attribute :=
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
-    | template=STRING; { (Prose_Description, StringAttribute template) }
-    | PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
-    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | prose_application_attribute
+    | type_attribute
+
+let prose_application_attribute ==
+    PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
@@ -218,3 +237,53 @@ let render_definition :=
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
     | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }
+
+let opt_relation_rule := { None }
+    | EQ; rule=rule; { Some rule }
+
+let rule := elements=list1(rule_element); { Rule.Case { name = "_"; elements } }
+
+let rule_element :=
+    | ~=judgment; SEMI; { Rule.Judgement judgment }
+    | CASE; name=IDENTIFIER; LBRACE; elements=terminated(list(rule_element), RBRACE);
+      { Rule.Case { name; elements } }
+
+let judgment :=
+    | ~=judgment_form; ~=judgment_attributes; { Rule.make_judgement judgment_form judgment_attributes  }
+    | ~=judgment_form; { Rule.make_judgement judgment_form [] }
+
+let judgment_form :=
+    | ~=expr;
+      { Rule.Expr expr }
+    | expr1=expr; COLON_EQ; expr2=expr;
+      { Rule.Expr (Rule.Application
+       { func = Rule.Operator Rule.Assign; components = [expr1; expr2] }) }
+    | MINUS_MINUS; ~=expr;
+      { Rule.Output expr }
+    | lhs=expr; ARROW; rhs=expr;
+      { Rule.Transition { lhs; rhs } }
+    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; RPAR; COLON; body=judgment_form;
+      { Rule.Indexed { index; list; body } }
+
+let expr :=
+    | id=IDENTIFIER;
+      { Rule.Var id }
+    | LPAR; components=clist1(expr); RPAR;
+      { Rule.Tuple components }
+    | func=expr; LPAR; components=clist1(expr); RPAR;
+      { Rule.Application { func; components } }
+    | record=expr; DOT; field=IDENTIFIER;
+      { Rule.Field {record; field} }
+    | list=expr; LBRACKET; index=IDENTIFIER; RBRACKET;
+      { Rule.ListIndex {list; index} }
+    | expr1=expr; EQ; expr2=expr;
+      { Rule.Application { func = Rule.Operator Rule.Equal; components = [expr1; expr2] } }
+    | name=expr; LBRACKET; fields=tclist1(field_assignment); RBRACKET;
+      { Rule.Record { name; fields } }
+
+let field_assignment == field=IDENTIFIER; COLON; value=expr; { (field, value) }
+
+let judgment_attributes ==
+    LBRACE; pairs=tclist0(judgment_attribute); RBRACE; { pairs }
+
+let judgment_attribute := math_layout_attribute

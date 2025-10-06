@@ -32,8 +32,11 @@ rule token = parse
 
     (* Keywords *)
     | "ast"               { AST }
+    | "case"              { CASE }
     | "constant"          { CONSTANT }
     | "constants_set"     { CONSTANTS_SET }
+    | "INDEX"             { INDEX }
+    | "latex"             { LATEX }
     | "list0"             { LIST0 }
     | "list1"             { LIST1 }
     | "math_macro"        { MATH_MACRO }
@@ -50,6 +53,7 @@ rule token = parse
     | "typedef"           { TYPEDEF }
 
     (* Punctuation and operators *)
+    | '.'            { DOT }
     | ','            { COMMA }
     | ':'            { COLON }
     | ';'            { SEMI }
@@ -63,6 +67,9 @@ rule token = parse
     | '}'            { RBRACE }
     | '-'            { MINUS }
     | "->"           { ARROW }
+    | "--"           { MINUS_MINUS }
+    | ":="           { COLON_EQ }
+    | "AS"           { EQ }
 
     | identifier as lxm { IDENTIFIER(lxm) }
     | latex_macro as lxm { LATEX_MACRO(lxm) }
