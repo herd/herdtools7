@@ -414,11 +414,17 @@ module Make(O:Config)(A:I) =
 
     let all_regs_in_tmpl t = all_regs t.code t.fhandler t.final
 
+    let trashed_code code =
+      List.map
+        (fun ins -> RegSet.of_list ins.outputs)
+        code
+      |> RegSet.unions
+
     let trashed_regs t =
-      let trashed_ins ins = RegSet.union (RegSet.of_list ins.outputs) in
-      let all_trashed =
-        List.fold_right trashed_ins t.code RegSet.empty in
-      RegSet.diff all_trashed
+      RegSet.diff
+        (RegSet.union
+           (trashed_code t.code)
+           (trashed_code t.fhandler))
         (RegSet.union
            (RegSet.of_list t.final)
            (RegSet.of_list t.stable))
