@@ -765,6 +765,8 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
   | NoCsel -> List.map (fun d -> d,c2) (D.sequence_dp d1 d2)
   | OkCsel -> []
 
+let expand_dp_dir (dir,_) = D.expand_dp_dir dir
+
 (* Read-Modify-Write *)
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
