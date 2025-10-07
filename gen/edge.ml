@@ -400,6 +400,9 @@ let fold_tedges f r =
   let r =
     F.fold_dpw
       (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
+  let r =
+    F.fold_dpw
+      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Irr)))) r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -723,11 +726,20 @@ let fold_tedges f r =
     expand_dir e1
       (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
 
+  let expand_dp_dir dp sd f acc = match sd with
+  | Dir _|NoDir -> f sd acc
+  | Irr ->
+    let expand_dir_list = F.expand_dp_dir dp in
+    List.fold_left (fun acc sd -> f (Dir sd) acc) acc expand_dir_list
+
   let do_expand_edge e f =
     match e.edge with
     | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Rmw _|Dp _|Leave _|Back _
+    | Hat |Rmw _|Leave _|Back _
       -> f e
+    | Dp (dp,sd,expr) ->
+      expand_dp_dir dp expr (fun new_expr ->
+        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);}))
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
           expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);}))

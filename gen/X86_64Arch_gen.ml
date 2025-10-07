@@ -235,6 +235,7 @@ module Make
       let is_addr _ = assert false
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
+      let expand_dp_dir _ = assert false
 
       (*******)
       (* RWM *)

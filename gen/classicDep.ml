@@ -41,3 +41,9 @@ let pp_dp = function
   | ADDR -> "Addr"
   | DATA -> "Data"
   | CTRL -> "Ctrl"
+
+open Code
+
+let expand_dp_dir = function
+  | CTRL | ADDR -> [R;W]
+  | DATA -> [W]
