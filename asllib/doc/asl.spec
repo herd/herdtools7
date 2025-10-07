@@ -1320,7 +1320,7 @@ relation annotate_get_array(
   expression in {t}, the annotated expression {new_e},
   and the inferred \sideeffectdescriptorterm{} {ses}.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(field)) ->
@@ -1351,7 +1351,7 @@ relation eval_expr(env: envs, e: expr) ->
     {new_env}. \ProseOtherwiseAbnormal",
     prose_application = "\hyperlink{relation-eval_expr}{evaluating} {e} in {env} yields
     {v}, {g}, and {new_env}",
-    math_layout = (_, [_,_,_,_])
+    math_layout = (_, [_,_,_,_]),
 };
 
 relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_value, g: XGraphs) | TDynError | TDiverging
@@ -1394,7 +1394,7 @@ relation eval_expr_list(env: envs, le: list0(expr)) ->
   from evaluating each expression, and the new
   environment {new_env}. \ProseOtherwiseAbnormal",
   prose_application = "\hyperlink{relation-evalexprlist}{evaluating} expressions {le} in {env} yields values {v}, graph {g}, and environment {new_env}",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1531,9 +1531,9 @@ relation list_min_abs(l: list0(Z)) ->
 relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitfield)) ->
          (new_fields: list0(bitfield), ses: powerset(TSideEffect)) | type_error
 {
-  "annotates a list of bitfields --- {fields} --- with an
+  "annotates a list of bitfields {fields} with an
   expression denoting the overall number of bits in the
-  containing bitvector type --- {e_width}, in an
+  containing bitvector type {e_width}, in an
   environment {tenv}, resulting in {new_fields} --- the
   \typedast{} for {fields} and {e_width} as well as a set
   of \sideeffectdescriptorsterm{} {ses}.
@@ -1544,8 +1544,7 @@ relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitf
 relation bitfield_get_name(bf: bitfield) ->
          (name: Identifier)
 {
-  "returns the name of a bitfield --- {name}, given a
-  bitfield {bf}.",
+  "given a bitfield {bf}, returns the name of the bitfield in {name}.",
   prose_application = "\hyperlink{relation-bitfieldgetname}{extracting} name from bitfield {bf} yields {name}"
 };
 
@@ -1569,11 +1568,11 @@ relation bitfield_get_nested(bf: bitfield) ->
 relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
          (new_field: bitfield, ses: powerset(TSideEffect)) | type_error
 {
-  "annotates a bitfield --- {field} --- with an integer
-  --- {width} --- indicating the number of bits in the
+  "annotates a bitfield {field} with an integer
+  {width} indicating the number of bits in the
   bitvector type that contains {field}, in an
   environment {tenv}, resulting in an annotated bitfield
-  --- {new_field} --- or a \typingerrorterm{}, if one is
+  {new_field} or a \typingerrorterm{}, if one is
   detected.",
   prose_application = "\hyperlink{relation-annotatebitfield}{annotating} bitfield {field} with width {width} in {tenv} yields {new_field} and {ses}"
 };
@@ -1602,10 +1601,11 @@ relation disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices
   "returns the set of integers defined by the list of
   slices in {slices} in {positions}. In particular, this
   rule checks that the following properties:
-  \begin{itemize}   \item bitfield slices do not
-  overlap; and   \item bitfield slices are not defined
-  in reverse (e.g., \texttt{0:1} rather than
-  \texttt{1:0}) \end{itemize} Conducting the checks for
+  \begin{itemize}
+  \item bitfield slices do not overlap; and
+  \item bitfield slices are not defined in reverse (e.g., \texttt{0:1} rather than \texttt{1:0})
+  \end{itemize}
+  Conducting the checks for
   these properties requires evaluating the expressions
   comprising the slices, either via static evaluation of
   via normalization. The flag {is_static} determines
@@ -1745,7 +1745,7 @@ relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect), c: c
   {new_catcher} and the \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotatecatcher}{annotating} catcher {c} in {tenv} with side effects {ses_in} yields catcher {new_catcher} and side effects {ses}",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
@@ -1807,7 +1807,7 @@ relation annotate_ty_opt_initial_value(
   should be associated with the storage element
   {declared_t}.",
   prose_application = "\hyperlink{relation-annotatetyoptinitialvalue}{annotating} type {ty_opt'} and initializer {initial_value} in {tenv} yields value {typed_initial_value} and type {declared_t}",
-  math_layout = [input[_,_,_,_,_], ([_,_,_],_)]
+  math_layout = [input[_,_,_,_,_], ([_,_,_],_)],
 };
 
 relation update_global_storage(
@@ -1828,7 +1828,7 @@ relation update_global_storage(
   \staticenvironmentterm{} {new_tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-updateglobalstorage}{updating} global storage {name} with keyword {gdk} and value {typed_initial_value} in {tenv} yields {new_tenv}",
-  math_layout = (input[_,_,_,_], _)
+  math_layout = (input[_,_,_,_], _),
 };
 
 relation add_global_storage(
@@ -1846,7 +1846,7 @@ relation add_global_storage(
   keyword {keyword} and type {declared_t}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-addglobalstorage}{adding} global storage {name} with keyword {keyword} and type {declared_t} to {genv} yields {new_genv}",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
@@ -1938,7 +1938,7 @@ relation eval_binop(op: binop, v1: native_value, v2: native_value) ->
          (w: native_value) | TDynError
 {
   "evaluates a binary operator {op} over a pair of
-  \nativevaluesterm{}  --- {v1} and {v2} --- and returns
+  \nativevaluesterm{}  {v1} and {v2} and returns
   the \nativevalueterm{}  {w} or an error.",
   prose_application = "",
 };
@@ -1978,8 +1978,8 @@ relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) ->
 relation named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) ->
          (ty: ty) | type_error
 {
-  "returns the lowest common named super type --- {ty}
-  --- of the types {t} and {s} in {tenv}.",
+  "returns the lowest common named super type
+   of types {t} and {s} in {tenv} in {ty}.",
   prose_application = "",
 };
 
@@ -2002,14 +2002,14 @@ relation annotate_constraint_binop(
 {
   "annotates the application of the binary operation {op}
   to the lists of integer constraints {cs1} and {cs2},
-  yielding a list of constraints --- {annotated_cs}.
+  yielding a list of constraints {annotated_cs}.
   If the list is empty, the result is either
   $\CannotUnderapproximate$ or $\CannotOverapproximate$,
   based on {approx} (this function is invoked in the
   context of approximating lists of constraints).
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation binop_filter_rhs(
@@ -2030,7 +2030,7 @@ relation binop_filter_rhs(
   based on {approx} (this function is invoked in the
   context of approximating lists of constraints).",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation refine_constraint_by_sign(tenv: static_envs, p: fun Z -> Bool, c: int_constraint) ->
@@ -2076,7 +2076,7 @@ relation refine_constraints(
   based on {approx} (this function is invoked in the
   context of approximating lists of constraints).",
   prose_application = "",
-  math_layout = [input[_,_,_,_], _]
+  math_layout = [input[_,_,_,_], _],
 };
 
 relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop, cs: list0(int_constraint)) ->
@@ -2091,7 +2091,7 @@ relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop,
   function is invoked in the context of approximating
   lists of constraints).",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation filter_reduce_constraint_div(c: int_constraint) ->
@@ -2162,7 +2162,7 @@ relation to_well_constrained(t: ty) ->
          (t': ty)
 {
   "returns the \wellconstrainedversionterm{} of a type {t}
-  --- {t'}, which converts
+  in {t'}, which converts
   \parameterizedintegertypesterm{} to
   \wellconstrainedintegertypesterm{}, and leaves all
   other types as are.",
@@ -2213,7 +2213,7 @@ relation precision_join(p1: precision_loss_indicator, p2: precision_loss_indicat
   "returns the \precisionlossindicatorterm{} {p},
   denoting whether {p1} or {p2} denote a precision loss.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 //////////////////////////////////////////////////
@@ -2473,7 +2473,7 @@ relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr) ->
   annotated expression {e''} and \sideeffectsetterm\
   {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
@@ -2494,7 +2494,7 @@ relation eval_slice(env: envs, s: slice) -> ResultSlices(((v_start: tint, v_leng
                         $\ResultSlices(((\vstart, \vlength), \vg), \newenv)$.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_slices(env: envs, slices: list0(slice)) ->
@@ -2506,7 +2506,7 @@ relation eval_slices(env: envs, slices: list0(slice)) ->
                         $\ResultSlices((\ranges, \newg), \newenv)$.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 //////////////////////////////////////////////////
@@ -2578,7 +2578,7 @@ relation declare_subprograms(
   \localstaticenvironmentterm, annotated $\func$ AST
   node, and \sideeffectdescriptorsetsterm.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation add_subprogram_decls(tenv: static_envs, funcs: list0((func, powerset(TSideEffect)))) ->
@@ -2647,7 +2647,7 @@ relation build_dependencies(decls: list0(decl)) ->
          (defs: list0(def_use_name), depends: list0((def_use_name, def_use_name)))
 {
   "takes a set of declarations {decls} and returns a
-  graph whose set of nodes --- {defs} --- consists of
+  graph whose set of nodes {defs} consists of
   the identifiers that are used to name declarations and
   whose set of edges {depends} consists of pairs $(a,b)$
   where the declaration of $a$ uses an identifier
@@ -2810,7 +2810,7 @@ relation annotate_stmt(tenv: static_envs, s: stmt) ->
 {
   "annotates a statement {s} in an environment {tenv},
   resulting in {new_s} --- the \typedast{} for {s}, which
-  is also known as the \emph{annotated statement} --- a
+  is also known as the \emph{annotated statement}, a
   modified environment {new_tenv}, and
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
@@ -2834,7 +2834,7 @@ relation annotate_local_decl_type_annot(
   and the inferred \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [input[_,_,_,_,_,_], _]
+  math_layout = [input[_,_,_,_,_,_], _],
 };
 
 relation inherit_integer_constraints(lhs: ty, rhs: ty) ->
@@ -2880,7 +2880,7 @@ relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
   yielding a pair consisting of an expression {e'} and a
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation get_for_constraints(
@@ -2893,18 +2893,20 @@ relation get_for_constraints(
          (vis: constraint_kind) | type_error
 {
   "infers the integer constraints for a \texttt{for} loop
-  index variable from the following: \begin{itemize}
+  index variable from the following:
+  \begin{itemize}
   \item the \wellconstrainedversionterm{} of the type of
-  the start expression --- {struct1}   \item the
-  \wellconstrainedversionterm{} of the type of the end
-  expression --- {struct2}   \item the annotated start
-  expression --- {e1'}   \item the annotated end
-  expression --- {e2'}   \item the loop direction ---
-  {dir} \end{itemize} The result is {vis}.
+  the start expression {struct1}
+  \item the \wellconstrainedversionterm{} of the type of the end
+  expression {struct2}
+  \item the annotated start expression {e1'}
+  \item the annotated end expression {e2'}
+  \item the loop direction {dir}
+  \end{itemize} The result is {vis}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \getforconstraints,
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), new_g: XGraphs), new_env: envs)
@@ -2914,15 +2916,15 @@ relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), ne
                         resulting in one of four types of configurations (see
                         more details in
                         \secref{KindsOfSemanticConfigurations}):
-                        \begin{itemize}   \item returning configurations with
-                        values {vs}, execution graph {new_g}, and a modified
-                        environment {new_env};   \item continuing
-                        configurations with an execution graph {new_g} and
-                        modified environment {new_env};   \item throwing
-                        configurations;   \item error configurations;   \item
-                        diverging configurations. \end{itemize}",
+                        \begin{itemize}
+                        \item returning configurations with values {vs}, execution graph {new_g}, and a modified environment {new_env};
+                        \item continuing configurations with an execution graph {new_g} and modified environment {new_env};
+                        \item throwing configurations;
+                        \item error configurations;
+                        \item diverging configurations.
+                        \end{itemize}",
  prose_application = "",
- math_layout = (_, [_,_,_,_,_])
+ math_layout = (_, [_,_,_,_,_]),
  };
 
 relation eval_for(
@@ -2942,7 +2944,7 @@ relation eval_for(
                         evaluation utilizes two helper relations:
                         $\evalforstep$ and $\evalforloop$.",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
  };
 
 relation eval_for_step(
@@ -2962,7 +2964,7 @@ relation eval_for_step(
   modified environment, and the resulting execution
   graph. \ProseOtherwiseReturningOrAbnormal",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_for_loop(
@@ -2979,7 +2981,7 @@ relation eval_for_loop(
   $\texttt{eval\_for}$ to execute the remaining
   iterations.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr, body: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError
@@ -2987,7 +2989,7 @@ relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr
    prose_description = "to evaluate both \texttt{while} statements and
                         \texttt{repeat} statements.",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
  };
 
 relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: option(N), g: XGraphs) | TDynError | TDiverging
@@ -3017,7 +3019,7 @@ relation eval_expr_list_m(env: envs, es: list0(expr)) ->
   expression terminates abnormally then the abnormal
   configuration is returned.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation write_folder(vms: list0((native_value, XGraphs))) ->
@@ -3050,15 +3052,13 @@ relation annotate_call(tenv: static_envs, call: call) ->
   "annotates the call {call} to a subprogram with call
     type $\calltype$, resulting in the following:
     \begin{itemize}
-    \item {call'} --- the updated call,
+    \item the updated call {call'},
         with all arguments/parameters annotated and \\
         $\vcall.\callname$ updated to uniquely identify the
         call among the set of overloading subprograms declared
         with the same name;
-    \item {ret_ty_opt} --- the
-        \optional{} annotated return type;
-    \item {ses} ---
-        the \sideeffectsetterm{} inferred for {call}.
+    \item the \optional{} annotated return type {ret_ty_opt};
+    \item the \sideeffectsetterm{} inferred for {call}, {ses}.
     \end{itemize}
     \ProseOtherwiseTypeError",
   prose_application = "",
@@ -3079,7 +3079,7 @@ relation annotate_call_actuals_typed(
   \sideeffectdescriptorsetsterm.
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [input[_,_,_,_,_], _]
+  math_layout = [input[_,_,_,_,_], _],
 };
 
 relation insert_stdlib_param(func_sig: func, params: list0((ty, expr)), arg_types: list0(ty)) ->
@@ -3109,7 +3109,7 @@ relation check_params_typesat(tenv: static_envs, func_sig_params: list0((Identif
   assumes that {func_sig_params} and {params} have the
   same length.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)), ty: ty) ->
@@ -3178,7 +3178,7 @@ relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig
   {eqs}, yielding the \optional{} annotated type
   {ret_ty_opt}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_types: list0(ty), call_type: subprogram_type) ->
@@ -3190,12 +3190,8 @@ relation subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_t
   type matching {call_type}, and determines which one of
   the following cases holds:
   \begin{enumerate}
-  \item
-  there is no declared subprogram that matches {name},
-  {caller_arg_types}, \\ and {call_type};
-  \item there is
-  exactly one subprogram that matches {name},
-  {caller_arg_types}, \\ and {call_type};
+  \item there is no declared subprogram that matches {name}, {caller_arg_types}, \\ and {call_type};
+  \item there is exactly one subprogram that matches {name}, {caller_arg_types}, \\ and {call_type};
   \end{enumerate}
   If more than one subprogram that matches {name} and
   {caller_arg_types}, this is detected by the rule
@@ -3204,7 +3200,7 @@ relation subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_t
   the rule \TypingRuleRef{AddNewFunc}, which results in
   a \typingerrorterm{}.",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation filter_call_candidates(tenv: static_envs, formal_types: list0(ty), call_type: subprogram_type, candidates: powerset(Strings)) ->
@@ -3270,7 +3266,7 @@ relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0
                         values, each one associated with an execution graph,
                         and a new environment. \ProseOtherwiseAbnormal",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation eval_subprogram(
@@ -3293,7 +3289,7 @@ relation eval_subprogram(
                         are used in generating execution graph constraints
                         for the returned values.",
  prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: list0((native_value, XGraphs))) -> (new_env: envs, new_g: XGraphs)
@@ -3348,7 +3344,7 @@ relation annotate_and_declare_func(genv: global_static_envs, func_sig: func) ->
     \staticenvironmentterm{} {new_tenv}, and an inferred
     \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
@@ -3373,7 +3369,7 @@ relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty
   annotated parameters already in the accumulator {acc}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_one_param(
@@ -3463,7 +3459,7 @@ relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), (new_te
   arguments already in the accumulator {acc}, and a
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifier, ty: ty)) ->
@@ -3476,7 +3472,7 @@ relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifi
   annotated argument type {ty'}, and inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: static_envs, return_type: option(ty), ses_in: powerset(TSideEffect)) ->
@@ -3492,7 +3488,7 @@ relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: sta
   return type {new_return_type} added and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation check_subprogram_purity(qualifier: option(qualifier), ses: powerset(TSideEffect)) ->
@@ -3514,7 +3510,7 @@ relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: power
     {new_func_sig} and new \staticenvironmentterm{}
     {new_tenv}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: qualifier, formal_types: list0(ty)) ->
@@ -3550,7 +3546,7 @@ relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(qua
   environment {new_tenv}, which is updated with
   {new_name}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(TSideEffect)) ->
@@ -3561,7 +3557,7 @@ relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(
   an annotated subprogram {f'} and inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation check_control_flow(tenv: static_envs, f: func, body: stmt) ->
@@ -4124,7 +4120,7 @@ relation get_structure(tenv: static_envs, ty: ty) ->
 relation make_anonymous(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
-  "returns the \emph{\underlyingtypeterm} --- {t} --- of
+  "returns the \emph{\underlyingtypeterm} {t} of
   the type {ty} in the \staticenvironmentterm{} {tenv}
   or a \typingerrorterm{}. Intuitively, {ty} is the
   first non-named type that is used to define {ty}.
@@ -4157,7 +4153,7 @@ relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: opt
   \optional{} additional fields {s'}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
@@ -4168,7 +4164,7 @@ relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: o
   environment {new_tenv}, type {new_ty}, and \optional{}
   extra fields {s'}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
@@ -4245,7 +4241,7 @@ relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
   integer constraint {new_c} and \sideeffectsetterm\
   {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation get_variable_enum(tenv: static_envs, e: expr) ->
@@ -4268,7 +4264,7 @@ relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr) ->
   the annotated expression {e'} and the
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 //////////////////////////////////////////////////
@@ -4450,7 +4446,7 @@ relation add_immutable_expression(
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \addimmutableexpression,
-  math_layout = [_,_]
+  math_layout = [_,_],
 };
 
 relation add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: powerset(TSideEffect)) ->
