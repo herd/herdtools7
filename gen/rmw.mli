@@ -28,4 +28,5 @@ module type S = sig
   val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw  -> Code.v -> Code.v -> Code.v
+  val expand_rmw : rmw -> rmw list
 end
