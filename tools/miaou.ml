@@ -445,6 +445,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
          tr_rel e1 e2 (opt_expr loc e)
       | Op1 (loc,Star,e) ->
          tr_rel e1 e2 (star_expr loc e)
+      | App (_, Var (_locf,"intervening"),
+             Op (_loc,Tuple,[evts; Op (_,op,es)])) ->
+         let e3 = Next.next () in
+         let top = List.map (tr_rel e1 e3) es in
+         let bottom = List.map (tr_rel e3 e2) es in
+         let items = top @ [tr_evts e3 evts] @ bottom in
+         (* Use Union to prevent flattening into surrounding Inter list, so the intro text survives. *)
+         List (Union,intro op,sep op,items)
       | App (_,Var (locf,("intervening-write" as f)),Var (loc,id)) ->
          let txt1 = do_pp_rel_id e1 e2 (pp_id locf f) in
          let txt2 = sprintf "{\\%s}" (pp_id loc id) in
