@@ -45,8 +45,12 @@ catdep (* This option tells that the cat file computes dependencies *)
 
 include "aarch64util.cat"
 
-(* Local write successor *)
-let lws =
+(* Local register read successor *)
+let lrrs =
+  [Wreg]; (po & same-gpr & ~(intervening(Wreg,(po & same-gpr)))); [Rreg]
+
+(* Local memory write successor *)
+let lmws =
  [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
  | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
 
@@ -54,13 +58,13 @@ let lws =
 let lfs =
  [Exp & M]; (po & same-loc); [MMU & FAULT]
 
-(* Local read successor *)
-let lrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
+(* Local memory read successor *)
+let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
 
 (* Dependency through registers and memory *)
 let rec dtrm =
-  [~range(lxsx)]; rf-reg
-  | lrs 
+  [~range(lxsx)]; lrrs
+  | lmrs
   | iico_data
   | dtrm; dtrm
 

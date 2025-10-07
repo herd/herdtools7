@@ -238,13 +238,18 @@
 \newcommand{\loc}[2]{#1 and #2 are to the same Physical Address}
 \newcommand{\povaloc}[2]{\po{#1}{#2} and \valoc{#1}{#2}}
 
-\newcommand{\lrsname}{Local read successor}
-\newcommand{\lrs}[2]{#2 is a \lrsname{} of #1}
-\newcommand{\lrsemph}[2]{#2 is a \emph{\lrsname} of #1}
+\newcommand{\samegpr}[2]{#1 and #2 are to the same Register}
+\newcommand{\lrrsname}{Local register read successor}
+\newcommand{\lrrs}[2]{#2 is a \lrrsname{} of #1}
+\newcommand{\lrrsemph}[2]{#2 is a \emph{\lrrsname} of #1}
 
-\newcommand{\lwsname}{Local write successor}
-\newcommand{\lws}[2]{#2 is a \lwsname{}  of #1}
-\newcommand{\lwsemph}[2]{#2 is a \emph{\lwsname}  of #1}
+\newcommand{\lmrsname}{Local memory read successor}
+\newcommand{\lmrs}[2]{#2 is a \lmrsname{} of #1}
+\newcommand{\lmrsemph}[2]{#2 is a \emph{\lmrsname} of #1}
+
+\newcommand{\lmwsname}{Local memory write successor}
+\newcommand{\lmws}[2]{#2 is a \lmwsname{}  of #1}
+\newcommand{\lmwsemph}[2]{#2 is a \emph{\lmwsname}  of #1}
 
 \newcommand{\lfsname}{Local MMU Fault successor}
 \newcommand{\lfs}[2]{#2 is a \lfsname{} of #1}

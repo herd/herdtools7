@@ -1,3 +1,6 @@
+(* Same General Purpose Register *)
+let same-gpr = [Rreg|Wreg]; loc; [Rreg|Wreg]
+
 (* Translation-intrinsically-before *)
 let tr-ib =
   [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]

@@ -95,8 +95,8 @@ let dob =
  | data
  | ctrl; [Exp & W | HU | TLBI | DC.CVAU | IC]
  | addr; [Exp & M]; po; [Exp & W | HU]
- | addr; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
- | data; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
+ | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
+ | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
  | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W]
  | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W] 
 
@@ -114,7 +114,7 @@ let pob =
 (* Atomic-ordered-before *)
 let aob =
  [Exp & M]; rmw; [Exp & M]
- | [Exp & M]; rmw; lrs; [A | Q]
+ | [Exp & M]; rmw; lmrs; [A | Q]
  | [Imp & TTD & R]; rmw; [HU]
 
 (* Barrier-ordered-before *)
@@ -161,8 +161,8 @@ let rec lob =
  | po-scl-ob
  | DSB-ob
  | IFB-ob
- | lws
- | lws; sca-class
+ | lmws
+ | lmws; sca-class
  | lfs
  | dob
  | pob
