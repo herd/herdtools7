@@ -41,9 +41,9 @@
 \cup\ & (\Int, \Int)\hypertarget{type-Rec}{}\\
 \cup\ & \Rec(\Int, \Int)\\
 \cup\ & \left[\begin{array}{lcl}
-\text{f} &  :  & \Int\\
-\text{g} &  :  & (\Int, \Int) \rightarrow \pow{\Int}\end{array}\right]
-\hypertarget{type-LRec}{}\\
+              \text{f} & : & \Int\\
+              \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
+              \end{array}\right]\hypertarget{type-LRec}{}\\
 \cup\ & \LRec\left[\text{f} : \Rec(\Int, \Int, \Int)\right]\end{flalign*}} % EndDefineType
 
 \DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}

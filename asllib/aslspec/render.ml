@@ -100,26 +100,22 @@ module Make (S : SPEC_VALUE) = struct
       {|\DefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|} name
       hyperlink_target macro
 
-  (** [pp_latex_array alignment fmt pp_funs] renders a table of elements using a
-      LaTeX array environment. The [alignment] string specifies the alignment of
-      each column and is copied directly to the array environment. The [pp_funs]
-      specify how to format each cell in the array along with [fmt]. *)
-  let pp_latex_array alignment fmt pp_funs =
+  (** [pp_latex_array alignment fmt pp_fun_rows] renders a table of elements
+      using a LaTeX array environment. The [alignment] string specifies the
+      alignment of each column and is copied directly to the array environment.
+      The [pp_fun_rows] is a list of lists, where the outer list represents the
+      array rows and the inner lists represent the columns. *)
+  let pp_latex_array alignment fmt pp_fun_rows =
     let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
     let num_columns = String.length alignment in
-    let () = assert (List.length pp_funs mod num_columns = 0) in
-    let () = fprintf fmt {|\begin{array}{%s}@.|} alignment in
-    let () =
-      List.iteri
-        (fun cell_index pp_fun ->
-          let () = pp_fun fmt in
-          if (cell_index + 1) mod num_columns <> 0 then fprintf fmt {| & |}
-          else if cell_index < List.length pp_funs - 1 then fprintf fmt {|\\@.|}
-          else ())
-        pp_funs
+    let pp_elt = fun fmt pp_fun -> pp_fun fmt in
+    let pp_one_row fmt pp_funs =
+      let () = assert (List.compare_length_with pp_funs num_columns = 0) in
+      pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt " & ") pp_elt fmt pp_funs
     in
-    let () = fprintf fmt {|\end{array}|} in
-    ()
+    fprintf fmt "@[<v>\\begin{array}{%s}@ %a@ \\end{array}@]" alignment
+      (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt {|\\@ |}) pp_one_row)
+      pp_fun_rows
 
   (** Renders the operator [op] applied to the argument rendered by
       [pp_arg fmt arg]. *)
@@ -199,10 +195,15 @@ module Make (S : SPEC_VALUE) = struct
         | Vertical _ ->
             pp_latex_array "c" fmt
               [
-                (fun fmt ->
-                  pp_opt_named_type_term fmt (from_type, input_layout));
-                (fun fmt -> pp_print_string fmt arrow_symbol);
-                (fun fmt -> pp_opt_named_type_term fmt (to_type, output_layout));
+                [
+                  (fun fmt ->
+                    pp_opt_named_type_term fmt (from_type, input_layout));
+                ];
+                [ (fun fmt -> pp_print_string fmt arrow_symbol) ];
+                [
+                  (fun fmt ->
+                    pp_opt_named_type_term fmt (to_type, output_layout));
+                ];
               ]
         | Unspecified -> assert false)
 
@@ -235,9 +236,12 @@ module Make (S : SPEC_VALUE) = struct
         let term_pp_funs =
           List.mapi
             (fun term_counter term_and_layout ->
-              if term_counter < num_terms - 1 then fun fmt ->
-                fprintf fmt {|%a,@.|} pp_opt_named_type_term term_and_layout
-              else fun fmt -> pp_opt_named_type_term fmt term_and_layout)
+              [
+                (fun fmt ->
+                  if term_counter < num_terms - 1 then
+                    fprintf fmt {|%a,@.|} pp_opt_named_type_term term_and_layout
+                  else pp_opt_named_type_term fmt term_and_layout);
+              ])
             opt_terms_with_layouts
         in
         pp_latex_array "c" fmt term_pp_funs
@@ -259,13 +263,13 @@ module Make (S : SPEC_VALUE) = struct
     match layout with
     | Vertical _ ->
         let field_pp_funs =
-          Utils.list_concat_map
+          List.map
             (fun (field_name, (field_term, layout)) ->
               [
                 (fun fmt ->
                   pp_print_string fmt
                     (Text.spec_var_to_latex_var ~font_type:Text field_name));
-                (fun fmt -> pp_print_string fmt " : ");
+                (fun fmt -> pp_print_string fmt ":");
                 (fun fmt -> pp_type_term fmt (field_term, layout));
               ])
             fields_with_layouts
@@ -302,7 +306,6 @@ module Make (S : SPEC_VALUE) = struct
                    else fun _fmt -> ());
                 ])
               terms_with_layouts
-            |> List.concat
           in
           pp_latex_array "ll" fmt term_pp_funs
       | Horizontal layouts ->
@@ -330,10 +333,12 @@ module Make (S : SPEC_VALUE) = struct
     | Vertical [ input_layout; output_layout ] ->
         pp_latex_array "c" fmt
           [
-            (fun fmt ->
-              pp_type_term fmt (input_as_labelled_tuple, input_layout));
-            (fun fmt -> pp_print_string fmt {|\bigtimes|});
-            (fun fmt -> pp_type_term_union fmt (output, output_layout));
+            [
+              (fun fmt ->
+                pp_type_term fmt (input_as_labelled_tuple, input_layout));
+            ];
+            [ (fun fmt -> pp_print_string fmt {|\bigtimes|}) ];
+            [ (fun fmt -> pp_type_term_union fmt (output, output_layout)) ];
           ]
     | _ -> assert false
 
