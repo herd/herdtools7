@@ -289,7 +289,7 @@ module DotGraph = struct
       previously used regexes, make sure this function is called after
       all other matching has been performed *)
   let is_gpreg reg =
-    let r = Str.regexp {|[BHWXQ][0-9]+|} in
+    let r = Str.regexp {|\([CXWVBHSDQZP]\|\(ZA\)\)[0-9]+|} in
     check_regex r reg
 
   (** Makes use of Str.string_match. If caller uses matching functions on
