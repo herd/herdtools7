@@ -1,4 +1,0 @@
-(executable
- (name dot2desc)
- (public_name dot2desc7)
- (libraries unix herdtools))
