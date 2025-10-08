@@ -1,4 +1,5 @@
 let green = "\027[32m"
+let red = "\027[31m"
 let reset_color = "\027[0m"
 let regex_underscore = Str.regexp_string "_"
 let regexp_spaces_segment = Str.regexp "[ \t]+"
@@ -6,13 +7,9 @@ let regexp_spaces_segment = Str.regexp "[ \t]+"
 (** An under score escape sequence for LaTeX *)
 let escaped_underscore = {|\_|}
 
-let shrink_space_segments str = Str.global_replace regexp_spaces_segment " " str
-
-let apply_substitutions str key_value_pairs =
-  List.fold_left
-    (fun acc_str (att_key, att_val) ->
-      Str.global_replace (Str.regexp_string att_key) att_val acc_str)
-    str key_value_pairs
+let shrink_whitespace str =
+  let regexp_newline_segment = Str.regexp "[ \n\r]+" in
+  Str.global_replace regexp_newline_segment " " str
 
 let escape_underscores str =
   Str.global_replace regex_underscore escaped_underscore str

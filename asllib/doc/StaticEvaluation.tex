@@ -100,12 +100,14 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
 
 \TypingRuleDef{StaticEnvToEnv}
-\hypertarget{def-staticenvtoenv}{}
+\RenderRelation{static_env_to_env}
+\BackupOriginalRelation{
 The function
 \[
   \staticenvtoenv(\overname{\staticenvs}{\tenv}) \typearrow \overname{\envs}{\env}
 \]
 transforms the constants defined in the \staticenvironmentterm{} $\tenv$ into an environment $\env$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Static environments to Dynamic Environments}
 In \listingref{static-eval}, in order to statically evaluate the expression

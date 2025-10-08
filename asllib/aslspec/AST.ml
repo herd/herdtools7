@@ -6,23 +6,36 @@ exception SpecError of string
 
 type type_kind = TypeKind_Generic | TypeKind_AST
 
+(** A unary operator that transforms one type into another. *)
+type operator =
+  | Powerset
+      (** A set containing all subsets (finite and infinite) of the given type.
+      *)
+  | Powerset_Finite
+      (** A set containing all finite subsets of the given type. *)
+  | List0
+      (** A set containing all (empty and non-empty) sequences of the given
+          member type. *)
+  | List1
+      (** A set containing all non-empty sequences of the given member type. *)
+  | Option
+      (** Either the empty set of a set containing a single value of the given
+          type. *)
+
 (** Terms for constructing types out of other types, with [Label t] being the
     leaf case.
 
     In the context of a type definition, a [Label] variant defines a new label -
     a type representing just this single label. In other contexts, for example a
-    type variant appearing in the signature of a relation, this can either refer
-    to a type name of a label defined as a type variant. *)
+    type variant appearing in the signature of a relation, this can refer to a
+    type defined elsewhere. *)
 type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Powerset of { term : opt_named_type_term; finite : bool }
-      (** A set containing all subsets of the given type. If [finite] is true
-          then only the finite subsets are included. *)
-  | Option of opt_named_type_term
-      (** Either the empty set of a set containing a single value of the given
-          type. *)
+  | Operator of { op : operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the operator [op] to the
+          type given by [term]. *)
   | LabelledTuple of {
       label_opt : string option;
       components : opt_named_type_term list;
@@ -37,9 +50,6 @@ type type_term =
     }
       (** A set containing all optionally-labelled records formed by the given
           fields. *)
-  | List of { maybe_empty : bool; member_type : opt_named_type_term }
-      (** A set containing all sequences of the given member type. If
-          [maybe_empty] is true, the list may also be empty. *)
   | ConstantsSet of string list
       (** A set containing all constants formed by the given names. *)
   | Function of {
@@ -55,6 +65,10 @@ and named_type_term = string * type_term
 
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
+
+(** [make_operator op term] Constructs an operator term with the given operator
+    and term. *)
+let make_operator op term = Operator { op; term }
 
 (** [make_tuple components] Constructs an unlabelled tuple for the tuple
     components [components]. *)
@@ -152,6 +166,34 @@ module Attributes = struct
           raise (SpecError msg)
         else add k v acc_map)
       empty pairs
+end
+
+(** A datatype for a constant definition. *)
+module Constant : sig
+  type t = { name : string; att : Attributes.t }
+
+  val make : string -> (AttributeKey.t * attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
+end = struct
+  type t = { name : string; att : Attributes.t }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  open Attributes
+
+  let make name attributes = { name; att = Attributes.of_list attributes }
+
+  let prose_description self =
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  let math_macro self =
+    match find_opt AttributeKey.Math_Macro self.att with
+    | Some (MathMacroAttribute s) -> Some s
+    | _ -> None
 end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
@@ -258,6 +300,55 @@ end = struct
     | _ -> None
 end
 
+(** A datatype for a set of inference rules for a given relation. *)
+module Rule = struct
+  type operator =
+    | Equal
+    | Assign
+    | NotEqual
+    | List
+    | Union
+    | UnionList
+    | And
+    | Or
+    | Not
+    | Choice
+    | ASTLabel
+
+  (** A term that can be used to form a judgement. *)
+  type expr =
+    | Var of string
+    | Operator of operator
+    | Tuple of expr list
+    | Application of { func : expr; components : expr list }
+    | Field of { record : expr; field : string }
+    | ListIndex of { list : expr; index : string }
+    | Record of { name : expr; fields : (string * expr) list }
+
+  type judgment_form =
+    | Expr of expr  (** a Boolean-valued expression *)
+    | Output of expr  (** The output configuration of a conclusion judgement. *)
+    | Transition of { lhs : expr; rhs : expr }
+        (** A transition from the [lhs] configuration to the [rhs]
+            configuration. *)
+    | Indexed of { index : string; list : string; body : judgment_form }
+    | LaTeX of { uses : string list; defines : string list; latex : string }
+        (** A direct LaTeX representation of the judgment. *)
+
+  type judgement = { form : judgment_form; att : Attributes.t }
+  (** A judgement represents either a premise or the the output configuration of
+      the conclusion. *)
+
+  (** A tree of judgments. *)
+  type t =
+    | Judgement of judgement  (** A leaf judgment. *)
+    | Case of { name : string; elements : t list }
+        (** A sub-tree of judgments. *)
+
+  let make_judgement form attributes =
+    { form; att = Attributes.of_list attributes }
+end
+
 (** A datatype for a relation definition. *)
 module Relation : sig
   type t = {
@@ -265,6 +356,7 @@ module Relation : sig
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
   val make :
@@ -272,6 +364,7 @@ module Relation : sig
     opt_named_type_term list ->
     type_term list ->
     (AttributeKey.t * attribute) list ->
+    Rule.t option ->
     t
 
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
@@ -287,10 +380,11 @@ end = struct
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
-  let make name input output attributes =
-    { name; input; output; att = Attributes.of_list attributes }
+  let make name input output attributes rule_opt =
+    { name; input; output; att = Attributes.of_list attributes; rule_opt }
 
   let attributes_to_list self = Attributes.bindings self.att
 
@@ -314,34 +408,6 @@ end = struct
   let math_layout self =
     match find_opt AttributeKey.Math_Layout self.att with
     | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
-end
-
-(** A datatype for a constant definition. *)
-module Constant : sig
-  type t = { name : string; att : Attributes.t }
-
-  val make : string -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-end = struct
-  type t = { name : string; att : Attributes.t }
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  open Attributes
-
-  let make name attributes = { name; att = Attributes.of_list attributes }
-
-  let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
-
-  let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 end
 

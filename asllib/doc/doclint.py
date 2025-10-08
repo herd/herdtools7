@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import List, Set
 import argparse
 import pathlib
-import pathlib
+import os, fnmatch
 
 cli_parser = argparse.ArgumentParser(prog="ASL Reference Linter")
 cli_parser.add_argument(
@@ -164,9 +164,10 @@ def check_undefined_references_and_multiply_defined_labels():
         # There are 3 known instances of "Warning", which are considered benign.
         # Any others, that have not been detected earlier, thereby increasing
         # `num_errors` are caught here.
-        if num_errors == 0 and len(
-            re.findall(r"warning", log_str, flags=re.IGNORECASE)
-        ) > 3:
+        if (
+            num_errors == 0
+            and len(re.findall(r"warning", log_str, flags=re.IGNORECASE)) > 3
+        ):
             print(
                 f"ERROR: There are unrecognized instances of 'warning' in {log_filepath})",
                 file=sys.stderr,
@@ -590,7 +591,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderType\[.*?\]{.*?}",
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
-        ]
+    ]
     asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
 
     num_errors = 0
@@ -641,6 +642,87 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     return num_errors
 
 
+def check_relation_references(latex_files: list[str]) -> int:
+    r"""
+    Checks that for each 'relation <name>' in any .spec file,
+    there exists a '\RenderRelation{<name>}' in some file
+    in `latex_files`.
+    Returns the number of errors found.
+    """
+    import pathlib
+    import glob
+
+    spec_files = fnmatch.filter(os.listdir("."), "*.spec")
+
+    # Extract all relation names from .spec files
+    defined_relations = set()
+    relation_pattern = re.compile(r"^relation\s+([a-zA-Z_][a-zA-Z0-9_]*)\(")
+
+    for spec_file in spec_files:
+        try:
+            with open(spec_file, "r", encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
+                    match = relation_pattern.match(line.strip())
+                    if match:
+                        relation_name = match.group(1)
+                        defined_relations.add(relation_name)
+        except Exception as e:
+            print(f"ERROR: Could not read spec file {spec_file}: {e}", file=sys.stderr)
+            return 1
+
+    # Find all \RenderRelation{<name>} references in .tex files
+    referenced_relations = set()
+    render_pattern = re.compile(r"\\RenderRelation\{([^}]+)\}")
+
+    for latex_file in latex_files:
+        try:
+            file_content = read_file_str(latex_file)
+            # Process line by line to exclude comments
+            for line in file_content.splitlines():
+                # Skip lines that are comments (start with %)
+                stripped = line.strip()
+                if stripped.startswith("%"):
+                    continue
+                # Check if line contains a comment and handle it
+                comment_pos = line.find("%")
+                if comment_pos != -1:
+                    # Only look at the part before the comment
+                    line_to_check = line[:comment_pos]
+                else:
+                    line_to_check = line
+
+                for match in render_pattern.finditer(line_to_check):
+                    relation_name = match.group(1)
+                    referenced_relations.add(relation_name)
+        except Exception as e:
+            print(
+                f"ERROR: Could not read LaTeX file {latex_file}: {e}", file=sys.stderr
+            )
+            return 1  # Check for missing references
+    missing_references = defined_relations - referenced_relations
+    num_errors = 0
+
+    if missing_references:
+        num_errors = len(missing_references)
+        print(
+            f"ERROR: Found {num_errors} relations defined in .spec files but not referenced in .tex files:"
+        )
+        for relation in sorted(missing_references):
+            print(f"  Missing \\RenderRelation{{{relation}}}")
+
+    # Report unused references (relations referenced but not defined)
+    unused_references = referenced_relations - defined_relations
+    if unused_references:
+        unused_count = len(unused_references)
+        print(
+            f"WARNING: Found {unused_count} \\RenderRelation references to undefined relations:"
+        )
+        for relation in sorted(unused_references):
+            print(f"  Undefined relation: {relation}")
+
+    return num_errors
+
+
 def check_per_file(latex_files: list[str], checks):
     r"""
     Applies the list of functions in 'checks' to each file in 'latex files',
@@ -674,6 +756,7 @@ def main():
     num_errors += check_hyperlinks_and_hypertargets(all_latex_sources)
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_unused_latex_macros(all_latex_sources)
+    num_errors += check_relation_references(content_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
         [

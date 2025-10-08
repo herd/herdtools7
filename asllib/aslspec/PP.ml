@@ -40,13 +40,19 @@ let pp_attribute_key_values fmt attributes =
           fmt attrs)
       attributes
 
+let operator_to_token = function
+  | Powerset -> POWERSET
+  | Powerset_Finite -> POWERSET_FINITE
+  | List0 -> LIST0
+  | List1 -> LIST1
+  | Option -> OPTION
+
 let rec pp_type_term fmt = function
   | Label name -> pp_print_string fmt name
-  | Powerset { term; finite } ->
-      let powerset_token = if finite then POWERSET_FINITE else POWERSET in
-      fprintf fmt "%s(%a)" (tok_str powerset_token) pp_opt_named_type_term term
-  | Option elt_term ->
-      fprintf fmt "%s(%a)" (tok_str OPTION) pp_opt_named_type_term elt_term
+  | Operator { op; term } ->
+      fprintf fmt "%s(%a)"
+        (operator_to_token op |> tok_str)
+        pp_opt_named_type_term term
   | LabelledTuple { label_opt; components } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
@@ -54,9 +60,6 @@ let rec pp_type_term fmt = function
   | LabelledRecord { label_opt; fields } ->
       let label = Option.value label_opt ~default:"" in
       fprintf fmt "%s[%a]" label pp_named_type_terms fields
-  | List { maybe_empty; member_type } ->
-      let list_label = if maybe_empty then tok_str LIST0 else tok_str LIST1 in
-      fprintf fmt "%s(%a)" list_label pp_opt_named_type_term member_type
   | ConstantsSet constants ->
       fprintf fmt "%s(%a)" (tok_str CONSTANTS_SET)
         (pp_sep_list ~sep:"," pp_print_string)
