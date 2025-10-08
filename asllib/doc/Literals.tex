@@ -155,7 +155,10 @@ See \ExampleRef{Literals}.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[int]{}{\annotateliteral(\Ignore, \LInt(n))\typearrow \TInt(\langle[\ConstraintExact(\ELInt{n})]\rangle)}
+  \begin{array}{r}
+\inferrule[int]{}{\annotateliteral(\Ignore, \LInt(n)) \typearrow\\
+\TInt(\WellConstrained([\ConstraintExact(\ELInt{n})]))}
+  \end{array}
 \end{mathpar}
 
 \begin{mathpar}

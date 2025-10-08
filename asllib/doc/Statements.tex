@@ -603,7 +603,8 @@ since immutable local storage elements require an initializing expression.
   \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
         that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables require
         an initializing expression, otherwise they are rejected by an ASL parser);
-  \item $\tyopt$ is $\langle\vt\rangle$\ProseOrTypeError;
+  \item checking that $\tyopt$ is not $\None$, that is, the declaration has a type annotation, yields $\True$\ProseOrTypeError;
+  \item $\tyopt$ is $\langle\vt\rangle$;
   \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vses)$\ProseOrTypeError;
   \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the type $\vtp$ and local declaration keyword $\LDIVar$
@@ -632,7 +633,7 @@ since immutable local storage elements require an initializing expression.
 
 \begin{mathpar}
 \inferrule[none]{
-  \checktrans{\tyopt = \langle\Ignore\rangle}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
+  \checktrans{\tyopt \neq \None}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
   \tyopt \eqname \langle\vt\rangle \\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
@@ -2675,8 +2676,8 @@ show examples of ill-typed \texttt{for} loops.
   \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
   \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \True\OrTypeError\\\\
+  \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \True\OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
@@ -3354,9 +3355,9 @@ the \trystatementsterm{} are all well-typed.
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_\vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_vi\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
   \commonprefixline\\\\
   \news \eqdef \STry(\vspp, \catchersp, \None)\\
   \vsesotherwise \eqdef \emptyset\\
@@ -3369,9 +3370,9 @@ the \trystatementsterm{} are all well-typed.
 \and
 \inferrule[otherwise]{
   \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_vi) \OrTypeError\\\\
+  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_\vi) \OrTypeError\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_i\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
   \commonprefixline\\\\
   \annotateblock(\tenv, \otherwise) \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
@@ -3775,7 +3776,7 @@ empty \executiongraphterm{}.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{%
-    \vi\in\listrange(\vargs): \annotateexpr(\vargs[i], \tenv) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
+    \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
     \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
     \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
