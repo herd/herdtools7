@@ -152,6 +152,7 @@ val map :
 val mk_sym_physical_label_from_virt : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_virtual_label : Proc.t -> Label.t -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_virtual_label_with_offset : Proc.t -> Label.t -> offset -> ('scalar,'pte,'addrreg,'instr) t
+val unmk_sym_virtual_label_with_offset : ('scalar,'pte,'addrreg,'instr) t -> Proc.t * Label.t * offset
 val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar,'pte,'addrreg,'instr) t
@@ -185,7 +186,7 @@ val as_fault_base :  ('scalar,'pte,'addrreg,'instr) t -> string option
 val as_symbolic_data : ('scalar,'pte,'addrreg,'instr) t -> symbolic_data option
 val of_symbolic_data : symbolic_data -> ('scalar,'pte,'addrreg,'instr) t
 
-val as_pte : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t option
+val as_pte_arg : ('scalar,'pte,'addrreg,'instr) t -> string option
 val is_pt : ('scalar,'pte,'addrreg,'instr)  t -> bool
 
 (* Remove the Pac field of a virtual address *)

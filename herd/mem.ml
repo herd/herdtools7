@@ -338,6 +338,24 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         Label.Full.Set.exists
           (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
            exported_labels in
+        let is_on_exported_page a_v =
+          let exp_pages = S.get_exported_code_pages test in
+          match a_v with
+          | Some (A.V.Val c) -> begin
+            let this_lbl = c in
+            List.exists
+              (fun ttd_lbl ->
+                let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
+                let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
+                (* Printf.eprintf "\nComparing %s and %s\n" (A.V.Cst.pp false this_lbl) (A.V.Cst.pp false ttd_lbl); *)
+                match (this_triple,ttd_triple) with
+                | (p1,s1,_),(p2,s2,_) ->
+                  (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
+              ) exp_pages
+            end
+          | _ ->
+            false
+      in
 
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
@@ -349,20 +367,20 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* canonical location (label).                            *)
 (**********************************************************)
 
-      (* map an addres to an address for rep*)
+      (* Given an integer of a herd7-internal representation for an address,
+       * this function returns to a value of a label at the beginning of
+       * the page the address is on with an appropriate offset *)
       let a2ra =
-        let page_size = 16 in
-        let proc_size = 1000000 in
+        let page_size = Pseudo.page_size in
+        let proc_size = Pseudo.proc_size in
         let proc_of_addr a = (a / proc_size)-1 in
-        let page_of_addr a = a / page_size in
-        let on_the_same_page a1 a2 =
-          page_of_addr a1 = page_of_addr a2
+        let pagestart_of_addr a =
+          let addr_part = a mod proc_size in
+          let proc_part = a - addr_part in
+          let page_within_proc =
+            (addr_part / page_size) in
+          proc_part + page_within_proc * page_size
         in
-        let labels = (* the list of all labels *)
-          prog
-          |> Label.Map.to_list
-          |> List.sort (fun (_,a1) (_,a2) -> Int.compare a1 a2) in
-        (if dbg then List.iter (fun (k,a) -> Printf.printf "Label k=%s a=%d\n" k a) labels);
         let a2l =
           prog
           |> Label.Map.to_list
@@ -379,31 +397,29 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             [] starts
           else []
         in
-        let p2lbl = (* map page numbers into labels *)
-          let rec iter ls a2a = 
-            match ls with
-            | (_,a1)::(_,a2)::tail when (on_the_same_page a1 a2) ->
-                iter tail a2a
-            | (_,_)::(l2,a2)::tail ->
-                iter ((l2,a2)::tail) (IntMap.add (page_of_addr a2) a2 a2a)
-            | _ -> a2a
-          in
-          match labels with
-          | (_,a)::_ -> iter labels (IntMap.add (page_of_addr a) a (IntMap.empty))
-          | [] -> (IntMap.empty)
-        in
         List.fold_left (fun acc x ->
-            match IntMap.find_opt (page_of_addr x) p2lbl with
-            | Some a -> (
-                let lbl = IntMap.find a a2l in
+            let a = pagestart_of_addr x in
+            match IntMap.find_opt a a2l with
+            | Some lbl -> (
                 let off = x - a in
-                let proc = proc_of_addr x in
-                let a_virt = V.Val (Constant.mk_sym_virtual_label_with_offset proc lbl (off/4)) in
-                (if dbg then Printf.printf "[%d -> <%d :::: label P%d:%s with offset %d)>\n" x a proc lbl off);
-                IntMap.add x a_virt acc)
-            | None -> Warn.user_error
-                    "The combination of vmsa and ifetch modes requires each page to have a label"
+                if off < 0 then begin
+                  (if dbg then
+                    Printf.printf "[%d -> no representative address (%d)\n" x a
+                  );
+                  acc
+                end else begin
+                  let proc = proc_of_addr x in
+                  let a_virt = V.Val (Constant.mk_sym_virtual_label_with_offset proc lbl (off/4)) in
+                  IntMap.add x a_virt acc
+                end)
+            | None ->
+              if dbg then
+                Warn.warn_always
+                  "On P%d, the instruction with address %d is on a page that does not start with a labelled instruction, which means that its address will not be translated" (proc_of_addr x) (x mod proc_size) ;
+              acc
           ) IntMap.empty iaddrs in
+
+      let addr2va addr = IntMap.find_opt addr a2ra in
 
       (* lbls2i -- overwritable instructions, with labels          *)
       (* overwritable_labels -- the set of labels of instructions  *)
@@ -478,50 +494,43 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let init_state =
           (* Change labels into their canonical representants *)
           A.map_state norm_val test.init_state in
-        if self && kvm then
-          (* Add initialisation of all instructions *)
-          let init_state =
-            List.fold_left
-            (fun env_ (_,code,fh_code) ->
-              let code = match fh_code with
-                | Some fh_code -> code@fh_code
-                | None -> code in
+        let init_state =
+          if self && kvm then
+            (* Add initialisation of instructions whose addresses
+             * may be remapped *)
               List.fold_left
-                (fun env (addr,i) ->
-                  let loc = A.Location_global (IntMap.find addr a2ra)
-                    (* mk_addr proc addr *)
-                  and v = A.V.instructionToV i in
-                  A.state_add env loc v)
-                env_ code)
-            init_state starts
-          in
-          { test with init_state; }
-        else
-          match lbls2i with
-          | [] -> test
-          | _::_ ->
-            let init_state =
-              (* Add initialisation of overwritable instructions *)
-              List.fold_left
-                (fun env (lbls,(proc,i)) ->
-                  match Label.norm lbls with
-                  | None -> assert false (* as lbls is non-empty *)
-                  | Some lbl ->
-                      let symb = Constant.mk_sym_virtual_label proc lbl in
-                      let loc = A.Location_global (A.V.cstToV symb)
+              (fun env_ (_,code,fh_code) ->
+                let code = match fh_code with
+                  | Some fh_code -> code@fh_code
+                  | None -> code in
+                List.fold_left
+                  (fun env (addr,i) ->
+                    match addr2va addr with
+                    | Some ttd_addr when (is_on_exported_page (addr2va addr)) ->
+                      let loc = A.Location_global (ttd_addr)
                       and v = A.V.instructionToV i in
-                      A.state_add env loc v)
-                init_state lbls2i
-            in
-            { test with init_state; } in
-
-        if dbg then
-          List.iter
-            (fun (lbls,(proc,i)) ->
-              Printf.printf "P%d:" proc ;
-              Label.Set.iter (fun lbl -> Printf.printf " %s" lbl) lbls;
-              Printf.printf ": %s\n" (A.pp_instruction PPMode.Ascii i);)
-            lbls2i;
+                      A.state_add env loc v
+                    | Some _ | None -> env
+                  )
+                  env_ code)
+              init_state starts
+          else init_state in
+        match lbls2i with
+        | [] -> test
+        | _::_ ->
+          let init_state =
+            (* Add initialisation of overwritable instructions *)
+            List.fold_left
+              (fun env (lbls,(proc,i)) ->
+                match Label.norm lbls with
+                | None -> assert false (* as lbls is non-empty *)
+                | Some lbl ->
+                    let symb = Constant.mk_sym_virtual_label proc lbl in
+                    let loc = A.Location_global (A.V.cstToV symb)
+                    and v = A.V.instructionToV i in
+                    A.state_add env loc v)
+              init_state lbls2i in
+          { test with init_state; } in
 
 (*****************************************************)
 (* Build events monad, _i.e._ run code in some sense *)
@@ -608,8 +617,8 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
              labels = labels_of_instr addr;
              lbl2addr = prog;
              addr = addr;
-             addr2v=addr2v proc;
-             addr2ra=a2ra;
+             addr2v=addr2v;
+             rel_addr = (addr2va addr);
              env = env;
              in_handler = re_exec;
            } in
@@ -1280,67 +1289,92 @@ let match_reg_events es =
         Warn.warn_always "Candidate rejected for remaining equations.";
       res
 
-    let solve_mem_non_mixed test es rfm cns kont res =
+ let solve_mem_non_mixed test es rfm cns kont res =
+      (* The auxiliary functions *)
+      let is_to_codeloc e =
+        let open Constant in
+        match
+          Misc.seq_opt A.global (E.location_of e)
+        with
+        | Some (V.Var _) -> true
+        | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
+        | Some (V.Val (Symbolic (Physical (s,_)))) when (s |> Symbol.of_string |> Symbol.is_label) -> true (* FIXME: this benefits from a proper exposition of a label as a physical address *)
+        | Some _|None -> false
+      in
+      let is_to_instr_ttd e =
+        let open Constant in
+        match
+          Misc.seq_opt A.global (E.location_of e)
+        with
+        | Some (V.Val (Symbolic (System (PTE,s)))) -> Misc.is_labelstr s
+        | Some _| None -> false
+      in
+      let get_imp_instr_rs es =
+        if not self then E.EventSet.empty
+        else E.EventSet.filter E.is_ifetch es.E.events
+      in
+      let get_instr_ws es =
+        if not self then E.EventSet.empty
+        else
+          E.EventSet.filter
+            (fun e -> E.is_mem_store e && is_to_codeloc e)
+            es.E.events
+      in
+      let get_imp_instr_ttd_rs es =
+        if not (self && kvm) then E.EventSet.empty
+        else
+          E.EventSet.filter
+            (fun e -> E.is_mem_load e && E.is_not_explicit e && is_to_instr_ttd e)
+            es.E.events
+      in
+      let get_instr_ttd_ws es =
+        if not (self && kvm) then E.EventSet.empty
+        else
+          E.EventSet.filter
+            (fun e -> E.is_mem_store e && is_to_instr_ttd e)
+            es.E.events
+      in
+      (* The actual logic *)
       let compat_locs = compatible_locs_mem in
-      if self then
-        let code_store e =
-          let open Constant in
-            E.is_mem_store e &&
-            match
-              Misc.seq_opt A.global (E.location_of e)
-            with
-            | Some (V.Var _) -> true
-            | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
-            | Some (V.Val (Symbolic (Physical (s,_)))) when (s |> Symbol.of_string |> Symbol.is_label) -> true
-            | Some _|None -> false
-        in
-        (* let code_access e =
-          match
-            Misc.seq_opt A.global (E.location_of e)
-          with
-          | Some (V.Val c) when Constant.is_label c -> true
-          | Some _|None -> false in *)
-        (* Select code accesses *)
-        let code_loads =
-          E.EventSet.filter E.is_ifetch es.E.events
-        and code_stores =
-          E.EventSet.filter code_store es.E.events in
+      let kont_rem_reads es rfm cns res = (* solve pending constraints and continue *)
+        let all_reads =  E.EventSet.filter E.is_mem_load es.E.events in
+        let rem_reads = E.EventSet.diff all_reads (get_imp_instr_rs es) in
+        let rem_reads = E.EventSet.diff rem_reads (get_imp_instr_ttd_rs es) in
+        let all_writes = E.EventSet.filter E.is_mem_store es.E.events in
         if dbg then begin
-            eprintf "# Code loads : %a\n"E.debug_events code_loads ;
-            eprintf "# Code stores: %a\n"E.debug_events code_stores ;
-          end ;
-        if dbg then begin
-          eprintf "# Loads : %a\n" E.debug_events (E.EventSet.filter E.is_mem_load es.E.events) ;
-          eprintf "# Stores: %a\n" E.debug_events (E.EventSet.filter E.is_mem_store es.E.events) ;
-          end ;
-        let kont es rfm cns res =
-          (* We get here once code accesses are solved *)
-          let loads =  E.EventSet.filter E.is_mem_load es.E.events
-          and stores = E.EventSet.filter E.is_mem_store es.E.events in
-          let loads =
-            (* Remove code loads that are now solved *)
-            E.EventSet.diff loads code_loads in
+          eprintf "Loads : %a\n"E.debug_events rem_reads ;
+          eprintf "Stores: %a\n"E.debug_events all_writes
+        end ;
+        solve_mem_or_res test es rfm cns kont res
+          rem_reads all_writes compat_locs add_mem_eqs
+      in
+      let kont_ifetch_reads es rfm cns res = (* solve ifetch constraints and continue *)
+        if not self then kont_rem_reads es rfm cns res
+        else begin
           if dbg then begin
-            eprintf "Left loads : %a\n"E.debug_events loads ;
-            eprintf "All stores: %a\n"E.debug_events stores
-          end ;
-          solve_mem_or_res test es rfm cns kont res
-            loads stores compat_locs add_mem_eqs in
-        if dbg then begin
-            eprintf "Code loads : %a\n"E.debug_events code_loads ;
-            eprintf "Code stores: %a\n"E.debug_events code_stores
-          end ;
-        solve_mem_or_res test es rfm cns kont res
-          code_loads code_stores compat_locs add_mem_eqs
-      else
-        let loads = E.EventSet.filter E.is_mem_load es.E.events
-        and stores = E.EventSet.filter E.is_mem_store es.E.events in
-        if dbg then begin
-          eprintf "Loads : %a\n"E.debug_events loads ;
-          eprintf "Stores: %a\n"E.debug_events stores
-          end ;
-        solve_mem_or_res test es rfm cns kont res
-          loads stores compat_locs add_mem_eqs
+            eprintf "Instruction fetches : %a\n"
+              E.debug_events (get_imp_instr_rs es) ;
+            eprintf "Instruction writes  : %a\n"
+              E.debug_events (get_instr_ws es)
+          end;
+          solve_mem_or_res test es rfm cns kont_rem_reads res
+            (get_imp_instr_rs es) (get_instr_ws es) compat_locs add_mem_eqs
+        end
+      in
+      let kont_ifetch_ttd_reads es rfm cns res = (* solve vmsa+ifetch constraints and continue *)
+        if not (self && kvm) then kont_ifetch_reads es rfm cns res
+        else begin
+          if dbg then begin
+            eprintf "Implicit Instruction-TTD Reads : %a\n"
+              E.debug_events (get_imp_instr_ttd_rs es) ;
+            eprintf "Instruction-TTD Writes         : %a\n"
+              E.debug_events (get_instr_ttd_ws es)
+          end;
+          solve_mem_or_res test es rfm cns kont_ifetch_reads res
+            (get_imp_instr_ttd_rs es) (get_instr_ttd_ws es) compat_locs add_mem_eqs
+        end
+      in
+      kont_ifetch_ttd_reads es rfm cns res
 
 (*************************************)
 (* Mixed-size write-to-load matching *)

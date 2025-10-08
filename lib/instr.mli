@@ -22,6 +22,7 @@ module type S = sig
   val pp : t -> string
   val tr : InstrLit.t -> t
   val nop : t option
+  val mk_imm_branch : int -> t option
   val is_nop : t -> bool
 
   val can_overwrite : t -> bool

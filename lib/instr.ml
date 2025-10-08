@@ -21,6 +21,7 @@ module type S = sig
   val pp : t -> string
   val tr : InstrLit.t -> t
   val nop : t option
+  val mk_imm_branch : int -> t option
   val is_nop : t -> bool
 
   val can_overwrite : t -> bool
@@ -42,6 +43,8 @@ module No (I:sig type instr end) = struct
   let tr i =
     fail ("litteral instruction " ^ InstrLit.pp i)
   let nop = None
+
+  let mk_imm_branch _ = None
   let is_nop _ = fail "is_nop"
   let can_overwrite _ = false
   let get_exported_label _ = None
@@ -73,6 +76,7 @@ module
     let tr i =
       fail ("litteral instruction " ^ InstrLit.pp i)
     let nop = Some I.nop
+    let mk_imm_branch _ = None
     let is_nop i = eq i I.nop
     let can_overwrite _ = false
     let get_exported_label _ = None

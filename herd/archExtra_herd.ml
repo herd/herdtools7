@@ -74,7 +74,8 @@ module type S = sig
   type instr = I.V.Cst.Instr.t
   type code = (int * instr) list
 
-  val mynop : I.V.Cst.Instr.t
+  val mk_nop_opt : I.V.Cst.Instr.t option
+  val mk_immbranch_opt : int -> (I.V.Cst.Instr.t option)
 
   (* Program loaded in memory *)
   type program = int Label.Map.t
@@ -107,8 +108,8 @@ module type S = sig
       inst : instr;
       labels : Label.Set.t; lbl2addr:program;
       addr : int;
-      addr2v : string -> I.V.v;
-      addr2ra : I.V.v IntMap.t;
+      addr2v : int -> string -> I.V.v;
+      rel_addr : I.V.v option;
       env : ii_env;
       in_handler : bool;
     }
@@ -335,8 +336,11 @@ module Make(C:Config) (I:I) : S with module I = I
       type instr = I.V.Cst.Instr.t
       type code = (int * instr) list
 
-      let mynop =
-        Option.get I.V.Cst.Instr.nop
+      let mk_nop_opt =
+        I.V.Cst.Instr.nop
+
+      let mk_immbranch_opt off =
+        I.V.Cst.Instr.mk_imm_branch (4*off)
 
       (* Programm loaded in memory *)
       type program = int Label.Map.t
@@ -367,8 +371,8 @@ module Make(C:Config) (I:I) : S with module I = I
           inst : instr;
           labels : Label.Set.t; lbl2addr : program;
           addr : int ;
-          addr2v : string -> I.V.v;
-          addr2ra : I.V.v IntMap.t;
+          addr2v : int -> string -> I.V.v;
+          rel_addr : I.V.v option;
           env : ii_env;
           in_handler : bool;
         }

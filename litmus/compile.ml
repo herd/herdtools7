@@ -324,7 +324,8 @@ module A.FaultType = A.FaultType)
     | A.Instruction ins -> f ins
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro (_,_) -> assert false 
-    | A.Align _ -> assert false
+    | A.Pagealign -> assert false
+    | A.Skip _ -> assert false (* used internally in herd7 only *)
 
     let extract_pseudo = do_extract_pseudo G.Set.empty C.extract_addrs
 
@@ -353,7 +354,8 @@ module A.FaultType = A.FaultType)
       | A.Instruction _
       | A.Symbolic _
       | A.Macro _
-      | A.Align _ -> k
+      | A.Pagealign -> k
+      | A.Skip _ -> k
       | A.Label (lbl,i) ->
           ins_labels (lbl::k) i
 
@@ -395,7 +397,7 @@ module A.FaultType = A.FaultType)
 
 (* Translate labls to integers (local labels), when possible *)
     let rec lblmap_pseudo cm i = match i with
-    | A.Nop|A.Instruction _|A.Align _ -> cm
+    | A.Nop|A.Instruction _|A.Pagealign|A.Skip _ -> cm
     | A.Label(lbl,i) ->
        let cm  =
          let c,m = cm in
@@ -473,8 +475,8 @@ module A.FaultType = A.FaultType)
           seen,ilab::k
       | A.Instruction ins ->
           seen,C.compile_ins (tr_lab seen) ins []
-      | A.Align _ -> assert false
       | A.Symbolic _ (*no symbolic in litmus *)
+      | A.Pagealign | A.Skip _
       | A.Macro (_,_) -> assert false in
 
       let rec do_rec seen = function
@@ -500,7 +502,7 @@ module A.FaultType = A.FaultType)
          A.dump_instruction ins::k
       | A.Macro _|A.Symbolic _
         -> assert false
-      | A.Align _ -> assert false (* support for .p2align not implemented yet*)
+      | A.Pagealign| A.Skip _ -> assert false (* support for .pagealign not implemented yet*)
 
     let pp_code code =
       let k = List.fold_right pp_pseudo code [] in

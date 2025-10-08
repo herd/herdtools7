@@ -216,7 +216,8 @@ module Make(A:ArchBase.S)
         | A.Label (lbl,p) -> sprintf "%s:" lbl::dump_rec p k
         | A.Symbolic s -> sprintf "codevar:%s" s::k
         | A.Macro _ -> assert false (* applied after macro expansion *) 
-        | A.Align n -> sprintf ".p2align %d" n::k in
+        | A.Pagealign -> "pagealign"::k
+        | A.Skip _ -> assert false in
         fun (_,ps) ->
           List.fold_right dump_rec ps []
 
