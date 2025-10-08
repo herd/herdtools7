@@ -249,7 +249,7 @@ module DotGraph = struct
     let loc = Str.matched_group 2 value in
     (* Look for the register that was used to address memory, which
       is part of the instruction (at the end of the attribute value) *)
-    let address_reg = Str.regexp {|\[\([A-Z_]+[0-9]*\)\]|} in
+    let address_reg = Str.regexp {|\[\([A-Z_]+x?[0-9]*\)\]|} in
     let reg = try
       ignore (Str.search_backward address_reg value (String.length value - 1));
       Some (Str.matched_group 1 value)
@@ -344,12 +344,12 @@ module DotGraph = struct
   let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} (* no location specified - eg. a: TLBI(VAAE1IS) *)
   let dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\),\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\])|} (* eg. a: DC(CVAU,label:\\"P0:m0\\") *)
   let generic_dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\))|} (* no label specified - eg. a: DC(CVAU) *)
-  let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+[0-9]*\)|} (* eg. a: R0:X0 *)
+  let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+x?[0-9]*\)|} (* eg. a: R0:X0 *)
   let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} (* eg. a: Branching(pred)([x]==0:X0) *)
-  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))|} (* eg. a: Branching(pred)(tag(x), X1) *)
-  let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} (* eg. a: Branching(pred)(PTE(x), X1)(valid:1 && af:1) *)
-  let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+[0-9]*\)))|} (* eg. a: Branching(pred)(AnyActive(P0)) *)
-  let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+[0-9]*\), \([0-9]+\)))|} (* eg. a: Branching(pred)(ActiveElem(P0, 0)) *)
+  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+x?[0-9]*\))|} (* eg. a: Branching(pred)(tag(x), X1) *)
+  let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+x?[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} (* eg. a: Branching(pred)(PTE(x), X1)(valid:1 && af:1) *)
+  let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+x?[0-9]*\)))|} (* eg. a: Branching(pred)(AnyActive(P0)) *)
+  let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+x?[0-9]*\), \([0-9]+\)))|} (* eg. a: Branching(pred)(ActiveElem(P0, 0)) *)
   let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} (* Only match after the above branching regexes have failed, since they are not exclusive with this one. eg. a: Branching(pred) *)
   let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} (* eg. a: Branching(bcc) *)
   let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} (* eg. a: ExcReturn *)
@@ -390,7 +390,7 @@ module DotGraph = struct
           let typ = make_monospace (Str.matched_group 1 value) in
           let loc = Str.matched_group 2 value in
 
-          let reg_regex = Str.regexp {|[A-Z_]+[0-9]*|} in
+          let reg_regex = Str.regexp {|[A-Z_]+x?[0-9]*|} in
           let reg = try
             ignore (Str.search_backward reg_regex value (String.length value - 1));
             Str.matched_group 0 value
@@ -452,8 +452,8 @@ module DotGraph = struct
           (* Extracts the memory location or register (pair) name(s) out of a lhs or rhs *)
           let mem_or_reg str =
             let mem = Str.regexp {|\[\([a-zA-Z0-9_\+]+\)\]|} in
-            let reg = Str.regexp {|[0-9]:\([A-Z_]+[0-9]*\)|} in
-            let reg_pair = Str.regexp {|{[0-9]:\([A-Z_]+[0-9]*\),[0-9]:\([A-Z_]+[0-9]*\)}|} in
+            let reg = Str.regexp {|[0-9]:\([A-Z_]+x?[0-9]*\)|} in
+            let reg_pair = Str.regexp {|{[0-9]:\([A-Z_]+x?[0-9]*\),[0-9]:\([A-Z_]+x?[0-9]*\)}|} in
             let check_str r = check_regex r str in
             if check_str mem then
               DescDict.memloc (Str.matched_group 1 str)
@@ -841,8 +841,8 @@ module DotGraph = struct
       preceded by an optional thread number and followed by an optional
       access size. These two can be present when the param is a gp register *)
     let param_replacements = List.map (fun (key, v) ->
-      let str1 = "\\(R\\|W\\)[0-9]:" ^ key ^ "[a-z]?" in
-      let str2 = "\\([0-9]:\\)?" ^ key ^ "[a-z]?" in
+      let str1 = "\\(R\\|W\\)[0-9]:" ^ key ^ "[bhwqs]?" in
+      let str2 = "\\([0-9]:\\)?" ^ key ^ "[bhwqs]?" in
       let regex1 = Str.regexp str1 in
       let regex2 = Str.regexp str2 in
       let v1 = "\\1 " ^ v in
@@ -850,9 +850,9 @@ module DotGraph = struct
     ) graph_param_pairs in
     (* In case -instr was not passed, we need to just get rid of access sizes *)
     let param_replacements = if param_replacements = [] then
-      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z][0-9]+\)[a-z]?|} in
+      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z_]+x?[0-9]*\)[bhwqs]?|} in
       let v1 = "\\1 \\2" in
-      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z][0-9]+\)[a-z]?|} in
+      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z_]+x?[0-9]*\)[bhwqs]?|} in
       let v2 = "\\2" in
       [regex1, v1, regex2, v2]
     else param_replacements in
