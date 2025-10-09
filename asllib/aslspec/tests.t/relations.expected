@@ -1,0 +1,52 @@
+% ==================================================
+% AUTO-GENERATED - DO NOT EDIT
+% ==================================================
+
+% ------------------
+% Macros for symbols
+% ------------------
+
+\newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
+\newcommand\Int[0]{ \hyperlink{ast-Int}{\textsc{Int}} } % Generated from Int
+\newcommand\String[0]{ \hyperlink{ast-String}{\textsc{String}} } % Generated from String
+\newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
+\newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
+\newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
+\newcommand\annotateexpr'[0]{ \hyperlink{relation-annotateexpr'}{\textit{annotate\_expr'}} } % Generated from annotate_expr'
+\newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
+
+% -------------------
+% Macros for elements
+% -------------------
+
+\DefineType{type}{\hypertarget{ast-type}{}\hypertarget{ast-Int}{}
+\begin{flalign*}
+\type \derives\ & \Int\hypertarget{ast-String}{}\\
+|\ & \String\end{flalign*}} % EndDefineType
+
+\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\begin{flalign*}
+\expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
+|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType
+
+\DefineRelation{annotate_expr'}{
+\hypertarget{relation-annotateexpr'}{}
+The relation
+\[
+\annotateexpr'(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\]
+infers the type $\texttt{inferred\_type}$ for the expression
+$\texttt{input}$
+} % EndDefineRelation
+
+\DefineRelation{annotate_plus}{
+\hypertarget{relation-annotateplus}{}
+The relation
+\[
+\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\]
+infers the type $\texttt{inferred\_type}$ for the plus expression
+$\texttt{input}$
+} % EndDefineRelation
+
+

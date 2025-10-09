@@ -75,9 +75,7 @@ let parse_spec_from_file filename =
       in
       try SpecParser.spec SpecLexer.token lexbuf with
       | AST.SpecError msg ->
-          let msg =
-            Format.asprintf "Spec error: %s around %a" msg pp_position lexbuf
-          in
+          let msg = Format.asprintf "%s around %a" msg pp_position lexbuf in
           raise (ParseError msg)
       | SpecParser.Error ->
           let msg = Format.asprintf "Syntax error at %a" pp_position lexbuf in
@@ -93,8 +91,7 @@ let pp_std spec =
   PP.pp_spec Format.std_formatter spec;
   Format.print_newline ()
 
-(** Main entry point. Runs aslspec for the command-line options. *)
-let () =
+let parse_command_line_args_and_execute () =
   let open CLI in
   let config = parse_args () in
   let ast =
@@ -129,3 +126,17 @@ let () =
           Format.fprintf Format.std_formatter
             "%sGenerated stand-alone LaTeX file into %s\n%s" Text.green
             debug_generated_elements_filename Text.reset_color)
+
+(** Main entry point. Runs aslspec for the command-line options. *)
+let () =
+  try parse_command_line_args_and_execute () |> fun () -> exit 0
+  with error ->
+    let error_type, msg =
+      match error with
+      | CLI.CLIError msg -> ("Usage Error", msg)
+      | ParseError msg -> ("Syntax Error", msg)
+      | AST.SpecError msg -> ("Specification Error", msg)
+      | _ -> raise error
+    in
+    Format.eprintf "%s%s: %s%s\n" Text.red error_type msg Text.reset_color;
+    exit 1

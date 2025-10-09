@@ -1,0 +1,54 @@
+% ==================================================
+% AUTO-GENERATED - DO NOT EDIT
+% ==================================================
+
+% ------------------
+% Macros for symbols
+% ------------------
+
+\newcommand\Int[0]{ \hyperlink{type-Int}{\textsf{Int}} } % Generated from Int
+\newcommand\One[0]{ \hyperlink{constant-One}{\textsf{One}} } % Generated from One
+\newcommand\Two[0]{ \hyperlink{constant-Two}{\textsf{Two}} } % Generated from Two
+\newcommand\B[0]{ \hyperlink{type-B}{\textsf{B}} } % Generated from B
+\newcommand\C[0]{ \hyperlink{type-C}{\textsf{C}} } % Generated from C
+\newcommand\Rec[0]{ \hyperlink{type-Rec}{\textsf{Rec}} } % Generated from Rec
+\newcommand\LRec[0]{ \hyperlink{type-LRec}{\textsf{LRec}} } % Generated from LRec
+\newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
+\newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
+\newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
+
+% -------------------
+% Macros for elements
+% -------------------
+
+\DefineType{Int}{\hypertarget{type-Int}{}$\Int$} % EndDefineType
+
+\DefineConstant{One}{\hypertarget{constant-One}{} $\One$} % EndDefineConstant
+
+\DefineConstant{Two}{\hypertarget{constant-Two}{} $\Two$} % EndDefineConstant
+
+\DefineType{B}{\hypertarget{type-B}{}\hypertarget{type-C}{}
+\begin{flalign*}
+\B \triangleq\ & \C\\
+\cup\ & \pow{\Int}\\
+\cup\ & \some{\Int}\\
+\cup\ & \KleeneStar{\Int}\\
+\cup\ & \KleenePlus{\Int}\\
+\cup\ & \Int\\
+\cup\ & \Int \rightarrow \Int\\
+\cup\ & \Int \partialto \Int\\
+\cup\ & \{\One, \Two\}\\
+\cup\ & (\Int, \Int)\hypertarget{type-Rec}{}\\
+\cup\ & \Rec(\Int, \Int)\\
+\cup\ & \left[\begin{array}{lcl}
+              \text{f} & : & \Int\\
+              \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
+              \end{array}\right]\hypertarget{type-LRec}{}\\
+\cup\ & \LRec\left[\text{f} : \Rec(\Int, \Int, \Int)\right]\end{flalign*}} % EndDefineType
+
+\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\begin{flalign*}
+\expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
+|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType
+
+

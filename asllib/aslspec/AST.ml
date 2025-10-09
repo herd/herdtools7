@@ -6,23 +6,28 @@ exception SpecError of string
 
 type type_kind = TypeKind_Generic | TypeKind_AST
 
+(** A unary operator that transforms one type into another. *)
+type operator =
+  | Powerset  (** All subsets (finite and infinite) of the given type. *)
+  | Powerset_Finite  (** All finite subsets of the given type. *)
+  | List0  (** All (empty and non-empty) sequences of the given member type. *)
+  | List1  (** All non-empty sequences of the given member type. *)
+  | Option  (** A set containing at most a single value of the given type. *)
+
 (** Terms for constructing types out of other types, with [Label t] being the
     leaf case.
 
     In the context of a type definition, a [Label] variant defines a new label -
     a type representing just this single label. In other contexts, for example a
-    type variant appearing in the signature of a relation, this can either refer
-    to a type name of a label defined as a type variant. *)
+    type variant appearing in the signature of a relation, this can refer to a
+    type defined elsewhere. *)
 type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Powerset of { term : opt_named_type_term; finite : bool }
-      (** A set containing all subsets of the given type. If [finite] is true
-          then only the finite subsets are included. *)
-  | Option of opt_named_type_term
-      (** Either the empty set of a set containing a single value of the given
-          type. *)
+  | Operator of { op : operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the operator [op] to the
+          type given by [term]. *)
   | LabelledTuple of {
       label_opt : string option;
       components : opt_named_type_term list;
@@ -37,9 +42,6 @@ type type_term =
     }
       (** A set containing all optionally-labelled records formed by the given
           fields. *)
-  | List of { maybe_empty : bool; member_type : opt_named_type_term }
-      (** A set containing all sequences of the given member type. If
-          [maybe_empty] is true, the list may also be empty. *)
   | ConstantsSet of string list
       (** A set containing all constants formed by the given names. *)
   | Function of {
@@ -55,6 +57,10 @@ and named_type_term = string * type_term
 
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
+
+(** [make_operator op term] Constructs an operator term with the given operator
+    and term. *)
+let make_operator op term = Operator { op; term }
 
 (** [make_tuple components] Constructs an unlabelled tuple for the tuple
     components [components]. *)
@@ -74,7 +80,7 @@ let make_record fields = LabelledRecord { label_opt = None; fields }
 let make_labelled_record label fields =
   LabelledRecord { label_opt = Some label; fields }
 
-(** Specifies how to layout a compound term. *)
+(** Specifies a visual layout for a compound term. *)
 type layout =
   | Unspecified
       (** No specific layout, appropriate for atomic terms and terms with
@@ -89,12 +95,15 @@ type layout =
 (** A module for totally ordered attribute keys. *)
 module AttributeKey = struct
   type t =
-    | Prose_Description  (** A description of the element in prose. *)
+    | Prose_Description
+        (** A description of the element in prose with template variables in the
+            format [{var}]. *)
     | Prose_Application
-        (** A description of the element in prose describing its application in
-            an inference rule premise. *)
-    | Math_Macro  (** A LaTeX macro for the element. *)
-    | Math_Layout  (** The layout of the element in a mathematical context. *)
+        (** A description of the element in prose, describing its application in
+            an inference rule premise. Can contain template variables in the
+            format [{var}]. *)
+    | Math_Macro  (** A LaTeX macro name for the element. *)
+    | Math_Layout  (** The visual layout of the element. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -146,8 +155,7 @@ module Attributes = struct
       (fun acc_map (k, v) ->
         if mem k acc_map then
           let msg =
-            Format.sprintf {| encountered second occurrence of attribute '%s'|}
-              (AttributeKey.to_str k)
+            Format.sprintf "Duplicate attribute: '%s'" (AttributeKey.to_str k)
           in
           raise (SpecError msg)
         else add k v acc_map)

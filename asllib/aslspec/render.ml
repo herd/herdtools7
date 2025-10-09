@@ -48,57 +48,34 @@ module Make (S : SPEC_VALUE) = struct
     in
     sprintf "%s-%s" category name_id
 
-  (** [vars_of_type_term term] returns the list of term-naming variables that
-      occur at any depth inside [term]. *)
-  let rec vars_of_type_term term =
-    let opt_named_term_to_list (var, t) =
-      (match var with Some x -> [ x ] | None -> []) @ vars_of_type_term t
-    in
-    let listed_vars =
-      match term with
-      | Label var -> [ var ]
-      | Powerset { term } -> opt_named_term_to_list term
-      | Option term -> opt_named_term_to_list term
-      | LabelledTuple { components } -> vars_of_opt_named_type_terms components
-      | LabelledRecord { fields } -> vars_of_named_type_terms fields
-      | List { member_type } -> opt_named_term_to_list member_type
-      | ConstantsSet _ -> []
-      | Function { from_type; to_type } ->
-          opt_named_term_to_list from_type @ opt_named_term_to_list to_type
-    in
-    List.sort_uniq String.compare listed_vars
-
-  (** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming
-      variables that occur at any depth inside [opt_named_terms]. *)
-  and vars_of_opt_named_type_terms opt_named_terms =
-    List.map
-      (fun (name_opt, term) ->
-        let term_vars = vars_of_type_term term in
-        match name_opt with Some name -> name :: term_vars | None -> term_vars)
-      opt_named_terms
-    |> List.concat
-
-  and vars_of_named_type_terms named_terms =
-    List.map (fun (name, term) -> (Some name, term)) named_terms
-    |> vars_of_opt_named_type_terms
-
   (** [substitute_spec_vars_by_latex_vars math_mode s vars] returns a string [s]
       with every variable like [my_var] is substituted into [\texttt{my\_var}],
       which makes the returned string suitable to typsetting with LaTeX. If
       [math_mode] is true then the result is surrounded by [$$]. *)
   let substitute_spec_vars_by_latex_vars ~math_mode str vars =
     let open Text in
-    let substitutions =
-      List.map
-        (fun var_str ->
+    let substitutions_map =
+      List.fold_left
+        (fun acc_map var_str ->
           let latex_var = spec_var_to_latex_var ~font_type:TextTT var_str in
           let latex_var =
             if math_mode then to_math_mode latex_var else latex_var
           in
-          (spec_var_to_template_var var_str, latex_var))
-        vars
+          let template_var = spec_var_to_template_var var_str in
+          StringMap.add template_var latex_var acc_map)
+        StringMap.empty vars
     in
-    apply_substitutions str substitutions
+    let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+    let blocks = Str.full_split template_var_regexp str in
+    List.fold_left
+      (fun acc block ->
+        match block with
+        | Str.Text txt -> acc ^ txt
+        | Str.Delim var -> (
+            match StringMap.find_opt var substitutions_map with
+            | Some latex_var -> acc ^ latex_var
+            | None -> acc ^ var))
+      "" blocks
 
   type parenthesis = Parens | Braces | Brackets
 
@@ -107,7 +84,7 @@ module Make (S : SPEC_VALUE) = struct
     let right = if large then {|\right|} else "" in
     match parenthesis with
     | Parens -> fprintf fmt "%s(%a%s)" left pp_elem elem right
-    | Braces -> fprintf fmt "%s{%a%s}" left pp_elem elem right
+    | Braces -> fprintf fmt "%s\\{%a%s\\}" left pp_elem elem right
     | Brackets -> fprintf fmt "%s[%a%s]" left pp_elem elem right
 
   (** Renders an instance of the constant [name] in a term. *)
@@ -120,56 +97,37 @@ module Make (S : SPEC_VALUE) = struct
     let macro = get_or_gen_math_macro name in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\BeginDefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|}
-      name hyperlink_target macro
+      {|\DefineConstant{%s}{\hypertarget{%s}{} $%s$} %% EndDefineConstant|} name
+      hyperlink_target macro
 
-  (** [pp_latex_array_rows fmt rows] renders a table of elements using a LaTeX
-      array environment. The elements are assumed to be organized by the
-      (top-level) list [rows] representing the table rows. Each (second-level)
-      list represents a column where the elements are formatting functions
-      invoked with [fmt]. *)
-  let pp_latex_array_rows fmt rows =
-    let () = assert (not (Utils.list_is_empty rows)) in
-    let num_columns = List.length (List.hd rows) in
-    let rows_argument = String.init num_columns (fun _ -> 'l') in
-    let () = fprintf fmt {|\begin{array}{%s}@.|} rows_argument in
-    let () =
-      let num_rows = List.length rows in
-      List.iteri
-        (fun row_index row ->
-          List.iter (fun cell_fun -> cell_fun fmt) row;
-          (* emit a LaTeX line break, except for the last line. *)
-          if row_index < num_rows - 1 then fprintf fmt {|\\@.|}
-          else fprintf fmt {|@.|})
-        rows
-    in
-    let () = fprintf fmt {|\end{array}|} in
-    ()
-
-  let pp_latex_array alignment fmt pp_funs =
+  (** [pp_latex_array alignment fmt pp_fun_rows] renders a table of elements
+      using a LaTeX array environment. The [alignment] string specifies the
+      alignment of each column and is copied directly to the array environment.
+      The [pp_fun_rows] is a list of lists, where the outer list represents the
+      array rows and the inner lists represent the columns. *)
+  let pp_latex_array alignment fmt pp_fun_rows =
     let () = assert (Str.string_match (Str.regexp "[lcr]+$") alignment 0) in
     let num_columns = String.length alignment in
-    let () = assert (List.length pp_funs mod num_columns = 0) in
-    let () = fprintf fmt {|\begin{array}{%s}@.|} alignment in
-    let () =
-      List.iteri
-        (fun cell_index pp_fun ->
-          let () = pp_fun fmt in
-          let () =
-            if cell_index mod num_columns <> 0 then fprintf fmt {| & |} else ()
-          in
-          let () =
-            if
-              cell_index mod num_columns = 0
-              && cell_index < List.length pp_funs - 1
-            then fprintf fmt {|\\@.|}
-            else ()
-          in
-          ())
-        pp_funs
+    let pp_elt = fun fmt pp_fun -> pp_fun fmt in
+    let pp_one_row fmt pp_funs =
+      let () = assert (List.compare_length_with pp_funs num_columns = 0) in
+      pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt " & ") pp_elt fmt pp_funs
     in
-    let () = fprintf fmt {|\end{array}|} in
-    ()
+    fprintf fmt "@[<v>\\begin{array}{%s}@ %a@ \\end{array}@]" alignment
+      (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt {|\\@ |}) pp_one_row)
+      pp_fun_rows
+
+  (** Renders the operator [op] applied to the argument rendered by
+      [pp_arg fmt arg]. *)
+  let pp_operator op fmt pp_arg =
+    let operator_to_macro = function
+      | Powerset -> "pow"
+      | Powerset_Finite -> "powfin"
+      | List0 -> "KleeneStar"
+      | List1 -> "KleenePlus"
+      | Option -> "some"
+    in
+    fprintf fmt {|\%s{%a}|} (operator_to_macro op) pp_arg
 
   (** [pp_type_term mode term] formats [term] into a string suitable for LaTeX
       math mode. *)
@@ -182,24 +140,26 @@ module Make (S : SPEC_VALUE) = struct
     let layout_contains_vertical = Layout.contains_vertical layout in
     match type_term with
     | Label name -> pp_print_string fmt (get_or_gen_math_macro name)
-    | Powerset { term = sub_term; finite } ->
-        let powerset_macro = if finite then {|\powfin|} else {|\pow|} in
-        fprintf fmt {|%s{%a}|} powerset_macro pp_opt_named_type_term
-          (sub_term, layout)
-    | Option sub_term ->
-        let optional_macro = {|\some|} in
-        fprintf fmt {|%s{%a}|} optional_macro pp_opt_named_type_term
-          (sub_term, layout)
+    | Operator { op; term = sub_term } ->
+        pp_operator op fmt pp_opt_named_type_term (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
-        let label =
-          match label_opt with
-          | Some label -> get_or_gen_math_macro label
-          | None -> ""
+        let is_type_reference =
+          (* Singleton unlabelled tuples are a special case -
+           they used to reference type terms, rather than defining them. *)
+          Option.is_none label_opt && Utils.is_singleton_list components
         in
-        fprintf fmt "%s%a" label
-          (pp_parenthesized Parens layout_contains_vertical
-             pp_opt_named_type_terms)
-          (components, layout)
+        if is_type_reference then
+          pp_opt_named_type_term fmt (List.hd components, layout)
+        else
+          let label =
+            match label_opt with
+            | Some label -> get_or_gen_math_macro label
+            | None -> ""
+          in
+          fprintf fmt "%s%a" label
+            (pp_parenthesized Parens layout_contains_vertical
+               pp_opt_named_type_terms)
+            (components, layout)
     | LabelledRecord { label_opt; fields } ->
         let label =
           match label_opt with
@@ -207,12 +167,6 @@ module Make (S : SPEC_VALUE) = struct
           | None -> ""
         in
         fprintf fmt {|%s%a|} label pp_record_fields (fields, layout)
-    | List { maybe_empty; member_type } ->
-        let iteration_macro =
-          if maybe_empty then {|\KleeneStar|} else {|\KleenePlus|}
-        in
-        fprintf fmt {|%s{%a}|} iteration_macro pp_opt_named_type_term
-          (member_type, layout)
     | ConstantsSet constant_names ->
         fprintf fmt {|%a|}
           (pp_parenthesized Braces layout_contains_vertical
@@ -228,8 +182,11 @@ module Make (S : SPEC_VALUE) = struct
           | Horizontal l | Vertical l -> l
           | Unspecified -> assert false
         in
-        let input_layout = List.nth layout_list 0 in
-        let output_layout = List.nth layout_list 1 in
+        let input_layout, output_layout =
+          match layout_list with
+          | [ input_layout; output_layout ] -> (input_layout, output_layout)
+          | _ -> (* Layout is expected to be valid. *) assert false
+        in
         match layout with
         | Horizontal _ ->
             fprintf fmt {|%a %s %a|} pp_opt_named_type_term
@@ -238,16 +195,21 @@ module Make (S : SPEC_VALUE) = struct
         | Vertical _ ->
             pp_latex_array "c" fmt
               [
-                (fun fmt ->
-                  pp_opt_named_type_term fmt (from_type, input_layout));
-                (fun fmt -> pp_print_string fmt arrow_symbol);
-                (fun fmt -> pp_opt_named_type_term fmt (to_type, output_layout));
+                [
+                  (fun fmt ->
+                    pp_opt_named_type_term fmt (from_type, input_layout));
+                ];
+                [ (fun fmt -> pp_print_string fmt arrow_symbol) ];
+                [
+                  (fun fmt ->
+                    pp_opt_named_type_term fmt (to_type, output_layout));
+                ];
               ]
         | Unspecified -> assert false)
 
   and pp_named_type_term fmt ((name, term), layout) =
     fprintf fmt {|\overtext{%a}{%s}|} pp_type_term (term, layout)
-      (Text.spec_var_to_prose name)
+      (Text.spec_var_to_latex_var ~font_type:TextTT name)
 
   and pp_opt_named_type_term fmt ((name_opt, term), layout) =
     match name_opt with
@@ -274,15 +236,19 @@ module Make (S : SPEC_VALUE) = struct
         let term_pp_funs =
           List.mapi
             (fun term_counter term_and_layout ->
-              if term_counter < num_terms - 1 then fun fmt ->
-                fprintf fmt {|%a,@.|} pp_opt_named_type_term term_and_layout
-              else fun fmt -> pp_opt_named_type_term fmt term_and_layout)
+              [
+                (fun fmt ->
+                  if term_counter < num_terms - 1 then
+                    fprintf fmt {|%a,@|} pp_opt_named_type_term term_and_layout
+                  else pp_opt_named_type_term fmt term_and_layout);
+              ])
             opt_terms_with_layouts
         in
         pp_latex_array "c" fmt term_pp_funs
     | Unspecified -> assert false
 
   and pp_record_fields fmt (fields, layout) =
+    let layout = Layout.horizontal_if_unspecified layout fields in
     let field_layouts =
       match layout with
       | Horizontal l | Vertical l -> l
@@ -296,21 +262,21 @@ module Make (S : SPEC_VALUE) = struct
     in
     match layout with
     | Vertical _ ->
-        let row_funs =
+        let field_pp_funs =
           List.map
             (fun (field_name, (field_term, layout)) ->
               [
                 (fun fmt ->
                   pp_print_string fmt
                     (Text.spec_var_to_latex_var ~font_type:Text field_name));
-                (fun fmt -> pp_print_string fmt " &:& ");
+                (fun fmt -> pp_print_string fmt ":");
                 (fun fmt -> pp_type_term fmt (field_term, layout));
               ])
             fields_with_layouts
         in
         fprintf fmt {|%a|}
-          (pp_parenthesized Brackets true pp_latex_array_rows)
-          row_funs
+          (pp_parenthesized Brackets true (pp_latex_array "lcl"))
+          field_pp_funs
     | Horizontal _ ->
         let pp_field fmt (field_name, (field_term, layout)) =
           fprintf fmt {|%s : %a|}
@@ -330,10 +296,18 @@ module Make (S : SPEC_VALUE) = struct
       match layout with
       | Vertical layouts ->
           let terms_with_layouts = List.combine terms layouts in
-          fprintf fmt
-            {|\left(\begin{array}{ll}@[<hv>%a@] & \\@.\end{array}\right)|}
-            (PP.pp_sep_list ~sep:{| & \cup \\@.|} pp_type_term)
-            terms_with_layouts
+          let term_pp_funs =
+            List.mapi
+              (fun term_counter (term, layout) ->
+                [
+                  (fun fmt -> pp_type_term fmt (term, layout));
+                  (if term_counter < List.length terms - 1 then fun fmt ->
+                     pp_print_string fmt {|\cup|}
+                   else fun _fmt -> ());
+                ])
+              terms_with_layouts
+          in
+          pp_latex_array "ll" fmt term_pp_funs
       | Horizontal layouts ->
           let terms_with_layouts = List.combine terms layouts in
           fprintf fmt {|\left(%a\right)|}
@@ -357,10 +331,15 @@ module Make (S : SPEC_VALUE) = struct
           (input_as_labelled_tuple, input_layout)
           pp_type_term_union (output, output_layout)
     | Vertical [ input_layout; output_layout ] ->
-        fprintf fmt {|\begin{array}{c}@.%a\\@.\bigtimes\\@.%a@.\end{array}|}
-          pp_type_term
-          (input_as_labelled_tuple, input_layout)
-          pp_type_term_union (output, output_layout)
+        pp_latex_array "c" fmt
+          [
+            [
+              (fun fmt ->
+                pp_type_term fmt (input_as_labelled_tuple, input_layout));
+            ];
+            [ (fun fmt -> pp_print_string fmt {|\bigtimes|}) ];
+            [ (fun fmt -> pp_type_term_union fmt (output, output_layout)) ];
+          ]
     | _ -> assert false
 
   let pp_relation fmt ({ Relation.name; input; output } as def) =
@@ -371,13 +350,13 @@ module Make (S : SPEC_VALUE) = struct
       substitute_spec_vars_by_latex_vars ~math_mode:true
         (Relation.prose_description def)
         vars
-      (* not necessary but nice to have: *)
-      |> Text.shrink_space_segments
+      (* necessary to avoid spurious line breaks. *)
+      |> Text.shrink_whitespace
     in
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\BeginDefineRelation{%s}{@.%a
+      {|\DefineRelation{%s}{@.%a
 The relation
 \[@.%a@.\]
 %a@.} %% EndDefineRelation|}
@@ -394,10 +373,10 @@ The relation
 
   (** [pp_define_type_wrapper name fmt pp_value value] renders a wrapper around
       the rendering of a type definition for the type. The wrapper uses the
-      LaTeX macro [\BeginDefineType{name}{...}] to define the type [name] with
-      the content rendered by [pp_value fmt value]. *)
+      LaTeX macro [\DefineType{name}{...}] to define the type [name] with the
+      content rendered by [pp_value fmt value]. *)
   let pp_define_type_wrapper name fmt pp_value value =
-    fprintf fmt {|\BeginDefineType{%s}{|} name;
+    fprintf fmt {|\DefineType{%s}{|} name;
     pp_value fmt value;
     fprintf fmt {|} %% EndDefineType|}
 
@@ -412,7 +391,7 @@ The relation
     in
     let first_variant, variants_tail =
       match variants with
-      | [] -> assert false
+      | [] -> (* Expected to be called with non-empty list *) assert false
       | first_variant :: variants_tail -> (first_variant, variants_tail)
     in
     let variant_hyperlink_targets =
@@ -524,9 +503,9 @@ The relation
       pointers
 
   let pp_render fmt { TypesRender.name; pointers } =
-    fprintf fmt {|\BeginDefineRenderTypes{%s}{%a
-} %% EndDefineRenderTypes|}
-      name pp_pointers pointers
+    fprintf fmt {|\DefineRenderTypes{%s}{%a
+} %% EndDefineRenderTypes|} name
+      pp_pointers pointers
 
   let pp_elem fmt = function
     | Elem_Constant def -> pp_constant_definition fmt def

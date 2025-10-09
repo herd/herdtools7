@@ -184,11 +184,11 @@ ast expr { "expression" } =
     | E_Var(name: Identifier)
     { "variable expression for {name}" }
     | E_ATC(source: expr, type: ty)
-    { "asserting type conversion for the source expression {e} and type {type}" }
+    { "asserting type conversion for the source expression {source} and type {type}" }
     | E_Binop(operator: binop, left: expr, right: expr)
     { "binary expression for the operator {operator}, left expression {left} and right expression {right}" }
     | E_Unop(operator: unop, subexpression: expr)
-    { "unary expression for the unary operator {operator} and subexpression {e}" }
+    { "unary expression for the unary operator {operator} and subexpression {subexpression}" }
     | E_Call(call_descriptor: call)
     { "call expression for the call descriptor {call_descriptor}" }
     | E_Slice(base: expr, slices: list0(slice))
@@ -219,9 +219,9 @@ ast expr { "expression" } =
     | E_GetItem(base: expr, index: N)
     { "an access to tuple expression {base} of the component at index {index}" }
     | E_Array[length: expr, value: expr]
-    { "array construction {base} of the component at index {index}" }
+    { "array construction for an array of length given by {length} with all cells initialized with {value}" }
     | E_EnumArray[labels: list1(Identifier), value: expr]
-    { "array construction {base} of the component at index {index}" }
+    { "array construction for an array associating each label in {labels} with the value given by {value}" }
     | E_GetEnumArray(base: expr, key: expr)
     { "access to enumeration-indexed array {base} with key expression {key}" }
     | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
@@ -353,17 +353,17 @@ ast ty { "type" } =
     | T_Tuple(component_types: list0(ty))
     { "tuple type with components types {component_types}" }
     | T_Array(index: array_index, element_type: ty)
-    { "integer type with {array_index} and element_type {element_type}" }
+    { "integer type with {index} and element_type {element_type}" }
     | T_Named(type_name: Identifier)
     { "named type with name {type_name}" }
     | T_Enum(labels: list1(Identifier))
     { "enumeration type with labels {labels}" }
     | T_Record(fields: list0(field))
-    { "record type with fields {record_fields}" }
+    { "record type with fields {fields}" }
     | T_Exception(fields: list0(field))
-    { "exception type with fields {record_fields}" }
+    { "exception type with fields {fields}" }
     | T_Collection(fields: list0(field))
-    { "collection type with fields {record_fields}" }
+    { "collection type with fields {fields}" }
 ;
 
 ast constraint_kind { "constraint kind" } =
@@ -411,7 +411,7 @@ ast int_constraint { "integer constraint" } =
     | Constraint_Exact(subexpression: expr)
     { "exact constraint for the subexpression {subexpression}" }
     | Constraint_Range(start_expression: expr, end_expression: expr)
-    { "range constraint from the start expression {start_subexpression} to the end expression {end_subexpression}" }
+    { "range constraint from the start expression {start_expression} to the end expression {end_expression}" }
 ;
 
 ast bitfield { "bitfield" } =
@@ -595,7 +595,7 @@ ast stmt { "statement" } =
   | S_Throw(exception: expr)
   { "throw statement with exception expression {exception}" }
   | S_Try(statement: stmt, catchers: list0(catcher), otherwise: option(stmt))
-  { "try statement with statement {stmt},
+  { "try statement with statement {statement},
     list of catchers {catchers},
     and otherwise optional statement {otherwise}" }
   | S_Print(arguments: list0(expr), newline: Bool)
