@@ -139,9 +139,7 @@ let of_subprogram_type x =
     | ST_Procedure -> "ST_PROCEDURE"
     | ST_Function -> "ST_FUNCTION"
     | ST_Getter -> "ST_GETTER"
-    | ST_EmptyGetter -> "ST_EMPTYGETTER"
-    | ST_Setter -> "ST_SETTER"
-    | ST_EmptySetter -> "ST_EMPTYSETTER")
+    | ST_Setter -> "ST_SETTER")
 
 let of_bitvector_mask x =
   aslsym_alist

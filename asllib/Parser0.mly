@@ -468,7 +468,7 @@ let getter_decl ==
         let return_type = Some ty
         and args = []
         and body = SB_ASL body
-        and subprogram_type = ST_EmptyGetter
+        and subprogram_type = ST_Getter
         and recurse_limit = None
         and parameters = [] in
         D_Func {
@@ -491,7 +491,7 @@ let getter_decl ==
         and args = []
         and body = SB_ASL body
         and recurse_limit = None
-        and subprogram_type = ST_EmptyGetter
+        and subprogram_type = ST_Getter
         and parameters = [] in
         D_Func {
           name;
@@ -541,7 +541,7 @@ let setter_decl ==
         let return_type = None
         and parameters = []
         and body = SB_ASL body
-        and subprogram_type = ST_EmptySetter
+        and subprogram_type = ST_Setter
         and recurse_limit = None
         and args = [ (ident, ty) ] in
         D_Func {
