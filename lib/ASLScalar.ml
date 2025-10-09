@@ -196,32 +196,20 @@ let mul = zop "mul" Z.mul
 and div = zop "div" Z.divexact
 and rem = zop "rem" asl_rem
 
-let logor s1 s2 =
+let bitwise_op zop boolop bvop name s1 s2 =
   match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.logor i1 i2)
-  | S_Bool b1, S_Bool b2 -> S_Bool (b1 || b2)
-  | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logor bv1 bv2)
-  | _ -> Warn.fatal "ASLScalar invalid op: %s OR %s" (pp false s1) (pp false s2)
+  | S_Int i1, S_Int i2 -> S_Int (zop i1 i2)
+  | S_Bool b1, S_Bool b2 -> S_Bool (boolop b1 b2)
+  | S_BitVector bv1, S_BitVector bv2
+    when Int.equal (BV.length bv1) (BV.length bv2) ->
+      S_BitVector (bvop bv1 bv2)
+  | _ -> Warn.fatal "ASLScalar invalid op: %s %s %s" (pp false s1) name (pp false s2)
 
-let logand s1 s2 =
-  match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.logand i1 i2)
-  | S_Bool b1, S_Bool b2 -> S_Bool (b1 && b2)
-  | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logand bv1 bv2)
-  | _ ->
-      Warn.fatal "ASLScalar invalid op: %s logand %s" (pp false s1)
-        (pp false s2)
+let logor = bitwise_op Z.logor ( || ) BV.logor "OR"
+let logand = bitwise_op Z.logand ( && ) BV.logand "AND"
+let logxor = bitwise_op Z.logxor ( != ) BV.logxor "XOR"
 
-let logxor s1 s2 =
-  match (s1, s2) with
-  | S_Int i1, S_Int i2 -> S_Int (Z.logxor i1 i2)
-  | S_Bool b1, S_Bool b2 -> S_Bool (b1 != b2)
-  | S_BitVector bv1, S_BitVector bv2 -> S_BitVector (BV.logxor bv1 bv2)
-  | _ ->
-      Warn.fatal "ASLScalar invalid op: %s logxor %s" (pp false s1)
-        (pp false s2)
-
-  let lognot = function
+let lognot = function
   | S_Int i -> S_Int (Z.lognot i)
   | S_Bool b -> S_Bool (not b)
   | S_BitVector bv -> S_BitVector (BV.lognot bv)
