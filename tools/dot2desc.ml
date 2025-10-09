@@ -249,7 +249,7 @@ module DotGraph = struct
     let loc = Str.matched_group 2 value in
     (* Look for the register that was used to address memory, which
       is part of the instruction (at the end of the attribute value) *)
-    let address_reg = Str.regexp {|\[\([A-Z_]+x?[0-9]*\)\]|} in
+    let address_reg = Str.regexp {|\[\([A-Z\._]+x?[0-9]*\)\]|} in
     let reg = try
       ignore (Str.search_backward address_reg value (String.length value - 1));
       Some (Str.matched_group 1 value)
@@ -296,9 +296,6 @@ module DotGraph = struct
     previously used regexes, make sure this function is called after
     all other matching has been performed *)
   let pp_reg param_map reg =
-    let reg = match reg with
-    | "NZCV" -> "PSTATE.NZCV"
-    | r -> r in
     let tr_reg = StringMap.safe_find reg reg param_map in
     if is_gpreg reg then tr_reg else make_monospace tr_reg
 
@@ -339,22 +336,22 @@ module DotGraph = struct
   let tag_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[tag(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[tag(x)] *)
   let pte_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PTE(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[PTE(x)] *)
   let pa_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)\[PA(\([a-zA-Z0-9_\+]+\))\]|} (* eg. a: R[PA(x)] *)
-  let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9_ ]+\)|} (* eg. a: R[label:\\"P0:L0\\"]IFetch=NOP *)
+  let ifetch = Str.regexp {|[a-zA-Z0-9_]*: R\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\]IFetch=\([][,a-zA-Z0-9\._ ]+\)|} (* eg. a: R[label:\\"P0:L0\\"]IFetch=NOP *)
   let tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\),\[\([a-zA-Z0-9_\+()]+\)\])|} (* eg. a: TLBI(VAAE1IS,[TLB(x)]) *)
   let generic_tlbi = Str.regexp {|[a-zA-Z0-9_]*: TLBI(\([A-Z0-9]+\))|} (* no location specified - eg. a: TLBI(VAAE1IS) *)
   let dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\),\[label:\\"P[0-9]:\([a-zA-Z0-9_]+\)\\"\])|} (* eg. a: DC(CVAU,label:\\"P0:m0\\") *)
   let generic_dc_ic = Str.regexp {|[a-zA-Z0-9_]*: \(DC\|IC\)(\([A-Z]+\))|} (* no label specified - eg. a: DC(CVAU) *)
-  let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z_]+x?[0-9]*\)|} (* eg. a: R0:X0 *)
-  let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9_\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9_\+:{}]+\))|} (* eg. a: Branching(pred)([x]==0:X0) *)
-  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+x?[0-9]*\))|} (* eg. a: Branching(pred)(tag(x), X1) *)
-  let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z_]+x?[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} (* eg. a: Branching(pred)(PTE(x), X1)(valid:1 && af:1) *)
-  let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z_]+x?[0-9]*\)))|} (* eg. a: Branching(pred)(AnyActive(P0)) *)
-  let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z_]+x?[0-9]*\), \([0-9]+\)))|} (* eg. a: Branching(pred)(ActiveElem(P0, 0)) *)
+  let reg_access = Str.regexp {|[a-zA-Z0-9_]*: \(R\|W\)[0-9]:\([A-Z\._]+x?[0-9]*\)|} (* eg. a: R0:X0 *)
+  let branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(\([][,a-zA-Z0-9\._\+:{}]+\)\(==\|!=\)\([][,a-zA-Z0-9\._\+:{}]+\))|} (* eg. a: Branching(pred)([x]==0:X0) *)
+  let branching_mte_tag = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(color)(tag(\([a-zA-Z0-9_\+]+\)), \([A-Z\._]+x?[0-9]*\))|} (* eg. a: Branching(pred)(tag(x), X1) *)
+  let branching_pte = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(PTE(\([a-zA-Z0-9_\+]+\)), \([A-Z\._]+x?[0-9]*\))\((\([a-zA-Z0-9_,:&|() ]+\))\)?|} (* eg. a: Branching(pred)(PTE(x), X1)(valid:1 && af:1) *)
+  let any_active = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(AnyActive(\([A-Z\._]+x?[0-9]*\)))|} (* eg. a: Branching(pred)(AnyActive(P0)) *)
+  let active_elem = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)(ActiveElem(\([A-Z\._]+x?[0-9]*\), \([0-9]+\)))|} (* eg. a: Branching(pred)(ActiveElem(P0, 0)) *)
   let branching_instr_cond = Str.regexp {|[a-zA-Z0-9_]*: Branching(pred)|} (* Only match after the above branching regexes have failed, since they are not exclusive with this one. eg. a: Branching(pred) *)
   let bcc_branching = Str.regexp {|[a-zA-Z0-9_]*: Branching(bcc)|} (* eg. a: Branching(bcc) *)
   let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} (* eg. a: ExcReturn *)
-  let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} (* eg. a: Fault(W,loc:x:red,TagCheck)*)
-  let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} (* eg. a: ExcEntry(W,loc:x:red,TagCheck)*)
+  let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9\._:,]*\))|} (* eg. a: Fault(W,loc:x:red,TagCheck)*)
+  let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9\._:,]*\))|} (* eg. a: ExcEntry(W,loc:x:red,TagCheck)*)
   let empty_effect = Str.regexp {|[a-zA-Z0-9_]*: Empty|} (* eg. a: \*)
 
   let tr_stmt acc stmt param_map =
@@ -390,7 +387,7 @@ module DotGraph = struct
           let typ = make_monospace (Str.matched_group 1 value) in
           let loc = Str.matched_group 2 value in
 
-          let reg_regex = Str.regexp {|[A-Z_]+x?[0-9]*|} in
+          let reg_regex = Str.regexp {|[A-Z\._]+x?[0-9]*|} in
           let reg = try
             ignore (Str.search_backward reg_regex value (String.length value - 1));
             Str.matched_group 0 value
@@ -452,8 +449,8 @@ module DotGraph = struct
           (* Extracts the memory location or register (pair) name(s) out of a lhs or rhs *)
           let mem_or_reg str =
             let mem = Str.regexp {|\[\([a-zA-Z0-9_\+]+\)\]|} in
-            let reg = Str.regexp {|[0-9]:\([A-Z_]+x?[0-9]*\)|} in
-            let reg_pair = Str.regexp {|{[0-9]:\([A-Z_]+x?[0-9]*\),[0-9]:\([A-Z_]+x?[0-9]*\)}|} in
+            let reg = Str.regexp {|[0-9]:\([A-Z\._]+x?[0-9]*\)|} in
+            let reg_pair = Str.regexp {|{[0-9]:\([A-Z\._]+x?[0-9]*\),[0-9]:\([A-Z\._]+x?[0-9]*\)}|} in
             let check_str r = check_regex r str in
             if check_str mem then
               DescDict.memloc (Str.matched_group 1 str)
@@ -675,7 +672,7 @@ module DotGraph = struct
     [CAS X0, X1, [X2]] in their label, and [instr] is [CAS Xs, Xt, [Xn]]. The map
     will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn]. *)
   let get_param_maps stmts instr =
-    let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9_]+\)\)?|} in
+    let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9\._]+\)\)?|} in
     if not (check_regex regex instr) then
       Warn.fatal "Instr validation did not work. %s is malformed" instr;
     let instr_mnemonic = Str.matched_group 1 instr in
@@ -695,7 +692,7 @@ module DotGraph = struct
       else param
     ) instr_params in
 
-    let str = instr_mnemonic ^ {|\( \([][,a-zA-Z0-9_]+\)\)?|} in
+    let str = instr_mnemonic ^ {|\( \([][,a-zA-Z0-9\._]+\)\)?|} in
     let regex = Str.regexp str in
     let stmt = try List.find (function
       | ParsedStmt.Node n ->
@@ -850,9 +847,9 @@ module DotGraph = struct
     ) graph_param_pairs in
     (* In case -instr was not passed, we need to just get rid of access sizes *)
     let param_replacements = if param_replacements = [] then
-      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z_]+x?[0-9]*\)[bhwqs]?|} in
+      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
       let v1 = "\\1 \\2" in
-      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z_]+x?[0-9]*\)[bhwqs]?|} in
+      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
       let v2 = "\\2" in
       [regex1, v1, regex2, v2]
     else param_replacements in
@@ -1040,7 +1037,7 @@ let () =
     begin match !instr with
     | None -> ()
     | Some s ->
-      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9_]+\)\)?\(,\([][a-zA-Z0-9_]+\)\)*$|} in
+      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9\._]+\)\)?\(,\([][a-zA-Z0-9\._]+\)\)*$|} in
       if not (Str.string_match instr_regex s 0) then
         invalid_arg "Invalid format for command. Command must have arguments separated by \
         commas, and with no whitespaces between them. The mnemonic and the first argument \
