@@ -11,7 +11,7 @@ BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink/
 
 ISA_A64_DIR := Exploration-Tools-A64-ISA/ISA_A64
-ISA_A64_NAME := ISA_A64_xml_A_profile-2025-06
+ISA_A64_NAME := ISA_A64_xml_A_profile-2025-09_ASL0
 
 TARGETS := $(ISA_A64_NAME)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
@@ -21,7 +21,7 @@ TARGETS_LOG := $(addsuffix .log,$(TARGETS))
 .SECONDARY: $(TARGETS_TAR_GZ) $(TARGETS)
 
 $(ISA_A64_NAME).tar.gz:
-	@echo "Downloading ISA $@ from developer.arm.com ..."
+	@ echo "Downloading ISA $@ from developer.arm.com ..."
 	curl $(BASE_URL)/$(ISA_A64_DIR)/$@ --silent --output $@
 
 $(TARGETS): %: | %.tar.gz
