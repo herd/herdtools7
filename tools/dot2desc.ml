@@ -355,7 +355,7 @@ module DotGraph = struct
   let exc_return = Str.regexp {|[a-zA-Z0-9_]*: ExcReturn|} (* eg. a: ExcReturn *)
   let fault = Str.regexp {|[a-zA-Z0-9_]*: Fault(\([a-zA-Z0-9_:,]*\))|} (* eg. a: Fault(W,loc:x:red,TagCheck)*)
   let exc_entry = Str.regexp {|[a-zA-Z0-9_]*: ExcEntry(\([a-zA-Z0-9_:,]*\))|} (* eg. a: ExcEntry(W,loc:x:red,TagCheck)*)
-  let empty_effect = Str.regexp {|[a-zA-Z0-9_]*: \\|} (* eg. a: \*)
+  let empty_effect = Str.regexp {|[a-zA-Z0-9_]*: Empty|} (* eg. a: \*)
 
   let tr_stmt acc stmt param_map =
     let pp_reg = pp_reg param_map in
