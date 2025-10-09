@@ -872,11 +872,37 @@ module Make
 
          *)
 
+      (*
+       * Reading PTE from EL0 will yield a fault,
+       * check perfomed early in standard
+       * (ie non-pte2) mode.
+       *)
+       
+           
+      let get_instr_label ii =
+        match Label.norm ii.A.labels with
+        | Some hd -> ii.A.addr2v hd
+        | None -> V.intToV ii.A.addr
+
+      let set_elr_el1 v ii =
+        write_reg AArch64Base.elr_el1 v ii
+
+      (* Emit fault event and set link register. *)
+      let emit_fault a ma dir an ft msg ii =
+        let lbl_v = get_instr_label ii in
+        insert_commit_to_fault ma
+          (fun _ ->
+             set_elr_el1 lbl_v ii
+             >>|
+             mk_fault (Some a) dir an ii ft msg) None ii
+        >>!  B.fault [AArch64Base.elr_el1, lbl_v]
+
+      (* Specific fault when accessing PTE from EL0. *)
       let mk_pte_fault a ma dir an ii =
         let open FaultType.AArch64 in
-        let ft = Some (MMU Permission) in
-        insert_commit_to_fault ma
-          (fun _ -> mk_fault (Some a) dir an ii ft (Some "EL0")) None ii >>! B.Exit
+        let ft = Some (MMU Permission)
+        and msg = Some "EL0" in
+        emit_fault a ma dir an ft msg ii
 
       let an_xpte =
         let open Annot in
@@ -1346,13 +1372,6 @@ module Make
  *)
 
 (*  memtag faults *)
-      let get_instr_label ii =
-        match Label.norm ii.A.labels with
-        | Some hd -> ii.A.addr2v hd
-        | None -> V.intToV ii.A.addr
-
-      let set_elr_el1 v ii =
-        write_reg AArch64Base.elr_el1 v ii
 
       let lift_fault_memtag mfault mm dir ii =
         let lbl_v = get_instr_label ii in
@@ -1373,6 +1392,7 @@ module Make
              mm ma >>! B.Next []
 
 (* KVM mode *)
+
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
       let fire_spurious_af dir a m =
@@ -1387,11 +1407,7 @@ module Make
         else m
 
       let lift_kvm dir updatedb mop ma an ii mphy =
-        let lbl_v = get_instr_label ii in
-        let mfault ma a ft =
-          insert_commit_to_fault ma
-            (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
-            None ii >>! B.fault [AArch64Base.elr_el1, lbl_v] in
+        let mfault ma a ft = emit_fault a ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
