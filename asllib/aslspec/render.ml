@@ -239,7 +239,7 @@ module Make (S : SPEC_VALUE) = struct
               [
                 (fun fmt ->
                   if term_counter < num_terms - 1 then
-                    fprintf fmt {|%a,@.|} pp_opt_named_type_term term_and_layout
+                    fprintf fmt {|%a,@|} pp_opt_named_type_term term_and_layout
                   else pp_opt_named_type_term fmt term_and_layout);
               ])
             opt_terms_with_layouts
