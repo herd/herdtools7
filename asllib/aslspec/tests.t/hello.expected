@@ -15,12 +15,12 @@
 % Macros for elements
 % -------------------
 
-\DefineType{t}{\hypertarget{type-t}{}$\t$} % EndDefineType
+\DefineType{t}{\texthypertarget{type-t}$\t$} % EndDefineType
 
-\DefineType{s}{\hypertarget{type-s}{}
+\DefineType{s}{
 \begin{flalign*}
-\s \triangleq\ & \pow{\t}\hypertarget{type-A}{}\\
-\cup\ & \A\hypertarget{type-B}{}\\
-\cup\ & \B(\s, \s)\end{flalign*}} % EndDefineType
+\s\texthypertarget{type-s} \triangleq\ & \pow{\t}\\
+\cup\ & \A\mathhypertarget{type-A}\\
+\cup\ & \B(\s, \s)\mathhypertarget{type-B}\end{flalign*}} % EndDefineType
 
 

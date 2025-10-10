@@ -21,15 +21,15 @@
 % Macros for elements
 % -------------------
 
-\DefineType{Int}{\hypertarget{type-Int}{}$\Int$} % EndDefineType
+\DefineType{Int}{\texthypertarget{type-Int}$\Int$} % EndDefineType
 
 \DefineConstant{One}{\hypertarget{constant-One}{} $\One$} % EndDefineConstant
 
 \DefineConstant{Two}{\hypertarget{constant-Two}{} $\Two$} % EndDefineConstant
 
-\DefineType{B}{\hypertarget{type-B}{}\hypertarget{type-C}{}
+\DefineType{B}{
 \begin{flalign*}
-\B \triangleq\ & \C\\
+\B\texthypertarget{type-B} \triangleq\ & \mathhypertarget{type-C}\C\\
 \cup\ & \pow{\Int}\\
 \cup\ & \some{\Int}\\
 \cup\ & \KleeneStar{\Int}\\
@@ -38,17 +38,17 @@
 \cup\ & \Int \rightarrow \Int\\
 \cup\ & \Int \partialto \Int\\
 \cup\ & \{\One, \Two\}\\
-\cup\ & (\Int, \Int)\hypertarget{type-Rec}{}\\
-\cup\ & \Rec(\Int, \Int)\\
+\cup\ & (\Int, \Int)\\
+\cup\ & \Rec(\Int, \Int)\mathhypertarget{type-Rec}\\
 \cup\ & \left[\begin{array}{lcl}
               \text{f} & : & \Int\\
               \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
-              \end{array}\right]\hypertarget{type-LRec}{}\\
-\cup\ & \LRec\left[\text{f} : \Rec(\Int, \Int, \Int)\right]\end{flalign*}} % EndDefineType
+              \end{array}\right]\\
+\cup\ & \LRec\left[\text{f} : \Rec(\Int, \Int, \Int)\right]\mathhypertarget{type-LRec}\end{flalign*}} % EndDefineType
 
-\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\DefineType{expr}{
 \begin{flalign*}
-\expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
-|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType
+\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Int}{\texttt{v}})\\
+|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 
