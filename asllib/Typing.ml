@@ -4087,7 +4087,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     (new_d :: acc, new_genv)
 
-  (* Being CheckGlobalPragma *)
+  (* Begin CheckGlobalPragma *)
   let check_global_pragma genv d =
     let loc = to_pos d in
     match d.desc with
