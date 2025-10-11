@@ -2736,7 +2736,7 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 The function
 \[
 \normalizeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\overname{\langle\expr\rangle}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}
+\overname{\some{\expr}}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
 expression that can be symbolically simplified.
@@ -2752,7 +2752,7 @@ See \ExampleRef{Normalize}.
     \item applying $\toir$ to $\ve$ in $\tenv$ to obtain a \symbolicexpressionterm{} yields a \symbolicexpressionterm{} $\vpone$
     (that is, not $\CannotBeTransformed$)\ProseOrTypeError;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\newe$;
-    \item \Proseeqdef{$\neweopt$}{$\langle\newe\rangle$}.
+    \item \Proseeqdef{$\neweopt$}{$\some{\newe}$}.
   \end{itemize}
 
   \item \AllApplyCase{not\_normalizable}
@@ -2769,7 +2769,7 @@ See \ExampleRef{Normalize}.
   \vpone \neq \CannotBeTransformed\\
   \normalize(\tenv, \ve) \typearrow \newe
 }{
-  \normalize(\tenv, \ve) \typearrow \overname{\langle\newe\rangle}{\neweopt}
+  \normalize(\tenv, \ve) \typearrow \overname{\some{\newe}}{\neweopt}
 }
 \and
 \inferrule[not\_normalizable]{

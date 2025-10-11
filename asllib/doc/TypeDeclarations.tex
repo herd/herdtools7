@@ -71,7 +71,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
     \begin{array}{c}
       \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Nsubtype}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-  \overname{\left[\DTypeDecl(\vx, \TNamed(\name), \langle(\name, \vfields)\rangle)\right]}{\vastnode}
+  \overname{\left[\DTypeDecl(\vx, \TNamed(\name), \some{(\name, \vfields)})\right]}{\vastnode}
     \end{array}
   }
 }
@@ -113,7 +113,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
    \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\langle(\Identifier \times \langle \KleeneStar{(\Identifier\times \ty)} \rangle)\rangle}{\vastnode}
+    \overname{\some{(\Identifier \times \some{\KleeneStar{(\Identifier\times \ty)}})}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -201,11 +201,11 @@ The function
 \declaretype(\overname{\globalstaticenvs}{\genv} \aslsep
             \overname{\Identifier}{\name} \aslsep
             \overname{\ty}{\tty} \aslsep
-            \overname{\langle(\Identifier\times\KleeneStar{\vfield})\rangle}{\vs}
+            \overname{\some{(\Identifier\times\KleeneStar{\vfield})}}{\vs}
 ) \aslto \\
 (\overname{\globalstaticenvs}{\newgenv} \times
  \overname{\ty}{\vttwo} \times
- \overname{\langle(\Identifier\times\KleeneStar{\vfield})\rangle}{\vsp})
+ \overname{\some{(\Identifier\times\KleeneStar{\vfield})}}{\vsp})
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -295,7 +295,7 @@ The function
 \annotateextrafields(\overname{\staticenvs}{\tenv} \aslsep
   \overname{\Identifier}{\name} \aslsep
   \overname{\ty}{\tty} \aslsep
-  \overname{\langle(\overname{\Identifier}{\vsuper}\times\overname{\KleeneStar{\vfield}}{\extrafields})\rangle}{\vs}
+  \overname{\some{(\overname{\Identifier}{\vsuper}\times\overname{\KleeneStar{\vfield}}{\extrafields})}}{\vs}
 )
 \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newty})
@@ -330,7 +330,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
   \item \AllApplyCase{empty\_fields}
   \begin{itemize}
-    \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
+    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
     \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is the empty list;
@@ -341,7 +341,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
   \item \AllApplyCase{no\_super}
   \begin{itemize}
-    \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
+    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
     \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
@@ -351,7 +351,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
   \item \AllApplyCase{structured}
   \begin{itemize}
-    \item $\vs$ is $\langle(\vsuper, \extrafields)\rangle$;
+    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
     \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
           $\True$\ProseOrTypeError;
     \item $\extrafields$ is not an empty list;
@@ -380,7 +380,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
+  \annotateextrafields(\tenv, \name, \tty, \overname{\some{(\vsuper, \extrafields)}}{\vs}) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
 }
 \end{mathpar}
 
@@ -391,7 +391,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = \bot
 }{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow
+  \annotateextrafields(\tenv, \name, \tty, \overname{\some{(\vsuper, \extrafields)}}{\vs}) \typearrow
   \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
@@ -412,7 +412,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\langle(\vsuper, \extrafields)\rangle}{\vs}) \typearrow (\newtenv, \newty, \vsp)
+  \annotateextrafields(\tenv, \name, \tty, \overname{\some{(\vsuper, \extrafields)}}{\vs}) \typearrow (\newtenv, \newty, \vsp)
 }
 \end{mathpar}
 
@@ -421,7 +421,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 The function
 \[
 \annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\some{\overname{\ty}{\vt}}}{\tyopt})
-\typearrow \overname{\langle\ty\rangle}{\tyoptp}
+\typearrow \overname{\some{\ty}}{\tyoptp}
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the type $\vt$ inside an \optional\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
@@ -449,7 +449,7 @@ The following are examples of annotating a type inside an \optional{} with the e
   \begin{itemize}
     \item $\tyopt$ contains the type $\vt$;
     \item annotating $\vt$ in $\tenv$ yields $\vtone$\ProseOrTypeError;
-    \item $\tyoptp$ is $\langle\vtone\rangle$.
+    \item $\tyoptp$ is $\some{\vtone}$.
   \end{itemize}
 \end{itemize}
 
@@ -462,7 +462,7 @@ The following are examples of annotating a type inside an \optional{} with the e
 \inferrule[some]{
   \annotatetype(\tenv, \vt) \typearrow \vtone \OrTypeError
 }{
-  \annotatetypeopt(\tenv, \overname{\langle\vt\rangle}{\tyopt}) \typearrow\overname{\langle\vtone\rangle}{\tyoptp}
+  \annotatetypeopt(\tenv, \overname{\some{\vt}}{\tyopt}) \typearrow\overname{\some{\vtone}}{\tyoptp}
 }
 \end{mathpar}
 
@@ -500,7 +500,7 @@ The following are examples of annotating an expression inside an \optional{} wit
   \begin{itemize}
     \item $\expropt$ contains the expression $\ve$;
     \item annotating $\ve$ in $\tenv$ yields $(\vt, \vep)$\ProseOrTypeError;
-    \item $\vres$ is $(\langle\vt\rangle, \langle\vep\rangle)$.
+    \item $\vres$ is $(\some{\vt}, \some{\vep})$.
   \end{itemize}
 \end{itemize}
 
@@ -513,7 +513,7 @@ The following are examples of annotating an expression inside an \optional{} wit
 \inferrule[some]{
   \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep)\OrTypeError
 }{
-  \annotateexpropt(\tenv, \overname{\langle\ve\rangle}{\expropt}) \typearrow \overname{(\langle\vt\rangle, \langle\vep\rangle)}{\vres}
+  \annotateexpropt(\tenv, \overname{\some{\ve}}{\expropt}) \typearrow \overname{(\some{\vt}, \some{\vep})}{\vres}
 }
 \end{mathpar}
 

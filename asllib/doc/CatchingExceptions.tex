@@ -61,7 +61,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   \begin{array}{r}
   \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
   \astarrow \\
-  \overname{(\langle\id\rangle, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \overname{(\some{\id}, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
   \end{array}
   }
 }
@@ -121,14 +121,14 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item the catcher has a named identifier, that is, $\vc$ is $(\langle\name\rangle, \tty, \vstmt)$;
+    \item the catcher has a named identifier, that is, $\vc$ is $(\some{\name}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
     \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields \\ $\True$\ProseOrTypeError;
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
           (that is, with the local declaration keyword $\LDKLet$), yields the \staticenvironmentterm{} $\tenvp$;
     \item annotating the block $\vstmt$ in $\tenvp$ yields $(\newstmt, \vsesblock)$;
-    \item \Proseeqdef{$\newcatcher$}{$(\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)$};
+    \item \Proseeqdef{$\newcatcher$}{$(\overname{\some{\name}}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
   \item \Proseeqdef{$\vses$}{the union of $\vsesblock$ and $\vsesty$}.
 \end{itemize}
@@ -152,13 +152,13 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 
 \begin{mathpar}
 \inferrule[some]{
-  \vc = (\overname{\langle\name\rangle}{\nameopt}, \tty, \vstmt)\\
+  \vc = (\overname{\some{\name}}{\nameopt}, \tty, \vstmt)\\
   \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
   \checkvarnotinenv(\tenv, \name) \typearrow \True \OrTypeError\\\\
   \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
   \annotateblock(\tenvp, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
-  \newcatcher \eqdef (\overname{\langle\name\rangle}{\nameopt}, \ttyp, \newstmt)\\\\
+  \newcatcher \eqdef (\overname{\some{\name}}{\nameopt}, \ttyp, \newstmt)\\\\
   \commonsuffixline\\\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
@@ -182,7 +182,7 @@ of evaluating a \trystatementterm{} and its type is defined as follows:
 The relation
 \hypertarget{def-evalcatchers}{}
 \[
-  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\catcher}}{\catchers} \aslsep \overname{\langle\stmt\rangle}{\otherwiseopt}
+  \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\catcher}}{\catchers} \aslsep \overname{\some{\stmt}}{\otherwiseopt}
    \aslsep \overname{\TOutConfig}{\sm}) \;\aslrel\;
   \left(
     \begin{array}{cl}
@@ -251,7 +251,7 @@ That is, no \dynamicerrorterm{} occurs.
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\None, \Ignore, \vs) \rangle\\
+  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
@@ -291,7 +291,7 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
   \env \eqname (\tenv, (G^\denv, L^\denv))\\
   \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \langle (\langle\name\rangle, \Ignore, \vs) \rangle\\
+  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
   \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\\\\
@@ -336,7 +336,7 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
-  \evalcatchers(\env, \catchers, \langle\vs\rangle, \sm) \evalarrow \withgraph{C}{\vg}
+  \evalcatchers(\env, \catchers, \some{\vs}, \sm) \evalarrow \withgraph{C}{\vg}
 }
 \end{mathpar}
 \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
@@ -398,7 +398,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 The (recursively-defined) helper relation
 \[
   \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\KleeneStar{\catcher}}{\catchers})
-  \;\aslrel\; \langle \catcher \rangle \enspace,
+  \;\aslrel\; \some{ \catcher } \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
 by invoking $\typesat$ with the \staticenvironmentterm{} $\tenv$.
@@ -450,7 +450,7 @@ resulting in a \dynamicerrorterm{}.
   \vc \eqname (\nameopt, \ety, \vs) \\
   \subtypes(\tenv, \vvty, \ety)
 }{
-  \findcatcher(\tenv, \vvty, \catchers) \evalarrow \langle\vc\rangle
+  \findcatcher(\tenv, \vvty, \catchers) \evalarrow \some{\vc}
 }
 \end{mathpar}
 

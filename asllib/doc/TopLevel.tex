@@ -311,8 +311,8 @@ $\args$, yielding the list of arguments $\newargs$.
 \hypertarget{def-renamelocalsnamedargs}{}
 The function
 \[
-\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\params}) \aslto
-\overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\newparams}
+\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\times\some{\ty})}}{\params}) \aslto
+\overname{\KleeneStar{(\Identifier\times\some{\ty})}}{\newparams}
 \]
 renames the local storage elements appearing in the list of parameters $\params$,
 yielding the list of parameters $\newparams$.

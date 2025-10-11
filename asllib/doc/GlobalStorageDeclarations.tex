@@ -145,7 +145,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
     \begin{array}{rcl}
       \GDkeyword&:& \GDKVar,\\
       \GDname&:& \name,\\
-      \GDty&:& \langle\astof{\Nasty}\rangle,\\
+      \GDty&:& \some{\astof{\Nasty}},\\
       \GDinitialvalue&:& \None
     \end{array}
     \right\}\right)\right]}{\vastnode}
@@ -162,7 +162,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
       \begin{array}{rcl}
         \GDkeyword&:& \GDKVar,\\
         \GDname&:& \vidasts[i],\\
-        \GDty&:& \langle\astof{\vasty}\rangle,\\
+        \GDty&:& \some{\astof{\vasty}},\\
         \GDinitialvalue&:& \None
       \end{array}
       \right\}\right)
@@ -450,7 +450,7 @@ of an ill-typed global storage declaration due to precision loss.
 \newgsd \eqdef \left\{
   \begin{array}{rcl}
   \GDkeyword &:& \keyword, \\
-  \GDinitialvalue &:& \langle\typedinitialvalue\rangle, \\
+  \GDinitialvalue &:& \some{\typedinitialvalue}, \\
   \GDty &:& \tyoptp, \\
   \GDname &:& \name
   \end{array}
@@ -472,11 +472,11 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\globaldeclkeyword}{\gdk} \aslsep
   \overname{\Bool}{\vmustbepure} \aslsep
-  \overname{\langle\ty\rangle}{\tyoptp} \aslsep
-  \overname{\langle\expr\rangle}{\initialvalue}
+  \overname{\some{\ty}}{\tyoptp} \aslsep
+  \overname{\some{\expr}}{\initialvalue}
   ) \\ \aslto
   (\overname{(\expr\times \ty \times \TSideEffectSet)}{\typedinitialvalue}
-  \times \overname{\langle\ty\rangle}{\tyoptp} \times \overname{\ty}{\declaredt})
+  \times \overname{\some{\ty}}{\tyoptp} \times \overname{\ty}{\declaredt})
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -562,9 +562,9 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \overname{\GDKConfig}{\gdk}, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \overname{\GDKConfig}{\gdk}, \vmustbepure, \overname{\some{\vt}}{\tyoptp}, \overname{\some{\ve}}{\initialvalue})
   \\ \typearrow
-  (\overname{\typede}{\typedinitialvalue}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+  (\overname{\typede}{\typedinitialvalue}, \overname{\some{\vtp}}{\tyoptp}, \overname{\vtp}{\declaredt})
     \end{array}
   }
 }
@@ -583,9 +583,9 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\some{\vt}}{\tyoptp}, \overname{\some{\ve}}{\initialvalue})
   \typearrow \\
-  (\overname{\typede}{\typedinitialvalue}, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+  (\overname{\typede}{\typedinitialvalue}, \overname{\some{\vtp}}{\tyoptp}, \overname{\vtp}{\declaredt})
     \end{array}
   }
 }
@@ -600,9 +600,9 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 }{
   {
   \begin{array}{r}
-    \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\langle\vt\rangle}{\tyoptp}, \overname{\None}{\initialvalue})
+    \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\some{\vt}}{\tyoptp}, \overname{\None}{\initialvalue})
     \typearrow \\
-    (\typedinitialvalue, \overname{\langle\vtp\rangle}{\tyoptp}, \overname{\vtp}{\declaredt})
+    (\typedinitialvalue, \overname{\some{\vtp}}{\tyoptp}, \overname{\vtp}{\declaredt})
   \end{array}
   }
 }
@@ -617,7 +617,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 }{
   {
     \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\None}{\tyoptp}, \overname{\langle\ve\rangle}{\initialvalue})
+  \annotatetyoptinitialvalue(\tenv, \gdk, \vmustbepure, \overname{\None}{\tyoptp}, \overname{\some{\ve}}{\initialvalue})
   \typearrow \\
   (\overname{\typede}{\typedinitialvalue}, \overname{\None}{\tyoptp}, \overname{\vte}{\declaredt})
     \end{array}
@@ -680,7 +680,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
   \item \AllApplyCase{let\_normalizable}
   \begin{itemize}
     \item $\gdk$ is $\GDKLet$;
-    \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\langle\vep\rangle$\ProseOrTypeError;
+    \item applying $\normalizeopt$ to $\ve$ in $\tenv$ yields $\some{\vep}$\ProseOrTypeError;
     \item applying $\addglobalimmutableexpr$ to $\name$ and $\vep$ in $\tenv$ yields $\newtenv$.
   \end{itemize}
 
@@ -729,7 +729,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 
 \begin{mathpar}
 \inferrule[let\_normalizable]{
-  \normalizeopt(\tenv, \ve) \typearrow \langle\vep\rangle \OrTypeError\\\\
+  \normalizeopt(\tenv, \ve) \typearrow \some{\vep} \OrTypeError\\\\
   \addglobalimmutableexpr(\tenv, \name, \vep) \typearrow \newtenv
 }{
   {
@@ -923,7 +923,7 @@ before having the chance to evaluate \verb|main|.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\langle\ve\rangle, \GDname:\name, \ldots \})\\
+  \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\some{\ve}, \GDname:\name, \ldots \})\\
   \envm \eqname (\env, \vgone)\\
   \evalexpr( \env, \ve) \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\

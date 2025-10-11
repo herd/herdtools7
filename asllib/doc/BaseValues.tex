@@ -184,7 +184,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \inferrule[t\_bits\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \vzopt \neq \None\\\\
-    \vzopt \eqname \langle\length\rangle\\
+    \vzopt \eqname \some{\length}\\
     \checktrans{\length \geq 0}{\NoBaseValue} \checktransarrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\LBitvector(i=1..\length: 0))}{\veinit}
@@ -353,7 +353,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \checktrans{\vzopt \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
-    \vzopt \eqname \langle\vz\rangle
+    \vzopt \eqname \some{\vz}
 }{
     \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
 }
@@ -363,10 +363,10 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \inferrule[range]{
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
     \checktrans{\vzoptone \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
-    \vzoptone \eqname \langle\vvone\rangle\\
+    \vzoptone \eqname \some{\vvone}\\
     \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
     \checktrans{\vzopttwo \neq \None}{\NoBaseValue} \checktransarrow \True \OrTypeError\\\\
-    \vzopttwo \eqname \langle\vvtwo\rangle\\
+    \vzopttwo \eqname \some{\vvtwo}\\
     \vzs \eqdef {
         \begin{cases}
            \emptylist & \vvone > \vvtwo\\

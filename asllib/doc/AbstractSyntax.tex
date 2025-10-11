@@ -70,7 +70,7 @@ In an ASL abstract syntax tree, a node is one the following data types:
 \item[Labelled Tuple Node.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
 \item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
       when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
-\item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\langle\rangle$ and the non-empty optional by $\langle n \rangle$;
+\item[Optional.] An optional node stands for a list of 0 or 1 occurrences of a sub-node $n$. We denote an empty optional by $\some{}$ and the non-empty optional by $\some{n}$;
 \item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where \\
       $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
@@ -841,7 +841,7 @@ to each of them --- $\vsymasts$.
 \hypertarget{build-option}{}
 The meta relation
 \[
-\buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\langle A \rangle}{\vsymast}
+\buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\some{ A }}{\vsymast}
 \]
 which is parameterized by an AST building relation $b : E \aslrel A$,
 takes a parse node that represents an optional $E$ value --- $\vsym$ --- and returns the result of applying $b$
@@ -857,7 +857,7 @@ to the value if it exists --- $\vsymasts$.
 \inferrule[some]{
   b(\vv) \astarrow \astversion{\vv}
 }{
-  \buildoption[b](\overname{\namednode{\vv}{E}}{\vsym}) \astarrow \overname{\langle\astversion{\vv}\rangle}{\vsymast}
+  \buildoption[b](\overname{\namednode{\vv}{E}}{\vsym}) \astarrow \overname{\some{\astversion{\vv}}}{\vsymast}
 }
 \end{mathpar}
 

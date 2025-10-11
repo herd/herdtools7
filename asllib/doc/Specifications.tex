@@ -1207,7 +1207,7 @@ used by them appearing as comments to their right.
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\vt$ is $\langle\tty\rangle$;
+    \item $\vt$ is $\some{\tty}$;
     \item applying $\usety$ to $\tty$ yields $\ids$.
   \end{itemize}
 
@@ -1275,7 +1275,7 @@ used by them appearing as comments to their right.
 \inferrule[some]{
   \usety(\tty) \typearrow \ids
 }{
-  \usety(\overname{\langle\tty\rangle}{\vt}) \typearrow \ids
+  \usety(\overname{\some{\tty}}{\vt}) \typearrow \ids
 }
 \and
 \inferrule[simple]{
@@ -1338,7 +1338,7 @@ used by them appearing as comments to their right.
 \hypertarget{def-usesubtypes}{}
 The function
 \[
-\usesubtypes(\overname{\langle(\overname{\Identifier}{\vx}\times\overname{\KleeneStar{\field}}{\subfields})\rangle}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
+\usesubtypes(\overname{\some{(\overname{\Identifier}{\vx}\times\overname{\KleeneStar{\field}}{\subfields})}}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the \optional\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
@@ -1359,7 +1359,7 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\fields$ is $\langle(\vx, \subfields)\rangle$;
+    \item $\fields$ is $\some{(\vx, \subfields)}$;
     \item define $\ids$ as the union of the singleton set for $\Other(\vx)$ and the union of applying $\usety$
           to each field type in $\subfields$.
   \end{itemize}
@@ -1374,7 +1374,7 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 \inferrule[some]{
   \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \in \subfields}\usety(\vt)
 }{
-  \usesubtypes(\langle(\vx, \subfields)\rangle) \typearrow \ids
+  \usesubtypes(\some{(\vx, \subfields)}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1405,7 +1405,7 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\ve$ is $\langle\veone\rangle$;
+    \item $\ve$ is $\some{\veone}$;
     \item applying $\useexpr$ to $\veone$ yields $\ids$.
   \end{itemize}
 
@@ -1539,7 +1539,7 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 \inferrule[some]{
   \useexpr(\veone) \typearrow \ids
 }{
-  \useexpr(\overname{\langle\veone\rangle}{\ve}) \typearrow \ids
+  \useexpr(\overname{\some{\veone}}{\ve}) \typearrow \ids
 }
 \and
 \inferrule[e\_literal]{}{
@@ -2186,7 +2186,7 @@ and the identifiers used by them, appearing in comments to their right.
 }
 \and
 \inferrule[assert\_return\_some]{
-  \vs = \SAssert(\ve) \lor \vs = \SReturn(\langle\ve\rangle)
+  \vs = \SAssert(\ve) \lor \vs = \SReturn(\some{\ve})
 }{
   \usestmt(\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
 }

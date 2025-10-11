@@ -575,10 +575,10 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
     \item $\vslices$ is the list with $\vs$ as its \head\ and $\vslicesone$ as its \tail;
     \item applying $\bitfieldslicetopositions$ to $\tenv$, $\isstatic$, and $\vs$, yields the optional set of positions \\
           $\positionsoneopt$\ProseOrTypeError;
-    \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\langle\vsone\rangle$ and the empty set, otherwise;
+    \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\some{\vsone}$ and the empty set, otherwise;
     \item applying $\disjointslicestopositions$ to $\tenv$, $\isstatic$, and $\vslicesone$, yields the optional set of positions
           $\positionstwoopt$\ProseOrTypeError;
-    \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\langle\vstwo\rangle$ and the empty set, otherwise;
+    \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\some{\vstwo}$ and the empty set, otherwise;
     \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BadSlices}
     \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
   \end{itemize}
@@ -593,9 +593,9 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 \begin{mathpar}
 \inferrule[non\_empty]{
   \bitfieldslicetopositions(\tenv, \isstatic, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
-  \positionsone \eqdef \choice{\positionsoneopt = \langle\vsone\rangle}{\vsone}{\emptyset}\\
+  \positionsone \eqdef \choice{\positionsoneopt = \some{\vsone}}{\vsone}{\emptyset}\\
   \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
-  \positionstwo \eqdef \choice{\positionstwoopt = \langle\vstwo\rangle}{\vstwo}{\emptyset}\\
+  \positionstwo \eqdef \choice{\positionstwoopt = \some{\vstwo}}{\vstwo}{\emptyset}\\
   \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
   \disjointslicestopositions(\tenv, \isstatic, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
@@ -611,7 +611,7 @@ The function
     \overname{\Bool}{\isstatic},
     \overname{\slice}{\vslice}
   )
-  \aslto \overname{\langle\powfin{\Z}\rangle}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
+  \aslto \overname{\some{\powfin{\Z}}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
 if it can be determined via static evaluation or normalization, depending on $\isstatic$,
@@ -659,14 +659,14 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \langle\offset\rangle \terminateas\TypeErrorConfig, \None\\\\
-  \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \langle\length\rangle \terminateas\TypeErrorConfig, \None\\\\
+  \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \some{\offset} \terminateas\TypeErrorConfig, \None\\\\
+  \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \some{\length} \terminateas\TypeErrorConfig, \None\\\\
   \checktrans{\offset \leq \offset + \length - 1}{\BadSlices} \checktransarrow \True \OrTypeError
 }{
   {
   \begin{array}{r}
   \bitfieldslicetopositions(\tenv, \isstatic, \overname{\SliceLength(\veone, \vetwo)}{\vslice}) \typearrow\\
-  \overname{\langle\{n \;|\; \offset \leq n \leq \offset+\length-1\}\rangle}{\positions}
+  \overname{\some{\{n \;|\; \offset \leq n \leq \offset+\length-1\}}}{\positions}
   \end{array}
   }
 }
