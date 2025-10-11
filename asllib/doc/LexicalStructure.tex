@@ -172,9 +172,12 @@ forbidden and trigger a lexical error.
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)*} \\
-$\REforbiddenrealfirst$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." (\REchar\ \regexminus{} \anycharacter{0123456789.})} \\
-$\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit\ (\Underscore\ | \REdigit)* \REletter{}} \\
+$\REreallit$  &$\triangleq$ & \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit} \\
+              &             & $\wrappedline$ \texttt{(\Underscore\ | \REdigit)*} \\
+$\REforbiddenrealfirst$ &$\triangleq$ & \texttt{\REdigit\ (\Underscore\ | \REdigit)* "."} \\
+              &             & $\wrappedline$ \texttt{ (\REchar\ \regexminus{} \anycharacter{\texttt{0123456789.}})} \\
+$\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit} \\
+              &            & $\wrappedline$ \texttt{(\Underscore\ | \REdigit)* \REletter{}} \\
 \end{tabular}
 \end{center}
 
@@ -591,7 +594,7 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"==>"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
 \texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}                        & $\actiontoken(\tokenid)$  \\
 \texttt{"["}, \texttt{"[["}, \texttt{"("}, \texttt{"."}, \texttt{"<="}, \texttt{"\textasciicircum"}, \texttt{"*"}, \texttt{"/"}                          & $\actiontoken(\tokenid)$  \\
-\texttt{"=="}, \texttt{"||"}, \texttt{"+"}, \texttt{":"}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\
+\texttt{"=="}, \texttt{"||"}, \texttt{"+"}, \texttt{"::"}, \texttt{":"}, \texttt{"=>"}, \texttt{"<=>"}                         & $\actiontoken(\tokenid)$  \\
 \texttt{"\}"}, \texttt{"++"}, \texttt{">"}, \texttt{"+:"}, \texttt{"*:"}, \texttt{";"}, \texttt{">="}                         & $\actiontoken(\tokenid)$  \\
 \hline
 \end{tabular}
@@ -616,7 +619,7 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"MOD"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"noreturn"}, \texttt{"NOT"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"of"},      \texttt{"OR"},      \texttt{"otherwise"}                  & $\actiontoken(\tokenid)$ \\
-\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}, \texttt{"pure"}                      & $\actiontoken(\tokenid)$ \\
+\texttt{"pass"},    \texttt{"pragma"},  \texttt{"print"}, \texttt{"println"}, \texttt{"pure"}                      & $\actiontoken(\tokenid)$ \\
 \texttt{"readonly"}, \texttt{"real"},    \texttt{"record"}  & $\actiontoken(\tokenid)$ \\
 \texttt{"recurselimit"}, \texttt{"repeat"}, \texttt{"return"}  & $\actiontoken(\tokenid)$ \\
 \texttt{"setter"},  \texttt{"string"},  \texttt{"subtypes"}                   & $\actiontoken(\tokenid)$ \\
