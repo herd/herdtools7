@@ -224,12 +224,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
   (* Return true if two subprogram are forbidden with the same argument types. *)
   let subprogram_types_clash s1 s2 =
     match (s1, s2) with
-    | ST_Getter, ST_Setter
-    | ST_Setter, ST_Getter
-    (* The following cases are for v0 *)
-    | ST_EmptyGetter, ST_EmptySetter
-    | ST_EmptySetter, ST_EmptyGetter ->
-        false
+    | ST_Getter, ST_Setter | ST_Setter, ST_Getter -> false
     | _ -> true
 
   (* Deduce renamings from match between calling and callee types. *)
@@ -297,16 +292,11 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
 
   (* Begin CallTypeMatches *)
   let call_type_matches func call_type =
-    func.subprogram_type = call_type
-    ||
-    match (func_version func, func.subprogram_type, call_type) with
+    match (func.subprogram_type, call_type) with
     (* Getters are syntactically identical to functions in V1 - so what
        looks like a function call may really be a getter call *)
-    | _, ST_Getter, ST_Function -> true
-    (* V0 compatibility: support for calling empty getters/setters *)
-    | V0, ST_EmptyGetter, (ST_Getter | ST_Function) -> true
-    | V0, ST_EmptySetter, ST_Setter -> true
-    | _ -> false
+    | ST_Getter, ST_Function -> true
+    | _ -> func.subprogram_type = call_type
   (* End *)
 
   (* Begin SubprogramForSignature *)
@@ -1858,9 +1848,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     *)
     let ret_ty_opt =
       match (call_type, callee.return_type) with
-      | (ST_Function | ST_Getter | ST_EmptyGetter), Some ty ->
-          Some (rename_ty_eqs env eqs3 ty)
-      | (ST_Setter | ST_EmptySetter | ST_Procedure), None -> None
+      | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs3 ty)
+      | (ST_Setter | ST_Procedure), None -> None
       | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue (Static, name)
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
@@ -1906,12 +1895,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin EVar *)
     | E_Var x -> (
         let () = if false then Format.eprintf "Looking at %S.@." x in
-        if e.version = V0 && should_reduce_to_call env x ST_EmptyGetter then
+        if e.version = V0 && should_reduce_to_call env x ST_Getter then
           let () =
             if false then
               Format.eprintf "@[Reducing getter %S@ at %a@]@." x PP.pp_pos e
           in
-          let call_type = ST_EmptyGetter in
+          let call_type = ST_Getter in
           let call, ty, ses =
             annotate_call ~loc:(to_pos e) env
               { name = x; params = []; args = []; call_type }
@@ -3210,7 +3199,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert (loc.version = V0 && C.use_field_getter_extension);
     let ( let* ) = Option.bind in
     let _, _, callee, _ =
-      try Fn.try_subprogram_for_signature ~loc env V0 x [] ST_EmptySetter
+      try Fn.try_subprogram_for_signature ~loc env V0 x [] ST_Setter
       with Error.ASLException _ -> assert false
     in
     let* ty = callee.return_type in
@@ -3344,7 +3333,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               Some (s, ses)
         | _ -> None)
     | LE_Var x ->
-        let st = ST_EmptySetter in
+        let st = ST_Setter in
         if should_reduce_to_call env x st then
           let args = [ typed_e ] in
           let call, ret_ty, ses_call = annotate_call_v0 ~loc env x args st in
@@ -3802,8 +3791,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
-    | ST_Getter | ST_EmptyGetter | ST_Function | ST_Procedure -> ok
-    | ST_EmptySetter | ST_Setter ->
+    | ST_Getter | ST_Function | ST_Procedure -> ok
+    | ST_Setter ->
         let ret_type, arg_types =
           match func_sig.args with
           | [] -> fatal_from ~loc Error.UnrespectedParserInvariant
@@ -3819,7 +3808,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let wanted_getter_type =
           match func_sig.subprogram_type with
           | ST_Setter -> ST_Getter
-          | ST_EmptySetter -> ST_EmptyGetter
           | _ -> assert false
         in
         let+ () = check_true (func_sig'.subprogram_type = wanted_getter_type) in
@@ -4205,10 +4193,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       (* Only relevant for V0: setters last as they need getters declared. *)
       let setters, others =
         List.partition
-          (fun (_, f, _, _) ->
-            match f.subprogram_type with
-            | ST_Setter | ST_EmptySetter -> true
-            | _ -> false)
+          (fun (_, f, _, _) -> f.subprogram_type = ST_Setter)
           env_and_fs
       in
       List.rev_append others setters

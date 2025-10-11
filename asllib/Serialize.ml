@@ -104,8 +104,6 @@ let subprogram_type_to_string = function
   | ST_Procedure -> "ST_Procedure"
   | ST_Setter -> "ST_Setter"
   | ST_Getter -> "ST_Getter"
-  | ST_EmptyGetter -> "ST_EmptyGetter"
-  | ST_EmptySetter -> "ST_EmptySetter"
 
 let pp_subprogram_type f st = addb f (subprogram_type_to_string st)
 

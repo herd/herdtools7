@@ -421,19 +421,6 @@ end;
 
 // =============================================================================
 
-accessor SCTLR_EL1() <=> v: SCTLRType
-begin
-  getter
-    return Zeros{64};
-  end;
-
-  setter
-    unreachable;
-  end;
-end;
-
-// =============================================================================
-
 // InstructionSynchronizationBarrier()
 // ===================================
 func InstructionSynchronizationBarrier()

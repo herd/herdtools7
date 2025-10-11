@@ -1502,12 +1502,6 @@ The table below shows keywords used to define functions, and their possible comp
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{equal}
-  \begin{itemize}
-    \item $\funcdef.\funcsubprogramtype$ is equal to $\calltype$;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-
   \item \AllApplyCase{getter\_func}
   \begin{itemize}
     \item $\funcdef.\funcsubprogramtype$ is $\STGetter$;
@@ -1515,23 +1509,14 @@ The table below shows keywords used to define functions, and their possible comp
     \item $\vb$ is $\True$.
   \end{itemize}
 
-  \item \AllApplyCase{no\_match}
+  \item \AllApplyCase{equal}
   \begin{itemize}
-    \item $\funcdef.\funcsubprogramtype$ is not equal to $\calltype$;
     \item either $\funcdef.\funcsubprogramtype$ is not $\STGetter$, or $\calltype$ is not $\STFunction$;
-    \item $\vb$ is $\False$.
+    \item define $\vb$ as whether $\funcdef.\funcsubprogramtype$ is equal to $\calltype$;
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
-\begin{mathpar}
-\inferrule[equal]{
-  \funcdef.\funcsubprogramtype = \calltype
-}{
-  \calltypematches(\func, \calltype) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-
 \begin{mathpar}
 \inferrule[getter\_func]{
   \funcdef.\funcsubprogramtype = \STGetter \\
@@ -1542,13 +1527,14 @@ The table below shows keywords used to define functions, and their possible comp
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[no\_match]{
-  \funcdef.\funcsubprogramtype \neq \calltype \\
-  (\funcdef.\funcsubprogramtype \neq \STGetter \lor \calltype \neq \STFunction)
+\inferrule[equal]{
+  (\funcdef.\funcsubprogramtype \neq \STGetter \lor \calltype \neq \STFunction) \\
+  \vb \eqdef \funcdef.\funcsubprogramtype = \calltype
 }{
-  \calltypematches(\func, \calltype) \typearrow \overname{\False}{\vb}
+  \calltypematches(\func, \calltype) \typearrow \vb
 }
 \end{mathpar}
+
 \CodeSubsection{\CallTypeMatchesBegin}{\CallTypeMatchesEnd}{../Typing.ml}
 
 \TypingRuleDef{HasArgClash}

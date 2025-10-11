@@ -142,15 +142,9 @@ type subprogram_type =
   | ST_Getter
       (** A getter is a special function called with a syntax similar to slices.
       *)
-  | ST_EmptyGetter
-      (** An empty getter is a special function called with a syntax similar to
-          a variable. This is relevant only for V0. *)
   | ST_Setter
       (** A setter is a special procedure called with a syntax similar to slice
           assignment. *)
-  | ST_EmptySetter
-      (** An empty setter is a special procedure called with a syntax similar to
-          an assignment to a variable. This is relevant only for V0. *)
 
 (** Expressions. Parametric on the type of literals. *)
 type expr_desc =
