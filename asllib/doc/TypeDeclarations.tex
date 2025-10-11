@@ -481,9 +481,13 @@ for the type and annotated expression in $\vres$.
 \ExampleDef{Annotating Optional Expressions}
 The following are examples of annotating an expression inside an \optional{} with the empty \staticenvironmentterm{}:
 \[
-\begin{array}{rcl}
-\annotateexpropt(\emptytenv, \None) &\typearrow& (\None, \None)\\
-\annotateexpropt(\emptytenv, \some{\LInt(5)}) &\typearrow& (\some{\LInt(5)}, \some{\TInt(\WellConstrained(\AbbrevConstraintExact{\LInt(5)}))})
+\annotateexpropt(\emptytenv, \None) \typearrow (\None, \None)\\
+\]
+
+\[
+\begin{array}{r}
+\annotateexpropt(\emptytenv, \some{\LInt(5)}) \typearrow\\
+\left(\some{\LInt(5)}, \some{\TInt(\WellConstrained([\AbbrevConstraintExact{\LInt(5)}]))}\right)
 \end{array}
 \]
 
