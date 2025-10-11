@@ -19,31 +19,31 @@
 % Macros for elements
 % -------------------
 
-\DefineType{type}{\hypertarget{ast-type}{}\hypertarget{ast-Int}{}
+\DefineType{type}{
 \begin{flalign*}
-\type \derives\ & \Int\hypertarget{ast-String}{}\\
-|\ & \String\end{flalign*}} % EndDefineType
+\type\texthypertarget{ast-type} \derives\ & \mathhypertarget{ast-Int}\Int\\
+|\ & \String\mathhypertarget{ast-String}\end{flalign*}} % EndDefineType
 
-\DefineType{expr}{\hypertarget{ast-expr}{}\hypertarget{ast-Number}{}
+\DefineType{expr}{
 \begin{flalign*}
-\expr \derives\ & \Number(\overtext{\Int}{\texttt{v}})\hypertarget{ast-Plus}{}\\
-|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\end{flalign*}} % EndDefineType
+\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Int}{\texttt{v}})\\
+|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 \DefineRelation{annotate_expr'}{
-\hypertarget{relation-annotateexpr'}{}
+
 The relation
 \[
-\annotateexpr'(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateexpr'}\annotateexpr'(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the expression
 $\texttt{input}$
 } % EndDefineRelation
 
 \DefineRelation{annotate_plus}{
-\hypertarget{relation-annotateplus}{}
+
 The relation
 \[
-\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateplus}\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the plus expression
 $\texttt{input}$

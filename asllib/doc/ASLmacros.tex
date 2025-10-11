@@ -13,6 +13,16 @@
     urlcolor=cyan
 }
 
+% The \hypertarget macro suffers from having the corresponding \hyperlink
+% point one line below where they should, which is a known issue.
+% To fix this, the next two versions of \hypertarget use \Hy@raisedlink.
+% \mathhypertarget{} is suitable for math environments,
+% whereas the \texthypertarget{} is suitable for text environments.
+\makeatletter
+\newcommand\mathhypertarget[1]{\Hy@raisedlink{\hypertarget{#1}}} % DO NOT LINT
+\newcommand\texthypertarget[1]{\Hy@raisedlink{\hypertarget{#1}{}}} % DO NOT LINT
+\makeatother
+
 \usepackage{listings}
 \lstdefinelanguage{ASL}
 {

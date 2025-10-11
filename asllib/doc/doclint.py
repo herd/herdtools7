@@ -48,7 +48,7 @@ def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
     right_delim = "}"
     label_pos: int = 0
     while True:
-        if DO_NOT_LINT_STR in line:
+        if DO_NOT_LINT_STR in line or line.strip().startswith("%"):
             return
         label_pos: int = line.find(left_delim, label_pos)
         if label_pos == -1:
@@ -99,6 +99,8 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
         for line in read_file_lines(latex_source):
             extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
             extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
+            extract_labels_from_line(line, "\\mathhypertarget{", hypertarget_labels)
+            extract_labels_from_line(line, "\\texthypertarget{", hypertarget_labels)
     num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
     if missing_hypertargets:
@@ -116,8 +118,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
         num_missing_hyperlinks = len(missing_hyperlinks)
         num_errors += num_missing_hyperlinks
         print(
-            f"ERROR: found {num_missing_hyperlinks} hypertargets without\
-               matching hyperlinks: ",
+            f"ERROR: found {num_missing_hyperlinks} hypertargets without matching hyperlinks: ",
             file=sys.stderr,
         )
         for label in missing_hyperlinks:
@@ -164,9 +165,10 @@ def check_undefined_references_and_multiply_defined_labels():
         # There are 3 known instances of "Warning", which are considered benign.
         # Any others, that have not been detected earlier, thereby increasing
         # `num_errors` are caught here.
-        if num_errors == 0 and len(
-            re.findall(r"warning", log_str, flags=re.IGNORECASE)
-        ) > 3:
+        if (
+            num_errors == 0
+            and len(re.findall(r"warning", log_str, flags=re.IGNORECASE)) > 3
+        ):
             print(
                 f"ERROR: There are unrecognized instances of 'warning' in {log_filepath})",
                 file=sys.stderr,
@@ -590,7 +592,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderType\[.*?\]{.*?}",
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
-        ]
+    ]
     asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
 
     num_errors = 0

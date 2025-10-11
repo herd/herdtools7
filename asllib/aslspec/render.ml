@@ -25,8 +25,11 @@ module Make (S : SPEC_VALUE) = struct
     | Some str -> str
     | None -> Text.elem_name_to_math_macro id
 
-  let pp_hypertarget fmt target_str =
-    fprintf fmt {|\hypertarget{%s}{}|} target_str
+  let pp_texthypertarget fmt target_str =
+    fprintf fmt {|\texthypertarget{%s}|} target_str
+
+  let pp_mathhypertarget fmt target_str =
+    fprintf fmt {|\mathhypertarget{%s}|} target_str
 
   (** [hyperlink_target_for_id id] returns a string [target] that can be used
       for the LaTeX [\hypertarget{target}{}] for [id]. *)
@@ -356,11 +359,11 @@ module Make (S : SPEC_VALUE) = struct
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hyperlink_target_for_id name in
     fprintf fmt
-      {|\DefineRelation{%s}{@.%a
+      {|\DefineRelation{%s}{@.
 The relation
-\[@.%a@.\]
+\[@.%a%a@.\]
 %a@.} %% EndDefineRelation|}
-      name pp_hypertarget hyperlink_target (pp_relation_math layout) def
+      name pp_mathhypertarget hyperlink_target (pp_relation_math layout) def
       pp_print_text instantiated_prose_description
 
   let pp_variant fmt ({ TypeVariant.term } as variant) =
@@ -404,40 +407,25 @@ The relation
         variants
     in
     let hd_hypertarget_opt = List.hd variant_hyperlink_targets in
-    (* Every line containing a variant, includes the hypertarget
-     of the next variant (to make LaTeX hyperlinks point to the right place).
-     Since the hypertarget for the first variant appears above the table,
-     we add one dummy optional to make the lists of
-     hypertargets equal in length to the list of variants second-to-last.
-  *)
     let tl_variant_hypertarget_opts =
-      Utils.list_tl_or_empty variant_hyperlink_targets @ [ None ]
-    in
-    let second_hypertarget, rest_of_variants_hypertargets =
-      match tl_variant_hypertarget_opts with
-      | [] -> (None, [])
-      | head :: tail -> (head, tail)
-    in
-    let _render_hypertarget_for_type = pp_hypertarget fmt hyperlink_target in
-    let _render_hypertarget_for_first_variant =
-      (Format.pp_print_option pp_hypertarget) fmt hd_hypertarget_opt
+      Utils.list_tl_or_empty variant_hyperlink_targets
     in
     let _render_begin_flalign =
       if is_first then fprintf fmt {|@.\begin{flalign*}|} else ()
     in
     let _render_newline = if not is_first then fprintf fmt {|\\|} else () in
     let _first_line =
-      fprintf fmt {|@.%s %s\ & %a%a|} macro equality_symbol pp_variant
-        first_variant
-        (Format.pp_print_option pp_hypertarget)
-        second_hypertarget
+      fprintf fmt {|@.%s%a %s\ & %a%a|} macro pp_texthypertarget
+        hyperlink_target equality_symbol
+        (Format.pp_print_option pp_mathhypertarget)
+        hd_hypertarget_opt pp_variant first_variant
     in
     let _add_latex_line_break_only_if_more_variants =
       if List.length variants > 1 then fprintf fmt {|\\@.|}
       else fprintf fmt {|@.|}
     in
     let variant_and_hypertargets =
-      List.combine variants_tail rest_of_variants_hypertargets
+      List.combine variants_tail tl_variant_hypertarget_opts
     in
     let num_variants_tail = List.length variant_and_hypertargets in
     let _render_variants_tail =
@@ -446,7 +434,7 @@ The relation
           let () =
             fprintf fmt {|@[<h>%s\ & %a@,%a@]|} join_symbol pp_variant
               variant_opt
-              (Format.pp_print_option pp_hypertarget)
+              (Format.pp_print_option pp_mathhypertarget)
               hyptarget_opt
           in
           let _add_latex_line_break_except_on_last_line =
@@ -462,7 +450,7 @@ The relation
   let pp_basic_type fmt { Type.name } =
     let macro = get_or_gen_math_macro name in
     let hyperlink_target = hyperlink_target_for_id name in
-    fprintf fmt {|%a$%s$|} pp_hypertarget hyperlink_target macro
+    fprintf fmt {|%a$%s$|} pp_texthypertarget hyperlink_target macro
 
   let pp_type fmt ({ Type.name; variants } as def) =
     match variants with
