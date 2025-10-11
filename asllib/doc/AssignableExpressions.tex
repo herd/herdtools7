@@ -398,7 +398,7 @@ The function
 \[
   \desugarlhstuple(\overname{\KleeneStar{\some{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
+transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
 
 \ExampleDef{Desugaring a left-hand side tuple}
 \listingref{DesugarLHSTuple} shows an example of desugaring a left-hand side tuple.
@@ -465,7 +465,7 @@ The parametric function
 \[
   \filteroptionlist(\overname{\KleeneStar{\some{ T }}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
 \]
-filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$.
+filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$.
 
 \ExampleDef{Filtering a List of Optionals}
 In \listingref{DesugarLHSFieldsTuple},

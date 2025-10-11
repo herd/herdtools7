@@ -390,7 +390,7 @@ of an ill-typed global storage declaration due to precision loss.
 \AllApply
 \begin{itemize}
   \item $\gsd$ is a global storage declaration with keyword $\keyword$, initial value \\ $\initialvalue$,
-        \optional\ type $\tyopt$, and name $\name$;
+        \optionalterm\ type $\tyopt$, and name $\name$;
   \item checking that $\name$ is not already declared in $\genv$ yields $\True$\ProseOrTypeError;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item define $\vmustbepure$ as $\True$ if $\keyword$ is $\GDKConstant$ or $\GDKConfig$, and $\False$ otherwise;

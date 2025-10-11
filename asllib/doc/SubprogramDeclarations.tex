@@ -910,7 +910,7 @@ The function
   \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the parameter given by $\vx$ and the \optional\ type $\tyopt$
+annotates the parameter given by $\vx$ and the \optionalterm\ type $\tyopt$
 with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
 The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
 \ProseOtherwiseTypeError
@@ -1585,11 +1585,11 @@ The function
 \cup\ \overname{\typeerror}{\TypeErrorConfig} &
 \end{array}
 \]
-annotates the \optional\ return type $\vreturntype$ in the context of the \staticenvironmentterm{}
+annotates the \optionalterm\ return type $\vreturntype$ in the context of the \staticenvironmentterm{}
 $\tenvwithparams$, where all parameters have been declared,
 and the \sideeffectsetterm\ $\vsesin$.
 The result is $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared)
-with the \optional{} annotated return type $\newreturntype$ added
+with the \optionalterm{} annotated return type $\newreturntype$ added
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
 

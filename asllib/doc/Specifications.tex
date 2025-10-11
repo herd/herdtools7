@@ -1124,7 +1124,7 @@ used by each global declaration via comments above it.
 
   \item \AllApplyCase{D\_Func}
   \begin{itemize}
-    \item $\vd$ declares a subprogram with arguments $\vargs$, \optional\ return type \\
+    \item $\vd$ declares a subprogram with arguments $\vargs$, \optionalterm\ return type \\
           $\rettyopt$, parameters $\vparams$, body statement $\body$, and optional recursion limit expression $\vrecurselimit$;
     \item define $\ids$ as the union of applying $\usety$ to each type of an argument in $\vargs$,
           applying $\usety$ to $\rettyopt$, applying $\usety$ to each type of a parameter in $\vparams$,
@@ -1189,7 +1189,7 @@ The function
 \usety(\overname{\tyoropt}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 
-returns the set of identifiers $\ids$ which the type or \optional\ type $\vt$ depends on.
+returns the set of identifiers $\ids$ which the type or \optionalterm\ type $\vt$ depends on.
 
 \ExampleDef{The Identifiers Used by a Type}
 The specification in \listingref{UseTy} shows type annotations and the identifiers
@@ -1340,7 +1340,7 @@ The function
 \[
 \usesubtypes(\overname{\some{(\overname{\Identifier}{\vx}\times\overname{\KleeneStar{\field}}{\subfields})}}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
-returns the set of identifiers $\ids$ which the \optional\ pair consisting of
+returns the set of identifiers $\ids$ which the \optionalterm\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
 
 \ExampleDef{The Identifiers Used by a Subtyping Declaration}
@@ -1387,7 +1387,7 @@ The function
 \[
 \useexpr(\ve: \exproropt) \aslto \overname{\pow{\defusename}}{\ids}
 \]
-returns the set of identifiers $\ids$ which the expression or \optional\ expression $\ve$ depends on.
+returns the set of identifiers $\ids$ which the expression or \optionalterm\ expression $\ve$ depends on.
 
 \ExampleDef{The Identifiers Used by Expressions}
 The specification in \listingref{UseExpr} shows the identifiers used
@@ -2140,7 +2140,7 @@ and the identifiers used by them, appearing in comments to their right.
   \item \AllApplyCase{s\_decl}
   \begin{itemize}
     \item $\vs$ is a declaration statement with \localdeclarationitem{} $\ldi$,
-      \optional{} type annotation $\vt$, and \optional\ initialization
+      \optionalterm{} type annotation $\vt$, and \optionalterm\ initialization
       expression $\ve$;
     \item define $\ids$ as the union of applying $\useldi$ to $\ldi$, $\usety$ to $\vt$, and $\useexpr$ to $\ve$.
   \end{itemize}
