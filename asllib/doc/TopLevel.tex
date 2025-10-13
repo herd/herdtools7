@@ -239,7 +239,7 @@ yielding the subprogram description $\vnewf$.
    \funcsubprogramtype &:& \vsubtype\\
    \funcrecurselimit    &:& \vlimitexpr\\
    \funcbuiltin &:& \vbuiltin\\
-   \funcqualifier &:& \vqualifier\\
+   \funcqualifierfield &:& \vqualifier\\
    \funcoverride &:& \voverride
   \end{array}
   \right\}
@@ -262,7 +262,7 @@ yielding the subprogram description $\vnewf$.
      \funcsubprogramtype &:& \vsubtype\\
      \funcrecurselimit    &:& \vlimitexpr\\
      \funcbuiltin &:& \vbuiltin\\
-     \funcqualifier &:& \vqualifier\\
+     \funcqualifierfield &:& \vqualifier\\
      \funcoverride &:& \voverride
     \end{array}
     \right\}
@@ -1226,9 +1226,9 @@ yielding the \assignableexpression\ $\newle$.
 
   \item \AllApplyCase{le\_setfield}
   \begin{itemize}
-    \item $\vle$ is an \setfield{$\vleone$}{$\vf$};
+    \item $\vle$ is an $\setfield(\vleone, \vf)$;
     \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
-    \item \Proseeqdef{$\newle$}{the \setfield{$\vleonep$}{$\vf$}}.
+    \item \Proseeqdef{$\newle$}{the $\setfield(\vleonep, \vf)$}.
   \end{itemize}
 
   \item \AllApplyCase{le\_setfields}

@@ -2948,8 +2948,8 @@ side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vstarte} \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
-  \evalexprsef{\env, \vende} \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vende) \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\\\\
   \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
   {
@@ -3303,7 +3303,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \name\in\Identifier \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
@@ -3924,7 +3924,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[print]{
-  \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
+  \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
   \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
   n \eqdef \listlen{\vlist}\\
   \newenv \eqdef \env_{n + 1}
