@@ -334,6 +334,9 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \end{mathpar}
 
 \SemanticsRuleDef{SlicesToPositions}
+The helper type \RenderType{slice_as_pair} expresses a slice via a pair of integers
+where the first integer is the starting position and the second integer is the length of the slice.
+
 \RenderRelation{slices_to_positions}
 \BackupOriginalRelation{
 The relation
