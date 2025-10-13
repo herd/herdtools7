@@ -27,6 +27,7 @@ let gensym () =
 module
   Make
     (Cst:Constant.S)
+    (SData:SymData.S)
     (ArchOp:ArchOp.S with
        type scalar = Cst.Scalar.t
        and type pteval = Cst.PteVal.t
@@ -56,17 +57,18 @@ module
   let equal_csym v1 v2 = v1 == v2
   let compare_csym v1 v2 = Misc.int_compare v1 v2
 
+  module SData = SData
 
   type cst = Cst.v
 
   type v =
-    | Var of csym
+    | Var of csym * SData.t
     | Val of cst
 
 (* A symbolic constant, computations much reduced on them... *)
-  let fresh_var () = Var (gensym ())
+  let fresh_var () = Var (gensym (), SData.default)
 
-  let from_var v = Var v
+  let from_var v = Var (v, SData.default)
 
 (* Basic utilities *)
   let as_constant = function
@@ -76,7 +78,7 @@ module
   let as_scalar v = Option.bind (as_constant v) Constant.as_scalar
 
   let do_pp pp_val = function
-  | Var s -> pp_csym s
+  | Var (s, _) -> pp_csym s
   | Val x -> pp_val x
 
   let pp hexa = do_pp (Cst.pp hexa)
@@ -101,13 +103,13 @@ module
   let compare v1 v2 =
     match v1,v2 with
     | Val i1,Val i2 -> Cst.compare i1 i2
-    | Var i1,Var i2 -> compare_csym i1 i2
+    | Var (i1, _),Var (i2, _) -> compare_csym i1 i2
     | Val _,Var _ -> 1
     | Var _,Val _ -> -1
 
   let equal v1 v2 =  match v1,v2 with
   | Val i1,Val i2 -> Cst.eq i1 i2
-  | Var i1,Var i2 -> equal_csym i1 i2
+  | Var (i1, _), Var (i2, _) -> equal_csym i1 i2
   | (Val _,Var _)|(Var _,Val _) -> false
 
   let intToV i  = Val (Cst.intToV i)
@@ -453,7 +455,7 @@ module
     | None -> assert false
 
   let eq v1 v2 = match v1,v2 with
-  | Var i1,Var i2 when Misc.int_eq i1 i2 -> v_true
+  | Var (i1, _),Var (i2, _) when Misc.int_eq i1 i2 -> v_true
   | Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Label _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
       Cst.eq s1 s2 |> bool_to_v
 (* Assume concrete and others always to differ *)
@@ -1027,13 +1029,13 @@ module
 
   let map_csym f v =
     match v with
-    | Var x -> f x
+    | Var (x, _) -> f x
     | Val _ -> v
 
   let simplify_var soln v =
     match v with
-    | Var x | Val (Constant.Frozen x) -> (
-        try Solution.find x soln with Not_found -> Var x)
+    | Var (x, _) | Val (Constant.Frozen x) -> (
+        try Solution.find x soln with Not_found -> v)
     | _ -> v
 
   (* Convenience *)
