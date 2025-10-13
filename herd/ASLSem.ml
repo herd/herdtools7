@@ -659,8 +659,10 @@ module Make (Conf : Config) = struct
     let read_memory ii datasize_m addr_m =
       do_read_memory ii addr_m datasize_m aneutral aexp avir
 
-    let read_pte ii addr_m =
-      do_read_memory ii addr_m  (M.unitT (V.intToV 64))
+    let read_pte ii n_m addr_m =
+      (* We do all the operations with 64 bits, even if the argument passed is different. *)
+      let* _ = n_m in
+      do_read_memory ii addr_m (M.unitT (V.intToV 64))
         aneutral (AArch64Explicit.(NExp Other)) apte
 
     let read_memory_gen ii datasize_m addr_m accdesc_m access_m =
@@ -1017,8 +1019,8 @@ module Make (Conf : Config) = struct
 (* VMSA *)
         p1r ~side_effecting "ComputePtePrimitive"
           ("addr", bv_64) ~returns:bv_64 compute_pte;
-        p1r ~side_effecting "ReadPtePrimitive"
-          ("addr", bv_64) ~returns:bv_64 read_pte;
+        p1a1r ~side_effecting "ReadPtePrimitive" ("N", None)
+          ("addr", bv_64) ~returns:(bv_var "N") read_pte;
         p1r ~side_effecting "GetOAPrimitive"
           ("addr", bv_64) ~returns:(bv_lit (64-ia_msb)) get_oa;
         p1r ~side_effecting "OffsetPrimitive"
