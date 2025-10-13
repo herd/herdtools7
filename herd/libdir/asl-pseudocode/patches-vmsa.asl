@@ -24,7 +24,7 @@ end;
 // Determine whether the descriptor is a page, block or table
 // Simplify: invalid or Leaf
 
-func AArch64_DecodeDescriptorType
+func AArch64_DecodeDescriptorType {N}
   (descriptor:bits(N), d128:bit, ds:bit, tgx:TGx, level:integer)
     =>
   DescriptorType
@@ -79,7 +79,7 @@ end;
 // stage 1 translated addresses to Realm PA space.
 // Temporary: do not fault
 
-func AArch64_S1AMECFault
+func AArch64_S1AMECFault{N}
   (wallparams:S1TTWParams, paspace:PASpace,regime:Regime,descriptor:bits(N))
 => boolean
 begin
@@ -159,6 +159,7 @@ begin
 var oa : FullAddress;
   oa.paspace = walkstate.baseaddress.paspace;
   oa.address = walkstate.baseaddress.address + OffsetPrimitive(ia);
+  // __DEBUG__(oa);
   return oa;
 end;
 
@@ -167,10 +168,11 @@ end;
 // Extract the address embedded in a block and page descriptor pointing to the
 // base of a memory block
 func
-  AArch64_S1LeafBase(descriptor:bits(N),walkparams:S1TTWParams,level:integer)
+  AArch64_S1LeafBase{N}(descriptor:bits(N),walkparams:S1TTWParams,level:integer)
   => bits(56)
 begin
-  return GetOAPrimitive(descriptor);
+  // __DEBUG__(descriptor);
+  return GetOAPrimitive{N}(descriptor);
 end;
 
 
@@ -184,12 +186,12 @@ func AArch64_MemSwapTableDesc
    ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor,n:integer)
 => (FaultRecord, bits(N))
 begin
-   let addr = descpaddr.paddress.address;
-   let mem_desc = ReadPteAgainPrimitive{N}(addr,descaccess.write);
+   let addr: bits(56) = descpaddr.paddress.address;
+   let mem_desc = ReadPteAgainPrimitive{N}(addr, descaccess.write);
 // __debug__(N,mem_desc,prev_desc,descaccess.write);
 // For speed, using "if" construct us much more expensive
    CheckProp(mem_desc == prev_desc);
-   WritePtePrimitive{N}(addr,new_desc,descaccess.write);
+   WritePtePrimitive{N}(addr, new_desc, descaccess.write);
    return (fault_in,new_desc);
 end;
 
@@ -277,18 +279,6 @@ begin
   return;
 end;
 
-//
-// Previous walkparams
-// {aie:'0',amec:'0',cmow:'0',d128:'0',dc:'0',dct:'0',disch:'0',ds:'0',
-// e0pd:'0',ee:'0',emec:'0',epan:'0',fng:'0',ha:'0',haft:'0',hd:'0',
-// hpd:'0',irgn:'01',
-// mair:'0000000000000000000000000000000000000000000000000000000000000000',
-// mair2:'0000000000000000000000000000000000000000000000000000000000000000',
-// mtx:'0',nfd:'0',ntlsmd:'1',nv1:'0',orgn:'01',pie:'0',pir:'',pire0:'',
-// pnch:'0',ps:'100',sh:'11',sif:'0',skl:'00',t0sz:'000',t1sz:'000',
-// tbi:'0',tbid:'0',tgx:2,txsz:'010000',uwxn:'0',wxn:'0',}
-
-
 // AArch64.GetS1TTWParams()
 // ========================
 // Returns stage 1 translation table walk parameters from respective controlling
@@ -314,7 +304,7 @@ end;
 // Get the value of the contiguous bit
 // Luc: Returns 0 to avoid faults in 128 bit mode
 
-func AArch64_ContiguousBit
+func AArch64_ContiguousBit{N}
   (tgx:TGx, d128:bit,level:integer, descriptor:bits(N)) => bit
 begin
   return '0';
@@ -440,6 +430,7 @@ var ForceNoAFUpdate : boolean;
 func
   AArch64_SetAccessFlag
     (ha:bit, accdesc:AccessDescriptor, fault:FaultRecord)
+    => boolean
 begin
     if ha == '0' || !AArch64_SettingAccessFlagPermitted(fault) then
         return FALSE;
