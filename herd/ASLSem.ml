@@ -230,13 +230,16 @@ module Make (Conf : Config) = struct
       | V.Val (Constant.Concrete i) -> V.Cst.Scalar.to_int i
       | v -> Warn.fatal "Cannot concretise symbolic value %s as an int" (V.pp_v v)
 
+    let cst_as_int cst = v_as_int (V.Val cst)
+    let cst_as_label cst = v_to_label (V.Val cst)
+
     let v_as_record = function
       | V.Val (Constant.ConcreteRecord map) -> map
       | v ->
           Warn.fatal "Cannot concretise symbolic value %s as a record"
             (V.pp_v v)
 
-    let v_as_bool = function
+    let cst_as_bool = function
       | Constant.Concrete (ASLScalar.S_Bool b) -> b
       | c ->
           Warn.fatal "Cannot concretise symbolic value %s as a boolean"
@@ -251,13 +254,16 @@ module Make (Conf : Config) = struct
           Warn.fatal
             "Cannot access a register or memory with size %s" (V.pp_v v)
 
-    let access_bool_field v f map =
-      try StringMap.find f map |> v_as_bool
+    let access_field v f map =
+      try StringMap.find f map
       with Not_found -> Warn.fatal "Record %s has no %s field" (V.pp_v v) f
+
+    let access_bool_field v f map = access_field v f map |> cst_as_bool
+    let access_integer_field v f map = access_field v f map |> cst_as_int
 
     type caller = Write|Read|Fault
 
-    let accdesc_to_annot  caller accdesc =
+    let accdesc_to_annot caller accdesc =
       let open AArch64Annot in
       let map = v_as_record accdesc in
       let is_release = access_bool_field accdesc "relsc" map
@@ -271,10 +277,39 @@ module Make (Conf : Config) = struct
         | Read -> true
         | Fault ->
             (* Read has priority, as for native VMSA *)
-            access_bool_field accdesc "read" map in
+            access_bool_field accdesc "read" map
+      in
       let is_ax x n = if is_atomic || is_exclusive then x else n in
+      let is_noret =
+        if not is_atomic then false
+        else
+          let rs = access_integer_field accdesc "Rs" map
+          and rt = access_integer_field accdesc "Rt" map
+          and rs2 = access_integer_field accdesc "Rs2" map
+          and rt2 = access_integer_field accdesc "Rt2" map
+          and modop = access_field accdesc "modop" map |> cst_as_label in
+          let () =
+            if false then
+              Printf.eprintf
+                "Got accdesc with modop=%S, Rs=%d, Rt=%d, Rs2=%d, Rt2=%d.\n%!"
+                modop rs rt rs2 rt2
+          in
+          let destreg, destreg2 =
+            match modop with
+            | "MemAtomicOp_ADD" | "MemAtomicOp_BIC" | "MemAtomicOp_EOR"
+            | "MemAtomicOp_ORR" | "MemAtomicOp_SMAX" | "MemAtomicOp_SMIN"
+            | "MemAtomicOp_UMAX" | "MemAtomicOp_UMIN" | "MemAtomicOp_SWP" ->
+                (rt, rt2)
+            | "MemAtomicOp_CAS" -> (rs, rs2)
+            | _ -> assert false
+          in
+          match (destreg, destreg2) with
+          | 31, 31 | 31, -1 | -1, 31 -> true
+          | _ -> false
+      in
       let an =
         if (not is_read) && is_release then is_ax XL L
+        else if is_noret then NoRet
         else if is_read && is_acquiresc then is_ax XA A
         else if is_read && is_acquirepc then is_ax XQ Q
         else is_ax X N

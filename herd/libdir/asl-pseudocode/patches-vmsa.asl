@@ -418,7 +418,18 @@ end;
 func
   CreateAccDescAtomicOp
     (modop:MemAtomicOp, acquire:boolean, release:boolean,
-     tagchecked:boolean, privileged:boolean) => AccessDescriptor
+     tagchecked:boolean, privileged:boolean, Rt: integer, Rs: integer) => AccessDescriptor
+begin
+    let Rt2: integer = -1;
+    let Rs2: integer = -1;
+
+    return CreateAccDescAtomicOp(modop, acquire, release, tagchecked, privileged, Rt, Rt2, Rs, Rs2);
+end;
+
+func
+  CreateAccDescAtomicOp
+    (modop:MemAtomicOp, acquire:boolean, release:boolean,
+     tagchecked:boolean, privileged:boolean, Rt: integer, Rt2: integer, Rs: integer, Rs2: integer) => AccessDescriptor
 begin
   var accdesc = NewAccDesc(AccessType_GPR);
   accdesc.acqsc           = acquire;
@@ -430,7 +441,10 @@ begin
   accdesc.write           = modop != MemAtomicOp_CAS || SomeBoolean();
   accdesc.pan             = TRUE;
   accdesc.tagchecked      = tagchecked;
-  accdesc.transactional   = IsFeatureImplemented(FEAT_TME) && TSTATE.depth > 0;
+  accdesc.Rs              = Rs;
+  accdesc.Rs2             = Rs2;
+  accdesc.Rt              = Rt;
+  accdesc.Rt2             = Rt2;
 
   return accdesc;
 end;
