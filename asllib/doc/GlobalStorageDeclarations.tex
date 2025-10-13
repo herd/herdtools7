@@ -472,11 +472,11 @@ The function
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\globaldeclkeyword}{\gdk} \aslsep
   \overname{\Bool}{\vmustbepure} \aslsep
-  \overname{\some{\ty}}{\tyoptp} \aslsep
-  \overname{\some{\expr}}{\initialvalue}
+  \overname{\Option{\ty}}{\tyoptp} \aslsep
+  \overname{\Option{\expr}}{\initialvalue}
   ) \\ \aslto
   (\overname{(\expr\times \ty \times \TSideEffectSet)}{\typedinitialvalue}
-  \times \overname{\some{\ty}}{\tyoptp} \times \overname{\ty}{\declaredt})
+  \times \overname{\Option{\ty}}{\tyoptp} \times \overname{\ty}{\declaredt})
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]

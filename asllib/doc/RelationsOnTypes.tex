@@ -1873,7 +1873,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 The function
 \[
 \refineconstraintbysign(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z\rightarrow \Bool}{\vp} \aslsep \overname{\intconstraint}{\vc})
-\aslto \overname{\some{\intconstraint}}{\vcopt}
+\aslto \overname{\Option{\intconstraint}}{\vcopt}
 \]
 takes a predicate $\vp$ that returns $\True$ based on the sign of its input.
 The function conservatively refines the constraint $\vc$ in $\tenv$ by applying symbolic reasoning to yield a new constraint
@@ -2064,7 +2064,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 The function
 \[
 \reducetozopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
-\aslto \overname{\some{\Z}}{\vzopt}
+\aslto \overname{\Option{\Z}}{\vzopt}
 \]
 returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
 and $\None$ otherwise.
@@ -2119,7 +2119,7 @@ The function
   \begin{array}{c}
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
-  \overname{\intconstraint\rightarrow\some{\intconstraint}}{\vf} \aslsep\\
+  \overname{\intconstraint\rightarrow\Option{\intconstraint}}{\vf} \aslsep\\
   \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right)
@@ -2312,7 +2312,7 @@ The function
 \[
 \filterreduceconstraintdiv(
   \overname{\intconstraint}{\vc}) \aslto
-  \overname{\some{\intconstraint}}{\vcopt}
+  \overname{\Option{\intconstraint}}{\vcopt}
 \]
 returns $\None$ if $\vc$ is an exact constraint for a \binopexpressionterm{} for dividing two integer literals
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.
@@ -2432,7 +2432,7 @@ Specifically, notice the following:
 \hypertarget{def-getliteraldivopt}{}
 The function
 \[
-\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\some{(\Z\cartimes\Z)}}{\rangeopt}
+\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\Option{(\Z\cartimes\Z)}}{\rangeopt}
 \]
 matches the expression $\ve$ to a binary operation expression over the division operation and two literal integer expressions.
 If $\ve$ matches this pattern, the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand

@@ -318,7 +318,7 @@ The function
 \[
 \begin{array}{r}
   \builddiscardoridentifier(\overname{\parsenode{\Ndiscardoridentifier}}{\vparsednode}) \;\aslto
-  \overname{\some{\Identifier}}{\vastnode}
+  \overname{\Option{\Identifier}}{\vastnode}
 \end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
@@ -396,7 +396,7 @@ transforms an $\lhsaccess$ on an identifier $\name$ into an AST node $\vlexpr$.
 \hypertarget{def-desugarlhstuple}{}
 The function
 \[
-  \desugarlhstuple(\overname{\KleeneStar{\some{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhstuple(\overname{\KleeneStar{\Option{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
 
@@ -417,7 +417,7 @@ transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vl
 \hypertarget{def-desugarlhsaccessopt}{}
 The helper AST function
 \[
-    \desugarlhsaccessopt(\overname{\some{\lhsaccess}}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+    \desugarlhsaccessopt(\overname{\Option{\lhsaccess}}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 is defined via the following rules:
 
@@ -440,7 +440,7 @@ is defined via the following rules:
 \hypertarget{def-desugarlhsfieldstuple}{}
 The function
 \[
-  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\some{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\Option{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
 
@@ -463,7 +463,7 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \hypertarget{def-filteroptionlist}{}
 The parametric function
 \[
-  \filteroptionlist(\overname{\KleeneStar{\some{ T }}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
+  \filteroptionlist(\overname{\KleeneStar{\Option{ T }}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
 \]
 filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$.
 
@@ -526,7 +526,7 @@ $\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fl
 \hypertarget{def-desugarlhsfieldopt}{}
 The helper AST function
 \[
-    \desugarlhsfieldopt(\overname{\Identifier}{\id} \aslsep \overname{\some{\Identifier}}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+    \desugarlhsfieldopt(\overname{\Identifier}{\id} \aslsep \overname{\Option{\Identifier}}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 is defined via the following rules:
 \begin{mathpar}

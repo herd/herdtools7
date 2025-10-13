@@ -262,7 +262,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \hypertarget{build-recurselimit}{}
 The function
 \[
-\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\some{\expr}}{\vastnode}
+\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -300,7 +300,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
-\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \some{\ty})}{\vastnode}
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \Option{\ty})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -337,7 +337,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier\times\some{\ty})}}{\vastnode}
+  \overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -466,7 +466,7 @@ The function
     \begin{array}{l}
     \overname{\overrideinfo}{\voverride} \aslsep \\
     \overname{\Identifier}{\name} \aslsep \\
-    \overname{\KleeneStar{(\Identifier \times \some{\ty})}}{\vparameters} \aslsep \\
+    \overname{\KleeneStar{(\Identifier \times \Option{\ty})}}{\vparameters} \aslsep \\
     \overname{\KleeneStar{\typedidentifier}}{\vargs} \aslsep \\
     \overname{\Identifier}{\vsetterarg} \aslsep \\
     \overname{\ty}{\tty} \aslsep \\
@@ -537,7 +537,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 The function
 \[
 \buildqualifier(\overname{\parsenode{\Nqualifier}}{\vparsednode}) \aslto
-  \overname{\some{\qualifier}}{\vastnode}
+  \overname{\Option{\qualifier}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -591,7 +591,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildoverride(\overname{\parsenode{\Noverride}}{\vparsednode}) \aslto
-  \overname{\some{\overrideinfo}}{\vastnode}
+  \overname{\Option{\overrideinfo}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -839,7 +839,7 @@ The function
 \begin{array}{r}
 \annotateparams(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier \times \some{\ty})}}{\params} \aslsep
+  \overname{\KleeneStar{(\Identifier \times \Option{\ty})}}{\params} \aslsep
   (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc})
 ) \aslto \\
 (\overname{\staticenvs}{\tenvwithparams} \times \overname{\Identifier\times\ty}{\paramsone})
@@ -903,7 +903,7 @@ The function
 \annotateoneparam(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\Identifier}{\vx} \times \overname{\some{\ty}}{\tyopt})
+  (\overname{\Identifier}{\vx} \times \overname{\Option{\ty}}{\tyopt})
 ) \aslto
 \begin{array}{l}
   (\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})\ \cup\\
@@ -1578,7 +1578,7 @@ The function
 \annotatereturntype(
   \overname{\staticenvs}{\tenvwithparams} \aslsep
   \overname{\staticenvs}{\tenvwithargs} \aslsep
-  \overname{\some{\ty}}{\vreturntype} \aslsep
+  \overname{\Option{\ty}}{\vreturntype} \aslsep
   \overname{\TSideEffectSet}{\vsesin}
 ) & \aslto \\
 (\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
@@ -1658,7 +1658,7 @@ as return types.
 The function
 \[
 \checksubprogrampurity(
-  \overname{\some{\qualifier}}{\vqualifier} \aslsep
+  \overname{\Option{\qualifier}}{\vqualifier} \aslsep
   \overname{\TSideEffectSet}{\vses}
 )
 \aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
@@ -1923,7 +1923,7 @@ The function
   \addnewfunc(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Identifier}{\name} \aslsep
-    \overname{\some{\qualifier}}{\vqualifier} \aslsep
+    \overname{\Option{\qualifier}}{\vqualifier} \aslsep
     \overname{\KleeneStar{\typedidentifier}}{\formals} \aslsep
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\

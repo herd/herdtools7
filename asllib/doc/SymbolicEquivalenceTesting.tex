@@ -2736,7 +2736,7 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 The function
 \[
 \normalizeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\overname{\some{\expr}}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}
+\overname{\Option{\expr}}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
 expression that can be symbolically simplified.

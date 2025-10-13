@@ -83,7 +83,7 @@ The function
     \overname{\call}{\vcall}
    ) \aslto
   (\overname{\call}{\vcallp} \times
-  \overname{\some{ \ty }}{\rettyopt} \times
+  \overname{\Option{ \ty }}{\rettyopt} \times
   \overname{\TSideEffectSet}{\vses}
   )
 \]
@@ -169,7 +169,7 @@ The function
   \right) \aslto
   \begin{array}{c}
   (\overname{\call}{\vcall} \aslsep
-  \overname{\some{ \ty }}{\rettyopt})\\
+  \overname{\Option{ \ty }}{\rettyopt})\\
   \cup\ \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
@@ -423,7 +423,7 @@ The function
 \begin{array}{r}
 \checkparamstypesat(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\some{\ty})}}{\funcsigparams} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\funcsigparams} \aslsep
   \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\params}
   ) \aslto \\
   \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -1180,10 +1180,10 @@ The function
 \annotateretty(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\subprogramtype}{\calltype} \aslsep
-  \overname{\some{\ty}}{\funcsigrettyopt} \aslsep
+  \overname{\Option{\ty}}{\funcsigrettyopt} \aslsep
   \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqsthree}
 ) \aslto \\
-\overname{\some{\ty}}{\rettyopt}
+\overname{\Option{\ty}}{\rettyopt}
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -2083,7 +2083,7 @@ return statement.
 \hypertarget{def-checkrecurselimit}{}
 The relation
 \[
-  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\some{\expr}}{\velimitopt}) \aslto
+  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\Option{\expr}}{\velimitopt}) \aslto
   \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
