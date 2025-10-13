@@ -31,7 +31,7 @@
 \begin{flalign*}
 \B\texthypertarget{type-B} \triangleq\ & \mathhypertarget{type-C}\C\\
 \cup\ & \pow{\Int}\\
-\cup\ & \some{\Int}\\
+\cup\ & \Option{\Int}\\
 \cup\ & \KleeneStar{\Int}\\
 \cup\ & \KleenePlus{\Int}\\
 \cup\ & \Int\\
