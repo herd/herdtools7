@@ -38,5 +38,7 @@ PhysMemRetStatus PhysMemWrite(AddressDescriptor desc, integer size, AccessDescri
 
 (PhysMemRetStatus, bits(8*size)) PhysMemRead(AddressDescriptor desc, integer size,
                                              AccessDescriptor accdesc)
+    // DEBUG(accdesc.acctype, desc.paddress.address);
     (ret_status,value) = PhysMemRead{size}(desc,accdesc);
     return (ret_status,value);
+

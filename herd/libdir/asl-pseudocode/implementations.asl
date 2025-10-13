@@ -22,6 +22,7 @@ The rest of the file are hand-written implementations: they are mostly the
 smallest AST that would type-check, but sometimes also call some logic relative
 to herd primitives.
 
+
 */
 
 // =============================================================================
@@ -307,101 +308,32 @@ type Feature of enumeration {
 
 // =============================================================================
 
-/*
-   Got with the following command line in the ARM Reference Manual XML Download folder:
-     rg '.*SCTLR2?_EL[x012](\[\])?\.(\w+).*' --replace '$2' -I -N | sort | uniq | nl | sed 's/\([[:digit:]]*\)\t\([[:alnum:]]*\)/[\1] \2,/'
- */
-
-// New version from manual
+type MAIRType of MAIR_EL1_Type;
+type S2PIRType of S2PIR_EL2_Type;
+type S1PIRType of S2PIRType;
+type SCRType of SCR_Type;
 
 
-// Inferred from manual...
+// =============================================================================
 
-type SCTLRType of bits(64) {
-  [0] M,
-  [1] A,
-  [2] C,
-  [3] SA,
-  [4] SA0,
-  [5] CP15BEN,
-  [6] nAA,
-  [7] ITD,
-  [8] SED,
-  [9] UMA,
-  [10] EnRCTX,
-  [11] EOS,
-  [12] I,
-  [13] EnDB,
-  [14] DEZ,
-  [15] UCT,
-  [16] nTWI,
-  [18] nTWE,
-  [19] WXN,
-  [20] TSCXT,
-  [21] IESB,
-  [22] EIS,
-  [23] SPAN,
-  [24] E0E,
-  [25] EE,
-  [26] UCI,
-  [27] EnDA,
-  [28] nTLSMD,
-  [29] LSMAOE,
-  [30] EnIB,
-  [31] EnIA,
-  [32] CMOW,
-  [33] MSCEn,
-  [34] EnFPM,
-  [35] BT0,
-  [36] BT1,
-  [37] ITFSB,
-  [39:38] TCF0,
-  [41:40] TCF,
-  [42] ATA0,
-  [43] ATA,
-  [44] DSSBS,
-  [45] TWEDEn,
-  [49:46] TWEDL,
-  [50] TMT0,
-  [51] TMT,
-  [52] TME0,
-  [53] TME,
-  [54] EnASR,
-  [55] EnAS0,
-  [56] EnALS,
-  [57] EPAN,
-  [58] TCSO0,
-  [59] TCSO,
-  [60] EnTP2,
-  [61] NMI,
-  [62] SPINTMASK,
-  [63] TIDCP,
-};
+func _SetUpRegisters ()
+begin
+  // Value found on Rasberry 4B, ArmBian
+  // uname -a:
+  // Linux cheilly 5.4.0-1089-raspi #100-Ubuntu SMP PREEMPT Thu Jun 22 09:59:38 UTC 2023 aarch64 aarch64 aarch64 GNU/Linux
+  _TCR_EL1 = '0000000000000000000000000000010011110101100100000111010100010000';
 
-var SCTLR_EL1 : SCTLRType =
-// Bit number 2 -> cache enabled, the rest probably is inaccurate.
-// '0000000000000000000000000000000000000000000000000000000000000100';
-// Value found on Rasberry 4B, Ubuntu 20.04.2
-// uname -a:
-// Linux cheilly 5.4.0-1115-raspi #127-Ubuntu SMP PREEMPT Wed Aug 7 14:38:47 UTC 2024 aarch64 aarch64 aarch64 GNU/Linux
-   '0000000000000000000000000000000000000000110001010001100000111101';
-// Another value from the same machine
-// '0000000000000000000000000000000000110000110100000001100110000101';
-
-// Infered from manual
-
-type HPFARType of bits(64) {
-  [47:4] FIPA,
-  [63] NS,
-};
-
-var HPFAR_EL2 : HPFARType;
-
-type SCRType of bits(32) {
-  [0] NS,
-};
-
-var SCR : SCRType = Zeros{64};
+  _SCTLR_EL1 =
+    // Bit number 2 -> cache enabled, the rest probably is inaccurate.
+    // '0000000000000000000000000000000000000000000000000000000000000100'
+    // Value found on Rasberry 4B, Ubuntu 20.04.2
+    // uname -a:
+    // Linux cheilly 5.4.0-1115-raspi #127-Ubuntu SMP PREEMPT Wed Aug 7 14:38:47 UTC 2024 aarch64 aarch64 aarch64 GNU/Linux
+       '0000000000000000000000000000000000000000110001010001100000111101'
+    // Another value from the same machine
+    // '0000000000000000000000000000000000110000110100000001100110000101'
+    ;
+end;
 
 // =============================================================================
 
@@ -413,8 +345,6 @@ func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
   return ARBITRARY: boolean;
 end;
-
-// =============================================================================
 
 // =============================================================================
 
