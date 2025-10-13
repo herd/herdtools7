@@ -1,0 +1,13 @@
+Test MP+popl+amo.staddpl-dmb.ldlp Allowed
+States 4
+1:X2=0; [y]=1;
+1:X2=0; [y]=3;
+1:X2=1; [y]=1;
+1:X2=1; [y]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=3 /\ 1:X2=0)
+Observation MP+popl+amo.staddpl-dmb.ldlp Sometimes 1 3
+Hash=dcfb25d5ffad6133ce9a386145811bf6
+

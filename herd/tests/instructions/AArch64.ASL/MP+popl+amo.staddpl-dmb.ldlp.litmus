@@ -1,0 +1,13 @@
+AArch64 MP+popl+amo.staddpl-dmb.ldlp
+Orig=PodWWPL RfeLP Amo.StAddPL DMB.LDdWRLP Fre
+{
+0:X1=x; 0:X3=y;
+1:X3=y; 1:X1=x;
+}
+ P0           | P1             ;
+ MOV W0,#1    | MOV W0,#2      ;
+ STR W0,[X1]  | STADDL W0,[X3] ;
+ MOV W2,#1    | DMB LD         ;
+ STLR W2,[X3] | LDR W2,[X1]    ;
+exists ([y]=3 /\ 1:X2=0)
+
