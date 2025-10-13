@@ -2179,7 +2179,7 @@ The relation
   \evalloop(
     \overname{\envs}{\env} \aslsep
     \overname{\Bool}{\iswhile} \aslsep
-    \overname{\N?}{\vlimitopt} \aslsep
+    \overname{\Option(\N)}{\vlimitopt} \aslsep
     \overname{\expr}{\econd} \aslsep
     \overname{\stmt}{\vbody})
   \;\aslrel\;
@@ -2274,7 +2274,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 The relation
 \hypertarget{def-evallimit}{}
 \[
-\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\expr?})
+\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\Option(\expr)})
 \;\aslrel\;
 \left(
 \begin{array}{ll}
@@ -2334,7 +2334,7 @@ of the \whilestatementterm.
 The relation
 \hypertarget{def-ticklooplimit}{}
 \[
-\ticklooplimit(\overname{\vvopt}{\N?}) \aslto \overname{\some{\vvoptp}}{\N?}
+\ticklooplimit(\overname{\Option(\N)}{\vvopt}) \aslto \overname{\Option(\N)}{\some{\vvoptp}}
 \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 decrements the optional integer $\vvopt$, yielding

@@ -993,11 +993,11 @@ We define the following rules to allow us to treat Boolean values as transition 
 \hypertarget{def-mapopt}{}
 Optional data types are prevalent in the AST.
 To facilitate transition judgments over optional data types,
-we introduce the following parametric function,
+we introduce the following parametric relation,
 which accepts a one-argument relation (or function) $f : A \aslrel B$
-and applies it to an optional value $A?$:
+and applies it to an optional value:
 \[
-\mapopt{\cdot} : \overname{A?}{\vvopt} \aslrel \overname{B?}{\vvoptnew}
+\mapopt{\cdot} : \overname{\Option(A)}{\vvopt} \aslrel \overname{\Option(B)}{\vvoptnew}
 \]
 
 \ProseParagraph
