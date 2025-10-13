@@ -2291,12 +2291,14 @@ relation concat_bitvectors(vs: list0(tbitvector)) ->
          (new_vs: tbitvector)
 {
   "transforms a (possibly empty) list of bitvector
-  \nativevaluesterm{}{vs} into a single bitvector
+  \nativevaluesterm{} {vs} into a single bitvector
   {new_vs}.",
   prose_application = "",
 };
 
-relation slices_to_positions(slices: list1((s: tint, l: tint))) ->
+typedef slice_as_pair { "slice" } = (s: tint, l: tint);
+
+relation slices_to_positions(slices: list1(slice_as_pair)) ->
          (positions: list0(N)) | TDynError
 {
   "returns the list of positions (indices) specified by
@@ -2436,7 +2438,7 @@ relation ses_is_pure(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-relation ses_for_subprogram(qualifier: option(qualifier)) ->
+relation ses_for_subprogram(qualifier: option(func_qualifier)) ->
          (s: powerset(TSideEffect))
 {
   "produces a \sideeffectsetterm{} given a subprogram
@@ -3491,7 +3493,7 @@ relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: sta
   math_layout = [_,_],
 };
 
-relation check_subprogram_purity(qualifier: option(qualifier), ses: powerset(TSideEffect)) ->
+relation check_subprogram_purity(qualifier: option(func_qualifier), ses: powerset(TSideEffect)) ->
          (b: Bool) | type_error
 {
   "checks that the \sideeffectsetterm{} {ses} is
@@ -3513,7 +3515,7 @@ relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: power
   math_layout = [_,_],
 };
 
-relation subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: qualifier, formal_types: list0(ty)) ->
+relation subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: func_qualifier, formal_types: list0(ty)) ->
          (b: Bool) | type_error
 {
   "checks whether the unique subprogram associated with
@@ -3532,7 +3534,7 @@ relation subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
   prose_application = "",
 };
 
-relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(qualifier), formals: list0(typed_identifier), subpgm_type: subprogram_type) ->
+relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(func_qualifier), formals: list0(typed_identifier), subpgm_type: subprogram_type) ->
          (new_tenv: static_envs, new_name: Strings) | type_error
 {
   "ensures that the subprogram given by the identifier
