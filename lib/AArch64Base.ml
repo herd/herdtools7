@@ -257,6 +257,7 @@ let zaslices =
 
 let linkreg = Ireg R30
 let elr_el1 = SysReg ELR_EL1
+let esr_el1 = SysReg ESR_EL1
 let tfsr = SysReg TFSR_ELx
 let par_el1 = SysReg PAR_EL1
 
