@@ -448,9 +448,217 @@ module Check = struct
       List.iter check_prose_template_for_definition_node defining_nodes
   end
 
-  (** TODO:
-      - Check that instantiated type terms for labelled type terms and labelled
-        records match their definition (see [tests/type_instance.bad]). *)
+  (** * A module for conservatively checking that all type terms are
+      well-formed. That is each term that instantiates another defined type term
+      is subsumed by it. *)
+  module CheckTypeInstantiations : sig
+    val check : definition_node StringMap.t -> elem list -> unit
+    (** [check id_to_defining_node elems] conservatively checks that all type
+        terms referenced in [elems] that instantiate type terms in the range of
+        [id_to_defining_node] are also subsumed by them. The check assumes that
+        [check_no_undefined_ids] has already been run. *)
+  end = struct
+    (** [subsumed sub_op super_op] is true if all values in the domain of
+        [Operator { op = sub_op; term }] are also in the domain of
+        [Operator { op = super_op; term }]. *)
+    let operator_subsumed sub_op super_op =
+      match (sub_op, super_op) with
+      | Powerset, Powerset
+      | Powerset_Finite, Powerset_Finite
+      | Powerset_Finite, Powerset
+      | List1, List1
+      | List0, List0
+      | List1, List0
+      | Option, Option
+      | Option, Powerset_Finite
+      | Option, Powerset
+      (* Option represents sets with 0 or 1 values while Powerset represents sets of _any_ number of values. *)
+        ->
+          true
+      | _ -> false
+
+    (** [subsumed id_to_defining_node sub super] conservatively tests whether
+        all values in the domain of [sub] are also in the domain of [super]. *)
+    let rec subsumed id_to_defining_node sub super =
+      match (sub, super) with
+      | Label sub_label, Label super_label -> sub_label = super_label
+      | ( Operator { op = sub_op; term = _, sub_term },
+          Operator { op = super_op; term = _, super_term } ) ->
+          operator_subsumed sub_op super_op
+          && subsumed id_to_defining_node sub_term super_term
+      | _, Label super_label ->
+          (* The case where [super_label] references a type. *)
+          subsumed_term_type id_to_defining_node sub super_label
+      | ( LabelledTuple
+            { label_opt = sub_label_opt; components = sub_components },
+          LabelledTuple
+            { label_opt = super_label_opt; components = super_components } ) ->
+          Option.equal String.equal sub_label_opt super_label_opt
+          && List.for_all2
+               (fun (_, sub_term) (_, super_term) ->
+                 subsumed id_to_defining_node sub_term super_term)
+               sub_components super_components
+      | ( LabelledRecord { label_opt = sub_label_opt; fields = sub_fields },
+          LabelledRecord { label_opt = super_label_opt; fields = super_fields }
+        ) ->
+          Option.equal String.equal sub_label_opt super_label_opt
+          && List.for_all2
+               (fun (_, sub_term) (_, super_term) ->
+                 subsumed id_to_defining_node sub_term super_term)
+               sub_fields super_fields
+      | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
+          Function
+            { from_type = _, super_from_term; to_type = _, super_to_term } ) ->
+          subsumed id_to_defining_node sub_from_term super_from_term
+          && subsumed id_to_defining_node sub_to_term super_to_term
+      | ConstantsSet sub_names, ConstantsSet super_names ->
+          List.for_all (fun name -> List.mem name super_names) sub_names
+      | _ -> false
+
+    (** [subsumed_term_type id_to_defining_node sub_term typename] checks if
+        [sub_term] is subsumed by the type term defined by [typename] in
+        [id_to_defining_node]. If [typename] is not defined in
+        [id_to_defining_node], returns false. *)
+    and subsumed_term_type id_to_defining_node sub_term typename =
+      match StringMap.find_opt typename id_to_defining_node with
+      | Some (Node_Type { Type.variants; _ }) ->
+          List.exists
+            (fun { TypeVariant.term = super_term } ->
+              subsumed id_to_defining_node sub_term super_term)
+            variants
+      | _ -> false
+
+    (** [check_subsumed id_to_defining_node sub super] checks that [sub] is
+        subsumed by [super]. If not, a [SpecError] is raised. *)
+    let check_subsumed id_to_defining_node sub super =
+      if not (subsumed id_to_defining_node sub super) then
+        let msg =
+          Format.asprintf "The type term `%a` is not subsumed by `%a`"
+            PP.pp_type_term sub PP.pp_type_term super
+        in
+        raise (SpecError msg)
+      else ()
+
+    (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
+         super_terms] checks that each term in [sub_terms] is subsumed by the
+        corresponding term in [super_terms]. Both lists of terms comprise the
+        labelled tuple/labelled record [term] with label [label]. If the lists
+        have different lengths, or if any term in [sub_terms] is not subsumed by
+        the corresponding term in [super_terms], a [SpecError] is raised. *)
+    let check_subsumed_terms_lists id_to_defining_node term label sub_terms
+        super_terms =
+      if List.compare_lengths sub_terms super_terms <> 0 then
+        let msg =
+          Format.asprintf
+            "The type term `%a` cannot be instantiated since it has %i type \
+             terms and `%s` requires %i type terms"
+            PP.pp_type_term term (List.length sub_terms) label
+            (List.length super_terms)
+        in
+        raise (SpecError msg)
+      else List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
+
+    (** [is_constant id_to_defining_node id] checks if [id] is either defined as
+        a constant directly or as a type variant with a label. *)
+    let check_is_constant id_to_defining_node id =
+      match StringMap.find_opt id id_to_defining_node with
+      | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ }) ->
+          ()
+      | _ ->
+          let msg =
+            Format.sprintf
+              "%s is used as a constant even though it is not defined as one" id
+          in
+          raise (SpecError msg)
+
+    (** [check_type_term id_to_defining_node term] checks that [term] is
+        well-formed with respect to the type definitions in the range of
+        [id_to_defining_node]. *)
+    let rec check_type_term id_to_defining_node term =
+      match term with
+      | Operator { term = _, operator_term } ->
+          check_type_term id_to_defining_node operator_term
+      | LabelledTuple { label_opt; components } -> (
+          let terms = List.map snd components in
+          let () = List.iter (check_type_term id_to_defining_node) terms in
+          match label_opt with
+          | None -> ()
+          | Some label -> (
+              let variant_def = StringMap.find label id_to_defining_node in
+              match variant_def with
+              | Node_TypeVariant
+                  {
+                    TypeVariant.term =
+                      LabelledTuple { components = def_opt_named_components };
+                  } ->
+                  let def_terms = List.map snd def_opt_named_components in
+                  check_subsumed_terms_lists id_to_defining_node term label
+                    terms def_terms
+              | _ ->
+                  let msg =
+                    Format.asprintf
+                      "The type term `%a` cannot be instantiated since '%s' is \
+                       not a labelled tuple type"
+                      PP.pp_type_term term label
+                  in
+                  raise (SpecError msg)))
+      | LabelledRecord { label_opt; fields } -> (
+          let terms = List.map snd fields in
+          let () = List.iter (check_type_term id_to_defining_node) terms in
+          match label_opt with
+          | None -> ()
+          | Some label -> (
+              let variant_def = StringMap.find label id_to_defining_node in
+              match variant_def with
+              | Node_TypeVariant
+                  {
+                    TypeVariant.term = LabelledRecord { fields = def_fields; _ };
+                  } ->
+                  let def_terms = List.map snd def_fields in
+                  check_subsumed_terms_lists id_to_defining_node term label
+                    terms def_terms
+              | _ ->
+                  let msg =
+                    Format.asprintf
+                      "The type term `%a` cannot be instantiated since '%s' is \
+                       not a labelled record type"
+                      PP.pp_type_term term label
+                  in
+                  raise (SpecError msg)))
+      | Function { from_type = _, from_term; to_type = _, to_term } ->
+          check_type_term id_to_defining_node from_term;
+          check_type_term id_to_defining_node to_term
+      | ConstantsSet labels ->
+          List.iter (check_is_constant id_to_defining_node) labels
+      | Label label -> (
+          let variant_def = StringMap.find label id_to_defining_node in
+          match variant_def with
+          | Node_TypeVariant _ | Node_Type _ -> ()
+          | _ ->
+              let msg =
+                Format.asprintf
+                  "The type term `%a` cannot be instantiated since '%s' is not \
+                   a type or type variant"
+                  PP.pp_type_term term label
+              in
+              raise (SpecError msg))
+
+    let check id_to_defining_node elems =
+      List.iter
+        (function
+          | Elem_Constant _ | Elem_Render _ -> ()
+          | Elem_Relation { input; output } ->
+              List.iter
+                (fun (_, term) -> check_type_term id_to_defining_node term)
+                input;
+              List.iter (check_type_term id_to_defining_node) output
+          | Elem_Type { Type.variants; _ } ->
+              List.iter
+                (fun { TypeVariant.term } ->
+                  check_type_term id_to_defining_node term)
+                variants)
+        elems
+  end
 end
 
 let from_ast ast =
