@@ -777,7 +777,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \vt = \TNamed(\namesubs)\\
   \vs = \TNamed(\namesubt)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \langle\name\rangle \OrTypeError\\
+  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \some{\name} \OrTypeError\\
 }{
   \lca(\tenv, \vt, \vs) \typearrow \overname{\TNamed(\name)}{\tty}
 }
@@ -1873,7 +1873,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 The function
 \[
 \refineconstraintbysign(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z\rightarrow \Bool}{\vp} \aslsep \overname{\intconstraint}{\vc})
-\aslto \overname{\langle\intconstraint\rangle}{\vcopt}
+\aslto \overname{\Option{\intconstraint}}{\vcopt}
 \]
 takes a predicate $\vp$ that returns $\True$ based on the sign of its input.
 The function conservatively refines the constraint $\vc$ in $\tenv$ by applying symbolic reasoning to yield a new constraint
@@ -1898,8 +1898,8 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
-          yields $\langle\vz\rangle$;
-    \item $\vcopt$ is $\langle\vc\rangle$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
+          yields $\some{\vz}$;
+    \item $\vcopt$ is $\some{\vc}$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
   \end{itemize}
 
   \item \AllApplyCase{exact\_does\_not\_reduce\_to\_z}
@@ -1907,7 +1907,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
           yields $\None$;
-    \item $\vcopt$ is $\langle\vc\rangle$.
+    \item $\vcopt$ is $\some{\vc}$.
   \end{itemize}
 
   \item \AllApplyCase{range\_both\_reduce\_to\_z}
@@ -1915,12 +1915,12 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
-          yields $\langle\vzone\rangle$;
+          yields $\some{\vzone}$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
-          yields $\langle\vztwo\rangle$;
+          yields $\some{\vztwo}$;
     \item \OneApplies{} (defining $\vcopt$)
     \begin{itemize}
-      \item if $\vp$ is $\True$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\True$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\some{\vc}$;
       \item if $\vp$ is $\False$ for $\vzone$ and $\True$ for $\vztwo$, define $\vcopt$ as the optional range constraint
             where the bottom expression is the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
             and the top expression is $\vetwo$;
@@ -1936,12 +1936,12 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
-          yields $\langle\vzone\rangle$;
+          yields $\some{\vzone}$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
           yields $\None$;
     \item \OneApplies{} (defining $\vcopt$):
     \begin{itemize}
-      \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\some{\vc}$;
       \item if $\vp$ is $\False$ for $\vzone$, define $\vcopt$ as the optional range constraint with the bottom expression
             as the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $1$ otherwise,
             and the top expression $\vetwo$.
@@ -1955,10 +1955,10 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
           yields $\None$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
-          yields $\langle\vztwo\rangle$;
+          yields $\some{\vztwo}$;
     \item One of the following applies (defining $\vcopt$):
     \begin{itemize}
-      \item if $\vp$ is $\True$ for $\vztwo$, define $\vcopt$ as $\langle\vc\rangle$;
+      \item if $\vp$ is $\True$ for $\vztwo$, define $\vcopt$ as $\some{\vc}$;
       \item if $\vp$ is $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint with the bottom expression
             $\veone$ and the top expression the literal expression for $0$ if $\vp$ holds for $0$ and the literal expression for $-1$ otherwise.
     \end{itemize}
@@ -1979,8 +1979,8 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact\_reduces\_to\_z]{
-  \reducetozopt(\tenv, \ve) \typearrow \langle\vz\rangle\\
-  \vcopt \eqdef \choice{\vp(\vz)}{\langle\vc\rangle}{\None}
+  \reducetozopt(\tenv, \ve) \typearrow \some{\vz}\\
+  \vcopt \eqdef \choice{\vp(\vz)}{\some{\vc}}{\None}
 }{
   \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vcopt
 }
@@ -1990,20 +1990,20 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[exact\_does\_not\_reduce\_to\_z]{
   \reducetozopt(\tenv, \ve) \typearrow \None
 }{
-  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+  \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\some{\vc}}{\vcopt}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range\_both\_reduce\_to\_z]{
-  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
   {
     \begin{array}{c}
   \vcopt \eqdef \\ \wrappedline\ \begin{cases}
-    \langle\vc\rangle& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
-    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
-    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
+    \some{\vc}& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
+    \some{\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)}& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
+    \some{\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})}& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
     \None& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
   \end{cases}
 \end{array}
@@ -2016,13 +2016,13 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \begin{mathpar}
 \inferrule[only\_e1\_reduces\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
-  \reducetozopt(\tenv, \veone) \typearrow \langle\vzone\rangle\\
+  \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
   \reducetozopt(\tenv, \vetwo) \typearrow \None\\
   {
     \begin{array}{c}
   \vcopt \eqdef \\ \wrappedline\ \begin{cases}
-    \langle\vc\rangle& \text{if }\vp(\vzone)\\
-    \langle\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)\rangle& \text{else}\\
+    \some{\vc}& \text{if }\vp(\vzone)\\
+    \some{\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)}& \text{else}\\
   \end{cases}
 \end{array}
   }
@@ -2035,12 +2035,12 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[only\_e2\_reduces\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \None\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \langle\vztwo\rangle\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
   {
     \begin{array}{c}
   \vcopt \eqdef \\ \wrappedline\ \begin{cases}
-    \langle\vc\rangle& \text{if }\vp(\vztwo)\\
-    \langle\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})\rangle& \text{else}\\
+    \some{\vc}& \text{if }\vp(\vztwo)\\
+    \some{\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})}& \text{else}\\
   \end{cases}
 \end{array}
   }
@@ -2064,7 +2064,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 The function
 \[
 \reducetozopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve})
-\aslto \overname{\langle\Z\rangle}{\vzopt}
+\aslto \overname{\Option{\Z}}{\vzopt}
 \]
 returns an integer inside an optional if $\ve$ can be symbolically simplified into an integer in $\tenv$
 and $\None$ otherwise.
@@ -2083,7 +2083,7 @@ and one that cannot be reduced into an integer constant, which yields $\None$.
   \item \AllApplyCase{normalizes\_to\_z}
   \begin{itemize}
     \item symbolically simplifying $\ve$ in $\tenv$ via $\normalize$ yields a literal expression for the integer $\vz$;
-    \item define $\vzopt$ as $\langle\vz\rangle$.
+    \item define $\vzopt$ as $\some{\vz}$.
   \end{itemize}
 
   \item \AllApplyCase{does\_not\_normalize\_to\_z}
@@ -2098,7 +2098,7 @@ and one that cannot be reduced into an integer constant, which yields $\None$.
 \inferrule[normalizes\_to\_z]{
   \normalize(\tenv, \ve) \typearrow \ELInt{\vz}
 }{
-  \reducetozopt(\tenv, \ve) \typearrow \overname{\langle\vz\rangle}{\vzopt}
+  \reducetozopt(\tenv, \ve) \typearrow \overname{\some{\vz}}{\vzopt}
 }
 \end{mathpar}
 
@@ -2119,7 +2119,7 @@ The function
   \begin{array}{c}
   \overname{\{\Over,\Under\}}{\vapprox} \aslsep\\
   \overname{\staticenvs}{\tenv} \aslsep\\
-  \overname{\intconstraint\rightarrow\langle\intconstraint\rangle}{\vf} \aslsep\\
+  \overname{\intconstraint\rightarrow\Option{\intconstraint}}{\vf} \aslsep\\
   \overname{\KleeneStar{\intconstraint}}{\cs}
   \end{array}
   \right)
@@ -2175,7 +2175,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
   \item \AllApplyCase{non\_empty\_some}
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
-    \item applying $\vf$ to $\vc$ yields $\langle\vcp\rangle$;
+    \item applying $\vf$ to $\vc$ yields $\some{\vcp}$;
     \item applying $\refineconstraints$ to $\vapprox$, $\vf$ and $\csone$ yields $\csonep$;
     \item $\newcs$ is the list with $\vcp$ as its \head\ and $\csonep$ as its \tail.
   \end{itemize}
@@ -2210,7 +2210,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 
 \begin{mathpar}
 \inferrule[non\_empty\_some]{
-  \vf(\vc) \typearrow \langle\vcp\rangle\\
+  \vf(\vc) \typearrow \some{\vcp}\\
   \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
 }{
   \refineconstraints(\vapprox, \vf, \overname{[\vc]\concat \csone}{\cs}) \typearrow \overname{[\vcp] \concat \csonep}{\newcs}
@@ -2251,7 +2251,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
     \item applying $\filterreduceconstraintdiv$ to each constraint $\cs[\vi]$, for each $\vi$ in $\listrange(\cs)$,
           yields the optional constraint $\vcopt_\vi$\ProseOrTypeError;
     \item define $\vres$ as the list made of constraints $\vcp_\vi$, for each $\vi$ in $\listrange(\cs)$
-          such that $\vcopt_\vi = \langle\vcp_\vi\rangle$;
+          such that $\vcopt_\vi = \some{\vcp_\vi}$;
     \item \OneApplies
     \begin{itemize}
       \item \AllApplyCase{div\_non\_empty}
@@ -2279,7 +2279,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
-  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
+  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{\vcp}{\epsilon}]\\
   \vres \neq \emptylist
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \vres
@@ -2290,7 +2290,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
-  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \langle\vcp_\vi\rangle}{\vcp}{\epsilon}]\\
+  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{\vcp}{\epsilon}]\\
   \vres = \emptylist\\
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \choice{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}
@@ -2312,7 +2312,7 @@ The function
 \[
 \filterreduceconstraintdiv(
   \overname{\intconstraint}{\vc}) \aslto
-  \overname{\langle\intconstraint\rangle}{\vcopt}
+  \overname{\Option{\intconstraint}}{\vcopt}
 \]
 returns $\None$ if $\vc$ is an exact constraint for a \binopexpressionterm{} for dividing two integer literals
 where the denominator does not divide the numerator, and an optional containing $\vc$ otherwise.
@@ -2343,11 +2343,11 @@ Specifically, notice the following:
   \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item applying $\getliteraldivopt$ to $\ve$ yields $\langle(\vzone, \vztwo)\rangle$\ProseTerminateAs{\None};
+    \item applying $\getliteraldivopt$ to $\ve$ yields $\some{(\vzone, \vztwo)}$\ProseTerminateAs{\None};
     \item define $\vcopt$ as follows:
     \begin{itemize}
       \item $\None$, if $\vztwo$ is positive and $\vztwo$ does not divide $\vzone$;
-      \item $\langle\vc\rangle$, otherwise.
+      \item $\some{\vc}$, otherwise.
     \end{itemize}
   \end{itemize}
 
@@ -2368,11 +2368,11 @@ Specifically, notice the following:
     \end{itemize}
     \item define $\vcopt$ as follows:
     \begin{itemize}
-      \item the exact constraint for the literal integer $\vzfive$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is equal to $\vzsix$;
-      \item the range constraint for the literal integer $\vzfive$ and $\vzsix$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is less than $\vzsix$;
-      \item $\None$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\langle\vzsix\rangle$ and $\vzfive$ is greater than $\vzsix$;
-      \item the range constraint for the literal integer $\vzfive$ and $\vetwo$, if $\vzoneopt$ is $\langle\vzfive\rangle$ and $\vztwoopt$ is $\None$;
-      \item the range constraint for $\veone$ and the literal integer $\vzsix$, if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\langle\vzsix\rangle$;
+      \item the exact constraint for the literal integer $\vzfive$, if $\vzoneopt$ is $\some{\vzfive}$ and $\vztwoopt$ is $\some{\vzsix}$ and $\vzfive$ is equal to $\vzsix$;
+      \item the range constraint for the literal integer $\vzfive$ and $\vzsix$, if $\vzoneopt$ is $\some{\vzfive}$ and $\vztwoopt$ is $\some{\vzsix}$ and $\vzfive$ is less than $\vzsix$;
+      \item $\None$, if $\vzoneopt$ is $\some{\vzfive}$ and $\vztwoopt$ is $\some{\vzsix}$ and $\vzfive$ is greater than $\vzsix$;
+      \item the range constraint for the literal integer $\vzfive$ and $\vetwo$, if $\vzoneopt$ is $\some{\vzfive}$ and $\vztwoopt$ is $\None$;
+      \item the range constraint for $\veone$ and the literal integer $\vzsix$, if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\some{\vzsix}$;
       \item $\vc$ if $\vzoneopt$ is $\None$ and $\vztwoopt$ is $\None$.
     \end{itemize}
   \end{itemize}
@@ -2381,12 +2381,12 @@ Specifically, notice the following:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
-  \getliteraldivopt(\ve) \typearrow \langle(\vzone, \vztwo)\rangle \terminateas \None\\\\
+  \getliteraldivopt(\ve) \typearrow \some{(\vzone, \vztwo)} \terminateas \None\\\\
   {
     \vcopt \eqdef
     \begin{cases}
       \None & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \not\in \Z\\
-      \langle\vc\rangle & \text{else}
+      \some{\vc} & \text{else}
     \end{cases}
   }
 }{
@@ -2400,7 +2400,7 @@ Specifically, notice the following:
   {
     \vzoneopt \eqdef
     \begin{cases}
-      \left\lceil\frac{\vzone}{\vztwo}\right\rceil & \text{if }\veoneopt = \langle(\vzone, \vztwo)\rangle \land \vztwo > 0\\
+      \left\lceil\frac{\vzone}{\vztwo}\right\rceil & \text{if }\veoneopt = \some{(\vzone, \vztwo)} \land \vztwo > 0\\
       \None & \text{else}
     \end{cases}
   }\\
@@ -2408,23 +2408,23 @@ Specifically, notice the following:
   {
     \vztwoopt \eqdef
     \begin{cases}
-      \left\lfloor\frac{\vzthree}{\vzfour}\right\rfloor & \text{if }\vetwoopt = \langle(\vzthree, \vzfour)\rangle \land \vzfour > 0\\
+      \left\lfloor\frac{\vzthree}{\vzfour}\right\rfloor & \text{if }\vetwoopt = \some{(\vzthree, \vzfour)} \land \vzfour > 0\\
       \None & \text{else}
     \end{cases}
   }\\
   {
     \vcopt \eqdef
     \begin{cases}
-     \langle\AbbrevConstraintExact{\ELInt{\vzfive}}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive=\vzsix\\
-     \langle\AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive<\vzsix\\
-     \None & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \langle\vzsix\rangle \land \vzfive>\vzsix\\
-     \langle\AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}\rangle & \text{if }\vzoneopt = \langle\vzfive\rangle \land \vztwoopt = \None\\
-     \langle\AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \langle\vzsix\rangle\\
-     \langle\AbbrevConstraintRange{\veone}{\vetwo}\rangle & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
+     \some{\AbbrevConstraintExact{\ELInt{\vzfive}}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive=\vzsix\\
+     \some{\AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive<\vzsix\\
+     \None & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive>\vzsix\\
+     \some{\AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \None\\
+     \some{\AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}} & \text{if }\vzoneopt = \None \land \vztwoopt = \some{\vzsix}\\
+     \some{\AbbrevConstraintRange{\veone}{\vetwo}} & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
     \end{cases}
   }
 }{
-  \filterreduceconstraintdiv(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\langle\vc\rangle}{\vcopt}
+  \filterreduceconstraintdiv(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\some{\vc}}{\vcopt}
 }
 \end{mathpar}
 
@@ -2432,7 +2432,7 @@ Specifically, notice the following:
 \hypertarget{def-getliteraldivopt}{}
 The function
 \[
-\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\langle(\Z\cartimes\Z)\rangle}{\rangeopt}
+\getliteraldivopt(\overname{\expr}{\ve}) \aslto \overname{\Option{(\Z\cartimes\Z)}}{\rangeopt}
 \]
 matches the expression $\ve$ to a binary operation expression over the division operation and two literal integer expressions.
 If $\ve$ matches this pattern, the result $\rangeopt$ is an optional containing the pair of integers appearing in the operand
@@ -2451,13 +2451,13 @@ for generating the constraints for \verb|z|:
 \]
 
 \ProseParagraph
-The value $\rangeopt$ is $\langle(\vzone, \vztwo)\rangle$ if $\ve$ is a binary operation expression over the division operation
+The value $\rangeopt$ is $\some{(\vzone, \vztwo)}$ if $\ve$ is a binary operation expression over the division operation
 and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \rangeopt \eqdef \choice{\ve = \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}}{\langle(\vzone, \vztwo)\rangle}{\None}
+  \rangeopt \eqdef \choice{\ve = \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}}{\some{(\vzone, \vztwo)}}{\None}
 }{
   \getliteraldivopt(\ve) \typearrow \rangeopt
 }
@@ -2559,8 +2559,8 @@ See \ExampleRef{Intervals too Large to Enumerate}.
   \item \AllApplyCase{range\_reduced}
   \begin{itemize}
     \item $\vc$ is a range constraint for the expressions $\va$ and $\vb$;
-    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\langle\vza\rangle$;
-    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\langle\vzb\rangle$;
+    \item applying $\reducetozopt$ to $\va$ in $\tenv$ yields $\some{\vza}$;
+    \item applying $\reducetozopt$ to $\vb$ in $\tenv$ yields $\some{\vzb}$;
     \item define $\explodedinterval$ as the list of exact constraints for each integer literal in the range starting
           at $\vza$ and ending at $\vzb$, inclusively, which is empty if $\vzb < \vza$;
     \item applying $\intervaltoolarge$ to $\vza$ and $\vzb$ yields $\vbtoolarge$;
@@ -2594,8 +2594,8 @@ See \ExampleRef{Intervals too Large to Enumerate}.
 \begin{mathpar}
 \inferrule[range\_reduced]{
   \vc = \ConstraintRange(\va, \vb)\\
-  \reducetozopt(\tenv, \va) \typearrow \langle\vza\rangle\\
-  \reducetozopt(\tenv, \vb) \typearrow \langle\vzb\rangle\\
+  \reducetozopt(\tenv, \va) \typearrow \some{\vza}\\
+  \reducetozopt(\tenv, \vb) \typearrow \some{\vzb}\\
   \explodedinterval \eqdef [\vz \in \vza..\vzb: \ConstraintExact(\ELInt{\vz})]\\
   \intervaltoolarge(\vza, \vzb) \typearrow \vbtoolarge\\
   {
@@ -2824,7 +2824,7 @@ is ill-typed.
 \and
 \inferrule[simple\_any]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \astlabel(\vbftwo) = \BitFieldSimple\\
   \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }{
@@ -2835,7 +2835,7 @@ is ill-typed.
 \begin{mathpar}
 \inferrule[nested\_simple]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
   \vbfone = \BitFieldSimple(\Ignore)\\
   \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
@@ -2845,7 +2845,7 @@ is ill-typed.
 \and
 \inferrule[nested\_nested]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
   \vbfone = \BitFieldNested(\nameone, \slicesone, \bfsone)\\
   \vbone \eqdef \nameone = \nametwo\\
@@ -2858,7 +2858,7 @@ is ill-typed.
 \and
 \inferrule[nested\_typed]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
   \astlabel(\vbfone) = \BitFieldType
 }{
@@ -2869,7 +2869,7 @@ is ill-typed.
 \begin{mathpar}
 \inferrule[typed\_simple]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
   \vbfone = \BitFieldSimple(\Ignore)\\
   \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
@@ -2879,7 +2879,7 @@ is ill-typed.
 \and
 \inferrule[typed\_nested]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
   \astlabel(\vbfone) = \BitFieldNested
 }{
@@ -2888,7 +2888,7 @@ is ill-typed.
 \and
 \inferrule[typed\_typed]{
   \bitfieldgetname(\vbf) \typearrow \name\\
-  \findbitfieldopt(\name, \bfstwo) \typearrow \langle \vbftwo \rangle\\
+  \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
   \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
   \vbone \eqdef \nameone = \nametwo\\

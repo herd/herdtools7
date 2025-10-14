@@ -405,16 +405,21 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 \hypertarget{def-optional}{}
 \begin{definition}[Optional Data Type]
 \hypertarget{def-none}{}
-\hypertarget{def-some}
-The notation $\some{\cdot}$ stands for either an empty set or a singleton set,
-where $\None\triangleq\langle\rangle$ denotes an empty set
-and $\some{v}$ denotes a set containing the single element $v$.
+\hypertarget{def-some}{}
+The notation $\some{x} \triangleq \{x\}$ stands for a singleton
+set containing $x$.
 %
-The notation $\some{T}$, where $T$ denotes a mathematical type, stands for
-$\{ \None \} \cup \{\some{v} \;|\; v \in T\}$.
+The notation $\None \triangleq \emptyset$ is an alias for the empty
+set used in places where either the empty set or a singleton set is expected.
 %
-We refer to $\some{T}$ as the \emph{optional data type for the parameter
-type $T$}, or shortly as an \emph{\optional}.
+The type $\Option(T) \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
+all singleton sets of elements from $T$ as well as the empty set.
+%
+We refer to $\Option(T)$ as the \emph{optional data type for the parameter
+type $T$}, or shortly as an \emph{\optionalterm}.
+
+To avoid having too many parentheses, instead of writing $\Option((a, b, c))$
+for a singleton set for the tuple $(a, b, c)$, we will write $\Option(a, b, c)$.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -988,11 +993,11 @@ We define the following rules to allow us to treat Boolean values as transition 
 \hypertarget{def-mapopt}{}
 Optional data types are prevalent in the AST.
 To facilitate transition judgments over optional data types,
-we introduce the following parametric function,
+we introduce the following parametric relation,
 which accepts a one-argument relation (or function) $f : A \aslrel B$
-and applies it to an optional value $A?$:
+and applies it to an optional value:
 \[
-\mapopt{\cdot} : \overname{A?}{\vvopt} \aslrel \overname{B?}{\vvoptnew}
+\mapopt{\cdot} : \overname{\Option(A)}{\vvopt} \aslrel \overname{\Option(B)}{\vvoptnew}
 \]
 
 \ProseParagraph
@@ -1017,7 +1022,7 @@ and applies it to an optional value $A?$:
 \inferrule[Some]{
   f(v) \longrightarrow v'
 }{
-  \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow{r} \some{v'}
+  \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow \some{v'}
 }
 \and
 \inferrule[None]{}{

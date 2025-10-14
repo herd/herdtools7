@@ -128,7 +128,7 @@ module Make (S : SPEC_VALUE) = struct
       | Powerset_Finite -> "powfin"
       | List0 -> "KleeneStar"
       | List1 -> "KleenePlus"
-      | Option -> "some"
+      | Option -> "Option"
     in
     fprintf fmt {|\%s{%a}|} (operator_to_macro op) pp_arg
 

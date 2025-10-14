@@ -443,7 +443,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \begin{mathpar}
 \inferrule{
   \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \langle\ECall(\vgetter)\rangle) \\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
 }{
   \readmodifywrite(\vcall, \vx, \vmodify)
@@ -538,7 +538,7 @@ As given by applying the relevant rules to the desugared AST.
   \begin{array}{r}
   \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
   \astarrow\\
-  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \langle\astof{\vexpr}\rangle)}{\vastnode}
+  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \some{\astof{\vexpr}})}{\vastnode}
   \end{array}
   }
 }
@@ -590,7 +590,7 @@ since immutable local storage elements require an initializing expression.
   \begin{itemize}
     \item $\vs$ is a declaration with an initializing expression $\ve$,
           that is, \\
-          $\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)$;
+          $\SDecl(\ldk, \ldi, \tyopt, \some{\ve})$;
     \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
@@ -604,12 +604,12 @@ since immutable local storage elements require an initializing expression.
         that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables require
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item checking that $\tyopt$ is not $\None$, that is, the declaration has a type annotation, yields $\True$\ProseOrTypeError;
-  \item $\tyopt$ is $\langle\vt\rangle$;
+  \item $\tyopt$ is $\some{\vt}$;
   \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vses)$\ProseOrTypeError;
   \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the type $\vtp$ and local declaration keyword $\LDIVar$
         yields $\newtenv$\ProseOrTypeError;
-  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \langle\veinit\rangle)$.
+  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \some{\veinit})$.
   \end{itemize}
 \end{itemize}
 
@@ -624,9 +624,9 @@ since immutable local storage elements require an initializing expression.
   \end{array}
   }\\
   \vses \eqdef \vsese \cup \vsesldi\\
-  \news \eqdef \SDecl(\ldk, \ldi, \tyoptp, \langle\vep\rangle)
+  \news \eqdef \SDecl(\ldk, \ldi, \tyoptp, \some{\vep})
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \langle\ve\rangle)}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \some{\ve})}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
 }
 \end{mathpar}
 \identr{YSPM}
@@ -634,11 +634,11 @@ since immutable local storage elements require an initializing expression.
 \begin{mathpar}
 \inferrule[none]{
   \checktrans{\tyopt \neq \None}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
-  \tyopt \eqname \langle\vt\rangle \\
+  \tyopt \eqname \some{\vt} \\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
-  \news \eqdef \SDecl(\LDKVar, \ldi, \langle\vtp\rangle, \langle\veinit\rangle)
+  \news \eqdef \SDecl(\LDKVar, \ldi, \some{\vtp}, \some{\veinit})
 }{
   \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \tyopt, \None)}{\vs}) \typearrow (\news, \newtenv, \vses)
 }
@@ -654,7 +654,7 @@ The function
   \left(
   \begin{array}{c}
     \overname{\staticenvs}{\tenv} \aslsep \\
-    \overname{\langle\ty\rangle}{\tyopt} \aslsep \\
+    \overname{\Option{\ty}}{\tyopt} \aslsep \\
     \overname{\ty}{\vte} \aslsep \\
     \overname{\localdeclkeyword}{\ldk} \aslsep \\
     \overname{\expr}{\vep} \aslsep\\
@@ -663,7 +663,7 @@ The function
   \right)
   \aslto \\
   \begin{array}{cl}
-    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\langle\ty\rangle}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
+    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option{\ty}}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
     & \cup \\
     \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
@@ -682,28 +682,28 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item \Prosenoprecisionloss{\vte};
-    \item $\newtenv$ is the result of $\annotatelocaldeclitem(\tenv, \vte, \ldk, \langle\vep\rangle, \ldi)$\ProseOrTypeError;
+    \item $\newtenv$ is the result of $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$\ProseOrTypeError;
     \item $\tyoptp$ is $\tyopt$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\tyopt$ is $\langle\vt\rangle$;
+    \item $\tyopt$ is $\some{\vt}$;
     \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
     \item propagating integer constraints from $\vtep$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
     \item annotating the type $\vtp$ in $\tenv$ yields $(\vtpp, \vses)$\ProseOrTypeError;
   \item determining whether $\vtpp$ can be initialized with $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the local declaration keyword $\ldk$, given
   the expression $\vep$, in the environment $\tenv$, yields $\newtenv$;
-  \item $\tyoptp$ is $\langle\vtpp\rangle$.
+  \item $\tyoptp$ is $\some{\vtpp}$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
-  \annotatelocaldeclitem(\tenv, \vte, \ldk, \langle\vep\rangle, \ldi) \typearrow \newtenv \OrTypeError
+  \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
 }{
   \annotatelocaldecltypeannot(\tenv, \None, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
 }
@@ -715,9 +715,9 @@ See \ExampleRef{Typing Declaration Statements}.
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
   \annotatetype(\tenv, \vtp) \typearrow (\vtpp, \vses) \OrTypeError\\\\
   \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
-  \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \langle \vep \rangle, \ldip) \typearrow \newtenv \OrTypeError
+  \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \some{ \vep }, \ldip) \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldecltypeannot(\tenv, \langle\vt\rangle, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\langle\vtpp\rangle}{\tyoptp}, \vses)
+  \annotatelocaldecltypeannot(\tenv, \some{\vt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
 }
 \end{mathpar}
 
@@ -936,7 +936,7 @@ In \listingref{semantics-sdeclnone},
   \item \AllApplyCase{some}
   \begin{itemize}
     \item $\vs$ is a declaration with an initial value,
-          $\SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)$;
+          $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
     \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
     \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
           value in $\envone$ as per \chapref{LocalStorageDeclarations} is
@@ -957,7 +957,7 @@ In \listingref{semantics-sdeclnone},
   \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
   \evallocaldecl(\envone, \ldi, \vm) \evalarrow \ResultLexpr(\newg, \newenv)\\
 }{
-  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \langle\ve\rangle)) \evalarrow \Continuing(\newg, \newenv)
+  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \some{\ve})) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
 
@@ -1057,7 +1057,7 @@ The function
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto
-\overname{\some{\expr}}{\vexpr}
+\overname{\Option{\expr}}{\vexpr}
 \cup\ \overname{\TBuildError}{\ParseErrorConfig}
 \]
 builds an expression $\vexpr$ from an assignment of the call $\vcall$ to the left-hand side with type annotation $\vt$, where the call has an elided parameter.
@@ -1752,7 +1752,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifier \text{ is fresh}\\
-  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \langle\vezero\rangle)\\
+  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
   \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
@@ -1808,7 +1808,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
   \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
-  \vcond \eqdef \choice{\vwhere = \langle\vewhere\rangle}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
+  \vcond \eqdef \choice{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
 }{
   \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
 }
@@ -2004,7 +2004,7 @@ the expression \verb|limit_loop()|.
 \hypertarget{build-looplimit}{}
 The function
 \[
-\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\langle\expr\rangle}{\vastnode}
+\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -2012,7 +2012,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[limit]{}{
   \buildlooplimit\left(\overname{\Nlooplimit(\Tlooplimit, \punnode{\Nexpr})}{\vparsednode}\right)
   \astarrow
-  \overname{\langle\astof{\vexpr}\rangle}{\vastnode}
+  \overname{\some{\astof{\vexpr}}}{\vastnode}
 }
 \end{mathpar}
 
@@ -2073,9 +2073,9 @@ The function
 \[
   \annotatelimitexpr(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\langle\expr\rangle}{\ve}
+    \overname{\Option{\expr}}{\ve}
   ) \aslto
-  (\langle\overname{\expr}{\vep}\rangle \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
+  (\Option{\overname{\expr}{\vep}} \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
 yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
@@ -2104,10 +2104,10 @@ limit expressions.
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\ve$ is $\langle\vlimit\rangle$;
+    \item $\ve$ is $\some{\vlimit}$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
           $(\vlimitp, \vses)$\ProseOrTypeError;
-    \item \Proseeqdef{$\vep$}{$\langle\vlimitp\rangle$}.
+    \item \Proseeqdef{$\vep$}{$\some{\vlimitp}$}.
   \end{itemize}
 \end{itemize}
 
@@ -2121,7 +2121,7 @@ limit expressions.
 \inferrule[some]{
   \annotatesymbolicconstrainedinteger(\tenv, \vlimit) \typearrow (\vlimitp, \vses) \OrTypeError
 }{
-  \annotatelimitexpr(\tenv, \overname{\langle\vlimit\rangle}{\ve}) \typearrow (\overname{\langle\vlimitp\rangle}{\vep}, \vses)
+  \annotatelimitexpr(\tenv, \overname{\some{\vlimit}}{\ve}) \typearrow (\overname{\some{\vlimitp}}{\vep}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
@@ -2179,7 +2179,7 @@ The relation
   \evalloop(
     \overname{\envs}{\env} \aslsep
     \overname{\Bool}{\iswhile} \aslsep
-    \overname{\N?}{\vlimitopt} \aslsep
+    \overname{\Option(\N)}{\vlimitopt} \aslsep
     \overname{\expr}{\econd} \aslsep
     \overname{\stmt}{\vbody})
   \;\aslrel\;
@@ -2274,11 +2274,11 @@ The negation of the condition is used to decide whether to continue the loop ite
 The relation
 \hypertarget{def-evallimit}{}
 \[
-\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\expr?})
+\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\Option(\expr)})
 \;\aslrel\;
 \left(
 \begin{array}{ll}
-(\overname{\langle\N\rangle}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
+(\overname{\Option{\N}}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
 \overname{\TDynError}{\DynErrorConfig} & \cup\\
 \overname{\TDiverging}{\DivergingConfig} & \\
 \end{array}
@@ -2311,7 +2311,7 @@ of the \whilestatementterm.
     \item $\velimitopt$ is the expression $\velimit$;
     \item evaluating the side-effect-free expression $\velimitopt$ in $\denv$ yields the native integer for $\vv$ and
           the execution graph $\vg$\ProseOrDynErrorDiverging;
-    \item $\vvopt$ is $\langle\vv\rangle$.
+    \item $\vvopt$ is $\some{\vv}$.
   \end{itemize}
 \end{itemize}
 
@@ -2326,7 +2326,7 @@ of the \whilestatementterm.
 \inferrule[some]{
   \evalexprsef(\env, \velimit) \evalarrow (\nvint(\vv), \vg) \OrDynErrorDiverging
 }{
-  \evallimit(\env, \overname{\langle\velimit\rangle}{\velimitopt}) \evalarrow (\overname{\langle\vv\rangle}{\vvopt}, \vg)
+  \evallimit(\env, \overname{\some{\velimit}}{\velimitopt}) \evalarrow (\overname{\some{\vv}}{\vvopt}, \vg)
 }
 \end{mathpar}
 
@@ -2334,7 +2334,7 @@ of the \whilestatementterm.
 The relation
 \hypertarget{def-ticklooplimit}{}
 \[
-\ticklooplimit(\overname{\vvopt}{\N?}) \aslto \overname{\langle\vvoptp\rangle}{\N?}
+\ticklooplimit(\overname{\Option(\N)}{\vvopt}) \aslto \overname{\Option(\N)}{\Option{\vvoptp}}
 \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 decrements the optional integer $\vvopt$, yielding
@@ -2358,7 +2358,7 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
   \item \AllApplyCase{some\_ok}
   \begin{itemize}
     \item $\vvopt$ is the positive integer $\vv$;
-    \item $\vvoptp$ is $\langle\vv-1\rangle$.
+    \item $\vvoptp$ is $\some{\vv-1}$.
   \end{itemize}
 
   \item \AllApplyCase{some\_error}
@@ -2379,13 +2379,13 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 \inferrule[some\_ok]{
   \vv > 0
 }{
-  \ticklooplimit(\overname{\langle\vv\rangle}{\vvopt}) \evalarrow \overname{\langle\vv-1\rangle}{\vvoptp}
+  \ticklooplimit(\overname{\some{\vv}}{\vvopt}) \evalarrow \overname{\some{\vv-1}}{\vvoptp}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[some\_error]{}{
-  \ticklooplimit(\overname{\langle 0 \rangle}{\vvopt}) \evalarrow \DynamicErrorVal{\LimitExceeded}
+  \ticklooplimit(\overname{\some{ 0 }}{\vvopt}) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
 
@@ -2916,7 +2916,7 @@ The relation
   \begin{array}{cl}
     \overname{\envs}{\env}                      & \aslsep\\
     \overname{\Identifier}{\vindexname}        & \aslsep\\
-    \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
+    \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
     \overname{\tint}{\vstart}                   & \aslsep\\
     \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
     \overname{\tint}{\vend}                     & \aslsep\\
@@ -2949,7 +2949,7 @@ The relation
   \begin{array}{cl}
   \overname{\envs}{\env}                      & \aslsep\\
   \overname{\Identifier}{\vindexname}        & \aslsep\\
-  \overname{\langle\tint\rangle}{\vlimitopt}  & \aslsep\\
+  \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
   \overname{\tint}{\vstart}                   & \aslsep\\
   \overname{\{\UP,\DOWN\}}{\dir}              &
   \end{array}
@@ -2977,7 +2977,7 @@ The relation
     \begin{array}{cl}
     \overname{\envs}{\env} \aslsep &\\
     \overname{\Identifier}{\vindexname} \aslsep &\\
-    \overname{\langle\tint\rangle}{\vlimitopt} \aslsep &\\
+    \overname{\Option{\tint}}{\vlimitopt} \aslsep &\\
     \overname{\tint}{\vstart} \aslsep &\\
     \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
     \overname{\tint}{\vend} \aslsep &\\
@@ -3279,7 +3279,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 The function
 \[
    \buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \aslto
-    \overname{\langle\stmt\rangle}{\vastnode}
+    \overname{\Option{\stmt}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -3317,7 +3317,7 @@ the \trystatementsterm{} are all well-typed.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optional\ \texttt{otherwise} block;
+  \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optionalterm\ \texttt{otherwise} block;
   \item annotating the statement $\vsp$ as a block statement yields $(\vspp, \vsesone)$\ProseOrTypeError;
   \item annotating each catcher $\catchers[\vi]$, for each $\vi$ in $\listrange(\catchers)$ in $\tenv$ yields $\vc\_\vi$
         and $\vxs_i$\ProseOrTypeError;
@@ -3341,7 +3341,7 @@ the \trystatementsterm{} are all well-typed.
       \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
             $\otherwisep$, that is \\
-            $\STry(\vspp, \catchersp, \langle\otherwisep\rangle)$;
+            $\STry(\vspp, \catchersp, \some{\otherwisep})$;
       \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
@@ -3381,7 +3381,7 @@ the \trystatementsterm{} are all well-typed.
   \commonsuffixline\\\\
   \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{
-  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \langle\otherwise\rangle)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \some{\otherwise})}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
@@ -3480,11 +3480,11 @@ since \verb|proc| is not a function but a procedure.
 
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\langle \vep \rangle)$;
+    \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\some{ \vep })$;
     \item the enclosing subprogram has a return type $\vt$;
     \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\tep,\vep,\vses)$\ProseOrTypeError;
     \item checking whether $\vtep$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item $\news$ is a \texttt{return} statement with value $\vep$, that is, $\SReturn(\langle \vep \rangle)$;
+    \item $\news$ is a \texttt{return} statement with value $\vep$, that is, $\SReturn(\some{ \vep })$;
     \item $\newtenv$ is $\tenv$.
   \end{itemize}
 \end{itemize}
@@ -3509,12 +3509,12 @@ since \verb|proc| is not a function but a procedure.
 
 \begin{mathpar}
 \inferrule[some]{
-  L^\tenv.\returntype = \langle \vt \rangle\\
+  L^\tenv.\returntype = \some{ \vt }\\
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
-  \annotatestmt(\tenv, \overname{\SReturn(\langle \ve \rangle)}{\vs}) \typearrow
-  (\overname{\SReturn(\langle \vep \rangle)}{\news}, \overname{\tenv}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \overname{\SReturn(\some{ \ve })}{\vs}) \typearrow
+  (\overname{\SReturn(\some{ \vep })}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
@@ -3551,7 +3551,7 @@ In \listingref{semantics-sreturntuple},
   \item \AllApplyCase{one}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement;
-    \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\langle\ve\rangle)$;
+    \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\some{\ve})$;
     \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
     \item $\vvs$ is $[\vv]$;
     \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
@@ -3560,7 +3560,7 @@ In \listingref{semantics-sreturntuple},
 
   \item \AllApplyCase{tuple}
   \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\langle\ETuple(\es)\rangle)$;
+    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\some{\ETuple(\es)})$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
     is \\ $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
@@ -3582,7 +3582,7 @@ In \listingref{semantics-sreturntuple},
   \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
-  \evalstmt(\env, \SReturn(\langle\ve\rangle)) \evalarrow \Returning(([\vv], \newg), \newenv)
+  \evalstmt(\env, \SReturn(\some{\ve})) \evalarrow \Returning(([\vv], \newg), \newenv)
 }
 \end{mathpar}
 
@@ -3591,7 +3591,7 @@ In \listingref{semantics-sreturntuple},
   \evalexprlistm(\env, \es) \evalarrow \ResultExprListM(\ms, \newenv) \OrAbnormal\\
   \writefolder(\ms) \evalarrow (\vvs, \newg)
 }{
-  \evalstmt(\env, \SReturn(\langle\ETuple(\es)\rangle)) \evalarrow \Returning((\vvs, \newg), \newenv)
+  \evalstmt(\env, \SReturn(\some{\ETuple(\es)})) \evalarrow \Returning((\vvs, \newg), \newenv)
 }
 \end{mathpar}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}

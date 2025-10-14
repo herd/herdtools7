@@ -83,7 +83,7 @@ The function
     \overname{\call}{\vcall}
    ) \aslto
   (\overname{\call}{\vcallp} \times
-  \overname{\langle \ty \rangle}{\rettyopt} \times
+  \overname{\Option{ \ty }}{\rettyopt} \times
   \overname{\TSideEffectSet}{\vses}
   )
 \]
@@ -91,7 +91,7 @@ annotates the call $\vcall$ to a subprogram with call type $\calltype$, resultin
 \begin{itemize}
   \item $\vcallp$ --- the updated call, with all arguments/parameters annotated and \\
         $\vcall.\callname$ updated to uniquely identify the call among the set of overloading subprograms declared with the same name;
-  \item $\rettyopt$ --- the \optional\ annotated return type;
+  \item $\rettyopt$ --- the \optionalterm\ annotated return type;
   \item $\vses$ --- the \sideeffectsetterm\ inferred for $\vcall$.
 \end{itemize}
 \ProseOtherwiseTypeError
@@ -169,7 +169,7 @@ The function
   \right) \aslto
   \begin{array}{c}
   (\overname{\call}{\vcall} \aslsep
-  \overname{\langle \ty \rangle}{\rettyopt})\\
+  \overname{\Option{ \ty }}{\rettyopt})\\
   \cup\ \overname{\typeerror}{\TypeErrorConfig}
   \end{array}
 \]
@@ -423,7 +423,7 @@ The function
 \begin{array}{r}
 \checkparamstypesat(
   \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\langle\ty\rangle)}}{\funcsigparams} \aslsep
+  \overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\funcsigparams} \aslsep
   \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\params}
   ) \aslto \\
   \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -471,12 +471,12 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
       \item \AllApplyCase{parameterized}
       \begin{itemize}
         \item $\tyactual$ is a \parameterizedintegertypeterm{} for the parameter $\vx$, that is, \\
-              $\langle\TInt(\Parameterized(\vx))\rangle$.
+              $\some{\TInt(\Parameterized(\vx))}$.
       \end{itemize}
 
       \item \AllApplyCase{other}
       \begin{itemize}
-        \item $\tydeclopt$ is not $\None$, that is, $\langle\tydecl\rangle$;
+        \item $\tydeclopt$ is not $\None$, that is, $\some{\tydecl}$;
         \item $\tydecl$ is not the \parameterizedintegertypeterm{} for the parameter $\vx$;
         \item checking that $\tyactual$ \typesatisfiesterm{} $\tydecl$ in $\tenv$ yields
               $\True$\ProseOrTypeError;
@@ -499,7 +499,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
-  \tydeclopt = \langle\TInt(\Parameterized(\vx))\rangle\\\\
+  \tydeclopt = \some{\TInt(\Parameterized(\vx))}\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
@@ -511,7 +511,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
   \commonprefixline\\\\
-  \tydeclopt \eqname \langle\tydecl\rangle\\
+  \tydeclopt \eqname \some{\tydecl}\\
   \tydecl \neq \TInt(\Parameterized(\vx))\\
   \checktypesat(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
@@ -862,7 +862,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[e\_var\_in\_substs]{
-  \assocopt(\vs, \substs) \typearrow \langle\newe\rangle
+  \assocopt(\vs, \substs) \typearrow \some{\newe}
 }{
   \substexpr(\tenv, \substs, \overname{\EVar(\vs)}{\ve}) \typearrow \newe
 }
@@ -1180,16 +1180,16 @@ The function
 \annotateretty(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\subprogramtype}{\calltype} \aslsep
-  \overname{\langle\ty\rangle}{\funcsigrettyopt} \aslsep
+  \overname{\Option{\ty}}{\funcsigrettyopt} \aslsep
   \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqsthree}
 ) \aslto \\
-\overname{\langle\ty\rangle}{\rettyopt}
+\overname{\Option{\ty}}{\rettyopt}
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
-annotates the \optional\ return type $\funcsigrettyopt$ given with the subprogram type
+annotates the \optionalterm\ return type $\funcsigrettyopt$ given with the subprogram type
 $\calltype$ with respect to the parameter expressions $\eqs$,
-yielding the \optional\ annotated type $\rettyopt$.
+yielding the \optionalterm\ annotated type $\rettyopt$.
 \ProseOtherwiseTypeError
 
 \ExampleDef{Annotating the Return Type of a Subprogram Call}
@@ -1211,9 +1211,9 @@ and functions can only be used in call expressions.
   \item \AllApplyCase{function\_or\_getter}
   \begin{itemize}
     \item $\calltype$ is one of $\STFunction$ or $\STGetter$;
-    \item $\funcsig$ is $\langle\tty\rangle$;
+    \item $\funcsig$ is $\some{\tty}$;
     \item applying $\renametyeqs$ to $\eqs$ and $\tty$ yields $\ttyone$\ProseOrTypeError;
-    \item $\rettyopt$ is $\langle\ttyone\rangle$.
+    \item $\rettyopt$ is $\some{\ttyone}$.
   \end{itemize}
 
   \item \AllApplyCase{procedure\_or\_setter}
@@ -1237,8 +1237,8 @@ and functions can only be used in call expressions.
   \calltype \in \{\STFunction, \STGetter\}\\
   \renametyeqs(\eqs, \tty) \typearrow \ttyone \OrTypeError
 }{
-  \annotateretty(\tenv, \calltype, \overname{\langle\tty\rangle}{\funcsigrettyopt}, \eqs) \typearrow
-  \overname{\langle\ttyone\rangle}{\rettyopt}
+  \annotateretty(\tenv, \calltype, \overname{\some{\tty}}{\funcsigrettyopt}, \eqs) \typearrow
+  \overname{\some{\ttyone}}{\rettyopt}
 }
 \end{mathpar}
 
@@ -2083,7 +2083,7 @@ return statement.
 \hypertarget{def-checkrecurselimit}{}
 The relation
 \[
-  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\some{\expr}}{\velimitopt}) \aslto
+  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\Option{\expr}}{\velimitopt}) \aslto
   \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
@@ -2114,7 +2114,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
   \item \AllApplyCase{some\_ok}
   \begin{itemize}
-    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrDynErrorDiverging;
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\some{\vlimit}, \vg)$\ProseOrDynErrorDiverging;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getpendingcalls$ to $\name$ in $\denv$ yields $\vpendingcalls$;
     \item $\vpendingcalls$ is less than $\vlimit$.
@@ -2122,7 +2122,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
   \item \AllApplyCase{limit\_exceeded}
   \begin{itemize}
-    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\langle\vlimit\rangle, \vg)$\ProseOrDynErrorDiverging;
+    \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\some{\vlimit}, \vg)$\ProseOrDynErrorDiverging;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getpendingcalls$ to $\name$ in $\denv$ yields $\vpendingcalls$;
     \item $\vpendingcalls$ is greater or equal to $\vlimit$;
@@ -2141,7 +2141,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[some\_ok]{
-  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\\\\
   \env \eqname (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls < \vlimit
@@ -2152,7 +2152,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[limit\_exceeded]{
-  \evallimit(\env, \velimitopt) \evalarrow (\langle\vlimit\rangle, \vg) \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\\\\
   \env \eqname (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls \geq \vlimit

@@ -1117,13 +1117,13 @@ and the inferred types of the expressions, as type annotations on the left-hand-
   \item $\ve$ denotes a call to a subprogram, that is, $\ECall(\vcall)$;
   \item applying $\annotatecall$ to $\vcall$ and in $\tenv$
         annotates the call of the subprogram in $\tenv$ as a function (see Chapter~\ref{chap:SubprogramCalls})
-        and yields $(\vcallp, \langle \vt \rangle, \vses)$\ProseOrTypeError.
+        and yields $(\vcallp, \some{ \vt }, \vses)$\ProseOrTypeError.
   \item $\newe$ is the call using $\vcallp$, that is, $\ECall(\vcallp)$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotatecall(\vcall) \typearrow (\vcallp, \langle \vt \rangle, \vses) \OrTypeError
+  \annotatecall(\vcall) \typearrow (\vcallp, \some{ \vt }, \vses) \OrTypeError
 }{
   \annotateexpr(\tenv, \overname{\ECall(\vcall)}{\ve}) \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
 }
@@ -1618,7 +1618,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
-  \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
+  \assocopt(\fields, \fieldname) \typearrow \some{ \vt}
 }{
   {
     \begin{array}{r}
@@ -1716,7 +1716,7 @@ All of the collection field expressions in
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vetwo = \EVar(\vbase) \\
   \vtetwo = \TCollection(\fields)\\
-  \assocopt(\fields, \fieldname) \typearrow \langle \vt\rangle
+  \assocopt(\fields, \fieldname) \typearrow \some{ \vt}
 }{
   {
     \begin{array}{r}
@@ -1754,7 +1754,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldSimple(\Ignore, \slices)\rangle\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldSimple(\Ignore, \slices)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
@@ -1792,7 +1792,7 @@ which refers to the bitfield \verb|info|, which is nested in the bitfield
   \vtetwo = \TBits(\Ignore, \bitfields)\\\\
   {
     \begin{array}{r}
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp)\rangle
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp)}
     \end{array}
   }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
@@ -1830,7 +1830,7 @@ which includes the type annotation \verb|bits(4)|.
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \langle \BitFieldType(\Ignore, \slices, \vt)\rangle\\
+  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \checktypesat(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
@@ -2216,7 +2216,7 @@ yields the literal expression for \verb|2|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \assocopt(\name, \tfields) \typearrow \langle\vt\rangle\\
+  \assocopt(\name, \tfields) \typearrow \some{\vt}\\
   \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError
 }{
   \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \ewidth

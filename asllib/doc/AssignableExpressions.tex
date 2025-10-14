@@ -290,7 +290,7 @@ The function
 \[
 \begin{array}{r}
   \builddiscardorbasiclexpr(\overname{\parsenode{\Ndiscardorbasiclexpr}}{\vparsednode}) \;\aslto\\
-  \overname{\langle\lhsaccess\rangle}{\vastnode}
+  \overname{\Option(\lhsaccess)}{\vastnode}
 \end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
@@ -306,7 +306,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   {
     \begin{array}{r}
       \builddiscardorbasiclexpr(\Ndiscardorbasiclexpr(\punnode{\Nbasiclexpr})) \astarrow \\
-      \overname{\langle \astof{\vbasiclexpr} \rangle}{\vastnode}
+      \overname{\some{ \astof{\vbasiclexpr} }}{\vastnode}
     \end{array}
   }
 }
@@ -318,7 +318,7 @@ The function
 \[
 \begin{array}{r}
   \builddiscardoridentifier(\overname{\parsenode{\Ndiscardoridentifier}}{\vparsednode}) \;\aslto
-  \overname{\langle\Identifier\rangle}{\vastnode}
+  \overname{\Option{\Identifier}}{\vastnode}
 \end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
@@ -334,7 +334,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
   {
     \begin{array}{r}
       \builddiscardoridentifier(\Ndiscardoridentifier(\Tidentifier(\id))) \astarrow
-      \overname{\langle \id \rangle}{\vastnode}
+      \overname{\some{ \id }}{\vastnode}
     \end{array}
   }
 }
@@ -396,9 +396,9 @@ transforms an $\lhsaccess$ on an identifier $\name$ into an AST node $\vlexpr$.
 \hypertarget{def-desugarlhstuple}{}
 The function
 \[
-  \desugarlhstuple(\overname{\KleeneStar{\langle\lhsaccess\rangle}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhstuple(\overname{\KleeneStar{\Option{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
+transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
 
 \ExampleDef{Desugaring a left-hand side tuple}
 \listingref{DesugarLHSTuple} shows an example of desugaring a left-hand side tuple.
@@ -417,7 +417,7 @@ transforms a list of \optional{} $\lhsaccess$ elements into an AST node $\vlexpr
 \hypertarget{def-desugarlhsaccessopt}{}
 The helper AST function
 \[
-    \desugarlhsaccessopt(\overname{\langle\lhsaccess\rangle}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+    \desugarlhsaccessopt(\overname{\Option{\lhsaccess}}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 is defined via the following rules:
 
@@ -432,7 +432,7 @@ is defined via the following rules:
 \inferrule[some]{
   \desugarlhsaccess(\vlhsaccess) \astarrow \vlexpr
 }{
-  \desugarlhsaccessopt(\overname{\langle\vlhsaccess\rangle}{\vlhsaccessopt}) \astarrow \vlexpr
+  \desugarlhsaccessopt(\overname{\some{\vlhsaccess}}{\vlhsaccessopt}) \astarrow \vlexpr
 }
 \end{mathpar}
 
@@ -440,7 +440,7 @@ is defined via the following rules:
 \hypertarget{def-desugarlhsfieldstuple}{}
 The function
 \[
-  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\langle\Identifier\rangle}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\Option{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
 
@@ -463,9 +463,9 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \hypertarget{def-filteroptionlist}{}
 The parametric function
 \[
-  \filteroptionlist(\overname{\KleeneStar{\langle T \rangle}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
+  \filteroptionlist(\overname{\KleeneStar{\Option{ T }}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
 \]
-filters a list of \optional{} elements, removing those which are $\None$ and unwrapping those which are $\langle v \rangle$ to $v$.
+filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$.
 
 \ExampleDef{Filtering a List of Optionals}
 In \listingref{DesugarLHSFieldsTuple},
@@ -492,7 +492,7 @@ $\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fl
 
   \item \AllApplyCase{non\_empty\_some}
   \begin{itemize}
-    \item $\vvopts$ is the non-empty list with head $\langle\vv\rangle$ and tail $\vvoptsp$;
+    \item $\vvopts$ is the non-empty list with head $\some{\vv}$ and tail $\vvoptsp$;
     \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvsp$;
     \item $\vvs$ is the concatenation of $\vv$ and $\vvsp$.
   \end{itemize}
@@ -518,7 +518,7 @@ $\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fl
   \inferrule[non\_empty\_some]{
     \filteroptionlist(\vvoptsp) \typearrow \vvsp
   }{
-    \filteroptionlist(\overname{[\langle\vv\rangle] \concat \vvoptsp}{\vvopts}) \typearrow \overname{[\vv] \concat \vvsp}{\vvs}
+    \filteroptionlist(\overname{[\some{\vv}] \concat \vvoptsp}{\vvopts}) \typearrow \overname{[\vv] \concat \vvsp}{\vvs}
   }
 \end{mathpar}
 
@@ -526,7 +526,7 @@ $\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fl
 \hypertarget{def-desugarlhsfieldopt}{}
 The helper AST function
 \[
-    \desugarlhsfieldopt(\overname{\Identifier}{\id} \aslsep \overname{\langle\Identifier\rangle}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+    \desugarlhsfieldopt(\overname{\Identifier}{\id} \aslsep \overname{\Option{\Identifier}}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
 is defined via the following rules:
 \begin{mathpar}
@@ -538,7 +538,7 @@ is defined via the following rules:
 
 \begin{mathpar}
 \inferrule[some]{}{
-  \desugarlhsfieldopt(\id, \overname{\langle\vfield\rangle}{\fieldopt}) \astarrow \overname{\LESetField(\LEVar(\id), \vfield)}{\vlexpr}
+  \desugarlhsfieldopt(\id, \overname{\some{\vfield}}{\fieldopt}) \astarrow \overname{\LESetField(\LEVar(\id), \vfield)}{\vlexpr}
 }
 \end{mathpar}
 
@@ -1469,7 +1469,7 @@ are well-typed.
   L \in \{\TException, \TRecord\}\\
   \assocopt(\fields, \vfield) \typearrow \tyopt\\
   \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
-  \tyopt \eqname \langle\vt\rangle\\
+  \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetField(\vletwo, \vfield)
 }{
@@ -1515,7 +1515,7 @@ All of the collection field assignable expressions in
   \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\\\\
   \assocopt(\fields, \vfield) \typearrow \tyopt\\
   \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
-  \tyopt \eqname \langle\vt\rangle\\
+  \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetCollectionFields(\vbase, [\vfield])
 }{
@@ -1703,7 +1703,7 @@ $(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|sta
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
     \item applying $\assocopt$ to $\vbasefields$ and $\vfield$ yields $\tyopt$;
     \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\BadField};
-    \item view $\tyopt$ as $\langle\vtfield\rangle$;
+    \item view $\tyopt$ as $\some{\vtfield}$;
     \item applying $\getbitvectorconstwidth$ to $\vtfield$ in $\tenv$ yields $\vfieldwidth$\ProseOrTypeError;
     \item \Proseeqdef{$\vlength$}{$\vstart + \vfieldwidth$};
     \item \Proseeqdef{$\vslices$}{the list with \head\ $(\vstart, \vfieldwidth)$ and \tail\ $\vslicesone$}.
@@ -1722,7 +1722,7 @@ $(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|sta
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
   \assocopt(\vbasefields, \vfield) \typearrow \tyopt\\
   \checktrans{\tyopt \neq \None}{\BadField} \typearrow \True \OrTypeError\\\\
-  \tyoptp \eqname \langle\vtfield\rangle\\
+  \tyoptp \eqname \some{\vtfield}\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
 }{
   {
@@ -1971,7 +1971,7 @@ are well-typed.
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \langle \BitFieldSimple(\Ignore, \slices) \rangle\\
+  \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldSimple(\Ignore, \slices) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \emptylist)\\\\
   \commonsuffixline\\\\
@@ -1989,7 +1989,7 @@ are well-typed.
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \langle \BitFieldNested(\Ignore, \slices, \bitfieldsp) \rangle\\
+  \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \bitfieldsp)\\\\
   \commonsuffixline\\\\
@@ -2007,7 +2007,7 @@ are well-typed.
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \langle \BitFieldType(\Ignore, \vslices, \vt) \rangle\\
+  \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vtp \eqdef \TBits(\vw , \emptylist)\\
   \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\

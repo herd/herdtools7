@@ -1196,7 +1196,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields the enumeration variable
-      name $\vs$ of size $\vi$, that is, $\langle \vs, \vi \rangle$\ProseOrTypeError;
+      name $\vs$ of size $\vi$, that is, $\some{ \vs, \vi }$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an \enumerationtypeterm{}
       named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$;
       \item define $\vses$ as $\vsest$.
@@ -1222,7 +1222,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \inferrule[expr\_is\_enum]{
   \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \langle \vs, \vlabels \rangle
+  \getvariableenum(\tenv, \ve) \typearrow \some{ \vs, \vlabels }
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
   (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
@@ -1248,7 +1248,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 The function
 \[
 \getvariableenum(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\langle (\overname{\Identifier}{\vx}, \overname{\KleenePlus{\Identifier}}{\vlabels})\rangle
+\Option{ (\overname{\Identifier}{\vx}, \overname{\KleenePlus{\Identifier}}{\vlabels})}
 \]
 tests whether the expression $\ve$ represents a variable of an \enumerationtypeterm{}.
 If so, the result is $\vx$ --- the name of the variable and the list of labels $\vlabels$,
@@ -1315,7 +1315,7 @@ enumeration labels from variable expressions.
   G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
   \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels)
 }{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \langle(\vx, \vlabels)\rangle
+  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \some{(\vx, \vlabels)}
 }
 \end{mathpar}
 
