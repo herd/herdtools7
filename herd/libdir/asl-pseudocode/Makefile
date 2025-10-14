@@ -27,9 +27,9 @@ FEATURES_NAME := Features.json
 FEATURES_TGT := $(FEATURES_DIR)/AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE)_ASL0
 FEATURES_OFILE := features.asl
 
-TARGETS := $(ISA_A64_TGT) $(SYSREGS_TGT)
+TARGETS := $(ISA_A64_TGT) $(SYSREGS_TGT) $(FEATURES_TGT)
 TARGETS_TAR_GZ := $(addsuffix .tar.gz,$(TARGETS))
-TARGETS_NAME := $(notdir $(TARGETS))
+TARGETS_NAME := $(ISA_A64_NAME) $(SYSREGS_NAME) $(FEATURES_NAME)
 TARGETS_LOG := $(addsuffix .log,$(TARGETS_NAME))
 TARGETS_OFILE := $(ISA_A64_OFILE) $(FEATURES_OFILE) $(SYSREGS_OFILE)
 
@@ -43,12 +43,13 @@ WANTED_REGS_XML := $(addsuffix .xml, $(WANTED_REGS))
 .SECONDARY: $(TARGETS_TAR_GZ) $(TARGETS_NAME)
 
 $(TARGETS_TAR_GZ):
-	mkdir -p $(dir $@)
+	@ mkdir -p $(dir $@)
 	@ echo "Downloading $@ from developer.arm.com ..."
-	curl $(BASE_URL)/$@ --silent --output $@
+	@ curl $(BASE_URL)/$@ --silent --output $@
 
 $(ISA_A64_NAME): $(ISA_A64_TGT).tar.gz
 $(SYSREGS_NAME): $(SYSREGS_TGT).tar.gz
+$(FEATURES_NAME): $(FEATURES_TGT).tar.gz
 
 $(TARGETS_NAME):
 	@ echo "Unpacking xml archive $^ ..."
@@ -70,6 +71,10 @@ $(SYSREGS_OFILE): $(SYSREGS_NAME)
 	@ $(BUNDLER_CMD) --make-regs -o $@ --log-file $(SYSREGS_NAME).log $(addprefix $^/,$(WANTED_REGS_XML))
 	@ echo "You can find extraction log at $(SYSREGS_NAME).log"
 
+$(FEATURES_OFILE): $(FEATURES_NAME)
+	@ echo "Extracting Features type definition from json file $^"
+	@ $(PYTHON) build_features.py -o $@ $^
+	
 .PHONY: a64
 a64: $(ISA_A64_NAME).log
 
@@ -80,7 +85,7 @@ regs: $(SYSREGS_OFILE)
 a32:
 
 .PHONY: all
-all: a64 a32 regs
+all: a64 a32 regs $(FEATURES_OFILE)
 
 .PHONY: clean-tmp
 clean-tmp:
@@ -88,4 +93,4 @@ clean-tmp:
 
 .PHONY: clean
 clean: clean-tmp
-	rm -fr aarch64 shared_pseudocode.asl regs other-instrs $(TARGETS_LOG)
+	rm -fr aarch64 shared_pseudocode.asl other-instrs $(TARGETS_LOG) $(TARGETS_OFILE)

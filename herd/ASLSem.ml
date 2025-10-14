@@ -1099,10 +1099,8 @@ module Make (Conf : Config) = struct
           patch ~patches:impls_vmsa ~src:impls
         else impls
       and shared =
-        (list_concat_map (build `ASLv1)
-           [
-             "system_registers.asl";
-           ])
+        build `ASLv1 "system_registers.asl"
+        @ build `ASLv1 "features.asl"
         @ build `ASLv0 "shared_pseudocode.asl"
       in
       let shared =
