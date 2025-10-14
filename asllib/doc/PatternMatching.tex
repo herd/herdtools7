@@ -38,7 +38,8 @@ matches a value specified by the \emph{pattern} $p$.
 transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 
 \paragraph{Typing:} Patterns are annotated by $\annotatepattern$.
-\hypertarget{def-annotatepattern}{}
+\RenderRelation{annotate_pattern}
+\BackupOriginalRelation{
 The function
 \[
   \annotatepattern(
@@ -51,12 +52,13 @@ annotates a pattern $\vp$ in a \staticenvironmentterm{} $\tenv$ given a type $\v
 resulting in $\newp$, which is the typed AST node for $\vp$
 and the inferred \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError.
-
+} % END_OF_BACKUP_RELATION
 \paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
+\RenderRelation{eval_pattern}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalpattern}{}
 \[
-  \evalpattern{\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\pattern}{\vp}} \;\aslrel\;
+  \evalpattern(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\pattern}{\vp}) \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultPattern(\overname{\tbool}{\vb}, \overname{\XGraphs}{\newg}) & \cup\\
@@ -67,6 +69,8 @@ The relation
 \]
 determines whether a value $\vv$ matches the pattern $\vp$ in an environment $\env$
 resulting in either $\ResultPattern(\vb, \newg)$ or an abnormal configuration.
+} % END_OF_BACKUP_RELATION
+
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
@@ -130,7 +134,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \begin{mathpar}
 \inferrule{}
 {
-  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
+  \evalpattern(\env, \Ignore, \PatternAll) \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
@@ -290,10 +294,10 @@ whereas \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \evalbinop(\EQ, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \overname{\PatternSingle(\ve)}{\vp}} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \overname{\PatternSingle(\ve)}{\vp}) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
@@ -401,14 +405,14 @@ range given by \texttt{3..42}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
   \evalbinop(\GE, \vv, \vvone) \evalarrow \vbone\\
-  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
   \evalbinop(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
   \evalbinop(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalpattern{\env, \vv, \PatternRange(\veone, \vetwo)} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \PatternRange(\veone, \vetwo)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
@@ -502,10 +506,10 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \evalbinop(\LE, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternLeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \PatternLeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
@@ -598,10 +602,10 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
   \evalbinop(\GE, \vv, \vvone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternGeq(\ve)} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \PatternGeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
@@ -711,7 +715,7 @@ is defined by the following table:
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \evalpattern{\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)} \evalarrow \ResultPattern(\True, \emptygraph)
+  \evalpattern(\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)) \evalarrow \ResultPattern(\True, \emptygraph)
 }
 \end{mathpar}
 
@@ -721,7 +725,7 @@ is defined by the following table:
   \vv = \nvbitvector(\vu_{1..n})\\
   \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))
 }{
-  \evalpattern{\env, \vv, \PatternMask(\vm)} \evalarrow \ResultPattern(\vb, \emptygraph)
+  \evalpattern(\env, \vv, \PatternMask(\vm)) \evalarrow \ResultPattern(\vb, \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
@@ -818,11 +822,11 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \inferrule{
   \vps \eqname \vp_{1..k}\\
   i=1..k: \getindex(i, \vv) \evalarrow \vvs_i\\
-  i=1..k: \evalpattern{\env, \vvs_i, \vp_i} \evalarrow \ResultPattern(\nvbool(\vbs_i), \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k: \evalpattern(\env, \vvs_i, \vp_i) \evalarrow \ResultPattern(\nvbool(\vbs_i), \vg_i) \OrDynErrorDiverging\\\\
   \vres \eqdef \nvbool(\bigwedge_{i=1..k} \vbs_i)\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
 }{
-  \evalpattern{\env, \vv, \PatternTuple(\vps)} \evalarrow \ResultPattern(\vres, \emptygraph)
+  \evalpattern(\env, \vv, \PatternTuple(\vps)) \evalarrow \ResultPattern(\vres, \emptygraph)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
@@ -845,12 +849,15 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 }
 
 \ASTRuleDef{PatternSet}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-patternset}{}
 The function
 \[
   \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[not]{}{
@@ -871,12 +878,15 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{PatternList}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-patternlist}{}
 The function
 \[
   \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule{
@@ -945,11 +955,11 @@ any pattern in \verb|{3, 4}|.
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
-  i=1..k : \evalpattern{\env, \vv, \vp_i} \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\\\\
   \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
   \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
 }{
-  \evalpattern{\env, \vv, \PatternAny(\vps)} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \PatternAny(\vps)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
@@ -1011,10 +1021,10 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vpone} \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
   \evalunop(\BNOT, \vbone) \evalarrow \vb
 }{
-  \evalpattern{\env, \vv, \PatternNot(\vpone)} \evalarrow \ResultPattern(\vb, \newg)
+  \evalpattern(\env, \vv, \PatternNot(\vpone)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
@@ -1042,12 +1052,15 @@ $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-exprpattern}{}
 The function
 \[
   \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
 \]
 transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[literal]{}{
