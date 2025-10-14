@@ -35,9 +35,9 @@ The function
 \]
 retrieves the value associated with $\name$ in $\denv.\pendingcalls$ or $0$ if no value is associated with it.
 
-\ExampleDef{Retrieving the Stack Size}
-In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
-with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.
+\ExampleDef{Retrieving the Number of Pending Calls}
+In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
+with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.\\
 That is, $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
@@ -62,8 +62,8 @@ The function
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
 
-\ExampleDef{Setting the Stack Size}
-In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
+\ExampleDef{Setting the Number of Pending Calls}
+In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is then set to $1$.
 That is, \\
 $\setpendingcalls(\denv_0, \factorial, 1) \evalarrow \denv_1$
@@ -89,8 +89,8 @@ The function
 \]
 increments the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 
-\ExampleDef{Incrementing the Stack Size}
-In \listingref{CheckRecurseLimit}, the stack size upon the call to \verb|factorial| from \verb|main|
+\ExampleDef{Incrementing the Number of Pending Calls}
+In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$, and it is incremented to $1$.
 That is, \\
 $\incrpendingcalls(\denv_0, \factorial) \evalarrow \denv_1$
@@ -124,8 +124,8 @@ The function
 decrements the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 It is assumed that $\getpendingcalls((\genv, \emptyfunc), \name)$ yields a positive value.
 
-\ExampleDef{Decrementing the Stack Size}
-In \listingref{CheckRecurseLimit}, the stack size upon returning from \verb|main| to \verb|factorial|
+\ExampleDef{Decrementing the Number of Pending Calls}
+In \listingref{CheckRecurseLimit}, the number of pending calls upon returning from \verb|main| to \verb|factorial|
 with the environment $\env_1 \eqdef (\tenv_1, \denv_1)$ is $1$, and it is decremented to $0$.
 That is, \\
 $\decrpendingcalls(\denv_1, \factorial) \evalarrow \denv_0$

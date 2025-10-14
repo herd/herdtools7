@@ -671,7 +671,7 @@ def check_zero_arg_macro_misuse(latex_files: list[str]) -> int:
             # Exclude macros that end with "term" as they can be used with {} for styling
             if (
                 not match.endswith("term")
-                and not match.endswith("Treerm")
+                and not match.endswith("Term")
                 and not match.startswith("Prose")
                 and not match.startswith("terminateas")
             ):
