@@ -28,7 +28,7 @@ cause an exception to be raised.
 and \typingerrorsterm{}.
 %
 \listingref{typing-error-reporting} shows a specification containing a \typingerrorterm,
-followed by an example of a report from \aslref{} in a \linuxbashshell.
+followed by an example of a report from \aslrefterm{} in a \linuxbashshellterm.
 
 \ASLListing{A specification resulting in a type error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
 % CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/TypingErrorReporting.asl
@@ -54,7 +54,7 @@ the exception must have the \supertypeterm{}
 \verb|runtime_exception|.
 %
 \listingref{dynamic-error-reporting} shows a specification containing a \dynamicerrorterm{},
-followed by an example of a report from \aslref{} in a \linuxbashshell.
+followed by an example of a report from \aslrefterm{} in a \linuxbashshellterm.
 
 \ASLListing{A specification resulting in a dynamic error}{dynamic-error-reporting}{\definitiontests/DynamicErrorReporting.asl}
 
@@ -69,7 +69,7 @@ ASL Dynamic error: Illegal application of operator DIV for values 128 and 7.
 If an implementation terminates execution in response to a \dynamicerrorterm{},
 it should signal an error to the hosting environment.
 %
-Applying \aslref{} in a \linuxbashshell{} on the specification in \listingref{dynamic-error-reporting}
+Applying \aslrefterm{} in a \linuxbashshellterm{} on the specification in \listingref{dynamic-error-reporting}
 yields the error status \texttt{1}.
 
 \RequirementDef{DynamicErrorAssert}
@@ -78,7 +78,7 @@ An assertion failure arising from an \assertionstatementterm\ is a \dynamicerror
 %
 \listingref{AssertionStatement} shows an example of a specification failing
 an \assertionstatementterm{}.
-The report from \aslref{} in a \linuxbashshell{} is shown next:
+The report from \aslrefterm{} in a \linuxbashshellterm{} is shown next:
 % CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/AssertionStatement.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 File ../tests/ASLDefinition.t/AssertionStatement.asl, line 5,
@@ -95,7 +95,7 @@ Evaluation of the \unreachablestatementterm{} is a \dynamicerrorterm{}
 %
 \listingref{UnreachableStatement} shows an example specification that
 fails with a \dynamicerrorsterm{} due to evaluation of an \unreachablestatementterm{}.
-The report from \aslref{} in a \linuxbashshell{} is shown next:
+The report from \aslrefterm{} in a \linuxbashshellterm{} is shown next:
 
 % CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/UnreachableStatement.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]

@@ -113,7 +113,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
    \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\Option{(\Identifier \times \Option{\KleeneStar{(\Identifier\times \ty)}})}}{\vastnode}
+    \overname{\Option((\Identifier \times \Option(\KleeneStar{(\Identifier\times \ty)})))}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -201,11 +201,11 @@ The function
 \declaretype(\overname{\globalstaticenvs}{\genv} \aslsep
             \overname{\Identifier}{\name} \aslsep
             \overname{\ty}{\tty} \aslsep
-            \overname{\Option{(\Identifier\times\KleeneStar{\vfield})}}{\vs}
+            \overname{\Option((\Identifier\times\KleeneStar{\vfield}))}{\vs}
 ) \aslto \\
 (\overname{\globalstaticenvs}{\newgenv} \times
  \overname{\ty}{\vttwo} \times
- \overname{\Option{(\Identifier\times\KleeneStar{\vfield})}}{\vsp})
+ \overname{\Option((\Identifier\times\KleeneStar{\vfield}))}{\vsp})
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \end{array}
 \]
@@ -420,8 +420,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \hypertarget{def-annotatetypeopt}{}
 The function
 \[
-\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option{\overname{\ty}{\vt}}}{\tyopt})
-\typearrow \overname{\Option{\ty}}{\tyoptp}
+\annotatetypeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option(\overname{\ty}{\vt})}{\tyopt})
+\typearrow \overname{\Option(\ty)}{\tyoptp}
 \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the type $\vt$ inside an \optionalterm\ $\tyopt$, if there is one, and leaves it as is if $\tyopt$ is $\None$.
@@ -470,8 +470,8 @@ The following are examples of annotating a type inside an \optionalterm{} with t
 \hypertarget{def-annotateexpropt}{}
 The function
 \[
-  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option{\expr}}{\expropt})
-  \aslto \overname{(\Option{\expr} \times \Option{\ty})}{\vres}
+  \annotateexpropt(\overname{\staticenvs}{\tenv} \aslsep \overname{\Option(\expr)}{\expropt})
+  \aslto \overname{(\Option(\expr) \times \Option(\ty))}{\vres}
   \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates the \optionalterm\ expression $\expropt$ in $\tenv$ and returns a pair of \optionalterm\ expressions

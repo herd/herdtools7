@@ -510,7 +510,7 @@ An example of an axiom in the ASL type system is \TypingRuleRef{SPass}:
 An example of an axiom in the ASL dynamic semantics is \SemanticsRuleRef{PAll}:
 \begin{mathpar}
 \inferrule{}{
-  \evalpattern{\env, \Ignore, \PatternAll} \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
+  \evalpattern(\env, \Ignore, \PatternAll) \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
 
