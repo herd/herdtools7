@@ -611,7 +611,7 @@ The function
     \overname{\Bool}{\isstatic},
     \overname{\slice}{\vslice}
   )
-  \aslto \overname{\Option{\powfin{\Z}}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
+  \aslto \overname{\Option(\powfin{\Z})}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
 if it can be determined via static evaluation or normalization, depending on $\isstatic$,
@@ -680,7 +680,7 @@ The function
   \overname{\staticenvs}{\tenv},
   \overname{\Bool}{\isstatic},
   \overname{\expr}{\ve}
-) \aslto \overname{\Option{\Z}}{\vzopt} \cup \overname{\typeerror}{\TypeErrorConfig}
+) \aslto \overname{\Option(\Z)}{\vzopt} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 attempts to transform the expression $\ve$ into a constant integer in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.

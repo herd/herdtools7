@@ -654,7 +654,7 @@ The function
   \left(
   \begin{array}{c}
     \overname{\staticenvs}{\tenv} \aslsep \\
-    \overname{\Option{\ty}}{\tyopt} \aslsep \\
+    \overname{\Option(\ty)}{\tyopt} \aslsep \\
     \overname{\ty}{\vte} \aslsep \\
     \overname{\localdeclkeyword}{\ldk} \aslsep \\
     \overname{\expr}{\vep} \aslsep\\
@@ -663,7 +663,7 @@ The function
   \right)
   \aslto \\
   \begin{array}{cl}
-    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option{\ty}}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
+    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option(\ty)}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
     & \cup \\
     \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
@@ -1057,7 +1057,7 @@ The function
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto
-\overname{\Option{\expr}}{\vexpr}
+\overname{\Option(\expr)}{\vexpr}
 \cup\ \overname{\TBuildError}{\ParseErrorConfig}
 \]
 builds an expression $\vexpr$ from an assignment of the call $\vcall$ to the left-hand side with type annotation $\vt$, where the call has an elided parameter.
@@ -2004,7 +2004,7 @@ the expression \verb|limit_loop()|.
 \hypertarget{build-looplimit}{}
 The function
 \[
-\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
+\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\Option(\expr)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -2073,9 +2073,9 @@ The function
 \[
   \annotatelimitexpr(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Option{\expr}}{\ve}
+    \overname{\Option(\expr)}{\ve}
   ) \aslto
-  (\Option{\overname{\expr}{\vep}} \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
+  (\Option(\overname{\expr}{\vep}) \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
 yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
@@ -2278,7 +2278,7 @@ The relation
 \;\aslrel\;
 \left(
 \begin{array}{ll}
-(\overname{\Option{\N}}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
+(\overname{\Option(\N)}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
 \overname{\TDynError}{\DynErrorConfig} & \cup\\
 \overname{\TDiverging}{\DivergingConfig} & \\
 \end{array}
@@ -2334,7 +2334,7 @@ of the \whilestatementterm.
 The relation
 \hypertarget{def-ticklooplimit}{}
 \[
-\ticklooplimit(\overname{\Option(\N)}{\vvopt}) \aslto \overname{\Option(\N)}{\Option{\vvoptp}}
+\ticklooplimit(\overname{\Option(\N)}{\vvopt}) \aslto \overname{\Option(\N)}{\Option(\vvoptp)}
 \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 decrements the optional integer $\vvopt$, yielding
@@ -2875,8 +2875,8 @@ side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via the rule for evaluating side-effect-free expressions.
 \begin{mathpar}
 \inferrule{
-  \evalexprsef{\env, \vstarte} \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
-  \evalexprsef{\env, \vende} \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vende) \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\\\\
   \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
   {
@@ -2916,7 +2916,7 @@ The relation
   \begin{array}{cl}
     \overname{\envs}{\env}                      & \aslsep\\
     \overname{\Identifier}{\vindexname}        & \aslsep\\
-    \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
+    \overname{\Option(\tint)}{\vlimitopt}  & \aslsep\\
     \overname{\tint}{\vstart}                   & \aslsep\\
     \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
     \overname{\tint}{\vend}                     & \aslsep\\
@@ -2949,7 +2949,7 @@ The relation
   \begin{array}{cl}
   \overname{\envs}{\env}                      & \aslsep\\
   \overname{\Identifier}{\vindexname}        & \aslsep\\
-  \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
+  \overname{\Option(\tint)}{\vlimitopt}  & \aslsep\\
   \overname{\tint}{\vstart}                   & \aslsep\\
   \overname{\{\UP,\DOWN\}}{\dir}              &
   \end{array}
@@ -2977,7 +2977,7 @@ The relation
     \begin{array}{cl}
     \overname{\envs}{\env} \aslsep &\\
     \overname{\Identifier}{\vindexname} \aslsep &\\
-    \overname{\Option{\tint}}{\vlimitopt} \aslsep &\\
+    \overname{\Option(\tint)}{\vlimitopt} \aslsep &\\
     \overname{\tint}{\vstart} \aslsep &\\
     \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
     \overname{\tint}{\vend} \aslsep &\\
@@ -3223,7 +3223,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr{\env, \ve} \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
   \name\in\Identifier \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
@@ -3279,7 +3279,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 The function
 \[
    \buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \aslto
-    \overname{\Option{\stmt}}{\vastnode}
+    \overname{\Option(\stmt)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -3837,7 +3837,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[print]{
-  \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
+  \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
   \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
   n \eqdef \listlen{\vlist}\\
   \newenv \eqdef \env_{n + 1}

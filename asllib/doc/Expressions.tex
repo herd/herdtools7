@@ -2771,7 +2771,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 
 \begin{mathpar}
 \inferrule[bits]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vvp, \vg) \OrDynErrorDiverging
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvp, \vg) \OrDynErrorDiverging
 }{
   \isvaloftype(\env, \overname{\nvbitvector(\vbits)}{\vv}, \overname{\TBits(\ve, \Ignore)}{\vt}) \evalarrow
   (\overname{\vvp = |\vbits|}{\vb}, \vg)
@@ -2846,7 +2846,7 @@ that expressions appearing in types are all side-effect-free.
 
 \begin{mathpar}
 \inferrule[Constraint\_Exact\_Sat]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
 }{
   \isconstaintsat(\env, \overname{\ConstraintExact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
 }
@@ -2854,8 +2854,8 @@ that expressions appearing in types are all side-effect-free.
 
 \begin{mathpar}
 \inferrule[Constraint\_Range\_Sat]{
-  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\nvint(a), \vgone) \OrDynErrorDiverging\\\\
-  \evalexprsef{\env, \vetwo} \evalarrow \ResultExprSEF(\nvint(b), \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \vgtwo) \OrDynErrorDiverging\\\\
   \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -2980,7 +2980,7 @@ succeed.
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\\\\
-  \evalpattern{\env, \vvone, \vp} \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\\\\
+  \evalpattern(\env, \vvone, \vp) \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
   \evalexpr(\env, \EPattern(\ve, \vp)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -3310,7 +3310,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \efields \eqname [i=1..k: (\id_i, \ve_i)]\\
   \names \eqdef \id_{1..k} \\
   \fields \eqdef \ve_{1..k} \\
-  \evalexprlist{\env, \fields} \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
+  \evalexprlist(\env, \fields) \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
   \vvfields \eqname \vv_{1..k}\\
   \vv \eqdef \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\})
 }{
@@ -3411,7 +3411,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprlist{\env, \elist} \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
+  \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
   \vv \eqdef \NVVector(\vlist)
 }{
   \evalexpr(\env, \ETuple(\elist)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -3491,7 +3491,7 @@ which evaluates to
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
-  \evalexprsef{\env, \elength} \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
   \vlength \eqname \nvint(\nlength)\\
   \checktrans{\nlength \geq 0}{\NegativeArrayLength} \checktransarrow \True \OrDynError\\\\
   \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
@@ -3556,7 +3556,7 @@ and $\vses$ is \readonlyterm{}.
 The relation
 \hypertarget{def-evalexprsef}{}
 \[
-  \evalexprsef{\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}} \;\aslrel\;
+  \evalexprsef(\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}) \;\aslrel\;
   \left(
   \begin{array}{ll}
   \ResultExprSEF(\overname{\nativevalue}{\vv}\aslsep\overname{\XGraphs}{\vg}) & \cup \\
@@ -3582,7 +3582,7 @@ which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv,\vg), \env) \OrDynErrorDiverging
 }{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\vv, \vg)
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vv, \vg)
 }
 \end{mathpar}
 Notice that the output configuration does not contain an environment,
@@ -3640,7 +3640,7 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \evalexprlist{\env, \overname{\emptylist}{\vle}} \evalarrow
+  \evalexprlist(\env, \overname{\emptylist}{\vle}) \evalarrow
   \ResultExprList((\overname{\emptylist}{\vv}, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
@@ -3649,10 +3649,10 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \inferrule[non\_empty]{
   \vle = [\ve] \concat \vle1\\
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\\\\
-  \evalexprlist{\envone, \vle1} \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
+  \evalexprlist(\envone, \vle1) \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo \\
   \vv \eqdef [\vvone] \concat \vvs
 }{
-  \evalexprlist{\env, \vle} \evalarrow \ResultExprList((\vv, \vg), \newenv)
+  \evalexprlist(\env, \vle) \evalarrow \ResultExprList((\vv, \vg), \newenv)
 }
 \end{mathpar}

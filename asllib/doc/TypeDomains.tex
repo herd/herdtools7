@@ -269,13 +269,13 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[constraint\_exact\_okay]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(n), \Ignore)
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(n), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
 }
 \and
 \inferrule[constraint\_exact\_abnormal]{
-  \evalexprsef{\env, \ve} \evalarrow C\\
+  \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
@@ -284,22 +284,22 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[constraint\_range\_okay]{
-  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\nvint(a), \Ignore)\\
-  \evalexprsef{\env, \vetwo} \evalarrow \ResultExprSEF(\nvint(b), \Ignore)
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \Ignore)\\
+  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
 }
 \and
 \inferrule[constraint\_range\_abnormal1]{
-  \evalexprsef{\env, \veone} \evalarrow C\\
+  \evalexprsef(\env, \veone) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[constraint\_range\_abnormal2]{
-  \evalexprsef{\env, \veone} \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
-  \evalexprsef{\env, \vetwo} \evalarrow C\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
+  \evalexprsef(\env, \vetwo) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
@@ -318,27 +318,27 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_bits\_abnormal]{
-  \evalexprsef{\env, \ve} \evalarrow C\\
+  \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_negative\_width\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_bits\_empty]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
 }
 \and
 \inferrule[t\_bits\_non\_empty]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k > 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \Bit \}}{\vd}
@@ -356,21 +356,21 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_array\_abnormal]{
-  \evalexprsef{\env, \ve} \evalarrow C\\
+  \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_negative\_length\_error]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \and
 \inferrule[t\_array\_okay]{
-  \evalexprsef{\env, \ve} \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k \geq 0\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{

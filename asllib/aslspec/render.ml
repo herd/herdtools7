@@ -80,7 +80,7 @@ module Make (S : SPEC_VALUE) = struct
             | None -> acc ^ var))
       "" blocks
 
-  type parenthesis = Parens | Braces | Brackets
+  type parenthesis = Parens | Braces | Brackets [@@warning "-37"]
 
   let pp_parenthesized parenthesis large pp_elem fmt elem =
     let left = if large then {|\left|} else "" in
@@ -148,7 +148,7 @@ module Make (S : SPEC_VALUE) = struct
     | LabelledTuple { label_opt; components } ->
         let is_type_reference =
           (* Singleton unlabelled tuples are a special case -
-           they used to reference type terms, rather than defining them. *)
+           they are used to reference type terms, rather than defining them. *)
           Option.is_none label_opt && Utils.is_singleton_list components
         in
         if is_type_reference then
@@ -278,7 +278,7 @@ module Make (S : SPEC_VALUE) = struct
             fields_with_layouts
         in
         fprintf fmt {|%a|}
-          (pp_parenthesized Brackets true (pp_latex_array "lcl"))
+          (pp_parenthesized Braces true (pp_latex_array "lcl"))
           field_pp_funs
     | Horizontal _ ->
         let pp_field fmt (field_name, (field_term, layout)) =
@@ -287,7 +287,7 @@ module Make (S : SPEC_VALUE) = struct
             pp_type_term (field_term, layout)
         in
         fprintf fmt {|%a|}
-          (pp_parenthesized Brackets true (PP.pp_sep_list ~sep:", " pp_field))
+          (pp_parenthesized Braces true (PP.pp_sep_list ~sep:", " pp_field))
           fields_with_layouts
     | Unspecified -> assert false
 

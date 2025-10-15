@@ -433,12 +433,12 @@ ast array_index { "array index" } =
 //////////////////////////////////////////////////
 // Typed AST
 //////////////////////////////////////////////////
-    | ArrayLengthEnum(enumeration_name: Identifier, enumeration_labels: list1(Identifier))
+    | ArrayLength_Enum(enumeration_name: Identifier, enumeration_labels: list1(Identifier))
     { "index for the enumeration {enumeration_name} with labels {enumeration_labels}" }
 ;
 
 render untyped_array_index = array_index(ArrayLength_Expr);
-render typed_array_index = array_index(ArrayLengthEnum);
+render typed_array_index = array_index(ArrayLength_Enum);
 
 ast field { "field" } =
     (name: Identifier, type: ty)
@@ -1089,9 +1089,15 @@ typedef approximation_direction { "approximation direction" } =
     constants_set(Over, Under)
 ;
 
-constant CannotOverapproximate { "cannot overapproximate" };
+constant CannotOverapproximate {
+    "cannot overapproximate",
+    math_macro = \CannotOverapproximate
+};
 
-constant CannotUnderapproximate { "cannot underapproximate" };
+constant CannotUnderapproximate {
+    "cannot underapproximate",
+    math_macro = \CannotUnderapproximate
+};
 
 typedef ty_or_opt { "type or optional type" } =
     | (t:ty)
