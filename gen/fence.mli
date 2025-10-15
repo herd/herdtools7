@@ -72,6 +72,9 @@ module type S = sig
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
 
+(* Expand wildcard `*` *)
+  val expand_dp_dir: dp -> dir list
+
 (* Read-Modify-Write *)
   include Rmw.S with type rmw_atom = atom
 

@@ -42,3 +42,8 @@ let fst_dp = function
 let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL|CTRLISYNC -> []
+
+open Code
+let expand_dp_dir = function
+  | CTRL | CTRLISYNC | ADDR -> [R;W]
+  | DATA -> [W]

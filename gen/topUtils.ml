@@ -137,8 +137,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let io_of_thread n = match n with
     | []|[_] -> None
     | n0::rem ->
-        let n0 = C.C.find_non_insert_store n0
-        and n1 = C.C.find_non_insert_store_prev (Misc.last rem) in
+        let n0 = C.C.find_memory_access n0
+        and n1 = C.C.find_memory_access_prev (Misc.last rem) in
         Some (io_of_node n0,io_of_node n1)
 
     let io_of_detour _n = None
@@ -183,7 +183,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
               | Some W -> true
               | None|Some R -> do_rec n.C.C.prev
               end
-          | Diff -> false in
+          | Diff -> false
+          | Both -> assert false in
       do_rec m.C.C.prev
 
     let write_after m =
@@ -198,6 +199,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             begin match C.E.loc_sd e with
             | Same -> do_rec nxt
             | Diff -> false
+            | Both -> assert false
             end
         end in
       do_rec m.C.C.next

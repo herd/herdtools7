@@ -77,6 +77,7 @@ module Make(C:Config) = struct
     | Mixed _ -> false
 
   let varatom_dir _d f = f None
+  let expand_atom atom f acc = f atom acc
 
   let merge_atoms a1 a2 = if a1 = a2 then Some a1 else None
 
@@ -113,6 +114,8 @@ module Make(C:Config) = struct
   | None| Some (Atomic|Reserve) -> v
   | Some (Mixed (sz,o)) ->
       ValsMixed.extract_value v sz o
+
+  let get_machine_feature _ = StringSet.empty
 
   include NoWide
 end

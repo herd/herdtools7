@@ -106,6 +106,7 @@ module Make
         | Atomic  -> true
 
       let varatom_dir _d f = f None
+      let expand_atom atom f acc = f atom acc
 
       let check_nt a sz =
         apply_mix (fun c _ -> Some c) a sz None
@@ -156,6 +157,8 @@ module Make
       include NoWide
 
       module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+
+      let get_machine_feature _ = StringSet.empty
 
       (**********)
       (* Fences *)
@@ -235,6 +238,7 @@ module Make
       let is_addr _ = assert false
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
+      let expand_dp_dir _ = assert false
 
       (*******)
       (* RWM *)
@@ -259,5 +263,6 @@ module Make
             let specials = xmms
             let specials2 = []
             let specials3 = []
+            module PteVal_gen = PteVal
           end)
     end

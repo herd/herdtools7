@@ -56,7 +56,10 @@ let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
+let get_machine_feature _ = StringSet.empty
+
 let varatom_dir _d f = f None
+let expand_atom atom f acc = f atom acc
 
 let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
@@ -246,6 +249,8 @@ let is_one_instruction _ = true
 let fold_rmw f r = let r = f Add r in  f Exch r
 
 let fold_rmw_compat f r = f Exch r
+
+let expand_rmw rmw = [rmw]
 
 let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
 | (None,_)|(_, None) -> None

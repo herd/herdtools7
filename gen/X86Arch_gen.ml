@@ -55,8 +55,11 @@ let fold_atom f k =  fold_non_mixed f k
 let worth_final _ = true
 
 let varatom_dir _d f = f None
+let expand_atom atom f acc = f atom acc
 
 let atom_to_bank _ = Code.Ord
+
+let get_machine_feature _ = StringSet.empty
 
 include NoMixed
 include NoWide
@@ -108,6 +111,7 @@ let is_ctrlr _ = assert false
 let is_addr _ = assert false
 let fst_dp _ = assert false
 let sequence_dp _ _ = assert false
+let expand_dp_dir _ = assert false
 
 (*******)
 (* RWM *)
@@ -127,4 +131,5 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)

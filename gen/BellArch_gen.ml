@@ -155,6 +155,8 @@ let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
+let get_machine_feature _ = StringSet.empty
+
 (* Atomic variation *)
 
 (* No atomic variation *)
@@ -193,6 +195,8 @@ let varatom_dir = match varatom with
         let at =  StringMap.find  (tr_dir d) va in
         fold_from at
       with Not_found -> no_varatom
+
+let expand_atom atom f acc = f atom acc
 
 let merge_atoms a1 a2 = if a2 = a1 then Some a1 else None
 
@@ -274,5 +278,6 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 end

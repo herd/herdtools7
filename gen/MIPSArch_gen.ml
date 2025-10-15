@@ -74,6 +74,11 @@ let ddw_default = Some DATA
 let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
 
+open Code
+let expand_dp_dir = function
+  | CTRL | ADDR -> [R;W]
+  | DATA -> [W]
+
 let is_ctrlr = function
   | CTRL -> true
   | _ -> false
@@ -104,5 +109,6 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 end

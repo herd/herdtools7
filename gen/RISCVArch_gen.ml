@@ -123,6 +123,7 @@ module Make
      | MO _|Mixed _ -> false
 
    let varatom_dir _ f k = f None k
+   let expand_atom atom f acc = f atom acc
 
    let merge_atoms a1 a2 = if a1=a2 then Some a1 else None
 
@@ -155,6 +156,8 @@ module Make
        ValsMixed.extract_value v sz o
 
    module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
+
+   let get_machine_feature _ = StringSet.empty
 
 (* End of atoms *)
 
@@ -228,6 +231,7 @@ include
 
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 
  end

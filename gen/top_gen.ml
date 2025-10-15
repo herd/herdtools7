@@ -200,6 +200,12 @@ let get_fence n =
   | n::ns ->
       if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
+      | E.Id ->
+          if E.is_pseudo n.C.edge then
+            (* and skip a pseudo annotation `n` in compilation *)
+            compile_proc pref chk loc_writes st p ro_prev init ns
+          else
+            Warn.fatal "Reach a non-pseudo annotation %s.\n" (C.str_node n)
       | E.Node _ ->
           let fs,ns =  collect_inserts ns in
           compile_proc
@@ -404,8 +410,10 @@ let max_set = IntSet.max_elt
               i,c::cs,f@fs
         with NoObserver -> build_observers p i x vss
 
-  let check_writes env_wide atoms =
-
+  (* The function decides/returns the initial value `i`.
+     - `env_wide` is a lookup table for the widths of locations
+     - `atoms` is a set of all atoms which affects on the initial value *)
+  let check_writes env_wide atoms proc init cos =
     let call_build_observers p i x vs =
       if StringMap.mem x env_wide then
         Warn.user_error "No observers on wide accesses"
@@ -456,8 +464,7 @@ let max_set = IntSet.max_elt
               match vs with
               | [] -> i,[],[]
               | [[(v,_)]] -> i,[],add_look_loc x v []
-              | [[(v1,_);(v2,_)]] ->
-                  let v = if O.same_loc then v1 else v2 in
+              | [[(_,_);(v,_)]] ->
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Avoid|Accept|Three|Four|Infinity
@@ -468,8 +475,7 @@ let max_set = IntSet.max_elt
                   end
               | _ ->
                   let vs_flat = List.flatten vs in
-                  let v,_ = if O.same_loc then List.hd vs_flat
-                            else Misc.last vs_flat in
+                  let v,_ = Misc.last vs_flat in
                   begin match O.do_observers with
                   | Local -> i,[],add_look_loc x v []
                   | Three ->
@@ -494,7 +500,7 @@ let max_set = IntSet.max_elt
           let i,cs,fs =
             check_rec (p+List.length c) i xvs in
           i,c@cs,f@fs in
-    check_rec
+    check_rec proc init cos
 
   let compile_store st p init n =
     let ro,init,c,st = call_emit_access st p init n in
@@ -664,7 +670,7 @@ let max_set = IntSet.max_elt
     let env_pair =
       if StringMap.is_empty env_wide then StringSet.empty
       else C.get_pair n in
-    let splitted =  C.split_procs n in
+    let splitted = C.split_procs n in
     (* Split before, as  proc numbers added by side effet.. *)
     let cos0 = C.coherence n in
     let lsts = U.last_map cos0 in
@@ -979,22 +985,22 @@ let tr_labs m env =
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
-  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) ?(init_pte=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
-  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
-  let init = tr_labs m_labs init in
-  let coms = String.concat " " coms in
-  let info =
-    let myinfo =
-      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
-        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
-    let myinfo = match scope with
-    | None -> myinfo
-    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
-    let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo@archinfo in
+  let init = (tr_labs m_labs init) @ List.map
+  (* Add the init pte value `init_pte` into `init`, so it will print
+  in the pre-condition of the final litmus test. *)
+    ( fun (loc, pte) -> (A.Loc ("pte_" ^ loc), Some (A.P pte)) ) init_pte in
+  let info = info @
+    ( Comp.get_archinfo c
+    |> do_add_info "Orig" com
+    |> do_add_info "Com" (String.concat " " coms)
+    |> do_add_info "Prefetch" (if do_self then "" else prf)
+    |> do_add_info "Scopes"
+      ( match scope with | None -> "" | Some st -> BellInfo.pp_scopes st )
+    |> do_add_info "Generator" O.generator ) in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
@@ -1003,8 +1009,8 @@ let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
-    let es,c,init = C.make es in
-    test_of_cycle name ?com ?info ?check ?scope ~init es c
+    let es,c,init,init_pte = C.make es in
+    test_of_cycle name ?com ?info ?check ?scope ~init ~init_pte es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
