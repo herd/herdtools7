@@ -194,6 +194,7 @@ We now present the list of derivations for the ASL Grammar where the start non-t
 The derivations allow certain parse trees where lists may have invalid sizes.
 Those parse trees must be rejected in a later phase.
 
+\hypertarget{def-tunops}{}
 Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with \\
 $\precedence{\Tunops}$.
 This is a precedence annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
@@ -731,8 +732,8 @@ reduce-reduce conflicts).
 The priority of a grammar derivation is defined as the priority of its rightmost token.
 Derivations that do not contain tokens do not require a priority as they do not induce shift-reduce conflicts.
 
-The table below assigns priorities to tokens in increasing order, starting from the lowest priority (for $\Telse$)
-to the highest priority (for $\Tdot$).
+The table below assigns priorities to tokens in descending order, starting from the highest priority (for $\Tdot$)
+to the lowest priority (for $\Telse$).
 When a shift-reduce conflict arises during the LR(1) grammar construction
 it resolve in favor of the action (shift or reduce) associated with the derivation that has the higher priority.
 If two derivations have the same priority due to them both having the same rightmost token,
@@ -748,17 +749,17 @@ which is never returned by the scanner.
 
 \begin{center}
 \begin{tabular}{ll}
-\textbf{Terminals} & \textbf{Associativity}\\
+\textbf{Tokens} & \textbf{Associativity}\\
 \hline
-$\Telse$ & $\nonassoc$\\
-$\Tbor$, $\Tband$, $\Timpl$, $\Tas$ & $\leftassoc$\\
-$\Teqop$, $\Tneq$ & $\leftassoc$\\
-$\Tgt$, $\Tgeq$, $\Tlt$, $\Tleq$ & $\nonassoc$\\
-$\Tplus$, $\Tminus$, $\Tor$, $\Txor$, $\Tand$, $\Tcoloncolon$, $\Tplusplus$ & $\leftassoc$\\
-$\Tmul$, $\Tdiv$, $\Tdivrm$, $\Trdiv$, $\Tmod$, $\Tshl$, $\Tshr$ & $\leftassoc$\\
-$\Tpow$ & $\leftassoc$\\
-$\Tunops$ & $\nonassoc$\\
-$\Tin$ & $\nonassoc$\\
-$\Tdot$, $\Tlbracket$, $\Tllbracket$ & $\leftassoc$
+$\Tdot$, $\Tlbracket$, $\Tllbracket$                                          & $\leftassoc$\\
+$\Tin$                                                                        & $\nonassoc$\\
+$\Tunops$                                                                     & $\nonassoc$\\
+$\Tpow$                                                                       & $\leftassoc$\\
+$\Tmul$, $\Tdiv$, $\Tdivrm$, $\Trdiv$, $\Tmod$, $\Tshl$, $\Tshr$              & $\leftassoc$\\
+$\Tplus$, $\Tminus$, $\Tor$, $\Tand$, $\Txor$, $\Tcoloncolon$, $\Tplusplus$   & $\leftassoc$\\
+$\Tgt$, $\Tgeq$, $\Tlt$, $\Tleq$                                              & $\nonassoc$\\
+$\Teqop$, $\Tneq$                                                             & $\leftassoc$\\
+$\Tbor$, $\Tband$, $\Timpl$, $\Tbeq$, $\Tas$                                  & $\leftassoc$\\
+$\Telse$                                                                      & $\nonassoc$
 \end{tabular}
 \end{center}

@@ -569,6 +569,7 @@ derivation
 derivations
 derive
 derived
+descending
 describe
 described
 describes

@@ -363,11 +363,14 @@ $x\ \opone\ y\ \optwo\ z$, is interpreted as
 $(x\ \opone\ y)\ \optwo\ z$
 if $\opone$ has higher precedence than $\optwo$ and as $x\ \opone\ (y\ \optwo\ z)$ if $\opone$ has lower precedence than $\optwo$.
 If $\opone$ is associative and $\opone$ = $\optwo$ then the expression may be interpreted as either
-$(x\ \opone\ y)\ \optwo\ z$ or as $x \opone\ (y\ \optwo\ z)$ since there is no difference.
+$(x\ \opone\ y)\ \optwo\ z$ or as $x\ \opone\ (y\ \optwo\ z)$ since there is no difference.
 Otherwise it is a static operator precedence error (\BinopPrecedence).
 See \ASTRuleRef{EBinop} for the formal details.
 
-The operator classes and precedence order is defined by the following table:
+The operator classes and precedence order is defined by the following table
+(a subset of the table in \secref{PriorityAndAssociativity},
+which contains tokens that are not operators, but are needed for parsing disambiguation):
+
 \begin{center}
 \begin{tabular}{lll}
 \hline
@@ -376,11 +379,11 @@ The operator classes and precedence order is defined by the following table:
 7 (Highest) & \textbf{Membership} & \Tin\\
 6 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
 5 & \textbf{Power}                & \Tpow\\
-4 & \textbf{Mul-Div-Shift}        & \Tmul, \Tdiv, \Trdiv, \Tdivrm, \Tmod, \Tshl, \Tshr\\
-3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tand, \Tor, \Txor, \Tcoloncolon, \Tplusplus\\
+4 & \textbf{Mul-Div-Shift}        & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
+3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
 2 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
-1 & \textbf{Equality-Inequality}  & \Teqop, \Tneq\\
-0 & \textbf{Boolean}              & \Tband, \Tbor, \Timpl, \Tbeq\\
+1 & \textbf{(In-)Equality}        & \Teqop, \Tneq\\
+0 & \textbf{Boolean}              & \Tbor, \Tband, \Timpl, \Tbeq\\
 \hline
 \end{tabular}
 \end{center}
