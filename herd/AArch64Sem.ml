@@ -1353,6 +1353,8 @@ module Make
 
       let set_elr_el1 v ii =
         write_reg AArch64Base.elr_el1 v ii
+      and set_esr_el1 v ii =
+        write_reg AArch64Base.esr_el1 v ii
 
       let lift_fault_memtag mfault mm dir ii =
         let lbl_v = get_instr_label ii in
@@ -3612,13 +3614,18 @@ Arguments:
              fun () -> read_reg_ord AArch64.elr_el1 ii >>=
              eret_to_addr
 
-        | I_SVC _ ->
+        | I_SVC imm ->
           let (>>!) = M.(>>!) in
           let ft = Some FaultType.AArch64.SupervisorCall in
           let m_fault = mk_fault None Dir.R Annot.N ii ft None in
           let lbl_ret = get_link_addr test ii in
-          m_fault >>| set_elr_el1 lbl_ret ii
-          >>! B.syscall [AArch64Base.elr_el1, lbl_ret]
+          let esr_val =
+            Int64.logor
+              (Int64.shift_left 0b0101011L  25) (* EC:IL for SVC, left shifted by ISS size *)
+              (Int64.of_int imm)
+            |> V.Cst.Scalar.of_int64 |> V.scalarToV in
+          m_fault >>| (set_elr_el1 lbl_ret ii >>| set_esr_el1 esr_val ii)
+          >>! B.syscall [(elr_el1, lbl_ret); (esr_el1, esr_val);]
 
         | I_CBZ(_,r,l) ->
             (read_reg_ord r ii)
