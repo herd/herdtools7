@@ -38,22 +38,31 @@ func PhysMemRead{N}(
   accdesc:AccessDescriptor
 ) => (PhysMemRetStatus, bits(N*8))
 begin
-  var eventaccess : EventAccess;
-  if IsVirtual(desc.vaddress) then
-    eventaccess = PHY;
-  else
-    eventaccess = PHY_PTE;
-  end;
-  CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), N);
-  let value =
-    read_memory_gen{N*8}(desc.paddress.address,accdesc,eventaccess);
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
     merrorstate = ErrorState_CE,  // ??
     store64bstatus = Zeros{64}
   };
-  return (ret_status, value);
+
+  if accdesc.acctype == AccessType_GPR then
+    var eventaccess : EventAccess;
+    if IsVirtual(desc.vaddress) then
+      eventaccess = PHY;
+    else
+      eventaccess = PHY_PTE;
+    end;
+    CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), N);
+    let value = read_memory_gen{N*8}(desc.paddress.address,accdesc,eventaccess);
+    return (ret_status, value);
+
+  elsif accdesc.acctype == AccessType_TTW then
+
+    let value = ReadPtePrimitive{N*8}(desc.paddress.address);
+    return (ret_status, value);
+
+  else unreachable;
+  end;
 end;
 
 // =========================================

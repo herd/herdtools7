@@ -37,24 +37,6 @@ begin
   end;
 end;
 
-// FetchDescriptor()
-// =================
-// Fetch a translation table descriptor
-
-func FetchDescriptor(ee:bit, walkaddress:AddressDescriptor,
-                     walkacces:AccessDescriptor,
-                     fault_in:FaultRecord,N:integer)
-  => (FaultRecord, bits(N))
-    // 32-bit descriptors for AArch32 Short-descriptor format
-    // 64-bit descriptors for AArch64 or AArch32 Long-descriptor format
-    // 128-bit descriptors for AArch64 when FEAT_D128 is set and {V}TCR_ELx.d128 is set
-begin
-//   __DEBUG__(walkaddress.paddress.address);
-   let desc = ReadPtePrimitive(walkaddress.paddress.address);
-//   __DEBUG__(walkaddress.paddress.address,desc);
-   return (fault_in,desc);
-end;
-
 // AArch64.S1SLTTEntryAddress()
 // ============================
 // Compute the first stage 1 translation table descriptor address within the
