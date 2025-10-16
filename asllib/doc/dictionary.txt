@@ -594,6 +594,7 @@ determined
 determines
 determining
 deterministic
+deterministically
 dev
 development
 diagnostic
@@ -1346,6 +1347,7 @@ never
 new
 newline
 newlines
+newly
 next
 no
 node
@@ -2050,6 +2052,7 @@ team
 technical
 technically
 technique
+temporary
 term
 terminal
 terminals
@@ -2069,6 +2072,7 @@ that
 the
 their
 them
+themselves
 then
 theory
 there
