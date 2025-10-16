@@ -258,6 +258,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "_PC" ^^= litbv 64 ii.A.addr;
               ])
 
+      (* Atomic instructions *)
       | I_SWP (v, t, rs, rt, rn) ->
           Some
             ( "ldst/memop/SWP_32_memop.opn",
@@ -304,6 +305,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "release" ^= litb (decode_release rmw);
                 "tagchecked" ^= litb (rn <> SP);
            ])
+
+      (* Register manipulations *)
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
           let fname =
             match opsel with
@@ -596,6 +599,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                "m" ^= reg rm;
                "datasize" ^= variant v;
                "shift_type" ^= var shift_type;])
+
+        (* Load, stores ... *)
         | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
         | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
           let fname =
@@ -763,6 +768,49 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rn_unknown" ^= litb false;
                   "acqrel" ^= litb acqrel;
                 ] )
+      | I_LDP (pa, v, rt, rt2, rn, (k, idx))
+      | I_STP (pa, v, rt, rt2, rn, (k, idx))
+        ->
+          let wback, postindex =
+            match idx with
+            | Idx -> (false, false)
+            | PreIdx -> (true, false)
+            | PostIdx -> (true, true)
+          in
+          let fname =
+            match pa, ii.A.inst with
+            | Pa, I_LDP _ -> "ldstpair_post/LDP_32_ldstpair_post.opn"
+            | Pa, I_STP _ -> "ldstpair_post/STP_32_ldstpair_post.opn"
+            | PaI, I_LDP _ -> "ldiappstilp/LDIAPP_32LE_ldiappstilp.opn"
+            | PaI, I_STP _ -> "ldiappstilp/STILP_32SE_ldiappstilp.opn"
+            | PaN, I_LDP _ -> "ldstnapair_offs/LDNP_32_ldstnapair_offs.opn"
+            | PaN, I_STP _ -> "ldstnapair_offs/STNP_32_ldstnapair_offs.opn"
+            | _ -> assert false
+          in
+          let acqrel =
+            match ii.A.inst with
+            | I_LDP _ -> pa = PaI && rt != ZR && rt2 != ZR
+            | _ -> false
+          in
+          Some
+            ( "ldst/" ^ fname,
+              stmt
+              [
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "ispair" ^= litb true;
+                  "t" ^= reg rt;
+                  "t2" ^= reg rt2;
+                  "n" ^= reg rn;
+                  "datasize" ^= variant v;
+                  "nontemporal" ^= litb (pa = PaN);
+                  "offset" ^= litbv 64 k;
+                  "tagchecked" ^= litb (wback || rn <> SP);
+                  "acqrel" ^= litb acqrel;
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ])
+
       | I_FENCE ISB -> Some ("control/barriers/ISB_BI_barriers.opn", stmt [])
       | I_FENCE (DMB (dom, btyp)) ->
           Some
