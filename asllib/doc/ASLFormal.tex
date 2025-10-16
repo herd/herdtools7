@@ -439,20 +439,21 @@ We use the following rule notation, where $P_{1..k}$ are the rule premises and $
 For example, the rule \TypingRuleRef{ELit} has one premise:
 \begin{mathpar}
 \inferrule{
-  \annotateliteral(\vv) \typearrow \vt
+  \annotateliteral(\tenv, \vv) \typearrow \vt
 }{
-  \annotateexpr(\tenv, \ELiteral(\vv)) \typearrow (\vt, \ELiteral(\vv))
+  \annotateexpr(\tenv, \ELiteral(\vv)) \typearrow (\vt, \ELiteral(\vv), \emptyset)
 }
 \end{mathpar}
 
-and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has three premises:
+and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has four premises:
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veone') \\\\
-  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwo') \\\\
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt
+  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone)\\
+  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo)\\
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt\\
+  \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateexpr(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veone', \vetwo'))
+  \annotateexpr(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veone', \vetwo'), \vses)
 }
 \end{mathpar}
 
