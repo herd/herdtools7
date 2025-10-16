@@ -885,7 +885,7 @@ module Make
         | Q|XQ -> XQ
         | L|XL -> XL
         | X|N  -> X
-        | NoRet|S|NTA -> X (* Does it occur? *)
+        | XNoRet|S|NTA -> X (* Does it occur? *)
 
       let an_pte =
         let open Annot in
@@ -894,7 +894,7 @@ module Make
         | Q|XQ -> Q
         | L|XL -> L
         | X|N -> N
-        | NoRet|S|NTA -> N
+        | XNoRet|S|NTA -> N
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -2084,7 +2084,7 @@ Arguments:
             let r2 = mv
             and w2 v = write_reg_sz sz r2 v ii
             and r1 a =
-              if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+              if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
               else rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
@@ -2108,7 +2108,7 @@ Arguments:
         let mop_fail_no_wb ac ma _ =
           (* CAS fails, there is no Explicit Write Effect *)
           let read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else do_read_mem_ret sz an aexp ac a ii in
           let noact _ _ = M.mk_singleton_es Act.NoAction ii in
           M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs read_mem
@@ -2118,7 +2118,7 @@ Arguments:
           (* CAS fails, there is an Explicit Write Effect writing back *)
           (* the value that is already in memory                       *)
           let read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
           M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs
@@ -2130,7 +2130,7 @@ Arguments:
               as this code is not executed in morello mode *)
           let read_rt = mv
           and read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs read_rt write_rs
@@ -2300,7 +2300,7 @@ Arguments:
             let read_mem =
               if noret then
                 fun sz ->
-                do_read_mem_ret sz Annot.NoRet aexp ac
+                do_read_mem_ret sz Annot.XNoRet aexp ac
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
