@@ -1073,10 +1073,7 @@ module Make
         >>= fun v -> write_reg_op op sz rd v ii
         >>= fun () -> B.nextT
 
-      let do_read_mem sz  = do_read_mem_op (uxt_op sz) sz
-
-      let read_mem_acquire sz = do_read_mem sz Annot.A
-      let read_mem_acquire_pc sz = do_read_mem sz Annot.Q
+      let do_read_mem sz = do_read_mem_op (uxt_op sz) sz
 
       let read_mem_reserve sz an anexp ac rd a ii =
         let m a =
@@ -1805,12 +1802,12 @@ Arguments:
              end) =
         struct
 
-          let ldp_wback sz an rd1 rd2 rs k post ii =
+          let ldp_wback sz pre_an an rd1 rd2 rs k post ii =
             let m =
               M.delay_kont "ldp_wback"
                 (read_reg_addr rs ii >>= add_if (not post) k)
                 (fun a_virt ma ->
-                  do_ldr rs sz Annot.N
+                  do_ldr rs sz pre_an
                     (fun ac a ->
                       (add_if post k a_virt >>=
                        fun b -> write_reg rs b ii) >>|
@@ -1830,13 +1827,15 @@ Arguments:
             else m
 
           let ldp tnt sz rd1 rd2 rs (k,md) ii =
-            let an =
+            let pre_an, an =
               let open AArch64 in
               let open Annot in
-              match tnt with
-              | Pa -> N
-              | PaN -> NTA
-              | PaI -> Q in
+              match (rd1, rd2, tnt) with
+              (* If rd1 or rd2 is NoRet, no Acquire nor AcquirePC *)
+              | (ZR, ZR, _) -> NoRet, NoRet
+              | (_, _, Pa) -> N, N
+              | (_, _, PaN) -> N, NTA
+              | (_, _, PaI) -> N, Q in
             let open AArch64 in
             match md with
             | Idx ->
@@ -1844,7 +1843,7 @@ Arguments:
                   match an with
                   | Annot.Q -> M.seq_mem
                   | _ -> (>>|) in
-                do_ldr rs sz Annot.N
+                do_ldr rs sz pre_an
                   (fun ac a ->
                     Read.read_mem sz an aexp ac rd1 a ii >>|
                 begin
@@ -1853,9 +1852,9 @@ Arguments:
                 end)
                   (get_ea_idx rs k ii) ii
             | PostIdx ->
-                ldp_wback sz an rd1 rd2 rs k true ii
+                ldp_wback sz pre_an an rd1 rd2 rs k true ii
             | PreIdx ->
-                ldp_wback sz an rd1 rd2 rs k false ii
+                ldp_wback sz pre_an an rd1 rd2 rs k false ii
         end
 
       let ldp =
@@ -1877,7 +1876,12 @@ Arguments:
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let open Annot in
-        let an = match t with XP -> X | AXP -> XA in
+        let an =
+          match rd1, rd2, t with
+          | ZR, ZR, _ -> XNoRet
+          | _, _, XP -> X
+          | _, _, AXP -> XA
+        in
         do_ldr rs sz an
           (fun ac a ->
             read_mem_reserve sz an aexp ac rd1 a ii >>||
@@ -1889,21 +1893,22 @@ Arguments:
 
       and ldar sz t rd rs ii =
         let open AArch64 in
-        let an = match t with
-        | XX -> Annot.X
-        | AA -> Annot.A
-        | AX -> Annot.XA
-        | AQ -> Annot.Q in
+        let an = match rd, t with
+        | ZR, (AX | XX) -> Annot.XNoRet
+        | ZR, (AA | AQ) -> Annot.NoRet
+        | _, XX -> Annot.X
+        | _, AA -> Annot.A
+        | _, AX -> Annot.XA
+        | _, AQ -> Annot.Q
+        in
+        let read sz = function
+          | Annot.(A | Q | NoRet) -> do_read_mem sz an
+          | Annot.(X | XA | XNoRet) -> read_mem_reserve sz an
+          | _ -> assert false
+        in
         do_ldr rs sz an
-          (fun ac a ->
-            let read =
-              match t with
-              | XX -> read_mem_reserve sz Annot.X
-              | AA -> read_mem_acquire sz
-              | AX -> read_mem_reserve sz Annot.XA
-              | AQ -> read_mem_acquire_pc sz in
-            read aexp ac rd a ii)
-          (read_reg_addr rs ii)  ii
+          (fun ac a -> read sz an aexp ac rd a ii)
+          (read_reg_addr rs ii) ii
 
       let str_simple sz rs rd m_ea ii =
         do_str rd

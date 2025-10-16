@@ -315,7 +315,7 @@ module Make (Conf : Config) = struct
       in
       let an =
         if (not is_read) && is_release then is_ax XL L
-        else if is_noret then XNoRet
+        else if is_noret then is_ax XNoRet NoRet
         else if is_read && is_acquiresc then is_ax XA A
         else if is_read && is_acquirepc then is_ax XQ Q
         else is_ax X N
