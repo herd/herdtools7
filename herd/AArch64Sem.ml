@@ -885,7 +885,8 @@ module Make
         | Q|XQ -> XQ
         | L|XL -> XL
         | X|N  -> X
-        | XNoRet|S|NTA -> X (* Does it occur? *)
+        | NoRet|XNoRet -> XNoRet
+        | S|NTA -> X (* Does it occur? *)
 
       let an_pte =
         let open Annot in
@@ -894,7 +895,8 @@ module Make
         | Q|XQ -> Q
         | L|XL -> L
         | X|N -> N
-        | XNoRet|S|NTA -> N
+        | NoRet|XNoRet -> NoRet
+        | S|NTA -> N
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -1751,15 +1753,16 @@ Arguments:
 (* Ordinary loads *)
         let open AArch64Base in
         let open MemExt in
+        let an = match rd with ZR -> Annot.NoRet | _ -> Annot.N in
         let mop ac a =
-          do_read_mem_op op sz Annot.N aexp ac rd a ii in
+          do_read_mem_op op sz an aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
-           do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
+           do_ldr rs sz an mop (get_ea_idx rs k ii) ii
         | Imm (k,PreIdx) ->
-            do_ldr rs sz Annot.N mop (get_ea_preindexed rs k ii) ii
+            do_ldr rs sz an mop (get_ea_preindexed rs k ii) ii
         | Reg (v,ri,sext,s) ->
-           do_ldr rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
+           do_ldr rs sz an mop (get_ea_reg rs v ri sext s ii) ii
         | Imm (k,PostIdx) ->
            (* This case differs signicantly from others,
             * as update of base address register is part
@@ -1769,10 +1772,10 @@ Arguments:
            M.delay_kont "ldr_postindex"
              (read_reg_addr rs ii)
              (fun a_virt ma ->
-               do_ldr rs sz Annot.N
+               do_ldr rs sz an
                  (fun ac a ->
                    read_mem_postindexed
-                     a_virt op sz Annot.N aexp ac rd rs k a ii)
+                     a_virt op sz an aexp ac rd rs k a ii)
                  ma ii)
         | _ -> assert false
 
