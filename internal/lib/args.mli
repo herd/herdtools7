@@ -41,6 +41,21 @@ val npar : int option ref -> spec
 
 val nohash : bool ref -> spec
 
+(** [checkobs b] Build an Arg.spec for setting b to Obs, with documentation
+    as limited test success check. *)
+
+val checkobs : TestHerd.check ref -> spec
+
+(** [checkstates b] Build an Arg.spec for setting b to Sta, with documentation
+    as test success check limited to final states equality. *)
+
+val checkstates : TestHerd.check ref -> spec
+
+(** [verbose b] Build an Arg.spec for setting b to true, with documentation
+    as enable some diagnostics. *)
+
+val verbose : bool ref -> spec
+
 
 (** Validators. *)
 

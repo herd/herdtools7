@@ -628,8 +628,10 @@ module
   let check_symbolic_v =
     function
     | Val (Constant.Symbolic _) -> v_true
-    | Val _ as v ->
-       Warn.user_error "Non symbolic address: %s" (pp_v v)
+    | Val cst ->
+       Warn.user_error
+         "Non symbolic address: [%s]"
+         (Cst.pp_v @@ Constant.map_scalar Cst.Scalar.printable cst)
     | Var _ -> raise Undetermined
 
   let andnot x1 x2 =

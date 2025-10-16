@@ -3,3 +3,5 @@
  (libraries herdtools str unix)
  (modes native)
  (wrapped false))
+
+(ocamllex lexState)

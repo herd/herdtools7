@@ -2101,7 +2101,9 @@ let match_reg_events es =
             -> ()
         | Some loc ->
             Warn.user_error "Non-symbolic memory access found on '%s'"
-              (A.pp_location loc)
+              (A.map_global
+                 (V.map_scalar V.Cst.Scalar.printable) loc
+               |> A.pp_location)
         | None -> assert false)
         (E.mem_of es.E.events)
 

@@ -22,13 +22,20 @@ let rec to_list k =
   if k+1 >= Array.length Sys.argv then []
   else Sys.argv.(k)::to_list (k+1)
 
-let com = Sys.argv.(1)
-let args = to_list 2
+let verbose =
+  match Sys.argv.(1) with
+  | "-verbose" -> true
+  | _ -> false
+
+let comidx = if verbose then 2 else 1
+let com = Sys.argv.(comidx)
+let args = to_list (comidx+1)
 
 let out_name = TestHerd.outname litmus
 and err_name = TestHerd.errname litmus
 
 let cat p out_chan line =
+  if verbose && TestHerd.check_tags line then prerr_endline line ;
   if p line then Printf.fprintf out_chan "%s\n" line
 
 
