@@ -1,4 +1,4 @@
-(ocamllex lexUtil lexLog_gen lexConf_gen autoLex)
+(ocamllex lexLog_gen lexConf_gen autoLex)
 
 (rule
  (copy ../Version.ml Version.ml))
@@ -26,14 +26,11 @@
   classify7
   diy7
   norm7)
- (libraries herdtools unix)
+ (libraries herdtools unix gen_common)
  (modules_without_implementation
   archLoc
   archRun
   arch_gen
-  atom
   autoInterpret
   builder
-  fence
-  XXXCompile_gen
-  rmw))
+  XXXCompile_gen))
