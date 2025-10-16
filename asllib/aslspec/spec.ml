@@ -480,15 +480,30 @@ module Check = struct
     (** [subsumed id_to_defining_node sub super] conservatively tests whether
         all values in the domain of [sub] are also in the domain of [super]. *)
     let rec subsumed id_to_defining_node sub super =
+      let equiv_singleton_tuple term =
+        match term with
+        | LabelledTuple
+            { label_opt = None; components = [ (_, referenced_term) ] } ->
+            referenced_term
+        | _ -> term
+      in
+      let sub = equiv_singleton_tuple sub in
+      let super = equiv_singleton_tuple super in
       match (sub, super) with
-      | Label sub_label, Label super_label -> sub_label = super_label
+      | _, Label super_label ->
+          let same_label =
+            match sub with
+            | Label sub_label -> String.equal sub_label super_label
+            | _ -> false
+          in
+          same_label
+          ||
+          (* The case where [super_label] references a type. *)
+          subsumed_term_type id_to_defining_node sub super_label
       | ( Operator { op = sub_op; term = _, sub_term },
           Operator { op = super_op; term = _, super_term } ) ->
           operator_subsumed sub_op super_op
           && subsumed id_to_defining_node sub_term super_term
-      | _, Label super_label ->
-          (* The case where [super_label] references a type. *)
-          subsumed_term_type id_to_defining_node sub super_label
       | ( LabelledTuple
             { label_opt = sub_label_opt; components = sub_components },
           LabelledTuple
@@ -513,7 +528,9 @@ module Check = struct
           && subsumed id_to_defining_node sub_to_term super_to_term
       | ConstantsSet sub_names, ConstantsSet super_names ->
           List.for_all (fun name -> List.mem name super_names) sub_names
-      | _ -> false
+      | _ ->
+          (* false is safely conservative. *)
+          false
 
     (** [subsumed_term_type id_to_defining_node sub_term typename] checks if
         [sub_term] is subsumed by the type term defined by [typename] in
@@ -531,13 +548,13 @@ module Check = struct
     (** [check_subsumed id_to_defining_node sub super] checks that [sub] is
         subsumed by [super]. If not, a [SpecError] is raised. *)
     let check_subsumed id_to_defining_node sub super =
-      if not (subsumed id_to_defining_node sub super) then
+      if subsumed id_to_defining_node sub super then ()
+      else
         let msg =
           Format.asprintf "The type term `%a` is not subsumed by `%a`"
             PP.pp_type_term sub PP.pp_type_term super
         in
         raise (SpecError msg)
-      else ()
 
     (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
          super_terms] checks that each term in [sub_terms] is subsumed by the
@@ -547,7 +564,9 @@ module Check = struct
         the corresponding term in [super_terms], a [SpecError] is raised. *)
     let check_subsumed_terms_lists id_to_defining_node term label sub_terms
         super_terms =
-      if List.compare_lengths sub_terms super_terms <> 0 then
+      if List.compare_lengths sub_terms super_terms = 0 then
+        List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
+      else
         let msg =
           Format.asprintf
             "The type term `%a` cannot be instantiated since it has %i type \
@@ -556,7 +575,6 @@ module Check = struct
             (List.length super_terms)
         in
         raise (SpecError msg)
-      else List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
 
     (** [is_constant id_to_defining_node id] checks if [id] is either defined as
         a constant directly or as a type variant with a label. *)
