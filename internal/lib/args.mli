@@ -41,6 +41,11 @@ val npar : int option ref -> spec
 
 val nohash : bool ref -> spec
 
+(** [checkobs b] Build an Arg.spec for setting b to true, with documentation
+    as limited test success check. *)
+
+val checkobs : bool ref -> spec
+
 
 (** Validators. *)
 

@@ -36,6 +36,10 @@ let nohash b =
   "-nohash",Arg.Unit (fun () -> b := true),
   "do not check hashes"
 
+let checkobs b =
+  "-checkobs",Arg.Unit (fun () -> b := true),
+  "limit test validity to observation: Never/Sometimes/Always"
+
 (** Validators. *)
 
 let validate check msg (key, spec, doc) =

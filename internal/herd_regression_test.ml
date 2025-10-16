@@ -30,6 +30,7 @@ type flags = {
   variants   : string list ;
   conf       : path option ;
   nohash     : bool ;
+  checkobs   : bool ;
 }
 
 
@@ -131,7 +132,8 @@ let show_tests_par j flags =
 
   let run_tests_seq flags =
     let test_passes l =
-      TestHerd.herd_output_matches_expected ~nohash:flags.nohash ~bell:None ~cat:None
+      TestHerd.herd_output_matches_expected
+        ~checkobs:flags.checkobs ~nohash:flags.nohash ~bell:None ~cat:None
         ~conf:flags.conf
         ~variants:flags.variants
         ~libdir:flags.libdir
@@ -233,11 +235,12 @@ let () =
   let variants = ref [] in
   let j = ref None in
   let nohash = ref false in
+  let checkobs = ref false in
 
   let anon_args = ref [] in
 
   let options = [
-    Args.npar j; Args.nohash nohash;
+    Args.npar j;  Args.nohash nohash; Args.checkobs checkobs;
     Args.is_file ("-herd-path",   Arg.Set_string herd,           "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,         "path to herd libdir") ;
     Args.is_dir  ("-litmus-dir",  Arg.Set_string litmus_dir,     "path to directory of .litmus files to test against") ;
@@ -266,6 +269,7 @@ let () =
     conf = !conf ;
     variants = !variants ;
     nohash = !nohash ;
+    checkobs = !checkobs ;
     } in
   let j = !j in
   match !anon_args with
