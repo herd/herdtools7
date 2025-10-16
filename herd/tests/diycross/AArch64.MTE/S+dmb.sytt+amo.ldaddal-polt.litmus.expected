@@ -1,13 +1,13 @@
 Test S+dmb.sytt+amo.ldaddal-polt Allowed
 States 4
-1:X4=0; [y]=1; [tag(x)]=:blue;  ~Fault(P1:L00,y);
-1:X4=0; [y]=1; [tag(x)]=:blue; Fault(P1:L00,y:red,TagCheck);
-1:X4=0; [y]=1; [tag(x)]=:red;  ~Fault(P1:L00,y);
-1:X4=0; [y]=1; [tag(x)]=:red; Fault(P1:L00,y:red,TagCheck);
+1:X4=1824; [y]=1952; [tag(x)]=:blue;  ~Fault(P1:L00,y);
+1:X4=1824; [y]=1952; [tag(x)]=:blue; Fault(P1:L00,y:red,TagCheck);
+1:X4=1824; [y]=1952; [tag(x)]=:red;  ~Fault(P1:L00,y);
+1:X4=1824; [y]=1952; [tag(x)]=:red; Fault(P1:L00,y:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 3
-Condition exists ([tag(x)]=:blue /\ [y]=1 /\ 1:X4=0 /\ not (fault(P1:L00,y)))
+Condition exists ([tag(x)]=:blue /\ [y]=1952 /\ 1:X4=1824 /\ not (fault(P1:L00,y)))
 Observation S+dmb.sytt+amo.ldaddal-polt Sometimes 1 3
-Hash=877c64a3e68c8748e9ba17e782fb7beb
+Hash=76e04041762603b457d3df938845d044
 
