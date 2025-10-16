@@ -59,3 +59,108 @@
             ^^^
   ASL Grammar error: Cannot parse. Did you mean `==>`?
   [1]
+
+  $ aslref binop-same-precedence.asl
+  File binop-same-precedence.asl, line 1, characters 8 to 13:
+  let x = a + b - c;
+          ^^^^^
+  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same
+    precedence - parenthesise to disambiguate.
+  [1]
+
+  $ aslref empty-record.asl
+  File empty-record.asl, line 1, characters 10 to 16:
+  type X of record;
+            ^^^^^^
+  ASL Grammar error: Cannot parse. Empty record types must be declared with
+    empty field list `{-}`.
+  [1]
+
+  $ aslref global-ignored.asl
+  File global-ignored.asl, line 1, characters 4 to 5:
+  var - = 1;
+      ^
+  ASL Grammar error: Cannot parse. A global declaration must declare a name.
+  [1]
+
+  $ aslref global-let-comma.asl
+  File global-let-comma.asl, line 1, characters 5 to 6:
+  let x, y : integer = 1;
+       ^
+  ASL Grammar error: Cannot parse. A global `let` declaration must introduce a
+    single name and have an initialising expression:
+      let name = initial_expression;
+      let name : type = initial_expression;
+    
+  [1]
+
+  $ aslref local-let-no-parentheses.asl
+  File local-let-no-parentheses.asl, line 3, characters 7 to 8:
+    let a, b = foo();
+         ^
+  ASL Grammar error: Cannot parse. A local `let` declaration must be of one of
+    the following forms:
+      let name = expression;
+      let name : type = expression;
+      let (name1, -, ...) = expression;
+      let (name1, -, ...) : type = expression;
+    
+  [1]
+
+  $ aslref multiple-configs.asl
+  File multiple-configs.asl, line 1, characters 8 to 9:
+  config x, y : integer = 1;
+          ^
+  ASL Grammar error: Cannot parse. A `config` declaration must introduce a
+    single name, and have both a type annotation and initialising expression:
+      config name : type = initial_expression;
+    
+  [1]
+
+  $ aslref multiple-constants.asl
+  File multiple-constants.asl, line 1, characters 10 to 11:
+  constant x, y : integer = 1;
+            ^
+  ASL Grammar error: Cannot parse. A `constant` declaration must introduce a
+    single name and have an initialising expression:
+      constant name = initial_expression;
+      constant name : type = initial_expression;
+    
+  [1]
+
+  $ aslref single-biimplication.asl
+  File single-biimplication.asl, line 1, characters 10 to 13:
+  let x = a <-> b;
+            ^^^
+  ASL Grammar error: Cannot parse. Did you mean `<=>`?
+  [1]
+
+  $ aslref uninitialised-config.asl
+  File uninitialised-config.asl, line 1, characters 18 to 19:
+  config x : integer;
+                    ^
+  ASL Grammar error: Cannot parse. A `config` declaration must introduce a
+    single name, and have both a type annotation and initialising expression:
+      config name : type = initial_expression;
+    
+  [1]
+
+  $ aslref uninitialised-constant.asl
+  File uninitialised-constant.asl, line 1, characters 20 to 21:
+  constant x : integer;
+                      ^
+  ASL Grammar error: Cannot parse. A `constant` declaration must introduce a
+    single name and have an initialising expression:
+      constant name = initial_expression;
+      constant name : type = initial_expression;
+    
+  [1]
+
+  $ aslref uninitialised-let.asl
+  File uninitialised-let.asl, line 1, characters 15 to 16:
+  let x : integer;
+                 ^
+  ASL Grammar error: Cannot parse. Declarations using `let` must have
+    initialising expressions.
+    
+  [1]

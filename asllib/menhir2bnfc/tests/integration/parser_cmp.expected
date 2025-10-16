@@ -4,6 +4,7 @@ FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBino
 FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBinop.bad4.asl
 FAIL - aslref false | bnfc true: asllib/tests/ASLSyntaxReference.t/ASTRule.EBinop.bad5.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/binop-non-associative.asl
+FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/binop-same-precedence.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/discard-locals.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/elided-parameter-non-bits.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/hyphenated-pending-constraint.asl
