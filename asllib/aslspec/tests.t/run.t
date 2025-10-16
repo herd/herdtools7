@@ -22,3 +22,10 @@
   $ aslspec unmatched_prose_var.spec
   Specification Error: The prose template 'transforms {a} to {b}' contains the following unmatched variables: {b}
   [1]
+
+  $ aslspec labelled_tuple_instantiation.bad
+  Specification Error: The type term `A(Int)` cannot be instantiated since 'A' is not a labelled tuple type
+  [1]
+  $ aslspec type_instantiation_function.bad
+  Specification Error: The type term `fun P -> O` is not subsumed by `fun O -> O`
+  [1]
