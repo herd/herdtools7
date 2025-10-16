@@ -746,8 +746,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Grammar error: Cannot parse. A `config` identifier must be annotated with
-    a type and given an initialising expression:
+  ASL Grammar error: Cannot parse. A `config` declaration must introduce a
+    single name, and have both a type annotation and initialising expression:
       config name : type = initial_expression;
     
   [1]
