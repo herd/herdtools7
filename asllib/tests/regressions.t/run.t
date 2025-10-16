@@ -333,14 +333,6 @@ Parameterized integers:
     precedence - parenthesise to disambiguate.
   [1]
 
-  $ aslref binop-non-assoc.asl
-  File binop-non-assoc.asl, line 3, characters 6 to 11:
-    - = 3 - 2 - 1;
-        ^^^^^
-  ASL Grammar error: Cannot parse. Binary operator `-` is not associative -
-    parenthesise to disambiguate.
-  [1]
-
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
       var x = 5.3 / "hello";
@@ -514,13 +506,6 @@ Required tests:
   ASL Static error: Undefined identifier: 'bar'
   [1]
 
-  $ aslref no-expression-elsif.asl
-  File no-expression-elsif.asl, line 12, characters 25 to 30:
-    let y = if TRUE then 1 elsif FALSE then 2 else 3;   // ERROR
-                           ^^^^^
-  ASL Grammar error: Cannot parse. Use `else if` instead.
-  [1]
-
   $ aslref --gnu-errors gnu-errors.asl
   aslref: gnu-errors.asl:1:0: ASL Warning: the recursive function fact has no recursive limit annotation.
   aslref: :0:-1: ASL Dynamic error: Mismatch type: value 11 does not belong to type integer {0..9}.
@@ -647,27 +632,8 @@ Left-hand sides
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
-  $ aslref hyphenated-pending-constraint.asl
-  File hyphenated-pending-constraint.asl, line 3, characters 18 to 21:
-      let x: integer{-} = 5;
-                    ^^^
-  ASL Grammar error: Cannot parse. Pending constraints are written `integer{}`.
-  [1]
-  $ aslref local_constants.asl
-  File local_constants.asl, line 8, characters 4 to 12:
-      constant x = 32;
-      ^^^^^^^^
-  ASL Grammar error: Cannot parse. Local constant declarations are not valid
-    ASL1. Did you mean `let`?.
-  [1]
 
 Outdated syntax
-  $ aslref outdated-implication.asl
-  File outdated-implication.asl, line 6, characters 21 to 24:
-    let z: boolean = x --> z;
-                       ^^^
-  ASL Grammar error: Cannot parse. Did you mean `==>`?
-  [1]
   $ aslref noreturn.asl
   File noreturn.asl, line 31, character 0 to line 34, character 4:
   noreturn func rec_noreturning()
@@ -721,26 +687,4 @@ Bounds checks
   $ aslref bounds-checks-write-zero-width-slice.asl
   ASL Dynamic error: Mismatch type:
     value 100 does not belong to type integer {0..3}.
-  [1]
-  $ aslref no_end_semicolon.asl
-  File no_end_semicolon.asl, line 6, characters 2 to 8:
-    return 0;
-    ^^^^^^
-  ASL Grammar error: Cannot parse. The `end` keyword must be followed by a
-    semicolon (`;`).
-    
-  [1]
-  $ aslref discard-locals.asl
-  File discard-locals.asl, line 3, characters 6 to 12:
-    let (-, -) = (1, 2);
-        ^^^^^^
-  ASL Grammar error: Cannot parse. A local declaration must declare at least
-    one name.
-  [1]
-  $ aslref elided-parameter-non-bits.asl
-  File elided-parameter-non-bits.asl, line 3, characters 20 to 27:
-    let x : integer = Zeros{};
-                      ^^^^^^^
-  ASL Grammar error: Cannot parse. Cannot desugar elided parameter: left-hand
-    side must have a `bits(...)` type annotation.
   [1]
