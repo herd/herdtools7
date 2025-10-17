@@ -1,0 +1,9 @@
+typedef O { "" };
+typedef Q { "" };
+typedef P { "" } = (O) | (Q);
+
+typedef A { "" } = L(fun O -> O) { "" };
+typedef B { "" } = M(fun P -> P) { "" };
+
+typedef Correct { "" } = ( M(fun P -> P) ) { "" };
+typedef Incorrect { "" } = ( M(fun O -> P) ) { "" };
