@@ -31,6 +31,7 @@ type flags = {
   conf_path  : path ;
   index_path : path option ;
   variants   : string list ;
+  verbose    : bool ;
 }
 
 
@@ -73,6 +74,7 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
   let cmd =
     TestHerd.run_herd
+      ~verbose:flags.verbose
       ~bell:(Option.map prepend p.bell)
       ~cat:(Some (prepend p.cat))
       ~conf:(flags.conf_path >>= Option.map prepend p.cfg)
@@ -215,8 +217,10 @@ let () =
   let j = ref None in
   let timeout = ref None in
   let anon_args = ref [] in
+  let verbose = ref false in
 
   let options = [
+    Args.verbose verbose ;
     Args.npar j ;
     "-herd-timeout",Arg.Float (fun f -> timeout := Some f), "<f> herd timeout";
     Args.is_file ("-herd-path",   Arg.Set_string herd,         "path to herd binary") ;
@@ -253,6 +257,7 @@ let () =
     conf_path = !conf_path ;
     variants = !variants ;
     index_path = !index_path ;
+    verbose = !verbose ;
     } in
   try
     let j = !j in
