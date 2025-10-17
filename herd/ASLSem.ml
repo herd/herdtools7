@@ -270,18 +270,24 @@ module Make (Conf : Config) = struct
       and is_acquiresc = access_bool_field accdesc "acqsc" map
       and is_acquirepc = access_bool_field accdesc "acqpc" map
       and is_atomic = access_bool_field accdesc "atomicop" map
-      and is_exclusive = access_bool_field accdesc "exclusive" map in
+      and is_exclusive = access_bool_field accdesc "exclusive" map
+      and raw_is_read = access_bool_field accdesc "read" map in
       let is_read =
         match caller with
         | Write -> false
         | Read -> true
         | Fault ->
             (* Read has priority, as for native VMSA *)
-            access_bool_field accdesc "read" map
+            raw_is_read
       in
       let is_ax x n = if is_atomic || is_exclusive then x else n in
       let is_noret =
-        if not is_atomic then false
+        if not is_atomic then
+          if not raw_is_read then false
+          else
+            let rt = access_integer_field accdesc "Rt" map
+            and rt2 = access_integer_field accdesc "Rt2" map in
+            match (rt, rt2) with 31, 31 | 31, -1 | -1, 31 -> true | _ -> false
         else
           let rs = access_integer_field accdesc "Rs" map
           and rt = access_integer_field accdesc "Rt" map
@@ -309,7 +315,7 @@ module Make (Conf : Config) = struct
       in
       let an =
         if (not is_read) && is_release then is_ax XL L
-        else if is_noret then NoRet
+        else if is_noret then is_ax XNoRet NoRet
         else if is_read && is_acquiresc then is_ax XA A
         else if is_read && is_acquirepc then is_ax XQ Q
         else is_ax X N
