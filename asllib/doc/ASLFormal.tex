@@ -473,11 +473,38 @@ For example,
 the following is a grounding of \TypingRuleRef{EBinop}
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\emptytenv, \ELiteral(\LInt(2))) \typearrow (\TInt, \ELiteral(\LInt(2))) \\\\
-  \annotateexpr(\emptytenv, \ELiteral(\LInt(3))) \typearrow (\TInt, \ELiteral(\LInt(3))) \\\\
+  {
+    \begin{array}{r}
+  \annotateexpr(\emptytenv, \ELiteral(\LInt(2))) \typearrow \\
+  (\TInt, \ELiteral(\LInt(2)), \emptyset)
+    \end{array}
+  }\\
+  {
+    \begin{array}{r}
+  \annotateexpr(\emptytenv, \ELiteral(\LInt(3))) \typearrow \\
+    (\TInt, \ELiteral(\LInt(3)), \emptyset)
+    \end{array}
+  }\\
   \applybinoptypes(\emptytenv, \MUL, \TInt, \TInt) \typearrow \TInt
 }{
-  \annotateexpr(\emptytenv, \EBinop(\MUL, \ELiteral(\LInt(2)), \ELiteral(\LInt(3)))) \typearrow \\ (\TInt, \EBinop(\MUL, \ELiteral(\LInt(2)), \ELiteral(\LInt(3))))
+  {
+    \begin{array}{r}
+  \annotateexpr\left(\emptytenv,
+  \EBinop\left(\begin{array}{c}
+  \MUL,\\
+   \ELiteral(\LInt(2)), \\
+   \ELiteral(\LInt(3))
+   \end{array}
+   \right)\right) \typearrow \\
+  \left(\TInt, \EBinop\left(
+  \begin{array}{c}
+  \MUL,\\
+   \ELiteral(\LInt(2)), \\
+   \ELiteral(\LInt(3))
+  \end{array}
+  \right), \emptyset\right)
+    \end{array}
+  }
 }
 \end{mathpar}
 obtained by the following substitutions:
@@ -505,7 +532,7 @@ An axiom is denoted by simply stating its conclusion.
 
 An example of an axiom in the ASL type system is \TypingRuleRef{SPass}:
 \begin{mathpar}
-\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv)}
+\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass,\tenv,\emptyset)}
 \end{mathpar}
 \hypertarget{SemanticsRule.PAll-example}{}
 An example of an axiom in the ASL dynamic semantics is \SemanticsRuleRef{PAll}:
@@ -523,7 +550,7 @@ the set of dynamic semantic rules, we must apply those rules to form a \emph{\de
 \begin{definition}[Derivation Tree]
 A \emph{\derivationtreeterm} is a tree whose vertices correspond to ground judgments.
 Each non-leaf vertex $c$ with children $p_{1..k}$ correspond to a ground rule
-$\inferrule{c_{1..k}}{c}$ and each leaf vertex $c$ corresponds to a ground axiom rule
+$\inferrule{p_{1..k}}{c}$ and each leaf vertex $c$ corresponds to a ground axiom rule
 $c$. There is one root vertex, which intuitively is the goal of the derivation tree.
 Derivation trees can be finite or infinite.
 Infinite derivation trees are used for defining diverging evaluations
@@ -547,8 +574,8 @@ For example, the rule \TypingRuleRef{ELit} defines a relation
 between the infinite set of elements of the form
 $\annotateexpr(\tenv, \ELiteral(\vv))$ (for the
 infinite choice of values for the free variables $\tenv$ and
-$\vv$) to the infinite set of pairs of the form $(\vt,
-\ELiteral(\vv))$, such that the premise holds.
+$\vv$) to the infinite set of tuples of the form $(\vt,
+\ELiteral(\vv), \emptyset)$, such that the premise holds.
 
 \paragraph{Mutual Exclusion Principle:}
 Our rules follow a mutual exclusion principle, where each rule
@@ -567,14 +594,15 @@ We refer to those labels as \emph{configuration domains}.
 The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
 
 We refer to configurations at the origin of a transition as \emph{input configurations} and to the
-configurations at the destination of a transition as \emph{output transitions}.
+configurations at the destination of a transition as \emph{output configurations}.
 
 For example, the conclusion of the rule \TypingRuleRef{ELit} has \\
 $\annotateexpr(\tenv, \ELiteral(\vv))$ as its input configuration
-and $(\vt, \ELiteral(\vv))$ as its output configuration.
+and \\
+$(\vt, \ELiteral(\vv), \emptyset)$ as its output configuration.
 Further, \\
-$\configdomain{\annotateexpr(\tenv, \ELiteral(\vv))} = \textit{annotate\_expr}$,
-while the output configuration does not have a configuration domain, since it is an unlabelled pair.
+$\configdomain{\annotateexpr(\tenv, \ELiteral(\vv))} = \annotateexpr$,
+while the output configuration does not have a configuration domain, since it is an unlabelled tuple.
 
 Our rules always make use of labelled input configurations. This makes it easier to ensure
 the mutual exclusion rule principle.
