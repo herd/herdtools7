@@ -31,6 +31,7 @@ type flags = {
   expected_dir  : path ;
   variants      : string list ;
   nohash        : bool ;
+  verbose       : bool ;
 }
 
 
@@ -118,7 +119,9 @@ let run_tests ?j flags =
     | None ->
        List.map
          (fun (l, e) ->
-            TestHerd.herd_output_matches_expected ~nohash:flags.nohash
+            TestHerd.herd_output_matches_expected
+              ~verbose:flags.verbose
+              ~nohash:flags.nohash
               ~bell:None ~cat:None
              ~conf:flags.herd_conf
              ~variants:flags.variants
@@ -127,7 +130,8 @@ let run_tests ?j flags =
          les
     | Some j ->
        ignore
-         (TestHerd.run_herd_concurrent  ~bell:None ~cat:None
+         (TestHerd.run_herd_concurrent
+            ~verbose:flags.verbose ~bell:None ~cat:None
             ~conf:flags.herd_conf
             ~variants:flags.variants
             ~libdir:flags.libdir
@@ -219,9 +223,11 @@ let () =
   let conf = ref None in
   let j = ref None in
   let nohash = ref false in
+  let verbose = ref false in
 
   let anon_args = ref [] in
   let options = [
+    Args.npar j ; Args.nohash nohash ; Args.verbose verbose ;
     Args.is_file ("-herd-path",     Arg.Set_string herd,           "path to herd binary") ;
     Args.is_dir  ("-libdir-path",   Arg.Set_string libdir,         "path to herd libdir") ;
     Args.is_file ("-diycross-path", Arg.Set_string diycross,       "path to diycross binary") ;
@@ -229,7 +235,6 @@ let () =
     "-diycross-arg", Args.append_string diycross_args,  "one argument for diycross (cumulative)" ;
     Args.is_file ("-conf", Args.set_string_option conf,   "path to config file to pass to herd7") ;
                   "-variant",     Args.append_string variants,   "variant to pass to herd7" ;
-    Args.npar j ; Args.nohash nohash ;
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
 
@@ -257,6 +262,7 @@ let () =
     expected_dir = !expected_dir ;
     variants = !variants ;
     nohash = !nohash ;
+    verbose = !verbose ;
     } in
   let j = !j in
   match !anon_args with

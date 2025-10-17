@@ -109,8 +109,12 @@ let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
   ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
 
-let apply_redirect_args herd j herd_args =
-  let redirect_args = String.concat "," (herd::herd_args) in
+let apply_redirect_args ?(verbose=false) herd j herd_args =
+  let herd_args = herd::herd_args in
+  let herd_args =
+    if verbose then "-verbose"::herd_args
+    else herd_args in
+  let redirect_args = String.concat "," herd_args in
   let redirect =
     Filename.concat (Filename.dirname Sys.argv.(0))
       "herd_redirect.exe" in
@@ -130,7 +134,20 @@ let herd_command
      let args = apply_args  herd j args in
      Command.command mapply  (args @ litmuses)
 
-let do_run_herd_args herd args ?j litmuses =
+let check_tags s =
+  try
+    let i = String.index s ' ' in
+    let q = String.sub s 0 i in
+    match q with
+    | "Observation"
+    | "Time"
+      -> true
+    | _ -> false
+  with Not_found -> false
+
+let check line = if check_tags line then prerr_endline line
+
+let do_run_herd_args verbose herd args ?j litmuses =
   let litmuses = Base.Iter.of_list litmuses in
   (*
    * Record stdout and stderr to two sources if we need
@@ -138,7 +155,11 @@ let do_run_herd_args herd args ?j litmuses =
    *)
   let lines = ref [] in
   let err_lines = ref [] in
-  let read_line line = lines := line :: !lines in
+  let read_line =
+    if verbose then
+      fun line -> check line; lines := line :: !lines
+    else
+      fun line -> lines := line :: !lines in
   let read_err_line line = err_lines := line :: !err_lines in
   let r =
     match j with
@@ -153,23 +174,24 @@ let do_run_herd_args herd args ?j litmuses =
          ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line mapply args in
   (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
 
-let run_herd_args herd args litmus = do_run_herd_args herd args [litmus]
+let run_herd_args ?(verbose=false) herd args litmus =
+  do_run_herd_args verbose herd args [litmus]
 
-let run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+let run_herd ?(verbose=false) ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
   let args =
     herd_args
       ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
       ~timeout:timeout in
-  do_run_herd_args herd args ?j litmuses
+  do_run_herd_args verbose herd args ?j litmuses
 
-let run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
+let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   let args =
     herd_args
       ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir ~timeout:None in
   let litmuses = Base.Iter.of_list litmuses in
   let j = max 2 j in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args = apply_redirect_args herd j args in
+  let args = apply_redirect_args ?verbose herd j args in
   let r = Command.NonBlock.run_status ~stdin:litmuses  mapply args in
   r
 
@@ -295,23 +317,24 @@ let do_herd_output_matches_expected
        (Command.string_of_error e) ; false
 
 let herd_output_matches_expected
-    ?(checkobs=false) ?(nohash=false)
+    ?(verbose=false) ?(checkobs=false) ?(nohash=false)
     ~bell ~cat ~conf ~variants ~libdir
     herd litmus expected expected_failure expected_warn =
   do_herd_output_matches_expected
     checkobs nohash
     (fun litmus ->
-      run_herd
+       run_herd
+        ~verbose:verbose
         ~bell:bell ~cat:cat ~conf:conf
         ~variants:variants ~libdir:libdir herd [litmus])
     litmus expected expected_failure expected_warn
 
 let herd_args_output_matches_expected
-    ?(checkobs=false) ?(nohash=false)
+    ?(verbose=false) ?(checkobs=false) ?(nohash=false)
     herd args  litmus expected expected_failure expected_warn =
   do_herd_output_matches_expected
     checkobs nohash
-    (run_herd_args herd args)
+    (run_herd_args ~verbose:verbose herd args)
     litmus expected expected_failure expected_warn
 
 let is_litmus path = Filename.check_suffix path ".litmus"

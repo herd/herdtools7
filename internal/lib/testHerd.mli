@@ -49,7 +49,7 @@ val apply_args : string -> int -> string list -> string list
 
 (** Same as above, with additional redirection of output channels
  *  to conventional files. *)
-val apply_redirect_args : string -> int -> string list -> string list
+val apply_redirect_args : ?verbose:bool -> string -> int -> string list -> string list
 
 (** [herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] returns the
  *  command line that [run_herd] would run. *)
@@ -61,6 +61,9 @@ val herd_command :
   libdir   : path ->
     path -> ?j:int -> ?timeout:float -> path list -> string
 
+(** [check_tags line] Checks that a line is a verbose diagnostic. *)
+val check_tags : string -> bool
+
 (** [run_herd ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] runs the
  *  binary [herd] with a custom [libdir] on list of litmus files [litmuses],
  *  and returns the stdout with unstable lines removed (e.g. Time) and stderr.
@@ -68,6 +71,7 @@ val herd_command :
  *  be passed in.
  * If argument [j] is present, at most [j] tests are run concurrently *)
 val run_herd :
+  ?verbose:bool ->
   bell     : path option ->
   cat      : path option ->
   conf     : path option ->
@@ -82,13 +86,14 @@ val run_herd :
   *   2. One litmus test only is given as argument.
   *)
 val run_herd_args :
-  path -> string list -> path ->
+  ?verbose:bool -> path -> string list -> path ->
     int * string list * string list
 
 (** [run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd j litmuses]
  *  Similar to [run_herd] except that output is stored into files specific
  *  to each test: [litmus].out and [litmus].err. *)
 val run_herd_concurrent :
+  ?verbose:bool ->
   bell     : path option ->
   cat      : path option ->
   conf     : path option ->
@@ -118,6 +123,7 @@ val output_matches_expected :
  *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
  *  be passed in. *)
 val herd_output_matches_expected :
+  ?verbose : bool ->
   ?checkobs : bool ->
   ?nohash  : bool ->
   bell     : path option ->
@@ -132,7 +138,7 @@ val herd_output_matches_expected :
   *  as [herd_output_matches_expected] above but a different interface,
   *   as command line options are given as the list [args]. *)
 val herd_args_output_matches_expected :
-  ?checkobs:bool -> ?nohash:bool ->
+  ?verbose:bool -> ?checkobs:bool -> ?nohash:bool ->
   path -> string list -> path -> path -> path -> path  -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)

@@ -40,6 +40,10 @@ let checkobs b =
   "-checkobs",Arg.Unit (fun () -> b := true),
   "limit test validity to observation: Never/Sometimes/Always"
 
+let verbose b =
+  "-verbose",Arg.Unit (fun () -> b := true),
+  "output a short diagnostic whenever a litmus test execution is complete"
+
 (** Validators. *)
 
 let validate check msg (key, spec, doc) =

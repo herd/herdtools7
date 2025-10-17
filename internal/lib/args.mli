@@ -46,6 +46,11 @@ val nohash : bool ref -> spec
 
 val checkobs : bool ref -> spec
 
+(** [verbose b] Build an Arg.spec for setting b to true, with documentation
+    as enable some diagnostics. *)
+
+val verbose : bool ref -> spec
+
 
 (** Validators. *)
 

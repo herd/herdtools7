@@ -31,6 +31,7 @@ type flags = {
   conf       : path option ;
   nohash     : bool ;
   checkobs   : bool ;
+  verbose    : bool ;
 }
 
 
@@ -133,6 +134,7 @@ let show_tests_par j flags =
   let run_tests_seq flags =
     let test_passes l =
       TestHerd.herd_output_matches_expected
+        ~verbose:flags.verbose
         ~checkobs:flags.checkobs ~nohash:flags.nohash ~bell:None ~cat:None
         ~conf:flags.conf
         ~variants:flags.variants
@@ -163,14 +165,17 @@ let do_run_test_par wrapper j flags =
       ~variants:flags.variants
       ~libdir:flags.libdir ~timeout:None in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args = "-exit"::"true"::TestHerd.apply_args  wrapper j (herd::args) in
+  let args =
+    "-exit"::"true"::TestHerd.apply_args  wrapper j
+      (let herd_args = herd::args in
+       if flags.verbose then "-verbose"::herd_args else herd_args) in
   let () =
     if _dbg then
       Printf.eprintf "Mapply arguments '%s'\n%!" (String.concat " " args) in
   let litmuses = read_litmus_dir flags.litmus_dir in
   let () =
     if _dbg then
-      let com = Command.command mapply  (args @ litmuses) in
+      let com = Command.command mapply (args @ litmuses) in
       Printf.eprintf "Wil run: %s\n%!" com in
   let st = Command.run_status mapply  (args @ litmuses) in
   if st <> 0 then begin
@@ -236,10 +241,12 @@ let () =
   let j = ref None in
   let nohash = ref false in
   let checkobs = ref false in
+  let verbose = ref false in
 
   let anon_args = ref [] in
 
   let options = [
+    Args.verbose verbose;
     Args.npar j;  Args.nohash nohash; Args.checkobs checkobs;
     Args.is_file ("-herd-path",   Arg.Set_string herd,           "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,         "path to herd libdir") ;
@@ -270,6 +277,7 @@ let () =
     variants = !variants ;
     nohash = !nohash ;
     checkobs = !checkobs ;
+    verbose = !verbose ;
     } in
   let j = !j in
   match !anon_args with

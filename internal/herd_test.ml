@@ -27,16 +27,22 @@ let rec to_list k =
   if k+1 >= Array.length Sys.argv then []
   else Sys.argv.(k)::to_list (k+1)
 
-let com = Sys.argv.(1)
-let args = to_list 2
+let verbose =
+  match Sys.argv.(1) with
+  | "-verbose" -> true
+  | _ -> false
+
+let comidx = if verbose then 2 else 1
+let com = Sys.argv.(comidx)
+let args = to_list (comidx+1)
 
 let () =
   let expected = TestHerd.expected_of_litmus litmus
   and expected_failure = TestHerd.expected_failure_of_litmus litmus
   and expected_warn = TestHerd.expected_warn_of_litmus litmus in
   if
-    TestHerd.herd_args_output_matches_expected com args litmus
-    expected expected_failure expected_warn
+    TestHerd.herd_args_output_matches_expected ~verbose:verbose com args litmus
+      expected expected_failure expected_warn
   then
     exit 0
   else begin
