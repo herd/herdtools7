@@ -449,8 +449,8 @@ module Check = struct
   end
 
   (** * A module for conservatively checking that all type terms are
-      well-formed. That is each term that instantiates another defined type term
-      is subsumed by it. *)
+      well-formed. That is each type term that instantiates another defined type
+      term is subsumed by it. *)
   module CheckTypeInstantiations : sig
     val check : definition_node StringMap.t -> elem list -> unit
     (** [check id_to_defining_node elems] conservatively checks that all type
@@ -464,22 +464,24 @@ module Check = struct
     let operator_subsumed sub_op super_op =
       match (sub_op, super_op) with
       | Powerset, Powerset
-      | Powerset_Finite, Powerset_Finite
-      | Powerset_Finite, Powerset
-      | List1, List1
+      | Powerset_Finite, (Powerset_Finite | Powerset)
+      | List1, (List1 | List0)
       | List0, List0
-      | List1, List0
-      | Option, Option
-      | Option, Powerset_Finite
-      | Option, Powerset
-      (* Option represents sets with 0 or 1 values while Powerset represents sets of _any_ number of values. *)
+      | Option, (Option | Powerset_Finite | Powerset)
+      (* Option represents sets with 0 or 1 values while Powerset represents sets
+         of _any_ number of values. *)
         ->
           true
       | _ -> false
 
-    (** [subsumed id_to_defining_node sub super] conservatively tests whether
-        all values in the domain of [sub] are also in the domain of [super]. *)
-    let rec subsumed id_to_defining_node sub super =
+    (** [subsumed id_to_defining_node expanded_types sub super] conservatively
+        tests whether all values in the domain of [sub] are also in the domain
+        of [super]. Labels that represent types may be expanded, that is,
+        replaced by their list of type variants, using [id_to_defining_node]. To
+        ensure termination on recursive types, this expansion is done at most
+        once by tracking the set of expanded labels in [expanded_types]. *)
+    let rec subsumed id_to_defining_node expanded_types sub super =
+      (* The domain of an unlabelled singleton tuple is the domain of its single type term. *)
       let equiv_singleton_tuple term =
         match term with
         | LabelledTuple
@@ -491,19 +493,24 @@ module Check = struct
       let super = equiv_singleton_tuple super in
       match (sub, super) with
       | _, Label super_label ->
-          let same_label =
+          let sub_is_label_case =
             match sub with
-            | Label sub_label -> String.equal sub_label super_label
+            | Label sub_label ->
+                String.equal sub_label super_label
+                ||
+                (* The case where [sub_label] is a type name. *)
+                subsumed_typename_term_type id_to_defining_node expanded_types
+                  sub_label super
             | _ -> false
           in
-          same_label
-          ||
-          (* The case where [super_label] references a type. *)
-          subsumed_term_type id_to_defining_node sub super_label
+          sub_is_label_case
+          (* The case where [super_label] is a type name. *)
+          || subsumed_term_type_typename id_to_defining_node expanded_types sub
+               super_label
       | ( Operator { op = sub_op; term = _, sub_term },
           Operator { op = super_op; term = _, super_term } ) ->
           operator_subsumed sub_op super_op
-          && subsumed id_to_defining_node sub_term super_term
+          && subsumed id_to_defining_node expanded_types sub_term super_term
       | ( LabelledTuple
             { label_opt = sub_label_opt; components = sub_components },
           LabelledTuple
@@ -511,7 +518,7 @@ module Check = struct
           Option.equal String.equal sub_label_opt super_label_opt
           && List.for_all2
                (fun (_, sub_term) (_, super_term) ->
-                 subsumed id_to_defining_node sub_term super_term)
+                 subsumed id_to_defining_node expanded_types sub_term super_term)
                sub_components super_components
       | ( LabelledRecord { label_opt = sub_label_opt; fields = sub_fields },
           LabelledRecord { label_opt = super_label_opt; fields = super_fields }
@@ -519,42 +526,62 @@ module Check = struct
           Option.equal String.equal sub_label_opt super_label_opt
           && List.for_all2
                (fun (_, sub_term) (_, super_term) ->
-                 subsumed id_to_defining_node sub_term super_term)
+                 subsumed id_to_defining_node expanded_types sub_term super_term)
                sub_fields super_fields
       | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
           Function
             { from_type = _, super_from_term; to_type = _, super_to_term } ) ->
-          subsumed id_to_defining_node sub_from_term super_from_term
-          && subsumed id_to_defining_node sub_to_term super_to_term
+          let equivalence_test term term' =
+            subsumed id_to_defining_node expanded_types term term'
+            && subsumed id_to_defining_node expanded_types term' term
+          in
+          equivalence_test sub_from_term super_from_term
+          && equivalence_test sub_to_term super_to_term
       | ConstantsSet sub_names, ConstantsSet super_names ->
           List.for_all (fun name -> List.mem name super_names) sub_names
       | _ ->
           (* false is safely conservative. *)
           false
 
-    (** [subsumed_term_type id_to_defining_node sub_term typename] checks if
-        [sub_term] is subsumed by the type term defined by [typename] in
-        [id_to_defining_node]. If [typename] is not defined in
-        [id_to_defining_node], returns false. *)
-    and subsumed_term_type id_to_defining_node sub_term typename =
-      match StringMap.find_opt typename id_to_defining_node with
-      | Some (Node_Type { Type.variants; _ }) ->
-          List.exists
-            (fun { TypeVariant.term = super_term } ->
-              subsumed id_to_defining_node sub_term super_term)
-            variants
-      | _ -> false
-
-    (** [check_subsumed id_to_defining_node sub super] checks that [sub] is
-        subsumed by [super]. If not, a [SpecError] is raised. *)
-    let check_subsumed id_to_defining_node sub super =
-      if subsumed id_to_defining_node sub super then ()
+    (** [subsumed_term_type_typename id_to_defining_node sub_term typename]
+        checks if [sub_term] is subsumed by any of the type variants defined by
+        [typename] in [id_to_defining_node]. If [typename] is not a type with
+        type variants, returns false. *)
+    and subsumed_term_type_typename id_to_defining_node expanded_types sub_term
+        typename =
+      if StringSet.mem typename expanded_types then false
       else
-        let msg =
-          Format.asprintf "The type term `%a` is not subsumed by `%a`"
-            PP.pp_type_term sub PP.pp_type_term super
-        in
-        raise (SpecError msg)
+        (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
+        let expanded_types = StringSet.add typename expanded_types in
+        match StringMap.find_opt typename id_to_defining_node with
+        | Some (Node_Type { Type.variants; _ }) ->
+            (not (Utils.list_is_empty variants))
+            && List.exists
+                 (fun { TypeVariant.term = super_term } ->
+                   subsumed id_to_defining_node expanded_types sub_term
+                     super_term)
+                 variants
+        | _ -> false
+
+    (** [subsumed_typename_term_type id_to_defining_node typename super_term]
+        checks if all type variants defined by [typename] are subsumed by
+        [super_term]. If [typename] is not a type with type variants, returns
+        false. *)
+    and subsumed_typename_term_type id_to_defining_node expanded_types typename
+        super_term =
+      if StringSet.mem typename expanded_types then false
+      else
+        (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
+        let expanded_types = StringSet.add typename expanded_types in
+        match StringMap.find_opt typename id_to_defining_node with
+        | Some (Node_Type { Type.variants; _ }) ->
+            (not (Utils.list_is_empty variants))
+            && List.for_all
+                 (fun { TypeVariant.term = sub_term } ->
+                   subsumed id_to_defining_node expanded_types sub_term
+                     super_term)
+                 variants
+        | _ -> false
 
     (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
          super_terms] checks that each term in [sub_terms] is subsumed by the
@@ -564,6 +591,15 @@ module Check = struct
         the corresponding term in [super_terms], a [SpecError] is raised. *)
     let check_subsumed_terms_lists id_to_defining_node term label sub_terms
         super_terms =
+      let check_subsumed id_to_defining_node sub super =
+        if subsumed id_to_defining_node StringSet.empty sub super then ()
+        else
+          let msg =
+            Format.asprintf "Unable to determine that `%a` is subsumed by `%a`"
+              PP.pp_type_term sub PP.pp_type_term super
+          in
+          raise (SpecError msg)
+      in
       if List.compare_lengths sub_terms super_terms = 0 then
         List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
       else
@@ -663,18 +699,23 @@ module Check = struct
 
     let check id_to_defining_node elems =
       List.iter
-        (function
-          | Elem_Constant _ | Elem_Render _ -> ()
-          | Elem_Relation { input; output } ->
-              List.iter
-                (fun (_, term) -> check_type_term id_to_defining_node term)
-                input;
-              List.iter (check_type_term id_to_defining_node) output
-          | Elem_Type { Type.variants; _ } ->
-              List.iter
-                (fun { TypeVariant.term } ->
-                  check_type_term id_to_defining_node term)
-                variants)
+        (fun elem ->
+          try
+            match elem with
+            | Elem_Constant _ | Elem_Render _ -> ()
+            | Elem_Relation { input; output } ->
+                List.iter
+                  (fun (_, term) -> check_type_term id_to_defining_node term)
+                  input;
+                List.iter (check_type_term id_to_defining_node) output
+            | Elem_Type { Type.variants; _ } ->
+                List.iter
+                  (fun { TypeVariant.term } ->
+                    check_type_term id_to_defining_node term)
+                  variants
+          with SpecError e ->
+            stack_spec_error e
+              (Format.sprintf "While checking: %s" (elem_name elem)))
         elems
   end
 end
@@ -684,6 +725,7 @@ let from_ast ast =
   let defined_ids = List.map definition_node_name definition_nodes in
   let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
+  let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
   let () = Check.check_mandatory_attributes definition_nodes in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in

@@ -44,7 +44,10 @@
                \text{f} & : & \Int\\
                \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
                \end{array}\right\}\\
-\cup\ & \LRec\left\{\text{f} : \Rec(\Int, \Int, \Int)\right\}\mathhypertarget{type-LRec}\end{flalign*}} % EndDefineType
+\cup\ & \LRec\left\{\begin{array}{lcl}
+                    \text{f} & : & \Rec(\Int, \Int)\\
+                    \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
+                    \end{array}\right\}\mathhypertarget{type-LRec}\end{flalign*}} % EndDefineType
 
 \DefineType{expr}{
 \begin{flalign*}
