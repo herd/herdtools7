@@ -312,7 +312,18 @@ inline static void reset_hahd_bits(void) {
   }
 }
 
-static inline void litmus_init(void) { reset_hahd_bits(); }
+// FEAT_ETSx
+
+inline static void check_ets(void) {
+  uint64_t r;
+  asm volatile ("mrs %x0, id_aa64mmfr1_EL1" : "=r" (r));
+  printf("ETS: 0x%" PRIx64 "\n",(r >> 36) & 0b1111);
+}
+
+static inline void litmus_init(void) {
+  check_ets();
+  reset_hahd_bits();
+}
 
 // PAR_EL1
 static const uint64_t msk_f = 0x1UL;
@@ -339,3 +350,5 @@ inline static parel1_t pack_par_el1(int pa, parel1_t p) {
     ((parel1_t)pa << OA_PACKED) |
     pack_flag(p, msk_f, 0);
 }
+
+
