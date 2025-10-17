@@ -1,0 +1,9 @@
+AArch64 A030
+Variant=vmsa
+{
+ 0:X1=x; 0:X2=7; 0:X0=42;
+ TTD(x)=(oa:PA(x),db:0);
+}
+P0             ;
+CAS W0,W2,[X1] ;
+forall fault(P0,x,MMU:Permission)
