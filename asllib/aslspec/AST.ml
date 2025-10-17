@@ -4,6 +4,14 @@
 
 exception SpecError of string
 
+(** Extends an error message and re-raises an exception. This is a temporary
+    hack until the AST supports source locations. *)
+let stack_spec_error msg extra_msg =
+  let full_msg = Printf.sprintf "%s\n%s" msg extra_msg in
+  raise (SpecError full_msg)
+
+(** The kind of a type, either generic or AST-specific. *)
+
 type type_kind = TypeKind_Generic | TypeKind_AST
 
 (** A unary operator that transforms one type into another. *)
