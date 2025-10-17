@@ -328,7 +328,7 @@ spec: CONFIG IDENTIFIER COLON BIT WITH
 ## CONFIG ignored_or_identifier as_ty
 ##
 
-A `config` identifier must be annotated with a type and given an initialising expression:
+A `config` declaration must introduce a single name, and have both a type annotation and initialising expression:
   config name : type = initial_expression;
 
 opn: LET IDENTIFIER XOR
@@ -342,16 +342,13 @@ opn: LET IDENTIFIER XOR
 ## The known suffix of the stack is as follows:
 ## LET decl_item
 ##
-opn: LET IDENTIFIER COLON BIT WITH
-##
-## Ends in an error in state: 414.
-##
-## stmt -> LET decl_item as_ty . EQ expr SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
-## stmt -> LET decl_item as_ty . EQ elided_param_call SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
-##
-## The known suffix of the stack is as follows:
-## LET decl_item as_ty
-##
+
+A local `let` declaration must be of one of the following forms:
+  let name = expression;
+  let name : type = expression;
+  let (name1, -, ...) = expression;
+  let (name1, -, ...) : type = expression;
+
 spec: LET IDENTIFIER XOR
 ##
 ## Ends in an error in state: 775.
@@ -362,6 +359,21 @@ spec: LET IDENTIFIER XOR
 ##
 ## The known suffix of the stack is as follows:
 ## LET ignored_or_identifier
+##
+
+A global `let` declaration must introduce a single name and have an initialising expression:
+  let name = initial_expression;
+  let name : type = initial_expression;
+
+opn: LET IDENTIFIER COLON BIT WITH
+##
+## Ends in an error in state: 414.
+##
+## stmt -> LET decl_item as_ty . EQ expr SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+## stmt -> LET decl_item as_ty . EQ elided_param_call SEMI_COLON [ WHILE WHEN VAR UNTIL UNREACHABLE TRY THROW RETURN REPEAT PRINTLN PRINT PRAGMA PASS OTHERWISE MINUS LPAR LET IF IDENTIFIER FOR EOF END ELSIF ELSE DEBUG CONSTANT CATCH CASE ASSERT ]
+##
+## The known suffix of the stack is as follows:
+## LET decl_item as_ty
 ##
 spec: LET IDENTIFIER COLON BIT WITH
 ##
@@ -398,4 +410,6 @@ spec: CONSTANT IDENTIFIER COLON BIT WITH
 ## CONSTANT ignored_or_identifier as_ty
 ##
 
-Declarations using `constant` must have initialising expressions.
+A `constant` declaration must introduce a single name and have an initialising expression:
+  constant name = initial_expression;
+  constant name : type = initial_expression;

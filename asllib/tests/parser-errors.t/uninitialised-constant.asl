@@ -1,0 +1,1 @@
+constant x : integer;
