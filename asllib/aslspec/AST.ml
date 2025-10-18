@@ -268,8 +268,18 @@ end
 
 (** A datatype for a relation definition. *)
 module Relation : sig
+  type relation_property =
+    | RelationProperty_Relation
+    | RelationProperty_Function
+
+  type relation_category =
+    | RelationCategory_Typing
+    | RelationCategory_Semantics
+
   type t = {
     name : string;
+    property : relation_property;
+    category : relation_category option;
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
@@ -277,6 +287,8 @@ module Relation : sig
 
   val make :
     string ->
+    relation_property ->
+    relation_category option ->
     opt_named_type_term list ->
     type_term list ->
     (AttributeKey.t * attribute) list ->
@@ -290,15 +302,32 @@ module Relation : sig
   val math_layout : t -> layout option
   (** The layout used when rendered as a stand-alone relation definition. *)
 end = struct
+  type relation_property =
+    | RelationProperty_Relation
+    | RelationProperty_Function
+
+  type relation_category =
+    | RelationCategory_Typing
+    | RelationCategory_Semantics
+
   type t = {
     name : string;
+    property : relation_property;
+    category : relation_category option;
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
   }
 
-  let make name input output attributes =
-    { name; input; output; att = Attributes.of_list attributes }
+  let make name property category input output attributes =
+    {
+      name;
+      property;
+      category;
+      input;
+      output;
+      att = Attributes.of_list attributes;
+    }
 
   let attributes_to_list self = Attributes.bindings self.att
 

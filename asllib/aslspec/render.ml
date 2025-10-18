@@ -320,19 +320,25 @@ module Make (S : SPEC_VALUE) = struct
 
   (** Renders the mathematical formula for the relation signature [def] using
       [layout] and referencing elements in [S.spec]. *)
-  let pp_relation_math layout fmt { Relation.name; input; output } =
+  let pp_relation_math layout fmt { Relation.name; property; input; output } =
     (* Reuse the rendering for type terms. *)
     let input_as_labelled_tuple =
       LabelledTuple { label_opt = Some name; components = input }
     in
     (* If a layout is unspecified, expand one level to a 2-element horizontal layout. *)
     let layout = Layout.horizontal_if_unspecified layout [ (); () ] in
+    let property_symbol =
+      match property with
+      | RelationProperty_Relation -> {|\bigtimes|}
+      | RelationProperty_Function -> {|\longrightarrow|}
+    in
+
     let output = output in
     match layout with
     | Horizontal [ input_layout; output_layout ] ->
-        fprintf fmt {|%a \;\bigtimes\; %a|} pp_type_term
+        fprintf fmt {|%a \;%s\; %a|} pp_type_term
           (input_as_labelled_tuple, input_layout)
-          pp_type_term_union (output, output_layout)
+          property_symbol pp_type_term_union (output, output_layout)
     | Vertical [ input_layout; output_layout ] ->
         pp_latex_array "c" fmt
           [
@@ -340,12 +346,12 @@ module Make (S : SPEC_VALUE) = struct
               (fun fmt ->
                 pp_type_term fmt (input_as_labelled_tuple, input_layout));
             ];
-            [ (fun fmt -> pp_print_string fmt {|\bigtimes|}) ];
+            [ (fun fmt -> pp_print_string fmt property_symbol) ];
             [ (fun fmt -> pp_type_term_union fmt (output, output_layout)) ];
           ]
     | _ -> assert false
 
-  let pp_relation fmt ({ Relation.name; input; output } as def) =
+  let pp_relation fmt ({ Relation.name; property; input; output } as def) =
     let input_vars = vars_of_opt_named_type_terms input in
     let output_vars = List.map vars_of_type_term output |> List.concat in
     let vars = input_vars @ output_vars in
@@ -358,13 +364,18 @@ module Make (S : SPEC_VALUE) = struct
     in
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hyperlink_target_for_id name in
+    let relation_property_description =
+      match property with
+      | RelationProperty_Relation -> "relation"
+      | RelationProperty_Function -> "function"
+    in
     fprintf fmt
       {|\DefineRelation{%s}{@.
-The relation
+The %s
 \[@.%a%a@.\]
 %a@.} %% EndDefineRelation|}
-      name pp_mathhypertarget hyperlink_target (pp_relation_math layout) def
-      pp_print_text instantiated_prose_description
+      name relation_property_description pp_mathhypertarget hyperlink_target
+      (pp_relation_math layout) def pp_print_text instantiated_prose_description
 
   let pp_variant fmt ({ TypeVariant.term } as variant) =
     let layout =
