@@ -45,7 +45,7 @@
   While checking: A
   [1]
   $ aslspec instantiation_label.bad
-  Specification Error: The type term `B` cannot be instantiated since 'B' is not a type or type variant
+  Specification Error: The type term `B` cannot be instantiated since 'B' is not a type
   While checking: A
   [1]
   $ aslspec instantiation_recursion.bad

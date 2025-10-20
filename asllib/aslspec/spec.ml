@@ -448,9 +448,41 @@ module Check = struct
       List.iter check_prose_template_for_definition_node defining_nodes
   end
 
-  (** * A module for conservatively checking that all type terms are
-      well-formed. That is each type term that instantiates another defined type
-      term is subsumed by it. *)
+  (** * A module for conservatively checking that all type terms are well-formed
+      and that all type instantiations are valid. That is each type term that
+      instantiates another defined type term is subsumed by it.
+
+      For example, given the following definitions:
+      {[
+        typedef Z;
+        typedef Bool = True | False;
+        ast literal = L_Int(whole_number: Z) | L_Bool(value: Bool);
+        typedef native_value = NV_Literal(l: literal);
+        typedef tint = ( NV_Literal(L_Int(v: Z)) );
+      ]}
+      The type [native_value] defines the labelled tuple type [L_Int] with a
+      single component of type [literal].
+
+      The type term for [tint] instantiates the type term for
+      [NV_Literal(L_Int(v: Z))] rather than defining it, which can be seen since
+      it parenthesized. The check needs to ensure that [NV_Literal(L_Int(v: Z))]
+      is valid.
+
+      This is done by: 1. checking that [NV_Literal(L_Int(v: Z))] is well-formed
+      with respect to [NV_Literal(l: literal)], and
+
+      2. checking that all values of [NV_Literal(L_Int(v: Z))] are also value of
+      [NV_Literal(l: literal)]. In other words, [NV_Literal(L_Int(v: Z))] is
+      subsumed by [NV_Literal(l: literal)].
+
+      To check (1), we verify that the labelled tuple [NV_Literal(L_Int(v: Z))]
+      has a single component.
+
+      To check (2), we use structural induction, which means that we need to
+      verify that [L_Int(v: Z)] is subsumed by [l: literal]. This is done by
+      checking that [L_Int(v: Z)] is subsumed by at least one of the type
+      variants of [literal], which is indeed the case since [L_Int(v: Z)] is a
+      type variant of [literal]. *)
   module CheckTypeInstantiations : sig
     val check : definition_node StringMap.t -> elem list -> unit
     (** [check id_to_defining_node elems] conservatively checks that all type
@@ -479,9 +511,28 @@ module Check = struct
         of [super]. Labels that represent types may be expanded, that is,
         replaced by their list of type variants, using [id_to_defining_node]. To
         ensure termination on recursive types, this expansion is done at most
-        once by tracking the set of expanded labels in [expanded_types]. *)
+        once by tracking the set of expanded labels in [expanded_types].
+
+        In the example, [M(B, Num)] is not subsumed by [M(A, Num)]. The
+        algorithm checks whether [B] is subsumed by [A], which requires checking
+        whether [B] is subsumed by [L] and whether [B] is subsumed by
+        [M(A, Num)]. The first check fails, but the second check requires
+        expanding [B] to check whether all of its variants are subsumed by
+        [M(A, Num)], namely whether [M(B, Num)] is subsumed by [M(A, Num)],
+        which is the original subsumption test.
+
+        To avoid infinite recursion, the algorithm tracks which types have
+        already been expanded, and do not expand it again when checking
+        subsumption for [B]. Thus, [B] is not expanded again, and the
+        subsumption test returns [false].
+        {[
+          typedef;
+          typedef A = L | M(A, Num);
+          typedef B = ( M(B, Num) );
+        ]} *)
     let rec subsumed id_to_defining_node expanded_types sub super =
-      (* The domain of an unlabelled singleton tuple is the domain of its single type term. *)
+      (* The domain of an unlabelled singleton tuple is the domain
+         of its single type term. *)
       let equiv_singleton_tuple term =
         match term with
         | LabelledTuple
@@ -489,6 +540,7 @@ module Check = struct
             referenced_term
         | _ -> term
       in
+      (* In the example above [( M(B, Num) )] is equivalent to [M(B, Num)]. *)
       let sub = equiv_singleton_tuple sub in
       let super = equiv_singleton_tuple super in
       match (sub, super) with
@@ -498,15 +550,19 @@ module Check = struct
             | Label sub_label ->
                 String.equal sub_label super_label
                 ||
-                (* The case where [sub_label] is a type name. *)
+                (* The case where [sub_label] is a type name,
+                  like [B] of [M(B, Num)] in the example. *)
                 subsumed_typename_term_type id_to_defining_node expanded_types
                   sub_label super
             | _ -> false
           in
           sub_is_label_case
-          (* The case where [super_label] is a type name. *)
+          (* The case where [super_label] is a type name,
+              like [A] of [M(A, Num)] in the example.
+          *)
           || subsumed_term_type_typename id_to_defining_node expanded_types sub
                super_label
+      (* From here on the test operates via structural induction. *)
       | ( Operator { op = sub_op; term = _, sub_term },
           Operator { op = super_op; term = _, super_term } ) ->
           operator_subsumed sub_op super_op
@@ -531,6 +587,10 @@ module Check = struct
       | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
           Function
             { from_type = _, super_from_term; to_type = _, super_to_term } ) ->
+          (* Functions can be partial or total, which require different subsumption tests.
+             To make this simple, we require equivalence of the from-terms and to-terms,
+             which is sufficient for our needs.
+          *)
           let equivalence_test term term' =
             subsumed id_to_defining_node expanded_types term term'
             && subsumed id_to_defining_node expanded_types term' term
@@ -555,6 +615,11 @@ module Check = struct
         let expanded_types = StringSet.add typename expanded_types in
         match StringMap.find_opt typename id_to_defining_node with
         | Some (Node_Type { Type.variants; _ }) ->
+            (* [sub_term] is subsumed by the type [typename] if it is subsumed by at least
+              one of its variants.
+              For example [L_Int(v: Z)] is subsumed by [literal] since it is subsumed by the
+              variant [L_Int(whole_number: Z)] of [literal].
+            *)
             (not (Utils.list_is_empty variants))
             && List.exists
                  (fun { TypeVariant.term = super_term } ->
@@ -589,8 +654,7 @@ module Check = struct
         labelled tuple/labelled record [term] with label [label]. If the lists
         have different lengths, or if any term in [sub_terms] is not subsumed by
         the corresponding term in [super_terms], a [SpecError] is raised. *)
-    let check_subsumed_terms_lists id_to_defining_node term label sub_terms
-        super_terms =
+    let check_subsumed_terms_lists id_to_defining_node sub_terms super_terms =
       let check_subsumed id_to_defining_node sub super =
         if subsumed id_to_defining_node StringSet.empty sub super then ()
         else
@@ -600,20 +664,17 @@ module Check = struct
           in
           raise (SpecError msg)
       in
-      if List.compare_lengths sub_terms super_terms = 0 then
-        List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
-      else
-        let msg =
-          Format.asprintf
-            "The type term `%a` cannot be instantiated since it has %i type \
-             terms and `%s` requires %i type terms"
-            PP.pp_type_term term (List.length sub_terms) label
-            (List.length super_terms)
-        in
-        raise (SpecError msg)
+      List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
 
     (** [is_constant id_to_defining_node id] checks if [id] is either defined as
-        a constant directly or as a type variant with a label. *)
+        a constant directly or as a type variant with a label.
+
+        For example:
+        {[
+          typedef A = L;
+          constant C
+        ]}
+        defines the constant [L] and the constant [C]. *)
     let check_is_constant id_to_defining_node id =
       match StringMap.find_opt id id_to_defining_node with
       | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ }) ->
@@ -625,16 +686,24 @@ module Check = struct
           in
           raise (SpecError msg)
 
-    (** [check_type_term id_to_defining_node term] checks that [term] is
-        well-formed with respect to the type definitions in the range of
-        [id_to_defining_node]. *)
-    let rec check_type_term id_to_defining_node term =
+    (** [check_well_typed id_to_defining_node term] checks that every type
+        referenced by [term] correctly instantiates its defining type with
+        respect to the type definitions in the range of [id_to_defining_node].
+        The check assumes that both [check_no_undefined_ids] and that
+        [check_well_formed] have already been run.
+
+        The check operates by structural induction on [term], except when a
+        label term references another type in which case the type variants of
+        the referenced type are considered. *)
+    let rec check_well_instantiated id_to_defining_node term =
       match term with
       | Operator { term = _, operator_term } ->
-          check_type_term id_to_defining_node operator_term
+          check_well_instantiated id_to_defining_node operator_term
       | LabelledTuple { label_opt; components } -> (
           let terms = List.map snd components in
-          let () = List.iter (check_type_term id_to_defining_node) terms in
+          let () =
+            List.iter (check_well_instantiated id_to_defining_node) terms
+          in
           match label_opt with
           | None -> ()
           | Some label -> (
@@ -646,19 +715,13 @@ module Check = struct
                       LabelledTuple { components = def_opt_named_components };
                   } ->
                   let def_terms = List.map snd def_opt_named_components in
-                  check_subsumed_terms_lists id_to_defining_node term label
-                    terms def_terms
-              | _ ->
-                  let msg =
-                    Format.asprintf
-                      "The type term `%a` cannot be instantiated since '%s' is \
-                       not a labelled tuple type"
-                      PP.pp_type_term term label
-                  in
-                  raise (SpecError msg)))
+                  check_subsumed_terms_lists id_to_defining_node terms def_terms
+              | _ -> assert false))
       | LabelledRecord { label_opt; fields } -> (
           let terms = List.map snd fields in
-          let () = List.iter (check_type_term id_to_defining_node) terms in
+          let () =
+            List.iter (check_well_instantiated id_to_defining_node) terms
+          in
           match label_opt with
           | None -> ()
           | Some label -> (
@@ -669,19 +732,11 @@ module Check = struct
                     TypeVariant.term = LabelledRecord { fields = def_fields; _ };
                   } ->
                   let def_terms = List.map snd def_fields in
-                  check_subsumed_terms_lists id_to_defining_node term label
-                    terms def_terms
-              | _ ->
-                  let msg =
-                    Format.asprintf
-                      "The type term `%a` cannot be instantiated since '%s' is \
-                       not a labelled record type"
-                      PP.pp_type_term term label
-                  in
-                  raise (SpecError msg)))
+                  check_subsumed_terms_lists id_to_defining_node terms def_terms
+              | _ -> assert false))
       | Function { from_type = _, from_term; to_type = _, to_term } ->
-          check_type_term id_to_defining_node from_term;
-          check_type_term id_to_defining_node to_term
+          check_well_instantiated id_to_defining_node from_term;
+          check_well_instantiated id_to_defining_node to_term
       | ConstantsSet labels ->
           List.iter (check_is_constant id_to_defining_node) labels
       | Label label -> (
@@ -697,6 +752,118 @@ module Check = struct
               in
               raise (SpecError msg))
 
+    (** [check_well_formed id_to_defining_node term] checks that [term] is
+        well-formed with respect to the type definitions in the range of
+        [id_to_defining_node]. That is:
+        - tuples have the correct number of components,
+        - records have the correct fields,
+        - constants sets only reference defined constants,
+        - labelled types reference defined labelled types. The check assumes
+          that [check_no_undefined_ids] has already been run and operates by
+          structural induction on [term]. *)
+    let rec check_well_formed id_to_defining_node term =
+      match term with
+      | Operator { term = _, operator_term } ->
+          check_well_formed id_to_defining_node operator_term
+      | LabelledTuple { label_opt; components } -> (
+          let terms = List.map snd components in
+          let () = List.iter (check_well_formed id_to_defining_node) terms in
+          match label_opt with
+          | None -> ()
+          | Some label -> (
+              let variant_def = StringMap.find label id_to_defining_node in
+              match variant_def with
+              | Node_TypeVariant
+                  {
+                    TypeVariant.term =
+                      LabelledTuple { components = def_components };
+                  } ->
+                  if
+                    List.compare_length_with components
+                      (List.length def_components)
+                    <> 0
+                  then
+                    let msg =
+                      Format.asprintf
+                        "The type term `%a` cannot be instantiated since it \
+                         has %i type terms and `%s` requires %i type terms"
+                        PP.pp_type_term term (List.length components) label
+                        (List.length def_components)
+                    in
+                    raise (SpecError msg)
+                  else ()
+              | _ ->
+                  let msg =
+                    Format.asprintf
+                      "The type term `%a` cannot be instantiated since '%s' is \
+                       not a labelled tuple type"
+                      PP.pp_type_term term label
+                  in
+                  raise (SpecError msg)))
+      | LabelledRecord { label_opt; fields } -> (
+          let terms = List.map snd fields in
+          let () = List.iter (check_well_formed id_to_defining_node) terms in
+          match label_opt with
+          | None -> ()
+          | Some label -> (
+              let variant_def = StringMap.find label id_to_defining_node in
+              match variant_def with
+              | Node_TypeVariant
+                  {
+                    TypeVariant.term =
+                      LabelledRecord { fields = def_fields; _ } as def_term;
+                  } ->
+                  let field_names = List.map fst fields in
+                  let def_field_names = List.map fst def_fields in
+                  if
+                    not
+                      (Utils.list_is_equal String.equal field_names
+                         def_field_names)
+                  then
+                    let msg =
+                      Format.asprintf
+                        "The type term `%a` cannot be instantiated since its \
+                         list of fields is different to those of %a"
+                        PP.pp_type_term term PP.pp_type_term def_term
+                    in
+                    raise (SpecError msg)
+                  else ()
+              | _ ->
+                  let msg =
+                    Format.asprintf
+                      "The type term `%a` cannot be instantiated since '%s' is \
+                       not a labelled record type"
+                      PP.pp_type_term term label
+                  in
+                  raise (SpecError msg)))
+      | Function { from_type = _, from_term; to_type = _, to_term } ->
+          check_well_formed id_to_defining_node from_term;
+          check_well_formed id_to_defining_node to_term
+      | ConstantsSet labels ->
+          List.iter (check_is_constant id_to_defining_node) labels
+      | Label label -> (
+          (* Label definitions have been filtered out so this is either a
+              reference to a type, which is well-formed, or reference to a label,
+              which should only appear in a [constants_set]. *)
+          let variant_def = StringMap.find label id_to_defining_node in
+          match variant_def with
+          | Node_Type _ -> ()
+          | _ ->
+              let msg =
+                Format.asprintf
+                  "The type term `%a` cannot be instantiated since '%s' is not \
+                   a type"
+                  PP.pp_type_term term label
+              in
+              raise (SpecError msg))
+
+    let check_well_typed id_to_defining_node term =
+      check_well_formed id_to_defining_node term;
+      (* Not for check whether [term] instantiates a type
+        and if so, check that it is subsumed by it.
+      *)
+      check_well_instantiated id_to_defining_node term
+
     let check id_to_defining_node elems =
       List.iter
         (fun elem ->
@@ -705,13 +872,16 @@ module Check = struct
             | Elem_Constant _ | Elem_Render _ -> ()
             | Elem_Relation { input; output } ->
                 List.iter
-                  (fun (_, term) -> check_type_term id_to_defining_node term)
+                  (fun (_, term) -> check_well_typed id_to_defining_node term)
                   input;
-                List.iter (check_type_term id_to_defining_node) output
+                List.iter (check_well_typed id_to_defining_node) output
             | Elem_Type { Type.variants; _ } ->
                 List.iter
                   (fun { TypeVariant.term } ->
-                    check_type_term id_to_defining_node term)
+                    match term with
+                    | Label _ ->
+                        () (* A constant label definition is well-formed. *)
+                    | _ -> check_well_typed id_to_defining_node term)
                   variants
           with SpecError e ->
             stack_spec_error e

@@ -1,5 +1,8 @@
-constant B { "" };
+constant B {""};
+
+typedef T {""} = C {""};
 
 typedef A { "A"} =
-    | (B)
+    | constants_set(B)
+    | (B) // B is a constant and can only be reference in a constants_set.
 ;

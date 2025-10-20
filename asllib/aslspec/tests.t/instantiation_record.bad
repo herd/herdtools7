@@ -3,5 +3,5 @@ typedef Int { "integer" };
 typedef A { "A"} =
     | X(Int) { "X"}
     | Y(Int) { "Y"}
-    | Z(X(Int), A[f: Int]) { "Z"}
+    | Z(X(Int), A[f: Int]) { "Z"} // Illegal: 'A' is not a record type.
 ;

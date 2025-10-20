@@ -1,10 +1,11 @@
-
+typedef Num {""};
 
 typedef A {""} =
     | L {""}
-    | M(A, L) {""}
+    | M(A, Num) {""}
 ;
-
 typedef B {""} =
-    | ( M(B, A) ) {""}
+    // An example where checking subsumption requires avoiding
+    // infinite recursion on the sub-term B.
+    | ( M(B, Num) ) {""}
 ;

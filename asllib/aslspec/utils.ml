@@ -1,6 +1,15 @@
 (** Utility functions for functions that are not available in 4.08. *)
 let list_is_empty = function [] -> true | _ -> false
 
+let list_is_equal eq l1 l2 =
+  let rec aux l1 l2 =
+    match (l1, l2) with
+    | [], [] -> true
+    | x1 :: t1, x2 :: t2 -> eq x1 x2 && aux t1 t2
+    | _ -> false
+  in
+  aux l1 l2
+
 let is_singleton_list list = 1 == List.length list
 let list_tl_or_empty list = match list with [] -> [] | _ :: t -> t
 

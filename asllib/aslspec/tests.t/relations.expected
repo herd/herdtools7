@@ -30,7 +30,7 @@
 
 \DefineType{expr}{
 \begin{flalign*}
-\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Int}{\texttt{v}})\\
+\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Num}{\texttt{v}})\\
 |\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 \DefineRelation{annotate_expr}{
