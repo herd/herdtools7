@@ -6,18 +6,22 @@
 % Macros for symbols
 % ------------------
 
+\newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
 \newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
 \newcommand\Int[0]{ \hyperlink{ast-Int}{\textsc{Int}} } % Generated from Int
 \newcommand\String[0]{ \hyperlink{ast-String}{\textsc{String}} } % Generated from String
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
 \newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
-\newcommand\annotateexpr'[0]{ \hyperlink{relation-annotateexpr'}{\textit{annotate\_expr'}} } % Generated from annotate_expr'
+\newcommand\annotateexpr[0]{ \hyperlink{relation-annotateexpr}{\textit{annotate\_expr}} } % Generated from annotate_expr
 \newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
+\newcommand\evalplus[0]{ \hyperlink{relation-evalplus}{\textit{eval\_plus}} } % Generated from eval_plus
 
 % -------------------
 % Macros for elements
 % -------------------
+
+\DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 
 \DefineType{type}{
 \begin{flalign*}
@@ -29,11 +33,11 @@
 \expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Int}{\texttt{v}})\\
 |\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
-\DefineRelation{annotate_expr'}{
+\DefineRelation{annotate_expr}{
 
 The relation
 \[
-\mathhypertarget{relation-annotateexpr'}\annotateexpr'(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateexpr}\annotateexpr(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the expression
 $\texttt{input}$
@@ -41,12 +45,22 @@ $\texttt{input}$
 
 \DefineRelation{annotate_plus}{
 
-The relation
+The function
 \[
-\mathhypertarget{relation-annotateplus}\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateplus}\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\longrightarrow\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the plus expression
 $\texttt{input}$
+} % EndDefineRelation
+
+\DefineRelation{eval_plus}{
+
+The relation
+\[
+\mathhypertarget{relation-evalplus}\evalplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\Num}{\texttt{output\_val}}
+\]
+evaluates the expression $\texttt{input}$ and returns
+$\texttt{output\_val}$
 } % EndDefineRelation
 
 

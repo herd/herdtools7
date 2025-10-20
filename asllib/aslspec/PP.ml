@@ -92,9 +92,20 @@ let pp_variants_with_attributes fmt variants =
 
 let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
 
-let pp_relation_definition fmt ({ Relation.name; input; output } as relation) =
+let pp_relation_category fmt = function
+  | None -> ()
+  | Some Relation.RelationCategory_Typing -> fprintf fmt "%s " (tok_str TYPING)
+  | Some Relation.RelationCategory_Semantics ->
+      fprintf fmt "%s " (tok_str SEMANTICS)
+
+let pp_relation_definition fmt
+    ({ Relation.name; property; category; input; output } as relation) =
   let module Rel = Relation in
-  fprintf fmt "@[<v>%s %s(%a) -> %a@,%a@];" (tok_str RELATION) name
+  fprintf fmt "@[<v>%a%s %s(%a) -> %a@,%a@];" pp_relation_category category
+    (match property with
+    | RelationProperty_Relation -> tok_str RELATION
+    | RelationProperty_Function -> tok_str FUNCTION)
+    name
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
     input pp_variants output pp_attribute_key_values
     (Rel.attributes_to_list relation)
