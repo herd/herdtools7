@@ -162,6 +162,34 @@ module Attributes = struct
       empty pairs
 end
 
+(** A datatype for a constant definition. *)
+module Constant : sig
+  type t = { name : string; att : Attributes.t }
+
+  val make : string -> (AttributeKey.t * attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
+end = struct
+  type t = { name : string; att : Attributes.t }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  open Attributes
+
+  let make name attributes = { name; att = Attributes.of_list attributes }
+
+  let prose_description self =
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  let math_macro self =
+    match find_opt AttributeKey.Math_Macro self.att with
+    | Some (MathMacroAttribute s) -> Some s
+    | _ -> None
+end
+
 (** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
   type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
@@ -266,6 +294,108 @@ end = struct
     | _ -> None
 end
 
+(** A datatype for a set of inference rules for a given relation. *)
+module Rule = struct
+  type operator =
+    | Operator_Assign
+    | Operator_Equal
+    | Operator_Iff
+    | Operator_List
+    | Operator_Size
+    | Operator_Union
+    | Operator_Some
+  (* | Operator_NotEqual
+    | Operator_And
+    | Operator_Or
+    | Operator_Not
+    | Operator_Choice
+    | Operator_ASTLabel *)
+
+  let is_infix_operator = function
+    | Operator_Assign | Operator_Equal | Operator_Iff -> true
+    | Operator_List | Operator_Size | Operator_Union | Operator_Some -> false
+
+  let is_prefix_operator op = not (is_infix_operator op)
+
+  type application_lhs =
+    | Tuple
+    | Relation of string
+    | TupleLabel of string
+    | Operator of operator
+    | Fields of string list
+    | Unresolved of expr
+
+  (** A term that can be used to form a judgement. *)
+  and expr =
+    | Var of string
+    | FieldPath of string list
+    | ListIndex of { var : string; index : string }
+    | Record of { label : string; fields : (string * expr) list }
+        (** A record construction expression, optionally labelled. *)
+    | Application of { lhs : application_lhs; args : expr list }
+        (** An application of [lhs] to the list of argument expressions [args].
+        *)
+
+  let make_tuple args = Application { lhs = Tuple; args }
+
+  let make_application lhs exprs =
+    Application { lhs = Unresolved lhs; args = exprs }
+
+  let make_prefix_operator_application op args =
+    Application { lhs = Operator op; args }
+
+  let make_infix_operator_application op lhs rhs =
+    Application { lhs = Operator op; args = [ lhs; rhs ] }
+
+  let make_record label fields = Record { label; fields }
+  let make_list_index var index = ListIndex { var; index }
+
+  (** A judgement form, which can be one of:
+
+      - a Boolean-valued expression;
+      - the output configuration of a conclusion judgement;
+      - a transition from one configuration to another;
+      - an indexed judgement form, which is a judgement form that is indexed
+        over a list. *)
+
+  type judgment_form =
+    | Expr of expr  (** a Boolean-valued expression *)
+    | Output of expr  (** The output configuration of a conclusion judgement. *)
+    | Transition of { lhs : expr; rhs : expr; is_output : bool }
+        (** A transition from the [lhs] configuration to the [rhs]
+            configuration. [is_output] indicates whether this transition is used
+            for the conclusion of a rule. *)
+    | Indexed of { index : string; list : string; body : judgment_form }
+
+  type judgement = { form : judgment_form; att : Attributes.t }
+  (** A judgement represents either a premise or the the output configuration of
+      the conclusion. *)
+
+  let judgment_layout { att } =
+    match Attributes.find_opt AttributeKey.Math_Layout att with
+    | Some (MathLayoutAttribute layout) -> layout
+    | _ -> Unspecified
+
+  (** A tree of judgments. *)
+  type rule_element =
+    | Judgement of judgement  (** A leaf judgment. *)
+    | Cases of case list
+
+  and case = { name : string; elements : rule_element list }
+  (** A sub-tree of judgments. *)
+
+  type t = rule_element list
+
+  let join_case_names names = String.concat "." names
+
+  let make_judgement form attributes =
+    { form; att = Attributes.of_list attributes }
+
+  let make_case name elements = { name; elements }
+  let make_cases cases = Cases cases
+  let make_root elements = elements
+end
+
 (** A datatype for a relation definition. *)
 module Relation : sig
   type relation_property =
@@ -283,6 +413,7 @@ module Relation : sig
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
   val make :
@@ -292,6 +423,7 @@ module Relation : sig
     opt_named_type_term list ->
     type_term list ->
     (AttributeKey.t * attribute) list ->
+    Rule.t option ->
     t
 
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
@@ -317,9 +449,10 @@ end = struct
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
-  let make name property category input output attributes =
+  let make name property category input output attributes rule_opt =
     {
       name;
       property;
@@ -327,6 +460,7 @@ end = struct
       input;
       output;
       att = Attributes.of_list attributes;
+      rule_opt;
     }
 
   let attributes_to_list self = Attributes.bindings self.att
@@ -354,43 +488,15 @@ end = struct
     | _ -> None
 end
 
-(** A datatype for a constant definition. *)
-module Constant : sig
-  type t = { name : string; att : Attributes.t }
-
-  val make : string -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-end = struct
-  type t = { name : string; att : Attributes.t }
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  open Attributes
-
-  let make name attributes = { name; att = Attributes.of_list attributes }
-
-  let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
-
-  let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
-end
-
 (** A datatype for grouping (subsets of) type definitions. *)
 module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
-  val make : string -> (string * string list) list -> render
+  val make : string -> (string * string list) list -> t
 end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
   let make name pointer_pairs =
     {
@@ -402,12 +508,24 @@ end = struct
     }
 end
 
+module RuleRender : sig
+  type t = { name : string; relation_name : string; path : string }
+
+  val make : string -> string -> string list -> t
+end = struct
+  type t = { name : string; relation_name : string; path : string }
+
+  let make name relation_name path =
+    { name; relation_name; path = Rule.join_case_names path }
+end
+
 (** The top-level elements of a specification. *)
 type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
-  | Elem_Render of TypesRender.render
+  | Elem_RenderTypes of TypesRender.t
+  | Elem_RenderRule of RuleRender.t
 
 type t = elem list
 (** A specification is a list of top-level elements. *)

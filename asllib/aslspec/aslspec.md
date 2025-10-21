@@ -7,7 +7,7 @@ aslspec allows specifying the following kinds of elements:
 - Constants
 - Relation signatures
 - Rendering elements
-- Inference rules (not just yet)
+- Inference rules
 
 # Type definitions
 Types definitions define mathematical types (like Booleans) and AST node types.
