@@ -22,16 +22,16 @@
 module type Config = sig
   val debuglexer : bool
   val verbose : int
-  val set_hash : bool
+  val hash : HashInfo.t
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
 end
 
 module DefaultConfig = struct
   let debuglexer = false let verbose = 0
+  let hash = HashInfo.Std
   let check_kind _ = None
   let check_cond _ = None
-  let set_hash = true
 end
 
 (* input signature, a lexer and a parser for a given architecture *)
@@ -238,17 +238,28 @@ module Make
             { parsed with
               MiscParser.condition =
               ConstrGen.set_kind k parsed.MiscParser.condition; } in
-      let parsed =
-        if not O.set_hash then parsed else
-        match MiscParser.get_hash parsed with
-        | None ->
-             let info = parsed.MiscParser.info in
-             { parsed with
-               MiscParser.info =
-               ("Hash",D.digest info init prog all_locs)::info ; }
-        | Some _ -> parsed in
-      parsed
-    end
+      let rehash remove parsed =
+        let info =
+          if remove then
+            List.filter
+              (fun (key,_) -> not (String.equal MiscParser.hash_key key))
+              parsed.MiscParser.info
+          else parsed.MiscParser.info in
+        let hash = D.digest info init prog all_locs in
+        { parsed with
+          MiscParser.info = (MiscParser.hash_key,hash)::info; } in
+      let open HashInfo in
+      match O.hash with
+      | Std ->
+          begin
+            match MiscParser.get_hash parsed with
+            | None -> rehash false parsed
+            | Some _ -> parsed
+          end
+      | NoOp -> parsed
+      | Rehash -> rehash true parsed
+
+  end
 
     let parse chan x =
       let module Src = struct

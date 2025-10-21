@@ -18,13 +18,17 @@
 (* Apply a function (zyva) to one test *)
 (***************************************)
 
+module type Config = GenParser.Config
+
+module DefaultConfig = GenParser.DefaultConfig
+
 module LexConf = struct
   include Splitter.Default
   let is_morello = false (* For AArch64, no Morello extension for tools *)
 end
 
 module Top
-    (PCfg: GenParser.Config)
+    (Cfg:Config)
     (T:sig type t end) (* Return type, must be abstracted *)
     (B: functor(A:ArchBase.S)-> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
       (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) :
@@ -36,7 +40,7 @@ end = struct
       (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
     struct
-      module P = GenParser.Make(PCfg)(A)(L)
+      module P = GenParser.Make(Cfg)(A)(L)
       module X = B(A)(Pte)(AddrReg)
 
 

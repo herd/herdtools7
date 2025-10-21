@@ -42,7 +42,7 @@ let pp_duplicates = function
 module Top
     (Opt:
        sig
-         val verbose : bool
+         val verbose : int
          val duplicates : duplicates
          val reverse : bool
          val cost : string -> int
@@ -78,7 +78,12 @@ module Top
           hash = MiscParser.get_hash  parsed; }
     end
 
-    module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)
+    module ZConfig = struct
+      include ToolParse.DefaultConfig
+      let verbose = Opt.verbose
+    end
+
+    module Z = ToolParse.Top(ZConfig)(T)(Make)
 
     type name = {fname:string; tname:string;}
 
@@ -174,7 +179,7 @@ module Top
             Hashtbl.replace t h (sz,f::fs)
           with Not_found -> Hashtbl.add t h (sz,[f]) in
         List.iter (fun (f,(sz,h)) -> see h f sz) xs ;
-        if Opt.verbose then begin
+        if Opt.verbose > 0 then begin
           Hashtbl.iter
             (fun _ (_,fs) -> match fs with
             | _::_::_ ->
@@ -224,7 +229,7 @@ module Top
           if Opt.tnames then (fun n -> n.tname) else (fun n -> n.fname) in
         List.iter
           (fun (ns,(c1,(c2,c3))) ->
-            if Opt.verbose then printf "#%i %i %i\n" c1 c2 c3;
+            if Opt.verbose > 0 then printf "#%i %i %i\n" c1 c2 c3;
             match Opt.duplicates with
             | Delete ->
                 begin match ns with
@@ -250,7 +255,7 @@ module Top
   end
 
 
-let verbose = ref false
+let verbose = ref 0
 let duplicates = ref Delete
 let arg = ref []
 let orders = ref []
@@ -277,7 +282,7 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    ["-v",Arg.Unit (fun () -> verbose := true), " be verbose";
+    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
      "-d",Arg.Unit (fun () -> duplicates := Keep)," keep duplicates";
      "-dups",Arg.String (fun tag -> duplicates := parse_duplicates tag),
      sprintf
@@ -298,13 +303,13 @@ let tests = !arg
 
 let parse_int s = try Some (int_of_string s) with _ -> None
 
-module L = LexRename.Make(struct let verbose = if !verbose then 1 else 0 end)
+module L = LexRename.Make(struct let verbose = !verbose end)
 let costs = L.read_from_files !orders parse_int
 
 module Check =
   CheckName.Make
     (struct
-      let verbose = if !verbose then 1 else 0
+      let verbose = !verbose
       let rename = []
       let select = []
       let names = !names

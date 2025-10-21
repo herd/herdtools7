@@ -49,7 +49,12 @@ module Top
 
     end
 
-    module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)
+    module ZConfig = struct
+      include ToolParse.DefaultConfig
+      let verbose = Opt.verbose
+    end
+
+    module Z = ToolParse.Top(ZConfig)(T)(Make)
 
     let do_test name  =
       try

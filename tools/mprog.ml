@@ -229,28 +229,35 @@ module Top
 
     end
 
+    module TPT =
+      ToolParse.Top
+        (struct
+          include ToolParse.DefaultConfig
+
+          let verbose = O.verbose
+
+          let hash =
+            let open HashInfo in
+            if O.set_hash then Std else NoOp
+        end)
+        (T)
+
     open OutMode
-
-    module PCfg = struct
-      include GenParser.DefaultConfig
-
-      let set_hash = O.set_hash
-    end
 
     let zyva =
       if O.transpose then
-        let module Z =  ToolParse.Top(PCfg)(T)(Transpose) in
+        let module Z = TPT(Transpose) in
         Z.from_file
       else match O.mode with
       | Txt ->
           if O.alloc then
-            let module Z =  ToolParse.Top(PCfg)(T)(TextAlloc) in
+            let module Z =  TPT(TextAlloc) in
             Z.from_file
           else
-            let module Z =  ToolParse.Top(PCfg)(T)(Text) in
+            let module Z =  TPT(Text) in
             Z.from_file
       | LaTeX|HeVeA|HeVeANew ->
-          let module Z =  ToolParse.Top(PCfg)(T)(Latex) in
+          let module Z =  TPT(Latex) in
           Z.from_file
 
   end
