@@ -46,7 +46,7 @@ module Top
           hash = hash; }
     end
 
-    module Z = ToolParse.Top(T)(Make)
+    module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)
 
     type name = {fname:string; tname:string;}
 

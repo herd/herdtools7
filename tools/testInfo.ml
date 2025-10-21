@@ -48,4 +48,4 @@ module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
     { T.tname = tname ; fname=fname; hash = hash; }
 end
 
-module Z = ToolParse.Top(T)(Make)
+module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)

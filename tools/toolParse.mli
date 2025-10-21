@@ -19,7 +19,7 @@
 (***************************************)
 
 module Top :
-    functor (T:sig type t end) -> (* Return type, must be abstracted *)
+    functor (PCfg: GenParser.Config) (T:sig type t end) -> (* Return type, must be abstracted *)
       functor (B: functor(A:ArchBase.S) -> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
         (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) ->
 sig
