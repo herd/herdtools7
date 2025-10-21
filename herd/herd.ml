@@ -573,6 +573,7 @@ let () =
     let module T =
       ParseTest.Top
         (struct
+          include GenParser.DefaultConfig
           let bell_model_info = bi
           include Config end) in
     SymbValue.reset_gensym () ;

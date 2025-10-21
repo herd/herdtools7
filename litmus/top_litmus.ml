@@ -433,6 +433,7 @@ end = struct
           let precision = TestConf.fault_handling
         end in
         let module Cfg = struct
+          include GenParser.DefaultConfig
           include OT
           let precision = TestConf.fault_handling
           let variant = TestConf.variant

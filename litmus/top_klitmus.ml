@@ -47,6 +47,7 @@ end
 module Top(O:Config)(Tar:Tar.S) = struct
 
   module OX = struct
+    include GenParser.DefaultConfig
     let debuglexer = O.verbose > 2
     let debug = debuglexer
     include O

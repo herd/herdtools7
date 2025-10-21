@@ -24,6 +24,7 @@ module LexConf = struct
 end
 
 module Top
+    (PCfg: GenParser.Config)
     (T:sig type t end) (* Return type, must be abstracted *)
     (B: functor(A:ArchBase.S)-> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
       (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) :
@@ -35,7 +36,7 @@ end = struct
       (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
       (L:GenParser.LexParse with type instruction = A.parsedPseudo) =
     struct
-      module P = GenParser.Make(GenParser.DefaultConfig)(A)(L)
+      module P = GenParser.Make(PCfg)(A)(L)
       module X = B(A)(Pte)(AddrReg)
 
 

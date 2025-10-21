@@ -69,7 +69,7 @@ module Top
           map=map; }
     end
 
-    module Z = ToolParse.Top(T)(Make)
+    module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)
 
     let do_test name (kh,km as k) =
       try
