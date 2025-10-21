@@ -92,7 +92,6 @@ let pp_op1 _hexa = function
   | ToAArch64 -> "ToAArch64"
   | FromAArch64 -> "FromAArch64"
 
-
 let ( let* ) = Option.bind
 let return c = Some c
 let return_concrete s = Constant.Concrete s |> return

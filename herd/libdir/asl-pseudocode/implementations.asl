@@ -415,7 +415,10 @@ end;
 
 func IsFeatureImplemented(f : Feature) => boolean
 begin
-  return FALSE;
+  case f of
+    when FEAT_LSE2 => return TRUE;
+    otherwise => return FALSE;
+  end;
 end;
 
 // =============================================================================
