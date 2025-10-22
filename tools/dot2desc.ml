@@ -948,7 +948,7 @@ module ParseDotFile(C: sig
     val debuglexer : bool
     val instr: string option
   end) : sig
-    val parse_file : string -> DotGraph.t list
+    val parse_file : string -> string -> DotGraph.t list
   end =
 struct
   let do_parse_file channel =
@@ -965,8 +965,8 @@ struct
       exit 1
     | e -> raise e
 
-  let parse_file filename =
-    let pairs = Misc.input_protect do_parse_file filename in
+  let parse_file in_filename wb_filename =
+    let pairs = Misc.input_protect do_parse_file in_filename in
     let tr_graphs, parsed_graphs = List.split pairs in
 
     let do_writeback channel =
@@ -974,7 +974,7 @@ struct
       let file_contents = String.concat "\n\n" printed_parsed_graphs in
       Printf.fprintf channel "%s\n" file_contents in
 
-    Misc.output_protect do_writeback filename;
+    Misc.output_protect do_writeback wb_filename;
     tr_graphs
 end
 
@@ -990,8 +990,8 @@ struct
     let instr = O.instr
   end)
 
-  let exec filename =
-    let graphs = Parse.parse_file filename in
+  let exec filename wb_filename =
+    let graphs = Parse.parse_file filename wb_filename in
     begin match graphs with
     | [] -> Printf.printf "No graph produced from dot file %s\n" filename
     | [g] -> Printf.printf "%s" (DotGraph.describe g)
@@ -1010,6 +1010,7 @@ end
 
 let debug = ref false
 let instr = ref None
+let wb_fname = ref None
 let args = ref []
 let get_cmd_arg s = args := s :: !args
 
@@ -1019,6 +1020,9 @@ let options = [
   ArgUtils.parse_string_opt "-instr" instr
     "Instance of the instruction being run, used for substitution \
     of register names and/or condition variables";
+  ArgUtils.parse_string_opt "-wbfname" wb_fname
+    "Name of the file where the simplified dot graph will be pasted. \
+    If left blank, it defaults to the input file"
 ]
 
 let () =
@@ -1049,6 +1053,9 @@ let () =
       let instr = !instr
     end) in
     let filename = List.hd !args in
-    Run.exec filename
+    let wb_filename = match !wb_fname with
+    | Some f -> f
+    | None -> filename in
+    Run.exec filename wb_filename
   with
   | Misc.Fatal msg -> Printf.eprintf "%s: %s\n" prog msg ; exit 2
