@@ -1,12 +1,10 @@
-typedef O { "O" };
+typedef O;
 
-typedef A { "A" } =
+typedef A =
     | L(O, O)
-    { "L definition" }
 ;
 
-typedef B { "B" } =
+typedef B =
     // L should only be instantiated with two types, not three.
     | (L(O, A, B))
-    { "L instance" }
 ;

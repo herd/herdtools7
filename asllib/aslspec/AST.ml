@@ -195,7 +195,7 @@ end = struct
   let prose_description self =
     match Attributes.find_opt AttributeKey.Prose_Description self.att with
     | Some (StringAttribute s) -> s
-    | _ -> assert false
+    | _ -> ""
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
@@ -261,7 +261,7 @@ end = struct
   let prose_description self =
     match Attributes.find_opt AttributeKey.Prose_Description self.att with
     | Some (StringAttribute s) -> s
-    | _ -> assert false
+    | _ -> ""
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
@@ -344,7 +344,7 @@ end = struct
   let prose_description self =
     match Attributes.find_opt AttributeKey.Prose_Description self.att with
     | Some (StringAttribute s) -> s
-    | _ -> assert false
+    | _ -> ""
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
@@ -354,7 +354,7 @@ end = struct
   let prose_application self =
     match find_opt AttributeKey.Prose_Application self.att with
     | Some (StringAttribute s) -> s
-    | _ -> assert false
+    | _ -> ""
 
   let math_layout self =
     match find_opt AttributeKey.Math_Layout self.att with

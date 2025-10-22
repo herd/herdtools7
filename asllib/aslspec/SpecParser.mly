@@ -155,7 +155,8 @@ let relation_category :=
     | SEMANTICS; { Some Relation.RelationCategory_Semantics }
 
 let type_attributes ==
-    LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
+    | { [] }
+    | LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
 
 let type_attribute :=
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
