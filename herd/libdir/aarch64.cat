@@ -108,13 +108,13 @@ let Tag-obs =
 
 (** TTD-observed-by **)
 
-(* TLBUncacheable-predecessor *)
-let TLBuncacheable-pred =
-  [range([TLBUncacheable & FAULT]; tr-ib^-1)]; (ca & ~intervening(W,ca)); [Exp & W]
+(* TLBUncacheable-coherence-after *)
+let TLBuncacheable-ca =
+  [range([TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R])]; ca; [Exp & W | HU]
 
-(* Hardware-update-predecessor *)
-let HU-pred =
-  (ca & ~intervening(W,ca)); [HU]
+(* Hardware-update-coherence-after *)
+let HU-ca =
+  [Exp & R]; ca; [HU]
 
 (* TLBI-coherence-after *)
 let TLBI-ca =
@@ -123,8 +123,8 @@ let TLBI-ca =
 (* TTD-observed-by *)
 let TTD-obs =
     [Imp & TTD]; rf | rf; [Imp & TTD]
-    | TLBuncacheable-pred
-    | HU-pred
+    | TLBuncacheable-ca
+    | HU-ca
     | [HU]; ca; [W] | [W]; ca; [HU]
     | TLBI-ca
 

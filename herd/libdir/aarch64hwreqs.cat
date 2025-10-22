@@ -97,8 +97,8 @@ let dob =
  | addr; [Exp & M]; po; [Exp & W | HU]
  | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
  | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W]
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W] 
+ | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | HU]
+ | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | HU]
 
 (* Fetch-ordered-before *)
 let f-ob =
