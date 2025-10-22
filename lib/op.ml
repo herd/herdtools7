@@ -135,6 +135,7 @@ type 'aop op1 =
   | IsInstr (* Check nature of constant *)
   | Promote (* Promote to higher precision *)
   | Demote  (* Demote to lower precision *)
+  | CheckSymbolic  (* Runtime check *)
   | ArchOp1 of 'aop
 
 let pp_op1 hexa pp_aop o = match o with
@@ -169,6 +170,7 @@ let pp_op1 hexa pp_aop o = match o with
 | IsInstr -> "IsInstruction"
 | Promote -> "promote"
 | Demote -> "demote"
+| CheckSymbolic -> "CheckSymbolic"
 | ArchOp1 aop -> pp_aop hexa aop
 
 (***********)

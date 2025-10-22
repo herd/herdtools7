@@ -968,6 +968,19 @@ let match_reg_events es =
             (add_eq
                (get_loc_as_value store)
                (get_loc_as_value load) eqs)
+(*
+ * The equation `False = CheckSymbolic(v)` induces
+ * the following behaviour:
+ * If v is a symbolic address, then CheckSymbolic(v) evaluates
+ * to True and the execution candidate is discarded.
+ * Otherwise, CheckSymbolic(v) raises a UserError exception
+ * and the whole simulation stops on a fatal error.
+ * The process yields the intended behaviour of
+ * stopping on a fatal error in case of attempt of
+ * dereferencing a non-symbolic constant.
+ *)
+    let add_nosymbol v eqs =
+      VC.Assign (V.v_false,VC.Unop (Op.CheckSymbolic,v))::eqs
 
 (* Our rather loose rfmaps can induce a cycle in
    causality. Check this. *)
@@ -1103,16 +1116,27 @@ let match_reg_events es =
       List.fold_right2
         (fun er rf -> S.RFMap.add (S.Load er) rf)
 
+(* Write kind, used locally *)
+    type kwrite =
+      | Write of S.read_from (* Found a write *)
+      | NoWrite              (* Leave this read without a write *)
+      | NoSymbol of V.v      (* Idem + Fail if location is not symbolic *)
+
+(**************************)
+(* Complete rfm structure *)
+(**************************)
+
     let add_some_mem =
       List.fold_right2
         (fun er rf ->  match rf with
-        | None -> fun rfm -> rfm
-        | Some rf -> S.RFMap.add (S.Load er) rf)
-
+        | NoWrite|NoSymbol _ -> fun rfm -> rfm
+        | Write rf -> S.RFMap.add (S.Load er) rf)
 
     let add_mems =
       List.fold_right2
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
+
+(* Solver code for memory. Starts by pairing loads and compatible writes. *)
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
@@ -1120,9 +1144,14 @@ let match_reg_events es =
       let possible =
         List.map
           (fun (er,ws) ->
-            let ws = List.map (fun w -> Some w) ws in
+            let ws = List.map (fun w -> Write w) ws in
+            let ws =
+              let v = S.E.global_loc_of er in
+              match v with
+              | Some (V.Var _ as v) -> NoSymbol v::ws
+              | None|Some (V.Val _) -> ws in
             (* Add reading from nowhere for speculated reads *)
-            let ws = if is_spec es er then None::ws else ws in
+            let ws = if is_spec es er then NoWrite::ws else ws in
             er,ws)
           possible in
       let loads,possible_stores =  List.split possible in
@@ -1137,8 +1166,9 @@ let match_reg_events es =
             let cns =
               List.fold_right2
                 (fun load rf k -> match rf with
-                | None -> k (* No write, no equation *)
-                | Some rf -> add_eqs test rf load k)
+                | NoWrite -> k (* No write, no equation *)
+                | Write rf -> add_eqs test rf load k
+                | NoSymbol v -> add_nosymbol v k)
                 loads stores cns in
             if dbg then eprintf "\n%!" ;
             (* And solve *)
