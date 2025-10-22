@@ -2695,7 +2695,7 @@ relation use_ty(t: ty_or_opt) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the type or
-  \optional{} type {t} depends on.",
+  \optionalterm{} type {t} depends on.",
   prose_application = "",
 };
 
@@ -2703,7 +2703,7 @@ relation use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) 
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
-  \optional{} pair consisting of identifier {x} (the type
+  \optionalterm{} pair consisting of identifier {x} (the type
   being subtyped) and fields {subfields} depends on.",
   prose_application = "",
 };
@@ -2712,7 +2712,7 @@ relation use_expr(e: expr_or_opt) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
-  expression or \optional{} expression {e} depends on.",
+  expression or \optionalterm{} expression {e} depends on.",
   prose_application = "",
   math_macro = \useexpr
 };
@@ -3059,7 +3059,7 @@ relation annotate_call(tenv: static_envs, call: call) ->
         $\vcall.\callname$ updated to uniquely identify the
         call among the set of overloading subprograms declared
         with the same name;
-    \item the \optional{} annotated return type {ret_ty_opt};
+    \item the \optionalterm{} annotated return type {ret_ty_opt};
     \item the \sideeffectsetterm{} inferred for {call}, {ses}.
     \end{itemize}
     \ProseOtherwiseTypeError",
@@ -3174,10 +3174,10 @@ relation check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier,
 relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs: list0((Identifier, expr))) ->
          (ret_ty_opt: option(ty)) | type_error
 {
-  "annotates the \optional{} return type
+  "annotates the \optionalterm{} return type
   {func_sig_ret_ty_opt} given with the subprogram type
   {call_type} with respect to the parameter expressions
-  {eqs}, yielding the \optional{} annotated type
+  {eqs}, yielding the \optionalterm{} annotated type
   {ret_ty_opt}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
@@ -3381,7 +3381,7 @@ relation annotate_one_param(
     (new_tenv': static_envs, ty: ty) | type_error
 {
    prose_description = "annotates the parameter given by {x} and the
-                        \optional\ type {ty_opt} with respect to {tenv} and
+                        \optionalterm{} type {ty_opt} with respect to {tenv} and
                         then declares the parameter {x} in environment
                         {new_tenv}. The updated environment {new_tenv'} and
                         annotated parameter type {ty} are returned.
@@ -3480,13 +3480,13 @@ relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifi
 relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: static_envs, return_type: option(ty), ses_in: powerset(TSideEffect)) ->
          (new_tenv: static_envs, new_return_type: ty, ses: powerset(TSideEffect)) | type_error
 {
-  "annotates the \optional{} return type {return_type} in
+  "annotates the \optionalterm{} return type {return_type} in
   the context of the \staticenvironmentterm{}
   {tenv_with_params}, where all parameters have been
   declared, and the \sideeffectsetterm{} {ses_in}. The
   result is {new_tenv}, which is the input
   {tenv_with_args} (where all parameters and arguments
-  have been declared) with the \optional{} annotated
+  have been declared) with the \optionalterm{} annotated
   return type {new_return_type} added and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
@@ -4148,11 +4148,11 @@ relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: opt
          (new_genv: global_static_envs, t2: ty, s': option((Identifier, list0(field)))) | type_error
 {
   "declares a type named {name} with type {ty} and
-  \optional{} additional fields over another type {s} in
+  \optionalterm{} additional fields over another type {s} in
   the \globalstaticenvironmentterm{} {genv}, resulting
   in the modified \globalstaticenvironmentterm{}
   {new_genv}, annotated type {t2}, and annotated
-  \optional{} additional fields {s'}.
+  \optionalterm{} additional fields {s'}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
@@ -4161,9 +4161,9 @@ relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: opt
 relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
          (new_tenv: static_envs, new_ty: ty, s': list0(field)) | type_error
 {
-  "annotates the type {ty} with the \optional{} extra
+  "annotates the type {ty} with the \optionalterm{} extra
   fields {s} in {tenv}, yielding the modified
-  environment {new_tenv}, type {new_ty}, and \optional{}
+  environment {new_tenv}, type {new_ty}, and \optionalterm{}
   extra fields {s'}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
@@ -4172,7 +4172,7 @@ relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: o
 relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
          (ty_opt': option(ty)) | type_error
 {
-  "annotates the type {t} inside an \optional{} {ty_opt},
+  "annotates the type {t} inside an \optionalterm{} {ty_opt},
   if there is one, and leaves it as is if {ty_opt} is
   $\None$. \ProseOtherwiseTypeError",
   prose_application = "",
@@ -4181,8 +4181,8 @@ relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
 relation annotate_expr_opt(tenv: static_envs, expr_opt: option(expr)) ->
          (res: (option(expr), option(ty))) | type_error
 {
-  "annotates the \optional{} expression {expr_opt} in
-  {tenv} and returns a pair of \optional{} expressions
+  "annotates the \optionalterm{} expression {expr_opt} in
+  {tenv} and returns a pair of \optionalterm{} expressions
   for the type and annotated expression in {res}.
   \ProseOtherwiseTypeError",
   prose_application = "",
