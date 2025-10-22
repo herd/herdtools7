@@ -1,0 +1,13 @@
+AArch64 A218
+(* This test should succeed *)
+{
+ int64_t *p = &x;
+ int64_t x = 2;
+ 0:X0=p;
+}
+ P0          ;
+ LDR X1,[X0] ;
+ LDR X2,[X1] ;
+
+locations [0:X1;0:X2;]
+forall (true)

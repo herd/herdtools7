@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/A217.litmus": Non-symbolic memory access found on '[2]' (User error)
