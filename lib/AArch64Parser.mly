@@ -691,6 +691,8 @@ instr:
 /* Memory */
 | LDR wxreg COMMA mem_ea
   { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR (v,r,ra,ext) }
+| LDR creg COMMA mem_ea
+  { let (ra,ext) = $4 in I_LDR (V128,$2,ra,ext) }
 | LDRSW xreg COMMA mem_ea
   { let r = $2 and (ra,ext) = $4 in I_LDRSW (r,ra,ext) }
 | LDRSB reg COMMA mem_ea
@@ -759,6 +761,8 @@ instr:
   { I_LDARBH (H,AQ,$2,$5) }
 | STR wxreg COMMA mem_ea
   { let (v,r)   = $2 and (ra,ext) = $4 in I_STR (v,r,ra,ext) }
+| STR creg COMMA mem_ea
+  { let (ra,ext) = $4 in I_STR (V128,$2,ra,ext) }
 | STRB wreg COMMA mem_ea
   { let (ra,idx) = $4 in I_STRBH (B,$2,ra,idx) }
 | STRH wreg COMMA mem_ea
