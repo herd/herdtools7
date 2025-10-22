@@ -250,31 +250,6 @@ module Check = struct
     in
     find_with_set StringSet.empty strs
 
-  (** Checks, for each definition node, that all mandatory attributes are
-      present. The parser ensures only allowed attributes are added. *)
-  let check_mandatory_attributes definition_nodes =
-    let check_mandatory_attributes_for_definition_node defining_node =
-      let attributes = definition_node_attributes defining_node in
-      let mandatory_attrs =
-        let open AttributeKey in
-        match defining_node with
-        | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
-            [ Prose_Description ]
-        | Node_Relation _ -> [ Prose_Description; Prose_Application ]
-      in
-      List.iter
-        (fun attr ->
-          if not (Attributes.mem attr attributes) then
-            let name = definition_node_name defining_node in
-            let msg =
-              Format.sprintf "element '%s' is missing mandatory attribute: '%s'"
-                name (AttributeKey.to_str attr)
-            in
-            raise (SpecError msg))
-        mandatory_attrs
-    in
-    List.iter check_mandatory_attributes_for_definition_node definition_nodes
-
   let rec check_layout term layout =
     let msg =
       Format.asprintf
@@ -737,20 +712,7 @@ module Check = struct
       | Function { from_type = _, from_term; to_type = _, to_term } ->
           check_well_instantiated id_to_defining_node from_term;
           check_well_instantiated id_to_defining_node to_term
-      | ConstantsSet labels ->
-          List.iter (check_is_constant id_to_defining_node) labels
-      | Label label -> (
-          let variant_def = StringMap.find label id_to_defining_node in
-          match variant_def with
-          | Node_TypeVariant _ | Node_Type _ -> ()
-          | _ ->
-              let msg =
-                Format.asprintf
-                  "The type term `%a` cannot be instantiated since '%s' is not \
-                   a type or type variant"
-                  PP.pp_type_term term label
-              in
-              raise (SpecError msg))
+      | ConstantsSet _ | Label _ -> ()
 
     (** [check_well_formed id_to_defining_node term] checks that [term] is
         well-formed with respect to the type definitions in the range of
@@ -896,7 +858,6 @@ let from_ast ast =
   let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
   let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
-  let () = Check.check_mandatory_attributes definition_nodes in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
   let defined_ids = List.rev defined_ids in
