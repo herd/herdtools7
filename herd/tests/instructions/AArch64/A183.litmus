@@ -1,6 +1,7 @@
 AArch64 A183
 (*
-  Complex indrect store/load, should fail
+  Complex indirect store/load, should fail.
+  Failing evolution of A182.
 *)
 Variant=DontCheckMixed
 {

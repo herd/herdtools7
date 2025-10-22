@@ -1,8 +1,8 @@
 AArch64 A182
 (*
-  Complex indrect store/load, should work
+  Complex indirect store/load, should work
 *)
-q
+
 {
   int x[2] = {1,1};
   int *p = &x;
