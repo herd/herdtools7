@@ -1,0 +1,9 @@
+typedef Int { "integer" };
+
+typedef A { "A"} = X[f: Int, g: Int] { "X"}
+;
+
+typedef B {"B"} =
+    | L(X[f: Int, g: Int]) {""}
+    | M(X[f: Int]) {""} // Illegal, field 'g' is missing.
+;

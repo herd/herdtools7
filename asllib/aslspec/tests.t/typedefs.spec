@@ -31,7 +31,7 @@ typedef B { prose_description = "B"} =
     { prose_description = "a labelled ordered pair of Int values" }
     | [f: Int, g: fun (Int, Int) -> powerset(Int)]
     { prose_description = "a record with two fields" }
-    | LRec[f: Rec(Int, Int, Int)]
+    | LRec[f: Rec(Int, Int), g: fun (Int, Int) -> powerset(Int)]
     { prose_description = "a labelled record with two fields" }
 ;
 

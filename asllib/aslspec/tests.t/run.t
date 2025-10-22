@@ -9,7 +9,6 @@
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 2 column 1
   [1]
-  $ aslspec type_instance.bad
 
 # Test that --pp generates legal output
   $ aslspec typedefs.spec --pp > tmp.spec; aslspec tmp.spec
@@ -21,4 +20,35 @@
 
   $ aslspec unmatched_prose_var.spec
   Specification Error: The prose template 'transforms {a} to {b}' contains the following unmatched variables: {b}
+  [1]
+
+# Check that all type terms are well-formed
+  $ aslspec instantiation_expansion.spec
+  $ aslspec instantiation_labelled_tuple2.bad
+  Specification Error: The type term `L(O, A, B)` cannot be instantiated since it has 3 type terms and `L` requires 2 type terms
+  While checking: B
+  [1]
+  $ aslspec instantiation_labelled_tuple.bad
+  Specification Error: The type term `A(Int)` cannot be instantiated since 'A' is not a labelled tuple type
+  While checking: A
+  [1]
+  $ aslspec instantiation_function.bad
+  Specification Error: Unable to determine that `fun O -> P` is subsumed by `fun P -> P`
+  While checking: Incorrect
+  [1]
+  $ aslspec instantiation_constant.bad
+  Specification Error: Int is used as a constant even though it is not defined as one
+  While checking: B
+  [1]
+  $ aslspec instantiation_record.bad
+  Specification Error: The type term `A[f: Int]` cannot be instantiated since 'A' is not a labelled record type
+  While checking: A
+  [1]
+  $ aslspec instantiation_label.bad
+  Specification Error: The type term `B` cannot be instantiated since 'B' is not a type
+  While checking: A
+  [1]
+  $ aslspec instantiation_recursion.bad
+  Specification Error: Unable to determine that `B` is subsumed by `A`
+  While checking: B
   [1]
