@@ -25,11 +25,11 @@
 (menhir
  (modules Tokens Parser)
  (merge_into Parser)
- (flags --cmly --external-tokens Tokens --exn-carries-state))
+ (flags --cmly --external-tokens Tokens --exn-carries-state --strict))
 
 (menhir
  (modules Parser0)
- (flags --unused-tokens --table))
+ (flags --unused-tokens --table --strict))
 
 (rule
  (target parser_errors.ml)
