@@ -187,8 +187,6 @@ let type_variant := VDASH; term=type_term; { term }
 
 let type_term_with_attributes := ~=type_term; ~=type_attributes;
     { TypeVariant.make TypeKind_Generic type_term type_attributes }
-    | ~=type_term;
-    { TypeVariant.make TypeKind_Generic type_term [] }
 
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }

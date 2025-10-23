@@ -10,7 +10,7 @@
 
 (menhir
  (modules SpecParser)
- (flags --unused-tokens --explain))
+ (flags --unused-tokens --explain --strict))
 
 (rule
  (target TokenStrings.ml)
