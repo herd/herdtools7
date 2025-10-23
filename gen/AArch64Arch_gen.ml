@@ -948,7 +948,7 @@ let init_rmw rmw =
     | LdOp op|StOp op -> begin match op with
       (* Set the spacial initial values as described above. *)
       | A_ADD|A_CLR|A_EOR|A_SET -> 0x07_20
-      | A_SMIN|A_UMIN -> 0x5_00_00
+      | A_SMIN|A_UMIN -> 0x50_00
       | _ -> 0
     end
     | _ -> 0 in
