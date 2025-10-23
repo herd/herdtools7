@@ -20,7 +20,7 @@
 module type Config = sig
   val debuglexer : bool
   val verbose : int
-  val set_hash : bool (* Set the hash of the parsed test, default to true. *)
+  val hash : HashInfo.t (* Hash behaviour *)
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
 end

@@ -22,13 +22,22 @@ module Top
     (Opt:
        sig
          val verbose : int
+         val recompute_hash : bool
        end) =
   struct
-    let () = ignore Opt.verbose
+
+    module Config = struct
+      include ToolParse.DefaultConfig
+      let verbose = Opt.verbose
+      let hash =
+        let open HashInfo in
+        if Opt.recompute_hash then Rehash else Std
+    end
+    module TI = TestInfo.Top(Config)
 
     let do_test name =
       try
-        let t = TestInfo.Z.from_file name in
+        let t = TI.Z.from_file name in
         printf "%s %s\n" t.TestInfo.T.tname t.TestInfo.T.hash
       with
       | Misc.Exit -> ()
@@ -44,6 +53,7 @@ module Top
 
 
 let verbose = ref 0
+let recompute_hash = ref false
 let arg = ref []
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -51,8 +61,11 @@ let prog =
 
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
-    (fun s -> arg := !arg @ [s])
+    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
+     "-rehash", Arg.Bool (fun b -> recompute_hash := b),
+     sprintf
+       " recompute test hashes, regardless of explicit hashes presence, default %b" !recompute_hash;]
+    (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
 let tests = List.rev !arg
@@ -61,6 +74,7 @@ module X =
   Top
     (struct
       let verbose = !verbose
+      let recompute_hash = !recompute_hash
     end)
 
 let () = X.zyva tests

@@ -18,7 +18,7 @@ open Printf
 module Top
     (Opt:
        sig
-         val verbose : bool
+         val verbose : int
          val tnames : bool
 	 val ncheck : bool
 	 val found : string option
@@ -36,7 +36,7 @@ module Top
       let zyva name parsed =
 	let tname = name.Name.name in
 	let hash = MiscParser.get_hash parsed in
-	if Opt.verbose
+	if Opt.verbose > 0
 	then printf "Name=%s\nHash=%s\n\n"
 			   tname
 			    (match hash with
@@ -46,7 +46,12 @@ module Top
           hash = hash; }
     end
 
-    module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)
+    module ZConfig = struct
+      include ToolParse.DefaultConfig
+      let verbose = Opt.verbose
+    end
+
+    module Z = ToolParse.Top(ZConfig)(T)(Make)
 
     type name = {fname:string; tname:string;}
 
@@ -67,11 +72,11 @@ module Top
     let zyva tests =
       let xs = match tests with
 	| [] -> raise (Misc.Fatal "No given tests base\n")
-	| [base] -> if Opt.verbose
+	| [base] -> if Opt.verbose > 0
 		    then eprintf "#From base : %s" base;
 		    (Misc.fold_argv do_test [base] [],
 		     Misc.fold_stdin do_test [])
-	| base::tests -> if Opt.verbose
+	| base::tests -> if Opt.verbose > 0
 			 then eprintf "#From base : %s" base;
 			 (Misc.fold_argv do_test [base] [],
 			  Misc.fold_argv do_test tests []) in
@@ -125,7 +130,7 @@ module Top
   end
 
 
-let verbose = ref false
+let verbose = ref 0
 let arg = ref []
 let tnames = ref false
 let ncheck = ref false
@@ -146,16 +151,16 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    ["-v",Arg.Unit (fun () -> verbose := true), "- be verbose";
-     "-t",Arg.Unit (fun () -> tnames := true),"- output test names";
-     "-s",Arg.Unit (fun () -> ncheck := true),"- do not add already existing tests with different names";
-     "-found",Arg.String (fun s -> found := Some s),"<name> - list already existing tests in file <name>"]
+    ["-v",Arg.Unit (fun () -> incr verbose), "be verbose";
+     "-t",Arg.Unit (fun () -> tnames := true),"output test names";
+     "-s",Arg.Unit (fun () -> ncheck := true),"do not add already existing tests with different names";
+     "-found",Arg.String (fun s -> found := Some s),"<name> list already existing tests in file <name>"]
     (fun s -> arg := s :: !arg)
     usage
 
 let tests = List.rev !arg
 
-module L = LexRename.Make(struct let verbose = if !verbose then 1 else 0 end)
+module L = LexRename.Make(struct let verbose = !verbose end)
 
 module X =
   Top

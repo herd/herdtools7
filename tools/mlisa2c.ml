@@ -226,7 +226,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
           let lexer = L.token
           let parser = LISAParser.main
         end in
-        let module P = GenParser.Make(GenParser.DefaultConfig)(Bell)(BellLexParse) in
+        let module P =
+          GenParser.Make(GenParser.DefaultConfig)(Bell)(BellLexParse) in
         let parsed = P.parse chan splitted in
         let name = splitted.Splitter.name in
         tr_test idx_out name parsed

@@ -22,7 +22,12 @@ module Top
        end) =
   struct
 
-    module TI = TestInfo
+    module TI =
+      TestInfo.Top
+        (struct
+          include ToolParse.DefaultConfig
+          let verbose = Opt.verbose
+        end)
 
     let do_test name (k,n as c) =
       try TI.Z.from_file name::k,n+1
@@ -35,7 +40,8 @@ module Top
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
-    module TSet = MySet.Make(TI.T)
+    module TIT = TestInfo.T
+    module TSet = MySet.Make(TIT)
 
     let is_singleton s  = match StringSet.as_singleton s with
     | Some _ -> true
@@ -52,11 +58,11 @@ module Top
       let tests = TSet.of_list tests in
       let byName,byHash =
         TSet.fold
-          (fun t (byName,byHash) -> add t.TI.T.tname t byName,add t.TI.T.hash t byHash)
+          (fun t (byName,byHash) -> add t.TIT.tname t byName,add t.TIT.hash t byHash)
           tests (StringMap.empty,StringMap.empty) in
       StringMap.iter
         (fun tname ts ->
-          let hashes = TSet.fold (fun t k -> t.TI.T.hash::k) ts [] in
+          let hashes = TSet.fold (fun t k -> t.TIT.hash::k) ts [] in
           let hashes = StringSet.of_list hashes in
           if not (is_singleton hashes) then begin
             printf "Error: name %s has different hashes\n"  tname ;
@@ -68,7 +74,7 @@ module Top
                       let fnames =
                         TSet.fold
                           (fun t k ->
-                            if t.TI.T.tname = tname then t.TI.T.fname::k else k)
+                            if t.TIT.tname = tname then t.TIT.fname::k else k)
                           ts [] in
                       StringSet.of_list fnames
                     with Not_found -> StringSet.empty in
@@ -80,7 +86,7 @@ module Top
         byName ;
       StringMap.iter
         (fun _hash ts ->
-          let names = TSet.fold (fun t k -> t.TI.T.tname::k) ts [] in
+          let names = TSet.fold (fun t k -> t.TIT.tname::k) ts [] in
           let names = StringSet.of_list names in
           if not (is_singleton names) then
             printf "Warning: tests {%s} are the same test\n"
@@ -89,7 +95,7 @@ module Top
       if Opt.verbose > 0 then
         StringMap.iter
           (fun name ts ->
-            let fnames = TSet.fold (fun t k -> t.TI.T.fname::k) ts [] in
+            let fnames = TSet.fold (fun t k -> t.TIT.fname::k) ts [] in
             let fnames = StringSet.of_list fnames in
             if not (is_singleton fnames) then begin
                 printf "Warning: test %s is referenced more than once:\n"

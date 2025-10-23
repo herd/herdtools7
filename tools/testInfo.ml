@@ -35,17 +35,21 @@ module T = struct
           t1 t2
 end
 
-module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+module Top(Cfg:ToolParse.Config) = struct
 
-  let zyva name parsed =
-    let tname = name.Name.name in
-    let fname =  name.Name.file in
-    let hash = MiscParser.get_hash parsed in
-    let hash =
-      match hash with
-      | None -> assert false
-      | Some h -> h in
-    { T.tname = tname ; fname=fname; hash = hash; }
+  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+
+    let zyva name parsed =
+      let tname = name.Name.name in
+      let fname =  name.Name.file in
+      let hash = MiscParser.get_hash parsed in
+      let hash =
+        match hash with
+        | None -> assert false
+        | Some h -> h in
+      { T.tname = tname ; fname=fname; hash = hash; }
+  end
+
+  module Z = ToolParse.Top(Cfg)(T)(Make)
+
 end
-
-module Z = ToolParse.Top(GenParser.DefaultConfig)(T)(Make)

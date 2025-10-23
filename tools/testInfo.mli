@@ -23,12 +23,16 @@ module T : sig
   val compare : t -> t -> int
 end
 
-(* Extract information out of parsed test *)
-module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) : sig
-  val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
-end
+module Top(Cfg:ToolParse.Config) : sig
 
-(* Parser an extract *)
-module Z : sig
-  val from_file : string -> T.t
+  (* Extract information out of parsed test *)
+  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) : sig
+    val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
+  end
+
+  (* Parser an extract *)
+  module Z : sig
+    val from_file : string -> T.t
+  end
+
 end

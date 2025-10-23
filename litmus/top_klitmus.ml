@@ -50,6 +50,7 @@ module Top(O:Config)(Tar:Tar.S) = struct
     include GenParser.DefaultConfig
     let debuglexer = O.verbose > 2
     let debug = debuglexer
+    let hash = HashInfo.Std
     include O
     include Template.DefaultConfig
     let mode = Mode.Std

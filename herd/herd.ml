@@ -438,6 +438,7 @@ let () =
     let statelessrc11 = !statelessrc11
     let dumpallfaults = !dumpallfaults
 
+    let hash = HashInfo.Std
     let check_name = Check.ok
     let check_rename = Check.rename_opt
     let check_kind = TblRename.find_value_opt kinds
