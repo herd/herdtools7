@@ -10,4 +10,4 @@
 
 (menhir
  (modules parser)
- (flags --explain --inspection --table --dump))
+ (flags --explain --inspection --table --dump --strict))
