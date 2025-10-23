@@ -897,10 +897,10 @@ let rec group_rec x ns = function
         r in
     group r
 
-let valid_cycle c =
+let check_cycle c =
   (* Collect all the rmw edges, organise by location
      and then check if all the rmw edges per locations are valid *)
-  fold ( fun n lst ->
+  let rmw_boolean = fold ( fun n lst ->
     match n.edge.E.edge with
     | E.Rmw rmw ->
       (* Encode the mixed size access into location, so reuse `by_loc` function.
@@ -915,7 +915,9 @@ let valid_cycle c =
     | _ -> lst
   ) c []
   |> by_loc
-  |> List.for_all (fun e -> E.valid_rmw @@ List.flatten @@ snd e)
+  |> List.for_all (fun e -> E.valid_rmw @@ List.flatten @@ snd e) in
+  if not rmw_boolean then
+    Warn.fatal "There are two rmw of the same type. A cycle will not form due to commutative."
 
 
 
@@ -1331,7 +1333,9 @@ let finish n =
     | Diff -> set_diff_loc st n
     | Same -> set_same_loc st n in
 
-  if not (valid_cycle n) then Warn.fatal "Invalid cycle.\n" ;
+  (* Check if the cycle is valid, function may fail hence
+     terminate the program *)
+  check_cycle n;
 
   if O.verbose > 1 then begin
     eprintf "LOCATIONS\n" ;
