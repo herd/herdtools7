@@ -40,11 +40,14 @@ module type S = sig
   val of_proc : int -> location -> loc_reg option
   val is_global : location -> bool
   val global : location -> loc_global option
+  val map_global :
+    (loc_global -> loc_global) -> location -> location
 
-(* Group locations as follows
-   1. Global locations, one per list
-   2. registers by proc
-*)
+(*
+ * Group locations as follows
+ *  1. Global locations, one per list
+ *  2. registers by proc
+ *)
   val env_for_pp : (location * 'a) list -> (location * 'a) list list
 
   module LocSet : MySet.S with type elt = location
@@ -82,6 +85,11 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     let global = function
       | Location_global s  -> Some s
       | Location_reg _ -> None
+
+    let map_global f loc =
+      match loc with
+      | Location_global s -> Location_global (f s)
+      | Location_reg _ -> loc
 
     let pp_location l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r

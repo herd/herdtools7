@@ -30,6 +30,8 @@ type flags = {
   variants   : string list ;
   conf       : path option ;
   nohash     : bool ;
+  check      : TestHerd.check ;
+  verbose    : bool ;
 }
 
 
@@ -131,7 +133,9 @@ let show_tests_par j flags =
 
   let run_tests_seq flags =
     let test_passes l =
-      TestHerd.herd_output_matches_expected ~nohash:flags.nohash ~bell:None ~cat:None
+      TestHerd.herd_output_matches_expected
+        ~verbose:flags.verbose
+        ~check:flags.check ~nohash:flags.nohash ~bell:None ~cat:None
         ~conf:flags.conf
         ~variants:flags.variants
         ~libdir:flags.libdir
@@ -161,14 +165,23 @@ let do_run_test_par wrapper j flags =
       ~variants:flags.variants
       ~libdir:flags.libdir ~timeout:None in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args = "-exit"::"true"::TestHerd.apply_args  wrapper j (herd::args) in
+  let args =
+    "-exit"::"true"::TestHerd.apply_args  wrapper j
+      (let args = herd::args in
+       let args =
+         let open TestHerd in
+         match flags.check with
+         | All -> args
+         | Obs -> "-checkobs"::args
+         | Sta -> "-checkstates"::args in
+      if flags.verbose then "-verbose"::args else args) in
   let () =
     if _dbg then
       Printf.eprintf "Mapply arguments '%s'\n%!" (String.concat " " args) in
   let litmuses = read_litmus_dir flags.litmus_dir in
   let () =
     if _dbg then
-      let com = Command.command mapply  (args @ litmuses) in
+      let com = Command.command mapply (args @ litmuses) in
       Printf.eprintf "Wil run: %s\n%!" com in
   let st = Command.run_status mapply  (args @ litmuses) in
   if st <> 0 then begin
@@ -203,12 +216,13 @@ let promote_tests_seq flags =
     exit 1
   end
 
-let promote_test_par = do_run_test_par "herd_promote.exe"
+let promote_tests_par = do_run_test_par "herd_promote.exe"
 
 let promote_tests ?j flags =
+  let flags = { flags with check = TestHerd.All; } in
   match j with
   | None -> promote_tests_seq flags
-  | Some j -> promote_test_par j flags
+  | Some j -> promote_tests_par j flags
 
 
 let usage = String.concat "\n" [
@@ -233,11 +247,15 @@ let () =
   let variants = ref [] in
   let j = ref None in
   let nohash = ref false in
+  let check = ref TestHerd.All in
+  let verbose = ref false in
 
   let anon_args = ref [] in
 
   let options = [
-    Args.npar j; Args.nohash nohash;
+    Args.verbose verbose;
+    Args.npar j;  Args.nohash nohash;
+    Args.checkobs  check ; Args.checkstates  check ;
     Args.is_file ("-herd-path",   Arg.Set_string herd,           "path to herd binary") ;
     Args.is_dir  ("-libdir-path", Arg.Set_string libdir,         "path to herd libdir") ;
     Args.is_dir  ("-litmus-dir",  Arg.Set_string litmus_dir,     "path to directory of .litmus files to test against") ;
@@ -266,6 +284,8 @@ let () =
     conf = !conf ;
     variants = !variants ;
     nohash = !nohash ;
+    check = !check ;
+    verbose = !verbose ;
     } in
   let j = !j in
   match !anon_args with

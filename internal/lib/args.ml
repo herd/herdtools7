@@ -36,6 +36,18 @@ let nohash b =
   "-nohash",Arg.Unit (fun () -> b := true),
   "do not check hashes"
 
+let checkobs b =
+  "-checkobs",Arg.Unit (fun () -> b := TestHerd.Obs),
+  "limit test validity to observation: Never/Sometimes/Always"
+
+let checkstates b =
+  "-checkstates",Arg.Unit (fun () -> b := TestHerd.Sta),
+  "limit test validity to final states"
+
+let verbose b =
+  "-verbose",Arg.Unit (fun () -> b := true),
+  "output a short diagnostic whenever a litmus test execution is complete"
+
 (** Validators. *)
 
 let validate check msg (key, spec, doc) =
