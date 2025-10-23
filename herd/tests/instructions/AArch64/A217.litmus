@@ -1,0 +1,12 @@
+AArch64 A217
+(* This test should fail on an attempt to dereference '2' *)
+{
+ [x]=2;
+ 0:X0=x;
+}
+ P0          ;
+ LDR X1,[X0] ;
+ LDR X2,[X1] ;
+
+locations [0:X1;]
+forall (true)

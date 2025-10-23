@@ -1,0 +1,17 @@
+AArch64 A219
+(* This test should fail, because some valid execution
+   attempts to dereference an integer *)
+{
+ int x=1;
+ int *p=x;
+ 0:X2=p;
+ 1:X2=p;
+ 2:X2=p;
+}
+ P0          | P1          | P2          ;
+ LDR X2,[X2] | STR X2,[X2] | LDR X2,[X2] ;
+ MOV X0,#2   |             | LDR X0,[X2] ;
+ STR X0,[X2] |             |             ;
+
+locations [0: X2; x; 2: X2; 2:X0; p]
+forall (true)

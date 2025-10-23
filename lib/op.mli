@@ -86,7 +86,16 @@ type 'aop op1 =
   | IsInstr (* Check nature of constant *)
   | Promote (* Promote to higher precision *)
   | Demote  (* Demote to lower precision *)
+  | CheckSymbolic (* Fails if argument is not a symbolic address *)
   | ArchOp1 of 'aop
+
+(*
+ * Notice: CheckSymbolic is for internal use.
+ * Its contributes to trigger a fatal error
+ * in case some undetermined address
+ * turns out to be non-symbolic.
+ * See comment before `add_no_symbol` in `herd/mem.ml`
+ *)
 
 val pp_op1 : bool -> (bool -> 'aop -> string) -> 'aop op1 -> string
 

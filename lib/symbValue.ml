@@ -625,6 +625,13 @@ module
     | Val _ -> v_false
     | Var _ -> raise Undetermined
 
+  let check_symbolic_v =
+    function
+    | Val (Constant.Symbolic _) -> v_true
+    | Val _ as v ->
+       Warn.user_error "Non symbolic address: %s" (pp_v v)
+    | Var _ -> raise Undetermined
+
   let andnot x1 x2 =
     Cst.Scalar.logand x1 (Cst.Scalar.lognot x2)
 
@@ -911,6 +918,7 @@ module
     | IsInstr -> is_instr_v
     | Promote -> unop op Cst.Scalar.promote
     | Demote -> unop op Cst.Scalar.demote
+    | CheckSymbolic -> check_symbolic_v
     | ArchOp1 op ->
         (function
          | Var _ -> raise Undetermined
