@@ -603,10 +603,16 @@ module CoSt = struct
        the next value need to decide based on bit conditions. *)
     | E.Rmw rmw, Ord ->
       let counter = (find_no_fail bank st.map) + 1 in
-      let init = E.extract_value
+      let v =
+        (* The new strategy for those feature will not work
+           due to a practical choice on counter limit,
+           we fall back the the default simple counter mode. *)
+        if do_neon || do_sve || do_sme then
+          Code.value_of_int (st.init_value + counter)
+        else
+          let init = E.extract_value
             (Code.value_of_int st.init_value) edge.E.a1 in
-      let v = Code.value_of_int counter
-              |> E.to_rmw_operand rmw init in
+          Code.value_of_int counter |> E.to_rmw_operand rmw init in
       (* NOTE st.map is NOT updated upon `rmw` with calculation
          because `Ord` only tracks the value used for
          various `STR` or rmw instruction *)
@@ -1114,7 +1120,12 @@ let check_cycle c =
                  via traversing the `ns` calling `E.init_val` and
                  compositing via bit-wise or `lor` *)
               let init_val =
-                List.map (fun n -> E.init_val n.edge) ns
+                List.map (fun n ->
+                  (* In the case of do_neon || do_sve || do_sme,
+                     we surpress special initial value for rmw *)
+                  if do_neon || do_sve || do_sme then Code.value_of_int 0
+                  else E.init_val n.edge
+                ) ns
                 |> List.fold_left (fun acc next -> acc lor (Code.value_to_int next)) 0
               (* The `init_val` assign different value for kvm with pte,
                  where different values are needed to distinct access
