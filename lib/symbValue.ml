@@ -627,7 +627,7 @@ module
 
   let check_symbolic_v =
     function
-    | Val (Constant.Symbolic _) -> v_true
+    | Val (Constant.(Symbolic _|Label _)) -> v_true
     | Val cst ->
        Warn.user_error
          "Non symbolic address: [%s]"

@@ -1,1 +1,1 @@
-Warning: File "./herd/tests/instructions/AArch64/A219.litmus": Non-symbolic memory access found on '[2]' (User error)
+Warning: File "./herd/tests/instructions/AArch64/A219.litmus": Non symbolic address: [2] (User error)
