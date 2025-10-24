@@ -60,6 +60,20 @@ end;
 
 // =============================================================================
 
+// AllInAlignedQuantity()
+// ======================
+// Returns TRUE if all accessed bytes are within one aligned quantity, FALSE otherwise.
+
+// Only used to check if all in granule, which only comes up if we had a very
+// large array. For now we can always return TRUE.
+
+func AllInAlignedQuantity(address: bits(64), size: integer, alignment: integer) => boolean
+begin
+  return TRUE;
+end;
+
+// =============================================================================
+
 // BigEndian()
 // ===========
 
