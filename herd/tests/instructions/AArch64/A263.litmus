@@ -1,0 +1,16 @@
+AArch64 A263
+(* Access to [16] attempted because of model, should fail *)
+{
+int x=0;
+0:X1=x; 1:X1=x; 1:X3=16;
+}
+
+  P0         |  P1          ;
+ MOV W0,#1   | LDR W0,[X1]  ;
+ STR W0,[X1] | LDR W2,[X1]  ;
+             | EOR W4,W0,#1 ;
+             | ORR W4,W4,W2 ;
+             | CBZ W4,L1    ;
+             | LDR W6,[X3]  ;
+             |L1:           ;
+forall 1:X4=1
