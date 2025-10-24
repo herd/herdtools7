@@ -1,0 +1,10 @@
+Test A260 Required
+States 1
+1:X4=1;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (1:X4=1)
+Observation A260 Always 3 0
+Hash=7ed678244962720ad1fd67e9c88eed24
+
