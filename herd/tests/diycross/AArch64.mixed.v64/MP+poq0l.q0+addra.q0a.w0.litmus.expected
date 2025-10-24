@@ -1,12 +1,12 @@
 Test MP+poq0l.q0+addra.q0a.w0 Allowed
 States 3
 1:X3=0x0; 1:X5=0x0;
-1:X3=0x0; 1:X5=0x1010101;
-1:X3=0x101010101010101; 1:X5=0x1010101;
+1:X3=0x0; 1:X5=0x10001;
+1:X3=0x1000100010001; 1:X5=0x10001;
 No
 Witnesses
 Positive: 0 Negative: 3
-Condition exists (1:X3=0x101010101010101 /\ 1:X5=0x0)
+Condition exists (1:X3=0x1000100010001 /\ 1:X5=0x0)
 Observation MP+poq0l.q0+addra.q0a.w0 Never 0 3
-Hash=1652d534b24e347b20563efb2dd06a1a
+Hash=34fa1d6c1ab09ae4ddd671f4258910b5
 
