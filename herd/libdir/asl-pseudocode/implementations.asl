@@ -397,6 +397,11 @@ type HPFARType of bits(64) {
 
 var HPFAR_EL2 : HPFARType;
 
+type SCRType of bits(32) {
+  [0] NS,
+};
+
+var SCR : SCRType = Zeros{64};
 
 // =============================================================================
 

@@ -768,6 +768,59 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rn_unknown" ^= litb false;
                   "acqrel" ^= litb acqrel;
                 ] )
+      | I_STRBH (bh, rt, rn, MemExt.Reg (_vm, rm, e, s))
+      | I_LDRBH (bh, rt, rn, MemExt.Reg (_vm, rm, e, s))
+        ->
+          let fname =
+            match ii.A.inst, bh with
+            | I_LDRBH _, B -> "LDRB_32B_ldst_regoff.opn"
+            | I_LDRBH _, H -> "LDRH_32_ldst_regoff.opn"
+            | I_STRBH _, B -> "STRB_32B_ldst_regoff.opn"
+            | I_STRBH _, H -> "STRH_32_ldst_regoff.opn"
+            | _ -> assert false
+          and extend_type = memext_decode_ext e in
+          Some
+            ( "ldst/ldst_regoff/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti s;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ] )
+      | I_STRBH (bh, rt, rn, MemExt.Imm (k, idx))
+      | I_LDRBH (bh, rt, rn, MemExt.Imm (k, idx))
+        ->
+          let fname =
+            match ii.A.inst, bh with
+            | I_LDRBH _, B -> "LDRB_32_ldst_immpost.opn"
+            | I_LDRBH _, H -> "LDRH_32_ldst_immpost.opn"
+            | I_STRBH _, B -> "STRB_32_ldst_immpost.opn"
+            | I_STRBH _, H -> "STRH_32_ldst_immpost.opn"
+            | _ -> assert false
+          and wback, postindex =
+            match idx with
+            | Idx -> (false, false)
+            | PreIdx -> (true, false)
+            | PostIdx -> (true, true)
+          in
+          Some
+            ( "ldst/ldst_immpost/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "offset" ^= litbv 64 k;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ] )
       | I_LDP (pa, v, rt, rt2, rn, (k, idx))
       | I_STP (pa, v, rt, rt2, rn, (k, idx))
         ->

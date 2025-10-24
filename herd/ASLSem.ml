@@ -247,6 +247,8 @@ module Make (Conf : Config) = struct
 
     let datasize_to_machsize v =
       match v_as_int v with
+      | 8 -> MachSize.Byte
+      | 16 -> MachSize.Short
       | 32 -> MachSize.Word
       | 64 -> MachSize.Quad
       | 128 -> MachSize.S128
@@ -345,23 +347,13 @@ module Make (Conf : Config) = struct
 
     let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii >>! []
 
-    let resize_from_quad = function
-      | MachSize.Quad -> return
-      | sz -> (
-          function
-          | V.Val (Constant.Symbolic _) as v -> return v
-          | v -> M.op1 (Op.Mask sz) v)
-
     let write_loc sz loc v a e acc ii =
-      let* resized_v = resize_from_quad sz v in
-      let mk_action loc' =
-        Act.Access (Dir.W, loc', resized_v, sz, (a, e, acc)) in
+      let mk_action loc' = Act.Access (Dir.W, loc', v, sz, (a, e, acc)) in
       M.write_loc mk_action loc ii
 
     let read_loc sz loc a e acc ii =
       let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, (a, e, acc)) in
-      let* v = M.read_loc Port.No mk_action loc ii in
-      resize_from_quad sz v >>= to_bv sz
+      M.read_loc Port.No mk_action loc ii >>= to_bv sz
 
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
@@ -673,7 +665,7 @@ module Make (Conf : Config) = struct
     let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
       let* addr = M.as_addr_port addr_m
       and* datasize = datasize_m
-      and* value = value_m in
+      and* value = value_m >>= to_aarch64_val in
       let sz = datasize_to_machsize datasize in
       write_loc sz (A.Location_global addr) value an aexp acc
         (use_ii_with_poi ii poi)

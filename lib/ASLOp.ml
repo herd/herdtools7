@@ -221,13 +221,13 @@ let do_op1 op cst =
   | ToAArch64 -> (
       match cst with
       | Constant.Concrete s ->
-          ASLScalar.convert_to_int_signed s |> return_concrete
+          ASLScalar.convert_to_sint64 s |> return_concrete
       | Constant.Symbolic _|Constant.PteVal _ -> Some cst
       | _ -> None)
   | FromAArch64 -> (
       match cst with
       | Constant.Concrete s ->
-          ASLScalar.as_bv s |> return_concrete
+          ASLScalar.as_bv_64 s |> return_concrete
       | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToIntU -> (

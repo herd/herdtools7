@@ -307,6 +307,18 @@ let convert_to_int_unsigned = function
   | S_BitVector bv -> S_Int (BV.to_z_unsigned bv)
   | S_Label s -> Warn.fatal "ASLScalar invalid op: label %S convert to int" s
 
+let convert_to_sint64 = function
+  | S_Int _ as s -> s
+  | S_Bool false -> S_Int Z.zero
+  | S_Bool true -> S_Int Z.one
+  | S_BitVector bv as s ->
+      if BV.length bv < 64 then S_Int (BV.to_z_unsigned bv)
+      else if BV.length bv = 64 then S_Int (BV.to_z_signed bv)
+      else
+        Warn.fatal "ASLScalar: cannot convert to 64-bits integer %d-bits bitvector %s"
+          (BV.length bv) (pp true s)
+  | S_Label _ as s -> s
+
 let convert_to_bool c =
   match as_bool c with
   | Some b -> S_Bool b
@@ -334,7 +346,7 @@ let convert_to_bv sz = function
       Warn.fatal "ASLScalar invalid op: label %S convert to bitvector" s
 
 (** Transform to bitvector, size fixed to 64 if transformation occurs. *)
-let as_bv = function S_BitVector _ as bv -> bv | v -> convert_to_bv 64 v
+let as_bv_64 = function S_BitVector _ as bv -> bv | v -> convert_to_bv 64 v
 
 let int64_to_bv v = of_int64 v |>  convert_to_bv 64
 
