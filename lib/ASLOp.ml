@@ -64,7 +64,7 @@ type scalar = ASLScalar.t
 
 type pteval = AArch64PteVal.t
 type addrreg = AArch64AddrReg.t
-type instr = ASLBase.Instr.t
+type instr = AArch64Base.instruction
 type cst = (scalar, pteval, addrreg, instr) Constant.t
 
 let pp_op = function
@@ -204,7 +204,10 @@ let do_op op c1 c2 =
             end
         | _ -> set_slice positions c1 c2
 
-let do_op1 op cst =
+let do_op1 op =
+  Printf.eprintf "ASL.do_op1: %s on cst\n%!"
+    (pp_op1 true op) ;
+  fun cst ->
   match op with
   | GetIndex i ->
       let* vec = as_concrete_vector cst in
@@ -216,30 +219,31 @@ let do_op1 op cst =
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _) -> Some cst
       | _ -> None)
   | ToAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
-      | Constant.Symbolic _|Constant.PteVal _ -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _) -> Some cst
       | _ -> None)
   | FromAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.as_bv s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _) -> Some cst
       | _ -> None)
   | ToIntU -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_unsigned s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _) -> Some cst
       | _ -> None)
   | ToBV sz -> (
       match cst with
       | Constant.Concrete s -> ASLScalar.convert_to_bv sz s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _) when sz=64 -> Some cst
+      | Constant.Instruction _ when sz=32-> Some cst
       | _ -> None)
   | BVSlice positions -> (
       match cst with
@@ -281,9 +285,9 @@ let do_op1 op cst =
             | _ when  is_address_mask positions -> Some cst
             | _ -> None
           end
-      | Constant.Symbolic x ->
+      | Constant.(Symbolic _|Label _ as cst) ->
           if is_address_mask positions then
-            Some (Constant.Symbolic x)
+            Some cst
           else begin
           (* MSB of virtual address is assumed null.
            * This hypothesis is reasonable for user programs,

@@ -619,7 +619,7 @@ let () =
            Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
            check_exit seen
         | Misc.UserError msg as e ->
-           if dbg_exc then raise e ;
+           if true || dbg_exc then raise e ;
            begin if check_pos0 msg then
              Warn.warn_always "%s (User error)" msg
            else

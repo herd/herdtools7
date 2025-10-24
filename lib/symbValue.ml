@@ -297,9 +297,9 @@ module
     | (Val (Symbolic (Physical (s,i2))),Val (Concrete i1)) ->
         let i1 = Cst.Scalar.to_int i1 in
         Val (Symbolic (Physical (s,i1+i2)))
-    | (Val (Symbolic _) as v,Val cst)
+    | (Val (Symbolic _|Label _) as v,Val cst)
         when Cst.is_zero cst -> v
-    | (Val cst,(Val (Symbolic _) as v))
+    | (Val cst,(Val (Symbolic _|Label _) as v))
         when Cst.is_zero cst -> v
     | _,_ -> (* General case *)
         binop Op.Add Cst.Scalar.add v1 v2
@@ -926,6 +926,7 @@ module
          | Var _ -> raise Undetermined
          | Val c as v ->
              begin
+               Printf.eprintf "Arch Op1: %s\n%!" (ArchOp.pp_op1 true op) ;
                match ArchOp.do_op1 op c with
                | None ->
                    Warn.user_error "Illegal arch operation %s on %s"

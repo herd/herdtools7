@@ -1090,6 +1090,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             in fun acc v1 v2 -> (M.VC.Binop (new_op, tr_v v1, tr_v v2), acc)
 
       let tr_arch_op1 op acc v =
+        Printf.eprintf "tr_arch_op1: %s\n%!" (ASLOp.pp_op1 true op) ;
         (M.VC.Unop (Op.ArchOp1 (AArch64Op.Extra1 op), tr_v v), acc)
 
       let tr_op1 =
@@ -1500,7 +1501,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let asl_build_semantics test_aarch64 ii =
       let () =
-        if _dbg then
+        if true || _dbg then
           Printf.eprintf "\n\nExecuting %s by proc %s\n%!"
             (A.pp_instruction PPMode.Ascii ii.A.inst)
             (Proc.pp ii.A.proc)

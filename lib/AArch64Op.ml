@@ -37,7 +37,7 @@ type 'op binop =
 module
    Make
      (S:Scalar.S)
-     (Extra:ArchOp.WithTr with type scalar = S.t) : ArchOp.S
+     (Extra:ArchOp.WithTr with type scalar = S.t and type instr = AArch64Base.instruction) : ArchOp.S
    with type extra_op1 = Extra.op1
     and type 'a constr_op1 = 'a unop
     and type extra_op = Extra.op
@@ -77,7 +77,7 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
-      | Extra1 op1 -> Extra.pp_op1 hexa op1
+      | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
@@ -158,11 +158,12 @@ module
       | Symbolic (Physical _) -> Some (AddrReg { AArch64AddrReg.oa = OutputAddress.PHY ""; AArch64AddrReg.f = 1 })
       | _ -> None
 
-    let exit _ = raise Exit
+    let _exit _ = raise Exit
 
-    let trToExtra cst = Constant.map Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg exit cst
+    let trToExtra cst =
+      Constant.map Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg Misc.identity cst
     and trFromExtra cst =
-      Constant.map Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg exit cst
+      Constant.map Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg Misc.identity cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
@@ -203,7 +204,9 @@ module
         with Exit -> None
 
 
-    let do_op1 = function
+    let do_op1 op =
+      Printf.eprintf "AArch64.do_op1 %s\n%!" (pp_op1 true op) ;
+      match op with
       | AF -> getaf
       | SetAF -> setaf
       | DB -> getdb
@@ -218,12 +221,14 @@ module
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
       | Extra1 op1 ->
-         fun cst ->
+          fun cst ->
+            Printf.eprintf "Extra! %s\n%!"
+              (Extra.pp_op1 true op1) ;
            try
              match Extra.do_op1 op1 (trToExtra cst) with
-             | None -> None
+             | None ->  None
              | Some cst -> Some (trFromExtra cst)
-           with Exit -> None
+           with Exit -> prerr_endline "Bingo" ; None
 
 
     let shift_address_right s c =

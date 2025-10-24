@@ -36,5 +36,6 @@ module ASLScalar = struct
   let printable c = c
 end
 module ASLConstant =
-  SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(ASLBase.Instr)
+  SymbConstant.Make
+    (ASLScalar)(AArch64PteVal)(AArch64AddrReg)(AArch64ASLValue.Instr)
 module V = SymbValue.Make(ASLConstant)(ASLOp)

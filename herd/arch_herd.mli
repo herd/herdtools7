@@ -24,7 +24,7 @@ module type S =
 
     include ArchBase.S
 
-    module V : Value.S with type Cst.Instr.t = instruction
+    module V : Value.S
 
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
