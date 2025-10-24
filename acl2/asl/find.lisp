@@ -511,7 +511,6 @@ supposed to have some subexpression that matches the given expr-matcher.</p>"
   :types (stmt)
   :measure (acl2::nat-list-measure (list :count 0 0)))
 
-(local (in-theory (enable maybe-[expr*maybe-ty]-some->val)))
 
 (with-output
   :evisc (:gag-mode '(nil 7 10 nil))
@@ -522,8 +521,6 @@ supposed to have some subexpression that matches the given expr-matcher.</p>"
                                           '(:expand ((:free (x) <call>))))))))
     :functions (find-matching-exprs-in-stmt
                 find-matching-exprs-in-lexpr
-                find-matching-exprs-in-maybe-[expr*maybe-ty]
-                find-matching-exprs-in-expr*maybe-ty
                 find-matching-exprs-in-maybe-ty
                 find-matching-exprs-in-maybe-expr
                 expr-match)))
@@ -711,8 +708,7 @@ matches the given expr-matcher.</li>
                                                          (expr-maybe-match matcher.test x.desc.test)
                                                          (or (not matcher.limit)
                                                              (and x.desc.limit (expr-match matcher.limit x.desc.limit)))))
-          ((:sm_throw               :s_throw)       (or (not matcher.val)
-                                                        (consp (find-matching-exprs-in-maybe-[expr*maybe-ty] matcher.val x.desc.val))))
+          ((:sm_throw               :s_throw)       (expr-maybe-match matcher.val x.desc.val))
           ((:sm_try                 :s_try)         (and (stmt-maybe-match matcher.body x.desc.body)
                                                          (or (not matcher.catchers)
                                                              (stmt-matcher-case matcher.catchers

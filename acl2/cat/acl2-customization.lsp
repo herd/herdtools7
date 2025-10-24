@@ -20,30 +20,7 @@
 ;; herdtools7 github repository.                                              ;;
 ;;****************************************************************************;;
 
-(in-package "ASL")
-(include-book "trace-interp")
-(include-book "static-env-preserved")
-(local (include-book "centaur/vl/util/default-hints" :dir :system))
-
-(local
- (with-output
-   ;; makes it so it won't take forever to print the induction scheme
-   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
-   :off (event)
-   (make-event
-    (b* (((std::defines-guts guts)
-          (cdr (assoc 'asl-interpreter-mutual-recursion-*t (std::get-defines-alist (w state))))))
-      `(flag::make-flag asl-interpreter-mutual-recursion-*t-flag
-                        eval_expr-*t-fn
-                        :flag-mapping ,guts.flag-mapping)))))
-
-
-(local (in-theory (acl2::disable* (:ruleset asl-*t-equals-original-rules))))
-
-(with-output
-  ;; makes it so it won't take forever to print the induction scheme
-  :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
-  :off (event)
-  (make-event (append *static-env-preserved-form*
-                      '(:hints ((vl::big-mutrec-default-hint 'eval_expr-*t-fn id nil world))
-                        :mutual-recursion asl-interpreter-mutual-recursion-*t))))
+(in-package "ACL2")
+(include-book "portcullis")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+(in-package "CAT")

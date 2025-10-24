@@ -1112,6 +1112,31 @@ error has been reached. Arguably unnecessary given FGL's backtrace capability."
 (defmacro evo_error (&rest args)
   `(pass-error (ev_error . ,args) orac))
 
+;; Similar to the RETURNING case in the B* binder for EVS, below.  In the EVO
+;; and EVOB b* binders, we check whether a result is ev_normal, and if so we
+;; continue with some computation whereas otherwise we return immediately. In
+;; symbolic simulation, sometimes this result is a splitter object,
+;; i.e. something that in some cases is an ev_normal and in others is an
+;; ev_error or ev_throwing. When we come back from the ev_normal branch and
+;; merge all the results together, it helps to be merging an object from the
+;; nonnormal branch that is explicitly not an ev_normal. So we apply
+;; eval_result-nonnormal-fix to ensure that it's syntactically either an error
+;; or throwing.
+(define eval_result-nonnormal-fix ((x eval_result-p))
+  :inline t
+  :guard (not (eval_result-case x :ev_normal))
+  (mbe :logic (if (eval_result-case x :ev_error)
+                  (b* (((ev_error x)))
+                    (ev_error x.desc x.data x.backtrace))
+                (b* (((ev_throwing x)))
+                  (ev_throwing x.throwdata x.env x.backtrace)))
+       :exec x)
+  ///
+  (defthm eval_result-nonnormal-fix-when-not-ev_normal
+    (implies (not (eval_result-case x :ev_normal))
+             (Equal (eval_result-nonnormal-fix x)
+                    (eval_Result-fix x)))))
+                     
 (acl2::def-b*-binder evo
   :parents (asl-interpreter-functions)
   :short "Binds an eval_result object. If it is an ev_error or ev_throwing,
@@ -1124,7 +1149,7 @@ error has been reached. Arguably unnecessary given FGL's backtrace capability."
        :ev_normal (b* ,(and (not (eq (car acl2::args) '&))
                            `((,(car acl2::args) evresult.res)))
                     ,acl2::rest-expr)
-       :otherwise (mv evresult orac))))
+       :otherwise (mv (eval_result-nonnormal-fix evresult) orac))))
 
 (defxdoc evo
   :short "@(csee B*) binder: see @(see patbind-evo)")
@@ -1170,7 +1195,9 @@ passed down from a context where a code position wasn't available.</p>"
                            `((,(car acl2::args) evresult.res)))
                     ,acl2::rest-expr)
 
-       :otherwise (pass-error (init-backtrace evresult pos) orac))))
+       :otherwise (pass-error (init-backtrace
+                               (eval_result-nonnormal-fix evresult)
+                               pos) orac))))
 
 (defxdoc evob
   :short "@(csee B*) binder: see @(see patbind-evob)")
@@ -1188,10 +1215,17 @@ evaluates the rest of the bindings/body."
   :body
   `(b* (((mv (evo cflow) orac) ,(car acl2::forms)))
      (control_flow_state-case cflow
-              :returning (evo_normal cflow)
-              :continuing (b* ,(and (not (eq (car acl2::args) '&))
-                                    `((,(car acl2::args) cflow.env)))
-                            ,acl2::rest-expr))))
+       ;; Note: Building a new copy of the RETURNING object here helps in
+       ;; symbolic simulation for cases where it's originally represented by a
+       ;; splitter object (i.e., something representing a RETURNING in some
+       ;; cases and a CONTINUING in others). When we finally come back from the
+       ;; continuing case, it helps to need to merge only a RETURNING from this
+       ;; branch rather than a splitter with an obsolete continuing branch.
+       :returning (evo_normal (mbe :logic (returning cflow.vals cflow.env)
+                                   :exec cflow))
+       :continuing (b* ,(and (not (eq (car acl2::args) '&))
+                             `((,(car acl2::args) cflow.env)))
+                     ,acl2::rest-expr))))
 
 (defxdoc evs
   :short "@(csee B*) binder: see @(see patbind-evs)")
@@ -1496,6 +1530,7 @@ for the individual define forms)</li>
      :parents (asl-interpreter-main-functions asl-interpreter-functions)
      :prepwork ((local (in-theory (disable xor not)))
                 (local (xdoc::set-default-parents asl-interpreter-functions asl-interpreter-mutual-recursion)))
+     :flag-local nil
      (define eval_expr ((env env-p)
                         (e expr-p)
                         &key
@@ -2269,13 +2304,10 @@ global) environment."
                           ((evob limit2) (tick_loop_limit limit))
                           ((evs env1) (eval_block env s.body)))
                        (evtailcall (eval_loop env1 nil limit2 s.test s.body)))
-           :s_throw (b* (((unless s.val)
-                          (evo_throwing nil env (list pos)))
-                         ((expr*maybe-ty s.val))
-                         ((unless s.val.ty)
+           :s_throw (b* (((unless s.ty)
                           (evo_error "Throw with untyped exception" s (list pos)))
-                         ((evoo (expr_result ex)) (eval_expr env s.val.expr)))
-                      (evo_throwing (throwdata ex.val s.val.ty) ex.env (list pos)))
+                         ((evoo (expr_result ex)) (eval_expr env s.val)))
+                      (evo_throwing (throwdata ex.val s.ty) ex.env (list pos)))
            :s_try (b* (((evbind try) (eval_block env s.body))
                        ((when (eval_result-case try
                                 :ev_throwing (not try.throwdata)
@@ -2551,13 +2583,18 @@ ASLRef we don't return the environment.</p>"
                                      (val-case n.val
                                        :v_int (evo_normal (equal n.val.val v.len)) ;;BITS
                                        :otherwise (evo_error "is_val_of_type failed - unexpected value of e in (T_BITS e,-)" (cons v ty) (list pos)))))
+           ((-        :t_bits) (evo_error "is_val_of_type failed T_BITS with other than v_bitvector" (cons v ty) (list pos)))
            ((:v_array :t_tuple) (b* (((unless (and (consp v.arr)
                                                    (consp ty.types)))
                                       (evo_error "For the case of tuple, both v-arr and ty.types must be non-empty lists" (cons v ty) (list pos)))
                                      ((unless (eql (len v.arr) (len ty.types)))
                                       (evo_error "is_val_of_type: value tuple of different length than type tuple" (cons v ty) (list pos))))
                                   (evtailcall (is_val_of_type_tuple env v.arr ty.types))))
-           (- (evo_error "is_val_of_type: bad val type combo" (cons v ty) (list pos))))
+           ((-       :t_tuple) (evo_error "is_val_of_type failed T_TUPLE with other than v_array" (cons v ty) (list pos)))
+           ;; Note: ASL reference says if the AST label of the type is not T_Int, T_Bits, or T_Tuple
+           ;; then is_val_of_type should return true, since all others are determined statically
+           ;; at type checking time.
+           (- (evo_normal t)))
          ))
 
      ///

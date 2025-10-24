@@ -21,32 +21,37 @@
 ;;****************************************************************************;;
 
 (in-package "ASL")
+(include-book "trace-interp")
+(include-book "static-env-preserved")
+(local (include-book "centaur/vl/util/default-hints" :dir :system))
 
-(include-book "align")
-(include-book "bits")
-(include-book "ilog2")
-(include-book "log2")
-(include-book "misc")
-(include-book "pow2")
-(include-book "round")
-(include-book "sint")
-(include-book "sqrtrounded")
-(include-book "uint")
-(include-book "shift")
-(include-book "no-trace")
+(local
+ (with-output
+   ;; makes it so it won't take forever to print the induction scheme
+   :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
+   :off (event)
+   (make-event
+    (b* (((std::defines-guts guts)
+          (cdr (assoc 'asl-interpreter-mutual-recursion-*t (std::get-defines-alist (w state))))))
+      `(flag::make-flag asl-interpreter-mutual-recursion-*t-flag
+                        eval_expr-*t-fn
+                        :flag-mapping ,guts.flag-mapping)))))
 
-;; Make sure there's a theorem for every stdlib function.
 
-(assert-event
- (or
-  (equal (mergesort
-          (acl2::alist-keys (table-alist 'asl-subprogram-table (w state))))
-         (mergesort
-          (acl2::alist-keys
-           (static_env_global->subprograms (stdlib-static-env)))))
-  (cw "~%########################################################~%")
-  (cw "## COMPLETION CHECK FAILED                            ##~%")
-  (cw "## A routine has been added or removed to/from stdlib.##~%")
-  (cw "## Proofs need adjustments                            ##~%")
-  (cw "########################################################"))
-  )
+(local (in-theory (acl2::disable* (:ruleset asl-*t-equals-original-rules))))
+
+(local (defun replace-static-env (x)
+           (if (atom x)
+               x
+             (if (equal x '(global-env->static (env->global env)))
+                 '(static_env_global-fix static-env)
+               (cons (replace-static-env (car x))
+                     (replace-static-env (cdr x)))))))
+
+(with-output
+  ;; makes it so it won't take forever to print the induction scheme
+  :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
+  :off (event)
+  (make-event (append (replace-static-env *static-env-preserved-form*)
+                      '(:hints ((vl::big-mutrec-default-hint 'eval_expr-*t-fn id nil world))
+                        :mutual-recursion asl-interpreter-mutual-recursion-*t))))
