@@ -1,0 +1,12 @@
+Test MP-I2V+rel+LDIAPPnoret-dmb.ld Allowed
+States 3
+1:X0=0;  ~Fault(P1:L0,y);
+1:X0=0; Fault(P1:L0,y,MMU:Translation);
+1:X0=1;  ~Fault(P1:L0,y);
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Condition exists (not (fault(P1:L0,y)) /\ 1:X0=0)
+Observation MP-I2V+rel+LDIAPPnoret-dmb.ld Sometimes 1 2
+Hash=6b941cb8104617491ef76a4767eb3f55
+

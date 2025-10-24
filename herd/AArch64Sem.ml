@@ -878,23 +878,32 @@ module Make
         insert_commit_to_fault ma
           (fun _ -> mk_fault (Some a) dir an ii ft (Some "EL0")) None ii >>! B.Exit
 
-      let an_xpte =
-        let open Annot in
-        function
-        | A|XA -> XA
-        | Q|XQ -> XQ
-        | L|XL -> XL
-        | X|N  -> X
-        | NoRet|S|NTA -> X (* Does it occur? *)
+      include struct
+        open Annot
 
-      let an_pte =
-        let open Annot in
-        function
-        | A|XA -> A
-        | Q|XQ -> Q
-        | L|XL -> L
-        | X|N -> N
-        | NoRet|S|NTA -> N
+        let an_xpte = function
+          | A | XA -> XA
+          | Q | XQ -> XQ
+          | L | XL -> XL
+          | X | N  -> X
+          | NoRet | XNoRet -> XNoRet
+          | S | NTA -> X (* Does it occur? *)
+
+        let an_pte = function
+          | A | XA -> A
+          | Q | XQ -> Q
+          | L | XL -> L
+          | X | N -> N
+          | NoRet | XNoRet -> NoRet
+          | S | NTA -> N
+
+        let is_noret r = match r with AArch64.ZR -> true | _ -> false
+        let to_noret t = if is_atomic t then XNoRet else NoRet
+        let or_noret r t = if is_noret r then to_noret t else t
+
+        let or_noret2 r1 r2 t =
+          if is_noret r1 && is_noret r2 then to_noret t else t
+      end
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -1071,10 +1080,7 @@ module Make
         >>= fun v -> write_reg_op op sz rd v ii
         >>= fun () -> B.nextT
 
-      let do_read_mem sz  = do_read_mem_op (uxt_op sz) sz
-
-      let read_mem_acquire sz = do_read_mem sz Annot.A
-      let read_mem_acquire_pc sz = do_read_mem sz Annot.Q
+      let do_read_mem sz = do_read_mem_op (uxt_op sz) sz
 
       let read_mem_reserve sz an anexp ac rd a ii =
         let m a =
@@ -1751,15 +1757,15 @@ Arguments:
 (* Ordinary loads *)
         let open AArch64Base in
         let open MemExt in
-        let mop ac a =
-          do_read_mem_op op sz Annot.N aexp ac rd a ii in
+        let an = or_noret rd Annot.N in
+        let mop ac a = do_read_mem_op op sz an aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
-           do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
+           do_ldr rs sz an mop (get_ea_idx rs k ii) ii
         | Imm (k,PreIdx) ->
-            do_ldr rs sz Annot.N mop (get_ea_preindexed rs k ii) ii
+            do_ldr rs sz an mop (get_ea_preindexed rs k ii) ii
         | Reg (v,ri,sext,s) ->
-           do_ldr rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
+           do_ldr rs sz an mop (get_ea_reg rs v ri sext s ii) ii
         | Imm (k,PostIdx) ->
            (* This case differs signicantly from others,
             * as update of base address register is part
@@ -1769,10 +1775,10 @@ Arguments:
            M.delay_kont "ldr_postindex"
              (read_reg_addr rs ii)
              (fun a_virt ma ->
-               do_ldr rs sz Annot.N
+               do_ldr rs sz an
                  (fun ac a ->
                    read_mem_postindexed
-                     a_virt op sz Annot.N aexp ac rd rs k a ii)
+                     a_virt op sz an aexp ac rd rs k a ii)
                  ma ii)
         | _ -> assert false
 
@@ -1802,12 +1808,12 @@ Arguments:
              end) =
         struct
 
-          let ldp_wback sz an rd1 rd2 rs k post ii =
+          let ldp_wback sz pre_an an rd1 rd2 rs k post ii =
             let m =
               M.delay_kont "ldp_wback"
                 (read_reg_addr rs ii >>= add_if (not post) k)
                 (fun a_virt ma ->
-                  do_ldr rs sz Annot.N
+                  do_ldr rs sz pre_an
                     (fun ac a ->
                       (add_if post k a_virt >>=
                        fun b -> write_reg rs b ii) >>|
@@ -1827,13 +1833,15 @@ Arguments:
             else m
 
           let ldp tnt sz rd1 rd2 rs (k,md) ii =
-            let an =
+            let pre_an, an =
               let open AArch64 in
               let open Annot in
-              match tnt with
-              | Pa -> N
-              | PaN -> NTA
-              | PaI -> Q in
+              match (rd1, rd2, tnt) with
+              (* If rd1 or rd2 is NoRet, no Acquire nor AcquirePC *)
+              | (ZR, ZR, _) -> NoRet, NoRet
+              | (_, _, Pa) -> N, N
+              | (_, _, PaN) -> N, NTA
+              | (_, _, PaI) -> N, Q in
             let open AArch64 in
             match md with
             | Idx ->
@@ -1841,7 +1849,7 @@ Arguments:
                   match an with
                   | Annot.Q -> M.seq_mem
                   | _ -> (>>|) in
-                do_ldr rs sz Annot.N
+                do_ldr rs sz pre_an
                   (fun ac a ->
                     Read.read_mem sz an aexp ac rd1 a ii >>|
                 begin
@@ -1850,9 +1858,9 @@ Arguments:
                 end)
                   (get_ea_idx rs k ii) ii
             | PostIdx ->
-                ldp_wback sz an rd1 rd2 rs k true ii
+                ldp_wback sz pre_an an rd1 rd2 rs k true ii
             | PreIdx ->
-                ldp_wback sz an rd1 rd2 rs k false ii
+                ldp_wback sz pre_an an rd1 rd2 rs k false ii
         end
 
       let ldp =
@@ -1874,7 +1882,7 @@ Arguments:
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let open Annot in
-        let an = match t with XP -> X | AXP -> XA in
+        let an = or_noret2 rd1 rd2 @@ match t with XP -> X | AXP -> XA in
         do_ldr rs sz an
           (fun ac a ->
             read_mem_reserve sz an aexp ac rd1 a ii >>||
@@ -1886,21 +1894,20 @@ Arguments:
 
       and ldar sz t rd rs ii =
         let open AArch64 in
-        let an = match t with
-        | XX -> Annot.X
-        | AA -> Annot.A
-        | AX -> Annot.XA
-        | AQ -> Annot.Q in
+        let an =
+          let open Annot in
+          or_noret rd @@ match t with
+          | XX -> X
+          | AA -> A
+          | AX -> XA
+          | AQ -> Q
+        in
+        let read =
+          if Annot.is_atomic an then read_mem_reserve else do_read_mem
+        in
         do_ldr rs sz an
-          (fun ac a ->
-            let read =
-              match t with
-              | XX -> read_mem_reserve sz Annot.X
-              | AA -> read_mem_acquire sz
-              | AX -> read_mem_reserve sz Annot.XA
-              | AQ -> read_mem_acquire_pc sz in
-            read aexp ac rd a ii)
-          (read_reg_addr rs ii)  ii
+          (fun ac a -> read sz an aexp ac rd a ii)
+          (read_reg_addr rs ii) ii
 
       let str_simple sz rs rd m_ea ii =
         do_str rd
@@ -2080,11 +2087,11 @@ Arguments:
         lift_memop r3 Dir.W true (* swp is a write for the purpose of DB *)
           memtag
           (fun ac ma mv ->
-            let noret = match r2 with | AArch64.ZR -> true | _ -> false in
+            let noret = is_noret r2 in
             let r2 = mv
             and w2 v = write_reg_sz sz r2 v ii
             and r1 a =
-              if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+              if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
               else rmw_amo_read sz rmw ac a ii
             and w1 a v = rmw_amo_write sz rmw ac a v ii in
             M.swp
@@ -2101,14 +2108,14 @@ Arguments:
         let an = rmw_to_read rmw in
         let read_rs = read_reg_data_sz sz rs ii
         and write_rs v = write_reg_sz sz rs v ii in
-        let noret = match rs with | AArch64.ZR -> true | _ -> false in
+        let noret = is_noret rs in
         let branch a =
           let cond = Printf.sprintf "[%s]==%d:%s" (V.pp_v a) ii.A.proc (A.pp_reg rs) in
             commit_pred_txt (Some cond) ii in
         let mop_fail_no_wb ac ma _ =
           (* CAS fails, there is no Explicit Write Effect *)
           let read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else do_read_mem_ret sz an aexp ac a ii in
           let noact _ _ = M.mk_singleton_es Act.NoAction ii in
           M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs read_mem
@@ -2118,7 +2125,7 @@ Arguments:
           (* CAS fails, there is an Explicit Write Effect writing back *)
           (* the value that is already in memory                       *)
           let read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
           M.aarch64_cas_no (Access.is_physical ac) ma read_rs write_rs
@@ -2130,7 +2137,7 @@ Arguments:
               as this code is not executed in morello mode *)
           let read_rt = mv
           and read_mem a =
-            if noret then do_read_mem_ret sz Annot.NoRet aexp ac a ii
+            if noret then do_read_mem_ret sz Annot.XNoRet aexp ac a ii
             else rmw_amo_read sz rmw ac a ii
           and write_mem a v = rmw_amo_write sz rmw ac a v ii in
           M.aarch64_cas_ok (Access.is_physical ac) ma read_rs read_rt write_rs
@@ -2287,7 +2294,7 @@ Arguments:
         let an = rmw_to_read rmw in
         lift_memop rn Dir.W true memtag
           (fun ac ma mv ->
-            let noret = match rt with | ZR -> true | _ -> false in
+            let noret = is_noret rt in
             let op = match op with
             | A_ADD -> Op.Add
             | A_EOR -> Op.Xor
@@ -2300,7 +2307,7 @@ Arguments:
             let read_mem =
               if noret then
                 fun sz ->
-                do_read_mem_ret sz Annot.NoRet aexp ac
+                do_read_mem_ret sz Annot.XNoRet aexp ac
               else fun sz -> rmw_amo_read sz rmw ac
             and write_mem = fun sz -> rmw_amo_write sz rmw ac in
             M.amo_strict (Access.is_physical ac) op
@@ -3319,8 +3326,9 @@ Arguments:
             M.bind_ctrldata (ma >>| mv) _do_ldg
           else
             ma >>| mv >>= _do_ldg in
-        lift_memop rn Dir.R false false (fun ac ma mv -> do_ldg ac ma mv)
-        (to_perms "w" MachSize.S128) ma mv Annot.N ii
+        let an = or_noret rt Annot.N in
+        lift_memop rn Dir.R false false do_ldg
+          (to_perms "w" MachSize.S128) ma mv an ii
 
       type double = Once|Twice
 

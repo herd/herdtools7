@@ -16,7 +16,7 @@
 
 
 type t =
-  A | XA | L | XL | X | N | Q | XQ | NoRet | S
+  A | XA | L | XL | X | N | Q | XQ | NoRet | XNoRet | S
   | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
 
 let is_speculated = function
@@ -28,11 +28,11 @@ let is_non_temporal = function
   | _ -> false
 
 let is_atomic = function
-  | XA | XQ | XL | X | NoRet -> true
+  | XA | XQ | XL | X | XNoRet -> true
   | _ -> false
 
 let is_noreturn = function
-  | NoRet -> true
+  | NoRet | XNoRet -> true
   | _ -> false
 
 let is_acquire = function
@@ -67,5 +67,6 @@ let pp = function
   | X -> "*"
   | N -> ""
   | NoRet -> "NoRet"
+  | XNoRet -> "NoRet*"
   | S -> "^s"
   | NTA -> "NT"
