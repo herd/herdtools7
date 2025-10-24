@@ -48,12 +48,15 @@ and their corresponding types in comments:
 \RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-value}{}
 The function
 \[
   \buildvalue(\overname{\parsenode{\Nvalue}}{\vparsednode}) \;\aslto\; \overname{\literal}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ for $\Nvalue$ into an AST node $\vastnode$ for $\literal$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[integer]{}{
@@ -107,8 +110,7 @@ annotates
 a literal $\texttt{l}$ in the \staticenvironmentterm{} $\texttt{tenv}$,
 resulting in a type
 $\texttt{t}$.
-}
-
+} % END_OF_BACKUP_RELATION
 See \ExampleRef{Literals}.
 
 \ProseParagraph
