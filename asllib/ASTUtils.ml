@@ -378,7 +378,7 @@ and slice_equal eq slice1 slice2 =
   | Slice_Range (e11, e21), Slice_Range (e12, e22)
   | Slice_Star (e11, e21), Slice_Star (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
-  | _ -> assert false
+  | _ -> false
 
 and constraint_equal eq c1 c2 =
   c1 == c2

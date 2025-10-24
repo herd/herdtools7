@@ -716,9 +716,9 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.DeclareType.asl
   $ aslref TypingRule.AnnotateExtraFields.bad.asl
-  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
+  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 0 to 40:
   type SubRecord subtypes Record with {-};
-                 ^^^^^^^^^^^^^^^^^^^^^^^^
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Static error: Undefined identifier: 'Record'
   [1]
   $ aslref --no-exec TypingRule.DeclaredType.asl

@@ -432,6 +432,7 @@ Required tests:
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
+  $ aslref --no-exec bitfield-subtyping.asl
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
