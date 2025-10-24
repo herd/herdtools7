@@ -34,6 +34,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include ArchExtra_herd.Make(C)
       (struct
         let arch = arch
+        type instr = instruction
         module V = V
         let endian            = endian
         type arch_reg         = reg

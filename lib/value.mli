@@ -78,7 +78,7 @@ module type S =
       val intToV  : int -> v
       val stringToV  : string -> v
       val nameToV  : string -> v
-      val instructionToV : Cst.Instr.t -> v
+      val instructionToV : Cst.Instr.exec -> v
       val cstToV : Cst.v -> v
       val scalarToV : Cst.Scalar.t -> v
       val maybevToV : MiscParser.maybev -> v
@@ -139,6 +139,7 @@ module type AArch64 =
   S
   with type Cst.PteVal.t = AArch64PteVal.t
   and type Cst.AddrReg.t = AArch64AddrReg.t
+  and type Cst.Instr.exec = AArch64Base.instruction
   and type Cst.Instr.t = AArch64Base.instruction
   and type 'a arch_constr_op1 = 'a AArch64Op.unop
   and type 'a arch_constr_op = 'a AArch64Op.binop

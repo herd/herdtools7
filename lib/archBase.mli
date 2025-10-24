@@ -44,6 +44,10 @@ module type S = sig
   type parsedInstruction
   type instruction
 
+  val nop : instruction option
+  val is_nop : instruction -> bool
+
+  (* Print instruction with formatting mode *)
   val pp_instruction : PPMode.t -> instruction -> string
 
   (* Shorthand for parsable dump *)
@@ -75,11 +79,7 @@ module type S = sig
   val map_addrs :
       (ParsedConstant.v -> ParsedConstant.v) -> instruction -> instruction
 
-  (* Normalize instruction (for hashes) *)
-  val norm_ins : instruction -> instruction
-
-  (* Check validity of instructions, beyond parsing *)
-  val is_valid : instruction -> bool
+  include InstrUtils.S with type instr_exec := instruction
 
   include Pseudo.S
    with type ins = instruction

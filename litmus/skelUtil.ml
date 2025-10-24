@@ -627,7 +627,7 @@ end
       let get_instrs_final t = T.C.get_instrs t.T.condition
 
       let nop_set =
-        match A.V.Instr.nop with
+        match A.nop with
         | None -> A.V.Instr.Set.empty
         | Some nop -> A.V.Instr.Set.singleton nop
 
@@ -1060,7 +1060,10 @@ end
           O.o "" ;
           let module D = A.GetInstr.Make(O) in
           let lbl2instr,is = all_instrs t in
-          if not (A.V.Instr.Set.is_empty is && Misc.nilp lbl2instr) then begin
+          if
+            A.GetInstr.active
+            && not (A.V.Instr.Set.is_empty is && Misc.nilp lbl2instr)
+          then begin
             O.o "/***************************/" ;
             O.o "/* Get instruction opcodes */" ;
             O.o "/***************************/" ;
@@ -1083,38 +1086,41 @@ end
           end
 
         let dump_init_getinstrs t =
-          let  lbl2instr,is = all_instrs t in
           O.o "static void init_getinstrs(void) {" ;
-          A.V.Instr.Set.iter
-            (fun i ->
+          if A.GetInstr.active then begin
+            let lbl2instr,is = all_instrs t in
+            A.V.Instr.Set.iter
+              (fun i ->
               O.fi "%s = %s();"
                 (A.GetInstr.instr_name i)
                 (A.GetInstr.fun_name i))
             is ;
-          let lbl2instrs =
-            Misc.group
-              (fun ((p1,_),_) ((p2,_),_) -> Proc.equal p1 p2)
-              lbl2instr in
-          let open OutUtils in
-          List.iter
-            (fun ps ->
-              match ps with
-              | [] -> assert false
-              | ((p,_),_)::_ ->
-                  check_ascall () ;
-                  O.fi "size_t %s = prelude_size((ins_t *)code%i);"
-                    (fmt_prelude p) p ;
-                  List.iter
-                    (fun ((p,_ as lbl),_) ->
-                      O.fi
-                        "%s = *(((ins_t *)code%i)+%s+%s);"
-                        (fmt_lbl_instr lbl) p
-                        (fmt_prelude p)
-                        (fmt_lbl_instr_offset lbl))
-                    ps)
-            lbl2instrs ;
+            let lbl2instrs =
+              Misc.group
+                (fun ((p1,_),_) ((p2,_),_) -> Proc.equal p1 p2)
+                lbl2instr in
+            let open OutUtils in
+            List.iter
+              (fun ps ->
+                 match ps with
+                 | [] -> assert false
+                 | ((p,_),_)::_ ->
+                     check_ascall () ;
+                     O.fi "size_t %s = prelude_size((ins_t *)code%i);"
+                       (fmt_prelude p) p ;
+                     List.iter
+                       (fun ((p,_ as lbl),_) ->
+                          O.fi
+                            "%s = *(((ins_t *)code%i)+%s+%s);"
+                            (fmt_lbl_instr lbl) p
+                            (fmt_prelude p)
+                            (fmt_lbl_instr_offset lbl))
+                       ps)
+              lbl2instrs
+          end ;
           O.o "}" ;
           O.o ""
+
 
         let dump_opcode env t =
           if instr_in_outs env t then begin

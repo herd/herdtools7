@@ -94,13 +94,14 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
       end)
 
   let features = []
-  let nop = Pnop
 
   include HardwareExtra.No
 
   module GetInstr = struct
 
       type t = instruction
+
+      let active = true
 
       let self_instrs = [Pnop; ]
 

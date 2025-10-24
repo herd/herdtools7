@@ -105,7 +105,10 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
                 let arch = arch
 
+                type instr = instruction
+
                 module V = V
+
                 let endian = endian
 
                 type arch_reg = reg

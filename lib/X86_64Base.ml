@@ -380,6 +380,11 @@ type instruction =
 (* Cache flush *)
   | I_CLFLUSH of opt * effaddr
 
+let nop = Some I_NOP
+and is_nop = function
+  | I_NOP -> true
+  | _ -> false
+
 type parsedInstruction = instruction
 
 let pp_abs = ParsedConstant.pp_v
@@ -685,8 +690,6 @@ let rec map_addrs f =
       I_LOCK (map_addrs f ins)
 
 
-let norm_ins ins = ins
-
 let rec get_next = function
   | I_NOP | I_EFF_OP _ | I_FENCE _
     | I_EFF_EFF _ | I_EFF _ | I_CMPXCHG _
@@ -697,7 +700,7 @@ let rec get_next = function
     | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
     | I_LOCK ins -> get_next ins
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make
           (struct

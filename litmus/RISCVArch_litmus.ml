@@ -45,8 +45,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_class_stable init _r = if init then "+w" else "=&r"
         let comment = comment
       end)
+
   let features = []
-  let nop = INop
 
   include HardwareExtra.No
 

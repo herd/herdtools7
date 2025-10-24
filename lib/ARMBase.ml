@@ -242,6 +242,11 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
+let nop = Some I_NOP
+and is_nop = function
+  | I_NOP -> true
+  | _ -> false
+
 let pp_lbl = fun i -> i
 
 open PPMode
@@ -497,8 +502,6 @@ let fold_addrs _f c _ins = c
 
 let map_addrs _f ins = ins
 
-let norm_ins ins = ins
-
 (* PLDI submission, complete later *)
 let is_data _ _ = assert false
 
@@ -545,7 +548,11 @@ let get_next = function
   | I_BX _ -> [Label.Any]
   | I_BEQ lbl|I_BNE lbl|I_CB (_,_,lbl) -> [Label.Next; Label.To lbl]
 
-let is_valid _ = true
+include
+  InstrUtils.No
+    (struct
+      type instr = instruction
+    end)
 
 include Pseudo.Make
     (struct
@@ -675,10 +682,4 @@ let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
 
-module Instr =
-  Instr.WithNop
-    (struct
-      type instr = instruction
-      let nop = I_NOP
-      let compare = compare
-    end)
+module Instr = Instr.No(struct type instr = instruction end)

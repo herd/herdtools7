@@ -77,14 +77,16 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
         let reg_class_stable init _ = if init then "+r" else "=&r"
         let comment = comment
       end)
+
   let features = []
-  let nop = I_NOP
 
   include HardwareExtra.No
 
   module GetInstr = struct
 
       type t = instruction
+
+      let active = true
 
       let self_instrs = [I_NOP; ]
 

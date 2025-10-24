@@ -2,10 +2,10 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2017-present Institut National de Recherche en Informatique et *)
-(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
+(* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,15 +14,28 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (C : sig
-  val is_morello : bool
-end) : Value.AArch64 = struct
-  module AArch64Instr = AArch64Instr.Make(C)(AArch64Instr.IdTr)
-  module AArch64Constant =
-    SymbConstant.Make (CapabilityScalar) (AArch64PteVal) (AArch64AddrReg) (AArch64Instr)
-  module NoCst =
-    SymbConstant.Make (CapabilityScalar) (PteVal.No) (AddrReg.No) (AArch64Instr)
-  module NoArchOp = ArchOp.No(NoCst)
-  module CapOp = AArch64Op.Make (CapabilityScalar)(NoArchOp)
-  include SymbValue.Make(AArch64Constant)(CapOp)
-end
+(** Utilities for instructions *)
+
+module type S =
+  sig
+    type instr_exec
+    val norm_ins : instr_exec -> instr_exec
+    val is_valid : instr_exec -> bool
+    val get_exported_label : instr_exec -> BranchTarget.t option
+  end
+
+module No :
+  functor (I : sig type instr end)
+  -> S with type instr_exec = I.instr
+
+module type Tr =
+  sig
+    type exec
+    type data
+    val from_exec : exec -> data
+    val to_exec : data -> exec
+  end
+
+module IdTr :
+  functor (I : sig type instr end)
+  ->  Tr with type exec = I.instr and type data = I.instr

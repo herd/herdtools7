@@ -25,10 +25,6 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
       | A.JR (IReg R31) -> true
       | _ -> false
 
-    and is_nop = function
-      | A.NOP -> true
-      | _ -> false
-
     let branch lbl = B lbl
 
 (* No addresses in code *)

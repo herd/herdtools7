@@ -159,7 +159,8 @@ let barrier_compare = A64B.barrier_compare
 
 type parsedInstruction = Asllib.AST.t
 type instruction = Asllib.AST.t
-
+let nop = None
+and is_nop _ = false
 let pp_instruction _ppmode ast = Asllib.PP.t_to_string ast
 let dump_instruction a = pp_instruction PPMode.Ascii a
 let dump_instruction_hash = Asllib.Serialize.t_to_string
@@ -168,9 +169,9 @@ let fold_regs _ ab _ = ab
 let map_regs _ _ i = i
 let fold_addrs _ a _ = a
 let map_addrs _ i = i
-let norm_ins i = i
 let get_next _ = assert false
-let is_valid _ = true
+
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make (struct
   type ins = instruction

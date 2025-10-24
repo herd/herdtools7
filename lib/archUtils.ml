@@ -16,7 +16,7 @@
 
 (** Utilities from ArchBase useful for herd and litmus *)
 
-module Make(A:ArchBase.S)(Instr:Instr.S with type t = A.instruction) =
+module Make(A:ArchBase.S) =
   struct
 
     let get_exported_labels_code prog =
@@ -26,7 +26,7 @@ module Make(A:ArchBase.S)(Instr:Instr.S with type t = A.instruction) =
             A.fold_pseudo_code
               (fun k i ->
                 let open BranchTarget in
-                match Instr.get_exported_label i with
+                match A.get_exported_label i with
                 | None -> k
                 | Some (Lbl lbl) ->
                    (MiscParser.proc_num p,lbl)::k

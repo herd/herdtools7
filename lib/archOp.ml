@@ -62,6 +62,7 @@ module type WithTr = sig
 
   val fromExtraAddrReg : addrreg -> AArch64AddrReg.t
   val toExtraAddrReg : AArch64AddrReg.t -> addrreg
+
 end
 
 

@@ -16,7 +16,6 @@
 
 module Make :
   functor(A:ArchBase.S) ->
-    functor(Instr:Instr.S with type t = A.instruction) ->
     sig
       val get_exported_labels_code :
         (MiscParser.proc * A.pseudo list) list  -> Label.Full.Set.t

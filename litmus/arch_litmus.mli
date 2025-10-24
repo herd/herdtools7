@@ -26,9 +26,14 @@ module type Base = sig
 
   type reg
   type instruction
+  val nop : instruction option
+
   val dump_instruction : instruction -> string
 
-  module V : Constant.S with type Instr.t = instruction
+  module
+    V : Constant.S
+    with type Instr.t = instruction
+     and type Instr.exec = instruction
 
   module RegSet : MySet.S with type elt = reg
   module RegMap : MyMap.S with type key = reg
@@ -108,7 +113,10 @@ module type S =
 
     include ArchBase.S
 
-    module V : Constant.S with type Instr.t = instruction
+    module
+      V : Constant.S
+      with type Instr.t = instruction
+      and type Instr.exec = instruction
 
 (* Reaction to different types, fail or warn *)
     val error : (CType.t -> CType.t -> bool)
@@ -120,7 +128,6 @@ module type S =
     and type I.arch_reg = reg
 
     val features : ((instruction -> bool) * string) list
-    val nop : instruction
 
     include HardwareExtra.S
 

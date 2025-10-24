@@ -83,7 +83,7 @@ module Pseudo(A:Arch_litmus.S) = struct
  * ARM "ADR" instruction.
  *)
 
-  module AU = ArchUtils.Make(A)(A.V.Instr)
+  module AU = ArchUtils.Make(A)
 
   let exported_labels_code prog = AU.get_exported_labels_code prog
 
