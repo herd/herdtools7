@@ -321,7 +321,11 @@ let run_herd bell cat litmus cfg =
 
   let from_file =
     let module T =
-      ParseTest.Top (struct let bell_model_info = bi include Config end) in
+      ParseTest.Top
+        (struct
+          include GenParser.DefaultConfig
+          let bell_model_info = bi
+          include Config end) in
     T.from_file in
 
 
