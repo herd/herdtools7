@@ -2,7 +2,12 @@ name: Check Build WWW
 
 on:
   workflow_dispatch:
-  schedule:     
+    inputs:
+      pr_number:
+        description: "Optional PR number to build (uses refs/pull/<n>/head)"
+        required: false
+        type: string
+  schedule:
       - cron: '0 8 * * 0'
 
 jobs:
@@ -16,7 +21,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout tree
+      - name: Checkout PR head ref (if provided)
+        if: ${{ github.event.inputs.pr_number != '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.inputs.pr_number }}/head
+
+      - name: Checkout default branch
+        if: ${{ github.event.inputs.pr_number == '' }}
         uses: actions/checkout@v4
 
       - name: Set-up OCaml 5
