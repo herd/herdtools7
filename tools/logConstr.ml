@@ -32,7 +32,7 @@ let rec tr_v v =
   | Concrete i -> Concrete (Int64.of_string i)
   | ConcreteVector vs -> ConcreteVector (List.map tr_v vs)
   | ConcreteRecord vs -> ConcreteRecord (StringMap.map tr_v vs)
-  | Symbolic _|Label _|Tag _
+  | Symbolic _|Tag _
   | PteVal _|AddrReg _|Instruction _|Frozen _
     as w -> w
 
