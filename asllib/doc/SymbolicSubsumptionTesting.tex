@@ -368,8 +368,12 @@ is
 
 \begin{mathpar}
 \inferrule[int\_parameterized]{}{
-  \symdomoftype(\tenv, \overname{\TInt(\Parameterized(\id))}{\vt}) \typearrow \\
+  {
+  \begin{array}{r}
+  \symdomoftype(\tenv, \overname{\TInt(\Parameterized(\id))}{\vt}) \typearrow\\
   \overname{\Subdomains([\ConstrainedDom(\ConstraintExact(\EVar(\id)))])}{\vd}
+  \end{array}
+  }
 }
 \end{mathpar}
 

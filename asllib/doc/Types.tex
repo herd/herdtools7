@@ -866,7 +866,7 @@ to be \constrainedintegersterm.
 }{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)) \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
   (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \vses)
     \end{array}
   }
@@ -883,7 +883,7 @@ to be \constrainedintegersterm.
 }{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TBits(\ewidth, \bitfields)) \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
   (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{\seswidth}{\seswidth})
     \end{array}
   }
@@ -978,7 +978,7 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
   i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \TTuple(\tys)) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
@@ -1109,7 +1109,7 @@ show examples of ill-typed enumeration type declarations.
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
   \vl \in \vli: \checkvarnotingenv(G^\tenv, \vl) \typearrow \True \OrTypeError
 }{
-  \annotatetype(\True, \tenv, \TEnum(\vli)) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
+  \annotatetype(\True, \tenv, \overname{\TEnum(\vli)}{\tty}) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
