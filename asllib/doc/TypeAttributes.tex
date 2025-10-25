@@ -514,7 +514,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\\\\
   \tstruct(\tenv, \vtone)\typearrow\vt \OrTypeError
 }{
-  \tstruct(\tenv, \TNamed(\vx)) \typearrow \vt
+  \tstruct(\tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow \vt
 }
 \end{mathpar}
 
@@ -531,7 +531,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   \tys \eqname \vt_{1..k}\\
   i=1..k: \tstruct(\tenv, \vt_i) \typearrow \vtp_i \OrTypeError
 }{
-  \tstruct(\tenv, \TTuple(\tys)) \typearrow  \TTuple(i=1..k: \vtp_i)
+  \tstruct(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow  \TTuple(i=1..k: \vtp_i)
 }
 \end{mathpar}
 
@@ -539,7 +539,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \inferrule[array]{
   \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError
 }{
-  \tstruct(\tenv, \TArray(\ve, \vt)) \typearrow \TArray(\ve, \vtone)
+  \tstruct(\tenv, \overname{\TArray(\ve, \vt)}{\tty}) \typearrow \TArray(\ve, \vtone)
 }
 \end{mathpar}
 
@@ -548,7 +548,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
   L \in \{\TRecord, \TException, \TCollection\}\\\\
   (\id,\vt) \in \fields : \tstruct(\tenv, \vt) \typearrow \vt_\id \OrTypeError
 }{
-  \tstruct(\tenv, L(\fields)) \typearrow
+  \tstruct(\tenv, \overname{L(\fields)}{\tty}) \typearrow
  L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
 }
 \end{mathpar}
@@ -667,18 +667,18 @@ is a \constrainedintegerterm{} type.
 \begin{mathpar}
 \inferrule[well-constrained]{}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\WellConstrained(\Ignore))) \typearrow \True
+  \checkconstrainedinteger(\tenv, \overname{\TInt(\WellConstrained(\Ignore))}{\tty}) \typearrow \True
 }
 \and
 \inferrule[parameterized]{}
 {
-  \checkconstrainedinteger(\tenv, \TInt(\Parameterized(\Ignore))) \typearrow \True
+  \checkconstrainedinteger(\tenv, \overname{\TInt(\Parameterized(\Ignore))}{\tty}) \typearrow \True
 }
 \and
 \inferrule[unconstrained]{
   \astlabel(\vc) = \Unconstrained \;\lor\; \astlabel(\vc) = \PendingConstrained
 }{
-  \checkconstrainedinteger(\tenv, \TInt(\vc)) \typearrow \TypeErrorVal{\UnexpectedType}
+  \checkconstrainedinteger(\tenv, \overname{\TInt(\vc)}{\tty}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \and
 \inferrule[conflicting\_type]{

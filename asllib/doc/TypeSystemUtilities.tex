@@ -72,7 +72,7 @@ thus resulting in a \typingerrorterm.
 \inferrule[okay]{
   \cardinality{\{\id_{1..k}\}} = k
 }{
-  \checknoduplicates(\id_{1..k}) \typearrow \True
+  \checknoduplicates(\overname{\id_{1..k}}{\ids}) \typearrow \True
 }
 \end{mathpar}
 
@@ -82,7 +82,7 @@ thus resulting in a \typingerrorterm.
   i \neq j\\
   \id_i = \id_j
 }{
-  \checknoduplicates(\id_{1..k}) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
+  \checknoduplicates(\overname{\id_{1..k}}{\ids}) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \end{mathpar}
 
@@ -257,11 +257,11 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \begin{mathpar}
 \inferrule[enum]{}
 {
-  \typeofarraylength(\ArrayLengthEnum(\vs, \Ignore)) \typearrow \TNamed(\vs)
+  \typeofarraylength(\overname{\ArrayLengthEnum(\vs, \Ignore)}{\size}) \typearrow \TNamed(\vs)
 }
 \and
 \inferrule[expr]{}{
-  \typeofarraylength(\ArrayLengthExpr(\Ignore)) \typearrow \TInt(\Unconstrained)
+  \typeofarraylength(\overname{\ArrayLengthExpr(\Ignore)}{\size}) \typearrow \TInt(\Unconstrained)
 }
 \end{mathpar}
 \CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}

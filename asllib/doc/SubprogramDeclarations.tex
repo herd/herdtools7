@@ -1216,7 +1216,7 @@ in \listingref{ParametersOfTy} are as follows:
 \inferrule[tbits]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
 }{
-  \paramsofty(\tenv, \TBits(\ve, \Ignore)) \typearrow \ids
+  \paramsofty(\tenv, \overname{\TBits(\ve, \Ignore)}{\tty}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1225,7 +1225,7 @@ in \listingref{ParametersOfTy} are as follows:
   \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \OrTypeError\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\tenv, \TTuple(\tys)) \typearrow \ids
+  \paramsofty(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1234,7 +1234,7 @@ in \listingref{ParametersOfTy} are as follows:
   \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
-  \paramsofty(\tenv, \TInt(\WellConstrained(\cs, \True))) \typearrow \ids
+  \paramsofty(\tenv, \overname{\TInt(\WellConstrained(\cs, \True))}{\tty}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1349,7 +1349,7 @@ for the expression \verb|A| appearing in the return type.
   \isundefined(\tenv, \vx) \typearrow \vb\\
   \ids \eqdef \choice{\vb}{[\vx]}{\emptylist}
 }{
-  \paramsofexpr(\tenv, \EVar(\vx)) \typearrow \ids
+  \paramsofexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1357,7 +1357,7 @@ for the expression \verb|A| appearing in the return type.
 \inferrule[eunop]{
   \paramsofexpr(\tenv, \veone) \typearrow \ids \OrTypeError
 }{
-  \paramsofexpr(\tenv, \EUnop(\Ignore, \veone)) \typearrow \ids
+  \paramsofexpr(\tenv, \overname{\EUnop(\Ignore, \veone)}{\ve}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1366,7 +1366,7 @@ for the expression \verb|A| appearing in the return type.
   \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
   \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
 }{
-  \paramsofexpr(\tenv, \EBinop(\Ignore, \veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
+  \paramsofexpr(\tenv, \overname{\EBinop(\Ignore, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 
@@ -1376,7 +1376,7 @@ for the expression \verb|A| appearing in the return type.
   \es \eqname [\ve]\\
   \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
-  \paramsofexpr(\tenv, \ETuple(\es)) \typearrow \ids
+  \paramsofexpr(\tenv, \overname{\ETuple(\es)}{\ve}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1386,7 +1386,7 @@ for the expression \verb|A| appearing in the return type.
   \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
   \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
 }{
-  \paramsofexpr(\tenv, \ECond(\ve, \veone, \vetwo)) \typearrow \overname{\idsp \concat \idsone \concat \idstwo}{\ids}
+  \paramsofexpr(\tenv, \overname{\ECond(\ve, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsp \concat \idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 
@@ -1436,7 +1436,7 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
 \inferrule[exact]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
 }{
-  \paramsofconstraint(\tenv, \ConstraintExact(\ve)) \typearrow \ids
+  \paramsofconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -1445,7 +1445,7 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
   \paramsofexpr(\tenv, \veone) \typearrow \idsone \\
   \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \\
 }{
-  \paramsofconstraint(\tenv, \ConstraintRange(\veone, \vetwo)) \typearrow \overname{\idsone \concat \idstwo}{\ids}
+  \paramsofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
 

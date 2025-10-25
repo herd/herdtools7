@@ -838,7 +838,7 @@ of well-typed unary operation expressions.
   \annotateexpr(\tenv, \vep) \typearrow (\vtpp, \vepp, \vses) \OrTypeError\\\\
   \applyunoptype(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
 }{
-  \annotateexpr(\tenv, \EUnop(\op, \vep)) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
+  \annotateexpr(\tenv, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
@@ -937,7 +937,7 @@ an example of typing a conditional expression.
 }{
   {
     \begin{array}{r}
-  \annotateexpr(\ECond(\econd, \etrue, \efalse)) \typearrow \\
+  \annotateexpr(\tenv, \overname{\ECond(\econd, \etrue, \efalse)}{\ve}) \typearrow \\
   (\vt, \ECond(\econdp, \etruep, \efalsep), \vses)
     \end{array}
   }
@@ -1625,7 +1625,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 }{
   {
     \begin{array}{r}
-      \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \\
+      \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \\
       (\vt, \EGetField(\vetwo, \fieldname), \overname{\vsesone}{\vses})
     \end{array}
   }
@@ -1659,7 +1659,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
   L \in \{\TRecord, \TException\}\\
   \assocopt(\fields, \fieldname) \typearrow \None
 }{
-  \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \TypeErrorVal{\BadField}
+  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
 \CodeSubsection{\EGetBadRecordFieldBegin}{\EGetBadRecordFieldEnd}{../Typing.ml}
@@ -1723,7 +1723,7 @@ All of the collection field expressions in
 }{
   {
     \begin{array}{r}
-      \annotateexpr(\tenv, \EGetField(\veone, \fieldname)) \typearrow \\
+      \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \\
       (\vt, \EGetCollectionFields(\vbase, [\fieldname]), \overname{\vsesone}{\vses})
     \end{array}
   }
@@ -3051,7 +3051,7 @@ Note that there are two important consequences of producing an arbitrary value w
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
   \vses \eqdef \vsesty \cup \{ \LocalEffect(\SEReadonly), \GlobalEffect(\SEReadonly), \Immutability(\False) \}
 }{
-  \annotateexpr(\tenv, \EArbitrary(\tty)) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
+  \annotateexpr(\tenv, \overname{\EArbitrary(\tty)}{\ve}) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}

@@ -112,7 +112,7 @@ without matching any operation.
   \withemptylocal(\genv) \typearrow \tenv \\
   \annotateexprlist(\tenv, \vargs) \typearrow \vargsp \OrTypeError \\
 }{
-  \checkglobalpragma(\genv, \overtext{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
+  \checkglobalpragma(\genv, \overname{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
 }
 \end{mathpar}
 \CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}

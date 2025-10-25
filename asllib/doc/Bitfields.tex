@@ -413,7 +413,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   \commonprefixline\\\\
   \checkslicesinwidth(\tenv, \width, \slicesone) \typearrow \True \OrTypeError
 }{
-  \annotatebitfield(\tenv, \width, \BitFieldSimple(\name, \vslices)) \typearrow \\
+  \annotatebitfield(\tenv, \width, \overname{\BitFieldSimple(\name, \vslices)}{\vfield}) \typearrow \\
   (\overname{\BitFieldSimple(\name, \slicesone)}{\newfield}, \overname{\vsesslices}{\vses})
 }
 \end{mathpar}
@@ -432,7 +432,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   }\\
   \vses \eqdef \vsesslices \cup \vsesbitfields
 }{
-  \annotatebitfield(\tenv, \width, \BitFieldNested(\name, \vslices, \bitfieldsp)) \typearrow \\
+  \annotatebitfield(\tenv, \width, \overname{\BitFieldNested(\name, \vslices, \bitfieldsp)}{\vfield}) \typearrow \\
   (\overname{\BitFieldNested(\slicesone, \bitfieldspp)}{\newfield}, \vses)
 }
 \end{mathpar}
@@ -449,7 +449,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesslices \cup \vsesty
 }{
-  \annotatebitfield(\tenv, \width, \BitFieldType(\name, \vslices, \vt)) \typearrow \\
+  \annotatebitfield(\tenv, \width, \overname{\BitFieldType(\name, \vslices, \vt)}{\vfield}) \typearrow \\
   (\overname{\BitFieldType(\name, \slicesone, \vtp)}{\newfield}, \vses)
 }
 \end{mathpar}

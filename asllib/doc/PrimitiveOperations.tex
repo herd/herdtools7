@@ -562,9 +562,9 @@ not_bits: NOT '11 01' = 0x2
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[error]{
-  (\op, \vl) \not\in \unopsignatures
+  (\op, \astlabel(\vl)) \not\in \unopsignatures
 }{
-  \unopliterals(\op, \astlabel(\vl)) \typearrow \TypeErrorVal{\BadOperands}
+  \unopliterals(\op, \vl) \typearrow \TypeErrorVal{\BadOperands}
 }
 \and
 \inferrule[negate\_int]{}{

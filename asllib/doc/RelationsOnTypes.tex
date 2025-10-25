@@ -79,7 +79,7 @@ yielding the result in $\vb$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[reflexive]{}{
-  \subtypesrel(\tenv, \TNamed(\id), \TNamed(\id)) \typearrow \True
+  \subtypesrel(\tenv, \overname{\TNamed(\id)}{\vtone}, \overname{\TNamed(\id)}{\vttwo}) \typearrow \True
 }
 \and
 \inferrule[transitive]{
@@ -87,14 +87,14 @@ yielding the result in $\vb$.
   G^\tenv.\subtypes(\idone) = \idthree\\
   \subtypesrel(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
 }{
-  \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \vb
+  \subtypesrel(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \vb
 }
 \and
 \inferrule[no\_supertype]{
   \idone \neq \idtwo\\
   G^\tenv.\subtypes(\idone) = \bot
 }{
-  \subtypesrel(\tenv, \TNamed(\idone), \TNamed(\idtwo)) \typearrow \False
+  \subtypesrel(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \False
 }
 \and
 \inferrule[not\_named]{
@@ -2991,13 +2991,13 @@ The following table shows examples of applying $\towellconstrained$ to various t
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}
 {
-  \towellconstrained(\TInt(\Parameterized(\vv))) \typearrow\\ \TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))
+  \towellconstrained(\overname{\TInt(\Parameterized(\vv))}{\vt}) \typearrow\\ \TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))
 }
 \and
 \inferrule[t\_int\_other]{
   \astlabel(\vi) \neq \Parameterized
 }{
-  \towellconstrained(\TInt(\vi)) \typearrow \vt
+  \towellconstrained(\overname{\TInt(\vi)}{\vt}) \typearrow \vt
 }
 \and
 \inferrule[other]{
@@ -3224,13 +3224,13 @@ precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
     \vpone = \PrecisionLost \lor
     \vptwo = \PrecisionLost
   }{
-    \vp = \PrecisionLost
+    \precisionjoin(\vpone, \vptwo) \typearrow \PrecisionLost
   }
   \and
   \inferrule[Full]{
     \vpone = \PrecisionFull \\
     \vptwo = \PrecisionFull
   }{
-    \vp = \PrecisionFull
+    \precisionjoin(\vpone, \vptwo) \typearrow \PrecisionFull
   }
 \end{mathpar}
