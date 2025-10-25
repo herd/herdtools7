@@ -3922,6 +3922,8 @@ module
 
   let nop = Some I_NOP
 
+  let mk_imm_branch off = Some (I_B (BranchTarget.Offset off)) 
+
   let is_nop = function
     | I_NOP -> true
     | _ -> false

@@ -19,7 +19,8 @@
 (************************************************)
 
 let func_size = Pseudo.func_size
-let proc_size = 10000
+let proc_size = Pseudo.proc_size
+let page_size = Pseudo.page_size
 
 let func_start_addr proc = function
   | MiscParser.Main -> (proc + 1) * proc_size
@@ -42,14 +43,20 @@ struct
   type start_points = A.start_points
   type code_segment = A.code_segment
 
+  let nop_sz = 4 (* A.size_of_ins (Option.get A.mk_nop_opt) *)
 
-  let preload_labels proc =
+  let next_addr_after_pagealign addr =
+    let addr_part = addr mod proc_size in
+    let proc_part = addr - addr_part in
+    proc_part + ((addr_part / page_size) + (if addr_part mod page_size = 0 then 0 else 1) ) * page_size
+
+  let preload_labels proc = fun m addr ->
     let add_label lbl addr m =
       if Label.Map.mem lbl m then
         Warn.user_error
           "Label %s occurs more that once" lbl ;
       Label.Map.add lbl (proc,addr) m in
-    A.fold_label_addr add_label
+    (A.fold_label_addr add_label) m addr
 
   let preload =
     List.fold_left
@@ -81,40 +88,101 @@ struct
     | Offset _ as x -> x in
     A.map_labels_base labelmap instr
 
-  let rec load_code proc addr mem rets = function
-    | [] ->
-       [],IntMap.add addr (proc,[]) rets
-    | ins::code ->
-       load_ins proc addr mem rets code ins
+  let rec load_code proc addr mem = function
+    | [] -> []
+    | ins::code -> load_ins proc addr mem code ins
 
-  and load_ins proc addr mem rets code = fun x ->
-    match x with
+  and load_ins proc addr mem code = function
     | A.Nop ->
-       load_code proc addr mem rets code
+       load_code proc addr mem code
     | A.Instruction ins ->
-        let start,new_rets =
-          load_code proc (addr+A.size_of_ins ins) mem rets code in
+        let start =
+          load_code proc (addr+A.size_of_ins ins) mem code in
         let new_ins =
           convert_lbl_to_offset proc addr mem ins in
-        let new_start = (addr,new_ins)::start in
-        let newer_rets = IntMap.add addr (proc,new_start)  new_rets in
-        new_start,newer_rets
-    | A.Label (_,ins) ->
-        let start,new_rets = load_ins proc addr mem rets code ins in
-        start,new_rets
+        (addr,new_ins)::start
+    | A.Label (_,A.Nop) ->
+        load_code proc addr mem code
+    | A.Label (_,_) -> assert false (* Expected to have been normalised already! *)
+    | A.Symbolic _
+    | A.Macro (_,_) -> assert false
+    | A.Pagealign ->
+      assert false
+    | A.Skip n ->
+      let new_addr = addr + n in
+      load_code proc new_addr mem code
+
+  let make_padding old_addr new_addr =
+    let immbranch_v sz = Option.get (A.mk_immbranch_opt sz) in
+    let sz = (new_addr - old_addr)/nop_sz in
+    assert ((new_addr - old_addr) mod nop_sz = 0);
+    assert (nop_sz == (A.size_of_ins (immbranch_v sz)));
+    match sz with
+    | 0 -> []
+    | 1 -> [(A.Instruction (immbranch_v sz))]
+    | _ -> [(A.Instruction (immbranch_v sz)); A.Skip ((sz-1)*nop_sz)]
+
+  let rec normalise_code addr = function
+  | [] -> []
+  | pseudoins::code -> normalise_ins addr code pseudoins
+
+  and normalise_ins addr code pseudo_ins =
+    match pseudo_ins with
+    | A.Nop ->
+      A.Nop :: (normalise_code addr code)
+    | A.Instruction ins ->
+      let next_addr = addr + (A.size_of_ins ins) in
+      A.Instruction ins :: (normalise_code next_addr code)
+    | A.Label (lbl,pseudo_ins) ->
+        let next_code = match pseudo_ins with
+        | A.Nop ->
+          if List.is_empty code then
+            []
+          else
+            code
+        | _ -> pseudo_ins::code
+        in
+        A.Label (lbl, A.Nop) :: (normalise_code addr next_code)
+    | A.Pagealign -> begin
+      try
+        let new_addr = next_addr_after_pagealign addr in
+        let padding = make_padding addr new_addr in
+        normalise_code addr (padding @ code)
+      with Invalid_argument _ -> Warn.fatal "Error in pre-processing litmus test"
+      end
+    | A.Skip n ->
+      let next_addr = addr + n in
+      (A.Skip n) :: (normalise_code next_addr code)
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
-  let load prog =
-    let mem = preload prog in
+  and normalise_prog = function
+  | [] -> []
+  | ((proc,foo,func),code)::pseudo_prog ->
+    let addr = func_start_addr proc func in
+    ((proc, foo, func),normalise_code addr code)::(normalise_prog pseudo_prog)
+
+  let rec mk_rets_from_starts proc addr rets start =
+    match start with
+    | [] ->
+      IntMap.add addr (proc,[]) rets
+    | (addr, _)::start_tl ->
+      let new_rets = IntMap.add addr (proc,start) rets in
+      mk_rets_from_starts proc (addr+nop_sz) new_rets start_tl
+
+
+  let load pseudo_prog =
+    let pseudo_prog = normalise_prog pseudo_prog in
+    let mem = preload pseudo_prog in
     let rec load_iter = function
       | [] -> [],IntMap.empty
-      | ((proc,_,func),code)::prog ->
-         let starts,rets = load_iter prog in
+      | ((proc,_,func),code)::pseudo_prog_tl ->
+         let starts,rets = load_iter pseudo_prog_tl in
          let addr = func_start_addr proc func in
-         let start,fin_rets = load_code proc addr mem rets code in
+         let start = load_code proc addr mem code in
+         let fin_rets = mk_rets_from_starts proc addr rets start in
          (proc,func,start)::starts,fin_rets in
-    let starts,codes = load_iter prog in
+    let starts,code_segments = load_iter pseudo_prog in
     let mains,fhandlers =
       List.partition (fun (_,func,_) -> func=MiscParser.Main) starts in
     let add_fhandler (proc,_,start) =
@@ -124,6 +192,8 @@ struct
       | Some (_,_,fh_start) ->
          (proc,start,Some fh_start)
       | None -> (proc,start,None) in
-    Label.Map.map snd mem,List.map add_fhandler mains,codes
+    let starts = List.map add_fhandler mains in
+    let prog = Label.Map.map snd mem in
+    prog,starts,code_segments
 
 end

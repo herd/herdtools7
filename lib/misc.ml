@@ -733,6 +733,18 @@ let tr_physical = do_tr "phy_"
 let is_physical = is_prefix "phy_"
 let pp_physical = sprintf "PA(%s)"
 
+let is_labelstr s =
+  try
+    Scanf.sscanf s "%d:%s" (fun _ _ -> true)
+  with Scanf.Scan_failure _ ->
+    false
+
+let str_as_label s =
+  try
+    Scanf.sscanf s "%d:%s" (fun proc lblname -> Some (proc, lblname))
+  with Scanf.Scan_failure _ ->
+    None
+
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
 
