@@ -1032,7 +1032,7 @@ let match_reg_events es =
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores test es rfm loads stores compat_locs =
+    let map_load_possible_stores test es _rfm loads stores compat_locs =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
         | OptAce.True ->
@@ -1093,16 +1093,11 @@ let match_reg_events es =
                             "mixed-size test rejected (symbol %s), consider option -variant mixed"
                             (A.pp_location loc)
                     | None ->
-                       if dbg then begin
-                        let module PP = Pretty.Make(S) in
-                        eprintf
-                          "Failed to find at least one write for load %a\n%!"
-                          E.debug_event load ;
-                        PP.show_es_rfm test es rfm
-                       end ;
-                       Warn.fatal
-                         "Non symbolic location with no initial write: '%s'\n"
-                         (A.pp_location loc)
+                        (*
+                         * Non symbolic accesses have an error of their own.
+                         * See "NoSymbol" below.
+                         *)
+                        ()
                     end
                 | _ -> assert false
                 end
@@ -1148,8 +1143,8 @@ let match_reg_events es =
             let ws =
               let v = S.E.global_loc_of er in
               match v with
-              | Some (V.Var _ as v) -> NoSymbol v::ws
-              | None|Some (V.Val _) -> ws in
+              | None|Some (V.Val (Constant.(Symbolic _|Label _))) -> ws
+              | Some v -> NoSymbol v::ws in
             (* Add reading from nowhere for speculated reads *)
             let ws = if is_spec es er then NoWrite::ws else ws in
             er,ws)
@@ -2090,34 +2085,17 @@ let match_reg_events es =
         (fun e -> check_event_aligned test e)
         es.E.mem_accesses
 
-    let check_symbolic_locations _test es =
-      E.EventSet.iter
-        (fun e -> match E.location_of e with
-        | Some (A.Location_global (V.Val cst)) when
-            Constant.is_symbol cst ||
-            Constant.is_label cst
-            -> ()
-        | Some (A.Location_global (V.Var _))
-            -> ()
-        | Some loc ->
-            Warn.user_error "Non-symbolic memory access found on '%s'"
-              (A.map_global
-                 (V.map_scalar V.Cst.Scalar.printable) loc
-               |> A.pp_location)
-        | None -> assert false)
-        (E.mem_of es.E.events)
-
-      let check_noifetch_limitations es =
-        let non_init_stores = E.EventSet.filter
+    let check_noifetch_limitations es =
+      let non_init_stores = E.EventSet.filter
           (fun e -> E.is_mem_store e && not (E.is_mem_store_init e))
           es.E.events in
-        E.EventSet.iter (fun e ->
+      E.EventSet.iter (fun e ->
           match E.location_of e with
           | Some (A.Location_global (V.Val(Constant.Label(p, lbl)))) ->
-             Warn.user_error
-               "Store to %s:%s requires instruction fetch functionality.\n\
-Please use `-variant self` as an argument to herd7 to enable it."
-              (Proc.pp p) (Label.pp lbl)
+              Warn.user_error
+                "Store to %s:%s requires instruction fetch functionality.\n\
+                 Please use `-variant self` as an argument to herd7 to enable it."
+                (Proc.pp p) (Label.pp lbl)
           | _ -> ()
         ) non_init_stores
 
@@ -2185,7 +2163,6 @@ Please use `-variant self` as an argument to herd7 to enable it."
                   ) ->
                   when_unsolved test es rfm cs res
               | _ ->
-                  check_symbolic_locations test es ;
                   if self then check_ifetch_limitations test es owls
                   else check_noifetch_limitations es;
                   if (mixed && not unaligned) then check_aligned test es ;

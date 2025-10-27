@@ -1,0 +1,10 @@
+Test A261 Required
+States 1
+1:X4=1;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (1:X4=1)
+Observation A261 Always 3 0
+Hash=16c7d6bac174eb7359bcbc262342314a
+
