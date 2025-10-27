@@ -382,7 +382,7 @@ is repeated.
 \begin{mathpar}
 \inferrule{
   \isundefined(\tenv, \id) \typearrow \vb\\
-  \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \IdentifierAlreadyDeclared) \typearrow \True \OrTypeError
 }{
   \checkvarnotinenv(\tenv, \id) \typearrow \True
 }
@@ -426,7 +426,7 @@ is declared both as a global variable and as an enumeration label.
 \begin{mathpar}
 \inferrule{
   \isglobalundefined(\genv, \id) \typearrow \vb\\
-  \checktrans{\vb}{\IdentifierAlreadyDeclared} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \IdentifierAlreadyDeclared) \typearrow \True \OrTypeError
 }{
   \checkvarnotingenv(\genv, \id) \typearrow \True
 }

@@ -633,7 +633,7 @@ since immutable local storage elements require an initializing expression.
 
 \begin{mathpar}
 \inferrule[none]{
-  \checktrans{\tyopt \neq \None}{\TypeErrorVal{\BadDeclaration}} \typearrow \True \OrTypeError \\
+  \techeck(\tyopt \neq \None, \TypeErrorVal{\BadDeclaration}) \typearrow \True \OrTypeError \\
   \tyopt \eqname \some{\vt} \\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
@@ -773,7 +773,7 @@ in the \CaseName{int} below.
 \begin{mathpar}
 \inferrule[int]{
   \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\\\\
-  \checktrans{\iswellconstrainedinteger(\rhs)}{\UnexpectedType} \checktransarrow \True\OrTypeError
+  \techeck(\iswellconstrainedinteger(\rhs), \UnexpectedType) \typearrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\PendingConstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
 }
@@ -783,7 +783,7 @@ in the \CaseName{int} below.
 \inferrule[tuple]{
   \lhs = \TTuple(\vlhstys) \\
   \rhs = \TTuple(\vrhstys) \\\\
-  \checktrans{\equallength(\vlhstys, \vrhstys)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
+  \techeck(\equallength(\vlhstys, \vrhstys), \UnexpectedType) \typearrow \True \OrTypeError \\\\
   {
   \begin{array}{r}
   \vi \in \listrange(\lhs): \inheritintegerconstraints(\vlhstys_\vi, \vrhstys_\vi) \typearrow \\
@@ -845,7 +845,7 @@ constant types would result in more than $2^17$ elements, see
 \FormallyParagraph
 \begin{mathpar}
   \inferrule[Well-Constrained]{%
-    \checktrans{p = \PrecisionFull}{PrecisionLostDefining}
+    \techeck(p = \PrecisionFull, PrecisionLostDefining) \typearrow \True\OrTypeError
   }{%
     \checknoprecisionloss(\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}) \typearrow \True
   }
@@ -1070,7 +1070,7 @@ if they can be copied from the type annotation in declaration statements.
 
 \begin{mathpar}
 \inferrule{
-  \checktrans{\vt = \TBits(\Ignore, \Ignore)}{\ParseErrorConfig} \typearrow \True \;\terminateas \ParseErrorConfig \\
+  \becheck(\vt = \TBits(\Ignore, \Ignore), \ParseError) \typearrow \True \;\terminateas \ParseErrorConfig \\
   \vt \eqname \TBits(\ve, \Ignore) \\
   \vcallp \eqdef \vcall[\callparams\mapsto [\ve] \concat \vcall.\callparams ]
 }{
@@ -1891,7 +1891,7 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsese) \typearrow \True}{\SideEffectViolation}\\\\
+  \techeck(\sesisreadonly(\vsese) \typearrow \True, \SideEffectViolation) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsese
   }{
@@ -2676,8 +2676,8 @@ show examples of ill-typed \texttt{for} loops.
   \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
   \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsesstart)}{\SideEffectViolation} \typearrow \True\OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsesend)}{\SideEffectViolation} \typearrow \True\OrTypeError\\\\
+  \techeck(\sesisreadonly(\vsesstart), \SideEffectViolation) \typearrow \True\OrTypeError\\\\
+  \techeck(\sesisreadonly(\vsesend), \SideEffectViolation) \typearrow \True\OrTypeError\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
   \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
@@ -3777,7 +3777,7 @@ empty \executiongraphterm{}.
 \begin{mathpar}
   \inferrule{%
     \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
-    \vi\in\listrange(\vargs): \checktrans{\issingular(\vt_i)}{\UnexpectedType} \typearrow \True \OrTypeError \\\\
+    \vi\in\listrange(\vargs): \techeck(\issingular(\vt_i), \UnexpectedType) \typearrow \True \OrTypeError \\\\
     \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
     \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)

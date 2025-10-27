@@ -558,7 +558,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
-  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \techeck(\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
@@ -579,7 +579,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotatetype(\tenv, \vtpp) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
   \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
-  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \techeck(\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}
@@ -594,7 +594,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \begin{mathpar}
 \inferrule[some\_none]{
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsest)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \techeck(\lnot\vmustbepure \lor \sesispure(\vsest), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
   \basevalue(\tenv, \vtp) \typearrow \vep \OrTypeError\\\\
   \typedinitialvalue \eqdef (\vtp, \vep, \emptyset)
 }{
@@ -613,7 +613,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese) \\
-  \checktrans{\lnot\vmustbepure \lor \sesispure(\vsese)}{\SideEffectViolation} \typearrow \True \OrTypeError
+  \techeck(\lnot\vmustbepure \lor \sesispure(\vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
     \begin{array}{r}

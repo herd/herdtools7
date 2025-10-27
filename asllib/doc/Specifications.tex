@@ -428,7 +428,7 @@ since it contains recursive type declarations.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vd\in\decls: \checktrans{\astlabel(\vd) = \DFunc}{\BadDeclaration} \typearrow \True\OrTypeError\\\\
+  \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
   \envandfsone \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
@@ -801,7 +801,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
       \item for each \Proselistrange{$i$}{$\vimpdefs$}, \Prosesignaturesmatch{$\vh$}{$\vimpdefs[i]$} yields $\vb_i$;
       \item define $\vmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\True$;
       \item define $\vnonmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\False$;
-      \item \Prosechecktrans{the length of $\vmatching$ is 1}{\OverridingError};
+      \item \Prosetecheck{the length of $\vmatching$ is 1}{\OverridingError};
       \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields $\vimpdefsp$ and $\vdiscardedp$;
       \item define $\vdiscarded$ as the concatenation of $\vmatching$ and $\vdiscardedp$.
     \end{itemize}
@@ -819,7 +819,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   i \in \listrange(\vimpdefs): \signaturesmatch(\vh, \vimpdefs[i]) \typearrow \vb_i \\
   \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
   \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
-  \checktrans{\listlen{\vmatching} = 1}{\OverridingError} \checktransarrow \True \terminateas \OverridingError \\\\
+  \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \\\\
   \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)
   \vdiscarded \eqdef \vmatching \concat \vdiscardedp
 }{

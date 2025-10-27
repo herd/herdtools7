@@ -1212,7 +1212,7 @@ typedef TDynError
 ;
 
 typedef dynamic_error_code { "dynamic error code" } =
-  | DE_UNR  { "Unreachable error Dynamic" }
+  | DE_UNR  { "Dynamic unreachable error" }
   | DE_TAF  { "Dynamic type assertion failure" }
   | DE_AET  { "ARBITRARY empty type" }
   | DE_BO   { "Bad operands" }
@@ -1253,6 +1253,30 @@ typedef value_read_from { "value-reading effect" } =
     (v: native_value, id: Identifier)
     { "{v} is read with {id}" }
 ;
+
+////////////////////////////////////////////////////////////////////////////////
+// Generic Functions and Relations
+////////////////////////////////////////////////////////////////////////////////
+
+typing function te_check(cond: Bool, code: type_error_code) -> constants_set(True) | type_error
+  {
+    "returns $\True$ if {cond} holds and a type error with {code} otherwise.",
+    prose_application = "checking whether {cond} holds returns $\True\terminateas\TypeError({code})$",
+  }
+;
+
+semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+  {
+    "returns $\True$ if {cond} holds and a dynamic error with {code} otherwise.",
+    prose_application = "checking whether {cond} holds returns $\True\terminateas\DynamicError({code})$",
+  }
+;
+
+function bool_transition(cond: Bool) -> (result: Bool)
+{
+    "returns $\True$ if {cond} holds and $\False$ otherwise",
+    prose_application = "testing whether {cond} holds returns {result}",
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relations and functions for Literals

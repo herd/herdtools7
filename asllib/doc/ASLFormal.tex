@@ -977,13 +977,44 @@ Expanding the last transition judgment, gives us the case:
 All these cases are succinctly encoded in a single rule with the alternative output configurations.
 
 \section{Conventionally-used Judgments and Notations\label{sec:ConventionallyUsedJudgments}}
-We now present judgments used conventionally in this reference.
+We now present functions used conventionally in this reference.
 
 \subsection{Checked Transitions\label{sec:Checked Transitions}}
-\hypertarget{def-checktrans}{}
+\hypertarget{relation-becheck}{}
+\hypertarget{type-builderror}{}
 The function
 \[
-\checktransname(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
+\becheck(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
+\cup\ \overname{\TBuildError}{\BuildErrorConfig}
+\]
+takes a Boolean value $\vb$ and an error code $\vcode$
+and returns $\True$ when $\vb$ is $\True$ and a build error configuration for $\vcode$, otherwise.
+\begin{mathpar}
+\inferrule[be\_check\_true]{}{ \becheck(\True, \vcode) \astarrow \True }
+\and
+\inferrule[be\_check\_false]{}{ \becheck(\False, \vcode) \astarrow \BuildError(\vcode) }
+\end{mathpar}
+
+We define a similar function for type errors.
+\RenderRelation{te_check}
+\begin{mathpar}
+\inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
+\and
+\inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
+\end{mathpar}
+
+We define a similar function for dynamic errors.
+\RenderRelation{de_check}
+\begin{mathpar}
+\inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
+\and
+\inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
+\end{mathpar}
+
+\BackupOriginalRelation{
+The function
+\[
+\techeckname(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
 \cup\ \overname{\typeerror}{\TypeErrorConfig}\ \cup\ \overname{\TDynError}{\DynErrorConfig}
 \]
 takes a Boolean value $\vb$ and an error code $\vcode$
@@ -994,20 +1025,21 @@ based on the error code (see \chapref{Errors}).
 This is used to assert that a condition that holds.
 
 \begin{mathpar}
-\inferrule[check\_trans\_true]{}{ \checktrans{\True}{\vcode} \checktransarrow \True }
+\inferrule[check\_trans\_true]{}{ \techeck{\True}{\vcode} \astarrow \True }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[check\_trans\_false\_type]{
   \vcode\text{ is a \typingerrorterm{} code}
-}{ \checktrans{\False}{\vcode} \checktransarrow \TypeErrorVal{\vcode} }
+}{ \techeck{\False}{\vcode} \astarrow \TypeErrorVal{\vcode} }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[check\_trans\_false\_dynamic]{
   \vcode\text{ is a \dynamicerrorterm{} code}
-}{ \checktrans{\False}{\vcode} \checktransarrow \DynamicErrorVal{\vcode} }
+}{ \techeck{\False}{\vcode} \checktransarrow \DynamicErrorVal{\vcode} }
 \end{mathpar}
+}
 
 \subsection{Boolean Transition Judgments}
 \hypertarget{def-booltrans}{}

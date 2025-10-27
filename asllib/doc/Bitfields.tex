@@ -523,7 +523,7 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \inferrule{
     \minpos \eqdef \min(\positions)\\
     \maxpos \eqdef \max(\positions)\\
-    \checktrans{0 \leq \minpos \land \maxpos < \vwidth}{\BadSlices} \typearrow \True \OrTypeError
+    \techeck( \leq \minpos \land \maxpos < \vwidth, \BadSlices) \typearrow \True \OrTypeError
 }{
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
 }
@@ -596,7 +596,7 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
   \positionsone \eqdef \choice{\positionsoneopt = \some{\vsone}}{\vsone}{\emptyset}\\
   \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
   \positionstwo \eqdef \choice{\positionstwoopt = \some{\vstwo}}{\vstwo}{\emptyset}\\
-  \checktrans{\positionsone \cap \positionstwo = \emptyset}{\BadSlices} \checktransarrow \True \OrTypeError
+  \techeck(\positionsone \cap \positionstwo = \emptyset, \BadSlices) \typearrow \True \OrTypeError
 }{
   \disjointslicestopositions(\tenv, \isstatic, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
@@ -661,7 +661,7 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \inferrule{
   \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \some{\offset} \terminateas\TypeErrorConfig, \None\\\\
   \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \some{\length} \terminateas\TypeErrorConfig, \None\\\\
-  \checktrans{\offset \leq \offset + \length - 1}{\BadSlices} \checktransarrow \True \OrTypeError
+  \techeck(\offset \leq \offset + \length - 1, \BadSlices) \typearrow \True \OrTypeError
 }{
   {
   \begin{array}{r}
@@ -804,7 +804,7 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
   \vlastindex \eqdef \vwidth - 1\\
   \vtopabsolute \eqdef (\emptylist, \vlastindex..0)\\
   \bitfieldstoabsolute(\tenv, \vbitfields, \vtopabsolute) \typearrow \vfs\\
-  \checktrans{\forall \vfone, \vftwo \in \vfs: \absolutebitfieldsalign(\vfone, \vftwo)}{\BadSlices} \typearrow \True \OrTypeError
+  \techeck(\forall \vfone, \vftwo \in \vfs: \absolutebitfieldsalign(\vfone, \vftwo), \BadSlices) \typearrow \True \OrTypeError
 }{
   \checkcommonbitfieldsalign(\tenv, \vbitfields, \vwidth) \typearrow \True
 }

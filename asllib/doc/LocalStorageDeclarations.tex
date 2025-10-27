@@ -155,7 +155,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[tuple]{
   \vb \eqdef \bigwedge_{i \in \listrange(\vids)} \vids_i = \Tminus \\
-  \checktrans{\lnot \vb}{\BuildBadDeclaration} \checktransarrow \True \OrBuildError \\
+  \becheck(\lnot \vb, \BuildBadDeclaration) \astarrow \True \OrBuildError \\
   \buildclist[\buildignoredoridentifier](\vids) \astarrow \astversion{\vids}
 }{
   {
@@ -347,9 +347,9 @@ to the evaluation of \texttt{3} in $\env$.
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
-  \checktrans{\astlabel(\vtp) = \TTuple}{TupleTypeExpected} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\vtp) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \vtp \eqname \TTuple([\vt_{1..n}])\\\\
-  \checktrans{k = n}{InvalidArity} \checktransarrow \True \OrTypeError\\\\
+  \techeck(k = n, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \newtenv_k \eqdef \tenv\\\\
   {
     \begin{array}{r}

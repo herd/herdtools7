@@ -375,7 +375,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \begin{mathpar}
 \inferrule[empty\_fields]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
@@ -387,7 +387,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \begin{mathpar}
 \inferrule[no\_super]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = \bot
 }{
@@ -399,12 +399,12 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \begin{mathpar}
 \inferrule[structured]{
   \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \checktrans{\vb}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
     \begin{array}{r}
-  \checktrans{\astlabel(\vt) \in \{\TRecord, \TException\}}{ExpectedStructuredType} \typearrow \\ \True \OrTypeError
+  \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, ExpectedStructuredType) \typearrow \\ \True \OrTypeError
     \end{array}
   }\\
   \vt \eqname L(\fields)\\

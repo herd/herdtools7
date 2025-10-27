@@ -337,7 +337,7 @@ This is checked in the following constructs:
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses) \typearrow \vb\\
-  \checktrans{\vb}{\SideEffectViolation} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   \checksymbolicallyevaluable(\vses) \typearrow \True
 }

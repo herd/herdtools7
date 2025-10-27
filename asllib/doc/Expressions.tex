@@ -537,12 +537,12 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \inferrule[binop\_same]{
   \op = \opp \\
   {
-  \checktrans{\op \in \left\{
+  \techeck(\op \in \left\{
     \begin{array}{l}
       \ADD, \MUL, \BAND, \BOR, \AND, \OR, \\
       \XOR, \BEQ, \BVCONCAT, \STRCONCAT
     \end{array}
-    \right\}}{\BinopPrecedence} \checktransarrow \True \OrBuildError
+    \right\}, \BinopPrecedence) \typearrow \True \OrBuildError
   }
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
@@ -552,7 +552,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \begin{mathpar}
 \inferrule[binop\_different]{
   \op \neq \opp \\
-  \checktrans{\binopprec(\op) \neq \binopprec(\opp)}{\BinopPrecedence} \checktransarrow \True \OrBuildError
+  \becheck(\binopprec(\op) \neq \binopprec(\opp), \BinopPrecedence) \astarrow \True \OrBuildError
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }
@@ -1260,7 +1260,7 @@ and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expres
   \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp, \vsesone) \OrTypeError\\\\
   \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
-  \checktrans{\slices \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
+  \techeck(\slices \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\\\\
   \annotateslices(\tenv, \slices) \typearrow (\slicesp, \vsestwo) \OrTypeError\\\\
   \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
@@ -1413,7 +1413,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \inferrule{
   \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\\\\
-  \checktrans{\astlabel(\tanonbase) = \TArray}{ExpectedArrayType} \typearrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \tanonbase \eqname \TArray(\size, \telem)\\
   {
     \begin{array}{r}
@@ -1874,7 +1874,7 @@ for its verbatim string.
   \fieldname = \itemprefix \stringconcat \num\\
   \num \in \Lang(\REintlit)\\
   \decimaltolit(\num) = \Tintlit(\vindex)\\
-  \checktrans{0 \leq \vindex \leq \listlen{\tys}}{\BadTupleIndex} \checktransarrow \True \OrTypeError\\\\
+  \techeck(0 \leq \vindex \leq \listlen{\tys}, \BadTupleIndex) \typearrow \True \OrTypeError\\\\
   \vt \eqdef \tys[\vindex]\\
   \newe \eqdef \EGetItem(\vetwo, \vindex)
 }{
@@ -2582,7 +2582,7 @@ are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yie
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
   \vtone = \TTuple(\vlone)\\
   \vttwo = \TTuple(\vltwo)\\
-  \checktrans{|\vlone|=|\vltwo|}{\TypeAssertionFailure} \typearrow \True\OrTypeError\\\\
+  \techeck(\vlone = \vltwo, \TypeAssertionFailure) \typearrow \True\OrTypeError\\\\
   \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
 }{
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
@@ -3223,13 +3223,13 @@ and an example (in comment) where the same field is initialized twice, which is 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\tty) = \TNamed}{NamedTypeExpected} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
-  \checktrans{\astlabel(\ttyanon) \in \{\TRecord, \TException\}}{\UnexpectedType} \typearrow \True\OrTypeError\\\\
+  \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\\\\
   \ttyanon \eqname L(\fieldtypes)\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
   \names \eqdef \fieldnames(\fieldtypes)\\
-  \checktrans{\{\names\} = \{\initializedfields\}}{\BadField} \typearrow \True \OrTypeError\\\\
+  \techeck(\{\names\} = \{\initializedfields\}, \BadField) \typearrow \True \OrTypeError\\\\
   \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\\\\
   {
     \begin{array}{r}
@@ -3280,7 +3280,7 @@ See \listingref{semantics-erecord} for an example.
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
-  \checktrans{\fieldtype(\fieldtypes, \name) \neq \bot}{\BadField} \typearrow \True \OrTypeError\\\\
+  \techeck(\fieldtype(\fieldtypes, \name) \neq \bot, \BadField) \typearrow \True \OrTypeError\\\\
   \fieldtype(\fieldtypes, \name) = \tspecp\\
   \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
 }{
@@ -3496,7 +3496,7 @@ which evaluates to
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
   \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
   \vlength \eqname \nvint(\nlength)\\
-  \checktrans{\nlength \geq 0}{\NegativeArrayLength} \checktransarrow \True \OrDynError\\\\
+  \decheck(\nlength \geq 0, \NegativeArrayLength) \evalarrow \True \OrDynError\\\\
   \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
