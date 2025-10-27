@@ -106,6 +106,13 @@ litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
 
+#Some tests are not terminating, disable them when tests are run
+ifeq ($(RUN_TEST),true)
+NORUN_IFETCH=UDF+2FH
+else
+NORUN_IFETCH=noname
+endif
+
 litmus-aarch64-test:: litmus-cata-aarch64-ifetch-test-kvm
 litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
@@ -113,12 +120,10 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 		-set-libdir $(LITMUS_LIB_DIR)	                 \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
 		-mach kvm-armv8.1 -variant self -a 4 -s 10 -r 10 \
+                -nonames $(NORUN_IFETCH)                         \
 		catalogue/aarch64-ifetch/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-#Disabled as some tests are not terminating. Those tests are
-# WRC-inst-modified-2 IDC1.WRC-inst-modified-2
-# DIC1.WRC-inst-modified-2 UDF+2FH
-	if false; then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
 
