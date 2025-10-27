@@ -10,7 +10,7 @@
 // Generic Types
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef empty_set
+constant empty_set
 {
     "the empty set",
     math_macro = \emptyset,
@@ -678,7 +678,7 @@ ast subprogram_type { "subprogram type" } =
     { "setter" }
 ;
 
-ast qualifier { "subprogram qualifier" } =
+ast func_qualifier { "subprogram qualifier" } =
     | Pure
     { "pure" }
     | Readonly
@@ -704,7 +704,7 @@ ast func { "subprogram descriptor" } =
     subprogram_type : subprogram_type,
     recurse_limit : option(expr),
     builtin : Bool,
-    qualifier : option(qualifier),
+    qualifier : option(func_qualifier),
     override : option(override_info),
     ]
     { "a subprogram descriptor for the subprogram name {name},
@@ -760,7 +760,7 @@ ast decl { "global declaration" } =
 ;
 
 render decl_global_storage = decl(D_GlobalStorage), global_decl(-), global_decl_keyword(-);
-render decl_func = decl(D_Func), func(-) ,subprogram_type(-), qualifier(-), override_info(-), typed_identifier(-);
+render decl_func = decl(D_Func), func(-) ,subprogram_type(-), func_qualifier(-), override_info(-), typed_identifier(-);
 render decl_type = decl(D_TypeDecl), field(-);
 render decl_global_pragma = decl(D_Pragma);
 
@@ -1102,15 +1102,28 @@ constant CannotUnderapproximate {
 typedef ty_or_opt { "type or optional type" } =
     | (t:ty)
     { "the type {t}" }
-    | option(ty)
-    { "optional type" }
+    | option(t:ty)
+    { "the optional type {t}" }
 ;
 
 typedef expr_or_opt { "expression or optional expression" } =
     | (e:expr)
     { "the expression {e}" }
-    | option(expr)
-    { "optional expression" }
+    | option(e:expr)
+    { "the optional expression {e}" }
+;
+
+typedef abstract_configuration
+{
+    "\hyperlink{type-abstractconfiguration}{abstract configuration}",
+    math_macro = \AbsConfig
+} =
+    | Abs_Continuing
+    { "abstract continuing configuration" }
+    | Abs_Returning
+    { "abstract returning configuration" }
+    | Abs_Abnormal
+    { "abstract abnormal configuration" }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1185,39 +1198,38 @@ typedef TDiverging
     { "diverging execution result" }
 ;
 
+typedef TOutConfig { "catcher output configuration" } =
+  | (TNormal)
+  | (TThrowing)
+  | (TContinuing)
+  | (TReturning)
+;
+
+typedef TContinuingOrReturning { "continuing or returning configuration" } =
+  | (TContinuing)
+  | (TReturning)
+;
+
 typedef value_read_from { "value-reading effect" } =
     (v: native_value, id: Identifier)
     { "{v} is read with {id}" }
 ;
 
-typedef abstract_configuration
-{
-    "\hyperlink{type-abstractconfiguration}{abstract configuration}",
-    math_macro = \AbsConfig
-} =
-    | Abs_Continuing
-    { "abstract continuing configuration" }
-    | Abs_Returning
-    { "abstract returning configuration" }
-    | Abs_Abnormal
-    { "abstract abnormal configuration" }
-;
-
 ////////////////////////////////////////////////////////////////////////////////
-// Literals Relations
+// Relations and functions for Literals
 ////////////////////////////////////////////////////////////////////////////////
 
-relation annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
+typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 {
     "annotates a literal {l} in the \staticenvironmentterm{} {tenv}, resulting in a type {t}.",
     prose_application = "annotating {l} in {tenv} yields {t}",
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Expression Relations
+// Relations and functions for Expressions
 ////////////////////////////////////////////////////////////////////////////////
 
-relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: powerset(TSideEffect)) | type_error
+typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: powerset(TSideEffect)) | type_error
 {
     "annotates the expression {e} in the \staticenvironmentterm{} {tenv},
                         resulting in the following:

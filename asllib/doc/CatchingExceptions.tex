@@ -174,10 +174,12 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 The semantic relation for evaluating catchers employs an argument
 that is an output configuration. This argument corresponds to the result
 of evaluating a \trystatementterm{} and its type is defined as follows:
-\hypertarget{def-toutconfig}{}
+\RenderType{TOutConfig}
+\BackupOriginalType{
 \[
   \TOutConfig \triangleq \TNormal \cup  \TThrowing \cup \TContinuing \cup \TReturning \enspace.
 \]
+} % END_OF_BACKUP_TYPE
 
 The relation
 \hypertarget{def-evalcatchers}{}

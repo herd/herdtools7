@@ -269,7 +269,7 @@
 \renewcommand\neg[0]{\hyperlink{def-neg}{\OldNeg}}
 \let\OldTriangleq\triangleq
 \let\OldEmptyset\emptyset
-\renewcommand\emptyset[0]{\hyperlink{type-emptyset}{\OldEmptyset}}
+\renewcommand\emptyset[0]{\hyperlink{constant-emptyset}{\OldEmptyset}}
 \let\OldBot\bot
 \renewcommand\bot[0]{\hyperlink{constant-bot}{\OldBot}}
 \renewcommand\triangleq[0]{\hyperlink{def-triangleq}{\OldTriangleq}}
@@ -282,7 +282,7 @@
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 
-\newcommand\emptylist[0]{\hyperlink{def-emptylist}{[\ ]}}
+\newcommand\emptylist[0]{\hyperlink{constant-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
 \newcommand\choicename[0]{\hyperlink{def-choice}{\textfunc{choice}}}
@@ -806,7 +806,7 @@
 \newcommand\funcsubprogramtype[0]{\text{subprogram\_type}}
 \newcommand\funcrecurselimit[0]{\text{recurse\_limit}}
 \newcommand\funcbuiltin[0]{\text{builtin}}
-\newcommand\funcqualifier[0]{\text{qualifier}}
+\newcommand\funcqualifierfield[0]{\text{qualifier}}
 \newcommand\funcoverride[0]{\text{override}}
 \newcommand\GDkeyword[0]{\text{keyword}}
 \newcommand\GDname[0]{\text{name}}
@@ -953,7 +953,6 @@
 \newcommand\ProseReturningOrAbnormal[0]{\ProseTerminateAs{\TReturning, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}}
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\ProseOrDynErrorDiverging[0]{\ProseTerminateAs{\DynErrorConfig, \DivergingConfig}}
-\newcommand\TOutConfig[0]{\hyperlink{def-toutconfig}{\textsf{TOutConfig}}}
 
 \newcommand\evalexpr[0]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}}
 \newcommand\Proseevalexpr[3]{
