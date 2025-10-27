@@ -2,10 +2,10 @@ Test L105 Required
 States 2
 0:X2=instr:"ADD W4,W4,#1";
 0:X2=instr:"ADD W4,W4,#2";
-No
+Ok
 Witnesses
-Positive: 2 Negative: 1
-Condition forall (0:X2=instr:"ADD W4,W4,#1" \/ 0:X2=instr:"ADD W4,W4,#1")
-Observation L105 Sometimes 2 1
+Positive: 3 Negative: 0
+Condition forall (0:X2=instr:"ADD W4,W4,#1" \/ 0:X2=instr:"ADD W4,W4,#2")
+Observation L105 Always 3 0
 Hash=80478f6f6f69edee84a2d1d432693d83
 
