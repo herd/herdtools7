@@ -364,16 +364,16 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 
-  \item[Dynamic Errors.] Semantic configurations in \RenderType{TDynError}
+  \item[Dynamic Errors.] Semantic configurations in
+  \RenderTypes{dynamic_error_and_codes}
   represent \dynamicerrorsterm{} (for example, division by zero).
   The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
   the evaluation of the entire specification terminates by outputting them.
 
-  \item[Diverging Configurations.] The following semantic configuration
-  represents a diverging evaluation:
-\RenderConstant{Diverging}
-The corresponding type is:
-\RenderType{TDiverging}
+  \item[Diverging Configurations.] The semantic configuration \RenderConstant{Diverging}
+  represents a diverging evaluation.
+  The corresponding type is:
+  \RenderType{TDiverging}
 
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
@@ -414,7 +414,7 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \hypertarget{def-throwingconfig}{}
 \item $\ThrowingConfig \triangleq \Throwing(\vv, \vt, \vg, \newenv)$.
       \hypertarget{def-errorconfig}{}
-\item $\DynErrorConfig \triangleq \DynamicError(\vs)$.
+\item $\DynErrorConfig \triangleq \DynamicError(\vc)$.
       \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
       is an early return semantic configuration.

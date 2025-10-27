@@ -824,11 +824,35 @@ typedef type_error
     {
         "\typingerrorterm{}",
     } =
-    TypeError(error_code: Strings)
+    TypeError(error_code: type_error_code)
     {
         "\typingerrorterm{} with error code {error_code}",
     }
 ;
+
+typedef type_error_code { "type error code" } =
+  | TE_UI   { "Undefined identifier Typing" }
+  | TE_IAD  { "Identifier already declared" }
+  | TE_AIM  { "Assign to immutable" }
+  | TE_TSF  { "Type satisfaction failure" }
+  | TE_LCA  { "Lowest common ancestor" }
+  | TE_NBV  { "No base value" }
+  | TE_TAF  { "Type assertion failure" }
+  | TE_SEF  { "Static evaluation failure" }
+  | TE_BO   { "Bad operands" }
+  | TE_UT   { "Unexpected type" }
+  | TE_BTI  { "Bad tuple index" }
+  | TE_BS   { "Bad slices" }
+  | TE_BF   { "Bad field" }
+  | TE_BSPD { "Bad subprogram declaration" }
+  | TE_BD   { "Bad declaration" }
+  | TE_BC   { "Bad call" }
+  | TE_SEV  { "Side effect violation" }
+  | TE_OE   { "Overriding error" }
+  | TE_PLD  { "Declaration with an imprecise type" }
+;
+
+render type_error_and_codes = type_error(-), type_error_code(-);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Side Effects Types
@@ -1181,11 +1205,26 @@ typedef TDynError
 {
     "dynamic error result",
 } =
-    DynamicError(error_code: Strings)
+    DynamicError(error_code: dynamic_error_code)
     { "dynamic error with error code {error_code}",
         math_macro = \DynamicError,
     }
 ;
+
+typedef dynamic_error_code { "dynamic error code" } =
+  | DE_UNR  { "Unreachable error Dynamic" }
+  | DE_TAF  { "Dynamic type assertion failure" }
+  | DE_AET  { "ARBITRARY empty type" }
+  | DE_BO   { "Bad operands" }
+  | DE_LE   { "Limit exceeded" }
+  | DE_UE   { "Uncaught exception" }
+  | DE_BI   { "Bad index" }
+  | DE_OSA  { "Overlapping slice assignment" }
+  | DE_NAL  { "Negative array length" }
+  | DE_NEP  { "No entry point" }
+;
+
+render dynamic_error_and_codes = TDynError(-), dynamic_error_code(-);
 
 constant Diverging
 { "diverging execution",  };
