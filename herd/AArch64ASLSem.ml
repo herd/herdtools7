@@ -930,6 +930,19 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (wback || rn <> SP);
                   "wb_unknown" ^= litb false;
                 ])
+      | I_LDUR (v, rt, rn, k) ->
+          Some
+            ( "ldst/ldst_unscaled/LDUR_32_ldst_unscaled.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "regsize" ^= variant v;
+                  "datasize" ^= variant v;
+                  "offset" ^= litbv 64 k;
+                  "nontemporal" ^= litb true;
+                  "tagchecked" ^= litb (rn <> SP);
+                ])
 
       | I_FENCE ISB -> Some ("control/barriers/ISB_BI_barriers.opn", stmt [])
       | I_FENCE (DMB (dom, btyp)) ->
