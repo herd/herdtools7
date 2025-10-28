@@ -88,42 +88,6 @@
 
 
 
-(defprod expr_result
-  :short "Type of the result from evaluating an ASL expression"
-  ((val val)
-   (env env)))
-
-(def-eval_result expr_eval_result-p expr_result-p)
-
-(defprod exprlist_result
-  :short "Type of the result from evaluating a list of ASL expressions"
-  ((val vallist)
-   (env env)))
-
-(def-eval_result exprlist_eval_result-p exprlist_result-p)
-
-(deftagsum control_flow_state
-  :short "Type of result from evaluating a statement"
-  (:returning ((vals vallist)
-               (env global-env))
-   :short "Indicates that a return has been encountered")
-  (:continuing ((env env))
-   :short "Indicates that no return has been encountered and execution of the current
-function continues"))
-
-(def-eval_result stmt_eval_result-p control_flow_state-p)
-
-(defprod func_result ((vals vallist ;; val_read_from-list
-                            )
-                      (env global-env))
-  :short "Type of result from evaluating a function call: a list of return values and an
-updated global environment")
-
-(def-eval_result func_eval_result-p func_result-p)
-
-
-
-
 ;; sequential bind
 (defmacro let*s (&rest args) (cons 'let* args))
 ;; data bind
@@ -930,10 +894,10 @@ function shouldn't be called.</p>"
       (("RoundDown" nil (:v_real)) (ev_normal (list (v_int (floor a0.val 1)))))
       (("RoundTowardsZero" nil (:v_real)) (ev_normal (list (v_int (truncate a0.val 1)))))
 
-      ;; (("AsciiStr" nil (:v_int))   (if (and (<= 0 a0.val)
-      ;;                                       (<= a0.val 127))
-      ;;                                  (ev_normal (list (v_string (coerce (list (code-char a0.val)) 'string))))
-      ;;                                (ev_error "AsciiStr argument out of bounds" a0)))
+      (("AsciiStr" nil (:v_int))   (if (and (<= 0 a0.val)
+                                            (<= a0.val 127))
+                                       (ev_normal (list (v_string (coerce (list (code-char a0.val)) 'string))))
+                                     (ev_error "AsciiStr argument out of bounds" (val-fix a0) nil)))
       (("DecStr"   nil (:v_int))   (ev_normal (list (v_string (coerce (explode-atom a0.val 10) 'string)))))
       ;; (("HexStr"   nil (:v_int))   (ev_normal (list (v_string (coerce (explode-atom a0.val 16) 'string)))))
       (("FloorLog2" nil (:v_int))  (if (< 0 a0.val)
@@ -1099,18 +1063,6 @@ error results) satisfies the given bitvector mask. That is, every 1-bit in the
   `(mv (ev_normal ,arg) orac))
 
 
-;; This is just a convenient function to hang rewrite rules on for FGL.
-(define pass-error (val orac)
-  :short "This function is just the @('mv') of its two arguments, but it is only called
-when the resulting value is an error. It is a convenience for FGL rewriting so
-that the @('orac') can be found for counterexample generation when we detect an
-error has been reached. Arguably unnecessary given FGL's backtrace capability."
-  :inline t
-  :enabled t
-  (mv val orac))
-
-(defmacro evo_error (&rest args)
-  `(pass-error (ev_error . ,args) orac))
 
 ;; Similar to the RETURNING case in the B* binder for EVS, below.  In the EVO
 ;; and EVOB b* binders, we check whether a result is ev_normal, and if so we
@@ -1136,6 +1088,45 @@ error has been reached. Arguably unnecessary given FGL's backtrace capability."
     (implies (not (eval_result-case x :ev_normal))
              (Equal (eval_result-nonnormal-fix x)
                     (eval_Result-fix x)))))
+
+(define ev_error-fix ((x eval_result-p))
+  :inline t
+  :guard (eval_result-case x :ev_error)
+  (mbe :logic (b* (((ev_error x)))
+                (ev_error x.desc x.data x.backtrace))
+       :exec x)
+  ///
+  (defthm ev_error-fix-when-ev_error
+    (implies (eval_result-case x :ev_error)
+             (Equal (ev_error-fix x)
+                    (eval_Result-fix x)))))
+
+(define ev_throwing-fix ((x eval_result-p))
+  :inline t
+  :guard (eval_result-case x :ev_throwing)
+  (mbe :logic (b* (((ev_throwing x)))
+                (ev_throwing x.throwdata x.env x.backtrace))
+       :exec x)
+  ///
+  (defthm ev_throwing-fix-when-ev_throwing
+    (implies (eval_result-case x :ev_throwing)
+             (Equal (ev_throwing-fix x)
+                    (eval_Result-fix x)))))
+
+
+;; This is just a convenient function to hang rewrite rules on for FGL.
+(define pass-error ((val eval_result-p) orac)
+  :guard (eval_result-case val :ev_error)
+  :short "This function is just the @('mv') of its two arguments, but it is only called
+when the resulting value is an error. It is a convenience for FGL rewriting so
+that the @('orac') can be found for counterexample generation when we detect an
+error has been reached. Arguably unnecessary given FGL's backtrace capability."
+  :inline t
+  :enabled t
+  (mv (ev_error-fix val) orac))
+
+(defmacro evo_error (&rest args)
+  `(pass-error (ev_error . ,args) orac))
                      
 (acl2::def-b*-binder evo
   :parents (asl-interpreter-functions)
@@ -1192,12 +1183,11 @@ passed down from a context where a code position wasn't available.</p>"
   `(b* ((evresult ,(car acl2::forms)))
      (eval_result-case evresult
        :ev_normal (b* ,(and (not (eq (car acl2::args) '&))
-                           `((,(car acl2::args) evresult.res)))
+                            `((,(car acl2::args) evresult.res)))
                     ,acl2::rest-expr)
 
-       :otherwise (pass-error (init-backtrace
-                               (eval_result-nonnormal-fix evresult)
-                               pos) orac))))
+       :ev_throwing (mv (init-backtrace (ev_throwing-fix evresult) pos) orac)
+       :otherwise (pass-error (init-backtrace (ev_error-fix evresult) pos) orac))))
 
 (defxdoc evob
   :short "@(csee B*) binder: see @(see patbind-evob)")
@@ -2447,9 +2437,9 @@ beginning (except for the cases of returns and exceptions/errors)."
                               (stmt-count* body)
                               (+ 1 (for_loop-measure v_start v_end dir)))
        :returns (mv (res stmt_eval_result-p) new-orac)
-       (b* (((evo limit1) (tick_loop_limit limit))
-            ((when (for_loop-test v_start v_end dir))
+       (b* (((when (for_loop-test v_start v_end dir))
              (evo_normal (continuing env)))
+            ((evo limit1) (tick_loop_limit limit))
             ((evs env1) (eval_block env body))
             ((mv v_step env2) (eval_for_step env1 index_name v_start dir)))
          (evtailcall (eval_for env2 index_name limit1 v_step dir v_end body))))
@@ -2671,5 +2661,5 @@ ASLRef we don't return the environment.</p>"
          :fn resolve-ty)
        :skip-others t)
 
-     (verify-guards eval_expr-fn :guard-debug t
+     (verify-guards eval_expr-fn
        :hints (("goal" :do-not-induct t))))))

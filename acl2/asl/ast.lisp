@@ -638,7 +638,8 @@ by name.</p>")
   (:throwsexception ((name identifier)))
   (:callsrecursive ((name identifier)))
   (:performsassertions ())
-  (:nondeterministic ()))
+  (:nondeterministic ())
+  (:prints ()))
 
 (deflist ses :elt-type side_effect :true-listp t)
 
