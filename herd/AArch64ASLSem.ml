@@ -599,10 +599,34 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                "m" ^= reg rm;
                "datasize" ^= variant v;
                "shift_type" ^= var shift_type;])
+      | I_MOVZ (v, rd, k, os)
+      | I_MOVN (v, rd, k, os)
+      | I_MOVK (v, rd, k, os) ->
+         let pos =
+           match os with
+           | S_NOEXT -> 0
+           | S_LSL (0|16|32|48 as i) -> i
+           | _ -> assert false
+         in
+         let fname =
+           match ii.A.inst with
+           | I_MOVN _ -> "MOVN_32_movewide.opn"
+           | I_MOVK _ -> "MOVK_32_movewide.opn"
+           | I_MOVZ _ -> "MOVZ_32_movewide.opn"
+           | _ -> assert false
+         in
+         Some
+           ("dpimm/movewide/" ^ fname,
+             stmt [
+               "d" ^= reg rd;
+               "datasize" ^= variant v;
+               "pos" ^= liti pos;
+               "imm" ^= litbv 16 k;
+             ])
 
-        (* Load, stores ... *)
-        | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
-        | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
+      (* Load, stores ... *)
+      | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
+      | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
           let fname =
             match i with
             | I_STR _ -> "STR_32_ldst_regoff.opn"
