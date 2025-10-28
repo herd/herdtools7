@@ -621,39 +621,16 @@ let overwrite_value v ao w = match ao with
 type strength = Strong | Weak
 let fold_strength f r = f Strong (f Weak r)
 let fold_dirloc f r = f Next (f Prev r)
-type sync = Sync | NoSync
-type fence = | Barrier of barrier | CacheSync of strength * bool |
-               Shootdown of mBReqDomain * TLBI.op * sync | CMO of syncType * dirloc
+type fence = | Barrier of barrier | CacheSync of strength * bool
+             | ShootdownSync of mBReqDomain * TLBI.op
+             | ShootdownNoSync of TLBI.op
+             | CMO of syncType * dirloc
 
 let is_isync = function
   | Barrier ISB -> true
   | _ -> false
 
-let compare_fence b1 b2 = match b1,b2 with
-| (Barrier _,(CacheSync _|Shootdown _))
-| (CacheSync _,Shootdown _)
-  -> -1
-| Barrier b1,Barrier b2 -> barrier_compare b1 b2
-| CacheSync (s1,b1) ,CacheSync (s2,b2)->
-    begin match compare b1 b2 with
-   | 0 -> compare s1 s2
-   | r -> r
-    end
-| Shootdown (dom1,op1,sync1),Shootdown (dom2,op2,sync2) ->
-    begin match compare dom1 dom2 with
-    | 0 ->
-       begin
-         match compare op1 op2 with
-         | 0 -> compare sync1 sync2
-         | r -> r
-       end
-   | r -> r
-    end
-| (Shootdown _,(Barrier _|CacheSync _))
-| (CacheSync _,Barrier _)
-| (CMO _,_) | (_, CMO _)
- -> +1
-
+let compare_fence = compare
 
 let default = Barrier (DMB (SY,FULL))
 let strong = default
@@ -662,49 +639,40 @@ let add_dot f x = match f x with
 | "" -> ""
 | s -> "." ^ s
 
-let pp_sync = function
-  | NoSync -> ""
-  | Sync -> "-sync"
-
 let pp_fence f = match f with
 | Barrier f -> do_pp_barrier "." f
 | CacheSync (s,isb) ->
    sprintf "CacheSync%s%s"
      (match s with Strong -> "Strong" | Weak -> "")
      (if isb then "Isb" else "")
-| Shootdown (d,op,sync) ->
-   let tlbi = "TLBI" ^ pp_sync sync in
-   sprintf "%s%s%s" tlbi
+| ShootdownSync (d,op) ->
+   sprintf "TLBI-sync%s%s"
      (add_dot TLBI.short_pp_op op)
-     (match sync with
-      | NoSync -> ""
-      | Sync -> add_dot pp_domain d)
+     (add_dot pp_domain d)
+| ShootdownNoSync (op) ->
+   sprintf "TLBI%s"
+     (add_dot TLBI.short_pp_op op)
 | CMO (t,loc) ->
   sprintf "%s%s"
     (match t with DC_CVAU -> "DC.CVAU" | IC_IVAU -> "IC.IVAU")
     (match loc with Prev -> "p"| Next -> "n")
 
-
 let fold_cumul_fences f k =
    do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
 
-let fold_shootdown =
-  if do_kvm then
+let fold_shootdown f acc =
+  if not do_kvm then acc
+  else
     let fold_domain =
       if C.moreedges then fold_domain
       else fun f k -> f ISH k
     and fold_op =
       if C.moreedges then TLBI.full_fold_op
       else TLBI.fold_op in
-    fun f k ->
-      fold_op
-        (fun op k ->
-          fold_domain
-            (fun d k ->
-              f (Shootdown(d,op,Sync))
-                (f (Shootdown(d,op,NoSync)) k)) k)
-        k
-  else fun _f k -> k
+    acc
+    |> fold_op ( fun op -> f (ShootdownNoSync(op)) )
+    |> fold_op ( fun op ->
+      fold_domain ( fun domain -> f (ShootdownSync(domain,op)) ) )
 
 let fold_cachesync =
   if do_self then
@@ -740,7 +708,8 @@ let orders f d1 d2 = match f,d1,d2 with
 | Barrier (DSB (_,LD)|DMB (_,LD)),Code.R,(W|Code.R) -> true
 | Barrier (DSB (_,LD)|DMB (_,LD)),_,_ -> false
 | CacheSync _,_,_ -> true
-| Shootdown _,_,_ -> false
+| ShootdownSync _,_,_ -> false
+| ShootdownNoSync _,_,_ -> false
 | CMO _,_,_ -> true
 
 let var_fence f r = f default r
