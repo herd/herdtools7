@@ -871,7 +871,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           Some
             ( "ldst/" ^ fname,
               stmt
-              [
+                [
                   "wback" ^= litb wback;
                   "postindex" ^= litb postindex;
                   "ispair" ^= litb true;
@@ -884,6 +884,50 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "tagchecked" ^= litb (wback || rn <> SP);
                   "acqrel" ^= litb acqrel;
                   "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ])
+      | I_LDRS ((v, bh), rt, rn, MemExt.Reg (_vm, rm, e, s)) ->
+          let fname =
+            match bh with
+            | B -> "LDRSB_32B_ldst_regoff.opn"
+            | H -> "LDRSH_32_ldst_regoff.opn"
+          and extend_type = memext_decode_ext e in
+          Some
+            ( "ldst/ldst_regoff/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "regsize" ^= variant v;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti s;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ])
+      | I_LDRS ((v, bh), rt, rn, MemExt.Imm(k, idx)) ->
+          let wback, postindex =
+            match idx with
+            | Idx -> (false, false)
+            | PreIdx -> (true, false)
+            | PostIdx -> (true, true)
+          and fname =
+            match bh with
+            | B -> "LDRSB_32_ldst_immpost.opn"
+            | H -> "LDRSH_32_ldst_immpost.opn"
+          in
+          Some
+            ( "ldst/ldst_immpost/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "regsize" ^= variant v;
+                  "offset" ^= litbv 64 k;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "nontemporal" ^= litb true;
+                  "tagchecked" ^= litb (wback || rn <> SP);
                   "wb_unknown" ^= litb false;
                 ])
 
