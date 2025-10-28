@@ -1368,13 +1368,13 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{}{
-  \usesubtypes(\None) \typearrow \overname{\emptyset}{\ids}
+  \usesubtypes(\overname{\None}{\fields}) \typearrow \overname{\emptyset}{\ids}
 }
 \and
 \inferrule[some]{
   \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \in \subfields}\usety(\vt)
 }{
-  \usesubtypes(\some{(\vx, \subfields)}) \typearrow \ids
+  \usesubtypes(\overname{\some{(\vx, \subfields)}}{\fields}) \typearrow \ids
 }
 \end{mathpar}
 
@@ -2238,7 +2238,7 @@ and the identifiers used by them, appearing in comments to their right.
 
 \begin{mathpar}
 \inferrule[s\_decl]{}{
-  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}\vs)
+  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}{\vs})
   \typearrow
   \overname{\useldi(\ldi) \cup \usety(\vt) \cup \useexpr(\ve)}{\ids}
 }
@@ -2246,7 +2246,7 @@ and the identifiers used by them, appearing in comments to their right.
 
 \begin{mathpar}
 \inferrule[s\_throw]{}{
-  \usestmt(\overname{\SThrow(\ve)}\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
+  \usestmt(\overname{\SThrow(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
 \end{mathpar}
 

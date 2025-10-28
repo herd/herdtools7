@@ -1545,13 +1545,13 @@ of \verb|Foo|.
 \inferrule[tint\_parameterized]{
   \vb \eqdef \vione = \vitwo
 }{
-  \typeequal(\tenv, \TInt(\Parameterized(\vione)), \TInt(\Parameterized(\vitwo))) \typearrow \vb
+  \typeequal(\tenv, \overname{\TInt(\Parameterized(\vione))}{\vtone}, \overname{\TInt(\Parameterized(\vitwo))}{\vttwo}) \typearrow \vb
 }
 \and
 \inferrule[tint\_wellconstrained]{
   \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb \OrTypeError
 }{
-  \typeequal(\tenv, \TInt(\WellConstrained(\vcone)), \TInt(\WellConstrained(\vctwo))) \typearrow \vb
+  \typeequal(\tenv, \overname{\TInt(\WellConstrained(\vcone))}{\vtone}, \overname{\TInt(\WellConstrained(\vctwo))}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1561,7 +1561,7 @@ of \verb|Foo|.
   \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \typeequal(\tenv, \TBits(\vwone, \bfone), \TBits(\vwtwo, \bftwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{\TBits(\vwone, \bfone)}{\vtone}, \overname{\TBits(\vwtwo, \bftwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1571,7 +1571,7 @@ of \verb|Foo|.
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \typeequal(\tenv, \TArray(\vlone, \vtone), \TArray(\vltwo, \vttwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{\TArray(\vlone, \vtone)}{\vtone}, \overname{\TArray(\vltwo, \vttwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1579,7 +1579,7 @@ of \verb|Foo|.
 \inferrule[tnamed]{
   \vb \eqdef \vsone = \vstwo
 }{
-  \typeequal(\tenv, \TNamed(\vsone), \TNamed(\vstwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{\TNamed(\vsone)}{\vtone}, \overname{\TNamed(\vstwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1587,7 +1587,7 @@ of \verb|Foo|.
 \inferrule[tenum]{
   \vb \eqdef \vlone = \vltwo
 }{
-  \typeequal(\tenv, \TEnum(\vlone), \TEnum(\vltwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{\TEnum(\vlone)}{\vtone}, \overname{\TEnum(\vltwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1602,7 +1602,7 @@ of \verb|Foo|.
   }\\\\
   \vb \eqdef \bigwedge_{\vf \in \fieldnames(\vfieldsone)} \vb_\vf
 }{
-  \typeequal(\tenv, L(\vfieldsone), L(\vfieldstwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{L(\vfieldsone)}{\vtone}, \overname{L(\vfieldstwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1612,7 +1612,7 @@ of \verb|Foo|.
   i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i \OrTypeError\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
 }{
-  \typeequal(\tenv, \TTuple(\vtsone), \TTuple(\vtstwo)) \typearrow \vb
+  \typeequal(\tenv, \overname{\TTuple(\vtsone)}{\vtone}, \overname{\TTuple(\vtstwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -2107,7 +2107,7 @@ even though they both contain three elements each.
 \inferrule[expr\_expr]{
   \exprequal(\veoneone, \vetwoone) \typearrow \vb \OrTypeError
 }{
-  \arraylengthequal(\ArrayLengthExpr(\veoneone), \ArrayLengthExpr(\vetwoone)) \typearrow \vb
+  \arraylengthequal(\overname{\ArrayLengthExpr(\veoneone)}{\vlone}, \overname{\ArrayLengthExpr(\vetwoone)}{\vltwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -2115,7 +2115,7 @@ even though they both contain three elements each.
 \inferrule[enum\_enum]{
   \vb \eqdef (\venumone = \venumtwo)
 }{
-  \arraylengthequal(\ArrayLengthEnum(\venumone, \Ignore), \ArrayLengthEnum(\venumtwo, \Ignore)) \typearrow \vb
+  \arraylengthequal(\overname{\ArrayLengthEnum(\venumone, \Ignore)}{\vlone}, \overname{\ArrayLengthEnum(\venumtwo, \Ignore)}{\vltwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -2201,15 +2201,13 @@ first identifier for which the two monomials differ.
 \begin{itemize}
   \item \AllApplyCase{equal\_monomials}
   \begin{itemize}
-    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
-    \item $f$ is equal to $g$;
+    \item $\vmone$ is equal to $\vmtwo$;
     \item $\vs$ is the sign of $\vqtwo - \vqone$.
   \end{itemize}
 
   \item \AllApplyCase{different\_monomials}
   \begin{itemize}
-    \item $\vmone$ is $f$ and $\vmtwo$ is $g$;
-    \item $f$ is different from to $g$;
+    \item $\vmone$ is different to $\vmtwo$;
     \item $\ids$ is the list obtained by taking the set of identifiers in the domain of $f$ and in the domain of $g$,
           and sorting them according to the lexical order for identifiers (ASCII string order);
     \item $\vv$ is the first identifier in $\ids$ for which $f$ and $g$ behave differently (either one of them is defined
@@ -2227,14 +2225,14 @@ via the lexicographic ordering.
 
 \begin{mathpar}
 \inferrule[equal\_monomials]{
-  f = g\\
+  \vmone = \vmtwo\\
   \vs \eqdef \sign(\vqtwo - \vqone)
 }{
-  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
+  \comparemonomialbindings((\vmone, \vqone), (\vmtwo, \vqtwo)) \typearrow \vs
 }
 \and
 \inferrule[different\_monomials]{
-  f \neq g\\
+  \vmone \neq \vmtwo\\
   \ids \eqdef \sort(\dom(f) \cup \dom(g), \compareidentifier)\\
   \ids \eqname \idsone \concat \idstwo\\
   \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
@@ -2247,7 +2245,7 @@ via the lexicographic ordering.
     \end{cases}
 }
 }{
-  \comparemonomialbindings((\overname{f}{\vmone}, \vqone), (\overname{g}{\vmtwo}, \vqtwo)) \typearrow \vs
+  \comparemonomialbindings((\vmone, \vqone), (, \vqtwo)) \typearrow \vs
 }
 \end{mathpar}
 

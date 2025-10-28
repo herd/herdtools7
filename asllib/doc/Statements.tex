@@ -705,7 +705,7 @@ See \ExampleRef{Typing Declaration Statements}.
 \inferrule[none]{
   \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldecltypeannot(\tenv, \None, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
+  \annotatelocaldecltypeannot(\tenv, \overname{\None}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 
@@ -717,7 +717,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \some{ \vep }, \ldip) \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldecltypeannot(\tenv, \some{\vt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
+  \annotatelocaldecltypeannot(\tenv, \overname{\some{\vt}}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
 }
 \end{mathpar}
 
