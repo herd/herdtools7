@@ -8,11 +8,20 @@
 \newcommand{\DefineConstant}[2]{%
   \expandafter\newcommand\csname RenderConstant@#1\endcsname{#2}%
 }
-\newcommand{\RenderConstant}[1]{%
-  \@ifundefined{RenderConstant@#1}{%
-    \textbf{Error: RenderConstant '#1' not defined}%
+
+% Main RenderConstant command with optional parameter
+\newcommand{\RenderConstant}[2][]{%
+  \@ifundefined{RenderConstant@#2}{%
+    \PackageError{rendering_macros}{RenderConstant '#2' is not defined! Check that you have defined constant '#2' and applied aslspec to generate \string\DefineConstant}{}%
   }{%
-    \csname RenderConstant@#1\endcsname%
+    \expandafter\let\expandafter\@current@content\csname RenderConstant@#2\endcsname%
+    \def\@renderconstant@option{#1}%
+    \def\@test@remove{remove_hypertargets}%
+    \ifx\@renderconstant@option\@test@remove%
+      \expandafter\remove@hypertargets\expandafter{\@current@content}%
+    \else%
+      \@current@content%
+    \fi%
   }%
 }
 \makeatother
@@ -44,7 +53,7 @@
 % Main RenderType command with optional parameter
 \newcommand{\RenderType}[2][]{%
   \@ifundefined{RenderType@#2}{%
-    \textbf{Error: RenderType '#2' not defined}%
+    \PackageError{rendering_macros}{RenderType '#2' is not defined! Check that you have defined type '#2' and applied aslspec to generate \string\DefineType}{}%
   }{%
     \expandafter\let\expandafter\@current@content\csname RenderType@#2\endcsname%
     \def\@rendertype@option{#1}%
@@ -67,7 +76,7 @@
 }
 \newcommand{\RenderRelation}[1]{%
   \@ifundefined{RenderRelation@#1}{%
-    \textbf{Error: RenderRelation '#1' not defined}%
+    \PackageError{rendering_macros}{RenderRelation '#1' is not defined! Check that you have defined relation '#1' and applied aslspec to generate \string\DefineRelation}{}%
   }{%
     \csname RenderRelation@#1\endcsname%
   }%
@@ -93,7 +102,7 @@
 % Main RenderTypes command with optional parameter
 \newcommand{\RenderTypes}[2][]{%
   \@ifundefined{RenderTypes@#2}{%
-    \textbf{Error: RenderTypes '#2' not defined}%
+    \PackageError{rendering_macros}{RenderTypes '#2' is not defined! Check that you have defined render '#2' and applied aslspec to generate \string\DefineRenderTypes}{}%
   }{%
     \expandafter\let\expandafter\@current@content\csname RenderTypes@#2\endcsname%
     \def\@rendertypes@option{#1}%

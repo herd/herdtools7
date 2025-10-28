@@ -626,6 +626,10 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 \end{mathpar}
 
 \TypingRuleDef{UpdateGlobalStorage}
+This helper function is applied following
+$\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$ is the type associated with
+$\name$.
+
 \hypertarget{def-updateglobalstorage}{}
 The function
 \[

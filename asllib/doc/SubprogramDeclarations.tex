@@ -108,7 +108,7 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
  \funcsubprogramtype &:& \subprogramtype,\\
  \funcrecurselimit    &:& \expr?\\
  \funcbuiltin &:& \Bool\\
- \funcqualifier &:& \Some{\qualifier}\\
+ \funcqualifierfield &:& \Some{\funcqualifier}\\
  \funcoverride &:& \Some{\overrideinfo}\\
 \end{array}
 \right\}
@@ -165,7 +165,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcsubprogramtype &:& \STFunction,\\
             \funcrecurselimit   &:& \astof{\vrecurselimit}\\
             \funcbuiltin &:& \False\\
-            \funcqualifier &:& \astversion{\vp}\\
+            \funcqualifierfield &:& \astversion{\vp}\\
             \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]}{\vastnode}
@@ -196,7 +196,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
             \funcsubprogramtype &:& \STProcedure,\\
             \funcrecurselimit   &:& \astof{\vrecurselimit}\\
             \funcbuiltin &:& \False\\
-            \funcqualifier &:& \astof{\vqualifier}\\
+            \funcqualifierfield &:& \astof{\vqualifier}\\
             \funcoverride &:& \astof{\voverride}
     \end{array}
   \right\}\right)\right]
@@ -491,7 +491,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcsubprogramtype &:& \STGetter,\\
         \funcrecurselimit   &:& \None\\
         \funcbuiltin &:& \False\\
-        \funcqualifier &:& \vqualifier\\
+        \funcqualifierfield &:& \vqualifier\\
         \funcoverride &:& \voverride
       \end{array}
       \right\}
@@ -509,7 +509,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcsubprogramtype &:& \STSetter,\\
         \funcrecurselimit   &:& \None\\
         \funcbuiltin &:& \False\\
-        \funcqualifier &:& \None\\
+        \funcqualifierfield &:& \None\\
         \funcoverride &:& \voverride
       \end{array}
       \right\}
@@ -537,7 +537,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 The function
 \[
 \buildqualifier(\overname{\parsenode{\Nqualifier}}{\vparsednode}) \aslto
-  \overname{\Option{\qualifier}}{\vastnode}
+  \overname{\Option{\funcqualifier}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -763,8 +763,8 @@ is not a constrained expression.
   \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields\\
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
   \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
-  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifier$ yields $\True$\ProseOrTypeError;
-  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifier$ (via $\sesforsubprogram$) is $\vses$;
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifierfield$ (via $\sesforsubprogram$) is $\vses$;
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}
@@ -809,8 +809,8 @@ is not a constrained expression.
     \end{array}
   }\\\\
   \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
-  \checksubprogrampurity(\funcsig.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
-  \sesforsubprogram(\funcsig.\funcqualifier) \typearrow \vses\\
+  \checksubprogrampurity(\funcsig.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\funcsig.\funcqualifierfield) \typearrow \vses\\
   {
     \newfuncsig \eqdef
     \left\{
@@ -1658,7 +1658,7 @@ as return types.
 The function
 \[
 \checksubprogrampurity(
-  \overname{\Option{\qualifier}}{\vqualifier} \aslsep
+  \overname{\Option{\funcqualifier}}{\vqualifier} \aslsep
   \overname{\TSideEffectSet}{\vses}
 )
 \aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
@@ -1757,7 +1757,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                       & \funcreturntype      &:& \vt,\\
                       & \funcsubprogramtype  &:& \subprogramtype, \\
                       & \funcbuiltin         &:& \vb \\
-                      & \funcqualifier       &:& \vqualifier \\
+                      & \funcqualifierfield       &:& \vqualifier \\
                   \}  & ; &&
         \end{array}
   \]
@@ -1783,7 +1783,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                     & \funcreturntype      &:& \vt,\\
                     & \funcsubprogramtype  &:& \subprogramtype, \\
                     & \funcbuiltin         &:& \vb \\
-                    & \funcqualifier       &:& \vqualifier \\
+                    & \funcqualifierfield       &:& \vqualifier \\
                     & \funcoverride        &:& \voverride \\
                 \} &&&
       \end{array}
@@ -1810,7 +1810,7 @@ The function
       \overname{\staticenvs}{\tenv} \aslsep
       \overname{\Strings}{\name} \aslsep
       \overname{\subprogramtype}{\subpgmtype} \aslsep
-      \overname{\qualifier}{\vqualifier} \aslsep
+      \overname{\funcqualifier}{\vqualifier} \aslsep
       \overname{\KleeneStar{\ty}}{\formaltypes}
     )
   & \aslto \\
@@ -1859,7 +1859,7 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
 \inferrule{
   G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
   \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\\
-  \vbtwo \eqdef \otherfuncsig.\funcqualifier \neq \vqualifier \\
+  \vbtwo \eqdef \otherfuncsig.\funcqualifierfield \neq \vqualifier \\
   \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vbthree
 }{
   \subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}
@@ -1923,7 +1923,7 @@ The function
   \addnewfunc(
     \overname{\staticenvs}{\tenv} \aslsep
     \overname{\Identifier}{\name} \aslsep
-    \overname{\Option{\qualifier}}{\vqualifier} \aslsep
+    \overname{\Option{\funcqualifier}}{\vqualifier} \aslsep
     \overname{\KleeneStar{\typedidentifier}}{\formals} \aslsep
     \overname{\subprogramtype}{\subpgmtype})
   & \aslto\\
@@ -2058,8 +2058,8 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \item applying $\checkcontrolflow$ to $\tenv$, $\vf$, and $\newbody$ yields $\True$\ProseOrTypeError;
   \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$;
   \item \Proseeqdef{$\vsesp$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every \LocalEffectTerm{} removed};
-  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\vf.\funcqualifier$ yields $\True$\ProseOrTypeError;
-  \item the \sideeffectsetterm{} corresponding to $\vf.\funcqualifier$ (via \\
+  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\vf.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
+  \item the \sideeffectsetterm{} corresponding to $\vf.\funcqualifierfield$ (via \\
         $\sesforsubprogram$) is $\vses$.
 \end{itemize}
 
@@ -2070,8 +2070,8 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
   \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
-  \checksubprogrampurity(\vf.\funcqualifier, \vsesp) \typearrow \True \OrTypeError \\
-  \sesforsubprogram(\vf.\funcqualifier) \typearrow \vses
+  \checksubprogrampurity(\vf.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \\
+  \sesforsubprogram(\vf.\funcqualifierfield) \typearrow \vses
 }{
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
@@ -2188,7 +2188,7 @@ by \verb|noreturn|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[noreturn]{
-  \vf.\funcqualifier = \some{\Noreturn}
+  \vf.\funcqualifierfield = \some{\Noreturn}
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsAbnormal\}}{\absconfigs}
 }
@@ -2196,7 +2196,7 @@ by \verb|noreturn|.
 
 \begin{mathpar}
 \inferrule[returning\_proc]{
-  \vf.\funcqualifier \neq \some{\Noreturn} \land \vf.\funcreturntype = \None
+  \vf.\funcqualifierfield \neq \some{\Noreturn} \land \vf.\funcreturntype = \None
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
@@ -2204,7 +2204,7 @@ by \verb|noreturn|.
 
 \begin{mathpar}
 \inferrule[func]{
-  \vf.\funcqualifier \neq \some{\Noreturn} \land \vf.\funcreturntype \neq \None
+  \vf.\funcqualifierfield \neq \some{\Noreturn} \land \vf.\funcreturntype \neq \None
 }{
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
@@ -2362,7 +2362,7 @@ can be added, for example, an \unreachablestatementterm.
   {
   \absconfigs \eqdef
   \begin{cases}
-    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifier = \some{\Noreturn}\\
+    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifierfield = \some{\Noreturn}\\
     \{\AbsContinuing, \AbsAbnormal\} & \text{else}
   \end{cases}
   }
