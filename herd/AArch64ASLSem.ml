@@ -264,6 +264,25 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "condition" ^= cond c;
                 "_PC" ^^= litbv 64 ii.A.addr;
               ])
+      | I_TBZ (v, rt, k, lab)
+      | I_TBNZ (v, rt, k, lab) ->
+        let offset = tgt2offset ii lab in
+        let fname =
+          match ii.A.inst with
+          | I_TBZ _ -> "TBZ_only_testbranch.opn"
+          | I_TBNZ _ -> "TBNZ_only_testbranch.opn"
+          | _ -> assert false
+        in
+        Some
+          ( "control/testbranch/" ^ fname,
+            stmt
+              [
+                "t" ^= reg rt;
+                "offset" ^= litbv 64 offset;
+                "bit_pos" ^= liti k;
+                "datasize" ^= variant v;
+                "_PC" ^^= litbv 64 ii.A.addr;
+              ])
 
       (* Atomic instructions *)
       | I_SWP (v, t, rs, rt, rn) ->
