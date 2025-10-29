@@ -2777,7 +2777,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
   \vv \eqname \nvint(n)\\
-  i=1..k: \isconstaintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k: \isconstraintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\\\\
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
 }{
@@ -2824,7 +2824,7 @@ cannot appear as a type, since ASL syntax does not allow the following:
 \BackupOriginalRelation{
 The relation
 \[
-  \isconstaintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
+  \isconstraintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
   (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
 \]
 tests whether the integer value $n$ \emph{satisfies the constraint} $\vc$
@@ -2866,7 +2866,7 @@ that expressions appearing in types are all side-effect-free.
 \inferrule[Constraint\_Exact\_Sat]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
 }{
-  \isconstaintsat(\env, \overname{\ConstraintExact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
+  \isconstraintsat(\env, \overname{\ConstraintExact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
 }
 \end{mathpar}
 
@@ -2877,7 +2877,7 @@ that expressions appearing in types are all side-effect-free.
   \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \isconstaintsat(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
+  \isconstraintsat(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
 }
 \end{mathpar}
 
