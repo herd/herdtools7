@@ -1987,7 +1987,7 @@ while calling \\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\\\\
-  \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vms)]\\
+  \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vm)]\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
 }{
@@ -2281,7 +2281,7 @@ these variable values and evaluates to $\nvint(15)$.
 \begin{mathpar}
 \inferrule[empty]{}
 {
-  \assignargs((\env, \vgone), \overname{\vids}{\emptylist}, \overname{\emptylist}{\actuals}) \evalarrow (\overname{\env}{\newenv}, \overname{\vgone}{\newg})
+  \assignargs((\env, \vgone), \overname{\emptylist}{\vids}, \overname{\emptylist}{\actuals}) \evalarrow (\overname{\env}{\newenv}, \overname{\vgone}{\newg})
 }
 \end{mathpar}
 

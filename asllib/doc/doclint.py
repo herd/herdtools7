@@ -708,7 +708,7 @@ def check_zero_arg_macro_misuse(latex_files: list[str]) -> int:
 
 def check_relation_references(latex_files: list[str]) -> int:
     r"""
-    Checks that for each 'relation <name>' in any .spec file,
+    Checks that for each 'relation <name>' and 'function <name>' in any .spec file,
     there exists a '\RenderRelation{<name>}' in some file
     in `latex_files`.
     Returns the number of errors found.
@@ -718,9 +718,9 @@ def check_relation_references(latex_files: list[str]) -> int:
 
     spec_files = fnmatch.filter(os.listdir("."), "*.spec")
 
-    # Extract all relation names from .spec files
+    # Extract all relation and function names from .spec files
     defined_relations = set()
-    relation_pattern = re.compile(r"^relation\s+([a-zA-Z_][a-zA-Z0-9_]*)\(")
+    relation_pattern = re.compile(r"^(?:\w+\s+)*(relation|function)\s+([a-zA-Z_][a-zA-Z0-9_]*)\(")
 
     for spec_file in spec_files:
         try:
@@ -728,7 +728,7 @@ def check_relation_references(latex_files: list[str]) -> int:
                 for line in f:
                     match = relation_pattern.match(line.strip())
                     if match:
-                        relation_name = match.group(1)
+                        relation_name = match.group(2)
                         defined_relations.add(relation_name)
         except Exception as e:
             print(f"ERROR: Could not read spec file {spec_file}: {e}", file=sys.stderr)

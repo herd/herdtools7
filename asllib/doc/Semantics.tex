@@ -335,6 +335,9 @@ is named $\evalexpr$.
 We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
 should be semantically evaluated, yielding an output semantic configuration.
 
+The helper type \RenderType{value_read_from} conveys that the value $\vv$ has been read
+from a storage element with the identifier $\id$.
+
 ASL dynamic semantics mainly utilize the following types of output semantic configurations:
 \begin{description}
   \item[Normal Values.]\hypertarget{def-normal}{}
@@ -351,7 +354,6 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The type \RenderType{value_read_from} is a semantic configuration nested inside an exception semantic configuration.
   The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 

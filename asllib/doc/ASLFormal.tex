@@ -1042,12 +1042,13 @@ This is used to assert that a condition that holds.
 }
 
 \subsection{Boolean Transition Judgments}
-\hypertarget{def-booltrans}{}
-We define the following rules to allow us to treat Boolean values as transition judgments:
+\RenderRelation{bool_transition}
+We define the following rules to allow us to treat Boolean values as transition judgments,
+which in turn allow us to employ \shortcircuitrulemacros{}:
 \begin{mathpar}
-\inferrule[bool\_trans\_true]{}{ \booltrans(\True) \booltransarrow\True }
+\inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
 \and
-\inferrule[bool\_trans\_false]{}{ \booltrans(\False) \booltransarrow\False }
+\inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
 \end{mathpar}
 
 \subsection{Judgments Over Optional Data Types}

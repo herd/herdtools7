@@ -495,7 +495,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vstart, \newg), \newenv) \OrAbnormal\\
   \vlength \eqdef \nvint(1)
 }{
-  \evalslice(\env, \SliceSingle(\ve)) \evalarrow \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceSingle(\ve)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -509,7 +509,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -521,7 +521,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \mlength \eqname (\vlength, \vgtwo)\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -534,7 +534,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalbinop(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -665,7 +665,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
   \begin{itemize}
     \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
     \item evaluating the slice $\vslice$ in $\env$ results in \\
-          $\ResultSlices((\range, \vgone), \envone)$\ProseOrAbnormal;
+          $((\range, \vgone), \envone)$\ProseOrAbnormal;
     \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
           $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
     \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
@@ -683,7 +683,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 \begin{mathpar}
 \inferrule[nonempty]{
   \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow \ResultSlices((\range, \vgone), \envone) \OrAbnormal\\\\
+  \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\\\\
   \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
   \ranges \eqdef [\range] \concat \rangesone\\
   \newg \eqdef \vgone \parallelcomp \vgtwo

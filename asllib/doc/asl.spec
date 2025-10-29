@@ -1174,7 +1174,7 @@ typedef TNormal
     { "expression list result with value-graph pairs {value_graph_pairs} and {environment}" }
     | ResultPattern(boolean_value: tbool, graph: XGraphs)
     { "pattern result with {boolean_value} and {graph}" }
-    | ResultCall(value_graph_pairs: list0((native_value, XGraphs)), environment: envs)
+    | ResultCall((value_graph_pairs: (list0(value_read_from), XGraphs)), environment: envs)
     { "call result with value-graph pairs {value_graph_pairs} and {environment}" }
 ;
 
@@ -1275,6 +1275,7 @@ semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_s
 
 function bool_transition(cond: Bool) -> (result: Bool)
 {
+    math_macro = \booltrans,
     "returns $\True$ if {cond} holds and $\False$ otherwise",
     prose_application = "testing whether {cond} holds returns {result}",
 };
@@ -1414,7 +1415,7 @@ relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 };
 
 relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
-        | ResultExpr(new_g: XGraphs, new_env: envs)
+        | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
         | TDiverging
@@ -2489,18 +2490,20 @@ relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
   prose_application = "",
 };
 
-relation eval_slice(env: envs, s: slice) -> ResultSlices(((v_start: tint, v_length: tint), new_g: XGraphs), new_env: envs) | TThrowing | TDynError | TDiverging
+relation eval_slice(env: envs, s: slice) ->
+  | (((v_start: tint, v_length: tint), new_g: XGraphs), new_env: envs)
+  | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates an individual slice {s} in an environment
                         {env} is, resulting either in \\
-                        $\ResultSlices(((\vstart, \vlength), \vg), \newenv)$.
+                        $((({v_start}, {v_length}), {new_g}), {new_env})$.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
   math_layout = [_,_],
 };
 
 relation eval_slices(env: envs, slices: list0(slice)) ->
-  ResultSlices((ranges: list0((native_value, native_value)), new_g: XGraphs), new_env: envs)
+  | ResultSlices((ranges: list0((native_value, native_value)), new_g: XGraphs), new_env: envs)
   | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates a list of slices {slices} in an environment
@@ -3259,7 +3262,7 @@ relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
 };
 
 relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0(expr)) ->
-    ResultCall(vms2: list0((native_value, XGraphs)), new_env: envs) | TDynError | TDiverging
+    ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs) | TDynError | TDiverging
 {
    prose_description = "evaluates a call to the subprogram named {name} in
                         the environment {env}, with the parameter expressions
@@ -3276,7 +3279,8 @@ relation eval_subprogram(
   name: Identifier,
   params: list0((native_value, XGraphs)),
   actual_args: list0((native_value, XGraphs))) ->
-  ResultCall(vs: (list0(native_value), XGraphs), new_env: envs) | TThrowing | TDynError | TDiverging
+  | ResultCall((list0(value_read_from), XGraphs), new_env: envs)
+  | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates the subprogram named {name} in the
                         environment {env}, with {actual_args} the list of
@@ -3303,7 +3307,8 @@ relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: 
  prose_application = "",
 };
 
-relation match_func_res(TContinuingOrReturning) -> (ResultCall((list0((Identifier, native_value)), XGraphs), envs))
+relation match_func_res(TContinuingOrReturning) ->
+    (ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs), envs)
 {
    prose_description = "converts continuing configurations and returning
                         configurations into corresponding normal
@@ -3325,8 +3330,7 @@ relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(ex
   prose_application = "",
 };
 
-relation read_value_from(value_read_from(native_value, Identifier)) ->
-         (native_value, XGraphs)
+relation read_value_from(value_read_from) -> (native_value, XGraphs)
 {
   "generates an execution graph for reading the given
   value to a variable given by the identifier, and pairs

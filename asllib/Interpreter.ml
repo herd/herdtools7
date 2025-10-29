@@ -1578,6 +1578,7 @@ module Make (B : Backend.S) (C : Config) = struct
          let () =
            if false then Format.eprintf "Finished evaluating %s.@." name
          in
+         (* MatchFuncRest( *)
          match res with
          | Continuing env4 -> return_normal ([], env4.global)
          | Returning (xs, ret_genv) ->
@@ -1585,6 +1586,7 @@ module Make (B : Backend.S) (C : Config) = struct
                List.mapi (fun i v -> (v, return_identifier i, scope)) xs
              in
              return_normal (vs, ret_genv))
+        (* MatchFuncRest) *)
         |: SemanticsRule.FCall
   (* End *)
 
