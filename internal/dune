@@ -6,6 +6,7 @@
   lint_shelves
   herd_redirect
   herd_test
-  herd_promote)
+  herd_promote
+  check_obs)
  (libraries internal_lib)
  (modes native))

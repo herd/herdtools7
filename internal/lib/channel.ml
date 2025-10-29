@@ -23,6 +23,16 @@ let iter_lines f chan =
     let rec iter () = f (input_line chan) ; iter () in iter ()
   with End_of_file -> ()
 
+let fold_lines f k chan =
+  let rec frec k =
+    let line =
+      try Some (input_line chan)
+      with End_of_file -> None in
+    match line with
+    | None -> k
+    | Some line -> frec (f k line) in
+  frec k
+
 let map_lines f chan =
   let ret = ref [] in
   iter_lines (fun l -> ret := f l :: !ret) chan ;
