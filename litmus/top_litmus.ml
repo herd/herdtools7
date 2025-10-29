@@ -86,6 +86,7 @@ module type CommonConfig = sig
   val hint : string option
   val no : string option
   val index : string option
+  val outnames : string option
 end
 
 module type TopConfig = sig
