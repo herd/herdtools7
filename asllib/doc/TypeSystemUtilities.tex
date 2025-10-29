@@ -151,7 +151,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 The function
 \[
   \findbitfieldopt(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\bitfields})
-  \aslto \overname{\Option(\bitfield)}{\vr}
+  \aslto \overname{\Option{\bitfield}}{\vr}
 \]
 returns the bitfield associated with the name $\name$ in the list of bitfields $\bitfields$,
 if there is one. Otherwise, the result is $\None$.
@@ -277,7 +277,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \hypertarget{def-assocopt}{}
 The function
 \[
-  \assocopt(\overname{\KleeneStar{(\Identifier\times T)}}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \Option(\overname{T}{\vv})
+  \assocopt(\overname{\KleeneStar{(\Identifier\times T)}}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \Option{\overname{T}{\vv}}
 \]
 returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
 } % END_OF_IGNORED_RELATION
@@ -833,7 +833,7 @@ The function
 \addimmutableexpression(
   \overname{\staticenvs}{\tenv} \aslsep
   \overname{\localdeclkeyword}{\ldk} \aslsep
-  \overname{\Option((\overname{\expr}{\ve}\times\overname{\TSideEffectSet}{\vsese}))}{\veopt} \aslsep
+  \overname{\Option{\overname{\expr}{\ve}\times\overname{\TSideEffectSet}{\vsese}}}{\veopt} \aslsep
   \overname{\Identifier}{\vx}) \\
   \aslto \overname{\staticenvs}{\newtenv} \cup\ \typeerror
 \end{array}

@@ -674,7 +674,7 @@ The function
   \left(
   \begin{array}{c}
     \overname{\staticenvs}{\tenv} \aslsep \\
-    \overname{\Option(\ty)}{\tyopt} \aslsep \\
+    \overname{\Option{\ty}}{\tyopt} \aslsep \\
     \overname{\ty}{\vte} \aslsep \\
     \overname{\localdeclkeyword}{\ldk} \aslsep \\
     \overname{\expr}{\vep} \aslsep\\
@@ -683,7 +683,7 @@ The function
   \right)
   \aslto \\
   \begin{array}{cl}
-    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option(\ty)}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
+    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option{\ty}}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
     & \cup \\
     \overname{\typeerror}{\TypeErrorConfig} &
   \end{array}
@@ -1085,7 +1085,7 @@ The function
   \overname{\ty}{\vt} \aslsep
   \overname{\call}{\vcall})
 \aslto
-\overname{\Option(\expr)}{\vexpr}
+\overname{\Option{\expr}}{\vexpr}
 \cup\ \overname{\TBuildError}{\ParseErrorConfig}
 \]
 builds an expression $\vexpr$ from an assignment of the call $\vcall$ to the left-hand side with type annotation $\vt$, where the call has an elided parameter.
@@ -2062,7 +2062,7 @@ the expression \verb|limit_loop()|.
 \hypertarget{build-looplimit}{}
 The function
 \[
-\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\Option(\expr)}{\vastnode}
+\buildlooplimit(\overname{\parsenode{\Nlooplimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -2134,9 +2134,9 @@ The function
 \[
   \annotatelimitexpr(
     \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Option(\expr)}{\ve}
+    \overname{\Option{\expr}}{\ve}
   ) \aslto
-  (\Option(\overname{\expr}{\vep}) \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
+  (\Option{\overname{\expr}{\vep}} \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
 \]
 annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
 yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
@@ -2242,7 +2242,7 @@ The relation
   \evalloop(
     \overname{\envs}{\env} \aslsep
     \overname{\Bool}{\iswhile} \aslsep
-    \overname{\Option(\N)}{\vlimitopt} \aslsep
+    \overname{\Option{\N}}{\vlimitopt} \aslsep
     \overname{\expr}{\econd} \aslsep
     \overname{\stmt}{\vbody})
   \;\aslrel\;
@@ -2339,11 +2339,11 @@ The negation of the condition is used to decide whether to continue the loop ite
 \BackupOriginalRelation{
 The relation
 \[
-\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\Option(\expr)})
+\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\Option{\expr}})
 \;\aslrel\;
 \left(
 \begin{array}{ll}
-(\overname{\Option(\N)}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
+(\overname{\Option{\N}}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
 \overname{\TDynError}{\DynErrorConfig} & \cup\\
 \overname{\TDiverging}{\DivergingConfig} & \\
 \end{array}
@@ -2401,7 +2401,7 @@ of the \whilestatementterm.
 \BackupOriginalRelation{
 The relation
 \[
-\ticklooplimit(\overname{\Option(\N)}{\vvopt}) \aslto \overname{\Option(\N)}{\Option(\vvoptp)}
+\ticklooplimit(\overname{\Option{\N}}{\vvopt}) \aslto \overname{\Option{\N}}{\Option{\vvoptp}}
 \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 decrements the optional integer $\vvopt$, yielding
@@ -2990,7 +2990,7 @@ The relation
   \begin{array}{cl}
     \overname{\envs}{\env}                      & \aslsep\\
     \overname{\Identifier}{\vindexname}        & \aslsep\\
-    \overname{\Option(\tint)}{\vlimitopt}  & \aslsep\\
+    \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
     \overname{\tint}{\vstart}                   & \aslsep\\
     \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
     \overname{\tint}{\vend}                     & \aslsep\\
@@ -3026,7 +3026,7 @@ The relation
   \begin{array}{cl}
   \overname{\envs}{\env}                      & \aslsep\\
   \overname{\Identifier}{\vindexname}        & \aslsep\\
-  \overname{\Option(\tint)}{\vlimitopt}  & \aslsep\\
+  \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
   \overname{\tint}{\vstart}                   & \aslsep\\
   \overname{\{\UP,\DOWN\}}{\dir}              &
   \end{array}
@@ -3056,7 +3056,7 @@ The relation
     \begin{array}{cl}
     \overname{\envs}{\env} \aslsep &\\
     \overname{\Identifier}{\vindexname} \aslsep &\\
-    \overname{\Option(\tint)}{\vlimitopt} \aslsep &\\
+    \overname{\Option{\tint}}{\vlimitopt} \aslsep &\\
     \overname{\tint}{\vstart} \aslsep &\\
     \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
     \overname{\tint}{\vend} \aslsep &\\
@@ -3360,7 +3360,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 The function
 \[
    \buildotherwiseopt(\overname{\parsenode{\Notherwiseopt}}{\vparsednode}) \aslto
-    \overname{\Option(\stmt)}{\vastnode}
+    \overname{\Option{\stmt}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
