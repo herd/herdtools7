@@ -28,6 +28,7 @@ module type Config = sig
   val gcc : string
   val stdio : bool
   val index : string option
+  val outnames : string option
   val crossrun : Crossrun.t
   val adbdir : string
   val sleep : int
@@ -194,9 +195,8 @@ type infos =
 
 let run_tests names out_chan =
 
-  let exp = match Cfg.index with
-  | None -> None
-  | Some exp -> Some (open_out exp) in
+  let exp = Misc.app_opt open_out Cfg.index
+  and onames = Misc.app_opt open_out Cfg.outnames in
 
   let  { one_arch; docs; srcs; nthreads; some_pac; some_self; hashes=_; } =
     Misc.fold_argv_or_stdin
@@ -218,10 +218,10 @@ let run_tests names out_chan =
         match ans with
         | Completed
             {arch; doc; src; fullhash; nprocs; pac; self; } ->
-            begin match exp with
-            | None -> ()
-            | Some exp -> fprintf exp "%s\n" name
-            end ;
+            Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
+            Misc.check_opt
+              (fun out -> fprintf out "%s\n" doc.Name.name)
+              onames ;
             { one_arch = check_arch one_arch arch;
               docs = doc::docs;
               srcs = src::srcs;
@@ -249,10 +249,8 @@ let run_tests names out_chan =
         docs = []; srcs = []; hashes = StringMap.empty;
         nthreads = IntSet.empty;
         some_pac = false; some_self = false; } in
-  begin match exp with
-  | None -> ()
-  | Some exp -> close_out exp
-  end ;
+  Misc.check_opt close_out exp ;
+  Misc.check_opt close_out onames ;
   let arch =
     match one_arch with
     | None -> `X86 (* No tests compiled, arch is irrelevant *)

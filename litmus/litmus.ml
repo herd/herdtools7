@@ -46,8 +46,10 @@ let opts =
     "<dir> target directory on device in mode -crossrun adb";
    "-mach", Arg.String MyName.read_cfg,
    "<name> read configuration file name.cfg";
-   "-index",  argstringo Option.index ,
+   "-index",  argstringo Option.index,
    "<@name> save index of compiled tests in file <@name>" ;
+   "-outnames",  argstringo Option.outnames,
+   "<name> save names of compiled tests in file <name>" ;
    "-hexa", Arg.Set Option.hexa,
    " hexadecimal output";
    "-no", argstringo Option.no,
@@ -268,6 +270,7 @@ let () =
 (* Static options *)
       let verbose = verbose
       let index = !index
+      let outnames = !outnames
       let no = !no
       let hint = !hint
       let verbose_prelude = match !verbose_prelude with
@@ -371,7 +374,7 @@ let () =
       let asmcomment = !asmcomment
       let asmcommentaslabel = !asmcommentaslabel
     end in
-    let module T = Top_litmus.Top (Config) (Tar) in
+     let module T = Top_litmus.Top (Config) (Tar) in
     T.from_files sources ;
     if not (Option.is_out ()) then MySys.rmdir outname ;
     exit 0
