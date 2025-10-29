@@ -84,7 +84,7 @@ which are configurations used to describe side effects, as explained below:
 We now define a few helper functions over \sideeffectdescriptorsterm.
 
 \TypingRuleDef{SideEffectIsPure}
-\hypertarget{def-sideeffectispure}{}
+\hypertarget{relation-sideeffectispure}{}
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
@@ -131,7 +131,7 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \end{mathpar}
 
 \TypingRuleDef{SideEffectIsReadonly}
-\hypertarget{def-sideeffectisreadonly}{}
+\hypertarget{relation-sideeffectisreadonly}{}
 \[
     \sideeffectisreadonly(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
@@ -164,7 +164,7 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \end{mathpar}
 
 \TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
-\hypertarget{def-sideeffectissymbolicallyevaluable}{}
+\hypertarget{relation-sideeffectissymbolicallyevaluable}{}
 \[
     \sideeffectissymbolicallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
@@ -307,7 +307,7 @@ is \symbolicallyevaluableterm.
 }
 \end{mathpar}
 
-\hypertarget{def-checksymbolicallyevaluable}{}
+\hypertarget{relation-checksymbolicallyevaluable}{}
 \TypingRuleDef{CheckSymbolicallyEvaluable}
 The function
 \[

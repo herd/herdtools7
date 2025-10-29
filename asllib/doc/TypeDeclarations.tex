@@ -387,7 +387,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
 \begin{mathpar}
 \inferrule[empty\_fields]{
-  \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
+  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
   \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
@@ -399,7 +399,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
 \begin{mathpar}
 \inferrule[no\_super]{
-  \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
+  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = \bot
@@ -411,7 +411,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
 \begin{mathpar}
 \inferrule[structured]{
-  \subtypesat(\tty, \TNamed(\vsuper)) \typearrow \vb\\
+  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
   G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\

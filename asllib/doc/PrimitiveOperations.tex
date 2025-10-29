@@ -1456,7 +1456,7 @@ and argument types of its operand literals:
 \end{mathpar}
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
-\hypertarget{def-bintounsigned}{}
+\hypertarget{relation-bintounsigned}{}
 The function $\bintounsigned : \KleeneStar{\Bit} \rightarrow \N$ converts a non-empty sequence of bits
 into a natural number:
 \[
@@ -1467,7 +1467,7 @@ and an empty sequence of bits into $0$:
   \bintounsigned(\emptylist) \triangleq 0 \enspace.
 \]
 
-\hypertarget{def-inttobits}{}
+\hypertarget{relation-inttobits}{}
 The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \KleeneStar{\Bit}$
 converts an integer \texttt{val} to its two's complement little endian representation
 of \texttt{width} bits.

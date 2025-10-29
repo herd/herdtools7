@@ -16,7 +16,7 @@ functions that inspect the structure of types:
 \end{itemize}
 
 \TypingRuleDef{BuiltinSingularType}
-\hypertarget{def-isbuiltinsingular}{}
+\hypertarget{relation-isbuiltinsingular}{}
 The predicate
 \[
   \isbuiltinsingular(\overname{\ty}{\tty}) \;\aslto\; \Bool
@@ -58,7 +58,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 \identd{PQCK} \identd{NZWT}
 
 \TypingRuleDef{NamedType}
-\hypertarget{def-isnamed}{}
+\hypertarget{relation-isnamed}{}
 The predicate
 \[
   \isnamed(\overname{\ty}{\tty}) \;\aslto\; \Bool
@@ -90,7 +90,7 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
 \identd{vmzx}
 
 \TypingRuleDef{AnonymousType}
-\hypertarget{def-isanonymous}{}
+\hypertarget{relation-isanonymous}{}
 \identd{VMZX} \identi{SBCK}%
 The predicate
 \[
@@ -119,7 +119,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
-\hypertarget{def-issingular}{}
+\hypertarget{relation-issingular}{}
 \identr{GVZK}%
 The predicate
 \[
@@ -157,7 +157,7 @@ type C of B;
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
-\hypertarget{def-isstructured}{}
+\hypertarget{relation-isstructured}{}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtypeterm} is any type that consists of a list of field
 identifiers that denote individual storage elements.

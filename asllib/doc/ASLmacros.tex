@@ -345,11 +345,11 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
-\newcommand\booltrans[0]{\hyperlink{relation-booltransition}{\textfunc{bool\_transition}}}
+\newcommand\booltrans[0]{\hyperlink{relation-booltransition}{\textfunc{bool\_transition}}} % SPECIFIED
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\Prosetecheck[2]{\hyperlink{relation-techeck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
 \newcommand\Prosebecheck[2]{\hyperlink{relation-becheck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
-\newcommand\becheck[0]{\hyperlink{relation-becheck}{\textfunc{be\_check}}}
+\newcommand\becheck[0]{\hyperlink{relation-becheck}{\textfunc{be\_check}}} % SPECIFICATION_DEFERRED
 
 \newcommand\termx[0]{\mathit{tx}}
 \newcommand\termy[0]{\mathit{ty}}
@@ -378,7 +378,7 @@
 \newcommand\epsilonnode[0]{\hyperlink{def-epsilonnode}{\textsf{epsilon\_node}}}
 \newcommand\yield[0]{\hyperlink{def-yield}{\textsf{yield}}}
 
-\newcommand\substrecordfield[0]{\hyperlink{def-substrecordfield}{\textfunc{subst\_record\_field}}}
+\newcommand\substrecordfield[0]{\hyperlink{def-substrecordfield}{\textfunc{subst\_record\_field}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\uniquesymb[1]{\textsf{unique}(#1)}
 \newcommand\Ndecllist[0]{\nonterminal{decl\_list}}
 
@@ -634,90 +634,90 @@
 \newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
 \newcommand\scanarrow[0]{\xrightarrow{\hyperlink{def-aslscan}{\textsf{scan}}}}
 
-\newcommand\buildidentity[0]{\hyperlink{build-identity}{\textfunc{build\_identity}}}
-\newcommand\buildlist[0]{\hyperlink{build-list}{\textfunc{build\_list}}}
-\newcommand\buildplist[0]{\hyperlink{build-plist}{\textfunc{build\_plist}}}
-\newcommand\buildclist[0]{\hyperlink{build-clist}{\textfunc{build\_clist}}}
-\newcommand\buildtclist[0]{\hyperlink{build-tclist}{\textfunc{build\_tclist}}}
-\newcommand\buildoption[0]{\hyperlink{build-option}{\textfunc{build\_option}}}
+\newcommand\buildidentity[0]{\hyperlink{build-identity}{\textfunc{build\_identity}}} % SPECIFICATION_DEFERRED
+\newcommand\buildlist[0]{\hyperlink{build-list}{\textfunc{build\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\buildplist[0]{\hyperlink{build-plist}{\textfunc{build\_plist}}} % SPECIFICATION_DEFERRED
+\newcommand\buildclist[0]{\hyperlink{build-clist}{\textfunc{build\_clist}}} % SPECIFICATION_DEFERRED
+\newcommand\buildtclist[0]{\hyperlink{build-tclist}{\textfunc{build\_tclist}}} % SPECIFICATION_DEFERRED
+\newcommand\buildoption[0]{\hyperlink{build-option}{\textfunc{build\_option}}} % SPECIFICATION_DEFERRED
 
 \newcommand\Prosebuildast[2]{\hyperlink{build-ast}{building} an untyped AST from the parse tree #1 yields #2}
-\newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}}
-\newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}}
-\newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}}
-\newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}}
-\newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}}
-\newcommand\desugarsettersetfields[0]{\hyperlink{def-desugarsettersetfields}{\textfunc{desugar\_setter\_setfields}}}
-\newcommand\readmodifywrite[0]{\hyperlink{def-readmodifywrite}{\textfunc{read\_modify\_write}}}
-\newcommand\desugaraccessorpair[0]{\hyperlink{def-desugaraccessorpair}{\textfunc{desugar\_accessor\_pair}}}
-\newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}}
-\newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}}
-\newcommand\desugarelidedparameter[0]{\hyperlink{def-desugarelidedparameter}{\textfunc{desugar\_elided\_parameter}}}
-\newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}}
-\newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}}
-\newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}}
-\newcommand\buildbasiclexpr[0]{\hyperlink{build-basiclexpr}{\textfunc{build\_basic\_lexpr}}}
-\newcommand\builddiscardorbasiclexpr[0]{\hyperlink{build-discardorbasiclexpr}{\textfunc{build\_discard\_or\_basic\_lexpr}}}
-\newcommand\buildaccess[0]{\hyperlink{build-access}{\textfunc{build\_access}}}
-\newcommand\builddiscardoridentifier[0]{\hyperlink{build-discardoridentifier}{\textfunc{build\_discard\_or\_identifier}}}
-\newcommand\desugarlhsaccess[0]{\hyperlink{def-desugarlhsaccess}{\textfunc{desugar\_lhs\_access}}}
-\newcommand\desugarlhsaccessopt[0]{\hyperlink{def-desugarlhsaccessopt}{\textfunc{desugar\_lhs\_access\_opt}}}
-\newcommand\desugarlhstuple[0]{\hyperlink{def-desugarlhstuple}{\textfunc{desugar\_lhs\_tuple}}}
-\newcommand\desugarlhsfieldopt[0]{\hyperlink{def-desugarlhsfieldopt}{\textfunc{desugar\_lhs\_field\_opt}}}
-\newcommand\desugarlhsfieldstuple[0]{\hyperlink{def-desugarlhsfieldstuple}{\textfunc{desugar\_lhs\_fields\_tuple}}}
-\newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}}
-\newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}}
-\newcommand\buildcall[0]{\hyperlink{build-call}{\textfunc{build\_call}}}
-\newcommand\buildelidedparamcall[0]{\hyperlink{build-elided-param-call}{\textfunc{build\_elided\_param\_call}}}
-\newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}}
-\newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}}
-\newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}}
-\newcommand\buildaccessorbody[0]{\hyperlink{build-accessorbody}{\textfunc{build\_accessor\_body}}}
-\newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}}
-\newcommand\buildisreadonly[0]{\hyperlink{build-isreadonly}{\textfunc{build\_is\_readonly}}}
-\newcommand\buildqualifier[0]{\hyperlink{build-qualifier}{\textfunc{build\_func\_qualifier}}}
-\newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}}
-\newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}}
-\newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}}
-\newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}}
-\newcommand\buildtyorcollection[0]{\hyperlink{build-tyorcollection}{\textfunc{build\_ty\_or\_collection}}}
-\newcommand\buildsubtype[0]{\hyperlink{build-subtype}{\textfunc{build\_subtype}}}
-\newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}}
-\newcommand\buildglobaldeclkeywordnonconfig[0]{\hyperlink{build-globaldeclkeywordnonconfig}{\textfunc{build\_global\_keyword\_non\_config}}}
-\newcommand\buildglobaldeclkeyword[0]{\hyperlink{build-globaldeclkeyword}{\textfunc{build\_global\_keyword}}}
-\newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}}
-\newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}}
-\newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}}
-\newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}}
-\newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}}
-\newcommand\buildasty[0]{\hyperlink{build-as-ty}{\textfunc{build\_as\_ty}}}
-\newcommand\buildignoredoridentifier[0]{\hyperlink{build-ignoredoridentifier}{\textfunc{build\_ignored\_or\_identifier}}}
-\newcommand\buildlocaldeclkeyword[0]{\hyperlink{build-localdeclkeyword}{\textfunc{build\_local\_decl\_keyword}}}
-\newcommand\buildstmtlist[0]{\hyperlink{build-stmtlist}{\textfunc{build\_stmt\_list}}}
-\newcommand\buildselse[0]{\hyperlink{build-selse}{\textfunc{build\_s\_else}}}
-\newcommand\buildconstraintkind[0]{\hyperlink{build-constraintkind}{\textfunc{build\_constraint\_kind}}}
-\newcommand\buildconstraintkindopt[0]{\hyperlink{build-constraintkindopt}{\textfunc{build\_constraint\_kind\_opt}}}
-\newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textfunc{build\_int\_constraint}}}
-\newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textfunc{build\_expr\_pattern}}}
-\newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textfunc{build\_field\_assign}}}
-\newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textfunc{build\_pattern\_set}}}
-\newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textfunc{build\_pattern\_list}}}
-\newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}}
-\newcommand\buildfields[0]{\hyperlink{build-fields}{\textfunc{build\_fields}}}
-\newcommand\buildslices[0]{\hyperlink{build-slices}{\textfunc{build\_slices}}}
-\newcommand\buildslice[0]{\hyperlink{build-slice}{\textfunc{build\_slice}}}
-\newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textfunc{build\_bitfields}}}
-\newcommand\buildbitfield[0]{\hyperlink{build-bitfield}{\textfunc{build\_bitfield}}}
-\newcommand\buildty[0]{\hyperlink{build-ty}{\textfunc{build\_ty}}}
-\newcommand\buildvalue[0]{\hyperlink{build-value}{\textfunc{build\_value}}}
-\newcommand\buildunop[0]{\hyperlink{build-unop}{\textfunc{build\_unop}}}
-\newcommand\buildbinop[0]{\hyperlink{build-binop}{\textfunc{build\_binop}}}
+\newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}} % SPECIFICATION_DEFERRED
+\newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}} % SPECIFICATION_DEFERRED
+\newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}} % SPECIFICATION_DEFERRED
+\newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarsettersetfields[0]{\hyperlink{def-desugarsettersetfields}{\textfunc{desugar\_setter\_setfields}}} % SPECIFICATION_DEFERRED
+\newcommand\readmodifywrite[0]{\hyperlink{def-readmodifywrite}{\textfunc{read\_modify\_write}}} % SPECIFICATION_DEFERRED
+\newcommand\desugaraccessorpair[0]{\hyperlink{def-desugaraccessorpair}{\textfunc{desugar\_accessor\_pair}}} % SPECIFICATION_DEFERRED
+\newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}} % SPECIFICATION_DEFERRED
+\newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarelidedparameter[0]{\hyperlink{def-desugarelidedparameter}{\textfunc{desugar\_elided\_parameter}}} % SPECIFICATION_DEFERRED
+\newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}} % SPECIFICATION_DEFERRED
+\newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}} % SPECIFICATION_DEFERRED
+\newcommand\buildbasiclexpr[0]{\hyperlink{build-basiclexpr}{\textfunc{build\_basic\_lexpr}}} % SPECIFICATION_DEFERRED
+\newcommand\builddiscardorbasiclexpr[0]{\hyperlink{build-discardorbasiclexpr}{\textfunc{build\_discard\_or\_basic\_lexpr}}} % SPECIFICATION_DEFERRED
+\newcommand\buildaccess[0]{\hyperlink{build-access}{\textfunc{build\_access}}} % SPECIFICATION_DEFERRED
+\newcommand\builddiscardoridentifier[0]{\hyperlink{build-discardoridentifier}{\textfunc{build\_discard\_or\_identifier}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarlhsaccess[0]{\hyperlink{def-desugarlhsaccess}{\textfunc{desugar\_lhs\_access}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarlhsaccessopt[0]{\hyperlink{def-desugarlhsaccessopt}{\textfunc{desugar\_lhs\_access\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarlhstuple[0]{\hyperlink{def-desugarlhstuple}{\textfunc{desugar\_lhs\_tuple}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarlhsfieldopt[0]{\hyperlink{def-desugarlhsfieldopt}{\textfunc{desugar\_lhs\_field\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\desugarlhsfieldstuple[0]{\hyperlink{def-desugarlhsfieldstuple}{\textfunc{desugar\_lhs\_fields\_tuple}}} % SPECIFICATION_DEFERRED
+\newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}} % SPECIFICATION_DEFERRED
+\newcommand\buildcall[0]{\hyperlink{build-call}{\textfunc{build\_call}}} % SPECIFICATION_DEFERRED
+\newcommand\buildelidedparamcall[0]{\hyperlink{build-elided-param-call}{\textfunc{build\_elided\_param\_call}}} % SPECIFICATION_DEFERRED
+\newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}} % SPECIFICATION_DEFERRED
+\newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}} % SPECIFICATION_DEFERRED
+\newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}} % SPECIFICATION_DEFERRED
+\newcommand\buildaccessorbody[0]{\hyperlink{build-accessorbody}{\textfunc{build\_accessor\_body}}} % SPECIFICATION_DEFERRED
+\newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}} % SPECIFICATION_DEFERRED
+\newcommand\buildisreadonly[0]{\hyperlink{build-isreadonly}{\textfunc{build\_is\_readonly}}} % SPECIFICATION_DEFERRED
+\newcommand\buildqualifier[0]{\hyperlink{build-qualifier}{\textfunc{build\_func\_qualifier}}} % SPECIFICATION_DEFERRED
+\newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}} % SPECIFICATION_DEFERRED
+\newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}} % SPECIFICATION_DEFERRED
+\newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}} % SPECIFICATION_DEFERRED
+\newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}} % SPECIFICATION_DEFERRED
+\newcommand\buildtyorcollection[0]{\hyperlink{build-tyorcollection}{\textfunc{build\_ty\_or\_collection}}} % SPECIFICATION_DEFERRED
+\newcommand\buildsubtype[0]{\hyperlink{build-subtype}{\textfunc{build\_subtype}}} % SPECIFICATION_DEFERRED
+\newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildglobaldeclkeywordnonconfig[0]{\hyperlink{build-globaldeclkeywordnonconfig}{\textfunc{build\_global\_keyword\_non\_config}}} % SPECIFICATION_DEFERRED
+\newcommand\buildglobaldeclkeyword[0]{\hyperlink{build-globaldeclkeyword}{\textfunc{build\_global\_keyword}}} % SPECIFICATION_DEFERRED
+\newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}} % SPECIFICATION_DEFERRED
+\newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}} % SPECIFICATION_DEFERRED
+\newcommand\buildasty[0]{\hyperlink{build-as-ty}{\textfunc{build\_as\_ty}}} % SPECIFICATION_DEFERRED
+\newcommand\buildignoredoridentifier[0]{\hyperlink{build-ignoredoridentifier}{\textfunc{build\_ignored\_or\_identifier}}} % SPECIFICATION_DEFERRED
+\newcommand\buildlocaldeclkeyword[0]{\hyperlink{build-localdeclkeyword}{\textfunc{build\_local\_decl\_keyword}}} % SPECIFICATION_DEFERRED
+\newcommand\buildstmtlist[0]{\hyperlink{build-stmtlist}{\textfunc{build\_stmt\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\buildselse[0]{\hyperlink{build-selse}{\textfunc{build\_s\_else}}} % SPECIFICATION_DEFERRED
+\newcommand\buildconstraintkind[0]{\hyperlink{build-constraintkind}{\textfunc{build\_constraint\_kind}}} % SPECIFICATION_DEFERRED
+\newcommand\buildconstraintkindopt[0]{\hyperlink{build-constraintkindopt}{\textfunc{build\_constraint\_kind\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textfunc{build\_int\_constraint}}} % SPECIFICATION_DEFERRED
+\newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textfunc{build\_expr\_pattern}}} % SPECIFICATION_DEFERRED
+\newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textfunc{build\_field\_assign}}} % SPECIFICATION_DEFERRED
+\newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textfunc{build\_pattern\_set}}} % SPECIFICATION_DEFERRED
+\newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textfunc{build\_pattern\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}} % SPECIFICATION_DEFERRED
+\newcommand\buildfields[0]{\hyperlink{build-fields}{\textfunc{build\_fields}}} % SPECIFICATION_DEFERRED
+\newcommand\buildslices[0]{\hyperlink{build-slices}{\textfunc{build\_slices}}} % SPECIFICATION_DEFERRED
+\newcommand\buildslice[0]{\hyperlink{build-slice}{\textfunc{build\_slice}}} % SPECIFICATION_DEFERRED
+\newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textfunc{build\_bitfields}}} % SPECIFICATION_DEFERRED
+\newcommand\buildbitfield[0]{\hyperlink{build-bitfield}{\textfunc{build\_bitfield}}} % SPECIFICATION_DEFERRED
+\newcommand\buildty[0]{\hyperlink{build-ty}{\textfunc{build\_ty}}} % SPECIFICATION_DEFERRED
+\newcommand\buildvalue[0]{\hyperlink{build-value}{\textfunc{build\_value}}} % SPECIFICATION_DEFERRED
+\newcommand\buildunop[0]{\hyperlink{build-unop}{\textfunc{build\_unop}}} % SPECIFICATION_DEFERRED
+\newcommand\buildbinop[0]{\hyperlink{build-binop}{\textfunc{build\_binop}}} % SPECIFICATION_DEFERRED
 
-\newcommand\binopprec[0]{\hyperlink{build-binopprec}{\textfunc{binop\_prec}}}
-\newcommand\checknotsameprec[0]{\hyperlink{build-checknotsameprec}{\textfunc{check\_not\_same\_prec}}}
+\newcommand\binopprec[0]{\hyperlink{build-binopprec}{\textfunc{binop\_prec}}} % SPECIFICATION_DEFERRED
+\newcommand\checknotsameprec[0]{\hyperlink{build-checknotsameprec}{\textfunc{check\_not\_same\_prec}}} % SPECIFICATION_DEFERRED
 
-\newcommand\stmtfromlist[0]{\hyperlink{def-stmtfromlist}{\textfunc{stmt\_from\_list}}}
-\newcommand\sequencestmts[0]{\hyperlink{def-sequencestmts}{\textfunc{sequence\_stmts}}}
+\newcommand\stmtfromlist[0]{\hyperlink{def-stmtfromlist}{\textfunc{stmt\_from\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\sequencestmts[0]{\hyperlink{def-sequencestmts}{\textfunc{sequence\_stmts}}} % SPECIFICATION_DEFERRED
 
 \newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
 
@@ -749,26 +749,26 @@
 \newcommand\shiftrightlexeme[0]{\texttt{">}\texttt{>"}}
 
 \newcommand\parsearrow[0]{\xrightarrow{\hyperlink{def-aslparse}{\textsf{parse}}}}
-\newcommand\aslparse[0]{\hyperlink{def-aslparse}{\textfunc{asl\_parse}}}
+\newcommand\aslparse[0]{\hyperlink{def-aslparse}{\textfunc{asl\_parse}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Proseaslparse[2]{\hyperlink{def-aslparse}{parsing} the list of tokens #1 yields the parse tree #2}
-\newcommand\aslscan[0]{\hyperlink{def-aslscan}{\textfunc{scan}}}
+\newcommand\aslscan[0]{\hyperlink{def-aslscan}{\textfunc{scan}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Proseaslscan[3]{\hyperlink{def-aslscan}{applying lexical analysis} to #1 with the lexical specification #2 yields the list of tokens #3}
-\newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textfunc{max\_matches}}}
-\newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}}
+\newcommand\maxmatches[0]{\hyperlink{def-maxmatch}{\textfunc{max\_matches}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Token[0]{\hyperlink{def-token}{\mathbb{T}\mathbb{O}\mathbb{K}\mathbb{E}\mathbb{N}}}
-\newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}}
-\newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textfunc{dec\_to\_lit}}}
-\newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}}
-\newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textfunc{real\_to\_lit}}}
-\newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textfunc{str\_to\_lit}}}
-\newcommand\bitstolit[0]{\hyperlink{def-bitstolit}{\textfunc{bits\_to\_lit}}}
-\newcommand\masktolit[0]{\hyperlink{def-masktolit}{\textfunc{mask\_to\_lit}}}
-\newcommand\truetolit[0]{\hyperlink{def-truetolit}{\textfunc{true\_to\_lit}}}
-\newcommand\falsetolit[0]{\hyperlink{def-falsetolit}{\textfunc{false\_to\_lit}}}
-\newcommand\tokenid[0]{\hyperlink{def-tokenid}{\textfunc{token\_id}}}
-\newcommand\lexicalerror[0]{\hyperlink{def-lexicalerror}{\textfunc{lexical\_error}}}
-\newcommand\toidentifier[0]{\hyperlink{def-toidentifier}{\textfunc{to\_identifier}}}
-\newcommand\eoftoken[0]{\hyperlink{def-eoftoken}{\textfunc{eof\_token}}}
+\newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textfunc{real\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textfunc{str\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\bitstolit[0]{\hyperlink{def-bitstolit}{\textfunc{bits\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\masktolit[0]{\hyperlink{def-masktolit}{\textfunc{mask\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\truetolit[0]{\hyperlink{def-truetolit}{\textfunc{true\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\falsetolit[0]{\hyperlink{def-falsetolit}{\textfunc{false\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\tokenid[0]{\hyperlink{def-tokenid}{\textfunc{token\_id}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\lexicalerror[0]{\hyperlink{def-lexicalerror}{\textfunc{lexical\_error}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\toidentifier[0]{\hyperlink{def-toidentifier}{\textfunc{to\_identifier}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\eoftoken[0]{\hyperlink{def-eoftoken}{\textfunc{eof\_token}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Teof[0]{\hyperlink{def-teof}{\textsf{EOF}}}
 \newcommand\Terror[0]{\hyperlink{def-terror}{\terminal{T\_ERR}}}
 \newcommand\Twhitespace[0]{\hyperlink{def-twhitespace}{\textsf{WHITE\_SPACE}}}
@@ -782,18 +782,18 @@
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
 \newcommand\speccomment[0]{\hyperlink{def-speccomment}{\textsc{spec\_comment}}}
 
-\newcommand\actiondiscard[0]{\hyperlink{def-actiondiscard}{\textfunc{discard}}}
-\newcommand\discardcommentchar[0]{\hyperlink{def-discardcommentchar}{\textfunc{discard\_comment\_char}}}
-\newcommand\actiontoken[0]{\hyperlink{def-actiontoken}{\textfunc{return\_token}}}
-\newcommand\actionstartstring[0]{\hyperlink{def-actionstartstring}{\textfunc{start\_string}}}
-\newcommand\actionstartcomment[0]{\hyperlink{def-actionstartcomment}{\textfunc{start\_comment}}}
+\newcommand\actiondiscard[0]{\hyperlink{def-actiondiscard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\discardcommentchar[0]{\hyperlink{def-discardcommentchar}{\textfunc{discard\_comment\_char}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\actiontoken[0]{\hyperlink{def-actiontoken}{\textfunc{return\_token}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\actionstartstring[0]{\hyperlink{def-actionstartstring}{\textfunc{start\_string}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\actionstartcomment[0]{\hyperlink{def-actionstartcomment}{\textfunc{start\_comment}}} % NO_SPECIFICATION_REQUIRED
 
-\newcommand\stringchar[0]{\hyperlink{def-stringchar}{\textfunc{string\_char}}}
-\newcommand\stringfinish[0]{\hyperlink{def-stringfinish}{\textfunc{string\_finish}}}
-\newcommand\stringescape[0]{\hyperlink{def-stringescape}{\textfunc{string\_escape}}}
+\newcommand\stringchar[0]{\hyperlink{def-stringchar}{\textfunc{string\_char}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\stringfinish[0]{\hyperlink{def-stringfinish}{\textfunc{string\_finish}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\stringescape[0]{\hyperlink{def-stringescape}{\textfunc{string\_escape}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Tstringchar[0]{\hyperlink{def-tstringchar}{\terminal{STRING\_CHAR}}}
 \newcommand\Tstringend[0]{\hyperlink{def-tstringend}{\terminal{STRING\_END}}}
-\newcommand\scanstring[0]{\hyperlink{def-scanstring}{\textfunc{scan\_string}}}
+\newcommand\scanstring[0]{\hyperlink{def-scanstring}{\textfunc{scan\_string}}} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\astversion[1]{#1\texttt{\_ast}}
 
@@ -841,7 +841,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\torexpr[0]{\hyperlink{def-rexpr}{\textfunc{rexpr}}}
+\newcommand\torexpr[0]{\hyperlink{relation-rexpr}{\textfunc{rexpr}}} % SPECIFICATION_REQUIRED
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
@@ -858,11 +858,11 @@
 \newcommand\globalstaticenvs[0]{\hyperlink{type-globalstaticenvs}{\mathbb{GSE}}}
 \newcommand\globalstaticenvironmentterm[0]{\hyperlink{type-globalstaticenvs}{global static environment}}
 \newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\emptyset_{\mathbb{SE}}}}
-\newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}}
-\newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}}
+\newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}} % SPECIFIED
+\newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\ProsetypesatTrue[3]{#2 \typesatisfiesterm{} #3 in the static environment #1}
 \newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfyterm{} #3 in the static environment #1}
-\newcommand\typesat[0]{\hyperlink{def-typesatisfies}{\textfunc{type\_satisfies}}}
+\newcommand\typesatisfies[0]{\hyperlink{relation-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
 \newcommand\globalstoragetypes[0]{\hyperlink{def-globalstoragetypes}{\textsf{global\_storage\_types}}}
@@ -926,10 +926,10 @@
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
 
-\newcommand\graphof[1]{\hyperlink{def-graphof}{\textfunc{graph}}({#1})}
-\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\textfunc{graph}}\mapsto{#2})}
-\newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})}
-\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})}
+\newcommand\graphof[1]{\hyperlink{def-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\textfunc{graph}}\mapsto{#2})} % NO_SPECIFICATION_REQUIRED
+\newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\ContinuingConfig[0]{\hyperlink{def-continuingconfig}{\texttt{\#C}}}
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
@@ -954,31 +954,31 @@
 \newcommand\Proseevalexpr[3]{
     \hyperlink{relation-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
-\newcommand\maskmatch[0]{\hyperlink{def-maskmatch}{\textfunc{mask\_match}}}
-\newcommand\evallocaldecl[0]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}}
-\newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
-\newcommand\poplocalscope[0]{\hyperlink{def-poplocalscope}{\textfunc{pop\_local\_scope}}}
-\newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{def-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
-\newcommand\evalmultiassignment[0]{\hyperlink{relation-evalmultiassignment}{\textfunc{multi\_assign}}}
+\newcommand\maskmatch[0]{\hyperlink{relation-maskmatch}{\textfunc{mask\_match}}} % REQUIRES_SPECIFICATION
+\newcommand\evallocaldecl[0]{\hyperlink{relation-evallocaldecl}{\textfunc{eval\_local\_decl}}} % REQUIRES_SPECIFICATION
+\newcommand\ldituplefolder[0]{\hyperlink{relation-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}} % REQUIRES_SPECIFICATION
+\newcommand\poplocalscope[0]{\hyperlink{relation-poplocalscope}{\textfunc{pop\_local\_scope}}} % REQUIRES_SPECIFICATION
+\newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{relation-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
+\newcommand\evalmultiassignment[0]{\hyperlink{relation-evalmultiassignment}{\textfunc{multi\_assign}}} % SPECIFIED
 \newcommand\Prosebuildgenv[4]{\hyperlink{relation-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
 \newcommand\Proseevalspec[3]{\hyperlink{relation-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
-\newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
-\newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}}
-\newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}}
-\newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}}
-\newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
+\newcommand\lexprisvar[0]{\hyperlink{relation-lexprisvar}{\textfunc{lexpr\_is\_var}}} % REQUIRES_SPECIFICATION
+\newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}} % SPECIFICATION_DEFERRED
+\newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}} % SPECIFICATION_DEFERRED
+\newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}} % SPECIFICATION_DEFERRED
+\newcommand\findcatcher[0]{\hyperlink{relation-findcatcher}{\textfunc{find\_catcher}}} % REQUIRES_SPECIFICATION
 \newcommand\Proseevallimit[3]{\hyperlink{relation-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
 \newcommand\Proseticklooplimit[2]{\hyperlink{relation-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
 
-\newcommand\outputtoconsole[0]{\hyperlink{relation-outputtoconsole}{\textfunc{output\_to\_console}}}
-\newcommand\literaltostring[0]{\hyperlink{def-literaltostring}{\textfunc{literal\_to\_string}}}
-\newcommand\Proseoutputtoconsole[1]{\hyperlink{def-outputtoconsole}{outputs} #1 to the console, if one exists}
+\newcommand\outputtoconsole[0]{\hyperlink{relation-outputtoconsole}{\textfunc{output\_to\_console}}} % REQUIRES_SPECIFICATION
+\newcommand\literaltostring[0]{\hyperlink{relation-literaltostring}{\textfunc{literal\_to\_string}}} % REQUIRES_SPECIFICATION
+\newcommand\Proseoutputtoconsole[1]{\hyperlink{relation-outputtoconsole}{outputs} #1 to the console, if one exists}
 
 
 \newcommand\DynamicError[0]{\hyperlink{type-DynamicError}{\textsf{DynError}}}
 \newcommand\DynamicErrorConfigurationTerm[0]{\hyperlink{type-DynamicError}{dynamic error configuration}}
 
-\newcommand\bitfunc[0]{\textfunc{bit}}
+\newcommand\bitfunc[0]{\textfunc{bit}} % NO_SPECIFICATION_REQUIRED
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typing macros
@@ -993,11 +993,11 @@
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
 
-\newcommand\isbuiltinsingular[0]{\hyperlink{def-isbuiltinsingular}{\textfunc{is\_builtin\_singular}}}
-\newcommand\isnamed[0]{\hyperlink{def-isnamed}{\textfunc{is\_named}}}
-\newcommand\isanonymous[0]{\hyperlink{def-isanonymous}{\textfunc{is\_anonymous}}}
-\newcommand\issingular[0]{\hyperlink{def-issingular}{\textfunc{is\_singular}}}
-\newcommand\isstructured[0]{\hyperlink{def-isstructured}{\textfunc{is\_structured}}}
+\newcommand\isbuiltinsingular[0]{\hyperlink{relation-isbuiltinsingular}{\textfunc{is\_builtin\_singular}}}
+\newcommand\isnamed[0]{\hyperlink{relation-isnamed}{\textfunc{is\_named}}}
+\newcommand\isanonymous[0]{\hyperlink{relation-isanonymous}{\textfunc{is\_anonymous}}}
+\newcommand\issingular[0]{\hyperlink{relation-issingular}{\textfunc{is\_singular}}}
+\newcommand\isstructured[0]{\hyperlink{relation-isstructured}{\textfunc{is\_structured}}}
 
 \newcommand\isunconstrainedinteger[0]{\hyperlink{def-isunconstrainedinteger}{\textsf{is\_unconstrained\_integer}}}
 \newcommand\isparameterizedinteger[0]{\hyperlink{def-isparameterizedinteger}{\textsf{is\_parameterized\_integer}}}
@@ -1007,41 +1007,39 @@
 \newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{relation-checkconstrainedinteger}{checking} that the type #2 is a \constrainedintegerterm\ in
   the static environment #1 yields $\True$\ProseOrTypeError}
 
-\newcommand\Prosestaticeval[3]{\hyperlink{def-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
-\newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
+\newcommand\Prosestaticeval[3]{\hyperlink{relation-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
+\newcommand\staticeval[0]{\hyperlink{relation-staticeval}{\textfunc{static\_eval}}} % SPECIFICATION_REQUIRED
 
 \newcommand\Prosemakeanonymous[3]{\hyperlink{relation-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
-\newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
-\newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
-\newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
+\newcommand\checktypesat[0]{\hyperlink{relation-checktypesat}{\textfunc{checked\_typesat}}} % SPECIFICATION_REQUIRED
 \newcommand\Prosetypeclashes[0]{\hyperlink{relation-typeclashes}{type-clashes}}
 \newcommand\Prosetypeclash[0]{\hyperlink{relation-typeclashes}{type-clash}}
 \newcommand\Prosetypeclashing[0]{\hyperlink{relation-typeclashes}{type-clashing}}
-\newcommand\lca[0]{\hyperlink{def-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}}
-\newcommand\Proselca[0]{\hyperlink{def-lowestcommonancestor}{lowest common ancestor}}
-\newcommand\namedlca[0]{\hyperlink{relation-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}}
+\newcommand\lca[0]{\hyperlink{relation-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}} % SPECIFICATION_REQUIRED
+\newcommand\Proselca[0]{\hyperlink{relation-lowestcommonancestor}{lowest common ancestor}}
+\newcommand\namedlca[0]{\hyperlink{relation-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}} % SPECIFIED
 \newcommand\Supers{\textsf{Supers}}
-\newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\textfunc{bitfields\_included}}}
+\newcommand\bitfieldsincluded[0]{\hyperlink{relation-bitfieldsincluded}{\textfunc{bitfields\_included}}}
 \newcommand\Prosecheckisnotcollection[2]{\hyperlink{relation-checkisnotcollection}{determining}
   whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
-\newcommand\widthplus[0]{\hyperlink{def-widthplus}{\textfunc{width\_plus}}}
-\newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}}
-\newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
+\newcommand\widthplus[0]{\hyperlink{relation-widthplus}{\textfunc{width\_plus}}} % SPECIFICATION_REQUIRED
+\newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}} % SPECIFICATION_DEFERRED
+\newcommand\annotatefieldinit[0]{\hyperlink{relation-annotatefieldinit}{\textfunc{annotate\_field\_init}}} % SPECIFICATION_REQUIRED
 \newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{relation-annotatesymbolicallyevaluableexpr}{annotating} the
     \symbolicallyevaluableterm\ expression #2 in the static environment #1 yields #3}
-\newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
-\newcommand\checkunderlyinginteger[0]{\hyperlink{def-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}}
-\newcommand\checksymbolicallyevaluable[0]{\hyperlink{def-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}}
-\newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluableterm\ yields $\True$\ProseOrTypeError}
-\newcommand\getforconstraints[0]{\hyperlink{relation-getforconstraints}{\textfunc{for\_constraints}}}
-\newcommand\findbitfieldsslices[0]{\hyperlink{def-findbitfieldsslices}{\textfunc{find\_bitfields\_slices}}}
+\newcommand\checkstructurelabel[0]{\hyperlink{relation-checkstructurelabel}{\textfunc{check\_structure}}} % SPECIFICATION_REQUIRED
+\newcommand\checkunderlyinginteger[0]{\hyperlink{relation-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}} % SPECIFICATION_REQUIRED
+\newcommand\checksymbolicallyevaluable[0]{\hyperlink{relation-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}} % SPECIFICATION_REQUIRED
+\newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{relation-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluableterm\ yields $\True$\ProseOrTypeError}
+\newcommand\getforconstraints[0]{\hyperlink{relation-getforconstraints}{\textfunc{for\_constraints}}} % SPECIFIED
+\newcommand\findbitfieldsslices[0]{\hyperlink{relation-findbitfieldsslices}{\textfunc{find\_bitfields\_slices}}} % SPECIFICATION_REQUIRED
 \newcommand\Prosetypeof[3]{\hyperlink{relation-typeof}{obtaining} the type of #2 in the static environment #1 yields #3}
 \newcommand\Prosecheckglobalpragma[2]{\hyperlink{relation-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
-\newcommand\paramsofty[0]{\hyperlink{relation-paramsofty}{\textfunc{parameters\_of\_ty}}}
-\newcommand\paramsofexpr[0]{\hyperlink{relation-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
-\newcommand\paramsofconstraint[0]{\hyperlink{relation-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
-\newcommand\addimmutableexpression[0]{\hyperlink{relation-addimmutableexpression}{\textfunc{add\_immutable\_expr}}}
-\newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}}
+\newcommand\paramsofty[0]{\hyperlink{relation-paramsofty}{\textfunc{parameters\_of\_ty}}} % SPECIFIED
+\newcommand\paramsofexpr[0]{\hyperlink{relation-paramsofexpr}{\textfunc{parameters\_of\_expr}}} % SPECIFIED
+\newcommand\paramsofconstraint[0]{\hyperlink{relation-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}} % SPECIFIED
+\newcommand\addimmutableexpression[0]{\hyperlink{relation-addimmutableexpression}{\textfunc{add\_immutable\_expr}}} % SPECIFIED
+\newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}} % SPECIFICATION_DEFERRED
 \newcommand\useexpr[0]{\hyperlink{relation-useexpr}{\textfunc{use\_e}}} % SPECIFICATION_DEFERRED
 \newcommand\uselexpr[0]{\hyperlink{relation-uselexpr}{\textfunc{use\_le}}} % SPECIFICATION_DEFERRED
 \newcommand\usestmt[0]{\hyperlink{relation-usestmt}{\textfunc{use\_s}}} % SPECIFICATION_DEFERRED
@@ -1057,24 +1055,24 @@
 \newcommand\TSideEffectSet[0]{\pow{\TSideEffect}}
 
 % sets of side effect descriptors
-\newcommand\sideeffectispure[0]{\hyperlink{def-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}}
-\newcommand\sideeffectisreadonly[0]{\hyperlink{def-sideeffectisreadonly}{\textfunc{side\_effect\_is\_readonly}}}
-\newcommand\sideeffectissymbolicallyevaluable[0]{\hyperlink{def-sideeffectissymbolicallyevaluable}{\textfunc{side\_effect\_symbolically\_evaluable}}}
+\newcommand\sideeffectispure[0]{\hyperlink{relation-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}} % SPECIFICATION_REQUIRED
+\newcommand\sideeffectisreadonly[0]{\hyperlink{relation-sideeffectisreadonly}{\textfunc{side\_effect\_is\_readonly}}} % SPECIFICATION_REQUIRED
+\newcommand\sideeffectissymbolicallyevaluable[0]{\hyperlink{relation-sideeffectissymbolicallyevaluable}{\textfunc{side\_effect\_symbolically\_evaluable}}} % SPECIFICATION_REQUIRED
 
 % Symbolic equivalence testing macros
 \newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
 \newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
 
-\newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}}
+\newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\Qnonzero[0]{\hyperlink{type-Qnonzero}{\Q{} \setminus \{0\}}}
-\newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\textfunc{mul\_polynomials}}}
-\newcommand\polynomialdividebyterm[0]{\hyperlink{def-polynomialdividebyterm}{polynomial\_divide\_by\_term}}
+\newcommand\mulpolynomials[0]{\hyperlink{relation-mulpolynomials}{\textfunc{mul\_polynomials}}} % REQUIRES_SPECIFICATION
+\newcommand\polynomialdividebyterm[0]{\hyperlink{relation-polynomialdividebyterm}{polynomial\_divide\_by\_term}} % REQUIRES_SPECIFICATION
 
 
-\newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\textfunc{field\_names}}}
-\newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\textfunc{field\_type}}}
+\newcommand\fieldnames[0]{\hyperlink{relation-fieldnames}{\textfunc{field\_names}}} % REQUIRES_SPECIFICATION
+\newcommand\fieldtype[0]{\hyperlink{relation-fieldtype}{\textfunc{field\_type}}} % REQUIRES_SPECIFICATION
 
 \newcommand\eliteral[1]{\ELiteral(#1)}
 
@@ -1083,8 +1081,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Primitive Operations macros
-\newcommand\unopsignatures[0]{\hyperlink{def-unopsignatures}{\textfunc{unop\_signatures}}}
-\newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textfunc{binop\_signatures}}}
+\newcommand\unopsignatures[0]{\hyperlink{def-unopsignatures}{\textsf{unop\_signatures}}}
+\newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textsf{binop\_signatures}}}
 
 \newcommand\aslnotbool[0]{\hyperlink{def-notbool}{\text{not\_bool}}}
 \newcommand\andbool[0]{\hyperlink{def-andbool}{\text{and\_bool}}}
@@ -1160,49 +1158,49 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand\checkandinterpret[0]{\hyperlink{def-checkandinterpret}{\textfunc{check\_and\_interpret}}}
-\newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}}
+\newcommand\checkandinterpret[0]{\hyperlink{def-checkandinterpret}{\textfunc{check\_and\_interpret}}} % SPECIFICATION_DEFERRED
+\newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}} % SPECIFICATION_DEFERRED
 
-\newcommand\renamelocals[0]{\hyperlink{def-renamelocals}{\textfunc{rename\_locals}}}
+\newcommand\renamelocals[0]{\hyperlink{def-renamelocals}{\textfunc{rename\_locals}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocals[2]{\hyperlink{def-renamelocals}{renaming}
   the local storage elements in the list of global declarations #1 yields the list of global declarations #2}
-\newcommand\renamelocalsname[0]{\hyperlink{def-renamelocalsname}{\textfunc{rename\_locals\_name}}}
+\newcommand\renamelocalsname[0]{\hyperlink{def-renamelocalsname}{\textfunc{rename\_locals\_name}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsname[2]{\hyperlink{def-renamelocalsname}{renames}
   the identifier #1, yielding the identifier #2}
-\newcommand\renamelocalsdecl[0]{\hyperlink{def-renamelocalsdecl}{\textfunc{rename\_locals\_decl}}}
+\newcommand\renamelocalsdecl[0]{\hyperlink{def-renamelocalsdecl}{\textfunc{rename\_locals\_decl}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsdecl[2]{\hyperlink{def-renamelocalsdecl}{renaming}
   the local storage elements in declaration #1 yields the declaration #2}
-\newcommand\renamelocalsfunc[0]{\hyperlink{def-renamelocalsfunc}{\textfunc{rename\_locals\_func}}}
+\newcommand\renamelocalsfunc[0]{\hyperlink{def-renamelocalsfunc}{\textfunc{rename\_locals\_func}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsfunc[2]{\hyperlink{def-renamelocalsfunc}{renaming}
   the local storage elements in subprogram description #1 yields the function description #2}
-\newcommand\renamelocalsargs[0]{\hyperlink{def-renamelocalsargs}{\textfunc{rename\_locals\_args}}}
+\newcommand\renamelocalsargs[0]{\hyperlink{def-renamelocalsargs}{\textfunc{rename\_locals\_args}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsargs[2]{\hyperlink{def-renamelocalsargs}{renaming}
   the list local arguments #1 yields the list of arguments #2}
-\newcommand\renamelocalsnamedargs[0]{\hyperlink{def-renamelocalsnamedargs}{\textfunc{rename\_locals\_named\_args}}}
+\newcommand\renamelocalsnamedargs[0]{\hyperlink{def-renamelocalsnamedargs}{\textfunc{rename\_locals\_named\_args}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsnamedargs[2]{\hyperlink{def-renamelocalsnamedargs}{renaming}
   the local storage elements in the list of parameters #1 yields the list of parameters #2}
-\newcommand\renamelocalsstmt[0]{\hyperlink{def-renamelocalsstmt}{\textfunc{rename\_locals\_stmt}}}
+\newcommand\renamelocalsstmt[0]{\hyperlink{def-renamelocalsstmt}{\textfunc{rename\_locals\_stmt}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsstmt[2]{\hyperlink{def-renamelocalsstmt}{renaming}
   the local storage elements in the statement #1 yields the statement #2}
-\newcommand\renamelocalsexpr[0]{\hyperlink{def-renamelocalsexpr}{\textfunc{rename\_locals\_expr}}}
+\newcommand\renamelocalsexpr[0]{\hyperlink{def-renamelocalsexpr}{\textfunc{rename\_locals\_expr}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsexpr[2]{\hyperlink{def-renamelocalsexpr}{renaming}
   the local storage elements in the expression #1 yields the expression #2}
-\newcommand\renamelocalslexpr[0]{\hyperlink{def-renamelocalslexpr}{\textfunc{rename\_locals\_lexpr}}}
+\newcommand\renamelocalslexpr[0]{\hyperlink{def-renamelocalslexpr}{\textfunc{rename\_locals\_lexpr}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalslexpr[2]{\hyperlink{def-renamelocalslexpr}{renaming}
   the local storage elements in the assignable expression #1 yields the
   assignable expression #2}
-\newcommand\renamelocalsldi[0]{\hyperlink{def-renamelocalsldi}{\textfunc{rename\_locals\_ldi}}}
+\newcommand\renamelocalsldi[0]{\hyperlink{def-renamelocalsldi}{\textfunc{rename\_locals\_ldi}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsldi[2]{\hyperlink{def-renamelocalsldi}{renaming}
   the local storage elements in the local declaration item #1 yields
   the local declaration item #2}
-\newcommand\renamelocalsty[0]{\hyperlink{def-renamelocalsty}{\textfunc{rename\_locals\_ty}}}
+\newcommand\renamelocalsty[0]{\hyperlink{def-renamelocalsty}{\textfunc{rename\_locals\_ty}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsty[2]{\hyperlink{def-renamelocalsty}{renaming}
   the local storage elements in the type #1 yields the type #2}
-\newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}}
-\newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}}
-\newcommand\renamelocalsarrayindex[0]{\hyperlink{def-renamelocalsarrayindex}{\textfunc{rename\_locals\_array\_index}}}
-\newcommand\renamelocalspattern[0]{\hyperlink{def-renamelocalspattern}{\textfunc{rename\_locals\_pattern}}}
-\newcommand\renamelocalscatcher[0]{\hyperlink{def-renamelocalscatcher}{\textfunc{rename\_locals\_catcher}}}
+\newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}} % SPECIFICATION_DEFERRED
+\newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}} % SPECIFICATION_DEFERRED
+\newcommand\renamelocalsarrayindex[0]{\hyperlink{def-renamelocalsarrayindex}{\textfunc{rename\_locals\_array\_index}}} % SPECIFICATION_DEFERRED
+\newcommand\renamelocalspattern[0]{\hyperlink{def-renamelocalspattern}{\textfunc{rename\_locals\_pattern}}} % SPECIFICATION_DEFERRED
+\newcommand\renamelocalscatcher[0]{\hyperlink{def-renamelocalscatcher}{\textfunc{rename\_locals\_catcher}}} % SPECIFICATION_DEFERRED
 
 \newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 
@@ -1246,10 +1244,10 @@
 \newcommand\desugared[0]{\hyperlink{def-syntacticsugar}{desugared}}
 \newcommand\desugaring[0]{\hyperlink{def-syntacticsugar}{desugaring}}
 
-\newcommand\anonymoustype[0]{\hyperlink{def-isanonymous}{anonymous type}}
-\newcommand\Anonymoustypes[0]{\hyperlink{def-isanonymous}{Anonymous types}}
-\newcommand\namedtype[0]{\hyperlink{def-isnamed}{named type}}
-\newcommand\namedtypes[0]{\hyperlink{def-isnamed}{named types}}
+\newcommand\anonymoustype[0]{\hyperlink{relation-isanonymous}{anonymous type}}
+\newcommand\Anonymoustypes[0]{\hyperlink{relation-isanonymous}{Anonymous types}}
+\newcommand\namedtype[0]{\hyperlink{relation-isnamed}{named type}}
+\newcommand\namedtypes[0]{\hyperlink{relation-isnamed}{named types}}
 \newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
 \newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
 \newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
@@ -1306,22 +1304,22 @@
 \newcommand\underlyingtypeterm[0]{\hyperlink{relation-makeanonymous}{underlying type}}
 \newcommand\underlyingtypesterm[0]{\hyperlink{relation-makeanonymous}{underlying types}}
 \newcommand\symbolicdomainterm[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
-\newcommand\typesatisfiesterm[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
-\newcommand\typesatisfyterm[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
-\newcommand\subtypesatisfiesterm[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
-\newcommand\subtypesatisfyterm[0]{\hyperlink{def-subtypesat}{subtype-satisfy}}
+\newcommand\typesatisfiesterm[0]{\hyperlink{relation-typesatisfies}{type-satisfies}}
+\newcommand\typesatisfyterm[0]{\hyperlink{relation-typesatisfies}{type-satisfy}}
+\newcommand\subtypesatisfiesterm[0]{\hyperlink{relation-subtypesatisfies}{subtype-satisfies}}
+\newcommand\subtypesatisfyterm[0]{\hyperlink{relation-subtypesatisfies}{subtype-satisfy}}
 \newcommand\typeequivalentterm[0]{\hyperlink{relation-typeequal}{type-equivalent}}
 \newcommand\bitwidthequivalentterm[0]{\hyperlink{relation-bitwidthequal}{bitwidth-equivalent}}
 \newcommand\constrainedintegerterm[0]{\hyperlink{relation-checkconstrainedinteger}{constrained integer}}
 \newcommand\constrainedintegersterm[0]{\hyperlink{relation-checkconstrainedinteger}{constrained integers}}
-\newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
+\newcommand\structureofinteger[0]{\hyperlink{relation-checkunderlyinginteger}{structure of an integer}}
 \newcommand\wellconstrainedstructureterm[0]{\hyperlink{relation-getwellconstrainedstructure}{well-constrained structure}}
 \newcommand\wellconstrainedversionterm[0]{\hyperlink{relation-towellconstrained}{well-constrained version}}
 \newcommand\namedlowestcommonancestorterm[0]{\hyperlink{relation-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccessterm[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifiesterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
-\newcommand\singulartypeterm[0]{\hyperlink{def-issingular}{singular type}}
-\newcommand\singulartypesterm[0]{\hyperlink{def-issingular}{singular types}}
+\newcommand\singulartypeterm[0]{\hyperlink{relation-issingular}{singular type}}
+\newcommand\singulartypesterm[0]{\hyperlink{relation-issingular}{singular types}}
 
 \newcommand\nativevalueterm[0]{\hyperlink{def-nativevalue}{native value}}
 \newcommand\executiongraphterm[0]{\hyperlink{def-executiongraph}{execution graph}}
@@ -1482,15 +1480,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
 \newcommand\Proseapplybinoptypes[5]{\hyperlink{relation-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
-\newcommand\explodeconstraint[0]{\hyperlink{def-explodeconstraint}{\textfunc{explode\_constraint}}}
+\newcommand\explodeconstraint[0]{\hyperlink{relation-explodeconstraint}{\textfunc{explode\_constraint}}} % REQUIRES_SPECIFICATION
 \newcommand\maxconstraintsize[0]{2^{17}}
 \newcommand\maxexplodedintervalsize[0]{2^{14}}
 \newcommand\Proseannotateexpr[3]{\hyperlink{relation-annotateexpr}{annotating} the expression #2 in the static environment #1 yields #3}
 \newcommand\Proseannotatelexpr[4]{\hyperlink{relation-annotatelexpr}{annotating}
     the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
-\newcommand\annotateexprlist[0]{\hyperlink{relation-annotateexprs}{\textfunc{annotate\_exprs}}}
-\newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
-\newcommand\annotatelocaldeclitem[0]{\hyperlink{def-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}}
+\newcommand\annotateexprlist[0]{\hyperlink{relation-annotateexprs}{\textfunc{annotate\_exprs}}} % SPECIFIED
+\newcommand\annotateslice[0]{\hyperlink{relation-annotateslice}{\textfunc{annotate\_slice}}} % REQUIRES_SPECIFICATION
+\newcommand\annotatelocaldeclitem[0]{\hyperlink{relation-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}} % REQUIRES_SPECIFICATION
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
     $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\Proseannotatesubprogram[5]{\hyperlink{relation-annotatesubprogram}{annotating} the subprogram definition #2
@@ -1508,8 +1506,8 @@
 \newcommand\Prosesignaturesmatch[2]{\hyperlink{relation-signaturesmatch}{checking} that the signatures of #1 and #2 match}
 \newcommand\Proserenamesubprograms[2]{\hyperlink{relation-renamesubprograms}{renaming} subprograms in #1 yields #2}
 \newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
-\newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
-\newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}}
+\newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Prosetopologicalorderingcomps[3]{\hyperlink{def-topologicalorderingcomps}{ordering} the set of strongly-connected components #1, with respect to #2, yields the list of strongly-connected components #3}
 \newcommand\Proseannotatedeclcomps[4]{\hyperlink{relation-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
 \newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{relation-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
@@ -1521,14 +1519,14 @@
 \newcommand\Proseselectindicesbyslices[3]{\hyperlink{relation-selectindicesbyslices}{selecting}
   the integers from the list #1 specified by the list of indices #2 yields the list #3}
 
-\newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}}
-\newcommand\bintounsigned[0]{\hyperlink{def-bintounsigned}{\textsf{binary\_to\_unsigned}}}
-\newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
+\newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}} % SPECIFICATION_DEFERRED
+\newcommand\bintounsigned[0]{\hyperlink{relation-bintounsigned}{\textsf{binary\_to\_unsigned}}} % REQUIRES_SPECIFICATION
+\newcommand\inttobits[0]{\hyperlink{relation-inttobits}{\textfunc{int\_to\_bits}}} % REQUIRES_SPECIFICATION
 
 % Symbolic domain subsumption
 \newcommand\CannotOverapproximate[0]{\hyperlink{constant-CannotOverapproximate}{\overline{\textsf{Approx}}}}
 \newcommand\CannotUnderapproximate[0]{\hyperlink{constant-CannotUnderapproximate}{\underline{\textsf{Approx}}}}
-\newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}}
+\newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Proseapproxconstraints[4]{\hyperlink{relation-approxconstraints}
   {Overapproximating} the list of constraints #3 in the static environment #1 with the \approximationdirectionterm\ #2
   yields the set of integers #3}

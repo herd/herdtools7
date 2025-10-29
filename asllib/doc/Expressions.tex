@@ -2117,7 +2117,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
 \TypingRuleDef{FindBitFieldsSlices}
-\hypertarget{def-findbitfieldsslices}{}
+\hypertarget{relation-findbitfieldsslices}{}
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
 The function
 \[
@@ -2244,7 +2244,7 @@ yields the literal expression for \verb|2|.
 \end{mathpar}
 
 \TypingRuleDef{WidthPlus}
-\hypertarget{def-widthplus}{}
+\hypertarget{relation-widthplus}{}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
 The function
 \[
@@ -2487,7 +2487,7 @@ as it is applied to unrelated kinds of types.
   \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
   \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
   \vsesp \eqdef \vsesty \cup \vsese \\
-  \subtypesat(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
+  \subtypesatisfies(\tenv, \vtstruct, \vtystruct) \typearrow \vallwayssucceeds \OrTypeError\\\\
   (\newe, \vses) \eqdef \choice{\vallwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
   \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
@@ -3265,7 +3265,7 @@ and an example (in comment) where the same field is initialized twice, which is 
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 \identr{WBCQ}
 
-\hypertarget{def-annotatefieldinit}{}
+\hypertarget{relation-annotatefieldinit}{}
 \TypingRuleDef{AnnotateFieldInit}
 The function
 \[

@@ -34,10 +34,10 @@ declared in \listingref{subtype}:\\
 
 \ASLListing{Subtypes and Supertypes}{subtype}{\typingtests/TypingRule.Subtype.asl}
 
-\hypertarget{def-subtypesrel}{}
+\hypertarget{relation-issubtype}{}
 The predicate
 \[
-  \subtypesrel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
+  \issubtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
   \aslto \overname{\Bool}{\vb}
 \]
 defines whether the type $\vtone$ subtypes the type $\vttwo$ in the \staticenvironmentterm{} $\tenv$,
@@ -79,28 +79,28 @@ yielding the result in $\vb$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[reflexive]{}{
-  \subtypesrel(\tenv, \overname{\TNamed(\id)}{\vtone}, \overname{\TNamed(\id)}{\vttwo}) \typearrow \True
+  \issubtype(\tenv, \overname{\TNamed(\id)}{\vtone}, \overname{\TNamed(\id)}{\vttwo}) \typearrow \True
 }
 \and
 \inferrule[transitive]{
   \idone \neq \idtwo\\
   G^\tenv.\subtypes(\idone) = \idthree\\
-  \subtypesrel(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
+  \issubtype(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
 }{
-  \subtypesrel(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \vb
+  \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \vb
 }
 \and
 \inferrule[no\_supertype]{
   \idone \neq \idtwo\\
   G^\tenv.\subtypes(\idone) = \bot
 }{
-  \subtypesrel(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \False
+  \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \False
 }
 \and
 \inferrule[not\_named]{
   (\astlabel(\vtone) \neq \TNamed \lor \astlabel(\vttwo) \neq \TNamed)
 }{
-  \subtypesrel(\tenv, \vtone, \vttwo) \typearrow \False
+  \issubtype(\tenv, \vtone, \vttwo) \typearrow \False
 }
 \end{mathpar}
 \CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
@@ -108,17 +108,17 @@ yielding the result in $\vb$.
 \identr{NXRX} \identi{KGKS} \identi{MTML} \identi{JVRM} \identi{CHMP}
 
 \TypingRuleDef{SubtypeSatisfaction}
-\hypertarget{def-subtypesat}{}
+\hypertarget{relation-subtypesatisfies}{}
 The predicate
 \[
-  \subtypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \subtypesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result in $\vb$.
 \ProseOtherwiseTypeError
 
-The function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
+This function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
 
 \ExampleDef{Subtype Satisfaction}
 \listingref{subtypesat1} shows examples
@@ -247,7 +247,7 @@ subtyping.
 \inferrule[error1]{
   \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
 }
 \end{mathpar}
 
@@ -256,7 +256,7 @@ subtyping.
   \makeanonymous(\tenv, \vt) \typearrow \vttwo\\
   \makeanonymous(\tenv, \vs) \typearrow \TypeErrorConfig
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \TypeErrorConfig
 }
 \end{mathpar}
 
@@ -266,7 +266,7 @@ subtyping.
   \makeanonymous(\tenv, \vs) \typearrow \vstwo\\
   \astlabel(\vttwo) \neq \astlabel(\vstwo)
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \False
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \False
 }
 \end{mathpar}
 
@@ -277,7 +277,7 @@ subtyping.
     \astlabel(\vttwo) \in \{\TReal, \TString, \TBool\}\\
     \vb \eqdef \astlabel(\vstwo) = \astlabel(\vttwo)
   }{
-    \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+    \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
   }
 \end{mathpar}
 
@@ -290,7 +290,7 @@ subtyping.
   \symdomoftype(\tenv, \vt) \typearrow \dt \\
   \symdomsubsetunions(\tenv, \ds, \dt) \typearrow \vb
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -300,7 +300,7 @@ subtyping.
   \makeanonymous(\tenv, \vs) \typearrow \TEnum(\vlis)\\
   \vb \eqdef \vlit = \vlis
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -313,7 +313,7 @@ subtyping.
   \symdomofwidthexpr(\tenv, \wt) \typearrow \dt \\
   \symdomsubsetunions(\tenv, \ds, \dt) \typearrow \vb
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -327,7 +327,7 @@ subtyping.
   \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
   \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -341,7 +341,7 @@ subtyping.
   \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
@@ -350,19 +350,19 @@ subtyping.
 { \makeanonymous(\tenv, \vs) \typearrow\TTuple(\vlis)\\
   \makeanonymous(\tenv, \vt) \typearrow\TTuple(\vlit)\\
   \equallength(\vlis, \vlit) \typearrow\True \terminateas \False\\
-  \vi\in\listrange(\vlis): \typesat(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \typeerror\\
+  \vi\in\listrange(\vlis): \typesatisfies(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \vb_i \terminateas \typeerror\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_\vi
 }{
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vb
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
-\hypertarget{def-fieldnames}{}
+\hypertarget{relation-fieldnames}{}
 For a list of typed fields $\fields$, we define the set of its field identifiers as:
 \[
   \fieldnames(\fields) \triangleq \{ \id \;|\; (\id, \vt) \in \fields\}
 \]
-\hypertarget{def-fieldtype}{}
+\hypertarget{relation-fieldtype}{}
 We define the type associated with the field name $\id$ in a list of typed fields $\fields$,
 if there is a unique one, as follows:
 \[
@@ -384,7 +384,7 @@ if there is a unique one, as follows:
   (\id,\vtys)\in\vfieldss: \typeequal(\tenv, \vtys, \fieldtype(\vfieldst, \id)) \typearrow \vb_\id\\
   \vb \eqdef \bigwedge_{\id \in \vnamess} \vb_\id
 }{
-  \subtypesat(\tenv, \vs, \vt) \typearrow \vb
+  \subtypesatisfies(\tenv, \vs, \vt) \typearrow \vb
 }
 \end{mathpar}
 \identd{TRVR} \identi{SJDC} \identi{MHYB} \identi{TWTZ} \identi{GYSK} \identi{KXSD} \identi{KNXJ}
@@ -392,10 +392,10 @@ if there is a unique one, as follows:
 
 \TypingRuleDef{TypeSatisfaction}
 \identr{FMXK}
-\hypertarget{def-typesatisfies}{}
+\hypertarget{relation-typesatisfies}{}
 The predicate
 \[
-  \typesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
+  \typesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 determines whether a type $\vt$ \emph{\typesatisfiesterm} a type $\vs$ in environment $\tenv$,
@@ -485,78 +485,78 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[subtypes]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \True
+  \issubtype(\tenv, \vt, \vs) \typearrow \True
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[anonymous]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \vbone\\
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
   \vbone \lor \vbtwo\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \True
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \True
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_bits]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \vbone\\
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \vt = \TBits(\widtht, \emptylist)\\
   \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \vb
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \vb
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[otherwise1]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \vbone\\
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \tstruct(\tenv, \vs) \typearrow \vsstruct\\
   \astlabel(\vt) \neq \TBits \lor \astlabel(\vsstruct) \neq \TBits
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[otherwise2]{
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\
   \isanonymous(\tenv, \vt) \typearrow \vbone\\
   \isanonymous(\tenv, \vs) \typearrow \vbtwo\\
-  \subtypesat(\tenv, \vt, \vs) \typearrow \vbthree\\
+  \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \tstruct(\tenv, \vs) \typearrow \vsstruct\\
   \astlabel(\vt) = \TBits \land \astlabel(\vsstruct) = \TBits\\
   \vt = \TBits(\widtht, \bitfields)\\
   \bitfields \neq \emptylist
 }{
-  \typesat(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{CheckTypeSatisfaction}
-\hypertarget{def-checktypesat}{}
+\hypertarget{relation-checktypesat}{}
 We also define
 \[
   \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
-which is the same as $\typesat$, but yields a \typingerrorterm{} when \\ $\typesat(\tenv, \vt, \vs)$ is $\False$.
+which is the same as $\typesatisfies$, but yields a \typingerrorterm{} when \\ $\typesatisfies(\tenv, \vt, \vs)$ is $\False$.
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
@@ -588,7 +588,7 @@ yields a \typingerrorterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
 }{
   \checktypesat(\tenv, \vt, \vs) \typearrow \True
 }
@@ -596,14 +596,14 @@ yields a \typingerrorterm.
 
 \begin{mathpar}
 \inferrule[error]{
-  \typesat(\tenv, \vt, \vs) \typearrow \False
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
 }{
   \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
 
 \TypingRuleDef{LowestCommonAncestor}
-\hypertarget{def-lowestcommonancestor}{}
+\hypertarget{relation-lowestcommonancestor}{}
 Annotating a conditional expression (see \TypingRuleRef{ECond}),
 requires finding a single type that can be used to annotate the results of both subexpressions.
 We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it next.
@@ -977,8 +977,8 @@ Similarly, we determine the negation of integer constraints.
 
 \begin{mathpar}
 \inferrule[neg\_error]{
-  \typesat(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
-  \typesat(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
+  \typesatisfies(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
+  \typesatisfies(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
 }{
   \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{\BadOperands}
 }
@@ -986,7 +986,7 @@ Similarly, we determine the negation of integer constraints.
 
 \begin{mathpar}
 \inferrule[neg\_t\_real]{
-  \typesat(\tenv, \vt, \TReal) \typearrow \True
+  \typesatisfies(\tenv, \vt, \TReal) \typearrow \True
 }{
   \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \overname{\TReal}{\vs}
 }
@@ -2550,7 +2550,7 @@ and so overall the result is that there is precision loss.
 \end{mathpar}
 
 \TypingRuleDef{ExplodeConstraint}
-\hypertarget{def-explodeconstraint}{}
+\hypertarget{relation-explodeconstraint}{}
 % Transliteration note: the implementation uses folding where explode_constraint
 % is a folder. To simplify this function, we remove the input precision lost flag
 % and join all precision loss flags in explode_intervals.
@@ -2707,7 +2707,7 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 \end{mathpar}
 
 \TypingRuleDef{BitFieldsIncluded}
-\hypertarget{def-bitfieldsincluded}{}
+\hypertarget{relation-bitfieldsincluded}{}
 The predicate
 \[
   \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\bitfield}}{\bfsone} \aslsep \overname{\KleeneStar{\bitfield}}{\bfstwo})
@@ -2926,14 +2926,14 @@ is ill-typed.
   \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
   \vbone \eqdef \nameone = \nametwo\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
-  \subtypesat(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
+  \subtypesatisfies(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo \land \vbthree
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
 }
 \end{mathpar}
 
-\hypertarget{def-checkstructurelabel}{}
+\hypertarget{relation-checkstructurelabel}{}
 \TypingRuleDef{CheckStructure}
 The function
 \[

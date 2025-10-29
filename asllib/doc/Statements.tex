@@ -253,7 +253,7 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \end{itemize}
 
 \FormallyParagraph
-\hypertarget{def-lexprisvar}{}
+\hypertarget{relation-lexprisvar}{}
 The rule uses the syntactic predicate defined as follows:
 \[
   \lexprisvar(\lexpr) \aslto \True
@@ -929,7 +929,7 @@ See \ExampleRef{Type-satisfaction Examples}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \typesat(\tenv, \vt, \vs) \typearrow \True
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
 }{
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \True
 }
@@ -937,7 +937,7 @@ See \ExampleRef{Type-satisfaction Examples}.
 
 \begin{mathpar}
 \inferrule[error]{
-  \typesat(\tenv, \vt, \vs) \typearrow \False
+  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
 }{
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
@@ -3949,7 +3949,7 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
 Therefore, the semantics is parameterized by the function
-\hypertarget{def-outputtoconsole}{}
+\hypertarget{relation-outputtoconsole}{}
 \[
 \outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv}) \aslto
   \overname{\envs}{\newenv}
@@ -3972,7 +3972,7 @@ only here to explain the modeling of a console.
 
 \ExampleRef{Printing Literals} shows the output to the console in a case it is supported.
 
-\hypertarget{def-literaltostring}{}
+\hypertarget{relation-literaltostring}{}
 The function $\literaltostring : \literal \aslto \Strings$,
 which defines how a literal is represented by a string,
 is defined by \taref{literaltostringtable}.
