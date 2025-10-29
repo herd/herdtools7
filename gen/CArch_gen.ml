@@ -244,7 +244,7 @@ let pp_rmw compat = function
 
 let is_one_instruction _ = true
 
-let fold_rmw f r = let r = f Add r in  f Exch r
+let fold_rmw _b f r = let r = f Add r in  f Exch r
 
 let fold_rmw_compat f r = f Exch r
 

@@ -159,6 +159,7 @@ let () =
       let scope = !Config.scope
       let info = !Config.info
       let variant = !Config.variant
+      let wildcard = true
     end in
     let module T = Top_gen.Make(C) in
     begin match !Config.arch with

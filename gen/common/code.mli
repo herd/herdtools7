@@ -59,10 +59,11 @@ val seq_sd : sd -> sd -> sd
 val is_same_loc : sd -> bool
 val is_both_loc : sd -> bool
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
-val fold_extr : (extr -> 'a -> 'a) -> 'a -> 'a
-val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr : (sd -> extr -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr_extr : (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
+(* The first boolean indicates whether wildcard syntax is included in the fold *)
+val fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
+val fold_sd : bool -> (sd -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr : bool -> (sd -> extr -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_extr : bool -> (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
 
 type check =
   | Default | Sc | Uni | Thin | Critical | Free

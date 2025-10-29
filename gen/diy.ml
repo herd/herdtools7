@@ -70,6 +70,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
       | All -> All
       | Set ps -> Set (parse_fences ps)
 
+    let wildcard = true
   end
 
 
@@ -287,6 +288,7 @@ let () =
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
     let variant = !Config.variant
+    let wildcard = true
   end in
   let module T = Top_gen.Make(Co) in
   let go = match !Config.arch with
