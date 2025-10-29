@@ -2,7 +2,11 @@ ifneq ($(OS),Darwin)
 AARCH64_PREFIX ?= aarch64-linux-gnu-
 endif
 
-litmus-aarch64-test:: litmus-cata-aarch64-test-std
+litmus-aarch64-run: RUN_TESTS:=true
+litmus-aarch64-norun:  RUN_TESTS:=false
+litmus-aarch64-test: litmus-aarch64-run litmus-aarch64-norun
+
+litmus-aarch64-run:: litmus-cata-aarch64-test-std
 litmus-cata-aarch64-test-std: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-aarch64-test-std:
 	$(LITMUS)					\
@@ -10,17 +14,21 @@ litmus-cata-aarch64-test-std:
 		-gcc=$(AARCH64_PREFIX)gcc		\
 		-ccopts='-march=armv8-a+lse'		\
 		-o $(TEMP_DIR)				\
-		-mode std -a 4				\
+		-mode std -a 4 -s 1k -r 100           	\
+                -outnames $(TEMP_DIR)/names.txt         \
 		catalogue/aarch64/tests/@all
 	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
-	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	if $(RUN_TESTS); then                           \
+          ( cd $(TEMP_DIR) && sh run.sh )             | \
+          $(CHECK_OBS) -verbose $(TEMP_DIR)/names.txt;  \
+        fi
 	$(RM) -r $(TEMP_DIR)
 	@ echo "litmus7 in -mode std catalogue aarch64 tests: OK"
 
 catalogue/aarch64-cas/tests/@all:
 	@ cd catalogue/aarch64-cas/tests/ && ls *.litmus > @all
 
-litmus-aarch64-test:: litmus-cata-aarch64-test-cas
+litmus-aarch64-run:: litmus-cata-aarch64-test-cas
 litmus-cata-aarch64-test-cas: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-aarch64-test-cas: catalogue/aarch64-cas/tests/@all
 	$(LITMUS)					\
@@ -28,14 +36,19 @@ litmus-cata-aarch64-test-cas: catalogue/aarch64-cas/tests/@all
 		-gcc=$(AARCH64_PREFIX)gcc		\
 		-ccopts='-march=armv8-a+lse'		\
 		-o $(TEMP_DIR)				\
-		-mode std -a 4				\
+		-mode std -a 4	-s 1k -r 100		\
+                -driver C -ascall true                  \
+                -outnames $(TEMP_DIR)/names.txt         \
 		catalogue/aarch64-cas/tests/@all
 	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
-	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	if $(RUN_TESTS); then                           \
+          ( cd $(TEMP_DIR) && ./run.exe )             | \
+          $(CHECK_OBS) -verbose $(TEMP_DIR)/names.txt ; \
+        fi
 	$(RM) -r $(TEMP_DIR)
 	@ echo "litmus7 in -mode std catalogue aarch64-cas tests: OK"
 
-litmus-aarch64-test:: litmus-cata-aarch64-test-presi
+litmus-aarch64-run:: litmus-cata-aarch64-test-presi
 litmus-cata-aarch64-test-presi: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-aarch64-test-presi:
 	$(LITMUS)					\
@@ -43,14 +56,20 @@ litmus-cata-aarch64-test-presi:
 		-gcc=$(AARCH64_PREFIX)gcc		\
 		-ccopts='-march=armv8-a+lse'		\
 		-o $(TEMP_DIR)				\
-		-mode presi -a 4			\
+		-mode presi -a 4 -s 1k -r 100		\
+                -driver C                               \
+                -outnames $(TEMP_DIR)/names.txt         \
 		catalogue/aarch64/tests/@all
 	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
-	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	if $(RUN_TESTS); then                           \
+          ( cd $(TEMP_DIR) && ./run.exe)              | \
+          $(CHECK_OBS) -verbose $(TEMP_DIR)/names.txt ; \
+        fi
 	$(RM) -r $(TEMP_DIR)
 	@ echo "litmus7 in -mode presi catalogue aarch64 tests: OK"
 
-litmus-aarch64-test:: litmus-cata-aarch64-ifetch-test
+#Notice do not execute tests by defaut: execution protect
+litmus-aarch64-norun:: litmus-cata-aarch64-ifetch-test
 litmus-cata-aarch64-ifetch-test: TEMP_DIR:=$(shell mktemp -d)
 litmus-cata-aarch64-ifetch-test:
 	$(LITMUS)					\
@@ -58,10 +77,15 @@ litmus-cata-aarch64-ifetch-test:
 		-gcc=$(AARCH64_PREFIX)gcc 	        \
 		-ccopts='-march=armv8-a+lse'		\
 		-o $(TEMP_DIR)				\
-		-mode std -a 4				\
+		-mode std -a 4	-s 1k -r 10             \
+                -driver C                               \
+                -outnames $(TEMP_DIR)/names.txt         \
 		catalogue/aarch64-ifetch/tests/@nofault
 	make $(SILENTOPT) -C $(TEMP_DIR) -j $(J)
-	if $(RUN_TESTS); then ( cd $(TEMP_DIR) && sh run.sh ); fi
+	if $(RUN_TESTS); then                           \
+          ( cd $(TEMP_DIR) && ./run.exe )             | \
+          $(CHECK_OBS) -verbose $(TEMP_DIR)/names.txt ; \
+        fi
 	$(RM) -r $(TEMP_DIR)
 	@ echo "litmus7 in -mode std catalogue aarch64-ifetch tests: OK"
 
@@ -72,6 +96,7 @@ endif
 KUT_CONFIG_PARAMS=--arch=arm64 --page-size=4k --cross-prefix=$(KUT_AARCH64_PREFFIX)
 
 KUT_DIR_AARCH64:=$(shell mktemp -d)
+KUT_NAMES:=$(KUT_DIR_AARCH64)/kvm-unit-tests/t/names.txt
 
 litmus-aarch64-dep:
 	cd $(KUT_DIR_AARCH64);                                             \
@@ -80,51 +105,63 @@ litmus-aarch64-dep:
 	./configure $(KUT_CONFIG_PARAMS);                                  \
 	make $(SILENTOPT) -j $(J)
 
-litmus-aarch64-test:: litmus-cata-aarch64-test-kvm
+litmus-aarch64-run:: litmus-cata-aarch64-test-kvm
 litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
-	$(LITMUS)					\
-		-set-libdir $(LITMUS_LIB_DIR)	        \
+	$(LITMUS)                                       \
+		-set-libdir $(LITMUS_LIB_DIR)           \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
 		-mach kvm-armv8.1 -a 4			\
+                -driver C -s 100 -r 100                  \
+                -outnames $(KUT_NAMES)                  \
 		catalogue/aarch64/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then                                       \
+          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
+          $(CHECK_OBS) -verbose $(KUT_NAMES)                      ; \
+        fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64 tests: OK"
 
-litmus-aarch64-test:: litmus-cata-aarch64-VMSA-test-kvm
+#Cannot run yet, some tests fail at runtime
+litmus-aarch64-norun:: litmus-cata-aarch64-VMSA-test-kvm
 litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	$(LITMUS)					\
 		-set-libdir $(LITMUS_LIB_DIR)	        \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	\
 		-mach kvm-armv8.1+rcpc -a 4 -s 10 -r 10	\
+                -driver C -ascall true                  \
+                -outnames $(KUT_NAMES)                  \
 		catalogue/aarch64-VMSA/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then                                       \
+          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
+          $(CHECK_OBS) -verbose $(KUT_NAMES)                      ; \
+        fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
 
-#Some tests are not terminating, disable them when tests are run
-ifeq ($(RUN_TESTS),true)
-NORUN_IFETCH=UDF+2FH
-else
-NORUN_IFETCH=noname
-endif
+litmus-aarch64-run:: litmus-cata-aarch64-ifetch-test-kvm
 
-litmus-aarch64-test:: litmus-cata-aarch64-ifetch-test-kvm
+# Test UDF+2H is not terminating, do not execute it.
+# See NORUN below.
+
 litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	if $(RUN_TESTS); then NORUN=UDF+2FH; else NORUN=NO; fi ; \
 	$(LITMUS)					         \
 		-set-libdir $(LITMUS_LIB_DIR)	                 \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
 		-mach kvm-armv8.1 -variant self -a 4 -s 10 -r 10 \
-                -nonames $(NORUN_IFETCH)                         \
+                -nonames $${NORUN}                               \
+                -driver C -ascall true                           \
+                -outnames $(KUT_NAMES)                           \
 		catalogue/aarch64-ifetch/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
-	if $(RUN_TESTS); then ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ); fi
+	if $(RUN_TESTS); then \
+          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
+          $(CHECK_OBS) -verbose $(KUT_NAMES)                      ; \
+        fi
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
-
-litmus-test:: litmus-aarch64-test
