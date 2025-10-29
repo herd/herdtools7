@@ -7,8 +7,9 @@ The rest of this chapter defines \TypingRuleRef{StaticEnvToEnv},
 which converts a \staticenvironmentterm{} into an environment for dynamic evaluation,
 which is then used in \TypingRuleRef{StaticEval} to define the overall static evaluation.
 
-\hypertarget{relation-staticeval}{}
 \TypingRuleDef{StaticEval}
+\RenderRelation{static_eval}
+\BackupOriginalRelation{
 The function
 \[
   \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
@@ -19,6 +20,8 @@ evaluates an expression $\ve$
 in the \staticenvironmentterm{} $\tenv$, returning a literal $\vv$.
 If the evaluation terminates by a thrown exception of a value that is not a literal
 (for example, a record value), the result is a \typingerrorterm{}.
+} % END_OF_BACKUP_RELATION
+If $\ve$ is \pureterm{}, the result is unique.
 
 \hypertarget{def-staticallyevaluable}{}
 We say that an expression $\ve$ is \staticallyevaluableterm{} in a given \staticenvironmentterm{} $\tenv$ if

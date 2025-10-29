@@ -54,7 +54,10 @@ in a \staticenvironmentterm{} $\tenv$ results in $\newenv$, the modified
 
 This is used to annotate both single local storage declarations and tuples of local storage declarations.
 
-\paragraph{Semantics:} The relation
+\paragraph{Semantics:}
+\RenderRelation{eval_local_decl}
+\BackupOriginalRelation{
+The relation
 \hypertarget{relation-evallocaldecl}{}
 \[
   \evallocaldecl(
@@ -66,10 +69,9 @@ This is used to annotate both single local storage declarations and tuples of lo
 \]
 evaluates a \localdeclarationitem\ $\ldi$ in an environment
 $\env$ with an initialization value $\vm$.
+} % END_OF_BACKUP_RELATION
 That is, the right-hand side of the declaration
 has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{SDeclSome}).
-Evaluation of the local variables $\ldi$
-in an environment $\env$ is $\ResultLDI(\vg, \newenv)$.
 
 This is used to evaluate both single local storage declarations and tuples of local storage declarations.
 

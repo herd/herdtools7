@@ -123,7 +123,8 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Bitvector Slices}
 \TypingRuleDef{Slice}
-\hypertarget{relation-annotateslice}{}
+\RenderRelation{annotate_slice}
+\BackupOriginalRelation{
 the function
 \[
   \annotateslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs})
@@ -133,6 +134,7 @@ the function
 annotates a single slice $\vs$ in the \staticenvironmentterm{} $\tenv$,
 resulting in an annotated slice $\vsp$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Slices}
 The slices in

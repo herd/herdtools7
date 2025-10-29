@@ -34,7 +34,8 @@ declared in \listingref{subtype}:\\
 
 \ASLListing{Subtypes and Supertypes}{subtype}{\typingtests/TypingRule.Subtype.asl}
 
-\hypertarget{relation-issubtype}{}
+\RenderRelation{is_subtype}
+\BackupOriginalRelation{
 The predicate
 \[
   \issubtype(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo})
@@ -42,6 +43,7 @@ The predicate
 \]
 defines whether the type $\vtone$ subtypes the type $\vttwo$ in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \OneApplies
@@ -108,7 +110,8 @@ yielding the result in $\vb$.
 \identr{NXRX} \identi{KGKS} \identi{MTML} \identi{JVRM} \identi{CHMP}
 
 \TypingRuleDef{SubtypeSatisfaction}
-\hypertarget{relation-subtypesatisfies}{}
+\RenderRelation{subtype_satisfies}
+\BackupOriginalRelation{
 The predicate
 \[
   \subtypesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
@@ -117,6 +120,7 @@ The predicate
 determines whether a type $\vt$ \emph{subtype-satisfies} a type $\vs$ in environment $\tenv$,
 returning the result in $\vb$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 This function assumes that both $\vt$ and $\vs$ are well-typed according to \chapref{Types}.
 
@@ -392,7 +396,8 @@ if there is a unique one, as follows:
 
 \TypingRuleDef{TypeSatisfaction}
 \identr{FMXK}
-\hypertarget{relation-typesatisfies}{}
+\RenderRelation{type_satisfies}
+\BackupOriginalRelation{
 The predicate
 \[
   \typesatisfies(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
@@ -401,6 +406,7 @@ The predicate
 determines whether a type $\vt$ \emph{\typesatisfiesterm} a type $\vs$ in environment $\tenv$,
 returning the result $\vb$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
@@ -550,13 +556,15 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{CheckTypeSatisfaction}
-\hypertarget{relation-checktypesat}{}
+\RenderRelation{checked_typesat}
+\BackupOriginalRelation{
 We also define
 \[
   \checktypesat(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
   \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 which is the same as $\typesatisfies$, but yields a \typingerrorterm{} when \\ $\typesatisfies(\tenv, \vt, \vs)$ is $\False$.
+} % END_OF_BACKUP_RELATION
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
@@ -603,11 +611,12 @@ yields a \typingerrorterm.
 \end{mathpar}
 
 \TypingRuleDef{LowestCommonAncestor}
-\hypertarget{relation-lowestcommonancestor}{}
 Annotating a conditional expression (see \TypingRuleRef{ECond}),
 requires finding a single type that can be used to annotate the results of both subexpressions.
 We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it next.
 
+\RenderRelation{lowest_common_ancestor}
+\BackupOriginalRelation{
 The function
 \[
   \lca(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
@@ -615,6 +624,7 @@ The function
 \]
 returns the \Proselca{} of types $\vt$ and $\vs$ in $\tenv$ --- $\tty$.
 The result is a \typingerrorterm{} if a \Proselca{} does not exist or a \typingerrorterm{} is detected.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Lowest Common Ancestor Examples}
 \listingref{example-lca} shows examples of conditional expressions and the resulting
@@ -2707,7 +2717,8 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 \end{mathpar}
 
 \TypingRuleDef{BitFieldsIncluded}
-\hypertarget{relation-bitfieldsincluded}{}
+\RenderRelation{bitfields_included}
+\BackupOriginalRelation{
 The predicate
 \[
   \bitfieldsincluded(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\bitfield}}{\bfsone} \aslsep \overname{\KleeneStar{\bitfield}}{\bfstwo})
@@ -2715,6 +2726,7 @@ The predicate
 \]
 tests whether the set of bit fields $\bfsone$ is included in the set of bit fields $\bfstwo$ in environment $\tenv$,
 returning a \typingerrorterm{}, if one is detected.
+}
 
 \ExampleDef{Checking Whether all Bitfields are Included}
 In \listingref{MemBfs},
@@ -2933,14 +2945,16 @@ is ill-typed.
 }
 \end{mathpar}
 
-\hypertarget{relation-checkstructurelabel}{}
 \TypingRuleDef{CheckStructure}
+\RenderRelation{check_structure_label}
+\BackupOriginalRelation{
 The function
 \[
   \checkstructurelabel(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ASTLabels}{\vl}) \aslto
   \{\True\} \cup \typeerror
 \]
 returns $\True$ is $\vt$ is has the \structureterm\ a of type corresponding to the AST label $\vl$ and a \typingerrorterm{} otherwise.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{The Structure of a Type}.
 

@@ -841,7 +841,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\torexpr[0]{\hyperlink{relation-rexpr}{\textfunc{rexpr}}} % SPECIFICATION_REQUIRED
+\newcommand\torexpr[0]{\hyperlink{relation-rexpr}{\textfunc{rexpr}}} % SPECIFIED
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type System macros
@@ -862,7 +862,6 @@
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\ProsetypesatTrue[3]{#2 \typesatisfiesterm{} #3 in the static environment #1}
 \newcommand\ProsetypesatFalse[3]{#2 does not \typesatisfyterm{} #3 in the static environment #1}
-\newcommand\typesatisfies[0]{\hyperlink{relation-typesatisfies}{\textfunc{type\_satisfies}}}
 
 \newcommand\constantvalues[0]{\hyperlink{def-constantvalues}{\textsf{constant\_values}}}
 \newcommand\globalstoragetypes[0]{\hyperlink{def-globalstoragetypes}{\textsf{global\_storage\_types}}}
@@ -955,7 +954,6 @@
     \hyperlink{relation-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
 \newcommand\maskmatch[0]{\hyperlink{relation-maskmatch}{\textfunc{mask\_match}}} % REQUIRES_SPECIFICATION
-\newcommand\evallocaldecl[0]{\hyperlink{relation-evallocaldecl}{\textfunc{eval\_local\_decl}}} % REQUIRES_SPECIFICATION
 \newcommand\ldituplefolder[0]{\hyperlink{relation-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}} % REQUIRES_SPECIFICATION
 \newcommand\poplocalscope[0]{\hyperlink{relation-poplocalscope}{\textfunc{pop\_local\_scope}}} % REQUIRES_SPECIFICATION
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{relation-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
@@ -993,12 +991,6 @@
 
 \newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
 
-\newcommand\isbuiltinsingular[0]{\hyperlink{relation-isbuiltinsingular}{\textfunc{is\_builtin\_singular}}}
-\newcommand\isnamed[0]{\hyperlink{relation-isnamed}{\textfunc{is\_named}}}
-\newcommand\isanonymous[0]{\hyperlink{relation-isanonymous}{\textfunc{is\_anonymous}}}
-\newcommand\issingular[0]{\hyperlink{relation-issingular}{\textfunc{is\_singular}}}
-\newcommand\isstructured[0]{\hyperlink{relation-isstructured}{\textfunc{is\_structured}}}
-
 \newcommand\isunconstrainedinteger[0]{\hyperlink{def-isunconstrainedinteger}{\textsf{is\_unconstrained\_integer}}}
 \newcommand\isparameterizedinteger[0]{\hyperlink{def-isparameterizedinteger}{\textsf{is\_parameterized\_integer}}}
 \newcommand\iswellconstrainedinteger[0]{\hyperlink{def-iswellconstrainedinteger}{\textsf{is\_well\_constrained\_integer}}}
@@ -1008,31 +1000,24 @@
   the static environment #1 yields $\True$\ProseOrTypeError}
 
 \newcommand\Prosestaticeval[3]{\hyperlink{relation-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
-\newcommand\staticeval[0]{\hyperlink{relation-staticeval}{\textfunc{static\_eval}}} % SPECIFICATION_REQUIRED
 
 \newcommand\Prosemakeanonymous[3]{\hyperlink{relation-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
-\newcommand\checktypesat[0]{\hyperlink{relation-checktypesat}{\textfunc{checked\_typesat}}} % SPECIFICATION_REQUIRED
+\newcommand\checktypesat[0]{\hyperlink{relation-checkedtypesat}{\textfunc{checked\_typesat}}} % SPECIFIED
 \newcommand\Prosetypeclashes[0]{\hyperlink{relation-typeclashes}{type-clashes}}
 \newcommand\Prosetypeclash[0]{\hyperlink{relation-typeclashes}{type-clash}}
 \newcommand\Prosetypeclashing[0]{\hyperlink{relation-typeclashes}{type-clashing}}
-\newcommand\lca[0]{\hyperlink{relation-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}} % SPECIFICATION_REQUIRED
+\newcommand\lca[0]{\hyperlink{relation-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}} % SPECIFIED
 \newcommand\Proselca[0]{\hyperlink{relation-lowestcommonancestor}{lowest common ancestor}}
 \newcommand\namedlca[0]{\hyperlink{relation-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}} % SPECIFIED
 \newcommand\Supers{\textsf{Supers}}
-\newcommand\bitfieldsincluded[0]{\hyperlink{relation-bitfieldsincluded}{\textfunc{bitfields\_included}}}
 \newcommand\Prosecheckisnotcollection[2]{\hyperlink{relation-checkisnotcollection}{determining}
   whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
-\newcommand\widthplus[0]{\hyperlink{relation-widthplus}{\textfunc{width\_plus}}} % SPECIFICATION_REQUIRED
 \newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}} % SPECIFICATION_DEFERRED
-\newcommand\annotatefieldinit[0]{\hyperlink{relation-annotatefieldinit}{\textfunc{annotate\_field\_init}}} % SPECIFICATION_REQUIRED
 \newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{relation-annotatesymbolicallyevaluableexpr}{annotating} the
     \symbolicallyevaluableterm\ expression #2 in the static environment #1 yields #3}
-\newcommand\checkstructurelabel[0]{\hyperlink{relation-checkstructurelabel}{\textfunc{check\_structure}}} % SPECIFICATION_REQUIRED
-\newcommand\checkunderlyinginteger[0]{\hyperlink{relation-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}} % SPECIFICATION_REQUIRED
-\newcommand\checksymbolicallyevaluable[0]{\hyperlink{relation-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}} % SPECIFICATION_REQUIRED
+\newcommand\checkstructurelabel[0]{\hyperlink{relation-checkstructurelabel}{\textfunc{check\_structure}}} % SPECIFIED
 \newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{relation-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluableterm\ yields $\True$\ProseOrTypeError}
 \newcommand\getforconstraints[0]{\hyperlink{relation-getforconstraints}{\textfunc{for\_constraints}}} % SPECIFIED
-\newcommand\findbitfieldsslices[0]{\hyperlink{relation-findbitfieldsslices}{\textfunc{find\_bitfields\_slices}}} % SPECIFICATION_REQUIRED
 \newcommand\Prosetypeof[3]{\hyperlink{relation-typeof}{obtaining} the type of #2 in the static environment #1 yields #3}
 \newcommand\Prosecheckglobalpragma[2]{\hyperlink{relation-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
 \newcommand\paramsofty[0]{\hyperlink{relation-paramsofty}{\textfunc{parameters\_of\_ty}}} % SPECIFIED
@@ -1053,11 +1038,6 @@
 \newcommand\puritygeq[0]{\hyperlink{def-puritygeq}{\geq_{\text{pure}}}}
 
 \newcommand\TSideEffectSet[0]{\pow{\TSideEffect}}
-
-% sets of side effect descriptors
-\newcommand\sideeffectispure[0]{\hyperlink{relation-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}} % SPECIFICATION_REQUIRED
-\newcommand\sideeffectisreadonly[0]{\hyperlink{relation-sideeffectisreadonly}{\textfunc{side\_effect\_is\_readonly}}} % SPECIFICATION_REQUIRED
-\newcommand\sideeffectissymbolicallyevaluable[0]{\hyperlink{relation-sideeffectissymbolicallyevaluable}{\textfunc{side\_effect\_symbolically\_evaluable}}} % SPECIFICATION_REQUIRED
 
 % Symbolic equivalence testing macros
 \newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
@@ -1487,7 +1467,6 @@
 \newcommand\Proseannotatelexpr[4]{\hyperlink{relation-annotatelexpr}{annotating}
     the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
 \newcommand\annotateexprlist[0]{\hyperlink{relation-annotateexprs}{\textfunc{annotate\_exprs}}} % SPECIFIED
-\newcommand\annotateslice[0]{\hyperlink{relation-annotateslice}{\textfunc{annotate\_slice}}} % REQUIRES_SPECIFICATION
 \newcommand\annotatelocaldeclitem[0]{\hyperlink{relation-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}} % REQUIRES_SPECIFICATION
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
     $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}

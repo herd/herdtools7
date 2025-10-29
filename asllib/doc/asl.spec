@@ -1280,6 +1280,13 @@ function bool_transition(cond: Bool) -> (result: Bool)
     prose_application = "testing whether {cond} holds returns {result}",
 };
 
+function rexpr(le: lexpr) -> (re: expr)
+{
+  "transforms the \assignableexpression{} {le} to the \rhsexpression{} {re}.",
+  prose_application = "transforming the \assignableexpression{} {le} to a \rhsexpression{} yields {re}",
+  math_macro = \torexpr,
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Relations and functions for Literals
 ////////////////////////////////////////////////////////////////////////////////
@@ -1303,6 +1310,25 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
    and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError",
     prose_application = "annotating {e} in {tenv} yields
     {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError",
+};
+
+typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfield)) -> (slices: list0(slice)) | type_error
+{
+  "returns the slices associated with the bitfield named {name} among the list of bitfields {bitfields}
+  in {slices}. \ProseOtherwiseTypeError",
+  prose_application = "finding the slices associated with the bitfield named {name} among the list of bitfields {bitfields}
+  yields {slices}\ProseOtherwiseTypeError",
+};
+
+typing relation annotate_field_init(tenv: static_envs, (name: Identifier, e': expr), field_types: list0(field)) ->
+        (name: Identifier, e'': expr, ses: powerset(TSideEffect)) | type_error
+{
+  "annotates a field initializer $({name}, {e'})$ in a record expression
+  with list of fields \\ {field_types} and returns the annotated initializing expression {e''}
+  and its \sideeffectdescriptorterm\ {ses}. \ProseOtherwiseTypeError",
+  prose_application = "annotating the field initializer $({name}, {e'})$ with respect to
+  the list of fields {field_types}, yields {e''} and {ses}\ProseOrTypeError",
+  math_layout = [_,_],
 };
 
 relation annotate_get_array(
@@ -1331,6 +1357,13 @@ relation get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}"
+};
+
+typing relation width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
+{
+  "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
+  normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
+  prose_application = "generating the expression representing the summation of {exprs} in {tenv}, yields {e_width}",
 };
 
 relation check_atc(tenv: static_envs, t1: ty, t2: ty) ->
@@ -1869,6 +1902,15 @@ relation declare_global(name: Identifier, v: native_value, env: envs) -> (new_en
 //////////////////////////////////////////////////
 // Relations for Local Storage Declarations
 
+semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: native_value, g1: XGraphs)) ->
+  ResultLDI(new_g: XGraphs, new_env: envs)
+{
+  "evaluates a \localdeclarationitem{} {ldi} in an environment {env} with an initialization value {m},
+  yielding the \executiongraphterm{} {new_g} and new environment {new_env}.",
+  prose_application = "evaluating the \localdeclarationitem{} {ldi} in {env} with the initializing
+  value {m} yields {new_g} and {new_env}.",
+};
+
 relation check_is_not_collection(tenv: static_envs, t: ty) ->
          (constants_set(True)) | type_error
 {
@@ -1946,6 +1988,42 @@ relation eval_binop(op: binop, v1: native_value, v2: native_value) ->
 
 //////////////////////////////////////////////////
 // Relations for Relations On Types
+
+typing function is_subtype(tenv: static_envs, t1: ty, t2: ty) -> (b: Bool)
+{
+    "defines whether the type {t1} subtypes the type {t2} in the \staticenvironmentterm{} {tenv},
+    yielding the result in {b}.",
+    prose_application = "testing whether {t1} subtypes {t2} in {tenv} yields {b}",
+};
+
+typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
+{
+    "determines whether a type {t} \emph{subtype-satisfies} a type {s} in the static environment {tenv},
+    yielding the result in {b}. \ProseOtherwiseTypeError",
+    prose_application = "testing whether {t} \emph{subtype-satisfies} {s} in {tenv} yields {b}\ProseOrTypeError",
+};
+
+typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
+{
+    "determines whether a type {t} \emph{\typesatisfiesterm} a type {s} in the static environment {tenv},
+    yielding the result {b}. \ProseOtherwiseTypeError",
+    prose_application = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
+};
+
+typing function checked_typesat(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
+{
+  "returns $\True$ if {t} \typesatisfiesterm{} a type {s} in the static environment {tenv}. \ProseOtherwiseTypeError",
+  prose_application = "checking whether {t} \typesatisfiesterm{} {s} in {tenv} yields $\True$\ProseOrTypeError",
+  math_macro = \checktypesat,
+};
+
+typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: ty) | type_error
+{
+  "returns the \Proselca{} of types {t} and {s} in the \staticenvironmentterm{} {tenv}, yielding {ty}.
+  If a \Proselca{} does not exist or a \typingerrorterm{} is detected, the result is a \typingerrorterm{}.",
+  prose_application = "the \Proselca{} of {t} and {s} in {tenv} is {ty}\ProseOrTypeError",
+  math_macro = \lca,
+};
 
 relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
          (s: ty) | type_error
@@ -2151,12 +2229,27 @@ relation binop_is_exploding(op: binop) ->
   prose_application = "",
 };
 
+typing function bitfields_included(tenv: static_envs, bfs1: list0(bitfield), bfs2: list0(bitfield)) -> (b: Bool) | type_error
+{
+    "tests whether the set of bit fields in {bfs1} is included in the set of bit fields in {bfs2}
+    in the static environment {tenv},
+    yielding the result in {b}. \ProseOtherwiseTypeError",
+    prose_application = "testing whether {bfs1} is included in {bfs2} in {tenv} yields {b}\ProseOrTypeError",
+};
+
 relation mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
          (b: Bool)
 {
   "checks whether the bitfield {bf1} exists in {bfs2} in
   the context of {tenv}, returning the result in {b}.",
   prose_application = "",
+};
+
+typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> constants_set(True) | type_error
+{
+  "returns $\True$ if {t} has the \structureterm{} a of type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
+  prose_application = "checking whether the \structureterm{} of {t} has the AST label {l} yields $\True$\ProseOrTypeError",
+  math_macro = \checkstructurelabel,
 };
 
 relation to_well_constrained(t: ty) ->
@@ -2395,6 +2488,27 @@ relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_val
 //////////////////////////////////////////////////
 // Relations for Side Effects
 
+typing function side_effect_is_pure(s: TSideEffect) -> (b: Bool)
+{
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\pureterm},
+    yielding the result in {b}.",
+  prose_application = "testing whether {s} is \pureterm{} yields {b}",
+};
+
+typing function side_effect_is_readonly(s: TSideEffect) -> (b: Bool)
+{
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\readonlyterm},
+    yielding the result in {b}.",
+  prose_application = "testing whether {s} is \readonlyterm{} yields {b}",
+};
+
+typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Bool)
+{
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\symbolicallyevaluableterm},
+    yielding the result in {b}.",
+  prose_application = "testing whether {s} is \symbolicallyevaluableterm{} yields {b}",
+};
+
 relation ses_ldk(ldk: local_decl_keyword) ->
          (s: powerset(TSideEffect))
 {
@@ -2420,6 +2534,13 @@ relation is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
   {ses} are all \symbolicallyevaluableterm, yielding the
   result in {b}.",
   prose_application = "",
+};
+
+typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> constants_set(True) | type_error
+{
+  "returns $\True$ if the set of \sideeffectdescriptorsterm{} {ses} is \symbolicallyevaluableterm.
+  \ProseOtherwiseTypeError",
+  prose_application = "checking whether {ses} is \symbolicallyevaluableterm{} yields $\True$\OrTypeError",
 };
 
 relation ses_is_readonly(ses: powerset(TSideEffect)) ->
@@ -2448,6 +2569,13 @@ relation ses_for_subprogram(qualifier: option(func_qualifier)) ->
 
 //////////////////////////////////////////////////
 // Relations for Slicing
+
+typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | type_error
+{
+  "annotates a single slice {s} in the \staticenvironmentterm{} {tenv},
+  resulting in an annotated slice {s'}.\ProseOtherwiseTypeError",
+  prose_application = "annotating the slice {s} in {tenv} yields {s'}\OrTypeError"
+};
 
 relation slices_width(tenv: static_envs, slices: list0(slice)) ->
          (width: expr) | type_error
@@ -3037,6 +3165,15 @@ relation write_folder(vms: list0((native_value, XGraphs))) ->
 
 //////////////////////////////////////////////////
 // Relations for Static Evaluation
+
+typing relation static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_error
+{
+  "evaluates an expression {e}
+  in the \staticenvironmentterm{} {tenv}, returning a literal {v}.
+  If the evaluation terminates by a thrown exception of a value that is not a literal
+  (for example, a record value), the result is a \typingerrorterm{}.",
+  prose_application = "statically evaluating {e} in {tenv} yields {v}\ProseOrTypeError",
+};
 
 relation static_env_to_env(tenv: static_envs) ->
          (env: envs)
@@ -4108,6 +4245,38 @@ relation constraint_pow(c1: int_constraint, c2: int_constraint) ->
 //////////////////////////////////////////////////
 // Relations for Type Attributes
 
+typing function is_builtin_singular(ty: ty) -> (b: Bool)
+{
+    "tests whether the type {ty} is a \emph{builtin singular type}, yielding the result in {b}.",
+    prose_application = "testing whether {ty} is a builtin singular type yields {b}",
+};
+
+typing function is_named(ty: ty) -> (b: Bool)
+{
+    "tests whether the type {ty} is a \emph{named type}.",
+    prose_application = "testing whether {ty} is a named type yields {b}",
+};
+
+typing function is_anonymous(ty: ty) -> (b: Bool)
+{
+    "tests whether the type {ty} is an \emph{\anonymoustype}.",
+    prose_application = "testing whether {ty} is an \anonymoustype{} yields {b}",
+};
+
+typing function is_singular(tenv: static_envs, ty: ty) -> (b: Bool) | type_error
+{
+    "tests whether the type {ty} is a \emph{\singulartypeterm} in the \staticenvironmentterm{} {tenv},
+    yielding the result in {b}. \ProseOtherwiseTypeError",
+    prose_application = "tests whether {ty} is a \singulartypeterm{} in {tenv},
+    yields {b}\ProseOrTypeError",
+};
+
+typing function is_structured(ty: ty) -> (b: Bool)
+{
+    "tests whether the type {ty} is a \structuredtypeterm{}.",
+    prose_application = "testing whether {ty} is a \structuredtypeterm{} yields {b}",
+};
+
 relation get_structure(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
@@ -4269,6 +4438,14 @@ relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr) ->
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
+};
+
+typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_set(True) | type_error
+{
+  "returns $\True$ if {t} has the \underlyingtypeterm{} of an \integertypeterm{} in the \staticenvironmentterm{} {tenv}.
+  \ProseOtherwiseTypeError",
+  prose_application = "checking whether {t} has the \underlyingtypeterm{} of an \integertypeterm{} in {tenv} yields
+  $\True$\ProseOrTypeError",
 };
 
 //////////////////////////////////////////////////

@@ -2117,8 +2117,9 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
 \TypingRuleDef{FindBitFieldsSlices}
-\hypertarget{relation-findbitfieldsslices}{}
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
+\RenderRelation{find_bitfields_slices}
+\BackupOriginalRelation{
 The function
 \[
   \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\vbitfields})
@@ -2127,6 +2128,7 @@ The function
 returns the slices associated with the bitfield named $\name$ in the list of bitfields $\vbitfields$
 in $\vslices$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Finding the Slices of a Bitfield}
 In \listingref{eget-bitfield},
@@ -2244,8 +2246,9 @@ yields the literal expression for \verb|2|.
 \end{mathpar}
 
 \TypingRuleDef{WidthPlus}
-\hypertarget{relation-widthplus}{}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
+\RenderRelation{width_plus}
+\BackupOriginalRelation{
 The function
 \[
   \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs}) \typearrow \overname{\expr}{\ewidth}
@@ -2254,6 +2257,7 @@ The function
 generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
 normalized in the \staticenvironmentterm{} $\tenv$.
 \ProseOrTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Summing Widths}
 Summing the list of expression \verb|2, 3|,
@@ -3265,8 +3269,9 @@ and an example (in comment) where the same field is initialized twice, which is 
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 \identr{WBCQ}
 
-\hypertarget{relation-annotatefieldinit}{}
 \TypingRuleDef{AnnotateFieldInit}
+\RenderRelation{annotate_field_init}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -3282,6 +3287,7 @@ annotates a field initializers $(\name, \vep)$ in a record expression
 with list of fields \\ $\fieldtypes$ and returns the annotated initializing expression $\vepp$
 and its \sideeffectdescriptorterm\ $\vses$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 See \listingref{semantics-erecord} for an example.
 
