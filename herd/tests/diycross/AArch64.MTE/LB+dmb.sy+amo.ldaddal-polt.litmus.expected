@@ -1,15 +1,15 @@
 Test LB+dmb.sy+amo.ldaddal-polt Allowed
 States 6
-0:X1=0; 1:X1=0; [y]=1;  ~Fault(P0:L00,x);
-0:X1=0; 1:X1=0; [y]=1; Fault(P0:L00,x:red,TagCheck);
-0:X1=0; 1:X1=1; [y]=1;  ~Fault(P0:L00,x);
-0:X1=0; 1:X1=1; [y]=1; Fault(P0:L00,x:red,TagCheck);
-0:X1=0; 1:X1=1; [y]=3;  ~Fault(P0:L00,x);
-0:X1=0; 1:X1=1; [y]=3; Fault(P0:L00,x:red,TagCheck);
+0:X1=0; 1:X1=1824; [y]=1825;  ~Fault(P0:L00,x);
+0:X1=0; 1:X1=1824; [y]=1825; Fault(P0:L00,x:red,TagCheck);
+0:X1=0; 1:X1=1825; [y]=1825;  ~Fault(P0:L00,x);
+0:X1=0; 1:X1=1825; [y]=1825; Fault(P0:L00,x:red,TagCheck);
+0:X1=0; 1:X1=1825; [y]=2081;  ~Fault(P0:L00,x);
+0:X1=0; 1:X1=1825; [y]=2081; Fault(P0:L00,x:red,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 5
-Condition exists ([y]=3 /\ 0:X1=0 /\ 1:X1=1 /\ not (fault(P0:L00,x)))
+Condition exists ([y]=2081 /\ 0:X1=0 /\ 1:X1=1825 /\ not (fault(P0:L00,x)))
 Observation LB+dmb.sy+amo.ldaddal-polt Sometimes 1 5
-Hash=6fb1e7032d8fb9ee88da8ce8605deafb
+Hash=96e7ec6b61f228951fc628fe65c3bb50
 
