@@ -77,6 +77,7 @@ begin
   let reserved = RESADDR;
   // If write succeeds then effective address and reservation coincide.
   if SuccessVA then CheckProp(address == reserved); end;
+  RESADDR = Zeros{64};
   return SuccessVA;
 end;
 
