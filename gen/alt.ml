@@ -31,6 +31,7 @@ module type AltConfig = sig
   val variant : Variant_gen.t -> bool
   type fence
   val cumul : fence list Config.cumul
+  val wildcard : bool
 end
 
 module Make(C:Builder.S)
@@ -737,7 +738,7 @@ module Make(C:Builder.S)
     let fold_ie f k = f (Int) (f (Ext) k)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
-    let fold_sd = Code.fold_sd
+    let fold_sd = Code.fold_sd O.wildcard
     let fold_sd_dir2 f =
       fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))

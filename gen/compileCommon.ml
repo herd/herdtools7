@@ -24,6 +24,7 @@ module type Config = sig
   val hexa : bool
   val moreedges : bool
   val variant : Variant_gen.t -> bool
+  val wildcard : bool
 end
 
 module type S = sig
@@ -59,6 +60,7 @@ module Make(C:Config) (A:Arch_gen.S) = struct
       (struct
         let variant = C.variant
         let naturalsize = TypBase.get_size C.typ
+        let wildcard = C.wildcard
       end)
       (A)
 

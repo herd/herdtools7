@@ -20,6 +20,7 @@ module Config =
   struct
     let variant _ = false
     let naturalsize = TypBase.get_size TypBase.default
+    let wildcard = false
   end
 
 let dbg = 0
@@ -36,6 +37,7 @@ module type S = sig
   module Value : Value_gen.S with type atom = atom
   type rmw
   type value = Value.v
+  val wildcard : bool
 
   val pp_atom : atom -> string
   val tr_value : atom option -> value -> value
@@ -161,6 +163,7 @@ module
        sig
          val variant : Variant_gen.t -> bool
          val naturalsize : MachSize.sz
+         val wildcard : bool
        end)
     (F:Fence.S) : S
 with
@@ -177,6 +180,7 @@ and type rmw = F.rmw = struct
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+  let wildcard = Cfg.wildcard
 
   let debug = false
   open Code
@@ -392,24 +396,25 @@ let fold_tedges f r =
   let r = fold_ie (fun ie -> f (Rf ie)) r in
   let r = fold_ie (fun ie -> f (Fr ie)) r in
   let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = F.fold_rmw (fun rmw -> f (Rmw rmw)) r in
-  let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
+  let r = F.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
+  let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
   let r =
     F.fold_all_fences
       (fun fe ->
-        fold_sd_extr_extr
+        fold_sd_extr_extr wildcard
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
     F.fold_dpr
-      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir R)))) r in
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir R)))) r in
   let r =
     F.fold_dpw
-      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir W)))) r in
   let r =
-    F.fold_dpw
-      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Irr)))) r in
+    if wildcard then F.fold_dpw
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Irr)))) r
+    else r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -589,7 +594,7 @@ let fold_tedges f r =
 
   let () =
    four_times_iter_edges false iter_edges;
-   fold_sd_extr_extr
+   fold_sd_extr_extr wildcard
       (fun sd e1 e2 () ->
         add_lxm_edge
           (pp_strong sd e1 e2) (plain_edge (Fenced (F.strong,sd,e1,e2)))) () ;
@@ -599,9 +604,10 @@ let fold_tedges f r =
         add_lxm_edge
           (pp_dp_default tag sd e)
           (plain_edge (Dp (dp,sd,e))) in
-    fold_sd
+    fold_sd wildcard
       (fun sd () ->
-        fill_opt "Dp" F.ddr_default sd Irr ;
+        if wildcard then fill_opt "Dp" F.ddr_default sd Irr ;
+        if wildcard then fill_opt "Ctrl" F.ctrlr_default sd Irr ;
         fill_opt "Dp" F.ddr_default sd (Dir R) ;
         fill_opt "Ctrl" F.ctrlr_default sd (Dir R) ;
         fill_opt "Dp" F.ddw_default sd (Dir W) ;

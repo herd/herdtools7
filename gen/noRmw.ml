@@ -22,7 +22,7 @@ module Make(A:sig type arch_atom end) = struct
 
   let pp_rmw _ _ = assert false
   let is_one_instruction _ = assert false
-  let fold_rmw _ r = r
+  let fold_rmw _ _ r = r
   let fold_rmw_compat _ r = r
   let applies_atom_rmw _ _ _ = assert false
   let show_rmw_reg _ = assert false
