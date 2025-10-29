@@ -241,9 +241,9 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
   \vses \eqdef \vsesargs \cup \vsescall\\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
   \equallength(\funcsig.\funcparameters, \paramsone) \typearrow \paramaritymatch \\\\
-  \checktrans{\paramaritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\paramaritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
   \equallength(\funcsig.\funcargs, \args) \typearrow \aritymatch\\
-  \checktrans{\aritymatch}{\BadCall} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\aritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsig.\funcparameters, \paramsone) \typearrow \True \OrTypeError\\\\
   \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcsigparams_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
   \checkargstypesat(\tenv, \funcsig.\funcargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\

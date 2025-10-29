@@ -171,7 +171,7 @@ The output configurations of type system assertions have two flavors:
   \item[Type Errors.] When the type system encounters a \typingerrorterm{},
   for example, using an integer type as a condition expression, as in \verb|if 5 then 1 else 2|,
   the result is a value of the following type:
-\RenderType{type_error}
+  \RenderTypes{type_error_and_codes}
 
   The ASL type system is designed such that when these \emph{\typingerrorterm{} configurations} appear,
   the typing of the entire specification terminates and outputs a \typingerrorterm{} with a code indicating
@@ -184,7 +184,8 @@ The output configurations of type system assertions have two flavors:
 \]
 }
 \hypertarget{type-TypeErrorconfig}{}
-We define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vs)$ for \typingerrorterm{} configurations with any code.
+We define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vc)$ for \typingerrorterm{} configurations
+with any type-error code $\vc \in \typeerrorcode$.
 
 When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
 we do not repeat the\ProseOrTypeError, but rather include it only in the first rule.

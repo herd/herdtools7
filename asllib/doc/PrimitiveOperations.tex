@@ -1242,15 +1242,15 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[div\_int]{
-  \checktrans{b > 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
+  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\\\\
   n \eqdef a \div b \\\\
-  \checktrans{n \in \Z}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(n \in \Z, \BadOperands) \typearrow \True \OrTypeError
 }{
   \binopliterals(\overname{\DIV}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(n)}{\vr}
 }
 \and
 \inferrule[fdiv\_int]{
-  \checktrans{b > 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
+  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\\\\
   n \eqdef \choice{a \geq 0}{\lfloor a \div b \rfloor}{-(\lceil (-a) \div b \rceil)}
 }{
   \binopliterals(\overname{\DIVRM}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(n)}{\vr}
@@ -1267,7 +1267,7 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[exp\_int]{
-  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError
 }{
   \binopliterals(\overname{\POW}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(a^b)}{\vr}
 }
@@ -1275,7 +1275,7 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[shl]{
-  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
+  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\\\\
   \binopliterals(\POW, \LInt(2), \LInt(b)) \typearrow \LInt(e)\\
   \binopliterals(\MUL, \LInt(a), \LInt(e)) \typearrow \vr
 }{
@@ -1285,7 +1285,7 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[shr]{
-  \checktrans{b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError\\\\
+  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\\\\
   \binopliterals(\POW, \LInt(2), \LInt(b)) \typearrow \LInt(e)\\
   \binopliterals(\DIVRM, \LInt(a), \LInt(e)) \typearrow \vr
 }{
@@ -1394,7 +1394,7 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[div\_real]{
-  \checktrans{b \neq 0}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(b \neq 0, \BadOperands) \typearrow \True \OrTypeError
 }{
   \binopliterals(\overname{\RDIV}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LReal(a\div b)}{\vr}
 }
@@ -1402,7 +1402,7 @@ and argument types of its operand literals:
 
 \begin{mathpar}
 \inferrule[exp\_real]{
-  \checktrans{a \neq 0 \lor b \geq 0}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(a \neq 0 \lor b \geq 0, \BadOperands) \typearrow \True \OrTypeError
 }{
   \binopliterals(\overname{\POW}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LReal(a^b)}{\vr}
 }

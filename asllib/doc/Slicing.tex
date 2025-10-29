@@ -204,8 +204,8 @@ are all well-typed.
 \inferrule[length]{
   \annotateexpr(\tenv, \eoffset) \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
   \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow (\elengthp, \vseslength) \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vsesoffset)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
-  \checktrans{\sesisreadonly(\vseslength)}{\SideEffectViolation} \typearrow \True \OrTypeError\\\\
+  \techeck(\sesisreadonly(\vsesoffset), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
+  \techeck(\sesisreadonly(\vseslength), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
   \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{

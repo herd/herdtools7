@@ -650,7 +650,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \begin{mathpar}
 \inferrule[local]{
   L^\tenv.\localstoragetypes(\vx) = (\tty, k)\\
-  \checktrans{k = \LDKVar}{\AssignmentToImmutable} \checktransarrow \True \OrTypeError\\\\
+  \techeck(k = \LDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -661,7 +661,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \begin{mathpar}
 \inferrule[global]{
   L^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
-  \checktrans{k = \GDKVar}{AssignToImmutable} \checktransarrow \True \OrTypeError\\\\
+  \techeck(k = \GDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -778,10 +778,10 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
 \begin{mathpar}
 \inferrule{
   \les \eqname [\ve_{1..k}]\\
-  \checktrans{\astlabel(\vte) = \TTuple}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\vte) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \vte \eqname \TTuple(\tys)\\
   \equallength(\les, \tys) \typearrow \vb\\
-  \checktrans{\vb}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \tys \eqname [\vt_{1..k}]\\
   i=1..k: \annotatelexpr(\tenv, \ve_i,\vt_i) \typearrow (\vep_i, \vxs_i) \OrTypeError\\\\
   \lesp \eqname [i=1..k: \vep_i]\\
@@ -933,7 +933,7 @@ are well-typed.
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\ebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\\\\
-  \checktrans{\astlabel(\tanonbase) = \TArray}{ExpectedArrayType} \typearrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \tanonbase \eqname \TArray(\size, \telem)\\
   \annotatelexpr(\tenv, \ebase, \tbase) \typearrow (\ebasep, \vsesbase) \OrTypeError\\\\
   {
@@ -1169,7 +1169,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \checktrans{\astlabel(\tleoneanon) = \TBits}{\UnexpectedType} \typearrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\tleoneanon) = \TBits, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vsesone) \OrTypeError\\
   \annotateslices(\tenv, \slices) \typearrow (\slicesannotated, \sesslices) \OrTypeError\\\\
   \sliceswidth(\tenv, \slicesannotated) \typearrow \widthp\\
@@ -1177,7 +1177,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \checkdisjointslices(\tenv, \slicesannotated) \typearrow \True \OrTypeError\\\\
-  \checktrans{\slicesannotated \neq \emptylist}{\BadSlices} \typearrow \True \OrTypeError\\\\
+  \techeck(\slicesannotated \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicesannotated)\\
   \vses \eqdef \vsesone \cup \sesslices \\
 }{
@@ -1365,7 +1365,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
   \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
   \evalbinop(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
   \evalbinop(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
-  \checktrans{\vb}{\OverlappingSliceAssignment} \checktransarrow \True\OrDynError
+  \techeck(\vb, \OverlappingSliceAssignment) \typearrow \True\OrDynError
 }{
   \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
 }
@@ -1468,7 +1468,7 @@ are well-typed.
   \makeanonymous(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
   L \in \{\TException, \TRecord\}\\
   \assocopt(\fields, \vfield) \typearrow \tyopt\\
-  \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetField(\vletwo, \vfield)
@@ -1514,7 +1514,7 @@ All of the collection field assignable expressions in
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\\\\
   \assocopt(\fields, \vfield) \typearrow \tyopt\\
-  \checktrans{\tyopt \neq \None}{\BadField} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetCollectionFields(\vbase, [\vfield])
@@ -1661,7 +1661,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
   \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
   \commonprefixline\\\\
-  \checktrans{\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord, \TCollection\}}{\UnexpectedType} \typearrow \True \OrTypeError
+  \techeck(\astlabel(\tbaseanon) \not\in \{\TBits, \TRecord, \TCollection\}, \UnexpectedType) \typearrow \True \OrTypeError
 }{
   \annotatelexpr(\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
@@ -1721,7 +1721,7 @@ $(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|sta
 \inferrule[non\_empty]{
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
   \assocopt(\vbasefields, \vfield) \typearrow \tyopt\\
-  \checktrans{\tyopt \neq \None}{\BadField} \typearrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyoptp \eqname \some{\vtfield}\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
 }{

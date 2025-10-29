@@ -371,7 +371,7 @@ is illegal for a slice.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \checktrans{\vs \geq 0 \land \vl \geq 0}{\BadIndex} \checktransarrow \DynErrorConfig\\
+  \decheck(\vs \geq 0 \land \vl \geq 0, \BadIndex) \evalarrow \DynErrorConfig\\
   \positionsone \eqdef (\vs + \vl - 1)..\vs\\
   \slicestopositions(\slicestwo) \evalarrow \positionstwo \OrDynError
 }{
@@ -500,7 +500,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
   \bits \eqname \bv[n] ... \bv[1]\\
-  \checktrans{\maxpos < n}{\BadIndex} \checktransarrow \OrDynError\\\\
+  \decheck(\maxpos < n, \BadIndex) \evalarrow \OrDynError\\\\
   \commonsuffixline\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
@@ -559,10 +559,10 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
   \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \checktrans{\listlen{\positions} = m + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
+  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\\\\
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \checktrans{\maxpos < n + 1}{\BadIndex} \checktransarrow \OrDynError\\\\
+  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in 0..n.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in 1..m.\ i = I_j\\

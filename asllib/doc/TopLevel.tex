@@ -1613,7 +1613,7 @@ It produces a build error when given a top-level declaration which is not a func
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item \Prosechecktrans{that $\vdecl$ is a function}{\BuildBadDeclaration};
+  \item \Prosebecheck{that $\vdecl$ is a function}{\BuildBadDeclaration};
   \item view $\vdecl$ as $\DFunc(\funcsig)$;
   \item define $\funcsigp$ as $\funcsig$ with its $\funcbuiltin$ flag set to $\True$;
   \item define $\vdeclp$ as $\DFunc(\funcsigp)$.
@@ -1622,7 +1622,7 @@ It produces a build error when given a top-level declaration which is not a func
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checktrans{\astlabel(\vdecl) = \DFunc}{\BuildBadDeclaration} \typearrow \True \terminateas \BuildErrorConfig\\\\
+  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \terminateas \BuildErrorConfig\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{

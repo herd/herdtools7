@@ -347,10 +347,9 @@
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
 \newcommand\booltrans[0]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}}
 \newcommand\booltransarrow[0]{\longrightarrow}
-\newcommand\checktransname[0]{\hyperlink{def-checktrans}{\textfunc{check}}}
-\newcommand\checktrans[2]{\checktransname\left(#1, \texttt{#2}\right)}
-\newcommand\Prosechecktrans[2]{\hyperlink{def-checktrans}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
-\newcommand\checktransarrow[0]{\longrightarrow}
+\newcommand\Prosetecheck[2]{\hyperlink{relation-techeck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
+\newcommand\Prosebecheck[2]{\hyperlink{relation-becheck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
+\newcommand\becheck[0]{\hyperlink{relation-becheck}{\textfunc{be\_check}}}
 
 \newcommand\termx[0]{\mathit{tx}}
 \newcommand\termy[0]{\mathit{ty}}
@@ -626,6 +625,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for AST builders
+\newcommand\BuildError[1]{\hyperlink{type-builderror}{\textsf{BuildError}}(\texttt{#1})}
 \newcommand\BuildErrorConfig[0]{\hyperlink{def-builderrorconfig}{\texttt{\#BE}}}
 \newcommand\TBuildError[0]{\hyperlink{def-tbuilderror}{\textsf{TBuildError}}}
 \newcommand\ProseOtherwiseBuildError[0]{Otherwise, the result is a build error.}

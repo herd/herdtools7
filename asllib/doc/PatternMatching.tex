@@ -214,7 +214,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(\astlabel(\vtstruct) = \astlabel(\testruct), \BadOperands) \typearrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
@@ -228,9 +228,9 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TBits\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\testruct), \BadOperands) \typearrow \True \OrTypeError\\
   \bitwidthequal(\tenv, \vtstruct, \testruct) \typearrow \vb\\
-  \checktrans{\vb}{BitvectorsDifferentWidths} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
@@ -244,10 +244,10 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
   \commonprefixline\\\\
   \astlabel(\vtstruct) = \TEnum\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\testruct), \BadOperands) \typearrow \True \OrTypeError\\
   \vtstruct \eqname \TEnum(\vlione)\\
   \vtestruct \eqname \TEnum(\vlitwo)\\
-  \checktrans{\vlione = \vlitwo}{EnumDifferentLabels} \checktransarrow \True \OrTypeError\\
+  \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
 }
@@ -260,7 +260,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \testruct \OrTypeError\\\\
   \commonprefixline\\\\
-  \checktrans{\astlabel(\vtstruct) = \astlabel(\testruct)}{\BadOperands} \checktransarrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\testruct), \BadOperands) \typearrow \True \OrTypeError\\
   \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
@@ -365,7 +365,7 @@ whereas \\
                 & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
     \end{array}
   }\\
-  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
@@ -473,7 +473,7 @@ that is, $\PatternLeq(\ve)$;
                 & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
     \end{array}
   }\\
-  \checktrans{\vb}{\BadOperands} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
@@ -569,7 +569,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
                 & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
     \end{array}
   }\\
-  \checktrans{\vb}{InvalidTypesForBinop} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
 }
@@ -777,9 +777,9 @@ The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \checktrans{\astlabel(\vtstruct) = \TTuple}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \vtstruct \eqname \TTuple(\vts)\\
-  \checktrans{\equallength(\vli, \vts)}{\UnexpectedType} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\\\\
   i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
   \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i

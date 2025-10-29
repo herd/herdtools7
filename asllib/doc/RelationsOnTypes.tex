@@ -848,7 +848,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \inferrule[t\_bits]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \exprequal(\tenv, \vet, \ves) \typearrow \vbequal\\
-  \checktrans{\vbequal}{\NoLCA} \checktransarrow \True \OrTypeError
+  \techeck(\vbequal, \NoLCA) \typearrow \True \OrTypeError
 }{
   \lca(\tenv, \overname{\TBits(\vet, \Ignore)}{\vt}, \overname{\TBits(\ves, \Ignore)}{\vs}) \typearrow \overname{\TBits(\vet, \emptylist)}{\tty}
 }
@@ -858,7 +858,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \inferrule[t\_array]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \arraylengthequal(\tenv, \widtht, \widths) \typearrow \vbequallength \OrTypeError\\\\
-  \checktrans{\vbequallength}{\NoLCA} \checktransarrow \True \OrTypeError\\\\
+  \techeck(\vbequallength, \NoLCA) \typearrow \True \OrTypeError\\\\
   \lca(\tenv, \vtyt, \vtys) \typearrow \vtone \OrTypeError
 }{
   {
@@ -874,7 +874,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \inferrule[t\_tuple]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \equallength(\vlit, \vlis) \typearrow \vb\\
-  \checktrans{\vb}{\NoLCA} \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \NoLCA) \typearrow \True \OrTypeError\\\\
   {
     \begin{array}{r}
   \vi\in\listrange(\vlit): \lca(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \\
@@ -1373,8 +1373,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \begin{mathpar}
 \inferrule[string\_concat]{
   \vtone \neq \TBits(\Ignore, \Ignore) \lor \vttwo \neq \TBits(\Ignore, \Ignore) \\
-  \checktrans{\issingular(\vtone)}{\UnexpectedType} \typearrow \True \OrTypeError \\
-  \checktrans{\issingular(\vttwo)}{\UnexpectedType} \typearrow \True \OrTypeError
+  \techeck(\issingular(\vtone), \UnexpectedType) \typearrow \True \OrTypeError \\
+  \techeck(\issingular(\vttwo), \UnexpectedType) \typearrow \True \OrTypeError
 }{
   \applybinoptypes(\tenv, \STRCONCAT, \vtone, \vttwo) \typearrow
   \overname{\TString}{\vt}
@@ -1422,7 +1422,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \begin{mathpar}
 \inferrule[eq\_neq\_enum]{
   \op \in  \{\EQ, \NE\}\\
-  \checktrans{\vlione = \vlitwo}{DifferentEnumLabels} \checktransarrow \True \OrTypeError
+  \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \overname{\TEnum(\vlione)}{\vtone}, \overname{\TEnum(\vlitwo)}{\vttwo}) \typearrow \overname{\TBool}{\vt}
 }
@@ -1843,7 +1843,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
   \op \in \{\SHL, \SHR, \POW\}\\\\
   \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0) \typearrow \vf\\
   \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
-  \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
+  \techeck(\newcs \neq \emptylist, \BadOperands) \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
 }
@@ -1854,7 +1854,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
   \op \in \{\MOD, \DIV, \DIVRM\}\\\\
   \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0)\\
   \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
-  \checktrans{\newcs \neq \emptylist}{\BadOperands} \typearrow \True\OrTypeError
+  \techeck(\newcs \neq \emptylist, \BadOperands) \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
 }
@@ -3171,7 +3171,7 @@ The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a si
   \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
   \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
   \bitwidthequal(\tenv, \vn, \vm) \typearrow \vb\\
-  \checktrans{\vb}{\UnexpectedType} \checktransarrow \True \OrTypeError
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError
 }{
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True
 }

@@ -1012,7 +1012,7 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \inferrule{
   \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\\\\
   \declaredparameters \eqdef [(\vp, \Ignore) \in \funcsig.\funcparameters: \vp]\\
-  \checktrans{\inferredparameters = \declaredparameters}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
+  \techeck(\inferredparameters = \declaredparameters, \BadSubprogramDeclaration) \typearrow \True \OrTypeError
 }{
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
@@ -1372,7 +1372,7 @@ for the expression \verb|A| appearing in the return type.
 
 \begin{mathpar}
 \inferrule[etuple]{
-  \checktrans{|\es| = 1}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
+  \techeck(\es = 1, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
   \es \eqname [\ve]\\
   \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
@@ -1790,7 +1790,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
     }\\
   \addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow
   (\tenvone, \namep) \OrTypeError\\\\
-  \checktrans{G^\tenvone.\subprograms(\namep) = \bot}{\IdentifierAlreadyDeclared} \checktransarrow \True \terminateas \IdentifierAlreadyDeclared \\\\
+  \techeck(G^\tenvone.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \\\\
   \newfuncsig \eqdef \funcsig[\funcname \mapsto \namep] \\\\
   \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
 }{
@@ -2019,7 +2019,7 @@ are ill-typed due to subprogram declaration clashes.
   \vb_{\namep} \OrTypeError
     \end{array}\right)
   }\\\\
-  \namep \in \othernames: \checktrans{\neg\vb_{\namep}}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError\\\\
+  \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
   \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}],  L^\tenv)
 }{
   \addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow
@@ -2127,7 +2127,7 @@ qualifier, yet it returns via a \passstatementterm.
 \begin{mathpar}
 \inferrule{
   \approxstmt(\tenv, \vbody) \typearrow \absconfigs\\
-  \checktrans{\absconfigs \subseteq \allowedabsconfigs(\vf)}{\BadSubprogramDeclaration} \typearrow \True \OrTypeError
+  \techeck(\absconfigs \subseteq \allowedabsconfigs(\vf), \BadSubprogramDeclaration) \typearrow \True \OrTypeError
 }{
   \checkcontrolflow(\tenv, \vf, \vbody) \typearrow \True
 }
