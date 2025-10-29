@@ -22,7 +22,8 @@ module type S = sig
 
   val pp_rmw : bool (* backward compatibility *) -> rmw -> string
   val is_one_instruction : rmw -> bool
-  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  (* The first boolean indicates whether wildcard syntax is included in the fold *)
+  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
   (* Second round of fold, for rmw with back compatible name *)
   val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool

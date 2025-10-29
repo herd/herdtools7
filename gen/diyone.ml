@@ -260,6 +260,7 @@ let () =
     let moreedges = !Config.moreedges
     let realdep = !Config.realdep
     let variant = !Config.variant
+    let wildcard = false
   end in
   (match !Config.arch with
   | `X86 ->

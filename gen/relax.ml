@@ -33,7 +33,7 @@ module type S = sig
   val bc_dp : dp -> sd -> extr -> relax
 
 (* Call function over all reckognized relaxations *)
-  val fold_relax : (relax -> 'a -> 'a) -> 'a -> 'a
+  val fold_relax : bool -> (relax -> 'a -> 'a) -> 'a -> 'a
 
   val compare : relax -> relax -> int
   val pp_relax : relax -> string
@@ -165,18 +165,18 @@ and type edge = E.edge
 
 (* Fold over all relaxations *)
 
-        let fold_relax f k =
+        let fold_relax wildcard f k =
           let k = E.fold_edges (fun e -> f (ERS [e])) k in
           let k =
             F.fold_cumul_fences
               (fun fe k ->
                 let k =
-                  Code.fold_sd
+                  Code.fold_sd wildcard
                     (fun sd k ->
                       let k = f (abc_fence fe sd Irr Irr) k in
                       f (abc_fence fe sd (Dir R) (Dir W)) k)
                     k in
-                Code.fold_sd_extr
+                Code.fold_sd_extr wildcard
                   (fun sd e k ->
                     let k = f (ac_fence fe sd Irr e) k in
                     let k = f (ac_fence fe sd (Dir R) e) k in
@@ -186,13 +186,13 @@ and type edge = E.edge
           let k =
             F.fold_dpw
               (fun dpw k ->
-                Code.fold_sd
+                Code.fold_sd wildcard
                   (fun sd k -> f (bc_dp dpw sd (Dir W)) k)
                   k) k in
           let k = f PPO k in
           k
 
-        let iter_relax = Misc.fold_to_iter fold_relax
+        let iter_relax wildcard = Misc.fold_to_iter (fold_relax wildcard)
 
 
 (***********)
@@ -209,7 +209,7 @@ and type edge = E.edge
 
 (* Fill up lexeme table *)
         let () =
-          iter_relax
+          iter_relax E.wildcard
             (fun e ->
               let pp = pp_relax e in
               Hashtbl.add t pp e);

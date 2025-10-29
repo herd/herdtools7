@@ -32,7 +32,7 @@ module
 
     let is_one_instruction _ = I.is_one_instruction
 
-    let fold_rmw f r = f () r
+    let fold_rmw _b f r = f () r
     let fold_rmw_compat f r = f () r
 
     let applies_atom_rmw () ar aw = match ar,aw with

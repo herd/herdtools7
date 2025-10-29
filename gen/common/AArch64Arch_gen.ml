@@ -793,17 +793,17 @@ let fold_aop f r =
   let r = f A_CLR r in
   r
 
-let fold_rmw f r =
+let fold_rmw wildcard f r =
   let r = f LrSc r in
   let r = f Swp r in
   let r = f Cas r in
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
-  let r = f AllAmo r in
+  let r = if wildcard then f AllAmo r else r in
   r
 
 let all_concrete_rmw =
-  fold_rmw ( fun rmw acc ->
+  fold_rmw false ( fun rmw acc ->
     if rmw <> AllAmo && rmw <> LrSc then rmw :: acc else acc
   ) []
 let expand_rmw rmw = match rmw with
