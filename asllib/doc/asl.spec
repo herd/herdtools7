@@ -3101,7 +3101,6 @@ relation can_omit_stdlib_param(func_sig: func) ->
   defined by {func_sig} can be omitted (and thus
   automatically inserted), yielding the result in {b}.",
   prose_application = "",
-  math_macro = \canomitstdlibparam
 };
 
 relation check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
