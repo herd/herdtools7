@@ -31,7 +31,6 @@ type env = StaticEnv.env
 (** {1 Predicates on types} *)
 
 val is_builtin_singular : ty -> bool
-
 val is_singular : env -> ty -> bool
 
 val is_named : ty -> bool
