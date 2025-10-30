@@ -610,16 +610,6 @@ let max_set = IntSet.max_elt
         let r,i,c,st = Comp.emit_obs Pte st p i x in
         i,code@c,F.add_final_pte p r v f,st
 
-  let add_co_local_check_pte avoid ns st p i code f =
-    let lst = Misc.last ns in
-    if U.check_here lst then
-      match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,Pte ->
-          do_add_local_check_pte avoid st p i code f lst x
-      | _ -> i,code,f,st
-    else
-      i,code,f,st
-
   let add_co_local_check avoid_ptes lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
@@ -728,13 +718,11 @@ let max_set = IntSet.max_elt
               (fun f (r,v) -> F.add_final_v p r (IntSet.singleton v) f)
               f xenv in
           let i,c,f,st =
-            match O.cond with
-            | Unicond -> i,c,f,st
-            | Cycle|Observe ->
-                match O.do_observers with
-                | Local -> add_co_local_check no_local_ptes lsts n st p i c f
-                | Avoid|Accept|Enforce|Three|Four|Infinity ->
-                    add_co_local_check_pte no_local_ptes n st p i c f in
+            match O.cond,O.do_observers with
+            | Unicond,_
+            | _,(Avoid|Accept|Enforce|Three|Four|Infinity) -> i,c,f,st
+            | (Cycle|Observe),Local ->
+              add_co_local_check no_local_ptes lsts n st p i c f in
           let i,c,st = Comp.postlude st p i c in
           let env_p = A.get_env st in
           let foks = gather_final_oks p st in
