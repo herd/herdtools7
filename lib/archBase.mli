@@ -75,11 +75,7 @@ module type S = sig
   val map_addrs :
       (ParsedConstant.v -> ParsedConstant.v) -> instruction -> instruction
 
-  (* Normalize instruction (for hashes) *)
-  val norm_ins : instruction -> instruction
-
-  (* Check validity of instructions, beyond parsing *)
-  val is_valid : instruction -> bool
+  include InstrUtils.S with type instr_exec := instruction
 
   include Pseudo.S
    with type ins = instruction

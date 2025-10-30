@@ -15,36 +15,43 @@
 (****************************************************************************)
 
 module type S = sig
+
+  type exec
   type t
+
+  val from_exec : exec -> t
+  val to_exec : t -> exec
+
+  val nop : t option
+  val is_nop : t -> bool
+
   val compare : t -> t -> int
   val eq : t -> t -> bool
   val pp : t -> string
   val tr : InstrLit.t -> t
-  val nop : t option
-  val is_nop : t -> bool
-
-  val can_overwrite : t -> bool
-
-  val get_exported_label : t -> BranchTarget.t option
 
   module Set : MySet.S with type elt = t
 end
 
 module No (I:sig type instr end) = struct
+
+  type exec = I.instr
   type t = I.instr
 
   let fail msg =
-    Warn.fatal "Functionality %s not implemented for -variant self" msg
+    Warn.fatal "Instruction as data, functionality %s not implemented" msg
 
-  let compare _ _ = fail ""
-  let eq _ _ = fail ""
-  let pp _ = fail ""
+  let from_exec i = i
+  let to_exec i = i
+
+  let nop = None
+  let is_nop _ = false
+
+  let compare _ _ = fail "compare"
+  let eq _ _ = fail "eq"
+  let pp _ = fail "pp"
   let tr i =
     fail ("litteral instruction " ^ InstrLit.pp i)
-  let nop = None
-  let is_nop _ = fail "is_nop"
-  let can_overwrite _ = false
-  let get_exported_label _ = None
 
   module Set =
     MySet.Make
@@ -57,30 +64,33 @@ end
 module
   WithNop
     (I:sig
-         type instr
-         val nop : instr
-         val compare : instr -> instr -> int
-       end) =
-  struct
-    type t = I.instr
+      type instr val nop : instr val compare : instr -> instr -> int
+    end) = struct
 
-    let fail msg =
-      Warn.fatal "Functionality %s not implemented for -variant self" msg
+  type exec = I.instr
+  type t = I.instr
 
-    let compare = I.compare
-    let eq i1 i2 = I.compare i1 i2 = 0
-    let pp _ = fail ""
-    let tr i =
-      fail ("litteral instruction " ^ InstrLit.pp i)
-    let nop = Some I.nop
-    let is_nop i = eq i I.nop
-    let can_overwrite _ = false
-    let get_exported_label _ = None
+  let fail msg =
+    Warn.fatal "Instruction as data, functionality %s not implemented" msg
 
-    module Set =
-      MySet.Make
-        (struct
-          type t = I.instr
-          let compare = I.compare
-        end)
-  end
+  let from_exec i = i
+  let to_exec i = i
+
+  let eq i1 i2 = I.compare i1 i2 = 0
+  let nop = Some I.nop
+  let is_nop = eq I.nop
+
+  let compare  = I.compare
+
+  let pp _ = fail "pp"
+  let tr i =
+    fail ("litteral instruction " ^ InstrLit.pp i)
+
+  module Set =
+    MySet.Make
+      (struct
+        type t = I.instr
+        let compare = compare
+      end)
+
+end

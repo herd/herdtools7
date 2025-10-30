@@ -653,6 +653,40 @@ let map_addrs _f ins = ins
 
 (* Go back to 32bits mode *)
 
+let is_data r1 i = match i with
+| Pstore (_,r,_,_)
+| Pstorex (_,r,_,_)
+| Pstwcx (r,_,_)
+  -> r1 = r
+| _ -> false
+
+let get_next = function
+  | Pnop
+  | Padd _ | Psub (_, _, _, _)|Psubf (_, _, _, _)
+  | Por (_, _, _, _)|Pand (_, _, _, _)|Pxor (_, _, _, _)
+  |Pmull (_, _, _, _)|Pdiv (_, _, _, _)|Paddi (_, _, _)|Prlwinm (_,_,_,_,_)
+  |Paddis _ |Prlwimi (_,_,_,_,_) | Pclrldi (_,_,_) | Pextsw _
+  | Pandi (_, _, _)|Pori (_, _, _)|Pxori (_, _, _)|Pmulli (_, _, _)
+  |Pli (_, _)|Plis(_,_)
+  |Pcmpwi (_, _, _)|Pcmpw (_, _, _)|Plwzu(_,_,_)
+  |Plwa _
+  |Pmr (_, _)|Pstwu(_,_,_)| Pcmplwi (_,_,_)
+  |Plwarx (_, _, _)|Pstwcx (_, _, _)
+  |Pload _|Ploadx _|Pstore _|Pstorex _| Plwax _
+  |Psync|Peieio|Pisync|Plwsync
+  |Pdcbf (_, _)|Pnor (_, _, _, _)|Pneg (_, _, _)
+  |Pslw (_, _, _, _)|Psrawi (_, _, _, _)|Psraw (_, _, _, _)
+  |Plmw _|Pstmw _
+  |Pcomment _ -> [Label.Next]
+  |Pb lbl -> [Label.To lbl]
+  |Pbcc (_, lbl) -> [Label.Next;Label.To lbl]
+        (* Hum *)
+  |Pbl _ -> [Label.Next]
+  |Pblr|Pmtlr _|Pmflr _|Pmfcr _ -> []
+
+
+(* InstrUtil inlined, specific *)
+
 let norm_ins ins =
   let open MachSize in
   match ins with
@@ -690,39 +724,15 @@ let norm_ins ins =
   | Plwax (S128, _, _, _)
   | Pstorex (S128, _, _, _) -> assert false
 
-let is_data r1 i = match i with
-| Pstore (_,r,_,_)
-| Pstorex (_,r,_,_)
-| Pstwcx (r,_,_)
-  -> r1 = r
-| _ -> false
-
-let get_next = function
-  | Pnop
-  | Padd _ | Psub (_, _, _, _)|Psubf (_, _, _, _)
-  | Por (_, _, _, _)|Pand (_, _, _, _)|Pxor (_, _, _, _)
-  |Pmull (_, _, _, _)|Pdiv (_, _, _, _)|Paddi (_, _, _)|Prlwinm (_,_,_,_,_)
-  |Paddis _ |Prlwimi (_,_,_,_,_) | Pclrldi (_,_,_) | Pextsw _
-  | Pandi (_, _, _)|Pori (_, _, _)|Pxori (_, _, _)|Pmulli (_, _, _)
-  |Pli (_, _)|Plis(_,_)
-  |Pcmpwi (_, _, _)|Pcmpw (_, _, _)|Plwzu(_,_,_)
-  |Plwa _
-  |Pmr (_, _)|Pstwu(_,_,_)| Pcmplwi (_,_,_)
-  |Plwarx (_, _, _)|Pstwcx (_, _, _)
-  |Pload _|Ploadx _|Pstore _|Pstorex _| Plwax _
-  |Psync|Peieio|Pisync|Plwsync
-  |Pdcbf (_, _)|Pnor (_, _, _, _)|Pneg (_, _, _)
-  |Pslw (_, _, _, _)|Psrawi (_, _, _, _)|Psraw (_, _, _, _)
-  |Plmw _|Pstmw _
-  |Pcomment _ -> [Label.Next]
-  |Pb lbl -> [Label.To lbl]
-  |Pbcc (_, lbl) -> [Label.Next;Label.To lbl]
-        (* Hum *)
-  |Pbl _ -> [Label.Next]
-  |Pblr|Pmtlr _|Pmflr _|Pmfcr _ -> []
-
-
 let is_valid _ = true
+
+let get_exported_label _ = None
+
+let nop = Some Pnop
+
+let is_nop = function
+  | Pnop -> true
+  | _ -> false
 
 include Pseudo.Make
     (struct
@@ -1043,10 +1053,4 @@ let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
 
-module Instr =
-  Instr.WithNop
-    (struct
-      type instr = instruction
-      let nop = Pnop
-      let compare = compare
-    end)
+module Instr = Instr.No(struct type instr = instruction end)

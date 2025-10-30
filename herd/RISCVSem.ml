@@ -19,7 +19,7 @@
 module
   Make
     (C:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = RISCVBase.instruction)
+    (V:Value.S with type Cst.Instr.exec = RISCVBase.instruction)
     =
   struct
     module RISCV = RISCVArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

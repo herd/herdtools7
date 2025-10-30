@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2020-present Institut National de Recherche en Informatique et *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,37 +14,42 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Instructions as data *)
+(** Utilities for instructions *)
 
-module type S = sig
-  type exec (* Instruction as instruction *)
-  type t    (* Instruction as data *)
-
-  val from_exec : exec -> t
-  val to_exec : t -> exec
-
-  val nop : t option
-  val is_nop : t -> bool
-
-  val compare : t -> t -> int
-  val eq : t -> t -> bool
-  val pp : t -> string
-  val tr : InstrLit.t -> t
-
-  module Set : MySet.S with type elt = t
-end
+module type S =
+  sig
+    type instr_exec
+    val norm_ins : instr_exec -> instr_exec
+    val is_valid : instr_exec -> bool
+    val get_exported_label : instr_exec -> BranchTarget.t option
+  end
 
 module No :
-  functor (I:sig type instr end)
-    -> S
-       with type exec = I.instr and type t = I.instr
+  functor (I : sig type instr end)
+  -> S with type instr_exec = I.instr
 
 module WithNop :
   functor
-    (I:
-       sig
-         type instr val nop : instr val compare : instr -> instr -> int
-       end)
-    -> S
-       with type exec = I.instr and type t = I.instr
+    (I : sig
+           type instr
+           val nop : instr
+           val compare : instr -> instr -> int
+         end)
+  ->
+  sig
+    include S with type instr_exec = I.instr
+    val nop : I.instr option
+    val is_nop : I.instr -> bool
+  end
 
+module type Tr =
+  sig
+    type exec
+    type data
+    val from_exec : exec -> data
+    val to_exec : data -> exec
+  end
+
+module IdTr :
+  functor (I : sig type instr end)
+  ->  Tr with type exec = I.instr and type data = I.instr

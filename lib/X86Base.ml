@@ -509,15 +509,6 @@ let rec map_addrs f =
   | I_MOVSD
     -> ins
 
-
-let norm_ins ins = match ins with
-| I_MOVB (eff,op) -> I_MOV (eff,op)
-| I_MOVW (eff,op) -> I_MOV (eff,op)
-| I_MOVL (eff,op) -> I_MOV (eff,op)
-| I_MOVQ (eff,op) -> I_MOV (eff,op)
-| I_MOVT (eff,op) -> I_MOV (eff,op)
-| _ -> ins
-
 (* PLDI submission, complete later ? *)
 let is_data _ _ = assert false
 
@@ -544,7 +535,16 @@ let rec get_next = function
   | I_JMP lbl-> [Label.To lbl]
   | I_JCC (_,lbl) -> [Label.Next; Label.To lbl]
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
+
+(* Override *)
+let norm_ins ins = match norm_ins ins with
+| I_MOVB (eff,op) -> I_MOV (eff,op)
+| I_MOVW (eff,op) -> I_MOV (eff,op)
+| I_MOVL (eff,op) -> I_MOV (eff,op)
+| I_MOVQ (eff,op) -> I_MOV (eff,op)
+| I_MOVT (eff,op) -> I_MOV (eff,op)
+| _ -> ins
 
 include Pseudo.Make
     (struct

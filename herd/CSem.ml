@@ -21,7 +21,7 @@ module
   Make
     (Conf:Config)
     (V:Value.S with
-      type Cst.Instr.t = CBase.instruction
+      type Cst.Instr.exec = CBase.instruction
       and type arch_extra_op = CBase.arch_extra_op
       and type 'a arch_constr_op = 'a CBase.arch_constr_op) = struct
     let unroll =

@@ -227,7 +227,7 @@ let do_dump_instruction pk i = match i with
 
 let dump_instruction i = do_dump_instruction (sprintf "%i") i
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make
     (struct
@@ -331,9 +331,6 @@ let map_regs f_reg f_symb =
   map_ins
 
 (* Seems to work for other architectures *)
-
-let norm_ins ins = ins
-
 
 let do_fold_addrs f =
  let fold_roa roa c = match roa with

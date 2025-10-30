@@ -370,9 +370,6 @@ let fold_addrs _f c _ins = c
 
 let map_addrs _f ins = ins
 
-(* No normalisation (yet ?) *)
-let norm_ins ins = ins
-
 (* Instruction continuation *)
 let get_next = function
   | NOP
@@ -392,7 +389,13 @@ let get_next = function
   | B lbl -> [Label.To lbl]
   | BC (_,_,_,lbl)|BCZ (_,_,lbl) -> [Label.Next; Label.To lbl;]
 
-let is_valid _ = true
+include
+  InstrUtils.WithNop
+    (struct
+      type instr = instruction
+      let nop = NOP
+      let compare = compare
+    end)
 
 include Pseudo.Make
     (struct
@@ -446,10 +449,4 @@ let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
 
-module Instr =
-  Instr.WithNop
-    (struct
-      type instr = instruction
-      let nop = NOP
-      let compare = compare
-    end)
+module Instr = Instr.No(struct type instr = instruction end)

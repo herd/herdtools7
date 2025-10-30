@@ -560,7 +560,11 @@ module RegMap = A.RegMap)
           | _ -> k)
           [] t.Tmpl.init
 
-      let nop_init t = List.exists (fun (_,v) -> A.V.is_nop v) t.Tmpl.init
+      let is_nop_v = function
+        | Constant.Instruction i -> A.V.Instr.is_nop i
+        | _ -> false
+
+      let nop_init t = List.exists (fun (_,v) -> is_nop_v v) t.Tmpl.init
 
       let dump_fun  chan args0 globEnv _volatileEnv proc t =
         if debug then debug_globEnv globEnv ;

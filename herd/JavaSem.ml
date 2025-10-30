@@ -20,7 +20,7 @@ module
   Make
     (Conf:Sem.Config)
     (V:Value.S with
-      type Cst.Instr.t = JavaBase.instruction
+      type Cst.Instr.exec = JavaBase.instruction
       and type arch_extra_op = JavaBase.arch_extra_op
       and type 'a arch_constr_op = 'a JavaBase.arch_constr_op) = struct
 

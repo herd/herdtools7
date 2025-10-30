@@ -26,9 +26,13 @@ module type Base = sig
 
   type reg
   type instruction
+
   val dump_instruction : instruction -> string
 
-  module V : Constant.S with type Instr.t = instruction
+  module
+    V : Constant.S
+    with type Instr.t = instruction
+     and type Instr.exec = instruction
 
   module RegSet : MySet.S with type elt = reg
   module RegMap : MyMap.S with type key = reg
@@ -108,7 +112,10 @@ module type S =
 
     include ArchBase.S
 
-    module V : Constant.S with type Instr.t = instruction
+    module
+      V : Constant.S
+      with type Instr.t = instruction
+      and type Instr.exec = instruction
 
 (* Reaction to different types, fail or warn *)
     val error : (CType.t -> CType.t -> bool)

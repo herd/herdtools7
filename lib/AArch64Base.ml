@@ -3508,6 +3508,13 @@ let is_valid i =
     -> false
   | _ -> true
 
+let nop = Some I_NOP
+
+let is_nop = function
+  | I_NOP -> true
+  | _ -> false
+
+
 module PseudoI = struct
       type ins = instruction
       type pins = parsedInstruction
@@ -3901,14 +3908,24 @@ module
        sig
          val is_morello : bool
          val parser : string -> instruction
-       end) = struct
+       end)
+    (Tr:InstrUtils.Tr with type data = instruction)  = struct
 
+  type exec = Tr.exec
   type t = instruction
+
+  let from_exec = Tr.from_exec
+  and to_exec = Tr.to_exec
+
+  let nop = Some I_NOP
+  let is_nop = function
+    | I_NOP -> true
+    | _ -> false
 
   let compare = Misc.polymorphic_compare
   let eq = (=)
 
-  module PP =MakePP(C)
+  module PP = MakePP(C)
 
   let pp = function
     | I_NOP ->  "NOP"
@@ -3920,14 +3937,7 @@ module
     | LIT_NOP -> I_NOP
     | LIT_INSTR s -> C.parser s
 
-  let nop = Some I_NOP
-
-  let is_nop = function
-    | I_NOP -> true
-    | _ -> false
-
   let can_overwrite =  can_overwrite
-  and get_exported_label = get_exported_label
 
   module Set =
     MySet.Make

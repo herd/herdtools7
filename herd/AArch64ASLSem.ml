@@ -811,8 +811,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr Misc.identity Misc.identity
-        (fun _ -> Warn.fatal "Cannot translate instruction")
+      Constant.map tr Misc.identity Misc.identity Misc.identity
 
     let aarch64_to_asl_bv_cst sz = function
       | V.Var _ as v ->
@@ -1568,10 +1567,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
     let build_semantics test ii =
       let open AArch64Base in
+      (* Check instruction that will be executed by AArch64Sem code *)
       match ii.A.inst with
-      | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0)) (* Specific -> get TLBI key *)
-      | I_OP3 (V64,SUBS,ZR,_,
-               OpExt.(Imm (0,0)|Reg(_,LSL 0))) (* Register or zero comparison *)
+       (* Specific -> get TLBI key *)
+      | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0))
+      (* Register or zero comparison, 64 is for addresses and pteval,
+         32 is for instructions *)
+      | I_OP3 ((V64|V32),SUBS,ZR,_,
+               OpExt.(Imm (0,0)|Reg(_,LSL 0)))
+      (* Those do little more then issuing an effect *)
       | I_DC _|I_IC _ | I_TLBI _ ->
           AArch64Mixed.build_semantics test ii
       | _ -> asl_build_semantics test ii

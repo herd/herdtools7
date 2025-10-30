@@ -19,7 +19,7 @@
 module
   Make
     (C:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = MIPSBase.instruction)
+    (V:Value.S with type Cst.Instr.exec = MIPSBase.instruction)
 =
   struct
     module MIPS = MIPSArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

@@ -4,12 +4,12 @@ ins_t *p;
 0:X1=p; 0:X6=P0:L0;
 1:X1=p; 1:X6=P0:L1;
 }
-  P0           |  P1         ;
- STR X6,[X1]   | STR X6,[X1] ;
-L0:            |             ;
-  ADD W4,W4,#1 |             ;
-L1:            |             ;
-  ADD W4,W4,#2 |             ;
-  LDR X3,[X1]  |             ;
-  LDR W2,[X3]  |             ;
-forall 0:X2=instr:"ADD W4,W4,#1" \/ 0:X2=instr:"ADD W4,W4,#1"
+  P0          |  P1         ;
+ STR X6,[X1]  | STR X6,[X1] ;
+L0:           |             ;
+ ADD W4,W4,#1 |             ;
+L1:           |             ;
+ ADD W4,W4,#2 |             ;
+ LDR X3,[X1]  |             ;
+ LDR W2,[X3]  |             ;
+forall 0:X2=instr:"ADD W4,W4,#1" \/ 0:X2=instr:"ADD W4,W4,#2"

@@ -37,7 +37,7 @@ type 'op binop =
 module
    Make
      (S:Scalar.S)
-     (Extra:ArchOp.WithTr with type scalar = S.t) : ArchOp.S
+     (Extra:ArchOp.WithTr with type scalar = S.t and type instr = AArch64Base.instruction) : ArchOp.S
    with type extra_op1 = Extra.op1
     and type 'a constr_op1 = 'a unop
     and type extra_op = Extra.op
@@ -77,7 +77,7 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
-      | Extra1 op1 -> Extra.pp_op1 hexa op1
+      | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
 
     type scalar = S.t
     type pteval = AArch64PteVal.t
@@ -158,11 +158,14 @@ module
       | Symbolic (Physical _) -> Some (AddrReg { AArch64AddrReg.oa = OutputAddress.PHY ""; AArch64AddrReg.f = 1 })
       | _ -> None
 
-    let exit _ = raise Exit
-
-    let trToExtra cst = Constant.map Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg exit cst
+    let trToExtra cst =
+      Constant.map
+        Misc.identity Extra.toExtraPteVal Extra.toExtraAddrReg
+        Misc.identity cst
     and trFromExtra cst =
-      Constant.map Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg exit cst
+      Constant.map
+        Misc.identity Extra.fromExtraPteVal Extra.fromExtraAddrReg
+        Misc.identity cst
 
     (* Add a PAC field to a virtual address, this function can only add a PAC
        field if the input pointer is canonical, otherwise it raise an error, it is
@@ -203,7 +206,8 @@ module
         with Exit -> None
 
 
-    let do_op1 = function
+    let do_op1 op =
+      match op with
       | AF -> getaf
       | SetAF -> setaf
       | DB -> getdb
@@ -218,10 +222,10 @@ module
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
       | Extra1 op1 ->
-         fun cst ->
+          fun cst ->
            try
              match Extra.do_op1 op1 (trToExtra cst) with
-             | None -> None
+             | None ->  None
              | Some cst -> Some (trFromExtra cst)
            with Exit -> None
 
@@ -237,14 +241,7 @@ module
       AArch64PteVal.andop p @@ S.to_int64 m
       |> Misc.app_opt S.of_int64
 
-    let mask c sz =
-      let open MachSize in
-      let open Constant in
-      match c,sz with
-(* The following are 64bits quantities, the last two being virtual addresses *)
-      | ((PteVal _|Symbolic _|Label _),Quad)
-(* Non-signed 32bit quantity *)
-      | (Instruction _,(Word|Quad))
-        -> Some c
-      | _,_ -> None
+    (* Share code, placement in ASLOp not ideal *)
+    let mask = ASLOp.mask
+
   end

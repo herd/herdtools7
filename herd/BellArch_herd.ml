@@ -18,7 +18,7 @@
 
 module Make
          (C:Arch_herd.Config)
-         (V:Value.S with type Cst.Instr.t  = BellBase.instruction) = struct
+         (V:Value.S with type Cst.Instr.exec  = BellBase.instruction) = struct
   include BellBase
   let is_amo = function
     | Prmw _ -> true
@@ -39,7 +39,10 @@ module Make
 
         let arch = arch
 
+        type instr = instruction
+
         module V = V
+
         let endian = endian
 
         type arch_reg = reg

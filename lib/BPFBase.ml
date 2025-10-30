@@ -390,17 +390,13 @@ let map_regs f_reg f_symb =
 let fold_addrs _f c _ins = c
 let map_addrs _f ins = ins
 
-(* No normalisation (yet ?) *)
-let norm_ins ins = ins
-
 (* Instruction continuation *)
 let get_next = function
   | OP _ | OPI _ | LOAD _ | LDAQ _ | STORE _ | STRL _ | STOREI _ | MOV _ | AMO _ | MOVI _ -> [ Label.Next ]
   | GOTO lbl -> [ Label.To lbl ]
   | JCONDI (_, _, _, lbl) | JCOND (_, _, _, lbl) -> [ Label.Next; Label.To lbl ]
-;;
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make (struct
     type ins = instruction

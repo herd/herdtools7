@@ -167,10 +167,9 @@ let fold_regs (_fc,_fs) acc _ins  = acc
 let map_regs _fc _fs ins          = ins
 let fold_addrs _f acc _ins        = acc
 let map_addrs _f ins              = ins
-let norm_ins ins                  = ins
 let get_next _ins                 = Warn.fatal "Java get_next not implemented"
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make
   (struct

@@ -13,7 +13,10 @@
 
 (** Semantics of BPF instructions *)
 
-module Make (C : Sem.Config) (V : Value.S with type Cst.Instr.t = BPFBase.instruction) =
+module
+  Make
+    (C : Sem.Config)
+    (V : Value.S with type Cst.Instr.exec = BPFBase.instruction) =
 struct
   module BPF = BPFArch_herd.Make (SemExtra.ConfigToArchConfig (C)) (V)
   module Act = MachAction.Make (C.PC) (BPF)

@@ -318,7 +318,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
           | V.Var _ -> k)
         st Label.Full.Set.empty
 
-    module AU = ArchUtils.Make(A)(V.Cst.Instr)
+    module AU = ArchUtils.Make(A)
 
     let get_exported_labels_code test =
       let { Test_herd.nice_prog=prog; _ } = test in

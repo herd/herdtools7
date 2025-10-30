@@ -480,8 +480,6 @@ let fold_addrs _f c _ins = c
 
 let map_addrs _f ins = ins
 
-let norm_ins ins = ins
-
 let get_next = function
   | J lbl -> [Label.To lbl;]
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
@@ -491,7 +489,7 @@ let get_next = function
   | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _|Ext (_,_,_,_)
     -> [Label.Next;]
 
-let is_valid _ = true
+include InstrUtils.No(struct type instr = instruction end)
 
 include Pseudo.Make
     (struct

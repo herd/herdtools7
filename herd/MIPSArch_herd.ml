@@ -18,7 +18,7 @@
 
 module Make
          (C:Arch_herd.Config)
-         (V:Value.S with type Cst.Instr.t  = MIPSBase.instruction ) =
+         (V:Value.S with type Cst.Instr.exec  = MIPSBase.instruction ) =
   struct
     include MIPSBase
     let is_amo _ = false
@@ -62,7 +62,10 @@ module Make
 
           let arch = arch
 
+          type instr = instruction
+
 	  module V = V
+
           let endian = endian
 
 	  type arch_reg = reg
