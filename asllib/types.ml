@@ -99,22 +99,6 @@ let is_builtin_singular ty =
   |: TypingRule.BuiltinSingularType
 (* End *)
 
-(* Begin BuiltinAggregate *)
-let is_builtin_aggregate ty =
-  (match ty.desc with
-  | T_Tuple _ | T_Array _ | T_Collection _ | T_Record _ | T_Exception _ -> true
-  | T_Int _ | T_Bits (_, _) | T_Real | T_String | T_Bool | T_Enum _ | T_Named _
-    ->
-      false)
-  |: TypingRule.BuiltinAggregateType
-(* End *)
-
-(* Begin BuiltinSingularOrAggregate *)
-let is_builtin ty =
-  (is_builtin_singular ty || is_builtin_aggregate ty)
-  |: TypingRule.BuiltinSingularOrAggregate
-(* End *)
-
 (* Begin Named *)
 let is_named ty =
   (match ty.desc with T_Named _ -> true | _ -> false) |: TypingRule.NamedType
@@ -124,33 +108,10 @@ let is_named ty =
 let is_anonymous ty = (not (is_named ty)) |: TypingRule.AnonymousType
 (* End *)
 
-(* A named type is singular if its underlying (a.k.a. anonimized) type is a builtin-singular type,
-   otherwise it is aggregate. *)
+(* A named type is singular if its underlying (a.k.a. anonymized) type is a builtin-singular type. *)
 (* Begin Singular *)
 let is_singular env ty =
   make_anonymous env ty |> is_builtin_singular |: TypingRule.SingularType
-(* End *)
-
-(* A named type is singular if its underlying (a.k.a. anonimized) type is a builtin-aggregate type. *)
-(* Begin Aggregate *)
-let is_aggregate env ty =
-  make_anonymous env ty |> is_builtin_aggregate |: TypingRule.AggregateType
-(* End *)
-
-(* Begin NonPrimitive *)
-let rec is_non_primitive ty =
-  (match ty.desc with
-  | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> false
-  | T_Named _ -> true
-  | T_Tuple tys -> List.exists is_non_primitive tys
-  | T_Array (_, ty) -> is_non_primitive ty
-  | T_Record fields | T_Exception fields | T_Collection fields ->
-      List.exists (fun (_, ty) -> is_non_primitive ty) fields)
-  |: TypingRule.NonPrimitiveType
-(* End *)
-
-(* Begin Primitive *)
-let is_primitive ty = (not (is_non_primitive ty)) |: TypingRule.PrimitiveType
 (* End *)
 
 let parameterized_ty ~loc var = T_Int (Parameterized var) |> add_pos_from loc
@@ -165,7 +126,7 @@ let get_well_constrained_structure env ty =
 
 (* --------------------------------------------------------------------------*)
 
-(* A module for symbolically representing the domain of values for types. *)
+(* A module for symbolically representing the domain of values for integer types. *)
 module Domain = struct
   module IntSet = Diet.Z
 
@@ -378,9 +339,9 @@ module Domain = struct
 
   (* Begin SymdomSubset *)
 
-  (* [symdom_subset env cd1 cd2] conservatively tests whether the set
-     of integers represented by [cd1] is a subset of the set of integers
-     represented by [cd2], in the context of [env]. *)
+  (** [symdom_subset env cd1 cd2] conservatively tests whether the set of
+      integers represented by [cd1] is a subset of the set of integers
+      represented by [cd2], in the context of [env]. *)
   let symdom_subset env cd1 cd2 =
     let open StaticApprox in
     match (cd1, cd2) with
@@ -662,7 +623,8 @@ let find_named_lowest_common_supertype env x1 x2 =
   in
   aux x2
 
-(* [unpack_options li] is [Some [x1; ... x_n]] if [li] is [[Some x1; ... Some x_n]], [None] otherwise *)
+(** [unpack_options li] is [Some [x1; ... x_n]] if [li] is
+    [[Some x1; ... Some x_n]], [None] otherwise *)
 let unpack_options li =
   let exception NoneFound in
   let unpack_one = function Some elt -> elt | None -> raise NoneFound in

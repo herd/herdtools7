@@ -1515,6 +1515,15 @@ is ill-typed, since the field \verb|v| repeats.
 An exception is a \structuredtypeterm{} consisting of a list of field identifiers
 which denote individual storage elements.
 
+\ExampleDef{Exception Types with and without Values}
+\ASLListing{Exception types}{typing-builtinexceptiontype}{\typingtests/TypingRule.BuiltinExceptionType.asl}
+\listingref{typing-builtinexceptiontype} defines two exception types:
+\begin{itemize}
+\item \verb|exception{-}| (for \texttt{Not\_found}), which carries no value; and
+\item \verb|exception { message:string }| (for \texttt{SyntaxException}), which carries a message.
+\end{itemize}
+Notice the similarity with record types.
+
 \ExampleDef{Well-typed Exception Types}
 In \listingref{typing-texception}, all the uses of exception types are well-typed.
 \ASLListing{Well-typed exception types}{typing-texception}{\typingtests/TypingRule.TExceptionDecl.asl}

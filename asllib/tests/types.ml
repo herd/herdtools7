@@ -14,15 +14,11 @@ let env_with_n =
 let builtin_examples () =
   let assert_is_builtin_singular t =
     assert (is_builtin_singular !!t);
-    assert (not (is_builtin_aggregate !!t));
-    assert (is_builtin !!t);
     assert (is_anonymous !!t);
     ()
   in
   let assert_is_builtin_aggregate t =
-    assert (is_builtin_aggregate !!t);
     assert (not (is_builtin_singular !!t));
-    assert (is_builtin !!t);
     assert (is_anonymous !!t)
   in
 
@@ -53,7 +49,6 @@ let builtin_examples () =
 
   (* Not builtin *)
   assert (is_named !!(T_Named "type_x"));
-  assert (not (is_builtin !!(T_Named "type_x")));
   assert (not (is_anonymous !!(T_Named "type_x")));
 
   ()
@@ -75,18 +70,12 @@ let structure_example () =
   (* the named type `T2` whose structure is (integer, integer) *)
   assert (is_named t2);
   assert ((get_structure env t2).desc = T_Tuple [ integer; integer ]);
-  (* Note that (integer, T1) is non-primitive since it uses T1 *)
-  assert (is_non_primitive t2_def);
-  (* the named (hence non-primitive) type `T1` *)
-  assert (is_non_primitive t1);
 
-  (* anonymous primitive type `integer` *)
-  assert (is_primitive integer);
+  (* anonymous type `integer` *)
   assert (is_anonymous integer);
 
-  (* the anonymous non-primitive type `(integer, T1)` whose structure is `(integer, integer)` *)
+  (* the anonymous type `(integer, T1)` whose structure is `(integer, integer)` *)
   assert (is_anonymous t2_def);
-  assert (is_non_primitive t2_def);
   assert ((get_structure env t2).desc = T_Tuple [ integer; integer ]);
 
   ()

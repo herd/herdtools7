@@ -22,8 +22,7 @@
 
 (** Type Algebra *)
 
-(** Types are defined as {!type:AST.ty}. This should map pretty-well with the
-    current version of the Language Reference Manual. *)
+(** Types are defined as {!type:AST.ty}. *)
 
 open AST
 
@@ -31,37 +30,16 @@ type env = StaticEnv.env
 
 (** {1 Predicates on types} *)
 
-val is_builtin : ty -> bool
 val is_builtin_singular : ty -> bool
-val is_builtin_aggregate : ty -> bool
-
-(** Note that a builtin type is either builtin aggregate or builtin singular. *)
-
 val is_singular : env -> ty -> bool
-val is_aggregate : env -> ty -> bool
-
-(** Note that a type is either singular or aggregate. *)
 
 val is_named : ty -> bool
 (** Types declared using the [type] syntax. *)
 
 val is_anonymous : ty -> bool
-(** Those not declared using †he [type] syntax. *)
+(** Types not declared using the [type] syntax. *)
 
 (** Note that a type is either builtin, named or anonymous. *)
-
-val is_primitive : ty -> bool
-(** Types that only use the builtin types. *)
-
-val is_non_primitive : ty -> bool
-(** Types that are named types or which make use of named types.
-
-    Usually for all [ty]:
-    {[
-      is_non_primitive ty = not (is_primitive ty)
-    ]} *)
-
-(** {1 Relations on types} *)
 
 (** {2 Type transformations} *)
 

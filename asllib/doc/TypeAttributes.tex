@@ -6,15 +6,10 @@ This section defines some basic predicates for classifying types as well as
 functions that inspect the structure of types:
 \begin{itemize}
   \item Builtin singular types (\TypingRuleRef{BuiltinSingularType})
-  \item Builtin aggregate types (\TypingRuleRef{BuiltinAggregateType})
-  \item Builtin types (\TypingRuleRef{BuiltinSingularOrAggregate})
   \item Named types (\TypingRuleRef{NamedType})
   \item Anonymous types (\TypingRuleRef{AnonymousType})
   \item Singular types (\TypingRuleRef{SingularType})
-  \item Aggregate types (\TypingRuleRef{AggregateType})
   \item Structured types (\TypingRuleRef{StructuredType})
-  \item Non-primitive types (\TypingRuleRef{NonPrimitiveType})
-  \item Primitive types (\TypingRuleRef{PrimitiveType})
   \item The structure of a type (\TypingRuleRef{Structure})
   \item The underlying type of a type (\TypingRuleRef{MakeAnonymous})
   \item Checked constrained integers (\TypingRuleRef{CheckConstrainedInteger})
@@ -60,99 +55,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 }
 \end{mathpar}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
-
-
 \identd{PQCK} \identd{NZWT}
-
-\TypingRuleDef{BuiltinAggregateType}
-\hypertarget{def-isbuiltinaggregate}{}
-The predicate
-\[
-  \isbuiltinaggregate(\overname{\ty}{\tty}) \;\aslto\; \Bool
-\]
-tests whether the type $\tty$ is a \emph{builtin aggregate type}.
-
-\ProseParagraph
-The builtin aggregate types are:
-\begin{itemize}
-\item tuple;
-\item \texttt{array};
-\item \texttt{record};
-\item \texttt{exception};
-\item \texttt{collection}.
-\end{itemize}
-
-\ExampleDef{Builtin Aggregate Types}
-\listingref{typing-builtinaggregatetypes} provides examples of some builtin aggregate types.
-\ASLListing{Builtin aggregate types}{typing-builtinaggregatetypes}{\typingtests/TypingRule.BuiltinAggregateTypes.asl}
-
-Type \texttt{Pair} is the type of integer and boolean pairs.
-
-Arrays are declared with indices that are either integer-typed
-or enumeration-typed.  In the example above, \texttt{T} is
-declared as an array with an integer-typed index (as indicated
-by the used of the integer-typed constant \texttt{3}) whereas
-\texttt{PointArray} is declared with the index of
-\texttt{Coord}, which is an \enumerationtypeterm{}.
-
-Arrays declared with integer-typed indices can be accessed only by integers ranging from $0$ to
-the size of the array minus $1$. In the example above, $\texttt{T}$ can be accessed with
-one of $0$, $1$, and $2$.
-
-Arrays declared with an enumeration-typed index can only be accessed with labels from the corresponding
-enumeration. In the example above, \texttt{PointArray} can only be accessed with one of the labels
-\texttt{CX}, \texttt{CY}, and \texttt{CZ}.
-
-The (builtin aggregate) type \verb|{ x : real, y : real, z : real }| is a record type with three fields
-\texttt{x}, \texttt{y} and \texttt{z}.
-
-\subsubsection{Builtin Aggregate Exception Types}
-\listingref{typing-builtinexceptiontype} defines two (builtin aggregate) exception types:
-\begin{itemize}
-\item \verb|exception{}| (for \texttt{Not\_found}), which carries no value; and
-\item \verb|exception { message:string }| (for \texttt{SyntaxException}), which carries a message.
-\end{itemize}
-Notice the similarity with record types and that the empty field list \verb|{}| can be
-omitted in type declarations, as is the case for \texttt{Not\_found}.
-
-\ASLListing{Exception types}{typing-builtinexceptiontype}{\typingtests/TypingRule.BuiltinExceptionType.asl}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{ \vb \eqdef \astlabel(\tty) \in \{\TTuple, \TArray, \TRecord, \TException, \TCollection\} }
-{ \isbuiltinaggregate(\tty) \typearrow \vb }
-\end{mathpar}
-\CodeSubsection{\BuiltinAggregateBegin}{\BuiltinAggregateEnd}{../types.ml}
-
-\identd{PQCK} \identd{KNBD}
-
-\TypingRuleDef{BuiltinSingularOrAggregate}
-\hypertarget{def-isbuiltin}{}
-The predicate
-\[
-  \isbuiltin(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
-\]
-tests whether the type $\tty$ is a \emph{builtin type}, yielding the result in $\vb$.
-
-\ExampleDef{Builtin Types}
-In the specification
-\begin{lstlisting}
-type ticks of integer;
-\end{lstlisting}
-the type \texttt{integer} is a builtin type but the type of \texttt{ticks} is not.
-
-\ProseParagraph
-\Proseeqdef{$\vb$}{$\True$ if and only if either $\tty$ is singular or $\tty$ is builtin aggregate}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \isbuiltinsingular(\tty) \lor \isbuiltinaggregate(\tty)
-}{
-  \isbuiltin(\tty) \typearrow \vbone \lor \vbtwo
-}
-\end{mathpar}
-\CodeSubsection{\BuiltinSingularOrAggregateBegin}{\BuiltinSingularOrAggregateEnd}{../types.ml}
 
 \TypingRuleDef{NamedType}
 \hypertarget{def-isnamed}{}
@@ -253,43 +156,6 @@ type C of B;
 \end{mathpar}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
-\TypingRuleDef{AggregateType}
-\hypertarget{def-isaggregate}{}
-The predicate
-\[
-  \isaggregate(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
-  \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-tests whether the type $\tty$ is an \emph{aggregate type} in the \staticenvironmentterm{} $\tenv$,
-yielding the result in $\vb$.
-
-\ExampleDef{Aggregate Types}
-In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all aggregate types:
-\begin{lstlisting}
-type A of (integer, integer);
-type B of A;
-type C of B;
-\end{lstlisting}
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item obtaining the \underlyingtypeterm\ of $\tty$ in the environment $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item $\vtone$ is a builtin aggregate.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
-  \isbuiltinaggregate(\vtone) \typearrow \vb
-}{
-  \isaggregate(\tenv, \tty) \typearrow \vb
-}
-\end{mathpar}
-\identr{GVZK}
-\CodeSubsection{\AggregateBegin}{\AggregateEnd}{../types.ml}
-
 \TypingRuleDef{StructuredType}
 \hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
@@ -325,134 +191,6 @@ $\tty$.
 \end{mathpar}
 
 \identd{WGQS} \identd{QXYC}
-
-\TypingRuleDef{NonPrimitiveType}
-\hypertarget{def-isnonprimitive}{}
-The predicate
-\[
-  \isnonprimitive(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
-\]
-tests whether the type $\tty$ is a \emph{non-primitive type}.
-
-\ExampleDef{Non-primitive Types}
-The following types are non-primitive:
-
-\begin{tabular}{ll}
-\textbf{Type definition} & \textbf{Reason for being non-primitive}\\
-\hline
-\texttt{type A of integer}  & Named types are non-primitive\\
-\texttt{(integer, A)}       & The second component, \texttt{A}, has non-primitive type\\
-\texttt{array[6] of A}      & Element type \texttt{A} has a non-primitive type\\
-\verb|record { a : A }|     & The field \texttt{a} has a non-primitive type
-\end{tabular}
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{singular}
-  \begin{itemize}
-  \item $\tty$ is a builtin singular type;
-  \item $\vb$ is $\False$.
-  \end{itemize}
-  \item \AllApplyCase{named}
-  \begin{itemize}
-    \item $\tty$ is a named type;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\tty$ is a \tupletypeterm{} $\vli$;
-    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\vli$.
-  \end{itemize}
-  \item \AllApplyCase{array}
-    \begin{itemize}
-    \item $\tty$ is an array of type $\tty'$
-    \item $\vb$ is $\True$ if and only if $\tty'$ is non-primitive.
-    \end{itemize}
-  \item \AllApplyCase{structured}
-    \begin{itemize}
-    \item $\tty$ is a \structuredtypeterm\ with fields $\fields$;
-    \item $\vb$ is $\True$ if and only if there exists a non-primitive type in $\fields$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-The cases \textsc{tuple} and \textsc{structured} below, use the notation $\vb_\vt$ to name
-Boolean variables by using the types denoted by $\vt$ as a subscript.
-\begin{mathpar}
-\inferrule[singular]{
-  \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
-}{
-  \isnonprimitive(\tty) \typearrow \False
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[named]{\astlabel(\tty) = \TNamed}{\isnonprimitive(\tty) \typearrow \True}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \vt \in \tys: \isnonprimitive(\vt) \typearrow \vb_{\vt}\\
-  \vb \eqdef \bigvee_{\vt \in \tys} \vb_{\vt}
-}{
-  \isnonprimitive(\overname{\TTuple(\tys)}{\tty}) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array]{
-  \isnonprimitive(\tty') \typearrow \vb
-}{
-  \isnonprimitive(\overname{\TArray(\Ignore, \tty')}{\tty}) \typearrow \vb
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  L \in \{\TRecord, \TException, \TCollection\}\\
-  (\Ignore,\vt) \in \fields : \isnonprimitive(\vt) \typearrow \vb_\vt\\
-  \vb \eqdef \bigvee_{\vt \in \vli} \vb_{\vt}
-}{
-  \isnonprimitive(\overname{L(\fields)}{\tty}) \typearrow \vb
-}
-\end{mathpar}
-\CodeSubsection{\NonPrimitiveBegin}{\NonPrimitiveEnd}{../types.ml}
-\identd{GWXK}
-
-\TypingRuleDef{PrimitiveType}
-\hypertarget{def-isprimitive}{}
-The predicate
-\[
-  \isprimitive(\overname{\ty}{\tty}) \;\aslto\; \Bool
-\]
-tests whether the type $\tty$ is a \emph{primitive type}.
-
-\ExampleDef{Primitive Types}
-The following types are primitive:
-
-\begin{tabular}{ll}
-\textbf{Type definition} & \textbf{Reason for being primitive}\\
-\hline
-\texttt{integer} & Integers are primitive\\
-\texttt{(integer, integer)} & All tuple elements are primitive\\
-\texttt{array[5] of integer} & The array element type is primitive\\
-\verb|record {ticks : integer}| & The single field \texttt{ticks} has a primitive type
-\end{tabular}
-
-\ProseParagraph
-A type $\tty$ is primitive if it is not non-primitive.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \isnonprimitive(\tty) \typearrow \vb
-}{
-  \isprimitive(\tty) \typearrow \neg\vb
-}
-\end{mathpar}
-\CodeSubsection{\PrimitiveBegin}{\PrimitiveEnd}{../types.ml}
-\identd{GWXK}
 
 \TypingRuleDef{Structure}
 \RenderRelation{get_structure}
