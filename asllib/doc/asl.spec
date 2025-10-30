@@ -1545,7 +1545,7 @@ relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitf
 relation bitfield_get_name(bf: bitfield) ->
          (name: Identifier)
 {
-  "given a bitfield {bf}, returns the name of the bitfield in {name}.",
+  "given a bitfield {bf}, returns {name}, the name of the bitfield {bf}.",
   prose_application = "\hyperlink{relation-bitfieldgetname}{extracting} name from bitfield {bf} yields {name}"
 };
 
@@ -2162,8 +2162,7 @@ relation mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
 relation to_well_constrained(t: ty) ->
          (t': ty)
 {
-  "returns the \wellconstrainedversionterm{} of a type {t}
-  in {t'}, which converts
+  "returns {t'}, the \wellconstrainedversionterm{} of a type {t}, which converts
   \parameterizedintegertypesterm{} to
   \wellconstrainedintegertypesterm{}, and leaves all
   other types as are.",
@@ -2297,13 +2296,13 @@ relation concat_bitvectors(vs: list0(tbitvector)) ->
   prose_application = "",
 };
 
-typedef slice_as_pair { "slice" } = (s: tint, l: tint);
-
-relation slices_to_positions(slices: list1(slice_as_pair)) ->
+relation slices_to_positions(slices: list1((s: tint, l: tint))) ->
          (positions: list0(N)) | TDynError
 {
   "returns the list of positions (indices) specified by
-  the slices {slices}, if all slices consist of only
+  a list of slices expressed as pairs. Each pair specifies the start
+  and length of a slice.
+  If all slices consist of only
   non-negative integers. \ProseOtherwiseDynamicError",
   prose_application = "",
 };
@@ -3781,7 +3780,7 @@ relation polynomial_to_expr(p: polynomial) ->
   prose_application = "\hyperlink{relation-polynomialtoexpr}{converting} polynomial {p} to an expression yields {e}"
 };
 
-relation compare_monomial_bindings((m1: monomial, q1: N), (m2: monomial, q2: N)) ->
+relation compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q)) ->
          (s: Sign)
 {
   "compares two monomial bindings given by $(\vmone,
@@ -3794,7 +3793,7 @@ relation compare_monomial_bindings((m1: monomial, q1: N), (m2: monomial, q2: N))
   prose_application = "",
 };
 
-relation monomials_to_expr(monoms: list0((m: unitary_monomial, q: N))) ->
+relation monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
          (e: expr, s: Sign)
 {
   "transforms a list consisting of pairs of unitary

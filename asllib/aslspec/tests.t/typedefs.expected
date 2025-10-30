@@ -38,20 +38,20 @@
 \cup\ & \Int \rightarrow \Int\\
 \cup\ & \Int \partialto \Int\\
 \cup\ & \{\One, \Two\}\\
-\cup\ & (\Int, \Int)\\
-\cup\ & \Rec(\Int, \Int)\mathhypertarget{type-Rec}\\
+\cup\ & \left(\Int, \Int\right)\\
+\cup\ & \Rec\left(\Int, \Int\right)\mathhypertarget{type-Rec}\\
 \cup\ & \left\{\begin{array}{lcl}
                \text{f} & : & \Int\\
-               \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
+               \text{g} & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
                \end{array}\right\}\\
 \cup\ & \LRec\left\{\begin{array}{lcl}
-                    \text{f} & : & \Rec(\Int, \Int)\\
-                    \text{g} & : & (\Int, \Int) \rightarrow \pow{\Int}
+                    \text{f} & : & \Rec\left(\Int, \Int\right)\\
+                    \text{g} & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
                     \end{array}\right\}\mathhypertarget{type-LRec}\end{flalign*}} % EndDefineType
 
 \DefineType{expr}{
 \begin{flalign*}
-\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Int}{\texttt{v}})\\
-|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
+\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number\left(\overtext{\Int}{\texttt{v}}\right)\\
+|\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 

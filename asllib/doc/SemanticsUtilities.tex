@@ -214,6 +214,8 @@ exn=TRUE
 \SemanticsRuleDef{ReadIdentifier}
 \ProseParagraph
 \RenderRelation{read_identifier}
+The value $\vv$ is ignored, as execution graphs do not contain values.
+
 \BackupOriginalRelation{
 The relation
 \[
@@ -223,8 +225,6 @@ creates an \executiongraphterm{} that represents the reading of the value $\vv$ 
 given by the identifier $\name$.
 The result is an execution graph containing a single Read Effect,
 which denotes reading from $\name$.
-%
-The value $\vv$ is ignored, as execution graphs do not contain values.
 } % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Effect of Reading from an Identifier}
@@ -334,9 +334,6 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \end{mathpar}
 
 \SemanticsRuleDef{SlicesToPositions}
-The helper type \RenderType{slice_as_pair} expresses a slice via a pair of integers
-where the first integer is the starting position and the second integer is the length of the slice.
-
 \RenderRelation{slices_to_positions}
 \BackupOriginalRelation{
 The relation

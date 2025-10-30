@@ -30,14 +30,14 @@
 
 \DefineType{expr}{
 \begin{flalign*}
-\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number(\overtext{\Num}{\texttt{v}})\\
-|\ & \Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
+\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number\left(\overtext{\Num}{\texttt{v}}\right)\\
+|\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 \DefineRelation{annotate_expr}{
 
 The relation
 \[
-\mathhypertarget{relation-annotateexpr}\annotateexpr(\overtext{\expr}{\texttt{input}}) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateexpr}\annotateexpr\left(\overtext{\expr}{\texttt{input}}\right) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the expression
 $\texttt{input}$
@@ -47,7 +47,7 @@ $\texttt{input}$
 
 The function
 \[
-\mathhypertarget{relation-annotateplus}\annotateplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\longrightarrow\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateplus}\annotateplus\left(\overtext{\Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)}{\texttt{input}}\right) \;\longrightarrow\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the plus expression
 $\texttt{input}$
@@ -57,7 +57,7 @@ $\texttt{input}$
 
 The relation
 \[
-\mathhypertarget{relation-evalplus}\evalplus(\overtext{\Plus(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}})}{\texttt{input}}) \;\bigtimes\; \overtext{\Num}{\texttt{output\_val}}
+\mathhypertarget{relation-evalplus}\evalplus\left(\overtext{\Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)}{\texttt{input}}\right) \;\bigtimes\; \overtext{\Num}{\texttt{output\_val}}
 \]
 evaluates the expression $\texttt{input}$ and returns
 $\texttt{output\_val}$
