@@ -78,7 +78,7 @@ litmus-aarch64-dep:
 	git clone -q https://gitlab.com/kvm-unit-tests/kvm-unit-tests.git; \
 	cd kvm-unit-tests;                                                 \
 	./configure $(KUT_CONFIG_PARAMS);                                  \
-	make $(SILENTOPT)
+	make $(SILENTOPT) -j $(J)
 
 litmus-aarch64-test:: litmus-cata-aarch64-test-kvm
 litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
@@ -107,7 +107,7 @@ litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
 	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
 
 #Some tests are not terminating, disable them when tests are run
-ifeq ($(RUN_TEST),true)
+ifeq ($(RUN_TESTS),true)
 NORUN_IFETCH=UDF+2FH
 else
 NORUN_IFETCH=noname
