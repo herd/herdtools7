@@ -55,6 +55,7 @@ let run_asl code version exec =
       override_mode = Permissive;
       no_primitives = false;
       no_stdlib = false;
+      no_stdlib0 = false;
       v0_use_split_chunks = false;
     }
   in

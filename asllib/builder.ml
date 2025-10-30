@@ -164,8 +164,7 @@ let stdlib0 =
 let with_stdlib ?(no_stdlib0 = false) ast =
   ast
   |> List.rev_append (Lazy.force stdlib)
-  |> (fun lst ->
-      List.rev_append (if no_stdlib0 then [] else Lazy.force stdlib0) lst)
+  |> List.rev_append (if no_stdlib0 then [] else Lazy.force stdlib0)
 
 let extract_name k d =
   let open AST in
