@@ -1,4 +1,4 @@
-AArch64 MP+STLXP+LDAXP
+AArch64 L032
 {
 uint64_t x[2] ;
 uint64_t y[2] ;
