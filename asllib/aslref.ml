@@ -42,6 +42,7 @@ type args = {
   override_mode : override_mode;
   no_primitives : bool;
   no_stdlib : bool;
+  no_stdlib0 : bool;
   v0_use_split_chunks : bool;
 }
 
@@ -71,6 +72,7 @@ let parse_args () =
   let set_override_mode m () = override_mode := m in
   let no_primitives = ref false in
   let no_stdlib = ref false in
+  let no_stdlib0 = ref false in
   let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
   let v0_use_split_chunks = ref false in
@@ -159,6 +161,9 @@ let parse_args () =
       ( "--no-stdlib",
         Arg.Set no_stdlib,
         " Do not use ASL's standard library. Implies `--no-primitives`." );
+      ( "--no-stdlib0",
+        Arg.Set no_stdlib0,
+        " Do not use ASL's standard library. Implies `--no-primitives`." );
       ( "--v0-use-chunks",
         Arg.Set v0_use_split_chunks,
         " While lexing v0 files, split the files along separator comment \
@@ -198,6 +203,7 @@ let parse_args () =
       override_mode = !override_mode;
       no_primitives = !no_primitives || !no_stdlib;
       no_stdlib = !no_stdlib;
+      no_stdlib0 = !no_stdlib0;
       v0_use_split_chunks = !v0_use_split_chunks;
     }
   in
@@ -287,7 +293,8 @@ let run_with (args : args) : unit =
 
   let ast =
     let open Builder in
-    let added_stdlib = if args.no_stdlib then ast else with_stdlib ast in
+    let added_stdlib =
+      if args.no_stdlib then ast else with_stdlib ast ~no_stdlib0:args.no_stdlib0 in
     if args.no_primitives then added_stdlib
     else with_primitives Native.DeterministicBackend.primitives added_stdlib
   in
