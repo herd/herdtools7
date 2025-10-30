@@ -161,10 +161,11 @@ let stdlib0 =
     |> obfuscate "__stdlib_local_"
     |> List.map make_builtin)
 
-let with_stdlib ast =
+let with_stdlib ?(no_stdlib0 = false) ast =
   ast
   |> List.rev_append (Lazy.force stdlib)
-  |> List.rev_append (Lazy.force stdlib0)
+  |> (fun lst ->
+      List.rev_append (if no_stdlib0 then [] else Lazy.force stdlib0) lst)
 
 let extract_name k d =
   let open AST in
