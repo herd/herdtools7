@@ -163,7 +163,7 @@ let parse_args () =
         " Do not use ASL's standard library. Implies `--no-primitives`." );
       ( "--no-stdlib0",
         Arg.Set no_stdlib0,
-        " Do not use ASL's standard library. Implies `--no-primitives`." );
+        " Do not use the ASL0 compatibility standard library." );
       ( "--v0-use-chunks",
         Arg.Set v0_use_split_chunks,
         " While lexing v0 files, split the files along separator comment \
@@ -294,7 +294,9 @@ let run_with (args : args) : unit =
   let ast =
     let open Builder in
     let added_stdlib =
-      if args.no_stdlib then ast else with_stdlib ast ~no_stdlib0:args.no_stdlib0 in
+      if args.no_stdlib then ast
+      else with_stdlib ast ~no_stdlib0:args.no_stdlib0
+    in
     if args.no_primitives then added_stdlib
     else with_primitives Native.DeterministicBackend.primitives added_stdlib
   in

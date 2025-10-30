@@ -1134,7 +1134,7 @@ module Make (Conf : Config) = struct
       in
       let ( @! ) = List.rev_append in
       let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
-      ast |> Asllib.Builder.with_stdlib
+      Asllib.Builder.with_stdlib ast
       |> Asllib.Builder.with_primitives extra_funcs
       |> TypeCheck.type_check_ast
 
