@@ -311,8 +311,8 @@
 \newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
-\newcommand\Option[0]{\hyperlink{def-option}{\textsf{Option}}} % The optional type term
-\newcommand\optionalterm[0]{\hyperlink{def-optional}{optional}}
+\newcommand\Option[1]{\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)} % The optional type term
+\newcommand\optionalterm[0]{\hyperlink{def-Option}{optional}}
 \newcommand\None[0]{\hyperlink{def-none}{\texttt{None}}}
 \newcommand\some[1]{\hyperlink{def-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
 \newcommand\KleeneStar[1]{{#1}^{\hyperlink{def-kleenestar}{*}}}
@@ -345,7 +345,7 @@
 
 \newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
 \newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
-\newcommand\booltrans[0]{\hyperlink{def-booltrans}{\textfunc{bool\_transition}}}
+\newcommand\booltrans[0]{\hyperlink{relation-booltransition}{\textfunc{bool\_transition}}}
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\Prosetecheck[2]{\hyperlink{relation-techeck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
 \newcommand\Prosebecheck[2]{\hyperlink{relation-becheck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
@@ -874,10 +874,7 @@
 \newcommand\overloadedsubprograms[0]{\hyperlink{def-overloadedsubprograms}{\textsf{overloaded\_subprograms}}}
 \newcommand\exprequiv[0]{\hyperlink{def-exprequiv}{\textsf{expr\_equiv}}}
 
-\newcommand\unopliterals[0]{\hyperlink{def-unopliterals}{\textfunc{unop\_literals}}}
-\newcommand\binopliterals[0]{\hyperlink{def-binopliterals}{\textfunc{binop\_literals}}}
 \newcommand\Prosebinopliterals[2]{statically evaluating #1 yields #2}
-\newcommand\foldbitvectorfields[0]{\hyperlink{def-foldbitvectorfields}{\textfunc{fold\_bitvector\_fields}}}
 
 \newcommand\Effect[0]{\textsf{Effect}}
 
@@ -954,86 +951,30 @@
 \newcommand\ProseOrError[0]{\ProseTerminateAs{\DynErrorConfig}}
 \newcommand\ProseOrDynErrorDiverging[0]{\ProseTerminateAs{\DynErrorConfig, \DivergingConfig}}
 
-\newcommand\evalexpr[0]{\hyperlink{def-evalexpr}{\textfunc{eval\_expr}}}
 \newcommand\Proseevalexpr[3]{
-    \hyperlink{def-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
-\newcommand\evalexprsef[0]{\hyperlink{def-evalexprsef}{\textfunc{eval\_expr\_sef}}}
-\newcommand\evallexpr[0]{\hyperlink{def-evallexpr}{\textfunc{eval\_lexpr}}}
-\newcommand\Proseevallexpr[4]{\hyperlink{def-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
-\newcommand\evalexprlist[0]{\hyperlink{def-evalexprlist}{\textfunc{eval\_expr\_list}}}
-\newcommand\evalexprlistm[0]{\hyperlink{def-evalexprlistm}{\textfunc{eval\_expr\_list\_m}}}
-\newcommand\evalpattern[0]{\hyperlink{def-evalpattern}{\textfunc{eval\_pattern}}}
+    \hyperlink{relation-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
+\newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
 \newcommand\maskmatch[0]{\hyperlink{def-maskmatch}{\textfunc{mask\_match}}}
 \newcommand\evallocaldecl[0]{\hyperlink{def-evallocaldecl}{\textfunc{eval\_local\_decl}}}
 \newcommand\ldituplefolder[0]{\hyperlink{def-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}}
-\newcommand\writefolder[0]{\hyperlink{def-writefolder}{\textfunc{write\_folder}}}
-\newcommand\evalslices[0]{\hyperlink{def-evalslices}{\textfunc{eval\_slices}}}
-\newcommand\evalslice[0]{\hyperlink{def-evalslice}{\textfunc{eval\_slice}}}
-\newcommand\evalstmt[0]{\hyperlink{def-evalstmt}{\textfunc{eval\_stmt}}}
-\newcommand\evalblock[0]{\hyperlink{def-evalblock}{\textfunc{eval\_block}}}
 \newcommand\poplocalscope[0]{\hyperlink{def-poplocalscope}{\textfunc{pop\_local\_scope}}}
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{def-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
-\newcommand\evalloop[0]{\hyperlink{def-evalloop}{\textfunc{eval\_loop}}}
-\newcommand\evalfor[0]{\hyperlink{def-evalfor}{\textfunc{eval\_for}}}
-\newcommand\evalforloop[0]{\hyperlink{def-evalforloop}{\textfunc{eval\_for\_loop}}}
-\newcommand\evalforstep[0]{\hyperlink{def-evalforstep}{\textfunc{eval\_for\_step}}}
-\newcommand\evalcatchers[0]{\hyperlink{def-evalcatchers}{\textfunc{eval\_catchers}}}
-\newcommand\evalsubprogram[0]{\hyperlink{def-evalsubprogram}{\textfunc{eval\_subprogram}}}
-\newcommand\evalcall[0]{\hyperlink{def-evalcall}{\textfunc{eval\_call}}}
-\newcommand\evalmultiassignment[0]{\hyperlink{def-evalmultiassign}{\textfunc{multi\_assign}}}
-\newcommand\assignargs[0]{\hyperlink{def-assignargs}{\textfunc{assign\_args}}}
-\newcommand\matchfuncres[0]{\hyperlink{def-matchfuncres}{\textfunc{match\_func\_res}}}
-\newcommand\Prosebuildgenv[4]{\hyperlink{def-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
-\newcommand\buildgenv[0]{\hyperlink{def-buildgenv}{\textfunc{build\_genv}}}
-\newcommand\evalglobals[0]{\hyperlink{def-evalglobals}{\textfunc{eval\_globals}}}
-\newcommand\Proseevalspec[3]{\hyperlink{def-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
-\newcommand\evalspec[0]{\hyperlink{def-evalspec}{\textfunc{eval\_spec}}}
+\newcommand\evalmultiassignment[0]{\hyperlink{relation-evalmultiassignment}{\textfunc{multi\_assign}}}
+\newcommand\Prosebuildgenv[4]{\hyperlink{relation-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
+\newcommand\Proseevalspec[3]{\hyperlink{relation-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
 \newcommand\lexprisvar[0]{\hyperlink{def-lexprisvar}{\textfunc{lexpr\_is\_var}}}
 \newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}}
 \newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}}
 \newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}}
 \newcommand\findcatcher[0]{\hyperlink{def-findcatcher}{\textfunc{find\_catcher}}}
-\newcommand\checknonoverlappingslices[0]{\hyperlink{def-checknonoverlappingslices}{\textfunc{check\_non\_overlapping\_slices}}}
-\newcommand\checktworangesnonoverlapping[0]{\hyperlink{def-checktworangesnonoverlapping}{\textfunc{check\_two\_ranges\_non\_overlapping}}}
-\newcommand\evallimit[0]{\hyperlink{def-evallimit}{\textfunc{eval\_limit}}}
-\newcommand\Proseevallimit[3]{\hyperlink{def-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
-\newcommand\checkrecurselimit[0]{\hyperlink{def-checkrecurselimit}{\textfunc{check\_recurse\_limit}}}
-\newcommand\Proseticklooplimit[2]{\hyperlink{def-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
-\newcommand\ticklooplimit[0]{\hyperlink{def-ticklooplimit}{\textfunc{tick\_loop\_limit}}}
+\newcommand\Proseevallimit[3]{\hyperlink{relation-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
+\newcommand\Proseticklooplimit[2]{\hyperlink{relation-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
 
-\newcommand\getpendingcalls[0]{\hyperlink{def-getpendingcalls}{\textfunc{get\_pending\_calls}}}
-\newcommand\setpendingcalls[0]{\hyperlink{def-setpendingcalls}{\textfunc{set\_pending\_calls}}}
-\newcommand\incrpendingcalls[0]{\hyperlink{def-incrpendingcalls}{\textfunc{incr\_pending\_calls}}}
-\newcommand\decrpendingcalls[0]{\hyperlink{def-decrpendingcalls}{\textfunc{decr\_pending\_calls}}}
-\newcommand\declarelocalidentifier[0]{\hyperlink{def-declarelocalidentifier}{\textfunc{declare\_local\_identifier}}}
-\newcommand\declarelocalidentifierm[0]{\hyperlink{def-declarelocalidentifierm}{\textfunc{declare\_local\_identifier\_m}}}
-\newcommand\declarelocalidentifiermm[0]{\hyperlink{def-declarelocalidentifermm}{\textfunc{declare\_local\_identifier\_mm}}}
-\newcommand\removelocal[0]{\hyperlink{def-removelocal}{\textfunc{remove\_local}}}
-\newcommand\readidentifier[0]{\hyperlink{def-readidentifier}{\textfunc{read\_identifier}}}
-\newcommand\writeidentifier[0]{\hyperlink{def-writeidentifier}{\textfunc{write\_identifier}}}
-\newcommand\concatbitvectors[0]{\hyperlink{def-concatbitvector}{\textfunc{concat\_bitvectors}}}
-\newcommand\readfrombitvector[0]{\hyperlink{def-readfrombitvector}{\textfunc{read\_from\_bitvector}}}
-\newcommand\writetobitvector[0]{\hyperlink{def-writetobitvector}{\textfunc{write\_to\_bitvector}}}
-\newcommand\slicestopositions[0]{\hyperlink{def-slicestopositions}{\textfunc{slices\_to\_positions}}}
-\newcommand\maxposofslice[0]{\hyperlink{def-maxposofslice}{\textfunc{max\_pos\_of\_slice}}}
-\newcommand\getindex[0]{\hyperlink{def-getindex}{\textfunc{get\_index}}}
-\newcommand\setindex[0]{\hyperlink{def-setindex}{\textfunc{set\_index}}}
-\newcommand\getfield[0]{\hyperlink{def-getfield}{\textfunc{get\_field}}}
-\newcommand\setfield[0]{\hyperlink{def-setfield}{\textfunc{set\_field}}}
-\newcommand\declareglobal[0]{\hyperlink{def-declareglobal}{\textfunc{declare\_global}}}
-\newcommand\basevalue[0]{\hyperlink{def-basevalue}{\textfunc{base\_value}}}
-\newcommand\constraintabsmin[0]{\hyperlink{def-constraintabsmin}{\textfunc{constraint\_abs\_min}}}
-\newcommand\listminabs[0]{\hyperlink{def-listminabs}{\textfunc{list\_min\_abs}}}
-\newcommand\isvaloftype[0]{\hyperlink{def-isvaloftype}{\textfunc{is\_val\_of\_type}}}
-\newcommand\isconstaintsat[0]{\hyperlink{def-isconstraintsat}{\textfunc{is\_constraint\_sat}}}
-\newcommand\readvaluefrom[0]{\hyperlink{def-readvaluefrom}{\textfunc{read\_value\_from}}}
+\newcommand\isconstaintsat[0]{\hyperlink{relation-isconstraintsat}{\textfunc{is\_constraint\_sat}}}
 \newcommand\outputtoconsole[0]{\hyperlink{def-outputtoconsole}{\textfunc{output\_to\_console}}}
 \newcommand\literaltostring[0]{\hyperlink{def-literaltostring}{\textfunc{literal\_to\_string}}}
 \newcommand\Proseoutputtoconsole[1]{\hyperlink{def-outputtoconsole}{outputs} #1 to the console, if one exists}
-\newcommand\assignbitvectorfields[0]{\hyperlink{def-assignbitvectorfields}{\textfunc{assign\_bitvector\_fields}}}
 
-\newcommand\evalunop[0]{\hyperlink{def-unoprel}{\textfunc{eval\_unop}}}
-\newcommand\evalbinop[0]{\hyperlink{def-binoprel}{\textfunc{eval\_binop}}}
 
 \newcommand\DynamicError[0]{\hyperlink{type-DynamicError}{\textsf{DynError}}}
 \newcommand\DynamicErrorConfigurationTerm[0]{\hyperlink{type-DynamicError}{dynamic error configuration}}
@@ -1069,139 +1010,49 @@
 \newcommand\iswellconstrainedinteger[0]{\hyperlink{def-iswellconstrainedinteger}{\textsf{is\_well\_constrained\_integer}}}
 \newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
 
-\newcommand\checkconstrainedinteger[0]{\hyperlink{def-checkconstrainedinteger}{\textfunc{check\_constrained\_integer}}}
-\newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{def-checkconstrainedinteger}{checking} that the type #2 is a \constrainedintegerterm\ in
+\newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{relation-checkconstrainedinteger}{checking} that the type #2 is a \constrainedintegerterm\ in
   the static environment #1 yields $\True$\ProseOrTypeError}
 
 \newcommand\Prosestaticeval[3]{\hyperlink{def-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
 \newcommand\staticeval[0]{\hyperlink{def-staticeval}{\textfunc{static\_eval}}}
-\newcommand\staticenvtoenv[0]{\hyperlink{def-staticenvtoenv}{\textfunc{static\_env\_to\_env}}}
 
-\newcommand\makeanonymous[0]{\hyperlink{def-makeanonymous}{\textfunc{make\_anonymous}}}
-\newcommand\Prosemakeanonymous[3]{\hyperlink{def-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
+\newcommand\Prosemakeanonymous[3]{\hyperlink{relation-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
 \newcommand\subtypesrel[0]{\hyperlink{def-subtypesrel}{\textfunc{is\_subtype}}}
 \newcommand\subtypesat[0]{\hyperlink{def-subtypesat}{\textfunc{subtype\_satisfies}}}
 \newcommand\checktypesat[0]{\hyperlink{def-checktypesat}{\textfunc{checked\_typesat}}}
-\newcommand\typeclashes[0]{\hyperlink{def-typeclashes}{\textfunc{type\_clashes}}}
-\newcommand\Prosetypeclashes[0]{\hyperlink{def-typeclashes}{type-clashes}}
-\newcommand\Prosetypeclash[0]{\hyperlink{def-typeclashes}{type-clash}}
-\newcommand\Prosetypeclashing[0]{\hyperlink{def-typeclashes}{type-clashing}}
+\newcommand\Prosetypeclashes[0]{\hyperlink{relation-typeclashes}{type-clashes}}
+\newcommand\Prosetypeclash[0]{\hyperlink{relation-typeclashes}{type-clash}}
+\newcommand\Prosetypeclashing[0]{\hyperlink{relation-typeclashes}{type-clashing}}
 \newcommand\lca[0]{\hyperlink{def-lowestcommonancestor}{\textfunc{lowest\_common\_ancestor}}}
 \newcommand\Proselca[0]{\hyperlink{def-lowestcommonancestor}{lowest common ancestor}}
-\newcommand\namedlca[0]{\hyperlink{def-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}}
+\newcommand\namedlca[0]{\hyperlink{relation-namedlowestcommonancestor}{\textfunc{named\_lowest\_common\_ancestor}}}
 \newcommand\Supers{\textsf{Supers}}
-\newcommand\supers[0]{\hyperlink{def-supers}{\textfunc{supers}}}
 \newcommand\bitfieldsincluded[0]{\hyperlink{def-bitfieldsincluded}{\textfunc{bitfields\_included}}}
-\newcommand\membfs[0]{\hyperlink{def-membfs}{\textfunc{mem\_bfs}}}
-\newcommand\checkisnotcollection[0]{\hyperlink{def-checkisnotcollection}{\textfunc{check\_is\_not\_collection}}}
-\newcommand\Prosecheckisnotcollection[2]{\hyperlink{def-checkisnotcollection}{determining}
+\newcommand\Prosecheckisnotcollection[2]{\hyperlink{relation-checkisnotcollection}{determining}
   whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
-\newcommand\checkcanbeinitializedwith[0]{\hyperlink{def-checkcanbeinitializedwith}{\textfunc{check\_can\_be\_initialized\_with}}}
-\newcommand\getbitvectorwidth[0]{\hyperlink{def-getbitvectorwidth}{\textfunc{get\_bitvector\_width}}}
-\newcommand\getbitvectorconstwidth[0]{\hyperlink{def-getbitvectorconstwidth}{\textfunc{get\_bitvector\_const\_width}}}
-\newcommand\getbitfieldwidth[0]{\hyperlink{def-getbitfieldwidth}{\textfunc{get\_bitfield\_width}}}
 \newcommand\widthplus[0]{\hyperlink{def-widthplus}{\textfunc{width\_plus}}}
-\newcommand\checkbitsequalwidth[0]{\hyperlink{def-checkbitsequalwidth}{\textfunc{check\_bits\_equal\_width}}}
-\newcommand\subprogramclash[0]{\hyperlink{def-subprogramclash}{\textfunc{subprogram\_clash}}}
-\newcommand\bitfieldgetname[0]{\hyperlink{def-bitfieldgetname}{\textfunc{bitfield\_get\_name}}}
-\newcommand\bitfieldgetslices[0]{\hyperlink{def-bitfieldgetslices}{\textfunc{bitfield\_get\_slices}}}
-\newcommand\bitfieldgetnested[0]{\hyperlink{def-bitfieldgetnested}{\textfunc{bitfield\_get\_nested}}}
 \newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}}
 \newcommand\annotatefieldinit[0]{\hyperlink{def-annotatefieldinit}{\textfunc{annotate\_field\_init}}}
-\newcommand\annotatesymbolicallyevaluableexpr[0]{\hyperlink{def-annotatesymbolicallyevaluableexpr}{\textfunc{annotate\_symbolically\_evaluable\_expr}}}
-\newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{def-annotatesymbolicallyevaluableexpr}{annotating} the
+\newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{relation-annotatesymbolicallyevaluableexpr}{annotating} the
     \symbolicallyevaluableterm\ expression #2 in the static environment #1 yields #3}
-\newcommand\annotatesymbolicconstrainedinteger[0]{\hyperlink{def-annotatesymbolicconstrainedinteger}{\textfunc{annotate\_symbolic\_constrained\_integer}}}
-\newcommand\checkatc[0]{\hyperlink{def-checkatc}{\textfunc{check\_atc}}}
-\newcommand\sliceswidth[0]{\hyperlink{def-sliceswidth}{\textfunc{slices\_width}}}
-\newcommand\slicewidth[0]{\hyperlink{def-slicewidth}{\textfunc{slice\_width}}}
 \newcommand\checkstructurelabel[0]{\hyperlink{def-checkstructurelabel}{\textfunc{check\_structure}}}
 \newcommand\checkunderlyinginteger[0]{\hyperlink{def-checkunderlyinginteger}{\textfunc{check\_underlying\_integer}}}
-\newcommand\issymbolicallyevaluable[0]{\hyperlink{def-issymbolicallyevaluable}{\textfunc{is\_symbolically\_evaluable}}}
 \newcommand\checksymbolicallyevaluable[0]{\hyperlink{def-checksymbolicallyevaluable}{\textfunc{check\_symbolically\_evaluable}}}
 \newcommand\Prosechecksymbolicallyevaluable[1]{\hyperlink{def-checksymbolicallyevaluable}{checking} that #1 is \symbolicallyevaluableterm\ yields $\True$\ProseOrTypeError}
-\newcommand\negateconstraint[0]{\hyperlink{def-negateconstraint}{\textfunc{negate\_constraint}}}
-\newcommand\getwellconstrainedstructure[0]{\hyperlink{def-getwellconstrainedstructure}{\textfunc{get\_well\_constrained\_structure}}}
-\newcommand\towellconstrained[0]{\hyperlink{def-towellconstrained}{\textfunc{to\_well\_constrained}}}
-\newcommand\getforconstraints[0]{\hyperlink{def-getforconstraints}{\textfunc{for\_constraints}}}
-\newcommand\findbitfieldopt[0]{\hyperlink{def-findbitfieldopt}{\textfunc{find\_bitfield\_opt}}}
+\newcommand\getforconstraints[0]{\hyperlink{relation-getforconstraints}{\textfunc{for\_constraints}}}
 \newcommand\findbitfieldsslices[0]{\hyperlink{def-findbitfieldsslices}{\textfunc{find\_bitfields\_slices}}}
-\newcommand\lookupconstant[0]{\hyperlink{def-lookupconstant}{\textfunc{lookup\_constant}}}
-\newcommand\typeof[0]{\hyperlink{def-typeof}{\textfunc{type\_of}}}
-\newcommand\Prosetypeof[3]{\hyperlink{def-typeof}{obtaining} the type of #2 in the static environment #1 yields #3}
-\newcommand\typecheckdecl[0]{\hyperlink{def-typecheckdecl}{\textfunc{typecheck\_decl}}}
-\newcommand\Prosecheckglobalpragma[2]{\hyperlink{def-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
-\newcommand\checkglobalpragma[0]{\hyperlink{def-checkglobalpragma}{\textfunc{check\_global\_pragma}}}
-\newcommand\annotateanddeclarefunc[0]{\hyperlink{def-annotateanddeclarefunc}{\textfunc{annotate\_and\_declare\_func}}}
-\newcommand\declareglobalstorage[0]{\hyperlink{def-declareglobalstorage}{\textfunc{declare\_global\_storage}}}
-\newcommand\annotatefuncsig[0]{\hyperlink{def-annotatefuncsig}{\textfunc{annotate\_func\_sig}}}
-\newcommand\checkparamdecls[0]{\hyperlink{def-checkparamdecls}{\textfunc{check\_param\_decls}}}
-\newcommand\extractparameters[0]{\hyperlink{def-extractparameters}{\textfunc{extract\_parameters}}}
-\newcommand\funcsigtypes[0]{\hyperlink{def-funcsigtypes}{\textfunc{func\_sig\_types}}}
-\newcommand\paramsofty[0]{\hyperlink{def-paramsofty}{\textfunc{parameters\_of\_ty}}}
-\newcommand\paramsofexpr[0]{\hyperlink{def-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
-\newcommand\paramsofconstraint[0]{\hyperlink{def-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
-\newcommand\declareonefunc[0]{\hyperlink{def-declareonefunc}{\textfunc{declare\_one\_func}}}
-\newcommand\withemptylocal[0]{\hyperlink{def-withemptylocal}{\textfunc{with\_empty\_local}}}
-\newcommand\addnewfunc[0]{\hyperlink{def-addnewfunc}{\textfunc{add\_new\_func}}}
-\newcommand\addsubprogram[0]{\hyperlink{def-addsubprogram}{\textfunc{add\_subprogram}}}
-\newcommand\addtype[0]{\hyperlink{def-addtype}{\textfunc{add\_type}}}
-\newcommand\isglobalundefined[0]{\hyperlink{def-isglobalundefined}{\textfunc{is\_global\_undefined}}}
-\newcommand\islocalundefined[0]{\hyperlink{def-islocalundefined}{\textfunc{is\_local\_undefined}}}
-\newcommand\isundefined[0]{\hyperlink{def-isundefined}{\textfunc{is\_undefined}}}
-\newcommand\lookupimmutableexpr[0]{\hyperlink{def-lookupimmutableexpr}{\textfunc{lookup\_immutable\_expr}}}
-\newcommand\addglobalimmutableexpr[0]{\hyperlink{def-addglobalimmutableexpr}{\textfunc{add\_global\_immutable\_expr}}}
-\newcommand\addlocalimmutableexpr[0]{\hyperlink{def-addlocalimmutableexpr}{\textfunc{add\_local\_immutable\_expr}}}
-\newcommand\shouldrememberimmutableexpression[0]{\hyperlink{def-shouldrememberimmutableexpression}{\textfunc{should\_remember\_immutable\_expr}}}
-\newcommand\addimmutableexpression[0]{\hyperlink{def-addimmutableexpression}{\textfunc{add\_immutable\_expr}}}
-\newcommand\annotateparams[0]{\hyperlink{def-annotateparams}{\textfunc{annotate\_params}}}
-\newcommand\annotateoneparam[0]{\hyperlink{def-annotateoneparam}{\textfunc{annotate\_one\_param}}}
-\newcommand\annotatetypeopt[0]{\hyperlink{def-annotatetypeopt}{\textfunc{annotate\_type\_opt}}}
-\newcommand\annotateexpropt[0]{\hyperlink{def-annotateexpropt}{\textfunc{annotate\_expr\_opt}}}
-\newcommand\addglobalstorage[0]{\hyperlink{def-addglobalstorage}{\textfunc{add\_global\_storage}}}
-\newcommand\annotatetyoptinitialvalue[0]{\hyperlink{def-annotatetyoptinitialvalue}{\textfunc{annotate\_ty\_opt\_initial\_value}}}
-\newcommand\updateglobalstorage[0]{\hyperlink{def-updateglobalstorage}{\textfunc{update\_global\_storage}}}
-\newcommand\annotateextrafields[0]{\hyperlink{def-annotateextrafields}{\textfunc{annotate\_extra\_fields}}}
-\newcommand\declareenumlabels[0]{\hyperlink{def-declareenumlabels}{\textfunc{declare\_enum\_labels}}}
-\newcommand\declareconst[0]{\hyperlink{def-declareconst}{\textfunc{declare\_const}}}
-\newcommand\addglobalconstant[0]{\hyperlink{def-addglobalconstant}{\textfunc{add\_global\_constant}}}
-\newcommand\annotateargs[0]{\hyperlink{def-annotateargs}{\textfunc{annotate\_args}}}
-\newcommand\annotateonearg[0]{\hyperlink{def-annotateonearg}{\textfunc{annotate\_one\_arg}}}
-\newcommand\annotatereturntype[0]{\hyperlink{def-annotatereturntype}{\textfunc{annotate\_return\_type}}}
-\newcommand\checksubprogrampurity[0]{\hyperlink{def-checksubprogrampurity}{\textfunc{check\_subprogram\_purity}}}
+\newcommand\Prosetypeof[3]{\hyperlink{relation-typeof}{obtaining} the type of #2 in the static environment #1 yields #3}
+\newcommand\Prosecheckglobalpragma[2]{\hyperlink{relation-checkglobalpragma}{checking} the global pragma #2 for correctness in the static environment #1 yields $\True$}
+\newcommand\paramsofty[0]{\hyperlink{relation-paramsofty}{\textfunc{parameters\_of\_ty}}}
+\newcommand\paramsofexpr[0]{\hyperlink{relation-paramsofexpr}{\textfunc{parameters\_of\_expr}}}
+\newcommand\paramsofconstraint[0]{\hyperlink{relation-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}}
+\newcommand\addimmutableexpression[0]{\hyperlink{relation-addimmutableexpression}{\textfunc{add\_immutable\_expr}}}
 \newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}}
-\newcommand\comparemonomialbindings[0]{\hyperlink{def-comparemonomialbindings}{\textfunc{compare\_monomial\_bindings}}}
-\newcommand\insertstdlibparam[0]{\hyperlink{def-insertstdlibparam}{\textfunc{insert\_stdlib\_param}}}
-\newcommand\canommitstdlibparam[0]{\hyperlink{def-canommitstdlibparam}{\textfunc{can\_omit\_stdlib\_param}}}
-\newcommand\checkparamstypesat[0]{\hyperlink{def-checkparamstypesat}{\textfunc{check\_params\_typesat}}}
-\newcommand\checkargstypesat[0]{\hyperlink{def-checkargstypesat}{\textfunc{check\_args\_typesat}}}
-\newcommand\annotateretty[0]{\hyperlink{def-annotateretty}{\textfunc{annotate\_ret\_ty}}}
-\newcommand\renametyeqs[0]{\hyperlink{def-renametyeqs}{\textfunc{rename\_ty\_eqs}}}
-\newcommand\substexpr[0]{\hyperlink{def-substexpr}{\textfunc{subst\_expr}}}
-\newcommand\substexprnormalize[0]{\hyperlink{def-substexprnormalize}{\textfunc{subst\_expr\_normalize}}}
-\newcommand\substconstraint[0]{\hyperlink{def-substconstraint}{\textfunc{subst\_constraint}}}
-\newcommand\typecheckmutuallyrec[0]{\hyperlink{def-typecheckmutuallyrec}{\textfunc{type\_check\_mutually\_rec}}}
-\newcommand\declaresubprograms[0]{\hyperlink{def-declaresubprograms}{\textfunc{declare\_subprograms}}}
-\newcommand\addsubprogramdecls[0]{\hyperlink{def-addsubprogramdecls}{\textfunc{add\_subprogram\_decls}}}
-\newcommand\defdecl[0]{\hyperlink{def-defdecl}{\textfunc{def\_decl}}}
-\newcommand\defenumlabels[0]{\hyperlink{def-defenumlabels}{\textfunc{def\_enum\_labels}}}
-\newcommand\usedecl[0]{\hyperlink{def-usedecl}{\textfunc{use\_decl}}}
-\newcommand\usety[0]{\hyperlink{def-usety}{\textfunc{use\_ty}}}
-\newcommand\useldi[0]{\hyperlink{def-useldi}{\textfunc{use\_ldi}}}
-\newcommand\usesubtypes[0]{\hyperlink{def-usesubtypes}{\textfunc{use\_subtypes}}}
-\newcommand\useexpr[0]{\hyperlink{def-useexpr}{\textfunc{use\_e}}}
-\newcommand\uselexpr[0]{\hyperlink{def-uselexpr}{\textfunc{use\_le}}}
-\newcommand\usepattern[0]{\hyperlink{def-usepattern}{\textfunc{use\_pattern}}}
-\newcommand\useslice[0]{\hyperlink{def-useslice}{\textfunc{use\_slice}}}
-\newcommand\usebitfield[0]{\hyperlink{def-usebitfield}{\textfunc{use\_bitfield}}}
-\newcommand\useconstraint[0]{\hyperlink{def-useconstraint}{\textfunc{use\_constraint}}}
-\newcommand\usestmt[0]{\hyperlink{def-usestmt}{\textfunc{use\_s}}}
-\newcommand\usecatcher[0]{\hyperlink{def-usecatcher}{\textfunc{use\_catcher}}}
-\newcommand\builddependencies[0]{\hyperlink{def-builddependencies}{\textfunc{build\_dependencies}}}
-\newcommand\Prosebuilddependencies[2]{\hyperlink{def-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
-\newcommand\decldependencies[0]{\hyperlink{def-decldependencies}{\textfunc{decl\_dependencies}}}
-\newcommand\annotategetarray[0]{\hyperlink{def-annotategetarray}{\textfunc{annotate\_get\_array}}}
-\newcommand\annotatesetarray[0]{\hyperlink{def-annotatesetarray}{\textfunc{annotate\_set\_array}}}
+\newcommand\canomitstdlibparam[0]{\hyperlink{relation-canomitstdlibparam}{\textfunc{can\_omit\_stdlib\_param}}}
+\newcommand\useexpr[0]{\hyperlink{relation-useexpr}{\textfunc{use\_e}}}
+\newcommand\uselexpr[0]{\hyperlink{relation-uselexpr}{\textfunc{use\_le}}}
+\newcommand\usestmt[0]{\hyperlink{relation-usestmt}{\textfunc{use\_s}}}
+\newcommand\Prosebuilddependencies[2]{\hyperlink{relation-builddependencies}{building} the \dependencygraphterm\ of #1 yields #2}
 
 % Macros related to side effects
 
@@ -1211,44 +1062,23 @@
 \newcommand\puritygeq[0]{\hyperlink{def-puritygeq}{\geq_{\text{pure}}}}
 
 \newcommand\TSideEffectSet[0]{\pow{\TSideEffect}}
-\newcommand\sesldk[0]{\hyperlink{def-sesldk}{\textfunc{ses\_ldk}}}
-\newcommand\sesgdk[0]{\hyperlink{def-sesgdk}{\textfunc{ses\_gdk}}}
-\newcommand\sesforsubprogram[0]{\hyperlink{def-sesforsubprogram}{\textfunc{ses\_for\_subprogram}}}
 
 % sets of side effect descriptors
 \newcommand\sideeffectispure[0]{\hyperlink{def-sideeffectispure}{\textfunc{side\_effect\_is\_pure}}}
 \newcommand\sideeffectisreadonly[0]{\hyperlink{def-sideeffectisreadonly}{\textfunc{side\_effect\_is\_readonly}}}
 \newcommand\sideeffectissymbolicallyevaluable[0]{\hyperlink{def-sideeffectissymbolicallyevaluable}{\textfunc{side\_effect\_symbolically\_evaluable}}}
-\newcommand\sesispure[0]{\hyperlink{def-sesispure}{\textfunc{ses\_is\_pure}}}
-\newcommand\sesisreadonly[0]{\hyperlink{def-sesisreadonly}{\textfunc{ses\_is\_readonly}}}
 
 % Symbolic equivalence testing macros
-\newcommand\normalize[0]{\hyperlink{def-normalize}{\textfunc{normalize}}}
-\newcommand\normalizeopt[0]{\hyperlink{def-normalizeopt}{\textfunc{normalize\_opt}}}
-\newcommand\typeequal[0]{\hyperlink{def-typeequal}{\textfunc{type\_equal}}}
-\newcommand\exprequal[0]{\hyperlink{def-exprequal}{\textfunc{expr\_equal}}}
-\newcommand\bitwidthequal[0]{\hyperlink{def-bitwidthequal}{\textfunc{bitwidth\_equal}}}
-\newcommand\bitfieldequal[0]{\hyperlink{def-bitfieldequal}{\textfunc{bitfield\_equal}}}
-\newcommand\bitfieldsequal[0]{\hyperlink{def-bitfieldsequal}{\textfunc{bitfields\_equal}}}
-\newcommand\polynomialtoexpr[0]{\hyperlink{def-polynomialtoexpr}{\textfunc{polynomial\_to\_expr}}}
-\newcommand\monomialtoexpr[0]{\hyperlink{def-monomialtoexpr}{\textfunc{monomial\_to\_expr}}}
 \newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
-\newcommand\symaddexpr[0]{\hyperlink{def-symaddexpr}{\textfunc{sym\_add\_expr}}}
-\newcommand\monomialstoexpr[0]{\hyperlink{def-monomialstoexpr}{\textfunc{monomials\_to\_expr}}}
-\newcommand\unitarymonomialstoexpr[0]{\hyperlink{def-unitarymonomialstoexpr}{\textfunc{unitary\_monomials\_to\_expr}}}
 \newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
 
 \newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}}
 
-\newcommand\toir[0]{\hyperlink{def-toir}{\textfunc{to\_ir}}}
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\Qnonzero[0]{\hyperlink{type-Qnonzero}{\Q{} \setminus \{0\}}}
-\newcommand\addpolynomials[0]{\hyperlink{def-addpolynomials}{\textfunc{add\_polynomials}}}
 \newcommand\mulpolynomials[0]{\hyperlink{def-mulpolynomials}{\textfunc{mul\_polynomials}}}
-\newcommand\mulmonomials[0]{\hyperlink{def-mulmonomials}{\textfunc{mul\_monomials}}}
 \newcommand\polynomialdividebyterm[0]{\hyperlink{def-polynomialdividebyterm}{polynomial\_divide\_by\_term}}
 
-\newcommand\declaredtype[0]{\hyperlink{def-declaredtype}{\textfunc{declared\_type}}}
 
 \newcommand\fieldnames[0]{\hyperlink{def-fieldnames}{\textfunc{field\_names}}}
 \newcommand\fieldtype[0]{\hyperlink{def-fieldtype}{\textfunc{field\_type}}}
@@ -1479,22 +1309,22 @@
 \newcommand\pendingconstrainedintegertypeterm[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer type}}
 \newcommand\pendingconstrainedintegertypesterm[0]{\hyperlink{def-pendingconstrainedintegertype}{pending constrained integer types}}
 \newcommand\structuredtypeterm[0]{\hyperlink{def-structuredtype}{structured type}}
-\newcommand\structureterm[0]{\hyperlink{def-structure}{structure}}
-\newcommand\underlyingtypeterm[0]{\hyperlink{def-underlyingtype}{underlying type}}
-\newcommand\underlyingtypesterm[0]{\hyperlink{def-underlyingtype}{underlying types}}
+\newcommand\structureterm[0]{\hyperlink{relation-getstructure}{structure}}
+\newcommand\underlyingtypeterm[0]{\hyperlink{relation-makeanonymous}{underlying type}}
+\newcommand\underlyingtypesterm[0]{\hyperlink{relation-makeanonymous}{underlying types}}
 \newcommand\symbolicdomainterm[0]{\hyperlink{def-symbolicdomain}{symbolic domain}}
 \newcommand\typesatisfiesterm[0]{\hyperlink{def-typesatisfies}{type-satisfies}}
 \newcommand\typesatisfyterm[0]{\hyperlink{def-typesatisfies}{type-satisfy}}
 \newcommand\subtypesatisfiesterm[0]{\hyperlink{def-subtypesat}{subtype-satisfies}}
 \newcommand\subtypesatisfyterm[0]{\hyperlink{def-subtypesat}{subtype-satisfy}}
-\newcommand\typeequivalentterm[0]{\hyperlink{def-typeequal}{type-equivalent}}
-\newcommand\bitwidthequivalentterm[0]{\hyperlink{def-bitwidthequal}{bitwidth-equivalent}}
-\newcommand\constrainedintegerterm[0]{\hyperlink{def-checkconstrainedinteger}{constrained integer}}
-\newcommand\constrainedintegersterm[0]{\hyperlink{def-checkconstrainedinteger}{constrained integers}}
+\newcommand\typeequivalentterm[0]{\hyperlink{relation-typeequal}{type-equivalent}}
+\newcommand\bitwidthequivalentterm[0]{\hyperlink{relation-bitwidthequal}{bitwidth-equivalent}}
+\newcommand\constrainedintegerterm[0]{\hyperlink{relation-checkconstrainedinteger}{constrained integer}}
+\newcommand\constrainedintegersterm[0]{\hyperlink{relation-checkconstrainedinteger}{constrained integers}}
 \newcommand\structureofinteger[0]{\hyperlink{def-checkunderlyinginteger}{structure of an integer}}
-\newcommand\wellconstrainedstructureterm[0]{\hyperlink{def-getwellconstrainedstructure}{well-constrained structure}}
-\newcommand\wellconstrainedversionterm[0]{\hyperlink{def-towellconstrained}{well-constrained version}}
-\newcommand\namedlowestcommonancestorterm[0]{\hyperlink{def-namedlowestcommonancestor}{named lowest common ancestor}}
+\newcommand\wellconstrainedstructureterm[0]{\hyperlink{relation-getwellconstrainedstructure}{well-constrained structure}}
+\newcommand\wellconstrainedversionterm[0]{\hyperlink{relation-towellconstrained}{well-constrained version}}
+\newcommand\namedlowestcommonancestorterm[0]{\hyperlink{relation-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccessterm[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifiesterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
 \newcommand\singulartypeterm[0]{\hyperlink{def-issingular}{singular type}}
@@ -1522,9 +1352,9 @@
 
 \newcommand\basevalueterm[0]{\hyperlink{def-basevalueterm}{base value}}
 
-\newcommand\defusedependencyterm[0]{\hyperlink{def-builddependencies}{def-use dependency}}
-\newcommand\defusedependenciesterm[0]{\hyperlink{def-builddependencies}{def-use dependencies}}
-\newcommand\dependencygraphterm[0]{\hyperlink{def-builddependencies}{def-use dependency graph}}
+\newcommand\defusedependencyterm[0]{\hyperlink{relation-builddependencies}{def-use dependency}}
+\newcommand\defusedependenciesterm[0]{\hyperlink{relation-builddependencies}{def-use dependencies}}
+\newcommand\dependencygraphterm[0]{\hyperlink{relation-builddependencies}{def-use dependency graph}}
 
 \newcommand\casediscriminantterm[0]{\hyperlink{def-casediscriminantterm}{case discriminant}}
 \newcommand\casealternativeterm[0]{\hyperlink{def-casealternativeterm}{case alternative}}
@@ -1646,9 +1476,9 @@
 \newcommand\ImmutabilityTerm[0]{\hyperlink{def-term-Immutability}{immutability side effect descriptor}}
 
 \newcommand\staticallyevaluableterm[0]{\hyperlink{def-staticallyevaluable}{statically evaluable}}
-\newcommand\pureterm[0]{\hyperlink{def-sesispure}{pure}}
-\newcommand\readonlyterm[0]{\hyperlink{def-sesisreadonly}{read-only}}
-\newcommand\symbolicallyevaluableterm[0]{\hyperlink{def-symbolicallyevaluable}{symbolically evaluable}}
+\newcommand\pureterm[0]{\hyperlink{relation-sesispure}{pure}}
+\newcommand\readonlyterm[0]{\hyperlink{relation-sesisreadonly}{read-only}}
+\newcommand\symbolicallyevaluableterm[0]{\hyperlink{relation-issymbolicallyevaluable}{symbolically evaluable}}
 \newcommand\sideeffectdescriptorterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptor}}
 \newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
 \newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}
@@ -1658,175 +1488,78 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
-\newcommand\applyunoptype[0]{\hyperlink{def-applyunoptype}{\textfunc{apply\_unop\_type}}}
-\newcommand\applybinoptypes[0]{\hyperlink{def-applybinoptypes}{\textfunc{apply\_binop\_types}}}
-\newcommand\Proseapplybinoptypes[5]{\hyperlink{def-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
-\newcommand\constraintbinop[0]{\hyperlink{def-constraintbinop}{\textfunc{constraint\_binop}}}
-\newcommand\applybinopextremities[0]{\hyperlink{def-applybinopextremities}{\textfunc{apply\_binop\_extremities}}}
-\newcommand\possibleextremitiesleft[0]{\hyperlink{def-possibleextremitiesleft}{\textfunc{possible\_extremities\_left}}}
-\newcommand\possibleextremitiesright[0]{\hyperlink{def-possibleextremitiesright}{\textfunc{possible\_extremities\_right}}}
-\newcommand\constraintmod[0]{\hyperlink{def-constraintmod}{\textfunc{constraint\_mod}}}
-\newcommand\constraintpow[0]{\hyperlink{def-constraintpow}{\textfunc{constraint\_pow}}}
-\newcommand\annotateconstraintbinop[0]{\hyperlink{def-annotateconstraintbinop}{\textfunc{annotate\_constraint\_binop}}}
-\newcommand\explodeintervals[0]{\hyperlink{def-explodeintervals}{\textfunc{explode\_intervals}}}
+\newcommand\Proseapplybinoptypes[5]{\hyperlink{relation-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
 \newcommand\explodeconstraint[0]{\hyperlink{def-explodeconstraint}{\textfunc{explode\_constraint}}}
-\newcommand\intervaltoolarge[0]{\hyperlink{def-intervaltoolarge}{\textfunc{interval\_too\_large}}}
 \newcommand\maxconstraintsize[0]{2^{17}}
 \newcommand\maxexplodedintervalsize[0]{2^{14}}
-\newcommand\binopisexploding[0]{\hyperlink{def-binopisexploding}{\textfunc{binop\_is\_exploding}}}
-\newcommand\binopfilterrhs[0]{\hyperlink{def-binopfilterrhs}{\textfunc{binop\_filter\_rhs}}}
-\newcommand\refineconstraintbysign[0]{\hyperlink{def-refineconstraintbysign}{\textfunc{refine\_constraint\_by\_sign}}}
-\newcommand\reducetozopt[0]{\hyperlink{def-reducetozopt}{\textfunc{reduce\_to\_z\_opt}}}
-\newcommand\refineconstraints[0]{\hyperlink{def-refineconstraints}{\textfunc{refine\_constraints}}}
-\newcommand\filterreduceconstraintdiv[0]{\hyperlink{def-filterreduceconstraintdiv}{\textfunc{filter\_reduce\_constraint\_div}}}
-\newcommand\refineconstraintfordiv[0]{\hyperlink{def-refineconstraintfordiv}{\textfunc{refine\_constraint\_for\_div}}}
-\newcommand\getliteraldivopt[0]{\hyperlink{def-getliteraldivopt}{\textfunc{get\_literal\_div\_opt}}}
-\newcommand\checkslicesinwidth[0]{\hyperlink{def-checkslicesinwidth}{\textfunc{check\_slices\_in\_width}}}
-\newcommand\disjointslicestopositions[0]{\hyperlink{def-disjointslicestopositions}{\textfunc{disjoint\_slices\_to\_positions}}}
-\newcommand\bitfieldslicetopositions[0]{\hyperlink{def-bitfieldslicetopositions}{\textfunc{bitfield\_slice\_to\_positions}}}
-\newcommand\evalsliceexpr[0]{\hyperlink{def-evalsliceexpr}{\textfunc{eval\_slice\_expr}}}
-\newcommand\checkpositionsinwidth[0]{\hyperlink{def-checkpositionsinwidth}{\textfunc{check\_positions\_in\_width}}}
-\newcommand\checkdisjointslices[0]{\hyperlink{def-checkdisjointslices}{\textfunc{check\_disjoint\_slices}}}
-\newcommand\annotatetype[0]{\hyperlink{def-annotatetype}{\textfunc{annotate\_type}}}
-\newcommand\annotateconstraint[0]{\hyperlink{def-annotateconstraint}{\textfunc{annotate\_constraint}}}
-\newcommand\getvariableenum[0]{\hyperlink{def-getvariableenum}{\textfunc{get\_variable\_enum}}}
 \newcommand\Proseannotateexpr[3]{\hyperlink{relation-annotateexpr}{annotating} the expression #2 in the static environment #1 yields #3}
-\newcommand\Proseannotatelexpr[4]{\hyperlink{def-annotatelexpr}{annotating}
+\newcommand\Proseannotatelexpr[4]{\hyperlink{relation-annotatelexpr}{annotating}
     the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
-\newcommand\annotateexprlist[0]{\hyperlink{def-annotateexprs}{\textfunc{annotate\_exprs}}}
-\newcommand\annotatelimitexpr[0]{\hyperlink{def-annotatelimitexpr}{\textfunc{annotate\_limit\_expr}}}
-\newcommand\annotatelexpr[0]{\hyperlink{def-annotatelexpr}{\textfunc{annotate\_lexpr}}}
+\newcommand\annotateexprlist[0]{\hyperlink{relation-annotateexprs}{\textfunc{annotate\_exprs}}}
 \newcommand\annotateslice[0]{\hyperlink{def-annotateslice}{\textfunc{annotate\_slice}}}
-\newcommand\annotateslices[0]{\hyperlink{def-annotateslices}{\textfunc{annotate\_slices}}}
-\newcommand\annotatepattern[0]{\hyperlink{def-annotatepattern}{\textfunc{annotate\_pattern}}}
 \newcommand\annotatelocaldeclitem[0]{\hyperlink{def-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}}
-\newcommand\inheritintegerconstraints[0]{\hyperlink{def-inheritintegerconstraints}{\textfunc{inherit\_integer\_constraints}}}
-\newcommand\annotatestmt[0]{\hyperlink{def-annotatestmt}{\textfunc{annotate\_stmt}}}
-\newcommand\annotateblock[0]{\hyperlink{def-annotateblock}{\textfunc{annotate\_block}}}
-\newcommand\annotatecall[0]{\hyperlink{def-annotatecall}{\textfunc{annotate\_call}}}
-\newcommand\annotatecallactualstyped[0]{\hyperlink{def-annotatecallactualstyped}{\textfunc{annotate\_call\_actuals\_typed}}}
-\newcommand\annotatecatcher[0]{\hyperlink{def-annotatecatcher}{\textfunc{annotate\_catcher}}}
-\newcommand\reduceconstraint[0]{\hyperlink{def-reduceconstraint}{\textfunc{reduce\_constraint}}}
-\newcommand\reduceconstraints[0]{\hyperlink{def-reduceconstraints}{\textfunc{reduce\_constraints}}}
-\newcommand\annotatelocaldecltypeannot[0]{\hyperlink{def-annotatelocaldecltypeannot}{\textfunc{annotate\_local\_decl\_type\_annot}}}
-\newcommand\checkvarnotinenv[0]{\hyperlink{def-checkvarnotinenv}{\textfunc{check\_var\_not\_in\_env}}}
-\newcommand\checkvarnotingenv[0]{\hyperlink{def-checkvarnotingenv}{\textfunc{check\_var\_not\_in\_genv}}}
-\newcommand\checknoprecisionloss[0]{\hyperlink{def-checknoprecisionloss}{\textfunc{check\_no\_precision\_loss}}}
-\newcommand\precisionjoin[0]{\hyperlink{def-precisionjoin}{\textfunc{precision\_join}}}
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
     $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
-\newcommand\annotatesubprogram[0]{\hyperlink{def-annotatesubprogram}{\textfunc{annotate\_subprogram}}}
-\newcommand\Proseannotatesubprogram[5]{\hyperlink{def-annotatesubprogram}{annotating} the subprogram definition #2
+\newcommand\Proseannotatesubprogram[5]{\hyperlink{relation-annotatesubprogram}{annotating} the subprogram definition #2
   in the static environment #1 with \sideeffectdescriptorsetsterm{} #3 yields the subprogram definition #4
   and \sideeffectdescriptorsetsterm{} #5}
 
-\newcommand\checkcontrolflow[0]{\hyperlink{def-checkcontrolflow}{\textfunc{check\_control\_flow}}}
 \newcommand\Proseabstractconfiguration{\hyperlink{type-abstractconfiguration}{abstract configuration}}
 \newcommand\Proseabstractconfigurations{\hyperlink{type-abstractconfiguration}{abstract configurations}}
 \newcommand\AbsConfig{\hyperlink{type-abstractconfiguration}{\textsf{AbsConfig}}}
-\newcommand\approxstmt[0]{\hyperlink{def-approxstmt}{\textfunc{approx\_stmt}}}
-\newcommand\allowedabsconfigs[0]{\hyperlink{def-allowedabsconfigs}{\textfunc{allowed\_abs\_configs}}}
 
-\newcommand\Prosetypecheckast[4]{\hyperlink{def-typecheckast}{typechecking} #1 in #2 yields the typed AST #3 and static environment #4}
-\newcommand\typecheckast[0]{\hyperlink{def-typecheckast}{\textfunc{type\_check\_ast}}}
-\newcommand\Proseoverridesubprograms[0]{\hyperlink{def-overridesubprograms}{overriding subprograms}}
-\newcommand\overridesubprograms[0]{\hyperlink{def-overridesubprograms}{\textfunc{override\_subprograms}}}
-\newcommand\Proseprocessoverrides[2]{\hyperlink{def-processoverrides}{processing overrides} in #1 and #2}
-\newcommand\processoverrides[0]{\hyperlink{def-processoverrides}{\textfunc{process\_overrides}}}
-\newcommand\Prosecheckimplementationsunique[1]{\hyperlink{def-checkimplementationsunique}{checking} that implementations are unique in #1}
-\newcommand\checkimplementationsunique[0]{\hyperlink{def-checkimplementationsunique}{\textfunc{check\_implementations\_unique}}}
-\newcommand\Prosesignaturesmatch[2]{\hyperlink{def-signaturesmatch}{checking} that the signatures of #1 and #2 match}
-\newcommand\signaturesmatch[0]{\hyperlink{def-signaturesmatch}{\textfunc{signatures\_match}}}
-\newcommand\Proserenamesubprograms[2]{\hyperlink{def-renamesubprograms}{renaming} subprograms in #1 yields #2}
-\newcommand\renamesubprograms[0]{\hyperlink{def-renamesubprograms}{\textfunc{rename\_subprograms}}}
+\newcommand\Prosetypecheckast[4]{\hyperlink{relation-typecheckast}{typechecking} #1 in #2 yields the typed AST #3 and static environment #4}
+\newcommand\Proseoverridesubprograms[0]{\hyperlink{relation-overridesubprograms}{overriding subprograms}}
+\newcommand\Proseprocessoverrides[2]{\hyperlink{relation-processoverrides}{processing overrides} in #1 and #2}
+\newcommand\Prosecheckimplementationsunique[1]{\hyperlink{relation-checkimplementationsunique}{checking} that implementations are unique in #1}
+\newcommand\Prosesignaturesmatch[2]{\hyperlink{relation-signaturesmatch}{checking} that the signatures of #1 and #2 match}
+\newcommand\Proserenamesubprograms[2]{\hyperlink{relation-renamesubprograms}{renaming} subprograms in #1 yields #2}
 \newcommand\ProseSCC[3]{\hyperlink{def-scc}{partitioning} the set of declarations #1 with the set of edges #2 yields the list of strongly-connected components #3}
 \newcommand\SCC[0]{\hyperlink{def-scc}{\textfunc{SCC}}}
 \newcommand\topologicalorderingcomps[0]{\hyperlink{def-topologicalorderingcomps}{\textfunc{topological\_ordering\_comps}}}
 \newcommand\Prosetopologicalorderingcomps[3]{\hyperlink{def-topologicalorderingcomps}{ordering} the set of strongly-connected components #1, with respect to #2, yields the list of strongly-connected components #3}
-\newcommand\annotatedeclcomps[0]{\hyperlink{def-annotatedeclcomps}{\textfunc{annotate\_decl\_comps}}}
-\newcommand\Proseannotatedeclcomps[4]{\hyperlink{def-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
-\newcommand\exprequalcase[0]{\hyperlink{def-exprequalcase}{\textfunc{expr\_equal\_case}}}
-\newcommand\exprequalnorm[0]{\hyperlink{def-exprequalnorm}{\textfunc{expr\_equal\_norm}}}
-\newcommand\slicesequal[0]{\hyperlink{def-slicesequal}{\textfunc{slices\_equal}}}
-\newcommand\sliceequal[0]{\hyperlink{def-sliceequal}{\textfunc{slice\_equal}}}
-\newcommand\constraintsequal[0]{\hyperlink{def-constraintsequal}{\textfunc{constraints\_equal}}}
-\newcommand\constraintequal[0]{\hyperlink{def-constraintequal}{\textfunc{constraint\_equal}}}
-\newcommand\arraylengthequal[0]{\hyperlink{def-arraylengthequal}{\textfunc{array\_length\_equal}}}
-\newcommand\annotatebitfield[0]{\hyperlink{def-annotatebitfield}{\textfunc{annotate\_bitfield}}}
-\newcommand\annotatebitfields[0]{\hyperlink{def-annotatebitfields}{\textfunc{annotate\_bitfields}}}
-\newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{def-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
+\newcommand\Proseannotatedeclcomps[4]{\hyperlink{relation-annotatedeclcomps}{annotating} the list of declaration components #2 in the global static environment #1 yields the list of annotated declarations #3 and new global static environment #4}
+\newcommand\Prosecheckcommonbitfieldsalign[3]{\hyperlink{relation-checkcommonbitfieldsalign}{checking} that all pairs of bitfields in #2 that are in the same scope
   and share the same name correspond to the same slice of the containing bitvector type in the static environment #1 yields $\True$}
-\newcommand\checkcommonbitfieldsalign[0]{\hyperlink{def-checkcommonbitfieldsalign}{\textfunc{check\_common\_bitfields\_align}}}
-\newcommand\absolutebitfieldsalign[0]{\hyperlink{def-absolutefieldsalign}{\textfunc{absolute\_bitfields\_align}}}
 \newcommand\TAbsField[0]{\hyperlink{type-TAbsField}{\mathbb{A}\mathbb{B}\mathbb{F}}}
-\newcommand\Prosebitfieldstoabsolute[4]{\hyperlink{def-bitfieldstoabsolute}{generating} the \absolutebitfields\ for the list of bitfields #2 and its nested bitfields
+\newcommand\Prosebitfieldstoabsolute[4]{\hyperlink{relation-bitfieldstoabsolute}{generating} the \absolutebitfields\ for the list of bitfields #2 and its nested bitfields
   with #3 as the parent \absolutebitfield\ in the static environment #1 yields the set of fields #4}
-\newcommand\bitfieldstoabsolute[0]{\hyperlink{def-bitfieldstoabsolute}{\textfunc{bitfields\_to\_absolute}}}
-\newcommand\bitfieldtoabsolute[0]{\hyperlink{def-bitfieldtoabsolute}{\textfunc{bitfield\_to\_absolute}}}
-\newcommand\Proseslicetoindices[3]{\hyperlink{def-slicetoindices}{obtaining} the sequence of indices for a slice #1 in the static environment #2 yields #3}
-\newcommand\slicetoindices[0]{\hyperlink{def-slicetoindices}{\textfunc{slice\_to\_indices}}}
-\newcommand\Proseselectindicesbyslices[3]{\hyperlink{def-selectindicesbyslices}{selecting}
+\newcommand\Proseslicetoindices[3]{\hyperlink{relation-slicetoindices}{obtaining} the sequence of indices for a slice #1 in the static environment #2 yields #3}
+\newcommand\Proseselectindicesbyslices[3]{\hyperlink{relation-selectindicesbyslices}{selecting}
   the integers from the list #1 specified by the list of indices #2 yields the list #3}
-\newcommand\selectindicesbyslices[0]{\hyperlink{def-selectindicesbyslices}{\textfunc{select\_indices\_by\_slices}}}
 
-\newcommand\checknoduplicates[0]{\hyperlink{def-checknoduplicates}{\textfunc{check\_no\_duplicates}}}
 \newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}}
-\newcommand\typeofarraylength[0]{\hyperlink{def-typeofarraylength}{\textfunc{type\_of\_array\_length}}}
-\newcommand\addlocal[0]{\hyperlink{def-addlocal}{\textfunc{add\_local}}}
-\newcommand\declaretype[0]{\hyperlink{def-declaretype}{\textfunc{declare\_type}}}
-\newcommand\subprogramtypesclash[0]{\hyperlink{def-subprogramtypeclash}{\textfunc{subprogram\_types\_clash}}}
-\newcommand\subprogramforsignature[0]{\hyperlink{def-subprogramforsignature}{\textfunc{subprogram\_for\_signature}}}
-\newcommand\calltypematches[0]{\hyperlink{def-calltypematches}{\textfunc{call\_type\_matches}}}
-\newcommand\hasargclash[0]{\hyperlink{def-hasargclash}{\textfunc{has\_arg\_clash}}}
-\newcommand\filtercallcandidates[0]{\hyperlink{def-filtercandidates}{\textfunc{filter\_call\_candidates}}}
 \newcommand\bintounsigned[0]{\hyperlink{def-bintounsigned}{\textsf{binary\_to\_unsigned}}}
 \newcommand\inttobits[0]{\hyperlink{def-inttobits}{\textfunc{int\_to\_bits}}}
 
 % Symbolic domain subsumption
 \newcommand\CannotOverapproximate[0]{\hyperlink{constant-CannotOverapproximate}{\overline{\textsf{Approx}}}}
 \newcommand\CannotUnderapproximate[0]{\hyperlink{constant-CannotUnderapproximate}{\underline{\textsf{Approx}}}}
-\newcommand\symdomoftype[0]{\hyperlink{def-symdomoftype}{\textfunc{symdom\_of\_type}}}
-\newcommand\symdomofwidthexpr[0]{\hyperlink{def-symdomofwidthexpr}{\textfunc{symdom\_of\_width\_expr}}}
-\newcommand\symdomofconstraint[0]{\hyperlink{def-symdomofconstraint}{\textfunc{symdom\_of\_constraint}}}
 \newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}}
-\newcommand\symdomsubset[0]{\hyperlink{def-symdomsubset}{\textfunc{symdom\_subset}}}
-\newcommand\symdomsubsetunions[0]{\hyperlink{def-symdomsubsetunions}{\textfunc{symdom\_subset\_unions}}}
-\newcommand\symdomnormalize[0]{\hyperlink{def-symdomnormalize}{\textfunc{symdom\_normalize}}}
-\newcommand\symdomeval[0]{\hyperlink{def-symdomeval}{\textfunc{symdom\_eval}}}
-\newcommand\approxconstraints[0]{\hyperlink{def-approxconstraints}{\textfunc{approx\_constraints}}}
-\newcommand\Proseapproxconstraints[4]{\hyperlink{def-approxconstraints}
+\newcommand\Proseapproxconstraints[4]{\hyperlink{relation-approxconstraints}
   {Overapproximating} the list of constraints #3 in the static environment #1 with the \approximationdirectionterm\ #2
   yields the set of integers #3}
-\newcommand\ProseapproxconstraintsOver[3]{\hyperlink{def-approxconstraints}
+\newcommand\ProseapproxconstraintsOver[3]{\hyperlink{relation-approxconstraints}
   {Overapproximating} the list of constraints #2 in the static environment #1 yields the set of
   integers #3}
-\newcommand\ProseapproxconstraintsUnder[3]{\hyperlink{def-approxconstraints}
+\newcommand\ProseapproxconstraintsUnder[3]{\hyperlink{relation-approxconstraints}
   {Underapproximating} the list of constraints #2 in the static environment #1 yields the set of
   integers #3}
-\newcommand\approxconstraint[0]{\hyperlink{def-approxconstraint}{\textfunc{approx\_constraint}}}
-\newcommand\Proseapproxconstraint[4]{\hyperlink{def-approxconstraint}
+\newcommand\Proseapproxconstraint[4]{\hyperlink{relation-approxconstraint}
   {approximating} the constraint #2 for all environments consisting of the static environment
   #1 with the \approximationdirectionterm\ #3 yields the set #4}
-\newcommand\makeinterval[0]{\hyperlink{def-makeinterval}{\textfunc{make\_interval}}}
-\newcommand\approxexpr[0]{\hyperlink{def-approxexpr}{\textfunc{approx\_expr}}}
-\newcommand\Proseapproxexpr[4]{\hyperlink{def-approxexpr}
+\newcommand\Proseapproxexpr[4]{\hyperlink{relation-approxexpr}
   {approximating} the set integers represented by the expression #3 in the static environment #1
   with the symbol #2 yields #4}
-\newcommand\approxconstraintbinop[0]{\hyperlink{def-approxconstraintbinop}{\textfunc{approx\_constraint\_binop}}}
-\newcommand\intsettoconstraints[0]{\hyperlink{def-intsettoconstraints}{intset\_to\_constraints}}
-\newcommand\approxexprmin[0]{\hyperlink{def-approxexprmin}{\textfunc{approx\_expr\_min}}}
-\newcommand\Proseapproxexprmin[3]{\hyperlink{def-approxexprmin}
+\newcommand\Proseapproxexprmin[3]{\hyperlink{relation-approxexprmin}
   {approximating} the minimal integer in the set of integers represented by the expression #2
   in the static environment #1 yields #3}
-\newcommand\approxexprmax[0]{\hyperlink{def-approxexprmax}{\textfunc{approx\_expr\_max}}}
-\newcommand\Proseapproxexprmax[3]{\hyperlink{def-approxexprmax}
+\newcommand\Proseapproxexprmax[3]{\hyperlink{relation-approxexprmax}
   {approximating} the maximal integer in the set of integers represented by the expression #2
   in the static environment #1 yields #3}
-\newcommand\approxtype[0]{\hyperlink{def-approxtype}{\textfunc{approx\_type}}}
-\newcommand\Proseapproxtype[4]{\hyperlink{def-approxtype}
+\newcommand\Proseapproxtype[4]{\hyperlink{relation-approxtype}
   {approximating} the type #3 in any environment consisting of the static environment #1
   with the \approximationdirectionterm\ #2 yields the set #4}
-\newcommand\approxbottomtop[0]{\hyperlink{def-approxbottomtop}{\textfunc{approx\_bottom\_top}}}
 
 %% Build Error Codes
 \newcommand\BuildErrorPrefix[0]{\texttt{BE}}

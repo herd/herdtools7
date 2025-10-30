@@ -64,7 +64,8 @@ The case rules for building global declarations are the following:
 \end{itemize}
 
 \paragraph{Typing:} Global declarations are annotated by the following function.
-\hypertarget{def-typecheckdecl}{}
+\RenderRelation{typecheck_decl}
+\BackupOriginalRelation{
 The function
 \[
   \typecheckdecl(
@@ -77,6 +78,7 @@ The function
 annotates a global declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding an annotated global declaration $\newd$ and modified \globalstaticenvironmentterm{} $\newgenv$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
   This function is implemented for each kind of global declarations:
 \begin{itemize}
@@ -111,12 +113,15 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
 }
 
 \ASTRuleDef{AST}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-ast}{}
 The relation
 \[
   \buildast : \overname{\parsenode{\Nspec}}{\vparsednode} \;\aslrel\; \overname{\spec}{\vastnode}
 \]
 transforms an $\Nspec$ node $\vparsednode$ into an AST specification node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 We define this function for subprogram declarations, type declarations, and global storage declarations in the corresponding chapters.
 
@@ -156,7 +161,8 @@ order the declarations such that false \typingerrorsterm{} are avoided.
 \identi{LWQQ}
 
 \TypingRuleDef{TypeCheckAST}
-\hypertarget{def-typecheckast}{}
+\RenderRelation{type_check_ast}
+\BackupOriginalRelation{
 The relation
 \[
 \typecheckast(
@@ -169,6 +175,7 @@ The relation
 annotates a list of declarations $\decls$ in an input \globalstaticenvironmentterm{} $\genv$,
 yielding an output \staticenvironmentterm{} $\newtenv$ and annotated list of declarations $\newdecls$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Typechecking a List of Global Declarations}
 The specification in \listingref{TypeCheckAST} contains numerous global declarations.
@@ -277,7 +284,8 @@ and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which i
 \end{mathpar}
 
 \TypingRuleDef{AnnotateDeclComps}
-\hypertarget{def-annotatedeclcomps}{}
+\RenderRelation{annotate_decl_comps}
+\BackupOriginalRelation{
 The function
 \[
 \annotatedeclcomps(\overname{\globalstaticenvs}{\genv} \aslsep \overname{\KleeneStar{(\KleeneStar{\decl})}}{\comps})
@@ -289,6 +297,7 @@ annotates a list of declaration components $\comps$
 (a list of lists) in the \globalstaticenvironmentterm{} $\genv$,
 yielding the annotated list of declarations $\newdecls$ and modified \globalstaticenvironmentterm{} $\newgenv$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 We note that a strongly-connected component containing just a single declaration may contain
 any kind of global declaration ---
@@ -362,7 +371,8 @@ except for $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$.
 \end{mathpar}
 
 \TypingRuleDef{TypeCheckMutuallyRec}
-\hypertarget{def-typecheckmutuallyrec}{}
+\RenderRelation{type_check_mutually_rec}
+\BackupOriginalRelation{
 The function
 \[
   \typecheckmutuallyrec(
@@ -380,6 +390,7 @@ annotates a list of mutually recursive declarations
 $\decls$ in the \globalstaticenvironmentterm{} $\genv$,
 yielding the annotated list of subprogram declarations $\newdecls$
 and modified \globalstaticenvironmentterm{} $\newgenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Mutually-recursive Declarations}
 In \ExampleRef{Typechecking a List of Global Declarations},
@@ -449,7 +460,8 @@ since it contains recursive type declarations.
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
 
 \TypingRuleDef{DeclareSubprograms}
-\hypertarget{def-declaresubprograms}{}
+\RenderRelation{declare_subprograms}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -468,6 +480,7 @@ declaring each subprogram in the environment consisting of $\genv$ and the stati
 each subprogram.
 The result is a modified \globalstaticenvironmentterm{} $\newgenv$ and list of tuples $\newenvandfs$
 consisting of \localstaticenvironmentterm, annotated $\func$ AST node, and \sideeffectdescriptorsetsterm.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Updating Static Environments for Subprogram Declarations}
 Applying $\declaresubprograms$ for the subprogram declarations in \listingref{DeclareSubprograms}
@@ -538,7 +551,8 @@ of the subprogram declarations.
 \end{mathpar}
 
 \TypingRuleDef{AddSubprogramDecls}
-\hypertarget{def-addsubprogramdecls}{}
+\RenderRelation{add_subprogram_decls}
+\BackupOriginalRelation{
 The function
 \[
   \addsubprogramdecls(
@@ -549,6 +563,7 @@ The function
 \]
 adds each subprogram definition given by a $\func$ AST node in $\vfuncs$
 to the $\subprograms$ map of $G^\tenv$, yielding $\newtenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Adding Subprogram Declarations}
 The specification in \listingref{AddSubprogramDecls}
@@ -642,7 +657,8 @@ Implementations may wish to emit user-configurable warnings to check either:
 \end{itemize}
 
 \TypingRuleDef{OverrideSubprograms}
-\hypertarget{def-overridesubprograms}{}
+\RenderRelation{override_subprograms}
+\BackupOriginalRelation{
 The function
 \[
 \overridesubprograms(\overname{\KleeneStar{\decl}}{\decls}) \aslto \overname{\KleeneStar{\decl}}{\declsp}
@@ -651,6 +667,7 @@ The function
 overrides subprograms in a list of declarations $\decls$, yielding the new list of declarations $\declsp$.
 \ProseOtherwiseTypeError{}
 See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \AllApply
@@ -682,7 +699,8 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 \end{mathpar}
 
 \TypingRuleDef{CheckImplementationsUnique}
-\hypertarget{def-checkimplementationsunique}{}
+\RenderRelation{check_implementations_unique}
+\BackupOriginalRelation{
 The function
 \[
 \checkimplementationsunique(\overname{\KleeneStar{\func}}{\vimpls}) \aslto \{\True\} \cup \typeerror
@@ -690,6 +708,7 @@ The function
 checks that the \Proseimplementationsubprograms{} $\vimpls$ have unique signatures.
 \ProseOtherwiseTypeError{}
 See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplementationsubprograms{}.
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \OneApplies
@@ -725,7 +744,8 @@ See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplement
 \end{mathpar}
 
 \TypingRuleDef{SignaturesMatch}
-\hypertarget{def-signaturesmatch}{}
+\RenderRelation{signatures_match}
+\BackupOriginalRelation{
 The function
 \[
 \signaturesmatch(\overname{\func}{\vfuncone} \aslsep \overname{\func}{\vfunctwo}) \aslto \Bool
@@ -733,6 +753,7 @@ The function
 checks whether the signatures of subprograms $\vfuncone$ and $\vfunctwo$ match for overriding purposes.
 \ProseOtherwiseTypeError{}
 See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \AllApply
@@ -748,7 +769,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \begin{mathpar}
   \inferrule{
     \booltrans(\vfuncone.\funcname = \vfunctwo.\funcname) \booltransarrow \True \terminateas \False \\
-    \booltrans(\vfuncone.\funcqualifier = \vfunctwo.\funcqualifier) \booltransarrow \True \terminateas \False \\
+    \booltrans(\vfuncone.\funcqualifierfield = \vfunctwo.\funcqualifierfield) \booltransarrow \True \terminateas \False \\
     \equallength(\vfuncone.\funcargs, \vfunctwo.\funcargs) \typearrow \True \terminateas \False \\
     {
     \begin{array}{r}
@@ -775,7 +796,8 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \end{mathpar}
 
 \TypingRuleDef{ProcessOverrides}
-\hypertarget{def-processoverrides}{}
+\RenderRelation{process_overrides}
+\BackupOriginalRelation{
 The function
 \[
 \processoverrides(\overname{\KleeneStar{\func}}{\vimpdefs} \aslsep \overname{\KleeneStar{\func}}{\vimpls}) \aslto
@@ -785,6 +807,7 @@ The function
 overrides the \Proseimpdefsubprograms{} $\vimpdefs$ with the \Proseimplementationsubprograms{} $\vimpls$, yielding the new \Proseimpdefsubprograms{} $\vimpdefs$ and the discarded subprograms $\vdiscarded$.
 \ProseOtherwiseTypeError{}
 See \ExampleRef{Overriding Subprograms} for an example of valid replacement of an \Proseimplementationsubprogram{}.
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \OneApplies
@@ -828,12 +851,14 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
 \end{mathpar}
 
 \TypingRuleDef{RenameSubprograms}
-\hypertarget{def-renamesubprograms}{}
+\RenderRelation{rename_subprograms}
+\BackupOriginalRelation{
 The function
 \[
 \renamesubprograms(\overname{\KleeneStar{\func}}{\vdiscarded}) \aslto \overname{\KleeneStar{\func}}{\vrenameddiscarded}
 \]
 renames the subprograms $\vdiscarded$ to give them fresh names.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Typechecking overridden subprograms}
 The specification in \listingref{RenameSubprograms} contains an ill-typed \Proseimpdefsubprogram{} that is overridden.
@@ -904,7 +929,8 @@ We use the following type to track \defusedependenciesterm{} between subprogram 
 }
 
 \TypingRuleDef{BuildDependencies}
-\hypertarget{def-builddependencies}{}
+\RenderRelation{build_dependencies}
+\BackupOriginalRelation{
 The function
 \[
 \builddependencies(\overname{\KleeneStar{\decl}}{\decls})
@@ -916,6 +942,7 @@ returns a graph whose set of nodes --- $\defs$ --- consists of the identifiers t
 and whose set of edges $\dependencies$ consists of pairs $(a,b)$
 where the declaration of $a$ uses an identifier defined by the declaration of $b$.
 We refer to this graph as the \emph{\dependencygraphterm} (of $\decls$).
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Dependency Graph for a List of Global Declarations}
 The \dependencygraphterm{} generated for the specification in \listingref{DeclDependencies}
@@ -958,12 +985,14 @@ is as follows:
 \end{mathpar}
 
 \TypingRuleDef{DeclDependencies}
-\hypertarget{def-decldependencies}{}
+\RenderRelation{decl_dependencies}
+\BackupOriginalRelation{
 The function
 \[
 \decldependencies(\overname{\decl}{\vd}) \aslto \overname{\KleeneStar{(\defusename\times\defusename)}}{\dependencies}
 \]
 returns the set of dependent pairs of identifiers $\dependencies$ induced by the declaration $\vd$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Dependencies of Global Declarations}
 The specification in \listingref{DeclDependencies}
@@ -996,12 +1025,14 @@ Define $\dependencies$ as the union of the following two sets of pairs:
 \end{mathpar}
 
 \TypingRuleDef{DefDecl}
-\hypertarget{def-defdecl}{}
+\RenderRelation{def_decl}
+\BackupOriginalRelation{
 The function
 \[
 \defdecl(\overname{\decl}{\vd}) \aslto \overname{\defusename}{\name}
 \]
 returns the identifier $\name$ being defined by the declaration $\vd$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Defined by Global Declarations}
 The specification given in \listingref{DefDecl},
@@ -1047,13 +1078,15 @@ which appear in comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{DefEnumLabels}
-\hypertarget{def-defenumlabels}{}
+\RenderRelation{def_enum_labels}
+\BackupOriginalRelation{
 The function
 \[
 \defenumlabels(\overname{\decl}{\vd}) \aslto \overname{\pow{\defusename}}{\vlabels}
 \]
 takes a declaration $\vd$ and returns the set of enumeration labels it defines in $\vlabels$,
 if it defines any.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Identifiers Defined by Declaring an Enumeration Type}
 The set of identifiers defined by the enumeration declaration
@@ -1094,12 +1127,14 @@ $\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
 \end{mathpar}
 
 \TypingRuleDef{UseDecl}
-\hypertarget{def-usedecl}{}
+\RenderRelation{use_decl}
+\BackupOriginalRelation{
 The function
 \[
 \usedecl(\overname{\decl}{\vd}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Identifiers Used by Global Declarations}
 The specification in \listingref{UseDecl} shows the set of identifiers
@@ -1183,13 +1218,15 @@ used by each global declaration via comments above it.
 We define the following convenience type to allow handling both types and optional types uniformly:
 \RenderType{ty_or_opt}
 
-\hypertarget{def-usety}{}
+\RenderRelation{use_ty}
+\BackupOriginalRelation{
 The function
 \[
 \usety(\overname{\tyoropt}{\vt}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 
 returns the set of identifiers $\ids$ which the type or \optionalterm\ type $\vt$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by a Type}
 The specification in \listingref{UseTy} shows type annotations and the identifiers
@@ -1335,13 +1372,15 @@ used by them appearing as comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseSubtypes}
-\hypertarget{def-usesubtypes}{}
+\RenderRelation{use_subtypes}
+\BackupOriginalRelation{
 The function
 \[
 \usesubtypes(\overname{\Option{(\overname{\Identifier}{\vx}\times\overname{\KleeneStar{\field}}{\subfields})}}{\fields}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the \optionalterm\ pair consisting of
 identifier $\vx$ (the type being subtyped) and fields $\subfields$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by a Subtyping Declaration}
 In \listingref{UseDecl}, applying $\usesubtypes$ at
@@ -1382,12 +1421,14 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 We define the following convenience type to allow handling both expressions and optional expressions uniformly:
 \RenderType{expr_or_opt}
 
-\hypertarget{def-useexpr}{}
+\RenderRelation{use_expr}
+\BackupOriginalRelation{
 The function
 \[
 \useexpr(\ve: \exproropt) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the expression or \optionalterm\ expression $\ve$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by Expressions}
 The specification in \listingref{UseExpr} shows the identifiers used
@@ -1654,12 +1695,14 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 \end{mathpar}
 
 \TypingRuleDef{UseLexpr}
-\hypertarget{def-uselexpr}{}
+\RenderRelation{use_lexpr}
+\BackupOriginalRelation{
 The function
 \[
 \uselexpr(\overname{\lexpr}{\vle}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the left-hand-side expression $\vle$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by Assignable Expressions}
 The specification in \listingref{UseLexpr} shows the identifiers used
@@ -1766,12 +1809,14 @@ by the assignable expressions on the left-hand-side of assignments in comments a
 \end{mathpar}
 
 \TypingRuleDef{UsePattern}
-\hypertarget{def-usepattern}{}
+\RenderRelation{use_pattern}
+\BackupOriginalRelation{
 The function
 \[
 \usepattern(\overname{\pattern}{\vp}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the declaration $\vd$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by a Pattern}
 The specification in \listingref{UsePattern} shows examples of patterns
@@ -1882,12 +1927,14 @@ and the identifiers used by them, appearing in comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseSlice}
-\hypertarget{def-useslice}{}
+\RenderRelation{use_slice}
+\BackupOriginalRelation{
 The function
 \[
 \useslice(\overname{\slice}{\vs}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the slice $\vs$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by a Slice}
 The specification in \listingref{UseSlice} shows slicing expressions
@@ -1924,12 +1971,14 @@ and the identifiers they use, appearing in comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseBitfield}
-\hypertarget{def-usebitfield}{}
+\RenderRelation{use_bitfield}
+\BackupOriginalRelation{
 The function
 \[
 \usebitfield(\overname{\decl}{\vbf}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the bitfield $\vbf$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by a Bitfield Declaration}
 The specification in \listingref{UseBitfield} shows examples
@@ -1981,12 +2030,14 @@ appearing as comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseConstraint}
-\hypertarget{def-useconstraint}{}
+\RenderRelation{use_constraint}
+\BackupOriginalRelation{
 The function
 \[
 \useconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the integer constraint $\vc$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by Constraints}
 The specification in \listingref{UseConstraint}
@@ -2022,10 +2073,12 @@ appearing in comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseLDI}
-\hypertarget{def-useldi}{}
+\RenderRelation{use_ldi}
+\BackupOriginalRelation{
 The function
 \[ \useldi(\overname{\localdeclitem}{\vl}) \aslto \overname{\pow{\defusename}}{\ids} \]
 returns the set of identifiers $\ids$ which the \localdeclarationitem{} $\vl$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The identifiers used by local declaration items}
 The specification in \listingref{UseLDI} shows examples of local declaration items
@@ -2063,12 +2116,14 @@ and the identifiers used by them, appearing in the comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseStmt}
-\hypertarget{def-usestmt}{}
+\RenderRelation{use_stmt}
+\BackupOriginalRelation{
 The function
 \[
 \usestmt(\overname{\stmt}{\vs}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the statement $\vs$ depends on.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Identifiers Used by Statements}
 The specification in \listingref{UseStmt} shows examples of statements
@@ -2271,13 +2326,14 @@ and the identifiers used by them, appearing in comments to their right.
 \end{mathpar}
 
 \TypingRuleDef{UseCatcher}
-\hypertarget{def-usecatcher}{}
+\RenderRelation{use_catcher}
+\BackupOriginalRelation{
 The function
 \[
 \usecatcher(\overname{\catcher}{\vc}) \aslto \overname{\pow{\defusename}}{\ids}
 \]
 returns the set of identifiers $\ids$ which the try statement catcher $\vc$ depends on.
-
+} % END_OF_BACKUP_RELATION
 \ExampleDef{The Identifiers Used by a Catcher}
 The specification in \listingref{UseStmt} shows an example
 of a catcher clause (towards the end of \verb|main|)
@@ -2330,8 +2386,9 @@ $C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition 
 The semantics of specifications is defined via the relation $\evalspec$, which is defined next.
 
 \SemanticsRuleDef{EvalSpec}
+\RenderRelation{eval_spec}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalspec}{}
 \[
   \evalspec(\overname{\staticenvs}{\tenv} \aslsep \overname{\spec}{\vspec}) \;\aslrel\;
    ((\overname{\tint}{\vv}\times \overname{\XGraphs}{\vg}) \cup \overname{\TDynError}{\DynErrorConfig})
@@ -2339,6 +2396,8 @@ The relation
 evaluates the specification $\vspec$ with the \staticenvironmentterm{} $\tenv$,
 yielding the native integer value $\vv$ and execution graph $\vg$.
 Otherwise, the result is a \dynamicerrorterm{}.
+} % END_OF_BACKUP_RELATION
+
 
 \ExampleRef{Returning a Value from the Entry Point} shows a specification
 whose evaluation results in returning the value $\nvint(0)$.
@@ -2405,8 +2464,9 @@ results in a \dynamicerrorterm.
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{BuildGlobalEnv}
+\RenderRelation{build_genv}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-buildgenv}{}
 \[
   \buildgenv(\overname{\staticenvs}{\tenv}, \overname{\spec}{\typedspec}) \;\aslrel\;
   \left(
@@ -2422,6 +2482,7 @@ storage declarations in $\typedspec$, starting from the \staticenvironmentterm{}
 This works by traversing the global storage declarations
 and updating the environment accordingly.
 \ProseOtherwiseDynamicErrorOrDiverging
+} % END_OF_BACKUP_RELATION
 
 It is assumed that $\typedspec$ lists the declarations in reverse order with respect
 to the \defusedependencyterm\ order

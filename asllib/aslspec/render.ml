@@ -160,8 +160,7 @@ module Make (S : SPEC_VALUE) = struct
             | None -> ""
           in
           fprintf fmt "%s%a" label
-            (pp_parenthesized Parens layout_contains_vertical
-               pp_opt_named_type_terms)
+            (pp_parenthesized Parens true pp_opt_named_type_terms)
             (components, layout)
     | LabelledRecord { label_opt; fields } ->
         let label =
@@ -242,7 +241,7 @@ module Make (S : SPEC_VALUE) = struct
               [
                 (fun fmt ->
                   if term_counter < num_terms - 1 then
-                    fprintf fmt {|%a,@|} pp_opt_named_type_term term_and_layout
+                    fprintf fmt {|%a,|} pp_opt_named_type_term term_and_layout
                   else pp_opt_named_type_term fmt term_and_layout);
               ])
             opt_terms_with_layouts
@@ -291,32 +290,35 @@ module Make (S : SPEC_VALUE) = struct
           fields_with_layouts
     | Unspecified -> assert false
 
+  (** [pp_type_term_union fmt (terms, layout)] renders the list type terms in
+      [terms], separated by the union symbol, using [layout]. *)
   let pp_type_term_union fmt (terms, layout) =
     if Utils.is_singleton_list terms then
       fprintf fmt {|%a|} pp_type_term (List.hd terms, layout)
     else
-      let layout = Layout.horizontal_if_unspecified layout terms in
-      match layout with
-      | Vertical layouts ->
-          let terms_with_layouts = List.combine terms layouts in
-          let term_pp_funs =
-            List.mapi
-              (fun term_counter (term, layout) ->
-                [
-                  (fun fmt -> pp_type_term fmt (term, layout));
-                  (if term_counter < List.length terms - 1 then fun fmt ->
-                     pp_print_string fmt {|\cup|}
-                   else fun _fmt -> ());
-                ])
-              terms_with_layouts
-          in
-          pp_latex_array "ll" fmt term_pp_funs
-      | Horizontal layouts ->
-          let terms_with_layouts = List.combine terms layouts in
-          fprintf fmt {|\left(%a\right)|}
-            (PP.pp_sep_list ~sep:{| \cup |} pp_type_term)
-            terms_with_layouts
-      | Unspecified -> assert false
+      let pp_multiple_terms fmt (terms, layout) =
+        let layout = Layout.horizontal_if_unspecified layout terms in
+        match layout with
+        | Vertical layouts ->
+            let terms_with_layouts = List.combine terms layouts in
+            let term_pp_funs =
+              List.mapi
+                (fun term_counter (term, layout) ->
+                  [
+                    (fun fmt -> pp_type_term fmt (term, layout));
+                    (if term_counter < List.length terms - 1 then fun fmt ->
+                       pp_print_string fmt {|\cup|}
+                     else fun _fmt -> ());
+                  ])
+                terms_with_layouts
+            in
+            pp_latex_array "ll" fmt term_pp_funs
+        | Horizontal layouts ->
+            let terms_with_layouts = List.combine terms layouts in
+            (PP.pp_sep_list ~sep:{| \cup |} pp_type_term) fmt terms_with_layouts
+        | Unspecified -> assert false
+      in
+      pp_parenthesized Parens true pp_multiple_terms fmt (terms, layout)
 
   (** Renders the mathematical formula for the relation signature [def] using
       [layout] and referencing elements in [S.spec]. *)
@@ -332,8 +334,6 @@ module Make (S : SPEC_VALUE) = struct
       | RelationProperty_Relation -> {|\bigtimes|}
       | RelationProperty_Function -> {|\longrightarrow|}
     in
-
-    let output = output in
     match layout with
     | Horizontal [ input_layout; output_layout ] ->
         fprintf fmt {|%a \;%s\; %a|} pp_type_term

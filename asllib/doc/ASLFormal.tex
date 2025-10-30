@@ -402,7 +402,7 @@ The notation $L(v_{1..k})$ is a compound term where $L$ is a label and $v_{1..k}
 We also write $L(T_{1..k})$, where $T_{1..k}$ denotes mathematical types of values, to stand for the type
 $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
-\hypertarget{def-optional}{}
+\hypertarget{def-Option}{}
 \begin{definition}[Optional Data Type]
 \hypertarget{def-none}{}
 \hypertarget{def-some}{}
@@ -412,14 +412,14 @@ set containing $x$.
 The notation $\None \triangleq \emptyset$ is an alias for the empty
 set used in places where either the empty set or a singleton set is expected.
 %
-The type $\Option(T) \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
+The type $\Option{T} \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
 all singleton sets of elements from $T$ as well as the empty set.
 %
-We refer to $\Option(T)$ as the \emph{optional data type for the parameter
+We refer to $\Option{T}$ as the \emph{optional data type for the parameter
 type $T$}, or shortly as an \emph{\optionalterm}.
 
-To avoid having too many parentheses, instead of writing $\Option((a, b, c))$
-for a singleton set for the tuple $(a, b, c)$, we will write $\Option(a, b, c)$.
+To avoid having too many parentheses, instead of writing $\Option{(a, b, c)}$
+for a singleton set for the tuple $(a, b, c)$, we will write $\Option{a, b, c}$.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1042,12 +1042,13 @@ This is used to assert that a condition that holds.
 }
 
 \subsection{Boolean Transition Judgments}
-\hypertarget{def-booltrans}{}
-We define the following rules to allow us to treat Boolean values as transition judgments:
+\RenderRelation{bool_transition}
+We define the following rules to allow us to treat Boolean values as transition judgments,
+which in turn allow us to employ \shortcircuitrulemacros{}:
 \begin{mathpar}
-\inferrule[bool\_trans\_true]{}{ \booltrans(\True) \booltransarrow\True }
+\inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
 \and
-\inferrule[bool\_trans\_false]{}{ \booltrans(\False) \booltransarrow\False }
+\inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
 \end{mathpar}
 
 \subsection{Judgments Over Optional Data Types}
@@ -1058,7 +1059,7 @@ we introduce the following parametric relation,
 which accepts a one-argument relation (or function) $f : A \aslrel B$
 and applies it to an optional value:
 \[
-\mapopt{\cdot} : \overname{\Option(A)}{\vvopt} \aslrel \overname{\Option(B)}{\vvoptnew}
+\mapopt{\cdot} : \overname{\Option{A}}{\vvopt} \aslrel \overname{\Option{B}}{\vvoptnew}
 \]
 
 \ProseParagraph

@@ -455,7 +455,8 @@ A type $\tty$ is primitive if it is not non-primitive.
 \identd{GWXK}
 
 \TypingRuleDef{Structure}
-\hypertarget{def-structure}{}
+\RenderRelation{get_structure}
+\BackupOriginalRelation{
 The function
 \[
   \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -463,6 +464,7 @@ The function
 assigns a type to its \hypertarget{def-tstruct}{\emph{\structureterm}}, which is the type formed by
 recursively replacing named types by their type definition in the \staticenvironmentterm{} $\tenv$.
 If a named type is not associated with a declared type in $\tenv$, a \typingerrorterm{} is returned.
+} % END_OF_BACKUP_RELATION
 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
@@ -556,8 +558,8 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \identd{FXQV}
 
 \TypingRuleDef{MakeAnonymous}
-\hypertarget{def-makeanonymous}{}
-\hypertarget{def-underlyingtype}{}
+\RenderRelation{make_anonymous}
+\BackupOriginalRelation{
 The function
 \[
   \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
@@ -566,6 +568,7 @@ returns the \emph{\underlyingtypeterm} --- $\vt$ --- of the type $\tty$ in the \
 Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
 $\makeanonymous$ replaces named types by their definition until the first non-named type is found but
 does not recurse further.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Underlying Type of a Type}
 Consider the following example:
@@ -621,13 +624,15 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 A type is a \emph{\constrainedintegerterm} if it is either a \wellconstrainedintegertypeterm{}
 or a \parameterizedintegertypeterm.
 
-\hypertarget{def-checkconstrainedinteger}{}
+\RenderRelation{check_constrained_integer}
+\BackupOriginalRelation{
 The function
 \[
   \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
 \]
 checks whether the type $\vt$ is a \constrainedintegerterm{} type.
 If so, the result is $\True$, otherwise the result is a \typingerrorterm.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking for Constrained Integers}
 \listingref{check-constrained-integer}

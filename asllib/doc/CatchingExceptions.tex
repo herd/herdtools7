@@ -48,12 +48,15 @@ subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|
 \RenderType[remove_hypertargets]{catcher}
 
 \ASTRuleDef{Catcher}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-catcher}{}
 The function
 \[
 \buildcatcher(\overname{\parsenode{\Ncatcher}}{\vparsednode}) \;\aslto\; \overname{\catcher}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[named]{}{
@@ -81,7 +84,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Exception Catchers}
-\hypertarget{def-annotatecatcher}{}
+\RenderRelation{annotate_catcher}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -99,6 +103,7 @@ and \sideeffectsetterm\ $\vsesin$.
 The result is the \sideeffectsetterm\ $\vsesin$, the annotated catcher $\newcatcher$ and the
 \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \TypingRuleDef{Catcher}
 \ExampleDef{Annotating Catch Clauses}
@@ -181,8 +186,9 @@ of evaluating a \trystatementterm{} and its type is defined as follows:
 \]
 } % END_OF_BACKUP_TYPE
 
+\RenderRelation{eval_catchers}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalcatchers}{}
 \[
   \evalcatchers(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\catcher}}{\catchers} \aslsep \overname{\Option{\stmt}}{\otherwiseopt}
    \aslsep \overname{\TOutConfig}{\sm}) \;\aslrel\;
@@ -199,6 +205,7 @@ evaluates a list of \texttt{catch} clauses $\catchers$, an optional \texttt{othe
 and a configuration $\sm$ resulting from the evaluation of the throwing expression,
 in the environment $\env$. The result --- $\smnew$ --- is either a continuation configuration,
 an early return configuration, or an abnormal configuration.
+} % END_OF_BACKUP_RELATION
 
 We refer to the block statement in a
 \trystatementterm{} as the \emph{try-block statement}.
@@ -400,7 +407,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 The (recursively-defined) helper relation
 \[
   \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\KleeneStar{\catcher}}{\catchers})
-  \;\aslrel\; \Option(\catcher) \enspace,
+  \;\aslrel\; \Option{\catcher} \enspace,
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
 by invoking $\typesat$ with the \staticenvironmentterm{} $\tenv$.

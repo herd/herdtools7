@@ -28,12 +28,14 @@ This chapter defines the following helper relations for operating on \nativevalu
 \end{itemize}
 
 \SemanticsRuleDef{GetPendingCalls}
-\hypertarget{def-getpendingcalls}{}
+\RenderRelation{get_pending_calls}
+\BackupOriginalRelation{
 The function
 \[
 \getpendingcalls(\overname{\dynamicenvs}{\denv} \aslsep \overname{\Identifier}{\name}) \aslto \overname{\N}{\vs}
 \]
 retrieves the value associated with $\name$ in $\denv.\pendingcalls$ or $0$ if no value is associated with it.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Retrieving the Number of Pending Calls}
 In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
@@ -54,13 +56,15 @@ $\name$ in $\denv.\pendingcalls$ otherwise.
 \end{mathpar}
 
 \SemanticsRuleDef{SetPendingCalls}
-\hypertarget{def-setpendingcalls}{}
+\RenderRelation{set_pending_calls}
+\BackupOriginalRelation{
 The function
 \[
 \setpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\N}{\vv}) \aslto
 \overname{\dynamicenvs}{\newgenv}
 \]
 updates the value bound to $\name$ in $\genv.\storage$ to $\vv$, yielding the new global dynamic environment $\newgenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Setting the Number of Pending Calls}
 In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
@@ -81,13 +85,15 @@ define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pending
 \end{mathpar}
 
 \SemanticsRuleDef{IncrPendingCalls}
-\hypertarget{def-incrpendingcalls}{}
+\RenderRelation{incr_pending_calls}
+\BackupOriginalRelation{
 The function
 \[
 \incrpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name}) \aslto
 \overname{\globaldynamicenvs}{\newgenv}
 \]
 increments the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Incrementing the Number of Pending Calls}
 In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to \verb|factorial| from \verb|main|
@@ -115,7 +121,8 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 \end{mathpar}
 
 \SemanticsRuleDef{DecrPendingCalls}
-\hypertarget{def-decrpendingcalls}{}
+\RenderRelation{decr_pending_calls}
+\BackupOriginalRelation{
 The function
 \[
 \decrpendingcalls(\overname{\globaldynamicenvs}{\genv} \aslsep \overname{\Identifier}{\name}) \aslto
@@ -123,6 +130,7 @@ The function
 \]
 decrements the value associated with $\name$ in $\genv.\pendingcalls$, yielding the updated global dynamic environment $\newgenv$.
 It is assumed that $\getpendingcalls((\genv, \emptyfunc), \name)$ yields a positive value.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Decrementing the Number of Pending Calls}
 In \listingref{CheckRecurseLimit}, the number of pending calls upon returning from \verb|main| to \verb|factorial|
@@ -151,13 +159,15 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \SemanticsRuleDef{RemoveLocal}
 \ProseParagraph
+\RenderRelation{remove_local}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-removelocal}{}
 \[
   \removelocal(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name}) \;\aslrel\; \overname{\envs}{\newenv}
 \]
 removes the binding of the identifier $\name$ from the local storage of the environment $\env$,
 yielding the environment $\newenv$.
+} % END_OF_BACKUP_RELATION
 
 This relation is used to maintain the invariant that the dynamic environment
 maintains bindings only for identifiers that are in scope. That is, only identifiers
@@ -203,8 +213,11 @@ exn=TRUE
 
 \SemanticsRuleDef{ReadIdentifier}
 \ProseParagraph
+\RenderRelation{read_identifier}
+The value $\vv$ is ignored, as execution graphs do not contain values.
+
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-readidentifier}{}
 \[
   \readidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
@@ -212,8 +225,7 @@ creates an \executiongraphterm{} that represents the reading of the value $\vv$ 
 given by the identifier $\name$.
 The result is an execution graph containing a single Read Effect,
 which denotes reading from $\name$.
-%
-The value $\vv$ is ignored, as execution graphs do not contain values.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Effect of Reading from an Identifier}
 In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
@@ -234,8 +246,9 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 
 \SemanticsRuleDef{WriteIdentifier}
 \ProseParagraph
+\RenderRelation{write_identifier}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-writeidentifier}{}
 \[
   \writeidentifier(\overname{\Identifier}{\name}\aslsep\overname{\nativevalue}{\vv}) \;\aslrel\; \XGraphs
 \]
@@ -245,6 +258,7 @@ The result is an execution graph containing a single Write Effect,
 which denotes writing into $\name$.
 %
 The value $\vv$ is ignored, as execution graphs do not contain values.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Effect of Writing to an Identifier}
 In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
@@ -263,13 +277,15 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \end{mathpar}
 
 \SemanticsRuleDef{ConcatBitvectors}
-\hypertarget{def-concatbitvector}{}
+\RenderRelation{concat_bitvectors}
+\BackupOriginalRelation{
 The relation
 \[
   \concatbitvectors(\overname{\KleeneStar{\tbitvector}}{\vvs}) \;\aslrel\; \overname{\tbitvector}{\newvs}
 \]
 transforms a (possibly empty) list of bitvector \nativevaluesterm{}$\vvs$ into a single bitvector
 $\newvs$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Concatenating Bitvectors}
 The specification in \listingref{ConcatBitvectors} shows examples of concatenating
@@ -318,7 +334,8 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \end{mathpar}
 
 \SemanticsRuleDef{SlicesToPositions}
-\hypertarget{def-slicestopositions}{}
+\RenderRelation{slices_to_positions}
+\BackupOriginalRelation{
 The relation
 \[
   \slicestopositions(\overname{\KleenePlus{(\overname{\tint}{\vs}\times\overname{\tint}{\vl})}}{\slices}) \;\aslrel\;
@@ -327,6 +344,7 @@ The relation
 returns the list of positions (indices) specified by the slices $\slices$,
 if all slices consist of only non-negative integers.
 \ProseOtherwiseDynamicError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Converting Slices to Lists of Indices}
 In \listingref{SlicesToPositions}, the slices \verb|1+:3, 7:5|
@@ -381,7 +399,8 @@ is illegal for a slice.
 \end{mathpar}
 
 \SemanticsRuleDef{MaxPosOfSlice}
-\hypertarget{def-maxposofslice}{}
+\RenderRelation{max_pos_of_slice}
+\BackupOriginalRelation{
 The relation
 \[
   \maxposofslice(\overname{\tint}{\vs}\times\overname{\tint}{\vl}) \;\aslrel\;
@@ -389,6 +408,7 @@ The relation
 \]
 returns the maximum position specified by the slices $\slices$,
 assuming that all slices consist only of non-negative integers.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Maximum positions of slices}
 The slice \verb|1+:3| has maximum position 3.
@@ -428,7 +448,8 @@ The slice \verb|42+:0| has maximum position 42.
 \end{mathpar}
 
 \SemanticsRuleDef{ReadFromBitvector}
-\hypertarget{def-readfrombitvector}{}
+\RenderRelation{read_from_bitvector}
+\BackupOriginalRelation{
 The relation
 \[
   \readfrombitvector(\overname{\nativevalue}{\vv} \aslsep \overname{\KleeneStar{(\tint\times\tint)}}{\slices}) \;\aslrel\;
@@ -436,6 +457,7 @@ The relation
 \]
 reads from a bitvector $\bv$, or an integer seen as a bitvector, the indices specified by the list of slices $\slices$,
 thereby concatenating their values.
+} % END_OF_BACKUP_RELATION
 
 Notice that the bits of a bitvector go from the least significant bit being on the right to the most significant bit being on the left,
 which is reflected by how the rules list the bits.
@@ -525,13 +547,15 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \end{mathpar}
 
 \SemanticsRuleDef{WriteToBitvector}
-\hypertarget{def-writetobitvector}{}
+\RenderRelation{write_to_bitvector}
+\BackupOriginalRelation{
 The relation
 \[
   \writetobitvector(\overname{\KleeneStar{(\tint\times\tint)}}{\slices} \aslsep \overname{\tbitvector}{\src} \aslsep \overname{\tbitvector}{\dst})
   \;\aslrel\; \overname{\tbitvector}{\vv} \cup \overname{\TDynError}{\DynErrorConfig}
 \]
 overwrites the bits of $\dst$ at the positions given by $\slices$ with the bits of $\src$.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobitvector$.
 
@@ -610,14 +634,16 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 \end{mathpar}
 
 \SemanticsRuleDef{GetIndex}
+\RenderRelation{get_index}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-getindex}{}
 \[
   \getindex(\overname{\N}{\vi} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
   (\overname{\tvector}{\vr} \cup \overname{\TDynError}{\DynamicErrorVal{\BadIndex}})
 \]
 reads the value $\vr$ from the vector of values $\vvec$ at the index $\vi$.
 \ProseOtherwiseDynamicError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Reading a Vector at an Index}
 The specification in \listingref{GetIndex} shows examples of accessing indices of native vectors:
@@ -666,14 +692,16 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \end{mathpar}
 
 \SemanticsRuleDef{SetIndex}
+\RenderRelation{set_index}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-setindex}{}
 \[
   \setindex(\overname{\N}{\vi} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\tvector}{\vvec}) \;\aslrel\;
   (\overname{\tvector}{\vres} \cup \overname{\TDynError}{\DynamicErrorVal{\BadIndex}})
 \]
 overwrites the value at the given index $\vi$ in a vector of values $\vvec$ with the new value $\vv$.
 \ProseOtherwiseDynamicError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Writing a Vector at an Index}
 In \listingref{GetIndex}, evaluating the statement \verb|arr[[1]] = 3;|
@@ -726,12 +754,14 @@ involves the following premise:
 
 \SemanticsRuleDef{GetField}
 \ProseParagraph
+\RenderRelation{get_field}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-getfield}{}
 \[
   \getfield(\overname{\Identifier}{\name} \aslsep \overname{\trecord}{\record}) \;\aslrel\; \nativevalue
 \]
 retrieves the value corresponding to the field name $\name$ from the record value $\record$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Reading a Record Field}
 In \listingref{GetField}, there are the following examples of reading a record field:
@@ -755,12 +785,14 @@ The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\n
 
 \SemanticsRuleDef{SetField}
 \ProseParagraph
+\RenderRelation{set_field}
+\BackupOriginalRelation{
 The function
-\hypertarget{def-setfield}{}
 \[
   \setfield(\overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\trecord}{\record}) \;\aslto\; \trecord
 \]
 overwrites the value corresponding to the field name $\name$ in the record value $\record$ with the value $\vv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Writing to a Record Field}
 In \listingref{GetField}, there are the following examples of writing to a record field:
@@ -806,14 +838,16 @@ The typechecker ensures that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{DeclareLocalIdentifier}
 \ProseParagraph
+\RenderRelation{declare_local_identifier}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-declarelocalidentifier}{}
 \[
   \declarelocalidentifier(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv}) \;\aslrel\;
   (\overname{\envs}{\newenv}\times\overname{\XGraphs}{\vg})
 \]
 associates $\vv$ to $\name$ as a local storage element in the environment $\env$ and
 returns the updated environment $\newenv$ with the execution graph consisting of a Write Effect to $\name$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating Local Declarations}
 In \listingref{semantics-levar}, evaluating \verb|var x: integer = 3;|
@@ -831,7 +865,8 @@ as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 \end{mathpar}
 
 \SemanticsRuleDef{DeclareLocalIdentifierM}
-\hypertarget{def-declarelocalidentifierm}{}
+\RenderRelation{declare_local_identifier_m}
+\BackupOriginalRelation{
 The relation
 \[
   \declarelocalidentifierm(\overname{\envs}{\env} \aslsep
@@ -842,6 +877,7 @@ The relation
 declares the local identifier $\vx$ in the environment $\env$, in the context
 of the value-graph pair $(\vv, \vg)$, yielding a pair consisting
 of the environment $\newenv$ and \executiongraphterm{} $\newg$.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Evaluating Local Declarations}.
 
@@ -867,7 +903,8 @@ See \ExampleRef{Evaluating Local Declarations}.
 \end{mathpar}
 
 \SemanticsRuleDef{DeclareLocalIdentifierMM}
-\hypertarget{def-declarelocalidentifermm}{}
+\RenderRelation{declare_local_identifier_mm}
+\BackupOriginalRelation{
 The relation
 \[
   \declarelocalidentifiermm(\overname{\envs}{\env} \aslsep
@@ -879,6 +916,7 @@ declares the local identifier $\vx$ in the environment $\env$,
 in the context of the value-graph pair $(\vv, \vg)$,
 yielding a pair consisting of an environment $\newenv$
 and an \executiongraphterm{} $\vgtwo$.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Evaluating Local Declarations}.
 

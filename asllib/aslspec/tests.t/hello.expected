@@ -21,6 +21,6 @@
 \begin{flalign*}
 \s\texthypertarget{type-s} \triangleq\ & \pow{\t}\\
 \cup\ & \A\mathhypertarget{type-A}\\
-\cup\ & \B(\s, \s)\mathhypertarget{type-B}\end{flalign*}} % EndDefineType
+\cup\ & \B\left(\s, \s\right)\mathhypertarget{type-B}\end{flalign*}} % EndDefineType
 
 

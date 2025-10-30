@@ -300,7 +300,7 @@ def apply_console_macros(aslref_path: str):
     global ASLREF_EXE
     ASLREF_EXE = aslref_path
     if not os.path.isfile(ASLREF_EXE):
-        raise Exception(f"Unable to find aslref in path {ASLREF_EXE}")
+        raise Exception(f"Unable to find aslref in path {ASLREF_EXE}. Perhaps you need to build it?")
     else:
         print(f"Using aslref path {ASLREF_EXE}")
     print("Extended macros: applying console macros... ")

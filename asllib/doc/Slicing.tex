@@ -66,12 +66,15 @@ as exemplified in \listingref{PrefixSlice}. It is \desugared{} by \\
 }
 
 \ASTRuleDef{Slice}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-slice}{}
 The function
 \[
   \buildslice(\overname{\parsenode{\Nslice}}{\vparsednode}) \;\aslto\; \overname{\slice}{\vastnode}
 \]
 transforms a parse node for a slice $\vparsednode$ into an AST node for a slice $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule[single]{}{
@@ -231,7 +234,8 @@ are all well-typed.
 \lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
 
 \TypingRuleDef{SlicesWidth}
-\hypertarget{def-sliceswidth}{}
+\RenderRelation{slices_width}
+\BackupOriginalRelation{
 The function
 \[
   \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\vslices}) \aslto
@@ -239,6 +243,7 @@ The function
 \]
 returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
 in the \staticenvironmentterm{} $\tenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Width of a List of Slices}
 In \listingref{eval-slices}
@@ -279,13 +284,15 @@ The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
 \end{mathpar}
 
 \TypingRuleDef{SliceWidth}
-\hypertarget{def-slicewidth}{}
+\RenderRelation{slice_width}
+\BackupOriginalRelation{
 The function
 \[
   \slicewidth(\overname{\slice}{\vslice}) \aslto
   \overname{\expr}{\vwidth}
 \]
 returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Width of a Slice}
 In \listingref{semantics-slicesingle},
@@ -345,7 +352,8 @@ the width of the slice \texttt{x[:3]} is $3$.
 \end{mathpar}
 
 \TypingRuleDef{SymbolicConstrainedInteger}
-\hypertarget{def-annotatesymbolicconstrainedinteger}{}
+\RenderRelation{annotate_symbolic_constrained_integer}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -356,6 +364,7 @@ The function
 annotates a \symbolicallyevaluableterm{} integer expression $\ve$ of a constrained integer type in the \staticenvironmentterm{} $\tenv$
 and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Symbolically Evaluable Constrained Integer Expressions}
 In \listingref{typing-annotatesymbolicallyevaluableexpr}, all of the symbolically evaluable
@@ -391,8 +400,9 @@ the parameter \verb|N|.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Bitvector Slices}
 \SemanticsRuleDef{Slice}
+\RenderRelation{eval_slice}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalslice}{}
 \[
   \evalslice(\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}) \;\aslrel\;
   \left(
@@ -408,6 +418,7 @@ evaluates an individual slice $\vs$ in an environment $\env$ is,
 resulting either in \\
 $\ResultSlices(((\vstart, \vlength), \vg), \newenv)$.
 \ProseOtherwiseAbnormal
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating Slices}
 In \listingref{semantics-slicesingle},
@@ -484,7 +495,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vstart, \newg), \newenv) \OrAbnormal\\
   \vlength \eqdef \nvint(1)
 }{
-  \evalslice(\env, \SliceSingle(\ve)) \evalarrow \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceSingle(\ve)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -498,7 +509,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceRange(\etop, \estart)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -510,7 +521,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \mlength \eqname (\vlength, \vgtwo)\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceLength(\estart, \elength)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -523,7 +534,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalbinop(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
-  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow \\ \ResultSlices(((\vstart, \vlength), \newg), \newenv)
+  \evalslice(\env, \SliceStar(\efactor, \elength)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
 
@@ -547,12 +558,15 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Lists of Bitvector Slices}
 \ASTRuleDef{Slices}
+\MarkedIgnoredRelationDefinition{
 \hypertarget{build-slices}{}
 The function
 \[
   \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\KleenePlus{\slice}}{\vastnode}
 \]
 transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
+} % END_OF_IGNORED_RELATION
+
 
 \begin{mathpar}
 \inferrule{
@@ -566,7 +580,8 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Lists of Bitvector Slices}
 \TypingRuleDef{Slices}
-\hypertarget{def-annotateslices}{}
+\RenderRelation{annotate_slices}
+\BackupOriginalRelation{
 The function
 \[
 \annotateslices(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\slice}}{\vslices}) \aslto
@@ -575,6 +590,7 @@ The function
 annotates a list of slices $\vslices$ in the \staticenvironmentterm{} $\tenv$, yielding a list of annotated slices (that is,
 slices in the \typedast) and \sideeffectsetterm\ $\vses$.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Bitvector Slices} for example of well-typed bitvector slices.
 
@@ -605,8 +621,9 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Lists of Bitvector Slices}
 \SemanticsRuleDef{Slices}
+\RenderRelation{eval_slices}
+\BackupOriginalRelation{
 The relation
-\hypertarget{def-evalslices}{}
 \[
   \evalslices(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\slice}}{\slices}) \;\aslrel\;
   \left(
@@ -621,6 +638,7 @@ The relation
 evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
 $\ResultSlices((\ranges, \newg), \newenv)$.
 \ProseOtherwiseAbnormal
+} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 $\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
@@ -647,7 +665,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
   \begin{itemize}
     \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
     \item evaluating the slice $\vslice$ in $\env$ results in \\
-          $\ResultSlices((\range, \vgone), \envone)$\ProseOrAbnormal;
+          $((\range, \vgone), \envone)$\ProseOrAbnormal;
     \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
           $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
     \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
@@ -665,7 +683,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 \begin{mathpar}
 \inferrule[nonempty]{
   \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow \ResultSlices((\range, \vgone), \envone) \OrAbnormal\\\\
+  \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\\\\
   \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
   \ranges \eqdef [\range] \concat \rangesone\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
