@@ -16,11 +16,7 @@ make
 dune build asllib/menhir2bnfc
 ```
 
-To run the bnfc parser tests run:
-```
-dune build @bnfc_test
-```
-You should now have a `_build/default/asllib/menhir2bnfc/tests/integration/bnfc_parser/grammar.cf` file built.
+You should now have a `asllib/menhir2bnfc/grammar.cf` file built.
 If all you're looking for an aslref bnfc file - that's it.
 
 The rest of the steps are how to build the bnfc file from scratch.
@@ -33,14 +29,19 @@ menhir --cmly --base Parser asllib/Parser.mly asllib/Tokens.mly
 At this point you should have a Parser.cmly and Lexer.ml file
 To build the grammar run:
 ```
-./_build/default/asllib/menhir2bnfc/menhir2bnfc.exe --with-lexer Parser.cmly grammar.cf
+./asllib/menhir2bnfc/menhir2bnfc.exe --with-lexer Parser.cmly grammar.cf
 ```
 
 You should now have a bnfc compliant grammar.cf file!
 
 ## Tests
 
-The `dune build @bnfc_test` builds a menhir parser from the bnfc grammar
+To run the bnfc parser tests run:
+```
+dune runtest asllib/menhir2bnfc
+```
+
+This builds a menhir parser from the bnfc grammar
 and runs it against all files under `asllib/tests/**/*.asl`
 
 Failing tests are recorded in `asllib/menhir2bnfc/tests/integration/parser_cmp.expected`
@@ -88,19 +89,20 @@ are required to be wrapped in parenthesis to disambiguate operation order.
 
 ## Building and running the script
 
-To build you simply run `dune build`.
+To build you simply run `dune build` from `asllib/menhir2bnfc`.
+This creates `menhir2bnfc.exe` in `asllib/menhir2bnfc`.
 
 The script can be run using:
 ```
-menhir2bnfc <cmly file> <output file>
+./menhir2bnfc.exe <cmly file> <output file>
 ```
 
 For example:
 ```
-menhir2bnfc Parser.cmly out.cf
+./menhir2bnfc.exe Parser.cmly out.cf
 ```
 
-See `menhir2bnfc --help` for more details.
+See `./menhir2bnfc.exe --help` for more details.
 
 ## Transforming the Grammar to BNFC
 

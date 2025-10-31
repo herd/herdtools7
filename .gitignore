@@ -24,3 +24,5 @@ asllib/doc/*.toc
 asllib/doc/*.fls
 asllib/doc/*.fdb_latexmk
 asllib/doc/generated_elements.tex
+asllib/menhir2bnfc/menhir2bnfc.exe
+asllib/menhir2bnfc/grammar.cf

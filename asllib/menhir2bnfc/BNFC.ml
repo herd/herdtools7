@@ -76,7 +76,8 @@ type t = {
    BNFC data structure utilities
  *)
 
-(** Group decl lists into a list of lists where each sub-list has a common name *)
+(** Group decl lists into a list of lists where each sub-list has a common name
+*)
 let rec group_by_name decl_list =
   match decl_list with
   | [] -> []
@@ -134,8 +135,8 @@ let string_of_bnfc bnfc =
        (fun part -> String.length part > 0)
        (eps :: comments :: tokens :: decls)
 
-(** Given a sorting order of the generated BNFC names. Order the bnfc ast
-    using the order of the names specified *)
+(** Given a sorting order of the generated BNFC names. Order the bnfc ast using
+    the order of the names specified *)
 let sort_bnfc bnfc order =
   let sort_fn el1 el2 =
     let get_idx (Decl { name }) =
@@ -224,8 +225,8 @@ let collect_used_names decl_list : StringSet.t =
         acc terms)
     StringSet.empty decl_list
 
-(** Given a bnfc record - embed all string/char literal tokens into
-    the bnfc decls *)
+(** Given a bnfc record - embed all string/char literal tokens into the bnfc
+    decls *)
 let embed_literals bnfc =
   let open Regex in
   let used_ids = collect_used_names bnfc.decls in

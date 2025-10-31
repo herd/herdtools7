@@ -4,6 +4,8 @@
  (flags -w -9)
  (optional)
  (package menhir2bnfc)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
  (libraries herdtools7.asllib menhirSdk))
 
 (executable
@@ -11,5 +13,10 @@
  (name menhir2bnfc)
  (modules menhir2bnfc)
  (optional)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
  (package menhir2bnfc)
- (libraries menhir2bnfc_lib))
+ (libraries menhir2bnfc_lib)
+ (promote
+  (until-clean)
+  (into .)))

@@ -421,24 +421,9 @@ diymicro-test-aarch64-asl: asl-pseudocode
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
-.PHONY: opam-install
-opam-install:
+test-bnfc:
 	@ echo
-	@ echo "Installing herdtools as an opam package"
-	opam install .
-	@ echo "Installed."
-
-ASLLIB_PARSER_CMLY := _build/default/asllib/Parser.cmly
-
-.PHONY: test-bnfc
-test-bnfc: opam-install
-	@ echo
-	dune build --profile $(DUNE_PROFILE) $(ASLLIB_PARSER_CMLY)
-	$(MAKE) \
-		-C asllib/menhir2bnfc \
-		HERDTOOLS_SOURCE=$(CURDIR) \
-		ASLLIB_PARSER_CMLY=$(abspath $(ASLLIB_PARSER_CMLY)) \
-		test
+	dune runtest asllib/menhir2bnfc
 	@ echo "BNFC tests: OK"
 
 test:: test.pac
