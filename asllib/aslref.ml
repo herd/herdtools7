@@ -163,7 +163,8 @@ let parse_args () =
         " Do not use ASL's standard library. Implies `--no-primitives`." );
       ( "--no-stdlib0",
         Arg.Set no_stdlib0,
-        " Do not use the ASL0 compatibility standard library." );
+        " Do not use the ASL0 compatibility standard library. Default if there \
+         is no ASLv0 file passed as argument." );
       ( "--v0-use-chunks",
         Arg.Set v0_use_split_chunks,
         " While lexing v0 files, split the files along separator comment \
@@ -207,6 +208,14 @@ let parse_args () =
       v0_use_split_chunks = !v0_use_split_chunks;
     }
   in
+
+  let all_v1 =
+    List.for_all
+      (function
+        | (NormalV1 | PatchV1), _ -> true | (NormalV0 | PatchV0), _ -> false)
+      args.files
+  in
+  let args = { args with no_stdlib0 = args.no_stdlib0 || all_v1 } in
 
   let () =
     let ensure_exists s =
