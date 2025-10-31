@@ -28,8 +28,9 @@ if [[ ${#aslargs[@]} -gt 0 ]]; then
     aslfile=${aslargs[${#aslargs[@]}-1]}
     unset aslargs[${#aslargs[@]}-1]  # Remove last element from aslargs
 else
-    echo "not enough arguments"
-    exit 1;
+    # there's a test that says what happens when run without arguments, so
+    # just do aslref's behavior
+    exec aslref ${aslargs[@]} ;
 fi
 
 # echo "incompatible=$incompatible"
@@ -50,7 +51,7 @@ export PATH="$acl2asldir"/bin:$PATH
 # echo aslref ${aslargs[@]} "$aslfile --print-lisp --no-exec";
 
 # echo aslref ${aslargs[@]} "$aslfile" --print-lisp --no-exec
-aslref_out=$( ( aslref ${aslargs[@]} "$aslfile" --no-primitives --print-lisp --no-exec > "$astfile" ) 2>&1 )
+aslref_out=$( ( aslref ${aslargs[@]} "$aslfile" --print-lisp --no-exec > "$astfile" ) 2>&1 )
 status=$?
 if [[ $status != 0 ]]; then
     # echo "aslref_out (fail before exec):"

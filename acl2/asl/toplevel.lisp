@@ -87,6 +87,37 @@ global variables and producing a new environment."
     (eval_globals env2 (cdr x))))
 
 
+(define find_main-aux ((names identifierlist-p)
+                       (static-env static_env_global-p))
+  :returns (mains (and (eval_result-p mains)
+                      (implies (eval_result-case mains :ev_normal)
+                               (identifierlist-p (ev_normal->res mains)))))
+  (b* (((when (atom names)) (ev_normal nil))
+       (name1 (identifier-fix (car names)))
+       (look (hons-assoc-equal name1 (static_env_global->subprograms static-env)))
+       ((unless look)
+        (make-ev_error :desc "Couldn't find function" :data name1))
+       ((func f) (func-ses->fn (cdr look)))
+       ((ev rest) (find_main-aux (cdr names) static-env))
+       ((when (and (not f.parameters) (not f.args)))
+        (ev_normal (cons name1 rest))))
+    (ev_normal rest)))
+    
+
+(define find_main ((static-env static_env_global-p))
+  :returns (main (and (eval_result-p main)
+                      (implies (eval_result-case main :ev_normal)
+                               (identifier-p (ev_normal->res main)))))
+  (b* ((names (cdr (hons-assoc-equal "main" (static_env_global->overloaded_subprograms static-env))))
+       ((ev mains) (find_main-aux names static-env))
+       ((when (atom mains))
+        (make-ev_error :desc "No main function found"))
+       ((when (consp (cdr mains)))
+        (make-ev_error :desc "Multiple main functions found")))
+    (ev_normal (car mains))))
+
+
+
 
 (local (defthm equal-len
          (implies (syntaxp (quotep n))
@@ -104,8 +135,9 @@ and then evaluating the \"main\" subprogram."
   (b* ((env0 (make-env :local (empty-local-env)
                        :global (make-global-env :static tenv)))
        ((mv (evo env1) orac) (eval_globals env0 ast))
+       ((evo main) (find_main tenv))
        ((mv (evo (func_result res)) orac)
-        (eval_subprogram env1 "main" nil nil :clk *main-initial-clock*))
+        (eval_subprogram env1 main nil nil :clk *main-initial-clock*))
        ((when (eql (len res.vals) 1))
         (evo_normal (car res.vals))))
     (evo_error "malformed return values from main" res.vals nil)))

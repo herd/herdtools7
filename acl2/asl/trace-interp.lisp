@@ -439,10 +439,11 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
 (defmacro evo_normal-*t (arg)
   `(mv (ev_normal ,arg) orac trace))
 
-(define pass-error-*t (val &optional (orac 'orac) (trace 'trace))
+(define pass-error-*t ((val eval_result-p) &optional (orac 'orac) (trace 'trace))
+  :guard (eval_result-case val :ev_error)
   :inline t
   :enabled t
-  (mv val orac trace))
+  (mv (ev_error-fix val) orac trace))
 
 (defmacro evo_error-*t (&rest args)
   `(pass-error-*t (ev_error . ,args) orac trace))
@@ -498,10 +499,13 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
        :ev_normal (b* ,(and (not (eq (car acl2::args) '&))
                            `((,(car acl2::args) evresult.res)))
                     ,acl2::rest-expr)
-       
+       :ev_throwing (mv (init-backtrace
+                       (ev_throwing-fix evresult)
+                       pos)
+                      orac trace)
        :otherwise (pass-error-*t
                    (init-backtrace
-                    (eval_result-nonnormal-fix evresult)
+                    (ev_error-fix evresult)
                     pos) orac))))
 
 (defmacro evbody-*t (body)

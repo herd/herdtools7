@@ -280,3 +280,39 @@ error/throwing results."
 
 (defxdoc ev
   :short "@(csee B*) binder: see @(see patbind-ev)")
+
+
+
+(defprod expr_result
+  :short "Type of the result from evaluating an ASL expression"
+  ((val val)
+   (env env)))
+
+(def-eval_result expr_eval_result-p expr_result-p)
+
+(defprod exprlist_result
+  :short "Type of the result from evaluating a list of ASL expressions"
+  ((val vallist)
+   (env env)))
+
+(def-eval_result exprlist_eval_result-p exprlist_result-p)
+
+(deftagsum control_flow_state
+  :short "Type of result from evaluating a statement"
+  (:returning ((vals vallist)
+               (env global-env))
+   :short "Indicates that a return has been encountered")
+  (:continuing ((env env))
+   :short "Indicates that no return has been encountered and execution of the current
+function continues"))
+
+(def-eval_result stmt_eval_result-p control_flow_state-p)
+
+(defprod func_result ((vals vallist ;; val_read_from-list
+                            )
+                      (env global-env))
+  :short "Type of result from evaluating a function call: a list of return values and an
+updated global environment")
+
+(def-eval_result func_eval_result-p func_result-p)
+

@@ -116,22 +116,30 @@
   :fn rethrow_implicit)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind i) :ev_throwing))
+  (and (not (equal (eval_result-kind i) :ev_throwing))
+       (implies (not (equal (eval_result-kind i) :ev_normal))
+                (equal (eval_result-kind i) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn v_to_bool)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind i) :ev_throwing))
+  (and (not (equal (eval_result-kind i) :ev_throwing))
+       (implies (not (equal (eval_result-kind i) :ev_normal))
+                (equal (eval_result-kind i) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn v_to_int)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind i) :ev_throwing))
+  (and (not (equal (eval_result-kind i) :ev_throwing))
+       (implies (not (equal (eval_result-kind i) :ev_normal))
+                (equal (eval_result-kind i) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn v_to_label)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn tick_loop_limit)
 
@@ -141,44 +149,60 @@
   :fn env-find-global)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn bitvec_fields_to_record!)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn bitvec_fields_to_record)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind err) :ev_throwing))
+  (and (not (equal (eval_result-kind err) :ev_throwing))
+       (implies (not (equal (eval_result-kind err) :ev_normal))
+                (equal (eval_result-kind err) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn check_two_ranges_non_overlapping)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind err) :ev_throwing))
+  (and (not (equal (eval_result-kind err) :ev_throwing))
+       (implies (not (equal (eval_result-kind err) :ev_normal))
+                (equal (eval_result-kind err) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn check_non_overlapping_slices-1)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind err) :ev_throwing))
+  (and (not (equal (eval_result-kind err) :ev_throwing))
+       (implies (not (equal (eval_result-kind err) :ev_normal))
+                (equal (eval_result-kind err) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn check_non_overlapping_slices)
 
 (local (in-theory (disable loghead logtail floor logior logmask lognot)))
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn check-bad-slices)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn vbv-to-int)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn write_to_bitvector)
 
@@ -198,12 +222,16 @@
 ;;   :fn env-push-stack)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn eval_binop)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind res) :ev_throwing))
+  (and (not (equal (eval_result-kind res) :ev_throwing))
+       (implies (not (equal (eval_result-kind res) :ev_normal))
+                (equal (eval_result-kind res) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn eval_unop)
 
@@ -213,27 +241,37 @@
   :fn eval_pattern_mask)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn get_field!)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn map-get_field!)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn map-get_field)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn concat_bitvectors)
 
 (defret <fn>-not-throwing
-  (not (equal (eval_result-kind v) :ev_throwing))
+  (and (not (equal (eval_result-kind v) :ev_throwing))
+       (implies (not (equal (eval_result-kind v) :ev_normal))
+                (equal (eval_result-kind v) :ev_error)))
   :hints(("Goal" :in-theory (enable <fn>)))
   :fn get_field)
 
