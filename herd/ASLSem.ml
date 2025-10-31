@@ -598,18 +598,27 @@ module Make (Conf : Config) = struct
     let primitive_isb (ii, poi) () =
       create_barrier AArch64Base.ISB (use_ii_with_poi ii poi)
 
-    let dom_of =
+    let dom_of_label =
       let open AArch64Base in
-      function 0 -> NSH | 1 -> ISH | 2 -> OSH | 3 -> SY | _ -> assert false
+      function
+      | "MBReqDomain_Nonshareable" -> NSH
+      | "MBReqDomain_InnerShareable" -> ISH
+      | "MBReqDomain_OuterShareable" -> OSH
+      | "MBReqDomain_FullSystem" -> SY
+      | _ -> assert false
 
-    and btyp_of =
+    and btyp_of_label =
       let open AArch64Base in
-      function 0 -> LD | 1 -> ST | 2 -> FULL | _ -> assert false
+      function
+      | "MBReqTypes_Reads" -> LD
+      | "MBReqTypes_Writes" -> ST
+      | "MBReqTypes_All" -> FULL
+      | _ -> assert false
 
     let primitive_db constr (ii, poi) ~d:dom_m ~t:btyp_m =
-      let* dom = dom_m and* btyp = btyp_m in
-      let dom = v_as_int dom and btyp = v_as_int btyp in
-      let dom = dom_of dom and btyp = btyp_of btyp in
+      let* dom_v = dom_m and* btyp_v = btyp_m in
+      let dom = dom_v |> v_to_label |> dom_of_label
+      and btyp = btyp_v |> v_to_label |> btyp_of_label in
       create_barrier (constr (dom, btyp)) (use_ii_with_poi ii poi)
 
     let primitive_dmb = primitive_db (fun (d, t) -> AArch64Base.DMB (d, t))
