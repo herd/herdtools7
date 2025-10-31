@@ -280,7 +280,7 @@ let () =
       (match Co.choice  with Uni -> true | _ -> false)
     let unrollatomic = !Config.unrollatomic
     let allow_back = match !Config.mode with
-    | Default|Sc|Critical|Thin -> false
+    | Sc|Critical|Thin -> false
     | _ -> true
     let typ = !Config.typ
     let hexa = !Config.hexa

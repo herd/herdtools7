@@ -107,16 +107,27 @@ module Make(C:Builder.S)
       r
 
     let choice_default e1 e2 =
-      let r = match e1.edge,e2.edge with
 (*
-  Now accept some internal with internal composition
+  Now accept some internal with internal composition following some principles:
+    - `Po(_)`, `Dp(_)` and `Fenced(_)` should be treated the same.
+    - Symmetric
  *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
-      | Dp (_,Diff,_),Po (Diff,_,_)
-      | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
+      let r = match e1.edge,e2.edge with
+      (* E.g. Rfi Pod** *)
+      | (Ws Int|Rf Int|Fr Int|Insert _),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. Pod** Rfi *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
+      (* E.g. Pod** Pod** *)
+      | (Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_)),(Po (Diff,_,_)|Dp (_,Diff,_)|Fenced (_,Diff,_,_))
+      (* E.g. ISB Rfi *)
+      | Insert _,(Ws Int|Rf Int|Fr Int)
+      (* E.g. Rfi ISB *)
+      | (Ws Int|Rf Int|Fr Int),Insert _
+      (* E.g. Rfi Pos** *)
+      | Rf Int,(Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))
+      (* E.g. Pos** Rfi *)
+      | ((Po (Same,_,_)|Dp (_,Same,_)|Fenced (_,Same,_,_))),Rf Int
+      (* E.g. Amo.Cas *)
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
@@ -157,6 +168,7 @@ module Make(C:Builder.S)
                 | (Same,Same) | (Diff,Same) | (Same,Diff)
                   -> true
                 | Diff,Diff -> false
+                | _ -> assert false
                 end
             | Ext,Ext -> false
             | (Ext,Int) | (Int,Ext)
@@ -564,9 +576,7 @@ module Make(C:Builder.S)
 
     let count_ext es = count_e 0 es
 
-    let change_loc e = match loc_sd e with
-    | Same -> false
-    | Diff -> true
+    let change_loc e = not @@ Code.is_same_loc @@ loc_sd e
 
     let count_p p =
       let rec do_rec c = function
@@ -740,7 +750,7 @@ module Make(C:Builder.S)
     let fold_ie f k = f (Int) (f (Ext) k)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
-    let fold_sd f k = f (Same) (f Diff k)
+    let fold_sd = Code.fold_sd
     let fold_sd_dir2 f =
       fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))
