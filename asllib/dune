@@ -67,7 +67,7 @@
 (library
  (name asllib)
  (modules
-  (:standard \ aslref bundler))
+  (:standard \ aslref))
  (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST ParserConfig)
@@ -82,9 +82,3 @@
  (public_name aslref)
  (libraries asllib)
  (modules aslref))
-
-(executable
- (public_name aslbundler)
- (name bundler)
- (libraries asllib)
- (modules bundler))

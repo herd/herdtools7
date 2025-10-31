@@ -298,3 +298,4 @@ type SecurityState of enumeration {
 
 constant VMID_NONE : bits(16) = Zeros{16};
 constant ASID_NONE : bits(16) = Zeros{16};
+
