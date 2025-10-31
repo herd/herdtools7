@@ -589,6 +589,16 @@
 \newcommand\option[1]{\hyperlink{def-option}{\textsf{option}}(#1)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% We use the following comments to document that status of a given macro
+% while importing to aslspec:
+% SPECIFIED: The macro is referenced by an aslspec function or relation.
+% SPECIFICATION_DEFERRED: The macro stands for a function or relation that
+%   is scheduled to be specified in aslspec in a later phase.
+% NO_SPECIFICATION_REQUIRED: The macro stands for a function or relation
+%   that does not need to be specified in aslspec.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% AST macros with hyperlinks
 
 \newcommand\zerobit[0]{\hyperlink{constant-zerobit}{\texttt{0}}}
@@ -596,8 +606,6 @@
 \newcommand\xbit[0]{\hyperlink{constant-xbit}{\texttt{x}}}
 
 \newcommand\ARBITRARY[0]{\hyperlink{ast-EArbitrary}{\textastlabel{ARBITRARY}}}
-
-% Non-terminal names
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Special macros for the typed AST:

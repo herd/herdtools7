@@ -373,7 +373,7 @@ module Make (S : SPEC_VALUE) = struct
       {|\DefineRelation{%s}{@.
 The %s
 \[@.%a%a@.\]
-%a@.} %% EndDefineRelation|}
+%a} %% EndDefineRelation|}
       name relation_property_description pp_mathhypertarget hyperlink_target
       (pp_relation_math layout) def pp_print_text instantiated_prose_description
 

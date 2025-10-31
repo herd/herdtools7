@@ -1991,16 +1991,16 @@ relation eval_binop(op: binop, v1: native_value, v2: native_value) ->
 
 typing function is_subtype(tenv: static_envs, t1: ty, t2: ty) -> (b: Bool)
 {
-    "defines whether the type {t1} subtypes the type {t2} in the \staticenvironmentterm{} {tenv},
+    "defines whether the type {t1} \subtypesterm{} the type {t2} in the \staticenvironmentterm{} {tenv},
     yielding the result in {b}.",
-    prose_application = "testing whether {t1} subtypes {t2} in {tenv} yields {b}",
+    prose_application = "testing whether {t1} \subtypesterm{} {t2} in {tenv} yields {b}",
 };
 
 typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
-    "determines whether a type {t} \emph{subtype-satisfies} a type {s} in the static environment {tenv},
+    "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},
     yielding the result in {b}. \ProseOtherwiseTypeError",
-    prose_application = "testing whether {t} \emph{subtype-satisfies} {s} in {tenv} yields {b}\ProseOrTypeError",
+    prose_application = "testing whether {t} \subtypesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
 };
 
 typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
@@ -2247,7 +2247,7 @@ relation mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
 
 typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> constants_set(True) | type_error
 {
-  "returns $\True$ if {t} has the \structureterm{} a of type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
+  "returns $\True$ if {t} has the \structureterm{} of a type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
   prose_application = "checking whether the \structureterm{} of {t} has the AST label {l} yields $\True$\ProseOrTypeError",
   math_macro = \checkstructurelabel,
 };
@@ -2490,21 +2490,21 @@ relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_val
 
 typing function side_effect_is_pure(s: TSideEffect) -> (b: Bool)
 {
-  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\pureterm},
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\pureterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \pureterm{} yields {b}",
 };
 
 typing function side_effect_is_readonly(s: TSideEffect) -> (b: Bool)
 {
-  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\readonlyterm},
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\readonlyterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \readonlyterm{} yields {b}",
 };
 
 typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Bool)
 {
-  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is defined as \emph{\symbolicallyevaluableterm},
+  "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\symbolicallyevaluableterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \symbolicallyevaluableterm{} yields {b}",
 };

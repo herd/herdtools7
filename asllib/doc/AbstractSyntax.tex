@@ -888,13 +888,13 @@ to terminals.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Transforming Assignable Expressions \\ to Right-hand-side Expressions\label{sec:LeftToRight}}
+\section{Transforming Assignable Expressions \\ to Right-hand side Expressions\label{sec:LeftToRight}}
 \RenderRelation{rexpr}
 This function is utilized by both the type system and the dynamic semantics.
 It is defined recursively by the following table:
 \[
 \begin{array}{lcl}
-  \textbf{Assignable expression} & & \textbf{Right-hand-side expression}\\
+  \textbf{Assignable expression} & & \textbf{Right-hand side expression}\\
   \hline
   \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
   \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
