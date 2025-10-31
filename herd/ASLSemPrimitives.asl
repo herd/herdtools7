@@ -31,11 +31,7 @@ begin pass; end;
 // implementation-defined in the Arm ARM, and implemented by hand in
 // `implementations.asl`.
 
-// The translation between Arm ARM representation of domain and types is done
-// by the functions MBReqTypesToInteger() and MBReqDomainToInteger() in
-// `implementations.asl`
-
-func primitive_dmb(d: integer, t: integer)
+func primitive_dmb(d: MBReqDomain, t: MBReqTypes)
 begin pass; end;
 
 
@@ -47,11 +43,7 @@ begin pass; end;
 // implementation-defined in the Arm ARM, and implemented by hand in
 // `implementations.asl`.
 
-// The translation between Arm ARM representation of domain and types is done
-// by the functions MBReqTypesToInteger() and MBReqDomainToInteger() in
-// `implementations.asl`
-
-func primitive_dsb(d: integer, t: integer)
+func primitive_dsb(d: MBReqDomain, t: MBReqTypes)
 begin pass; end;
 
 // -----------------------------------------------------------------------------

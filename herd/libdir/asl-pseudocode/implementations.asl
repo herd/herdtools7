@@ -141,42 +141,22 @@ end;
 // DataMemoryBarrier()
 // ===================
 
-// We use our own integer codings of enumerations
-// to guard against enumeration type change
-
-func MBReqDomainToInteger(domain : MBReqDomain) => integer
-begin
-  case domain of
-    when MBReqDomain_Nonshareable => return 0;
-    when MBReqDomain_InnerShareable => return 1;
-    when MBReqDomain_OuterShareable => return 2;
-    when MBReqDomain_FullSystem => return 3;
-  end;
-end;
-
-func MBReqTypesToInteger(types : MBReqTypes) => integer
-begin
-  case types of
-    when MBReqTypes_Reads => return 0;
-    when MBReqTypes_Writes => return 1;
-    when MBReqTypes_All => return 2;
-  end;
-end;
-
 func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
 begin
-  primitive_dmb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+  primitive_dmb(domain, types);
 end;
 
 // DataSynchronizationBarrier()
 // ============================
+
+// nXS is not implemented in herd
 
 func DataSynchronizationBarrier
   (domain : MBReqDomain,
    types : MBReqTypes,
    nXS : boolean)
 begin
-  primitive_dsb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+  primitive_dsb(domain, types);
 end;
 
 // =============================================================================
