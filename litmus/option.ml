@@ -91,6 +91,7 @@ and get_tar () = match !tar with
 let crossrun = ref Crossrun.No
 let adbdir = ref "/data/local/tmp"
 let index = ref None
+let outnames = ref None
 let hexa = ref false
 let limit = ref true
 let no = ref None

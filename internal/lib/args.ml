@@ -66,8 +66,10 @@ let validate check msg (key, spec, doc) =
   in
   key, spec, doc
 
+let test_file name = Sys.file_exists name && not (Sys.is_directory name)
+
 let is_file =
-  validate (fun v -> Sys.file_exists v && not (Sys.is_directory v)) "Must be a path to a file"
+  validate test_file "Must be a path to a file"
 
 let is_dir =
   validate Sys.is_directory "Must be a path to a directory"

@@ -29,7 +29,8 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - run: |
+          sudo apt install qemu-system -qq
           opam install dune menhir zarith
           opam exec -- make Version.ml
-          opam exec -- dune build litmus/litmus.exe
-          opam exec -- make ${{ matrix.arch.make-test-target }} LITMUS=$(pwd)/_build/default/litmus/litmus.exe
+          opam exec -- dune build litmus/litmus.exe internal/check_obs.exe
+          ACCEL=tcg make ${{ matrix.arch.make-test-target }} LITMUS=$(pwd)/_build/default/litmus/litmus.exe
