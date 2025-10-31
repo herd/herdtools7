@@ -54,7 +54,7 @@ Explicit parameter tests:
   File omit-output-stdlib-param.asl, line 3, characters 21 to 41:
     let x : bits(64) = Extend('1111', TRUE);
                        ^^^^^^^^^^^^^^^^^^^^
-  ASL Static error: Arity error while calling 'Extend-1':
+  ASL Static error: Arity error while calling 'Extend':
     2 parameters expected and 1 provided
   [1]
 

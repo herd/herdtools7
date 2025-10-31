@@ -72,7 +72,7 @@ val from_string :
   AST.t
 
 val stdlib : AST.t Lazy.t
-val with_stdlib : AST.t -> AST.t
+val with_stdlib : ?no_stdlib0:bool -> AST.t -> AST.t
 val is_stdlib_name : AST.identifier -> bool
 
 val with_primitives :
