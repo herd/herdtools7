@@ -430,18 +430,26 @@ module Mixed =
 let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
 
-let applies_atom (a,_) d = match a,d with
-| Neon SIMD.NeAcqPc,W
-| Neon SIMD.NeRel,R -> false
-| Acq _,R
-| AcqPc _,R
-| Rel _,W
-| Pte (Read|ReadAcq|ReadAcqPc|TTHM _),R
-| Pte (Set _|SetRel _|TTHM _),W
-| Instr, R
-| (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
-  -> true
-| _ -> false
+let applies_atom (a,_) d =
+  let open WPTE in
+  match a,d with
+  | Neon SIMD.NeAcqPc,W
+  | Neon SIMD.NeRel,R -> false
+  | Acq _,R
+  | AcqPc _,R
+  | Rel _,W
+  | Pte (Read|ReadAcq|ReadAcqPc),R
+  | Pte (Set _|SetRel _),W
+  | Instr, R
+  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
+    -> true
+  (* special case for TTHM in Pte as
+     - TTHMHA (AF) for read ans write
+     - TTHMHD (DB) for write *)
+  | Pte (TTHM pte_set),d ->
+    ( WPTESet.mem (Base AF) pte_set && ( d = R || d = W ) )
+    || ( WPTESet.mem (Base DB) pte_set && d = W )
+  | _ -> false
 
 let is_ifetch a = match a with
 | Some (Instr,_) -> true
