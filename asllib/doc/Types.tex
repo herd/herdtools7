@@ -1402,8 +1402,9 @@ expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 \end{mathpar}
 \CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
 
-\hypertarget{def-checkunderlyinginteger}{}
 \TypingRuleDef{CheckUnderlyingInteger}
+\RenderRelation{check_underlying_integer}
+\BackupOriginalRelation{
 The function
 \[
   \checkunderlyinginteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt}) \aslto
@@ -1411,6 +1412,7 @@ The function
 \]
 returns $\True$ is $\vt$ is has the \underlyingtypeterm{} of an \integertypeterm{}.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking for an Underlying Integer Type}
 All of the expressions appearing on the right-hand-side of the assignments in

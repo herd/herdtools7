@@ -16,12 +16,14 @@ functions that inspect the structure of types:
 \end{itemize}
 
 \TypingRuleDef{BuiltinSingularType}
-\hypertarget{def-isbuiltinsingular}{}
+\RenderRelation{is_builtin_singular}
+\BackupOriginalRelation{
 The predicate
 \[
   \isbuiltinsingular(\overname{\ty}{\tty}) \;\aslto\; \Bool
 \]
 tests whether the type $\tty$ is a \emph{builtin singular type}.
+}
 
 \ProseParagraph
 The \emph{builtin singular types} are:
@@ -58,12 +60,14 @@ the builtin singular type \texttt{Color} consists in two constants:
 \identd{PQCK} \identd{NZWT}
 
 \TypingRuleDef{NamedType}
-\hypertarget{def-isnamed}{}
+\RenderRelation{is_named}
+\BackupOriginalRelation{
 The predicate
 \[
   \isnamed(\overname{\ty}{\tty}) \;\aslto\; \Bool
 \]
 tests whether the type $\tty$ is a \emph{named type}.
+}
 
 \Enumerationtypesterm{}, record types, collection types, and exception types
 must be declared and associated with a named type.
@@ -90,13 +94,15 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
 \identd{vmzx}
 
 \TypingRuleDef{AnonymousType}
-\hypertarget{def-isanonymous}{}
 \identd{VMZX} \identi{SBCK}%
+\RenderRelation{is_anonymous}
+\BackupOriginalType{
 The predicate
 \[
   \isanonymous(\overname{\ty}{\tty}) \;\aslto\; \Bool
 \]
 tests whether the type $\tty$ is an \anonymoustype.
+}
 
 \ExampleDef{Anonymous Types}
 The well-typed specification in \listingref{AnonymousType} illustrates the use
@@ -119,8 +125,9 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
-\hypertarget{def-issingular}{}
 \identr{GVZK}%
+\RenderRelation{is_singular}
+\BackupOriginalRelation{
 The predicate
 \[
   \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
@@ -129,6 +136,7 @@ The predicate
 tests whether the type $\tty$ is a \emph{\singulartypeterm} in the \staticenvironmentterm{} $\tenv$,
 yielding the result in $\vb$.
 \ProseOtherwiseTypeError
+}
 
 \ExampleDef{Singular types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
@@ -157,18 +165,20 @@ type C of B;
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
-\hypertarget{def-isstructured}{}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtypeterm} is any type that consists of a list of field
 identifiers that denote individual storage elements.
 In ASL there are three such types --- record types, collection types, and
 exception types.
 
+\RenderRelation{is_structured}
+\BackupOriginalRelation{
 The predicate
 \[
   \isstructured(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
 \]
 tests whether the type $\tty$ is a \structuredtypeterm\ and yields the result in $\vb$.
+}
 
 \ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}

@@ -1704,7 +1704,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[subtype]{
-  (\subtypesrel(\tenv, \vs, \vt) \typearrow \True) \lor (\subtypesrel(\tenv, \vt, \vs) \typearrow \True)
+  (\issubtype(\tenv, \vs, \vt) \typearrow \True) \lor (\issubtype(\tenv, \vt, \vs) \typearrow \True)
 }{
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\True}{\vb}
 }
@@ -1712,8 +1712,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[simple]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
   \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
@@ -1725,8 +1725,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[t\_enum]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
   \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit)
 }{
@@ -1736,8 +1736,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[t\_array]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
   \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
   \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
@@ -1748,8 +1748,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[t\_tuple]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
   \booltrans(n = k) \booltransarrow \True \terminateas \False\\
@@ -1762,8 +1762,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[otherwise\_different\_labels]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) \neq \astlabel(\vsstruct)
@@ -1774,8 +1774,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 
 \begin{mathpar}
 \inferrule[otherwise\_structured]{
-  \subtypesrel(\tenv, \vs, \vt) \typearrow \False\\
-  \subtypesrel(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vs, \vt) \typearrow \False\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) = \astlabel(\vsstruct)\\

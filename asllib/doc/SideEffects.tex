@@ -84,12 +84,14 @@ which are configurations used to describe side effects, as explained below:
 We now define a few helper functions over \sideeffectdescriptorsterm.
 
 \TypingRuleDef{SideEffectIsPure}
-\hypertarget{def-sideeffectispure}{}
+\RenderRelation{side_effect_is_pure}
+\BackupOriginalRelation{
 \[
     \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
 defines whether a \sideeffectdescriptorterm\ $\vs$ is considered \emph{\pureterm},
 yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{\pureterm} \sideeffectdescriptorterm\ helps to establish that
 an expression can be evaluated during type-checking.
 
@@ -131,12 +133,14 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \end{mathpar}
 
 \TypingRuleDef{SideEffectIsReadonly}
-\hypertarget{def-sideeffectisreadonly}{}
+\RenderRelation{side_effect_is_readonly}
+\BackupOriginalRelation{
 \[
     \sideeffectisreadonly(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
 defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\readonlyterm},
 yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{\readonlyterm} \sideeffectdescriptorterm\ helps to establish that
 an expression evaluates without modifying values of storage elements.
 
@@ -164,12 +168,14 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 \end{mathpar}
 
 \TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
-\hypertarget{def-sideeffectissymbolicallyevaluable}{}
+\RenderRelation{side_effect_is_symbolically_evaluable}
+\BackupOriginalRelation{
 \[
     \sideeffectissymbolicallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
 \]
 defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluableterm},
 yielding the result in $\vb$.
+} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps establish that
 an expression evaluates without modifying any storage element,
 and always yielding the same result, that is, deterministically.
@@ -307,8 +313,9 @@ is \symbolicallyevaluableterm.
 }
 \end{mathpar}
 
-\hypertarget{def-checksymbolicallyevaluable}{}
 \TypingRuleDef{CheckSymbolicallyEvaluable}
+\RenderRelation{check_symbolically_evaluable}
+\BackupOriginalRelation{
 The function
 \[
   \checksymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
@@ -316,6 +323,7 @@ The function
 \]
 returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluableterm.
 \ProseOtherwiseTypeError
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether Expressions are Symbolically Evaluable}
 In \listingref{CheckSymbolicallyEvaluable},

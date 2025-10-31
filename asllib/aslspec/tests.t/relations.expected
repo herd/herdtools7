@@ -40,8 +40,7 @@ The relation
 \mathhypertarget{relation-annotateexpr}\annotateexpr\left(\overtext{\expr}{\texttt{input}}\right) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the expression
-$\texttt{input}$
-} % EndDefineRelation
+$\texttt{input}$} % EndDefineRelation
 
 \DefineRelation{annotate_plus}{
 
@@ -50,8 +49,7 @@ The function
 \mathhypertarget{relation-annotateplus}\annotateplus\left(\overtext{\Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)}{\texttt{input}}\right) \;\longrightarrow\; \overtext{\type}{\texttt{inferred\_type}}
 \]
 infers the type $\texttt{inferred\_type}$ for the plus expression
-$\texttt{input}$
-} % EndDefineRelation
+$\texttt{input}$} % EndDefineRelation
 
 \DefineRelation{eval_plus}{
 
@@ -60,7 +58,6 @@ The relation
 \mathhypertarget{relation-evalplus}\evalplus\left(\overtext{\Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)}{\texttt{input}}\right) \;\bigtimes\; \overtext{\Num}{\texttt{output\_val}}
 \]
 evaluates the expression $\texttt{input}$ and returns
-$\texttt{output\_val}$
-} % EndDefineRelation
+$\texttt{output\_val}$} % EndDefineRelation
 
 

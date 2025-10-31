@@ -888,14 +888,13 @@ to terminals.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Transforming Assignable Expressions to Expressions\label{sec:LeftToRight}}
-\hypertarget{def-rexpr}{}
-The recursive function $\torexpr : \lexpr \rightarrow \expr$ transforms
-\assignableexpressions{} to corresponding \rhsexpressions{},
-which is utilized both for the type system and semantics:
+\section{Transforming Assignable Expressions \\ to Right-hand side Expressions\label{sec:LeftToRight}}
+\RenderRelation{rexpr}
+This function is utilized by both the type system and the dynamic semantics.
+It is defined recursively by the following table:
 \[
 \begin{array}{lcl}
-  \textbf{Left hand side expression} & & \textbf{Right hand side expression}\\
+  \textbf{Assignable expression} & & \textbf{Right-hand side expression}\\
   \hline
   \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
   \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
