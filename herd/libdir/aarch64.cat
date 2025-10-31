@@ -1,4 +1,7 @@
 (*
+ * SPDX-FileCopyrightText: Copyright (C) 2016-present, Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * The Armv8 Application Level Memory Model.
  *
  * This is a machine-readable, executable and formal artefact, which aims to be
@@ -8,40 +11,32 @@
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
  * https://developer.arm.com/documentation/ddi0487/
  *
+ * Arm values academic work and sometimes works with academics or
+ * third parties to help avoid misunderstandings or divergences of
+ * conclusion, but sometimes these cannot be avoided despite Arm’s
+ * best efforts.
+ *
+ * The only definitive documentation of the Arm Architecture comes
+ * from Arm.
+ *
+ * Academic or third-party works, even where Arm staff appear as
+ * authors or in the acknowledgements or in the body of the material
+ * (of any kind, for example technical reports, conference or journal
+ * papers, theses...), may differ in known or unknown ways from the
+ * published Arm Architecture definition. Academic or third-party
+ * works should not be taken as making definitive statements about the
+ * Arm Architecture or the intended behaviours of designs compliant
+ * with the Arm Architecture. This applies even in cases where Arm
+ * staff is claimed to support the authors or to have discussed the
+ * work, to have made direct technical contributions, confirmed
+ * results or supposedly promised adoption of the work.
+ *
+ *
  * Authors:
  * Will Deacon <will.deacon@arm.com>
  * Jade Alglave <jade.alglave@arm.com>
  * Nikos Nikoleris <nikos.nikoleris@arm.com>
  * Artem Khyzha <artem.khyzha@arm.com>
- *
- * Copyright (C) 2016-present, Arm Ltd.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *     * Neither the name of ARM nor the names of its contributors may be
- *       used to endorse or promote products derived from this software
- *       without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
 catdep (* This option says that the cat file computes dependencies *)
