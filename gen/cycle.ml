@@ -108,10 +108,10 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> (string * Code.v) list
+  val finish : node -> (string * Code.v) list * (string * PteVal.t) list
 
 (* Composition of the two more basic steps above *)
-  val make : edge list -> edge list * node * Code.env
+  val make : edge list -> edge list * node * Code.env * (string * PteVal.t) list
 
 (* split cycle amoungst processors *)
   val split_procs : node -> node list list
@@ -180,6 +180,12 @@ module Make (O:Config) (E:Edge.S) :
         check_value : bool option }
 
   let pte_default = PteVal.default "*"
+
+  let is_pte_default loc pte =
+    let rhs = match loc with
+    | Data loc -> PteVal.default loc
+    | Code _ -> pte_default in
+    PteVal.compare pte rhs = 0
 
   let evt_null =
     { loc=Code.loc_none ; ord=0; tag=0;
@@ -502,18 +508,23 @@ module CoSt = struct
   type t = { map : int M.t;
              co_cell : Code.v array;
              pte_value : PteVal.t;
-             check_fault : bool;
-             check_value : bool; }
+             (* - Irr, checks both
+                - Dir R, only checks read
+                - Dir W, only checks write
+                - NoDir, no need to check *)
+             check_fault : Code.extr;
+             check_value : bool;
+             machine_feature: StringSet.t }
 
   let (<<) f g = fun x -> f (g x)
   and (<!) f x = f x
 
-  let create init sz pte_value check_value check_fault =
+  let create init sz pte_value check_value check_fault machine_feature =
     let map  =
       M.add Tag init <<  M.add CapaTag init <<
       M.add CapaSeal init << M.add Ord init << M.add Instr init <! M.empty
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Code.value_of_int init) in
-    { map; co_cell; pte_value; check_fault; check_value }
+    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -557,35 +568,43 @@ module CoSt = struct
 
 
  (* Record a new `pte_value`, and set `check_fault` *)
-  let set_pte_value st pte_value = { st with pte_value; check_fault = true }
+  let set_pte_value st check_fault pte_value = { st with pte_value; check_fault }
+
   let get_pte_value st = st.pte_value
 
   let get_check_value st = st.check_value
 
-  let set_check_fault st = {st with check_fault = true }
-
-  (* read the check_fault flag, and reset/clean it *)
-  let read_and_unset_check_fault st =
-    st.check_fault, {st with check_fault = false }
+  let set_check_fault st = {st with check_fault = Irr }
 
   (* Check if `pte_val` might fault *)
-  let label_pte_fault pte_val =
-    Some ( (Label.next_label "L"), (PteVal.can_fault pte_val) )
+  let label_pte_fault dir pte_val =
+    Some ( (Label.next_label "L"), (PteVal.can_fault dir pte_val) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is need. Otherwise return `None`. *)
-  let fault_update st =
-    let check_fault, st = read_and_unset_check_fault st in
+  let fault_update st dir =
+    let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
-    let fault = match () with
-    | _ when (not check_fault || do_no_fault) -> None
+    match () with
+    | _ when (st.check_fault = NoDir || do_no_fault) -> None,unset_check_fault st
       (* Need to check fault *)
-    | _ when do_kvm -> label_pte_fault pte_val
+    | _ when do_kvm ->
+      let fault,check_fault = match dir,st.check_fault with
+      | _,NoDir -> None,NoDir
+      | (R|W),Irr | W,Dir W | R,Dir R -> label_pte_fault dir pte_val,NoDir
+      | W,Dir R -> None,Dir R
+      | R,Dir W -> None,Dir W in
+      fault,{st with check_fault}
       (* In variants `memtag` and `morello`, the cycles are constructed such that
          no fault occurs *)
-    | _ when do_memtag || do_morello -> Some ((Label.next_label "L"), false)
-    |_ -> None in
-    fault, st
+    | _ when do_memtag || do_morello ->
+      Some ((Label.next_label "L"), false),unset_check_fault st
+    |_ -> None,unset_check_fault st
+
+  let implicit_pte_update st dir =
+    match PteVal.implicit_set_pteval dir st.machine_feature st.pte_value with
+    | Some (check_fault,pte_value) -> set_pte_value st check_fault pte_value
+    | None -> st
 
   let set_tcell st e = match e.bank with
     | Tag ->
@@ -610,9 +629,18 @@ module CoSt = struct
     { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
 end
 
-let pte_val_init loc = match loc with
-| Code.Data loc when do_kvm -> PteVal.default loc
-| _ -> pte_default
+(* Decide the initial pte value. *)
+let pte_val_init ns loc =
+  match loc with
+    | Code.Data loc when do_kvm ->
+      let atom_list = List.filter_map
+        ( fun node ->
+            match node.evt.atom with
+            | Some (atom) -> Some(atom)
+            | _ -> None
+         ) ns in
+      PteVal.init loc atom_list
+    | _ -> pte_default
 
 (****************************)
 (* Add events in edge cycle *)
@@ -877,16 +905,27 @@ let set_same_loc st n0 =
       |_ -> false ) ns
 
   let exist_fault_related_write ns =
-      List.exists
-      ( fun n -> match n.evt.bank,n.evt.dir with
-      |(Pte|Tag),Some W -> true
-      |_ -> false ) ns
+    List.fold_left ( fun acc n ->
+      let next = match n.evt.bank,n.evt.dir with
+        | Tag,Some W -> Irr
+        | Pte,Some W -> PteVal.need_check_fault n.evt.atom
+        | _ -> NoDir in
+      match acc,next with
+      | _,Irr | Irr, _
+      | Dir W,Dir R | Dir R,Dir W -> Irr
+      | NoDir,n | n,NoDir -> n
+      | Dir W,Dir W -> Dir W
+      | Dir R,Dir R -> Dir R
+    ) NoDir ns
 
   let tr_value e v = E.tr_value e.atom v
 
   let set_write_val_ord st n =
     let st = CoSt.next_co st Ord in
     let v = CoSt.get_co st Ord in
+    if v = n.evt.v then
+      Warn.fatal "Updated value remains the same. An issue should be reported.";
+    let st = CoSt.implicit_pte_update st W in
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
@@ -928,7 +967,7 @@ let set_same_loc st n0 =
           (* No need to add fault check in read modify write situation,
              as the label will be assigned in read *)
           let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st in
+            if n.evt.rmw then None,st else CoSt.fault_update st W in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -1011,7 +1050,8 @@ let set_same_loc st n0 =
                       | Code.Code _ -> Warn.fatal "Code location has no pte value." in
                     E.set_pteval n.evt.atom pte_val next_loc
                   end else pte_val in
-              let st = CoSt.set_pte_value st pte_val in
+              let check_fault = PteVal.need_check_fault n.evt.atom in
+              let st = CoSt.set_pte_value st check_fault pte_val in
               n.evt <- { n.evt with pte = pte_val; check_value; } ;
               ((!next_x_pred || next_x_ok), st)
             end (* END of match bank *)
@@ -1027,9 +1067,10 @@ let set_same_loc st n0 =
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
-    let _,initvals =
-      List.fold_right
-        (fun ns (k,env as r) ->
+    (* `initptes` contains the initial pte values, if they are non-default *)
+    let _,initvals,initptes =
+      List.fold_left
+        (fun (k,env,pteenv as r) ns ->
           match ns with
           | [] -> r
           | n::_ ->
@@ -1038,22 +1079,34 @@ let set_same_loc st n0 =
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
               let i = if do_kvm then k else 0 in
-              let pte_val = pte_val_init loc in
+              let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
               let check_value = exist_plain_value_write ns in
               let check_fault = exist_fault_related_write ns in
-              let init_st = CoSt.create i sz pte_val check_value check_fault in
+              let machine_feature =
+                List.fold_left
+                  ( fun acc n ->
+                    StringSet.union acc (E.get_machine_feature n.edge)
+                  ) StringSet.empty ns in
+              let init_st = CoSt.create i sz pte_val check_value check_fault machine_feature in
               let next_x_ok,_st = do_set_write_val false init_st ns in
+              (* Add pte initial values when kvm and the value is not default *)
+              let pteenv = if (not do_kvm) || is_pte_default loc pte_val then
+                pteenv else (Code.as_data loc,pte_val)::pteenv in
               let env = if do_kvm then (Code.as_data loc,Code.value_of_int k)::env else env in
               if next_x_ok then
-                k+8,(next_x,Code.value_of_int (k+4))::env
+                k+8,(next_x,Code.value_of_int (k+4))::env,pteenv
               else
-                k+4,env)
-        nss (0,[]) in
-    initvals
+                k+4,env,pteenv )
+        (* When in kvm mode, using initial value `1, 5, 9, ...,`
+           avoiding value `0`, which collides with
+           the default value of register. *)
+        (1,[],[]) nss in
+    initvals,initptes
 
+  (* TODO carry back the pte init value *)
   let set_write_v n =
     let nss =
       try
@@ -1080,8 +1133,8 @@ let set_same_loc st n0 =
           split_one_loc m
         with Not_found -> Warn.fatal "cannot set write values"
       | Exit -> Warn.fatal "cannot set write values" in
-    let initvals = set_all_write_val nss in
-    nss,initvals
+    let initvals,initptes = set_all_write_val nss in
+    nss,initvals,initptes
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1136,23 +1189,30 @@ let do_set_read_v init =
         let check_value = Some (CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
+          let st = CoSt.implicit_pte_update st R in
           set_read_individual_v n cell check_value;
           let check_fault, st =
             if do_morello then None, st
-            else CoSt.fault_update st in
+            (* because `rmw` is treated as both read and write,
+               we should assign label to this read event.
+               Here we assume write is stronger than read. *)
+            else if n.evt.rmw then CoSt.fault_update st W
+            else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
+          let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
+          let st = CoSt.implicit_pte_update st R in
           let cell = Array.map Code.value_to_int cell in
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Code.value_of_int in
-          let check_fault, st = CoSt.fault_update st in
+          let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->
@@ -1182,6 +1242,7 @@ let do_set_read_v init =
           |Ord|Pair|VecReg _ ->
               (* Record the cell value in `st` in
                memory access to a non-instruction value *)
+            let st = CoSt.implicit_pte_update st W in
             if Code.is_data n.evt.loc then CoSt.set_cell st n.evt.cell
             else st
           | Instr -> st
@@ -1189,7 +1250,8 @@ let do_set_read_v init =
             (* Record the pte value in `st` in
               memory access to a non-instruction pte value *)
             if Code.is_data n.evt.loc then
-                CoSt.set_pte_value st n.evt.pte
+              let check_fault = PteVal.need_check_fault n.evt.atom in
+              CoSt.set_pte_value st check_fault n.evt.pte
             else st in
         st
       | None ->
@@ -1199,10 +1261,15 @@ let do_set_read_v init =
   | []   -> assert false
   | n::_ ->
     let sz = get_wide_list ns in
-    let pte_val = pte_val_init n.evt.loc in
+    let pte_val = pte_val_init ns n.evt.loc in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault in
+    let machine_feature =
+      List.fold_left
+        ( fun acc n ->
+          StringSet.union acc (E.get_machine_feature n.edge)
+        ) StringSet.empty ns in
+    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
 
@@ -1218,6 +1285,42 @@ let do_set_read_v init =
         let vf = do_set_read_v init ns in
         (n.evt.loc,vf)::k)
     nss []
+
+  (* find the next node with communication but
+     there are all ordinary write nodes in between. *)
+  let rec find_fault_com = function
+    | [] -> None
+    | hd::tail ->
+      if hd.evt.bank != Ord then None
+      else if E.is_com hd.edge then
+        match tail with
+        | [] -> assert false
+        | next::_ ->
+          if next.evt.bank = Ord then Some next
+          else None
+      else find_fault_com tail
+
+  let propagate_fault by_loc =
+    let rec iter_with_tail f l =
+      match l with
+      | [] -> ()
+      | h::t -> f h t; iter_with_tail f t in
+    (* Collect all the node that might faults *)
+    List.iter
+    ( fun node_list ->
+      iter_with_tail ( fun node tail ->
+        match node.evt.check_fault with
+          | None -> ()
+          | Some (_label, fault_bool) ->
+            (* circulate `tail` back to `node_list` *)
+            match find_fault_com (node :: tail @ node_list) with
+            | Some n ->
+              if n.evt.check_fault = None then
+                let check_fault = Some ((Label.next_label "L", fault_bool)) in
+                n.evt <- { n.evt with check_fault }
+            | None -> ()
+        ) node_list
+    ) by_loc
 
 (* zyva... *)
 
@@ -1255,7 +1358,7 @@ let finish n =
     debug_cycle stderr n
   end ;
 (* Set write values *)
-  let by_loc,initvals = set_write_v n in
+  let by_loc,initvals,initptes = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
@@ -1267,6 +1370,7 @@ let finish n =
   end ;
 (* Set load values *)
   let vs = set_read_v by_loc initvals in
+  propagate_fault by_loc;
 (* Set dependency values *)
   (if do_morello then set_dep_v by_loc) ;
   if O.verbose > 1 then begin
@@ -1279,7 +1383,8 @@ let finish n =
             (Code.pp_loc loc) (Code.value_to_int v)) vs))
   end ;
   if O.variant Variant_gen.Self then check_fetch n;
-  initvals
+  initvals,initptes
+(* END of finish *)
 
 
 (* Re-extract edges, with irelevant directions solved *)
@@ -1332,8 +1437,8 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  let initvals = finish c in
-  es,c,initvals
+  let initvals,initptes = finish c in
+  es,c,initvals,initptes
 
 (*************************)
 (* Gather events by proc *)

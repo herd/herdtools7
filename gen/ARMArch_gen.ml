@@ -100,6 +100,7 @@ include Exch.LxSx(struct type arch_atom = atom end)
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)
 
 end

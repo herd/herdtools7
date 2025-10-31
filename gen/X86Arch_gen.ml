@@ -58,6 +58,8 @@ let varatom_dir _d f = f None
 
 let atom_to_bank _ = Code.Ord
 
+let get_machine_feature _ = StringSet.empty
+
 include NoMixed
 include NoWide
 
@@ -126,4 +128,5 @@ include
       let pp_i _ = assert false
       let free_registers = allowed_for_symb
       include NoSpecial
+      module PteVal_gen = PteVal
     end)

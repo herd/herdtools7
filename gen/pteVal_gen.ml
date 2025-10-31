@@ -19,9 +19,18 @@ module type S = sig
   type t
   val pp : t -> string
   val default : string -> t
+  (* Initial a valid pte_value that can be used to process atom list `pte_atom` *)
+  val init : string -> pte_atom list -> t
   val compare : t -> t -> int
+  val as_virtual: t -> string option
   val set_pteval : pte_atom -> t -> (unit -> string) -> t
-  val can_fault : t -> bool
+  (* Implicitly set pte value. Return indicates fault check and new pte vaule *)
+  val implicit_set_pteval : Code.dir -> StringSet.t -> t -> (Code.extr * t) option
+  val can_fault : Code.dir -> t -> bool
+  (* check if the `pte_atom` trigger fault check for further access,
+     Dir W and Dir R for write and read, respectively.
+     and Irr for both, NoDir for none *)
+  val need_check_fault : pte_atom option -> Code.extr
 end
 
 module No(A:sig type arch_atom end) = struct
@@ -29,9 +38,13 @@ module No(A:sig type arch_atom end) = struct
   type t = string
   let pp a = a
   let default s = s
+  let init s _atom_list = default s
   let compare _ _ = 0
+  let as_virtual _ = None
   let set_pteval _ p _ = p
-  let can_fault _t = false
+  let implicit_set_pteval _ _ _ = None
+  let can_fault _ _t = false
+  let need_check_fault _ = Code.NoDir
 end
 
 

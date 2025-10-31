@@ -576,16 +576,6 @@ let max_set = IntSet.max_elt
         let r,i,c,st = Comp.emit_obs Pte st p i x in
         i,code@c,F.add_final_pte p r v f,st
 
-  let add_co_local_check_pte avoid ns st p i code f =
-    let lst = Misc.last ns in
-    if U.check_here lst then
-      match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,Pte ->
-          do_add_local_check_pte avoid st p i code f lst x
-      | _ -> i,code,f,st
-    else
-      i,code,f,st
-
   let add_co_local_check avoid_ptes lsts ns st p i code f =
     let lst = Misc.last ns in
     if U.check_here lst then
@@ -693,13 +683,11 @@ let max_set = IntSet.max_elt
               (fun f (r,v) -> F.add_final_v p r (IntSet.singleton v) f)
               f xenv in
           let i,c,f,st =
-            match O.cond with
-            | Unicond -> i,c,f,st
-            | Cycle|Observe ->
-                match O.do_observers with
-                | Local -> add_co_local_check no_local_ptes lsts n st p i c f
-                | Avoid|Accept|Enforce|Three|Four|Infinity ->
-                    add_co_local_check_pte no_local_ptes n st p i c f in
+            match O.cond,O.do_observers with
+            | Unicond,_
+            | _,(Avoid|Accept|Enforce|Three|Four|Infinity) -> i,c,f,st
+            | (Cycle|Observe),Local ->
+              add_co_local_check no_local_ptes lsts n st p i c f in
           let i,c,st = Comp.postlude st p i c in
           let env_p = A.get_env st in
           let foks = gather_final_oks p st in
@@ -979,12 +967,15 @@ let tr_labs m env =
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
-  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
+  ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) ?(init_pte=[]) es c =
   let com = match com with None -> pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
-  let init = tr_labs m_labs init in
+  let init = (tr_labs m_labs init) @ List.map
+  (* Add the init pte value `init_pte` into `init`, so it will print
+  in the pre-condition of the final litmus test. *)
+    ( fun (loc, pte) -> (A.Loc ("pte_" ^ loc), Some (A.P pte)) ) init_pte in
   let coms = String.concat " " coms in
   let info =
     let myinfo =
@@ -1003,8 +994,8 @@ let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
     if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
-    let es,c,init = C.make es in
-    test_of_cycle name ?com ?info ?check ?scope ~init es c
+    let es,c,init,init_pte = C.make es in
+    test_of_cycle name ?com ?info ?check ?scope ~init ~init_pte es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
       Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
