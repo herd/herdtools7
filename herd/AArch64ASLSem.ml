@@ -188,6 +188,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let open AArch64 in
       function RMW_P | RMW_A -> false | RMW_L | RMW_AL -> true
 
+    let decode_wback_postindex =
+      let open AArch64 in
+      function
+      | Idx -> (false, false)
+      | PreIdx -> (true, false)
+      | PostIdx -> (true, true)
+
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
@@ -257,7 +264,27 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "condition" ^= cond c;
                 "_PC" ^^= litbv 64 ii.A.addr;
               ])
+      | I_TBZ (v, rt, k, lab)
+      | I_TBNZ (v, rt, k, lab) ->
+        let offset = tgt2offset ii lab in
+        let fname =
+          match ii.A.inst with
+          | I_TBZ _ -> "TBZ_only_testbranch.opn"
+          | I_TBNZ _ -> "TBNZ_only_testbranch.opn"
+          | _ -> assert false
+        in
+        Some
+          ( "control/testbranch/" ^ fname,
+            stmt
+              [
+                "t" ^= reg rt;
+                "offset" ^= litbv 64 offset;
+                "bit_pos" ^= liti k;
+                "datasize" ^= variant v;
+                "_PC" ^^= litbv 64 ii.A.addr;
+              ])
 
+      (* Atomic instructions *)
       | I_SWP (v, t, rs, rt, rn) ->
           Some
             ( "ldst/memop/SWP_32_memop.opn",
@@ -304,6 +331,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "release" ^= litb (decode_release rmw);
                 "tagchecked" ^= litb (rn <> SP);
            ])
+
+      (* Register manipulations *)
       | I_CSEL (v, rd, rn, rm, c, opsel) ->
           let fname =
             match opsel with
@@ -596,10 +625,36 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                "m" ^= reg rm;
                "datasize" ^= variant v;
                "shift_type" ^= var shift_type;])
-        | ( I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
-        | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ) as i ->
+      | I_MOVZ (v, rd, k, os)
+      | I_MOVN (v, rd, k, os)
+      | I_MOVK (v, rd, k, os) ->
+         let pos =
+           match os with
+           | S_NOEXT -> 0
+           | S_LSL (0|16|32|48 as i) -> i
+           | _ -> assert false
+         in
+         let fname =
+           match ii.A.inst with
+           | I_MOVN _ -> "MOVN_32_movewide.opn"
+           | I_MOVK _ -> "MOVK_32_movewide.opn"
+           | I_MOVZ _ -> "MOVZ_32_movewide.opn"
+           | _ -> assert false
+         in
+         Some
+           ("dpimm/movewide/" ^ fname,
+             stmt [
+               "d" ^= reg rd;
+               "datasize" ^= variant v;
+               "pos" ^= liti pos;
+               "imm" ^= litbv 16 k;
+             ])
+
+      (* Load, stores ... *)
+      | I_STR (v, rt, rn, MemExt.Reg (_vm, rm, e, s))
+      | I_LDR (v, rt, rn, MemExt.Reg (_vm, rm, e, s)) ->
           let fname =
-            match i with
+            match ii.A.inst with
             | I_STR _ -> "STR_32_ldst_regoff.opn"
             | I_LDR _ -> "LDR_32_ldst_regoff.opn"
             | _ -> assert false
@@ -640,12 +695,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             | I_LDR _ -> ("MemOp_LOAD", "LDR_32_ldst_immpost.opn")
             | _ -> assert false
           in
-          let wback, postindex =
-            match idx with
-            | Idx -> (false, false)
-            | PreIdx -> (true, false)
-            | PostIdx -> (true, true)
-          in
+          let wback, postindex = decode_wback_postindex idx in
           Some
             ( "ldst/ldst_immpost/" ^ fname,
               stmt
@@ -665,12 +715,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "wb_unknown" ^= litb false;
                 ] )
       | I_LDRSW (rt, rn, MemExt.Imm (k, idx)) ->
-          let wback, postindex =
-            match idx with
-            | Idx -> (false, false)
-            | PreIdx -> (true, false)
-            | PostIdx -> (true, true)
-          in
+          let wback, postindex = decode_wback_postindex idx in
           Some
             ( "ldst/ldst_immpost/LDRSW_64_ldst_immpost.opn",
               stmt
@@ -763,6 +808,164 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rn_unknown" ^= litb false;
                   "acqrel" ^= litb acqrel;
                 ] )
+      | I_STRBH (bh, rt, rn, MemExt.Reg (_vm, rm, e, s))
+      | I_LDRBH (bh, rt, rn, MemExt.Reg (_vm, rm, e, s))
+        ->
+          let fname =
+            match ii.A.inst, bh with
+            | I_LDRBH _, B -> "LDRB_32B_ldst_regoff.opn"
+            | I_LDRBH _, H -> "LDRH_32_ldst_regoff.opn"
+            | I_STRBH _, B -> "STRB_32B_ldst_regoff.opn"
+            | I_STRBH _, H -> "STRH_32_ldst_regoff.opn"
+            | _ -> assert false
+          and extend_type = memext_decode_ext e in
+          Some
+            ( "ldst/ldst_regoff/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti s;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ] )
+      | I_STRBH (bh, rt, rn, MemExt.Imm (k, idx))
+      | I_LDRBH (bh, rt, rn, MemExt.Imm (k, idx))
+        ->
+          let fname =
+            match ii.A.inst, bh with
+            | I_LDRBH _, B -> "LDRB_32_ldst_immpost.opn"
+            | I_LDRBH _, H -> "LDRH_32_ldst_immpost.opn"
+            | I_STRBH _, B -> "STRB_32_ldst_immpost.opn"
+            | I_STRBH _, H -> "STRH_32_ldst_immpost.opn"
+            | _ -> assert false
+          and wback, postindex = decode_wback_postindex idx in
+          Some
+            ( "ldst/ldst_immpost/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "offset" ^= litbv 64 k;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ] )
+      | I_LDP (pa, v, rt, rt2, rn, (k, idx))
+      | I_STP (pa, v, rt, rt2, rn, (k, idx))
+        ->
+          let wback, postindex = decode_wback_postindex idx in
+          let fname =
+            match pa, ii.A.inst with
+            | Pa, I_LDP _ -> "ldstpair_post/LDP_32_ldstpair_post.opn"
+            | Pa, I_STP _ -> "ldstpair_post/STP_32_ldstpair_post.opn"
+            | PaI, I_LDP _ -> "ldiappstilp/LDIAPP_32LE_ldiappstilp.opn"
+            | PaI, I_STP _ -> "ldiappstilp/STILP_32SE_ldiappstilp.opn"
+            | PaN, I_LDP _ -> "ldstnapair_offs/LDNP_32_ldstnapair_offs.opn"
+            | PaN, I_STP _ -> "ldstnapair_offs/STNP_32_ldstnapair_offs.opn"
+            | _ -> assert false
+          and acqrel =
+            match ii.A.inst with
+            | I_LDP _ -> pa = PaI && rt != ZR && rt2 != ZR
+            | _ -> false
+          and offset = if pa = PaI then liti k else litbv 64 k in
+          Some
+            ( "ldst/" ^ fname,
+              stmt
+                [
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "ispair" ^= litb true;
+                  "t" ^= reg rt;
+                  "t2" ^= reg rt2;
+                  "n" ^= reg rn;
+                  "datasize" ^= variant v;
+                  "nontemporal" ^= litb (pa = PaN);
+                  "offset" ^= offset;
+                  "tagchecked" ^= litb (wback || rn <> SP);
+                  "acqrel" ^= litb acqrel;
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ])
+      | I_LDRS ((v, bh), rt, rn, MemExt.Reg (_vm, rm, e, s)) ->
+          let fname =
+            match bh with
+            | B -> "LDRSB_32B_ldst_regoff.opn"
+            | H -> "LDRSH_32_ldst_regoff.opn"
+          and extend_type = memext_decode_ext e in
+          Some
+            ( "ldst/ldst_regoff/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "regsize" ^= variant v;
+                  "extend_type" ^= var extend_type;
+                  "shift" ^= liti s;
+                  "nontemporal" ^= litb false;
+                  "tagchecked" ^= litb true;
+                ])
+      | I_LDRS ((v, bh), rt, rn, MemExt.Imm(k, idx)) ->
+          let wback, postindex = decode_wback_postindex idx
+          and fname =
+            match bh with
+            | B -> "LDRSB_32_ldst_immpost.opn"
+            | H -> "LDRSH_32_ldst_immpost.opn"
+          in
+          Some
+            ( "ldst/ldst_immpost/" ^ fname,
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "regsize" ^= variant v;
+                  "offset" ^= litbv 64 k;
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "nontemporal" ^= litb true;
+                  "tagchecked" ^= litb (wback || rn <> SP);
+                  "wb_unknown" ^= litb false;
+                ])
+      | I_LDUR (v, rt, rn, k) ->
+          Some
+            ( "ldst/ldst_unscaled/LDUR_32_ldst_unscaled.opn",
+              stmt
+                [
+                  "t" ^= reg rt;
+                  "n" ^= reg rn;
+                  "regsize" ^= variant v;
+                  "datasize" ^= variant v;
+                  "offset" ^= litbv 64 k;
+                  "nontemporal" ^= litb true;
+                  "tagchecked" ^= litb (rn <> SP);
+                ])
+      | I_LDPSW (rt, rt2, rn, (k, idx))
+        ->
+          let wback, postindex = decode_wback_postindex idx in
+          Some
+            ( "ldst/ldstpair_post/LDPSW_64_ldstpair_post.opn",
+              stmt
+                [
+                  "wback" ^= litb wback;
+                  "postindex" ^= litb postindex;
+                  "ispair" ^= litb true;
+                  "t" ^= reg rt;
+                  "t2" ^= reg rt2;
+                  "n" ^= reg rn;
+                  "datasize" ^= liti 32;
+                  "nontemporal" ^= litb false;
+                  "offset" ^= litbv 64 k;
+                  "tagchecked" ^= litb (wback || rn <> SP);
+                  "rt_unknown" ^= litb false;
+                  "wb_unknown" ^= litb false;
+                ])
+
       | I_FENCE ISB -> Some ("control/barriers/ISB_BI_barriers.opn", stmt [])
       | I_FENCE (DMB (dom, btyp)) ->
           Some

@@ -221,13 +221,13 @@ let do_op1 op cst =
   | ToAArch64 -> (
       match cst with
       | Constant.Concrete s ->
-          ASLScalar.convert_to_int_signed s |> return_concrete
+          ASLScalar.convert_to_sint64 s |> return_concrete
       | Constant.Symbolic _|Constant.PteVal _ -> Some cst
       | _ -> None)
   | FromAArch64 -> (
       match cst with
       | Constant.Concrete s ->
-          ASLScalar.as_bv s |> return_concrete
+          ASLScalar.as_bv_64 s |> return_concrete
       | Constant.(Symbolic _|PteVal _) -> Some cst
       | _ -> None)
   | ToIntU -> (
@@ -291,6 +291,9 @@ let do_op1 op cst =
             match positions with
             | [63] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
             | [55] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [54] -> Some (Constant.Concrete ASLScalar.zeros_size_one)
+            | [63; 62; 61; 60; 59; 58; 57; 56; ]
+              -> Some (Constant.Concrete (ASLScalar.zeros 8))
             | [63; 62; 61; 60; 59; 58; 57; 56;
                55; 54; 53; 52; 51; 50; 49; 48;]
               -> Some (Constant.Concrete (ASLScalar.zeros 16))
