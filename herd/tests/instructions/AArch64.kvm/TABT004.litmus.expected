@@ -1,0 +1,10 @@
+Test TABT004 Allowed
+States 1
+  ~Fault(P0,x,MMU:Permission);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (fault(P0,x,MMU:Permission))
+Observation TABT004 Never 0 1
+Hash=429a3bc161be3d2b7d711eb06242edbe
+

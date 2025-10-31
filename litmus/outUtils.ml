@@ -36,6 +36,11 @@ let fmt_phy_tag x = "saved_" ^ Misc.add_pte x
 let fmt_phy_kvm x = sprintf "_vars->%s" (fmt_phy_tag x)
 let fmt_parel1 x = sprintf "parel1_%s" x
 
+let fmt_pmd_tag x = Misc.add_pmd x
+let fmt_pmd_kvm x = sprintf "_vars->%s" (fmt_pmd_tag x)
+let fmt_phy_pmd_tag x = "saved_" ^ Misc.add_pmd x
+let fmt_phy_pmd_kvm x = sprintf "_vars->%s" (fmt_phy_pmd_tag x)
+
 (* Value (address) output *)
 module type Config = sig
   val memory : Memory.t
@@ -80,7 +85,9 @@ module Make(O:Config)(V:Constant.S) = struct
     -> assert false
 
   let dump_v_kvm v = match v with
-  | Symbolic (System (PTE,a)) -> sprintf "_vars->%s" (Misc.add_pte a)
+  | Symbolic (System (PTE,a))
+  | Symbolic (System (TTD {stage=S1; level=LV3}, a)) -> sprintf "_vars->%s" (Misc.add_pte a)
+  | Symbolic (System (TTD {stage=S1; level=LV2}, a)) -> sprintf "_vars->%s" (Misc.add_pmd a)
   | Symbolic (Physical (a,0)) -> sprintf "_vars->saved_%s" (Misc.add_pte a)
   | _ -> V.pp_v v
 
