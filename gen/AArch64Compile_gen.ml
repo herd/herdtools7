@@ -1787,6 +1787,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
         let regs,inits,cs,st = begin match d,atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in

@@ -117,6 +117,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
 
+    (* If the effect of a node `n` should be checked in final condition *)
     let show_in_cond n =
       if O.optcond then
         let valid_edge m =
@@ -170,11 +171,16 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let prev_value = fun v -> v-1
 
+    (* Add a final change into `final` based on the node `n` *)
     let add_final get_friends p o n finals = match o with
     | Some r ->
         let m,fs = finals in
         let evt = n.C.C.evt in
         let bank = evt.C.C.bank in
+        (* variable `v` holds the observable value from the event `evt`.
+          Note that different event might observe different type of value,
+          e.g. a plain value for plain read event,
+          but a pte value for a pte read event. *)
         let v = match evt.C.C.dir with
         | Some Code.R ->
             begin match bank with
@@ -191,7 +197,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                  | [] -> assert false
                  | v0::_ -> v0 in
                 let vec = v0
-                 |> List.map Code.value_to_int 
+                 |> List.map Code.value_to_int
                  |> Code.add_vector O.hexa in
                 Some (S vec)
             | Code.Tag ->
@@ -200,6 +206,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (P evt.C.C.pte)
             end
         | Some Code.W ->
+           (* Because written value is assigned incrementally,
+              the value before this write event should be `-1`,
+              as function `prev_value` computes *)
            assert (evt.C.C.bank = Code.Ord || evt.C.C.bank = Code.CapaSeal) ;
            Some (I ( evt.C.C.v |> Code.value_to_int |> prev_value |> Code.value_of_int ) )
         | None -> None in
@@ -212,14 +221,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
              | Code.VecReg _ ->
                 begin match evt.C.C.vecreg with
                 | _::vs ->
-                   List.map (fun v -> S 
+                   List.map (fun v -> S
                    ( v |> List.map Code.value_to_int
                      |> Code.add_vector O.hexa ) ) vs
                 | _ -> assert false
                 end
              | _ -> [] in
-           let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m
-           and fs =
+           let m = C.C.EventMap.add n.C.C.evt (C.A.of_reg p r) m in
+           let fs =
              try
                 (* TODO what is this ?? *)
                add_to_fs r v
