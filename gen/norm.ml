@@ -63,13 +63,19 @@ end
 
 module Make(Co:Config) (A:Fence.S) = struct
   module E = Edge.Make(Co)(A)
+  module R = Relax.Make(A)(E)
   module N = Namer.Make(A)(E)
   module Norm = Normaliser.Make(Co)(E)
 
 
-  let zyva es =
+  let zyva relaxs =
     try
-      let es = List.map E.parse_edge es in
+      let rs =
+        relaxs
+        |> Util.List.concat_map LexUtil.split
+        |> List.map R.parse_relax
+      in
+      let es = Util.List.concat_map R.edges_of rs in
       let base,es,_ = Norm.normalise_family (E.resolve_edges es) in
       let name =  N.mk_name base ?scope:None es in
       Printf.printf "%s: %s\n" name (E.pp_edges es)
