@@ -2195,12 +2195,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let cs = [Instruction (lsri64 r1 r 12)] in
         r1,init,cs,st
 
-    let emit_shootdown_sync dom op r =
-      pseudo
-        (I_FENCE (DSB(dom,FULL))::
-        I_TLBI(op,r)::I_FENCE (DSB(dom,FULL))::[])
+    let emit_shootdown_sync dom op r csr =
+      pseudo ([I_FENCE (DSB(dom,FULL))])
+        @ csr
+        @ pseudo([I_TLBI(op,r); I_FENCE (DSB(dom,FULL))])
 
-    let emit_shootdown_nosync op r = pseudo (I_TLBI(op,r)::[])
+    let emit_shootdown_nosync op r csr = csr @ pseudo ([I_TLBI(op,r)])
 
     let emit_CMO t r = match t with
       | DC_CVAU -> pseudo ([I_DC (DC.cvau, r)])
@@ -2210,12 +2210,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Barrier f -> init,[Instruction (I_FENCE f)],st
     | ShootdownSync (dom,op) ->
       let r,init,csr,st = emit_shootdown_prefix st p init n op in
-      let cs = emit_shootdown_sync dom op r in
-      init,csr@cs,st
+      let cs = emit_shootdown_sync dom op r csr in
+      init,cs,st
     | ShootdownNoSync (op) ->
       let r,init,csr,st = emit_shootdown_prefix st p init n op in
-      let cs = emit_shootdown_nosync op r in
-      init,csr@cs,st
+      let cs = emit_shootdown_nosync op r csr in
+      init,cs,st
     | CacheSync (s,isb) -> begin
         try
           let lab = C.find_prev_code_write n in
