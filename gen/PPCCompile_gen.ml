@@ -452,7 +452,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           let emit = match e.atom with
           | None -> emit_load
           | Some (PPC.Mixed (sz,o)) -> emit_load_mixed sz o
-          | Some PPC.Reserve ->emit_lwarx
+          | Some PPC.Reserve -> emit_lwarx
           | Some PPC.Atomic -> emit_lda in
           let r,init,cs,st = emit st p init loc in
           Some r,init,(if isync then insert_isync c cs else c@cs),st
