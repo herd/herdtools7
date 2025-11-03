@@ -106,15 +106,6 @@ which drops back to the original local environment of $\env$ when the evaluation
 \SemanticsRuleDef{Block}
 See \ExampleRef{Block Statements}.
 
-We first define the helper function $\poplocalscope$:
-\hypertarget{relation-poplocalscope}{}
-\[
-  \begin{array}{c}
-    \poplocalscope : \overname{\dynamicenvs}{\vouterenv} \cartimes \overname{\dynamicenvs}{\vinnerenv} \rightarrow \dynamicenvs \\
-    \poplocalscope(\vouterenv, \vinnerenv) \triangleq
-      (G^{\vinnerenv}, \restrictfunc{L^{\vinnerenv}}{{\dom(L^\vouterenv)}})
-  \end{array}
-\]
 The $\poplocalscope$ function is used below to effectively discard the bindings for variables declared inside the block statement $\stm$.
 
 \ProseParagraph
@@ -189,3 +180,25 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}
 
 That is, evaluating a block discards the bindings for variables declared inside $\stm$.
+
+\SemanticsRuleDef{PopLocalScope}
+\RenderRelation{pop_local_scope}
+\BackupOriginalRelation{
+We first define the helper function $\poplocalscope$:
+\[
+    \poplocalscope : \overname{\dynamicenvs}{\vouterenv} \cartimes \overname{\dynamicenvs}{\vinnerenv} \rightarrow \dynamicenvs \\
+\]
+} % END_OF_BACKUP_RELATION
+
+See \ExampleRef{Block Statements}.
+
+\ProseParagraph
+\ProseEqdef{$\newdenv$}{$\vinnerenv$ without the bindings to local storage elements that are not in $\vouterenv$}.
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{
+  \poplocalscope(\vouterenv, \vinnerenv) \evalarrow
+    (G^{\vinnerenv}, \restrictfunc{L^{\vinnerenv}}{{\dom(L^\vouterenv)}})
+}
+\end{mathpar}

@@ -361,19 +361,19 @@ subtyping.
 }
 \end{mathpar}
 
-\hypertarget{relation-fieldnames}{}
+\RenderRelation{field_names}
 For a list of typed fields $\fields$, we define the set of its field identifiers as:
 \[
   \fieldnames(\fields) \triangleq \{ \id \;|\; (\id, \vt) \in \fields\}
 \]
-\hypertarget{relation-fieldtype}{}
-We define the type associated with the field name $\id$ in a list of typed fields $\fields$,
-if there is a unique one, as follows:
+
+\RenderRelation{field_type}
+It is defined as follows:
 \[
   \fieldtype(\fields, \id) \triangleq
   \begin{cases}
-  \vt  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
-  \bot & \text{ otherwise}
+  \some{\vt}  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
+  \None & \text{ otherwise}
   \end{cases}
 \]
 
@@ -2560,10 +2560,8 @@ and so overall the result is that there is precision loss.
 \end{mathpar}
 
 \TypingRuleDef{ExplodeConstraint}
-\hypertarget{relation-explodeconstraint}{}
-% Transliteration note: the implementation uses folding where explode_constraint
-% is a folder. To simplify this function, we remove the input precision lost flag
-% and join all precision loss flags in explode_intervals.
+\RenderRelation{explode_constraint}
+\BackupOriginalRelation{
 The function
 \[
 \begin{array}{r}
@@ -2580,6 +2578,7 @@ $\vc$ matches an ascending range constraint that is not too large,
 and the singleton list for $\vc$ otherwise.
 The resulting list of constraints and the \precisionlossindicatorterm{}
 are in $\vcs$ and $\newprec$, respectively.
+} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Intervals too Large to Enumerate}.
 

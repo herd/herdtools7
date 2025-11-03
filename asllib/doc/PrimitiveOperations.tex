@@ -1456,21 +1456,27 @@ and argument types of its operand literals:
 \end{mathpar}
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
-\hypertarget{relation-bintounsigned}{}
-The function $\bintounsigned : \KleeneStar{\Bit} \rightarrow \N$ converts a non-empty sequence of bits
-into a natural number:
+\RenderRelation{binary_to_unsigned}
+\BackupOriginalRelation{
+The function $\binarytounsigned : \KleeneStar{\Bit} \rightarrow \N$ converts a non-empty sequence of bits
+into a natural number.
+} % END_OF_BACKUP_RELATION
+
+It is defined as follows for a non-empty bit sequence:
 \[
-  \bintounsigned(a_{n..1}) \triangleq \sum_{i=1}^n a_i \cdot 2^{a_i}
+  \binarytounsigned(a_{n..0}) \triangleq \sum_{i=0}^n a_i \cdot 2^{i}
 \]
-and an empty sequence of bits into $0$:
+and as $0$ for an empty bit sequence:
 \[
-  \bintounsigned(\emptylist) \triangleq 0 \enspace.
+  \binarytounsigned(\emptylist) \triangleq 0 \enspace.
 \]
 
-\hypertarget{relation-inttobits}{}
+\RenderRelation{int_to_bits}
+\BackupOriginalRelation{
 The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \KleeneStar{\Bit}$
 converts an integer \texttt{val} to its two's complement little endian representation
 of \texttt{width} bits.
+} % END_OF_BACKUP_RELATION
 
 \begin{mathpar}
 \inferrule[bitwise\_different\_bitwidths]{
@@ -1544,8 +1550,8 @@ of \texttt{width} bits.
 
 \begin{mathpar}
 \inferrule[add\_bits]{
-  a \eqdef \bintounsigned(a_{1..k})\\
-  b \eqdef \bintounsigned(b_{1..k})\\
+  a \eqdef \binarytounsigned(a_{1..k})\\
+  b \eqdef \binarytounsigned(b_{1..k})\\
   c \eqdef \inttobits(a + b, k)
 }{
   \binopliterals(\overname{\ADD}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
@@ -1554,8 +1560,8 @@ of \texttt{width} bits.
 
 \begin{mathpar}
 \inferrule[sub\_bits]{
-  a \eqdef \bintounsigned(a_{1..k})\\
-  b \eqdef \bintounsigned(b_{1..k})\\
+  a \eqdef \binarytounsigned(a_{1..k})\\
+  b \eqdef \binarytounsigned(b_{1..k})\\
   c \eqdef \inttobits(a - b, k)
 }{
   \binopliterals(\overname{\SUB}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
@@ -1575,7 +1581,7 @@ of \texttt{width} bits.
 
 \begin{mathpar}
 \inferrule[add\_bits\_int]{
-  y \eqdef \bintounsigned(a)\\
+  y \eqdef \binarytounsigned(a)\\
   c \eqdef \inttobits(y + b, \listlen{a})
 }{
   \binopliterals(\overname{\ADD}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
@@ -1584,7 +1590,7 @@ of \texttt{width} bits.
 
 \begin{mathpar}
 \inferrule[sub\_bits\_int]{
-  y \eqdef \bintounsigned(a)\\
+  y \eqdef \binarytounsigned(a)\\
   c \eqdef \inttobits(y - b, \listlen{a})
 }{
   \binopliterals(\overname{\SUB}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}

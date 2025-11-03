@@ -403,7 +403,8 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 \CodeSubsection{\EvalCatchNoThrowBegin}{\EvalCatchNoThrowEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{FindCatcher}
-\hypertarget{relation-findcatcher}{}
+\RenderRelation{find_catcher}
+\BackupOriginalRelation{
 The (recursively-defined) helper relation
 \[
   \findcatcher(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vvty}, \overname{\KleeneStar{\catcher}}{\catchers})
@@ -411,6 +412,7 @@ The (recursively-defined) helper relation
 \]
 returns the first catcher clause in $\catchers$ that matches the type $\vvty$ (as a singleton set), or an empty set ($\None$),
 by invoking $\typesatisfies$ with the \staticenvironmentterm{} $\tenv$.
+} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Finding a Catch Clause}
 In \listingref{annotate-catcher}, the second catch clause --- for the exception type ExceptionType2
