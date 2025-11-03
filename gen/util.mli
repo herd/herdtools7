@@ -31,3 +31,8 @@ val arch_opt : Archs.t ref -> spec
 
 
 val parse_cmdline : spec list -> (string -> unit) -> unit
+
+module List : sig
+  (* For compatibility with ocaml <= 4.10 *)
+  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+end

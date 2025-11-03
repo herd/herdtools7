@@ -60,3 +60,15 @@ let parse_cmdline options get_cmd_arg =
   Arg.parse options
     get_cmd_arg
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
+
+module List = struct
+  let concat_map f l =
+    let open List in
+    let rec aux f acc = function
+      | [] -> rev acc
+      | x :: l ->
+          let xs = f x in
+          aux f (rev_append xs acc) l
+    in
+    aux f [] l
+end
