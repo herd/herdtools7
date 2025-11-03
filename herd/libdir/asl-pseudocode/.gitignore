@@ -4,6 +4,7 @@ other-instrs
 shared_pseudocode.asl
 features.asl
 notice.html
+registers-notice.html
 system_registers.asl
 *.log
 ISA_A64_xml_A_profile-*
