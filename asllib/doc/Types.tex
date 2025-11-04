@@ -1582,8 +1582,12 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 \ASTRuleDef{TyDecl.TCollection}
 \begin{mathpar}
 \inferrule{}{
-  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfields})) \astarrow
+{
+  \begin{array}{r}
+  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfields})) \astarrow\\
   \overname{\TCollection(\astof{\vfields})}{\vastnode}
+  \end{array}
+}
 }
 \and
 \inferrule{}{
@@ -1592,7 +1596,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 }
 \end{mathpar}
 
-\section{Typing Collection Types}
+\subsection{Typing Collection Types}
 \ExampleDef{Typing Collection Types}
 \listingref{TCollection} shows examples of well-typed collection types
 and ill-typed collection types in comments.
