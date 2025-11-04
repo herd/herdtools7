@@ -112,6 +112,10 @@ module AttributeKey = struct
             format [{var}]. *)
     | Math_Macro  (** A LaTeX macro name for the element. *)
     | Math_Layout  (** The visual layout of the element. *)
+    | Short_Circuit_Macro
+        (** A LaTeX macro name to succinctly denote any value of a type [T].
+            This is used to denote the short-circuit result of a relation
+            application yielding a value of type [T]. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -120,6 +124,7 @@ module AttributeKey = struct
       | Prose_Application -> 1
       | Math_Macro -> 2
       | Math_Layout -> 3
+      | Short_Circuit_Macro -> 4
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -132,6 +137,7 @@ module AttributeKey = struct
     | Prose_Application -> "prose_application"
     | Math_Macro -> "math_macro"
     | Math_Layout -> "math_layout"
+    | Short_Circuit_Macro -> "short_circuit_macro"
 end
 
 (** A value associated with an attribute key. *)
@@ -227,6 +233,7 @@ module Type : sig
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
   val prose_description : t -> string
   val math_macro : t -> string option
+  val short_circuit_macro : t -> string option
 
   val math_layout : t -> layout option
   (** The layout used when rendered as a stand-alone type definition. *)
@@ -265,6 +272,11 @@ end = struct
 
   let math_macro self =
     match find_opt AttributeKey.Math_Macro self.att with
+    | Some (MathMacroAttribute s) -> Some s
+    | _ -> None
+
+  let short_circuit_macro self =
+    match find_opt AttributeKey.Short_Circuit_Macro self.att with
     | Some (MathMacroAttribute s) -> Some s
     | _ -> None
 

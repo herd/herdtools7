@@ -25,6 +25,13 @@ module Make (S : SPEC_VALUE) = struct
     | Some str -> str
     | None -> Text.elem_name_to_math_macro id
 
+  (** [get_short_circuit_macro id] returns the short-circuit macro for the
+      element defined by [id], if one exists, and [None] otherwise. *)
+  let get_short_circuit_macro id =
+    assert (not (String.equal id ""));
+    let node = Spec.defining_node_for_id S.spec id in
+    match node with Node_Type def -> Type.short_circuit_macro def | _ -> None
+
   let pp_texthypertarget fmt target_str =
     fprintf fmt {|\texthypertarget{%s}|} target_str
 
@@ -142,7 +149,13 @@ module Make (S : SPEC_VALUE) = struct
     in
     let layout_contains_vertical = Layout.contains_vertical layout in
     match type_term with
-    | Label name -> pp_print_string fmt (get_or_gen_math_macro name)
+    | Label name -> (
+        match get_short_circuit_macro name with
+        | Some short_circuit_macro ->
+            fprintf fmt "\\overtext{%a}{%s}" pp_print_string
+              (get_or_gen_math_macro name)
+              short_circuit_macro
+        | None -> pp_print_string fmt (get_or_gen_math_macro name))
     | Operator { op; term = sub_term } ->
         pp_operator op fmt pp_opt_named_type_term (sub_term, layout)
     | LabelledTuple { label_opt; components } ->

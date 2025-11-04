@@ -14,8 +14,13 @@ ast expr { "expression" } =
     { "a binary expression for {lhs} and {rhs}" }
 ;
 
+typedef type_error
+{
+    short_circuit_macro = \TypeErrorConfig,
+};
+
 // A relation associates a tuple of types (the input) with an output type.
-typing relation annotate_expr(input: expr) -> (inferred_type: type)
+typing relation annotate_expr(input: expr) -> (inferred_type: type) | type_error
 {
     "infers the type {inferred_type} for the expression {input}",
     prose_application = "annotating the expression {input} yields the type {inferred_type}",

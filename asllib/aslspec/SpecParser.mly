@@ -36,6 +36,7 @@ let check_definition_name name =
 %token RENDER
 %token RELATION
 %token SEMANTICS
+%token SHORT_CIRCUIT_MACRO
 %token TYPEDEF
 %token TYPING
 
@@ -163,6 +164,7 @@ let type_attribute :=
     | template=STRING; { (Prose_Description, StringAttribute template) }
     | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
     | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }

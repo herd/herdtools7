@@ -49,6 +49,7 @@ rule token = parse
     | "relation"          { RELATION }
     | "render"            { RENDER }
     | "semantics"         { SEMANTICS }
+    | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
     | "typedef"           { TYPEDEF }
     | "typing"            { TYPING }
 

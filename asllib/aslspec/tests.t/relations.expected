@@ -13,6 +13,7 @@
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
 \newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
+\newcommand\typeerror[0]{ \hyperlink{type-typeerror}{\textsf{type\_error}} } % Generated from type_error
 \newcommand\annotateexpr[0]{ \hyperlink{relation-annotateexpr}{\textit{annotate\_expr}} } % Generated from annotate_expr
 \newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
 \newcommand\evalplus[0]{ \hyperlink{relation-evalplus}{\textit{eval\_plus}} } % Generated from eval_plus
@@ -33,11 +34,13 @@
 \expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number\left(\overtext{\Num}{\texttt{v}}\right)\\
 |\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
+\DefineType{type_error}{\texthypertarget{type-typeerror}$\typeerror$} % EndDefineType
+
 \DefineRelation{annotate_expr}{
 
 The relation
 \[
-\mathhypertarget{relation-annotateexpr}\annotateexpr\left(\overtext{\expr}{\texttt{input}}\right) \;\bigtimes\; \overtext{\type}{\texttt{inferred\_type}}
+\mathhypertarget{relation-annotateexpr}\annotateexpr\left(\overtext{\expr}{\texttt{input}}\right) \;\bigtimes\; \left(\overtext{\type}{\texttt{inferred\_type}} \cup \overtext{\typeerror}{\TypeErrorConfig}\right)
 \]
 infers the type $\texttt{inferred\_type}$ for the expression
 $\texttt{input}$} % EndDefineRelation
