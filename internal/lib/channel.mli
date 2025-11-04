@@ -21,6 +21,10 @@
 (** [iter_lines f chan] applies function [f] in turn to each line of in_channel [chan]. *)
 val iter_lines : (string -> unit) -> in_channel -> unit
 
+(** [fold_lines f k0 chan] computes [f  (... (f (f k0 l0) l1) ...) ln],
+ *  where [l0, l1,..., ln] are the lines of [chan] *)
+val fold_lines : ('a -> string -> 'a) -> 'a -> in_channel -> 'a
+
 (** [map_lines f chan] applies function [f] to each line of in_channel [chan],
  *  and returns the list [f l1; ...; f ln]. *)
 val map_lines : (string -> 'a) -> in_channel -> 'a list

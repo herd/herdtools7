@@ -59,6 +59,9 @@ val verbose : bool ref -> spec
 
 (** Validators. *)
 
+(** [test_file name] tests that [s] is not a valid path to a file *)
+val test_file : string -> bool
+
 (** [is_file (k, s, d)] returns [k, s', d], where [s'] wraps [s] with an
  *  Arg.spec that raises Arg.Bad if the argument is not a valid path to a file. *)
 val is_file : spec -> spec

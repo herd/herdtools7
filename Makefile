@@ -27,7 +27,7 @@ HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 BENTO                         = _build/default/tools/bento.exe
 ASLREF                        = _build/default/asllib/aslref.exe
-
+CHECK_OBS                     = _build/default/internal/check_obs.exe
 all: build
 
 .PHONY: Version.ml
