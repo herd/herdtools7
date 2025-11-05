@@ -824,6 +824,7 @@ constant empty_tenv {
 typedef type_error
     {
         "\typingerrorterm{}",
+        short_circuit_macro = \TypeErrorConfig,
     } =
     TypeError(error_code: type_error_code)
     {
@@ -1181,6 +1182,7 @@ typedef TNormal
 typedef TThrowing
 {
     "throwing execution result",
+    short_circuit_macro = \ThrowingConfig,
 } =
     Throwing(exception_value: native_value, exception_type: ty, graph: XGraphs, environment: envs)
     { "throwing result with exception value {exception_value}, type {exception_type}, {graph}, and {environment}" }
@@ -1197,6 +1199,7 @@ typedef TContinuing
 typedef TReturning
 {
     "returning execution result",
+    short_circuit_macro = \ReturningConfig,
 } =
     Returning(values_and_graph: (list0(native_value), XGraphs), environment: envs)
     { "returning result with values and graph {values_and_graph} and {environment}" }
@@ -1205,6 +1208,7 @@ typedef TReturning
 typedef TDynError
 {
     "dynamic error result",
+    short_circuit_macro = \DynErrorConfig,
 } =
     DynamicError(error_code: dynamic_error_code)
     { "dynamic error with error code {error_code}",
@@ -1233,6 +1237,7 @@ constant Diverging
 typedef TDiverging
 {
     "diverging execution result",
+    short_circuit_macro = \DivergingConfig,
 } =
     constants_set(Diverging)
     { "diverging execution result" }
