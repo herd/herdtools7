@@ -961,25 +961,16 @@
 \newcommand\Proseevalexpr[3]{
     \hyperlink{relation-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
 \newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
-\newcommand\maskmatch[0]{\hyperlink{relation-maskmatch}{\textfunc{mask\_match}}} % REQUIRES_SPECIFICATION
-\newcommand\ldituplefolder[0]{\hyperlink{relation-ldituplefolder}{\textfunc{ldi\_tuple\_folder}}} % REQUIRES_SPECIFICATION
-\newcommand\poplocalscope[0]{\hyperlink{relation-poplocalscope}{\textfunc{pop\_local\_scope}}} % REQUIRES_SPECIFICATION
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{relation-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
 \newcommand\evalmultiassignment[0]{\hyperlink{relation-evalmultiassignment}{\textfunc{multi\_assign}}} % SPECIFIED
 \newcommand\Prosebuildgenv[4]{\hyperlink{relation-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
 \newcommand\Proseevalspec[3]{\hyperlink{relation-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
-\newcommand\lexprisvar[0]{\hyperlink{relation-lexprisvar}{\textfunc{lexpr\_is\_var}}} % REQUIRES_SPECIFICATION
 \newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}} % SPECIFICATION_DEFERRED
 \newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}} % SPECIFICATION_DEFERRED
 \newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}} % SPECIFICATION_DEFERRED
-\newcommand\findcatcher[0]{\hyperlink{relation-findcatcher}{\textfunc{find\_catcher}}} % REQUIRES_SPECIFICATION
 \newcommand\Proseevallimit[3]{\hyperlink{relation-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
 \newcommand\Proseticklooplimit[2]{\hyperlink{relation-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
-
-\newcommand\outputtoconsole[0]{\hyperlink{relation-outputtoconsole}{\textfunc{output\_to\_console}}} % REQUIRES_SPECIFICATION
-\newcommand\literaltostring[0]{\hyperlink{relation-literaltostring}{\textfunc{literal\_to\_string}}} % REQUIRES_SPECIFICATION
 \newcommand\Proseoutputtoconsole[1]{\hyperlink{relation-outputtoconsole}{outputs} #1 to the console, if one exists}
-
 
 \newcommand\DynamicError[0]{\hyperlink{type-DynamicError}{\textsf{DynError}}}
 \newcommand\DynamicErrorConfigurationTerm[0]{\hyperlink{type-DynamicError}{dynamic error configuration}}
@@ -1055,12 +1046,6 @@
 
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
 \newcommand\Qnonzero[0]{\hyperlink{type-Qnonzero}{\Q{} \setminus \{0\}}}
-\newcommand\mulpolynomials[0]{\hyperlink{relation-mulpolynomials}{\textfunc{mul\_polynomials}}} % REQUIRES_SPECIFICATION
-\newcommand\polynomialdividebyterm[0]{\hyperlink{relation-polynomialdividebyterm}{polynomial\_divide\_by\_term}} % REQUIRES_SPECIFICATION
-
-
-\newcommand\fieldnames[0]{\hyperlink{relation-fieldnames}{\textfunc{field\_names}}} % REQUIRES_SPECIFICATION
-\newcommand\fieldtype[0]{\hyperlink{relation-fieldtype}{\textfunc{field\_type}}} % REQUIRES_SPECIFICATION
 
 \newcommand\eliteral[1]{\ELiteral(#1)}
 
@@ -1468,14 +1453,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Type functions
 \newcommand\Proseapplybinoptypes[5]{\hyperlink{relation-applybinoptypes}{applying} #2 to the type #3 and type #4 in the static environment #1 yields the type #5}
-\newcommand\explodeconstraint[0]{\hyperlink{relation-explodeconstraint}{\textfunc{explode\_constraint}}} % REQUIRES_SPECIFICATION
 \newcommand\maxconstraintsize[0]{2^{17}}
 \newcommand\maxexplodedintervalsize[0]{2^{14}}
 \newcommand\Proseannotateexpr[3]{\hyperlink{relation-annotateexpr}{annotating} the expression #2 in the static environment #1 yields #3}
 \newcommand\Proseannotatelexpr[4]{\hyperlink{relation-annotatelexpr}{annotating}
     the assignable expression #2 with the right-hand side type #3 in the static environment #1 yields #4}
 \newcommand\annotateexprlist[0]{\hyperlink{relation-annotateexprs}{\textfunc{annotate\_exprs}}} % SPECIFIED
-\newcommand\annotatelocaldeclitem[0]{\hyperlink{relation-annotatelocaldeclitem}{\textfunc{annotate\_local\_decl\_item}}} % REQUIRES_SPECIFICATION
 \newcommand\Prosenoprecisionloss[1]{determining whether #1 has been computed with no precision loss via\\
     $\checknoprecisionloss$ yields $\True$\ProseOrTypeError}
 \newcommand\Proseannotatesubprogram[5]{\hyperlink{relation-annotatesubprogram}{annotating} the subprogram definition #2
@@ -1507,8 +1490,6 @@
   the integers from the list #1 specified by the list of indices #2 yields the list #3}
 
 \newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}} % SPECIFICATION_DEFERRED
-\newcommand\bintounsigned[0]{\hyperlink{relation-bintounsigned}{\textsf{binary\_to\_unsigned}}} % REQUIRES_SPECIFICATION
-\newcommand\inttobits[0]{\hyperlink{relation-inttobits}{\textfunc{int\_to\_bits}}} % REQUIRES_SPECIFICATION
 
 % Symbolic domain subsumption
 \newcommand\CannotOverapproximate[0]{\hyperlink{constant-CannotOverapproximate}{\overline{\textsf{Approx}}}}

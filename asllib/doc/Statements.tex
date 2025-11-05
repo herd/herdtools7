@@ -253,19 +253,6 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \end{itemize}
 
 \FormallyParagraph
-\hypertarget{relation-lexprisvar}{}
-The rule uses the syntactic predicate defined as follows:
-\[
-  \lexprisvar(\lexpr) \aslto \True
-\]
-which holds when a left-hand side expression
-represents a variable or a discarded left-hand-side expression:
-\begin{mathpar}
-\inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
-\end{mathpar}
-
-The inference rules defining the evaluation of assigning
-from a subprogram call are as follows:
 \begin{mathpar}
 \inferrule{
   \vles \eqdef \vle_{1..k}\\
@@ -321,6 +308,29 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 }
 \end{mathpar}
 \CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
+
+\SemanticsRuleDef{LexprIsVar}
+\RenderRelation{lexpr_is_var}
+\BackupOriginalRelation{
+The rule uses the syntactic predicate defined as follows:
+\[
+  \lexprisvar(\lexpr) \aslto \True
+\]
+which holds when a left-hand side expression
+represents a variable or a discarded left-hand-side expression
+} % END_OF_BACKUP_RELATION
+
+In \ExampleRef{Evaluation of Multi-variable Assignment from Subprogram Calls},
+the \assignableexpressions{} \verb|a|, \verb|b| are variables,
+and \verb|-| is a discarded \assignableexpression{}.
+
+\ProseParagraph
+\ProseEqdef{$\vle$}{$\True$ if and only if $\vle$ is either a variable or a discarded left-hand-side expression.}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
+\end{mathpar}
 
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
 \subsection{Syntax}
@@ -3948,13 +3958,15 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
 
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
-Therefore, the semantics is parameterized by the function
-\hypertarget{relation-outputtoconsole}{}
+Therefore, the semantics is parameterized by the following function.
+\RenderRelation{output_to_console}
+\BackupOriginalRelation{
 \[
 \outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv}) \aslto
   \overname{\envs}{\newenv}
 \]
 which takes a string and communicates it to a console, where one exists.
+} % END_OF_BACKUP_RELATION
 
 We now explain how printing is modelled when the runtime supports a console
 (\SemanticsRuleRef{SupportedOutputToConsole})
@@ -3972,13 +3984,15 @@ only here to explain the modeling of a console.
 
 \ExampleRef{Printing Literals} shows the output to the console in a case it is supported.
 
-\hypertarget{relation-literaltostring}{}
+\RenderRelation{literal_to_string}
+\BackupOriginalRelation{
 The function $\literaltostring : \literal \aslto \Strings$,
 which defines how a literal is represented by a string,
-is defined by \taref{literaltostringtable}.
+} % END_OF_BACKUP_RELATION
+The function is defined by \taref{literaltostringtable}.
 %
-Please note that surrounding quotations mark for $\LString(S)$ are not included
-in $\literaltostring(S)$, so they will appear in the printed string.
+Please note that surrounding quotations marks that appear in ASL text (for example, \verb|"hello"|)
+are not included in string literals, and thus will not appear in the printed string.
 
 \begin{table}
 \caption{How literals should be represented as strings\label{ta:literaltostringtable}}

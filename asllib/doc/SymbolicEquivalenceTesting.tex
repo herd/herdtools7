@@ -218,12 +218,15 @@ $\alpha(\vptwo) = 4\cdot{}x^2\cdot{}y$, and
 $\alpha(\vptwo) = x\cdot{}y^2$,
 then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
 
+\RenderRelation{mul_polynomials}
+\BackupOriginalRelation{
 The function
-\hypertarget{relation-mulpolynomials}{}
 \[
   \mulpolynomials : \overname{\polynomial}{\vpone} \times \overname{\polynomial}{\vptwo} \rightarrow \overname{\polynomial}{\vp}
 \]
 multiplies two polynomials.
+} % END_OF_BACKUP_RELATION
+
 \begin{mathpar}
 \inferrule{
   {
@@ -241,8 +244,9 @@ multiplies two polynomials.
 }
 \end{mathpar}
 
+\RenderRelation{polynomial_divide_by_term}
+\BackupOriginalRelation{
 The function
-\hypertarget{relation-polynomialdividebyterm}{}
 \[
   \polynomialdividebyterm :
   \overname{\polynomial}{\vpone} \times
@@ -252,6 +256,7 @@ The function
 \]
 returns the result of dividing the polynomial $\vpone$ by the number $\vf$ and unitary monomial $\vm$,
 yielding the polynomial $\vp$. Otherwise, the result is $\CannotBeTransformed$.
+} % END_OF_BACKUP_RELATION
 
 \begin{mathpar}
 \inferrule[divides]{

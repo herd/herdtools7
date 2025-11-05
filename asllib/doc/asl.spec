@@ -1766,6 +1766,13 @@ relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs, new_env:
   math_layout = [_,_],
  };
 
+semantics function pop_local_scope(outer_denv: dynamic_envs, inner_denv: dynamic_envs) -> (new_denv: dynamic_envs)
+{
+  "discards from {inner_denv} the bindings to local storage elements that are not in\\ {outer_denv}, yielding {new_denv}.",
+  prose_application = "dropping from {inner_denv} the bindings to local storage elements that are not in {outer_denv}
+  yields {new_denv}",
+};
+
 //////////////////////////////////////////////////
 // Relations for Catching Exceptions
 
@@ -1795,6 +1802,14 @@ relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: optio
  prose_application = "",
   math_layout = [_,_],
  };
+
+semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(catcher)) ->
+  (catcher_opt: option(catcher))
+{
+  "returns the first catcher clause in {catchers} that matches the type {v_ty} in {catcher_opt}, if one exists.
+  Otherwise, it returns $\None$",
+  prose_application = "finding the first catcher clause in {catchers} that matches the type {v_ty} in the context of {tenv} yields {catcher_opt}",
+};
 
 //////////////////////////////////////////////////
 // Relations for Global Pragmas
@@ -1902,6 +1917,23 @@ relation declare_global(name: Identifier, v: native_value, env: envs) -> (new_en
 //////////////////////////////////////////////////
 // Relations for Local Storage Declarations
 
+typing relation annotate_local_decl_item(
+  tenv: static_envs,
+  ty: ty,
+  ldk: local_decl_keyword,
+  e_opt: option((expr, powerset(TSideEffect))),
+  ldi: local_decl_item
+) -> (new_tenv: static_envs) | type_error
+{
+  "annotates the \localdeclarationitem{} {ldi} and \localdeclarationkeyword{} {ldk},
+  given a type {ty}, and {e_opt} --- an optional initializing expression and \sideeffectsetterm{},
+  in the context of the \staticenvironmentterm{} {tenv} --- yielding the updated \staticenvironmentterm{}
+  {new_tenv}. \ProseOtherwiseTypeError",
+  prose_application = "annotating the local storage declaration with {ldi} and {ldk} with
+  {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt}, yields {new_tenv}\OrTypeError",
+  math_layout = [[_,_,_,_,_], _],
+};
+
 semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: native_value, g1: XGraphs)) ->
   ResultLDI(new_g: XGraphs, new_env: envs)
 {
@@ -1909,6 +1941,16 @@ semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: nativ
   yielding the \executiongraphterm{} {new_g} and new environment {new_env}.",
   prose_application = "evaluating the \localdeclarationitem{} {ldi} in {env} with the initializing
   value {m} yields {new_g} and {new_env}.",
+};
+
+semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: list0((native_value, XGraphs))) ->
+  ResultLDI(g: XGraphs, new_env: envs)
+{
+  "declares in {env} the local storage elements whose names are given by {ids} and initialization values and \executiongraphterm{} by {liv}.
+  The lists {ids} and {liv} are assumed to have equal lengths.
+  The result is the updated environment {new_env} and resulting \executiongraphterm{} {g}.",
+  prose_application = "declaring the local storage elements whose identifiers are given by {ids} and initializers are
+  given by {liv} yields the updated environment {new_env} and \executiongraphterm{} {g}.",
 };
 
 relation check_is_not_collection(tenv: static_envs, t: ty) ->
@@ -1942,6 +1984,12 @@ relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b
  prose_application = "",
 };
 
+semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bit) -> (res: Bool)
+{
+  "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}",
+  prose_application = "testing whether the bit {b} matches the mask value {mv}, yields {res}",
+};
+
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
 
@@ -1966,6 +2014,20 @@ relation binop_literals(op: binop, v1: literal, v2: literal) ->
   operator to the given values, or a different kind of
   \typingerrorterm{} is detected.",
   prose_application = "",
+};
+
+typing function binary_to_unsigned(bits: list0(Bit)) -> (num: N)
+{
+  "converts the bit sequence {bits} into the natural number {num} or $0$ if {bits} is empty.",
+  prose_application = "converting the bit sequence {bits} into a natural number yields {num}",
+};
+
+typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
+{
+  "converts the integer {val} to its two's complement little endian representation
+  of {width} bits, yielding the result in {bits}.",
+  prose_application = "converting the integer {val} to its two's complement little endian representation
+  of {width} bits, yields {bits}",
 };
 
 relation eval_unop(op: unop, v: native_value) ->
@@ -2001,6 +2063,18 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},
     yielding the result in {b}. \ProseOtherwiseTypeError",
     prose_application = "testing whether {t} \subtypesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
+};
+
+typing function field_names(fields: list0((name: Identifier, type: ty))) -> (names: powerset(Identifier))
+{
+  "returns the set of field names appearing in {fields} in {names}",
+  prose_application = "the set of field names appearing in {fields} is {names}",
+};
+
+typing function field_type(fields: list0((name: Identifier, type: ty)), id: Identifier) -> (ty_opt: option(ty))
+{
+  "returns the type associated with {id} in {fields}, if there exists a unique one, and $\None$, otherwise.",
+  prose_application = "finding the unique type associated with {id} in {fields} yields {ty_opt}",
 };
 
 typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
@@ -2208,6 +2282,22 @@ relation explode_intervals(tenv: static_envs, cs: list0(int_constraint)) ->
   prose_application = "",
 };
 
+// Transliteration note: the implementation uses folding where explode_constraint
+// is a folder. To simplify this function, we remove the input precision lost flag
+// and join all precision loss flags in explode_intervals.
+typing function explode_constraint(tenv: static_envs, c: int_constraint) ->
+  (vcs: list0(int_constraint), new_prec: precision_loss_indicator)
+{
+  "given the \staticenvironmentterm{} {tenv} and the constraint {c},
+  expands {c} into the equivalent list of exact constraints if
+  {c} matches an ascending range constraint that is not too large.
+  Otherwise, it returns the singleton list for {c}, otherwise.
+  The resulting list of constraints and the \precisionlossindicatorterm{}
+  are {vcs} and {new_prec}, respectively.",
+  prose_application = "exploding the constraint {c} in {tenv} yields {vcs} and {new_prec}",
+  math_layout = [_,_],
+};
+
 relation interval_too_large(z1: Z, z2: Z) ->
          (b: Bool)
 {
@@ -2334,9 +2424,9 @@ relation incr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
          (new_genv: global_dynamic_envs)
 {
   "increments the value associated with {name} in
-  $\genv.\pendingcalls$, yielding the updated global
+  $ {genv}.\pendingcalls $, yielding the updated global
   dynamic environment {new_genv}.",
-  prose_application = "",
+  prose_application = "incrementing the number of pending calls for {name} in {genv} yields {new_genv}",
 };
 
 relation decr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
@@ -3057,6 +3147,24 @@ relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), ne
                         \end{itemize}",
  prose_application = "",
  math_layout = (_, [_,_,_,_,_]),
+};
+
+semantics function output_to_console(env: envs, v: native_value) -> (new_env: envs)
+{
+  "communicates {v} to a console, where one exists, possibly updating the environment {env}, yielding {new_env}.",
+  prose_application = "communicating {v} to the console in the context of {env} yields {new_env}",
+};
+
+semantics function literal_to_string(l: literal) -> (s: Strings)
+{
+  "converts a literal {l} to a printable string {s}",
+  prose_application = "converting {l} to a printable string yields {s}",
+};
+
+semantics function lexpr_is_var(le: lexpr) -> (res: Bool)
+ {
+    "tests whether {le} is an assignable variable expression or a discarded \assignableexpression{}, yielding the result in {res}",
+    prose_application = "testsing whether {le} is an assignable variable expression or a discarded \assignableexpression{} yields {res}",
  };
 
 relation eval_for(
@@ -3907,6 +4015,22 @@ relation add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
   yielding the polynomial {p}",
   prose_application = "adding the polynomial {p1} with polynomial {p2}
                       yields the polynomial {p}"
+};
+
+typing function mul_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
+{
+  "multiplies the polynomial {p1} with the polynomial {p2}, yielding the polynomial {p}.",
+  prose_application = "multiplying the polynomial {p1} with polynomial {p2}
+                      yields the polynomial {p}"
+};
+
+typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f: Q) -> (p: polynomial) | constants_set(CannotBeTransformed)
+{
+  "returns the result of dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f},
+  yielding the polynomial {p}. Otherwise, the result is $\CannotBeTransformed$.",
+  prose_application = "dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f},
+    yields {p}",
+  math_layout = ([_,_,_], _),
 };
 
 relation polynomial_to_expr(p: polynomial) ->
