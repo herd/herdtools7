@@ -455,7 +455,7 @@ end = struct
           | `PPC ->
              begin match OT.usearch with
              | UseArch.Trad ->
-                let module V = Int64Constant.Make(PPCBase.Instr) in
+                let module V = Int64Constant.Make(PPCInstr) in
                 let module Arch' = PPCArch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                     type instruction = Arch'.parsedPseudo

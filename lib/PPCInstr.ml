@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2023-present Institut National de Recherche en Informatique et *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,23 +14,45 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
-  module LexConfig = struct
-    let debug = Conf.debug.Debug_herd.lexer
-  end
-  module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
-  module PPCValue = Int64Value.Make(PPCInstr)
-  module PPC = PPCArch_herd.Make(ArchConfig)(PPCValue)
-  module PPCLexParse = struct
-    type instruction = PPC.parsedPseudo
-    type token = PPCParser.token
-    module Lexer = PPCLexer.Make(LexConfig)
-    let lexer = Lexer.token
-    let parser = MiscParser.mach2generic PPCParser.main
-  end
-  module PPCS = PPCSem.Make(Conf)(PPCValue)
-  module PPCM = MemWithCav12.Make(ModelConfig)(PPCS)
-  module P = GenParser.Make (Conf) (PPC) (PPCLexParse)
-  module X = RunTest.Make (PPCS) (P) (PPCM) (Conf)
-  let run = X.run
-end
+open PPCBase
+
+type exec = instruction
+type t = instruction
+
+let from_exec = Misc.identity
+let to_exec = Misc.identity
+
+let compare = Misc.polymorphic_compare
+let eq = (=)
+
+let pp = function
+  | Pnop ->  "NOP"
+  | i -> Printf.sprintf "instr:%S" (dump_instruction i)
+
+module Lexer =
+  PPCLexer.Make
+    (struct
+      let debug = false
+    end)
+
+let parse_instr s =
+  let lexbuf = Lexing.from_string s in
+  let pi =
+    GenParserUtils.call_parser
+      "PPCInstr" lexbuf Lexer.token PPCParser.one_instr in
+  parsed_tr pi
+
+let tr =
+  let open InstrLit in
+  function
+  | LIT_NOP -> Pnop
+  | LIT_INSTR s -> parse_instr s
+
+let can_overwrite _ = false
+
+module Set =
+  MySet.Make
+    (struct
+      type t = instruction
+      let compare = compare
+    end)

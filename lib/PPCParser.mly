@@ -55,6 +55,9 @@ open MachSize
 %type <PPCBase.parsedPseudo list> instr_option_seq
 %start instr_option_seq
 
+%start one_instr
+%type  <PPCBase.pins> one_instr
+
 %%
 
 main:
@@ -94,6 +97,9 @@ reg_list :
 | { [] }
 | reg { [$1] }
 | reg COMMA reg_list { $1 :: $3 }
+
+one_instr:
+| i=instr EOF { i }
 
 instr:
   | NOP
