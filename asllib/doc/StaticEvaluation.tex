@@ -21,7 +21,8 @@ in the \staticenvironmentterm{} $\tenv$, returning a literal $\vv$.
 If the evaluation terminates by a thrown exception of a value that is not a literal
 (for example, a record value), the result is a \typingerrorterm{}.
 } % END_OF_BACKUP_RELATION
-If $\ve$ is \pureterm{}, the result is unique.
+
+This function assumes that $\ve$ is a \pureterm{} and thus the evaluation is deterministic.
 
 \hypertarget{def-staticallyevaluable}{}
 We say that an expression $\ve$ is \staticallyevaluableterm{} in a given \staticenvironmentterm{} $\tenv$ if

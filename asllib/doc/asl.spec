@@ -1336,7 +1336,7 @@ typing relation annotate_field_init(tenv: static_envs, (name: Identifier, e': ex
   math_layout = [_,_],
 };
 
-relation annotate_get_array(
+typing relation annotate_get_array(
         tenv: static_envs,
         (size: expr, t_elem: ty),
         (e_base: expr, ses_base: powerset(TSideEffect),
@@ -1355,7 +1355,7 @@ relation annotate_get_array(
   math_layout = [_,_],
 };
 
-relation get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(field)) ->
+typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(field)) ->
          (e_width: expr) | type_error
 {
   "returns the expression {e_width} that describes the
@@ -1364,14 +1364,14 @@ relation get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(
   prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}"
 };
 
-typing relation width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
+typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
 {
   "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
   normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
   prose_application = "generating the expression representing the summation of {exprs} in {tenv}, yields {e_width}",
 };
 
-relation check_atc(tenv: static_envs, t1: ty, t2: ty) ->
+typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether the types {t1} and {t2}, which are
@@ -1381,7 +1381,7 @@ relation check_atc(tenv: static_envs, t1: ty, t2: ty) ->
   prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True"
 };
 
-relation eval_expr(env: envs, e: expr) ->
+semantics relation eval_expr(env: envs, e: expr) ->
          ResultExpr((v: native_value, g: XGraphs), new_env: envs)
                                         | TThrowing | TDynError | TDiverging
 {
@@ -1393,7 +1393,7 @@ relation eval_expr(env: envs, e: expr) ->
     math_layout = (_, [_,_,_,_]),
 };
 
-relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_value, g: XGraphs) | TDynError | TDiverging
+semantics relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_value, g: XGraphs) | TDynError | TDiverging
 {
    prose_description = "specializes the expression evaluation relation for
                         side-effect-free expressions by omitting throwing
@@ -1401,7 +1401,7 @@ relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_value, g: 
  prose_application = "",
 };
 
-relation is_val_of_type(env: envs, v: native_value, t: ty) ->
+semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
          (b: Bool, g: XGraphs) | TDynError | TDiverging
 {
   "tests whether the value {v} can be stored in a
@@ -1411,7 +1411,7 @@ relation is_val_of_type(env: envs, v: native_value, t: ty) ->
   prose_application = "\hyperlink{relation-isvaloftype}{testing} if value {v} matches type {t} in {env} yields result {b} and graph {g}"
 };
 
-relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
+semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
          (b: Bool, g: XGraphs)
 {
   "tests whether the integer value $n$ \emph{satisfies
@@ -1423,7 +1423,7 @@ relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
   prose_application = "\hyperlink{relation-isconstraintsat}{verifying} integer {n} satisfies constraint {c} in {env} yields {b} and graph {g}"
 };
 
-relation eval_expr_list(env: envs, le: list0(expr)) ->
+semantics relation eval_expr_list(env: envs, le: list0(expr)) ->
          ResultExprList((v: list0(native_value), g: XGraphs), new_env: envs) | TThrowing | TDynError | TDiverging
 {
   "evaluates the list of expressions {le} in
@@ -1440,7 +1440,7 @@ relation eval_expr_list(env: envs, le: list0(expr)) ->
 // Assignable Expressions Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
+typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
    (new_le: lexpr, ses: powerset(TSideEffect)) | type_error
 {
     "annotates the \assignableexpression{} {le} with type {t_e}
@@ -1452,7 +1452,7 @@ relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     prose_application = "annotating {le} with {t_e} in {tenv} yields {new_le} and {ses}\ProseOrTypeError",
 };
 
-relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
+semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
@@ -1467,7 +1467,7 @@ relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
     math_layout = (_, [_,_,_,_]),
 };
 
-relation eval_multi_assignment(env: envs, lelist: list0(expr), vmlist: list0((native_value, XGraphs))) ->
+semantics relation eval_multi_assignment(env: envs, lelist: list0(expr), vmlist: list0((native_value, XGraphs))) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
@@ -1478,7 +1478,7 @@ relation eval_multi_assignment(env: envs, lelist: list0(expr), vmlist: list0((na
     math_layout = (_, [_,_,_]),
 };
 
-relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
+typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
     (new_le: lexpr, ses: powerset(TSideEffect)) | type_error
 {
     "annotates an array update in the \staticenvironmentterm{} {tenv}
@@ -1492,35 +1492,35 @@ relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs
     math_layout = [_,_],
 };
 
-relation check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
+typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
          constants_set(True) | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
     prose_application = "checking whether {slices} are disjoint in {tenv} yields $\True$\ProseOrTypeError",
 };
 
-relation check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
+semantics function check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
          constants_set(True) | TDynError
 {
     "checks whether the sets of integers represented by the list of ranges {value_ranges} overlap, yielding $\True$. \ProseOtherwiseDynamicErrorOrDiverging",
     prose_application = "checking whether {value_ranges} are non-overlapping yields $\True$\ProseOrDynamicErrorOrDiverging",
 };
 
-relation check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint), range2: (s2: tint, l2: tint)) ->
+semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint), range2: (s2: tint, l2: tint)) ->
          constants_set(True) | TDynError
 {
     "checks whether two sets of integers represented by the ranges $({s1},{l1})$ and $({s2},{l2})$ do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
     prose_application = "checking whether $({s1},{l1})$ and $({s2},{l2})$ do not intersect yields $\True$\ProseOrError",
 };
 
-relation fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
+typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
          (length: N, slices: list0((N, N)))
 {
     "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of {base_fields} about to be assigned to, and yields the total width across {le_fields} and the ranges corresponding to {le_fields} in terms of pairs where the first component is the start position and the second component is the width of the field.",
     prose_application = "folding bitvector fields {le_fields} from {base_fields} in {tenv} yields length {length} and slices {slices}",
 };
 
-relation assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields: list0(Identifier), slices: list0((N, N))) ->
+semantics function assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields: list0(Identifier), slices: list0((N, N))) ->
          (result: trecord)
 {
     "updates the list of fields {fields} of {record} with the slices given by {slices} from \\
@@ -1531,7 +1531,7 @@ relation assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields:
 //////////////////////////////////////////////////
 // Relations for Base Values
 
-relation base_value(tenv: static_envs, t: ty) ->
+typing function base_value(tenv: static_envs, t: ty) ->
          (e_init: expr) | type_error
 {
   "returns the expression {e_init} which can be used to
@@ -1541,7 +1541,7 @@ relation base_value(tenv: static_envs, t: ty) ->
   prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}"
 };
 
-relation constraint_abs_min(tenv: static_envs, c: int_constraint) ->
+typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
          (zs: list0(Z)) | type_error
 {
   "returns a single element list containing the integer
@@ -1552,7 +1552,7 @@ relation constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}"
 };
 
-relation list_min_abs(l: list0(Z)) ->
+typing function list_min_abs(l: list0(Z)) ->
          (z: Z)
 {
   "returns {z} --- the integer closest to $0$ among the
@@ -1567,7 +1567,7 @@ relation list_min_abs(l: list0(Z)) ->
 //////////////////////////////////////////////////
 // Relations for Bitfields
 
-relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitfield)) ->
+typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitfield)) ->
          (new_fields: list0(bitfield), ses: powerset(TSideEffect)) | type_error
 {
   "annotates a list of bitfields {fields} with an
@@ -1580,14 +1580,14 @@ relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: list0(bitf
   prose_application = "\hyperlink{relation-annotatebitfields}{annotating} bitfields {fields} with width {e_width} in {tenv} yields {new_fields} and side effects {ses}"
 };
 
-relation bitfield_get_name(bf: bitfield) ->
+typing function bitfield_get_name(bf: bitfield) ->
          (name: Identifier)
 {
   "given a bitfield {bf}, returns {name}, the name of the bitfield {bf}.",
   prose_application = "\hyperlink{relation-bitfieldgetname}{extracting} name from bitfield {bf} yields {name}"
 };
 
-relation bitfield_get_slices(bf: bitfield) ->
+typing function bitfield_get_slices(bf: bitfield) ->
          (slices: list0(slice))
 {
   "returns the list of slices {slices} associated with
@@ -1595,7 +1595,7 @@ relation bitfield_get_slices(bf: bitfield) ->
   prose_application = "\hyperlink{relation-bitfieldgetslices}{extracting} slices from bitfield {bf} yields {slices}"
 };
 
-relation bitfield_get_nested(bf: bitfield) ->
+typing function bitfield_get_nested(bf: bitfield) ->
          (nested: list0(bitfield))
 {
   "returns the list of bitfields {nested} nested within
@@ -1604,7 +1604,7 @@ relation bitfield_get_nested(bf: bitfield) ->
   prose_application = "\hyperlink{relation-bitfieldgetnested}{extracting} nested bitfields from {bf} yields {nested}"
 };
 
-relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
+typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
          (new_field: bitfield, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a bitfield {field} with an integer
@@ -1616,7 +1616,7 @@ relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
   prose_application = "\hyperlink{relation-annotatebitfield}{annotating} bitfield {field} with width {width} in {tenv} yields {new_field} and {ses}"
 };
 
-relation check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
+typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
          (constants_set(True)) | type_error
 {
   "checks whether the slices in {slices} fit within the
@@ -1625,7 +1625,7 @@ relation check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)
   prose_application = "\hyperlink{relation-checkslicesinwidth}{verifying} slices {slices} fit within width {width} in {tenv} yields True"
 };
 
-relation check_positions_in_width(width: Z, positions: powerset(Z)) ->
+typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
          (constants_set(True)) | type_error
 {
   "checks whether the set of positions in {positions} fit
@@ -1634,7 +1634,7 @@ relation check_positions_in_width(width: Z, positions: powerset(Z)) ->
   prose_application = "\hyperlink{relation-checkpositionsinwidth}{verifying} positions {positions} fit within width {width} yields True"
 };
 
-relation disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices: list0(slice)) ->
+typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices: list0(slice)) ->
          (positions: powerset_finite(Z)) | type_error
 {
   "returns the set of integers defined by the list of
@@ -1656,7 +1656,7 @@ relation disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices
   prose_application = "\hyperlink{relation-disjointslicestopositions}{converting} disjoint slices {slices} in {tenv} with static flag {is_static} yields positions {positions}"
 };
 
-relation bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, slice: slice) ->
+typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, slice: slice) ->
          (positions: option(powerset_finite(Z))) | type_error
 {
   "returns the set of integers defined by the bitfield
@@ -1667,7 +1667,7 @@ relation bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, slice: 
   prose_application = "\hyperlink{relation-bitfieldslicetopositions}{converting} slice {slice} in {tenv} with static flag {is_static} yields optional positions {positions}"
 };
 
-relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) ->
+semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) ->
          (z_opt: option(Z)) | type_error
 {
   "attempts to transform the expression {e} into a
@@ -1682,7 +1682,7 @@ relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) ->
   prose_application = "\hyperlink{relation-evalsliceexpr}{evaluating} slice expression {e} in {tenv} with static flag {is_static} yields optional integer {z_opt}"
 };
 
-relation check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
+typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
          (constants_set(True)) | type_error
 {
   "checks \RequirementRef{BitfieldAlignment} for every
@@ -1693,7 +1693,7 @@ relation check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfie
   prose_application = "\hyperlink{relation-checkcommonbitfieldsalign}{checking} alignment of bitfields {bitfields} of width {width} in {tenv} yields True"
 };
 
-relation bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfield), absolute_parent: TAbsField) ->
+typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfield), absolute_parent: TAbsField) ->
          (abs_bitfields: powerset(TAbsField))
 {
   "returns the set of \absolutebitfields{} {abs_bitfields}
@@ -1704,7 +1704,7 @@ relation bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfield), ab
   prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}"
 };
 
-relation bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->
+typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->
          (abs_bitfields: powerset(TAbsField))
 {
   "returns the set of \absolutebitfields{} {abs_bitfields}
@@ -1716,7 +1716,7 @@ relation bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: 
   prose_application = "\hyperlink{relation-bitfieldtoabsolute}{converting} bitfield {bf} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}"
 };
 
-relation select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
+typing function select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
          (absolute_slice: list0(N))
 {
   "considers the list {indices} as a list of indices into
@@ -1728,7 +1728,7 @@ relation select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
   prose_application = "\hyperlink{relation-selectindicesbyslices}{selecting} indices from {indices} using slice indices {slice_indices} yields absolute slice {absolute_slice}"
 };
 
-relation absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
+typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
          (b: Bool)
 {
   "tests whether the \absolutebitfields{} {f} and {g}
@@ -1738,7 +1738,7 @@ relation absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
   prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}"
 };
 
-relation slice_to_indices(tenv: static_envs, s: slice) ->
+typing function slice_to_indices(tenv: static_envs, s: slice) ->
          (indices: list0(N))
 {
   "returns the list of indices {indices} represented by
@@ -1750,7 +1750,7 @@ relation slice_to_indices(tenv: static_envs, s: slice) ->
 //////////////////////////////////////////////////
 // Relations for Block Statements
 
-relation annotate_block(tenv: static_envs, s: stmt) ->
+typing relation annotate_block(tenv: static_envs, s: stmt) ->
          (new_stmt: stmt, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a block statement {s} in
@@ -1760,7 +1760,7 @@ relation annotate_block(tenv: static_envs, s: stmt) ->
   prose_application = "\hyperlink{relation-annotateblock}{annotating} block statement {s} in {tenv} yields statement {new_stmt} and side effects {ses}"
 };
 
-relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError | TDiverging
+semantics relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates a statement {stm} as a \emph{block}. That
                         is, {stm} is evaluated in a fresh local environment,
@@ -1781,7 +1781,7 @@ semantics function pop_local_scope(outer_denv: dynamic_envs, inner_denv: dynamic
 //////////////////////////////////////////////////
 // Relations for Catching Exceptions
 
-relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect), c: catcher) ->
+typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect), c: catcher) ->
          (ses_in: powerset(TSideEffect), (new_catcher: catcher, ses: powerset(TSideEffect))) | type_error
 {
   "annotates a catcher {c} in the
@@ -1794,7 +1794,7 @@ relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect), c: c
   math_layout = [_,_],
 };
 
-relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
+semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
   TReturning | TContinuing | TThrowing | TDynError
 {
    prose_description = "evaluates a list of \texttt{catch} clauses
@@ -1819,7 +1819,7 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
 //////////////////////////////////////////////////
 // Relations for Global Pragmas
 
-relation check_global_pragma(genv: global_static_envs, d: decl) ->
+typing function check_global_pragma(genv: global_static_envs, d: decl) ->
          (constants_set(True)) | type_error
 {
   "typechecks a global pragma declaration {d} in the
@@ -1831,7 +1831,7 @@ relation check_global_pragma(genv: global_static_envs, d: decl) ->
 //////////////////////////////////////////////////
 // Relations for Global Storage Declarations
 
-relation declare_global_storage(genv: global_static_envs, gsd: global_decl) ->
+typing relation declare_global_storage(genv: global_static_envs, gsd: global_decl) ->
          (new_genv: global_static_envs, new_gsd: global_decl) | type_error
 {
   "annotates the global storage declaration {gsd} in the
@@ -1842,7 +1842,7 @@ relation declare_global_storage(genv: global_static_envs, gsd: global_decl) ->
   prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}"
 };
 
-relation annotate_ty_opt_initial_value(
+typing relation annotate_ty_opt_initial_value(
     tenv: static_envs,
     gdk: global_decl_keyword,
     must_be_pure: Bool,
@@ -1864,7 +1864,7 @@ relation annotate_ty_opt_initial_value(
   math_layout = [input[_,_,_,_,_], ([_,_,_],_)],
 };
 
-relation update_global_storage(
+typing relation update_global_storage(
     tenv: static_envs,
     name: Identifier,
     gdk: global_decl_keyword,
@@ -1885,7 +1885,7 @@ relation update_global_storage(
   math_layout = (input[_,_,_,_], _),
 };
 
-relation add_global_storage(
+typing function add_global_storage(
     genv: global_static_envs,
     name: Identifier,
     keyword: global_decl_keyword,
@@ -1903,7 +1903,7 @@ relation add_global_storage(
   math_layout = [_,_],
 };
 
-relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
+semantics relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
 {
    prose_description = "updates the input environment and execution graph by
                         initializing the global storage declarations.
@@ -1911,7 +1911,7 @@ relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C:
  prose_application = "",
 };
 
-relation declare_global(name: Identifier, v: native_value, env: envs) -> (new_env: envs)
+semantics function declare_global(name: Identifier, v: native_value, env: envs) -> (new_env: envs)
 {
    prose_description = "updates the environment {env} by mapping {name} to
                         {v} in the $\storage$ map of the global dynamic
@@ -1958,7 +1958,7 @@ semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: lis
   given by {liv} yields the updated environment {new_env} and \executiongraphterm{} {g}.",
 };
 
-relation check_is_not_collection(tenv: static_envs, t: ty) ->
+typing function check_is_not_collection(tenv: static_envs, t: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether the type {t} has the structure of a
@@ -1970,7 +1970,7 @@ relation check_is_not_collection(tenv: static_envs, t: ty) ->
 //////////////////////////////////////////////////
 // Relations for Pattern Matching
 
-relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
+typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
          (new_p: pattern, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a pattern {p} in a \staticenvironmentterm{}
@@ -1980,7 +1980,7 @@ relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
   prose_application = "",
 };
 
-relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
+semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
    prose_description = "determines whether a value {v} matches the pattern
                         {p} in an environment {env} resulting in either
@@ -1998,7 +1998,7 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
 
-relation unop_literals(op: unop, l: literal) ->
+typing function unop_literals(op: unop, l: literal) ->
          (r: literal) | type_error
 {
   "statically evaluates a unary operator {op} (a terminal
@@ -2008,7 +2008,7 @@ relation unop_literals(op: unop, l: literal) ->
   prose_application = "",
 };
 
-relation binop_literals(op: binop, v1: literal, v2: literal) ->
+typing function binop_literals(op: binop, v1: literal, v2: literal) ->
          (r: literal) | type_error
 {
   "statically evaluates a binary operator {op} (a
@@ -2035,7 +2035,7 @@ typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
   of {width} bits, yields {bits}",
 };
 
-relation eval_unop(op: unop, v: native_value) ->
+semantics function eval_unop(op: unop, v: native_value) ->
          (w: native_value) | TDynError
 {
   "evaluates a unary operator {op} over a
@@ -2044,7 +2044,7 @@ relation eval_unop(op: unop, v: native_value) ->
   prose_application = "",
 };
 
-relation eval_binop(op: binop, v1: native_value, v2: native_value) ->
+semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
          (w: native_value) | TDynError
 {
   "evaluates a binary operator {op} over a pair of
@@ -2104,7 +2104,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   math_macro = \lca,
 };
 
-relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
+typing relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
          (s: ty) | type_error
 {
   "determines the result type of applying a unary
@@ -2114,7 +2114,7 @@ relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
   prose_application = "",
 };
 
-relation negate_constraint(c: int_constraint) ->
+typing function negate_constraint(c: int_constraint) ->
          (new_c: int_constraint)
 {
   "takes an integer constraint {c} and returns the
@@ -2123,7 +2123,7 @@ relation negate_constraint(c: int_constraint) ->
   prose_application = "",
 };
 
-relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) ->
+typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) ->
          (t: ty) | type_error
 {
   "determines the result type {t} of applying the binary
@@ -2133,7 +2133,7 @@ relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) ->
   prose_application = "",
 };
 
-relation named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) ->
+typing function named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) ->
          (ty: ty) | type_error
 {
   "returns the lowest common named super type
@@ -2141,7 +2141,7 @@ relation named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) ->
   prose_application = "",
 };
 
-relation supers(tenv: static_envs, t: ty) ->
+typing function supers(tenv: static_envs, t: ty) ->
          (powerset(ty))
 {
   "returns the set of \emph{named supertypes} of a type
@@ -2150,7 +2150,7 @@ relation supers(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
-relation annotate_constraint_binop(
+typing relation annotate_constraint_binop(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     op: binop,
@@ -2170,7 +2170,7 @@ relation annotate_constraint_binop(
   math_layout = [_,_],
 };
 
-relation binop_filter_rhs(
+typing relation binop_filter_rhs(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     op: binop,
@@ -2191,7 +2191,7 @@ relation binop_filter_rhs(
   math_layout = [_,_],
 };
 
-relation refine_constraint_by_sign(tenv: static_envs, p: fun Z -> Bool, c: int_constraint) ->
+typing relation refine_constraint_by_sign(tenv: static_envs, p: fun Z -> Bool, c: int_constraint) ->
          (c_opt: option(int_constraint))
 {
   "takes a predicate {p} that returns $\True$ based on
@@ -2207,7 +2207,7 @@ relation refine_constraint_by_sign(tenv: static_envs, p: fun Z -> Bool, c: int_c
   prose_application = "",
 };
 
-relation reduce_to_z_opt(tenv: static_envs, e: expr) ->
+typing function reduce_to_z_opt(tenv: static_envs, e: expr) ->
          (z_opt: option(Z))
 {
   "returns an integer inside an optional if {e} can be
@@ -2218,7 +2218,7 @@ relation reduce_to_z_opt(tenv: static_envs, e: expr) ->
   prose_application = "",
 };
 
-relation refine_constraints(
+typing relation refine_constraints(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     f: fun int_constraint -> option(int_constraint),
@@ -2237,7 +2237,7 @@ relation refine_constraints(
   math_layout = [input[_,_,_,_], _],
 };
 
-relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop, cs: list0(int_constraint)) ->
+typing relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop, cs: list0(int_constraint)) ->
          (res: list0(int_constraint)) | constants_set(CannotUnderapproximate,CannotOverapproximate)
 {
   "filters the list of constraints {cs} for {op},
@@ -2252,7 +2252,7 @@ relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop,
   math_layout = [_,_],
 };
 
-relation filter_reduce_constraint_div(c: int_constraint) ->
+typing relation filter_reduce_constraint_div(c: int_constraint) ->
          (c_opt: option(int_constraint))
 {
   "returns $\None$ if {c} is an exact constraint for a
@@ -2265,7 +2265,7 @@ relation filter_reduce_constraint_div(c: int_constraint) ->
   prose_application = "",
 };
 
-relation get_literal_div_opt(e: expr) ->
+typing function get_literal_div_opt(e: expr) ->
          (range_opt: option((Z, Z)))
 {
   "matches the expression {e} to a binary operation
@@ -2277,7 +2277,7 @@ relation get_literal_div_opt(e: expr) ->
   prose_application = "",
 };
 
-relation explode_intervals(tenv: static_envs, cs: list0(int_constraint)) ->
+typing function explode_intervals(tenv: static_envs, cs: list0(int_constraint)) ->
          (new_cs: list0(int_constraint), p: precision_loss_indicator)
 {
   "applies $\explodeintervals$ to each constraint of {cs}
@@ -2303,7 +2303,7 @@ typing function explode_constraint(tenv: static_envs, c: int_constraint) ->
   math_layout = [_,_],
 };
 
-relation interval_too_large(z1: Z, z2: Z) ->
+typing function interval_too_large(z1: Z, z2: Z) ->
          (b: Bool)
 {
   "determines whether the set of numbers between {z1} and
@@ -2313,7 +2313,7 @@ relation interval_too_large(z1: Z, z2: Z) ->
   prose_application = "",
 };
 
-relation binop_is_exploding(op: binop) ->
+typing function binop_is_exploding(op: binop) ->
          (b: Bool)
 {
   "determines whether the binary operation {op} should
@@ -2332,7 +2332,7 @@ typing function bitfields_included(tenv: static_envs, bfs1: list0(bitfield), bfs
     prose_application = "testing whether {bfs1} is included in {bfs2} in {tenv} yields {b}\ProseOrTypeError",
 };
 
-relation mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
+typing function mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
          (b: Bool)
 {
   "checks whether the bitfield {bf1} exists in {bfs2} in
@@ -2347,7 +2347,7 @@ typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) ->
   math_macro = \checkstructurelabel,
 };
 
-relation to_well_constrained(t: ty) ->
+typing function to_well_constrained(t: ty) ->
          (t': ty)
 {
   "returns {t'}, the \wellconstrainedversionterm{} of a type {t}, which converts
@@ -2357,7 +2357,7 @@ relation to_well_constrained(t: ty) ->
   prose_application = "",
 };
 
-relation get_well_constrained_structure(tenv: static_envs, t: ty) ->
+typing function get_well_constrained_structure(tenv: static_envs, t: ty) ->
          (t': ty) | type_error
 {
   "returns the \wellconstrainedstructureterm{} of a type
@@ -2366,7 +2366,7 @@ relation get_well_constrained_structure(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
-relation get_bitvector_width(tenv: static_envs, t: ty) ->
+typing function get_bitvector_width(tenv: static_envs, t: ty) ->
          (e: expr) | type_error
 {
   "returns the expression {e}, which represents the width
@@ -2376,7 +2376,7 @@ relation get_bitvector_width(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
-relation get_bitvector_const_width(tenv: static_envs, t: ty) ->
+typing function get_bitvector_const_width(tenv: static_envs, t: ty) ->
          (w: N) | type_error
 {
   "returns the natural number {w}, which represents the
@@ -2386,7 +2386,7 @@ relation get_bitvector_const_width(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
-relation check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
+typing function check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
          (constants_set(True)) | type_error
 {
   "tests whether the types {t1} and {t2} are bitvector
@@ -2395,7 +2395,7 @@ relation check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
   prose_application = "",
 };
 
-relation precision_join(p1: precision_loss_indicator, p2: precision_loss_indicator) ->
+typing function precision_join(p1: precision_loss_indicator, p2: precision_loss_indicator) ->
          (p: precision_loss_indicator)
 {
   "returns the \precisionlossindicatorterm{} {p},
@@ -2407,7 +2407,7 @@ relation precision_join(p1: precision_loss_indicator, p2: precision_loss_indicat
 //////////////////////////////////////////////////
 // Relations for Semantics Utilities
 
-relation get_pending_calls(denv: dynamic_envs, name: Identifier) ->
+semantics function get_pending_calls(denv: dynamic_envs, name: Identifier) ->
          (s: N)
 {
   "retrieves the value associated with {name} in
@@ -2416,7 +2416,7 @@ relation get_pending_calls(denv: dynamic_envs, name: Identifier) ->
   prose_application = "\hyperlink{relation-getpendingcalls}{retrieving} pending calls count for {name} in {denv} yields {s}"
 };
 
-relation set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
+semantics function set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
          (new_genv: dynamic_envs)
 {
   "updates the value bound to {name} in $\genv.\storage$
@@ -2425,7 +2425,7 @@ relation set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
   prose_application = "",
 };
 
-relation incr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
+semantics function incr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
          (new_genv: global_dynamic_envs)
 {
   "increments the value associated with {name} in
@@ -2434,7 +2434,7 @@ relation incr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
   prose_application = "incrementing the number of pending calls for {name} in {genv} yields {new_genv}",
 };
 
-relation decr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
+semantics function decr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
          (new_genv: global_dynamic_envs)
 {
   "decrements the value associated with {name} in
@@ -2445,7 +2445,7 @@ relation decr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
   prose_application = "",
 };
 
-relation remove_local(env: envs, name: Identifier) -> (new_env: envs)
+semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
 {
    prose_description = "removes the binding of the identifier {name} from the
                         local storage of the environment {env}, yielding the
@@ -2453,7 +2453,7 @@ relation remove_local(env: envs, name: Identifier) -> (new_env: envs)
  prose_application = ""
  };
 
-relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
+semantics relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
    prose_description = "creates an \executiongraphterm{} that represents the
                         reading of the value {v} into a storage element given
@@ -2464,7 +2464,7 @@ relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
  prose_application = ""
  };
 
-relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
+semantics relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
    prose_description = "creates an \executiongraphterm{} that represents the
                         writing of the value {v} into the storage element
@@ -2475,7 +2475,7 @@ relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
  prose_application = ""
  };
 
-relation concat_bitvectors(vs: list0(tbitvector)) ->
+semantics function concat_bitvectors(vs: list0(tbitvector)) ->
          (new_vs: tbitvector)
 {
   "transforms a (possibly empty) list of bitvector
@@ -2484,7 +2484,7 @@ relation concat_bitvectors(vs: list0(tbitvector)) ->
   prose_application = "",
 };
 
-relation slices_to_positions(slices: list1((s: tint, l: tint))) ->
+semantics function slices_to_positions(slices: list1((s: tint, l: tint))) ->
          (positions: list0(N)) | TDynError
 {
   "returns the list of positions (indices) specified by
@@ -2495,7 +2495,7 @@ relation slices_to_positions(slices: list1((s: tint, l: tint))) ->
   prose_application = "",
 };
 
-relation max_pos_of_slice(s: tint, l: tint) ->
+semantics function max_pos_of_slice(s: tint, l: tint) ->
          (max_pos: tint)
 {
   "returns the maximum position specified by the slice
@@ -2504,7 +2504,7 @@ relation max_pos_of_slice(s: tint, l: tint) ->
   prose_application = "",
 };
 
-relation read_from_bitvector(v: native_value, slices: list0((tint, tint))) ->
+semantics function read_from_bitvector(v: native_value, slices: list0((tint, tint))) ->
          (new_v: tbitvector) | TDynError
 {
   "reads from a bitvector {v}, or an integer seen as a
@@ -2513,7 +2513,7 @@ relation read_from_bitvector(v: native_value, slices: list0((tint, tint))) ->
   prose_application = "",
 };
 
-relation write_to_bitvector(slices: list0((tint, tint)), src: tbitvector, dst: tbitvector) ->
+semantics function write_to_bitvector(slices: list0((tint, tint)), src: tbitvector, dst: tbitvector) ->
          (v: tbitvector) | TDynError
 {
   "overwrites the bits of {dst} at the positions given by
@@ -2521,14 +2521,14 @@ relation write_to_bitvector(slices: list0((tint, tint)), src: tbitvector, dst: t
   prose_application = "\hyperlink{relation-writetobitvector}{writing} bits from {src} to {dst} at positions {slices} yields bitvector {v}"
 };
 
-relation get_index(i: N, vec: tvector) -> (r: tvector) | TDynError
+semantics function get_index(i: N, vec: tvector) -> (r: tvector) | TDynError
 {
    prose_description = "reads the value {r} from the vector of values {vec}
                         at the index {i}. \ProseOtherwiseDynamicError",
  prose_application = ""
  };
 
-relation set_index(i: N, v: native_value, vec: tvector) -> (res: tvector) | TDynError
+semantics function set_index(i: N, v: native_value, vec: tvector) -> (res: tvector) | TDynError
 {
    prose_description = "overwrites the value at the given index {i} in a
                         vector of values {vec} with the new value {v}.
@@ -2536,14 +2536,14 @@ relation set_index(i: N, v: native_value, vec: tvector) -> (res: tvector) | TDyn
  prose_application = "",
 };
 
-relation get_field(name: Identifier, record: trecord) -> (native_value)
+semantics function get_field(name: Identifier, record: trecord) -> (native_value)
 {
    prose_description = "retrieves the value corresponding to the field name
                         {name} from the record value {record}.",
  prose_application = ""
  };
 
-relation set_field(name: Identifier, v: native_value, record: trecord) -> (trecord)
+semantics function set_field(name: Identifier, v: native_value, record: trecord) -> (trecord)
 {
    prose_description = "overwrites the value corresponding to the field name
                         {name} in the record value {record} with the value
@@ -2551,7 +2551,7 @@ relation set_field(name: Identifier, v: native_value, record: trecord) -> (treco
  prose_application = "",
 };
 
-relation declare_local_identifier(env: envs, name: Identifier, v: native_value) -> (new_env: envs, g: XGraphs)
+semantics relation declare_local_identifier(env: envs, name: Identifier, v: native_value) -> (new_env: envs, g: XGraphs)
 {
    prose_description = "associates {v} to {name} as a local storage element
                         in the environment {env} and returns the updated
@@ -2560,7 +2560,7 @@ relation declare_local_identifier(env: envs, name: Identifier, v: native_value) 
  prose_application = "",
 };
 
-relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
+semantics relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
          (new_env: envs, new_g: XGraphs)
 {
   "declares the local identifier {x} in the environment
@@ -2570,7 +2570,7 @@ relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: native_valu
   prose_application = "\hyperlink{relation-declarelocalidentifierm}{declaring} local identifier {x} in {env} with value-graph pair {m} yields environment {new_env} and graph {new_g}"
 };
 
-relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
+semantics relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
          (new_env: envs, new_g: XGraphs)
 {
   "declares the local identifier {x} in the environment
@@ -2604,7 +2604,7 @@ typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Boo
   prose_application = "testing whether {s} is \symbolicallyevaluableterm{} yields {b}",
 };
 
-relation ses_ldk(ldk: local_decl_keyword) ->
+typing function ses_ldk(ldk: local_decl_keyword) ->
          (s: powerset(TSideEffect))
 {
   "constructs a \sideeffectsetterm{} {s} corresponding to
@@ -2613,7 +2613,7 @@ relation ses_ldk(ldk: local_decl_keyword) ->
   prose_application = "",
 };
 
-relation ses_gdk(gdk: global_decl_keyword) ->
+typing function ses_gdk(gdk: global_decl_keyword) ->
          (s: powerset(TSideEffect))
 {
   "constructs a \sideeffectsetterm{} {s} corresponding to
@@ -2622,7 +2622,7 @@ relation ses_gdk(gdk: global_decl_keyword) ->
   prose_application = "",
 };
 
-relation is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
+typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
          (b: Bool)
 {
   "tests whether a set of \sideeffectdescriptorsterm\
@@ -2638,7 +2638,7 @@ typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> cons
   prose_application = "checking whether {ses} is \symbolicallyevaluableterm{} yields $\True$\OrTypeError",
 };
 
-relation ses_is_readonly(ses: powerset(TSideEffect)) ->
+typing function ses_is_readonly(ses: powerset(TSideEffect)) ->
          (b: Bool)
 {
   "tests whether all side effects in the set {ses} are
@@ -2646,7 +2646,7 @@ relation ses_is_readonly(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-relation ses_is_pure(ses: powerset(TSideEffect)) ->
+typing function ses_is_pure(ses: powerset(TSideEffect)) ->
          (b: Bool)
 {
   "tests whether all side effects in the set {ses} are
@@ -2654,7 +2654,7 @@ relation ses_is_pure(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-relation ses_for_subprogram(qualifier: option(func_qualifier)) ->
+typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
          (s: powerset(TSideEffect))
 {
   "produces a \sideeffectsetterm{} given a subprogram
@@ -2672,7 +2672,7 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | typ
   prose_application = "annotating the slice {s} in {tenv} yields {s'}\OrTypeError"
 };
 
-relation slices_width(tenv: static_envs, slices: list0(slice)) ->
+typing relation slices_width(tenv: static_envs, slices: list0(slice)) ->
          (width: expr) | type_error
 {
   "returns an expression {slices} that represents the
@@ -2681,7 +2681,7 @@ relation slices_width(tenv: static_envs, slices: list0(slice)) ->
   prose_application = "",
 };
 
-relation slice_width(slice: slice) ->
+typing function slice_width(slice: slice) ->
          (width: expr)
 {
   "returns an expression {width} that represents the
@@ -2689,7 +2689,7 @@ relation slice_width(slice: slice) ->
   prose_application = "",
 };
 
-relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr) ->
+typing relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr) ->
          (e'': expr, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a \symbolicallyevaluableterm{} integer
@@ -2701,7 +2701,7 @@ relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr) ->
   math_layout = [_,_],
 };
 
-relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
+typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
          (slices': list0(slice), ses: powerset(TSideEffect))
 {
   "annotates a list of slices {slices} in the
@@ -2712,7 +2712,7 @@ relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
   prose_application = "",
 };
 
-relation eval_slice(env: envs, s: slice) ->
+semantics relation eval_slice(env: envs, s: slice) ->
   | (((v_start: tint, v_length: tint), new_g: XGraphs), new_env: envs)
   | TThrowing | TDynError | TDiverging
 {
@@ -2739,7 +2739,7 @@ relation eval_slices(env: envs, slices: list0(slice)) ->
 //////////////////////////////////////////////////
 // Relations for Specifications
 
-relation typecheck_decl(genv: global_static_envs, d: decl) ->
+typing relation typecheck_decl(genv: global_static_envs, d: decl) ->
          (new_d: decl, new_genv: global_static_envs) | type_error
 {
   "annotates a global declaration {d} in the
@@ -2750,7 +2750,7 @@ relation typecheck_decl(genv: global_static_envs, d: decl) ->
   prose_application = "",
 };
 
-relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
+typing relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
          (new_decls: list0(decl), new_tenv: static_envs) | type_error
 {
   "annotates a list of declarations {decls} in an input
@@ -2761,7 +2761,7 @@ relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
   prose_application = "",
 };
 
-relation annotate_decl_comps(genv: global_static_envs, comps: list0((list0(decl)))) ->
+typing relation annotate_decl_comps(genv: global_static_envs, comps: list0((list0(decl)))) ->
          (new_genv: global_static_envs, new_decls: list0(decl)) | type_error
 {
   "annotates a list of declaration components {comps} (a
@@ -2773,7 +2773,7 @@ relation annotate_decl_comps(genv: global_static_envs, comps: list0((list0(decl)
   prose_application = "",
 };
 
-relation type_check_mutually_rec(genv: global_static_envs, decls: list0(decl)) ->
+typing relation type_check_mutually_rec(genv: global_static_envs, decls: list0(decl)) ->
          (new_decls: list0(decl), new_genv: global_static_envs) | type_error
 {
   "annotates a list of mutually recursive declarations
@@ -2784,7 +2784,7 @@ relation type_check_mutually_rec(genv: global_static_envs, decls: list0(decl)) -
   prose_application = "",
 };
 
-relation declare_subprograms(
+typing function declare_subprograms(
     genv: global_static_envs,
     env_and_fs: list0((local_static_envs, func))) ->
          (new_genv: global_static_envs,
@@ -2808,7 +2808,7 @@ relation declare_subprograms(
   math_layout = [_,_],
 };
 
-relation add_subprogram_decls(tenv: static_envs, funcs: list0((func, powerset(TSideEffect)))) ->
+typing function add_subprogram_decls(tenv: static_envs, funcs: list0((func, powerset(TSideEffect)))) ->
          (new_tenv: static_envs)
 {
   "adds each subprogram definition given by a $\func$ AST
@@ -2817,7 +2817,7 @@ relation add_subprogram_decls(tenv: static_envs, funcs: list0((func, powerset(TS
   prose_application = "",
 };
 
-relation override_subprograms(decls: list0(decl)) ->
+typing relation override_subprograms(decls: list0(decl)) ->
          (decls': list0(decl)) | type_error
 {
   "overrides subprograms in a list of declarations
@@ -2828,7 +2828,7 @@ relation override_subprograms(decls: list0(decl)) ->
   prose_application = "",
 };
 
-relation check_implementations_unique(impls: list0(func)) ->
+typing function check_implementations_unique(impls: list0(func)) ->
          (constants_set(True)) | type_error
 {
   "checks that the \Proseimplementationsubprograms{}
@@ -2839,7 +2839,7 @@ relation check_implementations_unique(impls: list0(func)) ->
   prose_application = "",
 };
 
-relation signatures_match(func1: func, func2: func) ->
+typing function signatures_match(func1: func, func2: func) ->
          (Bool)
 {
   "checks whether the signatures of subprograms {func1}
@@ -2849,7 +2849,7 @@ relation signatures_match(func1: func, func2: func) ->
   prose_application = "",
 };
 
-relation process_overrides(impdefs: list0(func), impls: list0(func)) ->
+typing function process_overrides(impdefs: list0(func), impls: list0(func)) ->
          (impdefs': list0(func), discarded: list0(func)) | type_error
 {
   "overrides the \Proseimpdefsubprograms{} {impdefs} with
@@ -2862,7 +2862,7 @@ relation process_overrides(impdefs: list0(func), impls: list0(func)) ->
   prose_application = "",
 };
 
-relation rename_subprograms(discarded: list0(func)) ->
+typing relation rename_subprograms(discarded: list0(func)) ->
          (renamed_discarded: list0(func))
 {
   "renames the subprograms {discarded} to give them fresh
@@ -2870,7 +2870,7 @@ relation rename_subprograms(discarded: list0(func)) ->
   prose_application = "",
 };
 
-relation build_dependencies(decls: list0(decl)) ->
+typing function build_dependencies(decls: list0(decl)) ->
          (defs: list0(def_use_name), depends: list0((def_use_name, def_use_name)))
 {
   "takes a set of declarations {decls} and returns a
@@ -2883,7 +2883,7 @@ relation build_dependencies(decls: list0(decl)) ->
   prose_application = "",
 };
 
-relation decl_dependencies(d: decl) ->
+typing function decl_dependencies(d: decl) ->
          (depends: list0((def_use_name, def_use_name)))
 {
   "returns the set of dependent pairs of identifiers
@@ -2891,7 +2891,7 @@ relation decl_dependencies(d: decl) ->
   prose_application = "",
 };
 
-relation def_decl(d: decl) ->
+typing function def_decl(d: decl) ->
          (name: def_use_name)
 {
   "returns the identifier {name} being defined by the
@@ -2899,7 +2899,7 @@ relation def_decl(d: decl) ->
   prose_application = "",
 };
 
-relation def_enum_labels(d: decl) ->
+typing function def_enum_labels(d: decl) ->
          (labels: powerset(def_use_name))
 {
   "takes a declaration {d} and returns the set of
@@ -2908,7 +2908,7 @@ relation def_enum_labels(d: decl) ->
   prose_application = "",
 };
 
-relation use_decl(d: decl) ->
+typing function use_decl(d: decl) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2916,7 +2916,7 @@ relation use_decl(d: decl) ->
   prose_application = "",
 };
 
-relation use_ty(t: ty_or_opt) ->
+typing function use_ty(t: ty_or_opt) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the type or
@@ -2924,7 +2924,7 @@ relation use_ty(t: ty_or_opt) ->
   prose_application = "",
 };
 
-relation use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) ->
+typing function use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2933,7 +2933,7 @@ relation use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) 
   prose_application = "",
 };
 
-relation use_expr(e: expr_or_opt) ->
+typing function use_expr(e: expr_or_opt) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2942,7 +2942,7 @@ relation use_expr(e: expr_or_opt) ->
   math_macro = \useexpr
 };
 
-relation use_lexpr(le: lexpr) ->
+typing function use_lexpr(le: lexpr) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2951,7 +2951,7 @@ relation use_lexpr(le: lexpr) ->
   math_macro = \uselexpr
 };
 
-relation use_pattern(p: pattern) ->
+typing function use_pattern(p: pattern) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2959,7 +2959,7 @@ relation use_pattern(p: pattern) ->
   prose_application = "",
 };
 
-relation use_slice(s: slice) ->
+typing function use_slice(s: slice) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the slice
@@ -2967,7 +2967,7 @@ relation use_slice(s: slice) ->
   prose_application = "",
 };
 
-relation use_bitfield(bf: decl) ->
+typing function use_bitfield(bf: decl) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2975,7 +2975,7 @@ relation use_bitfield(bf: decl) ->
   prose_application = "",
 };
 
-relation use_constraint(c: int_constraint) ->
+typing function use_constraint(c: int_constraint) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the integer
@@ -2983,7 +2983,7 @@ relation use_constraint(c: int_constraint) ->
   prose_application = "",
 };
 
-relation use_ldi(l: local_decl_item) ->
+typing function use_ldi(l: local_decl_item) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -2991,7 +2991,7 @@ relation use_ldi(l: local_decl_item) ->
   prose_application = "",
 };
 
-relation use_stmt(s: stmt) ->
+typing function use_stmt(s: stmt) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
@@ -3000,7 +3000,7 @@ relation use_stmt(s: stmt) ->
   math_macro = \usestmt
 };
 
-relation use_catcher(c: catcher) ->
+typing function use_catcher(c: catcher) ->
          (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the try
@@ -3008,7 +3008,7 @@ relation use_catcher(c: catcher) ->
   prose_application = "",
 };
 
-relation eval_spec(tenv: static_envs, spec: spec) -> (v: tint, g: XGraphs) | TDynError
+semantics relation eval_spec(tenv: static_envs, spec: spec) -> (v: tint, g: XGraphs) | TDynError
 {
    prose_description = "evaluates the specification {spec} with the
                         \staticenvironmentterm{} {tenv}, yielding the native
@@ -3017,7 +3017,7 @@ relation eval_spec(tenv: static_envs, spec: spec) -> (v: tint, g: XGraphs) | TDy
  prose_application = "",
 };
 
-relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: envs, new_g: XGraphs) | TDynError | TDiverging
+semantics relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: envs, new_g: XGraphs) | TDynError | TDiverging
 {
    prose_description = "populates {tenv} and output execution
                         graph {new_g} with the global storage declarations in
@@ -3032,7 +3032,7 @@ relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: envs, new_
 //////////////////////////////////////////////////
 // Relations for Statements
 
-relation annotate_stmt(tenv: static_envs, s: stmt) ->
+typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
          (new_s: stmt, new_tenv: static_envs, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a statement {s} in an environment {tenv},
@@ -3043,7 +3043,7 @@ relation annotate_stmt(tenv: static_envs, s: stmt) ->
   prose_application = "",
 };
 
-relation annotate_local_decl_type_annot(
+typing relation annotate_local_decl_type_annot(
     tenv: static_envs,
     ty_opt: option(ty),
     t_e: ty,
@@ -3064,7 +3064,7 @@ relation annotate_local_decl_type_annot(
   math_layout = [input[_,_,_,_,_,_], _],
 };
 
-relation inherit_integer_constraints(lhs: ty, rhs: ty) ->
+typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
          (lhs': ty) | type_error
 {
   "propagates integer constraints from the right-hand
@@ -3080,7 +3080,7 @@ relation inherit_integer_constraints(lhs: ty, rhs: ty) ->
   prose_application = "",
 };
 
-relation check_no_precision_loss(t: ty) ->
+typing function check_no_precision_loss(t: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether the type {t} is the result of a
@@ -3089,7 +3089,7 @@ relation check_no_precision_loss(t: ty) ->
   prose_application = "",
 };
 
-relation check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
+typing function check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether an expression of type {s} can be used
@@ -3099,7 +3099,7 @@ relation check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
   prose_application = "",
 };
 
-relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
+typing relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
          (option(e': expr), ses: powerset(TSideEffect)) | type_error
 {
   "annotates an optional expression {e} serving as the
@@ -3110,7 +3110,7 @@ relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
   math_layout = [_,_],
 };
 
-relation get_for_constraints(
+typing relation get_for_constraints(
     tenv: static_envs,
     struct1: ty,
     struct2: ty,
@@ -3136,7 +3136,7 @@ relation get_for_constraints(
   math_layout = [_,_],
 };
 
-relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), new_g: XGraphs), new_env: envs)
+semantics relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), new_g: XGraphs), new_env: envs)
     | Continuing(new_g: XGraphs, new_env: envs) | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates a statement {s} in an environment {env},
@@ -3172,7 +3172,7 @@ semantics function lexpr_is_var(le: lexpr) -> (res: Bool)
     prose_application = "testsing whether {le} is an assignable variable expression or a discarded \assignableexpression{} yields {res}",
  };
 
-relation eval_for(
+semantics relation eval_for(
   env: envs,
   index_name: Identifier,
   limit_opt: option(tint),
@@ -3192,7 +3192,7 @@ relation eval_for(
   math_layout = [_,_],
  };
 
-relation eval_for_step(
+semantics relation eval_for_step(
     env: envs,
     index_name: Identifier,
     limit_opt: option(tint),
@@ -3212,7 +3212,7 @@ relation eval_for_step(
   math_layout = [_,_],
 };
 
-relation eval_for_loop(
+semantics relation eval_for_loop(
     env: envs,
     index_name: Identifier,
     limit_opt: option(tint),
@@ -3229,7 +3229,11 @@ relation eval_for_loop(
   math_layout = [_,_],
 };
 
-relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr, body: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError
+semantics relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr, body: stmt) ->
+  | Continuing(new_g: XGraphs, new_env: envs)
+  | TReturning
+  | TThrowing
+  | TDynError
 {
    prose_description = "to evaluate both \texttt{while} statements and
                         \texttt{repeat} statements.",
@@ -3237,7 +3241,7 @@ relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr
   math_layout = [_,_],
  };
 
-relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: option(N), g: XGraphs) | TDynError | TDiverging
+semantics relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: option(N), g: XGraphs) | TDynError | TDiverging
 {
    prose_description = "evaluates the optional expression {e_limit_opt} in
                         the environment {env}, yielding the optional integer
@@ -3246,7 +3250,7 @@ relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: option(N), 
  prose_application = ""
  };
 
-relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TDynError
+semantics relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TDynError
 {
    prose_description = "decrements the optional integer {v_opt}, yielding the
                         optional integer value {v_opt}. If the value is $0$,
@@ -3254,7 +3258,7 @@ relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TDynError
  prose_application = ""
  };
 
-relation eval_expr_list_m(env: envs, es: list0(expr)) ->
+semantics relation eval_expr_list_m(env: envs, es: list0(expr)) ->
          ResultExprListM(vms: list0((native_value, XGraphs)), new_env: envs) | TThrowing | TDynError | TDiverging
 {
   "evaluates a list of expressions {es} in left-to-right
@@ -3267,7 +3271,7 @@ relation eval_expr_list_m(env: envs, es: list0(expr)) ->
   math_layout = [_,_],
 };
 
-relation write_folder(vms: list0((native_value, XGraphs))) ->
+semantics relation write_folder(vms: list0((native_value, XGraphs))) ->
          (vs: list0(native_value), new_g: XGraphs)
 {
   "concatenates the input values in {vms} and generates
@@ -3279,7 +3283,7 @@ relation write_folder(vms: list0((native_value, XGraphs))) ->
 //////////////////////////////////////////////////
 // Relations for Static Evaluation
 
-typing relation static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_error
+typing function static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_error
 {
   "evaluates an expression {e}
   in the \staticenvironmentterm{} {tenv}, returning a literal {v}.
@@ -3288,7 +3292,7 @@ typing relation static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_e
   prose_application = "statically evaluating {e} in {tenv} yields {v}\ProseOrTypeError",
 };
 
-relation static_env_to_env(tenv: static_envs) ->
+semantics function static_env_to_env(tenv: static_envs) ->
          (env: envs)
 {
   "transforms the constants defined in the
@@ -3300,7 +3304,7 @@ relation static_env_to_env(tenv: static_envs) ->
 //////////////////////////////////////////////////
 // Relations for Subprogram Calls
 
-relation annotate_call(tenv: static_envs, call: call) ->
+typing relation annotate_call(tenv: static_envs, call: call) ->
          (call': call, ret_ty_opt: option(ty), ses: powerset(TSideEffect))
 {
   "annotates the call {call} to a subprogram with call
@@ -3318,7 +3322,7 @@ relation annotate_call(tenv: static_envs, call: call) ->
   prose_application = "",
 };
 
-relation annotate_call_actuals_typed(
+typing relation annotate_call_actuals_typed(
   tenv: static_envs,
   name: Identifier,
   params: list0((ty, expr, powerset(TSideEffect))),
@@ -3336,7 +3340,7 @@ relation annotate_call_actuals_typed(
   math_layout = [input[_,_,_,_,_], _],
 };
 
-relation insert_stdlib_param(func_sig: func, params: list0((ty, expr)), arg_types: list0(ty)) ->
+typing function insert_stdlib_param(func_sig: func, params: list0((ty, expr)), arg_types: list0(ty)) ->
          (params1: list0((ty, expr, powerset(TSideEffect))))
 {
   "inserts the (optionally) omitted input parameter of a
@@ -3344,7 +3348,7 @@ relation insert_stdlib_param(func_sig: func, params: list0((ty, expr)), arg_type
   prose_application = "",
 };
 
-relation can_omit_stdlib_param(func_sig: func) ->
+typing function can_omit_stdlib_param(func_sig: func) ->
          (b: Bool)
 {
   "tests whether the first parameter of the subprogram
@@ -3353,7 +3357,7 @@ relation can_omit_stdlib_param(func_sig: func) ->
   prose_application = "",
 };
 
-relation check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
+typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
          (constants_set(True)) | type_error
 {
   "checks that annotated parameters {params} are correct
@@ -3365,7 +3369,7 @@ relation check_params_typesat(tenv: static_envs, func_sig_params: list0((Identif
   math_layout = [_,_],
 };
 
-relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)), ty: ty) ->
+typing relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)), ty: ty) ->
          (new_ty: ty) | type_error
 {
   "transforms the type {ty} in the
@@ -3376,7 +3380,7 @@ relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)), ty: ty
   prose_application = "",
 };
 
-relation subst_expr_normalize(tenv: static_envs, eqs: list0((Identifier, expr)), e: expr) ->
+typing function subst_expr_normalize(tenv: static_envs, eqs: list0((Identifier, expr)), e: expr) ->
          (new_e: expr)
 {
   "transforms the expression {e} in the
@@ -3388,7 +3392,7 @@ relation subst_expr_normalize(tenv: static_envs, eqs: list0((Identifier, expr)),
   prose_application = "",
 };
 
-relation subst_expr(tenv: static_envs, substs: list0((Identifier, expr)), e: expr) ->
+typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)), e: expr) ->
          (new_e: expr)
 {
   "transforms the expression {e} in the
@@ -3399,7 +3403,7 @@ relation subst_expr(tenv: static_envs, substs: list0((Identifier, expr)), e: exp
   prose_application = "",
 };
 
-relation subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr)), c: int_constraint) ->
+typing function subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr)), c: int_constraint) ->
          (new_c: int_constraint)
 {
   "transforms the integer constraint {c} in the
@@ -3411,7 +3415,7 @@ relation subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr)), c: 
   prose_application = "",
 };
 
-relation check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier, ty)), arg_types: list0(ty), eqs: list0((Identifier, expr))) ->
+typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier, ty)), arg_types: list0(ty), eqs: list0((Identifier, expr))) ->
          (constants_set(True)) | type_error
 {
   "checks that the types {arg_types} \typesatisfyterm\
@@ -3422,7 +3426,7 @@ relation check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier,
   prose_application = "",
 };
 
-relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs: list0((Identifier, expr))) ->
+typing relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs: list0((Identifier, expr))) ->
          (ret_ty_opt: option(ty)) | type_error
 {
   "annotates the \optionalterm{} return type
@@ -3434,7 +3438,7 @@ relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig
   math_layout = [_,_],
 };
 
-relation subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_types: list0(ty), call_type: subprogram_type) ->
+typing function subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_types: list0(ty), call_type: subprogram_type) ->
          (name': Strings, callee: func, ses: powerset(TSideEffect)) | type_error
 {
   "looks up the \staticenvironmentterm{} {tenv} for a
@@ -3456,7 +3460,7 @@ relation subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_t
   math_layout = [_,_],
 };
 
-relation filter_call_candidates(tenv: static_envs, formal_types: list0(ty), call_type: subprogram_type, candidates: powerset(Strings)) ->
+typing function filter_call_candidates(tenv: static_envs, formal_types: list0(ty), call_type: subprogram_type, candidates: powerset(Strings)) ->
          (matches: list0((Strings, func)))
 {
   "iterates over the list of unique subprogram names in
@@ -3470,7 +3474,7 @@ relation filter_call_candidates(tenv: static_envs, formal_types: list0(ty), call
   prose_application = "",
 };
 
-relation call_type_matches(func_def: func, call_type: subprogram_type) ->
+typing function call_type_matches(func_def: func, call_type: subprogram_type) ->
          (b: Bool)
 {
   "checks whether a function definition {func_def} is
@@ -3480,7 +3484,7 @@ relation call_type_matches(func_def: func, call_type: subprogram_type) ->
   prose_application = "",
 };
 
-relation has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((Identifier, ty))) ->
+typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((Identifier, ty))) ->
          (b: Bool) | type_error
 {
   "checks whether a list of types {f_tys} clashes with
@@ -3490,7 +3494,7 @@ relation has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((Identif
   prose_application = "",
 };
 
-relation type_clashes(tenv: static_envs, t: ty, s: ty) ->
+typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
          (b: Bool) | type_error
 {
   "determines whether a type {t} \emph{\Prosetypeclashes}
@@ -3499,7 +3503,7 @@ relation type_clashes(tenv: static_envs, t: ty, s: ty) ->
   prose_application = "",
 };
 
-relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
+typing relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
          (typed_exprs: list0((ty, expr, powerset(TSideEffect)))) | type_error
 {
   "annotates a list of expressions {exprs} from left to
@@ -3509,7 +3513,7 @@ relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
   prose_application = "",
 };
 
-relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0(expr)) ->
+semantics relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0(expr)) ->
     ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs) | TDynError | TDiverging
 {
    prose_description = "evaluates a call to the subprogram named {name} in
@@ -3522,7 +3526,7 @@ relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0
   math_layout = [_,_],
 };
 
-relation eval_subprogram(
+semantics relation eval_subprogram(
   env: envs,
   name: Identifier,
   params: list0((native_value, XGraphs)),
@@ -3546,7 +3550,7 @@ relation eval_subprogram(
   math_layout = [_,_],
 };
 
-relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: list0((native_value, XGraphs))) -> (new_env: envs, new_g: XGraphs)
+semantics relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: list0((native_value, XGraphs))) -> (new_env: envs, new_g: XGraphs)
 {
    prose_description = "updates the pair consisting of the environments {env}
                         and \executiongraphterm\ {g1} by assigning the values
@@ -3555,7 +3559,7 @@ relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: 
  prose_application = "",
 };
 
-relation match_func_res(TContinuingOrReturning) ->
+semantics relation match_func_res(TContinuingOrReturning) ->
     (ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs), envs)
 {
    prose_description = "converts continuing configurations and returning
@@ -3565,7 +3569,7 @@ relation match_func_res(TContinuingOrReturning) ->
  prose_application = "",
 };
 
-relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) ->
+semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) ->
          (g: XGraphs) | TDynError
 {
   "checks whether the value in the optional expression
@@ -3578,7 +3582,7 @@ relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(ex
   prose_application = "",
 };
 
-relation read_value_from(value_read_from) -> (native_value, XGraphs)
+semantics relation read_value_from(value_read_from) -> (native_value, XGraphs)
 {
   "generates an execution graph for reading the given
   value to a variable given by the identifier, and pairs
@@ -3589,7 +3593,7 @@ relation read_value_from(value_read_from) -> (native_value, XGraphs)
 //////////////////////////////////////////////////
 // Relations for Subprogram Declarations
 
-relation annotate_and_declare_func(genv: global_static_envs, func_sig: func) ->
+typing relation annotate_and_declare_func(genv: global_static_envs, func_sig: func) ->
          (new_tenv: static_envs, new_func_sig: func, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a subprogram definition {func_sig} in the
@@ -3601,7 +3605,7 @@ relation annotate_and_declare_func(genv: global_static_envs, func_sig: func) ->
   math_layout = [_,_],
 };
 
-relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
+typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
          (new_tenv: static_envs, new_func_sig: func, ses: TSideEffect) | type_error
 {
   "annotates the signature of a function definition
@@ -3613,7 +3617,7 @@ relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
   prose_application = "",
 };
 
-relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty))), (new_tenv: static_envs, acc: list0((Identifier, ty)))) ->
+typing relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty))), (new_tenv: static_envs, acc: list0((Identifier, ty)))) ->
          (tenv_with_params: static_envs, params1: Identifier, ty) | type_error
 {
   "annotates each parameter in {params} with respect to
@@ -3626,7 +3630,7 @@ relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty
   math_layout = [_,_],
 };
 
-relation annotate_one_param(
+typing relation annotate_one_param(
     tenv: static_envs,
     new_tenv: static_envs,
     (x: Identifier, ty_opt: option(ty))) ->
@@ -3641,7 +3645,7 @@ relation annotate_one_param(
  prose_application = "",
 };
 
-relation check_param_decls(tenv: static_envs, func_sig: func) ->
+typing relation check_param_decls(tenv: static_envs, func_sig: func) ->
          (b: Bool) | type_error
 {
   "checks the validity of the parameters declared in
@@ -3649,7 +3653,7 @@ relation check_param_decls(tenv: static_envs, func_sig: func) ->
   prose_application = "",
 };
 
-relation extract_parameters(tenv: static_envs, func_sig: func) ->
+typing function extract_parameters(tenv: static_envs, func_sig: func) ->
          (unique_parameters: list0(Identifier)) | type_error
 {
   "returns the parameter names declared in {func_sig}
@@ -3659,7 +3663,7 @@ relation extract_parameters(tenv: static_envs, func_sig: func) ->
   prose_application = "",
 };
 
-relation func_sig_types(func_sig: func) ->
+typing function func_sig_types(func_sig: func) ->
          (tys: list0(ty))
 {
   "returns the list of types {tys} in the subprogram
@@ -3669,7 +3673,7 @@ relation func_sig_types(func_sig: func) ->
   prose_application = "",
 };
 
-relation paramsofty(tenv: static_envs, ty: ty) ->
+typing function paramsofty(tenv: static_envs, ty: ty) ->
          (ids: list0(Identifier)) | type_error
 {
   "extracts the list of parameters appearing in the type
@@ -3679,7 +3683,7 @@ relation paramsofty(tenv: static_envs, ty: ty) ->
   math_macro = \paramsofty
 };
 
-relation params_of_expr(tenv: static_envs, e: expr) ->
+typing function params_of_expr(tenv: static_envs, e: expr) ->
          (ids: list0(Identifier)) | type_error
 {
   "extracts the list of parameters appearing in the
@@ -3691,7 +3695,7 @@ relation params_of_expr(tenv: static_envs, e: expr) ->
   math_macro = \paramsofexpr
 };
 
-relation params_of_constraint(tenv: static_envs, c: int_constraint) ->
+typing function params_of_constraint(tenv: static_envs, c: int_constraint) ->
          (ids: list0(Identifier))
 {
   "finds the list of parameters in the constraint {c}. It
@@ -3702,7 +3706,7 @@ relation params_of_constraint(tenv: static_envs, c: int_constraint) ->
   math_macro = \paramsofconstraint
 };
 
-relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), (new_tenv: static_envs, acc: list0((Identifier, ty)), ses_in: powerset(TSideEffect))) ->
+typing relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), (new_tenv: static_envs, acc: list0((Identifier, ty)), ses_in: powerset(TSideEffect))) ->
          (tenv_with_args: static_envs, new_args: list0((Identifier, ty)), ses: powerset(TSideEffect)) | type_error
 {
   "annotates each argument in {args} with respect to
@@ -3716,7 +3720,7 @@ relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), (new_te
   math_layout = [_,_],
 };
 
-relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifier, ty: ty)) ->
+typing relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifier, ty: ty)) ->
          (new_tenv': static_envs, ty': ty, ses: powerset(TSideEffect)) | type_error
 {
   "annotates the argument given by the identifier {x} and
@@ -3729,7 +3733,7 @@ relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifi
   math_layout = [_,_],
 };
 
-relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: static_envs, return_type: option(ty), ses_in: powerset(TSideEffect)) ->
+typing relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: static_envs, return_type: option(ty), ses_in: powerset(TSideEffect)) ->
          (new_tenv: static_envs, new_return_type: ty, ses: powerset(TSideEffect)) | type_error
 {
   "annotates the \optionalterm{} return type {return_type} in
@@ -3745,7 +3749,7 @@ relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: sta
   math_layout = [_,_],
 };
 
-relation check_subprogram_purity(qualifier: option(func_qualifier), ses: powerset(TSideEffect)) ->
+typing function check_subprogram_purity(qualifier: option(func_qualifier), ses: powerset(TSideEffect)) ->
          (b: Bool) | type_error
 {
   "checks that the \sideeffectsetterm{} {ses} is
@@ -3754,7 +3758,7 @@ relation check_subprogram_purity(qualifier: option(func_qualifier), ses: powerse
   prose_application = "",
 };
 
-relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: powerset(TSideEffect)) ->
+typing relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: powerset(TSideEffect)) ->
          (new_tenv: static_envs, new_func_sig: func) | type_error
 {
   "checks that a subprogram defined by {func_sig} and
@@ -3767,7 +3771,7 @@ relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: power
   math_layout = [_,_],
 };
 
-relation subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: func_qualifier, formal_types: list0(ty)) ->
+typing function subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: func_qualifier, formal_types: list0(ty)) ->
          (b: Bool) | type_error
 {
   "checks whether the unique subprogram associated with
@@ -3778,7 +3782,7 @@ relation subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprog
   prose_application = "",
 };
 
-relation subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
+typing function subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
          (b: Bool)
 {
   "defines whether the subprogram types {s1} and {s2}
@@ -3786,7 +3790,7 @@ relation subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
   prose_application = "",
 };
 
-relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(func_qualifier), formals: list0(typed_identifier), subpgm_type: subprogram_type) ->
+typing relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(func_qualifier), formals: list0(typed_identifier), subpgm_type: subprogram_type) ->
          (new_tenv: static_envs, new_name: Strings) | type_error
 {
   "ensures that the subprogram given by the identifier
@@ -3803,7 +3807,7 @@ relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(fun
   math_layout = [_,_],
 };
 
-relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(TSideEffect)) ->
+typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(TSideEffect)) ->
          (f': func, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a subprogram {f} in an environment {tenv}
@@ -3814,7 +3818,7 @@ relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(
   math_layout = [_,_],
 };
 
-relation check_control_flow(tenv: static_envs, f: func, body: stmt) ->
+typing function check_control_flow(tenv: static_envs, f: func, body: stmt) ->
          (constants_set(True)) | type_error
 {
   "checks whether the annotated body statement {body} of the
@@ -3823,7 +3827,7 @@ relation check_control_flow(tenv: static_envs, f: func, body: stmt) ->
   prose_application = "",
 };
 
-relation allowed_abs_configs(f: func) ->
+typing function allowed_abs_configs(f: func) ->
          (abs_configs: powerset(constants_set(Abs_Continuing,Abs_Returning,Abs_Abnormal)))
 {
   "determines the set of \Proseabstractconfigurations{}
@@ -3832,7 +3836,7 @@ relation allowed_abs_configs(f: func) ->
   prose_application = "",
 };
 
-relation approx_stmt(tenv: static_envs, s: stmt) ->
+typing function approx_stmt(tenv: static_envs, s: stmt) ->
          (abs_configs: constants_set(Abs_Continuing,Abs_Returning,Abs_Abnormal))
 {
   "returns in {abs_configs} a superset of the set of
@@ -3845,7 +3849,7 @@ relation approx_stmt(tenv: static_envs, s: stmt) ->
 //////////////////////////////////////////////////
 // Relations for Symbolic Equivalence Testing
 
-relation normalize(tenv: static_envs, e: expr) ->
+typing function normalize(tenv: static_envs, e: expr) ->
          (new_e: expr) | type_error
 {
   "\hypertarget{def-symbolicallysimplifies}{symbolically
@@ -3855,7 +3859,7 @@ relation normalize(tenv: static_envs, e: expr) ->
   prose_application = "\hyperlink{relation-normalize}{simplifying} expression {e} in {tenv} yields {new_e}"
 };
 
-relation reduce_constraint(tenv: static_envs, c: int_constraint) ->
+typing function reduce_constraint(tenv: static_envs, c: int_constraint) ->
          (new_c: int_constraint)
 {
   "\symbolicallysimplifiesterm{} an integer constraint
@@ -3863,7 +3867,7 @@ relation reduce_constraint(tenv: static_envs, c: int_constraint) ->
   prose_application = "",
 };
 
-relation reduce_constraints(tenv: static_envs, cs: list0(int_constraint)) ->
+typing function reduce_constraints(tenv: static_envs, cs: list0(int_constraint)) ->
          (new_cs: list0(int_constraint))
 {
   "\symbolicallysimplifiesterm{} a list of integer
@@ -3872,7 +3876,7 @@ relation reduce_constraints(tenv: static_envs, cs: list0(int_constraint)) ->
   prose_application = "",
 };
 
-relation to_ir(tenv: static_envs, e: expr) ->
+typing function to_ir(tenv: static_envs, e: expr) ->
          (p: polynomial) | constants_set(CannotBeTransformed) | type_error
 {
   "transforms a subset of ASL expressions into
@@ -3884,7 +3888,7 @@ relation to_ir(tenv: static_envs, e: expr) ->
   prose_application = "\hyperlink{relation-toir}{converting} expression {e} in {tenv} to symbolic form yields polynomial {p}"
 };
 
-relation expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
+typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
 {
   "conservatively checks whether {e1} and {e2} are
@@ -3894,7 +3898,7 @@ relation expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
   prose_application = "",
 };
 
-relation expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
+typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the {e1} and {e2} are
@@ -3908,7 +3912,7 @@ relation expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
   prose_application = "",
 };
 
-relation expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
+typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
 {
   "specializes the equivalence test for expressions {e1}
@@ -3918,7 +3922,7 @@ relation expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   prose_application = "",
 };
 
-relation type_equal(tenv: static_envs, t1: ty, t2: ty) ->
+typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether {t1} and {t2} are
@@ -3928,7 +3932,7 @@ relation type_equal(tenv: static_envs, t1: ty, t2: ty) ->
   prose_application = "",
 };
 
-relation bitwidth_equal(tenv: static_envs, w1: expr, w2: expr) ->
+typing function bitwidth_equal(tenv: static_envs, w1: expr, w2: expr) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the bitwidth expression
@@ -3938,7 +3942,7 @@ relation bitwidth_equal(tenv: static_envs, w1: expr, w2: expr) ->
   prose_application = "",
 };
 
-relation bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: list0(bitfield)) ->
+typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: list0(bitfield)) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the list of bitfields
@@ -3948,7 +3952,7 @@ relation bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: list0(bit
   prose_application = "",
 };
 
-relation bitfield_equal(tenv: static_envs, bf1: bitfield, bf2: bitfield) ->
+typing function bitfield_equal(tenv: static_envs, bf1: bitfield, bf2: bitfield) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the bitfield {bf1} is
@@ -3958,7 +3962,7 @@ relation bitfield_equal(tenv: static_envs, bf1: bitfield, bf2: bitfield) ->
   prose_application = "",
 };
 
-relation constraints_equal(tenv: static_envs, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
+typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the constraint list {cs1}
@@ -3968,7 +3972,7 @@ relation constraints_equal(tenv: static_envs, cs1: list0(int_constraint), cs2: l
   prose_application = "",
 };
 
-relation constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_constraint) ->
+typing function constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_constraint) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the constraint {c1} is
@@ -3978,7 +3982,7 @@ relation constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_constra
   prose_application = "",
 };
 
-relation slices_equal(tenv: static_envs, slices1: list0(slice), slices2: list0(slice)) ->
+typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: list0(slice)) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the list of slices
@@ -3988,7 +3992,7 @@ relation slices_equal(tenv: static_envs, slices1: list0(slice), slices2: list0(s
   prose_application = "",
 };
 
-relation slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
+typing function slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
          (b: Bool) | type_error
 {
   "conservatively tests whether the slice {slice1} is
@@ -3997,7 +4001,7 @@ relation slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
   prose_application = "",
 };
 
-relation array_length_equal(l1: array_index, l2: array_index) ->
+typing function array_length_equal(l1: array_index, l2: array_index) ->
          (b: Bool) | type_error
 {
   "tests whether the array lengths {l1} and {l2} are
@@ -4006,7 +4010,7 @@ relation array_length_equal(l1: array_index, l2: array_index) ->
   prose_application = "",
 };
 
-relation mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m: unitary_monomial)
+typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m: unitary_monomial)
 {
   "multiplies the unitary monomial {m1} with the unitary monomial {m2},
   yielding the unitary monomial {m}",
@@ -4014,7 +4018,7 @@ relation mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m: unitar
                       yields the unitary monomial {m}"
 };
 
-relation add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
+typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
   "adds the polynomial {p1} with the polynomial {p2},
   yielding the polynomial {p}",
@@ -4038,14 +4042,14 @@ typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f
   math_layout = ([_,_,_], _),
 };
 
-relation polynomial_to_expr(p: polynomial) ->
+typing function polynomial_to_expr(p: polynomial) ->
          (e: expr)
 {
   "transforms a polynomial {p} into the corresponding expression {e}.",
   prose_application = "\hyperlink{relation-polynomialtoexpr}{converting} polynomial {p} to an expression yields {e}"
 };
 
-relation compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q)) ->
+typing function compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q)) ->
          (s: Sign)
 {
   "compares two monomial bindings given by $(\vmone,
@@ -4058,7 +4062,7 @@ relation compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q))
   prose_application = "",
 };
 
-relation monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
+typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
          (e: expr, s: Sign)
 {
   "transforms a list consisting of pairs of unitary
@@ -4071,7 +4075,7 @@ relation monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
                         yields absolute value {e} and sign {s}"
 };
 
-relation monomial_to_expr(e: expr, q: N) ->
+typing function monomial_to_expr(e: expr, q: N) ->
          (new_e: expr, s: Sign)
 {
   "transforms an expression {e} and rational $q$ into the
@@ -4081,7 +4085,7 @@ relation monomial_to_expr(e: expr, q: N) ->
   prose_application = "",
 };
 
-relation sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
+typing function sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
          (e: expr, s: Sign)
 {
   "symbolically sums the expressions {e1} and {e2} with
@@ -4091,7 +4095,7 @@ relation sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
                         and {e2} with sign {s2} yields expression {e} with sign {s}"
 };
 
-relation unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
+typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
          (e: expr)
 {
   "transforms a list of single-variable unitary monomials
@@ -4101,7 +4105,7 @@ relation unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
   prose_application = "",
 };
 
-relation type_of(tenv: static_envs, s: Identifier) ->
+typing function type_of(tenv: static_envs, s: Identifier) ->
          (ty: ty) | type_error
 {
   "looks up the environment {tenv} for a type {ty}
@@ -4111,7 +4115,7 @@ relation type_of(tenv: static_envs, s: Identifier) ->
   prose_application = "",
 };
 
-relation normalize_opt(tenv: static_envs, e: expr) ->
+typing function normalize_opt(tenv: static_envs, e: expr) ->
          (new_e_opt: option(expr)) | type_error
 {
   "is similar to $\normalize$, except that it returns
@@ -4123,7 +4127,7 @@ relation normalize_opt(tenv: static_envs, e: expr) ->
 //////////////////////////////////////////////////
 // Relations for Symbolic Subsumption Testing
 
-relation symdom_subset_unions(tenv: static_envs, sd1: symdom_or_top, sd2: symdom_or_top) ->
+typing function symdom_subset_unions(tenv: static_envs, sd1: symdom_or_top, sd2: symdom_or_top) ->
          (b: Bool)
 {
   "conservatively tests whether the set of integers
@@ -4134,7 +4138,7 @@ relation symdom_subset_unions(tenv: static_envs, sd1: symdom_or_top, sd2: symdom
   prose_application = "\hyperlink{relation-symdomsubsetunions}{testing} whether {sd1} is subsumed by {sd2} in {tenv} yields {b}"
 };
 
-relation symdom_normalize(symdoms: list1(symdom)) ->
+typing function symdom_normalize(symdoms: list1(symdom)) ->
          (new_symdoms: list1(symdom))
 {
   "transforms the list of symbolic domain {symdoms} into
@@ -4148,7 +4152,7 @@ relation symdom_normalize(symdoms: list1(symdom)) ->
   prose_application = "\hyperlink{relation-symdomnormalize}{normalizing} {symdoms} by merging finite sets yields {new_symdoms}"
 };
 
-relation symdom_of_type(tenv: static_envs, t: ty) ->
+typing function symdom_of_type(tenv: static_envs, t: ty) ->
          (d: symdom_or_top)
 {
   "transforms a type {t} in a \staticenvironmentterm{}
@@ -4158,7 +4162,7 @@ relation symdom_of_type(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
-relation symdom_of_width_expr(e: expr) ->
+typing function symdom_of_width_expr(e: expr) ->
          (d: symdom_or_top)
 {
   "assigns a symbolic domain {d} to an \underline{integer
@@ -4168,7 +4172,7 @@ relation symdom_of_width_expr(e: expr) ->
   prose_application = "",
 };
 
-relation symdom_of_constraint(tenv: static_envs, c: int_constraint) ->
+typing function symdom_of_constraint(tenv: static_envs, c: int_constraint) ->
          (d: symdom)
 {
   "transforms an integer constraint {c} into a symbolic
@@ -4179,7 +4183,7 @@ relation symdom_of_constraint(tenv: static_envs, c: int_constraint) ->
   prose_application = "",
 };
 
-relation symdom_eval(tenv: static_envs, e: expr) ->
+typing function symdom_eval(tenv: static_envs, e: expr) ->
          (n: Z) | constants_set(Top)
 {
   "\symbolicallysimplifiesterm{} the
@@ -4189,7 +4193,7 @@ relation symdom_eval(tenv: static_envs, e: expr) ->
   prose_application = "",
 };
 
-relation symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
+typing function symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
          (b: Bool)
 {
   "conservatively tests whether the values represented by
@@ -4201,7 +4205,7 @@ relation symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
   prose_application = "",
 };
 
-relation approx_constraints(tenv: static_envs, approx: constants_set(Over,Under), cs: list1(int_constraint)) ->
+typing function approx_constraints(tenv: static_envs, approx: constants_set(Over,Under), cs: list1(int_constraint)) ->
          (s: powerset_finite(Z)) | constants_set(CannotOverapproximate)
 {
   "conservatively approximates the non-empty list of
@@ -4214,7 +4218,7 @@ relation approx_constraints(tenv: static_envs, approx: constants_set(Over,Under)
                         with direction {approx} yields integer set {s}"
 };
 
-relation approx_constraint(tenv: static_envs, approx: constants_set(Over,Under), c: int_constraint) ->
+typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,Under), c: int_constraint) ->
          (s: powerset(Z)) | constants_set(CannotOverapproximate)
 {
   "conservatively approximates the constraint {c} by a
@@ -4228,7 +4232,7 @@ relation approx_constraint(tenv: static_envs, approx: constants_set(Over,Under),
   prose_application = "",
 };
 
-relation make_interval(approx: constants_set(Over,Under), z1: Z, z2: Z) ->
+typing function make_interval(approx: constants_set(Over,Under), z1: Z, z2: Z) ->
          (s: powerset_finite(Z)) | constants_set(empty_set,CannotOverapproximate)
 {
   "returns the interval between the integers {z1} and
@@ -4236,7 +4240,7 @@ relation make_interval(approx: constants_set(Over,Under), z1: Z, z2: Z) ->
   prose_application = "",
 };
 
-relation approx_expr_min(tenv: static_envs, e: expr) ->
+typing function approx_expr_min(tenv: static_envs, e: expr) ->
          (z: Z) | constants_set(CannotOverapproximate)
 {
   "approximates the minimal integer represented by the
@@ -4247,7 +4251,7 @@ relation approx_expr_min(tenv: static_envs, e: expr) ->
   prose_application = "",
 };
 
-relation approx_expr_max(tenv: static_envs, e: expr) ->
+typing function approx_expr_max(tenv: static_envs, e: expr) ->
          (z: Z) | constants_set(CannotOverapproximate)
 {
   "approximates the maximal integer represented by the
@@ -4258,7 +4262,7 @@ relation approx_expr_max(tenv: static_envs, e: expr) ->
   prose_application = "",
 };
 
-relation approx_bottom_top(approx: constants_set(Under,Over)) ->
+typing function approx_bottom_top(approx: constants_set(Under,Over)) ->
          (s: powerset(Z)) | constants_set(CannotOverapproximate)
 {
   "returns in {s} either the empty set or the set of all
@@ -4267,7 +4271,7 @@ relation approx_bottom_top(approx: constants_set(Under,Over)) ->
   prose_application = "",
 };
 
-relation intset_to_constraints(s: powerset_finite(Z)) ->
+typing function intset_to_constraints(s: powerset_finite(Z)) ->
          (cs: list0(int_constraint))
 {
   "converts a finite set of integers {s} into an
@@ -4275,7 +4279,7 @@ relation intset_to_constraints(s: powerset_finite(Z)) ->
   prose_application = "",
 };
 
-relation approx_expr(tenv: static_envs, approx: constants_set(Over,Under), e: expr) ->
+typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under), e: expr) ->
          (s: powerset(Z)) | constants_set(CannotOverapproximate)
 {
   "conservatively approximates the expression {e} by a
@@ -4286,7 +4290,7 @@ relation approx_expr(tenv: static_envs, approx: constants_set(Over,Under), e: ex
   prose_application = "",
 };
 
-relation approx_constraint_binop(tenv: static_envs, approx: constants_set(Over,Under), op: binop, s1: list1(int_constraint), s2: list1(int_constraint)) ->
+typing function approx_constraint_binop(tenv: static_envs, approx: constants_set(Over,Under), op: binop, s1: list1(int_constraint), s2: list1(int_constraint)) ->
          (s: list1(int_constraint), plf: precision_loss_indicator)
 {
   "approximates the application of the binary operator
@@ -4299,7 +4303,7 @@ relation approx_constraint_binop(tenv: static_envs, approx: constants_set(Over,U
   math_layout = [_,_],
 };
 
-relation approx_type(tenv: static_envs, approx: constants_set(Over,Under), t: ty) ->
+typing function approx_type(tenv: static_envs, approx: constants_set(Over,Under), t: ty) ->
          (s: powerset(Z)) | constants_set(CannotOverapproximate)
 {
   "conservatively approximates the type {t} by a set of
@@ -4310,7 +4314,7 @@ relation approx_type(tenv: static_envs, approx: constants_set(Over,Under), t: ty
   prose_application = "",
 };
 
-relation constraint_binop(op: binop, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
+typing function constraint_binop(op: binop, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
          (new_cs: constraint_kind)
 {
   "symbolically applies the binary operation {op} to the
@@ -4320,7 +4324,7 @@ relation constraint_binop(op: binop, cs1: list0(int_constraint), cs2: list0(int_
                         to constraints {cs1} and {cs2} yields constraints {new_cs}"
 };
 
-relation apply_binop_extremities(op: binop, c1: int_constraint, c2: int_constraint) ->
+typing function apply_binop_extremities(op: binop, c1: int_constraint, c2: int_constraint) ->
          (new_cs: list0(int_constraint))
 {
   "yields a list of constraints {new_cs} for the
@@ -4330,7 +4334,7 @@ relation apply_binop_extremities(op: binop, c1: int_constraint, c2: int_constrai
   prose_application = "",
 };
 
-relation possible_extremities_left(op: binop, a: expr, b: expr) ->
+typing function possible_extremities_left(op: binop, a: expr, b: expr) ->
          (extpairs: list0((expr, expr)))
 {
   "yields a list of pairs of expressions {extpairs} given
@@ -4341,7 +4345,7 @@ relation possible_extremities_left(op: binop, a: expr, b: expr) ->
   prose_application = "",
 };
 
-relation possible_extremities_right(op: binop, c: expr, d: expr) ->
+typing function possible_extremities_right(op: binop, c: expr, d: expr) ->
          (extpairs: list0((expr, expr)))
 {
   "yields a list of pairs of expressions {extpairs} given
@@ -4352,7 +4356,7 @@ relation possible_extremities_right(op: binop, c: expr, d: expr) ->
   prose_application = "",
 };
 
-relation constraint_mod(c: int_constraint) ->
+typing function constraint_mod(c: int_constraint) ->
          (new_c: int_constraint)
 {
   "yields a range constraint {new_c} from $0$ to the
@@ -4361,7 +4365,7 @@ relation constraint_mod(c: int_constraint) ->
   prose_application = "",
 };
 
-relation constraint_pow(c1: int_constraint, c2: int_constraint) ->
+typing function constraint_pow(c1: int_constraint, c2: int_constraint) ->
          (new_cs: list1(int_constraint))
 {
   "yields a list of range constraints {new_cs} that are
@@ -4406,7 +4410,7 @@ typing function is_structured(ty: ty) -> (b: Bool)
     prose_application = "testing whether {ty} is a \structuredtypeterm{} yields {b}",
 };
 
-relation get_structure(tenv: static_envs, ty: ty) ->
+typing function get_structure(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
   "assigns a type to its
@@ -4419,7 +4423,7 @@ relation get_structure(tenv: static_envs, ty: ty) ->
   prose_application = "",
 };
 
-relation make_anonymous(tenv: static_envs, ty: ty) ->
+typing function make_anonymous(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
   "returns the \emph{\underlyingtypeterm} {t} of
@@ -4432,7 +4436,7 @@ relation make_anonymous(tenv: static_envs, ty: ty) ->
   prose_application = "",
 };
 
-relation check_constrained_integer(tenv: static_envs, t: ty) ->
+typing function check_constrained_integer(tenv: static_envs, t: ty) ->
          (constants_set(True)) | type_error
 {
   "checks whether the type {t} is a
@@ -4444,7 +4448,7 @@ relation check_constrained_integer(tenv: static_envs, t: ty) ->
 //////////////////////////////////////////////////
 // Relations for Type Declarations
 
-relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: option((Identifier, list0(field)))) ->
+typing relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: option((Identifier, list0(field)))) ->
          (new_genv: global_static_envs, t2: ty, s': option((Identifier, list0(field)))) | type_error
 {
   "declares a type named {name} with type {ty} and
@@ -4458,7 +4462,7 @@ relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: opt
   math_layout = [_,_],
 };
 
-relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
+typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
          (new_tenv: static_envs, new_ty: ty, s': list0(field)) | type_error
 {
   "annotates the type {ty} with the \optionalterm{} extra
@@ -4469,7 +4473,7 @@ relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: o
   math_layout = [_,_],
 };
 
-relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
+typing relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
          (ty_opt': option(ty)) | type_error
 {
   "annotates the type {t} inside an \optionalterm{} {ty_opt},
@@ -4478,7 +4482,7 @@ relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
   prose_application = "",
 };
 
-relation annotate_expr_opt(tenv: static_envs, expr_opt: option(expr)) ->
+typing relation annotate_expr_opt(tenv: static_envs, expr_opt: option(expr)) ->
          (res: (option(expr), option(ty))) | type_error
 {
   "annotates the \optionalterm{} expression {expr_opt} in
@@ -4488,7 +4492,7 @@ relation annotate_expr_opt(tenv: static_envs, expr_opt: option(expr)) ->
   prose_application = "",
 };
 
-relation declared_type(tenv: static_envs, id: Identifier) ->
+typing relation declared_type(tenv: static_envs, id: Identifier) ->
          (t: ty) | type_error
 {
   "retrieves the type associated with the identifier {id}
@@ -4498,7 +4502,7 @@ relation declared_type(tenv: static_envs, id: Identifier) ->
   prose_application = "",
 };
 
-relation declare_enum_labels(tenv: static_envs, name: Identifier, ids: list1(Identifier)) ->
+typing function declare_enum_labels(tenv: static_envs, name: Identifier, ids: list1(Identifier)) ->
          (new_tenv: static_envs) | type_error
 {
   "updates the \staticenvironmentterm{} {tenv} with the
@@ -4508,7 +4512,7 @@ relation declare_enum_labels(tenv: static_envs, name: Identifier, ids: list1(Ide
   prose_application = "",
 };
 
-relation declare_const(genv: global_static_envs, name: Identifier, ty: ty, v: literal) ->
+typing function declare_const(genv: global_static_envs, name: Identifier, ty: ty, v: literal) ->
          (new_genv: global_static_envs) | type_error
 {
   "adds a constant given by the identifier {name}, type
@@ -4522,7 +4526,7 @@ relation declare_const(genv: global_static_envs, name: Identifier, ty: ty, v: li
 //////////////////////////////////////////////////
 // Relations for Types
 
-relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
+typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
          (new_ty: ty, ses: powerset(TSideEffect)) | type_error
 {
   "typechecks a type {ty} in a \staticenvironmentterm{}
@@ -4535,7 +4539,7 @@ relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   prose_application = "",
 };
 
-relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
+typing relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
          (new_c: int_constraint, ses: powerset(TSideEffect)) | type_error
 {
   "annotates an integer constraint {c} in the
@@ -4546,7 +4550,7 @@ relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
   math_layout = [_,_],
 };
 
-relation get_variable_enum(tenv: static_envs, e: expr) ->
+typing function get_variable_enum(tenv: static_envs, e: expr) ->
          (option((x: Identifier, labels: list1(Identifier))))
 {
   "tests whether the expression {e} represents a variable
@@ -4557,7 +4561,7 @@ relation get_variable_enum(tenv: static_envs, e: expr) ->
   prose_application = "",
 };
 
-relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr) ->
+typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr) ->
          (t: ty, e': expr, ses: powerset(TSideEffect)) | type_error
 {
   "annotates the expression {e} in the
@@ -4580,7 +4584,7 @@ typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_
 //////////////////////////////////////////////////
 // Relations for Type System Utilities
 
-relation check_no_duplicates(ids: list1(Identifier)) ->
+typing function check_no_duplicates(ids: list1(Identifier)) ->
          (constants_set(True)) | type_error
 {
   "checks whether the non-empty list of identifiers {ids}
@@ -4590,7 +4594,7 @@ relation check_no_duplicates(ids: list1(Identifier)) ->
   prose_application = "",
 };
 
-relation find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) ->
+typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) ->
          (r: option(bitfield))
 {
   "returns the bitfield associated with the name {name}
@@ -4599,14 +4603,14 @@ relation find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) ->
   prose_application = "",
 };
 
-relation type_of_array_length(size: array_index) ->
+typing function type_of_array_length(size: array_index) ->
          (t: ty)
 {
   "returns the type for the array length {size} in {t}.",
   prose_application = "",
 };
 
-relation with_empty_local(genv: global_static_envs) ->
+typing function with_empty_local(genv: global_static_envs) ->
          (tenv: static_envs)
 {
   "constructs a \staticenvironmentterm{} from the
@@ -4615,7 +4619,7 @@ relation with_empty_local(genv: global_static_envs) ->
   prose_application = "",
 };
 
-relation check_var_not_in_env(tenv: static_envs, id: Strings) ->
+typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
          (constants_set(True)) | type_error
 {
   "checks whether {id} is already declared in {tenv}. If
@@ -4624,7 +4628,7 @@ relation check_var_not_in_env(tenv: static_envs, id: Strings) ->
   prose_application = "",
 };
 
-relation check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
+typing function check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
          (constants_set(True)) | type_error
 {
   "checks whether {id} is already declared in the
@@ -4634,7 +4638,7 @@ relation check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
   prose_application = "",
 };
 
-relation add_local(tenv: static_envs, id: Identifier, ty: ty, ldk: local_decl_keyword) ->
+typing function add_local(tenv: static_envs, id: Identifier, ty: ty, ldk: local_decl_keyword) ->
          (new_tenv: static_envs)
 {
   "adds the identifier {id} as a local storage element
@@ -4644,7 +4648,7 @@ relation add_local(tenv: static_envs, id: Identifier, ty: ty, ldk: local_decl_ke
   prose_application = "",
 };
 
-relation is_undefined(tenv: static_envs, x: Identifier) ->
+typing function is_undefined(tenv: static_envs, x: Identifier) ->
          (b: Bool)
 {
   "checks whether the identifier {x} is defined as a
@@ -4653,7 +4657,7 @@ relation is_undefined(tenv: static_envs, x: Identifier) ->
   prose_application = "",
 };
 
-relation is_global_undefined(genv: global_static_envs, x: Identifier) ->
+typing function is_global_undefined(genv: global_static_envs, x: Identifier) ->
          (b: Bool)
 {
   "checks whether the identifier {x} is defined in the
@@ -4664,7 +4668,7 @@ relation is_global_undefined(genv: global_static_envs, x: Identifier) ->
   prose_application = "",
 };
 
-relation is_local_undefined(lenv: local_static_envs, x: Identifier) ->
+typing function is_local_undefined(lenv: local_static_envs, x: Identifier) ->
          (b: Bool)
 {
   "checks whether {x} is declared as a local storage
@@ -4673,7 +4677,7 @@ relation is_local_undefined(lenv: local_static_envs, x: Identifier) ->
   prose_application = "",
 };
 
-relation lookup_constant(tenv: static_envs, s: Identifier) ->
+typing function lookup_constant(tenv: static_envs, s: Identifier) ->
          (v: literal) | constants_set(bot)
 {
   "looks up the environment {tenv} for a constant {v}
@@ -4682,7 +4686,7 @@ relation lookup_constant(tenv: static_envs, s: Identifier) ->
   prose_application = "",
 };
 
-relation add_global_constant(genv: global_static_envs, name: Identifier, v: literal) ->
+typing function add_global_constant(genv: global_static_envs, name: Identifier, v: literal) ->
          (new_genv: global_static_envs)
 {
   "binds the identifier {name} to the literal {v} in the
@@ -4691,7 +4695,7 @@ relation add_global_constant(genv: global_static_envs, name: Identifier, v: lite
   prose_application = "",
 };
 
-relation lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
+typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
          (e: expr) | constants_set(bot)
 {
   "looks up the \staticenvironmentterm{} {tenv} for an
@@ -4700,7 +4704,7 @@ relation lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
   prose_application = "",
 };
 
-relation add_global_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
+typing function add_global_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
          (new_tenv: static_envs)
 {
   "binds the identifier {x}, which is assumed to name a
@@ -4711,7 +4715,7 @@ relation add_global_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
   prose_application = "",
 };
 
-relation add_local_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
+typing function add_local_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
          (new_tenv: static_envs)
 {
   "binds the identifier {x}, which is assumed to name a
@@ -4722,7 +4726,7 @@ relation add_local_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
   prose_application = "",
 };
 
-relation should_remember_immutable_expression(ses: powerset(TSideEffect)) ->
+typing function should_remember_immutable_expression(ses: powerset(TSideEffect)) ->
          (b: Bool)
 {
   "tests whether the \sideeffectsetterm{} {ses} allows an
@@ -4735,7 +4739,7 @@ relation should_remember_immutable_expression(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-relation add_immutable_expression(
+typing function add_immutable_expression(
     tenv: static_envs,
     ldk: local_decl_keyword,
     e_opt: option((e: expr, ses_e: powerset(TSideEffect))), x: Identifier) ->
@@ -4759,7 +4763,7 @@ relation add_immutable_expression(
   math_layout = [_,_],
 };
 
-relation add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: powerset(TSideEffect)) ->
+typing function add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: powerset(TSideEffect)) ->
          (new_tenv: static_envs)
 {
   "updates the global environment of {tenv} by mapping
@@ -4770,7 +4774,7 @@ relation add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: pow
   prose_application = "",
 };
 
-relation add_type(tenv: static_envs, name: Identifier, ty: ty, f: TPurity) ->
+typing function add_type(tenv: static_envs, name: Identifier, ty: ty, f: TPurity) ->
          (new_tenv: static_envs)
 {
   "binds the type {ty} and \purity{} {f} to the

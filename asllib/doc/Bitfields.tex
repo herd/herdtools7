@@ -575,6 +575,8 @@ normalized.
 \ProseOtherwiseTypeError
 } % END_OF_BACKUP_RELATION
 
+This function assumes that all expressions in {slices} are \pureterm{} and thus deterministic.
+
 \ExampleDef{Converting Disjoint Slices to Positions}
 In \listingref{bitfieldslicetopositions}, the slices \verb|3:0| and \verb|5+:3|, declared for the bitfield \verb|data|
 yield the set of positions $\{0, 1, 2, 3, 5, 6, 7\}$.
@@ -643,7 +645,7 @@ and $\None$ if it cannot be determined.
 } % END_OF_BACKUP_RELATION
 
 The function assumes that AST nodes labelled with $\SliceSingle$, $\SliceRange$, and $\SliceStar$ have been reduced
-to $\SliceLength$ (via $\annotateslices$).
+to $\SliceLength$ (via $\annotateslices$), and that all expressions in $\vslice$ are \pureterm{} and thus deterministic.
 
 \ExampleDef{Converting Bitfield Slices to Positions}
 \taref{bitfieldslicetopositions} shows the optional set of positions associated with each slice
