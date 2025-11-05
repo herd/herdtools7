@@ -1,0 +1,13 @@
+Test A027 Allowed
+States 4
+1:R0=0; 1:R2=NOP;
+1:R0=0; 1:R2=instr:"ADD R1,R2,R3";
+1:R0=1; 1:R2=NOP;
+1:R0=1; 1:R2=instr:"ADD R1,R2,R3";
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:R0=1 /\ 1:R2=NOP)
+Observation A027 Sometimes 1 3
+Hash=ab18d8bc41027f8b650fcfca6ec3896d
+

@@ -41,6 +41,9 @@ module A = ARMBase
 %type <ARMBase.parsedPseudo list> instr_option_seq
 %start instr_option_seq
 
+%type <ARMBase.pins> one_instr
+%start one_instr
+
 %%
 
 main:
@@ -84,6 +87,9 @@ k:
 
 shift:
   | COMMA S_LSL k { A.S_LSL $3 }
+
+one_instr:
+  | i=instr EOF { i }
 
 instr:
   | I_ADD reg COMMA reg COMMA k

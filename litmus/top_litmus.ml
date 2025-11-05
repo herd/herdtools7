@@ -518,7 +518,7 @@ end = struct
              let module X = Make(Cfg)(Arch')(LexParse)(Compile) in
              X.compile
           | `ARM ->
-             let module V = Int32Constant.Make(ARMBase.Instr) in
+             let module V = Int32Constant.Make(ARMInstr) in
              let module Arch' = ARMArch_litmus.Make(OC)(V) in
              let module LexParse = struct
                  type instruction = Arch'.parsedPseudo
