@@ -1,0 +1,13 @@
+Test S+po+ctrlcsel Allowed
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+po+ctrlcsel Sometimes 1 3
+Hash=a000ceec3d80051478b9005781ea54b8
+

@@ -1,0 +1,12 @@
+Test MP+dsb.sylp+addr Allowed
+States 3
+1:X0=0; 1:X4=0;
+1:X0=0; 1:X4=1;
+1:X0=1; 1:X4=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X0=1 /\ 1:X4=0)
+Observation MP+dsb.sylp+addr Never 0 3
+Hash=f0b496b58e0e21c206eef5267190f750
+

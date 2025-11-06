@@ -1,0 +1,13 @@
+Test LB+isb+ctrlcsel Allowed
+States 4
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+isb+ctrlcsel Sometimes 1 3
+Hash=862cda10118d7ae979ea4239c6e9d02f
+

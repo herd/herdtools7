@@ -1,0 +1,13 @@
+Test RR+RW+ctrlcsel+rmw-po Allowed
+States 4
+0:X1=0; 0:X5=0; 1:X1=0;
+0:X1=0; 0:X5=1; 1:X1=0;
+0:X1=1; 0:X5=0; 1:X1=0;
+0:X1=1; 0:X5=1; 1:X1=0;
+Loop Ok
+Witnesses
+Positive: 3 Negative: 9
+Condition exists (0:X1=1 /\ 0:X5=0 /\ 1:X1=0)
+Observation RR+RW+ctrlcsel+rmw-po Sometimes 3 9
+Hash=ff351a8f6f0ef1f5621dc9f063094ed7
+

@@ -1,0 +1,13 @@
+Test LB+isb+data Allowed
+States 4
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+isb+data Sometimes 1 3
+Hash=cc34c10299cbb64d136667c20ea423da
+

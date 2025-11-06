@@ -1,0 +1,13 @@
+Test RR+RW+ctrlcsel+amo.stadd-po Allowed
+States 4
+0:X1=0; 0:X5=0;
+0:X1=0; 0:X5=1;
+0:X1=1; 0:X5=0;
+0:X1=1; 0:X5=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X1=1 /\ 0:X5=0)
+Observation RR+RW+ctrlcsel+amo.stadd-po Sometimes 1 3
+Hash=b261981322a0a25c932dd1513b085781
+
