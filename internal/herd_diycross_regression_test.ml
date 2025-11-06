@@ -119,6 +119,10 @@ let run_tests ?j flags =
     | None ->
        List.map
          (fun (l, e) ->
+           (* check if a `*.expected-warn` exists *)
+           let warn_file = Filename.remove_extension e
+                           |> TestHerd.expected_warn_of_litmus in
+           let warn_file = if Sys.file_exists warn_file then warn_file else "" in
             TestHerd.herd_output_matches_expected
               ~verbose:flags.verbose
               ~nohash:flags.nohash
@@ -126,7 +130,7 @@ let run_tests ?j flags =
              ~conf:flags.herd_conf
              ~variants:flags.variants
              ~libdir:flags.libdir
-             flags.herd l e "" "")
+             flags.herd l e "" warn_file)
          les
     | Some j ->
        ignore
@@ -164,11 +168,8 @@ let promote_tests ?j flags =
     concat_dir flags.expected_dir
       (List.filter TestHerd.is_expected (list_dir flags.expected_dir))in
   List.iter Sys.remove old_paths ;
-  (* New reference files *)
-  let expecteds = List.map TestHerd.expected_of_litmus litmuses in
 
   let litmus_paths = concat_dir tmp_dir litmuses in
-  let expected_paths = concat_dir flags.expected_dir expecteds in
 
   let outputs =
     match j with
@@ -193,9 +194,19 @@ let promote_tests ?j flags =
          TestHerd.read_file (TestHerd.outname l),
          TestHerd.read_file (TestHerd.errname l))
      litmus_paths in
-  let write_file (path, (_,lines,_)) =
-    Filesystem.write_file path (fun o -> Channel.write_lines o lines) in
-  List.combine expected_paths outputs |> List.iter write_file ;
+
+  (* New reference expected and warn files *)
+  let references = concat_dir flags.expected_dir litmuses
+    |> List.map (fun filename ->
+        TestHerd.expected_of_litmus filename, TestHerd.expected_warn_of_litmus filename
+      ) in
+
+  let write_file ((expected_path,warning_path), (_,lines,errs)) =
+    Filesystem.write_file expected_path (fun o -> Channel.write_lines o lines);
+    if List.length errs <> 0 then
+      Filesystem.write_file warning_path (fun o -> Channel.write_lines o errs)
+  in
+  List.combine references outputs |> List.iter write_file ;
   Filesystem.remove_recursive tmp_dir
 
 

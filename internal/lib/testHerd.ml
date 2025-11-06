@@ -43,8 +43,22 @@ let without_unstable_lines lines = List.filter is_stable lines
 
 let hash_re = Str.regexp "^Hash="
 
+(* If both string contain the "unrolling limit exceeded",
+  then droping the file names and temperate directory,
+  and matching the following characters. *)
+let match_unrolling_limit l1 l2 =
+  let re = Str.regexp "unrolling limit exceeded.*$" in
+  try
+    let _ = Str.search_forward re l1 0 in
+    let matched_l1 = Str.matched_string l1 in
+    let _ = Str.search_forward re l2 0 in
+    let matched_l2 = Str.matched_string l2 in
+    matched_l1 = matched_l2
+  with Not_found -> false
+
 let compare_lines nohash l1 l2 =
-  (nohash
+  match_unrolling_limit l1 l2
+  || (nohash
    && Str.string_match hash_re l1 0
    && Str.string_match hash_re l2 0)
   || String.equal l1 l2
