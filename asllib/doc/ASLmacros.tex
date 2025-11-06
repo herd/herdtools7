@@ -278,7 +278,7 @@
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
-\newcommand\overtext[2]{\overbracket{#1}^{\text{#2}}}
+\newcommand\overtext[2]{\overbracket{#1}^{#2}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 
@@ -343,8 +343,7 @@
 
 \newcommand\configdomain[1]{\hyperlink{def-configdomain}{\texttt{config\_dom}}({#1})}
 
-\newcommand\sslash[0]{\mathbin{/\mkern-6mu/}}
-\newcommand\terminateas[0]{\hyperlink{def-terminateas}{\sslash}\;}
+\newcommand\terminateas[0]{\hyperlink{def-terminateas}{\textbf{|}}}
 \newcommand\booltrans[0]{\hyperlink{relation-booltransition}{\textfunc{bool\_transition}}} % SPECIFIED
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\Prosetecheck[2]{\hyperlink{relation-techeck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
@@ -637,7 +636,7 @@
 \newcommand\BuildErrorConfig[0]{\hyperlink{def-builderrorconfig}{\texttt{\#BE}}}
 \newcommand\TBuildError[0]{\hyperlink{def-tbuilderror}{\textsf{TBuildError}}}
 \newcommand\ProseOtherwiseBuildError[0]{Otherwise, the result is a build error.}
-\newcommand\OrBuildError[0]{\;\terminateas \BuildErrorConfig}
+\newcommand\OrBuildError[0]{\;\terminateas\;\BuildErrorConfig}
 
 \newcommand\astarrow[0]{\xrightarrow{\textsf{ast}}}
 \newcommand\scanarrow[0]{\xrightarrow{\hyperlink{def-aslscan}{\textsf{scan}}}}
@@ -942,11 +941,11 @@
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}
 \newcommand\DynErrorConfig[0]{\hyperlink{def-errorconfig}{\texttt{\#DE}}}
 \newcommand\DivergingConfig[0]{\hyperlink{def-divergingconfig}{\texttt{\#DIV}}}
-\newcommand\OrAbnormal[0]{\;\terminateas \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
-\newcommand\OrAbnormalReturning[0]{\;\terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
-\newcommand\OrReturningOrAbnormal[0]{\;\terminateas \ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
-\newcommand\OrDynError[0]{\;\terminateas \DynErrorConfig}
-\newcommand\OrDynErrorDiverging[0]{\;\terminateas \DynErrorConfig, \DivergingConfig}
+\newcommand\OrAbnormal[0]{\;\terminateas\;\ThrowingConfig, \DynErrorConfig, \DivergingConfig}
+\newcommand\OrAbnormalReturning[0]{\;\terminateas\;\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
+\newcommand\OrReturningOrAbnormal[0]{\;\terminateas\;\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig}
+\newcommand\OrDynError[0]{\;\terminateas\;\DynErrorConfig}
+\newcommand\OrDynErrorDiverging[0]{\;\terminateas\;\DynErrorConfig, \DivergingConfig}
 \newcommand\ProseOtherwiseReturningOrAbnormal[0]{Otherwise, the result is either a returning configuration or abnormal.}
 \newcommand\ProseOtherwiseAbnormal[0]{Otherwise, the result is abnormal.}
 \newcommand\ProseOtherwiseDynamicError[0]{Otherwise, the result is a \dynamicerrorterm.}
@@ -981,7 +980,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\ProseOtherwiseTypeError[0]{Otherwise, the result is a \typingerrorterm.}
-\newcommand\OrTypeError[0]{\;\terminateas \TypeErrorConfig}
+\newcommand\OrTypeError[0]{\;\terminateas\;\TypeErrorConfig}
 \newcommand\ProseOrTypeError[0]{\ProseTerminateAs{\TypeErrorConfig}}
 
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
@@ -1524,6 +1523,7 @@
 \newcommand\BuildErrorCode[1]{\texttt{\BuildErrorPrefix\_#1}}
 \newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\texttt{\#}\BuildErrorCode{LE}}}
 \newcommand\LexicalErrorConfig[0]{\LexicalError}
+\newcommand\OrLexicalError[0]{\;\terminateas\;\LexicalErrorConfig}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
 \newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\texttt{\#}\BuildErrorCode{PE}}}
 \newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
@@ -1571,7 +1571,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Semantics/Typing Shared macros
-\newcommand\ProseTerminateAs[1]{\hyperlink{def-proseterminateas}{${}^{\sslash #1 }$}}
+\newcommand\ProseTerminateAs[1]{\hyperlink{def-proseterminateas}{${}^{\,\terminateas{}#1 }$}}
 \newcommand\aslsep[0]{\mathbf{,}}
 
 \newcommand\discardvar[0]{\texttt{-}}
