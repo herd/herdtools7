@@ -1,0 +1,12 @@
+Test LB+isbap+addrcsel Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+isbap+addrcsel Never 0 3
+Hash=6ad1d6bb68de4a800a3629f802f1929c
+

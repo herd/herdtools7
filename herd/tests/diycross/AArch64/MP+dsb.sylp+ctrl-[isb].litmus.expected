@@ -1,0 +1,12 @@
+Test MP+dsb.sylp+ctrl-[isb] Allowed
+States 3
+1:X0=0; 1:X2=0;
+1:X0=0; 1:X2=1;
+1:X0=1; 1:X2=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:X0=1 /\ 1:X2=0)
+Observation MP+dsb.sylp+ctrl-[isb] Never 0 3
+Hash=d51c8d9c1e9cc511b107b8768a5edda7
+

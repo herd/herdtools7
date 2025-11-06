@@ -1,0 +1,13 @@
+Test LB+addr+rmw-po Allowed
+States 4
+0:X1=0; 1:X1=0; [y]=1;
+0:X1=0; 1:X1=1; [y]=2;
+0:X1=1; 1:X1=0; [y]=1;
+0:X1=1; 1:X1=1; [y]=2;
+Loop Ok
+Witnesses
+Positive: 6 Negative: 12
+Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
+Observation LB+addr+rmw-po Sometimes 6 12
+Hash=79218aaeb05f9994b4cf1cef2b026771
+

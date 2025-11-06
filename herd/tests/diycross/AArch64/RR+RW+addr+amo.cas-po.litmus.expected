@@ -1,0 +1,13 @@
+Test RR+RW+addr+amo.cas-po Allowed
+States 4
+0:X1=0; 0:X3=0; 1:X1=0;
+0:X1=0; 0:X3=1; 1:X1=0;
+0:X1=1; 0:X3=0; 1:X1=0;
+0:X1=1; 0:X3=1; 1:X1=0;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (0:X1=1 /\ 0:X3=0 /\ 1:X1=0)
+Observation RR+RW+addr+amo.cas-po Sometimes 2 6
+Hash=832003c9a4b868de06e3781701e39b15
+

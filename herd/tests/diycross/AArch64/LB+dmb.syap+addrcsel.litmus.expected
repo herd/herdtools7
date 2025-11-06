@@ -1,0 +1,12 @@
+Test LB+dmb.syap+addrcsel Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+dmb.syap+addrcsel Never 0 3
+Hash=7bd5510e73355d51c6147fd655818cf4
+

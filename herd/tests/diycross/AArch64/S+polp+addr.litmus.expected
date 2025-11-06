@@ -1,0 +1,13 @@
+Test S+polp+addr Allowed
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+polp+addr Sometimes 1 3
+Hash=c968108d5294910a73c78ae43f818339
+

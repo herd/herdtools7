@@ -1,0 +1,13 @@
+Test RR+RW+addr+rmw-po Allowed
+States 4
+0:X1=0; 0:X3=0; 1:X1=0;
+0:X1=0; 0:X3=1; 1:X1=0;
+0:X1=1; 0:X3=0; 1:X1=0;
+0:X1=1; 0:X3=1; 1:X1=0;
+Loop Ok
+Witnesses
+Positive: 3 Negative: 9
+Condition exists (0:X1=1 /\ 0:X3=0 /\ 1:X1=0)
+Observation RR+RW+addr+rmw-po Sometimes 3 9
+Hash=e4be26a236021aadead1d30e4f64e451
+

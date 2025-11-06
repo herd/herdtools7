@@ -1,0 +1,13 @@
+Test S+isb+addr Allowed
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+isb+addr Sometimes 1 3
+Hash=b2e2e06613f23704653ed6918ea62e26
+

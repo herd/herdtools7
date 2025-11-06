@@ -1,0 +1,13 @@
+Test S+isb+ctrl-[isb] Allowed
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+isb+ctrl-[isb] Sometimes 1 3
+Hash=d672a9479e145fc220f8aa0c0f97d80d
+

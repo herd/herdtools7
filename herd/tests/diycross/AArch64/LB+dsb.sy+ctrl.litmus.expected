@@ -1,0 +1,12 @@
+Test LB+dsb.sy+ctrl Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+dsb.sy+ctrl Never 0 3
+Hash=525a841a350d84beb2fad910774e12ab
+

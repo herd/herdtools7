@@ -1,0 +1,12 @@
+Test LB+ctrl-[isb]+rmwap-po Allowed
+States 3
+0:X1=0; 1:X1=0; [y]=1;
+0:X1=0; 1:X1=1; [y]=2;
+0:X1=1; 1:X1=0; [y]=1;
+Loop No
+Witnesses
+Positive: 0 Negative: 12
+Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
+Observation LB+ctrl-[isb]+rmwap-po Never 0 12
+Hash=6b2d81be8ff635d968f3508054a70dc0
+
