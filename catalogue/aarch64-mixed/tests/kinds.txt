@@ -1,3 +1,5 @@
+CoRR+amo.swph0h0-posh0a.w0+w0  Forbidden
+CoRR+rmwh0h0-posh0a.w0+w0      Forbidden
 2+2W+posb0b0+posb1b1           Allowed
 CO-MIXED-20cc+H                Forbidden
 CoRW2+posb0b0+b0               Allowed

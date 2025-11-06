@@ -61,7 +61,7 @@ with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
 
 (** Explicitly-hazard-ordered-before **)
 let Exp-haz-ob =
-  [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
+  [Exp & R]; (po & same-loc); [Exp & R]; sca-class?; [Exp & R]; (ca & ext); [Exp & W]; sca-class?; [Exp & W]
 
 (** TLBI-ordered-before **)
 
