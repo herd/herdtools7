@@ -30,7 +30,6 @@ func AArch64_DecodeDescriptorType {N}
   DescriptorType
 begin
   if descriptor[0] == '0' then
-//    __DEBUG__(descriptor,DescriptorType_Invalid);
     return DescriptorType_Invalid;
   else
     return DescriptorType_Leaf;
@@ -49,7 +48,6 @@ begin
     var descaddress : FullAddress;
     descaddress.address = ComputePtePrimitive(ia);
     descaddress.paspace = tablebase.paspace;
-//    __DEBUG__(ia,descaddress.address);
     return descaddress;
 end;
 
@@ -159,7 +157,6 @@ begin
 var oa : FullAddress;
   oa.paspace = walkstate.baseaddress.paspace;
   oa.address = walkstate.baseaddress.address + OffsetPrimitive(ia);
-  // __DEBUG__(oa);
   return oa;
 end;
 
@@ -171,7 +168,6 @@ func
   AArch64_S1LeafBase{N}(descriptor:bits(N),walkparams:S1TTWParams,level:integer)
   => bits(56)
 begin
-  // __DEBUG__(descriptor);
   return GetOAPrimitive{N}(descriptor);
 end;
 
@@ -188,9 +184,10 @@ func AArch64_MemSwapTableDesc
 begin
    let addr: bits(56) = descpaddr.paddress.address;
    let mem_desc = ReadPteAgainPrimitive{N}(addr, descaccess.write);
-// __debug__(N,mem_desc,prev_desc,descaccess.write);
+
 // For speed, using "if" construct us much more expensive
    CheckProp(mem_desc == prev_desc);
+
    WritePtePrimitive{N}(addr, new_desc, descaccess.write);
    return (fault_in,new_desc);
 end;
@@ -221,7 +218,6 @@ type SilentExit of exception {-};
 
 func AArch64_DataAbort(fault:FaultRecord)
 begin
-// __debug__(123,fault.statuscode,fault.accessdesc.write);
   CheckNotCasAsLoad(fault.accessdesc);
   DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
   throw SilentExit {-};
@@ -355,8 +351,7 @@ func AArch64_CheckDebug
   (vaddress:bits(64), accdesc:AccessDescriptor, size:integer)
 => FaultRecord
 begin
-    let fault = NoFault(accdesc, vaddress);
-    return fault;
+    return NoFault(accdesc, vaddress);
 end;
 
 // AArch64.BlocknTFaults()
