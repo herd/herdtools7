@@ -1,0 +1,13 @@
+Test LB+datacsel+amo.stadd-po Allowed
+States 4
+0:X1=0; [y]=1;
+0:X1=0; [y]=3;
+0:X1=1; [y]=1;
+0:X1=1; [y]=3;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([y]=3 /\ 0:X1=1)
+Observation LB+datacsel+amo.stadd-po Sometimes 1 3
+Hash=785926611259edec8e0a4165c9c08a76
+

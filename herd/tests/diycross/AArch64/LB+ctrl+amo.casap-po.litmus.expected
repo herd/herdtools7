@@ -1,0 +1,12 @@
+Test LB+ctrl+amo.casap-po Allowed
+States 3
+0:X1=0; 1:X1=0; [y]=1;
+0:X1=0; 1:X1=1; [y]=2;
+0:X1=1; 1:X1=0; [y]=1;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
+Observation LB+ctrl+amo.casap-po Never 0 6
+Hash=ca3a0b2284b98a377e8ba97e9ca38c45
+

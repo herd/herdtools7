@@ -383,10 +383,11 @@ diy-test-aarch64:
 		-expected-dir ./herd/tests/diycross/AArch64 \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
-		-diycross-arg 'Pod**,Fenced**' \
+		-diycross-arg 'A,L,P' \
+		-diycross-arg 'Pod**,Fenced**,DSB.SYd**,ISBd**,[Amo.Cas,Pod**],[Amo.Swp,Pod**],[Amo.StAdd,Pod**],[LxSx,Pod**]' \
 		-diycross-arg 'Rfe,Fre,Coe' \
-		-diycross-arg 'Pod**,Fenced**,DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW' \
-		-diycross-arg 'Rfe,Fre,Coe' \
+		-diycross-arg 'DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW,DpAddrCseldR,DpAddrCseldW,DpDataCseldW,DpCtrlCseldR,DpCtrlCseldW,[DpCtrldR,ISB],[DpCtrldW,ISB]' \
+		-diycross-arg 'Rfe,Fre,Coe,Hat' \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 

@@ -1,0 +1,13 @@
+Test LB+isb+datacsel Allowed
+States 4
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+isb+datacsel Sometimes 1 3
+Hash=7e09beba2b24ed5fc7b295e8931bc751
+

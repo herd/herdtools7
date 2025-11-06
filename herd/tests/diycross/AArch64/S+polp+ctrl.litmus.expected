@@ -1,0 +1,13 @@
+Test S+polp+ctrl Allowed
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+polp+ctrl Sometimes 1 3
+Hash=d0317bfe6bb7a4babc428a0b8087dd4a
+

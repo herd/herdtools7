@@ -1,0 +1,12 @@
+Test LB+dsb.syap+datacsel Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+dsb.syap+datacsel Never 0 3
+Hash=3e9a5364ebea99fd4be4cbe76b83e14b
+

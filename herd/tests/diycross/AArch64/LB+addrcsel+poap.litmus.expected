@@ -1,0 +1,12 @@
+Test LB+addrcsel+poap Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+addrcsel+poap Never 0 3
+Hash=da7c1dcdd309a04e51950708d380c8ca
+
