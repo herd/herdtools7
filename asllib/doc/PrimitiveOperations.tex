@@ -810,6 +810,7 @@ and argument types of its operand literals:
   (\BOR       &,& \LBool &,& \LBool)&,\\
   (\IMPL      &,& \LBool &,& \LBool)&,\\
   (\BEQ       &,& \LBool &,& \LBool)&,\\
+  (\EQ       &,& \LBool &,& \LBool)&,\\
   (\NE       &,& \LBool &,& \LBool)&,\\
   (\MUL       &,& \LInt  &,& \LReal)&,\\
   (\MUL       &,& \LReal &,& \LInt)&,\\
@@ -976,7 +977,7 @@ and argument types of its operand literals:
 
   \item \AllApplyCase{eq\_bool}
   \begin{itemize}
-    \item $\op$ is $\BEQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is either $\BEQ$ or $\EQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
@@ -1360,8 +1361,10 @@ and argument types of its operand literals:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[eq\_bool]{}{
-  \binopliterals(\overname{\BEQ}{\op}, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
+\inferrule[eq\_bool]{
+  \op \in \{\EQ, \BEQ\}
+}{
+  \binopliterals(\op, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
 }
 \end{mathpar}
 
