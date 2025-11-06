@@ -386,9 +386,9 @@ let mask = (bit | 'x' | '(' bit+ ')')*
 let identifier = alpha_ (alpha_|digit)*
 
 let forbidden_hex_first = '0' 'x' [^'a'-'f' 'A'-'F' '0'-'9']
-let forbidden_hex_remaining = '0' 'x' hex_digit hex_digit_* ['g'-'z' 'G'-'Z']
+let forbidden_hex_remaining = hex_lit ['g'-'z' 'G'-'Z']
 let forbidden_real_first = int_lit '.' [^'0'-'9' '.']
-let forbidden_real_remaining = int_lit '.' digit digit_* alpha
+let forbidden_real_remaining = int_lit '.' int_lit alpha
 
 (*
    Lexing of string literals
