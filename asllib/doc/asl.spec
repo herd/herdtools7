@@ -16,6 +16,8 @@ constant empty_set
     math_macro = \emptyset,
 };
 
+constant None { "the empty \optionalterm{}" };
+
 constant True { "true", math_macro = \True };
 constant False { "false", math_macro = \False };
 

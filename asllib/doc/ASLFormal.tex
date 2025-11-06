@@ -404,13 +404,12 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-Option}{}
 \begin{definition}[Optional Data Type]
-\hypertarget{def-none}{}
 \hypertarget{def-some}{}
 The notation $\some{x} \triangleq \{x\}$ stands for a singleton
 set containing $x$.
 %
-The notation $\None \triangleq \emptyset$ is an alias for the empty
-set used in places where either the empty set or a singleton set is expected.
+The constant \RenderConstant{None} is an alias for the empty
+set. It is used in places where either the empty set or a singleton set is expected.
 %
 The type $\Option{T} \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
 all singleton sets of elements from $T$ as well as the empty set.
