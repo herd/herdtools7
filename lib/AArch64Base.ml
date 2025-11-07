@@ -1824,7 +1824,10 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
-
+let nop = Some I_NOP
+let is_nop = function
+  | I_NOP -> true
+  | _ -> false
 
 let pp_memo memo = memo
 
@@ -3908,14 +3911,19 @@ module
        sig
          val is_morello : bool
          val parser : string -> instruction
-       end) = struct
+       end)
+    (Tr:InstrUtils.Tr with type data = instruction)  = struct
 
+  type exec = Tr.exec
   type t = instruction
+
+  let from_exec = Tr.from_exec
+  and to_exec = Tr.to_exec
 
   let compare = Misc.polymorphic_compare
   let eq = (=)
 
-  module PP =MakePP(C)
+  module PP = MakePP(C)
 
   let pp = function
     | I_NOP ->  "NOP"
@@ -3927,14 +3935,7 @@ module
     | LIT_NOP -> I_NOP
     | LIT_INSTR s -> C.parser s
 
-  let nop = Some I_NOP
-
-  let is_nop = function
-    | I_NOP -> true
-    | _ -> false
-
   let can_overwrite =  can_overwrite
-  and get_exported_label = get_exported_label
 
   module Set =
     MySet.Make

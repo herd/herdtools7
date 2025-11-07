@@ -19,7 +19,7 @@
 module
   Make
     (C:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = BellBase.instruction)
+    (V:Value.S with type Cst.Instr.exec = BellBase.instruction)
     =
   struct
     module Bell = BellArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

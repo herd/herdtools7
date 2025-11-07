@@ -71,7 +71,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
       end)
 
   let features = []
-  let nop =  I_NOP
 
   include HardwareExtra.No
 

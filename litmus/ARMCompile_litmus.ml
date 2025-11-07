@@ -27,9 +27,7 @@ module Make(V:Constant.S)(C:Config) =
     open Printf
 
     let is_ret _ = false
-    and is_nop = function
-      | A.I_NOP -> true
-      | _ -> false
+
     let branch lbl = I_B lbl
 
 (* No addresses in code *)

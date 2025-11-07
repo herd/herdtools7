@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2017-present Institut National de Recherche en Informatique et *)
-(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
+(* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -14,15 +14,45 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make (C : sig
-  val is_morello : bool
-end) : Value.AArch64 = struct
-  module AArch64Instr = AArch64Instr.Make(C)(AArch64Instr.IdTr)
-  module AArch64Constant =
-    SymbConstant.Make (CapabilityScalar) (AArch64PteVal) (AArch64AddrReg) (AArch64Instr)
-  module NoCst =
-    SymbConstant.Make (CapabilityScalar) (PteVal.No) (AddrReg.No) (AArch64Instr)
-  module NoArchOp = ArchOp.No(NoCst)
-  module CapOp = AArch64Op.Make (CapabilityScalar)(NoArchOp)
-  include SymbValue.Make(AArch64Constant)(CapOp)
-end
+open ARMBase
+
+type exec = instruction
+type t = instruction
+
+let from_exec = Misc.identity
+let to_exec = Misc.identity
+
+let compare = Misc.polymorphic_compare
+let eq = (=)
+
+let pp = function
+  | I_NOP -> "NOP"
+  | i -> Printf.sprintf "instr:%S" (dump_instruction i)
+
+module Lexer =
+  ARMLexer.Make
+    (struct
+      let debug = false
+    end)
+
+let parse_instr s =
+  let lexbuf = Lexing.from_string s in
+  let pi =
+    GenParserUtils.call_parser
+      "ARMInstr" lexbuf Lexer.token ARMParser.one_instr in
+  parsed_tr pi
+
+let tr =
+  let open InstrLit in
+  function
+  | LIT_NOP -> I_NOP
+  | LIT_INSTR s -> parse_instr s
+
+let can_overwrite _ = false
+
+module Set =
+  MySet.Make
+    (struct
+      type t = instruction
+      let compare = compare
+    end)

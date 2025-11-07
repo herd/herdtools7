@@ -80,12 +80,6 @@ module Make
     | PteVal _|AddrReg _|Instruction _|Frozen _
         -> assert false
 
-  let is_nop = function
-    | Instruction i -> Instr.is_nop i
-    | Symbolic _|Concrete _|ConcreteRecord _|ConcreteVector _ | Label _|Tag _|PteVal _
-    | AddrReg _| Frozen _
-      -> false
-
   let access_of_constant =
     function
     | Symbolic (Virtual _) -> Access.VIR

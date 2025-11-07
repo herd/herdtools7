@@ -430,7 +430,7 @@ module A.FaultType = A.FaultType)
     let count_ret =
       if do_self then fun code -> count_ins C.is_ret code else fun _ -> 0
 
-    let count_nop = count_ins C.is_nop
+    let count_nop = count_ins A.is_nop
 
 (****************)
 (* Compile code *)
@@ -851,7 +851,14 @@ module A.FaultType = A.FaultType)
             (fun (p,(c,f)) ->
               (* Add nop to signal code start *)
               let is_user = ProcsUser.is procs_user p in
-              let nop = A.Instruction A.nop in
+              let nop =
+                match A.nop with
+                | None ->
+                    Warn.fatal
+                      "Architecture %s has no NOP instruction, compilation is impossible"
+                      (Archs.pp A.arch)
+                | Some nop ->
+                    A.Instruction nop in
               (* Except in user mode, where it will be added later *)
               let c = if not is_user then nop::c else c in
               let c = (* Append nop for faukt handler to return at end of code *)

@@ -23,7 +23,6 @@ module Make(V:Constant.S) =
     open Printf
 
     let is_ret _ = false
-    and is_nop _ = assert false
     and branch lbl = Pbranch (None,lbl,[])
 
 (***************************************************)

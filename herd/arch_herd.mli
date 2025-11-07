@@ -24,7 +24,7 @@ module type S =
 
     include ArchBase.S
 
-    module V : Value.S with type Cst.Instr.t = instruction
+    module V : Value.S with type Cst.Instr.exec = instruction
 
     val is_amo : instruction -> bool
     val pp_barrier_short : barrier -> string
@@ -40,6 +40,7 @@ module type S =
 
     include ArchExtra_herd.S with module I.V = V
     and type I.arch_reg = reg
+    and type I.instr = instruction
 
 (* Levels are abstract, for AArch64, they are E0 to E3 *)
     type level

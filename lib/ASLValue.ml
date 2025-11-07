@@ -31,10 +31,23 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
+module Instr =
+  AArch64Instr.Make
+    (struct let is_morello = false end)
+    (struct
+      type exec = ASLBase.instruction
+      type data = AArch64Base.instruction
+
+      let from_exec _ = Warn.fatal "ASLValue.from_exec"
+      and to_exec _ = Warn.fatal "ASLValue.to_exec"
+    end)
+
 module ASLScalar = struct
   include ASLScalar
   let printable c = c
 end
+
 module ASLConstant =
-  SymbConstant.Make(ASLScalar)(AArch64PteVal)(AArch64AddrReg)(ASLBase.Instr)
+  SymbConstant.Make
+    (ASLScalar)(AArch64PteVal)(AArch64AddrReg)(Instr)
 module V = SymbValue.Make(ASLConstant)(ASLOp)

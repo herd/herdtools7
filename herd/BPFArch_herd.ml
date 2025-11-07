@@ -15,7 +15,7 @@
 
 module Make
     (C : Arch_herd.Config)
-    (V : Value.S with type Cst.Instr.t = BPFBase.instruction) =
+    (V : Value.S with type Cst.Instr.exec = BPFBase.instruction) =
 struct
   include BPFBase
 
@@ -85,6 +85,8 @@ struct
       (struct
 
         let arch = arch
+
+        type instr = instruction
 
         module V = V
 

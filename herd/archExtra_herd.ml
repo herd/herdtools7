@@ -21,7 +21,10 @@ module type I = sig
 
   val arch : Archs.t
 
+  type instr
+
   module V : Value.S
+
   val endian : Endian.t
 
   type arch_reg
@@ -29,7 +32,7 @@ module type I = sig
   val reg_compare : arch_reg -> arch_reg -> int
   val get_val : arch_reg -> V.v -> V.v
 
-  val fromto_of_instr : V.Cst.Instr.t -> (Label.Set.t * Label.Set.t) option
+  val fromto_of_instr : instr -> (Label.Set.t * Label.Set.t) option
 
   module FaultType : FaultType.S
 end
@@ -43,6 +46,7 @@ module type S = sig
 
   module I : I
 
+  type instr = I.instr
   type global_loc = I.V.v
   type v = I.V.v
 
@@ -71,7 +75,6 @@ module type S = sig
 
 
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type instr = I.V.Cst.Instr.t
   type code = (int * instr) list
 
   val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
@@ -273,7 +276,12 @@ module Make(C:Config) (I:I) : S with module I = I
             (Archs.pp I.arch)
 
       module I = I
+
+      type instr = I.instr
+      type global_loc = I.V.v
       type v = I.V.v
+
+      type proc = Proc.t
 
       module OV =
         struct
@@ -283,10 +291,6 @@ module Make(C:Config) (I:I) : S with module I = I
 
       module VSet = MySet.Make(OV)
       module VMap = MyMap.Make(OV)
-
-      type global_loc = v
-
-      type proc = Proc.t
 
       let pp_proc = Proc.dump
 
@@ -331,7 +335,6 @@ module Make(C:Config) (I:I) : S with module I = I
       (*********************************)
 
       (* Code memory is a mapping from globals locs, to instructions *)
-      type instr = I.V.Cst.Instr.t
       type code = (int * instr) list
 
       (* This function is a default behaviour for all architectures.

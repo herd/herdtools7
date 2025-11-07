@@ -113,7 +113,8 @@ module
   let intToV i  = Val (Cst.intToV i)
   let stringToV i  = Val (Cst.stringToV i)
   and nameToV s = Val (Cst.nameToV s)
-  and instructionToV i = Val (Constant.Instruction i)
+  and instructionToV i =
+    Val (Constant.Instruction (Cst.Instr.from_exec i))
   and cstToV cst = Val cst
   and scalarToV sc = Val (Constant.Concrete sc)
 
@@ -297,9 +298,9 @@ module
     | (Val (Symbolic (Physical (s,i2))),Val (Concrete i1)) ->
         let i1 = Cst.Scalar.to_int i1 in
         Val (Symbolic (Physical (s,i1+i2)))
-    | (Val (Symbolic _) as v,Val cst)
+    | (Val (Symbolic _|Label _) as v,Val cst)
         when Cst.is_zero cst -> v
-    | (Val cst,(Val (Symbolic _) as v))
+    | (Val cst,(Val (Symbolic _|Label _) as v))
         when Cst.is_zero cst -> v
     | _,_ -> (* General case *)
         binop Op.Add Cst.Scalar.add v1 v2

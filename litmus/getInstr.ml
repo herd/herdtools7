@@ -17,6 +17,8 @@
 module type S = sig
   type t
 
+  val active : bool
+
   val self_instrs : t list (* Mandatory for `-variant self` mode *)
 
   val instr_name : t -> string
@@ -30,6 +32,8 @@ end
 module No (I:sig type instr end) = struct
 
   type t = I.instr
+
+  let active = false
 
   let self_instrs = []
 

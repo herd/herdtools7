@@ -22,9 +22,6 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     open Printf
 
     let is_ret _ = false
-    and is_nop = function
-      | A.INop -> true
-      | _ -> false
 
     let branch lbl = J lbl
 

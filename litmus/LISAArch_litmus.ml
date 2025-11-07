@@ -55,8 +55,8 @@ module Make(V:Constant.S) = struct
         let reg_class_stable _ _ = ""
         let comment = comment
       end)
+
   let features = []
-  let nop = Pnop
 
   include HardwareExtra.No
 

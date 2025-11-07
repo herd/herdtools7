@@ -242,6 +242,11 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
+let nop = Some I_NOP
+and is_nop = function
+  | I_NOP -> true
+  | _ -> false
+
 let pp_lbl = fun i -> i
 
 open PPMode
@@ -497,8 +502,6 @@ let fold_addrs _f c _ins = c
 
 let map_addrs _f ins = ins
 
-let norm_ins ins = ins
-
 (* PLDI submission, complete later *)
 let is_data _ _ = assert false
 
@@ -545,7 +548,58 @@ let get_next = function
   | I_BX _ -> [Label.Any]
   | I_BEQ lbl|I_BNE lbl|I_CB (_,_,lbl) -> [Label.Next; Label.To lbl]
 
-let is_valid _ = true
+include
+  InstrUtils.No
+    (struct
+      type instr = instruction
+    end)
+
+let parsed_tr = function
+  | I_ADD (c,r1,r2,k) ->  I_ADD (c,r1,r2,MetaConst.as_int k)
+  | I_SUB (c,r1,r2,k) ->  I_SUB (c,r1,r2,MetaConst.as_int k)
+  | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
+  | I_ANDC (c,r1,r2,r3) ->  I_ANDC (c,r1,r2,r3)
+  | I_ORR (c,r1,r2,k) ->  I_ORR (c,r1,r2,MetaConst.as_int k)
+  | I_LDRO (r1,r2,k,c) ->  I_LDRO (r1,r2,MetaConst.as_int k,c)
+  | I_LDRD (r1,r2,r3,Some k) ->  I_LDRD (r1,r2,r3,Some (MetaConst.as_int k))
+  | I_STR3_S (r1,r2,r3,S_LSL k,c) ->
+      I_STR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
+  | I_LDR3_S (r1,r2,r3,S_LSL k,c) ->
+      I_LDR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
+  | I_LDRD (r1,r2,r3,None) ->  I_LDRD (r1,r2,r3,None)
+  | I_BX r -> I_BX r
+  | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
+  | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
+  | I_MOVW (r,k,c) -> I_MOVW (r,MetaConst.as_int k,c)
+  | I_MOVT (r,k,c) -> I_MOVT (r,MetaConst.as_int k,c)
+  | I_NOP
+  | I_ADD3 _
+  | I_SUB3 _
+  | I_B _
+  | I_BEQ _
+  | I_BNE _
+  | I_CB _
+  | I_CMP _
+  | I_LDR _
+  | I_LDM2 _
+  | I_LDM3 _
+  | I_LDREX _
+  | I_LDA _
+  | I_LDAEX _
+  | I_LDR3 _
+  | I_STR _
+  | I_STR3 _
+  | I_STREX _
+  | I_STL _
+  | I_STLEX _
+  | I_MOV _
+  | I_XOR _
+  | I_DMB _
+  | I_DSB _
+  | I_ISB
+  | I_SADD16 _
+  | I_SEL _
+    as keep -> keep
 
 include Pseudo.Make
     (struct
@@ -553,53 +607,7 @@ include Pseudo.Make
       type pins = parsedInstruction
       type reg_arg = reg
 
-      let parsed_tr = function
-        | I_ADD (c,r1,r2,k) ->  I_ADD (c,r1,r2,MetaConst.as_int k)
-        | I_SUB (c,r1,r2,k) ->  I_SUB (c,r1,r2,MetaConst.as_int k)
-        | I_AND (c,r1,r2,k) ->  I_AND (c,r1,r2,MetaConst.as_int k)
-        | I_ANDC (c,r1,r2,r3) ->  I_ANDC (c,r1,r2,r3)
-        | I_ORR (c,r1,r2,k) ->  I_ORR (c,r1,r2,MetaConst.as_int k)
-        | I_LDRO (r1,r2,k,c) ->  I_LDRO (r1,r2,MetaConst.as_int k,c)
-        | I_LDRD (r1,r2,r3,Some k) ->  I_LDRD (r1,r2,r3,Some (MetaConst.as_int k))
-        | I_STR3_S (r1,r2,r3,S_LSL k,c) ->
-          I_STR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
-        | I_LDR3_S (r1,r2,r3,S_LSL k,c) ->
-          I_LDR3_S (r1,r2,r3,S_LSL (MetaConst.as_int k),c)
-        | I_LDRD (r1,r2,r3,None) ->  I_LDRD (r1,r2,r3,None)
-        | I_BX r -> I_BX r
-        | I_CMPI (r,k) -> I_CMPI (r,MetaConst.as_int k)
-        | I_MOVI (r,k,c) -> I_MOVI (r,MetaConst.as_int k,c)
-        | I_MOVW (r,k,c) -> I_MOVW (r,MetaConst.as_int k,c)
-        | I_MOVT (r,k,c) -> I_MOVT (r,MetaConst.as_int k,c)
-        | I_NOP
-        | I_ADD3 _
-        | I_SUB3 _
-        | I_B _
-        | I_BEQ _
-        | I_BNE _
-        | I_CB _
-        | I_CMP _
-        | I_LDR _
-        | I_LDM2 _
-        | I_LDM3 _
-        | I_LDREX _
-        | I_LDA _
-        | I_LDAEX _
-        | I_LDR3 _
-        | I_STR _
-        | I_STR3 _
-        | I_STREX _
-        | I_STL _
-        | I_STLEX _
-        | I_MOV _
-        | I_XOR _
-        | I_DMB _
-        | I_DSB _
-        | I_ISB
-        | I_SADD16 _
-        | I_SEL _
-            as keep -> keep
-
+      let parsed_tr = parsed_tr
 
       let get_naccesses = function
         | I_NOP
@@ -674,11 +682,3 @@ let get_macro _name = raise Not_found
 let get_id_and_list _i = Warn.fatal "get_id_and_list is only for Bell"
 
 let hash_pteval _ = assert false
-
-module Instr =
-  Instr.WithNop
-    (struct
-      type instr = instruction
-      let nop = I_NOP
-      let compare = compare
-    end)

@@ -1,0 +1,12 @@
+ARM A027
+{
+0:R1=x; 0:R3=y;
+1:R3=y; 1:R1=x;
+ins_t x =  NOP;
+0:R0=instr:"ADD R1,R2,R3"
+}
+ P0          | P1          ;             
+ STR R0,[R1] | LDR R0,[R3] ;
+ MOV R2,#1   | LDR R2,[R1] ;
+ STR R2,[R3] |             ;
+exists (1:R0=1 /\ 1:R2=NOP)

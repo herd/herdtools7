@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(* Luc Maranget, INRIA Paris, France.                                       *)
 (*                                                                          *)
-(* Copyright 2023-present Institut National de Recherche en Informatique et *)
+(* Copyright 2025-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,23 +14,45 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
-  module LexConfig = struct
-    let debug = Conf.debug.Debug_herd.lexer
-  end
-  module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
-  module PPCValue = Int64Value.Make(PPCInstr)
-  module PPC = PPCArch_herd.Make(ArchConfig)(PPCValue)
-  module PPCLexParse = struct
-    type instruction = PPC.parsedPseudo
-    type token = PPCParser.token
-    module Lexer = PPCLexer.Make(LexConfig)
-    let lexer = Lexer.token
-    let parser = MiscParser.mach2generic PPCParser.main
-  end
-  module PPCS = PPCSem.Make(Conf)(PPCValue)
-  module PPCM = MemWithCav12.Make(ModelConfig)(PPCS)
-  module P = GenParser.Make (Conf) (PPC) (PPCLexParse)
-  module X = RunTest.Make (PPCS) (P) (PPCM) (Conf)
-  let run = X.run
+(** Utilities for instructions *)
+
+module type S = sig
+
+  type instr_exec
+
+  (* Normalize instructions (for hashes) *)
+  val norm_ins : instr_exec -> instr_exec
+
+  (* Check validity of instructions, beyond parsing *)
+  val is_valid : instr_exec -> bool
+
+  (* This makes return label that may be used for accessing memory *)
+  val get_exported_label : instr_exec -> BranchTarget.t option
+
+end
+
+module No (I:sig type instr end) = struct
+  type instr_exec = I.instr
+
+  let norm_ins i = i
+  let is_valid _ = true
+  let get_exported_label _ = None
+end
+
+
+module type Tr = sig
+  type exec
+  type data
+
+  val from_exec : exec -> data
+  val to_exec : data -> exec
+end
+
+module IdTr(I:sig type instr end) =
+struct
+  type exec = I.instr
+  type data = I.instr
+
+  let from_exec i = i
+  let to_exec i = i
 end

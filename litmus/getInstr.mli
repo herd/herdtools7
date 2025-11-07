@@ -14,8 +14,12 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(** Get instruction values as machine code *)
+
 module type S = sig
   type t
+
+  val active : bool
 
   val self_instrs : t list (* Mandatory for `-variant self` mode *)
 

@@ -19,7 +19,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemWithCav12.Config) = struct
     let debug = Conf.debug.Debug_herd.lexer
   end
   module ArchConfig = SemExtra.ConfigToArchConfig(Conf)
-  module ARMValue = Int32Value.Make(ARMBase.Instr)
+  module ARMValue = Int32Value.Make(ARMInstr)
   module ARM = ARMArch_herd.Make(ArchConfig)(ARMValue)
   module ARMLexParse = struct
     type instruction = ARM.parsedPseudo

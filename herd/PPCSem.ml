@@ -19,7 +19,7 @@
 module
   Make
     (C:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = PPCBase.instruction)
+    (V:Value.S with type Cst.Instr.exec = PPCBase.instruction)
     =
   struct
     open MachSize

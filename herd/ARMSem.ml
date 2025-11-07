@@ -19,7 +19,7 @@
 module
   Make
     (C:Sem.Config)
-    (V:Value.S with type Cst.Instr.t = ARMBase.instruction)
+    (V:Value.S with type Cst.Instr.exec = ARMBase.instruction)
     =
   struct
     module ARM = ARMArch_herd.Make(SemExtra.ConfigToArchConfig(C))(V)

@@ -14,29 +14,25 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(** Instructions as data *)
+
 module type S = sig
-  type t
+  type exec (* Instruction as instruction *)
+  type t    (* Instruction as data *)
+
+  val from_exec : exec -> t
+  val to_exec : t -> exec
 
   val compare : t -> t -> int
   val eq : t -> t -> bool
   val pp : t -> string
   val tr : InstrLit.t -> t
-  val nop : t option
-  val is_nop : t -> bool
-
-  val can_overwrite : t -> bool
-  val get_exported_label : t -> BranchTarget.t option
 
   module Set : MySet.S with type elt = t
 end
 
-module No : functor (I:sig type instr end) -> S with type t = I.instr
+module No :
+  functor (I:sig type instr end)
+    -> S
+       with type exec = I.instr and type t = I.instr
 
-module WithNop :
-functor
-  (I:sig
-       type instr
-       val nop : instr
-       val compare : instr -> instr -> int
-     end)
--> S with type t = I.instr

@@ -33,10 +33,6 @@ module Make(V:Constant.S)(C:Config) =
       | Pblr -> true
       | _ -> false
 
-    and is_nop = function
-      | A.Pnop -> true
-      | _ -> false
-
     let branch lbl = Pb lbl
 
 (* Ready for template compilation *)

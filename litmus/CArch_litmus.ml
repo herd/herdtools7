@@ -23,6 +23,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
 
     type reg = string
     type instruction = CBase.instruction
+    val nop : CBase.instruction option
     val dump_instruction : instruction -> string
 
   end

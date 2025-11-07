@@ -1,0 +1,11 @@
+Test A017 Allowed
+States 2
+1:r1=NOP;
+1:r1=instr:"add r1,r1,r1";
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:r1=instr:"add r1,r1,r1")
+Observation A017 Sometimes 1 1
+Hash=a9b77fa3ceabf83ffc604a308d8fa248
+

@@ -14,7 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(C:sig val is_morello : bool end) = struct
+module IdTr =
+ InstrUtils.IdTr
+   (struct type instr = AArch64Base.instruction end)
+
+module
+  Make
+    (C:sig val is_morello : bool end)
+    (Tr:InstrUtils.Tr with type data = AArch64Base.instruction) = struct
 
   module Lexer =
     AArch64Lexer.Make
@@ -36,4 +43,10 @@ module Make(C:sig val is_morello : bool end) = struct
         let is_morello = C.is_morello
         let parser = parse_instr
       end)
+      (Tr)
 end
+
+module Std =
+  Make
+    (struct let is_morello = false end)
+    (IdTr)

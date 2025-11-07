@@ -64,7 +64,7 @@ type scalar = ASLScalar.t
 
 type pteval = AArch64PteVal.t
 type addrreg = AArch64AddrReg.t
-type instr = ASLBase.Instr.t
+type instr = AArch64Base.instruction
 type cst = (scalar, pteval, addrreg, instr) Constant.t
 
 let pp_op = function
@@ -132,9 +132,14 @@ let is_address_mask = function
   | x::xs -> x >= 41 && do_is_interval_from x xs
 
 (* Complete mask *)
-let is_mask_64 = function
-  | 63::xs -> do_is_interval_from 63 xs
+let is_mask_sz sz =
+  let sz = sz-1 in
+  function
+  | x::xs when x=sz -> do_is_interval_from sz xs
   | _ -> false
+
+let is_mask_64 = is_mask_sz 64
+and is_mask_32 = is_mask_sz 32
 
 let list_set n =
   let rec list_set acc n elt = function
@@ -172,12 +177,16 @@ let do_op op c1 c2 =
         | ASLScalar.S_BitVector s -> Asllib.Bitvector.length s = 0
         | _ -> false
       in
-      (match (as_concrete c1, as_concrete c2) with
-      | (Some s, _) when is_empty s ->
+      (match (as_concrete c1, as_concrete c2,c2) with
+      | (Some s, _,_) when is_empty s ->
           Some c2
-      | (_, Some s) when is_empty s ->
+      | (_, Some s,_) when is_empty s ->
           Some c1
-      | (Some s1, Some s2) ->
+      | (Some (ASLScalar.S_BitVector c1),None,Constant.Instruction _)
+         when Asllib.Bitvector.is_zeros c1 ->
+         (* Unsigned extend of instruction *)
+          Some c2
+      | (Some s1, Some s2,_) ->
         let* s = ASLScalar.try_concat s1 s2 in
         return_concrete s
       | _ -> None)
@@ -186,11 +195,11 @@ let do_op op c1 c2 =
         match c2 with
         | Constant.PteVal _ -> return c2
         | _ ->  set_slice positions c1 c2
-      else if is_interval_from_to 127 64 positions then begin
+      else if is_interval_from_to 127 64 positions then
         match c1 with
         | Constant.PteVal _ -> return c1
         | _ ->  set_slice positions c1 c2
-      end else match c1,c2 with
+      else match c1,c2 with
         |  Constant.PteVal pte,Constant.Concrete s2 ->
             begin match positions with
               | [10] ->
@@ -216,30 +225,32 @@ let do_op1 op cst =
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_signed s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
       | _ -> None)
   | ToAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_sint64 s |> return_concrete
-      | Constant.Symbolic _|Constant.PteVal _ -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
       | _ -> None)
   | FromAArch64 -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.as_bv_64 s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
       | _ -> None)
   | ToIntU -> (
       match cst with
       | Constant.Concrete s ->
           ASLScalar.convert_to_int_unsigned s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      | Constant.(Symbolic _|PteVal _|Label _|Instruction _) -> Some cst
       | _ -> None)
   | ToBV sz -> (
-      match cst with
-      | Constant.Concrete s -> ASLScalar.convert_to_bv sz s |> return_concrete
-      | Constant.(Symbolic _|PteVal _) -> Some cst
+      match cst,sz with
+      | Constant.Concrete s,_ -> ASLScalar.convert_to_bv sz s |> return_concrete
+      | (Constant.(Symbolic _|PteVal _|Label _|Instruction _),64)
+      | (Constant.Instruction _,32) (* Instructions are 32bit wide *)
+        -> Some cst
       | _ -> None)
   | BVSlice positions -> (
       match cst with
@@ -278,12 +289,13 @@ let do_op1 op cst =
               (* Valid *)
                 let valid = pte.AArch64PteVal.valid in
                 Some (Constant.Concrete (ASLScalar.bv_of_bit valid))
-            | _ when  is_address_mask positions -> Some cst
-            | _ -> None
+            | _ ->
+                if is_address_mask positions then Some cst
+                else None
           end
-      | Constant.Symbolic x ->
-          if is_address_mask positions then
-            Some (Constant.Symbolic x)
+      | Constant.(Symbolic _|Label _ as cst) ->
+          if is_address_mask positions || is_mask_64 positions then
+            Some cst
           else begin
           (* MSB of virtual address is assumed null.
            * This hypothesis is reasonable for user programs,
@@ -299,6 +311,10 @@ let do_op1 op cst =
               -> Some (Constant.Concrete (ASLScalar.zeros 16))
             | _ -> None
           end
+      | Constant.Instruction _ ->
+          if is_mask_64 positions || is_mask_32 positions then
+            Some cst
+          else None
       | _ -> None)
   | BoolNot -> (
       let open Constant in
@@ -323,7 +339,16 @@ and andop p m  =
   AArch64PteVal.andop p @@ ASLScalar.to_int64 m
   |> Misc.app_opt ASLScalar.int64_to_bv
 
-let mask _ _ = None
+let mask c sz =
+  let open MachSize in
+  let open Constant in
+  match c,sz with
+(* The following are 64bits quantities, the last two being virtual addresses *)
+  | ((PteVal _|Symbolic _|Label _),Quad)
+(* Non-signed 32bit quantity *)
+  | (Instruction _,(Word|Quad))
+    -> Some c
+  | _,_ -> None
 
 let fromExtraPteVal pteval = pteval
 and toExtraPteVal pteval = pteval

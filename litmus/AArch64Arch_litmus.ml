@@ -22,8 +22,6 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
   include MakeAArch64Base.Make(MakeAArch64Base.NoMorello)
 
-  let features = [is_atomic,"atomic"]
-
   module V = V
 
 (* t1 is declared (or inferred) type, t2 is type from instruction *)
@@ -115,75 +113,77 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
       end)
 
-      let nop = I_NOP
+  let features = [is_atomic,"atomic"]
+
+  let user_handler_clobber = "x29"
+  let user_handler_clobbers = [ user_handler_clobber; ]
+
+  let default_sync_handler user =
+    if user then "el0_sync_64"
+    else "el1h_sync"
 
 
-      let user_handler_clobber = "x29"
-      let user_handler_clobbers = [ user_handler_clobber; ]
+  let vector_table is_user name =
+    let el1h_sync,el0_sync_64 =
+      if is_user then default_sync_handler false,name
+      else name, default_sync_handler true in
+    let ventry label k = ".align 7"::Printf.sprintf "b %s" label::k
+    and wentry _label k =
+      ".align 7"
+      ::Printf.sprintf "br %s" user_handler_clobber
+      ::k in
+    let ( ** ) label k = ventry label k in
+    let ( *** ) label k =
+      if is_user then wentry label k else ventry label k in
+    "adr %0,2f"::"b 1f"::
+    ".align 11"::"2:"::
+    "el1t_sync" ** "el1t_irq" ** "el1t_fiq" ** "el1t_error"
+    ** el1h_sync ** "el1h_irq" ** "el1h_fiq" ** "el1h_error"
+    ** el0_sync_64 *** "el0_irq_64" ** "el0_fiq_64" ** "el0_error_64"
+    ** "el0_sync_32" ** "el0_irq_32" ** "el0_fiq_32" ** "el0_error_32"
+    ** ["1:"]
 
-      let default_sync_handler user =
-        if user then "el0_sync_64"
-        else "el1h_sync"
+  module GetInstr = struct
 
+    type t = instruction
 
-      let vector_table is_user name =
-        let el1h_sync,el0_sync_64 =
-          if is_user then default_sync_handler false,name
-          else name, default_sync_handler true in
-        let ventry label k = ".align 7"::Printf.sprintf "b %s" label::k
-        and wentry _label k =
-          ".align 7"
-          ::Printf.sprintf "br %s" user_handler_clobber
-          ::k in
-        let ( ** ) label k = ventry label k in
-        let ( *** ) label k =
-          if is_user then wentry label k else ventry label k in
-        "adr %0,2f"::"b 1f"::
-         ".align 11"::"2:"::
-         "el1t_sync" ** "el1t_irq" ** "el1t_fiq" ** "el1t_error"
-         ** el1h_sync ** "el1h_irq" ** "el1h_fiq" ** "el1h_error"
-         ** el0_sync_64 *** "el0_irq_64" ** "el0_fiq_64" ** "el0_error_64"
-         ** "el0_sync_32" ** "el0_irq_32" ** "el0_fiq_32" ** "el0_error_32"
-         ** ["1:"]
+    let active = true
 
-      module GetInstr = struct
+    let self_instrs = [I_NOP; I_RET None; ]
 
-        type t = instruction
+    let lower_instr i = Misc.lowercase (dump_instruction i)
 
-        let self_instrs = [I_NOP; I_RET None; ]
+    let instr_name i =
+      MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
 
-        let lower_instr i = Misc.lowercase (dump_instruction i)
+    let fun_name i = sprintf "get%s" (instr_name i)
 
-        let instr_name i =
-          MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+    let dump_instr dump = function
+      | Constant.Instruction i -> instr_name i
+      | Constant.Label (p, l) ->
+          SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p l)
+      | v -> dump v
 
-        let fun_name i = sprintf "get%s" (instr_name i)
+    module Make(O:Indent.S) = struct
 
-        let dump_instr dump = function
-          | Constant.Instruction i -> instr_name i
-          | Constant.Label (p, l) -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p l)
-          | v -> dump v
-
-        module Make(O:Indent.S) = struct
-
-          let dump i =
-            O.f "static ins_t %s(void) {" (fun_name i) ;
-            O.oi "ins_t *x1;" ;
-            O.oi "ins_t r;" ;
-            O.oi "asm __volatile__ (" ;
-            O.fii "%S" "adr %[x1],0f\n\t" ;
-            O.fii "%S" "ldr %w[x2],[%[x1]]\n\t" ;
-            O.fii "%S" "b 1f\n" ;
-            O.fii "%S" "0:\n\t" ;
-            O.fii "\"%s\\n\"" (lower_instr i) ;
-            O.fii "%S" "1:\n" ;
-            O.oii ":[x1] \"=&r\" (x1),[x2] \"=&r\" (r)" ;
-            O.oii ":" ;
-            O.oii ": \"cc\", \"memory\"" ;
-            O.o ");" ;
-            O.oi "return r;" ;
-            O.o "}" ;
-            O.o ""
-        end
-      end
+      let dump i =
+        O.f "static ins_t %s(void) {" (fun_name i) ;
+        O.oi "ins_t *x1;" ;
+        O.oi "ins_t r;" ;
+        O.oi "asm __volatile__ (" ;
+        O.fii "%S" "adr %[x1],0f\n\t" ;
+        O.fii "%S" "ldr %w[x2],[%[x1]]\n\t" ;
+        O.fii "%S" "b 1f\n" ;
+        O.fii "%S" "0:\n\t" ;
+        O.fii "\"%s\\n\"" (lower_instr i) ;
+        O.fii "%S" "1:\n" ;
+        O.oii ":[x1] \"=&r\" (x1),[x2] \"=&r\" (r)" ;
+        O.oii ":" ;
+        O.oii ": \"cc\", \"memory\"" ;
+        O.o ");" ;
+        O.oi "return r;" ;
+        O.o "}" ;
+        O.o ""
+    end
+  end
 end

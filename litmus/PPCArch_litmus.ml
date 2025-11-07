@@ -94,7 +94,6 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
       end)
 
   let features = []
-  let nop = Pnop
 
   include HardwareExtra.No
 
@@ -102,9 +101,19 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
 
       type t = instruction
 
+      let active = true
+
       let self_instrs = [Pnop; ]
 
-      let lower_instr i = Misc.lowercase (dump_instruction i)
+      module PP =
+        PPMake
+          (struct
+            let pp_reg = pp_reg_short
+          end)
+
+
+      let lower_instr i =
+        PP.pp_instruction string_of_int  i |> Misc.lowercase
 
       let instr_name i =
         MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
@@ -116,19 +125,27 @@ module Make (O:Arch_litmus.Config)(V:Constant.S) = struct
         | v -> dump v
 
       module Make(O:Indent.S) = struct
-      let dump i =
-        O.f "static ins_t %s(void) {" (fun_name i) ;
-        O.oi "ins_t r = 0;" ;
-        O.oi "asm __volatile__ (" ;
-        O.fii "%S" "nop\n\t" ;
-        O.oii ":" ;
-        O.oii ":" ;
-        O.oii ": \"cc\", \"memory\"" ;
-        O.o ");" ;
-        O.oi "return r;" ;
-        O.o "}" ;
-        O.o ""
-    end
-  end
 
+        let dump i =
+          let lbl = ".L" ^ fun_name i in
+          O.f "static ins_t %s(void) {" (fun_name i) ;
+          O.oi "ins_t *p;" ;
+          O.oi "ins_t r = 0;" ;
+          O.oi "asm __volatile__ (" ;
+          O.fii "%S" "b 0f\n" ;
+          O.fii "%S" (lbl ^ ":\n\t") ;
+          O.fii "\"%s\\n\"" (lower_instr i) ;
+          O.fii "%S" "0:\n\t" ;
+          O.fii "%S" ("lis %[p]," ^ lbl ^ "@ha\n\t") ;
+          O.fii "%S" ("la %[p]," ^ lbl ^ "@l(%[p])\n\t") ;
+          O.fii "%S" "lwz %[r],0(%[p])\n" ;
+          O.oii ": [r] \"=&r\" (r),[p] \"=&r\" (p)" ;
+          O.oii ":" ;
+          O.oii ": \"cc\", \"memory\"" ;
+          O.o ");" ;
+          O.oi "return r;" ;
+          O.o "}" ;
+          O.o ""
+      end
+    end
 end
