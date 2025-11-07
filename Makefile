@@ -17,11 +17,13 @@ REGRESSION_TEST_MODE = test
 
 DUNE_PROFILE = release
 
+DIY                           = _build/install/default/bin/diy7
 DIYCROSS                      = _build/install/default/bin/diycross7
 DIYMICROENUM                  = _build/install/default/bin/diymicroenum7
 HERD                          = _build/install/default/bin/herd7
 LITMUS                        = _build/install/default/bin/litmus7
 LITMUS_LIB_DIR                = $(PWD)/litmus/libdir
+DIY_REGRESSION_TEST           = _build/default/internal/diy_regression_test.exe
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
@@ -360,6 +362,8 @@ arm-test::
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 ARM instructions tests: OK"
 
+test::aarch32-test
+test-local::aarch32-test
 aarch32-test::
 	@ echo
 	$(HERD_REGRESSION_TEST) \
@@ -369,58 +373,6 @@ aarch32-test::
 		-conf ./herd/tests/instructions/AArch32/aarch32.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch32 instructions tests: OK"
-
-test::aarch32-test
-test-local::aarch32-test
-
-diy-test:: diy-test-aarch64
-diy-test-aarch64:
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64 \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg 'A,L,P' \
-		-diycross-arg 'Pod**,Fenced**,DSB.SYd**,ISBd**,[Amo.Cas,Pod**],[Amo.Swp,Pod**],[Amo.StAdd,Pod**],[LxSx,Pod**]' \
-		-diycross-arg 'Rfe,Fre,Coe' \
-		-diycross-arg 'DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW,DpAddrCseldR,DpAddrCseldW,DpDataCseldW,DpCtrlCseldR,DpCtrlCseldW,[DpCtrldR,ISB],[DpCtrldW,ISB]' \
-		-diycross-arg 'Rfe,Fre,Coe,Hat' \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diycross7 tests: OK"
-
-diymicro-test:: diymicro-test-aarch64
-diymicro-test-aarch64:
-	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
-	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYMICROENUM) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diymicro/AArch64 \
-		$(DIYMICRO_EDGES_ARG) \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diymicro7 tests: OK"
-
-test-all:: diymicro-test-aarch64-asl
-test-all-asl:: diymicro-test-aarch64-asl
-diymicro-test-aarch64-asl: asl-pseudocode
-	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
-	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYMICROENUM) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diymicro/AArch64 \
-		-conf ./herd/tests/diymicro/AArch64/asl.cfg \
-		-j $(J) \
-		$(DIYMICRO_EDGES_ARG) \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
 test-bnfc:
 	@ echo
@@ -694,11 +646,45 @@ test.vmsa+mte:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
-test:: diy-test diymicro-test
-test-local:: diy-test diymicro-test
+### Diy tests, includes
+### - A `diy7` with `cycleonly` instance checks the cycle generations
+### - Several `diycross7` + `herd7` instances, check if the generated litmus tests
+###   are equivalent based on `herd7` result.
+test:: diy-test
+test-local:: diy-test
+
+diy-test:: diy-baseline-cycleonly
+diy-baseline-cycleonly::
+	@ echo
+	$(DIY_REGRESSION_TEST) \
+		-diy-path $(DIY) \
+		-conf ./gen/libdir/forbidden.conf \
+		-expected ./gen/tests/baseline-size-4.cycle.expected \
+		-diy-arg "-size" \
+		-diy-arg "4" \
+		$(REGRESSION_TEST_MODE)
+	@ echo "diy7 baseline configuration test: OK"
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
+
+diy-test:: diy-test-aarch64
+diy-test-aarch64:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diycross/AArch64 \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg 'A,L,P' \
+		-diycross-arg 'Pod**,Fenced**,DSB.SYd**,ISBd**,[Amo.Cas,Pod**],[Amo.Swp,Pod**],[Amo.StAdd,Pod**],[LxSx,Pod**]' \
+		-diycross-arg 'Rfe,Fre,Coe' \
+		-diycross-arg 'DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW,DpAddrCseldR,DpAddrCseldW,DpDataCseldW,DpCtrlCseldR,DpCtrlCseldW,[DpCtrldR,ISB],[DpCtrldW,ISB]' \
+		-diycross-arg 'Rfe,Fre,Coe,Hat' \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diycross7 tests: OK"
 
 diy-test:: diy-test-mixed
 diy-test-mixed::
@@ -889,6 +875,41 @@ diy-test-C:
                 -diycross-arg Pod**,[Fetch.Add,Rlx,PodW*] \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 C diycross7 tests: OK"
+
+### Diymicro test
+test:: diymicro-test
+test-local:: diymicro-test
+
+diymicro-test:: diymicro-test-aarch64
+diymicro-test-aarch64:
+	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
+	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYMICROENUM) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diymicro/AArch64 \
+		$(DIYMICRO_EDGES_ARG) \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diymicro7 tests: OK"
+
+test-all:: diymicro-test-aarch64-asl
+test-all-asl:: diymicro-test-aarch64-asl
+diymicro-test-aarch64-asl: asl-pseudocode
+	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
+	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYMICROENUM) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./herd/tests/diymicro/AArch64 \
+		-conf ./herd/tests/diymicro/AArch64/asl.cfg \
+		-j $(J) \
+		$(DIYMICRO_EDGES_ARG) \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
 .PHONY: asl-pseudocode
 asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
