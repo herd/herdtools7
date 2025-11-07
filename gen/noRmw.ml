@@ -27,4 +27,5 @@ module Make(A:sig type arch_atom end) = struct
   let applies_atom_rmw _ _ _ = assert false
   let show_rmw_reg _ = assert false
   let compute_rmw _ _ _ = assert false
+  let expand_rmw rmw = [rmw]
 end

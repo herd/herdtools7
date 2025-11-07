@@ -248,6 +248,8 @@ let fold_rmw f r = let r = f Add r in  f Exch r
 
 let fold_rmw_compat f r = f Exch r
 
+let expand_rmw rmw = [rmw]
+
 let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
 | (None,_)|(_, None) -> None
 | (Some mo_r,Some mo_w) ->
