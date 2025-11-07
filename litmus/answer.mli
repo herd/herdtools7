@@ -25,8 +25,7 @@ type completed = (* Answer for completed test *)
     doc : Name.t   ; (* Name of test *)
     src : string   ; (* Name of emitted source file *)
     fullhash : hash ; nprocs : int ; (* hash and numbre of threads *)
-    pac : bool     ; (* Requires pointer authentification *)
-    self : bool    ; (* Self modying code *)
+    flags: Flags.t ;
   }
 
 type answer =
