@@ -2,7 +2,10 @@ build
 aarch64
 other-instrs
 shared_pseudocode.asl
+features.asl
 notice.html
+registers-notice.html
+system_registers.asl
 *.log
-ISA_A64_xml_A_profile-2022-12
-ISA_A64_xml_A_profile-2022-12.tar.gz
+ISA_A64_xml_A_profile-*
+SysReg_xml_A_profile-*

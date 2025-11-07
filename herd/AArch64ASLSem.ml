@@ -36,6 +36,19 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_annotation (S_Try (body,[catcher],None))
 
+let setup_registers =
+  let open Asllib.AST in
+  let open Asllib.ASTUtils in
+  add_dummy_annotation
+    (S_Call
+       {
+         name = "_SetUpRegisters";
+         args = [];
+         params = [];
+         call_type = ST_Procedure;
+       })
+    [@@warning "-42"]
+
 let end_profile t0 msg : unit =
   let t1 = Sys.time () in
   if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
@@ -1167,9 +1180,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let open Asllib.ASTUtils in
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
-              let s = stmt_from_list [ decode; s; return_0 ] in
-              let s =
-                if is_vmsa then  catch_silent_exit s else s in
+              let s = stmt_from_list [ setup_registers; decode; s; return_0 ] in
+              let s = if is_vmsa then catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
         in

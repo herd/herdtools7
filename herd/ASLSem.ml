@@ -741,7 +741,7 @@ module Make (Conf : Config) = struct
 
 
     let compute_pte _ addr = addr >>= M.op1 Op.PTELoc
-    and get_oa _ pte = pte >>= M.op1 (Op.ArchOp1 ASLOp.OA)
+    and get_oa _ _n pte = pte >>= M.op1 (Op.ArchOp1 ASLOp.OA)
     and get_offset _ ma = ma >>= M.op1 Op.Offset
 
     let data_abort_fault (ii,_) addr write statuscode accessdesc =
@@ -962,7 +962,7 @@ module Make (Conf : Config) = struct
       let bv_var x = bv @@ var x in
       let bv_lit x = bv @@ lit x in
       let bv_64 = bv_lit 64 in
-      let ia_msb = 8 in
+      let bv_56 = bv_lit 56 in
       let binop = Asllib.ASTUtils.binop in
       let minus_one e = binop `SUB e (lit 1) in
       let pow_2 = binop `POW (lit 2) in
@@ -984,7 +984,7 @@ module Make (Conf : Config) = struct
         p1r "read_register" ~side_effecting
           ("reg", reg) ~returns:bv_64 read_register;
         p2 "write_register" ~side_effecting
-          ("data", bv_64) ("reg", reg) write_register;
+          ("reg", reg) ("data", bv_64) write_register;
         p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
         p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
         (* Memory *)
@@ -992,7 +992,7 @@ module Make (Conf : Config) = struct
           ~returns:(bv_var "N")
           ~side_effecting read_memory;
         p1a3r "read_memory_gen" ("N",None)
-          ("addr", bv_64)
+          ("addr", bv_56)
           ("accdesc", t_named "AccessDescriptor")
           ("access", t_named "EventAccess")
           ~returns:(bv_var "N")
@@ -1002,7 +1002,7 @@ module Make (Conf : Config) = struct
           ("data", bv_var "N")
           ~side_effecting write_memory;
         p1a4 "write_memory_gen" ("N",None)
-          ("addr", bv_64)
+          ("addr", bv_56)
           ("data", bv_var "N")
           ("accdesc", t_named "AccessDescriptor")
           ("access", t_named "EventAccess")
@@ -1010,26 +1010,25 @@ module Make (Conf : Config) = struct
           write_memory_gen;
 (* VMSA *)
         p1r ~side_effecting "ComputePtePrimitive"
-          ("addr", bv_64) ~returns:bv_64 compute_pte;
+          ("addr", bv_64) ~returns:bv_56 compute_pte;
         p1a1r ~side_effecting "ReadPtePrimitive" ("N", None)
-          ("addr", bv_64) ~returns:(bv_var "N") read_pte;
-        p1r ~side_effecting "GetOAPrimitive"
-          ("addr", bv_64) ~returns:(bv_lit (64-ia_msb)) get_oa;
+          ("addr", bv_56) ~returns:(bv_var "N") read_pte;
+        p1a1r ~side_effecting "GetOAPrimitive" ("N", None)
+          ("addr", bv_var "N") ~returns:bv_56 get_oa;
         p1r ~side_effecting "OffsetPrimitive"
-          ("addr", bv_64) ~returns:(bv_lit ia_msb) get_offset;
+          ("addr", bv_64) ~returns:integer get_offset;
         p4 ~side_effecting "DataAbortPrimitive"
-          ("addr",bv_64) ("write",boolean) ("statuscode",integer)
+          ("addr",bv_64) ("write",boolean) ("statuscode", t_named "Fault")
           ("accdesc",t_named "AccessDescriptor")
           data_abort_fault;
         p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
         p0r "GetHdPrimitive" ~returns:(bv_lit 1) get_hd;
         p1a2r ~side_effecting "ReadPteAgainPrimitive"
-          ("N",None) ("addr", bv_var "N")  ("is_write",boolean)
+          ("N", None) ("addr", bv_56) ("is_write",boolean)
           ~returns:(bv_var "N")
           read_pte_again;
         p1a3 "WritePtePrimitive"
-          ("N",None)
-          ("addr", bv_64)  ("data",bv_var "N")
+          ("N",None) ("addr", bv_56) ("data", bv_var "N")
           ("is_write",boolean) write_pte;
 (* Translations *)
          p1r "UInt"
@@ -1099,7 +1098,11 @@ module Make (Conf : Config) = struct
           let impls_vmsa =  build `ASLv1 "implementations-vmsa.asl" in
           patch ~patches:impls_vmsa ~src:impls
         else impls
-      and shared = build `ASLv0 "shared_pseudocode.asl" in
+      and shared =
+        build `ASLv1 "system_registers.asl"
+        @ build `ASLv1 "features.asl"
+        @ build `ASLv0 "shared_pseudocode.asl"
+      in
       let shared =
         (*
          * Remove from shared pseudocode the functions declared in stdlib because:

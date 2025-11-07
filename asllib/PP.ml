@@ -135,14 +135,12 @@ let rec pp_expr f e =
   | E_Var x -> pp_print_string f x
   | E_ATC (e, ty) -> fprintf f "@[%a@ as %a@]" pp_expr e pp_ty ty
   | E_Binop (b, e1, e2) ->
-      fprintf f "(@[<hov 2>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr
-        e2
+      fprintf f "(@[<hov>%a@ %s %a@])" pp_expr e1 (binop_to_string b) pp_expr e2
   | E_Unop (u, e) -> fprintf f "(%s %a)" (unop_to_string u) pp_expr e
   | E_Call { name; params = []; args } ->
-      fprintf f "@[<hov 2>%s(%a)@]" name pp_expr_list args
+      fprintf f "@[%s(%a)@]" name pp_expr_list args
   | E_Call { name; params; args } ->
-      fprintf f "@[<hov 2>%s{%a}(%a)@]" name pp_expr_list params pp_expr_list
-        args
+      fprintf f "%s{%a}(%a)" name pp_expr_list params pp_expr_list args
   | E_Slice (e, args) ->
       fprintf f "@[<hov 2>%a[%a]@]" pp_expr e pp_slice_list args
   | E_GetArray (e1, e2) -> fprintf f "@[<hov 2>%a[[%a]]@]" pp_expr e1 pp_expr e2
@@ -160,7 +158,7 @@ let rec pp_expr f e =
   | E_Record (ty, li) ->
       let pp_one f (x, e) = fprintf f "@[<h>%s =@ %a@]" x pp_expr e in
       fprintf f "@[<hv>%a {@ %a@;<1 -2>}@]" pp_ty ty (pp_comma_list pp_one) li
-  | E_Tuple es -> fprintf f "@[<hv 2>(%a)@]" pp_expr_list es
+  | E_Tuple es -> fprintf f "(%a)" pp_expr_list es
   | E_Array { length; value } ->
       fprintf f "@[<hv 2>array[[%a]] of %a@]" pp_expr length pp_expr value
   | E_EnumArray { enum; value } ->
@@ -168,7 +166,7 @@ let rec pp_expr f e =
   | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
-and pp_expr_list f = pp_comma_list pp_expr f
+and pp_expr_list f l = fprintf f "@[<hv>%a@]" (pp_comma_list pp_expr) l
 
 and pp_slice f = function
   | Slice_Single e -> pp_expr f e
@@ -272,7 +270,7 @@ let rec pp_lexpr f le =
         (pp_comma_list pp_print_string)
         li
   | LE_Discard -> pp_print_string f "-"
-  | LE_Destructuring les -> fprintf f "@[( %a )@]" (pp_comma_list pp_lexpr) les
+  | LE_Destructuring les -> fprintf f "@[(%a)@]" (pp_comma_list pp_lexpr) les
 
 let pp_loop_limit =
   pp_print_option @@ fun f e -> fprintf f "@ @[<h 2>limit@ %a@]" pp_expr e
@@ -290,7 +288,7 @@ let rec pp_stmt f s =
   match s.desc with
   | S_Pass -> pp_print_string f "pass;"
   | S_Seq (s1, s2) -> fprintf f "%a@ %a" pp_stmt s1 pp_stmt s2
-  | S_Assign (le, e) -> fprintf f "@[<h 2>%a =@ %a;@]" pp_lexpr le pp_expr e
+  | S_Assign (le, e) -> fprintf f "@[<hv 2>%a =@ %a;@]" pp_lexpr le pp_expr e
   | S_Call { name; params = []; args } ->
       fprintf f "@[<hov 2>%s(%a);@]" name pp_expr_list args
   | S_Call { name; params; args } ->
@@ -300,44 +298,42 @@ let rec pp_stmt f s =
   | S_Return None -> fprintf f "return;"
   | S_Cond (e, s1, { desc = S_Pass; _ }) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>@[<hv>%a@]@ end;@]" pp_expr e
-        pp_stmt s1
+        pp_stmt_block s1
   | S_Cond (e, s1, s2) ->
-      fprintf f
-        "@[<hv>@[<h>if %a@ then@]@;\
-         <1 2>@[<hv>%a@]@ else@;\
-         <1 2>@[<hv>%a@]@ end;@]"
-        pp_expr e pp_stmt s1 pp_stmt s2
+      fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@ end;@]"
+        pp_expr e pp_stmt_block s1 pp_stmt_block s2
   | S_Assert e -> fprintf f "@[<2>assert@ %a;@]" pp_expr e
   | S_While (e, limit, s) ->
       fprintf f "@[<hv>@[<h>while %a%a@ do@]@;<1 2>@[<hv>%a@]@ end;@]" pp_expr e
-        pp_loop_limit limit pp_stmt s
+        pp_loop_limit limit pp_stmt_block s
   | S_Repeat (s, e, limit) ->
       fprintf f "@[<hv 2>repeat@;<1 2>@[<hv>%a@]@;<1 0>@[<h>until@ %a%a;@]@]"
-        pp_stmt s pp_expr e pp_loop_limit limit
+        pp_stmt_block s pp_expr e pp_loop_limit limit
   | S_For { index_name; start_e; end_e; dir; body; limit } ->
-      fprintf f "@[<hv>@[<h>for %a = %a %s %a%a@ do@]@;<1 2>@[<hv>%a@]@ end@]"
+      fprintf f "@[<hv>@[<h>for %a = %a %s %a%a@ do@]@;<1 2>@[<hv>%a@]@ end;@]"
         pp_print_string index_name pp_expr start_e (pp_for_direction dir)
-        pp_expr end_e pp_loop_limit limit pp_stmt body
+        pp_expr end_e pp_loop_limit limit pp_stmt_block body
   | S_Decl (ldk, ldi, None, None) ->
-      fprintf f "@[<2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item ldi
+      fprintf f "@[<hv 2>%a %a;@]" pp_local_decl_keyword ldk pp_local_decl_item
+        ldi
   | S_Decl (ldk, ldi, None, Some e) ->
-      fprintf f "@[<2>%a %a =@ %a;@]" pp_local_decl_keyword ldk
+      fprintf f "@[<hv 2>%a %a =@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_expr e
   | S_Decl (ldk, ldi, Some ty, None) ->
-      fprintf f "@[<2>%a %a:@ %a;@]" pp_local_decl_keyword ldk
+      fprintf f "@[<hv 2>%a %a:@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_ty ty
   | S_Decl (ldk, ldi, Some ty, Some e) ->
-      fprintf f "@[<2>%a %a:@ %a =@ %a;@]" pp_local_decl_keyword ldk
+      fprintf f "@[<hv 2>@[<hov>%a %a:@ %a@] =@ %a;@]" pp_local_decl_keyword ldk
         pp_local_decl_item ldi pp_ty ty pp_expr e
   | S_Throw (e, _ty_annotation) -> fprintf f "@[<2>throw@ %a;@]" pp_expr e
   | S_Try (s, catchers, Some s') ->
       fprintf f
-        "@[<hv>@[try@ %a@]@ @[<v 2>catch@ %a@ @[<2>otherwise =>@ %a@]@]@ end@]"
-        pp_stmt s
+        "@[<hv>@[try@ %a@]@ @[<v 2>catch@ %a@ @[<2>otherwise =>@ %a@]@]@ end;@]"
+        pp_stmt_block s
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers pp_stmt s'
   | S_Try (s, catchers, None) ->
-      fprintf f "@[<2>try@ %a@ catch@ @[<v 2>%a@]@ end@]" pp_stmt s
+      fprintf f "@[try@;<1 2>%a@ catch@;<1 2>@{<v>%a@]@ end;@]" pp_stmt_block s
         (pp_print_list ~pp_sep:pp_print_space pp_catcher)
         catchers
   | S_Print { args; newline = false; debug = false } ->
@@ -351,11 +347,13 @@ let rec pp_stmt f s =
       fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name
         (pp_comma_list pp_expr) args
 
+and pp_stmt_block f s = fprintf f "@[<v>%a@]" pp_stmt s
+
 and pp_catcher f (name, ty, s) =
   match name with
-  | None -> fprintf f "@[<2>when@ %a@ => %a@]" pp_ty ty pp_stmt s
+  | None -> fprintf f "@[<2>when@ %a@ => %a@]" pp_ty ty pp_stmt_block s
   | Some name ->
-      fprintf f "@[<2>when %s@ :@ %a@ => %a@]" name pp_ty ty pp_stmt s
+      fprintf f "@[<2>when %s@ :@ %a@ => %a@]" name pp_ty ty pp_stmt_block s
 
 let pp_gdk f gdk =
   pp_print_string f
@@ -392,9 +390,11 @@ let pp_decl f =
         qualifier;
         override;
       } =
-    let pp_args = pp_comma_list pp_typed_identifier in
+    let pp_args f =
+      fprintf f "@[<hv>%a@]" (pp_comma_list pp_typed_identifier)
+    in
     let pp_return_type_opt f = function
-      | Some return_type -> fprintf f "@;<1 -2>=> %a" pp_ty return_type
+      | Some return_type -> fprintf f "@ => %a" pp_ty return_type
       | None -> ()
     in
     let pp_parameters f = function
@@ -419,28 +419,28 @@ let pp_decl f =
     in
     match subprogram_type with
     | ST_Function | ST_Procedure ->
-        fprintf f "@[<hv 4>%s%sfunc @[%s%a@] (@,%a)%a@]" qualifier_keyword
+        fprintf f "@[<hv 2>%s%sfunc @[%s%a@]@ (%a)%a@]" qualifier_keyword
           override_keyword name pp_parameters parameters pp_args args
           pp_return_type_opt return_type
     | ST_Getter ->
-        fprintf f "@[<hv 4>%s%sgetter %s%a [@,%a]%a@]" qualifier_keyword
+        fprintf f "@[<hv 2>%s%sgetter %s%a [%a]%a@]" qualifier_keyword
           override_keyword name pp_parameters parameters pp_args args
           pp_return_type_opt return_type
     | ST_Setter ->
         let new_v, args =
           match args with [] -> assert false | h :: t -> (h, t)
         in
-        fprintf f "@[<hv 4>%ssetter %s%a [@,%a]@ = %a@]" override_keyword name
+        fprintf f "@[<hv 2>%ssetter %s%a [%a]@ = %a@]" override_keyword name
           pp_parameters parameters pp_args args pp_typed_identifier new_v
   in
   let pp_body f = function
-    | SB_ASL s -> pp_stmt f s
+    | SB_ASL s -> pp_stmt_block f s
     | SB_Primitive _ -> fprintf f "pass;@ // primitive"
   in
   fun d ->
     match d.desc with
     | D_Func func ->
-        fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end@]" pp_func_sig func
+        fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end;@]" pp_func_sig func
           pp_body func.body
     | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
     | D_TypeDecl (x, ty, Some (s, [])) ->
