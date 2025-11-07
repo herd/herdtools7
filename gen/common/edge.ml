@@ -790,20 +790,23 @@ let fold_tedges f r =
     let expand_dir_list = F.expand_dp_dir dp in
     List.fold_left (fun acc sd -> f (Dir sd) acc) acc expand_dir_list
 
-  let do_expand_edge e f =
+  let do_expand_edge e f acc =
     match e.edge with
     | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Rmw _|Leave _|Back _
-      -> f e
+    | Hat |Leave _|Back _
+      -> f e acc
+    | Rmw rmw ->
+        let expand_rmw_list = F.expand_rmw rmw in
+        List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
       expand_dp_dir dp expr (fun new_expr ->
-        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);}))
+        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);}))
+          expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);})) acc
     | Fenced(fe,sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);}))
+          expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);})) acc
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf

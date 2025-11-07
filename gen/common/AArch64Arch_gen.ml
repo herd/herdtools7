@@ -768,7 +768,7 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
 let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
-type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
+type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
 
 type rmw_atom = atom (* Enforced by Rmw.S signature *)
 
@@ -780,10 +780,11 @@ let pp_rmw compat = function
   | Cas -> "Amo.Cas"
   | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
   | StOp op -> sprintf "Amo.St%s" (pp_aop op)
+  | AllAmo -> sprintf "Amo"
 
 let is_one_instruction = function
   | LrSc -> false
-  | LdOp _ | StOp _ | Swp | Cas -> true
+  | LdOp _ | StOp _ | Swp | Cas | AllAmo -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -798,7 +799,16 @@ let fold_rmw f r =
   let r = f Cas r in
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
+  let r = f AllAmo r in
   r
+
+let all_concrete_rmw =
+  fold_rmw ( fun rmw acc ->
+    if rmw <> AllAmo && rmw <> LrSc then rmw :: acc else acc
+  ) []
+let expand_rmw rmw = match rmw with
+  | LrSc | Swp | Cas | LdOp _ | StOp _ -> [rmw]
+  | AllAmo -> all_concrete_rmw
 
 let fold_rmw_compat f r = f LrSc r
 
@@ -824,7 +834,7 @@ let same_mixed (a1:atom option) (a2:atom option) =
 let applies_atom_rmw rmw ar aw = match rmw with
   | LrSc ->
      ok_rw ar aw && (do_cu || same_mixed ar aw)
-  | Swp|Cas|LdOp _ ->
+  | Swp|Cas|LdOp _| AllAmo ->
      ok_rw ar aw && same_mixed ar aw
   | StOp _ ->
      ok_w ar aw && same_mixed ar aw
@@ -832,6 +842,7 @@ let applies_atom_rmw rmw ar aw = match rmw with
 let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
+| AllAmo -> assert false
 
 let compute_rmw r old co =
     match r with
@@ -851,6 +862,7 @@ let compute_rmw r old co =
         | A_CLR -> old land (lnot co)
     end
     | LrSc | Swp | Cas  -> co
+    | AllAmo -> assert false
 
 include
     ArchExtra_gen.Make
