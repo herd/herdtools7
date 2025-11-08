@@ -275,15 +275,15 @@ module Check = struct
         if List.length fields <> List.length cells then raise (SpecError msg)
         else
           List.iter2 (fun (_, term) cell -> check_layout term cell) fields cells
-    | ConstantsSet names, Horizontal cells ->
+    | ConstantsSet names, (Horizontal cells | Vertical cells) ->
         if List.length names <> List.length cells then raise (SpecError msg)
         else List.iter2 (fun _ cell -> check_layout (Label "") cell) names cells
     | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
-        Horizontal cells ) ->
+        (Horizontal cells | Vertical cells) ) ->
         if List.length cells <> 2 then raise (SpecError msg)
         else check_layout from_term (List.nth cells 0);
         check_layout to_term (List.nth cells 1)
-    | _ -> ()
+    | _, Unspecified -> ()
 
   let check_math_layout definition_nodes =
     let check_math_layout_for_definition_node node =
