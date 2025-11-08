@@ -1795,7 +1795,7 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
 };
 
 semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
-  TReturning | TContinuing | TThrowing | TDynError
+  TContinuing | TReturning | TThrowing | TDynError
 {
    prose_description = "evaluates a list of \texttt{catch} clauses
                         {catchers}, an optional \texttt{otherwise} clause,
@@ -3136,16 +3136,20 @@ typing relation get_for_constraints(
   math_layout = [_,_],
 };
 
-semantics relation eval_stmt(env: envs, s: stmt) -> Returning((vs: list0(native_value), new_g: XGraphs), new_env: envs)
-    | Continuing(new_g: XGraphs, new_env: envs) | TThrowing | TDynError | TDiverging
+semantics relation eval_stmt(env: envs, s: stmt) ->
+    | Continuing(new_g: XGraphs, new_env: envs)
+    | TReturning
+    | TThrowing
+    | TDynError
+    | TDiverging
 {
    prose_description = "evaluates a statement {s} in an environment {env},
                         resulting in one of four types of configurations (see
                         more details in
                         \secref{KindsOfSemanticConfigurations}):
                         \begin{itemize}
-                        \item returning configurations with values {vs}, execution graph {new_g}, and a modified environment {new_env};
                         \item continuing configurations with an execution graph {new_g} and modified environment {new_env};
+                        \item returning configurations;
                         \item throwing configurations;
                         \item error configurations;
                         \item diverging configurations.
@@ -3179,7 +3183,7 @@ semantics relation eval_for(
   v_start: tint,
   dir: constants_set(UP,DOWN),
   v_end: tint,
-  body: stmt) -> TReturning | TContinuing | TThrowing | TDynError | TDiverging
+  body: stmt) -> TContinuing | TReturning | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates the \texttt{for} loop with the index
                         variable {index_name}, optional limit value\\

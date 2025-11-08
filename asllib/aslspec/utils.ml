@@ -17,6 +17,12 @@ let list_tl_or_empty list = match list with [] -> [] | _ :: t -> t
 *)
 let list_concat_map f l = List.concat (List.map f l)
 
+(** [list_tail list] returns the tail of [list], or raises an [Invalid_argument]
+    exception if [list] is empty. *)
+let list_tail = function
+  | [] -> raise (Invalid_argument "list_tail: empty list")
+  | _ :: t -> t
+
 (** [string_exists p s] checks if at least one character of [s] satisfies the
     predicate [p]. *)
 let string_exists p s =
