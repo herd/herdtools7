@@ -1,6 +1,3 @@
-.PHONY: default
-default: a64
-
 MAKEFLAGS += -j3
 
 PYTHON := python3
@@ -93,14 +90,21 @@ regs: $(SYSREGS_OFILE)
 .PHONY: a32
 a32:
 
-.PHONY: all
-all: a64 a32 regs $(FEATURES_OFILE)
+.PHONY: features
+features: $(FEATURES_OFILE)
+
+.PHONY: just-build
+just-build: a64 a32 regs features
 
 # Ensure that the content of .INTERMEDIATE is empty
 .PHONY: clean-tmp
-clean-tmp: | all
+clean-tmp: | just-build
 	rm -fr $(TARGETS_NAME)
 
+.DEFAULT_GOAL = build
+.PHONY: build
+build: just-build clean-tmp
+
 .PHONY: clean
-clean: clean-tmp
-	rm -fr aarch64 other-instrs $(TARGETS_LOG) $(TARGETS_OFILE) notice.html registers-notice.html
+clean:
+	rm -fr aarch64 other-instrs $(TARGETS_NAME) $(TARGETS_LOG) $(TARGETS_OFILE) notice.html registers-notice.html

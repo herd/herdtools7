@@ -893,7 +893,7 @@ diy-test-C:
 asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
 
 herd/libdir/asl-pseudocode/shared_pseudocode.asl:
-	@ $(MAKE) -C $(@D) all clean-tmp
+	@ $(MAKE) -C $(@D) build
 
 .PHONY: clean-asl-pseudocode
 clean-asl-pseudocode:
