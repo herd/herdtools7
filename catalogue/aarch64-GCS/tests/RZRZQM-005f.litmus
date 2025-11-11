@@ -1,0 +1,38 @@
+AArch64 RZRZQM-005f
+variant=shadowstack
+(*
+
+A GCS effect E1 is Barrier-ordered-before an Explicit Memory effect
+E2, or conversely an Explicit Memory effect E1 is
+Barrier-ordered-before a GCS effect E2, if the GCS effect is a GCSB or
+a GCSSS1 Memory effect, E1 appears in program order before E2, and if
+and only if one of the following applies:
+
+ - E1 appears in program order before a DMB FULL effect E3 and E3
+   appears in program order before E2.
+
+ - E1 is a Memory Write effect (W1) which appears in program order
+   before a DMB ST that appears in program order before E2.
+
+*)
+
+{
+SS(x,1);
+SS(z,1);
+
+0:X1=x;
+0:X3=y;
+0:GCSPR_EL1=z;
+
+1:X1=x;
+1:X3=y;
+
+}
+P0                                      | P1                                        ;
+MOV W2,#1                               | ADD X2,X1,#1                              ;
+STR W2,[X3] (* Memory (Write) effect *) | GCSSTR X2,[X1] (* GCS (Write) effect   *) ;
+DMB ST                                  | GCSB DSYNC     (* GCSB effect          *) ; 
+GCSSS1 X1   (* GCSSS1 effect         *) | DMB SY                                    ;
+                                        | LDR W0,[X3]    (* Memory (Read) effect *) ;
+
+exists fault(P0,GCS:SS1) /\ 1:X0=0
