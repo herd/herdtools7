@@ -1949,10 +1949,10 @@ Arguments:
                            assert (not post) ;
                            fun m1 m2 -> M.seq_mem m2 m1
                         | _ -> (>>|) in
-                      ((read_reg_ord_sz sz rs1 ii >>> fun v ->
+                      ((read_reg_data_sz sz rs1 ii >>> fun v ->
                         do_write_mem sz an aexp ac a v ii) >>|
                          (add_size a sz >>= fun a ->
-                          read_reg_ord_sz sz rs2 ii >>> fun v ->
+                          read_reg_data_sz sz rs2 ii >>> fun v ->
                           do_write_mem sz an aexp ac a v ii)))
                   sz Annot.N
                   ma (M.unitT V.zero)
@@ -1979,10 +1979,10 @@ Arguments:
             let (>>>) = M.data_input_next in
             do_str rd
               (fun ac a _ ii ->
-                (read_reg_ord_sz sz rs1 ii >>> fun v ->
+                (read_reg_data_sz sz rs1 ii >>> fun v ->
                   do_write_mem sz an aexp ac a v ii) >>|
                   (add_size a sz >>= fun a ->
-                    read_reg_ord_sz sz rs2 ii >>> fun v ->
+                    read_reg_data_sz sz rs2 ii >>> fun v ->
                       do_write_mem sz an aexp ac a v ii))
               sz Annot.N
               (get_ea_idx rd k ii)
