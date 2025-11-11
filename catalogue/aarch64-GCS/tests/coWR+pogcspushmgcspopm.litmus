@@ -1,0 +1,14 @@
+AArch64 coWR+pogcspushmgcspopm
+variant=shadowstack
+{
+
+  SS(x,1);
+
+  0:GCSPR_EL1=&x[1];
+}
+P0         ;
+MOV X1,#4  ;
+GCSPUSHM X1; (* GCS (Write) effect *)
+GCSPOPM X2 ; (* GCS (Read) effect  *)
+
+forall 0:X2=4
