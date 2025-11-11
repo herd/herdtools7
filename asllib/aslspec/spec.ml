@@ -5,6 +5,27 @@ open AST
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
+let raise_not_type_name_error relation_name term =
+  let msg =
+    Format.asprintf
+      "In relation '%s', output type term '%a' is not a type name or a set of \
+       constants. All relation output types, except for the first one, must be \
+       type names or a set of constants."
+      relation_name PP.pp_type_term term
+  in
+  raise (SpecError msg)
+
+let raise_missing_short_circuit_attribute relation_name term type_name =
+  let msg =
+    Format.asprintf
+      "In relation '%s', output type term '%a' references type '%s' which does \
+       not have a short-circuit macro defined. All relation output types, \
+       except for the first one, must reference types with short-circuit \
+       macros."
+      relation_name PP.pp_type_term term type_name
+  in
+  raise (SpecError msg)
+
 (** [vars_of_type_term term] returns the list of term-naming variables that
     occur at any depth inside [term]. *)
 let rec vars_of_type_term term =
@@ -275,15 +296,15 @@ module Check = struct
         if List.length fields <> List.length cells then raise (SpecError msg)
         else
           List.iter2 (fun (_, term) cell -> check_layout term cell) fields cells
-    | ConstantsSet names, Horizontal cells ->
+    | ConstantsSet names, (Horizontal cells | Vertical cells) ->
         if List.length names <> List.length cells then raise (SpecError msg)
         else List.iter2 (fun _ cell -> check_layout (Label "") cell) names cells
     | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
-        Horizontal cells ) ->
+        (Horizontal cells | Vertical cells) ) ->
         if List.length cells <> 2 then raise (SpecError msg)
         else check_layout from_term (List.nth cells 0);
         check_layout to_term (List.nth cells 1)
-    | _ -> ()
+    | _, Unspecified -> ()
 
   let check_math_layout definition_nodes =
     let check_math_layout_for_definition_node node =
@@ -352,6 +373,30 @@ module Check = struct
         ids_referenced_by_elem
     in
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
+
+  let check_relations_outputs elems id_to_defining_node =
+    let relations_defs =
+      List.filter_map
+        (function Elem_Relation def -> Some def | _ -> None)
+        elems
+    in
+    let check_alternative_outputs { Relation.name; output } =
+      let alternative_outputs = ListLabels.tl output in
+      List.iter
+        (fun term ->
+          match term with
+          | Label id -> (
+              match StringMap.find id id_to_defining_node with
+              | Node_Type typedef -> (
+                  match Type.short_circuit_macro typedef with
+                  | None -> raise_missing_short_circuit_attribute name term id
+                  | Some _ -> ())
+              | _ -> raise_not_type_name_error name term)
+          | ConstantsSet _ -> ()
+          | _ -> raise_not_type_name_error name term)
+        alternative_outputs
+    in
+    List.iter check_alternative_outputs relations_defs
 
   (** A module for checking that each prose template string ([prose_description]
       and [prose_application] attributes) to ensure it does not contain a
@@ -857,6 +902,7 @@ let from_ast ast =
   let defined_ids = List.map definition_node_name definition_nodes in
   let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
+  let () = Check.check_relations_outputs ast id_to_defining_node in
   let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
