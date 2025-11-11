@@ -142,7 +142,7 @@ let random_trees config small =
 let read_files files =
   List.to_seq files
   |> Seq.filter_map (fun file ->
-         try Some (Builder.from_file `ASLv1 file) with _ -> None)
+      try Some (Builder.from_file `ASLv1 file) with _ -> None)
 
 let get_ref_result instr ast =
   match instr with

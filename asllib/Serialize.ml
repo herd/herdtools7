@@ -336,7 +336,9 @@ let pp_body f = function
 let pp_override_info f override =
   addb f
   @@
-  match override with Impdef -> "Impdef" | Implementation -> "Implementation"
+  match override with
+  | Impdef -> "Impdef"
+  | Implementation -> "Implementation"
 
 let pp_decl f d =
   match d.desc with

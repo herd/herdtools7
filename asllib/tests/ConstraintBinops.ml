@@ -86,9 +86,9 @@ let print_test (op : int3_binop) (x, y, cs1, cs2) =
     let reduced_cs =
       List.filter_map filter_reduce_constraint_div cs
       |> List.map (function
-           | Constraint_Exact e -> Constraint_Exact (try_eval_expr e)
-           | Constraint_Range (e1, e2) ->
-               Constraint_Range (try_eval_expr e1, try_eval_expr e2))
+        | Constraint_Exact e -> Constraint_Exact (try_eval_expr e)
+        | Constraint_Range (e1, e2) ->
+            Constraint_Range (try_eval_expr e1, try_eval_expr e2))
     in
     let op = (op :> binop) in
     Format.asprintf

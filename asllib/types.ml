@@ -67,22 +67,28 @@ let rec get_structure (env : env) (ty : ty) : ty =
   in
   let with_pos = add_pos_from ty in
   (match ty.desc with
-  | T_Named x -> (
-      match IMap.find_opt x env.global.declared_types with
-      | None -> undefined_identifier ty x
-      | Some (t1, _) -> get_structure env t1)
-  | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
-  | T_Tuple tys -> T_Tuple (List.map (get_structure env) tys) |> with_pos
-  | T_Array (e, t) -> T_Array (e, (get_structure env) t) |> with_pos
-  | T_Collection fields ->
-      let fields' = assoc_map (get_structure env) fields |> canonical_fields in
-      T_Collection fields' |> with_pos
-  | T_Record fields ->
-      let fields' = assoc_map (get_structure env) fields |> canonical_fields in
-      T_Record fields' |> with_pos
-  | T_Exception fields ->
-      let fields' = assoc_map (get_structure env) fields |> canonical_fields in
-      T_Exception fields' |> with_pos)
+    | T_Named x -> (
+        match IMap.find_opt x env.global.declared_types with
+        | None -> undefined_identifier ty x
+        | Some (t1, _) -> get_structure env t1)
+    | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
+    | T_Tuple tys -> T_Tuple (List.map (get_structure env) tys) |> with_pos
+    | T_Array (e, t) -> T_Array (e, (get_structure env) t) |> with_pos
+    | T_Collection fields ->
+        let fields' =
+          assoc_map (get_structure env) fields |> canonical_fields
+        in
+        T_Collection fields' |> with_pos
+    | T_Record fields ->
+        let fields' =
+          assoc_map (get_structure env) fields |> canonical_fields
+        in
+        T_Record fields' |> with_pos
+    | T_Exception fields ->
+        let fields' =
+          assoc_map (get_structure env) fields |> canonical_fields
+        in
+        T_Exception fields' |> with_pos)
   |: TypingRule.Structure
 (* End *)
 
@@ -91,11 +97,11 @@ let rec get_structure (env : env) (ty : ty) : ty =
 (* Begin BuiltinSingular *)
 let is_builtin_singular ty =
   (match ty.desc with
-  | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
-  | T_Tuple _
-  | T_Array (_, _)
-  | T_Collection _ | T_Record _ | T_Exception _ | T_Named _ ->
-      false)
+    | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
+    | T_Tuple _
+    | T_Array (_, _)
+    | T_Collection _ | T_Record _ | T_Exception _ | T_Named _ ->
+        false)
   |: TypingRule.BuiltinSingularType
 (* End *)
 
@@ -349,11 +355,11 @@ module Domain = struct
     | ConstrainedDom c1, ConstrainedDom c2 -> (
         constraint_equal env c1 c2
         ||
-        try
-          let s1 = approx_constraint Over env c1
-          and s2 = approx_constraint Under env c2 in
-          IntSet.subset s1 s2
-        with CannotOverApproximate -> false)
+          try
+            let s1 = approx_constraint Over env c1
+            and s2 = approx_constraint Under env c2 in
+            IntSet.subset s1 s2
+          with CannotOverApproximate -> false)
     | Finite s1, ConstrainedDom c2 ->
         let s2 = approx_constraint Under env c2 in
         IntSet.subset s1 s2
@@ -420,8 +426,8 @@ let rec subtypes_names env s1 s2 =
 
 let subtypes env t1 t2 =
   (match (t1.desc, t2.desc) with
-  | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false)
+    | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
+    | _ -> false)
   |: TypingRule.Subtype
 (* End Subtype *)
 
@@ -454,22 +460,22 @@ and subtype_satisfies env t s =
   (* A type T subtype-satisfies type S if and only if all of the following
      conditions hold: *)
   (match ((make_anonymous env s).desc, (make_anonymous env t).desc) with
-  (* If S has the structure of an integer type then T must have the structure
+    (* If S has the structure of an integer type then T must have the structure
      of an integer type. *)
-  | T_Int _, T_Int _ ->
-      let d_s = Domain.symdom_of_type env s
-      and d_t = Domain.symdom_of_type env t in
-      Domain.symdom_subset_unions env d_t d_s
-  (* If S has the structure of a real/string/bool then T must have the
+    | T_Int _, T_Int _ ->
+        let d_s = Domain.symdom_of_type env s
+        and d_t = Domain.symdom_of_type env t in
+        Domain.symdom_subset_unions env d_t d_s
+    (* If S has the structure of a real/string/bool then T must have the
      same structure. *)
-  | ( ((T_Real | T_String | T_Bool) as s_anon),
-      ((T_Real | T_String | T_Bool) as t_anon) ) ->
-      s_anon = t_anon
-  (* If S has the structure of an enumeration type then T must have
+    | ( ((T_Real | T_String | T_Bool) as s_anon),
+        ((T_Real | T_String | T_Bool) as t_anon) ) ->
+        s_anon = t_anon
+    (* If S has the structure of an enumeration type then T must have
      the structure of an enumeration type with exactly the same
      enumeration literals. *)
-  | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
-  (*
+    | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
+    (*
       • If S has the structure of a bitvector type then T must have the
         structure of a bitvector type of the same width.
       • If S has the structure of a bitvector type which has bitfields then T
@@ -477,49 +483,49 @@ and subtype_satisfies env t s =
         every bitfield in S there must be a bitfield in T of the same name, width
         and offset, whose type type-satisfies the bitfield in S.
     *)
-  | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
-      let bitfields_subtype = bitfields_included env bf_s bf_t in
-      let widths_subtype =
-        let t_width_domain = Domain.symdom_of_width_expr w_t in
-        let s_width_domain = Domain.symdom_of_width_expr w_s in
-        Domain.symdom_subset_unions env t_width_domain s_width_domain
-      in
-      bitfields_subtype && widths_subtype
-  (* If S has the structure of an array type with elements of type E then
+    | T_Bits (w_s, bf_s), T_Bits (w_t, bf_t) ->
+        let bitfields_subtype = bitfields_included env bf_s bf_t in
+        let widths_subtype =
+          let t_width_domain = Domain.symdom_of_width_expr w_t in
+          let s_width_domain = Domain.symdom_of_width_expr w_s in
+          Domain.symdom_subset_unions env t_width_domain s_width_domain
+        in
+        bitfields_subtype && widths_subtype
+    (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
-  | T_Array (length_s, ty_s), T_Array (length_t, ty_t) -> (
-      type_equal env ty_s ty_t
-      &&
-      match (length_s, length_t) with
-      | ArrayLength_Expr length_expr_s, ArrayLength_Expr length_expr_t ->
-          expr_equal env length_expr_s length_expr_t
-      | ArrayLength_Enum (name_s, _), ArrayLength_Enum (name_t, _) ->
-          String.equal name_s name_t
-      | ArrayLength_Enum (_, _), ArrayLength_Expr _
-      | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
-          false)
-  (* If S has the structure of a tuple type then T must have the
+    | T_Array (length_s, ty_s), T_Array (length_t, ty_t) -> (
+        type_equal env ty_s ty_t
+        &&
+        match (length_s, length_t) with
+        | ArrayLength_Expr length_expr_s, ArrayLength_Expr length_expr_t ->
+            expr_equal env length_expr_s length_expr_t
+        | ArrayLength_Enum (name_s, _), ArrayLength_Enum (name_t, _) ->
+            String.equal name_s name_t
+        | ArrayLength_Enum (_, _), ArrayLength_Expr _
+        | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
+            false)
+    (* If S has the structure of a tuple type then T must have the
      structure of a tuple type with same number of elements as S,
      and each element in T must type-satisfy the corresponding
      element in S.*)
-  | T_Tuple li_s, T_Tuple li_t ->
-      List.compare_lengths li_s li_t = 0
-      && List.for_all2 (type_satisfies env) li_t li_s
-  (* If S has the structure of an exception type then T must have the
+    | T_Tuple li_s, T_Tuple li_t ->
+        List.compare_lengths li_s li_t = 0
+        && List.for_all2 (type_satisfies env) li_t li_s
+    (* If S has the structure of an exception type then T must have the
      structure of an exception type with at least the same fields
      (each with the same type) as S.
      If S has the structure of a record type then T must have the
      structure of a record type with at least the same fields
      (each with the same type) as S. *)
-  | T_Collection fields_s, T_Collection fields_t
-  | T_Exception fields_s, T_Exception fields_t
-  | T_Record fields_s, T_Record fields_t ->
-      list_for_all' fields_s @@ fun (name_s, ty_s) ->
-      list_exists' fields_t @@ fun (name_t, ty_t) ->
-      String.equal name_s name_t && type_equal env ty_s ty_t
-  | T_Named _, _ -> assert false
-  | _, _ -> false)
+    | T_Collection fields_s, T_Collection fields_t
+    | T_Exception fields_s, T_Exception fields_t
+    | T_Record fields_s, T_Record fields_t ->
+        list_for_all' fields_s @@ fun (name_s, ty_s) ->
+        list_exists' fields_t @@ fun (name_t, ty_t) ->
+        String.equal name_s name_t && type_equal env ty_s ty_t
+    | T_Named _, _ -> assert false
+    | _, _ -> false)
   |: TypingRule.SubtypeSatisfaction
 
 (* End *)
@@ -636,49 +642,51 @@ let rec lowest_common_ancestor ~loc env s t =
   let ( let+ ) o f = Option.map f o in
   (* The lowest common ancestor of types S and T is: *)
   (match (s.desc, t.desc) with
-  | _, _ when type_equal env s t ->
-      (* • If S and T are the same type: S (or T). *)
-      Some s
-  | T_Named name_s, T_Named name_t -> (
-      (* If S and T are both named types: the (unique) common supertype of S
+    | _, _ when type_equal env s t ->
+        (* • If S and T are the same type: S (or T). *)
+        Some s
+    | T_Named name_s, T_Named name_t -> (
+        (* If S and T are both named types: the (unique) common supertype of S
          and T that is a subtype of all other common supertypes of S and T. *)
-      match find_named_lowest_common_supertype env name_s name_t with
-      | Some name -> Some (T_Named name |> here)
-      | None ->
-          let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
-          lowest_common_ancestor ~loc env anon_s anon_t)
-  | _, T_Named _ | T_Named _, _ ->
-      let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
-      if type_equal env anon_s anon_t then
-        Some (match s.desc with T_Named _ -> s | _ -> t)
-      else lowest_common_ancestor ~loc env anon_s anon_t
-  | T_Int _, T_Int UnConstrained | T_Int UnConstrained, T_Int _ ->
-      (* If either S or T is an unconstrained integer type: the unconstrained
+        match find_named_lowest_common_supertype env name_s name_t with
+        | Some name -> Some (T_Named name |> here)
+        | None ->
+            let anon_s = make_anonymous env s
+            and anon_t = make_anonymous env t in
+            lowest_common_ancestor ~loc env anon_s anon_t)
+    | _, T_Named _ | T_Named _, _ ->
+        let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
+        if type_equal env anon_s anon_t then
+          Some (match s.desc with T_Named _ -> s | _ -> t)
+        else lowest_common_ancestor ~loc env anon_s anon_t
+    | T_Int _, T_Int UnConstrained | T_Int UnConstrained, T_Int _ ->
+        (* If either S or T is an unconstrained integer type: the unconstrained
          integer type. *)
-      Some integer
-  | T_Int _, T_Int (Parameterized _) | T_Int (Parameterized _), T_Int _ ->
-      lowest_common_ancestor ~loc env (to_well_constrained s)
-        (to_well_constrained t)
-  | T_Int (WellConstrained (cs_s, p1)), T_Int (WellConstrained (cs_t, p2)) ->
-      (* If S and T both are well-constrained integer types: the
+        Some integer
+    | T_Int _, T_Int (Parameterized _) | T_Int (Parameterized _), T_Int _ ->
+        lowest_common_ancestor ~loc env (to_well_constrained s)
+          (to_well_constrained t)
+    | T_Int (WellConstrained (cs_s, p1)), T_Int (WellConstrained (cs_t, p2)) ->
+        (* If S and T both are well-constrained integer types: the
          well-constrained integer type with domain the union of the
          domains of S and T. *)
-      Some (well_constrained ~precision:(precision_join p1 p2) (cs_s @ cs_t))
-  | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
-      (* We forget the bitfields if they are not equal. *)
-      Some (T_Bits (e_s, []) |> here)
-  | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
-    when array_length_equal env width_s width_t ->
-      let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
-      T_Array (width_s, t) |> here
-  | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->
-      (* If S and T both are tuple types with the same number of elements:
+        Some (well_constrained ~precision:(precision_join p1 p2) (cs_s @ cs_t))
+    | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
+        (* We forget the bitfields if they are not equal. *)
+        Some (T_Bits (e_s, []) |> here)
+    | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
+      when array_length_equal env width_s width_t ->
+        let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
+        T_Array (width_s, t) |> here
+    | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->
+        (* If S and T both are tuple types with the same number of elements:
          the tuple type with the type of each element the lowest common ancestor
          of the types of the corresponding elements of S and T. *)
-      let+ li =
-        List.map2 (lowest_common_ancestor ~loc env) li_s li_t |> unpack_options
-      in
-      here (T_Tuple li)
-  | _ -> None)
+        let+ li =
+          List.map2 (lowest_common_ancestor ~loc env) li_s li_t
+          |> unpack_options
+        in
+        here (T_Tuple li)
+    | _ -> None)
   |: TypingRule.LowestCommonAncestor
 (* End *)

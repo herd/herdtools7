@@ -72,7 +72,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: ocamlformat.0.27.0
+          ocaml-compiler: ocamlformat.0.28.1
           dune-cache: true
 
       - run: opam exec -- dune fmt
