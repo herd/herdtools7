@@ -209,8 +209,8 @@ module Make (Elt : ELT) = struct
     let no_adjacent { x; y; l; r; _ } n =
       let error = "Intervals should not be adjacent" in
       (match l with
-      | Empty -> Ok ()
-      | Node left -> ensure (Elt.succ left.y < x) error n)
+        | Empty -> Ok ()
+        | Node left -> ensure (Elt.succ left.y < x) error n)
       >>= fun () ->
       match r with
       | Empty -> Ok ()

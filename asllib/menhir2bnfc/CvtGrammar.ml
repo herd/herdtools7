@@ -767,7 +767,7 @@ end = struct
         (fun nterm _ -> not @@ NonterminalMap.mem nterm reduced_production_sets)
         production_to_terminals
       |> NonterminalMap.map (fun m ->
-             List.map fst (ProductionMap.bindings m) |> mk_productions)
+          List.map fst (ProductionMap.bindings m) |> mk_productions)
       |> NonterminalMap.bindings |> List.map snd |> List.concat
     in
     decls @ prec_decls

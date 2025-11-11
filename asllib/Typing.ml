@@ -669,61 +669,65 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let here x = add_pos_from ~loc x in
     (match (op, (t1.desc, t2.desc)) with
-    | _, (T_Named _, _) | _, (_, T_Named _) ->
-        let t1_anon = Types.make_anonymous env t1
-        and t2_anon = Types.make_anonymous env t2 in
-        apply_binop_types ~loc env op t1_anon t2_anon
-    | (`BAND | `BOR | `BEQ | `IMPL), (T_Bool, T_Bool) -> T_Bool |> here
-    | (`AND | `OR | `XOR | `ADD | `SUB), (T_Bits (w1, _), T_Bits (w2, _))
-      when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
-        T_Bits (w1, []) |> here
-    | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
-        T_Bits (width_plus env w1 w2, []) |> here
-    | `STR_CONCAT, _ ->
-        let+ () =
-          check_true (Types.is_singular env t1) @@ fun () ->
-          fatal_from ~loc (Error.ExpectedSingularType t1)
-        in
-        let+ () =
-          check_true (Types.is_singular env t2) @@ fun () ->
-          fatal_from ~loc (Error.ExpectedSingularType t2)
-        in
-        T_String |> here
-    | (`ADD | `SUB), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
-    | (`LE | `GE | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
-    | ( (`EQ | `NE),
-        (T_Int _, T_Int _ | T_Bool, T_Bool | T_Real, T_Real | T_String, T_String)
-      ) ->
-        T_Bool |> here
-    | (`EQ | `NE), (T_Bits (w1, _), T_Bits (w2, _))
-      when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
-        T_Bool |> here
-    | (`EQ | `NE), (T_Enum li1, T_Enum li2) when list_equal String.equal li1 li2
-      ->
-        T_Bool |> here
-    | (#StaticOperations.int3_binop as op), (T_Int c1, T_Int c2) -> (
-        match (c1, c2) with
-        | PendingConstrained, _ | _, PendingConstrained -> assert false
-        | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> here
-        | Parameterized _, _ | _, Parameterized _ ->
-            let t1_well_constrained = Types.to_well_constrained t1
-            and t2_well_constrained = Types.to_well_constrained t2 in
-            apply_binop_types ~loc env op t1_well_constrained
-              t2_well_constrained
-        | WellConstrained (cs1, p1), WellConstrained (cs2, p2) -> (
-            best_effort integer @@ fun _ ->
-            try
-              let cs, p3 = SOp.annotate_constraint_binop ~loc env op cs1 cs2 in
-              let precision = precision_join p1 (precision_join p2 p3) in
-              well_constrained ~loc ~precision cs
-            with TypingAssumptionFailed ->
-              fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
-    | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
-    | (`ADD | `SUB | `MUL), (T_Real, T_Real)
-    | `POW, (T_Real, T_Int _)
-    | `RDIV, (T_Real, T_Real) ->
-        T_Real |> here
-    | _ -> fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2)))
+      | _, (T_Named _, _) | _, (_, T_Named _) ->
+          let t1_anon = Types.make_anonymous env t1
+          and t2_anon = Types.make_anonymous env t2 in
+          apply_binop_types ~loc env op t1_anon t2_anon
+      | (`BAND | `BOR | `BEQ | `IMPL), (T_Bool, T_Bool) -> T_Bool |> here
+      | (`AND | `OR | `XOR | `ADD | `SUB), (T_Bits (w1, _), T_Bits (w2, _))
+        when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
+          T_Bits (w1, []) |> here
+      | `BV_CONCAT, (T_Bits (w1, _), T_Bits (w2, _)) ->
+          T_Bits (width_plus env w1 w2, []) |> here
+      | `STR_CONCAT, _ ->
+          let+ () =
+            check_true (Types.is_singular env t1) @@ fun () ->
+            fatal_from ~loc (Error.ExpectedSingularType t1)
+          in
+          let+ () =
+            check_true (Types.is_singular env t2) @@ fun () ->
+            fatal_from ~loc (Error.ExpectedSingularType t2)
+          in
+          T_String |> here
+      | (`ADD | `SUB), (T_Bits (w, _), T_Int _) -> T_Bits (w, []) |> here
+      | (`LE | `GE | `GT | `LT), (T_Int _, T_Int _ | T_Real, T_Real)
+      | ( (`EQ | `NE),
+          ( T_Int _, T_Int _
+          | T_Bool, T_Bool
+          | T_Real, T_Real
+          | T_String, T_String ) ) ->
+          T_Bool |> here
+      | (`EQ | `NE), (T_Bits (w1, _), T_Bits (w2, _))
+        when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
+          T_Bool |> here
+      | (`EQ | `NE), (T_Enum li1, T_Enum li2)
+        when list_equal String.equal li1 li2 ->
+          T_Bool |> here
+      | (#StaticOperations.int3_binop as op), (T_Int c1, T_Int c2) -> (
+          match (c1, c2) with
+          | PendingConstrained, _ | _, PendingConstrained -> assert false
+          | UnConstrained, _ | _, UnConstrained -> T_Int UnConstrained |> here
+          | Parameterized _, _ | _, Parameterized _ ->
+              let t1_well_constrained = Types.to_well_constrained t1
+              and t2_well_constrained = Types.to_well_constrained t2 in
+              apply_binop_types ~loc env op t1_well_constrained
+                t2_well_constrained
+          | WellConstrained (cs1, p1), WellConstrained (cs2, p2) -> (
+              best_effort integer @@ fun _ ->
+              try
+                let cs, p3 =
+                  SOp.annotate_constraint_binop ~loc env op cs1 cs2
+                in
+                let precision = precision_join p1 (precision_join p2 p3) in
+                well_constrained ~loc ~precision cs
+              with TypingAssumptionFailed ->
+                fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
+      | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
+      | (`ADD | `SUB | `MUL), (T_Real, T_Real)
+      | `POW, (T_Real, T_Int _)
+      | `RDIV, (T_Real, T_Real) ->
+          T_Real |> here
+      | _ -> fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2)))
     |: TypingRule.ApplyBinopTypes
   (* End *)
 
@@ -1275,18 +1279,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TInt *)
     | T_Int constraints ->
         (match constraints with
-        | PendingConstrained ->
-            fatal_from ~loc Error.UnexpectedPendingConstrained
-        | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
-        | WellConstrained (constraints, precision) ->
-            let new_constraints, sess =
-              list_map_split (annotate_constraint ~loc env) constraints
-            in
-            let ses = SES.unions sess in
-            (well_constrained ~loc:ty ~precision new_constraints, ses)
-        | Parameterized name ->
-            (ty, SES.reads_local name TimeFrame.Constant true)
-        | UnConstrained -> (ty, SES.empty))
+          | PendingConstrained ->
+              fatal_from ~loc Error.UnexpectedPendingConstrained
+          | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+          | WellConstrained (constraints, precision) ->
+              let new_constraints, sess =
+                list_map_split (annotate_constraint ~loc env) constraints
+              in
+              let ses = SES.unions sess in
+              (well_constrained ~loc:ty ~precision new_constraints, ses)
+          | Parameterized name ->
+              (ty, SES.reads_local name TimeFrame.Constant true)
+          | UnConstrained -> (ty, SES.empty))
         |: TypingRule.TInt
     (* Begin TBits *)
     | T_Bits (e_width, bitfields) ->
@@ -2516,21 +2520,24 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin LEDestructuring *)
     | LE_Destructuring les ->
         (match t_e.desc with
-        | T_Tuple tys ->
-            if List.compare_lengths tys les != 0 then
-              Error.fatal_from le
-                (Error.BadArity
-                   (Static, "LEDestructuring", List.length tys, List.length les))
-            else
-              let les', sess =
-                List.map2 (annotate_lexpr env) les tys |> List.split
-              in
-              let ses =
-                (* TODO left-hand-side conflicting union *)
-                SES.unions sess
-              in
-              (LE_Destructuring les' |> here, ses)
-        | _ -> conflict ~loc [ T_Tuple [] ] t_e)
+          | T_Tuple tys ->
+              if List.compare_lengths tys les != 0 then
+                Error.fatal_from le
+                  (Error.BadArity
+                     ( Static,
+                       "LEDestructuring",
+                       List.length tys,
+                       List.length les ))
+              else
+                let les', sess =
+                  List.map2 (annotate_lexpr env) les tys |> List.split
+                in
+                let ses =
+                  (* TODO left-hand-side conflicting union *)
+                  SES.unions sess
+                in
+                (LE_Destructuring les' |> here, ses)
+          | _ -> conflict ~loc [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
     (* End *)
     | LE_Slice (le1, slices) -> (
@@ -2912,21 +2919,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
            requires a return value expression that type-satisfies the return
            type of the subprogram. *)
         (match (env.local.return_type, e_opt) with
-        | None, Some _ | Some _, None ->
-            fatal_from ~loc (Error.BadReturnStmt env.local.return_type)
-            |: TypingRule.SReturn
-        | None, None ->
-            (S_Return None |> here, env, SES.empty) |: TypingRule.SReturn
-        | Some t, Some e ->
-            let t_e', e', ses = annotate_expr env e in
-            let () =
-              if false then
-                Format.eprintf
-                  "Can I return %a(of type %a) when return_type = %a?@."
-                  PP.pp_expr e PP.pp_ty t_e' PP.pp_ty t
-            in
-            let+ () = check_type_satisfies ~loc env t_e' t in
-            (S_Return (Some e') |> here, env, ses))
+          | None, Some _ | Some _, None ->
+              fatal_from ~loc (Error.BadReturnStmt env.local.return_type)
+              |: TypingRule.SReturn
+          | None, None ->
+              (S_Return None |> here, env, SES.empty) |: TypingRule.SReturn
+          | Some t, Some e ->
+              let t_e', e', ses = annotate_expr env e in
+              let () =
+                if false then
+                  Format.eprintf
+                    "Can I return %a(of type %a) when return_type = %a?@."
+                    PP.pp_expr e PP.pp_ty t_e' PP.pp_ty t
+              in
+              let+ () = check_type_satisfies ~loc env t_e' t in
+              (S_Return (Some e') |> here, env, ses))
         |: TypingRule.SReturn
     (* End *)
     (* Begin SCond *)
@@ -3054,19 +3061,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* SDecl.None( *)
         | LDK_Var, None ->
             (match ty_opt with
-            | None ->
-                fatal_from ~loc (Error.BadLDI ldi)
-                |: TypingRule.LDUninitialisedVar
-            | Some t ->
-                let t', ses_t' = annotate_type ~loc env t in
-                let e_init = base_value ~loc env t' in
-                let new_env =
-                  annotate_local_decl_item ~loc env t' LDK_Var ldi
-                in
-                ( S_Decl (LDK_Var, ldi, Some t', Some e_init) |> here,
-                  new_env,
-                  ses_t' )
-                |: TypingRule.LDUninitialisedTyped)
+              | None ->
+                  fatal_from ~loc (Error.BadLDI ldi)
+                  |: TypingRule.LDUninitialisedVar
+              | Some t ->
+                  let t', ses_t' = annotate_type ~loc env t in
+                  let e_init = base_value ~loc env t' in
+                  let new_env =
+                    annotate_local_decl_item ~loc env t' LDK_Var ldi
+                  in
+                  ( S_Decl (LDK_Var, ldi, Some t', Some e_init) |> here,
+                    new_env,
+                    ses_t' )
+                  |: TypingRule.LDUninitialisedTyped)
             |: TypingRule.SDecl
         | LDK_Let, None -> fatal_from ~loc UnrespectedParserInvariant)
     (* SDecl.None) *)

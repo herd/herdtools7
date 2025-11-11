@@ -547,15 +547,15 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEVar *)
     | E_Var x ->
         (match IEnv.find x env with
-        | Local v ->
-            let* () = B.on_read_identifier x (IEnv.get_scope env) v in
-            return_normal (v, env)
-        | Global v ->
-            let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
-            return_normal (v, env)
-        | NotFound ->
-            fatal_from e env
-            @@ Error.UndefinedIdentifier (C.error_handling_time, x))
+          | Local v ->
+              let* () = B.on_read_identifier x (IEnv.get_scope env) v in
+              return_normal (v, env)
+          | Global v ->
+              let* () = B.on_read_identifier x (B.Scope.global ~init:false) v in
+              return_normal (v, env)
+          | NotFound ->
+              fatal_from e env
+              @@ Error.UndefinedIdentifier (C.error_handling_time, x))
         |: SemanticsRule.EVar
     (* End *)
     | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
@@ -1625,15 +1625,15 @@ module Make (B : Backend.S) (C : Config) = struct
       eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
     (match res with
-    | Normal ([ v ], _genv) -> read_value_from v
-    | Normal _ ->
-        Error.(
-          fatal_unknown_pos
-            (MismatchedReturnValue (C.error_handling_time, main_name)))
-    | Throwing ((v, _, _), ty, _genv) ->
-        let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
-        Error.fatal_unknown_pos (Error.UncaughtException msg)
-    | Cutoff -> return zero)
+      | Normal ([ v ], _genv) -> read_value_from v
+      | Normal _ ->
+          Error.(
+            fatal_unknown_pos
+              (MismatchedReturnValue (C.error_handling_time, main_name)))
+      | Throwing ((v, _, _), ty, _genv) ->
+          let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
+          Error.fatal_unknown_pos (Error.UncaughtException msg)
+      | Cutoff -> return zero)
     |: SemanticsRule.Spec
 
   let run_typed env main_name ast = run_typed_env [] env main_name ast

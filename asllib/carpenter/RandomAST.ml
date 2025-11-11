@@ -221,7 +221,11 @@ module Untyped (C : Config.S) = struct
       let+ ctnts = Nat.list_sized ctnt n in
       well_constrained ctnts
     and t_bits n =
-      let+ width = expr n and+ bitfields = pure [] (* TODO *) in
+      let+ width = expr n
+      and+ bitfields =
+        pure []
+        (* TODO *)
+      in
       T_Bits (width, bitfields) |> annot
     in
     fix @@ fun ty n ->
