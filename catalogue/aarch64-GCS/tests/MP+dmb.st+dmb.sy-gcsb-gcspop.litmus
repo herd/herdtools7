@@ -1,0 +1,27 @@
+AArch64 MP+dmb.st+dmb.sy-gcsb-gcspop
+variant=shadowstack,vmsa
+{
+
+uint64_t z=0;
+
+SS(x,1);
+
+[PTE(z)]=(oa:PA(x)); (* Alias z to x, otherwise STR would fault *)
+
+0:X2=y;
+0:X4=z;
+
+1:X2=y;
+1:GCSPR_EL1=x;
+
+
+}
+
+P0            | P1                                    ;
+MOV X0,#4     | LDR W1,[X2] (* Memory (Read) Effect *);
+STR X0,[X4]   | DMB SY                                ;
+DMB ST        | GCSB DSYNC  (* GCSB Effect          *);
+MOV W1,#1     | GCSPOPM X3  (* GCS (Read) Effect    *);
+STR W1,[X2]   |                                       ;
+
+exists 1:X1=1 /\ 1:X3=0
