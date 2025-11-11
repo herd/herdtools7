@@ -67,7 +67,7 @@ let atom_to_bank _ = Code.Ord
 include NoMixed
 include NoWide
 
-module Value = Value.NoPte(struct type arch_atom = atom end)
+module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
 (* Fences, to be completed *)
 

@@ -210,7 +210,7 @@ include NoWide
 
 (* End of atoms *)
 
-module Value = Value.NoPte(struct type arch_atom = atom end)
+module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
 (**********)
 (* Fences *)

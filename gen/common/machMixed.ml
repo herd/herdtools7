@@ -36,7 +36,7 @@ let overlap a1 a2 =
   let i1 = tr a1 and i2 = tr a2 in
   not (disjoint i1 i2)
 
-module Make(C:Config)(Value:Value.S) = struct
+module Make(C:Config)(Value:Value_gen.S) = struct
 
   open Printf
 
@@ -79,7 +79,7 @@ module type ValsConfig = sig
   val endian : Endian.t
 end
 
-module Vals(C:ValsConfig)(Value:Value.S) = struct
+module Vals(C:ValsConfig)(Value:Value_gen.S) = struct
 
   let correct_offset = match C.endian with
   | Little -> fun _ o -> o

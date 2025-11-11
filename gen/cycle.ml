@@ -22,7 +22,7 @@ module type S = sig
   type edge
   module SIMD : Atom.SIMD
   type atom
-  module Value : Value.S with type atom = atom
+  module Value : Value_gen.S with type atom = atom
 
   (* TODO can be parametric by dir *)
   type event =

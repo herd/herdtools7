@@ -33,7 +33,7 @@ module Make
       type atom_acc = Plain | Atomic | NonTemporal
       type atom = atom_acc * MachMixed.t option
 
-      module Value = Value.NoPte(struct type arch_atom = atom end)
+      module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
       module ScopeGen = ScopeGen.NoGen
       module Mixed =

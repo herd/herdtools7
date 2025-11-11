@@ -33,7 +33,7 @@ module type S = sig
   module SIMD : Atom.SIMD
 
   type atom
-  module Value : Value.S with type atom = atom
+  module Value : Value_gen.S with type atom = atom
   type rmw
   type value = Value.v
 

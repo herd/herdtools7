@@ -32,7 +32,7 @@ module type I = sig
   val specials2 : special2 list
   val specials3 : special3 list
   val pp_i : int -> string
-  module Value:Value.S with type atom = arch_atom
+  module Value:Value_gen.S with type atom = arch_atom
 end
 
 module type S = sig
@@ -40,7 +40,7 @@ module type S = sig
   type arch_atom
   type arch_reg
 
-  module Value : Value.S with type atom = arch_atom
+  module Value : Value_gen.S with type atom = arch_atom
 
 (* Locations *)
   type location =

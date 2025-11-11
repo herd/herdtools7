@@ -32,7 +32,7 @@ module type S = sig
 
 (* SIMD writes and reads *)
   module SIMD : SIMD
-  module Value : Value.S with type atom = atom
+  module Value : Value_gen.S with type atom = atom
 
   val default_atom : atom
   val instr_atom : atom option

@@ -204,7 +204,7 @@ type atom = atom_acc * MachMixed.t option
 
 module Value = struct
 
-  include Value.Make(struct
+  include Value_gen.Make(struct
     type nonrec atom = atom
     type pte = AArch64PteVal.t
     let pp_pte = AArch64PteVal.pp_v
