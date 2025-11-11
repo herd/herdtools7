@@ -1,0 +1,14 @@
+AArch64 coWR+pogcsss1gcsss2
+variant=shadowstack
+{
+  SS(x,2);
+  SS(y,1) = ssval_t: {SSCap(y,1)};
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=y;
+}
+P0        ;
+GCSSS1 X0 ; (* GCSSS1 Memory effect, GCSPR = y[0], y[0] = SSCap(x[1],5)  *)
+GCSSS2 X0 ; (* GCS effect                                                *)
+
+forall ~fault(P0,GCS:SS2)

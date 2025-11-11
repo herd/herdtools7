@@ -1,0 +1,18 @@
+AArch64 LB+gcspop-gcsb-dmb.sy+dmb.ld-gcsb
+variant=shadowstack
+{
+SS(x,1);
+
+0:GCSPR_EL1=x;
+0:X3=y;
+
+1:X0=x;
+1:X3=y;
+}
+ P0                                      | P1                                      ;
+ GCSPOPM X1  (* GCS (Read) effect     *) | LDR W1,[X3]    (* Memory Read effect *) ;
+ GCSB DSYNC  (* GCSB effect           *) | DMB LD                                  ;
+ DMB SY                                  | GCSB DSYNC     (* GCSB effect        *) ;
+ MOV W2,#1                               | MOV X2,#4                               ;
+ STR W2,[X3] (* Memory (Write) effect *) | GCSSTR X2,[X0] (* GCS (Write) effect *) ;
+exists (0:X1=4 /\ 1:X1=1)

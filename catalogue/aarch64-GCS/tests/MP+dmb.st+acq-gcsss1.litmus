@@ -1,0 +1,27 @@
+AArch64 MP+dmb.st+acq-gcsss1
+variant=shadowstack,vmsa
+{
+uint64_t z=0;
+
+SS(x,1);
+SS(k,1);
+
+[PTE(z)]=(oa:PA(k)); (* Alias z to k, otherwise STR would fault *)
+
+0:X2=y;
+0:X3=k;
+0:X4=z;
+
+1:X2=y;
+1:X3=k;
+1:GCSPR_EL1=x;
+}
+
+P0            | P1;
+ADD X0,X3,#1  | LDAR W1,[X2] (* Memory Read effect (with Acquire) *);
+STR X0,[X4]   | GCSSS1 X3    (* GCSSS1                            *);
+DMB ST        |                                                     ;
+MOV W1,#1     |                                                     ;
+STR W1,[X2]   |                                                     ;
+
+exists 1:X1=1 /\ fault(P1,GCS:SS1)

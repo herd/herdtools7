@@ -1,0 +1,17 @@
+AArch64 coWR+gcsbblp
+variant=shadowstack
+{
+
+  SS(x,1);
+
+  0:GCSPR_EL1=&x[1];
+
+  0:X0=x;
+}
+P0         ;
+BL L1      ; (* GCS (Write) effect   *)
+L1:        ;
+GCSB DSYNC ; (* GCSB effect          *)
+LDR X2,[X0]; (* Memory (Read) effect *)
+
+forall (0:X2=label:"P0:L1")

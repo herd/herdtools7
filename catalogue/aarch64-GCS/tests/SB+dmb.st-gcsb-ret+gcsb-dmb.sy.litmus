@@ -1,0 +1,21 @@
+AArch64 SB+dmb.st-gcsb-ret+gcsb-dmb.sy
+variant=shadowstack
+{
+SS(x,1);
+
+0:GCSPR_EL1=x;
+0:X3=y;
+0:LR=label:"P0:L0";
+
+1:X1=x;
+1:X2=label:"P0:L0";
+1:X3=y;
+}
+P0                                      | P1                                        ;
+MOV W1,#1                               | GCSSTR X2,[X1] (* GCS (Write) effect   *) ;
+STR W1,[X3] (* Memory (Write) effect *) | GCSB DSYNC     (* GCSB effect          *) ;
+DMB ST                                  | DMB SY                                    ;
+GCSB DSYNC  (* GCSB effect           *) | LDR W0,[X3]    (* Memory (Read) effect *) ;
+RET         (* GCS (Read) effect     *) |                                           ;
+L0:                                     |                                           ;
+exists fault(P0,GCS:PRET) /\ 1:X0=0
