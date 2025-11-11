@@ -75,20 +75,20 @@ or a \dynamicerrorterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \terminateas \LexicalErrorConfig\\\\
-    \aslparse(\vstdtokens) \parsearrow \vstdparse \terminateas \ParseErrorConfig\\\\
-    \buildast(\vstdparse) \astarrow \vstdast \terminateas \BuildErrorConfig\\\\
+    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\\\\
+    \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\\\\
+    \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\\\\
     \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
     {
     \begin{array}{r}
       \vi \in \listrange(\vstdastrenamed): \setbuiltin(\vstdastrenamed[\vi]) \typearrow \\
-      \vstddeclast_i \terminateas \BuildErrorConfig
+      \vstddeclast_i \OrBuildError
     \end{array}
     }\\
     \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
-    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \terminateas \LexicalErrorConfig\\\\
-    \aslparse(\vspectokens) \parsearrow \vspecparse \terminateas \ParseErrorConfig\\\\
-    \buildast(\vspecparse) \astarrow \vspecast \terminateas \BuildErrorConfig\\\\
+    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\\\\
+    \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\\\\
+    \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
     \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
     \typecheckast(G^{\emptytenv}, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
     \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
@@ -1676,7 +1676,7 @@ It produces a build error when given a top-level declaration which is not a func
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \terminateas \BuildErrorConfig\\\\
+  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{

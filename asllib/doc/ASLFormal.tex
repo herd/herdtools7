@@ -404,13 +404,12 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-Option}{}
 \begin{definition}[Optional Data Type]
-\hypertarget{def-none}{}
 \hypertarget{def-some}{}
 The notation $\some{x} \triangleq \{x\}$ stands for a singleton
 set containing $x$.
 %
-The notation $\None \triangleq \emptyset$ is an alias for the empty
-set used in places where either the empty set or a singleton set is expected.
+The constant \RenderConstant{None} is an alias for the empty
+set. It is used in places where either the empty set or a singleton set is expected.
 %
 The type $\Option{T} \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
 all singleton sets of elements from $T$ as well as the empty set.
@@ -780,12 +779,12 @@ These short-circuit output configurations are typically, but not always, due to 
 \hypertarget{def-terminateas}{}
 In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.
 %
-A rule macro includes the special premise form $C \rulearrow C' \terminateas E$,
-which introduces alternative output configurations $C'$ and short-circuit $E$:
+A rule macro includes the special premise form $C \rulearrow C'\; \terminateas\; E$,
+which introduces the output configuration $C'$ and the short-circuiting alternative $E$:
 \begin{mathpar}
   \inferrule{
     \XP\\\\
-    C \rulearrow C' \terminateas E\\\\
+    C \rulearrow C'\; \terminateas\; E\\\\
     \XQ\\
   }
   {
@@ -811,7 +810,7 @@ Such a rule macro expands to the following pair of rules:
     V \rulearrow E
   }
 \end{mathpar}
-Intuitively, if $C$ transitions to $C'$ then $\sslash E$ can be ignored
+Intuitively, if $C$ transitions to $C'$ then $\terminateas\; E$ can be ignored
 and the rule is interpreted as usual (Option 1).
 However, if $C$ transitions into $E$ (Option 2) then the premises $\XQ$ are ignored,
 thereby short-circuiting the rule, and the input configuration
@@ -823,7 +822,7 @@ That is, a rule macro of the form
 \begin{mathpar}
   \inferrule{
     \XP\\\\
-    C \rulearrow C' \terminateas E_{1...m}\\\\
+    C \rulearrow C'\; \terminateas\; E_{1...m}\\\\
     \XQ\\
   }
   {
@@ -834,7 +833,7 @@ Stands for the set of rule macros
 \begin{mathpar}
   \inferrule{
     \XP\\\\
-    C \rulearrow C' \terminateas E_1\\\\
+    C \rulearrow C'\; \terminateas\; E_1\\\\
     \XQ\\
   }
   {
@@ -845,7 +844,7 @@ Stands for the set of rule macros
 \and
 \inferrule{
   \XP\\\\
-  C \rulearrow C' \terminateas E_m\\\\
+  C \rulearrow C'\; \terminateas\; E_m\\\\
   \XQ\\
 }
 {
@@ -871,7 +870,7 @@ This time, not simplified:
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \terminateas \DynErrorConfig\\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv\; \terminateas\; \DynErrorConfig\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
