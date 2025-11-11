@@ -18,6 +18,7 @@ open Printf
 
 module type I = sig
   type arch_reg
+  type arch_atom
 
   val is_symbolic : arch_reg -> bool
   val pp_reg : arch_reg -> string
@@ -31,10 +32,15 @@ module type I = sig
   val specials2 : special2 list
   val specials3 : special3 list
   val pp_i : int -> string
+  module Value:Value_gen.S with type atom = arch_atom
 end
 
 module type S = sig
+
+  type arch_atom
   type arch_reg
+
+  module Value : Value_gen.S with type atom = arch_atom
 
 (* Locations *)
   type location =
@@ -53,7 +59,7 @@ module type S = sig
   module LocMap : MyMap.S with type key = location
 
 (* Initial states *)
-  type initval = S of string | P of AArch64PteVal.t
+  type initval = S of string | P of Value.pte
   val pp_initval : initval -> string
   val initval_eq : initval -> initval -> bool
 
@@ -61,7 +67,7 @@ module type S = sig
   type init = (location * initval option) list
 
 (* complete init with necessary information *)
-  val complete_init : bool (* hexa *) -> Code.env -> init -> init
+  val complete_init : bool (* hexa *) -> Value.env -> init -> init
   val _pp_env: init -> string
 
 
@@ -112,8 +118,11 @@ with type arch_reg = I.arch_reg
 and type special = I.special
 and type special2 = I.special2
 and type special3 = I.special3
+and type arch_atom = I.arch_atom
+and module Value := I.Value
 = struct
   type arch_reg = I.arch_reg
+  type arch_atom = I.arch_atom
 
   type location =
     | Reg of int * arch_reg
@@ -148,6 +157,8 @@ and type special3 = I.special3
       end
   | Loc loc1,Loc loc2 -> compare loc1 loc2
 
+  module Value = I.Value
+
   module LocOrd = struct
     type t = location
     let compare = location_compare
@@ -161,14 +172,14 @@ and type special3 = I.special3
 
   (* - S of a plain value, a pte_* address or a phy_* address
      - P of a PteVal *)
-  type initval = S of string | P of AArch64PteVal.t
+  type initval = S of string | P of Value.pte
   let pp_initval = function
     | S v ->  pp_symbol v
-    | P p -> AArch64PteVal.pp_v p
+    | P p -> Value.pp_pte p
 
   let initval_eq v1 v2 = match v1,v2 with
   | S s1,S s2 -> Misc.string_eq s1 s2
-  | P p1,P p2 -> AArch64PteVal.compare p1 p2 = 0
+  | P p1,P p2 -> Value.pte_compare p1 p2 = 0
   | (S _,P _)|(P _,S _) -> false
 
   type init = (location * initval option) list
@@ -204,7 +215,11 @@ and type special3 = I.special3
     let i =
       (* Add the locs `loc` and values `v` inside `iv` to `i` *)
       List.fold_left
-        (fun env (loc,v) -> (Loc loc,Some (S (Code.pp_v ~hexa:hexa v)))::env) i iv in
+        (fun env (loc,v) ->
+          (* Do not include if the value is default zero *)
+          if Value.to_int v = 0 then env else
+          (Loc loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
+        ) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->
@@ -233,7 +248,7 @@ and type special3 = I.special3
           (* Add the associated physical address in a pteval `p` into `k` *)
           | Some (P p) ->
              add_some
-               (OutputAddress.refers_virtual p.AArch64PteVal.oa) k
+               (Value.refers_virtual p) k
           | None -> k in
           k)
         StringSet.empty i in

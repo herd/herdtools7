@@ -50,14 +50,6 @@ let tr_endian = Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
 
-(* Mixed size *)
-module Mixed =
-  MachMixed.Make
-    (struct
-      let naturalsize = Some C.naturalsize
-      let fullmixed = C.fullmixed
-    end)
-
 (* AArch64 has more atoms that others *)
 let bellatom = false
 module SIMD = struct
@@ -209,6 +201,58 @@ type atom_acc =
 let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
+
+module Value = struct
+
+  include Value_gen.Make(struct
+    type nonrec atom = atom
+    type pte = AArch64PteVal.t
+    let pp_pte = AArch64PteVal.pp_v
+    let default_pte = AArch64PteVal.default
+    let pte_compare = AArch64PteVal.compare
+
+    let do_setpteval _a f p loc =
+      let open AArch64PteVal in
+      let fs = match f with
+        | Set f|SetRel f -> f
+        | Read|ReadAcq|ReadAcqPc ->
+           Warn.user_error "Atom is not a pteval write" in
+      WPTESet.fold
+        (fun f p ->
+          let open WPTE in
+          match f with
+          | AF -> { p with af = 1-p.af; }
+          | DB -> { p with db = 1-p.db; }
+          | DBM -> { p with dbm = 1-p.dbm; }
+          | VALID -> { p with valid = 1-p.valid; }
+          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
+      fs p
+
+    let set_pteval a p =
+      match a with
+      | Pte f,None -> do_setpteval a f p
+      | _ -> Warn.user_error "Atom is not a pteval write"
+
+    let can_fault pte_val =
+      let open AArch64PteVal in
+      pte_val.valid = 0
+
+    let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
+  end)
+
+  let from_pte p = PteValue p
+  let to_pte = function
+    | PteValue p -> p
+    | _ -> Warn.user_error "Cannot convert to pte"
+end
+
+(* Mixed size *)
+module Mixed =
+  MachMixed.Make
+    (struct
+      let naturalsize = Some C.naturalsize
+      let fullmixed = C.fullmixed
+    end)(Value)
 
 let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
@@ -524,15 +568,14 @@ let is_ifetch a = match a with
 
    let tr_value ao v = match ao with
    | None| Some (_,None) -> v
-   | Some (_,Some (sz,_)) ->
-      Mixed.tr_value sz v
+   | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
 
    module ValsMixed =
      MachMixed.Vals
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
-       end)
+       end)(Value)
 
 let overwrite_value v ao w = match ao with
 | None
@@ -553,47 +596,6 @@ let overwrite_value v ao w = match ao with
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
      ValsMixed.extract_value v sz o
   | Some ((Pte _|Pair _|Instr),Some _) -> assert false
-
-(* Page table entries *)
-  module PteVal = struct
-
-    type pte_atom = atom
-
-    type t = AArch64PteVal.t
-
-    let pp = AArch64PteVal.pp_v
-
-    let default = AArch64PteVal.default
-
-    let compare = AArch64PteVal.compare
-
-    let do_setpteval a f p loc =
-      let open AArch64PteVal in
-      let fs = match f with
-        | Set f|SetRel f -> f
-        | Read|ReadAcq|ReadAcqPc ->
-           Warn.user_error "Atom %s is not a pteval write" (pp_atom a) in
-      WPTESet.fold
-        (fun f p ->
-          let open WPTE in
-          match f with
-          | AF -> { p with af = 1-p.af; }
-          | DB -> { p with db = 1-p.db; }
-          | DBM -> { p with dbm = 1-p.dbm; }
-          | VALID -> { p with valid = 1-p.valid; }
-          | OA -> { p with oa=OutputAddress.PHY (loc ()); })
-      fs p
-
-    let set_pteval a p =
-      match a with
-      | Pte f,None -> do_setpteval a f p
-      | _ -> Warn.user_error "Atom %s is not a pteval write" (pp_atom a)
-
-    let can_fault pte_val =
-      let open AArch64PteVal in
-      pte_val.valid = 0
-
-  end
 
 (* Wide accesses *)
 
@@ -829,10 +831,8 @@ let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
 
-let compute_rmw r old co = 
-    let old = Code.value_to_int old in
-    let co = Code.value_to_int co in
-    let new_value = match r with 
+let compute_rmw r old co =
+    match r with
     | LdOp op | StOp op ->
       begin match op with
         | A_ADD -> old + co
@@ -848,8 +848,7 @@ let compute_rmw r old co =
         | A_SET -> old lor co
         | A_CLR -> old land (lnot co)
     end
-    | LrSc | Swp | Cas  -> co in
-    Code.value_of_int new_value
+    | LrSc | Swp | Cas  -> co
 
 include
     ArchExtra_gen.Make
@@ -870,6 +869,8 @@ include
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
+      type arch_atom = atom
+      module Value = Value
     end)
 
 end

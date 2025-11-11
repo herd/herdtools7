@@ -26,8 +26,8 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (******)
     let ppo _f k = k
 
-    open MIPS
-    open C
+    include MIPS
+    include C
 
 
 (* Utilities *)
@@ -254,7 +254,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     | None -> Warn.fatal "MIPSCompile.emit_access"
     | Some d ->
         (* collapse the value `v` in event `e` to integer *)
-        let value = Code.value_to_int e.v in
+        let value = Value.to_int e.v in
         match d,e.atom,e.loc with
         | R,None,Data loc ->
             let r,init,cs,st = emit_load st p init loc in
@@ -278,7 +278,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
       let rR,st = A.alloc_reg st in
-      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
+      let rW,init,csv,st = U.emit_mov st p init (Value.to_int ew.v) in
       let cs,st = emit_pair p st rR rW rA in
       rR,init,csv@cs,st
 
@@ -293,7 +293,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
           (* collapse the value `v` in event `e` to integer *)
-          let value = Code.value_to_int e.v in
+          let value = Value.to_int e.v in
           begin match d,e.atom with
           | R,None ->
               let r,init,cs,st = emit_load_idx st p init loc r2 in
@@ -318,7 +318,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let emit_exch_dep_addr st p init er ew rd =
       let rA,init,st = U.next_init st p init (as_data er.loc) in
       let rR,st = A.alloc_reg st in
-      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
+      let rW,init,csv,st = U.emit_mov st p init (Value.to_int ew.v) in
       let cs,st = emit_pair p st rR rW tmp1 in
       rR,init,
       csv@
@@ -335,7 +335,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           let r2,st = A.alloc_reg st in
           let cs2 =
             [Instruction (OP (XOR,r2,r1,r1)) ;
-             Instruction (OPI (ADDU,r2,r2,(Code.value_to_int e.v))) ; ] in
+             Instruction (OPI (ADDU,r2,r2,(Value.to_int e.v))) ; ] in
           begin match e.atom with
           | None ->
               let init,cs,st = emit_store_reg st p init loc r2 in
@@ -390,7 +390,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 (* Check load *)
     let do_check_load p st r e =
       let ok,st = A.ok_reg st in
-      (fun k -> lift_code (branch_neq r (Code.value_to_int e.v) (Label.last p) [inc ok])@k),
+      (fun k -> lift_code (branch_neq r (Value.to_int e.v) (Label.last p) [inc ok])@k),
       A.next_ok st
 
     let check_load  p r e init st =

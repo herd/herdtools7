@@ -30,21 +30,22 @@ module Make
       include X86_64Base
       let tr_endian = Misc.identity
 
+      type atom_acc = Plain | Atomic | NonTemporal
+      type atom = atom_acc * MachMixed.t option
+
+      module Value = Value_gen.NoPte(struct type arch_atom = atom end)
+
       module ScopeGen = ScopeGen.NoGen
       module Mixed =
         MachMixed.Make
           (struct
             let naturalsize = Some C.naturalsize
             let fullmixed = C.fullmixed
-          end)
+          end)(Value)
 
       let bellatom = false
 
       module SIMD = NoSIMD
-
-      type atom_acc = Plain | Atomic | NonTemporal
-
-      type atom = atom_acc * MachMixed.t option
 
       let default_atom = Atomic,None
       let instr_atom = None
@@ -141,7 +142,7 @@ module Make
           (struct
             let naturalsize () = C.naturalsize
             let endian = endian
-          end)
+          end)(Value)
 
       let overwrite_value v ao w = match ao with
       | None | Some ((Plain|Atomic|NonTemporal),None) -> w
@@ -154,8 +155,6 @@ module Make
          ValsMixed.extract_value v sz o
 
       include NoWide
-
-      module PteVal = PteVal_gen.No(struct type arch_atom = atom end)
 
       (**********)
       (* Fences *)
@@ -258,5 +257,7 @@ module Make
             let specials = xmms
             let specials2 = []
             let specials3 = []
+            type arch_atom = atom
+            module Value = Value
           end)
     end

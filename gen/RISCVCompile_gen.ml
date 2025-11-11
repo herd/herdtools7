@@ -38,7 +38,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     module AV=RISCV
     open RISCV
-    open C
+    include C
     open Code
 
 (* Utilities *)
@@ -366,7 +366,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     | None,_ -> Warn.fatal "TODO"
     | Some d,Data loc ->
         (* collapse the value `v` in event `e` to integer *)
-        let value = Code.value_to_int e.v in
+        let value = Value.to_int e.v in
         begin match d,e.atom with
         | Code.R,None ->
             let r,init,cs,st = LOAD.emit_load AV.Rlx st p init loc in
@@ -423,7 +423,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let emit_exch st p init er ew =
       let rA,init,st = U.next_init st p init (Code.as_data er.loc) in
       let rR,st = next_reg st in
-      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
+      let rW,init,csv,st = U.emit_mov st p init (Value.to_int ew.v) in
       let mo = tr_swap er.C.atom ew.C.atom in
       rR,init,csv@[Instruction (amoswap mo rR rW rA)],st
 
@@ -452,7 +452,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let r2,st = next_reg st in
       let c = calc0 r2 rd in
       (* collapse the value `v` in event `e` to integer *)
-      let value = Code.value_to_int e.v in
+      let value = Value.to_int e.v in
       match e.dir,e.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
@@ -485,7 +485,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let r2,st = next_reg st in let c = calc0 r2 rd in
       let loc = Code.as_data er.loc in
       let rA,init,st = U.next_init st p init loc in
-      let rW,init,csv,st = U.emit_mov st p init (Code.value_to_int ew.v) in
+      let rW,init,csv,st = U.emit_mov st p init (Value.to_int ew.v) in
       let rR,st = next_reg st in
       let mo = tr_swap er.C.atom ew.C.atom in
       let swap = Instruction (amoswap mo rR rW rA) in
@@ -500,7 +500,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let r2,st = next_reg st in
           let cs2 =
             [Instruction (calc0 r2 r1) ;
-             Instruction (ori r2 r2 (Code.value_to_int e.v)) ; ] in
+             Instruction (ori r2 r2 (Value.to_int e.v)) ; ] in
           begin match e.atom with
           | None ->
               let init,cs,st = STORE.emit_store_reg AV.Rlx st p init loc r2 in
@@ -556,7 +556,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
 
     let check_load p r e init st =
       let ok,st = A.ok_reg st in
-      let rI,init,ci,st = U.emit_mov st p init (Code.value_to_int e.v) in
+      let rI,init,ci,st = U.emit_mov st p init (Value.to_int e.v) in
       init,
       (fun k ->
         ci@

@@ -55,7 +55,6 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   let ppo = Comp.ppo
 
-  open E
   type edge = E.edge
   type node = C.node
 
@@ -108,18 +107,22 @@ module U = TopUtils.Make(O)(Comp)
       let init,is,st = emit_overload st p init (ov-1) loc in
       init,i@is,st
 
-  let insert_overload n = match n.C.edge.E.edge with
-  | Po (_,Dir R,Dir (W|R)) -> true
-  | _ -> false
+  let insert_overload n =
+    let open E in
+    match n.C.edge.E.edge with
+    | Po (_,Dir R,Dir (W|R)) -> true
+    | _ -> false
 
   type prev_load =
     | No       (* Non-existent or irrelevant *)
     | Yes of E.dp * A.arch_reg * C.node
 
 (* Catch exchanges at the very last moment... *)
-  let as_rmw n = match n.C.edge.E.edge with
-  | Rmw rmw -> rmw
-  | _ -> assert false
+  let as_rmw n =
+    let open E in
+    match n.C.edge.E.edge with
+    | Rmw rmw -> rmw
+    | _ -> assert false
 
   let call_emit_access st p init n =
     let e = n.C.evt in
@@ -174,6 +177,7 @@ module U = TopUtils.Make(O)(Comp)
 let edge_to_prev_load o n = match o with
 | None -> No
 | Some r ->
+    let open E in
     begin match n.C.edge.E.edge with
     | Dp (dp,_,_) -> Yes (dp,r,n)
     | _ -> No
@@ -262,7 +266,7 @@ let get_fence n =
             | None   -> finals (* Code write *)
             | Some r -> (* fetch! *)
               let m,fenv =  finals in
-              m,F.add_final_v p r (IntSet.singleton @@ Code.value_to_int @@ U.fetch_val n)
+              m,F.add_final_v p r (IntSet.singleton @@ C.Value.to_int @@ U.fetch_val n)
                 fenv
             end),
           st
@@ -460,9 +464,9 @@ let max_set = IntSet.max_elt
         - `x` is the location represented by a string
         - `vs` the final value of the location `x` *)
       let _p,i,cs,fs = List.fold_left
-        ( fun (p, i, cs, fs) (x, (vs : (Code.v array * IntSet.t) list list)) ->
+        ( fun (p, i, cs, fs) (x, (vs : (C.Value.v array * IntSet.t) list list)) ->
         let vs = List.map ( List.map
-            ( fun (v, vset) -> (Array.map Code.value_to_int v, vset) )
+            ( fun (v, vset) -> (Array.map C.Value.to_int v, vset) )
           ) vs in
         (* - `i`, new init value after this iteration,
            - `c`, new pseudo code to be added into `cs`,
@@ -593,7 +597,7 @@ let max_set = IntSet.max_elt
     let rs = r::A.get_friends st r in
     let f =
       List.fold_right2
-        (fun r v -> F.add_final_loc p r (v |> List.map Code.value_to_int |> Code.add_vector O.hexa))
+        (fun r v -> F.add_final_loc p r (v |> List.map C.Value.to_int |> Code.add_vector O.hexa))
         rs vs f in
     i,code@c,f,st
 
@@ -602,7 +606,7 @@ let max_set = IntSet.max_elt
     else match U.find_next_pte_write n with
     | None -> assert false (* As U.check_here n returned true *)
     | Some nxt ->
-        let v = nxt.C.evt.C.pte in
+        let v = C.Value.to_pte nxt.C.evt.C.v in
         let r,i,c,st = Comp.emit_obs Pte st p i x in
         i,code@c,F.add_final_pte p r v f,st
 
@@ -627,8 +631,8 @@ let max_set = IntSet.max_elt
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
          | _ ->
-            let v = Code.value_to_int nxt.C.v
-            and prev_v = Code.value_to_int lst.C.evt.C.v in
+            let v = C.Value.to_int nxt.C.v
+            and prev_v = C.Value.to_int lst.C.evt.C.v in
             let all_lst =
               try StringMap.find x lsts
               with Not_found -> C.evt_null in
@@ -643,15 +647,15 @@ let max_set = IntSet.max_elt
               do_observe_local  bank O.obs_type st p i code f x (Some prev_v) v
          end
       | Data x,Tag ->
-          let v = Code.value_to_int lst.C.next.C.evt.C.v in
+          let v = C.Value.to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs Tag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_tag x v) f,st
       | Data x,CapaTag ->
-          let v = Code.value_to_int lst.C.next.C.evt.C.v in
+          let v = C.Value.to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs CapaTag st p i x in
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,CapaSeal ->
-          let v = Code.value_to_int lst.C.next.C.evt.C.v in
+          let v = C.Value.to_int lst.C.next.C.evt.C.v in
           let r,i,c,st = Comp.emit_obs CapaSeal st p i x in
           i,code@c,F.add_final_loc p r (Code.add_capability x v) f,st
       | Data x,Pte ->
@@ -661,7 +665,7 @@ let max_set = IntSet.max_elt
          let bank = nxt.C.bank in
          begin match bank with
          | Ord|Pair ->
-            let v = Code.value_to_int nxt.C.v in
+            let v = C.Value.to_int nxt.C.v in
             do_observe_local bank O.obs_type st p i code f x None v
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
@@ -706,7 +710,7 @@ let max_set = IntSet.max_elt
         (String.concat ","
            (List.map
               (fun (loc,v) ->
-                Printf.sprintf "%s->%s" loc (C.PteVal.pp v)) last_ptes)) ;
+                Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes)) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
     if O.verbose > 1 then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
@@ -1019,7 +1023,7 @@ let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
-  let com = match com with None -> pp_edges es | Some com -> com in
+  let com = match com with None -> E.pp_edges es | Some com -> com in
   let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
@@ -1041,11 +1045,11 @@ let test_of_cycle name
 let make_test name ?com ?info ?check ?scope es =
   try
     if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-    if O.verbose > 2 then eprintf "**Cycle %s**\n" (pp_edges es) ;
+    if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;
     let es,c,init = C.make es in
     test_of_cycle name ?com ?info ?check ?scope ~init es c
   with
   | Misc.Fatal msg|Misc.UserError msg ->
-      Warn.fatal "Test %s [%s] failed:\n%s" name (pp_edges es) msg
+      Warn.fatal "Test %s [%s] failed:\n%s" name (E.pp_edges es) msg
 
 end
