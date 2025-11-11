@@ -2175,14 +2175,14 @@ and the identifiers used by them, appearing in comments to their right.
   \item \AllApplyCase{s\_for}
   \begin{itemize}
     \item $\vs$ is the for statement $\SFor\left\{\begin{array}{rcl}
-      \Forindexname &:& \Ignore\\
+      \Forindexname &:& \vindexname\\
       \Forstarte &:& \vstarte\\
       \fordirection &:& \vdirection\\
       \Forende &:& \vende\\
       \Forbody &:& \vbody\\
       \Forlimit &:& \vlimit
     \end{array}\right\}$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$, $\vstarte$, and $\vende$ and applying $\usestmt$ to $\vsone$.
+    \item define $\ids$ as the union of $\vindexname$, and applying $\useexpr$ to $\vlimit$, $\vstarte$, and $\vende$ and applying $\usestmt$ to $\vsone$.
   \end{itemize}
 
   \item \AllApplyCase{while\_repeat}
@@ -2270,11 +2270,11 @@ and the identifiers used by them, appearing in comments to their right.
 
 \begin{mathpar}
 \inferrule[s\_for]{
-  \ids \eqdef \useexpr(\vlimit) \cup \useexpr(\vstarte) \cup \useexpr(\vende) \cup \usestmt(\vbody)
+  \ids \eqdef \{ \vindexname \} \cup \useexpr(\vlimit) \cup \useexpr(\vstarte) \cup \useexpr(\vende) \cup \usestmt(\vbody)
 }{
   {
   \usestmt\left(\overname{\SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \Ignore\\
+    \Forindexname &:& \vindexname\\
     \Forstarte &:& \vstarte\\
     \fordirection &:& \vdirection\\
     \Forende &:& \vende\\
