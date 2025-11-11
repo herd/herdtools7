@@ -1,0 +1,23 @@
+AArch64 RFZRGP-004
+variant=shadowstack
+(*
+
+Two effects E1 and E2 to the Same Location follow the same ordering
+requirements as two Explicit Memory effects to the Same Location if
+one of the following applies:
+
+ - E1 is a GCSSS1 Memory effect and E2 is a GCS Memory effect.
+
+*)
+{
+  SS(x,2);
+  SS(y,1) = ssval_t: {SSCap(y,1)};
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=y;
+}
+P0        ;
+GCSSS1 X0 ; (* GCSSS1 Memory effect, GCSPR = y[0], y[0] = SSCap(x[1],5)  *)
+GCSSS2 X0 ; (* GCS effect                                                *)
+
+forall ~fault(P0,GCS:SS2)
