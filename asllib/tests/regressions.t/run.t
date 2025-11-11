@@ -86,6 +86,14 @@ Global ignored:
   ASL Type error: cannot declare already declared element "g".
   [1]
 
+  $ aslref shadow-banning-bug-2.asl
+  File shadow-banning-bug-2.asl, line 5, character 2 to line 7, character 6:
+    for i = 0 to 1 do
+     pass;
+    end;
+  ASL Type error: cannot declare already declared element "i".
+  [1]
+
 Constrained-type satisfaction:
   $ cat >type-sat1.asl <<EOF
   > func illegal_f1()
