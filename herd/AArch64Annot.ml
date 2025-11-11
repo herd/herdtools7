@@ -18,6 +18,12 @@
 type t =
   A | XA | L | XL | X | N | Q | XQ | NoRet | S
   | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
+  | GCS (* GCS Memory Effect *)
+  | GCSA | GCSL (* Acquire/release GCS Memory Effects to model GCSSS2 *)
+
+let is_gcs = function
+  | GCS | GCSA | GCSL -> true
+  | _ -> false
 
 let is_speculated = function
   | S -> true
@@ -36,7 +42,7 @@ let is_noreturn = function
   | _ -> false
 
 let is_acquire = function
-  | A | XA -> true
+  | A | XA | GCSA -> true
   | _ -> false
 
 let is_acquire_pc = function
@@ -44,7 +50,7 @@ let is_acquire_pc = function
   | _ -> false
 
 let is_release = function
-  | L | XL -> true
+  | L | XL | GCSL -> true
   | _ -> false
 
 let sets = [
@@ -55,6 +61,7 @@ let sets = [
     "NoRet", is_noreturn;
     "S", is_speculated;
     "NT",is_non_temporal;
+    "G",is_gcs;
   ]
 
 let pp = function
@@ -69,3 +76,6 @@ let pp = function
   | NoRet -> "NoRet"
   | S -> "^s"
   | NTA -> "NT"
+  | GCS -> "G"
+  | GCSA -> "GAcq"
+  | GCSL -> "GRel"

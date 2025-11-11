@@ -896,6 +896,7 @@ module Make
         | L|XL -> XL
         | X|N  -> X
         | NoRet|S|NTA -> X (* Does it occur? *)
+        | GCS|GCSA|GCSL -> X
 
       let an_pte =
         let open Annot in
@@ -905,6 +906,7 @@ module Make
         | L|XL -> L
         | X|N -> N
         | NoRet|S|NTA -> N
+        | GCS|GCSA|GCSL -> N
 
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
@@ -3605,7 +3607,7 @@ Arguments:
         m_fault >>| set_elr_el1 lbl_v ii >>! B.fault [AArch64Base.elr_el1, lbl_v]
 
       let gcsstr r1 r2 ii =
-        let an = Annot.N in (* FIXME: GCS Memory Write Effect *)
+        let an = Annot.GCS in
         let mop ac a v = do_write_shadow_stack ac an a v ii in
         lift_memop r2 Dir.W true false
         (fun ac ma mv ->
@@ -3622,7 +3624,7 @@ Arguments:
 
       let gcspushm rs ii =
         let open AArch64Base in
-        let an = Annot.N
+        let an = Annot.GCS
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
         let m =
@@ -3633,7 +3635,7 @@ Arguments:
             let mop ac a _v =
                 write_reg rA a_virt ii >>|
                 M.data_input_next
-                (read_reg_data rs ii) (* FIXME: GCS Memory Write Effect*)
+                (read_reg_data rs ii)
                 (fun v -> do_write_shadow_stack ac an a v ii)
                 >>= M.ignore >>= fun () -> B.nextSetT rA a_virt in
             lift_memop rA Dir.W true false
@@ -3654,7 +3656,7 @@ Arguments:
 
       let gcspopm rd ii =
         let open AArch64Base in
-        let an = Annot.N
+        let an = Annot.GCS
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
         let m =
@@ -3662,7 +3664,6 @@ Arguments:
         (read_reg_addr rA ii)
         (fun a_virt ma ->
           let mop ac a =
-            (* FIXME: GCS Memory Read Effect *)
             let m = do_read_shadow_stack ac an a ii >>= fun v ->
               let commit = commit_pred_txt (Some "PCAligned") ii in
               let mok =
@@ -3742,14 +3743,13 @@ Arguments:
 
       let blop v_ret write_linkreg branch bop ii =
         let open AArch64Base in
-        let an = Annot.N
+        let an = Annot.GCS
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
         M.delay_kont "bl(gcs)"
         (read_reg_addr rA ii >>= fun addr -> M.add addr (V.intToV (-off)))
         (fun a_virt ma ->
           let mop ac a v =
-            (* FIXME: GCS Memory Write Effect *)
             do_write_shadow_stack ac an a v ii >>|
             write_reg rA a_virt ii >>|
             write_linkreg >>= M.ignore in
@@ -3772,7 +3772,7 @@ Arguments:
 
       let retop test i r ii =
         let open AArch64Base in
-        let an = Annot.N
+        let an = Annot.GCS
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
         M.delay_kont "ret(gcs)"
@@ -3784,7 +3784,6 @@ Arguments:
               mv >>|
               (let(>>=) = if Access.is_physical ac then M.bind_ctrldata else (>>=) in
                 ma >>= fun addr ->
-                  (* FIXME: GCS Memory Read Effect *)
                   do_read_shadow_stack ac an addr ii) >>= fun (target,v) ->
                     let commit =
                       let cond = Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r) in
@@ -3936,8 +3935,7 @@ Arguments:
       (read_reg_addr rA ii)
       (fun a_virt ma ->
       let mop ac incoming =
-        (* FIXME: GCS Memory Read Effect *)
-        let m = do_read_shadow_stack ac an incoming ii >>= fun outgoing ->
+        let m = do_read_shadow_stack ac Annot.GCSA incoming ii >>= fun outgoing ->
           let mask = V.intToV 0x7 in
           get_cap mask outgoing >>= fun cap ->
             let(>>*=) = M.bind_control_set_data_input_first in
@@ -3950,8 +3948,7 @@ Arguments:
                   (reset_cap mask outgoing >>= M.add (V.intToV (-off)) >>= fun v -> write_reg r v ii) >>|
                    (M.add a_virt (V.intToV (off)) >>= fun new_addr ->
                       write_reg rA new_addr ii) >>|
-                      (make_valid outgoing >>= fun outgoing_value -> do_write_shadow_stack ac an a outgoing_value ii >>= (*FIXME: GCS Memory Write Effect *)
-                       M.ignore >>= fun() -> create_barrier GCSB ii) (*FIXME: GCSB effect *)
+                      (make_valid outgoing >>= fun outgoing_value -> do_write_shadow_stack ac Annot.GCSL a outgoing_value ii)
                 in
                 lift_memop r Dir.W true false
                 (fun ac ma mv ->
