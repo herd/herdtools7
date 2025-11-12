@@ -19,7 +19,8 @@ concurrency:
 jobs:
   make-asldoc:
     runs-on: ubuntu-latest
-    container: texlive/texlive:latest-full
+    container: texlive/texlive:TL2024-historic
+               # `latest-full` started producing surprising errors when installing OCaml
 
     env:
       OPAMROOTISOK: 1 # Suppress warnings about running opam as root
