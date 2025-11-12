@@ -665,6 +665,16 @@ diy-baseline-cycleonly::
 		$(REGRESSION_TEST_MODE)
 	@ echo "diy7 baseline configuration test: OK"
 
+diy-test:: diy-ifetch-cycleonly
+diy-ifetch-cycleonly::
+	@ echo
+	$(DIY_REGRESSION_TEST) \
+		-diy-path $(DIY) \
+		-conf ./gen/libdir/forbidden_ifetch.conf \
+		-expected ./gen/tests/ifetch.cycle.expected \
+		$(REGRESSION_TEST_MODE)
+	@ echo "diy7 ifetch configuration test: OK"
+
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
 
