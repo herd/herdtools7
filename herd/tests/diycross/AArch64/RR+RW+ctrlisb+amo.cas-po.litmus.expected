@@ -1,0 +1,13 @@
+Test RR+RW+ctrlisb+amo.cas-po Allowed
+States 4
+0:X1=0; 0:X3=0; 1:X1=0;
+0:X1=0; 0:X3=1; 1:X1=0;
+0:X1=1; 0:X3=0; 1:X1=0;
+0:X1=1; 0:X3=1; 1:X1=0;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (0:X1=1 /\ 0:X3=0 /\ 1:X1=0)
+Observation RR+RW+ctrlisb+amo.cas-po Sometimes 2 6
+Hash=d0d2d3f73c71578091cc7e349e382cc1
+

@@ -3,6 +3,7 @@
   herd_catalogue_regression_test
   herd_diycross_regression_test
   herd_regression_test
+  diy_regression_test
   lint_shelves
   herd_redirect
   herd_test

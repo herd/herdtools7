@@ -1,0 +1,13 @@
+Test LB+data+rmw-po Allowed
+States 4
+0:X1=0; 1:X1=0; [y]=1;
+0:X1=0; 1:X1=1; [y]=2;
+0:X1=1; 1:X1=0; [y]=1;
+0:X1=1; 1:X1=1; [y]=2;
+Loop Ok
+Witnesses
+Positive: 6 Negative: 12
+Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
+Observation LB+data+rmw-po Sometimes 6 12
+Hash=45f26858cc97fb43bb59b07806521638
+
