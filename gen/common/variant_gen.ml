@@ -48,8 +48,8 @@ type t =
 let tags =
   ["AsAmo";"ConstsInInit";
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
-   "Self"; "MemTag";
-   "NoVolatile"; "Morello"; "kvm"; "FullKvm"; "NoFault";
+   "Ifetch(Self)"; "MemTag";
+   "NoVolatile"; "Morello"; "VMSA(KVM)"; "NoFault";
    "Neon"; "ConstrainedUnpredictable"; ]
 
 let parse tag = match Misc.lowercase tag with
@@ -59,11 +59,11 @@ let parse tag = match Misc.lowercase tag with
 | "fullmixed" -> Some FullMixed
 | "mixeddisjoint"|"disjoint" -> Some MixedDisjoint
 | "mixedstrictoverlap"|"strictoverlap" -> Some MixedStrictOverlap
-| "self" -> Some Self
+| "ifetch" | "self" -> Some Self
 | "memtag" -> Some MemTag
 | "novolatile" -> Some NoVolatile
 | "morello" -> Some Morello
-| "kvm" -> Some KVM
+| "kvm" | "vmsa" -> Some KVM
 | "fullkvm" -> Some FullKVM
 | "nofault" -> Some NoFault
 | "neon" -> Some Neon
@@ -79,11 +79,11 @@ let pp = function
   | FullMixed -> "FullMixed"
   | MixedDisjoint -> "MixedDisjoint"
   | MixedStrictOverlap -> "MixedStrictOverlap"
-  | Self -> "Self"
+  | Self -> "Ifetch"
   | MemTag -> "MemTag"
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
-  | KVM -> "kvm"
+  | KVM -> "VMSA"
   | FullKVM -> "FullKvm"
   | NoFault -> "NoFault"
   | Neon -> "Neon"
