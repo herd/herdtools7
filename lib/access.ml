@@ -29,6 +29,10 @@ let is_physical = function
   | PHY|PHY_PTE -> true
   | REG|VIR|PTE|TLB|TAG -> false
 
+let is_pte = function
+  | PTE|PHY_PTE -> true
+  | REG|VIR|PHY|TLB|TAG -> false
+
 let compatible k1 k2 = match k1,k2 with
   | ((PTE|PHY_PTE),(PTE|PHY_PTE)) -> true
   | _,_ -> k1=k2

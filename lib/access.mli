@@ -23,4 +23,6 @@ val pp : t -> string
 
 val is_physical : t -> bool
 
+val is_pte : t -> bool
+
 val compatible : t -> t -> bool
