@@ -32,6 +32,17 @@ val arch_opt : Archs.t ref -> spec
 
 val parse_cmdline : spec list -> (string -> unit) -> unit
 
+module type Monad = sig
+  type 'a t
+  val pure : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+
+  module Infix : sig
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+    val (let*) : 'a t -> ('a -> 'b t) -> 'b t
+  end
+end
+
 module List : sig
   (* For compatibility with ocaml <= 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
