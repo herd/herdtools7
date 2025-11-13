@@ -61,6 +61,17 @@ let parse_cmdline options get_cmd_arg =
     get_cmd_arg
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
 
+module type Monad = sig
+  type 'a t
+  val pure : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+
+  module Infix : sig
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+    val (let*) : 'a t -> ('a -> 'b t) -> 'b t
+  end
+end
+
 module List = struct
   let concat_map f l =
     let open List in
