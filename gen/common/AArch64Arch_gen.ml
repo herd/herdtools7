@@ -863,7 +863,7 @@ let pp_fence f = match f with
     (match loc with Prev -> "p"| Next -> "n")
 
 let fold_cumul_fences f k =
-   do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
+   do_fold_dmb_dsb (fun b k -> f (Barrier b) k) k
 
 let fold_shootdown f acc =
   if not do_kvm then acc
@@ -894,7 +894,7 @@ let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
   let k = fold_cmo f k in
-  fold_barrier do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
+  fold_barrier (fun b k -> f (Barrier b) k) k
 
 
 let fold_some_fences f k =
