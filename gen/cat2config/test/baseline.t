@@ -104,11 +104,11 @@ aarch64hwreqs.cat
 aarch64deps.cat
   $ mcat2config7 -set-libdir ./libdir -let lwfs libdir/aarch64.cat
   Pos*W
-Pure unions
+Pure unions (temporarily disabled as their output is very large)
 $ mcat2config7 -set-libdir ./libdir -let pick-lob libdir/aarch64.cat
 $ mcat2config7 -set-libdir ./libdir -let hw-reqs libdir/aarch64.cat
 $ mcat2config7 -set-libdir ./libdir -let obs libdir/aarch64.cat
-Recursive unions
+Recursive unions (temporarily disabled as their output is very large)
 $ mcat2config7 -set-libdir ./libdir -let ob libdir/aarch64.cat
 $ mcat2config7 -set-libdir ./libdir -let lob libdir/aarch64.cat
 $ mcat2config7 -set-libdir ./libdir -let local-hw-reqs libdir/aarch64.cat
