@@ -46,4 +46,11 @@ end
 module List : sig
   (* For compatibility with ocaml <= 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+
+  include Monad with type 'a t := 'a list
+
+  module Traversal : (M : Monad) ->
+    sig
+      val fold_left : ('acc -> 'a -> 'acc M.t) -> 'acc -> 'a list -> 'acc M.t
+    end
 end
