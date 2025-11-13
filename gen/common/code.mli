@@ -40,7 +40,7 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext
+type ie = Int|Ext|UnspecCom
 
 (* Change of location across edge *)
 type sd = Same|Diff|UnspecLoc
@@ -58,8 +58,8 @@ val pp_sd : sd -> string
 val seq_sd : sd -> sd -> sd
 val is_same_loc : sd -> bool
 val is_both_loc : sd -> bool
-val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
 (* The first boolean indicates whether wildcard syntax is included in the fold *)
+val fold_ie : bool -> (ie -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd : bool -> (sd -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr : bool -> (sd -> extr -> 'a -> 'a) -> 'a -> 'a
