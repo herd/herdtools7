@@ -238,6 +238,14 @@ let parse_set_id (s : string) : set_nf option =
     | "emptyset" -> Some empty_set
     | "NoRet" -> Some empty_set
     | "T" -> Some empty_set
+    | "dmb.sy" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
+    | "dmb.full" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
+    | "dmb.st" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, ST)))))
+    | "dmb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, LD)))))
+    | "dsb.sy" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
+    | "dsb.full" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
+    | "dsb.st" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, ST)))))
+    | "dsb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, LD)))))
     | _ -> None
   in
   let try_fences () =
@@ -245,7 +253,20 @@ let parse_set_id (s : string) : set_nf option =
   in
   Util.Option.choice [ try_other_prims (); try_fences () ]
 
-let parse_rel_id : string -> rel_nf option = function
+let parse_rel_id (s : string) : rel_nf option =
+  let poswr =
+    rel_seq_l
+      [
+        to_id (prim_set (Dir W));
+        prim_rel_inter_l [ Edge Po; Loc ];
+        to_id (prim_set (Dir R));
+      ]
+  in
+  let pick_basic_dep = poswr in
+  let pick_addr_dep = prim_rel (Edge (Dp A.D.ADDR)) in
+  let pick_data_dep = prim_rel (Edge (Dp A.D.DATA)) in
+  let pick_ctrl_dep = prim_rel (Edge (Dp A.D.CTRL)) in
+  match s with
   | "po" -> Some (prim_rel (Edge Po))
   | "loc" -> Some (prim_rel Loc)
   | "co" -> Some (prim_rel (Edge Co))
@@ -258,22 +279,15 @@ let parse_rel_id : string -> rel_nf option = function
   | "rmw" -> Some (prim_rel (Edge Rmw))
   | "amo" -> Some (prim_rel (Edge Amo))
   | "lxsx" -> Some (prim_rel (Edge LxSx))
-  | "lrs" ->
+  | "lrs" -> Some poswr
+  | "pick-basic-dep" -> Some pick_basic_dep
+  | "pick-addr-dep" -> Some pick_addr_dep
+  | "pick-data-dep" -> Some pick_data_dep
+  | "pick-ctrl-dep" -> Some pick_ctrl_dep
+  | "pick-dep" ->
       Some
-        (rel_seq_l
-           [
-             to_id (prim_set (Dir W));
-             prim_rel_inter_l [ Edge Po; Loc ];
-             to_id (prim_set (Dir R));
-           ])
-  | "dmb.sy" -> Some (prim_rel (Edge (Fence (AArch64Base.DMB (SY, FULL)))))
-  | "dmb.full" -> Some (prim_rel (Edge (Fence (AArch64Base.DMB (SY, FULL)))))
-  | "dmb.st" -> Some (prim_rel (Edge (Fence (AArch64Base.DMB (SY, ST)))))
-  | "dmb.ld" -> Some (prim_rel (Edge (Fence (AArch64Base.DMB (SY, LD)))))
-  | "dsb.sy" -> Some (prim_rel (Edge (Fence (AArch64Base.DSB (SY, FULL)))))
-  | "dsb.full" -> Some (prim_rel (Edge (Fence (AArch64Base.DSB (SY, FULL)))))
-  | "dsb.st" -> Some (prim_rel (Edge (Fence (AArch64Base.DSB (SY, ST)))))
-  | "dsb.ld" -> Some (prim_rel (Edge (Fence (AArch64Base.DSB (SY, LD)))))
+        (rel_union_l
+           [ pick_basic_dep; pick_addr_dep; pick_data_dep; pick_ctrl_dep ])
   | _ -> None
 
 (* Pretty-printing *)
