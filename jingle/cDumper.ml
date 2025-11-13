@@ -57,6 +57,7 @@ let rec fmt_io io = match io with
        "%s(%s)"
        f
         (String.concat "," (List.map pp_reg regs))
+  | Pagealign | Skip _ -> assert false (* Not implemented yet *)
 
 let rec unwrap_pseudo = function
   | [] -> []
@@ -116,7 +117,7 @@ let get_params init i =
      | (MiscParser.Location_reg(p,_),
 	(_,Symbolic (Virtual {name=s;_}))) when i = p ->
 	{ CAst.param_ty = CType.Volatile CType.word;
-	  CAst.param_name = s }::a
+	  CAst.param_name = (Symbol.pp s) }::a
      | _ -> a
     ) [] init
 

@@ -40,7 +40,7 @@ module Make
   and is_zero = function
     | Concrete sc -> Scalar.is_zero sc
     | ConcreteVector _|ConcreteRecord _|Symbolic _
-    | Label (_, _)|Tag _|PteVal _|AddrReg _|Instruction _|Frozen _
+    | Tag _|PteVal _|AddrReg _|Instruction _|Frozen _
       -> false
   and one = Concrete Scalar.one
   and cst_true = Concrete Scalar.s_true
@@ -76,7 +76,7 @@ module Make
 (* For building code symbols. *)
   let vToName = function
     | Symbolic s-> Constant.as_address s
-    | Concrete _|ConcreteVector _|ConcreteRecord _| Label _|Tag _
+    | Concrete _|ConcreteVector _|ConcreteRecord _|Tag _
     | PteVal _|AddrReg _|Instruction _|Frozen _
         -> assert false
 
@@ -87,7 +87,6 @@ module Make
     | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
     | Symbolic (System (TLB,_)) -> Access.TLB
-    | Label _ -> Access.VIR
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _
     | PteVal _|AddrReg _|Instruction _|Frozen _ as v

@@ -274,7 +274,7 @@ module
               fun v -> M.op (tr_opi op) v (V.intToV k) >>=
                 fun v -> write_reg r1 v ii >>= B.next1T
           | RISCV.OpA (RISCV.LA,r1,lbl) ->
-              let v = ii.A.addr2v lbl in
+              let v = ii.A.addr2v ii.A.proc lbl in
               write_reg r1 v ii >>= B.next1T
           | RISCV.OpIW (op,r1,r2,k) ->
               read_reg_ord r2 ii >>=

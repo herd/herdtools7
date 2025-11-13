@@ -886,7 +886,8 @@ Monad type:
         let eiid,(act,_) = g lbl eiid in
         let f (r,cs,es) =
           let cs =
-            VC.Assign (v,VC.Atom (V.Val (Constant.Label (p,lbl))))::cs in
+            let symb = Constant.mk_sym_virtual_label p lbl in
+            VC.Assign (v,VC.Atom (V.Val symb))::cs in
           r,cs,es in
         eiid,(Evt.map f act,None) in
       (* Rec *)
@@ -1403,8 +1404,10 @@ Monad type:
         | _ -> false
 
       let is_instrloc a =
+        let open Constant in
         match a with
-        | V.Val (Constant.Label _) -> true
+        (* | V.Val (Constant.Label _) -> true *)
+        | V.Val (Symbolic (Virtual {name=n; _})) -> Symbol.is_label n
         | _ -> false
 
 (*
@@ -1461,7 +1464,7 @@ Monad type:
           E.action =
             E.Act.mk_init_write
               (A.of_symbolic_data
-                 {default_symbolic_data with name=Misc.add_ctag s})
+                 {default_symbolic_data with name=Symbol.Data (Misc.add_ctag s)})
               (def_size v) v; }
 
       let debug_env env =
@@ -1505,6 +1508,7 @@ Monad type:
             | A.Location_global
               (V.Val
                  (Symbolic (Virtual {name=s; tag=None; offset=o;_}))) ->
+               let s = Symbol.pp s in
                (phy_loc s o,v)::env,
                (StringSet.add s virt,pte)
             | A.Location_global (V.Val (Symbolic (System (PTE,s)))) ->
@@ -1563,11 +1567,11 @@ Monad type:
                 let sz =
                   match A.symbolic_data loc with
                   | Some  {Constant.name=s; _}
-                        when not (Misc.check_atag s) ->
+                        when not (Misc.check_atag (Constant.Symbol.pp s)) ->
 (* Notice that size does not depend upon offset.
    That is, all addresses with the same base
    share the same size *)
-                      A.look_size size_env s
+                      A.look_size size_env (Constant.Symbol.pp s)
                   | _ -> def_size v in
                 let eiid,ew =
                   let v = V.map_scalar (V.Cst.Scalar.mask sz) v in
@@ -1579,7 +1583,7 @@ Monad type:
                       if morello then
                         let eiid,em =
                           morello_init_tag
-                            s (V.op1 Op.CapaGetTag v) eiid in
+                            (Constant.Symbol.pp s) (V.op1 Op.CapaGetTag v) eiid in
                         eiid,(em::[ew])
                       else eiid,[ew] in
                     (eiid,ews@es)
@@ -1614,9 +1618,9 @@ Monad type:
                      (Symbolic
                         (Virtual
                            {name=s;offset=_;_})) as a)
-                      when not (Misc.check_atag s) ->
+                      when not (Misc.check_atag (Symbol.pp s)) ->
                     (* Suffix encoding of tag addresses, sufficient for now *)
-                    let sz = A.look_size size_env s in
+                    let sz = A.look_size size_env (Symbol.pp s) in
                     let ds = AM.explode sz v
                     and eas = AM.byte_eas sz a in
                     let eiid,ews =
@@ -1633,7 +1637,7 @@ Monad type:
                       if morello then
                         let eiid,em =
                           morello_init_tag
-                            s (V.op1 Op.CapaGetTag v)
+                            (Symbol.pp s) (V.op1 Op.CapaGetTag v)
                             eiid in
                         eiid,em::ews
                       else eiid,ews in

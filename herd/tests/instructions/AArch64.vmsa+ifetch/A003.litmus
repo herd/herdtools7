@@ -1,0 +1,9 @@
+AArch64 A003
+Variant=vmsa,ifetch
+{
+}
+P0          ;
+ADD X0,X0,#1;
+.pagealign  ;
+Page0:      ;
+forall 0:X0=1
