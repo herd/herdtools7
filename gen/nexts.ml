@@ -54,7 +54,8 @@ module Make (Co:Config) (A:Arch_gen.S) = struct
       (fun k e ->
         match E.get_ie e with
         | Ext -> k+1
-        | Int -> k)
+        | Int -> k
+        | UnspecCom -> assert false)
       0 es
 
   let filter chan =

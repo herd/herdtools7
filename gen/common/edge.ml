@@ -290,6 +290,9 @@ and type rmw = F.rmw = struct
 
 
   let do_pp_tedge compat = function
+    | Rf UnspecCom -> sprintf "Rf"
+    | Fr UnspecCom -> sprintf "Fr"
+    | Ws UnspecCom -> if compat then sprintf "Ws" else sprintf "Co"
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
     | Fr ie -> sprintf "Fr%s" (pp_ie ie)
     | Ws ie -> if compat then sprintf "Ws%s" (pp_ie ie) else sprintf "Co%s" (pp_ie ie)
@@ -388,14 +391,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   let do_is_diff e = not @@ Code.is_same_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
-  let r = fold_ie (fun ie -> f (Ws ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
   let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
-  let r = fold_ie (fun ie -> f (Rf ie)) r in
-  let r = fold_ie (fun ie -> f (Fr ie)) r in
-  let r = fold_ie (fun ie -> f (Ws ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
   let r = F.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -581,7 +584,7 @@ let fold_tedges f r =
       Hashtbl.add t lxm e
 
 (* Fill lexeme table *)
-  let iter_ie = Misc.fold_to_iter fold_ie
+  let iter_ie = Misc.fold_to_iter (fold_ie wildcard)
 
   let four_times_iter_edges compat iter_edges =
     iter_edges  (fun e -> add_lxm_edge (pp_edge_with_xx compat e) e) ;
