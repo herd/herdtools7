@@ -55,6 +55,7 @@ module Make(C:Builder.S)
     let is_int e = match get_ie e with
     | Int -> true
     | Ext -> false
+    | UnspecCom -> assert false
 
     let is_ext e = not (is_int e)
 
@@ -102,7 +103,8 @@ module Make(C:Builder.S)
     | _,_ ->
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
-        | Ext,_|_,Ext -> true  in
+        | Ext,_|_,Ext -> true
+        | UnspecCom,_ | _,UnspecCom -> assert false in
       if dbg then
         eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -123,7 +125,8 @@ module Make(C:Builder.S)
           (* Reject other internal followed by internal sequences *)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
-          | Ext,_|_,Ext -> true  in
+          | Ext,_|_,Ext -> true
+          | UnspecCom,_ | _,UnspecCom -> assert false in
       if dbg then
         eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -161,8 +164,8 @@ module Make(C:Builder.S)
                 | _ -> assert false
                 end
             | Ext,Ext -> false
-            | (Ext,Int) | (Int,Ext)
-                -> true  in
+            | (Ext,Int) | (Int,Ext) -> true
+            | UnspecCom,_ | _,UnspecCom -> assert false in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
@@ -333,6 +336,7 @@ module Make(C:Builder.S)
         | (Back _|Leave _),_
         | _,Int -> c
         | _,Ext -> c + 1
+        | _,UnspecCom -> assert false
       ) c
 
     let c_minprocs_suff c =
@@ -350,6 +354,7 @@ module Make(C:Builder.S)
           match get_ie e with
           | Ext -> true,c
           | Int -> c_minint_es (c+1) es
+          | UnspecCom -> assert false
 
     let rec c_minint c = function
       | [] -> c
