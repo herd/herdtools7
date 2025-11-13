@@ -73,13 +73,24 @@ module type Monad = sig
 end
 
 module List = struct
-  let concat_map f l =
-    let open List in
-    let rec aux f acc = function
-      | [] -> rev acc
-      | x :: l ->
-          let xs = f x in
-          aux f (rev_append xs acc) l
-    in
-    aux f [] l
+  let concat_map : ('a -> 'b list) -> 'a list -> 'b list =
+    fun f l -> List.concat (List.map f l)
+
+  let pure x = [ x ]
+  let bind x f = concat_map f x
+
+  module Infix = struct
+    let (>>=) = fun x f -> concat_map f x
+    let (let*) = (>>=)
+  end
+
+  module Traversal (M: Monad) = struct
+    let rec fold_left (f : 'acc -> 'a -> 'acc M.t) (v : 'acc) : 'a list -> 'acc M.t =
+      let open M.Infix in
+      function
+        | [] -> M.pure v
+        | x :: xs ->
+          let* acc = f v x in
+          fold_left f acc xs
+  end
 end
