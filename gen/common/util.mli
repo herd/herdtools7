@@ -54,3 +54,13 @@ module List : sig
       val fold_left : ('acc -> 'a -> 'acc M.t) -> 'acc -> 'a list -> 'acc M.t
     end
 end
+
+module Option : sig
+  (* Returns the first non-None element in the given list,
+     or None if all elements are None. *)
+  val choice : 'a option list -> 'a option
+  val choice_fn : (unit -> 'a option) list -> 'a option
+  val guard : bool -> unit option
+
+  include Monad with type 'a t := 'a option
+end

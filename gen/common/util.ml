@@ -94,3 +94,24 @@ module List = struct
           fold_left f acc xs
   end
 end
+
+module Option = struct
+  let rec choice : 'a option list -> 'a option = function
+    | [] -> None
+    | None :: l -> choice l
+    | Some x :: _ -> Some x
+
+  let rec choice_fn : (unit -> 'a option) list -> 'a option = function
+    | [] -> None
+    | f :: l -> let x = f () in if Option.is_some x then x else choice_fn l
+
+  let pure x = Some x
+  let bind = Option.bind
+
+  let guard b = if b then Some () else None
+
+  module Infix = struct
+    let (>>=) = Option.bind
+    let (let*) = Option.bind
+  end
+end
