@@ -37,6 +37,7 @@ val svint32_t : t
 val pteval_t : t
 val parel1_t : t
 val pte : t
+val pmdval_t : t
 val ins_t : t
 
 val dump : t -> string

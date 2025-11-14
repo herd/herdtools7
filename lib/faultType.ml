@@ -30,6 +30,7 @@ module type AArch64Sig = sig
     | AccessFlag
     | Permission
     | Exclusive
+    | TLBConflictAbort
 
   type t =
     | MMU of mmu_t
@@ -47,12 +48,14 @@ module AArch64 = struct
     | AccessFlag
     | Permission
     | Exclusive
+    | TLBConflictAbort
 
   let pp_mmu_t = function
     | Translation -> "Translation"
     | AccessFlag -> "AccessFlag"
     | Permission -> "Permission"
     | Exclusive -> "Exclusive"
+    | TLBConflictAbort -> "TLBConflictAbort"
 
   type t =
     | MMU of mmu_t
@@ -70,6 +73,7 @@ module AArch64 = struct
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
       "Exclusive", [MMU Exclusive];
+      "TLBConflictAbort", [MMU TLBConflictAbort];
       "TagCheck", [TagCheck];
       "PacCheck", [PacCheck PAC.DA;
                    PacCheck PAC.DB;
@@ -91,6 +95,7 @@ module AArch64 = struct
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "MMU:Exclusive" -> MMU Exclusive
+    | "MMU:TLBConflictAbort" -> MMU TLBConflictAbort
     | "TagCheck" -> TagCheck
     | "PacCheck:DA" -> PacCheck PAC.DA
     | "PacCheck:DB" -> PacCheck PAC.DB
