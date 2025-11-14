@@ -231,6 +231,7 @@ let parse_set_id (s : string) : set_nf option =
     | "M" -> Some (prim_set M)
     | "A" -> Some (prim_set (Atom (Acq None)))
     | "L" -> Some (prim_set (Atom (Rel None)))
+    | "Q" -> Some (prim_set (Atom (AcqPc None)))
     | "F" -> Some (prim_set (Fence None))
     | "TTD" -> Some empty_set
     | "Instr" -> Some empty_set
