@@ -9,11 +9,15 @@ To use this tool you need the following input files:
 ## Usage with AslRef
 
 To build and run this script make sure you have `bnfc` (https://github.com/BNFC/bnfc) installed.
+Make sure you have also installed the dependencies of `herdtools7`, by running the following from the `herdtools7` directory:
+```
+opam install . --deps-only
+```
 
 Then from the `herdtools7` root directory you can run the following:
 ```
-make
-dune build asllib/menhir2bnfc
+make all                          # build `herdtools7`
+dune build asllib/menhir2bnfc     # build `menhir2bnfc`
 ```
 
 You should now have a `asllib/menhir2bnfc/grammar.cf` file built.
