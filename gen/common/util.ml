@@ -93,6 +93,14 @@ module List = struct
     let (let*) = (>>=)
   end
 
+  let rec sequence : 'a list list -> 'a list list =
+    let open Infix in
+    function [] -> [[]]
+      | x :: xs ->
+        let* x' = x in
+        let* xs' = sequence xs in
+        [ x' :: xs' ]
+
   module Traversal (M: Monad) = struct
     let rec fold_left (f : 'acc -> 'a -> 'acc M.t) (v : 'acc) : 'a list -> 'acc M.t =
       let open M.Infix in
