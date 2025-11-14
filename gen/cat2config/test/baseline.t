@@ -5,9 +5,9 @@ aarch64.cat
   Coe
   Coi
   $ mcat2config7 -set-libdir ./libdir -let Exp-haz-ob libdir/aarch64.cat
-  PosRR Fre
+  [PosRR, Fre]
   $ mcat2config7 -set-libdir ./libdir -let haz-ob libdir/aarch64.cat
-  PosRR Fre
+  [PosRR, Fre]
   $ mcat2config7 -set-libdir ./libdir -let Exp-obs libdir/aarch64.cat
   Rfe
   Fre
@@ -25,14 +25,14 @@ aarch64hwreqs.cat
   [DpCtrls*, ISB]
   [DpCtrld*, ISB]
   [DpCtrls*, ISB]
-  DpAddrd* ISBd**
-  DpAddrs* ISBd**
-  DpAddrd* ISBs**
-  DpAddrs* ISBs**
-  DpAddrd* ISBd**
-  DpAddrs* ISBd**
-  DpAddrd* ISBs**
-  DpAddrs* ISBs**
+  [DpAddrd*, ISBd**]
+  [DpAddrs*, ISBd**]
+  [DpAddrd*, ISBs**]
+  [DpAddrs*, ISBs**]
+  [DpAddrd*, ISBd**]
+  [DpAddrs*, ISBd**]
+  [DpAddrd*, ISBs**]
+  [DpAddrs*, ISBs**]
   [DSB.SYd**, ISB]
   [DSB.SYs**, ISB]
   [DSB.LDdR*, ISB]
@@ -46,14 +46,14 @@ aarch64hwreqs.cat
   DpDatasW
   DpCtrldW
   DpCtrlsW
-  DpAddrd* Pod*W
-  DpAddrs* Pod*W
-  DpAddrd* Pos*W
-  DpAddrs* Pos*W
-  DpAddrdW PosWR
-  DpAddrsW PosWR
-  DpDatadW PosWR
-  DpDatasW PosWR
+  [DpAddrd*, Pod*W]
+  [DpAddrs*, Pod*W]
+  [DpAddrd*, Pos*W]
+  [DpAddrs*, Pos*W]
+  [DpAddrdW, PosWR]
+  [DpAddrsW, PosWR]
+  [DpDatadW, PosWR]
+  [DpDatasW, PosWR]
   $ mcat2config7 -set-libdir ./libdir -let pob libdir/aarch64.cat
   DpAddrdW
   DpAddrsW
@@ -61,33 +61,20 @@ aarch64hwreqs.cat
   DpDatasW
   DpCtrldW
   DpCtrlsW
-  DpAddrd* Pod*W
-  DpAddrs* Pod*W
-  DpAddrd* Pos*W
-  DpAddrs* Pos*W
+  [DpAddrd*, Pod*W]
+  [DpAddrs*, Pod*W]
+  [DpAddrd*, Pos*W]
+  [DpAddrs*, Pos*W]
   $ mcat2config7 -set-libdir ./libdir -let aob libdir/aarch64.cat
   LxSx
-  Amo.LdAdd
-  Amo.LdEor
-  Amo.LdSet
-  Amo.LdClr
-  Amo.StAdd
-  Amo.StEor
-  Amo.StSet
-  Amo.StClr
   Amo.Swp
   Amo.Cas
-  LxSx PosWRPA
-  Amo.LdAdd PosWRPA
-  Amo.LdEor PosWRPA
-  Amo.LdSet PosWRPA
-  Amo.LdClr PosWRPA
-  Amo.StAdd PosWRPA
-  Amo.StEor PosWRPA
-  Amo.StSet PosWRPA
-  Amo.StClr PosWRPA
-  Amo.Swp PosWRPA
-  Amo.Cas PosWRPA
+  [LxSx, PosWRPA]
+  [Amo.Swp, PosWRPA]
+  [Amo.Cas, PosWRPA]
+  [LxSx, PosWRPQ]
+  [Amo.Swp, PosWRPQ]
+  [Amo.Cas, PosWRPQ]
   $ mcat2config7 -set-libdir ./libdir -let bob libdir/aarch64.cat
   DMB.SYd**
   DMB.SYs**
@@ -95,10 +82,16 @@ aarch64hwreqs.cat
   DMB.LDsR*
   DMB.STdWW
   DMB.STsWW
+  [Amo.SwpAL, Pod**LP]
+  [Amo.CasAL, Pod**LP]
+  [Amo.SwpAL, Pos**LP]
+  [Amo.CasAL, Pos**LP]
   Pod**LA
   Pos**LA
   Pod**AP
   Pos**AP
+  Pod**QP
+  Pos**QP
   Pod**PL
   Pos**PL
 aarch64deps.cat
