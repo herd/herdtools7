@@ -2,6 +2,10 @@
 open AST
 open AST.AttributeKey
 
+(** Elements such as types, constants, and relations generate custom LaTeX macros.
+    Since LaTeX macro names do not allow certain characters, such as numbers and apostrophes,
+    we need to check that element-defining identifiers conform to those restrictions.
+*)
 let check_definition_name name =
    let () = assert (String.length name > 0) in
    let id_regexp = Str.regexp "^[A-Za-z_']+$" in
@@ -23,12 +27,12 @@ let check_definition_name name =
 %token CONSTANTS_SET
 %token FUN
 %token FUNCTION
-%token PARTIAL
 %token LIST0
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token OPTION
+%token PARTIAL
 %token POWERSET
 %token POWERSET_FINITE
 %token PROSE_APPLICATION
@@ -117,32 +121,32 @@ let list1(x) :=
 let spec := elems=terminated(list(elem), EOF); { elems }
 
 let elem :=
-    | type_definition
-    | relation_definition
-    | constant_definition
-    | render_definition
+    | ~=type_definition; SEMI; { type_definition }
+    | ~=relation_definition; SEMI; { relation_definition }
+    | ~=constant_definition; SEMI; { constant_definition }
+    | ~=render_types; SEMI; { render_types }
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
 
 let type_definition :=
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; SEMI;
+    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes;
     {   check_definition_name type_name;
         Elem_Type (Type.make type_kind type_name [] type_attributes) }
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes; SEMI;
+    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes;
     {   check_definition_name type_name;
         Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
-    | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes; SEMI;
+    | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes;
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError msg) }
 
 let relation_definition :=
     ~=relation_category; ~=relation_property; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
-    attributes=relation_attributes; SEMI;
+    ~=relation_attributes;
     {   check_definition_name name;
-        Elem_Relation (Relation.make name relation_property relation_category input output attributes) }
+        Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes) }
 
-let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes; SEMI;
+let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes;
     {   check_definition_name name;
         Elem_Constant (Constant.make name att) }
 
@@ -160,21 +164,34 @@ let type_attributes ==
     | LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
 
 let type_attribute :=
+    | prose_description_attribute
+    | math_macro_attribute
+    | math_layout_attribute
+    | short_circuit_macro_attribute
+
+let prose_description_attribute ==
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
     | template=STRING; { (Prose_Description, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_macro_attribute ==
+    MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_layout_attribute ==
     | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
-    | SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
+    | ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+
+let short_circuit_macro_attribute ==
+    SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
 
 let relation_attribute :=
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
-    | template=STRING; { (Prose_Description, StringAttribute template) }
-    | PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
-    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | prose_application_attribute
+    | type_attribute
+
+let prose_application_attribute ==
+    PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
@@ -192,7 +209,7 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
-    | op=operator; LPAR; ~=opt_named_type_term; RPAR; { make_operator op opt_named_type_term }
+    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { make_type_operation op opt_named_type_term }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
@@ -205,7 +222,7 @@ let type_term :=
     | FUN; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = true}}
     | PARTIAL; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = false}}
 
-let operator :=
+let type_operator :=
     | POWERSET; { Powerset }
     | POWERSET_FINITE; { Powerset_Finite }
     | LIST0; { List0 }
@@ -226,10 +243,10 @@ let math_layout :=
     | LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
 
-let render_definition :=
-    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer); SEMI;
+let render_types :=
+    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer);
     {   check_definition_name name;
-        Elem_Render (TypesRender.make name pointers) }
+        Elem_RenderTypes (TypesRender.make name pointers) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }

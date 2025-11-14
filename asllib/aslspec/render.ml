@@ -156,7 +156,7 @@ module Make (S : SPEC_VALUE) = struct
               (get_or_gen_math_macro name)
               short_circuit_macro
         | None -> pp_print_string fmt (get_or_gen_math_macro name))
-    | Operator { op; term = sub_term } ->
+    | TypeOperator { op; term = sub_term } ->
         pp_operator op fmt pp_opt_named_type_term (sub_term, layout)
     | LabelledTuple { label_opt; components } ->
         let is_type_reference =
@@ -523,7 +523,7 @@ The %s
     | Elem_Constant def -> pp_constant_definition fmt def
     | Elem_Type def -> pp_type fmt def
     | Elem_Relation def -> pp_relation fmt def
-    | Elem_Render def -> pp_render fmt def
+    | Elem_RenderTypes def -> pp_render fmt def
 
   (** Renders a LaTeX document containing all of the elements in [S.spec]. A
       header and footer are added to enable compiling the generated file
@@ -575,7 +575,7 @@ The %s
 \RenderType{%s}
 |}
                 latex_name PP.pp_elem elem name
-          | Elem_Render _ ->
+          | Elem_RenderTypes _ ->
               fprintf fmt
                 {|
 \section*{%s}

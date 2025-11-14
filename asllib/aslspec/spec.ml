@@ -32,7 +32,7 @@ let rec vars_of_type_term term =
   let listed_vars =
     match term with
     | Label _ -> []
-    | Operator { term } -> opt_named_term_to_var_list term
+    | TypeOperator { term } -> opt_named_term_to_var_list term
     | LabelledTuple { components } -> vars_of_opt_named_type_terms components
     | LabelledRecord { fields } ->
         Utils.list_concat_map
@@ -122,7 +122,7 @@ module Layout = struct
   let rec horizontal_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Operator { term = _, t } -> horizontal_for_type_term t
+    | TypeOperator { term = _, t } -> horizontal_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
@@ -144,7 +144,7 @@ module Layout = struct
   let rec default_for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | Operator { term = _, t } -> default_for_type_term t
+    | TypeOperator { term = _, t } -> default_for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
           Horizontal
@@ -198,7 +198,7 @@ let elem_name = function
   | Elem_Relation { Relation.name }
   | Elem_Constant { Constant.name } ->
       name
-  | Elem_Render { name } -> name
+  | Elem_RenderTypes { name } -> name
 
 (** Lists nodes that define identifiers and can be referenced. *)
 let list_definition_nodes ast =
@@ -226,7 +226,7 @@ let list_definition_nodes ast =
       | Elem_Constant def -> Node_Constant def :: acc_nodes
       (* Although a render defines an identifier, it does not carry semantic
          meaning, and cannot be referenced elsewhere. *)
-      | Elem_Render _ -> acc_nodes)
+      | Elem_RenderTypes _ -> acc_nodes)
     [] ast
 
 (** Creates a map from identifiers to the nodes where they are defined. If two
@@ -282,7 +282,7 @@ module Check = struct
     match (term, layout) with
     | Label _, Unspecified -> ()
     | Label _, _ -> raise (SpecError msg)
-    | Operator { term = _, t }, _ -> check_layout t layout
+    | TypeOperator { term = _, t }, _ -> check_layout t layout
     | LabelledTuple { components }, Horizontal cells
     | LabelledTuple { components }, Vertical cells ->
         if List.length components <> List.length cells then
@@ -324,7 +324,7 @@ module Check = struct
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids = function
     | Label id -> [ id ]
-    | Operator { term = _, t } -> referenced_ids t
+    | TypeOperator { term = _, t } -> referenced_ids t
     | LabelledTuple { label_opt; components } -> (
         let component_ids =
           List.map snd components |> Utils.list_concat_map referenced_ids
@@ -356,7 +356,7 @@ module Check = struct
         | Elem_Relation { Relation.input; output } ->
             let input_terms = List.map snd input in
             referenced_ids_for_list (input_terms @ output)
-        | Elem_Render { pointers } ->
+        | Elem_RenderTypes { pointers } ->
             Utils.list_concat_map
               (fun { TypesRender.type_name; variant_names } ->
                 type_name :: variant_names)
@@ -583,8 +583,8 @@ module Check = struct
           || subsumed_term_type_typename id_to_defining_node expanded_types sub
                super_label
       (* From here on the test operates via structural induction. *)
-      | ( Operator { op = sub_op; term = _, sub_term },
-          Operator { op = super_op; term = _, super_term } ) ->
+      | ( TypeOperator { op = sub_op; term = _, sub_term },
+          TypeOperator { op = super_op; term = _, super_term } ) ->
           operator_subsumed sub_op super_op
           && subsumed id_to_defining_node expanded_types sub_term super_term
       | ( LabelledTuple
@@ -717,7 +717,7 @@ module Check = struct
         the referenced type are considered. *)
     let rec check_well_instantiated id_to_defining_node term =
       match term with
-      | Operator { term = _, operator_term } ->
+      | TypeOperator { term = _, operator_term } ->
           check_well_instantiated id_to_defining_node operator_term
       | LabelledTuple { label_opt; components } -> (
           let terms = List.map snd components in
@@ -770,7 +770,7 @@ module Check = struct
           structural induction on [term]. *)
     let rec check_well_formed id_to_defining_node term =
       match term with
-      | Operator { term = _, operator_term } ->
+      | TypeOperator { term = _, operator_term } ->
           check_well_formed id_to_defining_node operator_term
       | LabelledTuple { label_opt; components } -> (
           let terms = List.map snd components in
@@ -876,7 +876,7 @@ module Check = struct
         (fun elem ->
           try
             match elem with
-            | Elem_Constant _ | Elem_Render _ -> ()
+            | Elem_Constant _ | Elem_RenderTypes _ -> ()
             | Elem_Relation { input; output } ->
                 List.iter
                   (fun (_, term) -> check_well_typed id_to_defining_node term)
