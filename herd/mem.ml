@@ -2164,13 +2164,28 @@ let match_reg_events es =
                   ) ->
                   when_unsolved test es rfm cs res
               | _ ->
-                  if self then check_ifetch_limitations test es owls
-                  else check_noifetch_limitations es;
-                  if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed
-                     && not (mixed || memtag || morello)
-                  then
-                    check_sizes test es ;
+                  let ofail =
+                    match ofail with
+                    | Some _ ->
+                       (* Previous error has priority *)
+                       ofail
+                    | None ->
+                       try
+                         (* Various checks *)
+                         begin
+                           if self then check_ifetch_limitations test es owls
+                           else check_noifetch_limitations es;
+                           if (mixed && not unaligned) then
+                             check_aligned test es ;
+                           if A.reject_mixed
+                              && not (mixed || memtag || morello)
+                           then
+                             check_sizes test es
+                         end ;
+                         None
+                       with e ->
+                         (* Delay error *)
+                         Some (VC.Failed e) in
                   if debug_solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;
