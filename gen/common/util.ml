@@ -79,6 +79,15 @@ module List = struct
   let pure x = [ x ]
   let bind x f = concat_map f x
 
+  let uniq ~eq l =
+    let rec uniq eq acc l =
+      match l with
+      | [] -> List.rev acc
+      | x :: xs when List.exists (eq x) xs -> uniq eq acc xs
+      | x :: xs -> uniq eq (x :: acc) xs
+    in
+    uniq eq [] l
+
   module Infix = struct
     let (>>=) = fun x f -> concat_map f x
     let (let*) = (>>=)
