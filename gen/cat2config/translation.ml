@@ -50,10 +50,14 @@ let set_tgt (extr : Code.extr) (e : E.edge) : E.edge =
   match extr with Code.Dir dir -> E.set_tgt dir e | _ -> e
 
 let amo_tedges : E.tedge list =
-  let atomic_ops = A.[ A_ADD; A_EOR; A_SET; A_CLR ] in
-  let ld_ops = List.map (fun x -> A.LdOp x) atomic_ops in
-  let st_ops = List.map (fun x -> A.StOp x) atomic_ops in
-  let amo_ops = ld_ops @ st_ops @ A.[ Swp; Cas ] in
+  (* let atomic_ops = A.[ A_ADD; A_EOR; A_SET; A_CLR ] in *)
+  (* let ld_ops = List.map (fun x -> A.LdOp x) atomic_ops in *)
+  (* let st_ops = List.map (fun x -> A.StOp x) atomic_ops in *)
+  (* let amo_ops = ld_ops @ st_ops @ A.[ Swp; Cas ] in *)
+  (* List.map (fun x -> E.Rmw x) amo_ops *)
+
+  (* Keeping it simple with just Swp and Cas for now *)
+  let amo_ops = A.[ Swp; Cas ] in
   List.map (fun x -> E.Rmw x) amo_ops
 
 type tedge = Tedge of { edge : E.tedge; insert : E.fence option }
