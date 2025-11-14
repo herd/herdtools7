@@ -23,12 +23,6 @@ aarch64hwreqs.cat
   $ mcat2config7 -set-libdir ./libdir -let IFB-ob libdir/aarch64.cat
   [DpCtrld*, ISB]
   [DpCtrls*, ISB]
-  [DpCtrld*, ISB]
-  [DpCtrls*, ISB]
-  [DpAddrd*, ISBd**]
-  [DpAddrs*, ISBd**]
-  [DpAddrd*, ISBs**]
-  [DpAddrs*, ISBs**]
   [DpAddrd*, ISBd**]
   [DpAddrs*, ISBd**]
   [DpAddrd*, ISBs**]
