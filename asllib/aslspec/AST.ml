@@ -15,7 +15,7 @@ let stack_spec_error msg extra_msg =
 type type_kind = TypeKind_Generic | TypeKind_AST
 
 (** A unary operator that transforms one type into another. *)
-type operator =
+type type_operator =
   | Powerset  (** All subsets (finite and infinite) of the given type. *)
   | Powerset_Finite  (** All finite subsets of the given type. *)
   | List0  (** All (empty and non-empty) sequences of the given member type. *)
@@ -33,9 +33,9 @@ type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Operator of { op : operator; term : opt_named_type_term }
-      (** A set containing all types formed by applying the operator [op] to the
-          type given by [term]. *)
+  | TypeOperator of { op : type_operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the type operator [op]
+          to the type given by [term]. *)
   | LabelledTuple of {
       label_opt : string option;
       components : opt_named_type_term list;
@@ -66,9 +66,9 @@ and named_type_term = string * type_term
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
 
-(** [make_operator op term] Constructs an operator term with the given operator
-    and term. *)
-let make_operator op term = Operator { op; term }
+(** [make_type_operation op term] Constructs a type term in which [op] is
+    applied to [term]. *)
+let make_type_operation op term = TypeOperator { op; term }
 
 (** [make_tuple components] Constructs an unlabelled tuple for the tuple
     components [components]. *)
@@ -174,6 +174,34 @@ module Attributes = struct
           raise (SpecError msg)
         else add k v acc_map)
       empty pairs
+end
+
+(** A datatype for a constant definition. *)
+module Constant : sig
+  type t = { name : string; att : Attributes.t }
+
+  val make : string -> (AttributeKey.t * attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
+end = struct
+  type t = { name : string; att : Attributes.t }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  open Attributes
+
+  let make name attributes = { name; att = Attributes.of_list attributes }
+
+  let prose_description self =
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  let math_macro self =
+    match find_opt AttributeKey.Math_Macro self.att with
+    | Some (MathMacroAttribute s) -> Some s
+    | _ -> None
 end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
@@ -374,43 +402,15 @@ end = struct
     | _ -> None
 end
 
-(** A datatype for a constant definition. *)
-module Constant : sig
-  type t = { name : string; att : Attributes.t }
-
-  val make : string -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-end = struct
-  type t = { name : string; att : Attributes.t }
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  open Attributes
-
-  let make name attributes = { name; att = Attributes.of_list attributes }
-
-  let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
-
-  let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
-end
-
 (** A datatype for grouping (subsets of) type definitions. *)
 module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
-  val make : string -> (string * string list) list -> render
+  val make : string -> (string * string list) list -> t
 end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
   let make name pointer_pairs =
     {
@@ -427,7 +427,7 @@ type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
-  | Elem_Render of TypesRender.render
+  | Elem_RenderTypes of TypesRender.t
 
 type t = elem list
 (** A specification is a list of top-level elements. *)

@@ -49,7 +49,7 @@ let operator_to_token = function
 
 let rec pp_type_term fmt = function
   | Label name -> pp_print_string fmt name
-  | Operator { op; term } ->
+  | TypeOperator { op; term } ->
       fprintf fmt "%s(%a)"
         (operator_to_token op |> tok_str)
         pp_opt_named_type_term term
@@ -142,7 +142,7 @@ let pp_elem fmt = function
   | Elem_Type def -> pp_type_definition fmt def
   | Elem_Relation def -> pp_relation_definition fmt def
   | Elem_Constant def -> pp_constant_definition fmt def
-  | Elem_Render def -> pp_render_definition fmt def
+  | Elem_RenderTypes def -> pp_render_definition fmt def
 
 let pp_spec fmt spec =
   fprintf fmt "@[<v>%a@]" (pp_sep_list ~sep:"@,@," pp_elem) spec
