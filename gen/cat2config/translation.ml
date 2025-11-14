@@ -165,6 +165,9 @@ let implied_constraints (l : prim_rel list) :
 
 type relax = Relax of E.edge list
 
+let join_relax (Relax r1 : relax) (Relax r2 : relax) : relax =
+  Relax (List.append r1 r2)
+
 let try_match_edge (left : prim_set list)
     (core : (prim_set, prim_rel) seq_item list) (right : prim_set list) :
     relax list option =
@@ -257,13 +260,13 @@ let try_match_edge (left : prim_set list)
   Some relaxs
 
 type state = {
-  relaxs : relax list list;
+  relaxs : relax list;
   left : prim_set inter;
   core : (prim_set, prim_rel) seq_item list;
   right : prim_set inter;
 }
 
-let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list list =
+let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list =
   let l = [ Set (Inter [ M ]) ] @ l @ [ Set (Inter [ M ]) ] in
   let st =
     List.fold_left
@@ -283,7 +286,7 @@ let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list list =
                   let open Util.List.Infix in
                   let* edge = edge_alts in
                   let* prev_edges = st.relaxs in
-                  [ edge :: prev_edges ]
+                  [ join_relax prev_edges edge ]
                 in
                 let left = st.right in
                 { relaxs; left; core = []; right = Inter [] }
@@ -294,10 +297,10 @@ let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list list =
               else core @ [ Set st.right; Rel r ]
             in
             { st with core; right = Inter [] })
-      { relaxs = [ [] ]; left = Inter []; core = []; right = Inter [] }
+      { relaxs = [ Relax [] ]; left = Inter []; core = []; right = Inter [] }
       l
   in
-  if st.core = [] then List.map List.rev st.relaxs else []
+  if st.core = [] then st.relaxs else []
 
 let pp_relax : relax -> string = function
   | Relax [ rlx ] -> E.pp_edge rlx
