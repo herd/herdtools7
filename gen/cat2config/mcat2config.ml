@@ -159,6 +159,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
             None
         | Some nf ->
+            let nf = Ir.expand_acq_rel nf in
             let compressed = Ir.compress nf in
             let expanded = Ir.expand_domain_range compressed in
             Some (var, compressed, expanded))

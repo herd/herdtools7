@@ -20,8 +20,27 @@ let map_union (f : 'a -> 'b) : 'a union -> 'b union =
 let union : 'a union -> 'a union -> 'a union =
  fun (Union x) (Union y) -> Union (List.append x y)
 
+let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
+  Union
+    (Util.List.concat_map
+       (fun x ->
+         let y = f x in
+         get_union y)
+       u)
+
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
+
+let seq_l : ('s, 'r) seq list -> ('s, 'r) seq =
+ fun l -> l |> List.map get_seq |> List.concat |> fun l -> Seq l
+
+let seq_flat_map (f : 's inter -> ('s, 'r) seq union)
+    (g : 'r inter -> ('s, 'r) seq union) (Seq seq : ('s, 'r) seq) :
+    ('s, 'r) seq union =
+  seq
+  |> List.map (function Set s -> get_union (f s) | Rel r -> get_union (g r))
+  |> Util.List.sequence |> List.map seq_l
+  |> fun l -> Union l
 
 let inter (e1 : 'a inter) (e2 : 'a inter) : 'a inter =
   match (e1, e2) with Inter i1, Inter i2 -> Inter (List.append i1 i2)
@@ -408,3 +427,31 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
     | x -> [ x ]
   in
   map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
+
+(* TODO: modify this so that it also works with id relations
+   of the form `[A & ...]` etc. *)
+let expand_acq_rel (nf : rel_nf) : rel_nf =
+  let mem = to_id (prim_set M) in
+  let amo = prim_rel (Edge Amo) in
+  let amo_ap : rel_nf =
+    rel_seq_l [ to_id (prim_set (Atom (Acq None))); amo; mem ]
+  in
+  let amo_qp : rel_nf =
+    rel_seq_l [ to_id (prim_set (Atom (AcqPc None))); amo; mem ]
+  in
+  let amo_pl : rel_nf =
+    rel_seq_l [ mem; amo; to_id (prim_set (Atom (Rel None))) ]
+  in
+  nf
+  |> union_flat_map
+       (seq_flat_map
+          (fun x ->
+            match x with
+            | Inter [ Atom (Acq None) ] ->
+                union_l [ Union [ Seq [ Set x ] ]; to_id (domain amo_ap) ]
+            | Inter [ Atom (AcqPc None) ] ->
+                union_l [ Union [ Seq [ Set x ] ]; to_id (domain amo_qp) ]
+            | Inter [ Atom (Rel None) ] ->
+                union_l [ Union [ Seq [ Set x ] ]; to_id (range amo_pl) ]
+            | s -> Union [ Seq [ Set s ] ])
+          (fun r -> Union [ Seq [ Rel r ] ]))
