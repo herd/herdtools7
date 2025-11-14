@@ -1,6 +1,3 @@
-let green = "\027[32m"
-let red = "\027[31m"
-let reset_color = "\027[0m"
 let regex_underscore = Str.regexp_string "_"
 let regexp_spaces_segment = Str.regexp "[ \t]+"
 
