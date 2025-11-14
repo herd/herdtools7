@@ -1,4 +1,11 @@
 (tests
  (names uint_test int128_test)
  (libraries internal_lib herdtools)
- (modes native))
+ (modes native)
+ (modules uint_test int128_test))
+
+(test
+ (name aslsymdata)
+ (enabled_if %{lib-available:qcheck})
+ (libraries asllib herdtools qcheck)
+ (modules aslsymdata))

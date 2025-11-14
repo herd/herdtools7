@@ -36,14 +36,16 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_annotation (S_Try (body,[catcher],None))
 
-let setup_registers =
+let setup_registers is_vmsa =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
   add_dummy_annotation
     (S_Call
        {
          name = "_SetUpRegisters";
-         args = [];
+         args = [
+           expr_of_bool is_vmsa;
+         ];
          params = [];
          call_type = ST_Procedure;
        })
@@ -51,7 +53,7 @@ let setup_registers =
 
 let end_profile t0 msg : unit =
   let t1 = Sys.time () in
-  if t1 -. t0 > 1. (* We log only executions that took more than 1 second *)
+  if t1 -. t0 > 0.1 (* We log only executions that took more than 1 second *)
   then
     Printf.eprintf "AArch64+ASL sem took %fs to evaluate %s.\n%!" (t1 -. t0)
       msg
@@ -1034,7 +1036,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let nv = V.fresh_var () in
           let nid =
             match nv with
-            | V.Var n -> n
+            | V.Var (n, _) -> n
             | _ -> assert false in
           let eq =
             let op = AArch64Op.Extra1 (ASLOp.ToBV sz) in
@@ -1043,11 +1045,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
 
     let aarch64_to_asl = function
-      | V.Var v -> ASLS.A.V.Var v
+      | V.Var (v, _) -> ASLS.A.V.Var (v, ASLS.A.V.SData.default)
       | V.Val cst -> ASLS.A.V.Val (tr_cst Misc.identity cst)
 
     let asl_to_aarch64 = function
-      | ASLS.A.V.Var v -> V.Var v
+      | ASLS.A.V.Var (v, _) -> V.Var (v, V.SData.default)
       | ASLS.A.V.Val cst -> V.Val (tr_cst Misc.identity cst)
 
     let not_cutoff = not (TopConf.C.variant Variant.CutOff)
@@ -1180,7 +1182,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let open Asllib.ASTUtils in
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
-              let s = stmt_from_list [ setup_registers; decode; s; return_0 ] in
+              let s = stmt_from_list [ setup_registers is_vmsa; decode; s; return_0 ] in
               let s = if is_vmsa then catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
