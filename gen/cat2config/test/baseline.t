@@ -23,10 +23,16 @@ aarch64hwreqs.cat
   $ mcat2config7 -set-libdir ./libdir -let IFB-ob libdir/aarch64.cat
   [DpCtrld*, ISB]
   [DpCtrls*, ISB]
+  [DpCtrlCseld*, ISB]
+  [DpCtrlCsels*, ISB]
   [DpAddrd*, ISBd**]
   [DpAddrs*, ISBd**]
   [DpAddrd*, ISBs**]
   [DpAddrs*, ISBs**]
+  [DpAddrCseld*, ISBd**]
+  [DpAddrCsels*, ISBd**]
+  [DpAddrCseld*, ISBs**]
+  [DpAddrCsels*, ISBs**]
   [DSB.SYd**, ISB]
   [DSB.SYs**, ISB]
   [DSB.LDdR*, ISB]
@@ -49,16 +55,16 @@ aarch64hwreqs.cat
   [DpDatadW, PosWR]
   [DpDatasW, PosWR]
   $ mcat2config7 -set-libdir ./libdir -let pob libdir/aarch64.cat
-  DpAddrdW
-  DpAddrsW
-  DpDatadW
-  DpDatasW
-  DpCtrldW
-  DpCtrlsW
-  [DpAddrd*, Pod*W]
-  [DpAddrs*, Pod*W]
-  [DpAddrd*, Pos*W]
-  [DpAddrs*, Pos*W]
+  DpAddrCseldW
+  DpAddrCselsW
+  DpDataCseld*
+  DpDataCsels*
+  DpCtrlCseldW
+  DpCtrlCselsW
+  [DpAddrCseld*, Pod*W]
+  [DpAddrCsels*, Pod*W]
+  [DpAddrCseld*, Pos*W]
+  [DpAddrCsels*, Pos*W]
   $ mcat2config7 -set-libdir ./libdir -let aob libdir/aarch64.cat
   LxSx
   Amo.Swp
