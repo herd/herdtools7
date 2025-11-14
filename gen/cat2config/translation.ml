@@ -132,6 +132,8 @@ let build_tedges (ed : prim_edge) : E.tedge list =
   | Rmw -> [ E.Rmw A.LrSc ] @ amo_tedges
   | Dp dp ->
       UList.concat_map (fun sd -> [ E.Dp ((dp, A.NoCsel), sd, Code.Irr) ]) sds
+  | PickDp dp ->
+      UList.concat_map (fun sd -> [ E.Dp ((dp, A.OkCsel), sd, Code.Irr) ]) sds
 
 let build_edge (edge : partial_edge) (l : prim_rel list) : partial_edge option =
   List_traversal.fold_left
@@ -204,6 +206,21 @@ let try_match_edge (left : prim_set list)
           [
             E.Dp ((A.D.CTRL, A.NoCsel), Code.Diff, Code.Irr);
             E.Dp ((A.D.CTRL, A.NoCsel), Code.Same, Code.Irr);
+          ]
+          |> List.map (fun edge ->
+              Tedge { edge; insert = Some (A.Barrier AArch64Base.ISB) })
+        in
+        let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = None } in
+        Some ([], pedge, [])
+    | [
+     Rel (Inter [ Edge (PickDp Dep.CTRL) ]);
+     Set (Inter [ Fence (Some AArch64Base.ISB) ]);
+     Rel (Inter [ Edge Po ]);
+    ] ->
+        let tedges =
+          [
+            E.Dp ((A.D.CTRL, A.OkCsel), Code.Diff, Code.Irr);
+            E.Dp ((A.D.CTRL, A.OkCsel), Code.Same, Code.Irr);
           ]
           |> List.map (fun edge ->
               Tedge { edge; insert = Some (A.Barrier AArch64Base.ISB) })
