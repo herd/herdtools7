@@ -14,6 +14,7 @@ module Arg = struct
     unroll : int;
     libdir : string option;
     show : show option;
+    conf : bool;
   }
 
   let parse_show : string -> show = function
@@ -32,6 +33,7 @@ module Arg = struct
     let add_file_path fp = file_paths := !file_paths @ [ fp ] in
     let libdir = ref None in
     let show = ref None in
+    let conf = ref false in
     let opts =
       [
         ("-v", Arg.Unit (fun () -> incr verbose), " be verbose");
@@ -51,6 +53,10 @@ module Arg = struct
         ( "-show",
           Arg.String (fun s -> show := Some (parse_show s)),
           "<tree|tree-only|lets> show info on parsed model" );
+        ( "-conf",
+          Arg.Bool (fun b -> conf := b),
+          "<true|false> print output as diy configuration file. Default = \
+           false." );
       ]
     in
     let prog =
@@ -69,6 +75,7 @@ module Arg = struct
         unroll = !unroll;
         libdir = !libdir;
         show = !show;
+        conf = !conf;
       }
     in
     (opts, !file_paths)
@@ -144,20 +151,47 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     Nf.normalize_bindings ~conditions:opts.conds ~unroll_depth:opts.unroll
       ~set_var:Ir.parse_set_id ~rel_var:Ir.parse_rel_id bindings
   in
-  opts.lets_to_print
-  |> List.iter (fun var ->
-      match Nf.find_env_rel var env with
-      | None -> Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var
-      | Some nf ->
-          let nf = Ir.compress nf in
-          if opts.show = Some Tree then Format.printf "%a@." Ir.pp_rel_nf nf;
-          let nf = Ir.expand_domain_range nf in
-          Ir.get_union nf
-          |> List.iter (fun seq ->
-              let edges = Translation.try_translate_seq seq in
-              edges
-              |> List.iter (fun edges ->
-                  Format.printf "%s@." (Translation.pp_relax_list edges))))
+  let results =
+    opts.lets_to_print
+    |> List.filter_map (fun var ->
+        match Nf.find_env_rel var env with
+        | None ->
+            Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
+            None
+        | Some nf ->
+            let compressed = Ir.compress nf in
+            let expanded = Ir.expand_domain_range compressed in
+            Some (var, compressed, expanded))
+  in
+  if opts.conf then (
+    let open Format in
+    printf "-arch AArch64@.";
+    printf "-nprocs 2@.";
+    printf "-size 6@.";
+    printf "-name cat2config-conf@.";
+    results
+    |> List.iter (fun (var, _, expanded) ->
+        printf "@.";
+        printf "### %s@." var;
+        Ir.get_union expanded
+        |> List.iter (fun seq ->
+            let relaxs = Translation.try_translate_seq seq in
+            if relaxs <> [] then begin
+              printf "-safe %s@."
+                (String.concat " " (List.map Translation.pp_relax relaxs))
+            end)))
+  else
+    results
+    |> List.iter (fun (_, compressed, expanded) ->
+        if opts.show = Some Tree then
+          Format.printf "%a@." Ir.pp_rel_nf compressed;
+        let relaxs =
+          Ir.get_union expanded
+          |> Util.List.concat_map (fun seq -> Translation.try_translate_seq seq)
+        in
+        relaxs
+        |> List.iter (fun relax ->
+            Format.printf "%s@." (Translation.pp_relax relax)))
 
 let () =
   let opts, file_paths = Arg.parse () in
