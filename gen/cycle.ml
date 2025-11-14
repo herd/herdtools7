@@ -468,9 +468,7 @@ let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
 | _ ->
   Code.Data (make_loc loc0),((loc0+1,lab0),vs)
 
-let same_loc e = match E.loc_sd e with
-    | Same -> true
-    | Diff -> false
+let same_loc e = Code.is_same_loc @@ E.loc_sd e
 
 let diff_loc e = not (same_loc e)
 
@@ -1240,7 +1238,8 @@ let finish n =
   let _nv,_st =
     match sd with
     | Diff -> set_diff_loc st n
-    | Same -> set_same_loc st n in
+    | Same -> set_same_loc st n
+    | UnspecLoc -> assert false in
 
   if O.verbose > 1 then begin
     eprintf "LOCATIONS\n" ;

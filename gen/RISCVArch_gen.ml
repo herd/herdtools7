@@ -106,7 +106,7 @@ module Make
      let k = f AcqRel k in
      k
 
-   let fold_rmw f k =
+   let fold_rmw _b f k =
      let fold1 f k = fold_mo f (f Rlx k) in
      fold1
        (fun m1 k -> fold1 (fun m2 k -> f (Atomic (m1,m2)) k) k)
@@ -114,7 +114,7 @@ module Make
 
    let fold_non_mixed f k =
      let k = fold_mo (fun mo k -> f (MO mo) k) k in
-     fold_rmw f k
+     fold_rmw false f k
 
    let fold_atom f k =
      let k = fold_mixed f k in

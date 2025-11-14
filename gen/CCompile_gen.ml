@@ -30,6 +30,7 @@ module type Config = sig
   val typ : TypBase.t
   val cpp : bool
   val docheck : bool
+  val wildcard : bool
 end
 
 module Make(O:Config) : Builder.S
@@ -54,6 +55,7 @@ module Make(O:Config) : Builder.S
           (struct
             let variant = O.variant
             let naturalsize = TypBase.get_size O.typ
+            let wildcard = O.wildcard
           end)
           (A)
 
