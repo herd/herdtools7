@@ -1,0 +1,13 @@
+Test A031 Forbidden
+States 3
+1:X5=1; [PTE(z)]=(oa:PA(x), af:0);
+1:X5=1; [PTE(z)]=(oa:PA(x));
+1:X5=2; [PTE(z)]=(oa:PA(x));
+Ok
+Witnesses
+Positive: 14 Negative: 0
+Flag requires-BBM
+Condition ~exists ([PTE(z)]=(oa:PA(x), af:0) /\ 1:X5=2)
+Observation A031 Never 0 14
+Hash=b49f887241d4043b0d917f97925e00ab
+

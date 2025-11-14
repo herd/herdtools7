@@ -1287,7 +1287,7 @@ Monad type:
       module Scalar = V.Cst.Scalar
       let def_size v= match v with
         | V.Val (Constant.Instruction _) ->
-            MachSize.Word (* TODO: arch dependennt *)
+            MachSize.Word (* TODO: arch dependent *)
         | _ -> Scalar.machsize
 
       let extract_byte v = VC.Unop (Op.AndK AM.mask,v)
@@ -1552,7 +1552,9 @@ Monad type:
 
       let initwrites_non_mixed madd env size_env other_es =
         if dbg then
-          Printf.eprintf "Initial env for init_writes: {%s}\n" (debug_env env) ;
+          Printf.eprintf "Initial env for init_writes: {%s}\nsize_env={%s}\n%!"
+            (debug_env env)
+            (A.debug_size_env size_env) ;
         let env =
           if kvm then (if dbg then debug_add_initpte else add_initpte) env
           else env in
@@ -1561,9 +1563,8 @@ Monad type:
             List.fold_left
               (fun (eiid,es) (loc,v) ->
                 let sz =
-                  match A.symbolic_data loc with
-                  | Some  {Constant.name=s; _}
-                        when not (Misc.check_atag s) ->
+                  match A.get_symbol_name loc with
+                  | Some  s when not (Misc.check_atag s) ->
 (* Notice that size does not depend upon offset.
    That is, all addresses with the same base
    share the same size *)
