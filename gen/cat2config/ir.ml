@@ -151,8 +151,6 @@ let prim_set_comp : prim_set -> prim_set inter union = function
   | Comp s -> prim_set s
   | s -> prim_set (Comp s)
 
-(* Public interface *)
-
 let empty_set : set_nf = Union []
 let empty_rel : rel_nf = Union []
 let domain : rel_nf -> set_nf = map_union (fun s -> Inter [ Domain s ])
