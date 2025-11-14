@@ -47,6 +47,7 @@ module List : sig
   (* For compatibility with ocaml <= 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
   val uniq : eq:('a -> 'a -> bool) -> 'a list -> 'a list
+  val sequence : 'a list list -> 'a list list
 
   include Monad with type 'a t := 'a list
 
