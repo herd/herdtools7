@@ -246,9 +246,7 @@ and module Value := I.Value
           (* Add value `s` into `k` if `s` is a pte or physical address *)
           | Some (S s) -> add_some (refers_virtual s) k
           (* Add the associated physical address in a pteval `p` into `k` *)
-          | Some (P p) ->
-             add_some
-               (Value.refers_virtual p) k
+          | Some (P p) -> add_some (Value.refers_virtual p) k
           | None -> k in
           k)
         StringSet.empty i in
