@@ -7,7 +7,7 @@ open SpecParser
 let tok_str = TokenStrings.string_of_token
 
 let pp_comma_list pp_elt fmt =
-  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ",@ ") pp_elt fmt
+  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ") pp_elt fmt
 
 let pp_sep_list ~sep pp_elem elements =
   Format.pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt sep) pp_elem elements
@@ -28,19 +28,19 @@ let pp_attribute fmt = function
   | MathMacroAttribute macro -> pp_print_string fmt macro
 
 let pp_attribute_key_value fmt (key, value) =
-  fprintf fmt {|%a = %a|} pp_attribute_key key pp_attribute value
+  fprintf fmt {|%a = %a,|} pp_attribute_key key pp_attribute value
 
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()
   else
-    fprintf fmt "{@[<v>@;<0 2>%a@,@]}"
+    fprintf fmt "{@[<v>@;<0 2>%a@]@,}"
       (fun fmt attrs ->
-        pp_sep_list ~sep:",@,"
+        pp_sep_list ~sep:"@;<0 2>"
           (fun fmt attr -> pp_attribute_key_value fmt attr)
           fmt attrs)
       attributes
 
-let operator_to_token = function
+let type_operator_to_token = function
   | Powerset -> POWERSET
   | Powerset_Finite -> POWERSET_FINITE
   | List0 -> LIST0
@@ -51,7 +51,7 @@ let rec pp_type_term fmt = function
   | Label name -> pp_print_string fmt name
   | TypeOperator { op; term } ->
       fprintf fmt "%s(%a)"
-        (operator_to_token op |> tok_str)
+        (type_operator_to_token op |> tok_str)
         pp_opt_named_type_term term
   | LabelledTuple { label_opt; components } ->
       fprintf fmt "%s(%a)"
@@ -84,11 +84,11 @@ and pp_opt_named_type_terms fmt opt_named_terms =
   pp_sep_list ~sep:", " pp_opt_named_type_term fmt opt_named_terms
 
 let pp_type_term_with_attributes fmt ({ TypeVariant.term } as variant) =
-  fprintf fmt "%a@.%a" pp_type_term term pp_attribute_key_values
+  fprintf fmt "@[<v>%a@,%a@]" pp_type_term term pp_attribute_key_values
     (TypeVariant.attributes_to_list variant)
 
 let pp_variants_with_attributes fmt variants =
-  pp_sep_list ~sep:" @,| " pp_type_term_with_attributes fmt variants
+  pp_sep_list ~sep:"@,  | " pp_type_term_with_attributes fmt variants
 
 let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
 
@@ -98,17 +98,20 @@ let pp_relation_category fmt = function
   | Some Relation.RelationCategory_Semantics ->
       fprintf fmt "%s " (tok_str SEMANTICS)
 
+let relation_keyword_to_string =
+  let open Relation in
+  function
+  | RelationProperty_Relation -> tok_str RELATION
+  | RelationProperty_Function -> tok_str FUNCTION
+
 let pp_relation_definition fmt
     ({ Relation.name; property; category; input; output } as relation) =
-  let module Rel = Relation in
-  fprintf fmt "@[<v>%a%s %s(%a) -> %a@,%a@];" pp_relation_category category
-    (match property with
-    | RelationProperty_Relation -> tok_str RELATION
-    | RelationProperty_Function -> tok_str FUNCTION)
+  fprintf fmt "@[<b>%a%s %s(%a) -> %a@,%a@];" pp_relation_category category
+    (relation_keyword_to_string property)
     name
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
     input pp_variants output pp_attribute_key_values
-    (Rel.attributes_to_list relation)
+    (Relation.attributes_to_list relation)
 
 let type_kind_to_string = function
   | TypeKind_Generic -> tok_str TYPEDEF
@@ -116,14 +119,14 @@ let type_kind_to_string = function
 
 let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
   let eq_str = if Utils.list_is_empty variants then "" else " = " in
-  fprintf fmt "%s %s@,%a@,%s@,@[<v 2>  %a@];"
+  fprintf fmt "%s %s@.%a@.%s@,@[<v>  %a@]@,;"
     (type_kind_to_string type_kind)
     name pp_attribute_key_values
     (Type.attributes_to_list def)
     eq_str pp_variants_with_attributes variants
 
 let pp_constant_definition fmt ({ Constant.name } as def) =
-  fprintf fmt "%s %s %a;" (tok_str CONSTANT) name pp_attribute_key_values
+  fprintf fmt "%s %s@.%a;" (tok_str CONSTANT) name pp_attribute_key_values
     (Constant.attributes_to_list def)
 
 let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
@@ -145,4 +148,6 @@ let pp_elem fmt = function
   | Elem_RenderTypes def -> pp_render_definition fmt def
 
 let pp_spec fmt spec =
-  fprintf fmt "@[<v>%a@]" (pp_sep_list ~sep:"@,@," pp_elem) spec
+  pp_set_margin fmt 120;
+  (* Set margin in terms of number of characters. *)
+  fprintf fmt "@[<b>%a@]" (pp_sep_list ~sep:"@.@." pp_elem) spec
