@@ -58,12 +58,15 @@
   -safe DMB.STdWW DMB.STsWW
   -safe [Amo.SwpAL, Pod**LP] [Amo.CasAL, Pod**LP] [Amo.SwpAL, Pos**LP] [Amo.CasAL, Pos**LP]
   -safe Pod**LA Pos**LA
+  -safe [Pod**LA, Amo.SwpAP] [Pos**LA, Amo.SwpAP] [Pod**LA, Amo.CasAP] [Pos**LA, Amo.CasAP]
+  -safe [Amo.SwpPL, Pod**LA] [Amo.CasPL, Pod**LA] [Amo.SwpPL, Pos**LA] [Amo.CasPL, Pos**LA]
+  -safe [Amo.SwpPL, Pod**LA, Amo.SwpAP] [Amo.CasPL, Pod**LA, Amo.SwpAP] [Amo.SwpPL, Pos**LA, Amo.SwpAP] [Amo.CasPL, Pos**LA, Amo.SwpAP] [Amo.SwpPL, Pod**LA, Amo.CasAP] [Amo.CasPL, Pod**LA, Amo.CasAP] [Amo.SwpPL, Pos**LA, Amo.CasAP] [Amo.CasPL, Pos**LA, Amo.CasAP]
   -safe Pod**AP Pos**AP
+  -safe [Amo.SwpAP, Pod**] [Amo.CasAP, Pod**] [Amo.SwpAP, Pos**] [Amo.CasAP, Pos**]
   -safe Pod**QP Pos**QP
-  -safe [Amo.SwpAP, PodW*] [Amo.SwpAP, PosW*] [Amo.CasAP, PodW*] [Amo.CasAP, PosW*]
-  -safe [Amo.SwpQP, PodW*] [Amo.SwpQP, PosW*] [Amo.CasQP, PodW*] [Amo.CasQP, PosW*]
+  -safe [Amo.SwpQP, Pod**] [Amo.CasQP, Pod**] [Amo.SwpQP, Pos**] [Amo.CasQP, Pos**]
   -safe Pod**PL Pos**PL
-  -safe [Pod*R, Amo.SwpPL] [Pos*R, Amo.SwpPL] [Pod*R, Amo.CasPL] [Pos*R, Amo.CasPL]
+  -safe [Pod**, Amo.SwpPL] [Pos**, Amo.SwpPL] [Pod**, Amo.CasPL] [Pos**, Amo.CasPL]
   
   ### lwfs
   -safe Pos*W

@@ -88,12 +88,40 @@ aarch64hwreqs.cat
   [Amo.CasAL, Pos**LP]
   Pod**LA
   Pos**LA
+  [Pod**LA, Amo.SwpAP]
+  [Pos**LA, Amo.SwpAP]
+  [Pod**LA, Amo.CasAP]
+  [Pos**LA, Amo.CasAP]
+  [Amo.SwpPL, Pod**LA]
+  [Amo.CasPL, Pod**LA]
+  [Amo.SwpPL, Pos**LA]
+  [Amo.CasPL, Pos**LA]
+  [Amo.SwpPL, Pod**LA, Amo.SwpAP]
+  [Amo.CasPL, Pod**LA, Amo.SwpAP]
+  [Amo.SwpPL, Pos**LA, Amo.SwpAP]
+  [Amo.CasPL, Pos**LA, Amo.SwpAP]
+  [Amo.SwpPL, Pod**LA, Amo.CasAP]
+  [Amo.CasPL, Pod**LA, Amo.CasAP]
+  [Amo.SwpPL, Pos**LA, Amo.CasAP]
+  [Amo.CasPL, Pos**LA, Amo.CasAP]
   Pod**AP
   Pos**AP
+  [Amo.SwpAP, Pod**]
+  [Amo.CasAP, Pod**]
+  [Amo.SwpAP, Pos**]
+  [Amo.CasAP, Pos**]
   Pod**QP
   Pos**QP
+  [Amo.SwpQP, Pod**]
+  [Amo.CasQP, Pod**]
+  [Amo.SwpQP, Pos**]
+  [Amo.CasQP, Pos**]
   Pod**PL
   Pos**PL
+  [Pod**, Amo.SwpPL]
+  [Pos**, Amo.SwpPL]
+  [Pod**, Amo.CasPL]
+  [Pos**, Amo.CasPL]
 aarch64deps.cat
   $ mcat2config7 -set-libdir ./libdir -let lwfs libdir/aarch64.cat
   Pos*W
