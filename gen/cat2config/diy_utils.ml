@@ -23,3 +23,9 @@ let parse_barrier : string -> AArch64Base.barrier option = function
   | _ -> None
 
 let pp_barrier (b : AArch64Base.barrier) : string = AArch64Base.pp_barrier_dot b
+
+let pp_dp : Dep.dp -> string = function
+  | ADDR -> "addr"
+  | DATA -> "data"
+  | CTRL -> "ctrl"
+  | CTRLISYNC -> "ctrlisb"
