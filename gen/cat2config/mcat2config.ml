@@ -173,13 +173,19 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     |> List.iter (fun (var, _, expanded) ->
         printf "@.";
         printf "### %s@." var;
-        Ir.get_union expanded
-        |> List.iter (fun seq ->
-            let relaxs = Translation.try_translate_seq seq in
-            if relaxs <> [] then begin
-              printf "-safe %s@."
-                (String.concat " " (List.map Translation.pp_relax relaxs))
-            end)))
+        let _ =
+          List.fold_left
+            (fun acc seq ->
+              let relaxs = Translation.try_translate_seq seq in
+              let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
+              if relaxs <> [] then begin
+                printf "-safe %s@."
+                  (String.concat " " (List.map Translation.pp_relax relaxs))
+              end;
+              acc @ relaxs)
+            [] (Ir.get_union expanded)
+        in
+        ()))
   else
     results
     |> List.iter (fun (_, compressed, expanded) ->
@@ -189,6 +195,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
           Ir.get_union expanded
           |> Util.List.concat_map (fun seq -> Translation.try_translate_seq seq)
         in
+        let relaxs = Util.List.uniq ~eq:( = ) relaxs in
         relaxs
         |> List.iter (fun relax ->
             Format.printf "%s@." (Translation.pp_relax relax)))
