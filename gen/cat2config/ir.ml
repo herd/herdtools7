@@ -122,6 +122,7 @@ type prim_edge =
   | Rf
   | Fence of fence
   | Dp of A.D.dp
+  | PickDp of A.D.dp
   | Amo
   | Rmw
   | LxSx
@@ -263,9 +264,9 @@ let parse_rel_id (s : string) : rel_nf option =
       ]
   in
   let pick_basic_dep = poswr in
-  let pick_addr_dep = prim_rel (Edge (Dp A.D.ADDR)) in
-  let pick_data_dep = prim_rel (Edge (Dp A.D.DATA)) in
-  let pick_ctrl_dep = prim_rel (Edge (Dp A.D.CTRL)) in
+  let pick_addr_dep = prim_rel (Edge (PickDp A.D.ADDR)) in
+  let pick_data_dep = prim_rel (Edge (PickDp A.D.DATA)) in
+  let pick_ctrl_dep = prim_rel (Edge (PickDp A.D.CTRL)) in
   match s with
   | "po" -> Some (prim_rel (Edge Po))
   | "loc" -> Some (prim_rel Loc)
@@ -328,10 +329,8 @@ let pp_prim_edge fmt =
   | LxSx -> fprintf fmt "lxsx"
   | Rmw -> fprintf fmt "rmw"
   | Fence f -> fprintf fmt "%s" (AArch64Base.pp_barrier f)
-  | Dp ADDR -> fprintf fmt "addr"
-  | Dp DATA -> fprintf fmt "data"
-  | Dp CTRL -> fprintf fmt "ctrl"
-  | Dp CTRLISYNC -> fprintf fmt "ctrlisb"
+  | Dp dp -> fprintf fmt "%s" (Diy_utils.pp_dp dp)
+  | PickDp dp -> fprintf fmt "pick-%s-dep" (Diy_utils.pp_dp dp)
 
 let pp_prim_rel fmt =
   let open Format in
