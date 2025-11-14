@@ -151,6 +151,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
       | Some nf ->
           let nf = Ir.compress nf in
           if opts.show = Some Tree then Format.printf "%a@." Ir.pp_rel_nf nf;
+          let nf = Ir.expand_domain_range nf in
           Ir.get_union nf
           |> List.iter (fun seq ->
               let edges = Translation.try_translate_seq seq in
