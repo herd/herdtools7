@@ -9,6 +9,7 @@ type 'a union = Union of 'a list
 
 let get_inter (Inter l : 'a inter) = l
 let get_union (Union l : 'a union) : 'a list = l
+let get_seq (Seq l : ('s, 'r) seq) : ('s, 'r) seq_item list = l
 
 let over_inter (f : 'a list -> 'b list) (Inter i : 'a inter) : 'b inter =
   Inter (f i)
@@ -393,3 +394,19 @@ let compress : ('s, 'r) seq union -> ('s, 'r) seq union =
       in
       Seq s)
     u
+
+let expand_domain_range (nf : rel_nf) : rel_nf =
+  let can_expand (Seq seq : (prim_set, prim_rel) seq) : bool =
+    let rels =
+      List.filter_map (function Set _ -> None | Rel r -> Some r) seq
+    in
+    match rels with [] -> true | [ Inter [ Edge Amo ] ] -> true | _ -> false
+  in
+  let expand_item :
+      (prim_set, prim_rel) seq_item -> (prim_set, prim_rel) seq_item list =
+    function
+    | Set (Inter [ Domain r ]) when can_expand r -> get_seq r
+    | Set (Inter [ Range r ]) when can_expand r -> get_seq r
+    | x -> [ x ]
+  in
+  map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
