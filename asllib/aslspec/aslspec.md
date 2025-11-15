@@ -7,7 +7,7 @@ aslspec allows specifying the following kinds of elements:
 - Constants
 - Relation signatures
 - Rendering elements
-- Inference rules (not just yet)
+- Inference rules
 
 # Type definitions
 Types definitions define mathematical types (like Booleans) and AST node types.
@@ -58,9 +58,9 @@ aslspec supports the following type constructors:
 - `list1(T)`: a non-empty list of elements from type `T`
 - `(T...T)`: a tuple of elements from respective types `T1`...`Tn`
 - `L(T1...Tn)`: a tuple type affixed with the label `L`
-- `[f_1: T1...f_n: Tn]`: a function mapping each identifier `f_i` to an element of `T_i`.
+- `{f_1: T1...f_n: Tn}`: a function mapping each identifier `f_i` to an element of `T_i`.
     This is conventionally referred to as a record type.
-- `L[field: term...field: term]`: a record type affixed with the label `L`.
+- `L{field: term...field: term}`: a record type affixed with the label `L`.
 - `fun A -> B`: the type of total functions from `A` to `B`.
 - `partial T -> T`: the type of partial functions from `A` to `B`.
 
