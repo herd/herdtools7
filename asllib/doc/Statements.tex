@@ -90,9 +90,13 @@ not modify the \staticenvironmentterm{}.
   \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass, \tenv, \overname{\emptyset}{\vses})}
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+
+\RenderRule{annotate_stmt_SPass}
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -153,6 +157,7 @@ is well-typed.
   \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
@@ -163,6 +168,8 @@ is well-typed.
   (\overname{\SAssign(\vleone, \vreone)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SAssign}
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -592,6 +599,7 @@ since immutable local storage elements require an initializing expression.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
@@ -622,6 +630,8 @@ since immutable local storage elements require an initializing expression.
   \annotatestmt(\tenv, \vs) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SDecl}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
@@ -1146,6 +1156,7 @@ and also recorded to be equivalent to $\LInt(3)$ (in the $\exprequiv$ map).
   \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and $\vsestwo$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\\\\
@@ -1155,6 +1166,8 @@ and also recorded to be equivalent to $\LInt(3)$ (in the $\exprequiv$ map).
   \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SSeq}
 \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -1236,6 +1249,7 @@ in \listingref{scall} is\\ well-typed.
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1252,6 +1266,8 @@ in \listingref{scall} is\\ well-typed.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SCall}
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
 \identd{VXKM}
 
@@ -1378,6 +1394,7 @@ an \atcexpressionterm{}.
   \item \Proseeqdef{$\vses$}{the union of $\vsescond$, $\vsesone$, and $\vsestwo$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
@@ -1390,6 +1407,8 @@ an \atcexpressionterm{}.
   (\overname{\SCond(\econd, \vsonep, \vstwop)}{\news}, \overname{\tenv}{\newtenv})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SCond}
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
 \identr{NBDJ}
 
@@ -1841,6 +1860,7 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
   \item \Proseeqdef{$\vses$}{$\vsese$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
@@ -1851,6 +1871,8 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
   \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SAssert}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
 \identr{JQYF}
 
@@ -2005,6 +2027,7 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vs = \SWhile(\veone, \vlimitone, \vsone)\\
@@ -2018,6 +2041,8 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
   (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SWhile}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 \identr{FTVN}
 
@@ -2345,6 +2370,7 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
   \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
@@ -2361,6 +2387,8 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SRepeat}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
 \identr{FTVN}
 
@@ -2557,6 +2585,7 @@ show examples of ill-typed \texttt{for} loops.
   \item define $\vses$ as the union of $\vsesblock$ and $\vsescond$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
@@ -2601,6 +2630,8 @@ show examples of ill-typed \texttt{for} loops.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SFor}
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
 \identr{SSBD} \identr{ZSND} \identr{VTJW}
 
@@ -2965,6 +2996,7 @@ shows examples of well-typed \throwstatementsterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
@@ -2976,6 +3008,8 @@ shows examples of well-typed \throwstatementsterm.
   (\overname{\SThrow(\vep, \vte)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SThrow}
 \identr{NXRC}
 \CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
 
@@ -3166,6 +3200,7 @@ the \trystatementsterm{} are all well-typed.
   \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+%\RenderRule{annotate_stmt_STry}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
 \identr{WVXS}
 
@@ -3267,6 +3302,7 @@ since \verb|proc| is not a function but a procedure.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error]{
   \vb \eqdef (\tenv.\staticenvsL.\returntype = \None \leftrightarrow \veopt = \None) \\
@@ -3296,6 +3332,8 @@ since \verb|proc| is not a function but a procedure.
   (\overname{\SReturn(\some{ \vep })}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SReturn}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
 \identr{FTPK}
 
@@ -3529,6 +3567,8 @@ empty \executiongraphterm{}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
+% This rule was fixed when translated to aslspec.
 \begin{mathpar}
   \inferrule{%
     \vs = \SPrint(\vargs, \vnewline)\\
@@ -3539,6 +3579,8 @@ empty \executiongraphterm{}.
     \annotatestmt (\tenv, \vs) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
   }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SPrint}
 \CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -3734,11 +3776,14 @@ The \unreachablestatementterm{} in \listingref{UnreachableStatement} is well-typ
 Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields\\$(\SUnreachable, \tenv, \emptyset)$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SUnreachable}
 
 \SemanticsRuleDef{SUnreachable}
 \ExampleDef{Evaluating an Unreachable Statement}
@@ -3799,6 +3844,7 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   i\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
@@ -3807,6 +3853,8 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
   \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SPragma}
 \CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
 
 \subsection{Semantics\label{sec:PragmaSemantics}}

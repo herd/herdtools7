@@ -199,7 +199,7 @@ let pp_elements_and_separator ~pp_sep ~alignment ~same_column pp_elem layout fmt
     separators are rendered in the same column as the elements, and the elements
     are aligned according to [alignment]. *)
 let pp_aligned_elements ~pp_sep ~alignment pp_elem layout fmt elements =
-  pp_elements_and_separator ~pp_sep ~alignment ~same_column:false pp_elem layout
+  pp_elements_and_separator ~pp_sep ~alignment ~same_column:true pp_elem layout
     fmt elements
 
 (** [pp_aligned_elements_and_operators ~pp_sep ~alignment pp_elem layout fmt
@@ -207,7 +207,7 @@ let pp_aligned_elements ~pp_sep ~alignment pp_elem layout fmt elements =
     [Vertical], the separators are rendered on a separate column. *)
 let pp_aligned_elements_and_operators ~pp_sep ~alignment pp_elem layout fmt
     elements =
-  pp_elements_and_separator ~pp_sep ~alignment ~same_column:true pp_elem layout
+  pp_elements_and_separator ~pp_sep ~alignment ~same_column:false pp_elem layout
     fmt elements
 
 (** [pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name

@@ -384,6 +384,18 @@ It relies on the helper function $\uniquep$:
 \]
 \end{definition}
 
+\begin{definition}[Taking the union of a list of sets]
+The parametric function
+\hypertarget{def-unionlist}{}
+\[
+\unionlist : \KleeneStar{\pow{T}} \rightarrow \pow{T}
+\]
+takes the union of a list of sets:
+\[
+  \unionlist(S_{1..k}) \triangleq \bigcup_{i=1}^{k} S_i \enspace.
+\]
+\end{definition}
+
 \subsection{Strings}
 \hypertarget{def-stringconcat}{}
 The function $\stringconcat : \Strings \times \Strings \rightarrow \Strings$

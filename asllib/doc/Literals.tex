@@ -144,6 +144,7 @@ See \ExampleRef{Literals}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[int]{}{
 {
@@ -182,6 +183,8 @@ See \ExampleRef{Literals}.
   \annotateliteral(\tenv, \overname{\LLabel(\vlabel)}{\vl}) \typearrow \vt
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_literal}
 \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
