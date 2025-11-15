@@ -706,6 +706,55 @@ def check_zero_arg_macro_misuse(latex_files: list[str]) -> int:
     return num_errors
 
 
+def check_mathpar_macro_usage(filename: str) -> int:
+    r"""
+    Scans a .tex file and checks that within \begin{mathpar} ... \end{mathpar} blocks,
+    there are no macros ending with 'term', 'Term', or starting with 'Prose'.
+    Returns the number of errors found.
+    """
+    num_errors = 0
+
+    # List of macros that are excluded from this check
+    excluded_macros = {
+        r'\polynomialdividebyterm',
+    }
+
+    # Pattern to match macros that end with 'term' or 'Term', or start with 'Prose'
+    prohibited_macro_pattern = re.compile(r'\\([a-zA-Z]+(?:term|Term)|Prose[a-zA-Z]+)')
+
+    file_str = read_file_str(filename)
+
+    # Find all mathpar blocks
+    mathpar_pattern = re.compile(r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', re.DOTALL)
+
+    for match in mathpar_pattern.finditer(file_str):
+        mathpar_content = match.group(1)
+        start_pos = match.start()
+
+        # Calculate approximate line number for error reporting
+        lines_before = file_str[:start_pos].count('\n')
+        line_number = lines_before + 1
+
+        # Find prohibited macros in this mathpar block
+        for macro_match in prohibited_macro_pattern.finditer(mathpar_content):
+            macro_name = macro_match.group(0)
+
+            # Skip if this macro is in the excluded list
+            if macro_name in excluded_macros:
+                continue
+
+            # Calculate line within the mathpar block
+            mathpar_lines_before = mathpar_content[:macro_match.start()].count('\n')
+            error_line = line_number + mathpar_lines_before
+
+            print(
+                f"{filename}:{error_line}: Prohibited macro {macro_name} found in mathpar block"
+            )
+            num_errors += 1
+
+    return num_errors
+
+
 def check_relation_references(latex_files: list[str]) -> int:
     r"""
     Checks that for each 'relation <name>' and 'function <name>' in any .spec file,
@@ -825,6 +874,7 @@ def main():
             check_repeated_lines,
             detect_incorrect_latex_macros_spacing,
             check_rules,
+            check_mathpar_macro_usage,
         ],
     )
 
