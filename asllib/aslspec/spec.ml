@@ -253,16 +253,6 @@ module Layout = struct
         Horizontal
           [ default_for_type_term from_term; default_for_type_term to_term ]
 
-  let horizontal_if_unspecified layout terms =
-    match layout with
-    | Horizontal _ | Vertical _ -> layout
-    | _ -> Horizontal (List.map (fun _ -> Unspecified) terms)
-
-  let rec contains_vertical = function
-    | Unspecified -> false
-    | Horizontal shapes -> List.exists contains_vertical shapes
-    | Vertical _ -> true
-
   (** [math_layout_for_node node] returns the math layout for the given node, or
       a default layout based on its type term if no math layout is defined. *)
   let math_layout_for_node = function
@@ -492,7 +482,7 @@ module Check = struct
         does not contain a [{var}] where [var] is not in [vars]. Otherwise,
         raises a [SpecError] detailing the unmatched variables. *)
     let check_prose_template_for_vars template vars =
-      let open Text in
+      let open Latex in
       (* Populate with [{var}] for each [var]. *)
       let template_vars =
         List.fold_left
