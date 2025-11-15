@@ -755,6 +755,125 @@ def check_mathpar_macro_usage(filename: str) -> int:
     return num_errors
 
 
+def check_balanced_parentheses_in_math(filename: str) -> int:
+    r"""
+    Checks that all mathematical environments ($...$, \[...\], \begin{mathpar}...\end{mathpar})
+    have balanced parentheses of the following types:
+    - ( and )
+    - [ and ]
+    - { and }
+    - \left{ and \right}
+    - \left{ and \right.
+    Returns the number of errors found.
+    """
+    num_errors = 0
+    file_str = read_file_str(filename)
+
+    # Patterns to extract mathematical environments
+    math_patterns = [
+        (r'\$([^\$]+)\$', 'inline math $...$'),
+        (r'\\\[(.*?)\\\]', 'display math \\[...\\]'),
+        (r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', 'mathpar environment'),
+    ]
+
+    def check_balance(content: str, env_type: str, start_pos: int) -> int:
+        """Check if parentheses are balanced and properly nested in the given content."""
+        errors = 0
+
+        # Calculate line number for error reporting
+        lines_before = file_str[:start_pos].count('\n')
+        line_number = lines_before + 1
+
+        # Single stack to track all parentheses in nesting order
+        # Each entry is (opening_symbol, position)
+        stack = []
+
+        i = 0
+        while i < len(content):
+            # Check for \left variants (any \left<char> can match any \right<char>)
+            if i < len(content) - 5 and content[i:i+5] == r'\left':
+                # Check if followed by a non-letter delimiter
+                if i + 5 < len(content) and not content[i+5].isalpha():
+                    delimiter = content[i+5]
+                    stack.append((r'\left', i))
+                    i += 6  # Skip \left and the delimiter
+                    continue
+            # Check for \right variants (can match any \left)
+            # Must ensure it's not part of \rightarrow or similar commands
+            elif i < len(content) - 6 and content[i:i+6] == r'\right':
+                # Check if followed by a non-letter delimiter (not part of \rightarrow, etc.)
+                if i + 6 < len(content) and not content[i+6].isalpha():
+                    delimiter = content[i+6]
+                    # Any \right matches any \left
+                    if not stack or not stack[-1][0].startswith(r'\left'):
+                        if not stack:
+                            print(f"{filename}:{line_number}: Unmatched \\right in {env_type}")
+                        else:
+                            print(f"{filename}:{line_number}: Improperly nested \\right (expected to close '{stack[-1][0]}') in {env_type}")
+                        errors += 1
+                    else:
+                        stack.pop()
+                    i += 7  # Skip \right and the delimiter
+                    continue
+
+            # Check regular parentheses
+            if content[i] == '(':
+                stack.append(('(', i))
+            elif content[i] == ')':
+                if not stack or stack[-1][0] != '(':
+                    if not stack:
+                        print(f"{filename}:{line_number}: Unmatched ')' in {env_type}")
+                    else:
+                        print(f"{filename}:{line_number}: Improperly nested ')' (expected to close '{stack[-1][0]}') in {env_type}")
+                    errors += 1
+                else:
+                    stack.pop()
+            elif content[i] == '[':
+                stack.append(('[', i))
+            elif content[i] == ']':
+                if not stack or stack[-1][0] != '[':
+                    if not stack:
+                        print(f"{filename}:{line_number}: Unmatched ']' in {env_type}")
+                    else:
+                        print(f"{filename}:{line_number}: Improperly nested ']' (expected to close '{stack[-1][0]}') in {env_type}")
+                    errors += 1
+                else:
+                    stack.pop()
+            elif content[i] == '{':
+                # Only track { if it's not preceded by a backslash (not part of a LaTeX command)
+                if i == 0 or content[i-1] != '\\':
+                    stack.append(('{', i))
+            elif content[i] == '}':
+                # Only track } if it's not preceded by a backslash (not part of a LaTeX command)
+                if i == 0 or content[i-1] != '\\':
+                    if not stack or stack[-1][0] != '{':
+                        if not stack:
+                            print(f"{filename}:{line_number}: Unmatched '}}' in {env_type}")
+                        else:
+                            print(f"{filename}:{line_number}: Improperly nested '}}' (expected to close '{stack[-1][0]}') in {env_type}")
+                        errors += 1
+                    else:
+                        stack.pop()
+
+            i += 1        # Check for unclosed parentheses
+        if stack:
+            for opening_symbol, pos in stack:
+                print(f"{filename}:{line_number}: Unclosed '{opening_symbol}' in {env_type}")
+                errors += len(stack)
+                break  # Only report once per environment
+
+        return errors
+
+    # Check each type of mathematical environment
+    for pattern, env_type in math_patterns:
+        for match in re.finditer(pattern, file_str, re.DOTALL):
+            content = match.group(1)
+            start_pos = match.start()
+            num_errors += check_balance(content, env_type, start_pos)
+
+    return num_errors
+
+
 def check_relation_references(latex_files: list[str]) -> int:
     r"""
     Checks that for each 'relation <name>' and 'function <name>' in any .spec file,
@@ -875,6 +994,7 @@ def main():
             detect_incorrect_latex_macros_spacing,
             check_rules,
             check_mathpar_macro_usage,
+            check_balanced_parentheses_in_math,
         ],
     )
 
