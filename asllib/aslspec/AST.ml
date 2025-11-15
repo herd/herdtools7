@@ -15,7 +15,7 @@ let stack_spec_error msg extra_msg =
 type type_kind = TypeKind_Generic | TypeKind_AST
 
 (** A unary operator that transforms one type into another. *)
-type operator =
+type type_operator =
   | Powerset  (** All subsets (finite and infinite) of the given type. *)
   | Powerset_Finite  (** All finite subsets of the given type. *)
   | List0  (** All (empty and non-empty) sequences of the given member type. *)
@@ -33,9 +33,9 @@ type type_term =
   | Label of string
       (** Either a set containing the single value named by the given string or
           a reference to a type with the given name. *)
-  | Operator of { op : operator; term : opt_named_type_term }
-      (** A set containing all types formed by applying the operator [op] to the
-          type given by [term]. *)
+  | TypeOperator of { op : type_operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the type operator [op]
+          to the type given by [term]. *)
   | LabelledTuple of {
       label_opt : string option;
       components : opt_named_type_term list;
@@ -66,9 +66,9 @@ and named_type_term = string * type_term
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
 
-(** [make_operator op term] Constructs an operator term with the given operator
-    and term. *)
-let make_operator op term = Operator { op; term }
+(** [make_type_operation op term] Constructs a type term in which [op] is
+    applied to [term]. *)
+let make_type_operation op term = TypeOperator { op; term }
 
 (** [make_tuple components] Constructs an unlabelled tuple for the tuple
     components [components]. *)
@@ -174,6 +174,34 @@ module Attributes = struct
           raise (SpecError msg)
         else add k v acc_map)
       empty pairs
+end
+
+(** A datatype for a constant definition. *)
+module Constant : sig
+  type t = { name : string; att : Attributes.t }
+
+  val make : string -> (AttributeKey.t * attribute) list -> t
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val prose_description : t -> string
+  val math_macro : t -> string option
+end = struct
+  type t = { name : string; att : Attributes.t }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  open Attributes
+
+  let make name attributes = { name; att = Attributes.of_list attributes }
+
+  let prose_description self =
+    match Attributes.find_opt AttributeKey.Prose_Description self.att with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  let math_macro self =
+    match find_opt AttributeKey.Math_Macro self.att with
+    | Some (MathMacroAttribute s) -> Some s
+    | _ -> None
 end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
@@ -286,6 +314,131 @@ end = struct
     | _ -> None
 end
 
+(** A datatype for a set of inference rules for a given relation. *)
+module Rule = struct
+  (** An operator over expressions. *)
+  type expr_operator =
+    | Operator_Assign
+    | Operator_Equal
+    | Operator_Iff
+    | Operator_List
+    | Operator_Size
+    | Operator_Set
+    | Operator_Union
+    | Operator_UnionList
+    | Operator_Some
+
+  (** [is_infix_operator] returns [true] if the operator is a binary operator
+      that is typically written as [e1 op e2]. *)
+  let is_infix_operator = function
+    | Operator_Assign | Operator_Equal | Operator_Iff -> true
+    | Operator_List | Operator_Set | Operator_Size | Operator_Union
+    | Operator_UnionList | Operator_Some ->
+        false
+
+  (** [is_prefix_operator] returns [true] if the operator is a unary operator
+      that is typically written as [op(e1,...,ek)]. *)
+  let is_prefix_operator op = not (is_infix_operator op)
+
+  (** [is_associative_operator op] returns [true] if [op(e1,...,ek)] is
+      typically written as [e1 op e2 ... op ek]. *)
+  let is_associative_operator = function Operator_Union -> true | _ -> false
+
+  (** The left-hand side of an application expression. *)
+  type applicator =
+    | EmptyApplicator
+        (** This is used for tuples, for which there is no applicator. *)
+    | Relation of string
+    | TupleLabel of string
+    | ExprOperator of expr_operator
+    | Fields of string list
+    | Unresolved of expr
+
+  (** A term that can be used to form a rule judgement. *)
+  and expr =
+    | Var of string
+    | FieldAccess of string list
+        (** The first identifier is a variable and the rest are field names. *)
+    | ListIndex of { var : string; index : string }
+    | Record of { label : string; fields : (string * expr) list }
+        (** A record construction expression, optionally labelled. *)
+    | Application of { applicator : applicator; args : expr list }
+        (** An application of [applicator] to the list of argument expressions
+            [args]. *)
+
+  (** [make_tuple args] constructs a tuple expression with the given arguments.
+  *)
+  let make_tuple args = Application { applicator = EmptyApplicator; args }
+
+  (** [make_application lhs exprs] constructs an application expression with
+      left-hand side [lhs] and argument expressions [exprs]. During rule
+      resolution, [lhs] is expected to resolve to either a relation name or a
+      tuple label. *)
+  let make_application lhs exprs =
+    Application { applicator = Unresolved lhs; args = exprs }
+
+  let make_prefix_operator_application op args =
+    Application { applicator = ExprOperator op; args }
+
+  let make_infix_operator_application op lhs rhs =
+    Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
+
+  let make_record label fields = Record { label; fields }
+  let make_list_index var index = ListIndex { var; index }
+
+  (** A judgement form. *)
+  type judgment_form =
+    | Expr of expr  (** a Boolean-valued expression *)
+    | Output of expr  (** The output configuration of a conclusion judgement. *)
+    | Transition of {
+        lhs : expr;
+        rhs : expr;
+        short_circuit : expr list option;
+            (** The optional [short_circuit] contains short-circuiting
+                alternatives. If [short_circuit] is [None], the alternatives are
+                taken from the corresponding relation definition. Otherwise,
+                they are overridden. *)
+        is_output : bool;
+            (** indicates whether this transition is used for the conclusion of
+                a rule; it is initially set to [false] and later updated via
+                rule expansion.*)
+      }
+        (** A transition from the [lhs] configuration to the [rhs] configuration
+            with optional alternatives. *)
+    | Indexed of { index : string; list : string; body : judgment_form }
+
+  type judgement = { form : judgment_form; att : Attributes.t }
+  (** A judgement represents either a premise or the the output configuration of
+      the conclusion. *)
+
+  (** [judgment_layout] returns the layout attribute of a judgment, if one was
+      specified, and [Unspecified] otherwise. *)
+  let judgment_layout { att } =
+    match Attributes.find_opt AttributeKey.Math_Layout att with
+    | Some (MathLayoutAttribute layout) -> layout
+    | _ -> Unspecified
+
+  (** A tree of elements. *)
+  type rule_element =
+    | Judgement of judgement  (** A leaf judgment. *)
+    | Cases of case list
+
+  and case = { name : string; elements : rule_element list }
+  (** A sub-tree of judgments. *)
+
+  type t = rule_element list
+
+  (** The absolute path of a case name. *)
+  let join_case_names names = String.concat "." names
+
+  let make_judgement form attributes =
+    { form; att = Attributes.of_list attributes }
+
+  let make_case name elements = { name; elements }
+  let make_cases cases = Cases cases
+  let make_root elements = elements
+end
+
 (** A datatype for a relation definition. *)
 module Relation : sig
   type relation_property =
@@ -303,6 +456,7 @@ module Relation : sig
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
   val make :
@@ -312,6 +466,7 @@ module Relation : sig
     opt_named_type_term list ->
     type_term list ->
     (AttributeKey.t * attribute) list ->
+    Rule.t option ->
     t
 
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
@@ -337,9 +492,10 @@ end = struct
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
-  let make name property category input output attributes =
+  let make name property category input output attributes rule_opt =
     {
       name;
       property;
@@ -347,6 +503,7 @@ end = struct
       input;
       output;
       att = Attributes.of_list attributes;
+      rule_opt;
     }
 
   let attributes_to_list self = Attributes.bindings self.att
@@ -374,43 +531,15 @@ end = struct
     | _ -> None
 end
 
-(** A datatype for a constant definition. *)
-module Constant : sig
-  type t = { name : string; att : Attributes.t }
-
-  val make : string -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-end = struct
-  type t = { name : string; att : Attributes.t }
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  open Attributes
-
-  let make name attributes = { name; att = Attributes.of_list attributes }
-
-  let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
-
-  let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
-end
-
 (** A datatype for grouping (subsets of) type definitions. *)
 module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
-  val make : string -> (string * string list) list -> render
+  val make : string -> (string * string list) list -> t
 end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type render = { name : string; pointers : type_subset_pointer list }
+  type t = { name : string; pointers : type_subset_pointer list }
 
   let make name pointer_pairs =
     {
@@ -422,12 +551,24 @@ end = struct
     }
 end
 
+module RuleRender : sig
+  type t = { name : string; relation_name : string; path : string }
+
+  val make : string -> string -> string list -> t
+end = struct
+  type t = { name : string; relation_name : string; path : string }
+
+  let make name relation_name path =
+    { name; relation_name; path = Rule.join_case_names path }
+end
+
 (** The top-level elements of a specification. *)
 type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
-  | Elem_Render of TypesRender.render
+  | Elem_RenderTypes of TypesRender.t
+  | Elem_RenderRule of RuleRender.t
 
 type t = elem list
 (** A specification is a list of top-level elements. *)

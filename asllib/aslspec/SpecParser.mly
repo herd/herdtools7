@@ -2,6 +2,10 @@
 open AST
 open AST.AttributeKey
 
+(** Elements such as types, constants, and relations generate custom LaTeX macros.
+    Since LaTeX macro names do not allow certain characters, such as numbers and apostrophes,
+    we need to check that element-defining identifiers conform to those restrictions.
+*)
 let check_definition_name name =
    let () = assert (String.length name > 0) in
    let id_regexp = Str.regexp "^[A-Za-z_']+$" in
@@ -19,31 +23,45 @@ let check_definition_name name =
 
 (* Keyword tokens *)
 %token AST
+%token CASE
+%token COLON_EQ
 %token CONSTANT
 %token CONSTANTS_SET
 %token FUN
 %token FUNCTION
-%token PARTIAL
+%token INDEX
+%token LATEX
 %token LIST0
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token OPTION
+%token PARTIAL
 %token POWERSET
 %token POWERSET_FINITE
 %token PROSE_APPLICATION
 %token PROSE_DESCRIPTION
 %token RENDER
 %token RELATION
+%token RULE
 %token SEMANTICS
 %token SHORT_CIRCUIT_MACRO
 %token TYPEDEF
 %token TYPING
 
+%token IFF
+%token UNION
+%token UNION_LIST
+%token LIST
+%token SET
+%token SIZE
+%token SOME
+
 (* Punctuation and operator tokens *)
 %token ARROW
 %token COMMA
 %token COLON
+%token DOT
 %token EQ
 %token SEMI
 %token VDASH
@@ -54,6 +72,10 @@ let check_definition_name name =
 %token LBRACE
 %token RBRACE
 %token MINUS
+%token MINUS_MINUS
+
+%nonassoc EQ IFF
+%left LPAR
 
 %%
 
@@ -102,6 +124,9 @@ let tclist1(x) :=
 (* A parenthesised comma-separated list *)
 let plist0(x) == pared(clist0(x))
 
+(* A parenthesised comma-separated list with at least one element. *)
+let plist1(x) == pared(clist1(x))
+
 (* A parenthesised comma-separated list with at least 2 elements. *)
 let plist2(x) == pared(clist2(x))
 
@@ -117,32 +142,33 @@ let list1(x) :=
 let spec := elems=terminated(list(elem), EOF); { elems }
 
 let elem :=
-    | type_definition
-    | relation_definition
-    | constant_definition
-    | render_definition
+    | ~=type_definition; SEMI; { type_definition }
+    | ~=relation_definition; SEMI; { relation_definition }
+    | ~=constant_definition; SEMI; { constant_definition }
+    | ~=render_types; SEMI; { render_types }
+    | ~=render_rule; SEMI; { render_rule }
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
 
 let type_definition :=
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; SEMI;
+    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes;
     {   check_definition_name type_name;
         Elem_Type (Type.make type_kind type_name [] type_attributes) }
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes; SEMI;
+    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes;
     {   check_definition_name type_name;
         Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
-    | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes; SEMI;
+    | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes;
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError msg) }
 
 let relation_definition :=
     ~=relation_category; ~=relation_property; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
-    attributes=relation_attributes; SEMI;
+    ~=relation_attributes; ~=opt_relation_rule;
     {   check_definition_name name;
-        Elem_Relation (Relation.make name relation_property relation_category input output attributes) }
+        Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes opt_relation_rule) }
 
-let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes; SEMI;
+let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes;
     {   check_definition_name name;
         Elem_Constant (Constant.make name att) }
 
@@ -160,21 +186,34 @@ let type_attributes ==
     | LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
 
 let type_attribute :=
+    | prose_description_attribute
+    | math_macro_attribute
+    | math_layout_attribute
+    | short_circuit_macro_attribute
+
+let prose_description_attribute ==
     | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
     | template=STRING; { (Prose_Description, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_macro_attribute ==
+    MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+
+let math_layout_attribute ==
     | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
-    | SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
+    | ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+
+let short_circuit_macro_attribute ==
+    SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
 
 let relation_attributes ==
     LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
 
 let relation_attribute :=
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
-    | template=STRING; { (Prose_Description, StringAttribute template) }
-    | PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
-    | MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
-    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    | prose_application_attribute
+    | type_attribute
+
+let prose_application_attribute ==
+    PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
@@ -192,7 +231,7 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
-    | op=operator; LPAR; ~=opt_named_type_term; RPAR; { make_operator op opt_named_type_term }
+    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { make_type_operation op opt_named_type_term }
     | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
@@ -205,7 +244,7 @@ let type_term :=
     | FUN; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = true}}
     | PARTIAL; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = false}}
 
-let operator :=
+let type_operator :=
     | POWERSET; { Powerset }
     | POWERSET_FINITE; { Powerset_Finite }
     | LIST0; { List0 }
@@ -226,11 +265,100 @@ let math_layout :=
     | LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
 
-let render_definition :=
-    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer); SEMI;
+let render_types :=
+    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer);
     {   check_definition_name name;
-        Elem_Render (TypesRender.make name pointers) }
+        Elem_RenderTypes (TypesRender.make name pointers) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
     | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }
+
+let opt_relation_rule := { None }
+    | EQ; ~=rule; { Some rule }
+
+let rule := rule_elements=list1(rule_element); { rule_elements }
+
+let rule_element :=
+    | ~=judgment; SEMI; { Rule.Judgement judgment }
+    | ~=rule_case; { Rule.Cases [ rule_case ] }
+
+let rule_case := CASE; name=IDENTIFIER; LBRACE; elements=list(rule_element); RBRACE;
+      { Rule.make_case name elements }
+
+let judgment := ~=judgment_form; ~=judgment_attributes; { Rule.make_judgement judgment_form judgment_attributes  }
+
+let judgment_form :=
+    | ~=expr;
+      { Rule.Expr expr }
+    | expr1=expr; COLON_EQ; expr2=expr;
+      { Rule.Expr (Rule.make_infix_operator_application Rule.Operator_Assign expr1 expr2) }
+    | MINUS_MINUS; ~=expr;
+      { Rule.Output expr }
+    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
+      { Rule.Transition { lhs; rhs; is_output = false; short_circuit } }
+    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; RPAR; COLON; body=judgment_form;
+      { Rule.Indexed { index; list; body } }
+
+let short_circuit :=
+    | { None }
+    | VDASH; alternatives=expr;
+      { Some [alternatives] }
+
+let expr :=
+    | id=IDENTIFIER;
+      { Rule.Var id }
+    | components=plist1(expr);
+      { Rule.make_tuple components }
+    | ~=prefix_expr_operator; args=plist0(expr);
+      { Rule.make_prefix_operator_application prefix_expr_operator args }
+    | lhs=expr; args=plist0(expr);
+      { Rule.make_application lhs args }
+    | lhs=expr; ~=infix_expr_operator; rhs=expr;
+      { Rule.make_infix_operator_application infix_expr_operator lhs rhs }
+    | ~=field_path;
+      { Rule.FieldAccess field_path }
+    | list=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
+      { Rule.make_list_index list index }
+    | name=IDENTIFIER; LBRACKET; fields=tclist1(field_and_value); RBRACKET;
+      { Rule.make_record name fields }
+
+(** We currently do not need field paths longer than a variable with two fields. *)
+let field_path :=
+  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; { [ id1; id2 ] }
+  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; DOT; id3=IDENTIFIER; { [ id1; id2; id3 ] }
+
+let prefix_expr_operator ==
+    | UNION; { Rule.Operator_Union }
+    | UNION_LIST; { Rule.Operator_UnionList }
+    | LIST; { Rule.Operator_List }
+    | SET; { Rule.Operator_Set }
+    | SIZE; { Rule.Operator_Size }
+    | SOME; { Rule.Operator_Some }
+
+let infix_expr_operator ==
+    | EQ; { Rule.Operator_Equal }
+    | IFF; { Rule.Operator_Iff }
+
+let field_and_value == field=IDENTIFIER; COLON; value=expr; { (field, value) }
+
+let judgment_attributes ==
+    | { [] }
+    | LBRACE; pairs=tclist0(judgment_attribute); RBRACE; { pairs }
+
+let judgment_attribute := math_layout_attribute
+
+let render_rule :=
+  | RENDER; RULE; relation_name=IDENTIFIER; EQ; relation=IDENTIFIER; rule_name=pared(rule_name);
+    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation rule_name) }
+  | RENDER; RULE; relation_name=IDENTIFIER;
+    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation_name []) }
+    (** Stands for the entire rule for the given relation. *)
+
+let rule_name :=
+  | ~=rule_path; { rule_path }
+  | MINUS; { [ "" ] }
+    (** The empty string is a prefix of every rule name. *)
+
+let rule_path := name=IDENTIFIER; { [name] }
+  | name=IDENTIFIER; DOT; rest=rule_path; { name :: rest }

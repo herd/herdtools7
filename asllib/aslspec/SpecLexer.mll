@@ -32,9 +32,12 @@ rule token = parse
 
     (* Keywords *)
     | "ast"               { AST }
+    | "case"              { CASE }
     | "constant"          { CONSTANT }
     | "constants_set"     { CONSTANTS_SET }
     | "function"          { FUNCTION }
+    | "INDEX"             { INDEX }
+    | "latex"             { LATEX }
     | "list0"             { LIST0 }
     | "list1"             { LIST1 }
     | "math_macro"        { MATH_MACRO }
@@ -48,16 +51,26 @@ rule token = parse
     | "prose_description" { PROSE_DESCRIPTION }
     | "relation"          { RELATION }
     | "render"            { RENDER }
+    | "rule"              { RULE }
     | "semantics"         { SEMANTICS }
     | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
     | "typedef"           { TYPEDEF }
     | "typing"            { TYPING }
+    | "UNION"             { UNION }
+    | "UNION_LIST"        { UNION_LIST }
+    | "IFF"               { IFF }
+    | "LIST"              { LIST }
+    | "SET"               { SET }
+    | "SIZE"              { SIZE }
+    | "SOME"              { SOME }
 
     (* Punctuation and operators *)
+    | '.'            { DOT }
     | ','            { COMMA }
     | ':'            { COLON }
     | ';'            { SEMI }
     | '|'            { VDASH }
+    | "=:"           { EQ }
     | '='            { EQ }
     | '('            { LPAR }
     | ')'            { RPAR }
@@ -67,6 +80,8 @@ rule token = parse
     | '}'            { RBRACE }
     | '-'            { MINUS }
     | "->"           { ARROW }
+    | "--"           { MINUS_MINUS }
+    | ":="           { COLON_EQ }
 
     | identifier as lxm { IDENTIFIER(lxm) }
     | latex_macro as lxm { LATEX_MACRO(lxm) }
