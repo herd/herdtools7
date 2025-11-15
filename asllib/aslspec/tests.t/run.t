@@ -7,7 +7,7 @@
   Generated LaTeX macros into generated_macros.tex
 
   $ aslspec type_name.bad
-  Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 2 column 1
+  Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
   [1]
 
 # Test that --pp generates legal output
