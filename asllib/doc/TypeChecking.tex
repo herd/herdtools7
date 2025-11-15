@@ -59,32 +59,7 @@ Static environments, denoted as $\staticenvs$, \\
 are defined as follows (referring to symbols defined by the abstract syntax):
 \RenderTypes{static_envs_and_components}
 
-\BackupOriginalType{
-\[
-\begin{array}{rcl}
-\staticenvs 	          &\triangleq& \globalstaticenvs \times \localstaticenvs \\
-\\
-\globalstaticenvs &\triangleq& \left[
-\begin{array}{lcl}
-  \declaredtypes        &\mapsto& \Identifier \partialto \ty \times \TPurity\\
-  \globalstoragetypes   &\mapsto& \Identifier \partialto \ty \times \globaldeclkeyword,\\
-  \exprequiv            &\mapsto& \Identifier \partialto \expr,\\
-  \subtypes             &\mapsto& \Identifier \partialto \Identifier,\\
-  \subprograms          &\mapsto& \Identifier \partialto \func \times \TSideEffectSet,\\
-  \overloadedsubprograms  &\mapsto& \Identifier \partialto \pow{\Strings}
-\end{array}
-\right]\\
-\\
-\localstaticenvs &\triangleq& \left[
-\begin{array}{lcl}
-  \localstoragetypes    &\mapsto& \Identifier \partialto \ty \times \localdeclkeyword,\\
-  \exprequiv            &\mapsto& \Identifier \partialto \expr,\\
-  \returntype           &\mapsto& \some{ \ty }
-\end{array}
-\right]\\
-\end{array}
-\]
-}
+
 \end{definition}
 
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
@@ -178,11 +153,7 @@ The output configurations of type system assertions have two flavors:
   the category of error (see \chapref{Errors} for the list of all error codes organized by category).
 \end{description}
 
-\BackupOriginalType{
-\[
-  \typeerror \triangleq \{\TypeErrorVal{\vs} \;|\; \vs \in \Strings \}
-\]
-}
+
 \hypertarget{type-TypeErrorconfig}{}
 We define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vc)$ for \typingerrorterm{} configurations
 with any type-error code $\vc \in \typeerrorcode$.

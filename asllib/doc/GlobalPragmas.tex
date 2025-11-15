@@ -48,11 +48,7 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 \AbstractSyntaxDef{Global Pragma Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{decl_global_pragma}
-\BackupOriginalAST{
-\begin{flalign*}
-\decl \derives\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
-\end{flalign*}
-}
+
 
 \ASTRuleDef{GlobalPragma}
 \begin{mathpar}
@@ -75,20 +71,6 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 
 \TypingRuleDef{CheckGlobalPragma}
 \RenderRelation{check_global_pragma}
-\BackupOriginalRelation{
-The function
-\[
-  \checkglobalpragma(
-    \overname{\globalstaticenvs}{\genv} \aslsep
-    \overname{\decl}{\vd}
-  )
-  \aslto
-  \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-typechecks a global pragma declaration $\vd$ in the \globalstaticenvironmentterm{} $\genv$,
-yielding $\True$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Global Pragmas}
 The specification in \listingref{CheckGlobalPragma} shows a well-typed global pragma,

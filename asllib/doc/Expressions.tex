@@ -57,47 +57,11 @@ transforms an expression parse node $\vparsednode$ into an expression AST node $
 \paragraph{Typing:}
 All expressions have a unique type (which can be a \tupletypeterm{}).
 \RenderRelation{annotate_expr}
-\BackupOriginalRelation{
-The relation
-\[
-\annotateexpr(\overname{\staticenvs}{\texttt{tenv}}, \overname{\expr}{\texttt{e}})
-\;\bigtimes\;
-\left(\begin{array}{ll}
-(\overname{\ty}{\texttt{t}}, \overname{\expr}{\texttt{new\_e}}, \overname{\pow{\TSideEffect}}{\texttt{ses}}) & \cup \\
- \typeerror & \\
-\end{array}\right)
-\]
-annotates the expression $\texttt{e}$ in the
-\staticenvironmentterm{} $\texttt{tenv}$,
- resulting in the following:
- $\texttt{t}$ is the type inferred for $\texttt{e}$;
- $\texttt{new\_e}$ is the \typedast{} for $\texttt{e}$, also known as the
-\emph{annotated expression};
- and $\texttt{ses}$ is the \sideeffectsetterm{} inferred for $\texttt{e}$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 The annotation rewrites the input expression in the following case, making the annotation of statements simpler:
 variables with constant values are substituted by their constant values.
 
 \paragraph{Semantics:}
 \RenderRelation{eval_expr}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalexpr(\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultExpr((\overname{\nativevalue}{\vv} \times \overname{\XGraphs}{\vg}) \aslsep \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} & \cup \\
-  \overname{\TDiverging}{\DivergingConfig} & \\
-  \end{array}
-  \right)
-\]
-evaluates the expression $\ve$ in an environment $\env$ and terminates normally with
-a \nativevalueterm{} $\vv$, an \executiongraphterm{} $\vg$, and a modified environment $\newenv$.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 \hypertarget{def-literalexpressionterm}{}
 \section{Literal Expressions\label{sec:LiteralExpressions}}
 A literal expression represents a literal as an expression.
@@ -111,11 +75,7 @@ A literal expression represents a literal as an expression.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_literal}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ELiteral(\literal) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ELit}
 \begin{mathpar}
@@ -183,11 +143,7 @@ A variable expression consists of an identifier for a storage element.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_var}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EVar(\overtext{\Identifier}{variable name}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EVAR}
 \begin{mathpar}
@@ -413,11 +369,7 @@ and the effect of operator precedence.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_binop}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EBinop(\binop, \expr, \expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST
@@ -808,11 +760,7 @@ as well as \texttt{==}).
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_unop}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EUnop(\unop, \expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EUnop}
 \begin{mathpar}
@@ -884,11 +832,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_cond}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ECond(\overtext{\expr}{condition}, \overtext{\expr}{then}, \overtext{\expr}{else})
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ECond}
 \begin{mathpar}
@@ -1028,19 +972,7 @@ conditional expression evaluates to the \texttt{else} expression.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_call}
-\BackupOriginalAST{
-\hypertarget{ast-expr}{}\hypertarget{ast-ECall}{}
-\begin{flalign*}
-\expr \derives\ & \ECall(\overtext{\call}{call descriptor})
-\hypertarget{ast-call}{}\\
-\call \derives\ & \left\{\begin{array}{lll}
-\text{name} &:& \Strings\\
-\text{params} &:& \KleeneStar{\expr}\\
-\text{args} &:& \KleeneStar{\expr}\\
-\text{call\_type} &:& \subprogramtype
-\end{array}\right\}
-\end{flalign*}
-}
+
 
 \ASTRuleDef{Call}
 \hypertarget{build-call}{}
@@ -1207,11 +1139,7 @@ The well-typed specification in \listingref{Bitvector_slices2} shows examples of
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_slice}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ESlice(\expr, \slice^{*}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ESlice}
 \begin{mathpar}
@@ -1368,11 +1296,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_getarray}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EGetArray(\expr, \expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EGetArray}
 \begin{mathpar}
@@ -1433,27 +1357,6 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 
 \TypingRuleDef{AnnotateGetArray}
 \RenderRelation{annotate_get_array}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\annotategetarray(
-  \overname{\staticenvs}{\tenv} \aslsep
-  (\overname{\expr}{\size} \times \overname{\ty}{\telem}) \aslsep
-  (\overname{\expr}{\ebase} \times \overname{\TSideEffectSet}{\vsesbase} \times \overname{\expr}{\eindex})
-)
-\aslto \\
-(\overname{\ty}{\vt} \times \overname{\expr}{\newe} \times \overname{\TSideEffectSet}{\vses})
-\end{array}
-\]
-annotates an array access expression with the following elements:
-$\size$ is the expression representing the array size,
-$\telem$ is the type of array elements,
-$\ebase$ is the annotated expression for the array base,
-$\eindex$ is the index expression.
-The function returns the type of the annotated expression in $\vt$,
-the annotated expression $\newe$, and the inferred \sideeffectdescriptorterm\ $\vses$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Array Access Expressions}.
 
@@ -1585,11 +1488,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_getfield}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EGetField(\overtext{\expr}{record}, \overtext{\Identifier}{field name}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EGetField}
 \begin{mathpar}
@@ -1979,11 +1878,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_getfields}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EGetFields(\overtext{\expr}{record}, \overtext{\Identifier^{*}}{field names}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EGetFields}
 \begin{mathpar}
@@ -2119,16 +2014,6 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \TypingRuleDef{FindBitFieldsSlices}
 % Transliteration note: The implementation returns an optional, but all of its uses raise a \typingerrorterm{} if the result is None.
 \RenderRelation{find_bitfields_slices}
-\BackupOriginalRelation{
-The function
-\[
-  \findbitfieldsslices(\overname{\Identifier}{\name} \aslsep \overname{\KleeneStar{\bitfield}}{\vbitfields})
-  \aslto \overname{\KleeneStar{\slice}}{\vslices} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the slices associated with the bitfield named $\name$ in the list of bitfields $\vbitfields$
-in $\vslices$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Finding the Slices of a Bitfield}
 In \listingref{eget-bitfield},
@@ -2191,19 +2076,6 @@ yields a \typingerrorterm, since it is a nested bitfield.
 
 \TypingRuleDef{GetBitfieldWidth}
 \RenderRelation{get_bitfield_width}
-\BackupOriginalRelation{
-The function
-\[
-  \getbitfieldwidth(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Identifier}{\name} \aslsep
-    \overname{\KleeneStar{\field}}{\tfields})
-  \aslto \overname{\expr}{\ewidth} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the expression $\ewidth$ that describes the width of the bitfield named $\name$
-in the list of fields $\tfields$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Obtaining the Width of a Bitfield}
 In \listingref{egetfields},
@@ -2248,16 +2120,6 @@ yields the literal expression for \verb|2|.
 \TypingRuleDef{WidthPlus}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
 \RenderRelation{width_plus}
-\BackupOriginalRelation{
-The function
-\[
-  \widthplus(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs}) \typearrow \overname{\expr}{\ewidth}
-  \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-generates the expression $\ewidth$, which represents the summation of all expressions in the list $\exprs$,
-normalized in the \staticenvironmentterm{} $\tenv$.
-\ProseOrTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Summing Widths}
 Summing the list of expression \verb|2, 3|,
@@ -2403,11 +2265,7 @@ is a \DynamicErrorConfigurationTerm{}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_atc}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \overtext{\EATC}{Type assertion}(\expr, \overtext{\ty}{asserted type}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ATC}
 \begin{mathpar}
@@ -2506,16 +2364,6 @@ as it is applied to unrelated kinds of types.
 
 \TypingRuleDef{CheckATC}
 \RenderRelation{check_atc}
-\BackupOriginalRelation{
-The function
-\[
-  \checkatc(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
-  \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the types $\vtone$ and $\vttwo$, which are assumed to not be named types,
-are compatible for a type assertion in the \staticenvironmentterm{} $\tenv$, yielding $\True$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Ill-typed ATC Expressions}
 \listingref{checkatc} shows examples of ill-typed ATC expressions.
@@ -2682,22 +2530,6 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \SemanticsRuleDef{IsValOfType}
 \ProseParagraph
 \RenderRelation{is_val_of_type}
-\BackupOriginalRelation{
-The relation
-\[
-  \isvaloftype(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\ty}{\vt}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg}) & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} & \cup \\
-  \overname{\TDiverging}{\DivergingConfig} & \\
-  \end{array}
-  \right)
-\]
-tests whether the value $\vv$ can be stored in a variable of type $\vt$ in the environment $\env$,
-resulting in a Boolean value $\vb$ and execution graph $\vg$.
-\ProseOtherwiseDynamicErrorOrDiverging
-} % END_OF_BACKUP_RELATION
 
 This relation is used in the context of a asserted type conversion,
 which means the typechecker rule \TypingRuleRef{ATC} was already applied,
@@ -2825,17 +2657,6 @@ cannot appear as a type, since ASL syntax does not allow the following:
 
 \SemanticsRuleDef{IsConstraintSat}
 \RenderRelation{is_constraint_sat}
-\BackupOriginalRelation{
-The relation
-\[
-  \isconstraintsat(\overname{\envs}{\env} \aslsep \overname{\intconstraint}{\vc} \aslsep \overname{\Z}{n}) \;\aslrel\;
-  (\overname{\Bool}{\vb} \times \overname{\XGraphs}{\vg})
-\]
-tests whether the integer value $n$ \emph{satisfies the constraint} $\vc$
-(that is, whether $n$ is within the range of values defined by $\vc$) in the environment $\env$
-and returns a Boolean answer $\vb$ and the execution graph $\vg$ resulting from evaluating
-the expressions appearing in $\vc$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 
@@ -2910,11 +2731,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_pattern}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EPattern(\expr, \pattern) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EPattern}
 \begin{mathpar}
@@ -3031,11 +2848,7 @@ Note that there are two important consequences of producing an arbitrary value w
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_arbitrary}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EArbitrary(\ty) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{EArbitrary}
 \begin{mathpar}
@@ -3156,11 +2969,7 @@ Notice that this rule introduces non-determinism.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_record}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ERecord(\overtext{\ty}{record type}, \overtext{(\Identifier, \expr)^{*}}{field initializers}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ERecord}
 \begin{mathpar}
@@ -3271,23 +3080,6 @@ and an example (in comment) where the same field is initialized twice, which is 
 
 \TypingRuleDef{AnnotateFieldInit}
 \RenderRelation{annotate_field_init}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \annotatefieldinit(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{(\Identifier\times\expr)}{(\name, \vep)} \aslsep
-    \overname{\KleeneStar{\vfield}}{\fieldtypes}
-  ) \aslto \\
-  (\overname{\Identifier}{\name} \times \overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})
-\end{array}
-\]
-annotates a field initializers $(\name, \vep)$ in a record expression
-with list of fields \\ $\fieldtypes$ and returns the annotated initializing expression $\vepp$
-and its \sideeffectdescriptorterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \listingref{semantics-erecord} for an example.
 
@@ -3358,11 +3150,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_tuple}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ETuple(\expr^{+}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{ETuple}
 \begin{mathpar}
@@ -3478,12 +3266,7 @@ no rules for building the AST for such expressions nor rules for typechecking th
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_array}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EArray\{\EArrayLength: \expr, \EArrayValue: \expr\} &\\
-             |\ & \EEnumArray \{\EArrayLabels: \Identifier^+, \EArrayValue: \expr\}
-\end{flalign*}
-}
+
 
 \subsection{Semantics}
 
@@ -3581,21 +3364,6 @@ and $\vses$ is \readonlyterm{}.
 \subsection{Semantics}
 \SemanticsRuleDef{ESideEffectFreeExpr}
 \RenderRelation{eval_expr_sef}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalexprsef(\overname{\envs}{\env} \aslsep \overname{\expr}{\ve}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultExprSEF(\overname{\nativevalue}{\vv}\aslsep\overname{\XGraphs}{\vg}) & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} & \cup \\
-  \overname{\TDiverging}{\DivergingConfig} & \\
-  \end{array}
-  \right)
-\]
-specializes the expression evaluation relation for side-effect-free expressions
-by omitting throwing configurations as possible output configurations.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating a Side-effect-free Expression}
 Evaluating the literal expression $\LInt(1)$ in any environment $\env$,
@@ -3620,24 +3388,6 @@ since side-effect-free expressions do not modify the environment.
 \section{Evaluating a List of Expressions\label{sec:ExprList}}
 \SemanticsRuleDef{EExprList}
 \RenderRelation{eval_expr_list}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalexprlist(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vle}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultExprList((\overname{\KleeneStar{\nativevalue}}{\vv} \times \overname{\XGraphs}{\vg})\aslsep \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
-  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
-  \overname{\TDiverging}{\DivergingConfig}  & \\
-  \end{array}
-  \right)
-\]
-evaluates the list of expressions $\vle$ in left-to-right order in the initial environment $\env$
-and returns the resulting list of values $\vv$, the parallel composition of the execution graphs
-generated from evaluating each expression, and the new environment $\newenv$.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating a List of Expressions}
 In \listingref{semantics-erecord},

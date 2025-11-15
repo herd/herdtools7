@@ -213,140 +213,59 @@ as indicated by respective comments.
 
 \subsection{Slices \label{sec:Slices}}
 \RenderTypes{untyped_slice}
-\BackupOriginalAST{
-\begin{flalign*}
-\slice \derives\ & \SliceSingle(\overtext{\expr}{\vi}) &\\
-  |\ & \SliceRange(\overtext{\expr}{\vj}, \overtext{\expr}{\vi}) &\\
-  |\ & \SliceLength(\overtext{\expr}{\vi}, \overtext{\expr}{\vn}) &\\
-  |\ & \SliceStar(\overtext{\expr}{\vi}, \overtext{\expr}{\vn}) &
-\end{flalign*}
-}
+
 
 \subsection{Subprogram calls \label{sec:SubprogramCalls}}
 \RenderType{call}
-\BackupOriginalAST{
-\begin{flalign*}
-\call \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
- \callname &:& \Strings, \\
- \callparams &:& \expr, \\
- \callargs &:& \expr, \\
- \callcalltype &:& \subprogramtype
-\end{array}
-\right\}
-} &
-\end{flalign*}
-}
+
 
 \subsection{Types \label{sec:Types}}
 
 \RenderType{ty}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\ty \derives\ & \TInt(\constraintkind)\\
-  |\ & \TReal & \\
-  |\ & \TString & \\
-  |\ & \TBool & \\
-  |\ & \TBits(\overtext{\expr}{width}, \bitfield^{*}) & \\
-  |\ & \TTuple(\ty^{*}) & \\
-  |\ & \TArray(\arrayindex, \ty) & \\
-  |\ & \TNamed(\overtext{\Identifier}{type name}) & & \\
-  |\ & \TEnum(\overtext{\Identifier^{*}}{labels})\\ & \\
-  |\ & \TRecord(\field^{*}) & \\
-  |\ & \TException(\field^{*}) & \\
-  |\ & \TCollection(\field^{*})
-\end{flalign*}
-}
+
 
 \subsection{Constraints \label{sec:Constraints}}
 \RenderTypes{untyped_constraint_kind}
-\BackupOriginalAST{
-\begin{flalign*}
-  \constraintkind \derives\ & \Unconstrained & \\
-  |\ & \WellConstrained(\intconstraint^{+}) & \\
-  |\ & \PendingConstrained{} & \\
-  |\ & \Parameterized(\overtext{\Identifier}{parameter}) &
-\end{flalign*}
-}
+
 
 \RenderType{int_constraint}
-\BackupOriginalAST{
-\begin{flalign*}
-\intconstraint \derives\ & \ConstraintExact(\expr) & \\
-  |\ & \ConstraintRange(\overtext{\expr}{start}, \overtext{\expr}{end})&
-\end{flalign*}
-}
+
 
 \subsection{Bit Fields \label{sec:BitFields}}
 
 \RenderType{bitfield}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\bitfield \derives\ & \BitFieldSimple(\Identifier, \slice^{*}) & \\
-  |\ & \BitFieldNested(\Identifier, \slice^{*}, \bitfield^{*}) & \\
-  |\ & \BitFieldType(\Identifier, \slice^{*}, \ty) &
-\end{flalign*}
-}
+
 
 \subsection{Array Indices \label{sec:ArrayIndices}}
 \hypertarget{ast-ArrayLengthEnum}{}
 \RenderTypes{untyped_array_index}
-\BackupOriginalAST{
-The AST type for array indices is given by the following derivation:
-\begin{flalign*}
-\arrayindex \derives\ &  \ArrayLengthExpr(\overtext{\expr}{array length}) &
-\end{flalign*}
-}
+
 
 \subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
 
 The following rule corresponds to a field of a record-like structure:
 \RenderType{field}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\field \derives\ & (\Identifier, \ty) &
-\end{flalign*}
-}
+
 
 The following rule corresponds to an identifier with its associated type:
 \RenderType{typed_identifier}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\typedidentifier \derives\ & (\Identifier, \ty) &
-\end{flalign*}
-}
+
 
 \subsection{Assignable Expressions \label{sec:AssignableExoressions}}
 The following rules define the types of left-hand side of assignments:
 \RenderTypes{untyped_lexpr}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} & \\
-  |\ & \LEVar(\Identifier) & \\
-  |\ & \LESlice(\lexpr, \KleeneStar{\slice}) & \\
-  |\ & \LESetArray(\lexpr, \expr) & \\
-  |\ & \LESetField(\lexpr, \Identifier) & \\
-  |\ & \LESetFields(\lexpr, \KleeneStar{\Identifier}) & \\
-  |\ & \LEDestructuring(\KleeneStar{\lexpr}) & \\
-\end{flalign*}
-}
+
 
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
 
 \RenderType{local_decl_keyword}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\localdeclkeyword \derives\ & \LDKVar \;|\; \LDKLet &
-\end{flalign*}
-}
+
 
 A local declaration item is the left-hand side of a declaration statements.
 In the following example of a declaration statement:
@@ -359,164 +278,58 @@ the local declaration item is
 \end{lstlisting}
 
 \RenderType{local_decl_item}
-\BackupOriginalAST{
-\begin{flalign*}
-\localdeclitem \derives\ &
-  & \\
-  |\ & \LDIVar(\Identifier)
-  & \\
-  |\ & \LDITuple(\KleeneStar{\Identifier}) &
-\end{flalign*}
-}
+
 \subsection{Statements \label{sec:Statements}}
 \RenderTypes{untyped_stmt}
 \RenderType{for_direction}
-\BackupOriginalAST{
-\begin{flalign*}
-\fordirection \derives\ & \UP \;|\; \DOWN &\\
-\\
-\stmt \derives\ & \SPass &\\
-  |\ & \SSeq(\stmt, \stmt) & \\
-  |\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?) & \\
-  |\ & \SAssign(\lexpr, \expr) & \\
-  |\ & \SCall(\call) & \\
-  |\ & \SReturn(\expr?) & \\
-  |\ & \SCond(\expr, \stmt, \stmt) & \\
-  |\ & \SAssert(\expr) & \\
-  |\ & \SFor\left\{
-    \begin{array}{rcl}
-    \Forindexname  &:& \Identifier,\\
-    \Forstarte     &:& \expr,\\
-    \Fordir        &:& \fordirection,\\
-    \Forende       &:& \expr,\\
-    \Forbody       &:& \stmt,\\
-    \Forlimit      &:& \expr?
-    \end{array}
-  \right\} & \\
-  |\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) & \\
-  |\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) & \\
-  |\ & \SThrow(\expr) &\\ & \\
-  |\ & \STry(\stmt, \KleeneStar{\catcher}, \overtext{\stmt?}{otherwise}) & \\
-  |\ & \SPrint(\overtext{\KleeneStar{\expr}}{args}, \overtext{\Bool}{newline}) & \\
-  |\ & \SPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args}) & \\
-  |\ & \SUnreachable
-\end{flalign*}
-}
+
 
 \subsection{Case Alternatives \label{sec:CaseAlternatives}}
 
 \RenderType{case_alt}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\casealt \derives\ & \{ \CasePattern : \pattern, \CaseWhere : \expr?, \CaseStmt : \stmt \} &
-}
+
 
 \subsection{Exception Catchers \label{sec:ExceptionCatchers}}
 \RenderType{catcher}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\catcher \derives\ & (\overtext{\Identifier?}{exception to match}, \overtext{\ty}{guard type}, \overtext{\stmt}{statement to execute on match}) &
-\end{flalign*}
-}
+
 
 \subsection{Subprograms \label{sec:Subprograms}}
 \RenderType{subprogram_type}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
-                |\  & \STGetter \;|\; \STSetter &
-\end{flalign*}
-}
+
 
 \RenderType{func_qualifier}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &
-\end{flalign*}
-}
+
 
 \RenderType{override_info}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
-\end{flalign*}
-}
+
 
 \RenderType{func}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\func \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
- \funcname &:& \Strings, \\
- \funcparameters &:& \KleeneStar{(\Identifier, \ty?)},\\
- \funcargs &:& \KleeneStar{\typedidentifier},\\
- \funcbody &:& \stmt,\\
- \funcreturntype &:& \ty?,\\
- \funcsubprogramtype &:& \subprogramtype\\
- \funcrecurselimit    &:& \expr?\\
- \funcbuiltin &:& \Bool\\
- \funcqualifierfield &:& \some{\funcqualifier}\\
- \funcoverride &:& \some{\overrideinfo}\\
-\end{array}
-\right\}
-} &
-\end{flalign*}
-}
+
 
 \subsection{Global Declarations \label{sec:GlobalDeclarations}}
 Declaration keyword for global storage elements:
 \RenderType{global_decl_keyword}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
-\end{flalign*}
-}
+
 
 \RenderType{global_decl}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\globaldecl \derives\ &
-{\left\{
-  \begin{array}{rcl}
-  \GDkeyword &:& \globaldeclkeyword, \\
-  \GDname &:& \Identifier,\\
-  \GDty &:& \ty?,\\
-  \GDinitialvalue &:& \expr?
-  \end{array}
-  \right\}
- } &
-\end{flalign*}
-}
+
 
 \RenderType{decl}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\decl \derives\ & \DFunc(\func) & \\
-  |\ & \DGlobalStorage(\globaldecl) & \\
-  |\ & \DTypeDecl(\Identifier, \ty, (\Identifier, \overtext{\KleeneStar{\field}}{with fields})?) & \\
-  |\ & \DPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args})
-\end{flalign*}
-}
+
 
 \subsection{Specifications \label{sec:Specifications}}
 \RenderType{spec}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\spec \derives\ & \KleeneStar{\decl} &
-\end{flalign*}
-}
+
 
 \section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
 
@@ -525,15 +338,7 @@ except for the following differences.
 
 The rules for expressions have the following extra derivation rules:
 \RenderTypes[remove_hypertargets]{typed_expr}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \EGetItem(\expr, \N) &\\ {}
-             |\ & \EArray \{\EArrayLength: \expr, \EArrayValue: \expr\} & \\
-             |\ & \EEnumArray \{\EArrayLabels: \identifier^+, \EArrayValue: \expr\} & \\
-             |\ & \EGetEnumArray(\overtext{\expr}{base}, \overtext{\expr}{key}) & \\
-             |\ & \EGetCollectionFields(\overtext{\identifier}{collection}, \overtext{\identifier^{*}}{field names}) & \\
-\end{flalign*}
-}
+
 
 The rules for left-hand-side expressions have the following extra derivation rules:
 \hypertarget{ast-LESetCollectionFields}{}
@@ -544,12 +349,7 @@ The rules for left-hand-side expressions have the following extra derivation rul
 \hypertarget{ast-EArray}{}
 \hypertarget{ast-EGetItem}{}
 \RenderTypes[remove_hypertargets]{typed_lexpr}
-\BackupOriginalAST{
-\begin{flalign*}
-  \lexpr \derives\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) & \\
-                |\ & \LESetCollectionFields(\overtext{\Identifier}{collection}, \overtext{\Identifier^{*}}{field names}) &\\
-\end{flalign*}
-}
+
 
 The intention for each AST node type above is as follows:
 \begin{itemize}
@@ -579,21 +379,13 @@ The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
 \hypertarget{ast-typedSThrow}{}
 \RenderTypes[remove_hypertargets]{typed_stmt}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SThrow(\expr, \overtext{\ty}{exception type}) &
-\end{flalign*}
-}
+
 
 The rules for slices is replaced by the following single derivation:
 \hypertarget{ast-typedSliceLength}{}
 \RenderTypes[remove_hypertargets]{typed_slice}
 
-\BackupOriginalAST{
-\begin{flalign*}
-\slice \derives\ & \SliceLength(\overtext{\expr}{start index}, \overtext{\expr}{length}) &
-\end{flalign*}
-}
+
 
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \\
@@ -601,11 +393,7 @@ $\SliceLength$.
 
 The following extra rule enables expressing array indices based on enumeration:
 \RenderTypes[remove_hypertargets]{typed_array_index}
-\BackupOriginalAST{
-\begin{flalign*}
-\arrayindex \derives\ &  \ArrayLengthEnum(\overtext{\Identifier}{name of enumeration}, \overtext{\Identifier^+}{enumeration labels}) &
-\end{flalign*}
-}
+
 
 The rules for constraint kinds refine the well-constrained kind by a precision
 indicator, which indicates whether precision has been lost during the typing of
@@ -613,13 +401,7 @@ binary operations over well-constrained integer types (see \TypingRuleRef{Interv
 \hypertarget{ast-typedWellConstrained}{}
 \RenderTypes[remove_hypertargets]{typed_constraint_kind}
 \RenderType{precision_loss_indicator}
-\BackupOriginalAST{
-\begin{flalign*}
-\precisionlossindicator \derives\ & \PrecisionFull & \\
-                                |\ & \PrecisionLost & \\
-        \constraintkind \derives\ & \WellConstrained(\intconstraint^{+}, \precisionlossindicator) & \\
-\end{flalign*}
-}
+
 
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field

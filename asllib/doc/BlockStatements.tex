@@ -43,16 +43,6 @@ as statements $\stmt$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Block Statements}
 \RenderRelation{annotate_block}
-\BackupOriginalRelation{
-The function
-\[
-  \annotateblock(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
-  (\overname{\stmt}{\newstmt} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a block statement $\vs$ in \staticenvironmentterm{} $\tenv$ and returns the annotated
-statement $\newstmt$ and inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \TypingRuleDef{Block}
 See \ExampleRef{Block Statements}.
@@ -84,24 +74,6 @@ an enclosing block, which has the effect of dropping bindings of the identifiers
 \SemanticsRulesDef{Block Statements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderRelation{eval_block}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalblock(\overname{\envs}{\env} \times \overname{\stmt}{\stm}) \;\aslrel\;
-  \left(
-  \begin{array}{cl}
-  \overname{\TContinuing}{\Continuing(\newg, \newenv)} &\cup\\
-  \overname{\TReturning}{\ReturningConfig} &\cup\\
-  \overname{\TThrowing}{\ThrowingConfig} &\cup\\
-  \overname{\TDynError}{\DynErrorConfig} &\cup\\
-  \overname{\TDiverging}{\DivergingConfig} &\cup\\
-  \end{array}
-  \right)
-\]
-evaluates a statement $\stm$ as a \emph{block}. That is, $\stm$ is evaluated in a fresh local environment,
-which drops back to the original local environment of $\env$ when the evaluation terminates.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 \SemanticsRuleDef{Block}
 See \ExampleRef{Block Statements}.
@@ -183,12 +155,6 @@ That is, evaluating a block discards the bindings for variables declared inside 
 
 \SemanticsRuleDef{PopLocalScope}
 \RenderRelation{pop_local_scope}
-\BackupOriginalRelation{
-We first define the helper function $\poplocalscope$:
-\[
-    \poplocalscope : \overname{\dynamicenvs}{\vouterenv} \cartimes \overname{\dynamicenvs}{\vinnerenv} \rightarrow \dynamicenvs \\
-\]
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Block Statements}.
 

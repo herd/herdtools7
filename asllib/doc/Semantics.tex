@@ -145,20 +145,7 @@ We define the following shorthand notations for \nativevalueterm{} literals:
 We define the following types of \nativevaluesterm{}:
 \RenderTypes{native_types}
 
-\BackupOriginalType{
-\[
-\begin{array}{rcl}
-  \tint       &\triangleq& \nvint(\Z) \\
-  \tbool      &\triangleq& \nvbool(\Bool) \\
-  \treal      &\triangleq& \nvreal(\Q) \\
-  \tlabel     &\triangleq& \nvlabel(\Identifier) \\
-  \tstring    &\triangleq& \nvstring(\Strings)  \\
-  \tbitvector &\triangleq& \nvbitvector(\KleeneStar{\Bit}) \\
-  \tvector    &\triangleq& \NVVector(\KleeneStar{\nativevalue}) \\
-  \trecord    &\triangleq& \NVRecord(\Identifier\rightarrowfin\nativevalue)\\
-\end{array}
-\]
-}
+
 
 \begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
@@ -173,15 +160,7 @@ The dynamic local environment maps identifiers corresponding to local storage el
 
 \RenderTypes{dynamic_envs_and_components}
 
-\BackupOriginalType{
-\[
-\begin{array}{rcl}
-\dynamicenvs        &\triangleq&  \globaldynamicenvs \times \localdynamicenvs \\
-\globaldynamicenvs  &\triangleq&  [\storage \mapsto (\Identifier \partialto \nativevalue),\; \stacksize \mapsto (\Identifier \partialto \N)] \\
-\localdynamicenvs   &\triangleq&  (\Identifier \partialto \nativevalue) \\
-\end{array}
-\]
-}
+
 \end{definition}
 
 \begin{definition}[Well-formed Dynamic Environments]
@@ -208,9 +187,7 @@ An empty dynamic environment $\emptydenv$ is defined as follows:
 Environments pair \hyperlink{type-staticenvs}{static environments} with dynamic environments:
 \RenderType{envs}
 
-\BackupOriginalType{
-$\envs \triangleq \staticenvs \times \dynamicenvs$.
-}
+
 \end{definition}
 We write $\env \in \envs$ to range over environments.
 %
@@ -231,15 +208,7 @@ Formally, an execution graph $\xgraph = (N^\xgraph, E^\xgraph, O^\xgraph) \in \X
 is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\xgraph$), and a set of \emph{output nodes} ($O^\xgraph$):
 
 \RenderTypes{xgraphs_and_components}
-\BackupOriginalType{
-\[
-\begin{array}{rcl}
-\XGraphs &\triangleq& \pow{\Nodes} \times \pow{\Nodes \times \Labels \times \Nodes} \times \pow{\Nodes}\\
-\Nodes   &\triangleq& \N \times \{ \Read, \Write \} \times \Identifier\\
-\Labels  &\triangleq& \{ \asldata, \aslctrl, \aslpo \}
-\end{array}
-\]
-}
+
 
 The label
 \RenderConstant{Read}
@@ -380,25 +349,7 @@ ASL dynamic semantics mainly utilize the following types of output semantic conf
 \end{description}
 Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
 
-\BackupOriginalType{
-We define the following shorthand notations for types of output semantic configurations:
-\[
-  \begin{array}{rcll}
-    \TNormal          & \triangleq & \ResultExpr((\nativevalue \times \XGraphs), \envs)\  & \cup \\
-                      &            & \ResultExprSEF(\nativevalue, \XGraphs)  & \cup \\
-                      &            & \ResultLexpr(\XGraphs, \envs) & \cup\\
-                      &            & \ResultLDI(\XGraphs, \envs)  & \cup \\
-                      &            & \ResultSlices((\KleeneStar{(\nativevalue \times \nativevalue)} \times \XGraphs), \envs) &  \cup\\
-                      &            & \ResultExprList((\KleeneStar{\nativevalue} \times \XGraphs), \envs)  & \cup \\
-                      &            & \ResultExprListM(\KleeneStar{(\nativevalue\times\XGraphs)}, \envs) & \\
-    \TThrowing        & \triangleq & \Throwing(\nativevalue \times \ty \times \XGraphs \times \envs) &\\
-    \TContinuing      & \triangleq & \Continuing(\XGraphs, \envs) &\\
-    \TReturning       & \triangleq & \Returning((\KleeneStar{\nativevalue} \times \XGraphs), \envs) &\\
-    \TDynError        & \triangleq & \DynamicError(\Strings) &\\
-    \TDiverging       & \triangleq & \{ \Diverging \}&\\
-  \end{array}
-\]
-}
+
 
 We will say that a semantic transition
 \begin{itemize}
