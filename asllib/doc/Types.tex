@@ -1595,7 +1595,7 @@ show examples of ill-typed named types.
 \inferrule{
   \techeck(G^\tenv.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\\\\
   G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
-  \vses \eqdef \{\ \GlobalEffectTerm(\vpurity), \Immutability(\True) \}
+  \vses \eqdef \{\ \GlobalEffect(\vpurity), \Immutability(\True) \}
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }
