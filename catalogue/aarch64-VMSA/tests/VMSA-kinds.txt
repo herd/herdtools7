@@ -620,7 +620,7 @@ D15347-2+2WExpNExp+DMBST+DSB-ISB               Allowed
 Artem2+TLBIx-HDy+dsb.ish                       Forbidden
 2+2WNExpExp+NExpNExp+SHOW                      Forbidden
 F2.mod-with-type+BBM-DSB-ISB                   Forbidden
-2+2WNExpExp+NExpNExp+DMBST+DMBST               Allowed
+2+2WNExpExp+NExpNExp+DMBST+DMBST               Forbidden
 2+2WNExpExp+NExpNExp+DMBST+DMBST+SHOW          Forbidden
 Artem2+TLBIx-TLBIy+dmb2                        Forbidden
 Artem3+UCx-TLBIy+dsb.ish-isb+dmb.ld            Forbidden
