@@ -115,3 +115,19 @@
   }%
 }
 \makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \DefineRule{name}{content} - Define a macro for later rendering rules
+%% \RenderRule{name} - Render the defined rule
+\makeatletter
+\newcommand{\DefineRule}[2]{%
+  \expandafter\newcommand\csname RenderRule@#1\endcsname{#2}%
+}
+\newcommand{\RenderRule}[1]{%
+  \@ifundefined{RenderRule@#1}{%
+    \textbf{Error: RenderRule '#1' not defined}%
+  }{%
+    \csname RenderRule@#1\endcsname%
+  }%
+}
+\makeatother

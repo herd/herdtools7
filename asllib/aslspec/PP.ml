@@ -100,6 +100,87 @@ let pp_variants_with_attributes fmt variants =
 
 let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
 
+let expr_operator_to_string =
+  let open Rule in
+  function
+  | Operator_Assign -> tok_str COLON_EQ
+  | Operator_Equal -> tok_str EQ
+  | Operator_Iff -> tok_str IFF
+  | Operator_List -> tok_str LIST
+  | Operator_Set -> tok_str SET
+  | Operator_Size -> tok_str SIZE
+  | Operator_Some -> tok_str SOME
+  | Operator_Union -> tok_str UNION
+  | Operator_UnionList -> tok_str UNION_LIST
+
+let pp_output_opt fmt is_output = if is_output then fprintf fmt "--@," else ()
+
+let rec pp_expr fmt =
+  let open Rule in
+  function
+  | Var name -> pp_print_string fmt name
+  | Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
+    when is_infix_operator op ->
+      fprintf fmt "%a %s %a" pp_expr lhs
+        (expr_operator_to_string op)
+        pp_expr rhs
+  | Application { applicator; args } ->
+      fprintf fmt "%a(%a)" pp_application_lhs applicator (pp_comma_list pp_expr)
+        args
+  | FieldAccess path -> fprintf fmt "%s" (String.concat "." path)
+  | ListIndex { var; index } -> fprintf fmt "%s[%s]" var index
+  | Record { label; fields } ->
+      fprintf fmt "%s[%a]" label
+        (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
+             fprintf fmt "%s : %a" field pp_expr expr))
+        fields
+  | Transition { lhs; rhs; short_circuit } ->
+      fprintf fmt "%a -> %a%a" pp_expr lhs pp_expr rhs pp_short_circuit
+        short_circuit
+  | Indexed { index; list; body } ->
+      fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list pp_expr body
+
+and pp_application_lhs fmt =
+  let open Rule in
+  function
+  | EmptyApplicator -> ()
+  | Relation name -> pp_print_string fmt name
+  | TupleLabel name -> pp_print_string fmt name
+  | ExprOperator op -> pp_print_string fmt (expr_operator_to_string op)
+  | Fields path -> fprintf fmt "%s" (String.concat "." path)
+  | Unresolved expr -> pp_expr fmt expr
+
+and pp_short_circuit fmt short_circuit =
+  match short_circuit with
+  | None -> ()
+  | Some alternatives ->
+      if Utils.list_is_empty alternatives then ()
+      else fprintf fmt " | %a" (pp_sep_list ~sep:", " pp_expr) alternatives
+
+let pp_judgment fmt { Rule.expr; is_output; att } =
+  let open Rule in
+  fprintf fmt "%a%a%a;" pp_output_opt is_output pp_expr expr
+    pp_attribute_key_values (Attributes.bindings att)
+
+let rec pp_case fmt { Rule.name; elements } =
+  fprintf fmt "case %s {@.@[<v 2>  %a@]@.}@." name
+    (pp_sep_list ~sep:"@," pp_rule_element)
+    elements
+
+and pp_rule_element fmt elem =
+  match elem with
+  | Rule.Judgment judgment -> pp_judgment fmt judgment
+  | Rule.Cases cases ->
+      fprintf fmt "@.@[<v>%a@]@." (pp_sep_list ~sep:"" pp_case) cases
+
+let pp_rule_opt fmt rule_opt =
+  match rule_opt with
+  | None -> ()
+  | Some elements ->
+      fprintf fmt "@ =@[<v>  %a@]@."
+        (pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt "@.") pp_rule_element)
+        elements
+
 let pp_relation_category fmt = function
   | None -> ()
   | Some Relation.RelationCategory_Typing -> fprintf fmt "%s " (tok_str TYPING)
@@ -113,13 +194,15 @@ let relation_keyword_to_string =
   | RelationProperty_Function -> tok_str FUNCTION
 
 let pp_relation_definition fmt
-    ({ Relation.name; property; category; input; output } as relation) =
-  fprintf fmt "@[<b>%a%s %s(%a) -> %a@,%a@];" pp_relation_category category
+    ({ Relation.name; property; category; input; output; rule_opt } as relation)
+    =
+  fprintf fmt "@[<b>%a%s %s(%a) -> %a@,%a%a@];" pp_relation_category category
     (relation_keyword_to_string property)
     name
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
     input pp_variants output pp_attribute_key_values
     (Relation.attributes_to_list relation)
+    pp_rule_opt rule_opt
 
 let type_kind_to_string = function
   | TypeKind_Generic -> tok_str TYPEDEF
@@ -155,6 +238,7 @@ let pp_elem fmt = function
   | Elem_Relation def -> pp_relation_definition fmt def
   | Elem_Constant def -> pp_constant_definition fmt def
   | Elem_RenderTypes def -> pp_render_definition fmt def
+  | Elem_RenderRule _def -> ()
 
 let pp_spec fmt spec =
   pp_set_margin fmt 120;
