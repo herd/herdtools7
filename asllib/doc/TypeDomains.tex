@@ -227,7 +227,7 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{t\_structured}
   \begin{itemize}
-    \item $\vt$ is a \structuredtypeterm\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i))]$
+    \item $\vt$ is a \structuredtypeterm\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i)])$
     where $L\in\{\TRecord, \TException\}$;
     \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
     \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$, for $i=1..k$.
@@ -399,7 +399,7 @@ in the \emph{local dynamic environment} of $\denv$.
   L \in \{\TRecord, \TException\}\\
   i=1..k: \dynamicdomain(\env, \vt_i) = D_i
 }{
-  \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i))]}{\vt}) = \\
+  \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i)])}{\vt}) = \\
   \overname{\{ \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\}) \;|\; \vv_i \in D_i \}}{\vd}
 }
 \end{mathpar}
