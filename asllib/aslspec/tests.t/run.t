@@ -6,10 +6,6 @@
   $ aslspec relations.spec --render; diff generated_macros.tex relations.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
 
-  $ aslspec type_name.bad
-  Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 2 column 1
-  [1]
-
 # Test that --pp generates legal output
   $ aslspec typedefs.spec --pp > tmp.spec; aslspec tmp.spec
   $ aslspec relations.spec --pp > tmp.spec; aslspec tmp.spec

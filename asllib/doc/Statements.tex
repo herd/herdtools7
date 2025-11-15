@@ -129,9 +129,13 @@ not modify the \staticenvironmentterm{}.
   \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass, \tenv, \overname{\emptyset}{\vses})}
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+
+\RenderRule{annotate_stmt_SPass}
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -196,6 +200,7 @@ is well-typed.
   \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
@@ -206,6 +211,8 @@ is well-typed.
   (\overname{\SAssign(\vleone, \vreone)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SAssign}
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -643,6 +650,7 @@ since immutable local storage elements require an initializing expression.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
@@ -672,6 +680,8 @@ since immutable local storage elements require an initializing expression.
   \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \tyopt, \None)}{\vs}) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_stmt_SDecl}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
