@@ -23,9 +23,9 @@
 
 \DefineType{Int}{\texthypertarget{type-Int}$\Int$} % EndDefineType
 
-\DefineConstant{One}{\hypertarget{constant-One}{} $\One$} % EndDefineConstant
+\DefineConstant{One}{\texthypertarget{constant-One}$\One$} % EndDefineConstant
 
-\DefineConstant{Two}{\hypertarget{constant-Two}{} $\Two$} % EndDefineConstant
+\DefineConstant{Two}{\texthypertarget{constant-Two}$\Two$} % EndDefineConstant
 
 \DefineType{B}{
 \begin{flalign*}
