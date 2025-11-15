@@ -90,36 +90,7 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
 \AbstractSyntaxDef{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{decl_func}
-\BackupOriginalAST{
-\begin{flalign*}
-\decl \derives\ & \DFunc(\func) &
-\end{flalign*}
 
-\begin{flalign*}
-\func \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
- \funcname &:& \Strings, \\
- \funcparameters &:& \KleeneStar{(\identifier, \ty?)},\\
- \funcargs &:& \KleeneStar{\typedidentifier},\\
- \funcbody &:& \stmt,\\
- \funcreturntype &:& \ty?,\\
- \funcsubprogramtype &:& \subprogramtype,\\
- \funcrecurselimit    &:& \expr?\\
- \funcbuiltin &:& \Bool\\
- \funcqualifierfield &:& \Some{\funcqualifier}\\
- \funcoverride &:& \Some{\overrideinfo}\\
-\end{array}
-\right\}
-} &\\
-\typedidentifier \derives\ & (\identifier, \ty) &\\
-\subprogramtype \derives\ & \STProcedure \;|\; \STFunction &\\
-                |\  & \STGetter \;|\; \STSetter &\\
-\qualifier \derives\ & \Pure \;|\; \Readonly \;|\; \Noreturn &\\
-\overrideinfo \derives\ & \Impdef \;|\; \Implementation &
-\end{flalign*}
-}
 
 \ASTRuleDef{SubprogramDecl}
 This rule defines the cases for $\builddecl$ for subprogram declarations.
@@ -717,21 +688,6 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 
 \TypingRuleDef{AnnotateAndDeclareFunc}
 \RenderRelation{annotate_and_declare_func}
-\BackupOriginalRelation{
-The function
-\[
-  \annotateanddeclarefunc(\overname{\globalstaticenvs}{\tenv}, \overname{\func}{\funcsig})
-  \aslto
-  \begin{array}{l}
-  (\overname{\staticenvs}{\tenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffectSet}{\vses})\ \cup\\
-  \overname{\typeerror}{\TypeErrorConfig}
-  \end{array}
-\]
-annotates a subprogram definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
-yielding a new subprogram definition $\newfuncsig$, a modified \staticenvironmentterm{}
-$\newtenv$, and an inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Annotating Subprogram Signatures} and
 \ExampleRef{Updating the Static Environment for a Subprogram}.
@@ -761,19 +717,6 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 
 \TypingRuleDef{AnnotateFuncSig}
 \RenderRelation{annotate_func_sig}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatefuncsig(\overname{\globalstaticenvs}{\genv}, \overname{\func}{\funcsig})
-  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig} \times \overname{\TSideEffect}{\vses})
-  \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates the signature of a function definition $\funcsig$ in the \globalstaticenvironmentterm{} $\genv$,
-yielding a new function definition $\newfuncsig$,
-a modified \staticenvironmentterm{} $\newtenv$, and
-an inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Subprogram Signatures}
 \ExampleRef{Annotating Parameters},
@@ -877,24 +820,6 @@ is not a constrained expression.
 
 \TypingRuleDef{AnnotateParams}
 \RenderRelation{annotate_params}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\annotateparams(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier \times \Option{\ty})}}{\params} \aslsep
-  (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc})
-) \aslto \\
-(\overname{\staticenvs}{\tenvwithparams} \times \overname{\Identifier\times\ty}{\paramsone})
-\cup\ \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates each parameter in $\params$ with respect to $\tenv$,
-and declares it in environment $\newtenv$.
-It returns the updated environment $\tenvwithparams$ and the annotated parameters $\paramsone$, together with any annotated parameters already in the accumulator $\acc$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Parameters}
 In \listingref{typing-parameterofconstraint}, the list of explicitly defined parameters
@@ -943,24 +868,6 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 
 \TypingRuleDef{AnnotateOneParam}
 \RenderRelation{annotate_one_param}
-\BackupOriginalRelation{
-The function
-\[
-\annotateoneparam(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\Identifier}{\vx} \times \overname{\Option{\ty}}{\tyopt})
-) \aslto
-\begin{array}{l}
-  (\overname{\staticenvs}{\newtenvp} \times \overname{\ty}{\tty})\ \cup\\
-  \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates the parameter given by $\vx$ and the \optionalterm\ type $\tyopt$
-with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
-The updated environment $\newtenvp$ and annotated parameter type $\tty$ are returned.
-\ProseOtherwiseTypeError
-} % END_OF_PENDING_RELATION
 
 
 \ExampleDef{Annotating Subprogram Parameters}
@@ -1026,13 +933,6 @@ since \verb|A| is also declared as a global storage element.
 
 \TypingRuleDef{CheckParamDecls}
 \RenderRelation{check_param_decls}
-\BackupOriginalRelation{
-The function
-\[
-\checkparamdecls(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks the validity of the parameters declared in $\funcsig$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Parameter Declarations}
 The specification in \listingref{CheckParamDecls} is well-typed.
@@ -1070,15 +970,6 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 
 \TypingRuleDef{ExtractParameters}
 \RenderRelation{extract_parameters}
-\BackupOriginalRelation{
-The function
-\[
-\extractparameters(\overname{\staticenvs}{\tenv}, \overname{\func}{\funcsig}) \aslto \overname{\KleeneStar{\Identifier}}{\uniqueparameters}
-  \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the parameter names declared in $\funcsig$ into $\allparameters$, while checking their validity in the \staticenvironmentterm{} $\tenv$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Parameters of a Function}
 In \listingref{typing-parameterofconstraint}, the set of identifiers that may correspond
@@ -1152,14 +1043,6 @@ are unsupported inside \bitvectortypesterm{} of arguments.
 
 \TypingRuleDef{FuncSigTypes}
 \RenderRelation{func_sig_types}
-\BackupOriginalRelation{
-The function
-\[
-\funcsigtypes(\overname{\func}{\funcsig}) \aslto \overname{\KleeneStar{\ty}}{\tys}
-\]
-returns the list of types $\tys$ in the subprogram signature $\funcsig$.
-Their ordering is return type first (if any), followed by argument types left-to-right.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Listing Signature Types}
 \listingref{FuncSigTypes} shows the list of signature types for a procedure and a function
@@ -1194,16 +1077,6 @@ in comments above their declarations.
 
 \TypingRuleDef{ParametersOfTy}
 \RenderRelation{paramsofty}
-\BackupOriginalRelation{
-The function
-\[
-\paramsofty(\overname{\staticenvs}{\tenv}, \overname{\ty}{\tty}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
-\cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-extracts the list of parameters appearing in the type $\tty$,
-assuming that $\tty$ appears in a function signature.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Parameters Extracted from Argument Types}
 The parameters extracted from the types of arguments appearing in the signature of \verb|parameters_of_types|
@@ -1319,16 +1192,6 @@ in \listingref{ParametersOfTy} are as follows:
 
 \TypingRuleDef{ParametersOfExpr}
 \RenderRelation{params_of_expr}
-\BackupOriginalRelation{
-The function
-\[
-\paramsofexpr(\overname{\staticenvs}{\tenv}, \overname{\expr}{\ve}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
-\cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-extracts the list of parameters appearing in the expression $\ve$.
-It assumes that $\ve$ appears as $\TBits(\ve, \Ignore)$ or as part of a \wellconstrainedintegertypeterm{} in a function signature.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Extracting the Parameters from Expressions}
 In \listingref{ParametersOfExpr}, extracting parameters from expressions appearing
@@ -1458,14 +1321,6 @@ for the expression \verb|A| appearing in the return type.
 
 \TypingRuleDef{ParametersOfConstraint}
 \RenderRelation{params_of_constraint}
-\BackupOriginalRelation{
-The function
-\[
-\paramsofconstraint(\overname{\staticenvs}{\tenv}, \overname{\intconstraint}{\vc}) \typearrow \overname{\KleeneStar{\Identifier}}{\ids}
-\]
-finds the list of parameters in the constraint $\vc$.
-It assumes that $\vc$ appears within a \wellconstrainedintegertypeterm{} in a function signature.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Parameters Extracted from a Constraint}
 In \listingref{ParametersOfTy}, the list of parameters extracted from the constraint
@@ -1511,27 +1366,6 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
 
 \TypingRuleDef{AnnotateArgs}
 \RenderRelation{annotate_args}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\annotateargs(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier \times \ty)}}{\args} \aslsep\
-  (\overname{\staticenvs}{\newtenv} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\acc} \aslsep
-  \overname{\TSideEffectSet}{\vsesin})
-) \aslto \\
-(\overname{\staticenvs}{\tenvwithargs} \times \overname{\KleeneStar{(\Identifier\times\ty)}}{\vnewargs} \times \overname{\TSideEffectSet}{\vses})
-\cup\ \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates each argument in $\args$ with respect to $\tenv$ and a \sideeffectsetterm\ $\vsesin$,
-and declares it in environment $\newtenv$.
-It returns the updated environment $\tenvwithargs$, the annotated arguments $\vnewargs$,
-together with any annotated arguments already in the accumulator $\acc$,
-and a \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Subprogram Arguments}
 In \listingref{typing-parameterofconstraint}, the annotated arguments are
@@ -1580,25 +1414,6 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
 
 \TypingRuleDef{AnnotateOneArg}
 \RenderRelation{annotate_one_arg}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \annotateonearg(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\staticenvs}{\newtenv} \aslsep
-  (\overname{\Identifier}{\vx} \times \overname{\ty}{\tty})
-) \aslto\\
-(\overname{\staticenvs}{\newtenvp} \times\ \overname{\ty}{\ttyp} \times \overname{\TSideEffectSet}{\vses})\ \cup
-\overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates the argument given by the identifier $\vx$ and the type $\tty$
-with respect to $\tenv$ and then declares the parameter $\vx$ in environment $\newtenv$.
-The result is the updated environment $\newtenvp$, annotated argument type $\ttyp$,
-and inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating a Subprogram Argument}
 The specification in \listingref{AnnotateOneArg} shows well-typed argument declarations
@@ -1636,28 +1451,6 @@ as \collectiontypesterm.
 
 \TypingRuleDef{AnnotateReturnType}
 \RenderRelation{annotate_return_type}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{rl}
-\annotatereturntype(
-  \overname{\staticenvs}{\tenvwithparams} \aslsep
-  \overname{\staticenvs}{\tenvwithargs} \aslsep
-  \overname{\Option{\ty}}{\vreturntype} \aslsep
-  \overname{\TSideEffectSet}{\vsesin}
-) & \aslto \\
-(\overname{\staticenvs}{\newtenv} \times \overname{\ty}{\newreturntype} \times \overname{\TSideEffectSet}{\vses})
-\cup\ \overname{\typeerror}{\TypeErrorConfig} &
-\end{array}
-\]
-annotates the \optionalterm\ return type $\vreturntype$ in the context of the \staticenvironmentterm{}
-$\tenvwithparams$, where all parameters have been declared,
-and the \sideeffectsetterm\ $\vsesin$.
-The result is $\newtenv$, which is the input $\tenvwithargs$ (where all parameters and arguments have been declared)
-with the \optionalterm{} annotated return type $\newreturntype$ added
-and the inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Subprogram Return Types}
 In \listingref{MatchFuncRes}, the subprogram \verb|proc| has no return type.
@@ -1721,18 +1514,6 @@ as return types.
 
 \TypingRuleDef{CheckSubprogramPurity}
 \RenderRelation{check_subprogram_purity}
-\BackupOriginalRelation{
-The function
-\[
-\checksubprogrampurity(
-  \overname{\Option{\funcqualifier}}{\vqualifier} \aslsep
-  \overname{\TSideEffectSet}{\vses}
-)
-\aslto \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks that the \sideeffectsetterm{} $\vses$ is consistent with the subprogram qualifier $\vqualifier$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking subprogram purity}
 In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as follows:
@@ -1794,22 +1575,6 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 
 \TypingRuleDef{DeclareOneFunc}
 \RenderRelation{declare_one_func}
-\BackupOriginalRelation{
-The function
-\[
-  \declareonefunc(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\func}{\funcsig} \aslsep
-    \overname{\TSideEffectSet}{\vsesfuncsig})
-  \aslto (\overname{\staticenvs}{\newtenv} \times \overname{\func}{\newfuncsig})
-  \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks that a subprogram defined by $\funcsig$
-and associated with the \sideeffectsetterm\ $\vsesfuncsig$
-can be added to the \staticenvironmentterm{} $\tenv$,
-resulting in an annotated function definition $\newfuncdef$ and new \staticenvironmentterm{} $\newtenv$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Updating the Static Environment for a Subprogram}.
 
@@ -1872,28 +1637,6 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
 
 \TypingRuleDef{SubprogramClash}
 \RenderRelation{subprogram_clash}
-\BackupOriginalRelation{
-The function
-\[
-  \begin{array}{rl}
-  \subprogramclash
-    (
-      \overname{\staticenvs}{\tenv} \aslsep
-      \overname{\Strings}{\name} \aslsep
-      \overname{\subprogramtype}{\subpgmtype} \aslsep
-      \overname{\funcqualifier}{\vqualifier} \aslsep
-      \overname{\KleeneStar{\ty}}{\formaltypes}
-    )
-  & \aslto \\
-    \overname{\Bool}{\vb} \cup\ \overname{\typeerror}{\TypeErrorConfig} &
-  \end{array}
-\]
-checks whether the unique subprogram associated with $\name$
-clashes with another subprogram
-that has subprogram type $\subpgmtype$, qualifier $\vqualifier$, and list of formal types $\formaltypes$,
-yielding a Boolean value in $\vb$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 The function assumes there exists a binding for $\name$ in the
 $\subprograms$ map of $\tenv$.
@@ -1941,17 +1684,6 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
 
 \TypingRuleDef{SubprogramTypesClash}
 \RenderRelation{subprogram_types_clash}
-\BackupOriginalRelation{
-The function
-\[
-  \subprogramtypesclash(
-    \overname{\subprogramtype}{\vsone} \aslsep
-    \overname{\subprogramtype}{\vstwo}
-  ) \aslto \overname{\Bool}{\vb}
-\]
-defines whether the subprogram types $\vsone$ and
-$\vstwo$ clash, yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Clashing Subprogram Types}
 
@@ -1991,29 +1723,6 @@ $\vsone$ is $\STSetter$ and $\vstwo$ is $\STGetter$}.
 
 \TypingRuleDef{AddNewFunc}
 \RenderRelation{add_new_func}
-\BackupOriginalRelation{
-The function
-\[
-  \begin{array}{rl}
-  \addnewfunc(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Identifier}{\name} \aslsep
-    \overname{\Option{\funcqualifier}}{\vqualifier} \aslsep
-    \overname{\KleeneStar{\typedidentifier}}{\formals} \aslsep
-    \overname{\subprogramtype}{\subpgmtype})
-  & \aslto\\
-  (\overname{\staticenvs}{\newtenv} \times \overname{\Strings}{\newname})
-  \cup\ \overname{\typeerror}{\TypeErrorConfig} &
-  \end{array}
-\]
-ensures that the subprogram given by the identifier $\name$, qualifier $\vqualifier$, list of formals $\formals$,
-and subprogram type $\subpgmtype$ has a unique name among all the potential subprograms
-that overload $\name$.
-The result is the unique subprogram identifier $\newname$, which is used to distinguish it in the set
-of overloaded subprograms (that is, other subprograms that share the same name)
-and the environment $\newtenv$, which is updated with $\newname$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 The function $\addnewfunc$ updates the $\overloadedsubprograms$ map in the \staticenvironmentterm{},
 and must be followed by $\addsubprogram$, which updates the $\subprograms$ map (see \TypingRuleRef{AddSubprogram}).
@@ -2107,19 +1816,6 @@ are ill-typed due to subprogram declaration clashes.
 
 \TypingRuleDef{Subprogram}
 \RenderRelation{annotate_subprogram}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \annotatesubprogram(\overname{\staticenvs}{\tenv} \aslsep \overname{\func}{\vf} \aslsep \overname{\TSideEffectSet}{\vsesfuncsig})
-  \aslto \\
-  (\overname{\func}{\vfp} \times \overname{\TSideEffectSet}{\vses})\ \cup \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates a subprogram $\vf$ in an environment $\tenv$ and \sideeffectsetterm\ $\vsesfuncsig$, resulting in an annotated subprogram $\vfp$
-and inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 Note that the return type in $\vf$ has already been annotated by $\annotatefuncsig$.
 
@@ -2161,18 +1857,6 @@ and an example of a well-typed function --- \verb|flip_bits|.
 
 \TypingRuleDef{CheckControlFlow}
 \RenderRelation{check_control_flow}
-\BackupOriginalRelation{
-The function
-\[
-  \checkcontrolflow(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\func}{\vf} \aslsep
-    \overname{\stmt}{\vbody})
-  \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the annotated body statement $\vs$ of the function definition $\vf$
-obeys the control-flow requirements in the \staticenvironmentterm{} $\tenv$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Ensuring All Terminating Paths Terminate Correctly}
 In \listingref{CheckControlFlow}, every evaluation of the function body for\\
@@ -2215,15 +1899,6 @@ qualifier, yet it returns via a \passstatementterm.
 
 \TypingRuleDef{AllowedAbsConfigs}
 \RenderRelation{allowed_abs_configs}
-\BackupOriginalRelation{
-The function
-\[
-  \allowedabsconfigs(\overname{\func}{\vf})
-  \typearrow \overname{\pow{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}}{\absconfigs}
-\]
-determines the set of \Proseabstractconfigurations{} allowed for the function definition $\vf$,
-yielding the result in $\absconfigs$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Allowed Abstract Configurations for a Subprogram}
 The set of \Proseabstractconfigurations{} allowed for the subprogram \\
@@ -2294,15 +1969,6 @@ by \verb|noreturn|.
 
 \TypingRuleDef{ApproxStmt}
 \RenderRelation{approx_stmt}
-\BackupOriginalRelation{
-The function
-\[
-  \approxstmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs})
-  \typearrow\overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
-\]
-returns in $\absconfigs$ a superset of the set of \Proseabstractconfigurations{} (defined next),
-that an evaluation of $\vs$ in any environment consisting of the \staticenvironmentterm{} $\tenv$ yields.
-} % END_OF_BACKUP_RELATION
 
 The type \RenderType{abstract_configuration}
 of \emph{\Proseabstractconfigurations{}} consists of symbols that represent

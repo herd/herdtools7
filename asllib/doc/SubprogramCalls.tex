@@ -44,12 +44,7 @@ and then invoking its getter and its setter.
 \AbstractSyntaxDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{calls}
-\BackupOriginalAST{
-\begin{flalign*}
-\expr \derives\ & \ECall(\call) &\\
-\stmt \derives\ & \SCall(\call) &
-\end{flalign*}
-}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Subprogram Calls}
@@ -76,27 +71,6 @@ We also define helper functions via respective rules:
 
 \TypingRuleDef{AnnotateCall}
 \RenderRelation{annotate_call}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatecall(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\call}{\vcall}
-   ) \aslto
-  (\overname{\call}{\vcallp} \times
-  \overname{\Option{ \ty }}{\rettyopt} \times
-  \overname{\TSideEffectSet}{\vses}
-  )
-\]
-annotates the call $\vcall$ to a subprogram with call type $\calltype$, resulting in the following:
-\begin{itemize}
-  \item $\vcallp$ --- the updated call, with all arguments/parameters annotated and \\
-        $\vcall.\callname$ updated to uniquely identify the call among the set of overloading subprograms declared with the same name;
-  \item $\rettyopt$ --- the \optionalterm\ annotated return type;
-  \item $\vses$ --- the \sideeffectsetterm\ inferred for $\vcall$.
-\end{itemize}
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Parameterized Subprogram Calls}
 The specifications in \listingref{AnnotateCall} and \listingref{AnnotateCall2} are well-typed.
@@ -158,29 +132,6 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 
 \TypingRuleDef{AnnotateCallActualsTyped}
 \RenderRelation{annotate_call_actuals_typed}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatecallactualstyped\left(
-    \begin{array}{c}
-      \overname{\staticenvs}{\tenv} \aslsep\\
-      \overname{\Identifier}{\name} \aslsep\\
-      \overname{\KleeneStar{(\ty \times\expr \times \TSideEffectSet)}}{\params} \aslsep\\
-      \overname{\KleeneStar{(\ty \times\expr \times \TSideEffectSet)}}{\typedargs} \aslsep\\
-      \overname{\subprogramtype}{\calltype}
-    \end{array}
-  \right) \aslto
-  \begin{array}{c}
-  (\overname{\call}{\vcall} \aslsep
-  \overname{\Option{ \ty }}{\rettyopt})\\
-  \cup\ \overname{\typeerror}{\TypeErrorConfig}
-  \end{array}
-\]
-is similar to $\annotatecall$, except that it accepts the annotated versions of
-the parameter and argument expressions as inputs,
-that is, tuples consisting of types, annotated expressions, and \sideeffectdescriptorsetsterm.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Calls with Typed Parameters and Typed Arguments}
 In \listingref{AnnotateCallActualsTyped-bad1}, the call expression \verb|xor_extend{64}(bv1, bv2)|
@@ -273,18 +224,6 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 
 \TypingRuleDef{InsertStdlibParam}
 \RenderRelation{insert_stdlib_param}
-\BackupOriginalRelation{
-The function
-\[
-\insertstdlibparam(
-  \overname{\func}{\funcsig} \aslsep
-  \overname{\KleeneStar{(\ty\times\expr)}}{\params} \aslsep
-  \overname{\KleeneStar{\ty}}{\argtypes}
-  ) \aslto \\
-  \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\paramsone}
-\]
-inserts the (optionally) omitted input parameter of a standard library function call.
-} % END_OF_BACKUP_RELATION
 
 Note that this function relies on all standard library functions with input parameters having one of two simple forms:
 \begin{lstlisting}
@@ -367,14 +306,6 @@ parameters elided, and the equivalent calls with all parameters included.
 
 \TypingRuleDef{CanOmmitStdlibParam}
 \RenderRelation{can_omit_stdlib_param}
-\BackupOriginalRelation{
-The function
-\[
-  \canomitstdlibparam(\overname{\func}{\funcsig}) \aslto \overname{\Bool}{\vb}
-\]
-tests whether the first parameter of the subprogram defined by
-$\funcsig$ can be omitted (and thus automatically inserted), yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Determining Whether a Parameter Can be Omitted}
 The following are examples of subprogram signatures
@@ -426,22 +357,6 @@ func Ones{N}() => bits(N)
 
 \TypingRuleDef{CheckParamsTypeSat}
 \RenderRelation{check_params_typesat}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\checkparamstypesat(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\funcsigparams} \aslsep
-  \overname{\KleeneStar{(\ty\times\expr\times\TSideEffectSet)}}{\params}
-  ) \aslto \\
-  \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-checks that annotated parameters $\params$ are correct with respect to the declared parameters $\funcsigparams$.
-\ProseOtherwiseTypeError\
-It assumes that $\funcsigparams$ and $\params$ have the same length.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking that Expression Types Type-satisfy Parameters}
 In \listingref{CheckParamsTypeSat},
@@ -532,21 +447,6 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 
 \TypingRuleDef{RenameTyEqs}
 \RenderRelation{rename_ty_eqs}
-\BackupOriginalRelation{
-The function
-\[
-\renametyeqs(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
-  \overname{\ty}{\tty}
-) \aslto
-\overname{\ty}{\newty} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-transforms the type $\tty$ in the \staticenvironmentterm{} $\tenv$,
-by substituting parameter names with their corresponding expressions in
-$\eqs$, yielding the type $\newty$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Parameterized Types Based on Actual Arguments}
 In \listingref{RenameTyEqs}, annotating the call expression \verb|FlipPrefix{8}(bv, 4)|
@@ -642,20 +542,6 @@ requires substituting \verb|8| for \verb|N| in the types
 
 \TypingRuleDef{SubstExprNormalize}
 \RenderRelation{subst_expr_normalize}
-\BackupOriginalRelation{
-The function
-\[
-\substexprnormalize(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
-  \overname{\expr}{\ve}
-) \aslto \overname{\expr}{\newe}
-\]
-transforms the expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
-by substituting parameter names with their corresponding expressions in
-$\eqs$, and then attempting to symbolically simplify the result, yielding the expression $\newe$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Substituting Parameter Expressions and Normalizing}
 In \listingref{SubstExpr},
@@ -685,20 +571,6 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
 
 \TypingRuleDef{SubstExpr}
 \RenderRelation{subst_expr}
-\BackupOriginalRelation{
-The function
-\[
-\substexpr(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\expr)}}{\substs} \aslsep
-  \overname{\expr}{\ve}
-) \aslto \overname{\expr}{\newe}
-\]
-transforms the expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
-by substituting parameter names with their corresponding expressions in
-$\substs$, yielding the expression $\newe$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 The function assumes that $\ve$ appears in the declaration of a parameter,
 which means it is in the subset allowed by $\extractparameters$.
@@ -1055,21 +927,6 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
 \TypingRuleDef{SubstConstraint}
 \RenderRelation{subst_constraint}
-\BackupOriginalRelation{
-The function
-\[
-\substconstraint(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs} \aslsep
-  \overname{\intconstraint}{\vc}
-) \aslto \overname{\intconstraint}{\newc}
-\]
-transforms the integer constraint $\vc$ in the \staticenvironmentterm{} $\tenv$,
-by substituting parameter names with their corresponding expressions in
-$\eqs$, and then attempting to symbolically simplify the result,
-yielding the integer constraint $\newc$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Substituting Parameter Expressions in Constraints}
 In \listingref{SubstExpr},
@@ -1117,23 +974,6 @@ resulting in the type \verb|integer{0..64}|.
 
 \TypingRuleDef{CheckArgsTypeSat}
 \RenderRelation{check_args_typesat}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \checkargstypesat(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\KleeneStar{(\Identifier\times\ty)}}{\funcsigargs} \aslsep
-    \overname{\KleeneStar{\ty}}{\argtypes} \aslsep
-    \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqs}
-  ) \aslto \\
-  \{\True\}\ \cup \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-checks that the types $\argtypes$ \typesatisfyterm\ the types of the corresponding
-formal arguments $\funcsigargs$ with the parameters substituted with their corresponding
-arguments as per $\eqs$ and results in a \typingerrorterm{} otherwise.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking that Actual Arguments Type-satisfy the Formal Arguments}
 In \listingref{RenameTyEqs}, checking that the call \verb|FlipPrefix{8}(bv, 4)| is well-typed
@@ -1194,25 +1034,6 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
 
 \TypingRuleDef{AnnotateRetTy}
 \RenderRelation{annotate_ret_ty}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\annotateretty(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\subprogramtype}{\calltype} \aslsep
-  \overname{\Option{\ty}}{\funcsigrettyopt} \aslsep
-  \overname{\KleeneStar{(\Identifier\times\expr)}}{\eqsthree}
-) \aslto \\
-\overname{\Option{\ty}}{\rettyopt}
-\cup \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates the \optionalterm\ return type $\funcsigrettyopt$ given with the subprogram type
-$\calltype$ with respect to the parameter expressions $\eqs$,
-yielding the \optionalterm\ annotated type $\rettyopt$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating the Return Type of a Subprogram Call}
 In \listingref{AnnotateRetTy}, annotating the return type \verb|bits(N)| of the subprogram \verb|flip|
@@ -1290,37 +1111,6 @@ and functions can only be used in call expressions.
 
 \TypingRuleDef{SubprogramForSignature}
 \RenderRelation{subprogram_for_signature}
-\BackupOriginalRelation{
-The function
-\[
-  \begin{array}{rl}
-    \subprogramforsignature(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Strings}{\name} \aslsep
-    \overname{\KleeneStar{\ty}}{\callerargtypes} \aslsep
-    \overname{\subprogramtype}{\calltype}
-    )
-    \aslto & \\
-    (
-    \overname{\Strings}{\namep} \aslsep
-    \overname{\func}{\callee} \aslsep
-    \overname{\TSideEffectSet}{\vses}
-    )
-    \cup\ \overname{\typeerror}{\TypeErrorConfig}
-  \end{array}
-\]
-looks up the \staticenvironmentterm{} $\tenv$ for a subprogram associated with $\name$, the list of argument types $\calleeargtypes$, and a subprogram type matching $\calltype$, and determines which one of the following
-cases holds:
-\begin{enumerate}
-  \item there is no declared subprogram that matches $\name$, $\calleeargtypes$, and $\calltype$;
-  \item there is exactly one subprogram that matches $\name$, $\calleeargtypes$, and $\calltype$;
-\end{enumerate}
-If more than one subprogram that matches $\name$ and $\calleeargtypes$,
-this is detected by the rule \TypingRuleRef{DeclareSubprograms},
-which invokes the rule \\ \TypingRuleRef{DeclareOneFunc},
-which invokes the rule \TypingRuleRef{AddNewFunc},
-which results in a \typingerrorterm{}.
-} % END_OF_BACKUP_RELATION
 
 The first case results in a \typingerrorterm{}.
 If the second case holds, the function returns a tuple which comprises:
@@ -1420,23 +1210,6 @@ the \integertypeterm{} rather than the \realtypeterm).
 
 \TypingRuleDef{FilterCallCandidates}
 \RenderRelation{filter_call_candidates}
-\BackupOriginalRelation{
-The function
-\[
-  \filtercallcandidates(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\KleeneStar{\ty}}{\formaltypes} \aslsep
-    \overname{\subprogramtype}{\calltype} \aslsep
-    \overname{\pow{\Strings}}{\candidates}
-    )
-  \aslto \overname{\KleeneStar{(\Strings\times\func)}}{\matches}
-\]
-iterates over the list of unique subprogram names in $\candidates$ and checks whether
-their lists of arguments clash with the types in $\formaltypes$ and their subprogram types match $\calltype$ in $\tenv$.
-The result is the set of pairs consisting of the names and function definitions of the
-subprograms whose arguments clash and subprogram types match in $\candidates$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
@@ -1502,17 +1275,6 @@ yields an empty list.
 
 \TypingRuleDef{CallTypeMatches}
 \RenderRelation{call_type_matches}
-\BackupOriginalRelation{
-The function
-\[
-  \calltypematches(
-    \overname{\func}{\funcdef} \aslsep
-    \overname{\subprogramtype}{\calltype}
-  )
-  \aslto \overname{\Bool}{\vb}
-\]
-checks whether a function definition $\funcdef$ is compatible with the subprogram type expected by a function call, $\calltype$, yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Matching call types}
 The table below shows keywords used to define functions, and their possible compatible call types.
@@ -1567,20 +1329,6 @@ The table below shows keywords used to define functions, and their possible comp
 
 \TypingRuleDef{HasArgClash}
 \RenderRelation{has_arg_clash}
-\BackupOriginalRelation{
-The function
-\[
-  \hasargclash(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\KleeneStar{\ty}}{\formaltys} \aslsep
-    \overname{\KleeneStar{(\Identifier\times\ty)}}{\vargs}
-  )
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether a list of types $\formaltys$ clashes with the list of types appearing
-in the list of arguments $\vargs$ in $\tenv$, yielding the result in $\vb$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Argument Clashing}
 \listingref{type-clashes} shows examples of types ---
@@ -1613,16 +1361,6 @@ the arguments of procedures -- that do not clash and types that do clash
 
 \TypingRuleDef{TypeClash}
 \RenderRelation{type_clashes}
-\BackupOriginalRelation{
-The function
-\[
-  \typeclashes(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vt} \aslsep \overname{\ty}{\vs})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-determines whether a type $\vt$ \emph{\Prosetypeclashes} with a type $\vs$ in environment $\tenv$,
-returning the result $\vb$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \identd{VPZZ} \identi{PQCT} \identi{WZKM} \identi{WZKM}
 Note that \Prosetypeclashing{} is an equivalence relation.
@@ -1792,18 +1530,6 @@ way around.
 
 \TypingRuleDef{ExpressionList}
 \RenderRelation{annotate_exprs}
-\BackupOriginalRelation{
-The function
-\[
-  \annotateexprlist(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\expr}}{\exprs})
-  \aslto \overname{\KleeneStar{(\ty \times \expr \times \TSideEffectSet)}}{\typedexprs}
-  \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a list of expressions $\exprs$ from left to right, yielding a list of tuples \\
-$\typedexprs$,
-each consisting of a type, an annotated expression, and a \sideeffectsetterm.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating a List of Expressions}
 In \listingref{ExpressionList}, the list of expressions \verb|10, 20.0|
@@ -1900,28 +1626,6 @@ We also define the following helper rules:
 
 \SemanticsRuleDef{Call}
 \RenderRelation{eval_call}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalcall(\overname{\envs}{\env} \aslsep
-  \overname{\Identifier}{\name} \aslsep
-  \overname{\KleeneStar{\expr}}{\params} \aslsep
-  \overname{\KleeneStar{\expr}}{\args}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultCall(\overbracket{\KleeneStar{(\nativevalue\times\XGraphs)}}^{\vmstwo}, \overname{\envs}{\newenv}) & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} & \cup \\
-  \overname{\TDiverging}{\DivergingConfig} & \\
-  \end{array}
-  \right)
-\]
-evaluates a call to the subprogram named $\name$ in the environment $\env$,
-with the parameter expressions $\params$ and the argument expressions
-$\args$.
-The evaluation results in either a list of returned values, each one associated
-with an execution graph, and a new environment.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 The evaluation first evaluates the expressions corresponding to the arguments
 and parameters and then passes their values in a resulting configuration
@@ -2015,37 +1719,6 @@ while calling \\
 
 \SemanticsRuleDef{EvalSubprogram}
 \RenderRelation{eval_subprogram}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalsubprogram\left(
-  \begin{array}{cl}
-  \overname{\envs}{\env} & \aslsep\\
-  \overname{\Identifier}{\name} & \aslsep\\
-  \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\params} & \aslsep\\
-  \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\args} &
-  \end{array}
-  \right)
-  \;\aslrel\;
-  \left(
-  \begin{array}{cl}
-  \ResultCall(\overname{(\KleeneStar{\nativevalue} \aslsep \XGraphs)}{\vvs}, \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig} & \cup\\
-  \overname{\TDynError}{\DynErrorConfig} & \cup\\
-  \overname{\TDiverging}{\DivergingConfig} &
-  \end{array}
-  \right)
-\]
-evaluates the subprogram named $\name$ in the environment $\env$, with
-$\actualargs$ the list of actual arguments, and $\params$ the
-list of arguments deduced by type equality.
-The result is either a \Prosenormalconfiguration{} or an abnormal configuration.
-In the case of a \Prosenormalconfiguration{}, it consists of a list of pairs
-with a value and an identifier, and a new environment $\newenv$.
-The values represent values returned by the subprogram call and the
-identifiers are used in generating execution graph constraints for the
-returned values.
-} % END_OF_BACKUP_RELATION
 
 
 \ExampleDef{Subprogram Calls}
@@ -2120,16 +1793,6 @@ return statement.
 
 \SemanticsRuleDef{CheckRecurseLimit}
 \RenderRelation{check_recurse_limit}
-\BackupOriginalRelation{
-The relation
-\[
-  \checkrecurselimit(\overname{\envs}{\env} \aslsep \overname{\Identifier}{\name} \aslsep \overname{\Option{\expr}}{\velimitopt}) \aslto
-  \overname{\XGraphs}{\vg} \cup \overname{\TDynError}{\DynErrorConfig}
-\]
-checks whether the value in the optional expression $\velimitopt$ has reached the limit associated with $\name$
-in $\env$, yielding the execution graph resulting from evaluating the optional expression in $\vg$.
-Otherwise, the result is a \DynamicErrorConfigurationTerm{} indicating that the recursion limit has been reached.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking the Recursion Limit of a Subprogram Call}
 In \listingref{CheckRecurseLimit-nolimit}, the function \verb|factorial| is specified without a limit expression,
@@ -2204,14 +1867,6 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \SemanticsRuleDef{ReadValueFrom}
 \RenderRelation{read_value_from}
-\BackupOriginalRelation{
-The relation
-\[
-  \readvaluefrom(\valuereadfrom(\nativevalue \aslsep \Identifier)) \;\aslrel\; (\nativevalue \times \XGraphs)
-\]
-generates an execution graph for reading the given value to a variable given
-by the identifier, and pairs it with the given value.
-} % END_OF_BACKUP_RELATION
 
 % NO_EXAMPLE
 
@@ -2234,19 +1889,6 @@ by the identifier, and pairs it with the given value.
 
 \SemanticsRuleDef{AssignArgs}
 \RenderRelation{assign_args}
-\BackupOriginalRelation{
-The relation
-\[
-  \assignargs(
-    (\overname{\envs}{\env}\times\overname{\XGraphs}{\vgone})\aslsep
-    \overname{\KleeneStar{\Identifier}}{\vids} \aslsep
-    \overname{\KleeneStar{(\nativevalue\times\XGraphs)}} {\actuals}) \;\aslrel\;
-              (\overname{\envs}{\newenv} \times \overname{\XGraphs}{\newg})
-\]
-updates the pair consisting of the environments $\env$ and \executiongraphterm\ $\vgone$
-by assigning the values given by $\actuals$ to the identifiers given by $\vids$,
-yielding the updated pair $(\newenv, \newg)$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Assigning Arguments}
 In \listingref{AssignArgs}, the call expression \verb|plus(10, 5)| binds \verb|x| to $\nvint(10)$
@@ -2298,15 +1940,6 @@ these variable values and evaluates to $\nvint(15)$.
 Using the type \RenderType{TContinuingOrReturning}, we define the following relation.
 
 \RenderRelation{match_func_res}
-\BackupOriginalRelation{
-The relation
-\[
-    \matchfuncres(\TContinuing \cup \TReturning) \;\aslrel\;
-                  \ResultCall((\KleeneStar{(\Identifier\times\nativevalue)}\times\XGraphs)\aslsep\envs)
-\]
-converts continuing configurations and returning configurations
-into corresponding normal configurations that can be returned by a subprogram evaluation.
-} % END_OF_BACKUP_RELATION
 \ExampleDef{Converting Configurations Upon Subprogram Return}
 In \listingref{MatchFuncRes},
 the final configuration resulting from evaluating the call \verb|proc()|

@@ -1010,35 +1010,7 @@ We define a similar function for dynamic errors.
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
 
-\BackupOriginalRelation{
-The function
-\[
-\techeckname(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
-\cup\ \overname{\typeerror}{\TypeErrorConfig}\ \cup\ \overname{\TDynError}{\DynErrorConfig}
-\]
-takes a Boolean value $\vb$ and an error code $\vcode$
-and returns $\True$ when $\vb$ is $\True$.
-Otherwise, the result is either a \typingerrorterm{} or a \dynamicerrorterm{},
-based on the error code (see \chapref{Errors}).
-%
-This is used to assert that a condition that holds.
 
-\begin{mathpar}
-\inferrule[check\_trans\_true]{}{ \techeck{\True}{\vcode} \astarrow \True }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[check\_trans\_false\_type]{
-  \vcode\text{ is a \typingerrorterm{} code}
-}{ \techeck{\False}{\vcode} \astarrow \TypeErrorVal{\vcode} }
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[check\_trans\_false\_dynamic]{
-  \vcode\text{ is a \dynamicerrorterm{} code}
-}{ \techeck{\False}{\vcode} \checktransarrow \DynamicErrorVal{\vcode} }
-\end{mathpar}
-}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}

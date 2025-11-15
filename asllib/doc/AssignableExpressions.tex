@@ -35,40 +35,8 @@ These refer to storage that needs to be updated.
 
 \paragraph{Typing:} Assignable expressions are annotated by $\annotatelexpr$.
 \RenderRelation{annotate_lexpr}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatelexpr(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\lexpr}{\vle} \aslsep
-    \overname{\ty}{\vte}) \aslto
-    (\overname{\lexpr}{\newle} \times \overname{\TSideEffectSet}{\vses}) \cup \typeerror
-\]
-annotates a left-hand side expression $\vle$ in an environment $\tenv$, assuming $\vte$
-to be the type of the corresponding \rhsexpression{},
-resulting in an annotated expression $\newle$ and inferred \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 \paragraph{Semantics:} Assignable expressions are evaluated by $\evallexpr$.
 \RenderRelation{eval_lexpr}
-\BackupOriginalRelation{
-The relation
-\[
-  \evallexpr(\overname{\envs}{\env} \aslsep \overname{\lexpr}{\vle} \aslsep (\overname{\nativevalue}{\vv} \times \overname{\XGraphs}{\vg})) \;\aslrel\;
-  \left(
-    \begin{array}{cl}
-    \ResultLexpr(\overname{\XGraphs}{\newg},\overname{\envs}{\newenv}) & \cup\\
-    \overname{\TThrowing}{\ThrowingConfig} & \cup\\
-    \overname{\TDynError}{\DynErrorConfig} & \cup\\
-    \overname{\TDiverging}{\DivergingConfig} &
-    \end{array}
-  \right)
-\]
-evaluates the assignment of a value $\vv$
-to the left-hand-side expression $\vle$ in an environment $\env$,
-resulting a configuration $\ResultLexpr(\newg, \env)$.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 \paragraph{A Convention for Assignable Expressions Semantics Rules:}
 In this chapter, variables containing $\vm$ range over $\nativevalue\times\XGraphs$
 while variables where the $\vm$ is replaced with $\vv$ correspond to their value component.
@@ -548,11 +516,7 @@ is defined via the following rules:
 \section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_discard}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \overtext{\LEDiscard}{\texttt{"-"}} &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LEDiscard}
@@ -603,11 +567,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_var}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LEVar(\Identifier) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LEVar}
@@ -750,11 +710,7 @@ In \listingref{semantics-leglobalvar},
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_destructuring}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LEDestructuring(\KleeneStar{\lexpr}) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LEDestructuring}
@@ -830,18 +786,6 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 
 \SemanticsRuleDef{LEMultiAssign}
 \RenderRelation{eval_multi_assignment}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalmultiassignment(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vlelist} \aslsep \overname{\KleeneStar{(\nativevalue \times \XGraphs)}}{\vmlist}) \;\aslrel\;
-  \ResultLexpr(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) \cup
-  \overname{\TThrowing}{\ThrowingConfig} \cup \overname{\TDynError}{\DynErrorConfig}
-\]
-evaluates multi-assignments.
-That is, the simultaneous assignment of the list of value-execution graph pairs $\vmlist$
-to the corresponding list of left-hand side expressions $\vlelist$, in the environment $\env$.
-The result is either the execution graph $\vg$ and new environment $\newenv$ or an abnormal configuration.
-} % END_OF_BACKUP_RELATION
 See \ExampleRef{Multi-assignments}.
 
 \ProseParagraph
@@ -905,12 +849,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setarray_and_typed}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LESetArray(\lexpr, \expr) &\\
-|\ & \LESetEnumArray(\overtext{\lexpr}{base}, \overtext{\expr}{index}) &\\
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LESetArray}
@@ -953,31 +892,6 @@ are well-typed.
 
 \TypingRuleDef{AnnotateSetArray}
 \RenderRelation{annotate_set_array}
-\BackupOriginalRelation{
-The function
-\[
-\annotatesetarray\left(
-  \begin{array}{c}
-    \overname{\staticenvs}{\tenv} \aslsep \\
-  (\overname{\arrayindex}{\size} \times \overname{\ty}{\telem}) \aslsep \\
-  \overname{\ty}{\rhsty} \aslsep \\
-  (\overname{\expr}{\ebase} \times \overname{\TSideEffectSet}{\vsesbase} \times \overname{\expr}{\eindex})
-\end{array}
-\right)
-\aslto
-(\overname{\lexpr}{\newle} \times \overname{\TSideEffectSet}{\vses})
-\]
-annotates an array update in the \staticenvironmentterm{} $\tenv$
-where $\size$ is the array index,
-$\telem$ is the type of array elements,
-$\rhsty$ is the type of the \rhsexpression{},
-$\ebase$ is the annotated expression for the array base,
-$\vsesbase$ is the \sideeffectsetterm\ inferred for $\ebase$,
-and $\eindex$ is the index expression.
-The result is the annotated assignable expression $\newle$ and
-\sideeffectsetterm\ for the annotated expression $\vses$.
-\ProseOrTypeError
-} % END_OF_BACKUP_RELATION
 See \listingref{semantics-lesetarray} and \listingref{semantics-lesetenumarray}
 for examples of well-typed assignable array expressions.
 
@@ -1134,11 +1048,7 @@ cell of
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_slice}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LESlice(\lexpr, \KleeneStar{\slice}) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LESlice}
@@ -1192,15 +1102,6 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
 
 \TypingRuleDef{CheckDisjointSlices}
 \RenderRelation{check_disjoint_slices}
-\BackupOriginalRelation{
-The function
-\[
-\checkdisjointslices(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\slices})
-\aslto \True \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-tests whether the list of slices $\slices$ do not overlap in $\tenv$, yielding $\True$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 See \ExampleRef{Typing Assignable Slice Expression}.
 
 \ProseParagraph
@@ -1285,17 +1186,6 @@ getter invocation
 
 \SemanticsRuleDef{CheckNonOverlappingSlices}
 \RenderRelation{check_non_overlapping_slices}
-\BackupOriginalRelation{
-The function
-\[
-  \checknonoverlappingslices(
-    \overname{\KleeneStar{(\tint\times\tint)}}{\valueranges}
-  ) \aslto \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
-\]
-checks whether the sets of integers represented by the list of ranges $\valueranges$
-overlap, yielding $\True$.
-\ProseOtherwiseDynamicErrorOrDiverging
-} % END_OF_BACKUP_RELATION
 \ExampleDef{Checking Slices for Overlaps}
 In \listingref{semantics-checknonoverlappingslices},
 the slices \verb|N-1:N-2| and \verb|0| do not overlap, and $\checknonoverlappingslices$
@@ -1335,21 +1225,6 @@ writes \verb|1| to the common position $0$.
 
 \SemanticsRuleDef{CheckTwoRangesNonOverlapping}
 \RenderRelation{check_two_ranges_non_overlapping}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \checktworangesnonoverlapping(
-    (\overname{\tint}{\vsone}\times\overname{\tint}{\vlone}) \aslsep
-    (\overname{\tint}{\vstwo}\times\overname{\tint}{\vltwo})
-  ) \aslto \\
-  \{\True\} \cup \overname{\TDynError}{\DynErrorConfig}
-\end{array}
-\]
-checks whether two sets of integers represented by the
-ranges $(\vsone, \vlone)$ and $(\vstwo, \vltwo)$ do not intersect, yielding $\True$.
-\ProseOtherwiseDynamicErrorOrDiverging
-} % END_OF_BACKUP_RELATION
 See \ExampleRef{Checking Slices for Overlaps}.
 
 \ProseParagraph
@@ -1382,11 +1257,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfield}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LESetField(\lexpr, \Identifier) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LESetBadField}
@@ -1538,11 +1409,7 @@ All of the collection field assignable expressions in
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfields}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LESetFields(\lexpr, \KleeneStar{\Identifier}) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LESetFields}
@@ -1677,18 +1544,6 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \TypingRuleDef{FoldBitvectorFields}
 \RenderRelation{fold_bitvector_fields}
-\BackupOriginalRelation{
-The function
-\[
-\foldbitvectorfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\field}}{\vbasefields} \aslsep \overname{\KleeneStar{\bitfield}}{\vlefields})
-\aslto (\overname{\N}\vlength \times \overname{\KleeneStar{(\N \times N)}}{\vslices})
-\]
-accepts a \staticenvironmentterm{} $\tenv$, the list of all fields $\vbasefields$ for a \recordtypeterm{},
-and a list of fields $\vlefields$ that are the subset of $\vbasefields$ about to be assigned to,
-and yields the total width across $\vlefields$ and the ranges corresponding to $\vlefields$
-in terms of pairs where the first component is the start position and the second component is
-the width of the field.
-} % END_OF_BACKUP_RELATION
 \ExampleDef{Obtaining the Total Width and Ranges of Bitvector-typed Fields}
 In \listingref{lesetfields}, applying $\foldbitvectorfields$ to the list of fields
 [\verb|data, time, status|] in the statement \verb|x.[status, time, data] = '1' :: Zeros{16} :: Ones{8};|,
@@ -1780,19 +1635,6 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 
 \SemanticsRuleDef{AssignBitvectorFields}
 \RenderRelation{assign_bitvector_fields}
-\BackupOriginalRelation{
-The function
-\[
-  \assignbitvectorfields(
-    \overname{\tbitvector}{\vbitvector} \aslsep
-    \overname{\trecord}{\record} \aslsep
-    \overname{\KleeneStar{\Identifier}}{\fields} \aslsep
-    \overname{{\KleeneStar{(\N\times\N)}}}{\vslices}) \aslto
-    \overname{\trecord}{\vres}
-\]
-updates the list of fields $\fields$ of $\record$ with the slices given by
-$\vslices$ of $\vbitvector$, yielding the \nativevalueterm{} $\vres$.
-} % END_OF_BACKUP_RELATION
 \ExampleDef{Assignment Bitvector-typed Fields}
 The statement \verb|y.[data, time, status] = Ones{8} :: Zeros{16} :: '1';|
 in \listingref{lesetfields}
@@ -1895,11 +1737,7 @@ All of the collection field assignable expressions in
 \section{Bitfield Assignable Expressions\label{sec:BitfieldAssignableExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_slice}
-\BackupOriginalAST{
-\begin{flalign*}
-\lexpr \derives\ & \LESlice(\lexpr, \KleeneStar{\slice}) &
-\end{flalign*}
-}
+
 
 \subsection{Typing}
 \TypingRuleDef{LESetBitField}

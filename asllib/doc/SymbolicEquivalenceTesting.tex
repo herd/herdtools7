@@ -74,14 +74,7 @@ Our symbolic reduction and equivalence testing rules employ \emph{\symbolicexpre
 \hypertarget{type-Qnonzero}{}
 \RenderTypes{symbolic_expressions}
 
-\BackupOriginalType{
-\[
-  \begin{array}{rcl}
-    \polynomial &\triangleq& \unitarymonomial \partialto \Q \setminus \{0\}\\
-    \unitarymonomial   &\triangleq& \Identifier \partialto \Npos\\
-  \end{array}
-\]
-}
+
 
 These \symbolicexpressionsterm{} provide a canonical representation for multivariate polynomials
 (that is, polynomials over multiple variables). The motivation for choosing this representation
@@ -113,14 +106,6 @@ For example,
 \]
 
 \RenderRelation{mul_monomials}
-\BackupOriginalRelation{
-The function
-\[
-  \mulmonomials(\overname{\unitarymonomial}{\vmone} \aslsep \overname{\unitarymonomial}{\vmtwo}) \rightarrow
-  \overname{\unitarymonomial}{\vm}
-\]
-multiplies two unitary monomials and returns a unitary monomial.
-} % END_OF_BACKUP_RELATION
 
 
 \begin{mathpar}
@@ -168,13 +153,6 @@ For example,
 \]
 
 \RenderRelation{add_polynomials}
-\BackupOriginalRelation{
-The function
-\[
-  \addpolynomials(\polynomial, \polynomial) \rightarrow \polynomial
-\]
-adds two polynomials.
-} % END_OF_BACKUP_RELATION
 
 
 \begin{mathpar}
@@ -219,13 +197,6 @@ $\alpha(\vptwo) = x\cdot{}y^2$,
 then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
 
 \RenderRelation{mul_polynomials}
-\BackupOriginalRelation{
-The function
-\[
-  \mulpolynomials : \overname{\polynomial}{\vpone} \times \overname{\polynomial}{\vptwo} \rightarrow \overname{\polynomial}{\vp}
-\]
-multiplies two polynomials.
-} % END_OF_BACKUP_RELATION
 
 \begin{mathpar}
 \inferrule{
@@ -245,18 +216,6 @@ multiplies two polynomials.
 \end{mathpar}
 
 \RenderRelation{polynomial_divide_by_term}
-\BackupOriginalRelation{
-The function
-\[
-  \polynomialdividebyterm :
-  \overname{\polynomial}{\vpone} \times
-  \overname{\unitarymonomial}{\vm} \times
-  \overname{\Q}{\vf}
-  \rightarrow \overname{\polynomial}{\vp} \cup \CannotBeTransformed
-\]
-returns the result of dividing the polynomial $\vpone$ by the number $\vf$ and unitary monomial $\vm$,
-yielding the polynomial $\vp$. Otherwise, the result is $\CannotBeTransformed$.
-} % END_OF_BACKUP_RELATION
 
 \begin{mathpar}
 \inferrule[divides]{
@@ -311,15 +270,6 @@ We employ the following rules:
 
 \TypingRuleDef{Normalize}
 \RenderRelation{normalize}
-\BackupOriginalRelation{
-The function
-\[
-\normalize(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto \overname{\expr}{\newe} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-\hypertarget{def-symbolicallysimplifies}{symbolically simplifies} an expression $\ve$ in the \staticenvironmentterm{} $\tenv$,
-yielding an expression $\newe$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \hypertarget{def-normalizedterm}{}
 We refer to an expression in the image of $\normalize$ as a \emph{\normalizedexpressionterm}.
@@ -365,17 +315,6 @@ and their corresponding normalized expressions.
 
 \TypingRuleDef{ReduceConstraint}
 \RenderRelation{reduce_constraint}
-\BackupOriginalRelation{
-The function
-\[
-\reduceconstraint(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\intconstraint}{\vc}
-) \aslto
-\overname{\intconstraint}{\newc}
-\]
-\symbolicallysimplifiesterm\ an integer constraint $\vc$, yielding the integer constraint $\newc$
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Symbolically Simplifying Constraints}
 The specification in \listingref{ReduceConstraint} shows examples of constraints
@@ -422,17 +361,6 @@ and their simplified counterparts.
 
 \TypingRuleDef{ReduceConstraints}
 \RenderRelation{reduce_constraints}
-\BackupOriginalRelation{
-The function
-\[
-\reduceconstraints(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{\intconstraint}}{\cs}
-) \aslto
-\overname{\KleeneStar{\intconstraint}}{\newcs}
-\]
-\symbolicallysimplifiesterm\ a list of integer constraints $\cs$, yielding a list of integer constraints $\newcs$
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Symbolically Simplifying Constraints}.
 
@@ -457,16 +385,6 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
 
 \TypingRuleDef{ToIR}
 \RenderRelation{to_ir}
-\BackupOriginalRelation{
-The function
-\[
-  \toir(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-  \overname{\polynomial}{\vp}\ \cup\ \{\CannotBeTransformed\}\ \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-transforms a subset of ASL expressions into \symbolicexpressionsterm{}. If an ASL expression cannot be represented
-by a symbolic expression (because, for example, it contains operations that are not available in \symbolicexpressionsterm{}),
-the special value $\CannotBeTransformed$ is returned.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Expressions into Symbolic Expressions}
 The specification in \listingref{ToIR} shows examples of expressions (on the right-hand-sides of assignments and declarations)
@@ -930,16 +848,6 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \TypingRuleDef{ExprEqual}
 \RenderRelation{expr_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \exprequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \aslto
-  \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively checks whether $\veone$ and $\vetwo$ are \equivalentexprsterm{} in
-the \staticenvironmentterm{} $\tenv$.
-The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Expression Equivalence}
 The specification in \listingref{ExprEqual} is well-typed as the expressions
@@ -980,17 +888,6 @@ comprising the array lengths are equivalent, as details in comments.
 
 \TypingRuleDef{ExprEqualNorm}
 \RenderRelation{expr_equal_norm}
-\BackupOriginalRelation{
-The function
-\[
-  \exprequalnorm(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the $\veone$ and $\vetwo$ are \equivalentexprsterm{} in the \staticenvironmentterm{} $\tenv$
-by attempting to transform both expressions to their \symbolicexpressionterm{} form
-and, if successful, comparing the resulting \symbolicexpressionsterm{} for equality.
-The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Expression Equivalence}.
 
@@ -1043,16 +940,6 @@ See \ExampleRef{Expression Equivalence}.
 
 \TypingRuleDef{ExprEqualCase}
 \RenderRelation{expr_equal_case}
-\BackupOriginalRelation{
-The function
-\[
-  \exprequalcase(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-specializes the equivalence test for expressions $\veone$ and $\vetwo$ in $\tenv$
-for the different types of expressions.
-The result is given in $\vb$ or a \typingerrorterm{}, if one is detected.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Expression Equivalence}.
 
@@ -1436,16 +1323,6 @@ See \ExampleRef{Expression Equivalence}.
 
 \TypingRuleDef{TypeEqual}
 \RenderRelation{type_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \typeequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vtone} \aslsep \overname{\ty}{\vttwo}) \aslto
-   \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether $\vtone$ and $\vttwo$ are \equivalenttypesterm{} in
-the \staticenvironmentterm{} $\tenv$
-and yields the result in $\vb$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalent Types}
 The specification in \listingref{TypeEqual} is well-typed.
@@ -1647,15 +1524,6 @@ of \verb|Foo|.
 
 \TypingRuleDef{BitwidthEqual}
 \RenderRelation{bitwidth_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \bitwidthequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\vwone} \aslsep \overname{\expr}{\vwtwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the bitwidth expression $\vwone$ is equivalent to the bitwidth expression $\vwtwo$
-in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalence of Bitwidth Expressions}
 \listingref{BitwidthEqual} shows examples of equivalent bitwidth expressions on both sides
@@ -1676,15 +1544,6 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
 
 \TypingRuleDef{BitFieldsEqual}
 \RenderRelation{bitfields_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\bitfield}}{\bfone} \aslsep \overname{\KleeneStar{\bitfield}}{\bftwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the list of bitfields $\bfone$ is equivalent to the list of bitfields $\bftwo$
-in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalent Lists of Bitfields}
 
@@ -1735,15 +1594,6 @@ of \verb|Foo| are not equivalent.
 
 \TypingRuleDef{BitFieldEqual}
 \RenderRelation{bitfield_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\bitfield}{\bfone} \aslsep \overname{\bitfield}{\bftwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the bitfield $\bfone$ is equivalent to the bitfield $\bftwo$ in environment $\tenv$
-and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Bitfield Equivalence}
 In \listingref{BitFieldEqual}, the bitfields of the \bitvectortypesterm{} on the left-hand-side
@@ -1843,15 +1693,6 @@ or different nested bitfields.
 
 \TypingRuleDef{ConstraintsEqual}
 \RenderRelation{constraints_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \constraintsequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\intconstraint}}{\csone} \aslsep \overname{\KleeneStar{\intconstraint}}{\cstwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the constraint list $\csone$ is equivalent to the constraint list $\cstwo$ in environment $\tenv$
-and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalent Lists of Constraints}
 The specification in \listingref{ConstraintsEqual}
@@ -1889,15 +1730,6 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 
 \TypingRuleDef{ConstraintEqual}
 \RenderRelation{constraint_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \constraintequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\intconstraint}{\vcone} \aslsep \overname{\intconstraint}{\vstwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the constraint $\vcone$ is equivalent to the constraint $\vctwo$ in environment $\tenv$
-and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalent Constraints}
 The specification in \listingref{ConstraintEqual} is well-typed,
@@ -1960,15 +1792,6 @@ corresponding constraint on the left-hand-side of that assignment.
 
 \TypingRuleDef{SlicesEqual}
 \RenderRelation{slices_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \slicesequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\slicesone} \aslsep \overname{\KleeneStar{\slice}}{\slicestwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the list of slices $\slicesone$ is equivalent to the list of slices $\slicestwo$
-in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Equivalent Lists of Slices}
 \listingref{SlicesEqual} shows an example of two equivalent lists of slices.
@@ -2011,15 +1834,6 @@ in environment $\tenv$ and yields the result in $\vb$.  \ProseOtherwiseTypeError
 
 \TypingRuleDef{SliceEqual}
 \RenderRelation{slice_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \sliceequal(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\sliceone} \aslsep \overname{\slice}{\slicetwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-conservatively tests whether the slice $\sliceone$ is equivalent to the slice $\slicetwo$
-in environment $\tenv$ and yields the result in $\vb$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 This function operates both on \typedast{} nodes, where both slices are only
 of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
@@ -2095,15 +1909,6 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 
 \TypingRuleDef{ArrayLengthEqual}
 \RenderRelation{array_length_equal}
-\BackupOriginalRelation{
-The function
-\[
-  \arraylengthequal(\overname{\arrayindex}{\vlone} \aslsep \overname{\arrayindex}{\vltwo})
-  \aslto \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-tests whether the array lengths $\vlone$ and $\vltwo$ are equivalent and yields the result
-in $\vb$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Array Length Expression Equivalence}
 See \ExampleRef{Expression Equivalence} for examples of equivalent array length expressions.
@@ -2166,13 +1971,6 @@ even though they both contain three elements each.
 
 \TypingRuleDef{PolynomialToExpr}
 \RenderRelation{polynomial_to_expr}
-\BackupOriginalRelation{
-The function
-\[
-\polynomialtoexpr(\overname{\polynomial}{\vp}) \typearrow \overname{\expr}{\ve}
-\]
-transforms a polynomial $\vp$ into the corresponding expression $\ve$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 
@@ -2225,19 +2023,6 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 
 \TypingRuleDef{CompareMonomialBindings}
 \RenderRelation{compare_monomial_bindings}
-\BackupOriginalRelation{
-The function
-\[
-\comparemonomialbindings(
-  (\overname{\monomial}{\vmone}\times\overname{\Q}{\vqone}) \aslsep
-  (\overname{\monomial}{\vmtwo}\times\overname{\Q}{\vqtwo})
-) \aslto \overname{\Sign}{\vs}
-\]
-compares two monomial bindings given by $(\vmone, \vqone)$ and $(\vmtwo, \vqtwo)$
-and yields in $\vs$ $-1$ to mean that the first monomial binding should be ordered before the second,
-$0$ to mean that any ordering of the monomial bindings is acceptable,
-and $1$ to mean that the second monomial binding should be ordered before the first.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Comparing Monomial Bindings}
 Comparing $(\vx, -1)$ to $(\vx, -1)$ yields $0$.
@@ -2300,16 +2085,6 @@ via the lexicographic ordering.
 
 \TypingRuleDef{MonomialsToExpr}
 \RenderRelation{monomials_to_expr}
-\BackupOriginalRelation{
-The function
-\[
-\monomialstoexpr(\overname{\KleeneStar{(\overname{\unitarymonomial}{\vm}\times\overname{\Q}{q})}}{\monoms}) \aslto
-(\overname{\expr}{\ve},\overname{\Sign}{\vs})
-\]
-transforms a list consisting of pairs of unitary monomials and rational factors $\monoms$ (so, general monomials),
-into an expression $\ve$, which represents the absolute value of the sum of all the monomials,
-and a sign value $\vs$, which indicates the sign of the resulting sum.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming a List of Unitary Monomials}
 Transforming the list of unitary monomials whose formulae are given by
@@ -2355,15 +2130,6 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 
 \TypingRuleDef{MonomialToExpr}
 \RenderRelation{monomial_to_expr}
-\BackupOriginalRelation{
-The function
-\[
-\monomialtoexpr(\overname{\expr}{\ve} \aslsep \overname{\Q}{q})
-\aslto (\overname{\expr}{\newe} \times \overname{\Sign}{\vs})
-\]
-transforms an expression $\ve$ and rational $q$ into the expression $\newe$,
-which represents the absolute value of $\ve$ multiplied by $q$, and the sign of $q$ as $\vs$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Expressions and Rationals}
 The following are examples of inputs and outputs of $\monomialtoexpr$:
@@ -2457,21 +2223,6 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 
 \TypingRuleDef{SymAddExpr}
 \RenderRelation{sym_add_expr}
-\BackupOriginalRelation{
-The function
-\[
-\symaddexpr(
-  \overname{\expr}{\veone} \aslsep
-  \overname{\Sign}{\vsone} \aslsep
-  \overname{\expr}{\vetwo} \aslsep
-  \overname{\Sign}{\vstwo}
-  )
-  \typearrow (\overname{\expr}{\ve}, \overname{\Sign}{\vs})
-\]
-symbolically sums the expressions $\veone$ and $\vetwo$
-with respective signs $\vsone$ and $\vstwo$
-yielding the expression $\ve$ and sign $\vs$.
-} % END_OF_BACKUP_RELATION
 
 The effect of the function can be summarized by the following table:
 \begin{center}
@@ -2557,14 +2308,6 @@ The following are some examples of inputs and outputs for symbolic addition:
 
 \TypingRuleDef{UnitaryMonomialsToExpr}
 \RenderRelation{unitary_monomials_to_expr}
-\BackupOriginalRelation{
-The function
-\[
-\unitarymonomialstoexpr(\overname{\KleeneStar{(\Identifier\times\N)}}{\monoms}) \aslto \overname{\expr}{\ve}
-\]
-transforms a list of single-variable unitary monomials $\monoms$ into an expression $\ve$.
-Intuitively, $\monoms$ represented a multiplication of the single-variable unitary monomials.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Unitary Monomials to Expressions}
 The specification in \listingref{UnitaryMonomialsToExpr}
@@ -2720,15 +2463,6 @@ yielding the result in $\ve$:
 
 \TypingRuleDef{TypeOf}
 \RenderRelation{type_of}
-\BackupOriginalRelation{
-The function
-\[
-  \typeof(\overname{\staticenvs}{\tenv} \aslsep \overname{\Identifier}{\vs})
-  \;\aslto\; \overname{\ty}{\tty}\ \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-looks up the environment $\tenv$ for a type $\tty$ associated with an identifier
-$\vs$. The result is \typingerrorterm{} if $\vs$ is not associated with any type.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Type Bound to an Identifier}
 In \listingref{expressions-evar}, the type bound to the global storage element
@@ -2790,16 +2524,6 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 
 \TypingRuleDef{NormalizeOpt}
 \RenderRelation{normalize_opt}
-\BackupOriginalRelation{
-The function
-\[
-\normalizeopt(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto
-\overname{\Option{\expr}}{\neweopt} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-is similar to $\normalize$, except that it returns $\None$ when $\ve$ is not an
-expression that can be symbolically simplified.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Normalize}.
 

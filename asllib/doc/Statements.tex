@@ -47,44 +47,9 @@ transforms a statement parse node $\vparsednode$ into a statement AST node $\vas
 
 \paragraph{Typing:} Statements are annotated by $\annotatestmt$.
 \RenderRelation{annotate_stmt}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatestmt(\overname{\staticenvs}{\tenv} \aslsep \overname{\stmt}{\vs}) \aslto
-  (\overname{\stmt}{\news} \times \overname{\staticenvs}{\newtenv} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a statement $\vs$ in an environment $\tenv$, resulting in $\news$ ---
-the \typedast\ for $\vs$, which is also known as the \emph{annotated statement} ---
-a modified environment $\newtenv$, and \sideeffectsetterm\ $\vses$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \paragraph{Semantics:} Statements are evaluated by $\evalstmt$.
 \RenderRelation{eval_stmt}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalstmt(\overname{\envs}{\env} \aslsep \overname{\stmt}{\vs}) \;\aslrel\;
-  \left(
-  \begin{array}{cl}
-  \overname{\TReturning}{\Returning((\vvs,\newg), \newenv)} & \cup\\
-  \overname{\TContinuing}{\Continuing(\newg,\newenv)} & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-  \overname{\TDynError}{\DynErrorConfig} & \cup \\
-  \overname{\TDiverging}{\DivergingConfig} & \\
-  \end{array}
-  \right)
-\]
-evaluates a statement $\vs$ in an environment $\env$, resulting in one of four types of configurations
-(see more details in \secref{KindsOfSemanticConfigurations}):
-\begin{itemize}
-  \item returning configurations with values $\vvs$, execution graph $\newg$, and a modified environment $\newenv$;
-  \item continuing configurations with an execution graph $\newg$ and modified environment $\newenv$;
-  \item throwing configurations;
-  \item error configurations;
-  \item diverging configurations.
-\end{itemize}
-} % END_OF_BACKUP_RELATION
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Pass Statements\label{sec:PassStatements}}
@@ -99,11 +64,7 @@ evaluates a statement $\vs$ in an environment $\env$, resulting in one of four t
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_pass}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SPass &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SPass}
 \begin{mathpar}
@@ -164,11 +125,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_assign}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SAssign(\lexpr, \expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SAssign}
 \begin{mathpar}
@@ -311,14 +268,6 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 
 \SemanticsRuleDef{LexprIsVar}
 \RenderRelation{lexpr_is_var}
-\BackupOriginalRelation{
-The rule uses the syntactic predicate defined as follows:
-\[
-  \lexprisvar(\lexpr) \aslto \True
-\]
-which holds when a left-hand side expression
-represents a variable or a discarded left-hand-side expression
-} % END_OF_BACKUP_RELATION
 
 In \ExampleRef{Evaluation of Multi-variable Assignment from Subprogram Calls},
 the \assignableexpressions{} \verb|a|, \verb|b| are variables,
@@ -552,11 +501,7 @@ As given by applying the relevant rules to the desugared AST.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_decl}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SDecl(\localdeclkeyword, \localdeclitem, \ty?, \expr?)
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SDecl}
 \begin{mathpar}
@@ -676,33 +621,6 @@ since immutable local storage elements require an initializing expression.
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \RenderRelation{annotate_local_decl_type_annot}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \annotatelocaldecltypeannot
-  \left(
-  \begin{array}{c}
-    \overname{\staticenvs}{\tenv} \aslsep \\
-    \overname{\Option{\ty}}{\tyopt} \aslsep \\
-    \overname{\ty}{\vte} \aslsep \\
-    \overname{\localdeclkeyword}{\ldk} \aslsep \\
-    \overname{\expr}{\vep} \aslsep\\
-    \overname{\localdeclitem}{\ldi}
-  \end{array}
-  \right)
-  \aslto \\
-  \begin{array}{cl}
-    \left(\overname{\staticenvs}{\newtenv} \aslsep \overname{\Option{\ty}}{\tyoptp} \aslsep \overname{\TSideEffectSet}{\vses}\right)
-    & \cup \\
-    \overname{\typeerror}{\TypeErrorConfig} &
-  \end{array}
-\end{array}
-\]
-annotates the type annotation $\tyopt$ in the \staticenvironmentterm{} $\tenv$ within the context of a local declaration with keyword $\ldk$, item $\ldi$, and initializing expression $\vep$ with type $\vte$.
-It yields the modified \staticenvironmentterm{} $\newtenv$, the annotated type annotation $\tyoptp$, and the inferred \sideeffectsetterm{} $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Typing Declaration Statements}.
 
@@ -754,16 +672,6 @@ See \ExampleRef{Typing Declaration Statements}.
 
 \TypingRuleDef{InheritIntegerConstraints}
 \RenderRelation{inherit_integer_constraints}
-\BackupOriginalRelation{
-The function
-\[
-\inheritintegerconstraints(\overname{\ty}{\lhs} \aslsep \overname{\ty}{\rhs})
-\aslto \overname{\ty}{\lhsp} \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-propagates integer constraints from the right-hand side type $\rhs$ to the left-hand side type annotation $\lhs$.
-In particular, each occurrence of \pendingconstrainedintegertypeterm{} on the left-hand side should inherit constraints from a corresponding \wellconstrainedintegertypeterm{} on the right-hand side.
-If the corresponding right-hand side type is not a \wellconstrainedintegertypeterm{} (including if it is an \unconstrainedintegertypeterm{}), the result is a \typingerrorterm{}.
-} % END_OF_BACKUP_RELATION
 
 \listingref{typing-pendingconstrained} shows examples of pending-constrained
 integer types.
@@ -838,15 +746,6 @@ in the \CaseName{int} below.
 
 \TypingRuleDef{CheckNoPrecisionLoss}
 \RenderRelation{check_no_precision_loss}
-\BackupOriginalRelation{
-The function
-\[
-  \checknoprecisionloss(\overname{\ty}{\vt})
-  \typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the type $\vt$ is the result of a precision loss in its
-constraint computation (see for example \TypingRuleRef{ApplyBinopTypes}).
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Rejected Declaration Because of Precision Loss}
 In \listingref{typing-imprecisetype}, the statement \verb|var b = a * a;|
@@ -906,16 +805,6 @@ constant types would result in more than $2^17$ elements, see
 
 \TypingRuleDef{CheckCanBeInitializedWith}
 \RenderRelation{check_can_be_initialized_with}
-\BackupOriginalRelation{
-The function
-\[
-\checkcanbeinitializedwith(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\vs} \aslsep \overname{\ty}{\vt})
-\typearrow \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether an expression of type $\vs$ can be used to initialize a storage element of type $\vt$ in the \staticenvironmentterm{}
-$\tenv$.
-If the answer if $\False$, the result is a \typingerrorterm.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Type-satisfaction Examples}.
 
@@ -1157,11 +1046,7 @@ As given by the applying the relevant rules to the desugared AST (see \secref{De
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_seq}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SSeq(\stmt, \stmt) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{StmtList}
 \MarkedIgnoredRelationDefinition{
@@ -1318,11 +1203,7 @@ Call statements are used to invoke procedures and setters.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_call}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SCall(\call) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SCall}
 \begin{mathpar}
@@ -1418,11 +1299,7 @@ can only be used for procedures, not functions.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_cond}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SCond(\expr, \stmt, \stmt)
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SCond}
 \begin{mathpar}
@@ -1918,11 +1795,7 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_assert}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SAssert(\expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SAssert}
 \begin{mathpar}
@@ -2040,11 +1913,7 @@ the expression \verb|limit_loop()|.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_while}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SWhile(\overtext{\expr}{condition}, \overtext{\expr?}{loop limit}, \overtext{\stmt}{loop body}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SWhile}
 \begin{mathpar}
@@ -2139,19 +2008,6 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 
 \TypingRuleDef{AnnotateLimitExpr}
 \RenderRelation{annotate_limit_expr}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatelimitexpr(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\Option{\expr}}{\ve}
-  ) \aslto
-  (\Option{\overname{\expr}{\vep}} \times \overname{\TSideEffectSet}{\vses}) \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates an optional expression $\ve$ serving as the limit of a loop or a recursive subprogram in $\tenv$,
-yielding a pair consisting of an expression $\vep$ and a \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Limit Expressions}
 The specification in \listingref{typing-swhile} has two loops.
@@ -2246,27 +2102,6 @@ the output configuration $C$.
 
 \SemanticsRuleDef{Loop}
 \RenderRelation{eval_loop}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalloop(
-    \overname{\envs}{\env} \aslsep
-    \overname{\Bool}{\iswhile} \aslsep
-    \overname{\Option{\N}}{\vlimitopt} \aslsep
-    \overname{\expr}{\econd} \aslsep
-    \overname{\stmt}{\vbody})
-  \;\aslrel\;
-  \left(
-    \begin{array}{cl}
-      \Continuing(\overname{\XGraphs}{\newg} \aslsep \overname{\envs}{\newenv}) & \cup \\
-      \overname{\TReturning}{\ReturningConfig} & \cup \\
-      \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-      \overname{\TDynError}{\DynErrorConfig} &
-    \end{array}
-  \right)
-\]
-to evaluate both \texttt{while} statements and \texttt{repeat} statements.
-} % END_OF_BACKUP_RELATION
 
 More specifically, $\evalloop(\env, \iswhile, \velimitopt, \econd, \vbody)$
 evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
@@ -2346,23 +2181,6 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \SemanticsRuleDef{EvalLimit}
 \RenderRelation{eval_limit}
-\BackupOriginalRelation{
-The relation
-\[
-\evallimit(\overname{\env}{\envs} \aslsep \overname{\velimitopt}{\Option{\expr}})
-\;\aslrel\;
-\left(
-\begin{array}{ll}
-(\overname{\Option{\N}}{\vvopt}, \overname{\XGraphs}{\vg}) & \cup\\
-\overname{\TDynError}{\DynErrorConfig} & \cup\\
-\overname{\TDiverging}{\DivergingConfig} & \\
-\end{array}
-\right)
-\]
-evaluates the optional expression $\velimitopt$ in the environment $\env$, yielding
-the optional integer value $\vvopt$ and execution graph $\vg$.
-\ProseOtherwiseDynamicErrorOrDiverging
-} % END_OF_BACKUP_RELATION
 
 The evaluation uses the function $\evalexprsef$ because limit expressions are
 guaranteed side-effect-free by the typechecker,
@@ -2408,16 +2226,6 @@ of the \whilestatementterm.
 
 \SemanticsRuleDef{TickLoopLimit}
 \RenderRelation{tick_loop_limit}
-\BackupOriginalRelation{
-The relation
-\[
-\ticklooplimit(\overname{\Option{\N}}{\vvopt}) \aslto \overname{\Option{\N}}{\Option{\vvoptp}}
-\cup \overname{\TDynError}{\DynErrorConfig}
-\]
-decrements the optional integer $\vvopt$, yielding
-the optional integer value $\vvopt$.
-If the value is $0$, the result is a \DynamicErrorConfigurationTerm{}.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Decrementing a Loop Limit Value}
 In \listingref{semantics-swhile}, the loop limit value
@@ -2479,11 +2287,7 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_repeat}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SRepeat(\overtext{\stmt}{loop body}, \overtext{\expr}{condition}, \overtext{\expr?}{loop limit}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SRepeat}
 \begin{mathpar}
@@ -2619,21 +2423,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_for}
-\BackupOriginalAST{
-\begin{flalign*}
-\fordirection \derives\ & \UP \;|\; \DOWN &\\
-\stmt \derives\ & \SFor\left\{
-      \begin{array}{rcl}
-      \Forindexname  &:& \identifier,\\
-      \Forstarte     &:& \expr,\\
-      \Fordir        &:& \fordirection,\\
-      \Forende       &:& \expr,\\
-      \Forbody       &:& \stmt,\\
-      \Forlimit      &:& \expr?
-      \end{array}
-    \right\} &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SFor}
 \begin{mathpar}
@@ -2801,30 +2591,6 @@ show examples of ill-typed \texttt{for} loops.
 
 \TypingRuleDef{SForConstraints}
 \RenderRelation{get_for_constraints}
-\BackupOriginalRelation{
-The function
-\[
-  \getforconstraints(
-    \overname{\staticenvs}{\tenv} \aslsep
-    \overname{\ty}{\structone} \aslsep
-    \overname{\ty}{\structtwo} \aslsep
-    \overname{\expr}{\veonep} \aslsep
-    \overname{\expr}{\vetwop} \aslsep
-    \overname{\fordirection}{\dir}
-  ) \aslto
-  \overname{\constraintkind}{\vis} \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\]
-infers the integer constraints for a \texttt{for} loop index variable from the following:
-\begin{itemize}
-  \item the \wellconstrainedversionterm\ of the type of the start expression --- $\structone$
-  \item the \wellconstrainedversionterm\ of the type of the end expression --- $\structtwo$
-  \item the annotated start expression --- $\veonep$
-  \item the annotated end expression --- $\vetwop$
-  \item the loop direction --- $\dir$
-\end{itemize}
-The result is $\vis$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Inferring the Constraints of a for Loop Index}
 In \listingref{semantics-sfor} the constraints for the loop index variable
@@ -2993,99 +2759,11 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
 
 \SemanticsRuleDef{EvalFor}
 \RenderRelation{eval_for}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalfor\left(
-  \begin{array}{cl}
-    \overname{\envs}{\env}                      & \aslsep\\
-    \overname{\Identifier}{\vindexname}        & \aslsep\\
-    \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
-    \overname{\tint}{\vstart}                   & \aslsep\\
-    \overname{\{\UP, \DOWN\}}{\dir}             & \aslsep\\
-    \overname{\tint}{\vend}                     & \aslsep\\
-    \overname{\stmt}{\vbody}                    &
-  \end{array}
-  \right)
-  \;\aslrel\;
-  \left(
-    \begin{array}{cl}
-    \overname{\TReturning}{\ReturningConfig} & \cup\\
-    \overname{\TContinuing}{\ContinuingConfig} & \cup\\
-    \overname{\TThrowing}{\ThrowingConfig} & \cup\\
-    \overname{\TDynError}{\DynErrorConfig} & \cup\\
-    \overname{\TDiverging}{\DivergingConfig} & \\
-    \end{array}
-    \right)
-\]
-evaluates the \texttt{for} loop with the index variable $\vindexname$,
-optional limit value $\vlimitopt$,
-starting from the value
-$\vstart$ going in the direction given by $\dir$ until the value given by $\vend$,
-executing $\vbody$ on each iteration.
-%
-The evaluation utilizes two helper relations: $\evalforstep$ and $\evalforloop$.
-} % END_OF_BACKUP_RELATION
 
 
 \RenderRelation{eval_for_step}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalforstep\left(
-  \begin{array}{cl}
-  \overname{\envs}{\env}                      & \aslsep\\
-  \overname{\Identifier}{\vindexname}        & \aslsep\\
-  \overname{\Option{\tint}}{\vlimitopt}  & \aslsep\\
-  \overname{\tint}{\vstart}                   & \aslsep\\
-  \overname{\{\UP,\DOWN\}}{\dir}              &
-  \end{array}
-  \right)
-  \;\aslrel\;
-  \left(
-  \begin{array}{cl}
-  ((\overname{\tint}{\vstep} \times \overname{\envs}{\newenv}) \times \overname{\XGraphs}{\newg}) & \cup\\
-  \overname{\TReturning}{\ReturningConfig}  & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig}    & \cup \\
-  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
-  \overname{\TDiverging}{\DivergingConfig}  &
-  \end{array}
-  \right)
-\]
-either increments or decrements the index variable,
-returning the new value of the index variable, the modified environment,
-and the resulting execution graph.
-\ProseOtherwiseReturningOrAbnormal
-} % END_OF_BACKUP_RELATION
 
 \RenderRelation{eval_for_loop}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalforloop\left(
-    \begin{array}{cl}
-    \overname{\envs}{\env} \aslsep &\\
-    \overname{\Identifier}{\vindexname} \aslsep &\\
-    \overname{\Option{\tint}}{\vlimitopt} \aslsep &\\
-    \overname{\tint}{\vstart} \aslsep &\\
-    \overname{\{\UP,\DOWN\}}{\dir} \aslsep &\\
-    \overname{\tint}{\vend} \aslsep &\\
-    \overname{\stmt}{\vbody} &
-    \end{array}
-    \right) \;\aslrel\;
-    \left(
-    \begin{array}{cl}
-    \Continuing(\overname{\XGraphs}{\newg}, \overname{\envs}{\newenv}) & \cup\\
-    \overname{\TReturning}{\ReturningConfig} & \cup\\
-    \overname{\TThrowing}{\ThrowingConfig} & \cup \\
-    \overname{\TDynError}{\DynErrorConfig} & \cup\\
-    \overname{\TDiverging}{\DivergingConfig} &
-    \end{array}
-    \right)
-\]
-executes one iteration of the loop body and then uses $\texttt{eval\_for}$ to execute the remaining
-iterations.
-} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 \subsubsection{Stepping the Index Variable}
@@ -3242,11 +2920,7 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_throw}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SThrow(\expr) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SThrow}
 \begin{mathpar}
@@ -3337,11 +3011,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_try}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \STry(\stmt, \KleeneStar{\catcher}, \overtext{\stmt?}{otherwise}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{STry}
 \begin{mathpar}
@@ -3517,11 +3187,7 @@ does not result in any Assertion error, and the specification terminates with th
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_return}
-\BackupOriginalAST{
-\begin{flalign*}
-  \stmt \derives\ & \SReturn(\expr?) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SReturn}
 \begin{mathpar}
@@ -3691,23 +3357,6 @@ In \listingref{semantics-sreturntuple},
 
 \SemanticsRuleDef{EExprListM}
 \RenderRelation{eval_expr_list_m}
-\BackupOriginalRelation{
-The relation
-\[
-\evalexprlistm(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\expr}}{\vEs}) \;\aslrel\;
-\left(
-\begin{array}{cl}
-\ResultExprListM(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms} \aslsep \overname{\envs}{\newenv}) & \cup\\
-\overname{\TThrowing}{\ThrowingConfig} & \cup \\
-\overname{\TDynError}{\DynErrorConfig} & \cup \\
-\overname{\TDiverging}{\DivergingConfig}
-\end{array}
-\right)
-\]
-evaluates a list of expressions $\vEs$ in left-to-right in the initial environment $\env$
-and returns the list of values associated with graphs $\vms$ and the new environment $\newenv$.
-If the evaluation of any expression terminates abnormally then the abnormal configuration is returned.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Seperately Evaluating a List of Expressions}
 In \listingref{semantics-sreturntuple}, the expressions \verb|3| and \verb|42|
@@ -3754,14 +3403,6 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 
 \SemanticsRuleDef{WriteFolder}
 \RenderRelation{write_folder}
-\BackupOriginalRelation{
-The relation
-\[
-  \writefolder(\overname{\KleeneStar{(\nativevalue\times\XGraphs)}}{\vms}) \aslrel (\overname{\KleeneStar{\nativevalue}}{\vvs}, \overname{\XGraphs}{\newg})
-\]
-concatenates the input values in $\vms$ and generates an execution graph
-by composing the graphs in $\vms$ with Write Effects for the respective values.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Folding a List of Pairs with Values and Execution Graphs}
 In \listingref{semantics-sreturntuple}, the statement \verb|return (3 , 42);|
@@ -3825,11 +3466,7 @@ empty \executiongraphterm{}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_print}
-\BackupOriginalAST{
-\begin{flalign*}
-  \stmt \derives\ & \SPrint(\overtext{\KleeneStar{\expr}}{args}, \overtext{\Bool}{newline}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SPrint}
 \begin{mathpar}
@@ -3960,13 +3597,6 @@ Not all ASL runtimes support printing to a console (see \RequirementRef{Printing
 %
 Therefore, the semantics is parameterized by the following function.
 \RenderRelation{output_to_console}
-\BackupOriginalRelation{
-\[
-\outputtoconsole(\overname{\envs}{\env} \aslsep \overname{\nativevalue}{\vv}) \aslto
-  \overname{\envs}{\newenv}
-\]
-which takes a string and communicates it to a console, where one exists.
-} % END_OF_BACKUP_RELATION
 
 We now explain how printing is modelled when the runtime supports a console
 (\SemanticsRuleRef{SupportedOutputToConsole})
@@ -3985,10 +3615,6 @@ only here to explain the modeling of a console.
 \ExampleRef{Printing Literals} shows the output to the console in a case it is supported.
 
 \RenderRelation{literal_to_string}
-\BackupOriginalRelation{
-The function $\literaltostring : \literal \aslto \Strings$,
-which defines how a literal is represented by a string,
-} % END_OF_BACKUP_RELATION
 The function is defined by \taref{literaltostringtable}.
 %
 Please note that surrounding quotations marks that appear in ASL text (for example, \verb|"hello"|)
@@ -4067,11 +3693,7 @@ to implement a custom form of assertion checking.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_unreachable}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SUnreachable &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SUnreachable}
 \begin{mathpar}
@@ -4122,11 +3744,7 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorCo
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_pragma}
-\BackupOriginalAST{
-\begin{flalign*}
-\stmt \derives\ & \SPragma(\Tidentifier, \overtext{\KleeneStar{\expr}}{args}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{SPragma}
 \begin{mathpar}
