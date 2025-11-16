@@ -183,7 +183,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
     \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
     \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
     \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
-    \item define $newe$ as the literal expression for $\vv$;
+    \item define $\newe$ as the literal expression for $\vv$;
     \item define $\vses$ as the empty set.
     \end{itemize}
 
@@ -192,7 +192,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
-      \item define $newe$ as $\ve$;
+      \item define $\newe$ as $\ve$;
       \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesgdk$.
     \end{itemize}
 
@@ -2038,7 +2038,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which is different to $\name$;
-    \item applying $\findbitfieldsslices$ to $\name$ and $vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
+    \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
   \end{itemize}
 
   \item \AllApplyCase{empty}
@@ -2812,7 +2812,7 @@ succeed.
   \item evaluating whether the pattern $\vp$ matches the value $\vvone$ in $\env$
         results in \\
         $\ResultPattern(\vv, \vgtwo)$\ProseOrAbnormal,
-        where $vv$ is a native Boolean that determines whether there is indeed a match;
+        where $\vv$ is a native Boolean that determines whether there is indeed a match;
   \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
 \end{itemize}
 \FormallyParagraph

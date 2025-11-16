@@ -779,7 +779,7 @@ constant types would result in more than $2^17$ elements, see
 \FormallyParagraph
 \begin{mathpar}
   \inferrule[Well-Constrained]{%
-    \techeck(p = \PrecisionFull, PrecisionLostDefining) \typearrow \True\OrTypeError
+    \techeck(p = \PrecisionFull, \PrecisionLostDefining) \typearrow \True\OrTypeError
   }{%
     \checknoprecisionloss(\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}) \typearrow \True
   }
