@@ -174,19 +174,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \TypeRulesDef{Bitfields}
 \TypingRuleDef{TBitFields}
 \RenderRelation{annotate_bitfields}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatebitfields(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ewidth} \aslsep \overname{\KleeneStar{\bitfield}}{\fields})
-  \aslto (\overname{\KleeneStar{\bitfield}}{\newfields} \times \overname{\TSideEffectSet}{\vses})
-  \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a list of bitfields --- $\fields$ --- with an expression denoting the overall number of bits in the containing
-bitvector type --- $\ewidth$,
-in an environment $\tenv$,
-resulting in $\newfields$ --- the \typedast\ for $\fields$ and $\ewidth$
-as well as a set of \sideeffectdescriptorsterm\ $\vses$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Typing Bitfields}
 The bitfields declared in \listingref{bitfields1} are well-typed and their total width
@@ -220,13 +207,6 @@ is $16$.
 
 \TypingRuleDef{BitFieldGetName}
 \RenderRelation{bitfield_get_name}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldgetname(\overname{\bitfield}{\vbf}) \aslto \overname{\Identifier}{\name}
-\]
-returns the name of a bitfield --- $\name$, given a bitfield $\vbf$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Bitfield Names}
 In \listingref{nestedbitfields}, the names of bitfields are:
@@ -267,13 +247,6 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 
 \TypingRuleDef{BitFieldGetSlices}
 \RenderRelation{bitfield_get_slices}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldgetslices(\overname{\bitfield}{\vbf}) \aslto \overname{\KleeneStar{\slice}}{\vslices}
-\]
-returns the list of slices $\vslices$ associated with the bitfield $\vbf$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Slices of a Bitfield}
 In \listingref{nestedbitfields},
@@ -316,14 +289,6 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
 
 \TypingRuleDef{BitFieldGetNested}
 \RenderRelation{bitfield_get_nested}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldgetnested(\overname{\bitfield}{\vbf}) \aslto \overname{\KleeneStar{\bitfield}}{\vnested}
-\]
-returns the list of bitfields $\vnested$ nested within the bitfield $\vbf$, if there are any,
-and an empty list if there are none.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Bitfields Nested in a Bitfield}
 In \listingref{nestedbitfields},
@@ -361,17 +326,6 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 
 \TypingRuleDef{TBitField}
 \RenderRelation{annotate_bitfield}
-\BackupOriginalRelation{
-The function
-\[
-  \annotatebitfield(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\width} \aslsep \overname{\bitfield}{\vfield})
-  \aslto (\overname{\bitfield}{\newfield} \times \overname{\TSideEffectSet}{\vses}) \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a bitfield --- $\vfield$ --- with an integer --- $\width$ --- indicating the number of bits in
-the bitvector type that contains $\vfield$,
-in an environment $\tenv$, resulting in an
-annotated bitfield --- $\newfield$ --- or a \typingerrorterm{}, if one is detected.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Well-typed Bitfields}
 In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
@@ -473,15 +427,6 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
 \TypingRuleDef{CheckSlicesInWidth}
 \RenderRelation{check_slices_in_width}
-\BackupOriginalRelation{
-The function
-\[
-  \checkslicesinwidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\Z}{\vwidth} \aslsep \overname{\KleeneStar{\slice}}{\vslices})
-  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the slices in $\vslices$ fit within the bitvector width given by $\vwidth$ in $\tenv$,
-yielding $\True$. \ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See
 \ExampleRef{Converting Disjoint Slices to Positions} and
@@ -510,16 +455,6 @@ See
 
 \TypingRuleDef{CheckPositionsInWidth}
 \RenderRelation{check_positions_in_width}
-\BackupOriginalRelation{
-The function
-\[
-  \checkpositionsinwidth(\overname{\Z}{\vwidth} \aslsep \overname{\pow{\Z}}{\positions})
-  \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the set of positions in $\positions$ fit within the bitvector width given by $\vwidth$,
-yielding $\True$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether Slice Positions Fit in a Bitvector Width}
 In \listingref{bitfieldslicetopositions}, all slices declared for all bitfields
@@ -551,29 +486,6 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 
 \TypingRuleDef{DisjointSlicesToPositions}
 \RenderRelation{disjoint_slices_to_positions}
-\BackupOriginalRelation{
-The function
-\[
-  \disjointslicestopositions(
-    \overname{\staticenvs}{\tenv},
-    \overname{\Bool}{\isstatic},
-    \overname{\KleeneStar{\slice}}{\vslices}
-  )
-  \aslto \overname{\powfin{\Z}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the set of integers defined by the list of slices in $\vslices$ in $\positions$.
-In particular, this rule checks that the following properties:
-\begin{itemize}
-  \item bitfield slices do not overlap; and
-  \item bitfield slices are not defined in reverse (e.g., \texttt{0:1} rather than \texttt{1:0})
-\end{itemize}
-Conducting the checks for these properties requires evaluating the expressions comprising the
-slices, either via static evaluation of via normalization.
-The flag $\isstatic$ determines whether the slice is assumed to consist of \staticallyevaluableterm{}
-expressions. If so, the slice expressions are statically evaluated, and otherwise they are
-normalized.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 This function assumes that all expressions in {slices} are \pureterm{} and thus deterministic.
 
@@ -628,21 +540,6 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 
 \TypingRuleDef{BitfieldSliceToPositions}
 \RenderRelation{bitfield_slice_to_positions}
-\BackupOriginalRelation{
-The function
-\[
-  \bitfieldslicetopositions(
-    \overname{\staticenvs}{\tenv},
-    \overname{\Bool}{\isstatic},
-    \overname{\slice}{\vslice}
-  )
-  \aslto \overname{\Option{\powfin{\Z}}}{\positions} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the set of integers defined by the bitfield slice $\vslice$ in $\positions$,
-if it can be determined via static evaluation or normalization, depending on $\isstatic$,
-and $\None$ if it cannot be determined.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 The function assumes that AST nodes labelled with $\SliceSingle$, $\SliceRange$, and $\SliceStar$ have been reduced
 to $\SliceLength$ (via $\annotateslices$), and that all expressions in $\vslice$ are \pureterm{} and thus deterministic.
@@ -700,21 +597,6 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 
 \TypingRuleDef{EvalSliceExpr}
 \RenderRelation{eval_slice_expr}
-\BackupOriginalRelation{
-The function
-\[
-\evalsliceexpr(
-  \overname{\staticenvs}{\tenv},
-  \overname{\Bool}{\isstatic},
-  \overname{\expr}{\ve}
-) \aslto \overname{\Option{\Z}}{\vzopt} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-attempts to transform the expression $\ve$ into a constant integer in the \staticenvironmentterm{} $\tenv$,
-yielding the result in $\vzopt$, where $\None$ indicates it could not be transformed into a constant integer.
-If $\isstatic$ is $\True$, then $\ve$ is known to be \staticallyevaluableterm, and the transformation is
-carried out via static evaluation. Otherwise, the transformation is carried out via normalization.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating Expressions in Slices}
 The specifications in \listingref{EvalSliceExpr} shows two kinds of slices:
@@ -761,20 +643,6 @@ it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
 
 \TypingRuleDef{CheckCommonBitfieldsAlign}
 \RenderRelation{check_common_bitfields_align}
-\BackupOriginalRelation{
-The function
-\[
-\checkcommonbitfieldsalign(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleeneStar{\bitfield}}{\vbitfields} \aslsep
-  \overname{\N}{\vwidth}
-) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks \RequirementRef{BitfieldAlignment}
-for every pair of bitfields in $\vbitfields$, contained in a
-bitvector type of width $\vwidth$ in the \staticenvironmentterm{} $\tenv$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 We represent \absolutebitfields\ by the type
 \RenderType{TAbsField}
@@ -842,19 +710,6 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
 
 \TypingRuleDef{BitfieldsToAbsolute}
 \RenderRelation{bitfields_to_absolute}
-\BackupOriginalRelation{
-The function
-\[
-\bitfieldstoabsolute(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\KleenePlus{\bitfield}}{\vbitfields} \aslsep
-  \overname{\TAbsField}{\vabsoluteparent}
-) \aslto \overname{\pow{\TAbsField}}{\vabsbitfields}
-\]
-returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the list
-of bitfields $\vbitfields$, whose \bitfieldscope\ and \absoluteslice\ is given by
-$\vabsoluteparent$, in the \staticenvironmentterm{} $\tenv$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
@@ -878,19 +733,6 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 
 \TypingRuleDef{BitfieldToAbsolute}
 \RenderRelation{bitfield_to_absolute}
-\BackupOriginalRelation{
-The function
-\[
-\bitfieldtoabsolute(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\bitfield}{\vbf} \aslsep
-  \overname{\TAbsField}{\vabsoluteparent}
-) \aslto \overname{\pow{\TAbsField}}{\vabsbitfields}
-\]
-returns the set of \absolutebitfields\ $\vabsbitfields$ that correspond to the
-bitfields nested in $\vbf$, including itself, where the \bitfieldscope\ and \absoluteslice\
-of the bitfield containing $\vbf$ are $\vabsoluteparent$, in the \staticenvironmentterm{} $\tenv$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
@@ -936,18 +778,9 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 
 \TypingRuleDef{SelectIndicesBySlices}
 \RenderRelation{select_indices_by_slices}
-\BackupOriginalRelation{
-The function
-\[
-\selectindicesbyslices(\overname{\KleenePlus{\N}}{\indices}, \overname{\KleenePlus{\N}}{\sliceindices})
-\aslto \overname{\KleeneStar{\N}}{\vabsslice}
-\]
-considers the list $\indices$ as a list of indices into a bitvector type (essentially, a slice of it),
-and the list $\sliceindices$ as a list of indices into $\indices$ (a slice of a slice),
-and returns the sub-list of $\indices$ indicated by the indices in $\sliceindices$.
+
 % The reference abstracts away from the implementation,
 % which represents sequence of indices via intervals.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Selecting from a List of Indices}
 The following are some examples of selecting indices:
@@ -977,16 +810,6 @@ The following are some examples of selecting indices:
 
 \TypingRuleDef{AbsoluteBitfieldsAlign}
 \RenderRelation{absolute_bitfields_align}
-\BackupOriginalRelation{
-The function
-\[
-\absolutebitfieldsalign(\overname{\TAbsField}{\vf}, \overname{\TAbsField}{\vg})
-\aslto \overname{\Bool}{\vb}
-\]
-tests whether the \absolutebitfields{} $\vfone$ and $\vftwo$ share the same name
-and exist in the same scope. If they do, $\vb$ indicates whether their \absoluteslices\
-are equal. Otherwise, the result is $\True$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{A bitvector type with nested bitfields} where all \absolutebitfields{} align
 and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
@@ -1022,13 +845,6 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 
 \TypingRuleDef{SliceToIndices}
 \RenderRelation{slice_to_indices}
-\BackupOriginalRelation{
-The function
-\[
-\slicetoindices(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs}) \aslto \overname{\KleeneStar{\N}}{\indices}
-\]
-returns the list of indices $\indices$ represented by the bitvector slice $\vs$ in the \staticenvironmentterm{} $\tenv$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Converting a Slice to a List of Indices}
 The list of indices for the slice \\

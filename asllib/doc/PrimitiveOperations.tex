@@ -64,25 +64,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 
 \AbstractSyntaxDef{Primitive Operations}
 \RenderTypes[remove_hypertargets]{unop_and_binop}
-\BackupOriginalAST{
-\begin{flalign*}
-\unop \derives\ & \overname{\BNOT}{\texttt{"!"}} \;|\; \overname{\NEG}{\texttt{"-"}} \;|\; \overname{\NOT}{\texttt{"NOT"}} & \\
-\binop  \derives\ & \overname{\BAND}{\texttt{"\&\&"}} \;|\; \overname{\BOR}{\texttt{"||"}} \;|\; \overname{\IMPL}{\texttt{"==>"}}
-              \;|\; \overname{\BEQ}{\texttt{"<=>"}}
-        & \\
-        |\ & \overname{\EQOP}{\texttt{"=="}} \;|\; \overname{\NEQ}{\texttt{"!="}} \;|\; \overname{\GT}{\texttt{"<"}}
-        \;|\; \overname{\GEQ}{\texttt{">="}} \;|\; \overname{\LT}{\texttt{"<"}} \;|\; \overname{\LEQ}{\texttt{"<="}}
-        & \\
-        |\ & \overname{\PLUS}{\texttt{"+"}} \;|\; \overname{\MINUS}{\texttt{"-"}} \;|\; \overname{\OR}{\texttt{"OR"}}
-        \;|\; \overname{\XOR}{\texttt{"XOR"}} \;|\; \overname{\AND}{\texttt{"AND"}}
-        & \\
-        |\ & \overname{\MUL}{\texttt{"*"}} \;|\; \overname{\DIV}{\texttt{"DIV"}} \;|\; \overname{\DIVRM}{\texttt{"DIVRM"}}
-        \;|\; \overname{\MOD}{\texttt{"MOD"}} \;|\; \overname{\SHL}{\shiftleftlexeme}  \;|\; \overname{\SHR}{\shiftrightlexeme}
-        & \\
-        |\ & \overname{\RDIV}{\texttt{"/"}} \;|\; \overname{\POW}{\texttt{"\^{}"}} \;|\; \overname{\BVCONCAT}{\texttt{"::"}} \;|\; \overname{\STRCONCAT}{\texttt{"++"}}
-        &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{Unop}
 \MarkedIgnoredRelationDefinition{
@@ -486,16 +468,6 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \TypeRulesDef{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
-\BackupOriginalRelation{
-The function
-\[
-  \unopliterals(\overname{\unop}{\op} \aslsep \overname{\literal}{\vl}) \aslto
-  \overname{\literal}{\vr} \cup \typeerror
-\]
-statically evaluates a unary operator $\op$ (a terminal derived from the AST non-terminal for unary operators)
-over a literal $\vl$ and returns the resulting literal $\vr$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \hypertarget{def-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
@@ -604,18 +576,6 @@ not_bits: NOT '11 01' = 0x2
 
 \TypingRuleDef{BinopLiterals}
 \RenderRelation{binop_literals}
-\BackupOriginalRelation{
-The function
-\[
-  \binopliterals(\overname{\binop}{\op} \aslsep \overname{\literal}{\vvone} \aslsep \overname{\literal}{\vvtwo}) \aslto
-  \overname{\literal}{\vr} \cup \typeerror
-\]
-statically evaluates a binary operator $\op$ (a terminal derived from the AST non-terminal for binary operators)
-over a pair of literals $\vlone$ and $\vltwo$
-and returns the resulting literal $\vr$.
-The result is a \typingerrorterm{}, if it is illegal to apply the operator
-to the given values, or a different kind of \typingerrorterm{} is detected.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Boolean Operations}
 \listingref{binary-operations-boolean} shows applications
@@ -1460,10 +1420,6 @@ and argument types of its operand literals:
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
 \RenderRelation{binary_to_unsigned}
-\BackupOriginalRelation{
-The function $\binarytounsigned : \KleeneStar{\Bit} \rightarrow \N$ converts a non-empty sequence of bits
-into a natural number.
-} % END_OF_BACKUP_RELATION
 
 It is defined as follows for a non-empty bit sequence:
 \[
@@ -1475,11 +1431,6 @@ and as $0$ for an empty bit sequence:
 \]
 
 \RenderRelation{int_to_bits}
-\BackupOriginalRelation{
-The function $\inttobits : \overname{\Z}{\texttt{val}} \times \overname{\Z}{\texttt{width}} \rightarrow \KleeneStar{\Bit}$
-converts an integer \texttt{val} to its two's complement little endian representation
-of \texttt{width} bits.
-} % END_OF_BACKUP_RELATION
 
 \begin{mathpar}
 \inferrule[bitwise\_different\_bitwidths]{
@@ -1645,13 +1596,6 @@ of \texttt{width} bits.
 
 \SemanticsRuleDef{UnopValues}
 \RenderRelation{eval_unop}
-\BackupOriginalRelation{
-The function
-\[
-  \evalunop(\overname{\unop}{\op} \aslsep \overname{\nativevalue}{\vv}) \aslto \overname{\nativevalue}{\vw} \cup \TDynError
-\]
-evaluates a unary operator $\op$ over a \nativevalueterm{} $\vv$ and returns the \nativevalueterm{} $\vw$ or an error.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Valid Unary Operation}
 The following grounded rule shows how the application of negation
@@ -1729,15 +1673,6 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 
 \SemanticsRuleDef{BinopValues}
 \RenderRelation{eval_binop}
-\BackupOriginalRelation{
-The function
-\[
-  \evalbinop(\overname{\binop}{\op} \aslsep \overname{\nativevalue}{\vvone} \aslsep \overname{\nativevalue}{\vvtwo})
-  \aslto \overname{\nativevalue}{\vw} \cup \TDynError
-\]
-evaluates a binary operator $\op$ over a pair of \nativevaluesterm{}  --- $\vvone$ and $\vvtwo$ --- and returns the
-\nativevalueterm{}  $\vw$ or an error.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Valid Binary Operation}
 The following grounded rule shows how the application of addition

@@ -56,14 +56,7 @@ as exemplified in \listingref{PrefixSlice}. It is \desugared{} by \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Bitvector Slices}
 \RenderType[remove_hypertargets]{slice}
-\BackupOriginalAST{
-\begin{flalign*}
-\slice \derives\ & \SliceSingle(\overname{\expr}{\vi}) &\\
-  |\ & \SliceRange(\overname{\expr}{\vj}, \overname{\expr}{\vi}) &\\
-  |\ & \SliceLength(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &\\
-  |\ & \SliceStar(\overname{\expr}{\vi}, \overname{\expr}{\vn}) &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{Slice}
 \MarkedIgnoredRelationDefinition{
@@ -124,17 +117,6 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
 \TypeRulesDef{Bitvector Slices}
 \TypingRuleDef{Slice}
 \RenderRelation{annotate_slice}
-\BackupOriginalRelation{
-the function
-\[
-  \annotateslice(\overname{\staticenvs}{\tenv} \aslsep \overname{\slice}{\vs})
-  \aslto
-  \overname{\slice}{\vsp} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates a single slice $\vs$ in the \staticenvironmentterm{} $\tenv$,
-resulting in an annotated slice $\vsp$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Slices}
 The slices in
@@ -237,15 +219,6 @@ are all well-typed.
 
 \TypingRuleDef{SlicesWidth}
 \RenderRelation{slices_width}
-\BackupOriginalRelation{
-The function
-\[
-  \sliceswidth(\overname{\staticenvs}{\tenv} \aslsep \overname{\KleeneStar{\slice}}{\vslices}) \aslto
-  \overname{\expr}{\vwidth} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns an expression $\vslices$ that represents the width of all slices given by $\vslices$
-in the \staticenvironmentterm{} $\tenv$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Width of a List of Slices}
 In \listingref{eval-slices}
@@ -287,14 +260,6 @@ The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
 
 \TypingRuleDef{SliceWidth}
 \RenderRelation{slice_width}
-\BackupOriginalRelation{
-The function
-\[
-  \slicewidth(\overname{\slice}{\vslice}) \aslto
-  \overname{\expr}{\vwidth}
-\]
-returns an expression $\vwidth$ that represents the width of the slices given by $\vslice$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Width of a Slice}
 In \listingref{semantics-slicesingle},
@@ -355,18 +320,6 @@ the width of the slice \texttt{x[:3]} is $3$.
 
 \TypingRuleDef{SymbolicConstrainedInteger}
 \RenderRelation{annotate_symbolic_constrained_integer}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-  \annotatesymbolicconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \aslto\\
-  (\overname{\expr}{\vepp} \times \overname{\TSideEffectSet}{\vses})\ \cup\ \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-annotates a \symbolicallyevaluableterm{} integer expression $\ve$ of a constrained integer type in the \staticenvironmentterm{} $\tenv$
-and returns the annotated expression $\vepp$ and \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Annotating Symbolically Evaluable Constrained Integer Expressions}
 In \listingref{typing-annotatesymbolicallyevaluableexpr}, all of the symbolically evaluable
@@ -403,24 +356,6 @@ the parameter \verb|N|.
 \SemanticsRulesDef{Bitvector Slices}
 \SemanticsRuleDef{Slice}
 \RenderRelation{eval_slice}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalslice(\overname{\envs}{\env} \aslsep \overname{\slice}{\vs}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultSlices(((\overname{\tint}{\vstart} \times \overname{\tint}{\vlength}) \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
-  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
-  \overname{\TDiverging}{\DivergingConfig}  & \\
-  \end{array}
-  \right)
-\]
-evaluates an individual slice $\vs$ in an environment $\env$ is,
-resulting either in \\
-$\ResultSlices(((\vstart, \vlength), \vg), \newenv)$.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating Slices}
 In \listingref{semantics-slicesingle},
@@ -583,16 +518,6 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \TypeRulesDef{Lists of Bitvector Slices}
 \TypingRuleDef{Slices}
 \RenderRelation{annotate_slices}
-\BackupOriginalRelation{
-The function
-\[
-\annotateslices(\overname{\staticenvs}{\tenv}, \overname{\KleeneStar{\slice}}{\vslices}) \aslto
-(\overname{\KleeneStar{\slice}}{\slicesp} \times \overname{\TSideEffectSet}{\vses})
-\]
-annotates a list of slices $\vslices$ in the \staticenvironmentterm{} $\tenv$, yielding a list of annotated slices (that is,
-slices in the \typedast) and \sideeffectsetterm\ $\vses$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Bitvector Slices} for example of well-typed bitvector slices.
 
@@ -624,23 +549,6 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 \SemanticsRulesDef{Lists of Bitvector Slices}
 \SemanticsRuleDef{Slices}
 \RenderRelation{eval_slices}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalslices(\overname{\envs}{\env} \aslsep \overname{\KleeneStar{\slice}}{\slices}) \;\aslrel\;
-  \left(
-  \begin{array}{ll}
-  \ResultSlices((\overname{\KleeneStar{(\nativevalue \times \nativevalue)}}{\ranges} \times \overname{\XGraphs}{\newg}), \overname{\envs}{\newenv}) & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig}    & \cup\\
-  \overname{\TDynError}{\DynErrorConfig}    & \cup\\
-  \overname{\TDiverging}{\DivergingConfig}  & \\
-  \end{array}
-  \right)
-\]
-evaluates a list of slices $\slices$ in an environment $\env$, resulting in either \\
-$\ResultSlices((\ranges, \newg), \newenv)$.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 $\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
