@@ -1099,7 +1099,10 @@ ast symdom { "\symbolicdomain{}" } =
     | Finite(powerset_finite(Z))
     { "symbolic finite set integer domain" }
     | ConstrainedDom(int_constraint)
-    { "symbolic constrained integer domain" }
+    {
+      "symbolic constrained integer domain",
+      math_macro = \ConstrainedDom
+    }
 ;
 
 ast symdom_or_top { "symbolic integer set" } =
