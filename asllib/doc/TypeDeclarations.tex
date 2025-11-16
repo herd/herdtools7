@@ -374,7 +374,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
     \begin{array}{r}
-  \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, ExpectedStructuredType) \typearrow \\ \True \OrTypeError
+  \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
     \end{array}
   }\\
   \vt \eqname L(\fields)\\

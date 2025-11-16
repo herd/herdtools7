@@ -874,6 +874,222 @@ def check_balanced_parentheses_in_math(filename: str) -> int:
     return num_errors
 
 
+def check_math_content_validity(filename: str) -> int:
+    r"""
+    Checks that content in mathematical environments ($...$, \[...\], \begin{mathpar}...\end{mathpar})
+    consists only of LaTeX macros (commands starting with \) or known LaTeX symbols.
+    Returns the number of errors found.
+    """
+    num_errors = 0
+    original_file_str = read_file_str(filename)
+    file_str = original_file_str
+
+    # Remove verbatim and code environments before checking math
+    # These environments should not be validated
+    verbatim_patterns = [
+        r'\\begin\{Verbatim\}.*?\\end\{Verbatim\}',
+        r'\\begin\{verbatim\}.*?\\end\{verbatim\}',
+        r'\\begin\{lstlisting\}.*?\\end\{lstlisting\}',
+        r'\\verb\|.*?\|',
+        r'\\verb\+.*?\+',
+        r'\\verb\!.*?\!',
+    ]
+
+    for pattern in verbatim_patterns:
+        file_str = re.sub(pattern, '', file_str, flags=re.DOTALL)
+
+    # Known LaTeX mathematical symbols and operators that don't require backslash
+    known_symbols = set([
+        '+', '-', '*', '/', '=', '<', '>', '!', '?', '|', ':', ';', ',', '.',
+        '(', ')', '[', ']', '{', '}', '_', '^', '~', "'", '`', '"',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        ' ', '\n', '\t', '&',  # Whitespace and alignment
+    ])
+
+    # Patterns to extract mathematical environments
+    math_patterns = [
+        (r'\$([^\$]+)\$', 'inline math $...$'),
+        (r'\\\[(.*?)\\\]', 'display math \\[...\\]'),
+        (r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', 'mathpar environment'),
+    ]
+
+    def check_content_validity(content: str, env_type: str, start_pos: int) -> int:
+        """Check if content consists only of valid LaTeX macros and symbols."""
+        errors = 0
+
+        # Calculate line number for error reporting using original file
+        lines_before = original_file_str[:start_pos].count('\n')
+        line_number = lines_before + 1
+
+        i = 0
+        while i < len(content):
+            char = content[i]
+
+            # Check for LaTeX comments (% to end of line)
+            if char == '%':
+                # Skip until newline
+                while i < len(content) and content[i] != '\n':
+                    i += 1
+                if i < len(content):
+                    i += 1  # Skip the newline itself
+                continue
+
+            # Check for LaTeX commands (start with backslash)
+            if char == '\\':
+                # Find the end of the command
+                j = i + 1
+                # Command name consists of letters, or is a single special character
+                if j < len(content) and content[j].isalpha():
+                    cmd_start = j
+                    while j < len(content) and content[j].isalpha():
+                        j += 1
+                    cmd_name = content[cmd_start:j]
+                else:
+                    # Single character command like \\ or \{ or \}
+                    cmd_name = content[j] if j < len(content) else ''
+                    j += 1
+
+                # Skip optional asterisk (e.g., \inferrule*)
+                if j < len(content) and content[j] == '*':
+                    j += 1
+
+                # Skip any whitespace and optional arguments in square brackets
+                # For most commands, we don't skip mandatory arguments in braces - we want to check their content
+                # Exception: \begin and \end commands have environment names in braces that should be skipped
+                # Exception: \text, \texttt, \textXY commands contain regular text, not math, so skip their content
+                while True:
+                    # Skip whitespace
+                    while j < len(content) and content[j] in ' \t\n':
+                        j += 1
+
+                    # Check for optional argument [...]
+                    # These we DO skip because they're not typically math content (they're options/names)
+                    if j < len(content) and content[j] == '[':
+                        bracket_count = 1
+                        j += 1
+                        while j < len(content) and bracket_count > 0:
+                            if content[j] == '\\' and j + 1 < len(content):
+                                j += 2  # Skip escaped characters
+                                continue
+                            elif content[j] == '[':
+                                bracket_count += 1
+                            elif content[j] == ']':
+                                bracket_count -= 1
+                            j += 1
+                        continue
+
+                    # For \begin and \end, skip the environment name argument
+                    # For \text, \texttt, \textXY (any text command), skip the text content
+                    # For \hypertarget, skip the target name
+                    # For \emph, skip the emphasized text
+                    if j < len(content) and content[j] == '{':
+                        should_skip = False
+
+                        # Skip for \begin and \end
+                        if cmd_name in ('begin', 'end'):
+                            should_skip = True
+                        # Skip for \text and any \textXY variant
+                        elif cmd_name == 'text' or (cmd_name.startswith('text') and len(cmd_name) > 4 and cmd_name[4:].isalpha()):
+                            should_skip = True
+                        # Skip for \hypertarget
+                        elif cmd_name == 'hypertarget':
+                            should_skip = True
+                        # Skip for \emph
+                        elif cmd_name == 'emph':
+                            should_skip = True
+
+                        if should_skip:
+                            brace_count = 1
+                            j += 1
+                            while j < len(content) and brace_count > 0:
+                                if content[j] == '\\' and j + 1 < len(content):
+                                    j += 2  # Skip escaped characters
+                                    continue
+                                elif content[j] == '{':
+                                    brace_count += 1
+                                elif content[j] == '}':
+                                    brace_count -= 1
+                                j += 1
+                            continue
+
+                    # No more arguments to skip
+                    break
+
+                i = j
+                continue
+
+            # Check if it's a known symbol
+            if char in known_symbols:
+                i += 1
+                continue
+
+            # Check if it's a letter (variables are allowed in math mode)
+            # But only single letters - multi-letter identifiers should use LaTeX commands
+            if char.isalpha():
+                # Check if this starts a sequence of letters
+                j = i + 1
+                while j < len(content) and content[j].isalpha():
+                    j += 1
+                # If we have 2 or more consecutive letters, it's an error
+                if j - i >= 2:
+                    word = content[i:j]
+                    context_start = max(0, i - 10)
+                    context_end = min(len(content), j + 10)
+                    context = content[context_start:context_end]
+                    print(f"{filename}:{line_number}: Multi-letter identifier '{word}' in {env_type} should use LaTeX command, context: ...{context}...")
+                    errors += 1
+                    i = j
+                    continue
+                i += 1
+                continue
+
+            # If we get here, it's an unknown/invalid character
+            # Get context for error message
+            context_start = max(0, i - 10)
+            context_end = min(len(content), i + 10)
+            context = content[context_start:context_end]
+            print(f"{filename}:{line_number}: Invalid character '{char}' (ord={ord(char)}) in {env_type}, context: ...{context}...")
+            errors += 1
+            i += 1
+
+        return errors
+
+    # Build a list of excluded ranges (verbatim blocks) for efficient checking
+    excluded_ranges = []
+    for verb_pattern in verbatim_patterns:
+        for verb_match in re.finditer(verb_pattern, original_file_str, re.DOTALL):
+            excluded_ranges.append((verb_match.start(), verb_match.end()))
+
+    # Sort ranges for efficient binary search-like checking
+    excluded_ranges.sort()
+
+    def is_in_excluded_range(start: int, end: int) -> bool:
+        """Check if a range overlaps with any excluded range."""
+        for exc_start, exc_end in excluded_ranges:
+            # If excluded range starts after our range ends, no more matches possible
+            if exc_start >= end:
+                break
+            # Check for overlap
+            if not (end <= exc_start or start >= exc_end):
+                return True
+        return False
+
+    # Check each type of mathematical environment
+    for pattern, env_type in math_patterns:
+        for match in re.finditer(pattern, original_file_str, re.DOTALL):
+            content = match.group(1)
+            start_pos = match.start()
+            end_pos = match.end()
+
+            # Skip if this math environment is inside a verbatim block
+            if is_in_excluded_range(start_pos, end_pos):
+                continue
+
+            num_errors += check_content_validity(content, env_type, start_pos)
+
+    return num_errors
+
+
 def check_relation_references(latex_files: list[str]) -> int:
     r"""
     Checks that for each 'relation <name>' and 'function <name>' in any .spec file,
@@ -995,6 +1211,7 @@ def main():
             check_rules,
             check_mathpar_macro_usage,
             check_balanced_parentheses_in_math,
+            check_math_content_validity,
         ],
     )
 
