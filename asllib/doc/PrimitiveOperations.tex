@@ -749,10 +749,22 @@ binary operations in terms of the type of the binary operator
 and argument types of its operand literals:
 \[
 \binopsignatures \triangleq
+\begin{array}{ll}
+  \binoparithsignatures &\cup\\
+  \binoprelsignatures   &\cup\\
+  \binopboolsignatures  &\cup\\
+  \binopbitssignatures
+\end{array}
+\]
+
+The set of valid signatures for arithmetic operations is defined as follows:
+\hypertarget{def-binoparithsignatures}{}
+\[
+\binoparithsignatures \triangleq
 \left\{
 \begin{array}{lclcll}
-  (\ADD      &,& \LInt &,& \LInt)&,\\
-  (\SUB     &,& \LInt &,& \LInt)&,\\
+  (\ADD       &,& \LInt &,& \LInt)&,\\
+  (\SUB       &,& \LInt &,& \LInt)&,\\
   (\MUL       &,& \LInt &,& \LInt)&,\\
   (\DIV       &,& \LInt &,& \LInt)&,\\
   (\DIVRM     &,& \LInt &,& \LInt)&,\\
@@ -760,25 +772,36 @@ and argument types of its operand literals:
   (\POW       &,& \LInt &,& \LInt)&,\\
   (\SHL       &,& \LInt &,& \LInt)&,\\
   (\SHR       &,& \LInt &,& \LInt)&,\\
+  (\MUL       &,& \LInt  &,& \LReal)&,\\
+  (\MUL       &,& \LReal &,& \LInt)&,\\
+  (\ADD       &,& \LReal &,& \LReal)&,\\
+  (\SUB       &,& \LReal &,& \LReal)&,\\
+  (\MUL       &,& \LReal &,& \LReal)&,\\
+  (\RDIV      &,& \LReal &,& \LReal)&,\\
+  (\POW       &,& \LReal &,& \LInt)&,\\
+  (\EQ      &,& \LString &,& \LString)&,\\
+  (\NE       &,& \LString &,& \LString)&,\\
+  (\EQ      &,& \LLabel &,& \LLabel)&,\\
+  (\NE       &,& \LLabel &,& \LLabel)&\\
+\end{array}
+\right\}
+\]
+
+The set of valid signatures for relational operations is defined as follows:
+\hypertarget{def-binoprelsignatures}{}
+\[
+\binoprelsignatures \triangleq
+\left\{
+\begin{array}{lclcll}
   (\EQ      &,& \LInt &,& \LInt)&,\\
   (\NE       &,& \LInt &,& \LInt)&,\\
   (\LE       &,& \LInt &,& \LInt)&,\\
   (\LT        &,& \LInt &,& \LInt)&,\\
   (\GE       &,& \LInt &,& \LInt)&,\\
   (\GT        &,& \LInt &,& \LInt)&,\\
-  (\BAND      &,& \LBool &,& \LBool)&,\\
-  (\BOR       &,& \LBool &,& \LBool)&,\\
-  (\IMPL      &,& \LBool &,& \LBool)&,\\
-  (\BEQ       &,& \LBool &,& \LBool)&,\\
   (\EQ       &,& \LBool &,& \LBool)&,\\
+  (\BEQ       &,& \LBool &,& \LBool)&,\\
   (\NE       &,& \LBool &,& \LBool)&,\\
-  (\MUL       &,& \LInt  &,& \LReal)&,\\
-  (\MUL       &,& \LReal &,& \LInt)&,\\
-  (\ADD      &,& \LReal &,& \LReal)&,\\
-  (\SUB     &,& \LReal &,& \LReal)&,\\
-  (\MUL       &,& \LReal &,& \LReal)&,\\
-  (\RDIV      &,& \LReal &,& \LReal)&,\\
-  (\POW       &,& \LReal &,& \LInt)&,\\
   (\EQ      &,& \LReal &,& \LReal)&,\\
   (\NE       &,& \LReal &,& \LReal)&,\\
   (\LE       &,& \LReal &,& \LReal)&,\\
@@ -786,21 +809,51 @@ and argument types of its operand literals:
   (\GE       &,& \LReal &,& \LReal)&,\\
   (\GT        &,& \LReal &,& \LReal)&,\\
   (\EQ      &,& \LBitvector &,& \LBitvector)&,\\
-  (\NE       &,& \LBitvector &,& \LBitvector)&,\\
+  (\NE       &,& \LBitvector &,& \LBitvector)&\\
+\end{array}
+\right\}
+\]
+
+The set of valid signatures for (binary) Boolean operations is defined as follows:
+\hypertarget{def-binopboolsignatures}{}
+\[
+\binopboolsignatures \triangleq
+\left\{
+\begin{array}{lclcll}
+  (\BAND      &,& \LBool &,& \LBool)&,\\
+  (\BOR       &,& \LBool &,& \LBool)&,\\
+  (\IMPL      &,& \LBool &,& \LBool)&\\
+\end{array}
+\right\}
+\]
+
+The set of valid signatures for bitvector operations is defined as follows:
+\hypertarget{def-binopbitssignatures}{}
+\[
+\binopboolsignatures \triangleq
+\left\{
+\begin{array}{lclcll}
   (\OR        &,& \LBitvector &,& \LBitvector)&,\\
   (\AND       &,& \LBitvector &,& \LBitvector)&,\\
   (\XOR       &,& \LBitvector &,& \LBitvector)&,\\
-  (\SUB     &,& \LBitvector &,& \LBitvector)&,\\
-  (\ADD      &,& \LBitvector &,& \LBitvector)&,\\
+  (\SUB       &,& \LBitvector &,& \LBitvector)&,\\
+  (\ADD       &,& \LBitvector &,& \LBitvector)&,\\
   (\BVCONCAT  &,& \LBitvector &,& \LBitvector)&,\\
-  (\STRCONCAT &,& \Ignore &,& \Ignore)&,\\
-  (\SUB     &,& \LBitvector &,& \LInt)&,\\
-  (\ADD      &,& \LBitvector &,& \LInt)&\\
-  (\EQ      &,& \LString &,& \LString)&,\\
-  (\NE       &,& \LString &,& \LString)&,\\
-  (\EQ      &,& \LLabel &,& \LLabel)&,\\
-  (\NE       &,& \LLabel &,& \LLabel)&\\
+  (\SUB       &,& \LBitvector &,& \LInt)&,\\
+  (\ADD       &,& \LBitvector &,& \LInt)&\\
 \end{array}
+\right\}
+\]
+
+The set of valid signatures for string concatenation operations is defined as follows:
+\hypertarget{def-binopstrsignatures}{}
+\[
+\binopstrsignatures \triangleq
+\left\{
+  \begin{array}{cl}
+  (\STRCONCAT, \astlabel(\vtone), \astlabel(\vttwo)) & |\\
+   \vtone \in \issingular(\vtone) \land \vttwo \in \issingular(\vttwo) &
+   \end{array}
 \right\}
 \]
 
@@ -1472,22 +1525,28 @@ and as $0$ for an empty bit sequence:
 
 \begin{mathpar}
 \inferrule[or\_bits]{
+  \vvone = \LBitvector(a_{1..k})\\
+  \vvtwo = \LBitvector(b_{1..k})\\
   i=1..k: c_i = \max(a_i, b_i)
 }{
-  \binopliterals(\overname{\OR}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\OR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[and\_bits]{
+  \vvone = \LBitvector(a_{1..k})\\
+  \vvtwo = \LBitvector(b_{1..k})\\
   i=1..k: c_i = \min(a_i, b_i)
 }{
-  \binopliterals(\overname{\AND}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\AND}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[xor\_bits]{
+  \vvone = \LBitvector(a_{1..k})\\
+  \vvtwo = \LBitvector(b_{1..k})\\
   {
     \textit{xor\_bit} = \lambda a,b\in\Bit.\ \left\{
       \begin{array}{ll}
@@ -1498,27 +1557,31 @@ and as $0$ for an empty bit sequence:
   }\\
   i=1..k: c_i=\textit{xor\_bit}(a_i, b_i)
 }{
-  \binopliterals(\overname{\XOR}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\XOR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[add\_bits]{
+  \vvone = \LBitvector(a_{1..k})\\
+  \vvtwo = \LBitvector(b_{1..k})\\
   a \eqdef \binarytounsigned(a_{1..k})\\
   b \eqdef \binarytounsigned(b_{1..k})\\
   c \eqdef \inttobits(a + b, k)
 }{
-  \binopliterals(\overname{\ADD}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
+  \binopliterals(\overname{\ADD}{\op}, \vvone, \vvtwo) \typearrow \overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[sub\_bits]{
+  \vvone = \LBitvector(a_{1..k})\\
+  \vvtwo = \LBitvector(b_{1..k})\\
   a \eqdef \binarytounsigned(a_{1..k})\\
   b \eqdef \binarytounsigned(b_{1..k})\\
   c \eqdef \inttobits(a - b, k)
 }{
-  \binopliterals(\overname{\SUB}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
+  \binopliterals(\overname{\SUB}{\op}, \vvone, \vvtwo) \typearrow \overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
 

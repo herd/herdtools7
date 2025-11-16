@@ -220,6 +220,8 @@ In this example, this is true as the following hold:
 
 \begin{mathpar}
 \inferrule{
+  \sdone = \Subdomains(\symdomsone)\\
+  \sdtwo = \Subdomains(\symdomstwo)\\
   \symdomnormalize(\symdomsone) \typearrow \symdomsonenorm\\
   \symdomnormalize(\symdomstwo) \typearrow \symdomstwonorm\\
   {
@@ -229,7 +231,7 @@ In this example, this is true as the following hold:
   \end{array}
   }
 }{
-  \symdomsubsetunions(\tenv, \overname{\Subdomains(\symdomsone)}{\sdone}, \overname{\Subdomains(\symdomstwo)}{\sdtwo}) \typearrow \vb
+  \symdomsubsetunions(\tenv, \sdone, \sdtwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -380,7 +382,7 @@ for the exact constraint for the expression $\ve$}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \symdomofwidthexpr(\ve) \typearrow \overname{\Subdomains([\ \ConstrainedDom(\ConstraintExact(\ve))\ ])}{\vd}
+  {\begin{array}{r}\symdomofwidthexpr(\ve) \typearrow \\ \overname{\Subdomains([\ \ConstrainedDom(\ConstraintExact(\ve))\ ])}{\vd}\end{array}}
 }
 \end{mathpar}
 
@@ -393,12 +395,12 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
   \item the \symbolicdomainterm{} for the constraint \verb|1..6| is $\Finite(\{1,2,3,4,5,6\})$
   \item the \symbolicdomainterm{} for the constraint \verb|9| is $\Finite(\{9\})$,
   \item the \symbolicdomainterm{} for the constraint \verb|N*2| is \\
-        $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$,
-        since the premise \\
+        $\ConstrainedDom(\ConstraintExact(\AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}}))$,\\
+        since the premise
         $\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$ yields $\Top$,
   \item the \symbolicdomainterm{} for the constraint \verb|5..N| is \\
-        $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$,
-        since the premise \\
+        $\ConstrainedDom(\ConstraintRange(\ELInt{5}, \AbbrevEVar{\vN}))$,\\
+        since the premise
         $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yields $\Top$.
 \end{itemize}
 
@@ -459,7 +461,7 @@ In \listingref{SymdomOfConstraint}, considering the constraints in the type anno
 \verb|x|,
 we have that both
 $\symdomeval(\tenv, \AbbrevEBinop{\MUL}{\AbbrevEVar{\vN}}{\ELInt{2}})$
-and $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yield $\Top$,
+and $\symdomeval(\tenv, \AbbrevEVar{\vN})$ yield\\$\Top$,
 since \verb|N| is a parameter.
 On the other hand, $\symdomeval(\tenv, \ELInt{1})$ and $\symdomeval(\tenv, \ELInt{6})$,
 yield $1$ and $6$, respectively.
@@ -980,8 +982,11 @@ showing how an instance of integer sets transformed to constraint lists.
 \begin{mathpar}
 \inferrule{
   \intervals \eqdef \{ a..b \;|\; a..b \in \vs \land \forall (c..d) \in \vs.\ a..b \not\subseteq c..d\}\\
-  \cs \eqdef [a..b \in \intervals: \choice{a=b}{
-    \AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}]
+  {
+  \cs \eqdef \left[a..b \in \intervals:
+  \ifthenelse{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
+    \right]
+  }
 }{
   \intsettoconstraints(\vs) \typearrow \cs
 }
@@ -1053,7 +1058,7 @@ needed to annotate the expression \verb|x as bits(N)|.
     \item $\ve$ is a \binopexpression{$\op$}{$\veone$}{$\vetwo$};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\veone$}{$\vsone$}\ProseTerminateAs{\CannotOverapproximate};
     \item \Proseapproxexpr{$\tenv$}{$\vapprox$}{$\vetwo$}{$\vstwo$}\ProseTerminateAs{\CannotOverapproximate};
-    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields $(\vsp, \plf)$;
+    \item applying $\annotateconstraintbinop$ to $\vapprox$, $\tenv$, $\vsone$, and $\vstwo$ yields\\$(\vsp, \plf)$;
     \item $\plf$ is $\PrecisionLost$ and $\vapprox$ is $\Over$;
     \item \Proseeqdef{$\vs$}{$\CannotOverapproximate$}.
   \end{itemize}
@@ -1442,10 +1447,13 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[exact\_exact]{}{
+\inferrule[exact\_exact]{
+  \vcone = \ConstraintExact(\va)\\
+  \vctwo = \ConstraintExact(\vc)
+}{
   {
     \begin{array}{r}
-  \applybinopextremities(\op, \overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow \\
+  \applybinopextremities(\op, \vcone, \vctwo) \typearrow \\
   \overname{[ \ConstraintExact(\AbbrevEBinop{\op}{\va}{\vc}) ]}{\newcs}
     \end{array}
   }
@@ -1454,32 +1462,38 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 
 \begin{mathpar}
 \inferrule[range\_exact]{
+  \vcone = \ConstraintRange(\va, \vb)\\
+  \vctwo = \ConstraintExact(\vc)\\
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairs\\
   \newcs \eqdef [(\vap, \vbp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vc}}{\AbbrevEBinop{\op}{\vbp}{\vc}}]
 }{
-  \applybinopextremities(\op, \overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintExact(\vc)}{\vctwo}) \typearrow
+  \applybinopextremities(\op, \vcone, \vctwo) \typearrow
   \newcs
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[exact\_range]{
+  \vcone = \ConstraintExact(\va)\\
+  \vctwo = \ConstraintRange(\vc, \vd)\\
   \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairs\\
   \newcs \eqdef [(\vcp, \vdp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\va}{\vcp}}{\AbbrevEBinop{\op}{\va}{\vdp}}]
 }{
-  \applybinopextremities(\op, \overname{\ConstraintExact(\va)}{\vcone}, \overname{\ConstraintRange(\vc, \vd)}{\vctwo}) \typearrow
+  \applybinopextremities(\op, \vcone, \vctwo) \typearrow
   \newcs
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[range\_range]{
+  \vcone = \ConstraintRange(\va, \vb)\\
+  \vctwo = \ConstraintRange(\vc, \vd)\\
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairsab\\
   \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairscd\\
   \newcs \eqdef [(\vap, \vbp) \in \extpairsab, (\vcp, \vdp) \in \extpairscd:
   \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vcp}}{\AbbrevEBinop{\op}{\vbp}{\vdp}}]
 }{
-  \applybinopextremities(\op, \overname{\ConstraintRange(\va, \vb)}{\vcone}, \overname{\ConstraintRange(\vc, \vd)}{\vctwo}) \typearrow
+  \applybinopextremities(\op, \vcone, \vctwo) \typearrow
   \newcs
 }
 \end{mathpar}
@@ -1559,13 +1573,13 @@ contains a \rangeconstraintterm{}.
   \item \AllApplyCase{shl\_shr}
   \begin{itemize}
     \item $\op$ is either $\SHL$ or $\SHR$;
-    \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{0})$ and $(\ELInt{0}, \vd)$.
+    \item define $\extpairs$ as the list consisting of\\$(\vd, \ELInt{0})$ and $(\ELInt{0}, \vd)$.
   \end{itemize}
 
   \item \AllApplyCase{div\_divrm}
   \begin{itemize}
     \item $\op$ is either $\DIV$ or $\DIVRM$;
-    \item define $\extpairs$ as the list consisting of $(\vd, \ELInt{1})$ and $(\ELInt{1}, \vd)$.
+    \item define $\extpairs$ as the list consisting of\\$(\vd, \ELInt{1})$ and $(\ELInt{1}, \vd)$.
   \end{itemize}
 \end{itemize}
 

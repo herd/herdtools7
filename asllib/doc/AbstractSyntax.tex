@@ -1,6 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Abstract Syntax\label{chap:AbstractSyntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 An abstract syntax is a form of context-free grammar over structured trees.
 Compilers and interpreters typically start by parsing the text of a program and producing an abstract syntax tree (AST, for short),
 and then continue to operate over that tree.
@@ -670,7 +671,7 @@ to terminals.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Transforming Assignable Expressions \\ to Right-hand side Expressions\label{sec:LeftToRight}}
+\section{Transforming Assignable Expressions\label{sec:LeftToRight}}
 \RenderRelation{rexpr}
 This function is utilized by both the type system and the dynamic semantics.
 It is defined recursively by the following table:

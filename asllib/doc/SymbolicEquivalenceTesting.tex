@@ -158,7 +158,8 @@ For example,
 \begin{mathpar}
 \inferrule{
   {
-    \vf \eqdef \lambda \vm\in\unitarymonomial.\
+    \begin{array}{l}
+    \vf \eqdef \lambda \vm\in\unitarymonomial.\\
     \left\{
     \begin{array}{ll}
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
@@ -167,6 +168,7 @@ For example,
       \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
     \end{array}
     \right.
+    \end{array}
   }
 }{
   \addpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \overname{\vf}{\vp}
@@ -328,12 +330,12 @@ and their simplified counterparts.
   \begin{itemize}
     \item $\vc$ is an exact integer constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$;
-    \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\ve)$.
+    \item define $\newc$ as the exact integer constraint for $\vep$ ($\ConstraintExact(\ve)$).
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$ ($\ConstraintRange(\veone, \vetwo)$);
     \item applying $\normalize$ to $\veone$ in $\tenv$ yields $\veonep$;
     \item applying $\normalize$ to $\vetwo$ in $\tenv$ yields $\vetwop$;
     \item define $\newc$ as the exact integer constraint for $\vep$, that is, \\ $\ConstraintRange(\veonep, \vetwop)$.
@@ -351,10 +353,11 @@ and their simplified counterparts.
 
 \begin{mathpar}
 \inferrule[range]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \normalize(\tenv, \veone) \typearrow \veonep\\
   \normalize(\tenv, \vetwo) \typearrow \vetwop\\
 }{
-  \reduceconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+  \reduceconstraint(\tenv, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
 \CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
@@ -584,7 +587,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \item \AllApplyCase{eunop\_neg}
   \begin{itemize}
     \item $\ve$ is a unary expression with the negation operator $\NEG$ and operand $\veone$;
-    \item converting the binary expression with operator $\MUL$ and left-hand-side operand for the integer literal $-1$ and
+    \item converting the binary expression with operator $\MUL$ and \\ left-hand-side operand for the integer literal $-1$ and
     right-hand-side operand $\veone$ in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
@@ -1377,8 +1380,8 @@ of \verb|Foo|.
 
   \item \AllApplyCase{tarray}
   \begin{itemize}
-    \item $\vtone$ is an array type with index $\vlone$ and element type $\vtone$, that is, $\TArray(\vlone, \vtone)$;
-    \item $\vttwo$ is an array type with index $\vltwo$ and element type $\vttwo$, that is, $\TArray(\vltwo, \vttwo)$;
+    \item $\vtone$ is an array type with index $\vlone$ and element type $\vtone$ ($\TArray(\vlone, \vtone)$);
+    \item $\vttwo$ is an array type with index $\vltwo$ and element type $\vttwo$ ($\TArray(\vltwo, \vttwo)$);
     \item testing whether $\vlone$ is equivalent to $\vltwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
     \item testing whether $\vtone$ is equivalent to $\vttwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
@@ -1447,17 +1450,23 @@ of \verb|Foo|.
 {
   \typeequal(\tenv, \unconstrainedinteger, \unconstrainedinteger) \typearrow \True
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[tint\_parameterized]{
   \vb \eqdef \vione = \vitwo
 }{
   \typeequal(\tenv, \overname{\TInt(\Parameterized(\vione))}{\vtone}, \overname{\TInt(\Parameterized(\vitwo))}{\vttwo}) \typearrow \vb
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[tint\_wellconstrained]{
+  \vtone = \TInt(\WellConstrained(\vcone))\\
+  \vttwo = \TInt(\WellConstrained(\vctwo))\\\\
   \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb \OrTypeError
 }{
-  \typeequal(\tenv, \overname{\TInt(\WellConstrained(\vcone))}{\vtone}, \overname{\TInt(\WellConstrained(\vctwo))}{\vttwo}) \typearrow \vb
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1748,8 +1757,8 @@ corresponding constraint on the left-hand-side of that assignment.
 
   \item \AllApplyCase{constraint\_exact}
   \begin{itemize}
-    \item $\vcone$ is an exact constraint with subexpression $\veone$, that is, $\ConstraintExact(\veone)$;
-    \item $\vctwo$ is an exact constraint with subexpression $\vetwo$, that is, $\ConstraintExact(\vetwo)$;
+    \item $\vcone$ is an exact constraint with subexpression $\veone$ ($\ConstraintExact(\veone)$);
+    \item $\vctwo$ is an exact constraint with subexpression $\vetwo$ ($\ConstraintExact(\vetwo)$);
     \item applying $\exprequal$ to $\veone$ and $\vetwo$ yields $\vb$\ProseOrTypeError.
   \end{itemize}
 
@@ -1955,17 +1964,21 @@ even though they both contain three elements each.
 
 \begin{mathpar}
 \inferrule[expr\_expr]{
+  \vlone = \ArrayLengthExpr(\veoneone)\\
+  \vltwo = \ArrayLengthExpr(\vetwoone)\\
   \exprequal(\veoneone, \vetwoone) \typearrow \vb \OrTypeError
 }{
-  \arraylengthequal(\overname{\ArrayLengthExpr(\veoneone)}{\vlone}, \overname{\ArrayLengthExpr(\vetwoone)}{\vltwo}) \typearrow \vb
+  \arraylengthequal(\vlone, \vltwo) \typearrow \vb
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[enum\_enum]{
+  \vlone = \ArrayLengthEnum(\venumone, \Ignore)\\
+  \vltwo = \ArrayLengthEnum(\venumtwo, \Ignore)\\
   \vb \eqdef (\venumone = \venumtwo)
 }{
-  \arraylengthequal(\overname{\ArrayLengthEnum(\venumone, \Ignore)}{\vlone}, \overname{\ArrayLengthEnum(\venumtwo, \Ignore)}{\vltwo}) \typearrow \vb
+  \arraylengthequal(\vlone, \vltwo) \typearrow \vb
 }
 \end{mathpar}
 

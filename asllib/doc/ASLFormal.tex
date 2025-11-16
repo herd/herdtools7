@@ -741,8 +741,8 @@ Consider the following examples, which is a simplified version of \SemanticsRule
 To parse a rule, start by examining the conclusion and the variables appearing in the rule.
 In this case, the rule describes a transition from an input configuration \\
 $\evalexpr( \env, \EBinop(\op, \veone, \vetwo) )$,
-whose configuration domain is \texttt{eval\_expr}, to an output configuration $\ResultExpr((\vv, \vg), \newenv)$
-whose configuration domain is $\ResultExpr$.
+whose configuration domain is \evalexpr, to an output configuration $\ResultExpr((\vv, \vg), \newenv)$
+whose configuration domain is\\$\ResultExpr$.
 %
 A rule uses the free variables appearing in the input configuration of the conclusion
 ($\env$, $\op$, $\veone$, and $\vetwo$ in our example),

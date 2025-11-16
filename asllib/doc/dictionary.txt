@@ -1694,6 +1694,7 @@ relate
 related
 relates
 relation
+relational
 relations
 relationship
 relative

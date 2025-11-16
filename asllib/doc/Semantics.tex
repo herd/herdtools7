@@ -486,10 +486,17 @@ The following example shows how to utilize the rules for expression literals and
 to derive a transition from an input semantic configuration with the expression $(1+2)*(4+5)$,
 given by the AST
 \[
-  \begin{array}{rl}
-  \EBinop(\MUL, &\overname{\EBinop(\ADD, \overname{\elint{1}}{\veone}, \overname{\elint{2}}{\vetwo})}{\veonetwo}, \\
-                &\overname{\EBinop(\ADD, \overname{\elint{4}}{\vefour}, \overname{\elint{5}}{\vefive})}{\vefourfive})
-  \end{array}
+  \EBinop\left(
+    \begin{array}{c}
+  \MUL, \\
+  \overname{\EBinop\left(
+  \begin{array}{l} \ADD, \\ \overname{\elint{1}}{\veone}, \\ \overname{\elint{2}}{\vetwo} \end{array}
+                \right)}{\veonetwo}, \\
+  \overname{\EBinop\left(
+  \begin{array}{l }\ADD, \\ \overname{\elint{4}}{\vefour}, \\ \overname{\elint{5}}{\vefive} \end{array}
+                \right)}{\vefourfive}
+    \end{array}
+          \right)
 \]
 to an output semantic configuration with the value resulting from the calculation of the expression.
 

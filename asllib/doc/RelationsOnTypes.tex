@@ -207,8 +207,8 @@ subtyping.
 
 \item \AllApplyCase{t\_tuple}
   \begin{itemize}
-  \item $\vs$ has the \underlyingtypeterm\ of a tuple with type list $\vlis$, that is $\TTuple(\vlis)$;
-  \item $\vt$ has the \underlyingtypeterm\ of a tuple with type list $\vlit$, that is $\TTuple(\vlit)$;
+  \item $\vs$ has the \underlyingtypeterm\ of a tuple with type list $\vlis$ ($\TTuple(\vlis)$);
+  \item $\vt$ has the \underlyingtypeterm\ of a tuple with type list $\vlit$ ($\TTuple(\vlit)$);
   \item equating the lengths of $\vlis$ and $\vlit$ is either $\True$ or $\False$, which short-circuits
   the entire rule with $\vb=\False$;
   \item checking at each index $\vi$ of the list $\vlis$ whether the type $\vlit[\vi]$ \typesatisfiesterm\ the type $\vlis[\vi]$
@@ -667,8 +667,8 @@ of different widths.
 
       \item \AllApplyCase{t\_bits}
       \begin{itemize}
-        \item $\vt$ is a bitvector type with length expression $\vet$, that is, $\TBits(\vet, \Ignore)$;
-        \item $\vs$ is a bitvector type with length expression $\ves$, that is, $\TBits(\ves, \Ignore)$;
+        \item $\vt$ is a bitvector type with length expression $\vet$ ($\TBits(\vet, \Ignore)$);
+        \item $\vs$ is a bitvector type with length expression $\ves$ ($\TBits(\ves, \Ignore)$);
         \item applying $\typeequal$ to $\vt$ and $\vs$ in $\tenv$ yields $\False$;
         \item applying $\exprequal$ to $\vet$ and $\ves$ in $\tenv$ yields $\vbequal$;
         \item checking whether $\vbequal$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
@@ -679,7 +679,7 @@ of different widths.
       \begin{itemize}
         \item $\vt$ is an array type with width expression $\widtht$ and element type $\vtyt$;
         \item $\vs$ is an array type with width expression $\widths$ and element type $\vtys$;
-        \item applying $\arraylengthequal$ to $\widtht$ and $\widths$ in $\tenv$ to equate the array lengths,
+        \item applying $\arraylengthequal$ to $\widtht$ and $\widths$ in $\tenv$ to\\ equate the array lengths,
               yields $\vbequallength$\ProseOrTypeError;
         \item checking that $\vbequallength$ is $\True$ yields $\True$\ProseTerminateAs{\NoLCA};
         \item the lowest common ancestor of $\vtyt$ and $\vtys$ is $\vtone$\ProseOrTypeError;
@@ -783,7 +783,9 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 }{
   \lca(\tenv, \vt, \vs) \typearrow \overname{\unconstrainedinteger}{\tty}
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[t\_int\_parameterized]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \astlabel(\vt) = \astlabel(\vs) = \TInt\\
@@ -796,46 +798,50 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 }{
   \lca(\tenv, \vt, \vs) \typearrow \tty
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[t\_int\_wellconstrained]
 {
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \vt = \TInt(\WellConstrained(\cst, \vpone))\\
   \vs = \TInt(\WellConstrained(\css, \vptwo))\\
-  \vp \eqdef \precisionjoin(\vpone, \vptwo)
+  \vp \eqdef \precisionjoin(\vpone, \vptwo)\\
+  \tty \eqdef \TInt(\WellConstrained(\cst \concat \css, \vp))
 }{
-  \lca(\tenv, \vt, \vs) \typearrow \overname{\TInt(\WellConstrained(\cst \concat \css, \vp))}{\tty}
+  \lca(\tenv, \vt, \vs) \typearrow \tty
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_bits]{
+  \vt = \TBits(\vet, \Ignore)\\
+  \vs = \TBits(\ves, \Ignore)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \exprequal(\tenv, \vet, \ves) \typearrow \vbequal\\
   \techeck(\vbequal, \NoLCA) \typearrow \True \OrTypeError
 }{
-  \lca(\tenv, \overname{\TBits(\vet, \Ignore)}{\vt}, \overname{\TBits(\ves, \Ignore)}{\vs}) \typearrow \overname{\TBits(\vet, \emptylist)}{\tty}
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TBits(\vet, \emptylist)}{\tty}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_array]{
+  \vt = \TArray(\widtht, \vtyt)\\
+  \vs = \TArray(\widths, \vtys)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \arraylengthequal(\tenv, \widtht, \widths) \typearrow \vbequallength \OrTypeError\\\\
   \techeck(\vbequallength, \NoLCA) \typearrow \True \OrTypeError\\\\
   \lca(\tenv, \vtyt, \vtys) \typearrow \vtone \OrTypeError
 }{
-  {
-  \begin{array}{r}
-  \lca(\tenv, \overname{\TArray(\widtht, \vtyt)}{\vt}, \overname{\TArray(\widths, \vtys)}{\vs}) \typearrow \\
-  \overname{\TArray(\widtht, \vtone)}{\tty}
-  \end{array}
-  }
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TArray(\widtht, \vtone)}{\tty}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_tuple]{
+  \vt = \TTuple(\vlit)\\
+  \vs = \TTuple(\vlis)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \equallength(\vlit, \vlis) \typearrow \vb\\
   \techeck(\vb, \NoLCA) \typearrow \True \OrTypeError\\\\
@@ -847,15 +853,19 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   }\\
   \vli \eqdef [\vi\in\listrange(\vlit): \vt_\vi]
 }{
-  \lca(\tenv, \overname{\TTuple(\vlit)}{\vt}, \overname{\TTuple(\vlis)}{\vs}) \typearrow \overname{\TTuple(\vli)}{\tty}
+  \lca(\tenv, \vt, \vs) \typearrow \overname{\TTuple(\vli)}{\tty}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[error]{
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  (\astlabel(\vt) \neq \astlabel(\vs)) \lor
-  \astlabel(\vt) \in \{\TEnum, \TRecord, \TException, \TCollection\}
+  {
+    \left(\begin{array}{cl}
+  \astlabel(\vt) \neq \astlabel(\vs) & \lor\\
+  \astlabel(\vt) \in \{\TEnum, \TRecord, \TException, \TCollection\} &
+    \end{array}\right)
+  }
 }{
   \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
@@ -997,9 +1007,11 @@ constraints and range constraints.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[exact]{}
+\inferrule[exact]{
+  \vc = \ConstraintExact(\ve)
+}
 {
-  \negateconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow
+  \negateconstraint(\vc) \typearrow
   \overname{\ConstraintExact(\EUnop(\SUB, \ve))}{\newc}
 }
 \end{mathpar}
@@ -1162,7 +1174,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
     \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertypeterm;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
-    \item \Proseapplybinoptypes{$\tenv$}{$\op$}{$\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
+    \item \Proseapplybinoptypes{$\tenv$}{$\op$}{\\ $\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
   \end{itemize}
 
   \item \AllApplyCase{arith\_t\_int\_wellconstrained}
@@ -1303,10 +1315,12 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[bits\_concat]{
+  \vtone = \TBits(\vwone, \Ignore)\\
+  \vttwo = \TBits(\vwtwo, \Ignore)\\
   \vw \eqdef \EBinop(\ADD, \vwone, \vwtwo) \\
   \normalize(\tenv, \vw) \typearrow \vwp
 }{
-  \applybinoptypes(\tenv, \BVCONCAT, \overname{\TBits(\vwone, \Ignore)}{\vtone}, \overname{\TBits(\vwtwo, \Ignore)}{\vttwo}) \typearrow
+  \applybinoptypes(\tenv, \BVCONCAT, \vtone, \vttwo) \typearrow
   \overname{\TBits(\vwp, \emptylist)}{\vt}
 }
 \end{mathpar}
@@ -1393,14 +1407,15 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[arith\_t\_int\_wellconstrained]{
+  \vtone = \TInt(\vcone)\\
+  \vttwo = \TInt(\vcstwo)\\
   \op \in  \{\MUL, \POW, \ADD, \SUB, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
   \vcone = \WellConstrained(\cstwo, \vpone)\\
   \vctwo = \WellConstrained(\csone, \vptwo)\\
   \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow (\cs, \vpthree) \OrTypeError\\\\
   \vp = \precisionjoin(\vpone, \precisionjoin(\vptwo, \vpthree))
 }{
-      \applybinoptypes(\tenv, \op, \overname{\TInt(\vcone)}{\vtone},
-        \overname{\TInt(\vctwo)}{\vttwo}) \typearrow
+      \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow
         \overname{\TInt(\WellConstrained(\cs, \vp))}{\vt}
 }
 \end{mathpar}
@@ -1430,64 +1445,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
   {
   \begin{array}{l}
-  (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in\\
-    \left\{
-    \begin{array}{lclcl}
-      (\AND     &,& \TBool  &,& \TBool)\\
-      (\OR      &,& \TBool  &,& \TBool)\\
-      (\EQ    &,& \TBool  &,& \TBool)\\
-      (\IMPL    &,& \TBool  &,& \TBool)\\
-      %
-      (\AND     &,& \TBits  &,& \TBits)\\
-      (\OR      &,& \TBits  &,& \TBits)\\
-      (\XOR     &,& \TBits  &,& \TBits)\\
-      (\ADD    &,& \TBits  &,& \TBits)\\
-      (\SUB   &,& \TBits  &,& \TBits)\\
-      (\BVCONCAT&,& \TBits  &,& \TBits)\\
-      %
-      (\ADD    &,& \TBits  &,& \TInt)\\
-      (\SUB   &,& \TBits  &,& \TInt)\\
-      %
-      (\LE     &,& \TInt     &,& \TInt)\\
-      (\GE     &,& \TInt     &,& \TInt)\\
-      (\GT      &,& \TInt     &,& \TInt)\\
-      (\LT      &,& \TInt     &,& \TInt)\\
-      (\LE     &,& \TReal    &,& \TReal)\\
-      (\GE     &,& \TReal    &,& \TReal)\\
-      (\GT      &,& \TReal    &,& \TReal)\\
-      (\LT      &,& \TReal    &,& \TReal)\\
-      (\EQ    &,& \TInt     &,& \TInt)\\
-      (\NE     &,& \TInt     &,& \TInt)\\
-      (\EQ    &,& \TBool    &,& \TBool)\\
-      (\NE     &,& \TBool    &,& \TBool)\\
-      (\EQ    &,& \TReal    &,& \TReal)\\
-      (\NE     &,& \TReal    &,& \TReal)\\
-      (\EQ    &,& \TString  &,& \TString)\\
-      (\NE     &,& \TString  &,& \TString)\\
-      %
-      (\MUL   &,& \TInt  &,& \TInt)\\
-      (\DIV   &,& \TInt  &,& \TInt)\\
-      (\DIVRM &,& \TInt  &,& \TInt)\\
-      (\MOD   &,& \TInt  &,& \TInt)\\
-      (\SHL   &,& \TInt  &,& \TInt)\\
-      (\SHR   &,& \TInt  &,& \TInt)\\
-      (\POW   &,& \TInt  &,& \TInt)\\
-      (\ADD  &,& \TInt  &,& \TInt)\\
-      (\SUB &,& \TInt  &,& \TInt)\\
-      (\ADD  &,& \TReal &,& \TReal)\\
-      (\SUB &,& \TReal &,& \TReal)\\
-      (\MUL   &,& \TReal &,& \TReal)\\
-      (\RDIV  &,& \TReal &,& \TReal)\\
-      (\POW   &,& \TReal &,& \TInt)\\
-      %
-      (\ADD  &,& \TReal &,& \TReal)\\
-      (\SUB &,& \TReal &,& \TReal)\\
-      (\MUL   &,& \TReal &,& \TReal)\\
-      (\POW   &,& \TReal &,& \TInt)\\
-      (\RDIV  &,& \TReal &,& \TReal)
-    \end{array}
-    \right\}\\
-    \cup \{ (\STRCONCAT, \astlabel(\vtone), \astlabel(\vttwo)) \;|\; \issingular(\vtone) \land \issingular(\vttwo)\}\\
+  (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in \binopsignatures\\
   \end{array}
   }
 }{
@@ -1579,17 +1537,17 @@ named lowest common ancestor.
 
 The operator $\op$ is assumed to be only one of the operators in the following set:
 $\{\SHL, \SHR, \POW, \MOD, \DIVRM, \SUB, \MUL, \ADD, \DIV\}$.
-The rule employs $\binopisexploding$ to decide whether range constraints can be maintained
+The rule employs \\ $\binopisexploding$ to decide whether range constraints can be maintained
 as range constraints or have to be converted to a list of exact constraints.
 
 \ExampleDef{Annotating Constraints for Binary Operations}
 Applying $\ADD$ to
 $\{\AbbrevConstraintRange{\ELInt{2}}{\ELInt{4}}\}$ and
-$\{\AbbrevConstraintExact{\ELInt{2}}\}$ results in\\
-$\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,
+$\{\AbbrevConstraintExact{\ELInt{2}}\}$ \\ results in
+$\{\AbbrevConstraintRange{\ELInt{4}}{\ELInt{6}}\}$,\\
 since $\binopisexploding(\ADD) \typearrow \False$
 while applying $\MUL$ to the same lists of constraints results in\\
-$\{\AbbrevConstraintExact{\ELInt{4}}, \AbbrevConstraintExact{\ELInt{6}}, \AbbrevConstraintExact{\ELInt{8}}\}$,
+$\{\AbbrevConstraintExact{\ELInt{4}}, \AbbrevConstraintExact{\ELInt{6}}, \AbbrevConstraintExact{\ELInt{8}}\}$,\\
 since $\binopisexploding(\MUL) \typearrow \True$.
 
 Annotating the constraints involves applying symbolic reasoning and in particular filtering out values that
@@ -1865,15 +1823,17 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[range\_both\_reduce\_to\_z]{
   \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
   \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
+  \vzeroorone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}\\
+  \vzeroorminusone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\\
+  \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\\
+  \vrangezeroorminusone \eqdef \ConstraintRange(\veone, \vzeroorminusone)\\
   {
-    \begin{array}{c}
-  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+  \vcopt \eqdef \begin{cases}
     \some{\vc}& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
-    \some{\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)}& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
-    \some{\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})}& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
+    \some{\vrangezeroorone}& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
+    \some{\vrangezeroorminusone}& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
     \None& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
   \end{cases}
-\end{array}
   }
 }{
   \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vcopt
@@ -1885,13 +1845,13 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
   \reducetozopt(\tenv, \vetwo) \typearrow \None\\
+  \vzeroorone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}\\
+  \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\\
   {
-    \begin{array}{c}
-  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+  \vcopt \eqdef  \begin{cases}
     \some{\vc}& \text{if }\vp(\vzone)\\
-    \some{\ConstraintRange(\choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}, \vetwo)}& \text{else}\\
+    \some{\vrangezeroorone}& \text{else}\\
   \end{cases}
-\end{array}
   }
 }{
   \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \vcopt
@@ -1903,13 +1863,13 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \None\\
   \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
+  \vzeroorminusone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\\
+  \vrangezeroorminusone \eqdef \ConstraintRange(\veone, \vzeroorminusone)\\
   {
-    \begin{array}{c}
-  \vcopt \eqdef \\ \wrappedline\ \begin{cases}
+  \vcopt \eqdef \begin{cases}
     \some{\vc}& \text{if }\vp(\vztwo)\\
-    \some{\ConstraintRange(\veone, \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}})}& \text{else}\\
+    \some{\vrangezeroorminusone}& \text{else}\\
   \end{cases}
-\end{array}
   }
 }{
   \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \vcopt
@@ -2219,15 +2179,20 @@ Specifically, notice the following:
       \None & \text{else}
     \end{cases}
   }\\
+  \vczfive \eqdef \AbbrevConstraintExact{\ELInt{\vzfive}}\\
+  \vczfivesix \eqdef \AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}\\
+  \vczfiveetwo \eqdef \AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}\\
+  \vceonezsix \eqdef \AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}\\
+  \vceoneetwo \eqdef \AbbrevConstraintRange{\veone}{\vetwo}\\
   {
     \vcopt \eqdef
     \begin{cases}
-     \some{\AbbrevConstraintExact{\ELInt{\vzfive}}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive=\vzsix\\
-     \some{\AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive<\vzsix\\
+     \some{\vczfive} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive=\vzsix\\
+     \some{\vczfivesix} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive<\vzsix\\
      \None & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \some{\vzsix} \land \vzfive>\vzsix\\
-     \some{\AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \None\\
-     \some{\AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}} & \text{if }\vzoneopt = \None \land \vztwoopt = \some{\vzsix}\\
-     \some{\AbbrevConstraintRange{\veone}{\vetwo}} & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
+     \some{\vczfiveetwo} & \text{if }\vzoneopt = \some{\vzfive} \land \vztwoopt = \None\\
+     \some{\vceonezsix} & \text{if }\vzoneopt = \None \land \vztwoopt = \some{\vzsix}\\
+     \some{\vceoneetwo} & \text{if }\vzoneopt = \None \land \vztwoopt = \None\\
     \end{cases}
   }
 }{
@@ -2257,7 +2222,8 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \rangeopt \eqdef \choice{\ve = \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}}{\some{(\vzone, \vztwo)}}{\None}
+  \zoneDIVztwo \eqdef \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}\\
+  \rangeopt \eqdef \choice{\ve = \zoneDIVztwo}{\some{(\vzone, \vztwo)}}{\None}
 }{
   \getliteraldivopt(\ve) \typearrow \rangeopt
 }
@@ -2477,7 +2443,7 @@ is a member of the set of bitfields in the type \verb|FlaggedPacket|.
 \ASLListing{No missing bitfields}{MemBfs}{\typingtests/TypingRule.MemBfs.asl}
 
 In \listingref{MemBfs-bad}, the bitfield \verb|lsb| is missing from
-the set of bitfields in the type \verb|FlaggedPacket|, which is why the specification
+the set of bitfields in the type \\ \verb|FlaggedPacket|, which is why the specification
 is ill-typed.
 \ASLListing{A missing bitfield}{MemBfs-bad}{\typingtests/TypingRule.MemBfs.bad.asl}
 
@@ -2693,16 +2659,26 @@ See \ExampleRef{The Structure of a Type}.
 \RenderRelation{to_well_constrained}
 
 \ExampleDef{Converting Parameterized Integer Types to Well-constrainted Integer Types}
-The following table shows examples of applying $\towellconstrained$ to various types:
-\[
-\begin{array}{rl}
-\textbf{input type}           & \textbf{output type}\\
-\hline
-\TInt(\Parameterized(\vx))    & \TInt(\WellConstrained(\ConstraintExact(\EVar(\vx))))\\
-\TInt(\unconstrainedinteger)  & \TInt(\unconstrainedinteger)\\
-\TReal                        & \TReal\\
-\end{array}
-\]
+The following are two examples of applying $\towellconstrained$ to various types:
+\begin{mathpar}
+\inferrule{}{
+  {
+    \begin{array}{r}
+  \towellconstrained(\overname{\TInt(\Parameterized(\vx))}{\vt}) \typearrow\\ \TInt(\WellConstrained(\ConstraintExact(\EVar(\vx))))
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule{}{
+  {
+    \begin{array}{r}
+  \towellconstrained(\overname{\TInt(\unconstrainedinteger)}{\vt}) \typearrow\\ \TInt(\unconstrainedinteger)
+    \end{array}
+  }
+}
+\end{mathpar}
 
 \ProseParagraph
 \OneApplies

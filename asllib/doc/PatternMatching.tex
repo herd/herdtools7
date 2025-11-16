@@ -311,11 +311,12 @@ whereas \\
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a \typingerrorterm{}, which short-circuits the entire rule.
         The \typingerrorterm{} indicates that the types of
         $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
-  \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$, that is, $\PatternRange(\veonep, \vetwop)$.
+  \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$ ($\PatternRange(\veonep, \vetwop)$).
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \vp = \PatternRange(\veone, \vetwo)\\
   \annotatesymbolicallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
   \annotatesymbolicallyevaluableexpr(\tenv, \vetwo) \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo\\
@@ -330,7 +331,7 @@ whereas \\
   }\\
   \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
+  \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
@@ -691,8 +692,12 @@ is defined by the following table:
 \inferrule{
   \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
 }{
-  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow
+  {
+    \begin{array}{r}
+  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow \\
   \overname{\PatternTuple(\vpatternasts)}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -715,13 +720,14 @@ The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
   \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ for each \Proselistrange{$i$}{$\vli$},
         yields $(\vlip[i], \vxs_i)$\ProseOrTypeError;
   \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
-  \item $\newp$ is the pattern which matches the tuple $\newli$, that is, $\PatternTuple(\newli)$;
+  \item $\newp$ is the pattern which matches the tuple $\newli$ ($\PatternTuple(\newli)$);
   \item define $\vses$ as the union of all $\vxs_i$, for each \Proselistrange{$i$}{$\vli$}.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \vp = \PatternTuple(\vli)\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \vtstruct \eqname \TTuple(\vts)\\
@@ -730,7 +736,7 @@ The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
   \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
 }{
-  \annotatepattern(\tenv, \vt, \overname{\PatternTuple(\vli)}{\vp}) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
+  \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
@@ -922,9 +928,9 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vp$ is the pattern which matches the negation of a pattern $\vq$, that is, $\PatternNot(\vq)$;
+  \item $\vp$ is the pattern which matches the negation of a pattern $\vq$ ($\PatternNot(\vq)$);
   \item annotating $\vq$ in $\tenv$ yields $(\newq, \vses)$\ProseOrTypeError;
-  \item $\newp$ is pattern which matches the negation of $\newq$, that is, $\PatternNot(\newq)$.
+  \item $\newp$ is pattern which matches the negation of $\newq$ ($\PatternNot(\newq)$).
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -992,6 +998,7 @@ The function
 \[
   \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
 \]
+
 transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
 
@@ -1039,7 +1046,8 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \buildexprpattern\left(\Nexprpattern\left(
     \begin{array}{l}
     \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \namednode{\velseexpr}{\Nexpr}
+    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \\
+    \wrappedline\ \namednode{\velseexpr}{\Nexpr}
     \end{array}
     \right)\right) \astarrow\\
   \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\velseexpr})}{\vastnode}
@@ -1081,21 +1089,22 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 
 \begin{mathpar}
   \inferrule[get\_field]{}{
-  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow
+  {
+    \begin{array}{r}
+  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow \\
   \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
 \begin{mathpar}
   \inferrule[get\_fields]{
-    \buildclist[\buildidentity](\vids) \astarrow \vidasts
+    \vparsednode = \Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)\\
+    \buildclist[\buildidentity](\vids) \astarrow \vidasts\\
+    \vastnode \eqdef \EGetFields(\astof{\vexprpattern}, \vidasts)
   }{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)) \astarrow\\
-  \overname{\EGetFields(\astof{\vexprpattern}, \vidasts)}{\vastnode}
-      \end{array}
-    }
+  \buildexprpattern(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -1178,17 +1187,20 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 
 \begin{mathpar}
   \inferrule[record\_non\_empty]{
-    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
-  }{
     {
-    \begin{array}{r}
-      \buildexprpattern\left(\Nexprpattern\left(
+    \vparsednode = \Nexprpattern\left(
       \begin{array}{l}
       \Tidentifier(\vt), \Tlbrace, \\
       \wrappedline\ \namednode{\vfieldassigns}{\ClistZero{\Nfieldassign}}, \\
       \wrappedline\ \Trbrace
       \end{array}
-      \right)\right) \\
+      \right)
+  }\\
+    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
+  }{
+    {
+    \begin{array}{r}
+      \buildexprpattern(\vparsednode) \\
       \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
   \end{array}
   }

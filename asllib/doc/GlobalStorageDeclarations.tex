@@ -57,7 +57,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 \SyntaxDef{Global Storage Declarations}
 
 \RequirementDef{DiscardingGlobalStorageDeclarations}
-Global storage declarations must bind a name.
+Global storage declarations must\\ bind a name.
 This is ensured by the ASL grammar.
 All the global storage declarations in \listingref{local-storage-discards} are illegal,
 as they discard their declared storage elements.
@@ -141,8 +141,9 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
 \inferrule[global\_uninit\_multiple\_vars]{
   \buildclist[\buildidentity](\vids) \astarrow \vidasts \\
   {
-  i \in \listrange(\vidasts): \vdecl_i \eqdef
-    \DGlobalStorage\left(
+    \begin{array}{l}
+  i \in \listrange(\vidasts): \\
+    \vdecl[i] \eqdef \DGlobalStorage\left(
       \left\{
       \begin{array}{rcl}
         \GDkeyword&:& \GDKVar,\\
@@ -151,21 +152,32 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
         \GDinitialvalue&:& \None
       \end{array}
       \right\}\right)
+    \end{array}
   } \\
-  \vastnode \eqdef [i \in \listrange(\vidasts): \vdecl_i]
+  \vastnode \eqdef [i \in \listrange(\vidasts): \vdecl[i]]
 }{
   \builddecl(\overname{\Ndecl(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode}) \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[global\_storage\_config]{}{
+\inferrule[global\_storage\_config]{
+  \vparsednode = \Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \punnode{\Nexpr}, \Tsemicolon)\\
   {
-    \begin{array}{r}
-      \builddecl(\overname{\Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode}) \astarrow
-    \end{array}
-  } \\
-  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \some{\astof{\vt}}, \GDinitialvalue: \some{\astof{\vexpr}}\})}{\vastnode}
+  \vastnode \eqdef \DGlobalStorage\left(
+    \left\{
+      \begin{array}{rcl}
+      \GDkeyword&:& \GDKConfig,\\
+      \GDname&:& \name,\\
+      \GDty&:& \some{\astof{\vt}},\\
+      \GDinitialvalue&:& \some{\astof{\vexpr}}
+      \end{array}
+    \right\}
+    \right)
+  }
+}{
+\builddecl(\vparsednode) \astarrow
+  \vastnode
 }
 \end{mathpar}
 
@@ -200,15 +212,28 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
 
 \begin{mathpar}
 \inferrule[global\_storage\_config\_elided\_parameter]{
-  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
-  \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr
-}{
   {
+  \vparsednode = \Ndecl\left(
     \begin{array}{r}
-      \builddecl(\overname{\Ndecl(\Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon)}{\vparsednode}) \astarrow
+    \Tconfig, \Tidentifier(\name), \Tcolon, \punnode{\Nty}, \Teq, \\
+    \wrappedline\ \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
     \end{array}
-  } \\
-  \overname{\DGlobalStorage(\{ \GDkeyword: \GDKConfig, \GDname: \name, \GDty: \some{\astof{\tty}}, \GDinitialvalue: \vexpr\})}{\vastnode}
+  \right)
+  }\\
+  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
+  \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr\\
+  {
+  \vastnode \eqdef \DGlobalStorage\left(\left\{
+    \begin{array}{rcl}
+    \GDkeyword&:& \GDKConfig,\\
+    \GDname&:& \name,\\
+    \GDty&:& \some{\astof{\tty}},\\
+    \GDinitialvalue&:& \vexpr
+    \end{array}
+    \right\}\right)
+  }
+}{
+  \builddecl(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -227,8 +252,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 
 \begin{mathpar}
-\inferrule[let]{}{
-  \buildglobaldeclkeywordnonconfig(\overname{\Nglobaldeclkeywordnonconfig(\Tlet)}{\vparsednode}) \astarrow \overname{\GDKLet}{\vastnode}
+\inferrule[let]{
+  \vparsednode = \Nglobaldeclkeywordnonconfig(\Tlet)
+}{
+  \buildglobaldeclkeywordnonconfig(\vparsednode) \astarrow \overname{\GDKLet}{\vastnode}
 }
 \end{mathpar}
 
@@ -269,8 +296,11 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 
 \begin{mathpar}
-\inferrule[non\_config]{}{
-  \buildglobaldeclkeyword(\overname{\Nglobaldeclkeyword(\punnode{\Nglobaldeclkeywordnonconfig})}{\vparsednode}) \astarrow \overname{\astof{\vglobalkeywordnonconfig}}{\vastnode}
+\inferrule[non\_config]{
+  \vparsednode = \Nglobaldeclkeyword(\punnode{\Nglobaldeclkeywordnonconfig})\\
+  \vastnode \eqdef \astof{\vglobalkeywordnonconfig}
+}{
+  \buildglobaldeclkeyword(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -407,8 +437,22 @@ of an ill-typed global storage declaration due to precision loss.
 }\\
 {
   \begin{array}{r}
-    \annotatetyoptinitialvalue(\tenv, \keyword, \vmustbepure, \tyopt, \initialvalue) \\ \typearrow
-    (\typedinitialvalue, \tyoptp, \declaredt) \OrTypeError
+    \annotatetyoptinitialvalue\left(
+      \begin{array}{c}
+      \tenv, \\
+      \keyword,\\
+      \vmustbepure,\\
+      \tyopt,\\
+      \initialvalue
+      \end{array}
+    \right) \\ \typearrow
+    \left(
+      \begin{array}{c}
+      \typedinitialvalue,\\
+      \tyoptp,\\
+      \declaredt
+      \end{array}
+      \right) \OrTypeError
   \end{array}
 }\\
 \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\\\\
@@ -473,7 +517,7 @@ See \ExampleRef{Declaring Global Storage}.
     \item $\gdk$ is not $\GDKConfig$;
     \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vsese)$\ProseOrTypeError;
     \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
-    \item propagating integer constraints from $\vtep$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtpp$\ProseOrTypeError;
+    \item propagating integer constraints from $\vtep$ to $\vt$ using \\$\inheritintegerconstraints$ yields $\vtpp$\ProseOrTypeError;
     \item annotating the type $\vtpp$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
     \item define $\typede$ as $(\vte, \vep, \vsese)$;
     \item checking that $\vte$ \typesatisfiesterm\ $\vtp$ in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -520,11 +564,23 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \techeck(\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
-    \begin{array}{r}
-  \annotatetyoptinitialvalue(\tenv, \overname{\GDKConfig}{\gdk}, \vmustbepure, \overname{\some{\vt}}{\tyoptp}, \overname{\some{\ve}}{\initialvalue})
-  \\ \typearrow
-  (\overname{\typede}{\typedinitialvalue}, \overname{\some{\vtp}}{\tyoptp}, \overname{\vtp}{\declaredt})
+  \annotatetyoptinitialvalue\left(
+    \begin{array}{c}
+    \tenv,\\
+    \overname{\GDKConfig}{\gdk},\\
+    \vmustbepure,\\
+    \overname{\some{\vt}}{\tyoptp},\\
+    \overname{\some{\ve}}{\initialvalue}
     \end{array}
+    \right)
+   \typearrow
+  \left(
+    \begin{array}{c}
+    \overname{\typede}{\typedinitialvalue},\\
+    \overname{\some{\vtp}}{\tyoptp},\\
+    \overname{\vtp}{\declaredt}
+    \end{array}
+    \right)
   }
 }
 \end{mathpar}
@@ -704,7 +760,15 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 
 \begin{mathpar}
 \inferrule[config]{
-  \typedinitialvalue \eqname (\initialvaluetype, \initialvaluep, \vsesinitialvalue)\\
+  {
+  \typedinitialvalue \eqname \left(
+    \begin{array}{r}
+    \initialvaluetype,\\
+    \initialvaluep,\\
+   \vsesinitialvalue
+    \end{array}
+    \right)
+  }\\
   \issingular(\tenv, \initialvaluetype) \typearrow \True \OrTypeError
 }{
   {
@@ -816,7 +880,7 @@ before having the chance to evaluate \verb|main|.
     \item $d$ is the AST node for declaring a global storage element with initial value $\ve$,
           name $\name$, and type $\vt$;
     \item $\envm$ is the environment-execution graph pair $(\env, \vgone)$;
-    \item the evaluation of the expression $\ve$ in $\env$ yields $\ResultExpr((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
+    \item the evaluation of the expression $\ve$ in $\env$ yields\\$\ResultExpr((\vv, \vgtwo), \envtwo)$\ProseOrAbnormal;
     \item declaring the global $\name$ with value $\vv$ in $\envtwo$ gives $\envthree$;
     \item evaluating the remaining global declarations $\vdecls'$ with the environment $\envthree$ and the execution graph
           that is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ label gives $C$;

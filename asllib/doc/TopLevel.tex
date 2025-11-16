@@ -363,11 +363,12 @@ yielding the list of parameters $\newparams$.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
+  \params = (\name,\tyopt) \concat \vargsone\\
   \renamelocalsname(\name) \astarrow \namep\\
   \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
   \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
 }{
-  \renamelocalsnamedargs(\overname{(\name,\tyopt) \concat \vargsone}{\params}) \astarrow \overname{[(\namep, \tyoptp)] \concat \paramsonep}{\newparams}
+  \renamelocalsnamedargs(\params) \astarrow \overname{[(\namep, \tyoptp)] \concat \paramsonep}{\newparams}
 }
 \end{mathpar}
 
@@ -467,9 +468,10 @@ yielding the type $\newty$.
 
 \begin{mathpar}
 \inferrule[t\_int\_wellconstrained]{
+  \tty = \TInt(\WellConstrained(\vcs))\\
   \newcs \eqdef [\vc\in \vcs: \renamelocalsconstraint(\vcs)]
 }{
-  \renamelocalsty(\overname{\TInt(\WellConstrained(\vcs))}{\tty}) \astarrow \overname{\TInt(\WellConstrained(\newcs))}{\newty}
+  \renamelocalsty(\tty) \astarrow \overname{\TInt(\WellConstrained(\newcs))}{\newty}
 }
 \end{mathpar}
 
@@ -1390,10 +1392,11 @@ yielding the constraint $\newc$.
 
 \begin{mathpar}
 \inferrule[range]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \renamelocalsexpr(\veone) \astarrow \veonep\\
   \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
 }{
-  \renamelocalsconstraint(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \astarrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+  \renamelocalsconstraint(\vc) \astarrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
 
