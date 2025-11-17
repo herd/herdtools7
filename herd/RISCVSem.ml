@@ -50,8 +50,20 @@ module
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
+      let sxt_op sz = M.op1 (Op.Sxt sz)
+      and uxt_op sz = M.op1 (Op.Mask sz)
 
-      let unimplemented op = Warn.user_error "RISCV operation %s is not implemented (yet)" op
+      let sxtw = sxt_op MachSize.Word
+      and uxtw = uxt_op MachSize.Word
+
+      let xt_op s =
+        let open Sign in
+        match s with
+        | Signed -> sxt_op
+        | Unsigned -> uxt_op
+
+      let unimplemented op =
+        Warn.user_error "RISCV operation %s is not implemented (yet)" op
 
       let tr_opi op = match op with
       | RISCV.ADDI ->  Op.Add
@@ -277,28 +289,31 @@ module
               let v = ii.A.addr2v lbl in
               write_reg r1 v ii >>= B.next1T
           | RISCV.OpIW (op,r1,r2,k) ->
-              read_reg_ord r2 ii >>=
-              fun v -> M.op (tr_opiw op) v (V.intToV k) >>=
-                fun v -> write_reg r1 v ii >>= B.next1T
+              read_reg_ord r2 ii >>= uxtw >>=
+              fun v -> M.op (tr_opiw op) v (V.intToV k) >>= sxtw >>=
+              fun v -> write_reg r1 v ii >>= B.next1T
           | RISCV.Op (op,r1,r2,r3) ->
               (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
               (fun (v1,v2) -> M.op (tr_op op) v1 v2) >>=
               (fun v -> write_reg r1 v ii) >>= B.next1T
           | RISCV.OpW (op,r1,r2,r3) ->
-              (read_reg_ord r2 ii >>|  read_reg_ord r3 ii) >>=
-              (fun (v1,v2) -> M.op (tr_opw op) v1 v2) >>=
-              (fun v -> write_reg r1 v ii) >>= B.next1T
+              ((read_reg_ord r2 ii >>= uxtw)
+               >>| (read_reg_ord r3 ii >>= uxtw)) >>=
+              fun (v1,v2) -> M.op (tr_opw op) v1 v2 >>= sxtw >>=
+              fun v -> write_reg r1 v ii >>= B.next1T
 
           | RISCV.J lbl -> B.branchT lbl
           | RISCV.Bcc (cond,r1,r2,lbl) ->
               (read_reg_ord r1 ii >>| read_reg_ord r2 ii) >>=
               fun (v1,v2) -> M.op (tr_cond cond) v1 v2 >>=
                 fun v -> commit ii >>= fun () -> B.bccT v lbl
-          | RISCV.Load (sz,_s,mo,r1,k,r2) ->
+          | RISCV.Load (sz,s,mo,r1,k,r2) ->
+              let sz = tr_sz sz in
               let mk_load mo =
                 read_reg_ord r2 ii >>=
                 (fun a -> M.add a (V.intToV k)) >>=
-                (fun ea -> read_mem (tr_sz sz) mo ea ii) >>=
+                (fun ea -> read_mem sz mo ea ii) >>=
+                xt_op s sz >>=
                 (fun v -> write_reg r1 v ii) in
               if specialX0 then mk_load mo >>= B.next1T
               else if asfence then
@@ -317,11 +332,13 @@ module
               else mk_load mo >>= B.next1T
 
           | RISCV.Store (sz,mo,r1,k,r2) ->
+              let sz = tr_sz sz in
               let mk_store mo =
-                (read_reg_data r1 ii >>| read_reg_addr r2 ii) >>=
+                (read_reg_data r1 ii >>= uxt_op sz
+                 >>| read_reg_addr r2 ii) >>=
                 (fun (d,a) ->
                   (M.add a (V.intToV k)) >>=
-                  (fun ea -> write_mem (tr_sz sz) mo ea d ii)) in
+                  (fun ea -> write_mem sz mo ea d ii)) in
               if specialX0 then mk_store mo >>= B.next1T
               else if asfence then
                 let open RISCV in
