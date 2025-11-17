@@ -1,0 +1,11 @@
+Test A020 Allowed
+States 2
+1:x2=0;
+1:x2=8070450532247928832;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (1:x2=8070450532247928832)
+Observation A020 Sometimes 1 1
+Hash=8ea0b9c48d570c4f3594e8603d5700ec
+
