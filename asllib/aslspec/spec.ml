@@ -6,115 +6,93 @@ module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
 module Error = struct
+  let spec_error msg = raise (SpecError msg)
+
   let undefined_reference id context =
-    let msg = Format.asprintf "Undefined reference to '%s' in %s" id context in
-    raise (SpecError msg)
+    spec_error @@ Format.asprintf "Undefined reference to '%s' in %s" id context
 
   let undefined_element id =
-    let msg = Format.sprintf "Encountered undefined element: %s" id in
-    raise (SpecError msg)
+    spec_error @@ Format.sprintf "Encountered undefined element: %s" id
 
   let duplicate_definition id =
-    let msg = Format.asprintf "Duplicate definition of '%s'" id in
-    raise (SpecError msg)
+    spec_error @@ Format.asprintf "Duplicate definition of '%s'" id
 
   let unmatched_variables_in_template template unmatched_vars =
-    let msg =
-      Format.sprintf
-        "The prose template '%s' contains the following unmatched variables: %s"
-        template
-        (String.concat ", " unmatched_vars)
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.sprintf
+         "The prose template '%s' contains the following unmatched variables: \
+          %s"
+         template
+         (String.concat ", " unmatched_vars)
 
   let not_type_name_error relation_name term =
-    let msg =
-      Format.asprintf
-        "In relation '%s', output type term '%a' is not a type name or a set \
-         of constants. All relation output types, except for the first one, \
-         must be type names or a set of constants."
-        relation_name PP.pp_type_term term
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "In relation '%s', output type term '%a' is not a type name or a set \
+          of constants. All relation output types, except for the first one, \
+          must be type names or a set of constants."
+         relation_name PP.pp_type_term term
 
   let missing_short_circuit_attribute relation_name term type_name =
-    let msg =
-      Format.asprintf
-        "In relation '%s', output type term '%a' references type '%s' which \
-         does not have a short-circuit macro defined. All relation output \
-         types, except for the first one, must reference types with \
-         short-circuit macros."
-        relation_name PP.pp_type_term term type_name
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "In relation '%s', output type term '%a' references type '%s' which \
+          does not have a short-circuit macro defined. All relation output \
+          types, except for the first one, must reference types with \
+          short-circuit macros."
+         relation_name PP.pp_type_term term type_name
 
   let type_subsumption_failure sub super =
-    let msg =
-      Format.asprintf "Unable to determine that `%a` is subsumed by `%a`"
-        PP.pp_type_term sub PP.pp_type_term super
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf "Unable to determine that `%a` is subsumed by `%a`"
+         PP.pp_type_term sub PP.pp_type_term super
 
   let non_constant_used_as_constant_set id =
-    let msg =
-      Format.sprintf
-        "%s is used as a constant even though it is not defined as one" id
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.sprintf
+         "%s is used as a constant even though it is not defined as one" id
 
   let tuple_instantiation_length_failure term components label def_components =
-    let msg =
-      Format.asprintf
-        "The type term `%a` cannot be instantiated since it has %i type terms \
-         and `%s` requires %i type terms"
-        PP.pp_type_term term (List.length components) label
-        (List.length def_components)
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated since it has %i type terms \
+          and `%s` requires %i type terms"
+         PP.pp_type_term term (List.length components) label
+         (List.length def_components)
 
   let tuple_instantiation_failure_not_labelled_tuple term label =
-    let msg =
-      Format.asprintf
-        "The type term `%a` cannot be instantiated since '%s' is not a \
-         labelled tuple type"
-        PP.pp_type_term term label
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated since '%s' is not a \
+          labelled tuple type"
+         PP.pp_type_term term label
 
   let record_instantiation_failure_different_fields term def_term =
-    let msg =
-      Format.asprintf
-        "The type term `%a` cannot be instantiated since its list of fields is \
-         different to those of %a"
-        PP.pp_type_term term PP.pp_type_term def_term
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated since its list of fields \
+          is different to those of %a"
+         PP.pp_type_term term PP.pp_type_term def_term
 
   let record_instantiation_failure_not_labelled_record term label =
-    let msg =
-      Format.asprintf
-        "The type term `%a` cannot be instantiated since '%s' is not a \
-         labelled record type"
-        PP.pp_type_term term label
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated since '%s' is not a \
+          labelled record type"
+         PP.pp_type_term term label
 
   let instantiation_failure_not_a_type term label =
-    let msg =
-      Format.asprintf
-        "The type term `%a` cannot be instantiated since '%s' is not a type"
-        PP.pp_type_term term label
-    in
-    raise (SpecError msg)
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated since '%s' is not a type"
+         PP.pp_type_term term label
 
-  let bad_layout term layout consistent_layout =
-    let msg =
-      Format.asprintf
-        "layout %a is inconsistent with %a. Here's a consistent layout: %a"
-        PP.pp_math_shape layout PP.pp_type_term term PP.pp_math_shape
-        consistent_layout
-    in
-    raise (SpecError msg)
+  let bad_layout term layout ~consistent_layout =
+    spec_error
+    @@ Format.asprintf
+         "layout %a is inconsistent with %a. Here's a consistent layout: %a"
+         PP.pp_math_shape layout PP.pp_type_term term PP.pp_math_shape
+         consistent_layout
 end
 
 (** [vars_of_type_term term] returns the list of term-naming variables that
@@ -287,32 +265,34 @@ let elem_name = function
 
 (** Lists nodes that define identifiers and can be referenced. *)
 let list_definition_nodes ast =
-  List.fold_left
-    (fun acc_nodes elem ->
+  List.fold_right
+    (fun elem acc_nodes ->
       match elem with
       | Elem_Relation def -> Node_Relation def :: acc_nodes
       | Elem_Type ({ Type.variants } as def) ->
-          let acc_nodes = Node_Type def :: acc_nodes in
           (* Labelled types directly under this type are considered defined here,
              but labelled types nested further in are considered as type references.
           *)
-          List.fold_left
-            (fun acc_nodes ({ TypeVariant.term } as variant) ->
-              match term with
-              | Label _
-              | LabelledTuple { label_opt = Some _ }
-              | LabelledRecord { label_opt = Some _ } ->
-                  Node_TypeVariant variant :: acc_nodes
-              | LabelledTuple { label_opt = None }
-              | LabelledRecord { label_opt = None }
-              | _ ->
-                  acc_nodes)
-            acc_nodes variants
+          let acc_nodes =
+            List.fold_right
+              (fun ({ TypeVariant.term } as variant) acc_nodes ->
+                match term with
+                | Label _
+                | LabelledTuple { label_opt = Some _ }
+                | LabelledRecord { label_opt = Some _ } ->
+                    Node_TypeVariant variant :: acc_nodes
+                | LabelledTuple { label_opt = None }
+                | LabelledRecord { label_opt = None }
+                | _ ->
+                    acc_nodes)
+              variants acc_nodes
+          in
+          Node_Type def :: acc_nodes
       | Elem_Constant def -> Node_Constant def :: acc_nodes
       (* Although a render defines an identifier, it does not carry semantic
          meaning, and cannot be referenced elsewhere. *)
       | Elem_RenderTypes _ -> acc_nodes)
-    [] ast
+    ast []
 
 (** Creates a map from identifiers to the nodes where they are defined. If two
     nodes with the same identifier exist, a [SpecError] is raised. *)
@@ -320,8 +300,10 @@ let make_id_to_definition_node definition_nodes =
   List.fold_left
     (fun acc_map node ->
       let name = definition_node_name node in
-      if StringMap.mem name acc_map then Error.duplicate_definition name
-      else StringMap.add name node acc_map)
+      StringMap.update name
+        (function
+          | Some _ -> Error.duplicate_definition name | None -> Some node)
+        acc_map)
     StringMap.empty definition_nodes
 
 type t = {
@@ -343,30 +325,30 @@ module Check = struct
     let open Layout in
     match (term, layout) with
     | Label _, Unspecified -> ()
-    | Label _, _ -> Error.bad_layout term layout consistent_layout
+    | Label _, _ -> Error.bad_layout term layout ~consistent_layout
     | TypeOperator { term = _, t }, _ -> check_layout t layout
     | LabelledTuple { components }, Horizontal cells
     | LabelledTuple { components }, Vertical cells ->
-        if List.length components <> List.length cells then
-          Error.bad_layout term layout consistent_layout
+        if List.compare_lengths components cells <> 0 then
+          Error.bad_layout term layout ~consistent_layout
         else
           List.iter2
             (fun (_, term) cell -> check_layout term cell)
             components cells
     | LabelledRecord { fields }, Horizontal cells
     | LabelledRecord { fields }, Vertical cells ->
-        if List.length fields <> List.length cells then
-          Error.bad_layout term layout consistent_layout
+        if List.compare_lengths fields cells <> 0 then
+          Error.bad_layout term layout ~consistent_layout
         else
           List.iter2 (fun (_, term) cell -> check_layout term cell) fields cells
     | ConstantsSet names, (Horizontal cells | Vertical cells) ->
-        if List.length names <> List.length cells then
-          Error.bad_layout term layout consistent_layout
+        if List.compare_lengths names cells <> 0 then
+          Error.bad_layout term layout ~consistent_layout
         else List.iter2 (fun _ cell -> check_layout (Label "") cell) names cells
     | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
         (Horizontal cells | Vertical cells) ) ->
         if List.length cells <> 2 then
-          Error.bad_layout term layout consistent_layout
+          Error.bad_layout term layout ~consistent_layout
         else check_layout from_term (List.nth cells 0);
         check_layout to_term (List.nth cells 1)
     | _, Unspecified -> ()
@@ -836,11 +818,7 @@ module Check = struct
                     TypeVariant.term =
                       LabelledTuple { components = def_components };
                   } ->
-                  if
-                    List.compare_length_with components
-                      (List.length def_components)
-                    <> 0
-                  then
+                  if List.compare_lengths components def_components <> 0 then
                     Error.tuple_instantiation_length_failure term components
                       label def_components
                   else ()
@@ -924,9 +902,7 @@ end
     correctness. *)
 let from_ast ast =
   let definition_nodes = list_definition_nodes ast in
-  let defined_ids =
-    List.map definition_node_name definition_nodes |> List.rev
-  in
+  let defined_ids = List.map definition_node_name definition_nodes in
   let id_to_defining_node = make_id_to_definition_node definition_nodes in
   let () = Check.check_no_undefined_ids ast id_to_defining_node in
   let () = Check.check_relations_outputs ast id_to_defining_node in

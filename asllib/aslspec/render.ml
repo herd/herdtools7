@@ -83,7 +83,7 @@ module Make (S : SPEC_VALUE) = struct
       | List1 -> "KleenePlus"
       | Option -> "Option"
     in
-    pp_one_arg_macro fmt (operator_to_macro_name op) pp_arg arg
+    pp_one_arg_macro (operator_to_macro_name op) pp_arg fmt arg
 
   (** [pp_type_term fmt (type_term, layout)] renders [type_term] with [fmt],
       laid out according to [layout]. *)
@@ -92,7 +92,7 @@ module Make (S : SPEC_VALUE) = struct
     | Label name -> (
         match get_short_circuit_macro name with
         | Some short_circuit_macro ->
-            over_text fmt pp_id_as_macro name pp_print_string
+            pp_overtext fmt pp_id_as_macro name pp_print_string
               short_circuit_macro
         | None -> pp_id_as_macro fmt name)
     | TypeOperator { op; term = sub_term } ->
@@ -131,13 +131,13 @@ module Make (S : SPEC_VALUE) = struct
   and pp_opt_named_type_term fmt ((name_opt, term), layout) =
     match name_opt with
     | None -> fprintf fmt {|%a|} pp_type_term (term, layout)
-    | Some name -> over_text fmt pp_type_term (term, layout) pp_var name
+    | Some name -> pp_overtext fmt pp_type_term (term, layout) pp_var name
 
   (** [pp_opt_named_type_terms fmt (opt_type_terms, layout)] formats a list of
       optionally-named type terms [opt_type_terms] using [fmt] and laid out
       according to [layout]. *)
   and pp_opt_named_type_terms fmt (opt_type_terms, layout) =
-    pp_sep_elements ~pp_sep:pp_comma ~alignment:"c" pp_opt_named_type_term
+    pp_aligned_elements ~pp_sep:pp_comma ~alignment:"c" pp_opt_named_type_term
       layout fmt opt_type_terms
 
   (** [pp_output_types fmt (terms, layout)] renders the relation output [terms]
@@ -147,7 +147,7 @@ module Make (S : SPEC_VALUE) = struct
       fprintf fmt {|%a|} pp_type_term (List.hd terms, layout)
     else
       let pp_multiple_terms fmt (terms, layout) =
-        pp_connect_elements
+        pp_aligned_elements_and_operators
           ~pp_sep:(fun fmt () -> pp_macro fmt union_macro_name)
           ~alignment:"c" pp_type_term layout fmt terms
       in

@@ -118,13 +118,13 @@ let list1(x) :=
 (* Actual AST rules                         *)
 (* ---------------------------------------- *)
 
-let spec := elems=terminated(list(elem), EOF); { elems }
+let spec := elems=terminated(list(terminated(elem, SEMI)), EOF); { elems }
 
 let elem :=
-    | ~=type_definition; SEMI; { type_definition }
-    | ~=relation_definition; SEMI; { relation_definition }
-    | ~=constant_definition; SEMI; { constant_definition }
-    | ~=render_types; SEMI; { render_types }
+    | type_definition
+    | relation_definition
+    | constant_definition
+    | render_types
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }

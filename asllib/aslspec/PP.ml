@@ -28,7 +28,7 @@ let pp_attribute fmt = function
   | MathMacroAttribute macro -> pp_print_string fmt macro
 
 let pp_attribute_key_value fmt (key, value) =
-  fprintf fmt {|%a = %a,|} pp_attribute_key key pp_attribute value
+  fprintf fmt "%a = %a," pp_attribute_key key pp_attribute value
 
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()
