@@ -9,18 +9,6 @@ which is then used in \TypingRuleRef{StaticEval} to define the overall static ev
 
 \TypingRuleDef{StaticEval}
 \RenderRelation{static_eval}
-\BackupOriginalRelation{
-The function
-\[
-  \staticeval(\overname{\staticenvs}{\tenv} \aslsep \overname{\expr}{\ve}) \;\aslto\;
-  \overname{\literal}{\vv} \cup
-  \overname{\typeerror}{\TypeErrorConfig}
-\]
-evaluates an expression $\ve$
-in the \staticenvironmentterm{} $\tenv$, returning a literal $\vv$.
-If the evaluation terminates by a thrown exception of a value that is not a literal
-(for example, a record value), the result is a \typingerrorterm{}.
-} % END_OF_BACKUP_RELATION
 
 This function assumes that $\ve$ is a \pureterm{} and thus the evaluation is deterministic.
 
@@ -105,13 +93,6 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 
 \TypingRuleDef{StaticEnvToEnv}
 \RenderRelation{static_env_to_env}
-\BackupOriginalRelation{
-The function
-\[
-  \staticenvtoenv(\overname{\staticenvs}{\tenv}) \typearrow \overname{\envs}{\env}
-\]
-transforms the constants defined in the \staticenvironmentterm{} $\tenv$ into an environment $\env$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Transforming Static environments to Dynamic Environments}
 In \listingref{static-eval}, in order to statically evaluate the expression

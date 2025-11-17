@@ -83,22 +83,7 @@ as they discard their declared storage elements.
 \AbstractSyntaxDef{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{decl_global_storage}
-\BackupOriginalAST{
-\begin{flalign*}
-\decl \derives\ & \DGlobalStorage(\globaldecl) &\\
-\globaldecl \derives\ &
-{\left\{
-  \begin{array}{rcl}
-  \GDkeyword &:& \globaldeclkeyword, \\
-  \GDname &:& \identifier,\\
-  \GDty &:& \ty?,\\
-  \GDinitialvalue &:& \expr?
-  \end{array}
-  \right\}
- } &\\
- \globaldeclkeyword \derives\ & \GDKConstant \;|\; \GDKConfig \;|\; \GDKLet \;|\; \GDKVar &
-\end{flalign*}
-}
+
 
 \ASTRuleDef{GlobalStorageDecl}
 This rule defines the cases for $\builddecl$ for global storage declarations.
@@ -350,19 +335,6 @@ See \ExampleRef{Declaring Global Storage}.
 
 \TypingRuleDef{DeclareGlobalStorage}
 \RenderRelation{declare_global_storage}
-\BackupOriginalRelation{
-The function
-\[
-  \declareglobalstorage(\overname{\globalstaticenvs}{\tenv} \aslsep \overname{\globaldecl}{\gsd})
-  \aslto
-  (\overname{\globalstaticenvs}{\newgenv} \aslsep \overname{\globaldecl}{\newgsd})
-  \cup
-  \overname{\typeerror}{\TypeErrorConfig}
-\]
-annotates the global storage declaration $\gsd$ in the \globalstaticenvironmentterm{} $\genv$,
-yielding a modified \globalstaticenvironmentterm{} $\newgenv$ and annotated global storage declaration $\newgsd$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Declaring Global Storage}
 \listingref{DeclareGlobalStorage} shows examples of well-typed global storage declarations.
@@ -473,29 +445,6 @@ of an ill-typed global storage declaration due to precision loss.
 
 \TypingRuleDef{AnnotateTyOptInitialValue}
 \RenderRelation{annotate_ty_opt_initial_value}
-\BackupOriginalRelation{
-The function
-\[
-\begin{array}{r}
-\annotatetyoptinitialvalue(
-  \overname{\staticenvs}{\tenv} \aslsep
-  \overname{\globaldeclkeyword}{\gdk} \aslsep
-  \overname{\Bool}{\vmustbepure} \aslsep
-  \overname{\Option{\ty}}{\tyoptp} \aslsep
-  \overname{\Option{\expr}}{\initialvalue}
-  ) \\ \aslto
-  (\overname{(\expr\times \ty \times \TSideEffectSet)}{\typedinitialvalue}
-  \times \overname{\Option{\ty}}{\tyoptp} \times \overname{\ty}{\declaredt})
-  \cup \overname{\typeerror}{\TypeErrorConfig}
-\end{array}
-\]
-is used in the context of a declaration of a global storage element with optional type annotation $\tyoptp$
-and optional initializing expression $\initialvalue$, in the \staticenvironmentterm{} $\tenv$.
-It determines $\typedinitialvalue$, which consists
-of an expression, a type, and a \sideeffectsetterm,
-the annotation of the type in $\tyoptp$ (in case there is a type), and the type
-that should be associated with the storage element $\declaredt$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Declaring Global Storage}.
 
@@ -640,30 +589,6 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
 This helper function is applied following
 $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$ is the type associated with
 $\name$.
-\BackupOriginalRelation{
-The function
-\[
-\updateglobalstorage
-\left(
-\begin{array}{c}
-  \overname{\staticenvs}{\tenv} \aslsep\\
-    \overname{\Identifier}{\name} \aslsep\\
-    \overname{\globaldeclkeyword}{\gdk} \aslsep\\
-    \overname{(\ty\times\expr\times\TSideEffectSet)}{\typedinitialvalue}
-\end{array}
-\right) \aslto \overname{\staticenvs}{\newtenv}
-\]
-updates the \staticenvironmentterm{} $\tenv$ for the global storage element
-named $\name$ with global declaration keyword $\gdk$,
-and a tuple (obtained via \\
-\TypingRuleRef{AnnotateTyOptInitialValue})
-$\typedinitialvalue$, which consists a type for the initializing value,
-the annotated initializing expression, and the inferred \sideeffectsetterm\ for the initializing value.
-The result is the updated \staticenvironmentterm{} $\newtenv$.
-\ProseOtherwiseTypeError
-This helper function is applied following $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$
-is the type associated with $\name$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Updating the Global Storage for a Constant}
 The specification in \listingref{UpdateGlobalStorage-constant}
@@ -812,23 +737,6 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 
 \TypingRuleDef{AddGlobalStorage}
 \RenderRelation{add_global_storage}
-\BackupOriginalRelation{
-The function
-\[
-  \addglobalstorage(
-    \overname{\globalstaticenvs}{\genv} \aslsep
-    \overname{\Identifier}{\name} \aslsep
-    \overname{\globaldeclkeyword}{\keyword} \aslsep
-    \overname{\ty}{\declaredt}
-  )
-  \aslto
-    \overname{\globalstaticenvs}{\newgenv} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns a \globalstaticenvironmentterm{} $\newgenv$ which is identical to the \globalstaticenvironmentterm{} $\genv$,
-except that the identifier $\name$, which is assumed to name a global storage element,
-is bound to the global storage keyword $\keyword$ and type $\declaredt$.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Adding Global Storage Elements to the Static Environment}
 Adding the global storage elements in \listingref{EvalGlobals},
@@ -872,23 +780,6 @@ This section defines the following relations:
 
 \SemanticsRuleDef{EvalGlobals}
 \RenderRelation{eval_globals}
-\BackupOriginalRelation{
-The relation
-\[
-  \evalglobals(\overname{\KleeneStar{\decl}}{\vdecls}, (\overname{\overname{\envs}{\env} \times \overname{\XGraphs}{\vgone}}{\envm}))
-  \;\aslrel\;
-  \left(
-  \begin{array}{cl}
-  \overname{(\envs \times \XGraphs)}{C} & \cup\\
-  \overname{\TThrowing}{\ThrowingConfig} & \cup\\
-  \overname{\TDynError}{\DynErrorConfig} & \cup\\
-  \overname{\TDiverging}{\DivergingConfig} &
-  \end{array}
-  \right)
-\]
-updates the input environment and execution graph by initializing the global storage declarations.
-\ProseOtherwiseAbnormal
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Evaluating a List of Global Declarations}
 Evaluating the global storage declarations in \listingref{EvalGlobals}
@@ -956,13 +847,6 @@ before having the chance to evaluate \verb|main|.
 \SemanticsRuleDef{DeclareGlobal}
 \ProseParagraph
 \RenderRelation{declare_global}
-\BackupOriginalRelation{
-The relation
-\[
-  \declareglobal(\overname{\Identifier}{\name} \aslsep \overname{\nativevalue}{\vv} \aslsep \overname{\envs}{\env}) \;\aslrel\; \overname{\envs}{\newenv}
-\]
-updates the environment $\env$ by mapping $\name$ to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Declaring a Global Storage Element}
 Evaluating the specification in \listingref{DeclareGlobal}, results in updating the $\storage$ map

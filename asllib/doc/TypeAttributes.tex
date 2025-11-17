@@ -17,13 +17,7 @@ functions that inspect the structure of types:
 
 \TypingRuleDef{BuiltinSingularType}
 \RenderRelation{is_builtin_singular}
-\BackupOriginalRelation{
-The predicate
-\[
-  \isbuiltinsingular(\overname{\ty}{\tty}) \;\aslto\; \Bool
-\]
-tests whether the type $\tty$ is a \emph{builtin singular type}.
-}
+
 
 \ProseParagraph
 The \emph{builtin singular types} are:
@@ -61,13 +55,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 
 \TypingRuleDef{NamedType}
 \RenderRelation{is_named}
-\BackupOriginalRelation{
-The predicate
-\[
-  \isnamed(\overname{\ty}{\tty}) \;\aslto\; \Bool
-\]
-tests whether the type $\tty$ is a \emph{named type}.
-}
+
 
 \Enumerationtypesterm{}, record types, collection types, and exception types
 must be declared and associated with a named type.
@@ -96,13 +84,7 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
 \TypingRuleDef{AnonymousType}
 \identd{VMZX} \identi{SBCK}%
 \RenderRelation{is_anonymous}
-\BackupOriginalType{
-The predicate
-\[
-  \isanonymous(\overname{\ty}{\tty}) \;\aslto\; \Bool
-\]
-tests whether the type $\tty$ is an \anonymoustype.
-}
+
 
 \ExampleDef{Anonymous Types}
 The well-typed specification in \listingref{AnonymousType} illustrates the use
@@ -127,16 +109,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \TypingRuleDef{SingularType}
 \identr{GVZK}%
 \RenderRelation{is_singular}
-\BackupOriginalRelation{
-The predicate
-\[
-  \issingular(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \;\aslto\;
-  \overname{\Bool}{\vb} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-tests whether the type $\tty$ is a \emph{\singulartypeterm} in the \staticenvironmentterm{} $\tenv$,
-yielding the result in $\vb$.
-\ProseOtherwiseTypeError
-}
+
 
 \ExampleDef{Singular types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
@@ -172,13 +145,7 @@ In ASL there are three such types --- record types, collection types, and
 exception types.
 
 \RenderRelation{is_structured}
-\BackupOriginalRelation{
-The predicate
-\[
-  \isstructured(\overname{\ty}{\tty}) \;\aslto\; \overname{\Bool}{\vb}
-\]
-tests whether the type $\tty$ is a \structuredtypeterm\ and yields the result in $\vb$.
-}
+
 
 \ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
@@ -204,15 +171,6 @@ $\tty$.
 
 \TypingRuleDef{Structure}
 \RenderRelation{get_structure}
-\BackupOriginalRelation{
-The function
-\[
-  \tstruct(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-assigns a type to its \hypertarget{def-tstruct}{\emph{\structureterm}}, which is the type formed by
-recursively replacing named types by their type definition in the \staticenvironmentterm{} $\tenv$.
-If a named type is not associated with a declared type in $\tenv$, a \typingerrorterm{} is returned.
-} % END_OF_BACKUP_RELATION
 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
 which ensures that \TypingRuleRef{Structure} terminates\footnote{In mathematical terms,
@@ -307,16 +265,6 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 \TypingRuleDef{MakeAnonymous}
 \RenderRelation{make_anonymous}
-\BackupOriginalRelation{
-The function
-\[
-  \makeanonymous(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \overname{\ty}{\vt} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-returns the \emph{\underlyingtypeterm} --- $\vt$ --- of the type $\tty$ in the \staticenvironmentterm{} $\tenv$ or a \typingerrorterm{}.
-Intuitively, $\tty$ is the first non-named type that is used to define $\tty$. Unlike $\tstruct$,
-$\makeanonymous$ replaces named types by their definition until the first non-named type is found but
-does not recurse further.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Underlying Type of a Type}
 Consider the following example:
@@ -373,14 +321,6 @@ A type is a \emph{\constrainedintegerterm} if it is either a \wellconstrainedint
 or a \parameterizedintegertypeterm.
 
 \RenderRelation{check_constrained_integer}
-\BackupOriginalRelation{
-The function
-\[
-  \checkconstrainedinteger(\overname{\staticenvs}{\tenv} \aslsep \overname{\ty}{\tty}) \aslto \{\True\} \cup \overname{\typeerror}{\TypeErrorConfig}
-\]
-checks whether the type $\vt$ is a \constrainedintegerterm{} type.
-If so, the result is $\True$, otherwise the result is a \typingerrorterm.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking for Constrained Integers}
 \listingref{check-constrained-integer}

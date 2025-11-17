@@ -29,11 +29,7 @@ We now define configurations used to determine whether expressions are \pureterm
 These are known as \purities{}.
 
 \RenderType{TPurity}
-\BackupOriginalType{
-\[
-\TPurity \triangleq \{ \SEPure,\; \SEReadonly,\; \SEImpure \}
-\]
-}
+
 \begin{description}
     \item[\RenderConstant{SE_Pure}] describes evaluation of a \pureterm{} construct, one that can be evaluated at type-checking.
 
@@ -61,16 +57,7 @@ f \puritygeq f' \triangleq \lnot(f \purityless f') \enspace.
 We now define \sideeffectdescriptorsterm,
 which are configurations used to describe side effects, as explained below:
 \RenderType{TSideEffect}
-\BackupOriginalType{
-\[
-\TSideEffect \triangleq \left\lbrace
-\begin{array}{ll}
-    \LocalEffect(\overname{\TPurity}{\vp}) & \cup \\
-    \GlobalEffect(\overname{\TPurity}{\vp}) & \cup \\
-    \Immutability(\overname{\Bool}{\vimmutable}) &
-\end{array} \right.
-\]
-}
+
 
 \hypertarget{def-term-LocalEffect}{}
 \begin{description}
@@ -85,13 +72,6 @@ We now define a few helper functions over \sideeffectdescriptorsterm.
 
 \TypingRuleDef{SideEffectIsPure}
 \RenderRelation{side_effect_is_pure}
-\BackupOriginalRelation{
-\[
-    \sideeffectispure(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
-\]
-defines whether a \sideeffectdescriptorterm\ $\vs$ is considered \emph{\pureterm},
-yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{\pureterm} \sideeffectdescriptorterm\ helps to establish that
 an expression can be evaluated during type-checking.
 
@@ -134,13 +114,6 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 
 \TypingRuleDef{SideEffectIsReadonly}
 \RenderRelation{side_effect_is_readonly}
-\BackupOriginalRelation{
-\[
-    \sideeffectisreadonly(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
-\]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\readonlyterm},
-yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{\readonlyterm} \sideeffectdescriptorterm\ helps to establish that
 an expression evaluates without modifying values of storage elements.
 
@@ -169,13 +142,6 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
 
 \TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
 \RenderRelation{side_effect_is_symbolically_evaluable}
-\BackupOriginalRelation{
-\[
-    \sideeffectissymbolicallyevaluable(\overname{\TSideEffect}{\vs}) \aslto \overname{\Bool}{\vb}
-\]
-defines whether a \sideeffectdescriptorsterm\ $\vs$ is considered \emph{\symbolicallyevaluableterm},
-yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 Intuitively, a \emph{symbolically evaluable} \sideeffectdescriptorterm\ helps establish that
 an expression evaluates without modifying any storage element,
 and always yielding the same result, that is, deterministically.
@@ -219,13 +185,6 @@ See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descript
 
 \TypingRuleDef{SideEffectsLDK}
 \RenderRelation{ses_ldk}
-\BackupOriginalRelation{
-The function
-\[
-  \sesldk(\overname{\localdeclkeyword}{\ldk}) \aslto \overname{\pow{\TSideEffect}}{\vs}
-\]
-constructs a \sideeffectsetterm{} $\vs$ corresponding to a read of a storage element declared with a local declaration keyword $\ldk$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Side Effects of Local Storage Declarations}
 The specification in \listingref{SideEffectsLDK} shows examples of local storage declarations
@@ -250,13 +209,6 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 
 \TypingRuleDef{SideEffectsGDK}
 \RenderRelation{ses_gdk}
-\BackupOriginalRelation{
-The function
-\[
-  \sesgdk(\overname{\globaldeclkeyword}{\gdk}) \aslto \overname{\pow{\TSideEffect}}{\vs}
-\]
-constructs a \sideeffectsetterm{} $\vs$ corresponding to a read of a storage element declared with a global declaration keyword $\gdk$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{The Side Effects of Global Storage Declarations}
 The specification in \listingref{SideEffectsGDK} shows examples of global storage declarations
@@ -283,14 +235,6 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 
 \TypingRuleDef{SESIsSymbolicallyEvaluable}
 \RenderRelation{is_symbolically_evaluable}
-\BackupOriginalRelation{
-The function
-\[
-  \issymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\bv}
-\]
-tests whether a set of \sideeffectdescriptorsterm\ $\vses$ are all \symbolicallyevaluableterm,
-yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 See \ExampleRef{Checking Whether Expressions are Symbolically Evaluable}.
 
@@ -315,15 +259,6 @@ is \symbolicallyevaluableterm.
 
 \TypingRuleDef{CheckSymbolicallyEvaluable}
 \RenderRelation{check_symbolically_evaluable}
-\BackupOriginalRelation{
-The function
-\[
-  \checksymbolicallyevaluable(\overname{\TSideEffectSet}{\vses}) \aslto
-  \{\True\} \cup \typeerror
-\]
-returns $\True$ if the set of \sideeffectdescriptorsterm\ $\vses$ is \symbolicallyevaluableterm.
-\ProseOtherwiseTypeError
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Checking Whether Expressions are Symbolically Evaluable}
 In \listingref{CheckSymbolicallyEvaluable},
@@ -359,13 +294,6 @@ This is checked in the following constructs:
 
 \TypingRuleDef{SESIsReadonly}
 \RenderRelation{ses_is_readonly}
-\BackupOriginalRelation{
-The function
-\[
-    \sesisreadonly(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
-\]
-tests whether all side effects in the set $\vses$ are \readonlyterm{}, yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectisreadonly$ holds for
@@ -401,13 +329,6 @@ where read-only expressions are expected (as explained in the comments).
 
 \TypingRuleDef{SESIsPure}
 \RenderRelation{ses_is_pure}
-\BackupOriginalRelation{
-The function
-\[
-    \sesispure(\overname{\TSideEffectSet}{\vses}) \aslto \overname{\Bool}{\vb}
-\]
-tests whether all side effects in the set $\vses$ are \pureterm{}, yielding the result in $\vb$.
-} % END_OF_BACKUP_RELATION
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for
@@ -433,13 +354,6 @@ appearing in bitvector widths for bitvector types with bitfields must be pure.
 
 \TypingRuleDef{SESForSubprogram}
 \RenderRelation{ses_for_subprogram}
-\BackupOriginalRelation{
-The function
-\[
-  \sesforsubprogram(\overname{\Option{\funcqualifier}}{\vqualifier}) \aslto \overname{\pow{\TSideEffect}}{\vs}
-\]
-produces a \sideeffectsetterm{} given a subprogram qualifier $\vqualifier$.
-} % END_OF_BACKUP_RELATION
 
 \ExampleDef{Side effects for subprograms}
 The specification in \listingref{SESForSubprogram} shows example subprogram declarations and the \sideeffectdescriptorsterm{} derived from their subprogram qualifiers (see comments).
