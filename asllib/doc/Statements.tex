@@ -507,7 +507,6 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_decl}
 
-
 \ASTRuleDef{SDecl}
 \begin{mathpar}
 \inferrule[let\_constant]{
@@ -865,9 +864,13 @@ See \ExampleRef{Type-satisfaction Examples}.
 \end{mathpar}
 \identr{ZCVD}  \identr{LXQZ}
 
-
 \subsection{Semantics}
-\SemanticsRuleDef{SDeclSome}
+\SemanticsRuleDef{SDecl}
+Notice that \TypingRuleRef{SDecl} ensures that a typed \declarationstatementterm{}
+has an initializing expression.
+% The implementation still handles the case where there is no initializing expression,
+% for cases where type-checking is skipped.
+
 \ExampleDef{Declaration With an Initializing Value}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
@@ -879,39 +882,24 @@ In \listingref{semantics-sdeclnone},
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vs$ is a declaration with an initial value,
-          $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
-    \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
-    \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
-          value in $\envone$ as per \chapref{LocalStorageDeclarations} is
-          $\ResultLexpr(\newg, \newenv)$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-  \end{itemize}
-
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
-    \item the result is a \DynamicErrorConfigurationTerm{}.
-  \end{itemize}
+  \item $\vs$ is a declaration with an initial value,
+        $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
+  \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
+  \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
+        value in $\envone$ as per \chapref{LocalStorageDeclarations} is
+        $\ResultLexpr(\newg, \newenv)$;
+  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[some]{
+\inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
   \evallocaldecl(\envone, \ldi, \vm) \evalarrow \ResultLexpr(\newg, \newenv)\\
 }{
   \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \some{\ve})) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \None)) \evalarrow \DynamicErrorVal{UninitialisedDecl}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
