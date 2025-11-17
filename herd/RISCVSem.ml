@@ -271,6 +271,9 @@ module
           begin match ii.A.inst with
           | RISCV.INop-> B.next1T ()
           | RISCV.Ret when O.variant Variant.Telechat -> M.unitT () >>! B.Exit
+          | RISCV.Li (r,k) ->
+              let v = V.Cst.Scalar.of_int64 k |> V.scalarToV in
+              write_reg r v ii >>= B.next1T
           | RISCV.OpI2 (RISCV.LUI,r1,k) ->
               (* put k into upper half of r1*)
               M.op (Op.ShiftLeft) (V.intToV k)

@@ -314,6 +314,7 @@ type signed = Sign.t
 type 'k kinstruction =
   | INop
   | Ret
+  | Li of reg * Int64.t
   | OpI of opi * reg * reg * 'k
   | OpI2 of opi2 * reg * 'k
   | OpA of opa * reg * lbl
@@ -348,6 +349,7 @@ type 'k basic_pp = { pp_k : 'k -> string; is_zero : 'k -> bool }
 let do_pp_instruction m = function
   | INop -> "nop"
   | Ret -> "ret"
+  | Li (r,k) -> sprintf "li %s,%Li" (pp_reg r) k
   (* MV is a pseudoinstruction - special case of ADDI*)
   | OpI (ADDI, r1,r2,k) when m.is_zero k ->
       sprintf "mv %s,%s" (pp_reg r1) (pp_reg r2)
@@ -430,6 +432,7 @@ let fold_regs (f_reg,f_sreg) =
 
   fun c ins -> match ins with
   | INop|Ret|J _ | FenceIns _ -> c
+  | Li (r1,_)
   | OpA (_,r1,_) | AUIPC (r1,_) | OpI2 (_,r1,_) -> fold_reg r1 c
   | OpI (_,r1,r2,_) | OpIW (_,r1,r2,_)
   | Bcc (_,r1,r2,_)
@@ -451,6 +454,7 @@ let map_regs f_reg f_symb =
 
   function ins -> match ins with
   | INop|Ret|J _ | FenceIns _ -> ins
+  | Li (r,k) -> Li (map_reg r,k)
   | OpI (op,r1,r2,k) ->
       OpI (op,map_reg r1,map_reg r2,k)
   | OpI2 (op,r1,k) ->
@@ -488,7 +492,7 @@ let map_addrs _f ins = ins
 let get_next = function
   | J lbl -> [Label.To lbl;]
   | Bcc (_,_,_,lbl) -> [Label.Next; Label.To lbl;]
-  | INop|Ret|OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _) | OpA (_,_,_) | AUIPC (_,_)
+  | INop|Ret|Li _|OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)|OpW (_, _, _, _) | OpA (_,_,_) | AUIPC (_,_)
   | OpI2 (_,_,_)
   | Load (_,_, _, _, _, _)|Store (_,_, _, _, _)|LoadReserve (_, _, _, _)
   | StoreConditional (_, _, _, _, _)|FenceIns _|Amo _|Ext (_,_,_,_)
@@ -510,7 +514,7 @@ include Pseudo.Make
       | OpIW (op,r1,r2,k) -> OpIW (op,r1,r2,k_tr k)
       |AUIPC (r1, k) -> AUIPC (r1,k_tr k)
       | Op (_, _, _, _)|OpW (_, _, _, _)|J _|Bcc (_, _, _, _)
-      |INop | Ret | OpA (_,_,_)
+      |INop | Ret | Li _ | OpA (_,_,_)
       |Load (_, _, _, _, _, _)|Store (_, _ ,_ , _, _)
       | Ext (_,_,_,_)
       |LoadReserve (_, _, _, _)|StoreConditional (_, _, _, _, _)|Amo _|FenceIns _
@@ -524,6 +528,7 @@ include Pseudo.Make
         | Amo _ -> 2
         | INop
         | Ret
+        | Li _
         | OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         | OpI2 (_,_,_)
         | OpA (_,_,_) | AUIPC (_,_) | Ext (_,_,_,_)
@@ -538,6 +543,7 @@ include Pseudo.Make
           -> f k lbl
         | INop
         | Ret
+        | Li _
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _) | AUIPC (_,_)
         | OpI2 (_,_,_)
         |OpW (_, _, _, _)|Load (_, _, _, _, _, _)|Store (_, _, _, _, _)
@@ -550,6 +556,7 @@ include Pseudo.Make
         | OpA (op,r1,lbl) -> OpA (op,r1,BranchTarget.as_string_fun f lbl)
         |INop
         |Ret
+        |Li _
         |OpI (_, _, _, _)|OpIW (_, _, _, _)|Op (_, _, _, _)
         | OpI2 (_,_,_)
         |OpW (_, _, _, _)|Load _|Store _| AUIPC (_,_)

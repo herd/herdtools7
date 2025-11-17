@@ -219,7 +219,7 @@ rule token = parse
 | [' ''\t''\r'] { token lexbuf }
 | '\n'      { incr_lineno lexbuf; token lexbuf }
 | "(*"      { LU.skip_comment lexbuf ; token lexbuf }
-| '-' ? num as x { NUM (int_of_string x) }
+| '-' ? num as x { NUM x }
 | 'P' (num as x)
     { PROC (int_of_string x) }
 | '&' (name as x) { META x }

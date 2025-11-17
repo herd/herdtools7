@@ -79,6 +79,9 @@ include Arch.MakeArch(struct
     and find_lab = find_lab subs
     and find_cst = find_cst subs in
     function
+      | Li (r1,k) ->
+          conv_reg r1 >! fun r1 ->
+          Li (r1,k)
       | OpI (op,r1,r2,k) ->
           conv_reg r1 >> fun r1 ->
           conv_reg r2 >> fun r2 ->
