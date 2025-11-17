@@ -1,0 +1,12 @@
+RISCV A017
+{
+uint64_t x=0xffffffffff;
+0:x2=x;
+uint64_t 0:x3;
+uint64_t 0:x5;
+}
+  P0            ;
+ lw x5,0(x2)    ;
+ lwu x3,0(x2)   ;
+forall 0:x5=0xffffffffffffffff /\ 0:x3=0xffffffff
+

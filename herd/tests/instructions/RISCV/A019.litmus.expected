@@ -1,0 +1,12 @@
+Test A019 Allowed
+States 3
+1:x2=-91; 1:x3=165;
+1:x2=0; 1:x3=0;
+1:x2=0; 1:x3=165;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Condition exists (1:x2=4294967205 /\ 1:x3=165)
+Observation A019 Sometimes 1 2
+Hash=d0c383a29afc75b48b1cb0e3413e890d
+

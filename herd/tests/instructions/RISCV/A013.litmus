@@ -1,0 +1,10 @@
+RISCV A013
+{
+uint64_t 0:x1;
+uint64_t 0:x3=0xfffffffe;
+}
+  P0          ;
+ori x1,x0,1   ;
+subw x1,x0,x1 ;
+addiw x3,x3,1 ;
+forall 0:x1=-1 /\ 0:x3=-1

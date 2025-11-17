@@ -1,0 +1,11 @@
+RISCV A019
+(* From a test by Quentin Bordier *)
+{
+0:x1=a;
+1:x1=a;
+}
+P0              |  P1             ;
+ori x2, x0, 421 | lb    x2, 0(x1) ;
+fence w,w       | fence r,r       ;
+sw  x2, 0(x1)   | lbu x3,0(x1)    ;
+exists 1:x2=0xffffffa5 /\ 1:x3=0xa5

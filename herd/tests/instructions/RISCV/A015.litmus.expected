@@ -1,0 +1,10 @@
+Test A015 Required
+States 1
+0:x3=255; 0:x5=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:x5=4294967295 /\ 0:x3=255)
+Observation A015 Always 1 0
+Hash=5ea54e159635bcc2325db323125e00ac
+

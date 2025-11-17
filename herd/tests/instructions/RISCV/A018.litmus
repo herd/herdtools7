@@ -1,0 +1,10 @@
+RISCV A018
+(* From a test by Quentin Bordier *)
+{
+0:x1=a;
+1:x1=a;
+}
+P0              |  P1           ;
+ori x2, x0, 293 | lbu x2, 0(x1) ;
+sw x2, 0(x1)    | lb x3,0(x1)   ;
+exists 1:x2=37 /\ 1:x3=37

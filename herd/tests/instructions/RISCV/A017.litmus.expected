@@ -1,0 +1,10 @@
+Test A017 Required
+States 1
+0:x3=4294967295; 0:x5=18446744073709551615;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:x5=-1 /\ 0:x3=4294967295)
+Observation A017 Always 1 0
+Hash=2c8009f3cac4fdd81581bac11efa2b11
+
