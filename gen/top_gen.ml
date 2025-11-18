@@ -77,7 +77,8 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
        prog : A.pseudo list list ;
        scopes : BellInfo.scopes option ;
        final : F.final ;
-       env : typ A.LocMap.t
+       env : typ A.LocMap.t ;
+       obs : F.locations list
      }
 
   let get_nprocs t = List.length t.prog
@@ -811,8 +812,8 @@ let max_set = IntSet.max_elt
              The behaviour based on different fault-related flags. *)
           let get_faults ns =
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
-            if O.variant Variant_gen.NoFault then
-              F.FaultSet.empty,F.FaultSet.empty
+           if O.variant Variant_gen.NoFault then
+             F.FaultAtomSet.empty,F.FaultAtomSet.empty
            else if do_memtag || do_kvm || do_morello then
              List.fold_left
                (fun (pos_flts,neg_flts) n ->
@@ -820,15 +821,15 @@ let max_set = IntSet.max_elt
                   match e.C.check_fault,e.C.loc,e.C.bank with
                   | Some (lbl, do_fault),Data x,(Ord|CapaTag|CapaSeal) ->
                     let proc = n.C.evt.C.proc in
-                    let flt = ((proc, (Label.Set.singleton lbl)), Some (A.Loc x), None, None) in
+                    let flt = ((proc, Some lbl), Some (F.S x), None) in
                     (* Collect fault information based on `do_fault`,
                        add into either `pos_flts` for checking `Fault(...)`
                        or `neg_flts` for checking `~Fault(...)`. *)
-                    if do_fault then F.FaultSet.add flt pos_flts,neg_flts
-                    else pos_flts,F.FaultSet.add flt neg_flts
-                  | _ -> (pos_flts,neg_flts)) (F.FaultSet.empty,F.FaultSet.empty) ns
+                    if do_fault then F.FaultAtomSet.add flt pos_flts,neg_flts
+                    else pos_flts,F.FaultAtomSet.add flt neg_flts
+                  | _ -> (pos_flts,neg_flts)) (F.FaultAtomSet.empty,F.FaultAtomSet.empty) ns
            else (* no fault-related flag *)
-             F.FaultSet.empty,F.FaultSet.empty
+             F.FaultAtomSet.empty,F.FaultAtomSet.empty
           in
           (* END of get_faults *)
           (* Extract faults from proc `i` and its node list `ns` *)
@@ -837,18 +838,22 @@ let max_set = IntSet.max_elt
         let f =
           List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
         (* `fc` converts faults `flts` and final values of registers `final_env` to final *)
-        let fc =
+        let fc flts =
           match O.cond with
           | Unicond ->
               let evts =
                 List.map
                   (List.map (fun n -> n.C.evt))
                   splitted in
-              F.run evts m
-          | Cycle -> F.check f
-          | Observe -> F.observe f in
+              F.run evts m flts
+          | Cycle -> F.check ~is_pos:(not O.neg) f flts
+          | Observe -> F.exist_true in
+        let obs =
+          match O.cond with
+          | Unicond | Cycle -> []
+          | Observe -> F.observe f flts in
         let i = if do_kvm then A.complete_init O.hexa initvals i else i in
-        (i,c,fc flts,env),
+        (i,c,fc flts,env,obs),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
   (* END of compile_cycle *)
@@ -858,119 +863,124 @@ let max_set = IntSet.max_elt
 (* Dump *)
 (********)
 
-let get_proc = function
-  | A.Loc _ -> -1
-  | A.Reg (p,_) -> p
+  module State = struct
+  type state_atom = (A.location * (TestType.t * A.initval))
+  type t = state_atom list
 
-(*
-let pp_pointer t =
-  let open TypBase in
-  let open MachSize in
-  match t with
-  | Int|Std (Signed,Word) -> ""
-  | _ -> sprintf "%s* " (TypBase.pp t)
-*)
+  let dump_state_atom state =
+    let is_global = ( fun _ -> false ) in
+    MiscParser.dump_state_atom
+      is_global A.pp_location A.pp_initval state
 
-let dump_init chan inits env =
-  let locs_init =
-    List.fold_left
-      (fun k (loc,_) -> A.LocSet.add loc k)
-      A.LocSet.empty inits in
-  fprintf chan "{" ;
-  let pp =
-    A.LocMap.fold
-      (fun loc t k ->
-        match t with
-        | Array (ty,sz) ->
-           sprintf "%s %s[%d];"
-             (TypBase.pp ty) (A.pp_location loc) sz::k
-        | Typ t ->
-            if A.LocSet.mem loc locs_init then k
-            else
-              let open TypBase in
-              let open MachSize in
-              match t with
-              | Int|Std (Signed,Word) -> k
-              | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
-      env [] in
-  begin match pp with
-  | [] -> ()
-  | _::_ ->
-      fprintf chan "\n%s\n" (String.concat " " pp)
-  end ;
-  let rec p_rec q = function
-    | [] -> fprintf chan "\n}\n"
-    | (left,loc)::rem ->
-        let p = get_proc left in
-        if p <> q then fprintf chan "\n" else fprintf chan " " ;
-        fprintf chan "%s%s%s;"
-          (match loc with
-           | Some _ -> begin
-               match left with
-               | A.Loc l when Misc.is_pte l -> ""
-               | _ -> begin
-                 try
-                   let t =
-                     match A.LocMap.find left env with
-                     | Typ t -> t
-                     | _ -> raise Not_found in
-                   TypBase.pp t ^ " "
-                 with Not_found -> ""
-               end
-           end
-           | None -> "")
-          (A.pp_location left)
-          (match loc with
-          | Some v -> sprintf "=%s" (A.pp_initval v)
-          | None -> "") ;
-        p_rec p rem in
-  p_rec (-1) inits
+    (* split the `state_atom list` to `state_atom list list`
+       by grouping location for the same procedure *)
+    let states_list states =
+      List.fold_left
+        ( fun (acc, prev_loc) (loc,v) ->
+          let new_acc = match prev_loc,loc with
+            | Some (A.Reg(p1,_)),A.Reg(p2,_) when p1 = p2 ->
+              begin match acc with
+                | [] -> assert false
+                | hd :: tail -> ((loc,v) :: hd) :: tail
+              end
+            | _ -> [(loc,v)] :: acc in
+          (new_acc, Some loc)
+        ) ([],None) states
+      |> fst
 
+    let dump_state states = DumpUtils.dump_state dump_state_atom (states_list states)
 
-let rec dump_pseudo = function
-  | [] -> []
-  | A.Instruction ins::rem -> A.dump_instruction ins::dump_pseudo rem
-  | A.Label (lbl,ins)::rem ->
-      sprintf "%s:" lbl::dump_pseudo (ins::rem)
-  | A.Nop::rem -> dump_pseudo rem
-  | A.Symbolic _::_ -> assert false (* no symbolic in diy *)
-  | A.Macro (m,args)::rem ->
-      sprintf "%s(%s)"
-        m
-        (String.concat ","
-           (List.map A.pp_reg args))::
-      dump_pseudo rem
+    let typ_to_testtype = function
+      | Typ TypBase.Int -> TestType.TyDef
+      | Typ t -> TestType.Ty (TypBase.pp t)
+      | Array (t,size) -> TestType.TyArray (TypBase.pp t,size)
 
-let fmt_cols =
-  let rec fmt_col p k = function
-    | [] -> k
-    | cs::prog ->
-        (pp_proc p::dump_pseudo cs)::
-        fmt_col (p+1) k prog in
-  fmt_col 0 []
+    let init_type_env_to_states inits env =
+      (* annotation the inits list with typing *)
+      let type_inits = List.map ( fun (loc, init_opt) ->
+          let typing = match loc with
+            (* NOT add typing information of `pte` to loc *)
+            | A.Loc l when Misc.is_pte l -> TestType.TyDef
+            | _ -> A.LocMap.find_opt loc env
+                    |> Option.map typ_to_testtype
+                    |> Option.value ~default:TestType.TyDef in
+          (loc,(typing,Option.value ~default:(A.S "0") init_opt))
+          ) inits in
+      (* Add those location exists in `env` but not in `inits`
+         to the head of `type_inits` *)
+      let locs = List.split inits |> fst |> A.LocSet.of_list in
+      let extra_type_declaration =
+        A.LocMap.filter ( fun k -> not @@ A.LocSet.mem k locs ) env
+        (* to_list only exists after ocaml 5 *)
+          |> A.LocMap.to_seq |> List.of_seq
+          (* give default 0 value *)
+          |> List.map ( fun (loc, t) -> (loc, (typ_to_testtype t, A.S "0")) ) in
+      List.sort (fun (l, _) (r, _) -> A.location_compare r l) (type_inits @ extra_type_declaration)
+          |> List.filter_map ( fun (loc, (typ, value)) ->
+              match typ,value with
+              (* fix the array value from `v` -> `{v, v, ..}` *)
+              | TestType.TyArray (_,size), A.S v ->
+                Some (loc, (typ, A.S ( sprintf "{%s}" ( List.init size ( fun _ -> v ) |> String.concat "," ) ) ) )
+              (* fix the array only support basic value *)
+              | TestType.TyArray (_), _ -> assert false
+              (* remove if value and type is default *)
+              | TestType.TyDef, A.S "0" -> None
+              | _ -> Some (loc, (typ, value))
+          )
+  end
 
-  let dump_code chan code =
-    let pp = fmt_cols code in
-    Misc.pp_prog chan pp
+  module Dumper = SimpleDumper.Make
+  (struct let compat = false end)
+  (struct
+    module A = A
+
+    type v  = F.v
+    let dump_v = F.dump_val
+
+    type state = State.t
+    let dump_state = State.dump_state
+
+    type prop = F.prop
+    let dump_prop = ConstrGen.prop_to_string F.pp_prop_atom
+    let dump_constr = ConstrGen.constraints_to_string F.pp_prop_atom
+
+    type location = A.location
+    let dump_location = A.pp_location
+
+    type fault_type = FaultType.No.t
+    let dump_fault_type = FaultType.No.pp
+  end)
+
+  let add_proc_to_prog prog =
+    List.mapi ( fun index code ->
+      ((index, None, MiscParser.Main),code)
+    ) prog
 
   let dump_test_channel_full chan t =
-    fprintf chan "%s %s\n" (Archs.pp A.arch) t.name ;
-    if O.metadata then begin
-      if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
-      List.iter
-        (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-        t.info ;
-      Hint.dump O.hout t.name t.info
-    end ;
-    dump_init chan t.init t.env ;
-    dump_code chan t.prog ;
-    begin match t.scopes with
-    | None -> ()
-    | Some st ->
-        fprintf chan "scopes: %s\n" (BellInfo.pp_scopes st)
-    end ;
-    F.dump_final chan t.final ;
-    ()
+    let core_dumper_name = {
+      Name.name = t.name;
+      Name.file = "";
+      Name.texname = "";
+      Name.doc = t.com;
+    } in
+    let extra_data = match t.scopes with
+      | None -> []
+      | (Some  _ as scopes) ->
+        [MiscParser.BellExtra ({
+          BellInfo.regions = None;
+          BellInfo.scopes = scopes;
+          BellInfo.levels = None;
+        })] in
+    let core_dumper_t = {
+      MiscParser.info = t.info ;
+      MiscParser.init = State.init_type_env_to_states t.init t.env ;
+      MiscParser.prog = add_proc_to_prog t.prog ;
+      filter = None ;
+      MiscParser.condition = t.final;
+      MiscParser.locations = t.obs;
+      MiscParser.extra_data = extra_data ;
+    } in
+    Dumper.dump_info chan core_dumper_name core_dumper_t
 
   let dump_test_channel chan t =
     if O.cycleonly then
@@ -994,7 +1004,7 @@ let fmt_cols =
       | c::cs -> num_rec (p+1) (num_code p m c) cs in
     num_rec 0 StringMap.empty
 
-let tr_labs m env =
+let tr_labs m init =
   List.map
     (fun bd -> match bd with
       | (loc,Some (A.S v)) ->
@@ -1006,14 +1016,14 @@ let tr_labs m env =
           with Not_found -> bd
           end
       | _ -> bd)
-    env
+    init
 
 let do_self =  O.variant Variant_gen.Self
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
   let com = match com with None -> E.pp_edges es | Some com -> com in
-  let (init,prog,final,env),(prf,coms) = compile_cycle check init c in
+  let (init,prog,final,env,obs),(prf,coms) = compile_cycle check init c in
   let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
@@ -1029,7 +1039,7 @@ let test_of_cycle name
     info@myinfo@archinfo in
 
   { name=name ; info=info; com=com ;  edges = es ;
-    init=init ; prog=prog ; scopes = scope; final=final ; env=env; }
+    init=init ; prog=prog ; scopes = scope; final=final ; env=env; obs=obs}
 
 let make_test name ?com ?info ?check ?scope es =
   try
