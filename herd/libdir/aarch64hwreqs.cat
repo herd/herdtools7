@@ -95,10 +95,10 @@ let dob =
  | data
  | ctrl; [Exp & W | HU | TLBI | DC.CVAU | IC]
  | addr; [Exp & M]; po; [Exp & W | HU]
- | addr; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
- | data; [Exp & M]; lrs; [Exp & R | Imp & Tag & R]
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W]
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W] 
+ | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
+ | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
+ | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | HU]
+ | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | HU]
 
 (* Fetch-ordered-before *)
 let f-ob =
@@ -114,7 +114,7 @@ let pob =
 (* Atomic-ordered-before *)
 let aob =
  [Exp & M]; rmw; [Exp & M]
- | [Exp & M]; rmw; lrs; [A | Q]
+ | [Exp & M]; rmw; lmrs; [(Exp & R & A) | (Exp & R & Q)]
  | [Imp & TTD & R]; rmw; [HU]
 
 (* Barrier-ordered-before *)
@@ -125,12 +125,12 @@ let bob =
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
  | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
- | [range([A];amo;[L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [L]; po; [A]
- | [A | Q]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [A | Q]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & M | Imp & Tag & R]; po; [L]
- | [Exp & M | Imp & Tag & R]; iico_order; [L]
+ | [range([(Exp & R & A)]; amo; [(Exp & W & L) | (FAULT & L)])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & W & L) | (FAULT & L)]; po; [Exp & R & A]
+ | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & R & A) | (Exp & R & Q)]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & M | Imp & Tag & R]; po; [(Exp & W & L) | (FAULT & L)]
+ | [Exp & M | Imp & Tag & R]; iico_order; [(Exp & W & L) | (FAULT & L)]
 
 let po-scl-ob =
  [Exp & M]; (po & scl); [DC.CVAU]
@@ -161,8 +161,9 @@ let rec lob =
  | po-scl-ob
  | DSB-ob
  | IFB-ob
- | lwfs
- | lwfs; sca-class
+ | lmws
+ | lmws; sca-class
+ | lfs
  | dob
  | pob
  | aob

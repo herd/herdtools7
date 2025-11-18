@@ -514,8 +514,8 @@ aarch64-test-mixed:
 		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64/tests/kinds.txt \
-		-shelf-path catalogue/aarch64/shelf.py \
+		-kinds-path catalogue/aarch64-mixed/tests/kinds.txt \
+		-shelf-path catalogue/aarch64-mixed/shelf.py \
 		-variant mixed \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue aarch64 tests (mixed mode): OK"
