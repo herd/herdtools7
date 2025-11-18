@@ -40,9 +40,9 @@
   [1]
 
   $ aslref recursive-type.asl
-  File recursive-type.asl, line 1, characters 0 to 35:
+  File recursive-type.asl, line 1, characters 13 to 34:
   type tree of (tree, integer, tree);
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               ^^^^^^^^^^^^^^^^^^^^^
   ASL Static error: Undefined identifier: 'tree'
   [1]
 

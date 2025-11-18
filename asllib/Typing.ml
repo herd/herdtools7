@@ -3903,25 +3903,26 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let here x = add_pos_from ~loc:ty x in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let env1, t1, s' =
+    let t1, ses_t = annotate_type ~decl:true ~loc:(to_pos ty) env ty in
+    let env1, t2, s' =
       match s with
       (* AnnotateExtraFields( *)
-      | None -> (env, ty, None)
+      | None -> (env, t1, None)
       | Some (super, extra_fields) ->
           let+ () =
            fun () ->
-            if Types.subtype_satisfies env ty (T_Named super |> here) then ()
-            else conflict ~loc [ T_Named super ] ty
+            if Types.subtype_satisfies env t1 (T_Named super |> here) then ()
+            else conflict ~loc [ T_Named super ] t1
           in
           let new_ty =
-            if extra_fields = [] then ty
+            if extra_fields = [] then t1
             else
               match IMap.find_opt super genv.declared_types with
               | Some ({ desc = T_Record fields; _ }, _) ->
                   T_Record (fields @ extra_fields) |> here
               | Some ({ desc = T_Exception fields; _ }, _) ->
                   T_Exception (fields @ extra_fields) |> here
-              | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] ty
+              | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] t1
               | None -> undefined_identifier ~loc super
           and env = add_subtype name super env in
           (* the extra_fields have already been incorporated into new_ty,
@@ -3929,7 +3930,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (env, new_ty, Some (super, []))
       (* AnnotateExtraFields) *)
     in
-    let t2, ses_t = annotate_type ~decl:true ~loc env1 t1 in
     let time_frame =
       if SES.is_pure ses_t then TimeFrame.Constant else TimeFrame.Execution
     in

@@ -214,9 +214,9 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
   \item checking that $\name$ is not already declared in the global environment of $\genv$ yields $\True$\ProseOrTypeError;
   \item define $\tenv$ as the \staticenvironmentterm{} whose global component is $\genv$ and its local component is the empty local
         \staticenvironmentterm{};
-  \item annotating the \optionalterm\ extra fields $\vs$ for $\tty$ in $\tenv$ yields via \\ $\annotateextrafields$
-        yields the modified environment $\tenvone$, type $\vtone$, and annotated \optionalterm{} extra fields $\vsp$\ProseOrTypeError;
-  \item annotating $\vtone$ in $\tenvone$ yields $(\vttwo, \vsest)$\ProseOrTypeError;
+  \item annotating $\tty$ in $\tenv$ yields $(\vtone, \vsest)$\ProseOrTypeError;
+  \item annotating the \optionalterm\ extra fields $\vs$ for $\vtone$ in $\tenv$ yields via \\ $\annotateextrafields$
+        yields the modified environment $\tenvone$, type $\vttwo$, and annotated \optionalterm{} extra fields $\vsp$\ProseOrTypeError;
   \item applying $\sesispure$ to $\vsest$ yields $\vb$;
   \item \Proseeqdef{$\vpurity$} as $\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$;
   \item applying $\addtype$ to $\name$, $\vttwo$, and $\vpurity$ in $\tenv$ yields $\tenvtwo$;
@@ -242,8 +242,8 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \inferrule[enum]{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
-  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\\\\
+  \annotateextrafields(\tenv, \name, \vtone, \vs) \typearrow (\tenvone, \vttwo, \vsp)\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
   \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\

@@ -29,7 +29,7 @@ Type-checking errors:
   [1]
 
   $ aslref duplicate_record_fields.asl
-  File duplicate_record_fields.asl, line 1, character 0 to line 5, character 2:
+  File duplicate_record_fields.asl, line 1, character 17 to line 5, character 1:
   type MyRecord of record {
     i: integer,
     j: boolean,
@@ -39,9 +39,9 @@ Type-checking errors:
   [1]
 
   $ aslref duplicate_enumeration_items.asl
-  File duplicate_enumeration_items.asl, line 1, characters 0 to 34:
+  File duplicate_enumeration_items.asl, line 1, characters 10 to 33:
   type t of enumeration { i, j, i };
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "i".
   [1]
 
@@ -49,7 +49,7 @@ Type-checking errors:
 
 Bad types:
   $ aslref overlapping-slices.asl
-  File overlapping-slices.asl, line 1, character 0 to line 4, character 2:
+  File overlapping-slices.asl, line 1, character 10 to line 4, character 1:
   type t of bits(64) {
     [23: 0] a,
     [10: 0, 3+: 2] b,
@@ -432,6 +432,7 @@ Required tests:
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
+  $ aslref --no-exec bitfield-subtyping.asl
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
@@ -621,8 +622,8 @@ Inherit integer constraints on left-hand sides
   [1]
 
   $ aslref inherit-integer-constraints-bad-type.asl
-  File inherit-integer-constraints-bad-type.asl, line 1, character 0 to line 4,
-    character 2:
+  File inherit-integer-constraints-bad-type.asl, line 1, character 16 to
+    line 4, character 1:
   type badtype of record {
       a : integer{},
       c : integer

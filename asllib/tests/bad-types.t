@@ -22,7 +22,7 @@ Bad fields
   > EOF
 
   $ aslref bad-types2.asl
-  File bad-types2.asl, line 1, character 0 to line 4, character 2:
+  File bad-types2.asl, line 1, character 10 to line 4, character 1:
   type t of bits(12) {
     [10: 3] a,
     [2+:1] a,
@@ -39,7 +39,7 @@ Overlapping slices
   > EOF
 
   $ aslref bad-types3.asl
-  File bad-types3.asl, line 1, character 0 to line 4, character 2:
+  File bad-types3.asl, line 1, character 10 to line 4, character 1:
   type t of bits(64) {
     [23: 0] a,
     [10: 0, 3+: 2] b,
@@ -56,7 +56,7 @@ Bad slices
   > EOF
 
   $ aslref bad-types4.asl
-  File bad-types4.asl, line 1, character 0 to line 4, character 2:
+  File bad-types4.asl, line 1, character 10 to line 4, character 1:
   type t of bits(12) {
     [10: 3] a,
     [14:12] b,
@@ -72,7 +72,7 @@ Bad slices
   > EOF
 
   $ aslref bad-types5.asl
-  File bad-types5.asl, line 1, character 0 to line 4, character 2:
+  File bad-types5.asl, line 1, character 10 to line 4, character 1:
   type t of bits(12) {
     [10: 3] a,
     [-2+:1] b,
@@ -91,7 +91,7 @@ Bad slices
   > EOF
 
   $ aslref bad-types6.asl
-  File bad-types6.asl, line 1, character 0 to line 7, character 2:
+  File bad-types6.asl, line 1, character 10 to line 7, character 1:
   type t of bits(12) {
     [10: 3] a,
     [7+:3] b {
