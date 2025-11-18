@@ -92,7 +92,7 @@ expressions passed as parameters need to be \constrainedintegersterm.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad3}{\typingtests/TypingRule.AnnotateCall.bad3.asl}
 
 The specification in \listingref{AnnotateCall-bad4} is illegal since
-the type of \verb|N| --- \verb|integer{N} --- does not \typesatisfyterm{} \verb|integer{1,2,3}|.
+the type of \verb|N| --- \verb|integer{N}| --- does not \typesatisfyterm{} \verb|integer{1,2,3}|.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad4}{\typingtests/TypingRule.AnnotateCall.bad4.asl}
 
 For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
@@ -253,7 +253,7 @@ parameters elided, and the equivalent calls with all parameters included.
     \begin{itemize}
       \item \Proseeqdef{$\vt$}{the \head{} of $\argtypes$};
       \item applying $\getbitvectorwidth$ to $\tenv$ and $\vt$ yields $\vwidth$\ProseOrTypeError;
-      \item \Proseeqdef{$paramtype$}{the \wellconstrainedintegertypeterm{} for the single
+      \item \Proseeqdef{$\paramtype$}{the \wellconstrainedintegertypeterm{} for the single
             constraint consisting of the \exactconstraintterm{} for $\vwidth$};
       \item \Proseeqdef{$\paramsone$}{the list whose \head{} is $\params$ and \tail{} is
             the tuple consisting of $\paramtype$, $\vwidth$, and the empty list of \sideeffectdescriptorsetsterm}.
@@ -403,7 +403,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
       \begin{itemize}
         \item $\tydeclopt$ is not $\None$, that is, $\some{\tydecl}$;
         \item $\tydecl$ is not the \parameterizedintegertypeterm{} for the parameter $\vx$;
-        \item checking that $\tyactual$ \typesatisfiesterm{} $\tydecl$ in $\tenv$ yields
+        \item checking that $\tyactual$ \typesatisfiesterm{} $\tydecl$ in $\tenv$ yields\\
               $\True$\ProseOrTypeError;
       \end{itemize}
     \end{itemize}
@@ -479,7 +479,7 @@ requires substituting \verb|8| for \verb|N| in the types
   \item \AllApplyCase{t\_int\_parameterized}
   \begin{itemize}
     \item $\tty$ is a \parameterizedintegertypeterm\ for the parameter $\name$;
-    \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$ yields $\ve$;
+    \item applying $\substexprnormalize$ to $\eqs$ and the expression $\EVar(\name)$\\ yields $\ve$;
     \item define $\newty$ as the well-constrained integer type with the single constraint for $\ve$, that is,
           $\TInt(\WellConstrained(\ConstraintExact(\ve)))$.
   \end{itemize}
@@ -649,7 +649,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
     \item applying $\substexpr$ to $\substs$ and $\vetwo$ in $\tenv$ yields $\vetwop$;
     \item define $\newe$ as the \arrayaccessterm\ expression for base expression $\veonep$ and \\
           enumeration-typed index expression $\vetwop$,
-          that is, $\EGetEnumArray(\veonep, \vetwop)$.
+          that is,\\ $\EGetEnumArray(\veonep, \vetwop)$.
   \end{itemize}
 
   \item \AllApplyCase{e\_getfield}
@@ -708,7 +708,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
     \item applying $\substexpr$ to $\substs$ and every expression $\ves[\vi]$ in $\tenv$, for every $\vi$ in $\listrange(\ves)$
           yields $\newe_\vi$;
     \item define $\vesp$ as the list of expressions $\newe_\vi$, for every $\vi$ in $\listrange(\ves)$;
-    \item define $\newe$ as the tuple expression of expressions $\vesp$, that is, $\ETuple(\vesp)$.
+    \item define $\newe$ as the tuple expression of expressions $\vesp$ ($\ETuple(\vesp)$).
   \end{itemize}
 
   \item \AllApplyCase{e\_array}
@@ -815,10 +815,11 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
 \begin{mathpar}
 \inferrule[e\_getenumarray]{
+  \ve = \EGetEnumArray(\veone, \vetwo)\\
   \substexpr(\tenv, \substs, \veone) \typearrow \veonep\\
   \substexpr(\tenv, \substs, \vetwop) \typearrow \vetwop
 }{
-  \substexpr(\tenv, \substs, \overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\EGetEnumArray(\veonep, \vetwop)}{\newe}
+  \substexpr(\tenv, \substs, \ve) \typearrow \overname{\EGetEnumArray(\veonep, \vetwop)}{\newe}
 }
 \end{mathpar}
 
@@ -832,9 +833,10 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
 \begin{mathpar}
 \inferrule[e\_getfields]{
+  \ve = \EGetFields(\veone, \fields)\\
   \substexpr(\tenv, \substs, \veone) \typearrow \veonep
 }{
-  \substexpr(\tenv, \substs, \overname{\EGetFields(\veone, \fields)}{\ve}) \typearrow \overname{\EGetFields(\veonep, \fields)}{\newe}
+  \substexpr(\tenv, \substs, \ve) \typearrow \overname{\EGetFields(\veonep, \fields)}{\newe}
 }
 \end{mathpar}
 
@@ -959,16 +961,18 @@ resulting in the type \verb|integer{0..64}|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
+  \vc = \ConstraintExact(\ve)\\
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
 }{
-  \substconstraint(\tenv, \eqs, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\ConstraintExact(\newe)}{\newc}
+  \substconstraint(\tenv, \eqs, \vc) \typearrow \overname{\ConstraintExact(\newe)}{\newc}
 }
 \and
 \inferrule[range]{
+  \vc = \ConstraintRange(\veone, \vetwo)\\
   \substexprnormalize(\tenv, \eqs, \veone) \typearrow \veonep\\
   \substexprnormalize(\tenv, \eqs, \vetwo) \typearrow \vetwop
 }{
-  \substconstraint(\tenv, \eqs, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
+  \substconstraint(\tenv, \eqs, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
 
@@ -998,7 +1002,7 @@ In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
-    \item view $\funcsigargs$ as a list with \head\ $(\Ignore, \tydecl)$ and \tail\ $\funcsigargsone$;
+    \item view $\funcsigargs$ as a list with \head\ $(\Ignore, \tydecl)$ and \tail\\ $\funcsigargsone$;
     \item view $\argtypes$ as a list with \head\ $\tyactual$ and \tail\ \\
           $\argtypesone$;
     \item applying $\renametyeqs$ to $\eqs$ and $\tydecl$ in $\tenv$
@@ -1172,7 +1176,9 @@ the \integertypeterm{} rather than the \realtypeterm).
 \inferrule[undefined]{
   G^\tenv.\overloadedsubprograms(\name) = \bot
 }{
-  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+  {
+  \subprogramforsignature\left( \begin{array}{l}\tenv,\\ \name,\\ \callerargtypes,\\ \calltype\end{array} \right) \typearrow \TypeErrorVal{\UndefinedIdentifier}
+  }
 }
 \end{mathpar}
 
@@ -1181,11 +1187,13 @@ the \integertypeterm{} rather than the \realtypeterm).
   G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
-      \filtercallcandidates(\tenv, \callerargtypes, \calltype, \renamingset) \typearrow \emptyset \OrTypeError
+      \filtercallcandidates(\tenv, \callerargtypes, \calltype, \renamingset) \typearrow\\ \emptyset \OrTypeError
     \end{array}
   }
 }{
-  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \TypeErrorVal{\BadCall}
+  {
+  \subprogramforsignature\left( \begin{array}{l}\tenv,\\ \name,\\ \callerargtypes,\\ \calltype\end{array} \right) \typearrow \TypeErrorVal{\BadCall}
+  }
 }
 \end{mathpar}
 
@@ -1200,9 +1208,7 @@ the \integertypeterm{} rather than the \realtypeterm).
   \matchingrenamings = [(\namep, \callee)]
 }{
   {
-    \begin{array}{r}
-  \subprogramforsignature(\tenv, \name, \callerargtypes, \calltype) \typearrow \\ (\namep, \callee, \vses)
-    \end{array}
+  \subprogramforsignature\left( \begin{array}{l}\tenv,\\ \name,\\ \callerargtypes,\\ \calltype\end{array} \right) \typearrow (\namep, \callee, \vses)
   }
 }
 \end{mathpar}
@@ -1215,7 +1221,7 @@ The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
 
 \ExampleDef{Filtering Subprograms Matching a Call}
 In \listingref{SubprogramForSignature}, filtering the
-set of declared subprograms for the call expression \verb|add_10(5)| yields
+set of declared subprograms for the call expression\\ \verb|add_10(5)| yields
 the (singleton list containing the) subprogram \\
 \verb|func add_10(x: integer) => integer|.
 In contrast, filtering the set of declared subprograms for the call expression
@@ -1237,8 +1243,8 @@ yields an empty list.
     \item the function definition associated with $\name$ in $\tenv$ is $\funcdef$;
     \item determining whether there is an argument clash between $\formaltypes$ and the arguments in $\funcdef$
           (that is, $\funcdef.\funcargs$) yields $\vbone$\ProseOrTypeError;
-  \item determining whether $\funcdef$ is compatible with $\calltype$ via $\calltypematches$ yields $\vbtwo$;
-    \item filtering the call candidates in $\candidatesone$ with $\formaltypes$ and $\calltype$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
+  \item determining whether $\funcdef$ is compatible with $\calltype$ via \\$\calltypematches$ yields $\vbtwo$;
+    \item filtering the call candidates in $\candidatesone$ with\\ $\formaltypes$ and $\calltype$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
     \item if $\vbone$ and $\vbtwo$ are both $\True$ then $\matches$ is the list with \head\ $(\name,\funcdef)$ and \tail\ $\matchesone$,
           and otherwise it is $\matchesone$.
   \end{itemize}
@@ -1536,9 +1542,9 @@ In \listingref{ExpressionList}, the list of expressions \verb|10, 20.0|
 is annotated as
 \[
 \left[
-\begin{array}{lll}
-(\TInt(\WellConstrained([\AbbrevConstraintExact{\ELInt{10}}])),& \eliteral{\LInt(10)},& \emptyset),\\
-(\TReal,& \eliteral{\LReal(20)},& \emptyset)
+\begin{array}{l}
+\left(\begin{array}{l}\TInt(\WellConstrained([\AbbrevConstraintExact{\ELInt{10}}])),\\ \ELInt{10},\\ \emptyset\end{array}\right),\\
+\left(\begin{array}{l}\TReal,\\ \eliteral{\LReal(20)},\\ \emptyset\end{array}\right)
 \end{array}
 \right]
 \]
@@ -1690,7 +1696,7 @@ while calling \\
   \incrpendingcalls(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\\\\
+  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\end{array}}\\\\
   \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vm)]\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
@@ -1707,7 +1713,7 @@ while calling \\
   \incrpendingcalls(G^\denvtwo, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
-  \evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\\\\
+  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\end{array}}\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
@@ -1910,7 +1916,7 @@ these variable values and evaluates to $\nvint(15)$.
   \begin{itemize}
     \item $\vids$ has $\vx$ as its head and $\vidsone$ as its tail,
           and $\actuals$ has $\vm$ as its head and $\actualsone$ as its tail;
-    \item declaring the local identifier $\vx$ with $\vm$ in $\env$ as per \SemanticsRuleRef{DeclareLocalIdentifierMM}
+    \item declaring the local identifier $\vx$ with $\vm$ in $\env$ as per\\ \SemanticsRuleRef{DeclareLocalIdentifierMM}
     gives \\ $(\envone, \vgtwo)$.
     \item assigning the remaining lists $\vidsone$ and $\actualsone$ with the environment $\envone$ and the ordered
           composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge yields\\

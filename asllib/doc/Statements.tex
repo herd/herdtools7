@@ -212,12 +212,18 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \vs = \SAssign(\LEDestructuring(\les),\ECall(\vcall))\\
   \vles \eqdef \vle_{1..k}\\
   i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultCall(\vms, \envone) \OrAbnormal\\\\
+  {
+    \begin{array}{r}
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
+  \ResultCall(\vms, \envone) \OrAbnormal
+    \end{array}
+  }\\\\
   \evalmultiassignment(\envone, \vles, \vms) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
-  \evalstmt(\env, \SAssign(\LEDestructuring(\les),\ECall(\vcall))) \\
+  \evalstmt(\env, \vs)
   \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
@@ -422,11 +428,10 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \inferrule{
   \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
   \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \\\\
-  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter
+  \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter\\
+  \news \eqdef \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }{
-  \readmodifywrite(\vcall, \vx, \vmodify)
-  \astarrow
-  \overname{\SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))}{\news}
+  \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \news
 }
 \end{mathpar}
 
@@ -502,19 +507,18 @@ As given by applying the relevant rules to the desugared AST.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_decl}
 
-
 \ASTRuleDef{SDecl}
 \begin{mathpar}
 \inferrule[let\_constant]{
-  \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}
-}{
   {
-  \begin{array}{r}
-  \buildstmt(\overname{\Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)}{\vparsednode})
-  \astarrow\\
-  \overname{\SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \some{\astof{\vexpr}})}{\vastnode}
+    \begin{array}{l}
+  \vparsednode =\\ \Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)\\
   \end{array}
-  }
+  }\\
+  \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}\\
+  \vastnode \eqdef \SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \some{\astof{\vexpr}})
+}{
+  \buildstmt(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -607,6 +611,7 @@ since immutable local storage elements require an initializing expression.
 
 \begin{mathpar}
 \inferrule[none]{
+  \vs = \SDecl(\LDKVar, \ldi, \tyopt, \None)\\
   \techeck(\tyopt \neq \None, \TypeErrorVal{\BadDeclaration}) \typearrow \True \OrTypeError \\
   \tyopt \eqname \some{\vt} \\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
@@ -614,7 +619,7 @@ since immutable local storage elements require an initializing expression.
   \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
   \news \eqdef \SDecl(\LDKVar, \ldi, \some{\vtp}, \some{\veinit})
 }{
-  \annotatestmt(\tenv, \overname{\SDecl(\LDKVar, \ldi, \tyopt, \None)}{\vs}) \typearrow (\news, \newtenv, \vses)
+  \annotatestmt(\tenv, \vs) \typearrow (\news, \newtenv, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
@@ -631,7 +636,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item \Prosenoprecisionloss{\vte};
-    \item $\newtenv$ is the result of $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$\ProseOrTypeError;
+    \item $\newtenv$ is the result of \\ $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$\ProseOrTypeError;
     \item $\tyoptp$ is $\tyopt$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
@@ -640,7 +645,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\some{\vt}$;
     \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
-    \item propagating integer constraints from $\vtep$ to $\vt$ using $\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
+    \item propagating integer constraints from $\vtep$ to $\vt$ using \\$\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
     \item annotating the type $\vtp$ in $\tenv$ yields $(\vtpp, \vses)$\ProseOrTypeError;
   \item determining whether $\vtpp$ can be initialized with $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the local declaration keyword $\ldk$, given
@@ -654,7 +659,12 @@ See \ExampleRef{Typing Declaration Statements}.
 \inferrule[none]{
   \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldecltypeannot(\tenv, \overname{\None}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
+  {
+    \begin{array}{r}
+  \annotatelocaldecltypeannot(\tenv, \overname{\None}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow\\
+   (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -666,7 +676,12 @@ See \ExampleRef{Typing Declaration Statements}.
   \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \some{ \vep }, \ldip) \typearrow \newtenv \OrTypeError
 }{
-  \annotatelocaldecltypeannot(\tenv, \overname{\some{\vt}}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
+  {
+    \begin{array}{r}
+  \annotatelocaldecltypeannot(\tenv, \overname{\some{\vt}}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow\\
+   (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
+   \end{array}
+  }
 }
 \end{mathpar}
 
@@ -738,7 +753,13 @@ in the \CaseName{int} below.
 
 \begin{mathpar}
 \inferrule[other]{
-  \lhs \neq \TInt(\PendingConstrained) \lor \astlabel(\lhs) \neq \TTuple \lor \astlabel(\rhs) \neq \TTuple
+  {
+    \begin{array}{ll}
+  \lhs \neq \TInt(\PendingConstrained) & \lor\\
+  \astlabel(\lhs) \neq \TTuple & \lor\\
+  \astlabel(\rhs) \neq \TTuple &
+    \end{array}
+  }
 }{
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
@@ -779,7 +800,7 @@ constant types would result in more than $2^17$ elements, see
 \FormallyParagraph
 \begin{mathpar}
   \inferrule[Well-Constrained]{%
-    \techeck(p = \PrecisionFull, PrecisionLostDefining) \typearrow \True\OrTypeError
+    \techeck(p = \PrecisionFull, \PrecisionLostDefining) \typearrow \True\OrTypeError
   }{%
     \checknoprecisionloss(\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}) \typearrow \True
   }
@@ -843,9 +864,13 @@ See \ExampleRef{Type-satisfaction Examples}.
 \end{mathpar}
 \identr{ZCVD}  \identr{LXQZ}
 
-
 \subsection{Semantics}
-\SemanticsRuleDef{SDeclSome}
+\SemanticsRuleDef{SDecl}
+Notice that \TypingRuleRef{SDecl} ensures that a typed \declarationstatementterm{}
+has an initializing expression.
+% The implementation still handles the case where there is no initializing expression,
+% for cases where type-checking is skipped.
+
 \ExampleDef{Declaration With an Initializing Value}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
@@ -857,39 +882,24 @@ In \listingref{semantics-sdeclnone},
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vs$ is a declaration with an initial value,
-          $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
-    \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
-    \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
-          value in $\envone$ as per \chapref{LocalStorageDeclarations} is
-          $\ResultLexpr(\newg, \newenv)$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-  \end{itemize}
-
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is a declaration without an initial value, $\SDecl(\Ignore, \ldi, \Ignore, \None)$;
-    \item the result is a \DynamicErrorConfigurationTerm{}.
-  \end{itemize}
+  \item $\vs$ is a declaration with an initial value,
+        $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
+  \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
+  \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
+        value in $\envone$ as per \chapref{LocalStorageDeclarations} is
+        $\ResultLexpr(\newg, \newenv)$;
+  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[some]{
+\inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
   \evallocaldecl(\envone, \ldi, \vm) \evalarrow \ResultLexpr(\newg, \newenv)\\
 }{
   \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \some{\ve})) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \None)) \evalarrow \DynamicErrorVal{UninitialisedDecl}
 }
 \end{mathpar}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
@@ -932,46 +942,38 @@ $\Nelidedparamcall$.
 
 \begin{mathpar}
 \inferrule{
+  \vparsednode = \Nelidedparamcall(\Tidentifier(\id), \Tlbrace, \Trbrace, \namednode{\vargs}{\PlistZero{\Nexpr}})\\
   \buildcall(\Ncall(\Tidentifier(\id), \vargs))
   \astarrow \vastnode
 }{
-  {
-    \begin{array}{l}
-      \buildelidedparamcall(\Nelidedparamcall \\
-        \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Trbrace, \namednode{\vargs}{\PlistZero{\Nexpr}}))
-      \astarrow \vastnode
-    \end{array}
-  }
+  \buildelidedparamcall(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule{
+  \vparsednode = \Nelidedparamcall(\Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace)\\
   \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace))
   \astarrow \vastnode
 }{
-  {
-    \begin{array}{l}
-      \buildelidedparamcall(\Nelidedparamcall \\
-        \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace))
-        \astarrow \vastnode
-    \end{array}
-  }
+  \buildelidedparamcall(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule{
+  {
+  \vparsednode = \Nelidedparamcall\left(
+    \begin{array}{l}
+    \Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace, \\
+    \wrappedline\ \namednode{\vargs}{\PlistZero{\Nexpr}}
+    \end{array}
+    \right)
+  }\\
   \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace, \vargs))
   \astarrow \vastnode
 }{
-  {
-    \begin{array}{l}
-    \buildelidedparamcall (\Nelidedparamcall \\
-      \qquad \qquad (\Tidentifier(\id), \Tlbrace, \Tcomma, \namednode{\vparams}{\ClistOne{\Nexpr}}, \Trbrace, \namednode{\vargs}{\PlistZero{\Nexpr}}))
-      \astarrow \vastnode
-    \end{array}
-  }
+  \buildelidedparamcall(\vparsednode) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -1221,7 +1223,7 @@ Call statements are used to invoke procedures and setters.
 \subsection{Typing}
 \TypingRuleDef{SCall}
 The call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
-in \listingref{scall} is well-typed.
+in \listingref{scall} is\\ well-typed.
 
 \ProseParagraph
 \AllApply
@@ -1551,17 +1553,21 @@ AST:
 \RenderType[remove_hypertargets]{case_alt}
 
 \ASTRuleDef{SCase}
-To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,
+To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,\\
 $\SUnreachable$ is used instead:
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
   \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
   {
-  \begin{array}{r}
-  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast, \SUnreachable) \astarrow \\
-  \vastnode
+  \desugarcasestmt\left(
+  \begin{array}{l}
+    \astversion{\vediscriminant},\\
+    \vcasealtlistast,\\
+    \SUnreachable
   \end{array}
+    \right) \astarrow
+  \vastnode
   }
 }{
   {
@@ -1586,10 +1592,14 @@ $\SUnreachable$ is used instead:
   \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
   \buildstmtlist(\votherwise) \astarrow \astversion{\votherwise}\\
   {
-  \begin{array}{r}
-  \desugarcasestmt(\astversion{\vediscriminant}, \vcasealtlistast, \astversion{\votherwise}) \astarrow \\
-  \vastnode
+  \desugarcasestmt\left(
+  \begin{array}{l}
+    \astversion{\vediscriminant},\\
+    \vcasealtlistast,\\
+    \astversion{\votherwise}
   \end{array}
+    \right) \astarrow
+  \vastnode
   }
 }{
   {
@@ -1598,7 +1608,8 @@ $\SUnreachable$ is used instead:
       \begin{array}{l}
         \Tcase, \namednode{\vediscriminant}{\Nexpr}, \Tof, \\
         \wrappedline\ \namednode{\vcasealtlist}{\Ncasealtlist}, \\
-        \wrappedline\ \Totherwise, \Tarrow, \namednode{\votherwise}{\Nstmtlist}, \\
+        \wrappedline\ \Totherwise, \Tarrow, \\
+        \wrappedline\ \namednode{\votherwise}{\Nstmtlist}, \\
         \wrappedline\ \Tend, \Tsemicolon
       \end{array}
     \right)
@@ -1752,7 +1763,9 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
   \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
-  \vcond \eqdef \choice{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
+  {
+  \vcond \eqdef \ifthenelse{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
+  }
 }{
   \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
 }
@@ -1924,8 +1937,9 @@ the expression \verb|limit_loop()|.
   {
     \begin{array}{r}
   \buildstmt\left(\overname{\Nstmt\left(
-    \begin{array}{r}
-    \Twhile, \econd: \Nexpr, \voptlimit : \Nlooplimit, \Tdo, \\
+    \begin{array}{l}
+    \Twhile, \econd: \Nexpr, \\
+    \wrappedline\ \voptlimit : \Nlooplimit, \Tdo, \\
     \wrappedline\ \punnode{\Nstmtlist}, \Tend, \Tsemicolon
     \end{array}
     \right)}{\vparsednode}\right)
@@ -1993,13 +2007,14 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \vs = \SWhile(\veone, \vlimitone, \vsone)\\
   \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
   \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
-  \annotatestmt(\tenv, \overname{\SWhile(\veone, \vlimitone, \vsone)}{\vs}) \typearrow
+  \annotatestmt(\tenv, \vs) \typearrow
   (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
@@ -2104,7 +2119,7 @@ the output configuration $C$.
 \RenderRelation{eval_loop}
 
 More specifically, $\evalloop(\env, \iswhile, \velimitopt, \econd, \vbody)$
-evaluates $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
+evaluates\\ $\vbody$ in $\env$ as long as $\econd$ holds when $\iswhile$ is $\True$
 or until $\econd$ holds when $\iswhile$ is $\False$.
 If the number of iterations exceeds the optional value specified by $\vlimitopt$,
 the result is a \dynamicerrorterm{}.
@@ -3117,8 +3132,9 @@ the \trystatementsterm{} are all well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[no\_otherwise]{
+  \vs = \STry(\vsp, \catchers, \None)\\
   \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_\vi) \OrTypeError\\\\
+  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
   \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
   \commonprefixline\\\\
@@ -3128,12 +3144,15 @@ the \trystatementsterm{} are all well-typed.
   \commonsuffixline\\\\
   \vses \eqdef \vsesthree \cup \vsescatchers \cup \vsesotherwise
 }{
-  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \None)}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[otherwise]{
+  \vs = \STry(\vsp, \catchers, \some{\otherwise})\\
   \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  \vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow (\vc_\vi, \vxs_\vi) \OrTypeError\\\\
+  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\\\\
   \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
   \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
   \commonprefixline\\\\
@@ -3144,7 +3163,7 @@ the \trystatementsterm{} are all well-typed.
   \commonsuffixline\\\\
   \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{
-  \annotatestmt(\tenv, \overname{\STry(\vsp, \catchers, \some{\otherwise})}{\vs}) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
+  \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
@@ -3268,11 +3287,12 @@ since \verb|proc| is not a function but a procedure.
 
 \begin{mathpar}
 \inferrule[some]{
+  \vs = \SReturn(\some{ \ve })\\
   L^\tenv.\returntype = \some{ \vt }\\
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
-  \annotatestmt(\tenv, \overname{\SReturn(\some{ \ve })}{\vs}) \typearrow
+  \annotatestmt(\tenv, \vs) \typearrow
   (\overname{\SReturn(\some{ \vep })}{\news}, \overname{\tenv}{\newtenv}, \vses)
 }
 \end{mathpar}
@@ -3283,7 +3303,7 @@ since \verb|proc| is not a function but a procedure.
 \SemanticsRuleDef{SReturn}
 \ExampleDef{No Return Value}
 The specification in \listingref{semantics-sreturn} exits the procedure \texttt{println\_me}
-by evaluating the \texttt{return;} statement.
+by evaluating the\\ \texttt{return;} statement.
 \ASLListing{Evaluating a \texttt{return} statement with no value}{semantics-sreturn}{\semanticstests/SemanticsRule.SReturnNone.asl}
 
 \ExampleDef{Returning a Single Value}
@@ -3319,7 +3339,7 @@ In \listingref{semantics-sreturntuple},
 
   \item \AllApplyCase{tuple}
   \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement for a list of expressions, $\SReturn(\some{\ETuple(\es)})$;
+    \item $\vs$ is a \texttt{return} statement for a list of expressions,\\ $\SReturn(\some{\ETuple(\es)})$;
     \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
     is \\ $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
@@ -3347,10 +3367,11 @@ In \listingref{semantics-sreturntuple},
 
 \begin{mathpar}
 \inferrule[tuple]{
+  \vs = \SReturn(\some{\ETuple(\es)})\\
   \evalexprlistm(\env, \es) \evalarrow \ResultExprListM(\ms, \newenv) \OrAbnormal\\
   \writefolder(\ms) \evalarrow (\vvs, \newg)
 }{
-  \evalstmt(\env, \SReturn(\some{\ETuple(\es)})) \evalarrow \Returning((\vvs, \newg), \newenv)
+  \evalstmt(\env, \vs) \evalarrow \Returning((\vvs, \newg), \newenv)
 }
 \end{mathpar}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
@@ -3482,12 +3503,12 @@ empty \executiongraphterm{}.
 
 \begin{mathpar}
 \inferrule{%
+  \vparsednode = \Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)\\
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
   \vnewline \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
-  \buildstmt(\overname{\Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
-  \astarrow
+  \buildstmt(\vparsednode) \astarrow
   \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
 }
 \end{mathpar}
@@ -3510,11 +3531,12 @@ empty \executiongraphterm{}.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{%
+    \vs = \SPrint(\vargs, \vnewline)\\
     \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
     \vi\in\listrange(\vargs): \techeck(\issingular(\vt_i), \UnexpectedType) \typearrow \True \OrTypeError \\\\
     \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
-    \annotatestmt (\tenv, \overname{\SPrint(\vargs, \vnewline)}{\vs}) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
+    \annotatestmt (\tenv, \vs) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
   }
 \end{mathpar}
 \CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
@@ -3552,7 +3574,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
   \item \AllApplyCase{print}
   \begin{itemize}
     \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\False$;
-    \item the evaluation of $\elist$ in $\env$ is $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
+    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
     \item \Proseoutputtoconsole{all the elements in $\elist$, without a separator,};
     \item if $\vnewline$ is $\True$, \Proseoutputtoconsole{a newline character};
   \end{itemize}
@@ -3709,7 +3731,7 @@ to implement a custom form of assertion checking.
 The \unreachablestatementterm{} in \listingref{UnreachableStatement} is well-typed.
 
 \ProseParagraph
-Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields $(\SUnreachable, \tenv, \emptyset)$.
+Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields\\$(\SUnreachable, \tenv, \emptyset)$.
 
 \FormallyParagraph
 \begin{mathpar}

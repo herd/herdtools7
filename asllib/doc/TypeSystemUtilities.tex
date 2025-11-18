@@ -96,7 +96,7 @@ and $-1$ to mean that $b$ should be ordered before $a$.
 The following is an example of sorting lists of identifiers using lexicographic order:\\
 $\sort([\vy, \vx], \compareidentifier) \typearrow [\vx, \vy]$.
 
-The following is an example of sorting monomial bindings''
+The following is an example of sorting monomial bindings\\
 (see \TypingRuleRef{PolynomialToExpr}):\\
 $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1), (x, 1), (y, 1)]$.
 
@@ -223,13 +223,13 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \begin{itemize}
   \item \AllApplyCase{enum}
   \begin{itemize}
-    \item $\size$ is an enumeration index over the enumeration $\vs$, that is, \\ $\ArrayLengthEnum(\vs, \Ignore)$;
+    \item $\size$ is an enumeration index over the enumeration $\vs$\\($\ArrayLengthEnum(\vs, \Ignore)$);
     \item $\vt$ is the named type for $\vs$, that is, $\TNamed(\vs)$.
   \end{itemize}
 
   \item \AllApplyCase{expr}
   \begin{itemize}
-    \item $\size$ is an expression for integer-sized arrays, that is, $\ArrayLengthExpr(\Ignore)$;
+    \item $\size$ is an expression for integer-sized arrays ($\ArrayLengthExpr(\Ignore)$);
     \item $\vt$ is the \unconstrainedintegertypeterm.
   \end{itemize}
 \end{itemize}
@@ -262,18 +262,23 @@ In \listingref{eget-record-field}, annotating the expressions \verb|my_record.i|
 and \verb|my_record.b| require finding the types associated with the fields \verb|i| and \verb|b|
 of the type \\
 \verb|record{i: integer, b: boolean}|, respectively:
-\[
-\begin{array}{rcl}
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vi) &\typearrow& \some{\unconstrainedinteger}\\
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vb) &\typearrow& \some{\TBool}\\
-\end{array}
-\]
+\begin{mathpar}
+\inferrule{}{
+  {\begin{array}{r}\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vi) \typearrow \\ \some{\unconstrainedinteger}\end{array}}
+}
+\and
+\inferrule{}{
+\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vb) \typearrow \some{\TBool}
+}
+\end{mathpar}
 
 In \listingref{eget-bad-record-field}, however, annotating the expression \\
 \verb|my_record.undeclared_identifier| fails:
-\[
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \undeclaredidentifier) \typearrow \None\\
-\]
+\begin{mathpar}
+\inferrule{}{
+{\begin{array}{r}\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \undeclaredidentifier) \typearrow \\ \None\end{array}}
+}
+\end{mathpar}
 
 \ProseParagraph
 \OneApplies
@@ -726,7 +731,11 @@ specification.
     \begin{array}{ll}
       \ldk \neq \LDKLet & \lor\\
       \veopt = \None & \lor\\
-      \veopt = \some{\ve, \vsese} \land \shouldrememberimmutableexpression(\vsese) \typearrow \False
+      \veopt =
+      \left(\begin{array}{ll}
+      \some{\ve, \vsese} & \land\\
+      \shouldrememberimmutableexpression(\vsese) \typearrow \False &
+      \end{array}\right)
     \end{array}
   }
 }{

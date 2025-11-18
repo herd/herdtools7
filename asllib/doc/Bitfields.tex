@@ -125,8 +125,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule{
   \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
 }{
-  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClistZero{\Nbitfield}}, \Trbrace)) \astarrow
+  {
+    \begin{array}{r}
+  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClistZero{\Nbitfield}}, \Trbrace)) \astarrow\\
   \overname{\vbitfieldasts}{\vastnode}
+  \end{array}
+  }
 }
 \end{mathpar}
 
@@ -512,7 +516,7 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
     \item applying $\bitfieldslicetopositions$ to $\tenv$, $\isstatic$, and $\vs$, yields the optional set of positions \\
           $\positionsoneopt$\ProseOrTypeError;
     \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\some{\vsone}$ and the empty set, otherwise;
-    \item applying $\disjointslicestopositions$ to $\tenv$, $\isstatic$, and $\vslicesone$, yields the optional set of positions
+    \item applying $\disjointslicestopositions$ to $\tenv$, $\isstatic$, and $\vslicesone$,\\ yields the optional set of positions
           $\positionstwoopt$\ProseOrTypeError;
     \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\some{\vstwo}$ and the empty set, otherwise;
     \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BadSlices}
@@ -528,13 +532,14 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 
 \begin{mathpar}
 \inferrule[non\_empty]{
+  \vslices = \vs \concat \vslicesone\\
   \bitfieldslicetopositions(\tenv, \isstatic, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
   \positionsone \eqdef \choice{\positionsoneopt = \some{\vsone}}{\vsone}{\emptyset}\\
   \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
   \positionstwo \eqdef \choice{\positionstwoopt = \some{\vstwo}}{\vstwo}{\emptyset}\\
   \techeck(\positionsone \cap \positionstwo = \emptyset, \BadSlices) \typearrow \True \OrTypeError
 }{
-  \disjointslicestopositions(\tenv, \isstatic, \overname{\vs \concat \vslicesone}{\vslices}) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
+  \disjointslicestopositions(\tenv, \isstatic, \vslices) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
 \end{mathpar}
 

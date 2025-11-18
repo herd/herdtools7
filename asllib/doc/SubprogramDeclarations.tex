@@ -60,8 +60,8 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
     &\wrappedline \Nreturntype \parsesep \Nrecurselimit \parsesep \Nfuncbody\\
 |\ & \Nqualifier \parsesep \Noverride \parsesep \Tfunc \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs &\\
     &\wrappedline \Nrecurselimit \parsesep \Nfuncbody &\\
-|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
-   & \wrappedline\ \Naccessorbody &\\
+|\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq &\\
+   & \wrappedline\ \Tidentifier \parsesep \Nasty \parsesep \Naccessorbody &\\
 \Naccessorbody \derives \ & \Tbegin \parsesep \Naccessors \parsesep \Tend \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -119,8 +119,9 @@ In particular, rather than directly building the abstract syntax for accessors, 
   \builddecl\left(
     \overname{\Ndecl\left(
       \begin{array}{l}
-    \namednode{\vp}{\Npuritykeyword}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
-    \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+    \namednode{\vp}{\Npuritykeyword}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \\
+    \wrappedline\ \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
+    \wrappedline\ \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
       \end{array}
   \right)}{\vparsednode}\right)
 \astarrow \\
@@ -199,7 +200,8 @@ In particular, rather than directly building the abstract syntax for accessors, 
       \begin{array}{l}
         \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt},  \\
         \wrappedline\ \punnode{\Nfuncargs},
-        \Tbeq, \Tidentifier(\vsetterarg), \punnode{\Nasty}, \namednode{\vbody}{\Naccessorbody}
+        \Tbeq, \Tidentifier(\vsetterarg), \punnode{\Nasty}, \\
+        \wrappedline\ \namednode{\vbody}{\Naccessorbody}
       \end{array}
     \right)}{\vparsednode}\right)
   \\ \astarrow \vastnode
@@ -221,14 +223,10 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 
 \begin{mathpar}
 \inferrule{
+  \vparsednode = \Ndecl(\Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon)\\
   \buildaccessors(\vaccessors) \astarrow \vaccessorpair
 }{
-    \buildaccessorbody\left(\overname{\Ndecl\left(
-      \begin{array}{l}
-        \Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon
-      \end{array}
-    \right)}{\vparsednode}\right)
-  \astarrow \vaccessorpair
+    \buildaccessorbody(\vparsednode) \astarrow \vaccessorpair
 }
 \end{mathpar}
 
@@ -289,11 +287,12 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
+  \vparsednode = \Ntypedidentifier(\Tidentifier(\id), \namednode{\vastyopt}{\option{\Nasty}})\\
   \buildoption[\Nasty](\vastyopt) \astarrow \astversion{\vastyopt}
 }{
   {
   \begin{array}{r}
-  \buildopttypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \namednode{\vastyopt}{\option{\Nasty}})}{\vparsednode}) \astarrow \\
+  \buildopttypedidentifier(\vparsednode) \astarrow \\
   \overname{(\id, \astversion{\vastyopt})}{\vastnode}
   \end{array}
   }
@@ -339,9 +338,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
+  \vparsednode = \Nparamsopt(\Tlbrace, \namednode{\ids}{\ClistZero{\Nopttypedidentifier}}, \Trbrace)\\
   \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
 }{
-  \buildparamsopt(\overname{\Nparamsopt(\Tlbrace, \namednode{\ids}{\ClistZero{\Nopttypedidentifier}}, \Trbrace)}{\vparsednode}) \astarrow
+  \buildparamsopt(\vparsednode) \astarrow
   \overname{\astversion{\ids}}{\vastnode}
 }
 \end{mathpar}
@@ -750,7 +750,7 @@ is not a constrained expression.
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
   \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
   \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
-  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifierfield$ (via $\sesforsubprogram$) is $\vses$;
+  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifierfield$\\(via $\sesforsubprogram$) is $\vses$;
   \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
         and $\vrecurselimit$ as its recursion limit.
 \end{itemize}
@@ -860,7 +860,7 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
   \params = [(\vx,\tyopt)] \concat \paramsp\\\\
   \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
-  \annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow (\tenvwithparams, \paramsone) \OrTypeError
+  {\begin{array}{r}\annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow \\(\tenvwithparams, \paramsone) \OrTypeError\end{array}}
 }{
   \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
 }
@@ -868,7 +868,6 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 
 \TypingRuleDef{AnnotateOneParam}
 \RenderRelation{annotate_one_param}
-
 
 \ExampleDef{Annotating Subprogram Parameters}
 In \listingref{AnnotateOneParam},
@@ -1000,7 +999,7 @@ in \listingref{ParametersOfExpr} is
 The specification in \listingref{ExtractParameters-bad1} is ill-typed, since the
 expressions \\
 \verb|N as integer{8,16,32}| and \verb|(N + 1) as integer{9,17}|
-are unsupported inside \bitvectortypesterm{} of arguments.
+are unsupported inside\\ \bitvectortypesterm{} of arguments.
 \ASLListing{An ill-typed subprogram signature}{ExtractParameters-bad1}{\typingtests/TypingRule.ExtractParameters-bad1.asl}
 
 \ProseParagraph
@@ -1056,7 +1055,7 @@ in comments above their declarations.
         $\funcsig.\funcreturntype$ if the singleton set for $\ttyp$,
         and the empty list, otherwise.}
   \item \Proseeqdef{$\argtypes$}{the types of arguments in $\funcsig.\funcargs$};
-  \item \Proseeqdef{$tys$}{the \Proselist{$\vreturntype$}{$\argtypes$}}.
+  \item \Proseeqdef{$\tys$}{the \Proselist{$\vreturntype$}{$\argtypes$}}.
 \end{itemize}
 
 \FormallyParagraph
@@ -1116,7 +1115,7 @@ in \listingref{ParametersOfTy} are as follows:
 
   \item \AllApplyCase{tint\_constrained\_precise}
     \begin{itemize}
-      \item $\tty$ is a \wellconstrainedintegertypeterm, that is, $\TInt(\WellConstrained(\cs))$;
+      \item $\tty$ is a \wellconstrainedintegertypeterm{} ($\TInt(\WellConstrained(\cs))$);
       \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$\ProseOrTypeError;
       \item $\ids$ is the concatenation of all the $\ids_i$.
     \end{itemize}
@@ -1334,7 +1333,7 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
   \item \AllApplyCase{exact}
     \begin{itemize}
       \item $\vc$ is an exact constraint, that is, $\ConstraintExact(\ve)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $ids$.
+      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
     \end{itemize}
 
   \item \AllApplyCase{range}
@@ -1405,10 +1404,10 @@ In \listingref{typing-parameterofconstraint}, the annotated arguments are
   \vargs = [(\vx,\tty)] \concat \vargsp\\\\
   \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \\\\
   \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
-  \annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow (\tenvwithargs, \newargs, \newses) \OrTypeError\\\\
+  {\begin{array}{r}\annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \newses) \OrTypeError\end{array}}\\\\
   \vses \eqdef \vsesty \cup\ \newses
 }{
-  \annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow (\tenvwithargs, \newargs, \vses)
+  {\begin{array}{r}\annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
 }
 \end{mathpar}
 
@@ -1623,8 +1622,8 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                 \} &&&
       \end{array}
     }\\
-  \addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow
-  (\tenvone, \namep) \OrTypeError\\\\
+  {\begin{array}{r}\addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow \\(\tenvone, \namep) \OrTypeError\end{array}}
+  \\\\
   \techeck(G^\tenvone.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \\\\
   \newfuncsig \eqdef \funcsig[\funcname \mapsto \namep] \\\\
   \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
@@ -1677,7 +1676,7 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
   \vbtwo \eqdef \otherfuncsig.\funcqualifierfield \neq \vqualifier \\
   \hasargclash(\formaltypes, \otherfuncsig.\funcargs) \typearrow \vbthree
 }{
-  \subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}
+  {\begin{array}{r}\subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \\ \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}\end{array}}
 }
 \end{mathpar}
 \identd{BTBR} \identi{FSFQ} \identi{PFGQ}
@@ -1692,7 +1691,7 @@ The subprogram type of its getter does not clash with the subprogram type of its
 \ASLListing{Non-clashing subprogram types}{SubprogramTypesClash}{\typingtests/TypingRule.SubprogramTypesClash.asl}
 
 The specification in \listingref{SubprogramTypesClash-bad1} contains an accessor for \verb|X|.
-The subprogram types of its getter and setter both clash with the subprogram type of the procedure \verb|X| ($\STProcedure$).
+The subprogram types of its getter and setter both clash with the subprogram type of the procedure\\ \verb|X| ($\STProcedure$).
 \ASLListing{Clashing subprogram types}{SubprogramTypesClash-bad1}{\typingtests/TypingRule.SubprogramTypesClash.bad1.asl}
 
 The specification in \listingref{SubprogramTypesClash-bad2} contains a function \verb|X| and a procedure \verb|X|
@@ -1787,8 +1786,7 @@ are ill-typed due to subprogram declaration clashes.
   G^\tenv.\overloadedsubprograms(\name) = \bot\\
   \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto\{\name\}],  L^\tenv)
 }{
-  \addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow
-  (\newtenv, \overname{\name}{\newname})
+  {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \overname{\name}{\newname})\end{array}}
 }
 \end{mathpar}
 
@@ -1799,16 +1797,23 @@ are ill-typed due to subprogram declaration clashes.
   \newname \eqdef \name\ \stringconcat\ \discardvarstr\ \stringconcat\ \stringofnat(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
-    \left(\begin{array}{l}
-  \namep \in \othernames: \\ \subprogramclash(\tenv, \namep, \subpgmtype, \vqualifier, \formaltypes) \typearrow
+  \namep \in \othernames:
+  \subprogramclash\left(
+    \begin{array}{c}
+    \tenv,\\
+    \namep,\\
+    \subpgmtype,\\
+    \vqualifier,\\
+    \formaltypes
+    \end{array}
+    \right) \typearrow
   \vb_{\namep} \OrTypeError
-    \end{array}\right)
   }\\\\
   \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
-  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}],  L^\tenv)
+  \newgenv \eqdef G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}]\\
+  \newtenv \eqdef (\newgenv,  L^\tenv)
 }{
-  \addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow
-  (\newtenv, \newname)
+  {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \newname)\end{array}}
 }
 \end{mathpar}
 \identr{PGFC}
@@ -1865,7 +1870,7 @@ a value, throwing an exception, or evaluating an \unreachablestatementterm.
 \ASLListing{All terminating paths terminate correctly}{CheckControlFlow}{\typingtests/TypingRule.CheckControlFlow.asl}
 
 In \listingref{CheckControlFlow-bad2}, the path through the function body
-for \verb|incorrect_terminating_path|
+for\\ \verb|incorrect_terminating_path|
 where \verb|v != Zeros{N}| evaluates to
 $\True$ and \verb|flag| evaluates to $\False$ terminates without
 returning a value, throwing an exception, or evaluating an \unreachablestatementterm,
@@ -2111,10 +2116,7 @@ can be added, for example, an \unreachablestatementterm.
   G^\tenv.\subprograms(\call.\callname) = (\vf, \Ignore)\\
   {
   \absconfigs \eqdef
-  \begin{cases}
-    \{\AbsAbnormal\} & \text{if }\vf.\funcqualifierfield = \some{\Noreturn}\\
-    \{\AbsContinuing, \AbsAbnormal\} & \text{else}
-  \end{cases}
+  \ifthenelse{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
   }
 }{
   \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs

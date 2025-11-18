@@ -1099,7 +1099,10 @@ ast symdom { "\symbolicdomain{}" } =
     | Finite(powerset_finite(Z))
     { "symbolic finite set integer domain" }
     | ConstrainedDom(int_constraint)
-    { "symbolic constrained integer domain" }
+    {
+      "symbolic constrained integer domain",
+      math_macro = \ConstrainedDom
+    }
 ;
 
 ast symdom_or_top { "symbolic integer set" } =
@@ -1513,6 +1516,7 @@ semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint)
 {
     "checks whether two sets of integers represented by the ranges $({s1},{l1})$ and $({s2},{l2})$ do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
     prose_application = "checking whether $({s1},{l1})$ and $({s2},{l2})$ do not intersect yields $\True$\ProseOrError",
+    math_layout = [_, _],
 };
 
 typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
@@ -1579,7 +1583,8 @@ typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: lis
   \typedast{} for {fields} and {e_width} as well as a set
   of \sideeffectdescriptorsterm{} {ses}.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-annotatebitfields}{annotating} bitfields {fields} with width {e_width} in {tenv} yields {new_fields} and side effects {ses}"
+  prose_application = "\hyperlink{relation-annotatebitfields}{annotating} bitfields {fields} with width {e_width} in {tenv} yields {new_fields} and side effects {ses}",
+  math_layout = [_,_],
 };
 
 typing function bitfield_get_name(bf: bitfield) ->
@@ -1841,7 +1846,8 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   modified \globalstaticenvironmentterm{} {new_genv} and
   annotated global storage declaration {new_gsd}.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}"
+  prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}",
+  math_layout = [_,_],
 };
 
 typing relation annotate_ty_opt_initial_value(
@@ -2169,7 +2175,7 @@ typing relation annotate_constraint_binop(
   context of approximating lists of constraints).
   \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_],
+  math_layout = [[_,_,_,_,_],_],
 };
 
 typing relation binop_filter_rhs(
@@ -2287,6 +2293,7 @@ typing function explode_intervals(tenv: static_envs, cs: list0(int_constraint)) 
     of exploded constraints in {new_cs} and a
     \precisionlossindicatorterm{} {p}.",
   prose_application = "",
+  math_layout = [_,_],
 };
 
 // Transliteration note: the implementation uses folding where explode_constraint
@@ -2883,6 +2890,7 @@ typing function build_dependencies(decls: list0(decl)) ->
   defined by the declaration of $b$. We refer to this
   graph as the \emph{\dependencygraphterm} (of {decls}).",
   prose_application = "",
+  math_layout = [_,_]
 };
 
 typing function decl_dependencies(d: decl) ->
@@ -3572,7 +3580,8 @@ semantics relation match_func_res(TContinuingOrReturning) ->
                         configurations into corresponding normal
                         configurations that can be returned by a subprogram
                         evaluation.",
- prose_application = "",
+  prose_application = "",
+  math_layout = [_,_],
 };
 
 semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) ->
@@ -3621,6 +3630,7 @@ typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
   {new_tenv}, and an inferred \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "",
+  math_layout = [_,_],
 };
 
 typing relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty))), (new_tenv: static_envs, acc: list0((Identifier, ty)))) ->
@@ -3648,7 +3658,8 @@ typing relation annotate_one_param(
                         {new_tenv}. The updated environment {new_tenv'} and
                         annotated parameter type {ty} are returned.
                         \ProseOtherwiseTypeError",
- prose_application = "",
+  prose_application = "",
+  math_layout = [_,_],
 };
 
 typing relation check_param_decls(tenv: static_envs, func_sig: func) ->
@@ -3762,6 +3773,7 @@ typing function check_subprogram_purity(qualifier: option(func_qualifier), ses: 
   consistent with the subprogram qualifier {qualifier}.
   \ProseOtherwiseTypeError",
   prose_application = "",
+  math_layout = [_,_],
 };
 
 typing relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: powerset(TSideEffect)) ->
@@ -3786,6 +3798,7 @@ typing function subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: 
   and list of formal types {formal_types}, yielding a
   Boolean value in {b}. \ProseOtherwiseTypeError",
   prose_application = "",
+  math_layout = [_,_],
 };
 
 typing function subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
@@ -3840,6 +3853,7 @@ typing function allowed_abs_configs(f: func) ->
   allowed for the function definition {f}, yielding the
   result in {abs_configs}.",
   prose_application = "",
+  math_layout = [_,_],
 };
 
 typing function approx_stmt(tenv: static_envs, s: stmt) ->
@@ -4306,7 +4320,7 @@ typing function approx_constraint_binop(tenv: static_envs, approx: constants_set
   list of constraints {s} and \precisionlossindicatorterm{}
   {plf}.",
   prose_application = "",
-  math_layout = [_,_],
+  math_layout = [[_,_,_,_,_],_],
 };
 
 typing function approx_type(tenv: static_envs, approx: constants_set(Over,Under), t: ty) ->
@@ -4766,7 +4780,7 @@ typing function add_immutable_expression(
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \addimmutableexpression,
-  math_layout = [_,_],
+  math_layout = [[_,_,_,_],_],
 };
 
 typing function add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: powerset(TSideEffect)) ->

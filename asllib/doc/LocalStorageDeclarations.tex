@@ -36,7 +36,7 @@ This is used to annotate both single local storage declarations and tuples of lo
 \paragraph{Semantics:}
 \RenderRelation{eval_local_decl}
 That is, the right-hand side of the declaration
-has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{SDeclSome}).
+has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{SDecl}).
 
 This is used to evaluate both single local storage declarations and tuples of local storage declarations.
 
@@ -386,7 +386,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
     \item $\vids$ is a list with \head{} $\id$ and \tail{} $\vids'$;
     \item $\liv$ is a list with \head{} $\vm$ and \tail{} $\liv'$;
     \item applying $\declarelocalidentifier$ to $\id$ and $\vv$ in $\env$ yields $(\envone, \vgtwo)$;
-    \item applying $\declareldituple$ to $\vids'$ and $\liv'$ in $\envone$ yields $\ResultLDI(\vgthree, \newenv)$;
+    \item applying $\declareldituple$ to $\vids'$ and $\liv'$ in $\envone$ yields \\ $\ResultLDI(\vgthree, \newenv)$;
     \item \Proseeqdef{$\vg$}{the parallel composition of the ordered composition of $\vgone$ and $\vgtwo$
           with the $\asldata$ edge, and $\vgthree$}.
   \end{itemize}

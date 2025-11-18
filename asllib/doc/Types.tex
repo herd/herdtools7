@@ -321,20 +321,36 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{def-iswellconstrainedinteger}{}
 We use the following helper predicates to classify integer types:
 \[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \isparameterizedinteger(\overname{\ty}{\vt}) &\aslto& \Bool\\
-  \iswellconstrainedinteger(\overname{\ty}{\vt}) &\aslto& \Bool
-  \end{array}
+\isunconstrainedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
 \]
-Those are defined as follows:
+\begin{mathpar}
+\inferrule{}{
+  \isunconstrainedinteger(\vt) \typearrow \overname{\vt = \TInt(c) \land \astlabel(c)=\Unconstrained}{\vb}
+}
+\end{mathpar}
+
 \[
-  \begin{array}{rcl}
-  \isunconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\Unconstrained\\
-  \isparameterizedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\Parameterized\\
-  \iswellconstrainedinteger(\vt) &\triangleq& \vt = \TInt(c) \land \astlabel(c)=\WellConstrained\\
-\end{array}
+\isparameterizedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
 \]
+\begin{mathpar}
+\inferrule{}{
+  \isparameterizedinteger(\vt) \typearrow \overname{\vt = \TInt(c) \land \astlabel(c)=\Parameterized}{\vb}
+}
+\end{mathpar}
+
+\[
+\iswellconstrainedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
+\]
+\begin{mathpar}
+\inferrule{}{
+{
+  \iswellconstrainedinteger(\vt) \typearrow \overname{
+    \begin{array}{cl}\vt = \TInt(c) & \land\\
+      \astlabel(c)=\WellConstrained &
+    \end{array}}{\vb}
+}
+}
+\end{mathpar}
 \identd{ZTPP} \identr{WJYH} \identr{HJPN} \identr{CZTX} \identr{TPHR}
 
 \hypertarget{def-unconstrainedinteger}{}
@@ -459,7 +475,7 @@ expressions of \texttt{let} storage elements.
     \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
           $(\vep, \vses)$\ProseOrTypeError;
-    \item define $\newc$ as the exact integer constraint for $\vep$, that is, $\ConstraintExact(\vep)$.
+    \item define $\newc$ as the exact integer constraint for $\vep$ \\ ($\ConstraintExact(\vep)$).
   \end{itemize}
 
   \item \AllApplyCase{range}
@@ -475,9 +491,10 @@ expressions of \texttt{let} storage elements.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
+  \vc = \ConstraintExact(\ve)\\
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
 }{
-  \annotateconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
+  \annotateconstraint(\tenv, \vc) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
 }
 \end{mathpar}
 
@@ -1156,7 +1173,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
       via $\getvariableenum$ yields the enumeration variable
       name $\vs$ of size $\vi$, that is, $\some{ \vs, \vi }$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an \enumerationtypeterm{}
-      named $\vs$ of length $\vi$ and of elements of type $\vtp$, that is, $\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$;
+      named $\vs$ of length $\vi$ and of elements of type $\vtp$\\ ($\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$);
       \item define $\vses$ as $\vsest$.
     \end{itemize}
 
@@ -1168,8 +1185,8 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
       \item annotating the \symbolicallyevaluableterm{} \constrainedintegerterm{} expression $\ve$ yields\\
       $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
-      the expression $\vep$ and of elements of type $\vtp$, that is,
-      $\TArray(\ArrayLengthExpr(\vep), \vtp)$;
+      the expression $\vep$ and of elements of type $\vtp$
+      ($\TArray(\ArrayLengthExpr(\vep), \vtp)$);
       \item define $\vses$ as the union of $\vsest$ and $\vsesindex$.
     \end{itemize}
   \end{itemize}
@@ -1178,11 +1195,12 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
+  \tty = \AbbrevTArrayLengthExpr{\ve}{\vt}\\
   \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \commonprefixline\\\\
   \getvariableenum(\tenv, \ve) \typearrow \some{ \vs, \vlabels }
 }{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow
   (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
 }
 \end{mathpar}
@@ -1514,6 +1532,7 @@ collection types in comments.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \tty = \TCollection(\fields)\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
   i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
@@ -1521,7 +1540,7 @@ collection types in comments.
   i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
-  \annotatetype(\False, \tenv, \overname{\TCollection(\fields)}{\tty}) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
+  \annotatetype(\False, \tenv, \tty) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
 
@@ -1595,7 +1614,7 @@ show examples of ill-typed named types.
 \inferrule{
   \techeck(G^\tenv.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\\\\
   G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
-  \vses \eqdef \{\ \GlobalEffectTerm(\vpurity), \Immutability(\True) \}
+  \vses \eqdef \{\ \GlobalEffect(\vpurity), \Immutability(\True) \}
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }

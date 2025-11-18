@@ -183,7 +183,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
     \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
     \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
     \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
-    \item define $newe$ as the literal expression for $\vv$;
+    \item define $\newe$ as the literal expression for $\vv$;
     \item define $\vses$ as the empty set.
     \end{itemize}
 
@@ -192,7 +192,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
-      \item define $newe$ as $\ve$;
+      \item define $\newe$ as $\ve$;
       \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesgdk$.
     \end{itemize}
 
@@ -200,7 +200,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
       \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
-      \item the result is a \typingerrorterm{} indicating that $\vx$ is an undefined identifier ($\UndefinedIdentifier$).
+      \item the result is a \typingerrorterm{} indicating that $\vx$ is an undefined identifier\\ ($\UndefinedIdentifier$).
     \end{itemize}
   \end{itemize}
 \end{itemize}
@@ -494,12 +494,23 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \inferrule[binop\_same]{
   \op = \opp \\
   {
-  \techeck(\op \in \left\{
+  \vassociativeoperators \eqdef \left\{
     \begin{array}{l}
-      \ADD, \MUL, \BAND, \BOR, \AND, \OR, \\
-      \XOR, \BEQ, \BVCONCAT, \STRCONCAT
+    \ADD, \\
+    \MUL, \\
+    \BAND, \\
+    \BOR, \\
+    \AND, \\
+    \OR, \\
+    \XOR, \\
+    \BEQ, \\
+    \BVCONCAT, \\
+    \STRCONCAT
     \end{array}
-    \right\}, \BinopPrecedence) \typearrow \True \OrBuildError
+    \right\}
+  } \\
+  {
+  \techeck(\op \in \vassociativeoperators, \BinopPrecedence) \typearrow \True \OrBuildError
   }
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
@@ -1104,7 +1115,12 @@ and the values they evaluate to, as assertions on the values assigned.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[single\_returned\_value]{
-  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \ResultExpr(\vms, \newenv) \OrAbnormal\\
+  {
+    \begin{array}{r}
+  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultExpr(\vms, \newenv) \OrAbnormal
+  \end{array}
+  }\\\\
+  \commonprefixline\\\\
   \vms \eqname [(\vv, \vg)]
 }{
   \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1113,7 +1129,12 @@ and the values they evaluate to, as assertions on the values assigned.
 
 \begin{mathpar}
 \inferrule[multiple\_returned\_values]{
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \ResultExpr(\vms, \newenv) \OrAbnormal\\
+  {
+    \begin{array}{r}
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\ \ResultExpr(\vms, \newenv) \OrAbnormal
+  \end{array}
+  }\\\\
+  \commonprefixline\\\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
   \vv \eqdef \NVVector(\vv_{1..k})
@@ -1198,8 +1219,12 @@ and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expres
   \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow
+  {
+    \begin{array}{r}
+  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow\\
   (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\ESlice(\vepp, \slicesp)}{\newe}, \vses)
+    \end{array}
+  }
 }
 \end{mathpar}
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
@@ -1382,12 +1407,7 @@ See \ExampleRef{Array Access Expressions}.
   \typeofarraylength(\size) \typearrow \wantedtindex\\
   \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesindex \cup \vsesbase \\
-  {
-    \newe \eqdef \begin{cases}
-      \EGetArray(\ebase, \eindexp)     & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
-      \EGetEnumArray(\ebase, \eindexp) & \text{if }\astlabel(\size) = \ArrayLengthEnum
-    \end{cases}
-  }
+  \newe \eqdef \ifthenelse{\astlabel(\size) = \ArrayLengthExpr}{\EGetArray(\ebase, \eindexp)}{\EGetEnumArray(\ebase, \eindexp)}
 }{
   {
   \begin{array}{r}
@@ -1466,6 +1486,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \ve = \EGetEnumArray(\earray, \eindex)\\
   \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
   \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
   \marray \eqname (\varray, \vgone)\\
@@ -1474,7 +1495,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
   \getfield(\vl, \varray) \evalarrow \vv\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
-  \evalexpr(\env, \EGetEnumArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
@@ -1854,7 +1875,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \begin{itemize}
   \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
         given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
-  \item evaluating the expression $\etuple$ yields $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
+  \item evaluating the expression $\etuple$ yields \\ $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
   \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$, yields
         the native value $\vv$.
 \end{itemize}
@@ -1923,7 +1944,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
     \item \AllApplyCase{record}
     \begin{itemize}
-      \item $\tbaseannotanon$ is a record or exception type with list of fields $\vbasefields$\ProseOrTypeError;
+      \item $\tbaseannotanon$ is a record or exception type with list of fields \\$\vbasefields$\ProseOrTypeError;
       \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
       \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
             for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
@@ -1936,7 +1957,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
     \item \AllApplyCase{collection}
     \begin{itemize}
       \item $\tbaseannotanon$ is a collection type with list of fields $\vbasefields$\ProseOrTypeError;
-      \item $\ebaseannot$ denotes a variable expression for $\vbase$, that is, $\EVar(\vbase)$;
+      \item $\ebaseannot$ denotes a variable expression for $\vbase$ ($\EVar(\vbase)$);
       \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
       \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
             for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
@@ -1989,12 +2010,14 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \ebaseannot = \EVar(\vbase)\\
   \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
   \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
-  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
+  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError\\
+  \vt \eqdef \TBits(\veslicewidth, \emptylist)\\
+  \newe \eqdef \EGetCollectionFields(\vbase, \vbasefields)
 }{
   {
   \begin{array}{r}
     \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow \\
-    (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetCollectionFields(\vbase, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
+    (\vt, \newe, \overname{\vsesbase}{\vses})
   \end{array}
   }
 }
@@ -2038,7 +2061,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
     \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which is different to $\name$;
-    \item applying $\findbitfieldsslices$ to $\name$ and $vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
+    \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
   \end{itemize}
 
   \item \AllApplyCase{empty}
@@ -2177,7 +2200,7 @@ yields the bitvector value \verb|'001010'|.
 \begin{itemize}
   \item $\ve$ is the multi-field access expression for the expression $\erecord$ and list of field names
         $\vfieldnames$;
-  \item evaluating the expression $\erecord$ in $\env$ yields $((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
+  \item evaluating the expression $\erecord$ in $\env$ yields \\$((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
   \item obtaining the value associated with the field $\fieldname$ in $\vv$, for each $\fieldname$ in $\vfieldnames$,
         yields $\vv_\fieldname$;
   \item define $\vv$ as the concatenation of $\vv_\fieldname$, for each $\fieldname$ in $\vfieldnames$.
@@ -2578,7 +2601,7 @@ of the type \verb|integer{4, 5, 6}| fails.
   \begin{itemize}
     \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
     \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
-    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields $\ResultExpr(\vvp, \vg)$\ProseOrDynErrorDiverging;
+    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields \\$\ResultExpr(\vvp, \vg)$\ProseOrDynErrorDiverging;
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
   \end{itemize}
 
@@ -2750,8 +2773,12 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 
 \begin{mathpar}
 \inferrule[eq]{}{
-  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow
+  {
+    \begin{array}{r}
+  \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
   \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -2781,14 +2808,16 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
         $\EPattern(\vetwo, \vpatp)$;
   \item define $\vses$ as the union of $\vsese$ and $\vsespat$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \ve = \EPattern(\veone, \vpat)\\
   \annotateexpr(\tenv, \veone) \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\\\\
   \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow (\vpatp, \vsespat) \OrTypeError\\\\
   \vses \eqdef \vsese \cup \vsespat
 }{
-  \annotateexpr(\tenv, \overname{\EPattern(\veone, \vpat)}{\ve}) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
+  \annotateexpr(\tenv, \ve) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
@@ -2812,7 +2841,7 @@ succeed.
   \item evaluating whether the pattern $\vp$ matches the value $\vvone$ in $\env$
         results in \\
         $\ResultPattern(\vv, \vgtwo)$\ProseOrAbnormal,
-        where $vv$ is a native Boolean that determines whether there is indeed a match;
+        where $\vv$ is a native Boolean that determines whether there is indeed a match;
   \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
 \end{itemize}
 \FormallyParagraph
@@ -2869,21 +2898,30 @@ Note that there are two important consequences of producing an arbitrary value w
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$, that is, $\EArbitrary(\tty)$;
+  \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$ ($\EArbitrary(\tty)$);
   \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structureterm\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
-  \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$, that is, $\EArbitrary(\ttytwo)$;
+  \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$ ($\EArbitrary(\ttytwo)$);
   \item define $\vses$ as the union of $\vsesty$ and the set containing an \ImmutabilityTerm{} with immutability $\False$, and a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEReadonly$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \ve = \EArbitrary(\tty)\\
   \annotatetype(\tenv, \tty) \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
   \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
-  \vses \eqdef \vsesty \cup \{ \LocalEffect(\SEReadonly), \GlobalEffect(\SEReadonly), \Immutability(\False) \}
+  {
+  \vses \eqdef \vsesty \cup \left\{
+  \begin{array}{l}
+  \LocalEffect(\SEReadonly),\\
+  \GlobalEffect(\SEReadonly),\\
+  \Immutability(\False)
+  \end{array}
+  \right\}
+  }
 }{
-  \annotateexpr(\tenv, \overname{\EArbitrary(\tty)}{\ve}) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
+  \annotateexpr(\tenv, \ve) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
 \end{mathpar}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
@@ -3051,9 +3089,11 @@ and an example (in comment) where the same field is initialized twice, which is 
   \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
   \item define $\vsess$ as the union of the \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\vfield$ element $(\name,\Ignore)$ of $\vfields$.
 \end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
+  \ve = \ERecord(\tty, \vfields)\\
   \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
   \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\\\\
@@ -3071,7 +3111,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \ve_\name)]\\
   \vses \eqdef \bigcup_{(\name, \Ignore) \in \fields} \vxs_\name\\
 }{
-  \annotateexpr(\tenv, \overname{\ERecord(\tty, \vfields)}{\ve}) \typearrow
+  \annotateexpr(\tenv, \ve) \typearrow
   (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
 }
 \end{mathpar}
@@ -3180,7 +3220,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
     \item $\vli$ consists of at least two expressions;
-    \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i, \vxs_i$)\ProseOrTypeError;
+    \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields $(\vt_i, \ve_i, \vxs_i)$\ProseOrTypeError;
     \item $\vt$ is the \tupletypeterm{} with list of types $\vt_i$, for $i=1..k$;
     \item $\newe$ is tuple expression over list of expressions $\ve_i$, for $i=1..k$;
     \item defining $\vses$ as the union of $\vxs_i$ for $i=1..k$.
@@ -3288,7 +3328,8 @@ which evaluates to
 \begin{itemize}
   \item $\ve$ is an array construction expression with length expression $\elength$ and value expression $\evalue$,
         that is, $\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}$;
-  \item evaluating the expression $\evalue$ in $\env$ yields $\ResultExpr((\vvalue, \vgone), \newenv)$\ProseOrAbnormal;
+  \item evaluating the expression $\evalue$ in $\env$ yields \\
+        $\ResultExpr((\vvalue, \vgone), \newenv)$\ProseOrAbnormal;
   \item evaluating the side-effect-free expression $\elength$ in $\env$ yields \\
         $\ResultExprSEF((\vlength, \vgtwo))$\ProseOrDynErrorDiverging;
   \item $\vlength$ is a native integer value for $\nlength$;
@@ -3334,7 +3375,8 @@ which evaluates to
         list of labels $\vlabels$ and value expression $\evalue$,
         that is, \\
         $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}$;
-  \item evaluating the expression $\evalue$ in $\env$ yields $\ResultExpr((\vvalue, \vg), \newenv)$\ProseOrAbnormal;
+  \item evaluating the expression $\evalue$ in $\env$ yields \\
+        $\ResultExpr((\vvalue, \vg), \newenv)$\ProseOrAbnormal;
   \item \Proseeqdef{$\vv$}{the native record mapping each label $\vl\in\vlabels$ to $\vvalue$}.
 \end{itemize}
 

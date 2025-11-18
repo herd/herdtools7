@@ -265,7 +265,10 @@ for single declarations and \textsc{mutually\_recursive} for more than one decla
 \ExampleDef{Annotating Strongly-connected Components of Declarations}
 In \ExampleRef{Typechecking a List of Global Declarations},
 each declaration is in its own strongly-connected component,
-except for $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$.
+except for the component
+\[
+\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \} \enspace.
+\]
 
 \ProseParagraph
 \OneApplies
@@ -445,7 +448,7 @@ of the subprogram declarations.
     \item applying $\declareonefunc$ to $\vf$ in $\tenv$ yields $(\tenvone, \vfone)$\ProseOrTypeError;
     \item applying $\declaresubprograms$ to the global environment of $\tenvone$ and \\
           $\envandfsone$ yields $(\newgenv, \envandfstwo)$\ProseOrTypeError;
-    \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone, \vsesf)$ and \tail\ $\envandfstwo$.
+    \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone, \vsesf)$ and the \tail\ $\envandfstwo$.
   \end{itemize}
 \end{itemize}
 
@@ -457,12 +460,13 @@ of the subprogram declarations.
 }
 \and
 \inferrule[non\_empty]{
+  \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
   \tenv \eqname (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
   \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
 }{
-  \declaresubprograms(\genv, \overname{[(\lenv, \vf, \vsesf)]\concat\envandfsone}{\envandfs}) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
+  \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
 }
 \end{mathpar}
 
@@ -526,7 +530,7 @@ must match the overridden \Proseimpdefsubprogram{} subprogram in all of the foll
   \item number, names, types, and order of parameters;
   \item return type.
 \end{itemize}
-In \ExampleRef{Overriding Subprograms}, the \verb|Foo| subprograms marked \texttt{impdef} and \texttt{implementation} match in all of the above.
+In \ExampleRef{Overriding Subprograms}, the \verb|Foo| subprograms marked with \texttt{impdef} and the one marked with \texttt{implementation} match in all of the above.
 
 \ExampleDef{Overriding Subprograms}
 \listingref{overriding} shows a specification which defines \Proseimpdefsubprograms{} \verb|Foo| and \verb|Bar|.
@@ -574,7 +578,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \item \Proseprocessoverrides{$\vimpdefs$}{$\vimpls$} yields $\vimpdefsp$ and $\vdiscarded$\ProseOrTypeError;
   \item \Proserenamesubprograms{$\vdiscarded$}{$\vrenameddiscarded$};
   \item define $\voverridden$ as the concatenation of $\vimpdefsp$ and $\vimpls$;
-  \item $\declsp$ is the concatenation of subprogram declarations in $\voverridden$, $\vrenameddiscarded$, and $\vnormal$.
+  \item $\declsp$ is the concatenation of subprogram declarations in $\voverridden$,\\ $\vrenameddiscarded$, and $\vnormal$.
 \end{itemize}
 
 \FormallyParagraph
@@ -587,7 +591,14 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \\\\
   \renamesubprograms(\vdiscarded) \typearrow \vrenameddiscarded \\
   \voverridden \eqdef \vimpdefsp \concat \vimpls \\
-  \declsp \eqdef [\DFunc(\vd) : \vd \in \voverridden] \concat [\DFunc(\vd) : \vd \in \vrenameddiscarded] \concat \vnormal
+  {
+  \declsp \eqdef
+  \begin{array}{ll}
+  [ \DFunc(\vd) : \vd \in \voverridden ] & \concat\\
+  { [\DFunc(\vd) : \vd \in \vrenameddiscarded] } & \concat\\
+  \vnormal &
+  \end{array}
+  }
 }{
   \overridesubprograms(\decls) \typearrow \declsp
 }
@@ -623,7 +634,7 @@ See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplement
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \terminateas \OverridingError \\\\
+  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \OrTypeError \\\\
   \checkimplementationsunique(\vt) \typearrow \True \OrTypeError
 }{
   \checkimplementationsunique(\overname{[\vh] \concat \vt}{\vimpls}) \typearrow \True
@@ -694,7 +705,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
       \item define $\vmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\True$;
       \item define $\vnonmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\False$;
       \item \Prosetecheck{the length of $\vmatching$ is 1}{\OverridingError};
-      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields $\vimpdefsp$ and $\vdiscardedp$;
+      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields $\vimpdefsp$ and \\ $\vdiscardedp$;
       \item define $\vdiscarded$ as the concatenation of $\vmatching$ and $\vdiscardedp$.
     \end{itemize}
 \end{itemize}
@@ -712,7 +723,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
   \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
   \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \\\\
-  \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)
+  \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)\\
   \vdiscarded \eqdef \vmatching \concat \vdiscardedp
 }{
   \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow (\vimpdefsp, \vdiscarded)
@@ -763,7 +774,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 }
 \end{mathpar}
 
-\section{Establishing Def-Use Dependencies \\ Between Global Declarations\label{sec:TopologicalOrdering}}
+\section{Def-Use Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
 with global declarations.
 This is achieved by associating, for each declaration $d$, the set identifiers \emph{used} by $d$,
@@ -1607,7 +1618,7 @@ and the identifiers used by them, appearing in comments to their right.
 \begin{itemize}
   \item \AllApplyCase{mask\_all}
   \begin{itemize}
-    \item $\vp$ is either a mask pattern ($\PatternMask$) or a match-all pattern ($\PatternAll$);
+    \item $\vp$ is either a mask pattern ($\PatternMask$) or a match-all pattern \\ ($\PatternAll$);
     \item define $\ids$ as the empty set.
   \end{itemize}
 
@@ -1881,7 +1892,7 @@ and the identifiers used by them, appearing in comments to their right.
 \begin{itemize}
   \item \AllApplyCase{pass\_return\_none}
   \begin{itemize}
-    \item $\vs$ is either a pass statement $\SPass$ or a return-nothing statement $\SReturn(\None)$;
+    \item $\vs$ is either a pass statement ($\SPass$) or a return-nothing statement \\ ($\SReturn(\None)$);
     \item define $\ids$ as the empty set.
   \end{itemize}
 
@@ -2016,7 +2027,16 @@ and the identifiers used by them, appearing in comments to their right.
 
 \begin{mathpar}
 \inferrule[s\_for]{
-  \ids \eqdef \{ \vindexname \} \cup \useexpr(\vlimit) \cup \useexpr(\vstarte) \cup \useexpr(\vende) \cup \usestmt(\vbody)
+  {
+  \ids \eqdef
+  \begin{array}{ll}
+  \{ \vindexname \} & \cup\\
+  \useexpr(\vlimit) & \cup\\
+  \useexpr(\vstarte) & \cup\\
+  \useexpr(\vende) & \cup\\
+  \usestmt(\vbody) &
+  \end{array}
+  }
 }{
   {
   \usestmt\left(\overname{\SFor\left\{\begin{array}{rcl}
@@ -2138,7 +2158,7 @@ results in a \dynamicerrorterm.
 \AllApply
 \begin{itemize}
   \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
-  \item the subprogram \verb|main() => integer| can be found in $\tenv$ via $\subprogramforsignature$\ProseTerminateAs{\NoEntryPoint} with name $\namep$;
+  \item the subprogram \verb|main() => integer| can be found in $\tenv$ via \\ $\subprogramforsignature$\ProseTerminateAs{\NoEntryPoint} with name $\namep$;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{normal}
