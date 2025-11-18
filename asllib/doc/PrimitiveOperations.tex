@@ -753,7 +753,8 @@ and argument types of its operand literals:
   \binoparithsignatures &\cup\\
   \binoprelsignatures   &\cup\\
   \binopboolsignatures  &\cup\\
-  \binopbitssignatures
+  \binopbitssignatures  &\cup\\
+  \binopstrsignatures   &
 \end{array}
 \]
 
@@ -793,23 +794,22 @@ The set of valid signatures for relational operations is defined as follows:
 \binoprelsignatures \triangleq
 \left\{
 \begin{array}{lclcll}
-  (\EQ      &,& \LInt &,& \LInt)&,\\
-  (\NE       &,& \LInt &,& \LInt)&,\\
-  (\LE       &,& \LInt &,& \LInt)&,\\
+  (\EQ        &,& \LInt &,& \LInt)&,\\
+  (\NE        &,& \LInt &,& \LInt)&,\\
+  (\LE        &,& \LInt &,& \LInt)&,\\
   (\LT        &,& \LInt &,& \LInt)&,\\
-  (\GE       &,& \LInt &,& \LInt)&,\\
+  (\GE        &,& \LInt &,& \LInt)&,\\
   (\GT        &,& \LInt &,& \LInt)&,\\
-  (\EQ       &,& \LBool &,& \LBool)&,\\
-  (\BEQ       &,& \LBool &,& \LBool)&,\\
-  (\NE       &,& \LBool &,& \LBool)&,\\
-  (\EQ      &,& \LReal &,& \LReal)&,\\
-  (\NE       &,& \LReal &,& \LReal)&,\\
-  (\LE       &,& \LReal &,& \LReal)&,\\
+  (\EQ        &,& \LBool &,& \LBool)&,\\
+  (\NE        &,& \LBool &,& \LBool)&,\\
+  (\EQ        &,& \LReal &,& \LReal)&,\\
+  (\NE        &,& \LReal &,& \LReal)&,\\
+  (\LE        &,& \LReal &,& \LReal)&,\\
   (\LT        &,& \LReal &,& \LReal)&,\\
-  (\GE       &,& \LReal &,& \LReal)&,\\
+  (\GE        &,& \LReal &,& \LReal)&,\\
   (\GT        &,& \LReal &,& \LReal)&,\\
-  (\EQ      &,& \LBitvector &,& \LBitvector)&,\\
-  (\NE       &,& \LBitvector &,& \LBitvector)&\\
+  (\EQ        &,& \LBitvector &,& \LBitvector)&,\\
+  (\NE        &,& \LBitvector &,& \LBitvector)&\\
 \end{array}
 \right\}
 \]
@@ -820,6 +820,7 @@ The set of valid signatures for (binary) Boolean operations is defined as follow
 \binopboolsignatures \triangleq
 \left\{
 \begin{array}{lclcll}
+  (\BEQ       &,& \LBool &,& \LBool)&,\\
   (\BAND      &,& \LBool &,& \LBool)&,\\
   (\BOR       &,& \LBool &,& \LBool)&,\\
   (\IMPL      &,& \LBool &,& \LBool)&\\
@@ -830,7 +831,7 @@ The set of valid signatures for (binary) Boolean operations is defined as follow
 The set of valid signatures for bitvector operations is defined as follows:
 \hypertarget{def-binopbitssignatures}{}
 \[
-\binopboolsignatures \triangleq
+\binopbitssignatures \triangleq
 \left\{
 \begin{array}{lclcll}
   (\OR        &,& \LBitvector &,& \LBitvector)&,\\

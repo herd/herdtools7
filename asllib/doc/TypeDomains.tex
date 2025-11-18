@@ -217,7 +217,7 @@ by overloading $\dynamicdomain$:
   \item \AllApplyCase{t\_enum\_array}
   \begin{itemize}
     \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,\\
-          ()$\TArray(\ArrayLengthEnum(\id, k), \telem)$);
+          ($\TArray(\ArrayLengthEnum(\id, k), \telem)$);
     \item view $\env$ as the pair consisting of the \staticenvironmentterm{} $\tenv$ and a dynamic environment;
     \item the type bound to $\id$ in the $\declaredtypes$ map of the \staticenvironmentterm{} of $\tenv$ is the \enumerationtypeterm{}
           for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
