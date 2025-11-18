@@ -137,6 +137,8 @@ and module Value := I.Value
     | Reg (i,r) ->
         if I.is_symbolic r then I.pp_reg r
         else sprintf "%i:%s" i (I.pp_reg r)
+    | Loc loc when Misc.tr_pte loc <> None
+      -> sprintf "[%s]" (pp_symbol loc)
     | Loc loc -> pp_symbol loc
 
   let pp_location_brk = function
@@ -148,14 +150,24 @@ and module Value := I.Value
   let pp_i = I.pp_i
 
   let location_compare loc1 loc2 = match loc1,loc2 with
-  | Reg _,Loc _ -> -1
-  | Loc _,Reg _ -> 1
+  | Reg _,Loc _ -> 1
+  | Loc _,Reg _ -> -1
   | Reg (p1,r1),Reg (p2,r2) ->
-      begin match Misc.int_compare p1 p2 with
-      | 0 -> compare r1 r2
-      | r -> r
-      end
-  | Loc loc1,Loc loc2 -> compare loc1 loc2
+    begin match Misc.int_compare p1 p2 with
+    | 0 -> compare (I.pp_reg r1) (I.pp_reg r2)
+    | r -> r
+    end
+  | Loc loc1, Loc loc2 ->
+    (* order `x` before `pte(x)` before `y` *)
+    match Misc.tr_pte loc1, Misc.tr_pte loc2 with
+    | None, None -> compare loc1 loc2
+    | Some pte1, Some pte2 -> compare pte1 pte2
+    | Some pte1, None ->
+      let result = compare pte1 loc2 in
+      if result = 0 then 1 else result
+    | None, Some pte2 ->
+      let result = compare loc1 pte2 in
+      if result = 0 then -1 else result
 
   module Value = I.Value
 
