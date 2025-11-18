@@ -220,10 +220,16 @@ ast expr { "expression" } =
 ////////////////////////////////////////////////
     | E_GetItem(base: expr, index: N)
     { "an access to tuple expression {base} of the component at index {index}" }
-    | E_Array[length: expr, value: expr]
-    { "array construction for an array of length given by {length} with all cells initialized with {value}" }
-    | E_EnumArray[labels: list1(Identifier), value: expr]
-    { "array construction for an array associating each label in {labels} with the value given by {value}" }
+    | E_Array[
+        length: expr,
+        array_value: expr { math_macro = \arrayvalue }
+      ]
+    { "array construction for an array of length given by {length} with all cells initialized with {array_value}" }
+    | E_EnumArray[
+        labels: list1(Identifier),
+        enum_array_value: expr { math_macro = \enumarrayvalue }
+      ]
+    { "array construction for an array associating each label in {labels} with the value given by {enum_array_value}" }
     | E_GetEnumArray(base: expr, key: expr)
     { "access to enumeration-indexed array {base} with key expression {key}" }
     | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
@@ -331,9 +337,9 @@ render untyped_slice = slice(
 render typed_slice = slice(typed_Slice_Length);
 
 ast call { "call descriptor" } =
-    [   name: Strings,
+    [   call_name: Strings { math_macro = \callname },
         params: list0(expr),
-        args: list0(expr),
+        call_args: list0(expr) { math_macro = \callargs },
         call_type: subprogram_type,
     ]
     { "call of {call_type} subprogram {name}with parameters {params}, arguments {args}" }
@@ -572,12 +578,12 @@ ast stmt { "statement" } =
   | S_Assert(condition: expr)
   { "assertion statement with {condition}" }
   | S_For [
-    index_name : Identifier,
-    start_e    : expr,
-    dir        : for_direction,
-    end_e      : expr,
-    body       : stmt,
-    limit      : option(expr)
+    index_name: Identifier,
+    start_e   : expr,
+    dir       : for_direction,
+    end_e     : expr,
+    body      : stmt,
+    limit     : option(expr)
   ]
   { "for loop statement with
     index variable {index_name},
@@ -655,7 +661,10 @@ render stmt_pragma = stmt(S_Pragma);
 render stmt_unreachable = stmt(S_Unreachable);
 
 ast case_alt { "case alternative" } =
-    [ pattern: pattern, where: option(expr), stmt: stmt ]
+    [ case_alt_pattern: pattern { math_macro = \casealtpattern },
+      where: option(expr),
+      case_alt_stmt: stmt { math_macro = \casealtstmt }
+    ]
     { "case alternative for the pattern {pattern},
         optional where expression {where},
         and statement {stmt}"
@@ -698,16 +707,16 @@ ast override_info { "override qualifier" } =
 
 ast func { "subprogram descriptor" } =
     [
-    name : Strings,
-    parameters : list0((name: Identifier, type: option(ty))),
-    args : list0(typed_identifier),
-    body : stmt,
-    return_type : option(ty),
-    subprogram_type : subprogram_type,
-    recurse_limit : option(expr),
-    builtin : Bool,
-    qualifier : option(func_qualifier),
-    override : option(override_info),
+    name: Strings,
+    parameters: list0((name: Identifier, type: option(ty))),
+    args: list0(typed_identifier),
+    func_body: stmt { math_macro = \funcbody },
+    return_type: option(ty),
+    func_subprogram_type: subprogram_type { math_macro = \funcsubprogramtype},
+    recurse_limit: option(expr),
+    builtin: Bool,
+    qualifier: option(func_qualifier),
+    override: option(override_info),
     ]
     { "a subprogram descriptor for the subprogram name {name},
         parameter list {parameters},
@@ -735,10 +744,10 @@ ast global_decl_keyword { "global declaration keyword" } =
 
 ast global_decl { "global storage declaration" } =
     [
-    keyword : global_decl_keyword,
-    name : Identifier,
-    ty : option(ty),
-    initial_value : option(expr)
+    keyword: global_decl_keyword,
+    global_decl_name: Identifier { math_macro = \globaldeclname },
+    global_decl_ty: option(ty) { math_macro = \globaldeclty },
+    initial_value: option(expr)
     ]
     { "global storage declaration with the
         keyword {keyword},
@@ -780,10 +789,15 @@ typedef static_envs
         "static environment",
         math_macro = \staticenvs,
     } =
- (G: global_static_envs, L: local_static_envs)
-    {
-        "static environment with global static environment {G} and local static environment {L}",
-    }
+ [
+  static_envs_G: global_static_envs
+  { math_macro = \staticenvsG },
+  static_envs_L: local_static_envs
+  { math_macro = \staticenvsL },
+ ]
+  {
+      "static environment with global static environment {G} and local static environment {L}",
+  }
 ;
 
 typedef global_static_envs
@@ -794,7 +808,7 @@ typedef global_static_envs
     [
         declared_types: partial Identifier -> (element_type: ty, element_purity: TPurity),
         global_storage_types: partial Identifier -> (element_type: ty, declared_keyword: global_decl_keyword),
-        expr_equiv: partial Identifier -> (initializer: expr),
+        global_static_envs_expr_equiv: partial Identifier -> (initializer: expr) { math_macro = \globalstaticenvsexprequiv },
         subtypes: partial (sub_type: Identifier) ->
          (super_type: Identifier),
         subprogram: partial Identifier -> (func, side_effects: powerset(TSideEffect)),
@@ -810,8 +824,8 @@ typedef local_static_envs
     } =
     [
         local_storage_types: partial Identifier -> (element_type: ty, declared_keyword: local_decl_keyword),
-        expr_equiv: partial Identifier -> expr,
-        return_type: option(ty)
+        local_static_envs_expr_equiv: partial Identifier -> expr { math_macro = \localstaticenvsexprequiv },
+        local_static_envs_return_type: option(ty) { math_macro = \localstaticenvsreturntype }
     ]
     {  "local static environment" }
 ;
@@ -991,9 +1005,12 @@ typedef dynamic_envs
         "dynamic environment",
         math_macro = \dynamicenvs,
     } =
-    (G: global_dynamic_envs, L: local_dynamic_envs)
+    [
+      dynamic_envs_G: global_dynamic_envs { math_macro = \dynamicenvsG },
+      dynamic_envs_L: local_dynamic_envs { math_macro = \dynamicenvsL },
+    ]
     {
-        "dynamic environment with global dynamic environment {G} and local dynamic environment {L}",
+        "dynamic environment with global dynamic environment {dynamic_envs_G} and local dynamic environment {dynamic_envs_L}",
     }
 ;
 

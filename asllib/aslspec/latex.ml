@@ -234,10 +234,12 @@ let pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name
         pp_rhs_with_layout rhs_with_layout
   | Unspecified -> assert false
 
-(** [pp_fields pp_field_value fmt (fields, layout)] formats [fields] with [fmt]
-    using [pp_field_value] and laid out according to [layout]. Each field is a
-    pair of a field name and a field value. *)
-let pp_fields pp_field_value fmt (fields, layout) =
+(** [pp_fields pp_field_name pp_field_value fmt (fields, layout)] formats
+    [fields] with [fmt] using [pp_field_name] to format each field name and
+    [pp_field_value] to format each field value. The fields are laid out
+    according to [layout]. Each field is a pair of a field name and a field
+    value. *)
+let pp_fields pp_field_name pp_field_value fmt (fields, layout) =
   let layout = LayoutUtils.vertical_if_unspecified layout fields in
   let field_layouts =
     match layout with
@@ -257,7 +259,7 @@ let pp_fields pp_field_value fmt (fields, layout) =
         List.map
           (fun (field_name, (fields_value, layout)) ->
             [
-              (fun fmt -> pp_print_string fmt (field_name_to_latex field_name));
+              (fun fmt -> pp_field_name fmt field_name);
               (fun fmt -> pp_print_string fmt ":");
               (fun fmt -> pp_field_value fmt (fields_value, layout));
             ])
@@ -268,9 +270,8 @@ let pp_fields pp_field_value fmt (fields, layout) =
         field_pp_funs
   | Horizontal _ ->
       let pp_field fmt (field_name, (fields_value, layout)) =
-        fprintf fmt {|%s : %a|}
-          (field_name_to_latex field_name)
-          pp_field_value (fields_value, layout)
+        fprintf fmt {|%a : %a|} pp_field_name field_name pp_field_value
+          (fields_value, layout)
       in
       fprintf fmt {|%a|}
         (pp_parenthesized Braces true (PP.pp_sep_list ~sep:", " pp_field))

@@ -711,11 +711,11 @@ where $\ldots$ stands for fields that are irrelevant for the rule.
 
 For example, the \func{} non-terminal is
 of a record type and has the following fields:
-$\funcname$, $\funcparameters$, $\funcargs$, $\funcbody$, $\funcreturntype$, $\funcsubprogramtype$,
-$\funcrecurselimit$, and \\
+$\FIELDname$, $\FIELDparameters$, $\FIELDargs$, $\funcbody$, $\FIELDreturntype$, $\funcsubprogramtype$,
+$\FIELDrecurselimit$, and \\
 $\funcbuiltin$.
-The notation $\{ \funcbody:\vbody,\ \funcargs:\vargdecls, \ldots \}$
-allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\funcargs$ fields.
+The notation $\{ \funcbody:\vbody,\ \FIELDargs:\vargdecls, \ldots \}$
+allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\FIELDargs$ fields.
 
 Recall that a subset of AST nodes are either labels or labelled tuples.
 \hypertarget{def-astlabel}{}

@@ -10,84 +10,6 @@ let stack_spec_error msg extra_msg =
   let full_msg = Printf.sprintf "%s\n%s" msg extra_msg in
   raise (SpecError full_msg)
 
-(** The kind of a type, either generic or AST-specific. *)
-
-type type_kind = TypeKind_Generic | TypeKind_AST
-
-(** A unary operator that transforms one type into another. *)
-type type_operator =
-  | Powerset  (** All subsets (finite and infinite) of the given type. *)
-  | Powerset_Finite  (** All finite subsets of the given type. *)
-  | List0  (** All (empty and non-empty) sequences of the given member type. *)
-  | List1  (** All non-empty sequences of the given member type. *)
-  | Option  (** A set containing at most a single value of the given type. *)
-
-(** Terms for constructing types out of other types, with [Label t] being the
-    leaf case.
-
-    In the context of a type definition, a [Label] variant defines a new label -
-    a type representing just this single label. In other contexts, for example a
-    type variant appearing in the signature of a relation, this can refer to a
-    type defined elsewhere. *)
-type type_term =
-  | Label of string
-      (** Either a set containing the single value named by the given string or
-          a reference to a type with the given name. *)
-  | TypeOperator of { op : type_operator; term : opt_named_type_term }
-      (** A set containing all types formed by applying the type operator [op]
-          to the type given by [term]. *)
-  | LabelledTuple of {
-      label_opt : string option;
-      components : opt_named_type_term list;
-    }
-      (** A set containing all optionally-labelled tuples formed by the given
-          components. An unlabelled tuple containing a single term is a special
-          case - its domain is the domain of that term; this serves to reference
-          types defined elsewhere. *)
-  | LabelledRecord of {
-      label_opt : string option;
-      fields : named_type_term list;
-    }
-      (** A set containing all optionally-labelled records formed by the given
-          fields. *)
-  | ConstantsSet of string list
-      (** A set containing all constants formed by the given names. *)
-  | Function of {
-      from_type : opt_named_type_term;
-      to_type : opt_named_type_term;
-      total : bool;
-    }
-      (** A set containing all functions formed by the given types. If [total]
-          is true, the function is total, otherwise it is partial. *)
-
-and named_type_term = string * type_term
-(** A term associated with a variable name. *)
-
-and opt_named_type_term = string option * type_term
-(** A term optionally associated with a variable name. *)
-
-(** [make_type_operation op term] Constructs a type term in which [op] is
-    applied to [term]. *)
-let make_type_operation op term = TypeOperator { op; term }
-
-(** [make_tuple components] Constructs an unlabelled tuple for the tuple
-    components [components]. *)
-let make_tuple components = LabelledTuple { label_opt = None; components }
-
-(** [make_labelled_tuple label components] Constructs a tuple labelled [label]
-    and tuple components [components]. *)
-let make_labelled_tuple label components =
-  LabelledTuple { label_opt = Some label; components }
-
-(** [make_record fields] Constructs an unlabelled record with fields [fields].
-*)
-let make_record fields = LabelledRecord { label_opt = None; fields }
-
-(** [make_labelled_record label fields] Constructs a record labelled [label] and
-    fields [fields]. *)
-let make_labelled_record label fields =
-  LabelledRecord { label_opt = Some label; fields }
-
 (** Specifies a visual layout for a compound term. *)
 type layout =
   | Unspecified
@@ -175,6 +97,100 @@ module Attributes = struct
         else add k v acc_map)
       empty pairs
 end
+
+(** The kind of a type, either generic or AST-specific. *)
+type type_kind = TypeKind_Generic | TypeKind_AST
+
+(** A unary operator that transforms one type into another. *)
+type type_operator =
+  | Powerset  (** All subsets (finite and infinite) of the given type. *)
+  | Powerset_Finite  (** All finite subsets of the given type. *)
+  | List0  (** All (empty and non-empty) sequences of the given member type. *)
+  | List1  (** All non-empty sequences of the given member type. *)
+  | Option  (** A set containing at most a single value of the given type. *)
+
+(** Terms for constructing types out of other types, with [Label t] being the
+    leaf case.
+
+    In the context of a type definition, a [Label] variant defines a new label -
+    a type representing just this single label. In other contexts, for example a
+    type variant appearing in the signature of a relation, this can refer to a
+    type defined elsewhere. *)
+type type_term =
+  | Label of string
+      (** Either a set containing the single value named by the given string or
+          a reference to a type with the given name. *)
+  | TypeOperator of { op : type_operator; term : opt_named_type_term }
+      (** A set containing all types formed by applying the type operator [op]
+          to the type given by [term]. *)
+  | LabelledTuple of {
+      label_opt : string option;
+      components : opt_named_type_term list;
+    }
+      (** A set containing all optionally-labelled tuples formed by the given
+          components. An unlabelled tuple containing a single term is a special
+          case - its domain is the domain of that term; this serves to reference
+          types defined elsewhere. *)
+  | LabelledRecord of { label_opt : string option; fields : record_field list }
+      (** A set containing all optionally-labelled records formed by the given
+          fields. *)
+  | ConstantsSet of string list
+      (** A set containing all constants formed by the given names. *)
+  | Function of {
+      from_type : opt_named_type_term;
+      to_type : opt_named_type_term;
+      total : bool;
+    }
+      (** A set containing all functions formed by the given types. If [total]
+          is true, the function is total, otherwise it is partial. *)
+
+and named_type_term = string * type_term
+(** A term associated with a variable name. *)
+
+and opt_named_type_term = string option * type_term
+(** A term optionally associated with a variable name. *)
+
+and record_field = { name_and_type : named_type_term; att : Attributes.t }
+(** A field of a record type. *)
+
+(** [make_type_operation op term] Constructs a type term in which [op] is
+    applied to [term]. *)
+let make_type_operation op term = TypeOperator { op; term }
+
+(** [make_tuple components] Constructs an unlabelled tuple for the tuple
+    components [components]. *)
+let make_tuple components = LabelledTuple { label_opt = None; components }
+
+(** [make_labelled_tuple label components] Constructs a tuple labelled [label]
+    and tuple components [components]. *)
+let make_labelled_tuple label components =
+  LabelledTuple { label_opt = Some label; components }
+
+let make_record_field named_type_term attributes =
+  let att = Attributes.of_list attributes in
+  { name_and_type = named_type_term; att }
+
+(** [make_record fields] Constructs an unlabelled record with fields [fields].
+*)
+let make_record fields = LabelledRecord { label_opt = None; fields }
+
+let field_type { name_and_type = _, field_type; _ } = field_type
+let field_name { name_and_type = name, _; _ } = name
+
+let record_field_math_macro { att } =
+  match Attributes.find_opt AttributeKey.Math_Macro att with
+  | Some (MathMacroAttribute s) -> Some s
+  | _ -> None
+
+let record_field_prose_description { att } =
+  match Attributes.find_opt AttributeKey.Prose_Description att with
+  | Some (StringAttribute s) -> s
+  | _ -> ""
+
+(** [make_labelled_record label fields] Constructs a record labelled [label]
+    with fields [fields]. *)
+let make_labelled_record label fields =
+  LabelledRecord { label_opt = Some label; fields }
 
 (** A datatype for a constant definition. *)
 module Constant : sig

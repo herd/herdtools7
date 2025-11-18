@@ -26,12 +26,12 @@
 
 \DefineType{type}{
 \begin{flalign*}
-\type\texthypertarget{ast-type} \derives\ & \mathhypertarget{ast-Int}\Int\\
+\type\mathhypertarget{ast-type} \derives\ & \Int\mathhypertarget{ast-Int}\\
 |\ & \String\mathhypertarget{ast-String}\end{flalign*}} % EndDefineType
 
 \DefineType{expr}{
 \begin{flalign*}
-\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number\left(\overtext{\Num}{\texttt{v}}\right)\\
+\expr\mathhypertarget{ast-expr} \derives\ & \Number\left(\overtext{\Num}{\texttt{v}}\right)\mathhypertarget{ast-Number}\\
 |\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 \DefineType{type_error}{\texthypertarget{type-typeerror}$\typeerror$} % EndDefineType

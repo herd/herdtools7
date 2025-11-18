@@ -166,16 +166,16 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
         yields $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
-  \item checking that the lengths of $\funcsig.\funcparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
-  \item checking that the lengths of $\funcsig.\funcargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
+  \item checking that the lengths of $\funcsig.\FIELDparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
+  \item checking that the lengths of $\funcsig.\FIELDargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
   \item applying $\checkparamstypesat$ to $\paramsone$
-        to check that the actual parameters have correct types with respect to $\funcsig.\funcparameters$
+        to check that the actual parameters have correct types with respect to $\funcsig.\FIELDparameters$
         in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item define $\eqs$ as the association of declared parameter names in $\funcsig.\funcparameters$ with actual parameters $\paramsone$;
+  \item define $\eqs$ as the association of declared parameter names in $\funcsig.\FIELDparameters$ with actual parameters $\paramsone$;
   \item applying $\checkargstypesat$ to $\argtypes$ and $\eqs$
-        to check that the actual arguments have correct types with respect to $\funcsig.\funcargs$
+        to check that the actual arguments have correct types with respect to $\funcsig.\FIELDargs$
         in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item applying $\annotateretty$ to $\eqs$, $\calltype$, and $\funcsig.\funcreturntype$
+  \item applying $\annotateretty$ to $\eqs$, $\calltype$, and $\funcsig.\FIELDreturntype$
         to check that the two call types match and to substitute actual parameter arguments in the formal return type
         yields $\rettyopt$ \ProseOrTypeError;
   \item define $\vcall$ as the call with name $\namep$, parameters taken from $\paramsone$, arguments $\vargs$,
@@ -195,14 +195,14 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
   }\\
   \vses \eqdef \vsesargs \cup \vsescall\\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
-  \equallength(\funcsig.\funcparameters, \paramsone) \typearrow \paramaritymatch \\\\
+  \equallength(\funcsig.\FIELDparameters, \paramsone) \typearrow \paramaritymatch \\\\
   \techeck(\paramaritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
-  \equallength(\funcsig.\funcargs, \args) \typearrow \aritymatch\\
+  \equallength(\funcsig.\FIELDargs, \args) \typearrow \aritymatch\\
   \techeck(\aritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
-  \checkparamstypesat(\tenv, \funcsig.\funcparameters, \paramsone) \typearrow \True \OrTypeError\\\\
+  \checkparamstypesat(\tenv, \funcsig.\FIELDparameters, \paramsone) \typearrow \True \OrTypeError\\\\
   \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcsigparams_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
-  \checkargstypesat(\tenv, \funcsig.\funcargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\
-  \annotateretty(\tenv, \calltype, \funcsig.\funcreturntype, \eqs) \typearrow \rettyopt \OrTypeError
+  \checkargstypesat(\tenv, \funcsig.\FIELDargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\
+  \annotateretty(\tenv, \calltype, \funcsig.\FIELDreturntype, \eqs) \typearrow \rettyopt \OrTypeError
 }{
   {
     \begin{array}{r}
@@ -275,7 +275,7 @@ parameters elided, and the equivalent calls with all parameters included.
   {
     \caninsertstdlibparam \eqdef \left(\begin{array}{ll}
       \canomitstdlibparam(\funcsig) & \land\\
-      \listlen{\params} < \listlen{\funcsig.\funcparameters} & \land\\
+      \listlen{\params} < \listlen{\funcsig.\FIELDparameters} & \land\\
       \argtypes \neq \emptylist &
     \end{array}\right)
   }\\
@@ -294,7 +294,7 @@ parameters elided, and the equivalent calls with all parameters included.
   {
     \caninsertstdlibparam \eqdef \left(\begin{array}{ll}
       \canomitstdlibparam(\funcsig) & \land\\
-      \listlen{\params} < \listlen{\funcsig.\funcparameters} & \land\\
+      \listlen{\params} < \listlen{\funcsig.\FIELDparameters} & \land\\
       \argtypes \neq \emptylist &
     \end{array}\right)
   }\\
@@ -343,13 +343,13 @@ func Ones{N}() => bits(N)
   \funcsig.\funcbuiltin\\\\
   {
     \declaredparam \eqdef \begin{cases}
-      \some{\vn} & \text{if }\funcsig.\funcparameters = [(\vn, \Ignore)]\\
-      \some{\vn} & \text{if }\funcsig.\funcparameters = [\Ignore, (\vn, \Ignore)]\\
+      \some{\vn} & \text{if }\funcsig.\FIELDparameters = [(\vn, \Ignore)]\\
+      \some{\vn} & \text{if }\funcsig.\FIELDparameters = [\Ignore, (\vn, \Ignore)]\\
       \None      & \text{else}
     \end{cases}
   }\\
   \vb \eqdef \declaredparam = \some{\vn} \land
-  \funcsig.\funcargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
+  \funcsig.\FIELDargs = (\Ignore, \TBits(\EVar(\vn), \Ignore))
 }{
   \canomitstdlibparam(\funcsig) \typearrow \vb
 }
@@ -1242,7 +1242,7 @@ yields an empty list.
     \item $\candidates$ is a list with \head\ $\name$ and \tail\ $\candidatesone$;
     \item the function definition associated with $\name$ in $\tenv$ is $\funcdef$;
     \item determining whether there is an argument clash between $\formaltypes$ and the arguments in $\funcdef$
-          (that is, $\funcdef.\funcargs$) yields $\vbone$\ProseOrTypeError;
+          (that is, $\funcdef.\FIELDargs$) yields $\vbone$\ProseOrTypeError;
   \item determining whether $\funcdef$ is compatible with $\calltype$ via \\$\calltypematches$ yields $\vbtwo$;
     \item filtering the call candidates in $\candidatesone$ with\\ $\formaltypes$ and $\calltype$ in $\tenv$ yields $\matchesone$\ProseOrTypeError;
     \item if $\vbone$ and $\vbtwo$ are both $\True$ then $\matches$ is the list with \head\ $(\name,\funcdef)$ and \tail\ $\matchesone$,
@@ -1262,7 +1262,7 @@ yields an empty list.
 \inferrule[candidates\_exist]
 {
   \funcdef \eqdef G^\tenv.\subprograms(\name) \\
-  \hasargclash(\tenv, \formaltypes, \funcdef.\funcargs) \typearrow \vbone \OrTypeError\\\\
+  \hasargclash(\tenv, \formaltypes, \funcdef.\FIELDargs) \typearrow \vbone \OrTypeError\\\\
   \calltypematches(\funcdef, \calltype) \typearrow \vbtwo \\\\
   {
   \begin{array}{r}
@@ -1770,9 +1770,9 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
     G^\tenv.\subprograms(\name) \eqname \left\{
       \begin{array}{rcl}
       \funcbody &:& \vbody,\\
-      \funcargs &:& \argdecls,\\
-      \funcparameters &:& \paramdecls,\\
-      \funcrecurselimit &:& \vrecurselimit, \\
+      \FIELDargs &:& \argdecls,\\
+      \FIELDparameters &:& \paramdecls,\\
+      \FIELDrecurselimit &:& \vrecurselimit, \\
       &&\ldots
       \end{array}
       \right\}

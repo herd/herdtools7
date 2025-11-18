@@ -105,7 +105,8 @@ let rec vars_of_type_term term =
     | LabelledTuple { components } -> vars_of_opt_named_type_terms components
     | LabelledRecord { fields } ->
         Utils.list_concat_map
-          (fun (field_name, t) -> field_name :: vars_of_type_term t)
+          (fun { name_and_type = name, field_term; _ } ->
+            name :: vars_of_type_term field_term)
           fields
     | ConstantsSet _ -> []
     | Function { from_type; to_type } ->
@@ -140,6 +141,7 @@ type definition_node =
   | Node_Relation of Relation.t
   | Node_TypeVariant of TypeVariant.t
   | Node_Constant of Constant.t
+  | Node_RecordField of record_field
 
 let definition_node_name = function
   | Node_Type { Type.name }
@@ -147,18 +149,21 @@ let definition_node_name = function
   | Node_Constant { Constant.name } ->
       name
   | Node_TypeVariant def -> Option.get (variant_to_label_opt def)
+  | Node_RecordField { name_and_type = name, _; _ } -> name
 
 let math_macro_opt_for_node = function
   | Node_Type def -> Type.math_macro def
   | Node_Relation def -> Relation.math_macro def
   | Node_TypeVariant def -> TypeVariant.math_macro def
   | Node_Constant def -> Constant.math_macro def
+  | Node_RecordField def -> record_field_math_macro def
 
 let prose_description_for_node = function
   | Node_Type def -> Type.prose_description def
   | Node_Relation def -> Relation.prose_description def
   | Node_TypeVariant def -> TypeVariant.prose_description def
   | Node_Constant def -> Constant.prose_description def
+  | Node_RecordField def -> record_field_prose_description def
 
 (** [vars_of_node node] returns the list of term-naming variables that occur at
     any depth inside the definition node [node]. *)
@@ -172,6 +177,8 @@ let vars_of_node = function
   | Node_Relation { Relation.input; output; _ } ->
       vars_of_opt_named_type_terms input
       @ Utils.list_concat_map vars_of_type_term output
+  | Node_RecordField { name_and_type = field_name, field_type; _ } ->
+      field_name :: vars_of_type_term field_type
 
 (** Utility functions for handling layouts. *)
 module Layout = struct
@@ -202,7 +209,10 @@ module Layout = struct
     | LabelledRecord { fields; _ } ->
         if List.length fields > 1 then
           Horizontal
-            (List.map (fun (_, t) -> horizontal_for_type_term t) fields)
+            (List.map
+               (fun { name_and_type = _, field_type; _ } ->
+                 horizontal_for_type_term field_type)
+               fields)
         else Unspecified
     | ConstantsSet names ->
         Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
@@ -223,7 +233,11 @@ module Layout = struct
         else Unspecified
     | LabelledRecord { fields; _ } ->
         if List.length fields > 1 then
-          Vertical (List.map (fun (_, t) -> default_for_type_term t) fields)
+          Vertical
+            (List.map
+               (fun { name_and_type = _, field_type; _ } ->
+                 default_for_type_term field_type)
+               fields)
         else Unspecified
     | ConstantsSet names ->
         Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
@@ -247,13 +261,16 @@ module Layout = struct
         match TypeVariant.math_layout def with
         | Some layout -> layout
         | None -> default_for_type_term term)
+    | Node_RecordField { name_and_type = _, field_type; _ } ->
+        default_for_type_term field_type
 end
 
 let definition_node_attributes = function
   | Node_Type { Type.att }
   | Node_TypeVariant { TypeVariant.att }
   | Node_Relation { Relation.att }
-  | Node_Constant { Constant.att } ->
+  | Node_Constant { Constant.att }
+  | Node_RecordField { att } ->
       att
 
 let elem_name = function
@@ -277,13 +294,19 @@ let list_definition_nodes ast =
             List.fold_right
               (fun ({ TypeVariant.term } as variant) acc_nodes ->
                 match term with
-                | Label _
-                | LabelledTuple { label_opt = Some _ }
-                | LabelledRecord { label_opt = Some _ } ->
+                | Label _ | LabelledTuple { label_opt = Some _ } ->
                     Node_TypeVariant variant :: acc_nodes
+                | LabelledRecord { label_opt; fields } ->
+                    let field_nodes =
+                      List.map (fun field -> Node_RecordField field) fields
+                    in
+                    let variant_if_labelled =
+                      Option.map (fun _ -> Node_TypeVariant variant) label_opt
+                      |> Option.to_list
+                    in
+                    variant_if_labelled @ field_nodes @ acc_nodes
                 | LabelledTuple { label_opt = None }
-                | LabelledRecord { label_opt = None }
-                | _ ->
+                | Function _ | ConstantsSet _ | TypeOperator _ ->
                     acc_nodes)
               variants acc_nodes
           in
@@ -340,7 +363,9 @@ module Check = struct
         if List.compare_lengths fields cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
         else
-          List.iter2 (fun (_, term) cell -> check_layout term cell) fields cells
+          List.iter2
+            (fun { name_and_type = _, term; _ } cell -> check_layout term cell)
+            fields cells
     | ConstantsSet names, (Horizontal cells | Vertical cells) ->
         if List.compare_lengths names cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
@@ -367,6 +392,8 @@ module Check = struct
           check_layout term (math_layout_for_node node)
       | Node_Relation def ->
           check_layout (relation_to_tuple def) (math_layout_for_node node)
+      | Node_RecordField { name_and_type = _, field_type; _ } ->
+          check_layout field_type (math_layout_for_node node)
     in
     List.iter check_math_layout_for_definition_node definition_nodes
 
@@ -382,11 +409,15 @@ module Check = struct
         | None -> component_ids
         | Some label -> label :: component_ids)
     | LabelledRecord { label_opt; fields } -> (
+        let fields_ids =
+          List.map
+            (fun { name_and_type = _, field_type; _ } -> field_type)
+            fields
+          |> Utils.list_concat_map referenced_ids
+        in
         match label_opt with
-        | None -> List.map snd fields |> Utils.list_concat_map referenced_ids
-        | Some label ->
-            label
-            :: (List.map snd fields |> Utils.list_concat_map referenced_ids))
+        | None -> fields_ids
+        | Some label -> label :: fields_ids)
     | ConstantsSet constant_names -> constant_names
     | Function { from_type = _, from_term; to_type = _, to_term } ->
         referenced_ids from_term @ referenced_ids to_term
@@ -501,7 +532,9 @@ module Check = struct
       let vars = vars_of_node defining_node in
       let () = check_prose_template_for_vars prose_description vars in
       match defining_node with
-      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ -> ()
+      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _
+        ->
+          ()
       | Node_Relation def ->
           let prose_application = Relation.prose_application def in
           let () = check_prose_template_for_vars prose_application vars in
@@ -644,7 +677,8 @@ module Check = struct
         ) ->
           Option.equal String.equal sub_label_opt super_label_opt
           && List.for_all2
-               (fun (_, sub_term) (_, super_term) ->
+               (fun { name_and_type = _, sub_term; _ }
+                    { name_and_type = _, super_term; _ } ->
                  subsumed id_to_defining_node expanded_types sub_term super_term)
                sub_fields super_fields
       | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
@@ -771,7 +805,9 @@ module Check = struct
                   check_subsumed_terms_lists id_to_defining_node terms def_terms
               | _ -> assert false))
       | LabelledRecord { label_opt; fields } -> (
-          let terms = List.map snd fields in
+          let terms =
+            List.map (fun { name_and_type = _, term; _ } -> term) fields
+          in
           let () =
             List.iter (check_well_instantiated id_to_defining_node) terms
           in
@@ -784,7 +820,7 @@ module Check = struct
                   {
                     TypeVariant.term = LabelledRecord { fields = def_fields; _ };
                   } ->
-                  let def_terms = List.map snd def_fields in
+                  let def_terms = List.map field_type def_fields in
                   check_subsumed_terms_lists id_to_defining_node terms def_terms
               | _ -> assert false))
       | Function { from_type = _, from_term; to_type = _, to_term } ->
@@ -826,7 +862,7 @@ module Check = struct
                   Error.tuple_instantiation_failure_not_labelled_tuple term
                     label))
       | LabelledRecord { label_opt; fields } -> (
-          let terms = List.map snd fields in
+          let terms = List.map field_type fields in
           let () = List.iter (check_well_formed id_to_defining_node) terms in
           match label_opt with
           | None -> ()
@@ -838,8 +874,8 @@ module Check = struct
                     TypeVariant.term =
                       LabelledRecord { fields = def_fields; _ } as def_term;
                   } ->
-                  let field_names = List.map fst fields in
-                  let def_field_names = List.map fst def_fields in
+                  let field_names = List.map field_name fields in
+                  let def_field_names = List.map field_name def_fields in
                   if
                     not
                       (Utils.list_is_equal String.equal field_names

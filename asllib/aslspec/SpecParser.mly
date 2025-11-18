@@ -214,8 +214,8 @@ let type_term :=
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
         LabelledTuple {label_opt = Some label; components} }
-    | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_record fields }
-    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET;
+    | LBRACKET; fields=tclist1(record_field); RBRACKET; { make_record fields }
+    | label=IDENTIFIER; LBRACKET; fields=tclist1(record_field); RBRACKET;
     {   check_definition_name label;
         make_labelled_record label fields }
     | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
@@ -235,6 +235,9 @@ let named_type_term ==
 let opt_named_type_term ==
     | name=IDENTIFIER; COLON; ~=type_term; { (Some name, type_term) }
     | ~=type_term; { (None, type_term) }
+
+let record_field := ~=named_type_term; ~=type_attributes;
+    { make_record_field named_type_term type_attributes }
 
 let math_layout :=
     | IDENTIFIER; { Unspecified }
