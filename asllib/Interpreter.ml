@@ -843,7 +843,11 @@ module Make (B : Backend.S) (C : Config) = struct
             (i + 1, m)
           in
           List.fold_left fold (0, m_true) tys |> snd
-      | _ -> fatal_from loc env TypeInferenceNeeded
+      | _ ->
+          (* In all other cases, type-checking should already have confirmed
+             that the ATC succeeds. This case should only arise when
+             non-bits/integer types are nested within tuple types. *)
+          m_true
     in
     choice ~pos:loc env (in_values v ty) true false >>= fun (_, res) ->
     return res
