@@ -263,7 +263,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                     locs
                   else
                     let sym = Constant.mk_sym_virtual s in
-                      A.Location_global (A.V.Val sym)::locs
+                    A.Location_global (A.V.Val sym)::locs
               | None -> locs
             with V.Undetermined -> locs)
           init [] in

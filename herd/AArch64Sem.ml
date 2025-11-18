@@ -1374,9 +1374,6 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let set_elr_el1 v ii =
-        write_reg AArch64Base.elr_el1 v ii
-
       let lift_kvm dir updatedb mop ma an ii mphy =
         let lbl_v = get_instr_label ii in
         let mfault ma a ft =
@@ -3615,7 +3612,6 @@ Arguments:
             >>= do_indirect_jump test [] i ii
 
         | I_ERET ->
-           let open Constant in
            let eret_to_addr v =
               match v2tgt v with
               | Some tgt -> B.faultRetT tgt

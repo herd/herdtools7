@@ -116,7 +116,7 @@ module Make(O:Config)(I:I) : S with module I = I
   let tr_global (c:ParsedConstant.v) =
     let open Constant in
     match c with
-    | Symbolic sym when not (is_label c) -> Global_litmus.get_base_symbol sym
+    | Symbolic sym when not (is_label c) -> Global_litmus.tr_symbol sym
     | Symbolic _| Tag _| Concrete _| ConcreteVector _| ConcreteRecord _
     | PteVal _| AddrReg _| Instruction _
     | Frozen _
