@@ -33,3 +33,12 @@ let string_exists p s =
     else check_from_index (i + 1)
   in
   check_from_index 0
+
+(** [string_replace_all regexp f s] replaces all matches of [regexp] in [s] by
+    the result of applying [f] to each matched substring. *)
+let string_replace_all regexp f s =
+  Str.full_split regexp s
+  |> List.map (function
+    | Str.Text txt -> txt
+    | Str.Delim match_str -> f match_str)
+  |> String.concat ""
