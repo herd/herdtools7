@@ -488,6 +488,7 @@ Required tests:
   $ aslref asciistr.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
   $ aslref --no-exec accessor-overloading-1.asl
+  $ aslref atc-tuple.asl
   $ aslref accessor-overloading-2.asl
   nullary setter
   unary getter

@@ -2621,7 +2621,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[type\_equal]{
-  \astlabel(\vt) \not\in \{\TInt, \TBits\}
+  \astlabel(\vt) \not\in \{\TInt, \TBits, \TTuple \}
 }{
   \isvaloftype(\env, \vv, \vt) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
 }
