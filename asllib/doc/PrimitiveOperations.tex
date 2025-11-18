@@ -907,7 +907,7 @@ The set of valid signatures for string concatenation operations is defined as fo
   \begin{itemize}
     \item $\op$ is $\MOD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
     \item applying $\binopliterals$ to $\DIVRM$ with $\vlone$ and $\vltwo$ yields $c$\ProseOrTypeError;
-    \item define $n$ as $a-c$;
+    \item define $n$ as $a - (c \times b)$;
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
