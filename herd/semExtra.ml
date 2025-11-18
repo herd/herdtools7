@@ -331,23 +331,27 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
 (* Exported TTDs from the init environments *)
     let get_exported_code_pages test =
-      (* V.Val (Symbolic (System (PTE,s))) when Misc.is_labelstr s *)
+      (* extract the list [<labels>] from the list of locations [TTD(<label>)]
+       *)
       let { Test_herd.init_state=st; _ } = test in
+      let cst_to_pagelbl cst =
+        let (>>=) = Option.bind in
+        Constant.as_pte_arg cst
+        >>= Misc.str_as_label
+        >>= fun (proc, lblname) ->
+              Some (Constant.mk_sym_virtual_label_with_offset proc lblname 0)
+      in
       A.state_fold
-        (fun _ v k ->
-          match v with
-          | V.Val cst ->
-              begin
-                match Constant.as_pte_arg cst with
-                | Some str -> begin
-                    match Misc.str_as_label str with
-                    | Some (proc, lblname) ->
-                      (Constant.mk_sym_virtual_label_with_offset proc lblname 0)::k
-                    | None -> k
-                    end
-                | None -> k
-              end
-          | V.Var _ -> k)
+        (fun loc _ k ->
+          match loc with
+          | A.Location_global (V.Val cst) -> begin
+            match cst_to_pagelbl cst with
+            | Some v -> v::k
+            | None -> k
+            end
+          | A.Location_global _
+          | A.Location_reg _ -> k
+          )
         st []
 
 

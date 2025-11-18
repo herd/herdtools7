@@ -4684,11 +4684,11 @@ Arguments:
         let relevant_pagelbls = get_instr_ptevals test
           (* map labels into VAs *)
         in
-        (*
+        
         Printf.printf "# Debug output for %d::%s is:" ii.A.addr (A.pp_instruction PPMode.Ascii ii.A.inst);
         List.iter (fun a -> Printf.printf " %d" a) (List.map (fun (p,lbl) -> Label.Map.find lbl test.program) relevant_pagelbls);
         Printf.printf "\n";
-        *)
+       
         let default_cands =
           InstrSet.empty
           |> InstrSet.add ii.A.inst
@@ -4787,14 +4787,13 @@ Arguments:
               (fun ttd_lbl ->
                 let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
                 let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
-                (* Printf.eprintf "\nComparing %s and %s\n" (A.V.Cst.pp false this_lbl) (A.V.Cst.pp false ttd_lbl); *)
+                (* Printf.printf "\nComparing %s and %s\n" (A.V.Cst.pp false this_lbl) (A.V.Cst.pp false ttd_lbl); *)
                 match (this_triple,ttd_triple) with
                 | (p1,s1,_),(p2,s2,_) ->
                   (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
               ) exp_pages
             end
-          | _ ->
-            false
+          | _ -> false
         in
         let lbl_exposed addr =
           let labels = test.Test_herd.entry_points addr in
@@ -4804,9 +4803,9 @@ Arguments:
                 (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
                 (get_exported_labels test))
             labels in
-        (* Printf.printf "Instruction %s at address %d on an %s page and at an %s label\n" (A.pp_instruction PPMode.Ascii ii.A.inst) ii.A.addr (if is_on_exported_page then "exported" else "unexported")
-        (if is_exported then "exported" else "unexported")
-        ; *)
+        Printf.printf "Instruction %s at address %d on an %s page and at an %s label\n" (A.pp_instruction PPMode.Ascii ii.A.inst) ii.A.addr (if is_on_exported_page then "exported" else "unexported")
+        (if (lbl_exposed ii.A.addr) then "exported" else "unexported")
+        ;
         let needs_vmsa_for_ifetch =
           kvm && self && is_on_exported_page in
         let needs_ifetch = (lbl_exposed ii.A.addr) && self in
