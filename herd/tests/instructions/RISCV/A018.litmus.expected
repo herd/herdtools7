@@ -1,0 +1,12 @@
+Test A018 Allowed
+States 3
+1:x2=0; 1:x3=0;
+1:x2=0; 1:x3=37;
+1:x2=37; 1:x3=37;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Condition exists (1:x2=37 /\ 1:x3=37)
+Observation A018 Sometimes 1 2
+Hash=483c25ba336114b76811cbcc06fa9399
+

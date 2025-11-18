@@ -31,7 +31,7 @@ let tr_rw = function
 %token EOF
 %token <RISCVBase.reg> ARCH_REG
 %token <string> SYMB_REG
-%token <int> NUM
+%token <string> NUM
 %token <string> NAME
 %token <int> PROC
 
@@ -96,18 +96,18 @@ reg:
 | ARCH_REG { $1 }
 
 k:
-| NUM  { MetaConst.Int $1 }
+| NUM  { MetaConst.Int (int_of_string $1) }
 | META { MetaConst.Meta $1 }
 
 addr:
 | NUM LPAR reg RPAR
-    { $1,$3 }
+    { int_of_string $1,$3 }
 | LPAR reg RPAR
     { 0,$2 }
 
 addr0:
 | NUM LPAR reg RPAR
-    { if $1 <> 0 then raise Parsing.Parse_error;
+    { if $1 <> "0" then raise Parsing.Parse_error;
       $3 }
 | LPAR reg RPAR
     { $2 }
@@ -118,8 +118,8 @@ instr:
 | RET
   { A.Ret }
 /* OPs */
-| LI reg COMMA k
-  { A.OpI (A.ORI,$2,A.Ireg A.X0,$4) }
+| LI reg COMMA NUM
+   { A.Li ($2,Int64.of_string $4) }
 | LA reg COMMA NAME
   { A.OpA (A.LA,$2,$4) }
 | LUI reg COMMA k

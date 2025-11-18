@@ -1,0 +1,10 @@
+RISCV A016
+{
+int x=0xffffffff;
+0:x2=x;
+}
+  P0            ;
+ lh x5,0(x2)    ;
+ lhu x3,0(x2)   ;
+forall 0:x5=0xffffffff /\ 0:x3=0xffff
+

@@ -57,6 +57,12 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
         memo = sprintf "%s %s,%s,%i" memo fmt1 fmt2 k ;
         inputs=r2; outputs=r1; }
 
+    let li r k =
+      let fmt,r = tr_1o r in
+      { empty_ins with
+        memo = sprintf "li %s,%Li" fmt k ;
+        outputs=r; }
+
     let lui r1 k =
       let fmt1,r1 = tr_1o r1 in
       { empty_ins with
@@ -90,6 +96,8 @@ module Make(V:Constant.S)(C:Arch_litmus.Config) =
     let compile_ins tr_lab ins k = match ins with
     | A.INop -> { empty_ins with memo="nop"; }::k
     | A.Ret -> { empty_ins with memo="ret"; }::k
+    | A.Li (r,i) ->
+        li r i::k
     | A.OpI2 (A.LUI,r1,i) ->
         lui r1 i::k
     | A.OpI (op,r1,r2,i) ->

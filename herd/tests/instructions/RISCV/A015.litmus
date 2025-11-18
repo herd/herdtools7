@@ -1,0 +1,11 @@
+RISCV A015
+{
+int x=0xffff;
+0:x2=x;
+}
+  P0            ;
+ lb x5,0(x2)    ;
+ lbu x3,0(x2)   ;
+forall 0:x5=0xffffffff /\ 0:x3=0xff
+
+

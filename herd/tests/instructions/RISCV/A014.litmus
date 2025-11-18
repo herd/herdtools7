@@ -1,0 +1,14 @@
+RISCV A014
+{
+uint64_t z;
+0:x1=x;
+0:x3=y;
+0:x5=z;
+0:x2=-1;
+}
+  P0        ;
+sh x2,0(x1) ;
+sb x2,0(x3) ;
+sw x2,0(x5) ;
+locations [x;y;z;]
+forall [x]=65535 /\ [x]=255 /\ [z]=4294967295

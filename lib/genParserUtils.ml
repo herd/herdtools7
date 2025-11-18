@@ -37,10 +37,10 @@ let call_parser name lexbuf lex parse =
   | Misc.Timeout as e -> raise e
   | e ->
       Printf.eprintf
-        "%a: Uncaught exception %s (in %s)\n"
+        "%a: Exception raised in parser %s (in %s)\n"
         Pos.pp_pos lexbuf.lex_curr_p
         (Printexc.to_string e) name ;
-      assert false
+      raise e
 
 
 (************************)

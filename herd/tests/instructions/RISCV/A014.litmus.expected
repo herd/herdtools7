@@ -1,0 +1,10 @@
+Test A014 Required
+States 1
+[x]=65535; [y]=255; [z]=4294967295;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall ([x]=65535 /\ [x]=255 /\ [z]=4294967295)
+Observation A014 Never 0 1
+Hash=179693dd5fa72d4c6a38584f51d2ae03
+
