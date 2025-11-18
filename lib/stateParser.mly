@@ -21,9 +21,6 @@ open LocationsItem
 open MiscParser
 open ConstrGen
 
-let mk_sym_tag s t =
-  Symbolic (Virtual {default_symbolic_data with name=s;tag=Some t;})
-
 let do_mk_sym_tagloc s o =
   if
     o < 0 ||
@@ -39,29 +36,7 @@ let mk_sym_tagloc s o =
 
 let mk_sym_tagloc_zero s = do_mk_sym_tagloc s 0
 
-let mk_sym_morello p s t =
-  let p_int = Misc.string_as_int64 p in
-  if
-    not (Int64.equal (Int64.logand p_int 0x7L) 0L)
-    || Int64.compare p_int (Int64.shift_left 1L 36) >= 0
-    || Int64.compare p_int 0L < 0
-    then Printf.eprintf "Warning: incorrect address encoding: %#Lx\n" p_int ;
-  let truncated_perms = Int64.shift_right_logical p_int 3 in
-  let tag = if Misc.string_as_int t <> 0 then 1L else 0L in
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with
-       name=s;
-       cap=Int64.logor truncated_perms (Int64.shift_left tag 33); })
-
-let mk_sym_with_index s i =
-  Symbolic
-    (Virtual
-       {default_symbolic_data
-       with name=s; offset=Misc.string_as_int i})
-
-let mk_lab (p, l) = Label (p, l)
+let mk_lab (p,s) = Symbolic (Virtual ({default_symbolic_data with name=Symbol.Label (p,s)}))
 %}
 
 %token EOF
@@ -83,6 +58,7 @@ let mk_lab (p, l) = Label (p, l)
 %token TOK_PTE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
+%token TOK_SS TOK_SSCAP TOK_SSVAL
 %token <string> INSTR
 %token <int * string> LABEL
 %token PTX_REG_DEC
@@ -124,16 +100,16 @@ reg:
 | DOLLARNAME {  $1 }
 
 location_global:
-| NAME { Constant.mk_sym $1 }
+| NAME { Constant.mk_sym $1  }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
-| NAME COLON NAME { mk_sym_tag $1 $3 }
+| NAME COLON NAME { Constant.mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
 | TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
-| NUM COLON NAME COLON NUM {mk_sym_morello $1 $3 $5}
-| NAME COLON NUM { mk_sym_morello "0" $1 $3 }
+| NUM COLON NAME COLON NUM { Constant.mk_sym_morello $1 $3 $5}
+| NAME COLON NUM { Constant.mk_sym_morello "0" $1 $3 }
 
 name_or_num:
 | NAME { $1 }
@@ -184,11 +160,14 @@ maybev_notag:
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
-| NAME LBRK NUM RBRK { mk_sym_with_index $1 $3 }
+| NAME LBRK NUM RBRK
+    { Constant.mk_sym_with_index $1 (Misc.string_as_int $3) }
+| TOK_SSCAP LPAR NAME COMMA NUM RPAR
+    { Constant.mk_sym_with_offset $3 (Misc.string_as_int $5) }
 
 maybev_amper:
 | AMPER NAME { Constant.mk_sym $2 }
-| AMPER NAME LBRK NUM RBRK { mk_sym_with_index $2 $4 }
+| AMPER NAME LBRK NUM RBRK { Constant.mk_sym_with_index $2 (Misc.string_as_int $4) }
 
 maybev:
 | maybev_notag { $1 }
@@ -207,6 +186,10 @@ maybev_label:
 | PROC COLON NAME { mk_lab ($1, $3) }
 | NUM COLON NAME { mk_lab (Misc.string_as_int $1, $3) }
 | l=LABEL { mk_lab l }
+
+maybev_label_list:
+  | maybev_label COMMA maybev_label_list { $1::$3 }
+  | maybev_label { [$1] }
 
 %inline std_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -274,6 +257,19 @@ atom_init:
      else
        Warn.user_error
          "Declared size of array %s does not match initial value size"
+	 (dump_location t) }
+| ssspec
+   { let (t,sz) = $1 in
+     let v0 = Constant.mk_replicate sz ParsedConstant.zero in
+     (t,(TyArray ("uintptr_t",sz),v0)) }
+| ssspec EQUAL TOK_SSVAL LCURLY maybev_label_list RCURLY
+   { let (t,sz) = $1 and vs = $5 in
+     if sz = List.length vs then
+       let arr = (TyArray ("uintptr_t",sz),Constant.mk_vec sz vs) in
+       (t, arr)
+     else
+       Warn.user_error
+         "Declared size of shadow stack %s does not match initial value size"
 	 (dump_location t) }
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
@@ -421,6 +417,10 @@ locindex:
 arrayspec:
 | NAME LBRK NUM RBRK
     { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
+
+ssspec:
+| TOK_SS LPAR NAME COMMA NUM RPAR
+    { (Location_global (Constant.mk_sym $3),Misc.string_as_int $5) }
 
 %inline equal:
 | EQUAL { () }
