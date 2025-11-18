@@ -872,70 +872,91 @@ let max_set = IntSet.max_elt
 (* Dump *)
 (********)
 
-let get_proc = function
-  | A.Loc _ -> -1
-  | A.Reg (p,_) -> p
+(* Print a loc with potential initial value `init_opt` and
+   potential type `type_opt` *)
+let dump_init_type_entry loc init_opt typ_opt =
+  match init_opt, typ_opt with
+  (* A empty record is error. *)
+  | None, None -> assert false
+  (* Register initialisation *)
+  | Some init, None ->
+    Some (sprintf "%s=%s;" (A.pp_location loc) (A.pp_initval init))
+  (* Pure type declaration *)
+  | None, Some typ -> begin
+    match typ with
+    | Array (ty,sz) ->
+      Some (sprintf "%s %s[%d];" (TypBase.pp ty) (A.pp_location loc) sz)
+    | Typ ty ->
+      let open TypBase in
+      let open MachSize in
+      match ty with
+      (* Skip the basic type declaration *)
+      | Int|Std (Signed,Word) -> None
+      | _ -> Some (sprintf "%s %s;" (TypBase.pp ty) (A.pp_location loc))
+    end
+  (* Location initialisation with type declaration *)
+  | Some init, Some typ ->
+    let pp_init_typ = sprintf "%s %s=%s;"
+      ( match typ with | Typ t| Array (t,_) -> TypBase.pp t )
+      ( match typ with
+        | Array (_,sz) -> sprintf "%s[%d]" (A.pp_location loc) sz
+        | _ -> A.pp_location loc )
+      ( match typ with
+        | Array (_,sz) ->
+          sprintf "{%s}"
+            ( List.init sz (fun _ -> A.pp_initval init)
+            |> String.concat "," )
+        | _ -> A.pp_initval init ) in
+    Some (pp_init_typ)
 
-(*
-let pp_pointer t =
-  let open TypBase in
-  let open MachSize in
-  match t with
-  | Int|Std (Signed,Word) -> ""
-  | _ -> sprintf "%s* " (TypBase.pp t)
-*)
+(* Print the inital values list, similar to `dump_init_type_entry`.
+   Each time there is a location change, a line break is added in,
+   otherwise a whitespace. *)
+let pp_type_init_by_loc inits =
+  match inits with
+  | [] -> ""
+  | (first_loc,_,_) :: _ ->
+    List.fold_left
+    ( fun (prev_loc, acc_pp_inits) (loc, init_opt, typ_opt) ->
+      match dump_init_type_entry loc init_opt typ_opt with
+      | None -> prev_loc, acc_pp_inits
+      | Some pp_loc_init_typ ->
+        (* if same register proc
+          then a space otherwise a line break followed by a whitespace *)
+        let concat = match prev_loc,loc with
+          | (A.Reg(p1,_),A.Reg(p2,_)) when p1 = p2 -> " "
+          | _ -> "\n " in
+        loc, acc_pp_inits @ [concat; pp_loc_init_typ]
+    ) (first_loc,[]) inits
+    |> snd
+    |> String.concat ""
+    (* trim the empty space at beginning *)
+    |> String.trim
 
 let dump_init chan inits env =
-  let locs_init =
-    List.fold_left
-      (fun k (loc,_) -> A.LocSet.add loc k)
-      A.LocSet.empty inits in
-  fprintf chan "{" ;
-  let pp =
-    A.LocMap.fold
-      (fun loc t k ->
-        match t with
-        | Array (ty,sz) ->
-           sprintf "%s %s[%d];"
-             (TypBase.pp ty) (A.pp_location loc) sz::k
-        | Typ t ->
-            if A.LocSet.mem loc locs_init then k
-            else
-              let open TypBase in
-              let open MachSize in
-              match t with
-              | Int|Std (Signed,Word) -> k
-              | _ -> sprintf "%s %s;" (TypBase.pp t) (A.pp_location loc)::k)
-      env [] in
-  begin match pp with
-  | [] -> ()
-  | _::_ ->
-      fprintf chan "\n%s\n" (String.concat " " pp)
-  end ;
-  let rec p_rec q = function
-    | [] -> fprintf chan "\n}\n"
-    | (left,loc)::rem ->
-        let p = get_proc left in
-        if p <> q then fprintf chan "\n" else fprintf chan " " ;
-        fprintf chan "%s%s%s;"
-          (match loc with
-           | Some _ ->
-               begin
-                 try
-                   let t =
-                     match A.LocMap.find left env with
-                     | Typ t -> t
-                     | _ -> raise Not_found in
-                   TypBase.pp t ^ " "
-                 with Not_found -> ""
-               end
-           | None -> "")
-          (A.pp_location left)
-          (match loc with
-          | Some v -> sprintf "=%s" (A.pp_initval v)
-          | None -> "") ;
-        p_rec p rem in
-  p_rec (-1) inits
+  (* annotation the inits list with typing *)
+  let type_inits = List.map ( fun (loc, init_opt) ->
+      let typing = match loc with
+        (* NOT add typing information of `pte` *)
+        | A.Loc l when Misc.is_pte l -> None
+        | _ -> A.LocMap.find_opt loc env in
+      (loc,init_opt,typing)
+    ) inits
+    |> pp_type_init_by_loc in
+  (* Add those location exists in `env` but not in `inits`
+     to the head of `type_inits` *)
+  let locs = List.split inits |> fst |> A.LocSet.of_list in
+  let extra_type_declaration =
+    A.LocMap.filter ( fun k -> not @@ A.LocSet.mem k locs ) env
+    (* to_list only exists after ocaml 5 *)
+    |> A.LocMap.to_seq |> List.of_seq
+    |> List.filter_map
+      ( fun (loc, typ) -> dump_init_type_entry loc None (Some typ) )
+    |> String.concat " " in
+  if extra_type_declaration = "" then
+    fprintf chan "{\n %s\n}\n" type_inits
+  else
+    fprintf chan "{\n %s\n %s\n}\n" extra_type_declaration type_inits
 
 
 let rec dump_pseudo = function
