@@ -189,9 +189,9 @@ ASL Typing Tests / annotating types:
   ASL Type error: cannot declare already declared element "GREEN".
   [1]
   $ aslref --no-exec TypingRule.TEnumDecl.bad2.asl
-  File TypingRule.TEnumDecl.bad2.asl, line 4, characters 0 to 67:
+  File TypingRule.TEnumDecl.bad2.asl, line 4, characters 24 to 47:
   type SubEnumIllegal1 of enumeration {LOW, HIGH} subtypes SuperEnum;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "LOW".
   [1]
   $ aslref --no-exec TypingRule.TEnumDecl.bad3.asl
@@ -202,18 +202,18 @@ ASL Typing Tests / annotating types:
     provided enumeration {TOP, BOTTOM}.
   [1]
   $ aslref --no-exec TypingRule.TEnumDecl.bad4.asl
-  File TypingRule.TEnumDecl.bad4.asl, line 1, characters 0 to 49:
+  File TypingRule.TEnumDecl.bad4.asl, line 1, characters 14 to 48:
   type Color of enumeration { GREEN, ORANGE, RED };
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "RED".
   [1]
   $ aslref --no-exec TypingRule.Subtype.asl
   $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
   $ aslref TypingRule.TRecordDecl.bad.asl
-  File TypingRule.TRecordDecl.bad.asl, line 1, characters 0 to 58:
+  File TypingRule.TRecordDecl.bad.asl, line 1, characters 17 to 57:
   type MyRecord of record {v: integer, b: boolean, v: real};
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot declare already declared element "v".
   [1]
   $ aslref TypingRule.TExceptionDecl.asl
@@ -716,9 +716,9 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.DeclareType.asl
   $ aslref TypingRule.AnnotateExtraFields.bad.asl
-  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 0 to 40:
+  File TypingRule.AnnotateExtraFields.bad.asl, line 1, characters 15 to 39:
   type SubRecord subtypes Record with {-};
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Static error: Undefined identifier: 'Record'
   [1]
   $ aslref --no-exec TypingRule.DeclaredType.asl

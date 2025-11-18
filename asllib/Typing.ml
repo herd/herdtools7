@@ -3903,7 +3903,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let here x = add_pos_from ~loc:ty x in
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
-    let t1, ses_t = annotate_type ~decl:true ~loc env ty in
+    let t1, ses_t = annotate_type ~decl:true ~loc:(to_pos ty) env ty in
     let env1, t2, s' =
       match s with
       (* AnnotateExtraFields( *)
