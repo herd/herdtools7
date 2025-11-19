@@ -90,7 +90,7 @@ or a \dynamicerrorterm{}.
     \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\\\\
     \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
     \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
-    \typecheckast(G^{\emptytenv}, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
+    \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
     \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
 }{
     \checkandinterpret(\vspectext, \vstdtext) \longrightarrow (\nvint(\vret), \vg)

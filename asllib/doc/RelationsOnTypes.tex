@@ -77,7 +77,7 @@ declared in \listingref{subtype}:\\
 \and
 \inferrule[transitive]{
   \idone \neq \idtwo\\
-  G^\tenv.\subtypes(\idone) = \idthree\\
+  \tenv.\staticenvsG.\subtypes(\idone) = \idthree\\
   \issubtype(\tenv, \TNamed(\idthree), \vttwo) \typearrow \vb
 }{
   \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \vb
@@ -85,7 +85,7 @@ declared in \listingref{subtype}:\\
 \and
 \inferrule[no\_supertype]{
   \idone \neq \idtwo\\
-  G^\tenv.\subtypes(\idone) = \bot
+  \tenv.\staticenvsG.\subtypes(\idone) = \bot
 }{
   \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \False
 }
@@ -1465,8 +1465,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \[
   \supers(\tenv, \vt) \triangleq
   \begin{cases}
-    \{\vt\} \cup \supers(\vs) & \text{ if }G^\tenv.\subtypes(\vt) = \vs\\
-    \{\vt\}  & \text{ otherwise } (\text{that is, }G^\tenv.\subtypes(\vt) = \bot)\\
+    \{\vt\} \cup \supers(\vs) & \text{ if }\tenv.\staticenvsG.\subtypes(\vt) = \vs\\
+    \{\vt\}  & \text{ otherwise } (\text{that is, }\tenv.\staticenvsG.\subtypes(\vt) = \bot)\\
   \end{cases}
 \]
 
@@ -1517,7 +1517,7 @@ named lowest common ancestor.
 \inferrule[super]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
   \vs \not\in \vtsupers\\
-  G^\tenv.\subtypes(\vs) = \vsp\\
+  \tenv.\staticenvsG.\subtypes(\vs) = \vsp\\
   \namedlca(\tenv, \vt, \vsp) \typearrow \tty
 }{
   \namedlca(\tenv, \vt, \vs) \typearrow \tty
@@ -1526,7 +1526,7 @@ named lowest common ancestor.
 \inferrule[none]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
   \vs \not\in \vtsupers\\
-  G^\tenv.\subtypes(\vs) = \bot
+  \tenv.\staticenvsG.\subtypes(\vs) = \bot
 }{
   \namedlca(\tenv, \vt, \vs) \typearrow \None
 }

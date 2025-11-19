@@ -167,7 +167,7 @@ The dynamic local environment maps identifiers corresponding to local storage el
 A dynamic environment \\
 $\denv\in\dynamicenvs$ is \emph{well-formed} if it satisfies the following invariant:
 \[
-\dom(G^\denv.\storage) \cap \dom(L^\denv) = \emptyset \enspace.
+\dom(\denv.\dynamicenvsG.\storage) \cap \dom(\denv.\dynamicenvsL) = \emptyset \enspace.
 \]
 That is, the storage elements assigned values in the local dynamic environment
 and the storage elements assigned values in the global dynamic environment

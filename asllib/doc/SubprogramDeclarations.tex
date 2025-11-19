@@ -682,7 +682,7 @@ See \ExampleRef{Annotating Subprogram Signatures} and
   \addsubprogram(\tenvone, \newf.\FIELDname, \newf, \vsesf) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
-  \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{G^\newtenv}{\newgenv})
+  \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{\newtenv.\staticenvsG}{\newgenv})
 }
 \end{mathpar}
 
@@ -1495,11 +1495,20 @@ as return types.
   \end{array}
   }
 }
-\and
+\end{mathpar}
+
+\begin{mathpar}
 \inferrule[has\_return\_type]{
   \annotatetype(\tenvwithparams, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
   \newreturntype \eqdef \some{\ttyp}\\
-  \newtenv \eqdef (G^\tenvwithargs, L^\tenvwithargs[\FIELDreturntype\mapsto\newreturntype])\\
+  {
+  \newtenv \eqdef \left\{
+  \begin{array}{rl}
+  \staticenvsG: & \tenvwithargs.\staticenvsG,\\
+  \staticenvsL: & \tenvwithargs.\staticenvsL[\FIELDreturntype\mapsto\newreturntype]
+  \end{array}
+  \right\}
+  }\\
   \vses \eqdef \vsesin \cup\ \vsesty
 }{
   {
@@ -1624,7 +1633,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
     }\\
   {\begin{array}{r}\addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow \\(\tenvone, \namep) \OrTypeError\end{array}}
   \\\\
-  \techeck(G^\tenvone.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \\\\
+  \techeck(\tenvone.\staticenvsG.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \\\\
   \newfuncsig \eqdef \funcsig[\FIELDname \mapsto \namep] \\\\
   \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
 }{
@@ -1671,7 +1680,7 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  G^\tenv.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
+  \tenv.\staticenvsG.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
   \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\\
   \vbtwo \eqdef \otherfuncsig.\funcqualifierfield \neq \vqualifier \\
   \hasargclash(\formaltypes, \otherfuncsig.\FIELDargs) \typearrow \vbthree
@@ -1783,8 +1792,8 @@ are ill-typed due to subprogram declaration clashes.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[first\_name]{
-  G^\tenv.\overloadedsubprograms(\name) = \bot\\
-  \newtenv \eqdef (G^\tenv.\overloadedsubprograms[\name\mapsto\{\name\}],  L^\tenv)
+  \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot\\
+  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\overloadedsubprograms[\name\mapsto\{\name\}],  \staticenvsL: \tenv.\staticenvsL\}
 }{
   {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \overname{\name}{\newname})\end{array}}
 }
@@ -1792,7 +1801,7 @@ are ill-typed due to subprogram declaration clashes.
 
 \begin{mathpar}
 \inferrule[name\_exists]{
-  G^\tenv.\overloadedsubprograms(\name) = \othernames\\
+  \tenv.\staticenvsG.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
   \newname \eqdef \name\ \stringconcat\ \discardvarstr\ \stringconcat\ \stringofnat(k)\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
@@ -1810,8 +1819,8 @@ are ill-typed due to subprogram declaration clashes.
   \vb_{\namep} \OrTypeError
   }\\\\
   \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
-  \newgenv \eqdef G^\tenv.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}]\\
-  \newtenv \eqdef (\newgenv,  L^\tenv)
+  \newgenv \eqdef \tenv.\staticenvsG.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}]\\
+  \newtenv \eqdef \{\staticenvsG: \newgenv,  \staticenvsL: \tenv.\staticenvsL\}
 }{
   {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \newname)\end{array}}
 }
@@ -2113,7 +2122,7 @@ can be added, for example, an \unreachablestatementterm.
 
 \begin{mathpar}
 \inferrule[s\_call]{
-  G^\tenv.\subprograms(\call.\callname) = (\vf, \Ignore)\\
+  \tenv.\staticenvsG.\subprograms(\call.\callname) = (\vf, \Ignore)\\
   {
   \absconfigs \eqdef
   \ifthenelse{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}

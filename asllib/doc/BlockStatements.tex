@@ -164,7 +164,15 @@ See \ExampleRef{Block Statements}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \poplocalscope(\vouterenv, \vinnerenv) \evalarrow
-    (G^{\vinnerenv}, \restrictfunc{L^{\vinnerenv}}{{\dom(L^\vouterenv)}})
+  {
+    \begin{array}{r}
+  \poplocalscope(\vouterenv, \vinnerenv) \evalarrow\\
+    \{ \dynamicenvsG:
+      \vinnerenv.\dynamicenvsG,
+        \dynamicenvsL:
+      \restrictfunc{\vinnerenv.\dynamicenvsL}{{\dom(\vouterenv.\dynamicenvsL)}}
+    \}
+    \end{array}
+  }
 }
 \end{mathpar}

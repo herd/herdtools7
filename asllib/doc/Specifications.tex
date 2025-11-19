@@ -380,7 +380,7 @@ since it contains recursive type declarations.
 \inferrule{
   \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
-  \envandfsone \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
+  \envandfsone \eqdef [\DFunc(\vf)\in\decls: ({\tenv_\vf}.\staticenvsL, \vd_\vf, \vses_\vf)]\\
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
@@ -393,7 +393,7 @@ since it contains recursive type declarations.
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
   \addsubprogramdecls(\tenvtwo, \vsess) \typearrow \tenvthree
 }{
-  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
+  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{\tenvthree.\staticenvsG}{\newgenv})
 }
 \end{mathpar}
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
@@ -463,7 +463,7 @@ of the subprogram declarations.
   \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
   \tenv \eqname (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
+  \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
 }{
   \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)

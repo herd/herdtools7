@@ -807,6 +807,7 @@ typedef global_static_envs
     } =
     [
         declared_types: partial Identifier -> (element_type: ty, element_purity: TPurity),
+        constant_values: partial Identifier -> literal,
         global_storage_types: partial Identifier -> (element_type: ty, declared_keyword: global_decl_keyword),
         global_static_envs_expr_equiv: partial Identifier -> (initializer: expr) { math_macro = \globalstaticenvsexprequiv },
         subtypes: partial (sub_type: Identifier) ->
@@ -1940,7 +1941,7 @@ semantics function declare_global(name: Identifier, v: native_value, env: envs) 
 {
    prose_description = "updates the environment {env} by mapping {name} to
                         {v} in the $\storage$ map of the global dynamic
-                        environment $G^\denv$.",
+                        environment $\denv.\dynamicenvsG$.",
  prose_application = "",
 };
 
@@ -2481,24 +2482,18 @@ semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
 
 semantics relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
-   prose_description = "creates an \executiongraphterm{} that represents the
+  prose_description = "creates an \executiongraphterm{} that represents the
                         reading of the value {v} into a storage element given
-                        by the identifier {name}. The result is an execution
-                        graph containing a single Read Effect, which denotes
-                        reading from {name}. % The value {v} is ignored, as
-                        execution graphs do not contain values.",
- prose_application = ""
+                        by the identifier {name}.",
+  prose_application = ""
  };
 
 semantics relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
-   prose_description = "creates an \executiongraphterm{} that represents the
+  prose_description = "creates an \executiongraphterm{} that represents the
                         writing of the value {v} into the storage element
-                        given by an identifier {name}. The result is an
-                        execution graph containing a single Write Effect,
-                        which denotes writing into {name}. % The value {v} is
-                        ignored, as execution graphs do not contain values.",
- prose_application = ""
+                        given by an identifier {name}.",
+  prose_application = ""
  };
 
 semantics function concat_bitvectors(vs: list0(tbitvector)) ->
@@ -2562,9 +2557,9 @@ semantics function set_index(i: N, v: native_value, vec: tvector) -> (res: tvect
  prose_application = "",
 };
 
-semantics function get_field(name: Identifier, record: trecord) -> (native_value)
+semantics function get_field(name: Identifier, record: trecord) -> (v: native_value)
 {
-   prose_description = "retrieves the value corresponding to the field name
+   prose_description = "retrieves the value {v} corresponding to the field name
                         {name} from the record value {record}.",
  prose_application = ""
  };
@@ -2839,7 +2834,7 @@ typing function add_subprogram_decls(tenv: static_envs, funcs: list0((func, powe
 {
   "adds each subprogram definition given by a $\func$ AST
   node in {funcs} to the $\subprograms$ map of
-  $G^\tenv$, yielding {new_tenv}.",
+  $\tenv.\staticenvsG$, yielding {new_tenv}.",
   prose_application = "",
 };
 

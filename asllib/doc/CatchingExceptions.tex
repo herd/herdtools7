@@ -215,8 +215,8 @@ That is, no \dynamicerrorterm{} occurs.
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, (G^\denv, L^\denv))\\
-  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \env \eqname (\tenv, \denv)\\
+  \envthrow \eqname (\tenv, \denvthrow)\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
@@ -255,8 +255,8 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, (G^\denv, L^\denv))\\
-  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \env \eqname (\tenv, \denv)\\
+  \envthrow \eqname (\tenv, \denvthrow)\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
@@ -296,8 +296,8 @@ The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherw
 \begin{mathpar}
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, (G^\denv, L^\denv))\\
-  \envthrow \eqname (\tenv, (G^{\denvthrow}, L^{\denvthrow}))\\
+  \env \eqname (\tenv, \denv)\\
+  \envthrow \eqname (\tenv, \denvthrow)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}

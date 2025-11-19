@@ -1148,7 +1148,7 @@ the \integertypeterm{} rather than the \realtypeterm).
   \item \AllApplyCase{undefined}
   \begin{itemize}
     \item $\tenv$ does not contain a binding for $\name$ in the $\overloadedsubprograms$ map
-          ($G^\tenv.\overloadedsubprograms$);
+          ($\tenv.\staticenvsG.\overloadedsubprograms$);
     \item the result is a \typingerrorterm{} indicating that the identifier has not been declared (as a subprogram).
   \end{itemize}
 
@@ -1174,7 +1174,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[undefined]{
-  G^\tenv.\overloadedsubprograms(\name) = \bot
+  \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot
 }{
   {
   \subprogramforsignature\left( \begin{array}{l}\tenv,\\ \name,\\ \callerargtypes,\\ \calltype\end{array} \right) \typearrow \TypeErrorVal{\UndefinedIdentifier}
@@ -1184,7 +1184,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 
 \begin{mathpar}
 \inferrule[no\_candidates]{
-  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
+  \tenv.\staticenvsG.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \calltype, \renamingset) \typearrow\\ \emptyset \OrTypeError
@@ -1199,7 +1199,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 
 \begin{mathpar}
 \inferrule[one\_candidate]{
-  G^\tenv.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
+  \tenv.\staticenvsG.\overloadedsubprograms(\name) = (\renamingset, \vses)\\
   {
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset, \calltype) \typearrow \\ \matchingrenamings \OrTypeError
@@ -1217,7 +1217,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \TypingRuleDef{FilterCallCandidates}
 \RenderRelation{filter_call_candidates}
 
-The names $\candidates$ are assumed to exist in $G^\tenv.\subprograms$.
+The names $\candidates$ are assumed to exist in $\tenv.\staticenvsG.\subprograms$.
 
 \ExampleDef{Filtering Subprograms Matching a Call}
 In \listingref{SubprogramForSignature}, filtering the
@@ -1261,7 +1261,7 @@ yields an empty list.
 \begin{mathpar}
 \inferrule[candidates\_exist]
 {
-  \funcdef \eqdef G^\tenv.\subprograms(\name) \\
+  \funcdef \eqdef \tenv.\staticenvsG.\subprograms(\name) \\
   \hasargclash(\tenv, \formaltypes, \funcdef.\FIELDargs) \typearrow \vbone \OrTypeError\\\\
   \calltypematches(\funcdef, \calltype) \typearrow \vbtwo \\\\
   {
@@ -1651,7 +1651,7 @@ while calling \\
   \item evaluating each expression in $\args$ separately in $\envone$ as per \\
         \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvargs, \envtwo)$\ProseOrAbnormal;
   \item $\envtwo$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment $\denvtwo$;
-  \item applying $\incrpendingcalls$ to $G^\denvtwo$ and $\name$ yields $\genv$;
+  \item applying $\incrpendingcalls$ to $\denvtwo.\dynamicenvsG$ and $\name$ yields $\genv$;
   \item the environment $\envtwo'$ is defined as the environment
   consisting of the \staticenvironmentterm{} $\tenv$ and the dynamic environment with the global component
   $\genv$ and an empty local component (intuitively, this is because the called subprogram does not have access
@@ -1693,13 +1693,13 @@ while calling \\
   \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\\\\
   \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \incrpendingcalls(G^\denvtwo, \name) \evalarrow \genv\\\\
+  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\end{array}}\\\\
   \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vm)]\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
-  \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
 }{
   \evalcall(\env, \name, \params, \args) \evalarrow \ResultCall(\vmstwo, \newenv)
 }
@@ -1710,13 +1710,13 @@ while calling \\
   \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\\\\
   \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \incrpendingcalls(G^\denvtwo, \name) \evalarrow \genv\\\\
+  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
   \commonprefixline\\\\
   {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\end{array}}\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
-  \newenv \eqdef (\tenv, (\genvtwo, L^{\denvtwo}))
+  \newenv \eqdef (\tenv, \{ \dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
 }{
   \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
 }
@@ -1767,7 +1767,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 \inferrule{
   \env \eqname (\tenv, \denv)\\
   {
-    G^\tenv.\subprograms(\name) \eqname \left\{
+    \tenv.\staticenvsG.\subprograms(\name) \eqname \left\{
       \begin{array}{rcl}
       \funcbody &:& \vbody,\\
       \FIELDargs &:& \argdecls,\\
@@ -1777,7 +1777,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
       \end{array}
       \right\}
   }\\
-  \envone \eqdef (\tenv, (G^\denv, \emptyfunc))\\
+  \envone \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \emptyfunc\})\\
   \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\\\\
   \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
   \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\

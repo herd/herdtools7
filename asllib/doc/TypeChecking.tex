@@ -58,16 +58,14 @@ variable declarations of the specification.
 Static environments, denoted as $\staticenvs$, \\
 are defined as follows (referring to symbols defined by the abstract syntax):
 \RenderTypes{static_envs_and_components}
-
-
 \end{definition}
 
 We use $\tenv$ and similar variable names (for example, $\tenvone$ and $\newtenv$) to range over static environments.
 
-A \staticenvironmentterm{} $\tenv=(G^\tenv, L^\tenv)$ consists of two
-distinct components: the \emph{\globalstaticenvironmentterm} $G^\tenv \in \globalstaticenvs$ --- pertaining to AST nodes
+A \staticenvironmentterm{} $\tenv$ consists of two
+distinct components: the \emph{\globalstaticenvironmentterm} $\tenv.\staticenvsG \in \globalstaticenvs$ --- pertaining to AST nodes
 appearing outside of a given subprogram, and the \emph{\localstaticenvironmentterm}
-$L^\tenv \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
+$\tenv.\staticenvsL \in \localstaticenvs$ --- pertaining to AST nodes appearing inside a given subprogram.
 This separation allows us to typecheck subprograms by using an empty local environment.
 
 The intuitive meaning of each field appearing above is as follows:
@@ -129,7 +127,7 @@ The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is define
 \end{definition}
 
 The global environment and local environment consist of various components.
-We use the notation $G^\tenv.m$ and $L^\tenv.m$ to access the $m$ component of a given environment.
+We use the notation $\tenv.\staticenvsG.m$ and $\tenv.\staticenvsL.m$ to access the $m$ component of a given environment.
 
 To update a function component $f$ (e.g., $\declaredtypes$) of a global or local environment $E$
 with a new mapping $x \mapsto v$, we use the notation $\tenv.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.

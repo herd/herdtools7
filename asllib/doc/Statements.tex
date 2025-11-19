@@ -2852,7 +2852,7 @@ Advancing the loop counter one step towards the end of its range is achieved via
   \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
   \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
   \env \eqname (\tenv, \denv)\\
-  \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vindexname\mapsto\vstep]))\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
   {
@@ -3269,7 +3269,7 @@ since \verb|proc| is not a function but a procedure.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[error]{
-  \vb \eqdef (L^\tenv.\returntype = \None \leftrightarrow \veopt = \None) \\
+  \vb \eqdef (\tenv.\staticenvsL.\returntype = \None \leftrightarrow \veopt = \None) \\
   \vb = \False
 }{
   \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
@@ -3278,7 +3278,7 @@ since \verb|proc| is not a function but a procedure.
 
 \begin{mathpar}
 \inferrule[none]{
-  L^\tenv.\returntype = \None
+  \tenv.\staticenvsL.\returntype = \None
 }{
   \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow
   (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\emptyset}{\vses})
@@ -3288,7 +3288,7 @@ since \verb|proc| is not a function but a procedure.
 \begin{mathpar}
 \inferrule[some]{
   \vs = \SReturn(\some{ \ve })\\
-  L^\tenv.\returntype = \some{ \vt }\\
+  \tenv.\staticenvsL.\returntype = \some{ \vt }\\
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
   \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{

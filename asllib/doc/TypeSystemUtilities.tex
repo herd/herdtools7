@@ -326,7 +326,7 @@ is the \localstaticenvironmentterm{} of $\emptytenv$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \withemptylocal(\genv) \typearrow (\genv, L^{\emptytenv})
+  \withemptylocal(\genv) \typearrow \{ \staticenvsG: \genv, \staticenvsL: \emptytenv \}
 }
 \end{mathpar}
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
@@ -428,10 +428,9 @@ the following local storage elements are added:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \newlocalstoragetypes \eqdef L^\tenv.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
-  \newtenv \eqdef (G^\tenv, L^\tenv[\localstoragetypes \mapsto \newlocalstoragetypes])
-}
-{
+  \newlocalstoragetypes \eqdef \tenv.\staticenvsL.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
+  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG, \staticenvsL: \tenv.\staticenvsL[\localstoragetypes \mapsto \newlocalstoragetypes]\}
+}{
   \addlocal(\tenv, \id, \tty, \ldk) \typearrow \newtenv
 }
 \end{mathpar}
@@ -449,8 +448,8 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvi
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \isglobalundefined(G^\tenv, \vx) \typearrow \vbone\\
-  \islocalundefined(L^\tenv, \vx) \typearrow \vbtwo\\
+  \isglobalundefined(\tenv.\staticenvsG, \vx) \typearrow \vbone\\
+  \islocalundefined(\tenv.\staticenvsL, \vx) \typearrow \vbtwo\\
 }{
   \isundefined(\tenv, \vx) \typearrow \overname{\vbone \land \vbtwo}{\vb}
 }
@@ -503,7 +502,7 @@ Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoraget
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \islocalundefined(\lenv, \vx) \typearrow \overname{L^\tenv.\localstoragetypes(\vx) = \bot}{\vb}
+  \islocalundefined(\lenv, \vx) \typearrow \overname{\tenv.\staticenvsL.\localstoragetypes(\vx) = \bot}{\vb}
 }
 \end{mathpar}
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
@@ -525,7 +524,7 @@ of the \globalstaticenvironmentterm{} and $\bot$ if it is unbound.}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \lookupconstant(\tenv, \vs) \typearrow \overname{G^\tenv.\constantvalues(\vs)}{\vv}
+  \lookupconstant(\tenv, \vs) \typearrow \overname{\tenv.\staticenvsG.\constantvalues(\vs)}{\vv}
 }
 \end{mathpar}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
@@ -580,7 +579,7 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\exprequiv(\vx) = \ve
+  \tenv.\staticenvsL.\exprequiv(\vx) = \ve
 }{
   \lookupimmutableexpr(\tenv, \vx) \typearrow \ve
 }
@@ -588,8 +587,8 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
 \begin{mathpar}
 \inferrule[global]{
-  L^\tenv.\exprequiv(\vx) = \bot\\
-  G^\tenv.\exprequiv(\vx) = \ve\\
+  \tenv.\staticenvsL.\exprequiv(\vx) = \bot\\
+  \tenv.\staticenvsG.\exprequiv(\vx) = \ve\\
 }{
   \lookupimmutableexpr(\tenv, \vx) \typearrow \ve
 }
@@ -597,8 +596,8 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
 \begin{mathpar}
 \inferrule[none]{
-  L^\tenv.\exprequiv(\vx) = \bot\\
-  G^\tenv.\exprequiv(\vx) = \bot\\
+  \tenv.\staticenvsL.\exprequiv(\vx) = \bot\\
+  \tenv.\staticenvsG.\exprequiv(\vx) = \bot\\
 }{
   \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
 }
@@ -617,14 +616,18 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 \ASLListing{Remembering global immutable expressions}{AddGlobalImmutableExpr}{\typingtests/TypingRule.AddGlobalImmutableExpr.asl}
 
 \ProseParagraph
-\ProseEqdef{$\newtenv$}{
-  the \staticenvironmentterm{} with the same local environment as $\tenv$ and a global environment
+\ProseEqdef{$\newtenv$}{the \staticenvironmentterm{} with the same local environment as $\tenv$ and a global environment
   where $\exprequiv$ binds $\vx$ to $\ve$.}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \addglobalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv.\exprequiv[\vx \mapsto \ve], L^\tenv)}{\newtenv}
+  {
+  \begin{array}{r}
+  \addglobalimmutableexpr(\tenv, \vx, \ve) \typearrow \\
+  \overname{\{\staticenvsG: \tenv.\staticenvsG.\exprequiv[\vx \mapsto \ve], \staticenvsL: \tenv.\staticenvsL\}}{\newtenv}
+  \end{array}
+  }
 }
 \end{mathpar}
 \CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
@@ -635,15 +638,18 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
 \ProseParagraph
-\AllApply
-\begin{itemize}
-  \item define $\newtenv$ as the \staticenvironmentterm{} with the same global environment as $\tenv$ and a local environment
-        where $\exprequiv$ binds $\vx$ to $\ve$.
-\end{itemize}
+\ProseEqdef{$\newtenv$}{the \staticenvironmentterm{} with the same global environment as $\tenv$ and a local environment
+where $\exprequiv$ binds $\vx$ to $\ve$.}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \addlocalimmutableexpr(\tenv, \vx, \ve) \typearrow \overname{(G^\tenv, L^\tenv.\exprequiv[\vx \mapsto \ve])}{\newtenv}
+  {
+  \begin{array}{r}
+  \addlocalimmutableexpr(\tenv, \vx, \ve) \typearrow \\
+  \overname{\{\staticenvsG: \tenv.\staticenvsG, \staticenvsL: \tenv.\staticenvsL.\exprequiv[\vx \mapsto \ve]\}}{\newtenv}
+  \end{array}
+  }
 }
 \end{mathpar}
 \CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
@@ -800,7 +806,7 @@ binding $\name$ to $\funcdef$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \newtenv \eqdef (G^\tenv.\subprograms[\name\mapsto(\funcdef, \vs)], L^\tenv)
+  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subprograms[\name\mapsto(\funcdef, \vs)], \staticenvsL: \tenv.\staticenvsL\}
 }{
   \addsubprogram(\tenv, \name, \funcdef, \vs) \typearrow \newtenv
 }
@@ -831,7 +837,8 @@ by binding $\name$ to $\tty$ and $\vf$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}{
-  \addtype(\tenv, \name, \tty, \vf) \typearrow \overname{(G^\tenv.\declaredtypes[\name\mapsto(\tty, \vf)] , L^\tenv)}{\newtenv}
+  \addtype(\tenv, \name, \tty, \vf) \typearrow
+  \overname{\{\staticenvsG: \tenv.\staticenvsG.\declaredtypes[\name\mapsto(\tty, \vf)] , \staticenvsL: \tenv.\staticenvsL\}}{\newtenv}
 }
 \end{mathpar}
 \CodeSubsection{\AddTypeBegin}{\AddTypeEnd}{../StaticEnv.ml}

@@ -1086,7 +1086,7 @@ show examples of ill-typed enumeration type declarations.
 \begin{mathpar}
 \inferrule{
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
-  \vl \in \vli: \checkvarnotingenv(G^\tenv, \vl) \typearrow \True \OrTypeError
+  \vl \in \vli: \checkvarnotingenv(\tenv.\staticenvsG, \vl) \typearrow \True \OrTypeError
 }{
   \annotatetype(\True, \tenv, \overname{\TEnum(\vli)}{\tty}) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
@@ -1271,7 +1271,7 @@ enumeration labels from variable expressions.
 
 \begin{mathpar}
 \inferrule[no\_declared\_type]{
-  G^\tenv.\declaredtypes(\vx) = \bot
+  \tenv.\staticenvsG.\declaredtypes(\vx) = \bot
 }{
   \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
 }
@@ -1279,7 +1279,7 @@ enumeration labels from variable expressions.
 
 \begin{mathpar}
 \inferrule[declared\_enum]{
-  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
+  \tenv.\staticenvsG.\declaredtypes(\vx) = (\vt, \Ignore)\\
   \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels)
 }{
   \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \some{(\vx, \vlabels)}
@@ -1288,7 +1288,7 @@ enumeration labels from variable expressions.
 
 \begin{mathpar}
 \inferrule[declared\_not\_enum]{
-  G^\tenv.\declaredtypes(\vx) = (\vt, \Ignore)\\
+  \tenv.\staticenvsG.\declaredtypes(\vx) = (\vt, \Ignore)\\
   \makeanonymous(\tenv, \vt) \typearrow \vtone\\
   \astlabel(\vtone) \neq \TEnum
 }{
@@ -1612,8 +1612,8 @@ show examples of ill-typed named types.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \techeck(G^\tenv.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\\\\
-  G^\tenv.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
+  \techeck(\tenv.\staticenvsG.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\\\\
+  \tenv.\staticenvsG.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
   \vses \eqdef \{\ \GlobalEffect(\vpurity), \Immutability(\True) \}
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)

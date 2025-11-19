@@ -2514,21 +2514,21 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\localstoragetypes(\vs) = \tty
+  \tenv.\staticenvsL.\localstoragetypes(\vs) = \tty
 }{
   \typeof(\tenv, \vs) \typearrow \tty
 }
 \and
 \inferrule[global]{
-  L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = \tty
+  \tenv.\staticenvsL.\localstoragetypes(\vs) = \bot\\
+  \tenv.\staticenvsG.\globalstoragetypes(\vs) = \tty
 }{
   \typeof(\tenv, \vs) \typearrow \tty
 }
 \and
 \inferrule[error]{
-  L^\tenv.\localstoragetypes(\vs) = \bot\\
-  G^\tenv.\globalstoragetypes(\vs) = \bot
+  \tenv.\staticenvsL.\localstoragetypes(\vs) = \bot\\
+  \tenv.\staticenvsG.\globalstoragetypes(\vs) = \bot
 }{
   \typeof(\tenv, \vs) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }

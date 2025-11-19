@@ -306,11 +306,12 @@ by overloading $\dynamicdomain$:
 }
 \end{mathpar}
 
-The notation $L^\denv(\id)$ denotes the \nativevalueterm{} associated with the identifier $\id$
+The notation $\denv.\dynamicenvsL(\id)$ denotes the \nativevalueterm{} associated with the identifier $\id$
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
-  \inferrule[t\_int\_parameterized]{
-  L^\denv(\id) = \nvint(n)
+\inferrule[t\_int\_parameterized]{
+  \env \eqname (\Ignore, \denv)\\
+  \denv.\dynamicenvsL(\id) = \nvint(n)
 }{
   \dynamicdomain(\env, \overname{\TInt(\Parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
 }
@@ -388,7 +389,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_enum\_array]{
   \env \eqname (\tenv, \Ignore)\\
-  G^\tenv.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
+  \tenv.\staticenvsG.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   {
@@ -412,7 +413,8 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_named]{
-  G^\tenv.\declaredtypes(\id)=\tty
+  \env \eqname (\tenv, \Ignore)\\
+  \tenv.\staticenvsG.\declaredtypes(\id)=\tty
 }{
   \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
 }
