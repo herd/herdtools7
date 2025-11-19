@@ -1824,10 +1824,12 @@ type 'k kinstruction =
 type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
-let nop = Some I_NOP
 let mk_imm_branch off = Some (I_B (BranchTarget.Offset off)) 
+
+(* Nop is used by litmus7 as marker for start/stop of litmus assembly sequence *)
+let nop = Some (I_MOV(V32,ZR,K 0))
 let is_nop = function
-  | I_NOP -> true
+  | I_MOV(V32,ZR,K 0) -> true
   | _ -> false
 
 let pp_memo memo = memo
