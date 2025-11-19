@@ -16,6 +16,18 @@
 
 (** Constants, both symbolic (ie addresses) and concrete (eg integers)  *)
 
+module Symbol : sig
+  type t = Data of string | Label of Label.Full.full
+
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+  val pp : t -> string
+  val map : (string -> string) -> t -> t
+  val of_string : string -> t
+  val is_data : t -> bool
+  val is_label : t -> bool
+end
+
 type tag = string option
 type cap = Int64.t
 type offset = int
@@ -25,7 +37,7 @@ type offset = int
 (* Memory cell, with optional tag, capability<128:95>,optional vector metadata, and offset *)
 type symbolic_data =
   {
-   name : string ;
+   name : Symbol.t ;
    tag : tag ;
    cap : cap ;
    offset : offset ;
@@ -88,7 +100,6 @@ type ('scalar, 'pte, 'addrreg, 'instr) t =
   | ConcreteRecord of ('scalar, 'pte, 'addrreg, 'instr) t StringMap.t
       (** A record of constants, e.g. [{ addr: x; instr: NOP; index: 3 }] *)
   | Symbolic of symbol  (** A symbolic constant, e.g. [x] *)
-  | Label of Proc.t * string  (** A label in code. *)
   | Tag of string
   | PteVal of 'pte  (** A page table entry. *)
   | AddrReg of 'addrreg (** A register with fields *)
@@ -138,9 +149,11 @@ val map_label : (Label.t -> Label.t) -> ('s,'pte, 'addrreg,'instr) t -> ('s,'pte
 val map :
   ('a -> 'b) -> ('c -> 'd) -> ('e -> 'f) -> ('g -> 'h) -> ('a,'c,'e,'g) t -> ('b,'d,'f,'h) t
 
+val mk_sym_virtual_label : Proc.t -> Label.t -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_virtual_label_with_offset : Proc.t -> Label.t -> offset -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
-val mk_sym_with_index : string -> int -> ('scalar, 'pte,'addrreg, 'instr) t
+val mk_sym_with_index : string -> int -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pte2 : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'addrreg,'instr) t
@@ -150,13 +163,16 @@ val mk_vec : int -> ('scalar,'pte, 'addrreg,'instr) t list -> ('scalar,'pte,'add
 val mk_replicate : int -> ('scalar,'pte, 'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t
 
 val is_symbol : ('scalar,'pte,'addrreg,'instr) t -> bool
+val is_data : ('scalar,'pte,'addrreg,'instr) t -> bool
 val is_label : ('scalar,'pte,'addrreg,'instr) t -> bool
+val is_label_pa : ('scalar,'pte,'addrreg,'instr) t -> bool
 (* Extract label, if any *)
 val as_label :  ('scalar,'pte,'addrreg,'instr)  t -> Label.Full.full option
 
 val is_non_mixed_symbol : symbol -> bool
 
 val default_tag : ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_tag : string -> string -> ('scalar,'pte,'addrreg,'instr) t
 
 (* Check  non-concrete constant (and change type!) *)
 val check_sym : ('a,'pte,'addrreg,'instr) t -> ('b,'pte,'addrreg,'instr) t
@@ -174,6 +190,7 @@ val is_pt : ('scalar,'pte,'addrreg,'instr)  t -> bool
 (* Remove the Pac field of a virtual address *)
 val make_canonical : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t
 
+val mk_sym_morello : string -> string -> string -> ('scalar,'pte,'addrreg,'instr) t
 module type S =  sig
 
   module Scalar : Scalar.S
