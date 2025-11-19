@@ -127,6 +127,7 @@ module type S = sig
   val symbol : location -> Constant.symbol option
   val offset : location -> int option
   val symbolic_data : location -> Constant.symbolic_data option
+  val get_symbol_name : location -> string option
   val of_symbolic_data : Constant.symbolic_data -> location
 
 (* Extra for locations *)
@@ -157,6 +158,7 @@ module type S = sig
   val mask_type : TestType.t -> v -> v
 
   type size_env
+  val debug_size_env : size_env -> string
   val size_env_empty : size_env
   val build_size_env : (location * (TestType.t * 'v)) list -> size_env
   val look_size : size_env -> string -> MachSize.sz
@@ -407,6 +409,13 @@ module Make(C:Config) (I:I) : S with module I = I
         let open Constant in
         match global loc with
         | Some (I.V.Val (Symbolic (Virtual sym))) -> Some sym
+        | _ -> None
+
+      let get_symbol_name loc =
+        let open Constant in
+        match global loc with
+        | Some (I.V.Val (Symbolic (Physical (name,_)|Virtual {name;_})))
+          -> Some name
         | _ -> None
 
       let of_symbolic_data s =
@@ -847,6 +856,13 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Sizes *)
 
       type size_env = MachSize.sz StringMap.t
+
+      let debug_size_env =
+        StringMap.pp_str_delim ", "
+          (fun loc sz ->
+             Printf.sprintf "%s -> %s"
+               loc
+               (MachSize.pp sz))
 
       let size_env_empty = StringMap.empty
 

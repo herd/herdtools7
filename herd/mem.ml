@@ -1133,6 +1133,14 @@ let match_reg_events es =
         (List.fold_right2 (fun r w ->  S.RFMap.add (S.Load r) (S.Store w)))
 
 (* Solver code for memory. Starts by pairing loads and compatible writes. *)
+    exception KontFailed of exn * S.event_structure * S.rfmap
+
+    let top_show test es rfm e =
+      if C.debug.Debug_herd.top then begin
+        eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
+        let module PP = Pretty.Make(S) in
+        PP.show_es_rfm test es rfm
+     end
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
@@ -1183,7 +1191,8 @@ let match_reg_events es =
                 (* And to make everything concrete *)
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
-                kont es rfm cs res
+                try kont es rfm cs res
+                with e -> raise (KontFailed (e,es,rfm))
           with
           | Contradiction ->  (* May  be raised by add_mem_eqs *)
              if debug_solver then
@@ -1192,13 +1201,8 @@ let match_reg_events es =
                  pp_nosol "memory" test es rfm
                end ;
              res
-          | e ->
-              if C.debug.Debug_herd.top then begin
-                eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
-                let module PP = Pretty.Make(S) in
-                let rfm = add_some_mem loads stores rfm in
-                PP.show_es_rfm test es rfm
-              end ;
+          | KontFailed (e,es,rfm) ->
+              top_show test es rfm e ;
               raise e
         )
         res
@@ -2164,13 +2168,28 @@ let match_reg_events es =
                   ) ->
                   when_unsolved test es rfm cs res
               | _ ->
-                  if self then check_ifetch_limitations test es owls
-                  else check_noifetch_limitations es;
-                  if (mixed && not unaligned) then check_aligned test es ;
-                  if A.reject_mixed
-                     && not (mixed || memtag || morello)
-                  then
-                    check_sizes test es ;
+                  let ofail =
+                    match ofail with
+                    | Some _ ->
+                       (* Previous error has priority *)
+                       ofail
+                    | None ->
+                       try
+                         (* Various checks *)
+                         begin
+                           if self then check_ifetch_limitations test es owls
+                           else check_noifetch_limitations es;
+                           if (mixed && not unaligned) then
+                             check_aligned test es ;
+                           if A.reject_mixed
+                              && not (mixed || memtag || morello)
+                           then
+                             check_sizes test es
+                         end ;
+                         None
+                       with e ->
+                         (* Delay error *)
+                         Some (VC.Failed e) in
                   if debug_solver && C.verbose > 0 then begin
                     let module PP = Pretty.Make(S) in
                     prerr_endline "Mem solved" ;

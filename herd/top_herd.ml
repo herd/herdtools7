@@ -363,7 +363,11 @@ module Make(O:Config)(M:XXXMem.S) =
       match cs with
       | Some (Failed e) ->
          (* Perform error *)
-         raise e
+          if O.debug.Debug_herd.top then
+            model_kont
+              ochan test do_restrict cstr
+              conc (st,flts) (set_pp,vbpp) flags c
+          else raise e
       | Some (Warn msg) ->
          (* Warn and ignore *)
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
