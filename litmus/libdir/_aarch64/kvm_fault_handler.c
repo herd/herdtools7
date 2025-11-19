@@ -2,6 +2,15 @@
 /* Handle MMU faults */
 /*********************/
 
+#ifdef SEE_FAULTS
+static bool is_iabt(unsigned long esr) {
+  unsigned int ec = esr >> ESR_EL1_EC_SHIFT;
+
+  return (ec == ESR_EL1_EC_IABT_EL1) || (ec == ESR_EL1_EC_IABT_EL0);
+
+}
+#endif
+
 static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 #ifdef SEE_FAULTS
   th_faults_info_t *th_flts = &th_faults[w->instance][w->proc];
@@ -20,7 +29,7 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
   }
 
   flt.instr_symb = get_instr_symb_id(lbls, (ins_t *)pc);
-  if (get_far(esr, &far)) {
+  if (!is_iabt(esr) && get_far(esr, &far)) {
     flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
   } else {
     flt.data_symb = DATA_SYMB_ID_UNKNOWN;
@@ -66,6 +75,7 @@ static void fault_handler(struct pt_regs *regs,unsigned int esr) {
 #define ESR_EL1_EC_PAC 0b011100
 
 static void install_fault_handler(int cpu) {
+  install_exception_handler(EL1H_SYNC, ESR_EL1_EC_IABT_EL1, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_DABT_EL1, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_UNKNOWN, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_SVC64, fault_handler);
@@ -73,6 +83,7 @@ static void install_fault_handler(int cpu) {
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_PAC, fault_handler);
 #ifdef USER_MODE
   struct thread_info *ti = thread_info_sp(user_stack[cpu]);
+  ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_IABT_EL0] = fault_handler;
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_DABT_EL0] = fault_handler;
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_UNKNOWN] = fault_handler;
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_SVC64] = fault_handler;
