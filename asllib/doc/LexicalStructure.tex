@@ -150,9 +150,7 @@ $\REintlit$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)*}\\
 $\REhexlit$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter) \\
             &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)* \\
 $\REforbiddenhexfirst$ &$\triangleq$& \texttt{"0x"} ((\REchar\ \regexminus{} \REdigit) \regexminus{} \REhexletter) \\
-$\REforbiddenhexremaining$ &$\triangleq$& \texttt{"0x"} (\REdigit\ \texttt{|} \REhexletter)  \\
-                           &            & $\wrappedline$ (\Underscore\ \texttt{|} \REdigit\ \texttt{|} \REhexletter)*  \\
-                           &            & $\wrappedline$ (\REletter{} \regexminus{} \REhexletter) \\
+$\REforbiddenhexremaining$ &$\triangleq$& $\REhexlit$ (\REletter{} \regexminus{} \REhexletter) \\
 \end{tabular}
 \end{center}
 
@@ -172,12 +170,9 @@ forbidden and trigger a lexical error.
 This is formalized by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
-$\REreallit$  &$\triangleq$ & \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit} \\
-              &             & $\wrappedline$ \texttt{(\Underscore\ | \REdigit)*} \\
-$\REforbiddenrealfirst$ &$\triangleq$ & \texttt{\REdigit\ (\Underscore\ | \REdigit)* "."} \\
-              &             & $\wrappedline$ \texttt{ (\REchar\ \regexminus{} \anycharacter{\texttt{0123456789.}})} \\
-$\REforbiddenrealremaining$ &$\triangleq$& \texttt{\REdigit\ (\Underscore\ | \REdigit)* "." \REdigit} \\
-              &            & $\wrappedline$ \texttt{(\Underscore\ | \REdigit)* \REletter{}} \\
+$\REreallit$  &$\triangleq$ & $\REintlit$ \texttt{"."} $\REintlit$ \\
+$\REforbiddenrealfirst$ &$\triangleq$ & $\REintlit$ \texttt{ (\REchar\ \regexminus{} \anycharacter{\texttt{0123456789.}})} \\
+$\REforbiddenrealremaining$ &$\triangleq$& $\REintlit$ \texttt{"."} $\REintlit$ \REletter{} \\
 \end{tabular}
 \end{center}
 
