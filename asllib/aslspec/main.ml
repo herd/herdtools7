@@ -97,41 +97,48 @@ module TextColor = struct
   let reset_color = "\027[0m"
 end
 
+(** [write_to_file_with_formatter filename f] opens the file [filename] for
+    writing, creates a formatter for it, and applies [f] to that formatter. The
+    file is closed afterwards. *)
+let write_to_file_with_formatter filename f =
+  let file_channel = open_out_bin filename in
+  Fun.protect
+    ~finally:(fun () -> close_out_noerr file_channel)
+    (fun () ->
+      let file_formatter = Format.formatter_of_out_channel file_channel in
+      f file_formatter)
+
 let parse_command_line_args_and_execute () =
   let open CLI in
   let config = parse_args () in
   let ast =
     (* Parse the abstract syntax tree (AST) from all specification files. *)
-    List.map (fun filename -> parse_spec_from_file filename) config.spec_files
-    |> List.concat
+    Utils.list_concat_map
+      (fun filename -> parse_spec_from_file filename)
+      config.spec_files
   in
   if config.pp then pp_std ast;
   let spec = Spec.from_ast ast in
-  if config.render then
-    let generated_macros_filename = !arg_render_filename in
-    let open AST in
-    let file_channel = open_out_bin generated_macros_filename in
-    let () =
-      Fun.protect
-        ~finally:(fun () -> close_out_noerr file_channel)
-        (fun () ->
-          let file_formatter = Format.formatter_of_out_channel file_channel in
-          Render.render spec file_formatter;
+  let _render =
+    if config.render then
+      let generated_macros_filename = !arg_render_filename in
+      let open AST in
+      write_to_file_with_formatter generated_macros_filename (fun fmt ->
+          Render.render spec fmt;
           Format.fprintf Format.std_formatter
             "%sGenerated LaTeX macros into %s\n%s" TextColor.green
             generated_macros_filename TextColor.reset_color)
-    in
+  in
+  let _render_debug =
     if !arg_render_debug then
       let debug_generated_elements_filename = !arg_render_debug_filename in
-      let file_channel = open_out_bin debug_generated_elements_filename in
-      Fun.protect
-        ~finally:(fun () -> close_out_noerr file_channel)
-        (fun () ->
-          let file_formatter = Format.formatter_of_out_channel file_channel in
-          Render.render_debug spec file_formatter;
+      write_to_file_with_formatter debug_generated_elements_filename (fun fmt ->
+          Render.render_debug spec fmt;
           Format.fprintf Format.std_formatter
             "%sGenerated stand-alone LaTeX file into %s\n%s" TextColor.green
             debug_generated_elements_filename TextColor.reset_color)
+  in
+  ()
 
 (** Main entry point. Runs aslspec for the command-line options. *)
 let () =

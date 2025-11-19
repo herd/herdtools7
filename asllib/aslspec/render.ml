@@ -49,7 +49,7 @@ module Make (S : SPEC_VALUE) = struct
       LaTeX [\hypertarget{target}{}] for [id]. *)
   let hypertarget_for_id id =
     let open Spec in
-    let name_id = Latex.remove_underscores id in
+    let name_id = StringOps.remove_underscores id in
     let category =
       match defining_node_for_id S.spec id with
       | Node_Relation _ -> "relation"
@@ -190,14 +190,14 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_definition fmt
       ({ Relation.name; property; input; output } as def) =
     let input_vars = vars_of_opt_named_type_terms input in
-    let output_vars = List.map vars_of_type_term output |> List.concat in
+    let output_vars = Utils.list_concat_map vars_of_type_term output in
     let vars = input_vars @ output_vars in
     let instantiated_prose_description =
       substitute_spec_vars_by_latex_vars ~math_mode:true
         (Relation.prose_description def)
         vars
       (* necessary to avoid spurious line breaks. *)
-      |> Latex.shrink_whitespace
+      |> StringOps.shrink_whitespace
     in
     let layout = Layout.math_layout_for_node (Node_Relation def) in
     let hyperlink_target = hypertarget_for_id name in
@@ -220,7 +220,7 @@ module Make (S : SPEC_VALUE) = struct
     let layout =
       match TypeVariant.math_layout variant with
       | Some layout -> layout
-      | None -> Layout.default_for_type_term term
+      | None -> Layout.for_type_term term
     in
     fprintf fmt "%a" pp_type_term (term, layout)
 
@@ -237,11 +237,7 @@ module Make (S : SPEC_VALUE) = struct
       along with its hypertarget. *)
   let pp_variant_with_hypertarget fmt ({ TypeVariant.term } as variant) =
     let variant_name_opt = Spec.variant_to_label_opt variant in
-    let hyperlink_target_opt =
-      Option.map
-        (fun variant_name -> hypertarget_for_id variant_name)
-        variant_name_opt
-    in
+    let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
     match term with
     | LabelledRecord { fields } ->
         (* Records are a special case, since each field has its own hypertarget. *)

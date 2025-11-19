@@ -12,19 +12,22 @@ let union_macro_name = "cup"
 (** A LaTeX underscore escape sequence. *)
 let escaped_underscore = {|\_|}
 
-let escape_underscores str =
-  Str.global_replace regex_underscore escaped_underscore str
+module StringOps = struct
+  let escape_underscores str =
+    Str.global_replace regex_underscore escaped_underscore str
 
-let underscore_to_space str = Str.global_replace regex_underscore " " str
-let spec_var_to_prose var_str = underscore_to_space var_str
+  let remove_underscores str = Str.global_replace (Str.regexp_string "_") "" str
+  let underscore_to_space str = Str.global_replace regex_underscore " " str
+
+  let shrink_whitespace str =
+    let regexp_newline_segment = Str.regexp "[ \n\r]+" in
+    Str.global_replace regexp_newline_segment " " str
+end
+
+let spec_var_to_prose var_str = StringOps.underscore_to_space var_str
 let to_math_mode str = Printf.sprintf "$%s$" str
 let spec_var_to_template_var var_str = "{" ^ var_str ^ "}"
-let remove_underscores str = Str.global_replace (Str.regexp_string "_") "" str
 let ignore_macro = "\\Ignore"
-
-let shrink_whitespace str =
-  let regexp_newline_segment = Str.regexp "[ \n\r]+" in
-  Str.global_replace regexp_newline_segment " " str
 
 type font_type = Text | TextTT | TextSF | TextSC | TextIT
 
@@ -57,10 +60,10 @@ let spec_var_to_latex_var ~font_type var_str =
     in
     Format.asprintf "%a"
       (pp_one_arg_macro font_macro_name pp_print_string)
-      (escape_underscores var_str)
+      (StringOps.escape_underscores var_str)
 
 let elem_name_to_math_macro elem_name =
-  Format.asprintf "%a" pp_macro (remove_underscores elem_name)
+  Format.asprintf "%a" pp_macro (StringOps.remove_underscores elem_name)
 
 let pp_comma = fun fmt () -> fprintf fmt ", "
 

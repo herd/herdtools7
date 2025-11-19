@@ -1,6 +1,3 @@
-(** A module for querying the AST (of the semantics-specification for ASL) and
-    for checking its correctness. *)
-
 open AST
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
@@ -12,14 +9,14 @@ module Error = struct
     spec_error @@ Format.asprintf "Undefined reference to '%s' in %s" id context
 
   let undefined_element id =
-    spec_error @@ Format.sprintf "Encountered undefined element: %s" id
+    spec_error @@ Format.asprintf "Encountered undefined element: %s" id
 
   let duplicate_definition id =
     spec_error @@ Format.asprintf "Duplicate definition of '%s'" id
 
   let unmatched_variables_in_template template unmatched_vars =
     spec_error
-    @@ Format.sprintf
+    @@ Format.asprintf
          "The prose template '%s' contains the following unmatched variables: \
           %s"
          template
@@ -49,7 +46,7 @@ module Error = struct
 
   let non_constant_used_as_constant_set id =
     spec_error
-    @@ Format.sprintf
+    @@ Format.asprintf
          "%s is used as a constant even though it is not defined as one" id
 
   let tuple_instantiation_length_failure term components label def_components =
@@ -95,8 +92,6 @@ module Error = struct
          consistent_layout
 end
 
-(** [vars_of_type_term term] returns the list of term-naming variables that
-    occur at any depth inside [term]. *)
 let rec vars_of_type_term term =
   let listed_vars =
     match term with
@@ -121,21 +116,15 @@ let rec vars_of_type_term term =
 and opt_named_term_to_var_list (var, t) =
   Option.to_list var @ vars_of_type_term t
 
-(** [vars_of_opt_named_type_terms named_terms] returns the list of term-naming
-    variables that occur at any depth inside [opt_named_terms]. *)
 and vars_of_opt_named_type_terms opt_named_terms =
-  List.map opt_named_term_to_var_list opt_named_terms |> List.concat
+  Utils.list_concat_map opt_named_term_to_var_list opt_named_terms
 
-(** Returns the label of a type variant, if it consists of a label. *)
 let variant_to_label_opt { TypeVariant.term } =
   match term with
   | Label label -> Some label
   | LabelledTuple { label_opt } | LabelledRecord { label_opt } -> label_opt
   | _ -> None
 
-(** Wraps AST nodes that define identifiers that may appear in type terms and
-    expression terms: types, constants, relations, [Label]s, labelled tuples,
-    and labelled records. *)
 type definition_node =
   | Node_Type of Type.t
   | Node_Relation of Relation.t
@@ -196,57 +185,28 @@ module Layout = struct
         (None, make_tuple opt_named_output_terms);
       ]
 
-  (** Creates a horizontal layout for [term]. *)
-  let rec horizontal_for_type_term term =
+  let rec for_type_term term =
     match term with
     | Label _ -> Unspecified
-    | TypeOperator { term = _, t } -> horizontal_for_type_term t
+    | TypeOperator { term = _, t } -> for_type_term t
     | LabelledTuple { components } ->
         if List.length components > 1 then
-          Horizontal
-            (List.map (fun (_, t) -> horizontal_for_type_term t) components)
+          Horizontal (List.map (fun (_, t) -> for_type_term t) components)
         else Unspecified
     | LabelledRecord { fields; _ } ->
         if List.length fields > 1 then
-          Horizontal
-            (List.map
-               (fun { name_and_type = _, field_type; _ } ->
-                 horizontal_for_type_term field_type)
-               fields)
+          let layout_per_field =
+            List.map
+              (fun { name_and_type = _, field_type; _ } ->
+                for_type_term field_type)
+              fields
+          in
+          Vertical layout_per_field
         else Unspecified
-    | ConstantsSet names ->
-        Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
+    | ConstantsSet names -> Horizontal (List.map (fun _ -> Unspecified) names)
     | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
-        Horizontal
-          [
-            horizontal_for_type_term from_term; horizontal_for_type_term to_term;
-          ]
+        Horizontal [ for_type_term from_term; for_type_term to_term ]
 
-  let rec default_for_type_term term =
-    match term with
-    | Label _ -> Unspecified
-    | TypeOperator { term = _, t } -> default_for_type_term t
-    | LabelledTuple { components } ->
-        if List.length components > 1 then
-          Horizontal
-            (List.map (fun (_, t) -> default_for_type_term t) components)
-        else Unspecified
-    | LabelledRecord { fields; _ } ->
-        if List.length fields > 1 then
-          Vertical
-            (List.map
-               (fun { name_and_type = _, field_type; _ } ->
-                 default_for_type_term field_type)
-               fields)
-        else Unspecified
-    | ConstantsSet names ->
-        Horizontal ((List.init (List.length names)) (fun _ -> Unspecified))
-    | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
-        Horizontal
-          [ default_for_type_term from_term; default_for_type_term to_term ]
-
-  (** [math_layout_for_node node] returns the math layout for the given node, or
-      a default layout based on its type term if no math layout is defined. *)
   let math_layout_for_node = function
     | Node_Type def -> (
         match Type.math_layout def with
@@ -256,22 +216,14 @@ module Layout = struct
     | Node_Relation def -> (
         match Relation.math_layout def with
         | Some layout -> layout
-        | None -> default_for_type_term (relation_to_tuple def))
+        | None -> for_type_term (relation_to_tuple def))
     | Node_TypeVariant ({ TypeVariant.term } as def) -> (
         match TypeVariant.math_layout def with
         | Some layout -> layout
-        | None -> default_for_type_term term)
+        | None -> for_type_term term)
     | Node_RecordField { name_and_type = _, field_type; _ } ->
-        default_for_type_term field_type
+        for_type_term field_type
 end
-
-let definition_node_attributes = function
-  | Node_Type { Type.att }
-  | Node_TypeVariant { TypeVariant.att }
-  | Node_Relation { Relation.att }
-  | Node_Constant { Constant.att }
-  | Node_RecordField { att } ->
-      att
 
 let elem_name = function
   | Elem_Type { Type.name }
@@ -344,7 +296,7 @@ module Check = struct
       consistent with the given [term]. If not, raises a [SpecError] describing
       the issue. *)
   let rec check_layout term layout =
-    let consistent_layout = Layout.default_for_type_term term in
+    let consistent_layout = Layout.for_type_term term in
     let open Layout in
     match (term, layout) with
     | Label _, Unspecified -> ()
@@ -929,13 +881,11 @@ module Check = struct
                   variants
           with SpecError e ->
             stack_spec_error e
-              (Format.sprintf "While checking: %s" (elem_name elem)))
+              (Format.asprintf "While checking: %s" (elem_name elem)))
         elems
   end
 end
 
-(** [from_ast ast] converts an AST into a specification after ensuring its
-    correctness. *)
 let from_ast ast =
   let definition_nodes = list_definition_nodes ast in
   let defined_ids = List.map definition_node_name definition_nodes in
@@ -949,26 +899,7 @@ let from_ast ast =
 
 let defined_ids self = self.defined_ids
 
-(** [defining_node_opt_for_id self id] returns the defining node for the element
-    with identifier [id] that is given in the specification. If no such element
-    exists, [None] is returned. *)
-let defining_node_opt_for_id self id =
-  StringMap.find_opt id self.id_to_defining_node
-
-(** [defining_node_for_id self id] returns the defining node for the element
-    with identifier [id] that is given in the specification. If no such element
-    exists, a [SpecError] is raised. *)
 let defining_node_for_id self id =
   match StringMap.find_opt id self.id_to_defining_node with
   | Some def -> def
   | None -> Error.undefined_element id
-
-let relation_for_id self id =
-  match defining_node_for_id self id with
-  | Node_Relation def -> def
-  | _ -> assert false
-
-let is_constant self id =
-  match defining_node_opt_for_id self id with
-  | Some (Node_TypeVariant { term = Label _ }) | Some (Node_Constant _) -> true
-  | _ -> false

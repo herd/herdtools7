@@ -103,6 +103,55 @@ module Attributes = struct
           raise (SpecError msg)
         else add k v acc_map)
       empty pairs
+
+  (** Helper functions for typed attribute access *)
+
+  (** [find_string key attrs] returns [Some s] if [key] maps to a
+      [StringAttribute s] in [attrs], [None] otherwise. *)
+  let find_string key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> Some s
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [get_string key attrs] returns the string value for [key] in [attrs], or
+      [""] if not found. *)
+  let get_string_or_empty key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> s
+    | Some _ -> assert false
+    | _ -> ""
+
+  (** [get_string_exn key attrs] returns the string value for [key] in [attrs],
+      or raises [Assert_failure] if not found or wrong type. *)
+  let get_string_exn key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  (** [find_math_macro key attrs] returns [Some s] if [key] is bound to the math
+      macro [s], and [None] otherwise. *)
+  let find_math_macro key attrs =
+    match find_opt key attrs with
+    | Some (MathMacroAttribute s) -> Some s
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [find_layout key attrs] returns [Some layout] if [key] is bound to
+      [layout] in [attrs], and [None] otherwise. *)
+  let find_layout key attrs =
+    match find_opt key attrs with
+    | Some (MathLayoutAttribute layout) -> Some layout
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [get_bool key ~default attrs] returns the bool value for [key] in [attrs],
+      or [default] if not found. *)
+  let get_bool key ~default attrs =
+    match find_opt key attrs with
+    | Some (BoolAttribute b) -> b
+    | Some _ -> assert false
+    | _ -> default
 end
 
 (** The kind of a type, either generic or AST-specific. *)
@@ -185,14 +234,10 @@ let field_type { name_and_type = _, field_type; _ } = field_type
 let field_name { name_and_type = name, _; _ } = name
 
 let record_field_math_macro { att } =
-  match Attributes.find_opt AttributeKey.Math_Macro att with
-  | Some (MathMacroAttribute s) -> Some s
-  | _ -> None
+  Attributes.find_math_macro AttributeKey.Math_Macro att
 
 let record_field_prose_description { att } =
-  match Attributes.find_opt AttributeKey.Prose_Description att with
-  | Some (StringAttribute s) -> s
-  | _ -> ""
+  Attributes.get_string_or_empty AttributeKey.Prose_Description att
 
 (** [make_labelled_record label fields] Constructs a record labelled [label]
     with fields [fields]. *)
@@ -217,14 +262,10 @@ end = struct
   let make name attributes = { name; att = Attributes.of_list attributes }
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
+    Attributes.get_string_exn AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
@@ -250,19 +291,13 @@ end = struct
   let attributes_to_list self = bindings self.att
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for a type definition. *)
@@ -317,24 +352,16 @@ end = struct
   let attributes_to_list self = Attributes.bindings self.att
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let short_circuit_macro self =
-    match find_opt AttributeKey.Short_Circuit_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Short_Circuit_Macro self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for a relation definition. *)
@@ -405,24 +432,16 @@ end = struct
   open Attributes
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let prose_application self =
-    match find_opt AttributeKey.Prose_Application self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)
@@ -468,9 +487,7 @@ end = struct
   let attributes_to_list self = Attributes.bindings self.att
 
   let lhs_hypertargets self =
-    match Attributes.find_opt AttributeKey.LHS_Hypertargets self.att with
-    | Some (BoolAttribute b) -> b
-    | _ -> true
+    Attributes.get_bool AttributeKey.LHS_Hypertargets ~default:true self.att
 end
 
 (** The top-level elements of a specification. *)
