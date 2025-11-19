@@ -1,0 +1,11 @@
+Test A006 Required
+States 1
+  ~Fault(P0:Page0,MMU:Translation);
+No
+Witnesses
+Positive: 0 Negative: 1
+Flag combining-vmsa-and-ifetch-is-not-supported
+Condition forall (fault(P0:Page0,MMU:Translation))
+Observation A006 Never 0 1
+Hash=6c87a3b426fea462b62ac4da13f98ba4
+

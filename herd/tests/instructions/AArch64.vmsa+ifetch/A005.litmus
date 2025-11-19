@@ -1,0 +1,9 @@
+AArch64 A005
+Variant=vmsa,ifetch
+{
+TTD(P0:Page0)=(oa:PA(P0:Page0),valid:1);
+}
+P0          ;
+Page0:      ;
+ADD X0,X0,#1;
+forall 0:X0=1

@@ -94,6 +94,7 @@ type instruction =
   | PCall of string * expression list
 
 let nop = None
+and mk_imm_branch _ = None
 and is_nop _ = false
 
 type parsedInstruction = instruction
@@ -260,7 +261,7 @@ include Pseudo.Make
         function
           | Const(Concrete _|ConcreteVector _) as k -> k
           | Const
-              (Symbolic _|Label _|Tag _|ConcreteRecord _
+              (Symbolic _|Tag _|ConcreteRecord _
               |PteVal _|AddrReg _ |Instruction _|Frozen _ as v) ->
              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l

@@ -125,7 +125,7 @@ let sca-class = [M & Exp]; sm; [M & Exp]
 
 (* Flag any occurrence of writes to two different locations that might be on
  * the same cache line. *)
-flag ~empty ((W & Instr)*(W & Instr) \ loc)
+flag ~empty (((W \ IW) & Instr) * ((W \ IW) & Instr) \ loc)
   as Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 
 (* Flag the runs of herd7 with unsupported combinations of variants *)

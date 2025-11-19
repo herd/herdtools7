@@ -26,6 +26,7 @@ module type S = sig
   val eq : t -> t -> bool
   val pp : t -> string
   val tr : InstrLit.t -> t
+  (* val mk_imm_branch : int -> t option *)
 
   module Set : MySet.S with type elt = t
 end

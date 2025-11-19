@@ -1,0 +1,10 @@
+AArch64 A006
+Variant=vmsa,ifetch
+{
+TTD(P0:Page0)=(oa:PA(P0:Page0),valid:0);
+}
+P0          ;
+Page0:      ;
+ADD X0,X0,#1;
+forall Fault(P0:Page0,MMU:Translation)
+(* TODO: change this to "I-MMU:Translation" *)

@@ -62,6 +62,7 @@ type t =
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)
   | ETS3 (*A feature further strengthening ETS2*)
+  | ETS4
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)

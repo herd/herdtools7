@@ -342,6 +342,8 @@ val tr_physical : string -> string option
 val is_physical : string -> bool
 val pp_physical : string -> string
 
+val is_labelstr : string -> bool
+val str_as_label : string -> (int * string) option
 (******************)
 (* Hash utilities *)
 (******************)

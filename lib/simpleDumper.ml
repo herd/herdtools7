@@ -61,6 +61,8 @@ CoreDumper.S with
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
+  | A.Pagealign -> ".pagealign"
+  | A.Skip _ -> assert false
 
   let fmt_col (p,is) = MiscParser.pp_proc p::List.map fmt_io is
 
