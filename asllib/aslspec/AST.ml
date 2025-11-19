@@ -38,6 +38,10 @@ module AttributeKey = struct
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation
             application yielding a value of type [T]. *)
+    | LHS_Hypertargets
+        (** An attribute for [TypesRender] elements indicating whether
+            hypertargets should be generated for the LHS of type definitions in
+            the rendered output. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -47,6 +51,7 @@ module AttributeKey = struct
       | Math_Macro -> 2
       | Math_Layout -> 3
       | Short_Circuit_Macro -> 4
+      | LHS_Hypertargets -> 5
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -60,6 +65,7 @@ module AttributeKey = struct
     | Math_Macro -> "math_macro"
     | Math_Layout -> "math_layout"
     | Short_Circuit_Macro -> "short_circuit_macro"
+    | LHS_Hypertargets -> "lhs_hypertargets"
 end
 
 (** A value associated with an attribute key. *)
@@ -67,6 +73,7 @@ type attribute =
   | StringAttribute of string
   | MathMacroAttribute of string
   | MathLayoutAttribute of layout
+  | BoolAttribute of bool
 
 (** A module for associating attributes with attribute keys. *)
 module Attributes = struct
@@ -421,21 +428,49 @@ end
 (** A datatype for grouping (subsets of) type definitions. *)
 module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type t = { name : string; pointers : type_subset_pointer list }
 
-  val make : string -> (string * string list) list -> t
+  type t = {
+    name : string;
+    pointers : type_subset_pointer list;
+    att : Attributes.t;
+  }
+
+  val make :
+    string ->
+    (string * string list) list ->
+    (AttributeKey.t * attribute) list ->
+    t
+
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+
+  val lhs_hypertargets : t -> bool
+  (** Whether hypertargets should be generated for the LHS of type definitions
+      in the rendered output. *)
 end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type t = { name : string; pointers : type_subset_pointer list }
 
-  let make name pointer_pairs =
+  type t = {
+    name : string;
+    pointers : type_subset_pointer list;
+    att : Attributes.t;
+  }
+
+  let make name pointer_pairs attributes =
     {
       name;
       pointers =
         List.map
           (fun (type_name, variant_names) -> { type_name; variant_names })
           pointer_pairs;
+      att = Attributes.of_list attributes;
     }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  let lhs_hypertargets self =
+    match Attributes.find_opt AttributeKey.LHS_Hypertargets self.att with
+    | Some (BoolAttribute b) -> b
+    | _ -> true
 end
 
 (** The top-level elements of a specification. *)

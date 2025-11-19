@@ -215,58 +215,37 @@ as indicated by respective comments.
 \subsection{Slices \label{sec:Slices}}
 \RenderTypes{untyped_slice}
 
-
 \subsection{Subprogram calls \label{sec:SubprogramCalls}}
 \RenderType{call}
 
-
 \subsection{Types \label{sec:Types}}
-
 \RenderType{ty}
-
-
 
 \subsection{Constraints \label{sec:Constraints}}
 \RenderTypes{untyped_constraint_kind}
-
-
 \RenderType{int_constraint}
 
-
 \subsection{Bit Fields \label{sec:BitFields}}
-
 \RenderType{bitfield}
-
-
 
 \subsection{Array Indices \label{sec:ArrayIndices}}
 \hypertarget{ast-ArrayLengthEnum}{}
 \RenderTypes{untyped_array_index}
-
 
 \subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
 
 The following rule corresponds to a field of a record-like structure:
 \RenderType{field}
 
-
-
 The following rule corresponds to an identifier with its associated type:
 \RenderType{typed_identifier}
-
-
 
 \subsection{Assignable Expressions \label{sec:AssignableExoressions}}
 The following rules define the types of left-hand side of assignments:
 \RenderTypes{untyped_lexpr}
 
-
-
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
-
 \RenderType{local_decl_keyword}
-
-
 
 A local declaration item is the left-hand side of a declaration statements.
 In the following example of a declaration statement:
@@ -284,53 +263,26 @@ the local declaration item is
 \RenderTypes{untyped_stmt}
 \RenderType{for_direction}
 
-
 \subsection{Case Alternatives \label{sec:CaseAlternatives}}
-
 \RenderType{case_alt}
-
-
 
 \subsection{Exception Catchers \label{sec:ExceptionCatchers}}
 \RenderType{catcher}
 
-
-
 \subsection{Subprograms \label{sec:Subprograms}}
 \RenderType{subprogram_type}
-
-
-
 \RenderType{func_qualifier}
-
-
-
 \RenderType{override_info}
-
-
-
 \RenderType{func}
-
-
 
 \subsection{Global Declarations \label{sec:GlobalDeclarations}}
 Declaration keyword for global storage elements:
 \RenderType{global_decl_keyword}
-
-
-
 \RenderType{global_decl}
-
-
-
 \RenderType{decl}
-
-
 
 \subsection{Specifications \label{sec:Specifications}}
 \RenderType{spec}
-
-
 
 \section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
 
@@ -338,19 +290,10 @@ The derivation rules for the typed abstract syntax are the same as the rules for
 except for the following differences.
 
 The rules for expressions have the following extra derivation rules:
-\RenderTypes[remove_hypertargets]{typed_expr}
-
+\RenderTypes{typed_expr}
 
 The rules for left-hand-side expressions have the following extra derivation rules:
-\hypertarget{ast-LESetCollectionFields}{}
-\hypertarget{ast-LESetEnumArray}{}
-\hypertarget{ast-EGetCollectionFields}{}
-\hypertarget{ast-EGetEnumArray}{}
-\hypertarget{ast-EEnumArray}{}
-\hypertarget{ast-EArray}{}
-\hypertarget{ast-EGetItem}{}
-\RenderTypes[remove_hypertargets]{typed_lexpr}
-
+\RenderTypes{typed_lexpr}
 
 The intention for each AST node type above is as follows:
 \begin{itemize}
@@ -378,12 +321,10 @@ The rules for statements exclude \texttt{pragma} statements, since those are tra
 
 The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
-\hypertarget{ast-typedSThrow}{}
-\RenderTypes[remove_hypertargets]{typed_stmt}
+\RenderTypes{typed_stmt}
 
 The rules for slices is replaced by the following single derivation:
-\hypertarget{ast-typedSliceLength}{}
-\RenderTypes[remove_hypertargets]{typed_slice}
+\RenderTypes{typed_slice}
 
 This reflects the fact that all other slicing constructs are syntactic sugar
 for \\
@@ -392,14 +333,12 @@ $\SliceLength$.
 The following extra rule enables expressing array indices based on enumeration:
 \RenderTypes[remove_hypertargets]{typed_array_index}
 
-
 The rules for constraint kinds refine the well-constrained kind by a precision
 indicator, which indicates whether precision has been lost during the typing of
 binary operations over well-constrained integer types (see \TypingRuleRef{IntervalTooLarge}).
 \hypertarget{ast-typedWellConstrained}{}
 \RenderTypes[remove_hypertargets]{typed_constraint_kind}
 \RenderType{precision_loss_indicator}
-
 
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field

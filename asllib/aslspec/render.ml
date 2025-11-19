@@ -266,8 +266,8 @@ module Make (S : SPEC_VALUE) = struct
       using the formatter [fmt]. The boolean flags [is_first] and [is_last]
       indicate whether this is the first or last type in a list of types being
       rendered. *)
-  let pp_type_and_variants ?(is_first = true) ?(is_last = true) fmt
-      ({ Type.type_kind; Type.name }, variants) =
+  let pp_type_and_variants ?(lhs_hypertargets = true) ?(is_first = true)
+      ?(is_last = true) fmt ({ Type.type_kind; Type.name }, variants) =
     let equality_symbol, join_symbol =
       match type_kind with
       | TypeKind_AST -> ({|\derives|}, "|")
@@ -282,9 +282,12 @@ module Make (S : SPEC_VALUE) = struct
       if is_first then fprintf fmt {|@.\begin{flalign*}|} else ()
     in
     let _render_newline = if not is_first then fprintf fmt {|\\|} else () in
+    let pp_typename =
+      if lhs_hypertargets then pp_typename_with_hypertarget else pp_id_as_macro
+    in
     let _first_line =
-      fprintf fmt {|@.%a %s\ & %a|} pp_typename_with_hypertarget name
-        equality_symbol pp_variant_with_hypertarget first_variant
+      fprintf fmt {|@.%a %s\ & %a|} pp_typename name equality_symbol
+        pp_variant_with_hypertarget first_variant
     in
     let _add_latex_line_break_only_if_more_variants =
       if List.length variants > 1 then fprintf fmt {|\\@.|}
@@ -340,8 +343,8 @@ module Make (S : SPEC_VALUE) = struct
       definitions [pointer] with the formatter [fmt]. The boolean flags
       [is_first] and [is_last] indicate whether this is the first or last
       pointer in a list of pointers being rendered. *)
-  let pp_pointer ~is_first ~is_last fmt { TypesRender.type_name; variant_names }
-      =
+  let pp_pointer ~lhs_hypertargets ~is_first ~is_last fmt
+      { TypesRender.type_name; variant_names } =
     let ({ Type.variants } as def) =
       match Spec.defining_node_for_id S.spec type_name with
       | Node_Type def -> def
@@ -360,20 +363,25 @@ module Make (S : SPEC_VALUE) = struct
             | _ -> assert false)
           variant_names
     in
-    pp_type_and_variants ~is_first ~is_last fmt (def, selected_variants)
+    pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
+      (def, selected_variants)
 
   (** [pp_pointers fmt pointers] renders [pointers] - a list of subsets of type
       definitions - with the formatter [fmt]. *)
-  let pp_pointers fmt pointers =
+  let pp_pointers ~lhs_hypertargets fmt pointers =
     let num_pointers = List.length pointers in
     List.iteri
       (fun i pointer ->
-        pp_pointer ~is_first:(i = 0) ~is_last:(i = num_pointers - 1) fmt pointer)
+        pp_pointer ~lhs_hypertargets ~is_first:(i = 0)
+          ~is_last:(i = num_pointers - 1)
+          fmt pointer)
       pointers
 
   (** [pp_render_types fmt render_types] renders the named list of subsets of
       type definitions [render_types] with the formatter [fmt]. *)
-  let pp_render_types fmt { TypesRender.pointers } = pp_pointers fmt pointers
+  let pp_render_types fmt ({ TypesRender.pointers } as def) =
+    let lhs_hypertargets = TypesRender.lhs_hypertargets def in
+    pp_pointers ~lhs_hypertargets fmt pointers
 
   (** [pp_render_types_macro fmt def] renders the LaTeX wrapper macro
       [\DefineRenderTypes{name}{...}] around the rendering of a list of subsets

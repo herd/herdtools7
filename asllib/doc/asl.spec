@@ -270,7 +270,7 @@ render expr_tuple = expr(E_Tuple);
 render expr_arbitrary = expr(E_Arbitrary);
 render expr_pattern = expr(E_Pattern);
 
-render typed_expr = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
+render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
 constant zero_bit
@@ -334,7 +334,7 @@ render untyped_slice = slice(
     Slice_Star,
 );
 
-render typed_slice = slice(typed_Slice_Length);
+render typed_slice { lhs_hypertargets = false } = slice(typed_Slice_Length);
 
 ast call { "call descriptor" } =
     [   call_name: Strings { math_macro = \callname },
@@ -404,7 +404,7 @@ render untyped_constraint_kind = constraint_kind(
     Parameterized,
     PendingConstrained,
 );
-render typed_constraint_kind = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
+render typed_constraint_kind { lhs_hypertargets = false } = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
 
 ast precision_loss_indicator { "\Proseprecisionlossindicator{}" } =
     | Precision_Full
@@ -496,7 +496,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -641,7 +641,7 @@ render untyped_stmt = stmt(
     S_Pragma,
     S_Unreachable,
 );
-render typed_stmt = stmt(typed_S_Throw);
+render typed_stmt { lhs_hypertargets = false } = stmt(typed_S_Throw);
 
 render stmt_pass = stmt(S_Pass);
 render stmt_seq = stmt(S_Seq);

@@ -12,6 +12,14 @@ let check_definition_name name =
    if not (Str.string_match id_regexp name 0) then
      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
      raise (SpecError msg)
+
+let bool_of_string s =
+  match String.lowercase_ascii s with
+  | "true" -> true
+  | "false" -> false
+  | _ ->
+      let msg = Format.sprintf "expected boolean string (true/false), got: %s" s in
+      raise (SpecError msg)
 %}
 
 %type <AST.t> spec
@@ -31,6 +39,7 @@ let check_definition_name name =
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
+%token LHS_HYPERTARGETS
 %token OPTION
 %token PARTIAL
 %token POWERSET
@@ -247,10 +256,20 @@ let math_layout :=
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
 
 let render_types :=
-    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer);
+    RENDER; name=IDENTIFIER; ~=render_types_attributes; EQ; pointers=clist1(type_subset_pointer);
     {   check_definition_name name;
-        Elem_RenderTypes (TypesRender.make name pointers) }
+        Elem_RenderTypes (TypesRender.make name pointers render_types_attributes) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
     | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }
+
+let render_types_attributes ==
+    | { [] }
+    | LBRACE; pairs=tclist0(render_types_attribute); RBRACE; { pairs }
+
+let render_types_attribute :=
+    | lhs_hypertargets
+
+let lhs_hypertargets ==
+    | LHS_HYPERTARGETS; EQ; value=IDENTIFIER;{ (LHS_Hypertargets, BoolAttribute (bool_of_string value)) }
