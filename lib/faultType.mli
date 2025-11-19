@@ -30,6 +30,7 @@ module type AArch64Sig = sig
     | AccessFlag  (* af: 0 *)
     | Permission  (* db: 0 *)
     | Exclusive   (* memattr <> sharedWB *)
+    | TLBConflictAbort  (* improper TLB maintenance *)
 
   type t =
     | MMU of mmu_t

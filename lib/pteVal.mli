@@ -20,7 +20,11 @@ module type S = sig
 
   (* Default pte for virtual addresses and pte themselves  *)
   val default : string -> t
+  val default_pmd : string -> t
   val of_pte : string -> t
+  val is_page  : t -> bool
+  val is_block : t -> bool
+  val is_table : t -> bool
   val is_default : t -> bool
   (* Attributes have the default values *)
   val is_default_attrs : t -> bool
@@ -51,6 +55,7 @@ module type S = sig
   val default_fields : string list
   val dump_pack : (string -> string) -> t -> string
   val as_physical : t -> string option
+  val as_pte : t -> string option
   val as_flags : t -> string option
   val attrs_as_kvm_symbols : t -> string list
 end

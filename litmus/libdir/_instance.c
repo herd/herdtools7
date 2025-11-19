@@ -65,11 +65,27 @@ static void instance_free(ctx_t *p) {
 
 #define LINESZ (LINE/sizeof(intmax_t))
 #define VOFFSZ (VOFF/sizeof(intmax_t))
+
+#ifdef MLPT
+#define MEMSZ (PMD_SIZE*NEXE)
+
+static uint8_t static_mem[MEMSZ * sizeof(intmax_t) + (PMD_SIZE-1)];
+
+static inline intmax_t *static_mem_ptr(void)
+{
+  uintptr_t addr = (uintptr_t)static_mem;
+  addr = ALIGN(addr, PMD_SIZE);
+  return (intmax_t *)addr;
+}
+
+#else
 #define MEMSZ ((NVARS*NEXE+1)*LINESZ)
 
 #ifndef DYNALLOC
 static intmax_t mem[MEMSZ] ;
 #endif
+#endif
+
 
 typedef struct global_t {
   /* Command-line parameter */
@@ -134,7 +150,11 @@ static void init_global(global_t *g) {
   /* Instance contexts */
   for (int k = 0 ; k < NEXE ; k++) {
     instance_init(&g->ctx[k],k,m) ;
+  #ifdef MLPT
+    m += PMD_SIZE;
+  #else
     m += NVARS*LINESZ ;
+  #endif
   }
   g->hash_ok = 1;
 }

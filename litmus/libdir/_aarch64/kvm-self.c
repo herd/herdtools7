@@ -33,7 +33,7 @@ static void litmus_pte_unset_el0(uintptr_t vaddr, uintptr_t vaddr_end)
 {
   while (vaddr < vaddr_end) {
     pteval_t *pte = litmus_tr_pte((void *)vaddr);
-    litmus_set_pte_safe((void *)vaddr, pte, *pte & ~msk_el0);
+    litmus_set_descriptor_safe((void *)vaddr, pte, *pte & ~msk_el0);
     vaddr += LITMUS_PAGE_SIZE;
   }
   asm __volatile__ (

@@ -17,10 +17,13 @@
 type t =
   { p_oa : OutputAddress.t option;
     p_kv : string StringMap.t;
-    p_attrs : StringSet.t; }
+    p_attrs : StringSet.t;
+    p_dt : DescriptorKind.t;}
 
 (* Buld values *)
 val empty : t
+val set_type : DescriptorKind.t -> t -> t
+val get_type : t -> DescriptorKind.t
 val add_oa : OutputAddress.t -> t -> t
 val add_oa_if_none : OutputAddress.t -> t -> t
 val add_kv : string -> string -> t -> t
