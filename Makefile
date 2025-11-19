@@ -650,9 +650,7 @@ test.vmsa+mte:
 ### - A `diy7` with `cycleonly` instance checks the cycle generations
 ### - Several `diycross7` + `herd7` instances, check if the generated litmus tests
 ###   are equivalent based on `herd7` result.
-test:: diy-test
-test-local:: diy-test
-
+diy-test:: | build
 diy-test:: diy-baseline-cycleonly
 diy-baseline-cycleonly::
 	@ echo
@@ -685,7 +683,7 @@ diy-test-aarch64:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64 \
+		-expected-dir ./gen/tests/AArch64 \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
 		-diycross-arg 'A,L,P' \
@@ -704,8 +702,8 @@ diy-test-mixed::
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.mixed \
-		-conf ./herd/tests/diycross/AArch64.mixed/mixed.cfg \
+		-expected-dir ./gen/tests/AArch64.mixed \
+		-conf ./gen/tests/AArch64.mixed/mixed.cfg \
 		-diycross-arg -ua \
 		-diycross-arg 0 \
 		-diycross-arg -obs \
@@ -743,8 +741,8 @@ diy-test-mixed::
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.mixed.strict \
-		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-expected-dir ./gen/tests/AArch64.mixed.strict \
+		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
 		-diycross-arg -ua \
@@ -774,8 +772,8 @@ v32:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.mixed.v32 \
-		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-expected-dir ./gen/tests/AArch64.mixed.v32 \
+		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
 		-diycross-arg -variant \
@@ -798,8 +796,8 @@ v64:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.mixed.v64 \
-		-conf ./herd/tests/diycross/AArch64.mixed.strict/mixed.cfg \
+		-expected-dir ./gen/tests/AArch64.mixed.v64 \
+		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
 		-diycross-arg -variant \
@@ -824,7 +822,7 @@ diy-store-test:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.store \
+		-expected-dir ./gen/tests/AArch64.store \
 		-diycross-arg -obs \
 		-diycross-arg four \
 		-diycross-arg -arch \
@@ -846,8 +844,8 @@ diy-test-mte::
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/AArch64.MTE \
-		-conf ./herd/tests/diycross/AArch64.MTE/MTE.cfg \
+		-expected-dir ./gen/tests/AArch64.MTE \
+		-conf ./gen/tests/AArch64.MTE/MTE.cfg \
 		-diycross-arg -arch \
 		-diycross-arg AArch64 \
 		-diycross-arg -variant \
@@ -873,8 +871,8 @@ diy-test-C:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYCROSS) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diycross/C \
-		-conf ./herd/tests/diycross/C/C.cfg \
+		-expected-dir ./gen/tests/C \
+		-conf ./gen/tests/C/C.cfg \
 		-diycross-arg -arch \
                 -diycross-arg C \
 		-diycross-arg [Rlx,Coe,Rlx],[Rlx,Rfe,Rlx],[Rlx,Fre,Rlx],[Rlx,Hat,Rlx] \
@@ -887,8 +885,7 @@ diy-test-C:
 	@ echo "herd7 C diycross7 tests: OK"
 
 ### Diymicro test
-test:: diymicro-test
-test-local:: diymicro-test
+diymicro-test:: | build
 
 diymicro-test:: diymicro-test-aarch64
 diymicro-test-aarch64:
@@ -899,13 +896,12 @@ diymicro-test-aarch64:
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diymicro/AArch64 \
+		-expected-dir ./gen/tests/diymicro/AArch64 \
 		$(DIYMICRO_EDGES_ARG) \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diymicro7 tests: OK"
 
-test-all:: diymicro-test-aarch64-asl
-test-all-asl:: diymicro-test-aarch64-asl
+diymicro-test:: diymicro-test-aarch64-asl
 diymicro-test-aarch64-asl: asl-pseudocode
 	$(eval DIYMICRO_EDGES = $(shell $(DIYMICROENUM) -list-iico | sed -n 's/^iico\[\([^ ]*\).*/iico[\1]/p'))
 	$(eval DIYMICRO_EDGES_ARG := $(foreach arg,$(DIYMICRO_EDGES),-diycross-arg $(arg)))
@@ -914,8 +910,8 @@ diymicro-test-aarch64-asl: asl-pseudocode
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
 		-libdir-path ./herd/libdir \
-		-expected-dir ./herd/tests/diymicro/AArch64 \
-		-conf ./herd/tests/diymicro/AArch64/asl.cfg \
+		-expected-dir ./gen/tests/diymicro/AArch64 \
+		-conf ./gen/tests/diymicro/AArch64/asl.cfg \
 		-j $(J) \
 		$(DIYMICRO_EDGES_ARG) \
 		$(REGRESSION_TEST_MODE)
