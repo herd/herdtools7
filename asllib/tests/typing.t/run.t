@@ -346,8 +346,8 @@ Bit slice expressions
   $ aslref --no-exec TPositive15.asl
   $ aslref --no-exec TReconsider15.asl
   $ aslref --no-exec TNegative15-0.asl
-  File TNegative15-0.asl, line 6, characters 20 to 37:
-      let testA     = 0xA55A1234[x+7:x];  // The RHS width express does not result in a constrained integer, so even though the width is
+  File TNegative15-0.asl, line 8, characters 20 to 37:
+      let testA     = 0xA55A1234[x+7:x];
                       ^^^^^^^^^^^^^^^^^
   ASL Type error: constrained integer expected, provided integer.
   [1]
