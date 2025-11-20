@@ -9,6 +9,7 @@ cfgs = [
 ]
 
 illustrative_tests = [
+    "tests/A031.litmus",
     "tests/2+2WNExpExp+NExpExp+DMBST+DMBST+SHOW.litmus",
     "tests/2+2WNExpExp+NExpExp+DMBST+DMBST.litmus",
     "tests/2+2WNExpExp+NExpExp+SHOW.litmus",
