@@ -156,60 +156,72 @@ type capa_opt = capa option
 
 module WPTE = struct
 
-  type pte_field = AF | DB | OA | DBM | VALID
-  let all_pte_field = [AF; DB; OA; DBM; VALID;]
+  type pte_field = AF | DB | DBM | VALID
+  let all_pte_field = [AF; DB; DBM; VALID;]
   let pp_pte_field = function
     | AF -> "AF"
     | DB -> "DB"
     | DBM -> "DBM"
-    | VALID -> "VALID"
-    | OA -> "OA"
+    | VALID -> "V"
 
           (* Toggle the value between 0 and 1 *)
-  type t = Base of pte_field
+  type t = OA
           (* Precise value of 0 to 1 *)
           | One of pte_field
           (* Precise value of 1 to 0 *)
           | Zero of pte_field
+          | HA
+          | HD
+
   let all =
-    List.map ( fun field -> [Base field; One field; Zero field;] ) all_pte_field
-    |> List.flatten
+    OA :: HA :: HD ::
+    ( List.map ( fun field -> [One field; Zero field;] ) all_pte_field
+      |> List.flatten )
   let compare = compare
   let pp = function
-    | Base p -> pp_pte_field p
-    | One p -> "One" ^ pp_pte_field p
-    | Zero p -> "Zero" ^ pp_pte_field p
-  let get_pte_field = function
-    | Base p | One p | Zero p -> p
-
-  let pp_tthm = function
-    | Base AF -> "HA"
-    | Base DB -> "HD"
-    | _ -> assert false
+    | OA -> "OA"
+    | One p -> ( pp_pte_field p ) ^ "1"
+    | Zero p -> ( pp_pte_field p ) ^ "0"
+    | HA -> "HA"
+    | HD -> "HD"
 end
 
 module WPTESet = MySet.Make(WPTE)
 
-(* Check the `set` contains the same field.
-   This rules out the situation where the set contains,
-   for example, two different `VALID` such as
-   `One VALID` and `Zero VALID` *)
-let contain_same_pte_field set =
+(* check if set only contain `HA` and `HD` *)
+let contain_valid_tthm_fields set =
   let open WPTE in
-  (* Convert the set to all `Base` and check size equal *)
-  WPTESet.cardinal set <>
-  ( WPTESet.cardinal
-  @@ WPTESet.fold ( fun field acc ->
+  ( WPTESet.remove HD set
+  |> WPTESet.remove HA
+  |> WPTESet.cardinal ) = 0
+
+(* Check the `set` contains valid pte fields.
+   - NO `HA` or `HD`
+   - fields must NOT conflict,
+     for example, two different `VALID`, i.e. `V1` and `V0` *)
+let contain_valid_pte_fields set =
+  let open WPTE in
+  not @@ WPTESet.mem HD set
+  && not @@ WPTESet.mem HA set
+  (* Convert the set to all `One` and check size equal *)
+  && WPTESet.cardinal set =
+  ( WPTESet.map ( fun field ->
     match field with
-    | Base p | One p | Zero p ->
-       WPTESet.add (Base p) acc ) set WPTESet.empty)
+    | One p | Zero p -> One p
+    | p -> p
+    ) set |> WPTESet.cardinal )
 
 type atom_pte =
   | Read|ReadAcq|ReadAcqPc
   | Set of WPTESet.t
   | SetRel of WPTESet.t
-  (* TTHM prelude *)
-  | TTHM of WPTESet.t
+  (* Special `Acq` and `AcqPc` read case for `HA`
+     Note that the plain read for `HA` share the
+     same internal data structure as `Set of WPTESet.t`.
+     Due to  `diy` parsing limitation, it is impossible
+     to introduce `PteHA` to different internal
+     representation. *)
+  | ReadHAAcq | ReadHAAcqPc
 
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
@@ -217,10 +229,10 @@ let pp_atom_pte = function
   | Read -> ""
   | ReadAcq -> "A"
   | ReadAcqPc -> "Q"
+  | ReadHAAcq -> "HAA"
+  | ReadHAAcqPc -> "HAQ"
   | Set set -> pp_w_pte set
   | SetRel set -> pp_w_pte set ^"L"
-  | TTHM set -> "TTHM" ^ WPTESet.pp_str "." WPTE.pp_tthm set
-
 
 type neon_opt = SIMD.atom
 
@@ -248,16 +260,16 @@ module Value = struct
       let open AArch64PteVal in
       let open WPTE in
       match field with
-      | AF -> { pteval with af = 1-pteval.af; }
-      | DB -> { pteval with db = 1-pteval.db; }
-      | DBM -> { pteval with dbm = 1-pteval.dbm; }
-      | VALID -> { pteval with valid = 1-pteval.valid; }
+      | One AF | Zero AF | HA -> { pteval with af = 1-pteval.af; }
+      | One DB | Zero DB | HD -> { pteval with db = 1-pteval.db; }
+      | One DBM | Zero DBM -> { pteval with dbm = 1-pteval.dbm; }
+      | One VALID | Zero VALID -> { pteval with valid = 1-pteval.valid; }
       | OA -> { pteval with oa=OutputAddress.PHY (loc ()); }
 
     (* toggle or flip the value of pte field *)
     let toggle_pte flag_set pteval loc =
       WPTESet.fold (fun f p ->
-        toggle_pte_field (WPTE.get_pte_field f) p loc
+        toggle_pte_field f p loc
       ) flag_set pteval
 
     (* Decide the initial pte value for location `loc`
@@ -274,58 +286,48 @@ module Value = struct
       let loc_fun () = "*" in
       (* TODO: Check if the `field` in `pteval` is of `value`.
          Upon mismatching  `value`, the initial value needs to change. *)
-      let precise_set_field field value (af,db,dbm,valid,pteval) =
+      let precise_set_field field (af,db,dbm,valid,pteval) =
         let open AArch64PteVal in
-        let pteval = toggle_pte_field field pteval loc_fun in
+        (* Helper function to check if the `field` in `pteval` is of `value`.
+          Upon mismatching  `value`, the initial value needs to change. *)
+        let flip_field field value (af,db,dbm,valid,pteval) =
+          match field with
+          | AF -> begin match value = pteval.af,af with
+            (* Either carry the previous `af` or set `af` to Some false,
+               i.e. no need to flip the initial value of `af` *)
+            | true,_ -> (Some (Option.value ~default:false af),db,dbm,valid,pteval)
+            (* Flip the initial `af` *)
+            | false,None -> (Some true,db,dbm,valid,{pteval with af = value})
+            (* Value collide, invalid cycle/anotation specification *)
+            | false,Some _ -> Warn.user_error "Fail to set AF."
+          end
+          | DB -> begin match value = pteval.db,db with
+            | true,_ -> (af,Some (Option.value ~default:false db),dbm,valid,pteval)
+            | false,None -> (af,Some true,dbm,valid,{pteval with db = value})
+            | false,Some _ -> Warn.user_error "Fail to set DB."
+          end
+          | DBM -> begin match value = pteval.dbm, dbm with
+            | true,_ -> (af,db,Some (Option.value ~default:false dbm),valid,pteval)
+            | false,None -> (af,db,Some true,valid,{pteval with dbm = value})
+            | false,Some _ -> Warn.user_error "Fail to set DBM."
+          end
+          | VALID -> begin match value = pteval.valid,valid with
+            | true,_ -> (af,db,dbm,Some (Option.value ~default:false valid),pteval)
+            | false,None -> (af,db,dbm,Some true,{pteval with valid = value})
+            | false,Some _ -> Warn.user_error "Fail to set VALID."
+          end in
+        let acc = (af,db,dbm,valid,toggle_pte_field field pteval loc_fun) in
         match field with
-        | AF -> begin match value = pteval.af,af with
-          (* Either carry the previous `af` or set `af` to Some false,
-             i.e. no need to flip the initial value of `af` *)
-          | true,_ -> (Some (Option.value ~default:false af),db,dbm,valid,pteval)
-          (* Flip the initial `af` *)
-          | false,None -> (Some true,db,dbm,valid,{pteval with af = value})
-          (* Value collide, invalid cycle/anotation specification *)
-          | false,Some _ -> Warn.user_error "Fail to set AF."
-        end
-        | DB -> begin match value = pteval.db,db with
-          | true,_ -> (af,Some (Option.value ~default:false db),dbm,valid,pteval)
-          | false,None -> (af,Some true,dbm,valid,{pteval with db = value})
-          | false,Some _ -> Warn.user_error "Fail to set DB."
-        end
-        | DBM -> begin match value = pteval.dbm, dbm with
-          | true,_ -> (af,db,Some (Option.value ~default:false dbm),valid,pteval)
-          | false,None -> (af,db,Some true,valid,{pteval with dbm = value})
-          | false,Some _ -> Warn.user_error "Fail to set DBM."
-        end
-        | VALID -> begin match value = pteval.valid,valid with
-          | true,_ -> (af,db,dbm,Some (Option.value ~default:false valid),pteval)
-          | false,None -> (af,db,dbm,Some true,{pteval with valid = value})
-          | false,Some _ -> Warn.user_error "Fail to set VALID."
-        end
-        | OA -> Warn.user_error "precisely set OA is not supported." in
-      (* Check if the `field_set` is possible against `pteval` (in `acc`). *)
-      let check_init_pte acc field_set =
-        let open AArch64PteVal in
-        WPTESet.fold ( fun field acc ->
-          match field with
-          | One pte_field -> precise_set_field pte_field 1 acc
-          | Zero pte_field -> precise_set_field pte_field 0 acc
-          | Base pte_field ->
-            let (af,db,dbm,valid,pteval) = acc in
-            (af,db,dbm,valid,toggle_pte_field pte_field pteval loc_fun)
-        ) field_set acc in
-      (* Direct set the initial value *)
-      let set_init_pte acc field_set =
-        WPTESet.fold ( fun field (af,db,dbm,valid,pteval) ->
-          let open AArch64PteVal in
-          match field with
-          | Base AF -> (* TTHM=HA *)
+          | OA -> acc
+          | One pte_field -> flip_field pte_field 1 acc
+          | Zero pte_field -> flip_field pte_field 0 acc
+          | HA ->
             let expected_af = not (default_pte_loc.af = 0) in
             let init_af = Option.value ~default:expected_af af in
             let new_pteval = {pteval with af = 1} in
             if init_af then (Some expected_af,db,dbm,valid,new_pteval)
             else Warn.user_error "Fail to set AF in TTHM=HA."
-          | Base DB -> (* TTHM=HD *)
+          | HD ->
             let expected_db = not (default_pte_loc.db = 0) in
             let init_db = Option.value ~default:expected_db db in
             let expected_dbm = not (default_pte_loc.dbm = 1) in
@@ -335,9 +337,7 @@ module Value = struct
               | true,true -> (af, Some expected_db,Some expected_dbm,valid,new_pteval)
               | _ -> Warn.user_error "Fail to set DB and DBM in TTHM=HD."
             end
-          (* TTHM for DBM, VALID, and OA should never happen *)
-          | _ -> assert false
-        ) field_set acc in
+      in
       (* The entire process decides if we want to flip the initial value of fields.
          Field `valid,af,db,dbm` in accumulator `acc` track if the default
          value is (not) needed to be flipped.
@@ -350,8 +350,8 @@ module Value = struct
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
-          | Set(field_set)|SetRel(field_set) -> check_init_pte acc field_set
-          | TTHM(field_set) -> set_init_pte acc field_set
+          | Set(field_set)|SetRel(field_set) -> WPTESet.fold precise_set_field field_set acc
+          | ReadHAAcq | ReadHAAcqPc -> precise_set_field HA acc
           | _ -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
@@ -359,21 +359,22 @@ module Value = struct
       let adjust_value =
         let value_false = Option.value ~default:false in
         WPTESet.empty
-        |> (if value_false af then WPTESet.add (Base AF) else Fun.id)
-        |> (if value_false db then WPTESet.add (Base DB) else Fun.id)
-        |> (if value_false dbm then WPTESet.add (Base DBM) else Fun.id)
-        |> (if value_false valid then WPTESet.add (Base VALID) else Fun.id) in
+        |> (if value_false af then WPTESet.add (One AF) else Fun.id)
+        |> (if value_false db then WPTESet.add (One DB) else Fun.id)
+        |> (if value_false dbm then WPTESet.add (One DBM) else Fun.id)
+        |> (if value_false valid then WPTESet.add (One VALID) else Fun.id) in
       toggle_pte adjust_value default_pte_loc loc_fun
 
     let do_setpteval flags pte loc =
+      let open WPTE in
       match flags with
-        (* In the case of `SetOne` and `SetZero`,
-          the `init` function above already ensure and assign
-          a valid inital value, hence here those two
-          will behave the same as `Set`, i.e.e toggle the pte value *)
+        | Set f|SetRel f when WPTESet.mem HA f || WPTESet.mem HD f ->
+          Warn.user_error "Atom `HD` or `HA` is not a pteval write"
         | Set f|SetRel f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc|TTHM _ ->
-          Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc|TTHM` is not a pteval write"
+        | Read|ReadAcq|ReadAcqPc ->
+          Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
+        | ReadHAAcq | ReadHAAcqPc ->
+          Warn.user_error "Atom `HA` is not a pteval write"
 
     let set_pteval a p =
       match a with
@@ -384,28 +385,34 @@ module Value = struct
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
 
-    let has_pte_field field pte_fields =
+    (* check if an pte annotation `pte` will affect a pte `field` *)
+    let affect_pte_field field pte =
       let open WPTE in
-      WPTESet.mem (Base field) pte_fields
-      || WPTESet.mem (One field) pte_fields
-      || WPTESet.mem (Zero field) pte_fields
+      match pte with
+      | Read | ReadAcq | ReadAcqPc -> false
+      | ReadHAAcq | ReadHAAcqPc -> field = AF
+      | Set pte_fields | SetRel pte_fields ->
+        WPTESet.mem (One field) pte_fields
+        || WPTESet.mem (Zero field) pte_fields
+        (* special case for `HD` and `HA` *)
+        || (field = AF && WPTESet.mem HA pte_fields)
+        || (field = DB && WPTESet.mem HD pte_fields)
 
     let need_check_fault atom =
       let open WPTE in
       match atom with
-      | Some (Pte (Set pte_fields|SetRel pte_fields|TTHM pte_fields), None) ->
-        if has_pte_field AF pte_fields || has_pte_field VALID pte_fields then Irr
-        else if has_pte_field DB pte_fields then Dir W
-        else NoDir
+      | Some (Pte pte, None)
+        when (affect_pte_field AF pte || affect_pte_field VALID pte) -> Irr
+      | Some (Pte pte, None)
+        when affect_pte_field DB pte -> Dir W
       | _ -> NoDir
 
     let implicitly_set_pteval dir machine_feature p =
       let open WPTE in
       let open AArch64PteVal in
-      if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base AF)))) machine_feature
-        && p.af = 0 then
+      if StringSet.mem (WPTE.pp HA) machine_feature && p.af = 0 then
           Some (Irr,{p with af = 1})
-      else if StringSet.mem (pp_atom_pte (TTHM(WPTESet.singleton (Base DB)))) machine_feature
+      else if StringSet.mem (WPTE.pp HD) machine_feature
         && dir = Code.W && p.db = 0  && p.dbm = 1 then
           Some (Dir W,{p with db = 1})
       else None
@@ -439,23 +446,22 @@ let applies_atom (a,_) d =
   | AcqPc _,R
   | Rel _,W
   | Pte (Read|ReadAcq|ReadAcqPc),R
-  | Pte (Set _|SetRel _),W
   | Instr, R
   | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
     -> true
-  (* special case for TTHM in Pte as
-     - TTHMHA (AF) for read ans write
-     - TTHMHD (DB) for write *)
-  | Pte (TTHM pte_set),d ->
-    ( WPTESet.mem (Base AF) pte_set && ( d = R || d = W ) )
-    || ( WPTESet.mem (Base DB) pte_set && d = W )
+  (* special case for TTHM HA for read *)
+  | Pte (Set p),R when WPTESet.mem HA p -> true
+  | Pte (ReadHAAcq|ReadHAAcqPc),R -> true
+  | Pte (Set _|SetRel _),W -> true
   | _ -> false
 
 let is_ifetch a = match a with
 | Some (Instr,_) -> true
 | _ -> false
 
-let is_tthm = function | TTHM _ -> true | _ -> false
+let is_tthm fields =
+  let open WPTE in
+    WPTESet.mem HD fields || WPTESet.mem HA fields
 
    let pp_plain = "P"
 (* Annotation A is taken by load aquire *)
@@ -560,8 +566,7 @@ let is_tthm = function | TTHM _ -> true | _ -> false
          List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
        let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
        r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
-          |> f (TTHM (WPTESet.singleton (Base AF)))
-          |> f (TTHM (WPTESet.singleton (Base DB)))
+         |> f ReadHAAcq |> f ReadHAAcqPc
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -653,7 +658,9 @@ let is_tthm = function | TTHM _ -> true | _ -> false
 
    let varatom_dir _d f r = f None r
 
-   let merge_atoms a1 a2 = match a1,a2 with
+   let merge_atoms a1 a2 =
+   let open WPTE in
+   match a1,a2 with
 (* Plain and Instr do not merge *)
    | ((Plain _,_),(Instr,_))
    | ((Instr,_),(Plain _,_)) ->
@@ -679,23 +686,39 @@ let is_tthm = function | TTHM _ -> true | _ -> false
    | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc None),None))
    | (((Pte ReadAcqPc|AcqPc None),None),(Pte (Read|ReadAcqPc),None))
        -> Some (Pte ReadAcqPc,None)
+   (* A few special cases for TTHM HA on read *)
+   | ((Pte (Set p),None),((Pte ReadHAAcq|Acq None),None))
+   | (((Acq None|Pte ReadHAAcq),None),(Pte (Set p),None))
+     when p = WPTESet.singleton HA
+       -> Some (Pte ReadHAAcq,None)
+   | ((Pte ReadHAAcq,None),((Pte ReadHAAcq|Acq None),None))
+   | ((Acq None,None),(Pte ReadHAAcq,None))
+       -> Some (Pte ReadHAAcq,None)
+   | ((Pte (Set p),None),((Pte ReadHAAcqPc|AcqPc None),None))
+   | (((Pte ReadHAAcqPc|AcqPc None),None),(Pte (Set p),None))
+     when p = WPTESet.singleton HA
+       -> Some (Pte ReadHAAcqPc,None)
+   | ((Pte ReadHAAcqPc,None),((Pte ReadHAAcqPc|AcqPc None),None))
+   | ((AcqPc None,None),(Pte ReadHAAcqPc,None))
+       -> Some (Pte ReadHAAcqPc,None)
+   (* END special cases for TTHM HA on read *)
    | ((Pte (Set set|SetRel set),None),(Rel None,None))
    | ((Rel None,None),(Pte (Set set|SetRel set),None))
        -> Some (Pte (SetRel set),None)
    | (Pte (Set set1),None),(Pte (Set set2),None)
      -> let set = WPTESet.union set1 set2 in
-        if contain_same_pte_field set then None
-        else Some (Pte (Set set),None)
+        if contain_valid_pte_fields set
+          || contain_valid_tthm_fields set
+        then Some (Pte (Set set),None)
+        else None
    | ((Pte (Set set1),None),(Pte (SetRel set2),None))
    | ((Pte (SetRel set1),None),(Pte (Set set2),None))
    | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
      -> let set = WPTESet.union set1 set2 in
-        if contain_same_pte_field set then None
-        else Some (Pte (SetRel set),None)
-   | ((Pte (TTHM set1), None),(Pte (TTHM set2), None))
-     -> let set = WPTESet.union set1 set2 in
-        if contain_same_pte_field set then None
-        else Some (Pte (TTHM set),None)
+        if contain_valid_pte_fields set
+          || contain_valid_tthm_fields set
+        then Some (Pte (SetRel set),None)
+        else None
 (* Add size when (ordinary) annotation equal *)
    | ((Acq None as a,None),(Acq None,(Some _ as sz)))
    | ((Acq None as a,(Some _ as sz)),(Acq None,None))
@@ -736,7 +759,9 @@ let is_tthm = function | TTHM _ -> true | _ -> false
 
    let atom_to_bank = function
    | Tag,None -> Code.Tag
-   | Pte (TTHM _),None -> Code.Ord
+   (* TTHM feature only apply to ordinary R/W *)
+   | Pte (Set p|SetRel p),None when is_tthm p -> Code.Ord
+   | Pte (ReadHAAcq|ReadHAAcqPc),None -> Code.Ord
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
@@ -800,10 +825,18 @@ let overwrite_value v ao w = match ao with
      | Some (Pair _,_) -> true
      | Some _|None -> false
 
-  let get_machine_feature = function
-    | Some(Pte(TTHM field), _) ->
-      WPTESet.map_list (fun f -> pp_atom_pte (TTHM(WPTESet.singleton f))) field
-      |> StringSet.of_list
+  let get_machine_feature atom =
+    let open WPTE in
+    match atom with
+    | Some(Pte(Set pte|SetRel pte), _) ->
+      WPTESet.fold (fun f acc ->
+        match f with
+        | HA -> StringSet.add (WPTE.pp HA) acc
+        | HD -> StringSet.add (WPTE.pp HD) acc
+        | _ -> acc
+      ) pte StringSet.empty
+    | Some(Pte(ReadHAAcq|ReadHAAcqPc), _) ->
+      StringSet.singleton (WPTE.pp HA)
     | _ -> StringSet.empty
 
 (* End of atoms *)
