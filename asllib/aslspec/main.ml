@@ -113,30 +113,27 @@ let parse_command_line_args_and_execute () =
   let config = parse_args () in
   let ast =
     (* Parse the abstract syntax tree (AST) from all specification files. *)
-    Utils.list_concat_map
-      (fun filename -> parse_spec_from_file filename)
-      config.spec_files
+    Utils.list_concat_map parse_spec_from_file config.spec_files
   in
   if config.pp then pp_std ast;
   let spec = Spec.from_ast ast in
   let _render =
-    if config.render then
+    if config.render then (
       let generated_macros_filename = !arg_render_filename in
       let open AST in
-      write_to_file_with_formatter generated_macros_filename (fun fmt ->
-          Render.render spec fmt;
-          Format.fprintf Format.std_formatter
-            "%sGenerated LaTeX macros into %s\n%s" TextColor.green
-            generated_macros_filename TextColor.reset_color)
+      write_to_file_with_formatter generated_macros_filename
+        (Render.render spec);
+      Format.fprintf Format.std_formatter "%sGenerated LaTeX macros into %s\n%s"
+        TextColor.green generated_macros_filename TextColor.reset_color)
   in
   let _render_debug =
-    if !arg_render_debug then
+    if !arg_render_debug then (
       let debug_generated_elements_filename = !arg_render_debug_filename in
-      write_to_file_with_formatter debug_generated_elements_filename (fun fmt ->
-          Render.render_debug spec fmt;
-          Format.fprintf Format.std_formatter
-            "%sGenerated stand-alone LaTeX file into %s\n%s" TextColor.green
-            debug_generated_elements_filename TextColor.reset_color)
+      write_to_file_with_formatter debug_generated_elements_filename
+        (Render.render_debug spec);
+      Format.fprintf Format.std_formatter
+        "%sGenerated stand-alone LaTeX file into %s\n%s" TextColor.green
+        debug_generated_elements_filename TextColor.reset_color)
   in
   ()
 
