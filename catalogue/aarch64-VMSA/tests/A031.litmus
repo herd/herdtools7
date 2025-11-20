@@ -1,0 +1,15 @@
+AArch64 A031
+(* Test the delaying of size check *)
+TTHM=P1:HA
+{
+ int z=1;
+ int x=2;
+ [PTE(z)]=(oa:PA(z),af:0);
+ pteval_t 0:X15=(oa:PA(x),af:0); 0:X14=PTE(z);
+ 1:X6=p;
+ int *p = &z;
+}
+ P0             | P1                  ;
+ STR X15,[X14]  | LDR X4,[X6]         ;
+                | LDR W5,[X4]         ;
+~exists [PTE(z)]=(oa:PA(x), af:0) /\ 1:X5=2
