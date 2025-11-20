@@ -18,6 +18,12 @@ constant empty_set
 
 constant None { "the empty \optionalterm{}" };
 
+constant empty_list
+{
+    "the empty list",
+    math_macro = \emptylist,
+};
+
 constant True { "true", math_macro = \True };
 constant False { "false", math_macro = \False };
 
@@ -815,7 +821,6 @@ typedef global_static_envs
         subprogram: partial Identifier -> (func, side_effects: powerset(TSideEffect)),
         overloaded_subprogram: partial Identifier -> powerset(Strings)
     ]
-    {  "global static environment with" }
 ;
 
 typedef local_static_envs
@@ -828,7 +833,6 @@ typedef local_static_envs
         local_static_envs_expr_equiv: partial Identifier -> expr { math_macro = \localstaticenvsexprequiv },
         local_static_envs_return_type: option(ty) { math_macro = \localstaticenvsreturntype }
     ]
-    {  "local static environment" }
 ;
 
 render static_envs_and_components = static_envs(-), global_static_envs(-), local_static_envs(-);
@@ -1323,7 +1327,48 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 {
     "annotates a literal {l} in the \staticenvironmentterm{} {tenv}, resulting in a type {t}.",
     prose_application = "annotating {l} in {tenv} yields {t}",
-};
+} =
+  case Int {
+    l = L_Int(n);
+    cs := LIST(Constraint_Exact(E_Literal(L_Int(n))));
+    --
+    T_Int(WellConstrained(cs));
+  }
+
+  case Bool {
+    l = L_Bool(_);
+    --
+    T_Bool;
+  }
+
+  case Real {
+    l = L_Real(_);
+    --
+    T_Real;
+  }
+
+  case String {
+    l = L_String(_);
+    --
+    T_String;
+  }
+
+  case Bits {
+    l = L_Bitvector(bits);
+    n := SIZE(bits);
+    --
+    T_Bits(E_Literal(L_Int(n)), empty_list);
+  }
+
+  case Label {
+    l = L_Label(label);
+    tenv.static_envs_G.declared_types(label) = (t, _);
+    --
+    t;
+  }
+;
+
+render rule annotate_literal;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relations and functions for Expressions
@@ -1384,7 +1429,7 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   "returns the expression {e_width} that describes the
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}"
+  prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}",
 };
 
 typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
@@ -1401,7 +1446,7 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
   assumed to not be named types, are compatible for a
   type assertion in the \staticenvironmentterm{} {tenv},
   yielding $\True$. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True"
+  prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True",
 };
 
 semantics relation eval_expr(env: envs, e: expr) ->
@@ -1431,7 +1476,7 @@ semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
   variable of type {t} in the environment {env},
   resulting in a Boolean value {b} and execution graph
   {g}. \ProseOtherwiseDynamicErrorOrDiverging",
-  prose_application = "\hyperlink{relation-isvaloftype}{testing} if value {v} matches type {t} in {env} yields result {b} and graph {g}"
+  prose_application = "\hyperlink{relation-isvaloftype}{testing} if value {v} matches type {t} in {env} yields result {b} and graph {g}",
 };
 
 semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
@@ -1443,7 +1488,7 @@ semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
   {env} and returns a Boolean answer {b} and the
   execution graph {g} resulting from evaluating the
   expressions appearing in {c}.",
-  prose_application = "\hyperlink{relation-isconstraintsat}{verifying} integer {n} satisfies constraint {c} in {env} yields {b} and graph {g}"
+  prose_application = "\hyperlink{relation-isconstraintsat}{verifying} integer {n} satisfies constraint {c} in {env} yields {b} and graph {g}",
 };
 
 semantics relation eval_expr_list(env: envs, le: list0(expr)) ->
@@ -1562,7 +1607,7 @@ typing function base_value(tenv: static_envs, t: ty) ->
   initialize a storage element of type {t} in the
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}"
+  prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}",
 };
 
 typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
@@ -1573,7 +1618,7 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   {tenv}, if one exists, and an empty list if the
   constraint represents an empty set. Otherwise, the
   result is $\TypeErrorVal{\NoBaseValue}$.",
-  prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}"
+  prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}",
 };
 
 typing function list_min_abs(l: list0(Z)) ->
@@ -1585,7 +1630,7 @@ typing function list_min_abs(l: list0(Z)) ->
   $x$ and $y$ have the same absolute value and $x$ is
   positive and $y$ is negative then $x$ is considered
   closer to $0$.",
-  prose_application = "\hyperlink{relation-listminabs}{finding} integer closest to zero in list {l} yields {z}"
+  prose_application = "\hyperlink{relation-listminabs}{finding} integer closest to zero in list {l} yields {z}",
 };
 
 //////////////////////////////////////////////////
@@ -1617,7 +1662,7 @@ typing function bitfield_get_slices(bf: bitfield) ->
 {
   "returns the list of slices {slices} associated with
   the bitfield {bf}.",
-  prose_application = "\hyperlink{relation-bitfieldgetslices}{extracting} slices from bitfield {bf} yields {slices}"
+  prose_application = "\hyperlink{relation-bitfieldgetslices}{extracting} slices from bitfield {bf} yields {slices}",
 };
 
 typing function bitfield_get_nested(bf: bitfield) ->
@@ -1626,7 +1671,7 @@ typing function bitfield_get_nested(bf: bitfield) ->
   "returns the list of bitfields {nested} nested within
   the bitfield {bf}, if there are any, and an empty list
   if there are none.",
-  prose_application = "\hyperlink{relation-bitfieldgetnested}{extracting} nested bitfields from {bf} yields {nested}"
+  prose_application = "\hyperlink{relation-bitfieldgetnested}{extracting} nested bitfields from {bf} yields {nested}",
 };
 
 typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
@@ -1638,7 +1683,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
   environment {tenv}, resulting in an annotated bitfield
   {new_field} or a \typingerrorterm{}, if one is
   detected.",
-  prose_application = "\hyperlink{relation-annotatebitfield}{annotating} bitfield {field} with width {width} in {tenv} yields {new_field} and {ses}"
+  prose_application = "\hyperlink{relation-annotatebitfield}{annotating} bitfield {field} with width {width} in {tenv} yields {new_field} and {ses}",
 };
 
 typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
@@ -1647,7 +1692,7 @@ typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0
   "checks whether the slices in {slices} fit within the
   bitvector width given by {width} in {tenv}, yielding
   $\True$. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-checkslicesinwidth}{verifying} slices {slices} fit within width {width} in {tenv} yields True"
+  prose_application = "\hyperlink{relation-checkslicesinwidth}{verifying} slices {slices} fit within width {width} in {tenv} yields True",
 };
 
 typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
@@ -1656,7 +1701,7 @@ typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
   "checks whether the set of positions in {positions} fit
   within the bitvector width given by {width}, yielding
   $\True$. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-checkpositionsinwidth}{verifying} positions {positions} fit within width {width} yields True"
+  prose_application = "\hyperlink{relation-checkpositionsinwidth}{verifying} positions {positions} fit within width {width} yields True",
 };
 
 typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices: list0(slice)) ->
@@ -1678,7 +1723,7 @@ typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool,
   slice expressions are statically evaluated, and
   otherwise they are normalized.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-disjointslicestopositions}{converting} disjoint slices {slices} in {tenv} with static flag {is_static} yields positions {positions}"
+  prose_application = "\hyperlink{relation-disjointslicestopositions}{converting} disjoint slices {slices} in {tenv} with static flag {is_static} yields positions {positions}",
 };
 
 typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, slice: slice) ->
@@ -1689,7 +1734,7 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   via static evaluation or normalization, depending on
   {is_static}, and $\None$ if it cannot be determined.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-bitfieldslicetopositions}{converting} slice {slice} in {tenv} with static flag {is_static} yields optional positions {positions}"
+  prose_application = "\hyperlink{relation-bitfieldslicetopositions}{converting} slice {slice} in {tenv} with static flag {is_static} yields optional positions {positions}",
 };
 
 semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) ->
@@ -1704,7 +1749,7 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
   is carried out via static evaluation. Otherwise, the
   transformation is carried out via normalization.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-evalsliceexpr}{evaluating} slice expression {e} in {tenv} with static flag {is_static} yields optional integer {z_opt}"
+  prose_application = "\hyperlink{relation-evalsliceexpr}{evaluating} slice expression {e} in {tenv} with static flag {is_static} yields optional integer {z_opt}",
 };
 
 typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
@@ -1715,7 +1760,7 @@ typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0
   bitvector type of width {width} in the
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-checkcommonbitfieldsalign}{checking} alignment of bitfields {bitfields} of width {width} in {tenv} yields True"
+  prose_application = "\hyperlink{relation-checkcommonbitfieldsalign}{checking} alignment of bitfields {bitfields} of width {width} in {tenv} yields True",
 };
 
 typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfield), absolute_parent: TAbsField) ->
@@ -1726,7 +1771,7 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfie
   whose \bitfieldscope{} and \absoluteslice{} is given by
   {absolute_parent}, in the \staticenvironmentterm{}
   {tenv}.",
-  prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}"
+  prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
 };
 
 typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->
@@ -1738,7 +1783,7 @@ typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_p
   \absoluteslice{} of the bitfield containing {bf} are
   {absolute_parent}, in the \staticenvironmentterm{}
   {tenv}.",
-  prose_application = "\hyperlink{relation-bitfieldtoabsolute}{converting} bitfield {bf} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}"
+  prose_application = "\hyperlink{relation-bitfieldtoabsolute}{converting} bitfield {bf} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
 };
 
 typing function select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
@@ -1750,7 +1795,7 @@ typing function select_indices_by_slices(indices: list1(N), slice_indices: list1
   {indices} (a slice of a slice), and returns the
   sub-list of {indices} indicated by the indices in
   {slice_indices}.",
-  prose_application = "\hyperlink{relation-selectindicesbyslices}{selecting} indices from {indices} using slice indices {slice_indices} yields absolute slice {absolute_slice}"
+  prose_application = "\hyperlink{relation-selectindicesbyslices}{selecting} indices from {indices} using slice indices {slice_indices} yields absolute slice {absolute_slice}",
 };
 
 typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
@@ -1760,7 +1805,7 @@ typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
   share the same name and exist in the same scope. If
   they do, {b} indicates whether their \absoluteslices\
   are equal. Otherwise, the result is $\True$.",
-  prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}"
+  prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}",
 };
 
 typing function slice_to_indices(tenv: static_envs, s: slice) ->
@@ -1769,7 +1814,7 @@ typing function slice_to_indices(tenv: static_envs, s: slice) ->
   "returns the list of indices {indices} represented by
   the bitvector slice {s} in the
   \staticenvironmentterm{} {tenv}.",
-  prose_application = "\hyperlink{relation-slicetoindices}{converting} slice {s} in {tenv} yields indices {indices}"
+  prose_application = "\hyperlink{relation-slicetoindices}{converting} slice {s} in {tenv} yields indices {indices}",
 };
 
 //////////////////////////////////////////////////
@@ -1782,7 +1827,7 @@ typing relation annotate_block(tenv: static_envs, s: stmt) ->
   \staticenvironmentterm{} {tenv} and returns the
   annotated statement {new_stmt} and inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-annotateblock}{annotating} block statement {s} in {tenv} yields statement {new_stmt} and side effects {ses}"
+  prose_application = "\hyperlink{relation-annotateblock}{annotating} block statement {s} in {tenv} yields statement {new_stmt} and side effects {ses}",
 };
 
 semantics relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError | TDiverging
@@ -1850,7 +1895,7 @@ typing function check_global_pragma(genv: global_static_envs, d: decl) ->
   "typechecks a global pragma declaration {d} in the
   \globalstaticenvironmentterm{} {genv}, yielding
   $\True$. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-checkglobalpragma}{checking} global pragma declaration {d} in {genv} yields True"
+  prose_application = "\hyperlink{relation-checkglobalpragma}{checking} global pragma declaration {d} in {genv} yields True",
 };
 
 //////////////////////////////////////////////////
@@ -1990,7 +2035,7 @@ typing function check_is_not_collection(tenv: static_envs, t: ty) ->
   "checks whether the type {t} has the structure of a
   \collectiontypeterm{}, and if so, raises a
   \typingerrorterm{}. Otherwise, the result is $\True$.",
-  prose_application = "\hyperlink{relation-checkisnotcollection}{verifying} type {t} in {tenv} is not a collection type yields True"
+  prose_application = "\hyperlink{relation-checkisnotcollection}{verifying} type {t} in {tenv} is not a collection type yields True",
 };
 
 //////////////////////////////////////////////////
@@ -2440,7 +2485,7 @@ semantics function get_pending_calls(denv: dynamic_envs, name: Identifier) ->
   "retrieves the value associated with {name} in
   $\denv.\pendingcalls$ or $0$ if no value is associated
   with it.",
-  prose_application = "\hyperlink{relation-getpendingcalls}{retrieving} pending calls count for {name} in {denv} yields {s}"
+  prose_application = "\hyperlink{relation-getpendingcalls}{retrieving} pending calls count for {name} in {denv} yields {s}",
 };
 
 semantics function set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
@@ -2539,7 +2584,7 @@ semantics function write_to_bitvector(slices: list0((tint, tint)), src: tbitvect
 {
   "overwrites the bits of {dst} at the positions given by
   {slices} with the bits of {src}.",
-  prose_application = "\hyperlink{relation-writetobitvector}{writing} bits from {src} to {dst} at positions {slices} yields bitvector {v}"
+  prose_application = "\hyperlink{relation-writetobitvector}{writing} bits from {src} to {dst} at positions {slices} yields bitvector {v}",
 };
 
 semantics function get_index(i: N, vec: tvector) -> (r: tvector) | TDynError
@@ -2588,7 +2633,7 @@ semantics relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: n
   {env}, in the context of the value-graph pair $(\vv,
   \vg)$, yielding a pair consisting of the environment
   {new_env} and \executiongraphterm{} {new_g}.",
-  prose_application = "\hyperlink{relation-declarelocalidentifierm}{declaring} local identifier {x} in {env} with value-graph pair {m} yields environment {new_env} and graph {new_g}"
+  prose_application = "\hyperlink{relation-declarelocalidentifierm}{declaring} local identifier {x} in {env} with value-graph pair {m} yields environment {new_env} and graph {new_g}",
 };
 
 semantics relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
@@ -3063,7 +3108,249 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   modified environment {new_tenv}, and
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+}
+=
+  case SPass {
+    s = S_Pass;
+    --
+    (S_Pass, tenv, empty_set);
+  }
+
+  case SAssign {
+    s = S_Assign(le, re);
+    annotate_expr(tenv, re) -> (t_re, re1, ses_re);
+    annotate_lexpr(tenv, le, t_re) -> (le1, ses_le);
+    ses := UNION(ses_re, ses_le);
+    --
+    (S_Assign(le1, re1), tenv, ses);
+  }
+
+  case SDecl {
+    case Some {
+      s = S_Decl(ldk, ldi, ty_opt, SOME(e));
+      annotate_expr(tenv, e) -> (t_e, e', ses_e);
+      annotate_local_decl_type_annot(tenv, ty_opt, t_e, ldk, e', ldi) -> (tenv1, ty_opt', ses_ldi)
+      { math_layout = [_,_] };
+      ses := UNION(ses_e, ses_ldi);
+      new_s := S_Decl(ldk, ldi, ty_opt', SOME(e'));
+      --
+      (new_s, tenv1, ses);
+    }
+
+    case None {
+      s = S_Decl(LDK_Var, ldi, ty_opt, None);
+      te_check(ty_opt = SOME(_), TE_BD) -> True;
+      base_value(tenv, t') -> e_init;
+      annotate_local_decl_item(tenv, t', LDK_Var, None, ldi') -> new_tenv;
+      new_s := S_Decl(LDK_Var, ldi, SOME(t'), SOME(e_init));
+      --
+      (new_s, new_tenv, ses);
+    }
+  }
+
+  case SSeq {
+    s = S_Seq(s1, s2);
+    annotate_stmt(tenv, s1) -> (new_s1, tenv1, ses1);
+    annotate_stmt(tenv1, s2) -> (new_s2, new_tenv, ses2);
+    ses := UNION(ses1, ses2);
+    --
+    (S_Seq(new_s1, new_s2), new_tenv, ses);
+  }
+
+  case SCall {
+    s = S_Call(call);
+    annotate_call(call) -> (call', None, ses);
+    --
+    (S_Call(call'), tenv, ses);
+  }
+
+  case SCond {
+    s = S_Cond(e, s1, s2);
+    annotate_expr(tenv, e) -> (t_cond, e_cond, ses_cond);
+    checked_typesat(tenv, t_cond, T_Bool) -> True;
+    annotate_block(tenv, s1) -> (s1', ses1);
+    annotate_block(tenv, s2) -> (s2', ses2);
+    ses := UNION(ses_cond, ses1, ses2);
+    --
+    (S_Cond(e_cond, s1', s2'), tenv, ses);
+  }
+
+  case SAssert {
+    s = S_Assert(e);
+    annotate_expr(tenv, e) -> (t_e', e', ses_e);
+    te_check( ses_is_readonly(ses_e) -> True, TE_SEV ) -> True;
+    checked_typesat(tenv, t_e', T_Bool) -> True;
+    ses := ses_e;
+    --
+    (S_Assert(e'), tenv, ses);
+  }
+
+  case SWhile {
+    s = S_While(e1, limit1, s1);
+    annotate_expr(tenv, e1) -> (t, e2, ses_e);
+    annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
+    checked_typesat(tenv, t, T_Bool) -> True;
+    annotate_block(tenv, s1) -> (s2, ses_block);
+    ses := UNION(ses_block, ses_e, ses_limit);
+    --
+    (S_While(e2, limit2, s2), tenv, ses);
+  }
+
+  case SRepeat {
+    s = S_Repeat(s1, e1, limit1);
+    annotate_block(tenv, s1) -> (s2, ses_block);
+    annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
+    annotate_expr(tenv, e1) -> (t, e2, ses_e);
+    checked_typesat(tenv, t, T_Bool) -> True;
+    ses := UNION(ses_block, ses_e, ses_limit);
+    --
+    (S_Repeat(s2, e2, limit2), tenv, ses);
+  }
+
+  case SFor {
+    s = S_For[
+      index_name : index_name,
+      start_e    : start_e,
+      dir        : dir,
+      end_e      : end_e,
+      body       : body,
+      limit      : limit
+    ];
+    annotate_expr(tenv, start_e) -> (start_t, start_e', ses_start);
+    annotate_expr(tenv, end_e) -> (end_t, end_e', ses_end);
+    annotate_limit_expr(tenv, limit) -> (limit', ses_limit);
+    te_check(ses_is_readonly(ses_start), TE_SEV) -> True;
+    te_check(ses_is_readonly(ses_end), TE_SEV) -> True;
+    ses_cond := UNION(ses_start, ses_end, ses_limit);
+    make_anonymous(tenv, start_t) -> start_struct;
+    make_anonymous(tenv, end_t) -> end_struct;
+    get_for_constraints(tenv, start_struct, end_struct, start_e', end_e', dir, cs) -> cs
+    { ([_,_,_,_,_,_,_], _) };
+    ty := T_Int(cs);
+    check_var_not_in_env(tenv, index_name) -> True;
+    add_local(tenv, ty, index_name, LDK_Let) -> tenv';
+    annotate_block(tenv', body) -> (body', ses_block);
+    ses := UNION(ses_block, ses_cond);
+    --
+    (
+      S_For[
+      index_name : index_name,
+      start_e    : start_e',
+      dir        : dir,
+      end_e      : end_e',
+      body       : body',
+      limit      : limit'
+      ],
+      tenv,
+      ses
+    ) { math_layout = (_,[_,_,_]) };
+  }
+
+  case SThrow {
+    s = S_Throw(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses1);
+    check_structure_label(tenv, t_e, T_Exception) -> True;
+    t_e =: T_Named(exn_name);
+    ses := UNION(ses1, SET(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)));
+    --
+    (S_Throw(e', t_e), tenv, ses);
+  }
+
+  // The implementation includes code for fine-grained side-effect analysis,
+  // which is not part of the reference.
+  // Specifically, there's no need to call `SES.remove_thrown_exceptions`
+  // and thus ses3 and ses2 are equal.
+  case STry {
+    s = S_Try(s', catchers, otherwise);
+    annotate_block(tenv, s') -> (s'', ses1);
+    (INDEX(i, catchers : annotate_catcher(tenv, catchers[i]) -> (catchers'[i], xs[i])))
+    { math_layout =  ([_,_]) };
+    ses_catchers := UNION_LIST(catchers');
+    case No_Otherwise {
+      otherwise = None;
+      otherwise' := None;
+      ses_otherwise := empty_set;
+    }
+
+    case Otherwise {
+      otherwise = SOME(block);
+      annotate_block(tenv, block) -> (block', ses_block);
+      otherwise' := SOME(otherwise');
+      ses_otherwise := ses_block;
+      ses_otherwise := ses_block;
+    }
+    ses := UNION(ses2, ses_catchers, ses_otherwise);
+    new_s := S_Try(s'', catchers', otherwise');
+    --
+    (new_s, tenv, ses);
+  }
+
+  case SReturn {
+    case Error {
+      s = S_Return(e_opt);
+      b := (tenv.static_envs_L.return_type = None) IFF (e_opt = None);
+      b = False;
+      --
+      TypeError(TE_BSPD);
+    }
+
+    case None {
+      s = S_Return(None);
+      tenv.static_envs_L.return_type = None;
+      --
+      (S_Return(None), tenv, empty_set);
+    }
+
+    case Some {
+      s = S_Return(SOME(e));
+      tenv.static_envs_L.return_type = SOME(t);
+      annotate_expr(tenv, e) -> (t_e', e', ses);
+      checked_typesat(tenv, t_e', t) -> True;
+      --
+      (S_Return(SOME(e')), tenv, ses);
+    }
+  }
+
+  case SPrint {
+    s = S_Print(args, newline);
+    INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
+    INDEX(i, args : te_check(is_singular(tys[i]), TE_UT) -> True);
+    ses := UNION(SET(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), UNION_LIST(sess));
+    --
+    (S_Print(args', newline), tenv, ses);
+  }
+
+  case SUnreachable {
+    s = S_Unreachable;
+    --
+    (S_Unreachable, tenv, empty_set);
+  }
+
+  case SPragma {
+    s = S_Pragma(id, args);
+    INDEX(i, args : annotate_expr(tenv, args[i]) -> (_, _, sess[i]));
+    ses := UNION_LIST(sess);
+    --
+    (S_Pass, tenv, ses);
+  }
+;
+
+render rule annotate_stmt_SPass = annotate_stmt(SPass);
+render rule annotate_stmt_SAssign = annotate_stmt(SAssign);
+render rule annotate_stmt_SDecl = annotate_stmt(SDecl);
+render rule annotate_stmt_SSeq = annotate_stmt(SSeq);
+render rule annotate_stmt_SCall = annotate_stmt(SCall);
+render rule annotate_stmt_SCond = annotate_stmt(SCond);
+render rule annotate_stmt_SAssert = annotate_stmt(SAssert);
+render rule annotate_stmt_SWhile = annotate_stmt(SWhile);
+render rule annotate_stmt_SRepeat = annotate_stmt(SRepeat);
+render rule annotate_stmt_SFor = annotate_stmt(SFor);
+render rule annotate_stmt_SThrow = annotate_stmt(SThrow);
+render rule annotate_stmt_STry = annotate_stmt(STry);
+render rule annotate_stmt_SReturn = annotate_stmt(SReturn);
+render rule annotate_stmt_SPrint = annotate_stmt(SPrint);
+render rule annotate_stmt_SUnreachable = annotate_stmt(SUnreachable);
+render rule annotate_stmt_SPragma = annotate_stmt(SPragma);
 
 typing relation annotate_local_decl_type_annot(
     tenv: static_envs,
@@ -3332,6 +3619,7 @@ semantics function static_env_to_env(tenv: static_envs) ->
 
 typing relation annotate_call(tenv: static_envs, call: call) ->
          (call': call, ret_ty_opt: option(ty), ses: powerset(TSideEffect))
+         | type_error
 {
   "annotates the call {call} to a subprogram with call
     type $\calltype$, resulting in the following:
@@ -3888,7 +4176,7 @@ typing function normalize(tenv: static_envs, e: expr) ->
   simplifies} an expression {e} in the
   \staticenvironmentterm{} {tenv}, yielding an
   expression {new_e}. \ProseOtherwiseTypeError",
-  prose_application = "\hyperlink{relation-normalize}{simplifying} expression {e} in {tenv} yields {new_e}"
+  prose_application = "\hyperlink{relation-normalize}{simplifying} expression {e} in {tenv} yields {new_e}",
 };
 
 typing function reduce_constraint(tenv: static_envs, c: int_constraint) ->
@@ -3917,7 +4205,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   (because, for example, it contains operations that are
   not available in \symbolicexpressionsterm{}), the
   special value $\CannotBeTransformed$ is returned.",
-  prose_application = "\hyperlink{relation-toir}{converting} expression {e} in {tenv} to symbolic form yields polynomial {p}"
+  prose_application = "\hyperlink{relation-toir}{converting} expression {e} in {tenv} to symbolic form yields polynomial {p}",
 };
 
 typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
@@ -4047,7 +4335,7 @@ typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m:
   "multiplies the unitary monomial {m1} with the unitary monomial {m2},
   yielding the unitary monomial {m}",
   prose_application = "multiplying the unitary monomial {m1} with unitary monomial {m2}
-                      yields the unitary monomial {m}"
+                      yields the unitary monomial {m}",
 };
 
 typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
@@ -4055,7 +4343,7 @@ typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomia
   "adds the polynomial {p1} with the polynomial {p2},
   yielding the polynomial {p}",
   prose_application = "adding the polynomial {p1} with polynomial {p2}
-                      yields the polynomial {p}"
+                      yields the polynomial {p}",
 };
 
 typing function mul_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
@@ -4078,7 +4366,7 @@ typing function polynomial_to_expr(p: polynomial) ->
          (e: expr)
 {
   "transforms a polynomial {p} into the corresponding expression {e}.",
-  prose_application = "\hyperlink{relation-polynomialtoexpr}{converting} polynomial {p} to an expression yields {e}"
+  prose_application = "\hyperlink{relation-polynomialtoexpr}{converting} polynomial {p} to an expression yields {e}",
 };
 
 typing function compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q)) ->
@@ -4104,7 +4392,7 @@ typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
   and a sign value {s}, which indicates the sign of the
   resulting sum.",
   prose_application = "\hyperlink{relation-monomialstoexpr}{converting} monomial list {monoms} to expression form
-                        yields absolute value {e} and sign {s}"
+                        yields absolute value {e} and sign {s}",
 };
 
 typing function monomial_to_expr(e: expr, q: N) ->
@@ -4124,7 +4412,7 @@ typing function sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
   respective signs {s1} and {s2} yielding the expression
   {e} and sign {s}.",
   prose_application = "\hyperlink{relation-symaddexpr}{symbolically summing} expressions {e1} with sign {s1}
-                        and {e2} with sign {s2} yields expression {e} with sign {s}"
+                        and {e2} with sign {s2} yields expression {e} with sign {s}",
 };
 
 typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
@@ -4167,7 +4455,7 @@ typing function symdom_subset_unions(tenv: static_envs, sd1: symdom_or_top, sd2:
   integers represented by {sd2}, in the context of the
   \staticenvironmentterm{} {tenv}, yielding the result
   in {b}.",
-  prose_application = "\hyperlink{relation-symdomsubsetunions}{testing} whether {sd1} is subsumed by {sd2} in {tenv} yields {b}"
+  prose_application = "\hyperlink{relation-symdomsubsetunions}{testing} whether {sd1} is subsumed by {sd2} in {tenv} yields {b}",
 };
 
 typing function symdom_normalize(symdoms: list1(symdom)) ->
@@ -4181,7 +4469,7 @@ typing function symdom_normalize(symdoms: list1(symdom)) ->
   integer domain whose set of integers is the union of
   the sets of integers in the merged symbolic finite set
   integer domains.",
-  prose_application = "\hyperlink{relation-symdomnormalize}{normalizing} {symdoms} by merging finite sets yields {new_symdoms}"
+  prose_application = "\hyperlink{relation-symdomnormalize}{normalizing} {symdoms} by merging finite sets yields {new_symdoms}",
 };
 
 typing function symdom_of_type(tenv: static_envs, t: ty) ->
@@ -4247,7 +4535,7 @@ typing function approx_constraints(tenv: static_envs, approx: constants_set(Over
   is either overapproximation or underapproximation,
   based on the \approximationdirectionterm{} {approx}.",
   prose_application = "\hyperlink{relation-approxconstraints}{approximating} constraints {cs} in {tenv}
-                        with direction {approx} yields integer set {s}"
+                        with direction {approx} yields integer set {s}",
 };
 
 typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,Under), c: int_constraint) ->
@@ -4353,7 +4641,7 @@ typing function constraint_binop(op: binop, cs1: list0(int_constraint), cs2: lis
   lists of integer constraints {cs1} and {cs2}, yielding
   the integer constraints {new_cs}.",
   prose_application = "\hyperlink{relation-constraintbinop}{applying} operator {op}
-                        to constraints {cs1} and {cs2} yields constraints {new_cs}"
+                        to constraints {cs1} and {cs2} yields constraints {new_cs}",
 };
 
 typing function apply_binop_extremities(op: binop, c1: int_constraint, c2: int_constraint) ->
@@ -4404,7 +4692,7 @@ typing function constraint_pow(c1: int_constraint, c2: int_constraint) ->
   needed to calculate the result of applying a $\POW$
   operation to the constraints {c1} and {c2}.",
   prose_application = "\hyperlink{relation-constraintpow}{symbolically applying} the $\POW$
-                        operation to {c1} and {c2} yields constraint list {new_cs}"
+                        operation to {c1} and {c2} yields constraint list {new_cs}",
 };
 
 //////////////////////////////////////////////////
@@ -4716,7 +5004,12 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
   associated with an identifier {s}. The result is
   $\bot$ if {s} is not associated with any constant.",
   prose_application = "",
-};
+} =
+  --
+  tenv.static_envs_G.constant_values(s);
+;
+
+render rule lookup_constant;
 
 typing function add_global_constant(genv: global_static_envs, name: Identifier, v: literal) ->
          (new_genv: global_static_envs)
