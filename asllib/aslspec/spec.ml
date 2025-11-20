@@ -39,6 +39,16 @@ module Error = struct
           short-circuit macros."
          relation_name PP.pp_type_term term type_name
 
+  let invalid_application_of_symbol_in_expr name expr =
+    spec_error
+    @@ Format.asprintf "Invalid application of symbol '%s' to expression %a"
+         name PP.pp_expr expr
+
+  let invalid_application_of_expression_to_arguments expr =
+    spec_error
+    @@ Format.asprintf "Invalid application of expression to arguments in %a"
+         PP.pp_expr expr
+
   let type_subsumption_failure sub super =
     spec_error
     @@ Format.asprintf "Unable to determine that `%a` is subsumed by `%a`"
@@ -83,6 +93,27 @@ module Error = struct
     @@ Format.asprintf
          "The type term `%a` cannot be instantiated since '%s' is not a type"
          PP.pp_type_term term label
+
+  let empty_rule relation_name =
+    spec_error
+    @@ Format.asprintf "The rule for relation '%s' is empty." relation_name
+
+  let multiple_output_judgments relation_name rule_name_opt =
+    let pp_name_opt fmt = function
+      | Some name -> Format.fprintf fmt ": %s" name
+      | None -> ()
+    in
+    spec_error
+    @@ Format.asprintf
+         "All but the last judgment in the rule for relation %s must be \
+          non-output judgments%a"
+         relation_name pp_name_opt rule_name_opt
+
+  let missing_output_judgment relation_name =
+    spec_error
+    @@ Format.sprintf
+         "The rule for relation %s must end with an output judgment"
+         relation_name
 
   let bad_layout term layout ~consistent_layout =
     spec_error
@@ -229,7 +260,8 @@ let elem_name = function
   | Elem_Type { Type.name }
   | Elem_Relation { Relation.name }
   | Elem_Constant { Constant.name }
-  | Elem_RenderTypes { TypesRender.name } ->
+  | Elem_RenderTypes { TypesRender.name }
+  | Elem_RenderRule { RuleRender.name } ->
       name
 
 (** Lists nodes that define identifiers and can be referenced. *)
@@ -266,7 +298,7 @@ let list_definition_nodes ast =
       | Elem_Constant def -> Node_Constant def :: acc_nodes
       (* Although a render defines an identifier, it does not carry semantic
          meaning, and cannot be referenced elsewhere. *)
-      | Elem_RenderTypes _ -> acc_nodes)
+      | Elem_RenderTypes _ | Elem_RenderRule _ -> acc_nodes)
     ast []
 
 (** Creates a map from identifiers to the nodes where they are defined. If two
@@ -290,6 +322,323 @@ type t = {
 }
 
 let ast spec = spec.ast
+
+(** A module for performing resolution transformations on rules to make them
+    amenable for further checking and for rendering. *)
+module ResolveRules = struct
+  open Rule
+
+  (** [resolve_expr id_to_defining_node expr] resolves application expressions
+      appearing in [expr] by using [id_to_defining_node] to lookup type variants
+      and relations. *)
+  let rec resolve_expr id_to_defining_node expr =
+    match expr with
+    | Var _ | FieldAccess _ | ListIndex _ -> expr
+    | Record { label; fields } ->
+        let resolved_fields =
+          List.map
+            (fun (field_name, field_expr) ->
+              (field_name, resolve_expr id_to_defining_node field_expr))
+            fields
+        in
+        Record { label; fields = resolved_fields }
+    | Application ({ applicator; args } as app) -> (
+        let resolved_args =
+          List.map (fun e -> resolve_expr id_to_defining_node e) args
+        in
+        match applicator with
+        | EmptyApplicator | Relation _ | ExprOperator _ | Fields _ ->
+            Application { app with args = resolved_args }
+        | TupleLabel _ -> assert false
+        (* Tuple labels appear only post resolution so not expected here. *)
+        | Unresolved (Var id) -> (
+            match StringMap.find_opt id id_to_defining_node with
+            | Some (Node_Relation _) ->
+                Application { applicator = Relation id; args = resolved_args }
+            | Some (Node_TypeVariant _) ->
+                Application { applicator = TupleLabel id; args = resolved_args }
+            | Some (Node_Constant { Constant.name })
+            | Some (Node_Type { Type.name }) ->
+                Error.invalid_application_of_symbol_in_expr name expr
+            | _ ->
+                Application { applicator = Fields [ id ]; args = resolved_args }
+            )
+        | Unresolved (FieldAccess path) ->
+            Application { applicator = Fields path; args = resolved_args }
+        | Unresolved _ ->
+            Error.invalid_application_of_expression_to_arguments expr)
+    | Transition { lhs; rhs; short_circuit } ->
+        let resolved_lhs = resolve_expr id_to_defining_node lhs in
+        let resolved_rhs = resolve_expr id_to_defining_node rhs in
+        let resolved_short_circuit =
+          Option.map
+            (List.map (fun e -> resolve_expr id_to_defining_node e))
+            short_circuit
+        in
+        Transition
+          {
+            lhs = resolved_lhs;
+            rhs = resolved_rhs;
+            short_circuit = resolved_short_circuit;
+          }
+    | Indexed ({ body : expr } as indexed_expr) ->
+        let resolved_body = resolve_expr id_to_defining_node body in
+        Indexed { indexed_expr with body = resolved_body }
+
+  (** [resolve_rule_element id_to_defining_node rule_element] performs
+      resolution transformations on [rule_element] using [id_to_defining_node]
+      to lookup type variants and relations. *)
+  let rec resolve_rule_element id_to_defining_node conclusion_lhs rule_element =
+    let open Rule in
+    match rule_element with
+    | Judgment ({ expr; is_output } as judgment) ->
+        let resolved_expr = resolve_expr id_to_defining_node expr in
+        let resolved_expr =
+          if is_output then
+            Transition
+              {
+                lhs = conclusion_lhs;
+                rhs = resolved_expr;
+                short_circuit = Some [];
+                (* Output transitions never have alternatives. *)
+              }
+          else resolved_expr
+        in
+        Judgment { judgment with expr = resolved_expr }
+    | Cases cases ->
+        let resolved_cases =
+          List.map
+            (fun { name; elements } ->
+              let resolved_elements =
+                List.map
+                  (fun e ->
+                    resolve_rule_element id_to_defining_node conclusion_lhs e)
+                  elements
+              in
+              { name; elements = resolved_elements })
+            cases
+        in
+        Cases resolved_cases
+
+  (** [lhs_of_conclusion] returns an expression representing the LHS of the
+      conclusion judgment for relation definition with the given [name] and
+      [input] arguments. *)
+  let lhs_of_conclusion { Relation.name; input } =
+    let input_vars =
+      List.map (fun (name_opt, _) -> Var (Option.get name_opt)) input
+    in
+    Application { applicator = Relation name; args = input_vars }
+
+  (** In text, a list of [case] elements without non-[case] elements in between
+      them are considered to be a single case element with multiple cases.
+      Therefore, we make this explicit by merging all consecutive [Case]
+      elements into a single [Case] element.
+
+      So for example, the following list of elements:
+      {[
+        Judgment j1;
+        Cases [ case1 ];
+        Cases [ case2 ];
+        Judgment j2;
+        Cases [ case3 ];
+        Cases [ case4 ]
+      ]}
+      is transformed into:
+      {[
+        Judgment j1;
+        Cases [ case1; case2 ];
+        Judgment j2;
+        Cases [ case3; case4 ]
+      ]}
+
+      [aggregate_case_blocks rule_elements] merges all consecutive [Case]
+      elements in [rule_elements] into a single [Cases] element, recursing into
+      [Case] elements elements as needed. *)
+  let rec aggregate_case_blocks rule_elements =
+    let open Rule in
+    (* First, aggregate by recursing into each Case element separately. *)
+    let rule_elements =
+      List.map
+        (fun rule_elem ->
+          match rule_elem with
+          | Judgment _ -> rule_elem
+          | Cases cases ->
+              let aggregated_cases =
+                List.map
+                  (fun { name; elements } ->
+                    { name; elements = aggregate_case_blocks elements })
+                  cases
+              in
+              Cases aggregated_cases)
+        rule_elements
+    in
+    (* Second, aggregate consecutive Cases elements. *)
+    List.fold_right
+      (fun rule_elem suffix_elements ->
+        match (rule_elem, suffix_elements) with
+        | Judgment _, _ | Rule.Cases _, Judgment _ :: _ ->
+            rule_elem :: suffix_elements
+        | Rule.Cases cases, [] -> [ Rule.Cases cases ]
+        | Rule.Cases cases, Cases next_cases :: tail ->
+            Rule.Cases (cases @ next_cases) :: tail)
+      rule_elements []
+
+  (** Transforms relations in three ways:
+      {ul
+       {- Aggregates consecutive [Case] blocks into a single [Case] block. }
+       {- Resolves [Unresolved] in applicators to either [Node_Relation] or
+          [Node_TypeVariant]
+       }
+       {- Transforms the conclusion judgment from an expression to a transition.
+          That is, given
+          {[
+            relation r(a: A) -> (b:B) =
+              p1; ... pk;
+              --
+              c_expr;
+          ]}
+          we transform it to
+          {[
+            relation r(a: A) -> (b:B) =
+              p1; ... pk;
+              --
+              r(a) -> c_expr;
+          ]}
+          The result is the re-written AST along with an updated map from
+          identifiers to definition nodes, updated for the newly created
+          relation nodes.
+       }
+      } *)
+  let resolve ast id_to_defining_node =
+    let open Rule in
+    let ast =
+      List.map
+        (fun elem ->
+          match elem with
+          | Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
+          | Elem_RenderRule _ ->
+              elem
+          | Elem_Relation def ->
+              let resolved_def =
+                match def.rule_opt with
+                | None -> def
+                | Some elements ->
+                    let elements = aggregate_case_blocks elements in
+                    let conclusion_lhs = lhs_of_conclusion def in
+                    let resolved_elements =
+                      List.map
+                        (fun rule_elem ->
+                          resolve_rule_element id_to_defining_node
+                            conclusion_lhs rule_elem)
+                        elements
+                    in
+                    { def with rule_opt = Some resolved_elements }
+              in
+              Elem_Relation resolved_def)
+        ast
+    in
+    (* Since we generated new relation nodes, we need to re-generate id_to_defining_node. *)
+    let definition_nodes = list_definition_nodes ast in
+    let id_to_defining_node = make_id_to_definition_node definition_nodes in
+    (ast, id_to_defining_node)
+end
+
+(** A module for expanding rules with cases into multiple rules without cases.
+*)
+module ExpandRules = struct
+  open Rule
+
+  type expanded_rule = {
+    name_opt : string option;
+        (** The optional name of the expanded rule, if it originated from a
+            case. *)
+    category_opt : Relation.relation_category option;
+        (** The optional category is associated with the expanded rule to make
+            it possible to later render the rule without having to look it up.
+        *)
+    judgments : Rule.judgment list;
+        (** After all cases have been expanded, the rule is simply a list of
+            judgments. *)
+  }
+  (** An expanded rule is a rule with no [Cases]. *)
+
+  (** [concat_expanded_rules prefix suffix] concatenates two expanded rules,
+      [prefix] and [suffix], combining their optional names and categories as
+      needed. *)
+  let concat_expanded_rules
+      {
+        name_opt = prefix_name_opt;
+        category_opt = prefix_category_opt;
+        judgments = prefix_judgments;
+      }
+      {
+        name_opt = suffix_name_opt;
+        category_opt = suffix_category_opt;
+        judgments = suffix_judgments;
+      } =
+    let name_opt =
+      match (prefix_name_opt, suffix_name_opt) with
+      | None, None -> None
+      | Some name, None | None, Some name -> Some name
+      | Some prefix_name, Some suffix_name ->
+          Some (Rule.join_case_names [ prefix_name; suffix_name ])
+    in
+    let category_opt =
+      match (prefix_category_opt, suffix_category_opt) with
+      | Some category, None | None, Some category -> Some category
+      | Some prefix_category, Some suffix_category ->
+          if prefix_category = suffix_category then Some prefix_category
+          else assert false
+            (* This should not happen: the same category is set by [expand]. *)
+      | None, None -> None
+    in
+    { name_opt; category_opt; judgments = prefix_judgments @ suffix_judgments }
+
+  (** [product_concat expanded_prefix expanded_suffix] performs a Cartesian
+      product concatenation of two lists of expanded rules, [expanded_prefix]
+      and [expanded_suffix], returning a list of expanded rules. *)
+  let product_concat expanded_prefix expanded_suffix =
+    Utils.list_concat_map
+      (fun expanded_suffix_rule ->
+        List.map
+          (fun expanded_case_rule ->
+            concat_expanded_rules expanded_case_rule expanded_suffix_rule)
+          expanded_prefix)
+      expanded_suffix
+
+  (** [expand category_opt elements] expands the rule whose list of elements is
+      [elements] into multiple rules without cases, all having the optional
+      category [category_opt]. *)
+  let rec expand category_opt elements =
+    let open Rule in
+    (* Transforms a single case into expanded rules and update the names
+       of all resulting expanded cases by prefixing them with the case name
+       and setting the optional category.
+    *)
+    let expand_case { name; elements } =
+      let name_as_expanded =
+        [ { name_opt = Some name; category_opt; judgments = [] } ]
+      in
+      let expanded_case_elements = expand category_opt elements in
+      product_concat name_as_expanded expanded_case_elements
+    in
+    (* Expand cases by transforming the list bottom-up. *)
+    List.fold_right
+      (fun rule_elem suffix_expanded ->
+        match rule_elem with
+        | Judgment judgment ->
+            let judgment_as_expanded_rule_list =
+              [ { name_opt = None; category_opt; judgments = [ judgment ] } ]
+            in
+            product_concat judgment_as_expanded_rule_list suffix_expanded
+        | Cases cases ->
+            let cases_as_expanded_rule =
+              Utils.list_concat_map expand_case cases
+            in
+            product_concat cases_as_expanded_rule suffix_expanded)
+      elements
+      [ { name_opt = None; category_opt; judgments = [] } ]
+end
 
 module Check = struct
   (** [check_layout term layout] checks that the given [layout] is structurally
@@ -393,6 +742,7 @@ module Check = struct
               (fun { TypesRender.type_name; variant_names } ->
                 type_name :: variant_names)
               pointers
+        | Elem_RenderRule { RuleRender.relation_name } -> [ relation_name ]
       in
       List.iter
         (fun id ->
@@ -494,6 +844,44 @@ module Check = struct
 
     let check defining_nodes =
       List.iter check_prose_template_for_definition_node defining_nodes
+  end
+
+  (** A module for checking that all rules are well-formed. That is, that they
+      end with an output judgment and that all preceding judgments are
+      non-output judgments. *)
+  module CheckRules = struct
+    let check_well_formed_expanded relation_name expanded_rule =
+      let open ExpandRules in
+      match List.rev expanded_rule.judgments with
+      | [] -> Error.empty_rule relation_name
+      | { expr = Transition _; is_output = true } :: prefix_fules ->
+          List.iter
+            (fun { Rule.is_output } ->
+              if is_output then
+                Error.multiple_output_judgments relation_name
+                  expanded_rule.name_opt
+              else ())
+            prefix_fules
+      | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
+
+    let check_rule_for_relation { Relation.name; category } elements =
+      let expanded_rules = ExpandRules.expand category elements in
+      List.iter (check_well_formed_expanded name) expanded_rules
+
+    (** Checks the rules in all relations. *)
+    let check ast =
+      let open Rule in
+      List.iter
+        (fun elem ->
+          match elem with
+          | Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
+          | Elem_RenderRule _ ->
+              ()
+          | Elem_Relation ({ rule_opt } as def) -> (
+              match rule_opt with
+              | None -> ()
+              | Some elements -> check_rule_for_relation def elements))
+        ast
   end
 
   (** A module for conservatively checking that all type terms are well-formed
@@ -865,7 +1253,7 @@ module Check = struct
         (fun elem ->
           try
             match elem with
-            | Elem_Constant _ | Elem_RenderTypes _ -> ()
+            | Elem_Constant _ | Elem_RenderTypes _ | Elem_RenderRule _ -> ()
             | Elem_Relation { input; output } ->
                 List.iter
                   (fun (_, term) -> check_well_typed id_to_defining_node term)
@@ -895,11 +1283,25 @@ let from_ast ast =
   let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
+  let ast, id_to_defining_node = ResolveRules.resolve ast id_to_defining_node in
+  let () = Check.CheckRules.check ast in
   { ast; id_to_defining_node; defined_ids }
 
 let defined_ids self = self.defined_ids
 
-let defining_node_for_id self id =
+let defining_node_opt_for_id self id =
   match StringMap.find_opt id self.id_to_defining_node with
+  | Some def -> Some def
+  | None -> None
+
+let defining_node_for_id self id =
+  match defining_node_opt_for_id self id with
   | Some def -> def
   | None -> Error.undefined_element id
+
+let relation_for_id self id =
+  match defining_node_for_id self id with
+  | Node_Relation def -> def
+  | _ -> assert false
+
+let is_defined_id self id = StringMap.mem id self.id_to_defining_node

@@ -364,6 +364,123 @@ end = struct
     Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
+(** A datatype for a set of inference rules for a given relation. *)
+module Rule = struct
+  (** An operator over expressions. *)
+  type expr_operator =
+    | Operator_Assign
+    | Operator_Equal
+    | Operator_Iff
+    | Operator_List
+    | Operator_Size
+    | Operator_Set
+    | Operator_Union
+    | Operator_UnionList
+    | Operator_Some
+
+  (** [is_infix_operator] returns [true] if the operator is a binary operator
+      that is typically written as [e1 op e2]. *)
+  let is_infix_operator = function
+    | Operator_Assign | Operator_Equal | Operator_Iff -> true
+    | Operator_List | Operator_Set | Operator_Size | Operator_Union
+    | Operator_UnionList | Operator_Some ->
+        false
+
+  (** [is_prefix_operator] returns [true] if the operator is a unary operator
+      that is typically written as [op(e1,...,ek)]. *)
+  let is_prefix_operator op = not (is_infix_operator op)
+
+  (** [is_associative_operator op] returns [true] if [op(e1,...,ek)] is
+      typically written as [e1 op e2 ... op ek]. *)
+  let is_associative_operator = function Operator_Union -> true | _ -> false
+
+  (** The left-hand side of an application expression. *)
+  type applicator =
+    | EmptyApplicator
+        (** This is used for tuples, for which there is no applicator. *)
+    | Relation of string
+    | TupleLabel of string
+    | ExprOperator of expr_operator
+    | Fields of string list
+    | Unresolved of expr
+
+  (** A term that can be used to form a rule judgment. *)
+  and expr =
+    | Var of string
+    | FieldAccess of string list
+        (** The first identifier is a variable and the rest are field names. *)
+    | ListIndex of { var : string; index : string }
+    | Record of { label : string; fields : (string * expr) list }
+        (** A record construction expression, optionally labelled. *)
+    | Application of { applicator : applicator; args : expr list }
+        (** An application of [applicator] to the list of argument expressions
+            [args]. *)
+    | Transition of {
+        lhs : expr;
+        rhs : expr;
+        short_circuit : expr list option;
+            (** The optional [short_circuit] contains short-circuiting
+                alternatives. If [short_circuit] is [None], the alternatives are
+                taken from the corresponding relation definition. Otherwise,
+                they are overridden. *)
+      }
+        (** A transition from the [lhs] configuration to the [rhs] configuration
+            with optional alternatives. *)
+    | Indexed of { index : string; list : string; body : expr }
+
+  (** [make_tuple args] constructs a tuple expression with the given arguments.
+  *)
+  let make_tuple args = Application { applicator = EmptyApplicator; args }
+
+  (** [make_application lhs exprs] constructs an application expression with
+      left-hand side [lhs] and argument expressions [exprs]. During rule
+      resolution, [lhs] is expected to resolve to either a relation name or a
+      tuple label. *)
+  let make_application lhs exprs =
+    Application { applicator = Unresolved lhs; args = exprs }
+
+  let make_prefix_operator_application op args =
+    Application { applicator = ExprOperator op; args }
+
+  let make_infix_operator_application op lhs rhs =
+    Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
+
+  let make_record label fields = Record { label; fields }
+  let make_list_index var index = ListIndex { var; index }
+
+  type judgment = { expr : expr; is_output : bool; att : Attributes.t }
+  (** A judgment represents either a premise or the the output configuration of
+      the conclusion. If [is_output] is [true], the judgment represents the
+      output configuration of the conclusion. *)
+
+  (** [judgment_layout] returns the layout attribute of a judgment, if one was
+      specified, and [Unspecified] otherwise. *)
+  let judgment_layout { att } =
+    match Attributes.find_opt AttributeKey.Math_Layout att with
+    | Some (MathLayoutAttribute layout) -> layout
+    | _ -> Unspecified
+
+  (** A tree of elements. *)
+  type rule_element =
+    | Judgment of judgment  (** A leaf judgment. *)
+    | Cases of case list
+
+  and case = { name : string; elements : rule_element list }
+  (** A sub-tree of judgments. *)
+
+  type t = rule_element list
+
+  (** The absolute path of a case name. *)
+  let join_case_names names = String.concat "." names
+
+  let make_judgement expr is_output attributes =
+    { expr; is_output; att = Attributes.of_list attributes }
+
+  let make_case name elements = { name; elements }
+  let make_cases cases = Cases cases
+  let make_root elements = elements
+end
+
 (** A datatype for a relation definition. *)
 module Relation : sig
   type relation_property =
@@ -381,6 +498,7 @@ module Relation : sig
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
   val make :
@@ -390,6 +508,7 @@ module Relation : sig
     opt_named_type_term list ->
     type_term list ->
     (AttributeKey.t * attribute) list ->
+    Rule.t option ->
     t
 
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
@@ -415,9 +534,10 @@ end = struct
     input : opt_named_type_term list;
     output : type_term list;
     att : Attributes.t;
+    rule_opt : Rule.t option;
   }
 
-  let make name property category input output attributes =
+  let make name property category input output attributes rule_opt =
     {
       name;
       property;
@@ -425,6 +545,7 @@ end = struct
       input;
       output;
       att = Attributes.of_list attributes;
+      rule_opt;
     }
 
   let attributes_to_list self = Attributes.bindings self.att
@@ -490,12 +611,24 @@ end = struct
     Attributes.get_bool AttributeKey.LHS_Hypertargets ~default:true self.att
 end
 
+module RuleRender : sig
+  type t = { name : string; relation_name : string; path : string }
+
+  val make : string -> string -> string list -> t
+end = struct
+  type t = { name : string; relation_name : string; path : string }
+
+  let make name relation_name path =
+    { name; relation_name; path = Rule.join_case_names path }
+end
+
 (** The top-level elements of a specification. *)
 type elem =
   | Elem_Type of Type.t
   | Elem_Relation of Relation.t
   | Elem_Constant of Constant.t
   | Elem_RenderTypes of TypesRender.t
+  | Elem_RenderRule of RuleRender.t
 
 type t = elem list
 (** A specification is a list of top-level elements. *)
