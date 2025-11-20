@@ -26,6 +26,7 @@ let pp_attribute fmt = function
       fprintf fmt "\"@[<hov>%a@]\"" pp_print_text s
   | MathLayoutAttribute layout -> pp_math_shape fmt layout
   | MathMacroAttribute macro -> pp_print_string fmt macro
+  | BoolAttribute b -> pp_print_bool fmt b
 
 let pp_attribute_key_value fmt (key, value) =
   fprintf fmt "%a = %a," pp_attribute_key key pp_attribute value
@@ -59,7 +60,7 @@ let rec pp_type_term fmt = function
         pp_opt_named_type_terms components
   | LabelledRecord { label_opt; fields } ->
       let label = Option.value label_opt ~default:"" in
-      fprintf fmt "%s[%a]" label pp_named_type_terms fields
+      fprintf fmt "%s[%a]" label pp_record_fields fields
   | ConstantsSet constants ->
       fprintf fmt "%s(%a)" (tok_str CONSTANTS_SET)
         (pp_sep_list ~sep:"," pp_print_string)
@@ -82,6 +83,13 @@ and pp_named_type_terms fmt named_terms =
 
 and pp_opt_named_type_terms fmt opt_named_terms =
   pp_sep_list ~sep:", " pp_opt_named_type_term fmt opt_named_terms
+
+and pp_record_fields fmt fields =
+  pp_sep_list ~sep:", " pp_record_field fmt fields
+
+and pp_record_field fmt { name_and_type; att } =
+  fprintf fmt "%a%a" pp_named_type_term name_and_type pp_attribute_key_values
+    (Attributes.bindings att)
 
 let pp_type_term_with_attributes fmt ({ TypeVariant.term } as variant) =
   fprintf fmt "@[<v>%a@,%a@]" pp_type_term term pp_attribute_key_values
@@ -136,8 +144,9 @@ let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
       (pp_sep_list ~sep:", " pp_print_string)
       variant_names
 
-let pp_render_definition fmt { TypesRender.name; pointers } =
-  fprintf fmt "%s %s = %a;" (tok_str RENDER) name
+let pp_render_definition fmt ({ TypesRender.name; pointers } as def) =
+  fprintf fmt "%s %s%a = %a;" (tok_str RENDER) name pp_attribute_key_values
+    (TypesRender.attributes_to_list def)
     (pp_sep_list ~sep:", " type_subset_pointer)
     pointers
 

@@ -177,7 +177,7 @@ See \ExampleRef{Literals}.
 
 \begin{mathpar}
 \inferrule[label]{
-  G^\tenv.\declaredtypes(\vlabel) = (\vt, \Ignore)
+  \tenv.\staticenvsG.\declaredtypes(\vlabel) = (\vt, \Ignore)
 }{
   \annotateliteral(\tenv, \overname{\LLabel(\vlabel)}{\vl}) \typearrow \vt
 }

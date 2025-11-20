@@ -20,11 +20,16 @@ module Make (S : SPEC_VALUE) = struct
       is given in which case it generates a math macro name and returns it. *)
   let get_or_gen_math_macro id =
     assert (not (String.equal id ""));
+    let macro_prefix = function
+      | Node_Relation _ | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
+          ""
+      | Node_RecordField _ -> "FIELD"
+    in
     let node = Spec.defining_node_for_id S.spec id in
     let math_macro_opt = Spec.math_macro_opt_for_node node in
     match math_macro_opt with
     | Some str -> str
-    | None -> Latex.elem_name_to_math_macro id
+    | None -> Latex.elem_name_to_math_macro (macro_prefix node ^ id)
 
   (** [get_short_circuit_macro id] returns the short-circuit macro for the
       element defined by [id], if one exists, and [None] otherwise. *)
@@ -40,11 +45,11 @@ module Make (S : SPEC_VALUE) = struct
     | Some id -> pp_print_string fmt (get_or_gen_math_macro id)
     | None -> ()
 
-  (** [hyperlink_target_for_id id] returns a string [target] that can be used
-      for the LaTeX [\hypertarget{target}{}] for [id]. *)
-  let hyperlink_target_for_id id =
+  (** [hypertarget_for_id id] returns a string [target] that can be used for the
+      LaTeX [\hypertarget{target}{}] for [id]. *)
+  let hypertarget_for_id id =
     let open Spec in
-    let name_id = Latex.remove_underscores id in
+    let name_id = StringOps.remove_underscores id in
     let category =
       match defining_node_for_id S.spec id with
       | Node_Relation _ -> "relation"
@@ -57,6 +62,7 @@ module Make (S : SPEC_VALUE) = struct
           | TypeKind_Generic -> "type"
           | TypeKind_AST -> "ast")
       | Node_Constant _ -> "constant"
+      | Node_RecordField _ -> "recordfield"
     in
     sprintf "%s-%s" category name_id
 
@@ -69,7 +75,7 @@ module Make (S : SPEC_VALUE) = struct
       [\DefineConstant{name}{...}] around the rendering of a constant definition
       [def] with the formatter [fmt].*)
   let pp_constant_definition_macro fmt ({ Constant.name } as def) =
-    let hyperlink_target = hyperlink_target_for_id name in
+    let hyperlink_target = hypertarget_for_id name in
     fprintf fmt {|\DefineConstant{%s}{%a%a} %% EndDefineConstant|} name
       pp_texthypertarget hyperlink_target pp_constant_definition def
 
@@ -84,6 +90,8 @@ module Make (S : SPEC_VALUE) = struct
       | Option -> "Option"
     in
     pp_one_arg_macro (operator_to_macro_name op) pp_arg fmt arg
+
+  let pp_field_name fmt field_name = pp_id_as_macro fmt field_name
 
   (** [pp_type_term fmt (type_term, layout)] renders [type_term] with [fmt],
       laid out according to [layout]. *)
@@ -110,8 +118,15 @@ module Make (S : SPEC_VALUE) = struct
             (pp_parenthesized Parens true pp_opt_named_type_terms)
             (components, layout)
     | LabelledRecord { label_opt; fields } ->
+        let pp_record_fields_as_pairs =
+          List.map
+            (fun ({ name_and_type = field_name, _; _ } as field) ->
+              (field_name, field))
+            fields
+        in
         fprintf fmt {|%a%a|} pp_id_opt_as_macro label_opt
-          (pp_fields pp_type_term) (fields, layout)
+          (pp_fields pp_field_name pp_record_field_as_pair)
+          (pp_record_fields_as_pairs, layout)
     | ConstantsSet constant_names ->
         let layout_contains_vertical = LayoutUtils.contains_vertical layout in
         fprintf fmt {|%a|}
@@ -139,6 +154,10 @@ module Make (S : SPEC_VALUE) = struct
   and pp_opt_named_type_terms fmt (opt_type_terms, layout) =
     pp_aligned_elements ~pp_sep:pp_comma ~alignment:"c" pp_opt_named_type_term
       layout fmt opt_type_terms
+
+  and pp_record_field_as_pair fmt ({ name_and_type = _, field_type; _ }, layout)
+      =
+    pp_type_term fmt (field_type, layout)
 
   (** [pp_output_types fmt (terms, layout)] renders the relation output [terms]
       in with the given [layout]. *)
@@ -171,17 +190,17 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_definition fmt
       ({ Relation.name; property; input; output } as def) =
     let input_vars = vars_of_opt_named_type_terms input in
-    let output_vars = List.map vars_of_type_term output |> List.concat in
+    let output_vars = Utils.list_concat_map vars_of_type_term output in
     let vars = input_vars @ output_vars in
     let instantiated_prose_description =
       substitute_spec_vars_by_latex_vars ~math_mode:true
         (Relation.prose_description def)
         vars
       (* necessary to avoid spurious line breaks. *)
-      |> Latex.shrink_whitespace
+      |> StringOps.shrink_whitespace
     in
     let layout = Layout.math_layout_for_node (Node_Relation def) in
-    let hyperlink_target = hyperlink_target_for_id name in
+    let hyperlink_target = hypertarget_for_id name in
     let relation_property_description =
       match property with
       | RelationProperty_Relation -> "relation"
@@ -201,13 +220,50 @@ module Make (S : SPEC_VALUE) = struct
     let layout =
       match TypeVariant.math_layout variant with
       | Some layout -> layout
-      | None -> Layout.default_for_type_term term
+      | None -> Layout.for_type_term term
     in
     fprintf fmt "%a" pp_type_term (term, layout)
 
-  let pp_type_and_variants ?(is_first = true) ?(is_last = true) fmt
-      ({ Type.type_kind; Type.name }, variants) =
-    let hyperlink_target = hyperlink_target_for_id name in
+  (** [pp_typename_with_hypertarget fmt type_name] renders the type name
+      [type_name] along with its hypertarget. *)
+  let pp_typename_with_hypertarget fmt type_name =
+    let hyperlink_target = hypertarget_for_id type_name in
+    (* The hypertarget macro must come after the type name macro.
+       Otherwise LaTeX compilation fails. *)
+    fprintf fmt {|%a%a|} pp_id_as_macro type_name pp_mathhypertarget
+      hyperlink_target
+
+  (** [pp_variant_with_hypertarget fmt variant] renders the variant [variant]
+      along with its hypertarget. *)
+  let pp_variant_with_hypertarget fmt ({ TypeVariant.term } as variant) =
+    let variant_name_opt = Spec.variant_to_label_opt variant in
+    let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
+    match term with
+    | LabelledRecord { fields } ->
+        (* Records are a special case, since each field has its own hypertarget. *)
+        let field_hyperlink_targets =
+          List.map
+            (fun { name_and_type = field_name, _; _ } ->
+              hypertarget_for_id field_name)
+            fields
+        in
+        fprintf fmt {|%a%a%a|}
+          (Format.pp_print_option pp_mathhypertarget)
+          hyperlink_target_opt
+          (PP.pp_sep_list ~sep:"" pp_mathhypertarget)
+          field_hyperlink_targets pp_variant variant
+    | _ ->
+        fprintf fmt {|%a%a|} pp_variant variant
+          (Format.pp_print_option pp_mathhypertarget)
+          hyperlink_target_opt
+
+  (** [pp_type_and_variants ~is_first ~is_last fmt (type_def, variants)] renders
+      the type definition [type_def] along with its list of variants [variants]
+      using the formatter [fmt]. The boolean flags [is_first] and [is_last]
+      indicate whether this is the first or last type in a list of types being
+      rendered. *)
+  let pp_type_and_variants ?(lhs_hypertargets = true) ?(is_first = true)
+      ?(is_last = true) fmt ({ Type.type_kind; Type.name }, variants) =
     let equality_symbol, join_symbol =
       match type_kind with
       | TypeKind_AST -> ({|\derives|}, "|")
@@ -218,52 +274,35 @@ module Make (S : SPEC_VALUE) = struct
       | [] -> (* Expected to be called with non-empty list *) assert false
       | first_variant :: variants_tail -> (first_variant, variants_tail)
     in
-    let variant_hyperlink_targets =
-      List.map
-        (fun variant ->
-          let variant_name_opt = Spec.variant_to_label_opt variant in
-          Option.map
-            (fun variant_name -> hyperlink_target_for_id variant_name)
-            variant_name_opt)
-        variants
-    in
-    let hd_hypertarget_opt = List.hd variant_hyperlink_targets in
-    let tl_variant_hypertarget_opts =
-      Utils.list_tl_or_empty variant_hyperlink_targets
-    in
     let _render_begin_flalign =
       if is_first then fprintf fmt {|@.\begin{flalign*}|} else ()
     in
     let _render_newline = if not is_first then fprintf fmt {|\\|} else () in
+    let pp_typename =
+      if lhs_hypertargets then pp_typename_with_hypertarget else pp_id_as_macro
+    in
     let _first_line =
-      fprintf fmt {|@.%a%a %s\ & %a%a|} pp_id_as_macro name pp_texthypertarget
-        hyperlink_target equality_symbol
-        (Format.pp_print_option pp_mathhypertarget)
-        hd_hypertarget_opt pp_variant first_variant
+      fprintf fmt {|@.%a %s\ & %a|} pp_typename name equality_symbol
+        pp_variant_with_hypertarget first_variant
     in
     let _add_latex_line_break_only_if_more_variants =
       if List.length variants > 1 then fprintf fmt {|\\@.|}
       else fprintf fmt {|@.|}
     in
-    let variant_and_hypertargets =
-      List.combine variants_tail tl_variant_hypertarget_opts
-    in
-    let num_variants_tail = List.length variant_and_hypertargets in
+    let num_variants_tail = List.length variants_tail in
     let _render_variants_tail =
       List.iteri
-        (fun counter (variant_opt, hyptarget_opt) ->
+        (fun counter variant ->
           let () =
-            fprintf fmt {|@[<h>%s\ & %a@,%a@]|} join_symbol pp_variant
-              variant_opt
-              (Format.pp_print_option pp_mathhypertarget)
-              hyptarget_opt
+            fprintf fmt {|@[<h>%s\ & %a@]|} join_symbol
+              pp_variant_with_hypertarget variant
           in
           let _add_latex_line_break_except_on_last_line =
             if counter < num_variants_tail - 1 then fprintf fmt {|\\@.|}
             else fprintf fmt {||}
           in
           ())
-        variant_and_hypertargets
+        variants_tail
     in
     let _end_flalign = if is_last then fprintf fmt {|\end{flalign*}|} else () in
     ()
@@ -271,7 +310,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_basic_type fmt basic_type] renders the basic type (a type with no
       variants) [basic_type] with the formatter [fmt]. *)
   let pp_basic_type fmt { Type.name } =
-    let hyperlink_target = hyperlink_target_for_id name in
+    let hyperlink_target = hypertarget_for_id name in
     fprintf fmt {|%a$%a$|} pp_texthypertarget hyperlink_target pp_id_as_macro
       name
 
@@ -300,8 +339,8 @@ module Make (S : SPEC_VALUE) = struct
       definitions [pointer] with the formatter [fmt]. The boolean flags
       [is_first] and [is_last] indicate whether this is the first or last
       pointer in a list of pointers being rendered. *)
-  let pp_pointer ~is_first ~is_last fmt { TypesRender.type_name; variant_names }
-      =
+  let pp_pointer ~lhs_hypertargets ~is_first ~is_last fmt
+      { TypesRender.type_name; variant_names } =
     let ({ Type.variants } as def) =
       match Spec.defining_node_for_id S.spec type_name with
       | Node_Type def -> def
@@ -320,20 +359,25 @@ module Make (S : SPEC_VALUE) = struct
             | _ -> assert false)
           variant_names
     in
-    pp_type_and_variants ~is_first ~is_last fmt (def, selected_variants)
+    pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
+      (def, selected_variants)
 
   (** [pp_pointers fmt pointers] renders [pointers] - a list of subsets of type
       definitions - with the formatter [fmt]. *)
-  let pp_pointers fmt pointers =
+  let pp_pointers ~lhs_hypertargets fmt pointers =
     let num_pointers = List.length pointers in
     List.iteri
       (fun i pointer ->
-        pp_pointer ~is_first:(i = 0) ~is_last:(i = num_pointers - 1) fmt pointer)
+        pp_pointer ~lhs_hypertargets ~is_first:(i = 0)
+          ~is_last:(i = num_pointers - 1)
+          fmt pointer)
       pointers
 
   (** [pp_render_types fmt render_types] renders the named list of subsets of
       type definitions [render_types] with the formatter [fmt]. *)
-  let pp_render_types fmt { TypesRender.pointers } = pp_pointers fmt pointers
+  let pp_render_types fmt ({ TypesRender.pointers } as def) =
+    let lhs_hypertargets = TypesRender.lhs_hypertargets def in
+    pp_pointers ~lhs_hypertargets fmt pointers
 
   (** [pp_render_types_macro fmt def] renders the LaTeX wrapper macro
       [\DefineRenderTypes{name}{...}] around the rendering of a list of subsets
@@ -406,7 +450,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_id_macro fmt id] renders the LaTeX macro corresponding to the element
       defined for [id] with the formatter [fmt]. *)
   let pp_id_macro fmt id =
-    let hyperlink_target = hyperlink_target_for_id id in
+    let hyperlink_target = hypertarget_for_id id in
     let node = Spec.defining_node_for_id S.spec id in
     let font_for_type_kind = function
       | TypeKind_Generic -> Latex.TextSF
@@ -419,6 +463,7 @@ module Make (S : SPEC_VALUE) = struct
       | Node_TypeVariant { TypeVariant.type_kind } ->
           font_for_type_kind type_kind
       | Node_Constant _ -> Latex.TextSF
+      | Node_RecordField _ -> Latex.TextSF
     in
     if Option.is_some (Spec.math_macro_opt_for_node node) then ()
     else

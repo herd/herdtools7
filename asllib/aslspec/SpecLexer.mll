@@ -31,27 +31,28 @@ rule token = parse
                                }
 
     (* Keywords *)
-    | "ast"               { AST }
-    | "constant"          { CONSTANT }
-    | "constants_set"     { CONSTANTS_SET }
-    | "function"          { FUNCTION }
-    | "list0"             { LIST0 }
-    | "list1"             { LIST1 }
-    | "math_macro"        { MATH_MACRO }
-    | "math_layout"       { MATH_LAYOUT }
-    | "option"            { OPTION }
-    | "fun"               { FUN }
-    | "partial"           { PARTIAL }
-    | "powerset"          { POWERSET }
-    | "powerset_finite"   { POWERSET_FINITE }
-    | "prose_application" { PROSE_APPLICATION }
-    | "prose_description" { PROSE_DESCRIPTION }
-    | "relation"          { RELATION }
-    | "render"            { RENDER }
-    | "semantics"         { SEMANTICS }
+    | "ast"                 { AST }
+    | "constant"            { CONSTANT }
+    | "constants_set"       { CONSTANTS_SET }
+    | "function"            { FUNCTION }
+    | "list0"               { LIST0 }
+    | "list1"               { LIST1 }
+    | "math_macro"          { MATH_MACRO }
+    | "math_layout"         { MATH_LAYOUT }
+    | "lhs_hypertargets"    { LHS_HYPERTARGETS }
+    | "option"              { OPTION }
+    | "fun"                 { FUN }
+    | "partial"             { PARTIAL }
+    | "powerset"            { POWERSET }
+    | "powerset_finite"     { POWERSET_FINITE }
+    | "prose_application"   { PROSE_APPLICATION }
+    | "prose_description"   { PROSE_DESCRIPTION }
+    | "relation"            { RELATION }
+    | "render"              { RENDER }
+    | "semantics"           { SEMANTICS }
     | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
-    | "typedef"           { TYPEDEF }
-    | "typing"            { TYPING }
+    | "typedef"             { TYPEDEF }
+    | "typing"              { TYPING }
 
     (* Punctuation and operators *)
     | ','            { COMMA }

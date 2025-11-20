@@ -12,7 +12,11 @@
 \newcommand\B[0]{ \hyperlink{type-B}{\textsf{B}} } % Generated from B
 \newcommand\C[0]{ \hyperlink{type-C}{\textsf{C}} } % Generated from C
 \newcommand\Rec[0]{ \hyperlink{type-Rec}{\textsf{Rec}} } % Generated from Rec
+\newcommand\FIELDanonf[0]{ \hyperlink{recordfield-anonf}{\textsf{anon\_f}} } % Generated from anon_f
+\newcommand\FIELDanong[0]{ \hyperlink{recordfield-anong}{\textsf{anon\_g}} } % Generated from anon_g
 \newcommand\LRec[0]{ \hyperlink{type-LRec}{\textsf{LRec}} } % Generated from LRec
+\newcommand\FIELDf[0]{ \hyperlink{recordfield-f}{\textsf{f}} } % Generated from f
+\newcommand\FIELDg[0]{ \hyperlink{recordfield-g}{\textsf{g}} } % Generated from g
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
 \newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
@@ -29,7 +33,7 @@
 
 \DefineType{B}{
 \begin{flalign*}
-\B\texthypertarget{type-B} \triangleq\ & \mathhypertarget{type-C}\C\\
+\B\mathhypertarget{type-B} \triangleq\ & \C\mathhypertarget{type-C}\\
 \cup\ & \pow{\Int}\\
 \cup\ & \Option{\Int}\\
 \cup\ & \KleeneStar{\Int}\\
@@ -40,18 +44,18 @@
 \cup\ & \{\One, \Two\}\\
 \cup\ & \left(\Int, \Int\right)\\
 \cup\ & \Rec\left(\Int, \Int\right)\mathhypertarget{type-Rec}\\
-\cup\ & \left\{\begin{array}{lcl}
-               \text{f} & : & \Int\\
-               \text{g} & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
-               \end{array}\right\}\\
-\cup\ & \LRec\left\{\begin{array}{lcl}
-                    \text{f} & : & \Rec\left(\Int, \Int\right)\\
-                    \text{g} & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
-                    \end{array}\right\}\mathhypertarget{type-LRec}\end{flalign*}} % EndDefineType
+\cup\ & \mathhypertarget{recordfield-anonf}\mathhypertarget{recordfield-anong}\left\{\begin{array}{lcl}
+                                                                    \FIELDanonf & : & \Int\\
+                                                                    \FIELDanong & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
+                                                                    \end{array}\right\}\\
+\cup\ & \mathhypertarget{type-LRec}\mathhypertarget{recordfield-f}\mathhypertarget{recordfield-g}\LRec\left\{\begin{array}{lcl}
+                                                                    \FIELDf & : & \Rec\left(\Int, \Int\right)\\
+                                                                    \FIELDg & : & \left(\Int, \Int\right) \rightarrow \pow{\Int}
+                                                                    \end{array}\right\}\end{flalign*}} % EndDefineType
 
 \DefineType{expr}{
 \begin{flalign*}
-\expr\texthypertarget{ast-expr} \derives\ & \mathhypertarget{ast-Number}\Number\left(\overtext{\Int}{\texttt{v}}\right)\\
+\expr\mathhypertarget{ast-expr} \derives\ & \Number\left(\overtext{\Int}{\texttt{v}}\right)\mathhypertarget{ast-Number}\\
 |\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 

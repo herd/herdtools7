@@ -10,8 +10,151 @@ let stack_spec_error msg extra_msg =
   let full_msg = Printf.sprintf "%s\n%s" msg extra_msg in
   raise (SpecError full_msg)
 
-(** The kind of a type, either generic or AST-specific. *)
+(** Specifies a visual layout for a compound term. *)
+type layout =
+  | Unspecified
+      (** No specific layout, appropriate for atomic terms and terms with
+          singleton lists. *)
+  | Horizontal of layout list
+      (** Specifies a horizontal layout for terms where the layout for each term
+          is specified individually. *)
+  | Vertical of layout list
+      (** Specifies a vertical layout for terms where the layout for each term
+          is specified individually. *)
 
+(** A module for totally ordered attribute keys. *)
+module AttributeKey = struct
+  type t =
+    | Prose_Description
+        (** A description of the element in prose with template variables in the
+            format [{var}]. *)
+    | Prose_Application
+        (** A description of the element in prose, describing its application in
+            an inference rule premise. Can contain template variables in the
+            format [{var}]. *)
+    | Math_Macro  (** A LaTeX macro name for the element. *)
+    | Math_Layout  (** The visual layout of the element. *)
+    | Short_Circuit_Macro
+        (** A LaTeX macro name to succinctly denote any value of a type [T].
+            This is used to denote the short-circuit result of a relation
+            application yielding a value of type [T]. *)
+    | LHS_Hypertargets
+        (** An attribute for [TypesRender] elements indicating whether
+            hypertargets should be generated for the LHS of type definitions in
+            the rendered output. *)
+
+  (* A total ordering on attribute keys. *)
+  let compare a b =
+    let key_to_int = function
+      | Prose_Description -> 0
+      | Prose_Application -> 1
+      | Math_Macro -> 2
+      | Math_Layout -> 3
+      | Short_Circuit_Macro -> 4
+      | LHS_Hypertargets -> 5
+    in
+    let a_int = key_to_int a in
+    let b_int = key_to_int b in
+    Int.compare a_int b_int
+
+  (** Converts an attribute key with the same string as the corresponding token.
+  *)
+  let to_str = function
+    | Prose_Description -> "prose_description"
+    | Prose_Application -> "prose_application"
+    | Math_Macro -> "math_macro"
+    | Math_Layout -> "math_layout"
+    | Short_Circuit_Macro -> "short_circuit_macro"
+    | LHS_Hypertargets -> "lhs_hypertargets"
+end
+
+(** A value associated with an attribute key. *)
+type attribute =
+  | StringAttribute of string
+  | MathMacroAttribute of string
+  | MathLayoutAttribute of layout
+  | BoolAttribute of bool
+
+(** A module for associating attributes with attribute keys. *)
+module Attributes = struct
+  include Map.Make (AttributeKey)
+
+  type 'a map = 'a t
+  (** Shadows [Map.t] with a string-to-string map type. *)
+
+  type nonrec t = attribute t
+
+  let check_definition_name name =
+    let () = assert (String.length name > 0) in
+    let id_regexp = Str.regexp "^[A-Za-z_']+$" in
+    if not (Str.string_match id_regexp name 0) then
+      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
+      raise (SpecError msg)
+
+  (** Shadows [of_list] by raising a [SpecError] exception on pairs containing
+      the same key. *)
+  let of_list pairs =
+    List.fold_left
+      (fun acc_map (k, v) ->
+        if mem k acc_map then
+          let msg =
+            Format.sprintf "Duplicate attribute: '%s'" (AttributeKey.to_str k)
+          in
+          raise (SpecError msg)
+        else add k v acc_map)
+      empty pairs
+
+  (** Helper functions for typed attribute access *)
+
+  (** [find_string key attrs] returns [Some s] if [key] maps to a
+      [StringAttribute s] in [attrs], [None] otherwise. *)
+  let find_string key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> Some s
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [get_string key attrs] returns the string value for [key] in [attrs], or
+      [""] if not found. *)
+  let get_string_or_empty key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> s
+    | Some _ -> assert false
+    | _ -> ""
+
+  (** [get_string_exn key attrs] returns the string value for [key] in [attrs],
+      or raises [Assert_failure] if not found or wrong type. *)
+  let get_string_exn key attrs =
+    match find_opt key attrs with
+    | Some (StringAttribute s) -> s
+    | _ -> assert false
+
+  (** [find_math_macro key attrs] returns [Some s] if [key] is bound to the math
+      macro [s], and [None] otherwise. *)
+  let find_math_macro key attrs =
+    match find_opt key attrs with
+    | Some (MathMacroAttribute s) -> Some s
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [find_layout key attrs] returns [Some layout] if [key] is bound to
+      [layout] in [attrs], and [None] otherwise. *)
+  let find_layout key attrs =
+    match find_opt key attrs with
+    | Some (MathLayoutAttribute layout) -> Some layout
+    | Some _ -> assert false
+    | _ -> None
+
+  (** [get_bool key ~default attrs] returns the bool value for [key] in [attrs],
+      or [default] if not found. *)
+  let get_bool key ~default attrs =
+    match find_opt key attrs with
+    | Some (BoolAttribute b) -> b
+    | Some _ -> assert false
+    | _ -> default
+end
+
+(** The kind of a type, either generic or AST-specific. *)
 type type_kind = TypeKind_Generic | TypeKind_AST
 
 (** A unary operator that transforms one type into another. *)
@@ -44,10 +187,7 @@ type type_term =
           components. An unlabelled tuple containing a single term is a special
           case - its domain is the domain of that term; this serves to reference
           types defined elsewhere. *)
-  | LabelledRecord of {
-      label_opt : string option;
-      fields : named_type_term list;
-    }
+  | LabelledRecord of { label_opt : string option; fields : record_field list }
       (** A set containing all optionally-labelled records formed by the given
           fields. *)
   | ConstantsSet of string list
@@ -66,6 +206,9 @@ and named_type_term = string * type_term
 and opt_named_type_term = string option * type_term
 (** A term optionally associated with a variable name. *)
 
+and record_field = { name_and_type : named_type_term; att : Attributes.t }
+(** A field of a record type. *)
+
 (** [make_type_operation op term] Constructs a type term in which [op] is
     applied to [term]. *)
 let make_type_operation op term = TypeOperator { op; term }
@@ -79,102 +222,27 @@ let make_tuple components = LabelledTuple { label_opt = None; components }
 let make_labelled_tuple label components =
   LabelledTuple { label_opt = Some label; components }
 
+let make_record_field named_type_term attributes =
+  let att = Attributes.of_list attributes in
+  { name_and_type = named_type_term; att }
+
 (** [make_record fields] Constructs an unlabelled record with fields [fields].
 *)
 let make_record fields = LabelledRecord { label_opt = None; fields }
 
-(** [make_labelled_record label fields] Constructs a record labelled [label] and
-    fields [fields]. *)
+let field_type { name_and_type = _, field_type; _ } = field_type
+let field_name { name_and_type = name, _; _ } = name
+
+let record_field_math_macro { att } =
+  Attributes.find_math_macro AttributeKey.Math_Macro att
+
+let record_field_prose_description { att } =
+  Attributes.get_string_or_empty AttributeKey.Prose_Description att
+
+(** [make_labelled_record label fields] Constructs a record labelled [label]
+    with fields [fields]. *)
 let make_labelled_record label fields =
   LabelledRecord { label_opt = Some label; fields }
-
-(** Specifies a visual layout for a compound term. *)
-type layout =
-  | Unspecified
-      (** No specific layout, appropriate for atomic terms and terms with
-          singleton lists. *)
-  | Horizontal of layout list
-      (** Specifies a horizontal layout for terms where the layout for each term
-          is specified individually. *)
-  | Vertical of layout list
-      (** Specifies a vertical layout for terms where the layout for each term
-          is specified individually. *)
-
-(** A module for totally ordered attribute keys. *)
-module AttributeKey = struct
-  type t =
-    | Prose_Description
-        (** A description of the element in prose with template variables in the
-            format [{var}]. *)
-    | Prose_Application
-        (** A description of the element in prose, describing its application in
-            an inference rule premise. Can contain template variables in the
-            format [{var}]. *)
-    | Math_Macro  (** A LaTeX macro name for the element. *)
-    | Math_Layout  (** The visual layout of the element. *)
-    | Short_Circuit_Macro
-        (** A LaTeX macro name to succinctly denote any value of a type [T].
-            This is used to denote the short-circuit result of a relation
-            application yielding a value of type [T]. *)
-
-  (* A total ordering on attribute keys. *)
-  let compare a b =
-    let key_to_int = function
-      | Prose_Description -> 0
-      | Prose_Application -> 1
-      | Math_Macro -> 2
-      | Math_Layout -> 3
-      | Short_Circuit_Macro -> 4
-    in
-    let a_int = key_to_int a in
-    let b_int = key_to_int b in
-    Int.compare a_int b_int
-
-  (** Converts an attribute key with the same string as the corresponding token.
-  *)
-  let to_str = function
-    | Prose_Description -> "prose_description"
-    | Prose_Application -> "prose_application"
-    | Math_Macro -> "math_macro"
-    | Math_Layout -> "math_layout"
-    | Short_Circuit_Macro -> "short_circuit_macro"
-end
-
-(** A value associated with an attribute key. *)
-type attribute =
-  | StringAttribute of string
-  | MathMacroAttribute of string
-  | MathLayoutAttribute of layout
-
-(** A module for associating attributes with attribute keys. *)
-module Attributes = struct
-  include Map.Make (AttributeKey)
-
-  type 'a map = 'a t
-  (** Shadows [Map.t] with a string-to-string map type. *)
-
-  type nonrec t = attribute t
-
-  let check_definition_name name =
-    let () = assert (String.length name > 0) in
-    let id_regexp = Str.regexp "^[A-Za-z_']+$" in
-    if not (Str.string_match id_regexp name 0) then
-      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
-      raise (SpecError msg)
-
-  (** Shadows [of_list] by raising a [SpecError] exception on pairs containing
-      the same key. *)
-  let of_list pairs =
-    List.fold_left
-      (fun acc_map (k, v) ->
-        if mem k acc_map then
-          let msg =
-            Format.sprintf "Duplicate attribute: '%s'" (AttributeKey.to_str k)
-          in
-          raise (SpecError msg)
-        else add k v acc_map)
-      empty pairs
-end
 
 (** A datatype for a constant definition. *)
 module Constant : sig
@@ -194,14 +262,10 @@ end = struct
   let make name attributes = { name; att = Attributes.of_list attributes }
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> assert false
+    Attributes.get_string_exn AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
@@ -227,19 +291,13 @@ end = struct
   let attributes_to_list self = bindings self.att
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for a type definition. *)
@@ -294,24 +352,16 @@ end = struct
   let attributes_to_list self = Attributes.bindings self.att
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let short_circuit_macro self =
-    match find_opt AttributeKey.Short_Circuit_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Short_Circuit_Macro self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for a relation definition. *)
@@ -382,44 +432,62 @@ end = struct
   open Attributes
 
   let prose_description self =
-    match Attributes.find_opt AttributeKey.Prose_Description self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
-    match find_opt AttributeKey.Math_Macro self.att with
-    | Some (MathMacroAttribute s) -> Some s
-    | _ -> None
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let prose_application self =
-    match find_opt AttributeKey.Prose_Application self.att with
-    | Some (StringAttribute s) -> s
-    | _ -> ""
+    Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
 
   let math_layout self =
-    match find_opt AttributeKey.Math_Layout self.att with
-    | Some (MathLayoutAttribute layout) -> Some layout
-    | _ -> None
+    Attributes.find_layout AttributeKey.Math_Layout self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)
 module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type t = { name : string; pointers : type_subset_pointer list }
 
-  val make : string -> (string * string list) list -> t
+  type t = {
+    name : string;
+    pointers : type_subset_pointer list;
+    att : Attributes.t;
+  }
+
+  val make :
+    string ->
+    (string * string list) list ->
+    (AttributeKey.t * attribute) list ->
+    t
+
+  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+
+  val lhs_hypertargets : t -> bool
+  (** Whether hypertargets should be generated for the LHS of type definitions
+      in the rendered output. *)
 end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
-  type t = { name : string; pointers : type_subset_pointer list }
 
-  let make name pointer_pairs =
+  type t = {
+    name : string;
+    pointers : type_subset_pointer list;
+    att : Attributes.t;
+  }
+
+  let make name pointer_pairs attributes =
     {
       name;
       pointers =
         List.map
           (fun (type_name, variant_names) -> { type_name; variant_names })
           pointer_pairs;
+      att = Attributes.of_list attributes;
     }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  let lhs_hypertargets self =
+    Attributes.get_bool AttributeKey.LHS_Hypertargets ~default:true self.att
 end
 
 (** The top-level elements of a specification. *)

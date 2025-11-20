@@ -103,25 +103,26 @@ the \staticenvironmentterm{} $\tenv$, defined as follows:
 \]
 is transformed into the dynamic environment $\env$, defined as follows:
 \[
-( \overname{\{\vHALFWORDSIZE \mapsto \nvint(32)\}}{G^\env}, \overname{\emptyfunc}{L^\env}) \enspace.
+\{ \dynamicenvsG: \{\vHALFWORDSIZE \mapsto \nvint(32)\}, \dynamicenvsL: \emptyfunc \} \enspace.
 \]
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
   \item define the global dynamic environment $\vglobal$ as the map that binds
-        each $\id$ in the domain of $G^\tenv.\constantvalues$ to $\NVLiteral(\vl)$
-        if $G^\tenv.\constantvalues(\id) = \vl$;
+        each $\id$ in the domain of $\tenv.\staticenvsG.\constantvalues$ to $\NVLiteral(\vl)$
+        if \\
+        $\tenv.\staticenvsG.\constantvalues(\id) = \vl$;
   \item define the local dynamic environment $\vlocal$ as the empty map;
   \item define the environment $\env$ to have the static component $\tenv$ and the dynamic
-        environment $(\vglobal, \vlocal)$;
+        environment $\{\dynamicenvsG: \vglobal, \dynamicenvsL: \vlocal\}$;
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vglobal \eqdef [\id \mapsto \NVLiteral(\vl) \;|\; G^\tenv.\constantvalues(\id) = \vl]\\
+  \vglobal \eqdef [\id \mapsto \NVLiteral(\vl) \;|\; \tenv.\staticenvsG.\constantvalues(\id) = \vl]\\
   \vlocal \eqdef \emptyfunc
 }{
-  \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, (\vglobal, \vlocal))}{\env}
+  \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, \{\dynamicenvsG: \vglobal, \dynamicenvsL: \vlocal\})}{\env}
 }
 \end{mathpar}

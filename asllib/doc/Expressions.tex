@@ -208,7 +208,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\localstoragetypes(\vx) =  (\vt, k) \\
+  \tenv.\staticenvsL.\localstoragetypes(\vx) =  (\vt, k) \\
   \sesldk(k) \typearrow \vses
 }{
   \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
@@ -217,9 +217,9 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 
 \begin{mathpar}
 \inferrule[global\_constant]{
-  L^\tenv.\localstoragetypes(\vx) = \bot \\
-  G^\tenv.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
-  G^\tenv.\constantvalues(\vx) = \vv
+  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
+  \tenv.\staticenvsG.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
+  \tenv.\staticenvsG.\constantvalues(\vx) = \vv
 }{
   \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\eliteral{\vv}}{\newe}, \overname{\emptyset}{\vses})
 }
@@ -227,9 +227,9 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 
 \begin{mathpar}
 \inferrule[global\_non\_constant]{
-  L^\tenv.\localstoragetypes(\vx) = \bot \\
-  G^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
-  G^\tenv.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
+  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
+  \tenv.\staticenvsG.\globalstoragetypes(\vx) = (\tty, k)\\
+  \tenv.\staticenvsG.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
   \sesgdk(k) \typearrow \vses
 }{
   \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
@@ -238,8 +238,8 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
-  L^\tenv.\localstoragetypes(\vx) = \bot \\
-  G^\tenv.\globalstoragetypes(\vx) = \bot
+  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
+  \tenv.\staticenvsG.\globalstoragetypes(\vx) = \bot
 }{
   \annotateexpr(\tenv,\overname{\EVar(\vx)}{\ve}) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -285,18 +285,18 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \begin{mathpar}
 \inferrule[local]{
   \env \eqname (\Ignore, \denv)\\
-  \vx \in \dom(L^\denv)
+  \vx \in \dom(\denv.\dynamicenvsL)
 }{
-  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{L^\denv(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsL(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[global]{
   \env \eqname (\Ignore, \denv)\\
-  \vx \in \dom(G^\denv.\storage)
+  \vx \in \dom(\denv.\dynamicenvsG.\storage)
 }{
-  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{G^\denv.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
+  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsG.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
@@ -2245,8 +2245,8 @@ All of the collection field expressions in
 \begin{mathpar}
 \inferrule{
   \env \eqname (\Ignore, \denv)\\
-  \vbase \in \dom(G^\denv.\storage) \\
-  \vv \eqdef G^\denv.\storage(\vbase) \\
+  \vbase \in \dom(\denv.\dynamicenvsG.\storage) \\
+  \vv \eqdef \denv.\dynamicenvsG.\storage(\vbase) \\
   \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \\
   \vg \eqdef \left\{ \fieldname\in\vfieldnames: \ReadEffect(\vbase + \ttdotstr + \fieldname) \right\} \\
   \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \evalarrow \vv \\
@@ -3306,7 +3306,6 @@ no rules for building the AST for such expressions nor rules for typechecking th
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_array}
-
 
 \subsection{Semantics}
 

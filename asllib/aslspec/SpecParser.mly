@@ -12,6 +12,14 @@ let check_definition_name name =
    if not (Str.string_match id_regexp name 0) then
      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
      raise (SpecError msg)
+
+let bool_of_string s =
+  match String.lowercase_ascii s with
+  | "true" -> true
+  | "false" -> false
+  | _ ->
+      let msg = Format.sprintf "expected boolean string (true/false), got: %s" s in
+      raise (SpecError msg)
 %}
 
 %type <AST.t> spec
@@ -31,6 +39,7 @@ let check_definition_name name =
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
+%token LHS_HYPERTARGETS
 %token OPTION
 %token PARTIAL
 %token POWERSET
@@ -214,8 +223,8 @@ let type_term :=
     | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
         LabelledTuple {label_opt = Some label; components} }
-    | LBRACKET; fields=tclist1(named_type_term); RBRACKET; { make_record fields }
-    | label=IDENTIFIER; LBRACKET; fields=tclist1(named_type_term); RBRACKET;
+    | LBRACKET; fields=tclist1(record_field); RBRACKET; { make_record fields }
+    | label=IDENTIFIER; LBRACKET; fields=tclist1(record_field); RBRACKET;
     {   check_definition_name label;
         make_labelled_record label fields }
     | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
@@ -236,6 +245,9 @@ let opt_named_type_term ==
     | name=IDENTIFIER; COLON; ~=type_term; { (Some name, type_term) }
     | ~=type_term; { (None, type_term) }
 
+let record_field := ~=named_type_term; ~=type_attributes;
+    { make_record_field named_type_term type_attributes }
+
 let math_layout :=
     | IDENTIFIER; { Unspecified }
     | LPAR; inner=clist0(math_layout); RPAR; { Horizontal inner }
@@ -244,10 +256,20 @@ let math_layout :=
     | IDENTIFIER; LBRACKET; inner=clist0(math_layout); RBRACKET; { Vertical inner }
 
 let render_types :=
-    RENDER; name=IDENTIFIER; EQ; pointers=clist1(type_subset_pointer);
+    RENDER; name=IDENTIFIER; ~=render_types_attributes; EQ; pointers=clist1(type_subset_pointer);
     {   check_definition_name name;
-        Elem_RenderTypes (TypesRender.make name pointers) }
+        Elem_RenderTypes (TypesRender.make name pointers render_types_attributes) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
     | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }
+
+let render_types_attributes ==
+    | { [] }
+    | LBRACE; pairs=tclist0(render_types_attribute); RBRACE; { pairs }
+
+let render_types_attribute :=
+    | lhs_hypertargets
+
+let lhs_hypertargets ==
+    | LHS_HYPERTARGETS; EQ; value=IDENTIFIER;{ (LHS_Hypertargets, BoolAttribute (bool_of_string value)) }

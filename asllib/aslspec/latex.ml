@@ -12,19 +12,22 @@ let union_macro_name = "cup"
 (** A LaTeX underscore escape sequence. *)
 let escaped_underscore = {|\_|}
 
-let escape_underscores str =
-  Str.global_replace regex_underscore escaped_underscore str
+module StringOps = struct
+  let escape_underscores str =
+    Str.global_replace regex_underscore escaped_underscore str
 
-let underscore_to_space str = Str.global_replace regex_underscore " " str
-let spec_var_to_prose var_str = underscore_to_space var_str
+  let remove_underscores str = Str.global_replace (Str.regexp_string "_") "" str
+  let underscore_to_space str = Str.global_replace regex_underscore " " str
+
+  let shrink_whitespace str =
+    let regexp_newline_segment = Str.regexp "[ \n\r]+" in
+    Str.global_replace regexp_newline_segment " " str
+end
+
+let spec_var_to_prose var_str = StringOps.underscore_to_space var_str
 let to_math_mode str = Printf.sprintf "$%s$" str
 let spec_var_to_template_var var_str = "{" ^ var_str ^ "}"
-let remove_underscores str = Str.global_replace (Str.regexp_string "_") "" str
 let ignore_macro = "\\Ignore"
-
-let shrink_whitespace str =
-  let regexp_newline_segment = Str.regexp "[ \n\r]+" in
-  Str.global_replace regexp_newline_segment " " str
 
 type font_type = Text | TextTT | TextSF | TextSC | TextIT
 
@@ -57,10 +60,10 @@ let spec_var_to_latex_var ~font_type var_str =
     in
     Format.asprintf "%a"
       (pp_one_arg_macro font_macro_name pp_print_string)
-      (escape_underscores var_str)
+      (StringOps.escape_underscores var_str)
 
 let elem_name_to_math_macro elem_name =
-  Format.asprintf "%a" pp_macro (remove_underscores elem_name)
+  Format.asprintf "%a" pp_macro (StringOps.remove_underscores elem_name)
 
 let pp_comma = fun fmt () -> fprintf fmt ", "
 
@@ -234,10 +237,12 @@ let pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name
         pp_rhs_with_layout rhs_with_layout
   | Unspecified -> assert false
 
-(** [pp_fields pp_field_value fmt (fields, layout)] formats [fields] with [fmt]
-    using [pp_field_value] and laid out according to [layout]. Each field is a
-    pair of a field name and a field value. *)
-let pp_fields pp_field_value fmt (fields, layout) =
+(** [pp_fields pp_field_name pp_field_value fmt (fields, layout)] formats
+    [fields] with [fmt] using [pp_field_name] to format each field name and
+    [pp_field_value] to format each field value. The fields are laid out
+    according to [layout]. Each field is a pair of a field name and a field
+    value. *)
+let pp_fields pp_field_name pp_field_value fmt (fields, layout) =
   let layout = LayoutUtils.vertical_if_unspecified layout fields in
   let field_layouts =
     match layout with
@@ -257,7 +262,7 @@ let pp_fields pp_field_value fmt (fields, layout) =
         List.map
           (fun (field_name, (fields_value, layout)) ->
             [
-              (fun fmt -> pp_print_string fmt (field_name_to_latex field_name));
+              (fun fmt -> pp_field_name fmt field_name);
               (fun fmt -> pp_print_string fmt ":");
               (fun fmt -> pp_field_value fmt (fields_value, layout));
             ])
@@ -268,9 +273,8 @@ let pp_fields pp_field_value fmt (fields, layout) =
         field_pp_funs
   | Horizontal _ ->
       let pp_field fmt (field_name, (fields_value, layout)) =
-        fprintf fmt {|%s : %a|}
-          (field_name_to_latex field_name)
-          pp_field_value (fields_value, layout)
+        fprintf fmt {|%a : %a|} pp_field_name field_name pp_field_value
+          (fields_value, layout)
       in
       fprintf fmt {|%a|}
         (pp_parenthesized Braces true (PP.pp_sep_list ~sep:", " pp_field))

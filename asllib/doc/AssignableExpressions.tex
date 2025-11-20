@@ -611,7 +611,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[local]{
-  L^\tenv.\localstoragetypes(\vx) = (\tty, k)\\
+  \tenv.\staticenvsL.\localstoragetypes(\vx) = (\tty, k)\\
   \techeck(k = \LDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \{\LocalEffect(\SEImpure), \Immutability(\False)\}
@@ -623,7 +623,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 
 \begin{mathpar}
 \inferrule[global]{
-  L^\tenv.\globalstoragetypes(\vx) = (\tty, k)\\
+  \tenv.\staticenvsL.\globalstoragetypes(\vx) = (\tty, k)\\
   \techeck(k = \GDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
   \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \{\GlobalEffect(\SEImpure), \Immutability(\False)\}
@@ -635,8 +635,8 @@ since \verb|x| is not defined as either a local storage element or as a global s
 
 \begin{mathpar}
 \inferrule[error\_undefined]{
-  L^\tenv.\localstoragetypes(\vx) = \bot\\
-  L^\tenv.\globalstoragetypes(\vx) = \bot
+  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot\\
+  \tenv.\staticenvsL.\globalstoragetypes(\vx) = \bot
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -669,14 +669,14 @@ In \listingref{semantics-leglobalvar},
     \begin{itemize}
         \item \AllApplyCase{local}
         \begin{itemize}
-            \item $\vx$ is in the local dynamic environment ($L^\denv$);
-            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local dynamic environment ($L^\denv$).
+            \item $\vx$ is in the local dynamic environment ($\denv.\dynamicenvsL$);
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the local dynamic environment ($\denv.\dynamicenvsL$).
         \end{itemize}
 
         \item \AllApplyCase{global}
         \begin{itemize}
-            \item $\vx$ is bound in the global dynamic environment ($G^\denv.\storage$);
-            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the $\storage$ map of the global dynamic environment $G^\denv$.
+            \item $\vx$ is bound in the global dynamic environment ($\denv.\dynamicenvsG.\storage$);
+            \item $\newenv$ is $\env$ where $\vx$ is bound to $\vv$ in the $\storage$ map of the global dynamic environment $\denv.\dynamicenvsG$.
         \end{itemize}
     \end{itemize}
     \item $\newg$ is the ordered composition of $\vg$ and a Write Effect for $\vx$ with the $\asldata$ edge;
@@ -686,8 +686,8 @@ In \listingref{semantics-leglobalvar},
 \begin{mathpar}
 \inferrule[local]{
   \env \eqname (\tenv, \denv)\\
-  \vx \in \dom(L^\denv)\\
-  \newenv \eqdef (\tenv, (G^\denv, L^\denv[\vx \mapsto \vv]))\\
+  \vx \in \dom(\denv.\dynamicenvsL)\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vx \mapsto \vv]\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
 }{
   \evallexpr(\env, \LEVar(\vx), (\vv, \vg)) \evalarrow \ResultLexpr(\newg,\newenv)
@@ -697,8 +697,8 @@ In \listingref{semantics-leglobalvar},
 \begin{mathpar}
 \inferrule[global]{
   \env \eqname (\tenv, \denv)\\
-  \vx \in \dom(G^\denv.\storage)\\
-  \newenv \eqdef(\tenv, (G^\denv.\storage[\vx \mapsto \vv], L^\denv))\\
+  \vx \in \dom(\denv.\dynamicenvsG.\storage)\\
+  \newenv \eqdef(\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG.\storage[\vx \mapsto \vv], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
 }{
   \evallexpr(\env, \LEVar(\vx), (\vv, \vg)) \evalarrow \ResultLexpr(\newg,\newenv)
@@ -1732,14 +1732,14 @@ All of the collection field assignable expressions in
     $\vslices$ is the same);
   \item view $\env$ as an environment where $\tenv$ is the \staticenvironmentterm{}
     and $\denv$ is the dynamic environment;
-  \item $\vbase$ is bound in the global dynamic environment ($G^\denv.\storage$);
+  \item $\vbase$ is bound in the global dynamic environment ($\denv.\dynamicenvsG.\storage$);
   \item $\record$ is the value of $\vbase$ in the global component of $\env$ ;
   \item applying $\assignbitvectorfields$ to $\vv$, $\record$,
     $\fields$, and $\vslices$, yields\\ $\recordone$\ProseOrError;
   \item \Proseeqdef{$\vgzero$}{the graph containing a Write Effect for each
     $\fieldname$ in $\fields$};
   \item $\newenv$ is $\env$ where $\vbase$ is bound to $\recordone$ in the $\storage$ map
-    of the global dynamic environment $G^\denv$.
+    of the global dynamic environment $\denv.\dynamicenvsG$.
   \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vg$
     and $\vgzero$;
 \end{itemize}
@@ -1749,11 +1749,11 @@ All of the collection field assignable expressions in
 \inferrule{
   \vle = \LESetCollectionFields(\vbase, \fields, \vslices)\\
   \env \eqname (\tenv, \denv)\\
-  \vbase \in \dom(G^\denv)\\
-  \record \eqdef G^\denv[\vbase]\\
+  \vbase \in \dom(\denv.\dynamicenvsG)\\
+  \record \eqdef \denv.\dynamicenvsG[\vbase]\\
   \assignbitvectorfields(\vv, \record, \fields, \vslices) \evalarrow \recordone \OrDynError\\\\
   \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
-  \newenv \eqdef (\tenv, (G^\denv[\vx \mapsto \recordone], L^\denv))\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG[\vx \mapsto \recordone], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
 }{
   \evallexpr(\env, \vle, (\vv,\vg)) \evalarrow \ResultLexpr(\newg,\newenv)

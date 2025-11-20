@@ -126,7 +126,6 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 \end{mathpar}
 
 \SemanticsRuleDef{RemoveLocal}
-\ProseParagraph
 \RenderRelation{remove_local}
 
 This relation is used to maintain the invariant that the dynamic environment
@@ -151,11 +150,12 @@ exn=TRUE
 \end{Verbatim}
 % CONSOLE_END
 
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
   \item $\newenv$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment
-  with the same global component as $\denv$ --- $G^\denv$, and local component $L^\denv$,
+  with the same global component as $\denv$ --- $\denv.\dynamicenvsG$, and local component $\denv.\dynamicenvsL$,
   with the identifier $\name$ removed from its domain.
 \end{itemize}
 
@@ -163,8 +163,8 @@ exn=TRUE
 (Recall that $[\name\mapsto\bot]$ means that $\name$ is not in the domain of the resulting function.)
 \begin{mathpar}
   \inferrule{
-    \env \eqname (\tenv, (G^\denv, L^\denv))\\
-    \newenv \eqdef (\tenv, (G^\denv, L^\denv[\name \mapsto \bot]))
+    \env \eqname (\tenv, \denv)\\
+    \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL:\denv.\dynamicenvsL[\name \mapsto \bot]\})
   }
   {
     \removelocal(\env, \name) \evalarrow \newenv
@@ -172,10 +172,7 @@ exn=TRUE
 \end{mathpar}
 
 \SemanticsRuleDef{ReadIdentifier}
-\ProseParagraph
 \RenderRelation{read_identifier}
-The value $\vv$ is ignored, as execution graphs do not contain values.
-
 
 \ExampleDef{The Effect of Reading from an Identifier}
 In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
@@ -186,6 +183,10 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 
 \ASLListing{A simple for loop}{ReadIdentifier}{\semanticstests/SemanticsRule.ReadIdentifier.asl}
 
+\ProseParagraph
+\ProseEqdef{The result \executiongraphterm{}}{a Read Effect on $\name$}.
+\ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{}
@@ -195,7 +196,6 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 \end{mathpar}
 
 \SemanticsRuleDef{WriteIdentifier}
-\ProseParagraph
 \RenderRelation{write_identifier}
 
 \ExampleDef{The Effect of Writing to an Identifier}
@@ -205,6 +205,10 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \[
 \writeidentifier(\vi, \nvint(1)) \evalarrow \WriteEffect(\vi) \enspace.
 \]
+
+\ProseParagraph
+\ProseEqdef{The result \executiongraphterm{}}{a Write Effect on $\name$}.
+\ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
 
 \FormallyParagraph
 \begin{mathpar}
@@ -629,7 +633,6 @@ involves the following premise:
 \end{mathpar}
 
 \SemanticsRuleDef{GetField}
-\ProseParagraph
 \RenderRelation{get_field}
 
 \ExampleDef{Reading a Record Field}
@@ -642,6 +645,9 @@ In \listingref{GetField}, there are the following examples of reading a record f
 \end{itemize}
 \ASLListing{Reading a record field}{GetField}{\semanticstests/SemanticsRule.GetField.asl}
 
+\ProseParagraph
+\Proseeqdef{$\vv$}{the value of field $\name$ in record $\record$}.
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -653,7 +659,6 @@ In \listingref{GetField}, there are the following examples of reading a record f
 The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{SetField}
-\ProseParagraph
 \RenderRelation{set_field}
 
 \ExampleDef{Writing to a Record Field}
@@ -687,6 +692,9 @@ In \listingref{GetField}, there are the following examples of writing to a recor
         $
 \end{itemize}
 
+\ProseParagraph
+\ProseEqdef{$\fieldmapp$}{the record value with the field map of $\record$ updated to bind $\name$ to $\vv$}.
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
@@ -699,7 +707,6 @@ In \listingref{GetField}, there are the following examples of writing to a recor
 The typechecker ensures that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{DeclareLocalIdentifier}
-\ProseParagraph
 \RenderRelation{declare_local_identifier}
 
 \ExampleDef{Evaluating Local Declarations}
@@ -707,14 +714,25 @@ In \listingref{semantics-levar}, evaluating \verb|var x: integer = 3;|
 binds \verb|x| to $\nvint(3)$ in the environment where \verb|x| is unbound
 as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item \Proseeqdef{\vg}{the execution graph consisting of a Write Effect on $\name$};
+  \item $\env$ is the environment consisting of the static environment $\tenv$
+        and the dynamic environment $\denv$;
+  \item \Proseeqdef{\newenv}{the environment $\env$ modified to declare the variable $\name$
+        as a local storage element bound to the value $\vv$}.
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
-  \inferrule{
-    \vg \eqdef \WriteEffect(\name)\\
-    \env \eqname (\tenv, (G^\denv, L^\denv))\\
-    \newenv \eqdef (\tenv, (G^\denv, L^\denv[\name\mapsto \vv]))
-  }
-  { \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)  }
+\inferrule{
+  \vg \eqdef \WriteEffect(\name)\\
+  \env \eqname (\tenv, \denv)\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\name\mapsto \vv]\})
+}{
+  \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)
+}
 \end{mathpar}
 
 \SemanticsRuleDef{DeclareLocalIdentifierM}

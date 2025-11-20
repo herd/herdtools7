@@ -380,7 +380,7 @@ since it contains recursive type declarations.
 \inferrule{
   \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\\\\
   \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
-  \envandfsone \eqdef [\DFunc(\vf)\in\decls: (L^{\tenv_\vf}, \vd_\vf, \vses_\vf)]\\
+  \envandfsone \eqdef [\DFunc(\vf)\in\decls: ({\tenv_\vf}.\staticenvsL, \vd_\vf, \vses_\vf)]\\
   \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
   {
     \begin{array}{r}
@@ -393,7 +393,7 @@ since it contains recursive type declarations.
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
   \addsubprogramdecls(\tenvtwo, \vsess) \typearrow \tenvthree
 }{
-  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{G^\tenvthree}{\newgenv})
+  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{\tenvthree.\staticenvsG}{\newgenv})
 }
 \end{mathpar}
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
@@ -463,7 +463,7 @@ of the subprogram declarations.
   \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
   \tenv \eqname (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \declaresubprograms(G^\tenvone, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
+  \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
 }{
   \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
@@ -493,7 +493,7 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vfuncs$ is the list with \head\ $(\vf, \vsesf)$ and \tail\ $\vfuncsone$;
-    \item applying $\addsubprogram$ to $\vf.\funcname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
+    \item applying $\addsubprogram$ to $\vf.\FIELDname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
     \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields $\newtenv$.
   \end{itemize}
 \end{itemize}
@@ -507,7 +507,7 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \addsubprogram(\tenv, \vf.\funcname, \vf, \vsesf) \typearrow \tenvone\\
+  \addsubprogram(\tenv, \vf.\FIELDname, \vf, \vsesf) \typearrow \tenvone\\
   \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow \newtenv
 }{
   \addsubprogramdecls(\tenv, \overname{[(\vf, \vsesf)] \concat \vfuncsone}{\vfuncs}) \typearrow
@@ -658,28 +658,28 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \FormallyParagraph
 \begin{mathpar}
   \inferrule{
-    \booltrans(\vfuncone.\funcname = \vfunctwo.\funcname) \booltransarrow \True \terminateas \False \\
+    \booltrans(\vfuncone.\FIELDname = \vfunctwo.\FIELDname) \booltransarrow \True \terminateas \False \\
     \booltrans(\vfuncone.\funcqualifierfield = \vfunctwo.\funcqualifierfield) \booltransarrow \True \terminateas \False \\
-    \equallength(\vfuncone.\funcargs, \vfunctwo.\funcargs) \typearrow \True \terminateas \False \\
+    \equallength(\vfuncone.\FIELDargs, \vfunctwo.\FIELDargs) \typearrow \True \terminateas \False \\
     {
     \begin{array}{r}
-      i \in \indices(\vfuncone.\funcargs),\;
-        \vfuncone.\funcargs[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\funcargs[i] \eqname (\idtwo, \ttytwo): \\
+      i \in \indices(\vfuncone.\FIELDargs),\;
+        \vfuncone.\FIELDargs[i] \eqname (\idone, \ttyone),\;
+        \vfunctwo.\FIELDargs[i] \eqname (\idtwo, \ttytwo): \\
         \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbone_{i}
     \end{array}
     } \\
-    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\funcargs)} \vbone_{i}) \booltransarrow \True \terminateas \False \\
+    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDargs)} \vbone_{i}) \booltransarrow \True \terminateas \False \\
     {
     \begin{array}{r}
-      i \in \indices(\vfuncone.\funcparameters), \hfill \\
-        \vfuncone.\funcparameters[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\funcparameters[i] \eqname (\idtwo, \ttytwo): \hfill \\
+      i \in \indices(\vfuncone.\FIELDparameters), \hfill \\
+        \vfuncone.\FIELDparameters[i] \eqname (\idone, \ttyone),\;
+        \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \hfill \\
         \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}
     \end{array}
     } \\
-    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\funcparameters)} \vbtwo_{i}) \booltransarrow \True \terminateas \False \\
-    \booltrans(\vfuncone.\funcreturntype = \vfunctwo.\funcreturntype) \booltransarrow \True \terminateas \False
+    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDparameters)} \vbtwo_{i}) \booltransarrow \True \terminateas \False \\
+    \booltrans(\vfuncone.\FIELDreturntype = \vfunctwo.\FIELDreturntype) \booltransarrow \True \terminateas \False
   }{
     \signaturesmatch(\vfuncone, \vfunctwo) \typearrow \True
   }
@@ -752,7 +752,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
     \begin{itemize}
       \item $\vdiscarded$ is a \Proselist{$\vh$}{$\vt$};
       \item \Proserenamesubprograms{$\vt$}{$\vtp$};
-      \item define $\vhp$ as $\vh$ with the $\funcname$ field updated to a fresh name;
+      \item define $\vhp$ as $\vh$ with the $\FIELDname$ field updated to a fresh name;
       \item the result is the concatenation of $\vhp$ and $\vtp$.
     \end{itemize}
 \end{itemize}
@@ -768,7 +768,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 \inferrule[non\_empty]{
   \renamesubprograms(\vt) \typearrow \vtp \\
   \name \in \Identifier \text{ is fresh} \\
-  \vhp \eqdef \vh[\funcname \mapsto \name] \\
+  \vhp \eqdef \vh[\FIELDname \mapsto \name] \\
 }{
   \renamesubprograms(\overname{[\vh] \concat \vt}{\vdiscarded}) \typearrow \overname{[\vhp] \concat \vtp}{\vrenameddiscarded}
 }
@@ -907,7 +907,7 @@ which appear in comments to their right.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[d\_func]{}{
-  \defdecl(\overname{\DFunc(\funcname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
+  \defdecl(\overname{\DFunc(\FIELDname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
 }
 \and
 \inferrule[d\_globalstorage]{}{
@@ -1027,10 +1027,10 @@ used by each global declaration via comments above it.
   \left\{
     \begin{array}{l}
     \funcbody: \body,\\
-    \funcargs: \vargs,\\
-    \funcreturntype: \rettyopt,\\
-    \funcparameters: \vparams,\\
-    \funcrecurselimit: \vrecurselimit,\\
+    \FIELDargs: \vargs,\\
+    \FIELDreturntype: \rettyopt,\\
+    \FIELDparameters: \vparams,\\
+    \FIELDrecurselimit: \vrecurselimit,\\
     \ldots\\
     \end{array}
   \right\}
@@ -2186,7 +2186,7 @@ results in a \dynamicerrorterm.
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\funcreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+      (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
   }\\\\
   \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultCall([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
@@ -2202,7 +2202,7 @@ results in a \dynamicerrorterm.
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\funcreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
+      (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
   }\\\\
   \evalsubprogram(\env, \namep, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging

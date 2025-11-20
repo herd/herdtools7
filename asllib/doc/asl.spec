@@ -220,10 +220,16 @@ ast expr { "expression" } =
 ////////////////////////////////////////////////
     | E_GetItem(base: expr, index: N)
     { "an access to tuple expression {base} of the component at index {index}" }
-    | E_Array[length: expr, value: expr]
-    { "array construction for an array of length given by {length} with all cells initialized with {value}" }
-    | E_EnumArray[labels: list1(Identifier), value: expr]
-    { "array construction for an array associating each label in {labels} with the value given by {value}" }
+    | E_Array[
+        length: expr,
+        array_value: expr { math_macro = \arrayvalue }
+      ]
+    { "array construction for an array of length given by {length} with all cells initialized with {array_value}" }
+    | E_EnumArray[
+        labels: list1(Identifier),
+        enum_array_value: expr { math_macro = \enumarrayvalue }
+      ]
+    { "array construction for an array associating each label in {labels} with the value given by {enum_array_value}" }
     | E_GetEnumArray(base: expr, key: expr)
     { "access to enumeration-indexed array {base} with key expression {key}" }
     | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
@@ -264,7 +270,7 @@ render expr_tuple = expr(E_Tuple);
 render expr_arbitrary = expr(E_Arbitrary);
 render expr_pattern = expr(E_Pattern);
 
-render typed_expr = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
+render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
 constant zero_bit
@@ -328,12 +334,12 @@ render untyped_slice = slice(
     Slice_Star,
 );
 
-render typed_slice = slice(typed_Slice_Length);
+render typed_slice { lhs_hypertargets = false } = slice(typed_Slice_Length);
 
 ast call { "call descriptor" } =
-    [   name: Strings,
+    [   call_name: Strings { math_macro = \callname },
         params: list0(expr),
-        args: list0(expr),
+        call_args: list0(expr) { math_macro = \callargs },
         call_type: subprogram_type,
     ]
     { "call of {call_type} subprogram {name}with parameters {params}, arguments {args}" }
@@ -398,7 +404,7 @@ render untyped_constraint_kind = constraint_kind(
     Parameterized,
     PendingConstrained,
 );
-render typed_constraint_kind = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
+render typed_constraint_kind { lhs_hypertargets = false } = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
 
 ast precision_loss_indicator { "\Proseprecisionlossindicator{}" } =
     | Precision_Full
@@ -490,7 +496,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -572,12 +578,12 @@ ast stmt { "statement" } =
   | S_Assert(condition: expr)
   { "assertion statement with {condition}" }
   | S_For [
-    index_name : Identifier,
-    start_e    : expr,
-    dir        : for_direction,
-    end_e      : expr,
-    body       : stmt,
-    limit      : option(expr)
+    index_name: Identifier,
+    start_e   : expr,
+    dir       : for_direction,
+    end_e     : expr,
+    body      : stmt,
+    limit     : option(expr)
   ]
   { "for loop statement with
     index variable {index_name},
@@ -635,7 +641,7 @@ render untyped_stmt = stmt(
     S_Pragma,
     S_Unreachable,
 );
-render typed_stmt = stmt(typed_S_Throw);
+render typed_stmt { lhs_hypertargets = false } = stmt(typed_S_Throw);
 
 render stmt_pass = stmt(S_Pass);
 render stmt_seq = stmt(S_Seq);
@@ -655,7 +661,10 @@ render stmt_pragma = stmt(S_Pragma);
 render stmt_unreachable = stmt(S_Unreachable);
 
 ast case_alt { "case alternative" } =
-    [ pattern: pattern, where: option(expr), stmt: stmt ]
+    [ case_alt_pattern: pattern { math_macro = \casealtpattern },
+      where: option(expr),
+      case_alt_stmt: stmt { math_macro = \casealtstmt }
+    ]
     { "case alternative for the pattern {pattern},
         optional where expression {where},
         and statement {stmt}"
@@ -698,16 +707,16 @@ ast override_info { "override qualifier" } =
 
 ast func { "subprogram descriptor" } =
     [
-    name : Strings,
-    parameters : list0((name: Identifier, type: option(ty))),
-    args : list0(typed_identifier),
-    body : stmt,
-    return_type : option(ty),
-    subprogram_type : subprogram_type,
-    recurse_limit : option(expr),
-    builtin : Bool,
-    qualifier : option(func_qualifier),
-    override : option(override_info),
+    name: Strings,
+    parameters: list0((name: Identifier, type: option(ty))),
+    args: list0(typed_identifier),
+    func_body: stmt { math_macro = \funcbody },
+    return_type: option(ty),
+    func_subprogram_type: subprogram_type { math_macro = \funcsubprogramtype},
+    recurse_limit: option(expr),
+    builtin: Bool,
+    qualifier: option(func_qualifier),
+    override: option(override_info),
     ]
     { "a subprogram descriptor for the subprogram name {name},
         parameter list {parameters},
@@ -735,10 +744,10 @@ ast global_decl_keyword { "global declaration keyword" } =
 
 ast global_decl { "global storage declaration" } =
     [
-    keyword : global_decl_keyword,
-    name : Identifier,
-    ty : option(ty),
-    initial_value : option(expr)
+    keyword: global_decl_keyword,
+    global_decl_name: Identifier { math_macro = \globaldeclname },
+    global_decl_ty: option(ty) { math_macro = \globaldeclty },
+    initial_value: option(expr)
     ]
     { "global storage declaration with the
         keyword {keyword},
@@ -780,10 +789,15 @@ typedef static_envs
         "static environment",
         math_macro = \staticenvs,
     } =
- (G: global_static_envs, L: local_static_envs)
-    {
-        "static environment with global static environment {G} and local static environment {L}",
-    }
+ [
+  static_envs_G: global_static_envs
+  { math_macro = \staticenvsG },
+  static_envs_L: local_static_envs
+  { math_macro = \staticenvsL },
+ ]
+  {
+      "static environment with global static environment {G} and local static environment {L}",
+  }
 ;
 
 typedef global_static_envs
@@ -793,8 +807,9 @@ typedef global_static_envs
     } =
     [
         declared_types: partial Identifier -> (element_type: ty, element_purity: TPurity),
+        constant_values: partial Identifier -> literal,
         global_storage_types: partial Identifier -> (element_type: ty, declared_keyword: global_decl_keyword),
-        expr_equiv: partial Identifier -> (initializer: expr),
+        global_static_envs_expr_equiv: partial Identifier -> (initializer: expr) { math_macro = \globalstaticenvsexprequiv },
         subtypes: partial (sub_type: Identifier) ->
          (super_type: Identifier),
         subprogram: partial Identifier -> (func, side_effects: powerset(TSideEffect)),
@@ -810,8 +825,8 @@ typedef local_static_envs
     } =
     [
         local_storage_types: partial Identifier -> (element_type: ty, declared_keyword: local_decl_keyword),
-        expr_equiv: partial Identifier -> expr,
-        return_type: option(ty)
+        local_static_envs_expr_equiv: partial Identifier -> expr { math_macro = \localstaticenvsexprequiv },
+        local_static_envs_return_type: option(ty) { math_macro = \localstaticenvsreturntype }
     ]
     {  "local static environment" }
 ;
@@ -991,9 +1006,12 @@ typedef dynamic_envs
         "dynamic environment",
         math_macro = \dynamicenvs,
     } =
-    (G: global_dynamic_envs, L: local_dynamic_envs)
+    [
+      dynamic_envs_G: global_dynamic_envs { math_macro = \dynamicenvsG },
+      dynamic_envs_L: local_dynamic_envs { math_macro = \dynamicenvsL },
+    ]
     {
-        "dynamic environment with global dynamic environment {G} and local dynamic environment {L}",
+        "dynamic environment with global dynamic environment {dynamic_envs_G} and local dynamic environment {dynamic_envs_L}",
     }
 ;
 
@@ -1923,7 +1941,7 @@ semantics function declare_global(name: Identifier, v: native_value, env: envs) 
 {
    prose_description = "updates the environment {env} by mapping {name} to
                         {v} in the $\storage$ map of the global dynamic
-                        environment $G^\denv$.",
+                        environment $\denv.\dynamicenvsG$.",
  prose_application = "",
 };
 
@@ -2464,24 +2482,18 @@ semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
 
 semantics relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
-   prose_description = "creates an \executiongraphterm{} that represents the
+  prose_description = "creates an \executiongraphterm{} that represents the
                         reading of the value {v} into a storage element given
-                        by the identifier {name}. The result is an execution
-                        graph containing a single Read Effect, which denotes
-                        reading from {name}. % The value {v} is ignored, as
-                        execution graphs do not contain values.",
- prose_application = ""
+                        by the identifier {name}.",
+  prose_application = ""
  };
 
 semantics relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
-   prose_description = "creates an \executiongraphterm{} that represents the
+  prose_description = "creates an \executiongraphterm{} that represents the
                         writing of the value {v} into the storage element
-                        given by an identifier {name}. The result is an
-                        execution graph containing a single Write Effect,
-                        which denotes writing into {name}. % The value {v} is
-                        ignored, as execution graphs do not contain values.",
- prose_application = ""
+                        given by an identifier {name}.",
+  prose_application = ""
  };
 
 semantics function concat_bitvectors(vs: list0(tbitvector)) ->
@@ -2545,9 +2557,9 @@ semantics function set_index(i: N, v: native_value, vec: tvector) -> (res: tvect
  prose_application = "",
 };
 
-semantics function get_field(name: Identifier, record: trecord) -> (native_value)
+semantics function get_field(name: Identifier, record: trecord) -> (v: native_value)
 {
-   prose_description = "retrieves the value corresponding to the field name
+   prose_description = "retrieves the value {v} corresponding to the field name
                         {name} from the record value {record}.",
  prose_application = ""
  };
@@ -2822,7 +2834,7 @@ typing function add_subprogram_decls(tenv: static_envs, funcs: list0((func, powe
 {
   "adds each subprogram definition given by a $\func$ AST
   node in {funcs} to the $\subprograms$ map of
-  $G^\tenv$, yielding {new_tenv}.",
+  $\tenv.\staticenvsG$, yielding {new_tenv}.",
   prose_application = "",
 };
 

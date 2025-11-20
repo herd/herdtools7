@@ -348,7 +348,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields = \emptylist \\
-  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
+  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
@@ -361,7 +361,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
-  G^\tenv.\declaredtypes(\vsuper) = \bot
+  \tenv.\staticenvsG.\declaredtypes(\vsuper) = \bot
 }{
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow
   \TypeErrorVal{\UndefinedIdentifier}
@@ -374,7 +374,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
   \extrafields \neq \emptylist\\\\
-  G^\tenv.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
+  \tenv.\staticenvsG.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
     \begin{array}{r}
   \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
@@ -382,7 +382,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   }\\
   \vt \eqname L(\fields)\\
   \newty \eqdef L(\fields \concat \extrafields)\\
-  \newtenv \eqdef (G^\tenv.\subtypes[\name\mapsto\vsuper], L^\tenv) \\
+  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
 }{
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \newty, \vsp)
@@ -508,7 +508,7 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exists]{
-  G^\tenv.\declaredtypes(\id) = (\vt, \Ignore)
+  \tenv.\staticenvsG.\declaredtypes(\id) = (\vt, \Ignore)
 }{
   \declaredtype(\tenv, \id) \typearrow \vt
 }
@@ -516,7 +516,7 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 
 \begin{mathpar}
 \inferrule[type\_not\_declared]{
-  G^\tenv.\declaredtypes(\id) = \bot
+  \tenv.\staticenvsG.\declaredtypes(\id) = \bot
 }{
   \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
@@ -575,8 +575,8 @@ In \listingref{DeclareConst}, declaring the constant \PI{}
 in the empty \globalstaticenvironmentterm{} yields the following \globalstaticenvironmentterm:
 \[
 \begin{array}{l}
-  \declareconst(G^{\emptytenv}, \PI, \TReal, \LReal(157 / 50)) \typearrow \\
-  G^{\emptytenv}\left[
+  \declareconst(\emptytenv.\staticenvsG, \PI, \TReal, \LReal(157 / 50)) \typearrow \\
+  \emptytenv.\staticenvsG\left[
     \begin{array}{l}
     \globalstoragetypes\mapsto\{\PI\mapsto(\TReal, \GDKConstant)\},\\
     \constantvalues[\PI\mapsto\LReal(157 / 50)]

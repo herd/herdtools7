@@ -481,7 +481,7 @@ of an ill-typed global storage declaration due to precision loss.
 \right\}
 }
 }{
-  \declareglobalstorage(\genv, \gsd) \typearrow (\overname{G^\tenvtwo}{\newgenv}, \newgsd)
+  \declareglobalstorage(\genv, \gsd) \typearrow (\overname{\tenvtwo.\staticenvsG}{\newgenv}, \newgsd)
 }
 \end{mathpar}
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
@@ -668,7 +668,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
     \item $\gdk$ is $\GDKConstant$;
     \item view $\typedinitialvalue$ as $(\Ignore, \initialvaluep, \vsesinitialvalue)$;
     \item \Prosestaticeval{$\tenv$}{$\initialvaluep$}{$\vv$};
-    \item applying $\addglobalconstant$ to $G^\tenv$, $\name$ and $\vv$ yields $G'$;
+    \item applying $\addglobalconstant$ to $\tenv.\staticenvsG$, $\name$ and $\vv$ yields $G'$;
     \item \Proseeqdef{$\newtenv$}{the \staticenvironmentterm{} whose global component is $G'$ and local component is
     the local component of $\tenv$}.
   \end{itemize}
@@ -707,8 +707,8 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
   \staticeval(\tenv, \initialvaluep) \typearrow \vv\\
-  \addglobalconstant(G^\tenv, \name, \vv) \typearrow G'\\
-  \newtenv \eqdef (G', L^\tenv)
+  \addglobalconstant(\tenv.\staticenvsG, \name, \vv) \typearrow G'\\
+  \newtenv \eqdef \{\staticenvsG: G', \staticenvsL: \tenv.\staticenvsL\}
 }{
   {
     \begin{array}{r}
@@ -909,7 +909,6 @@ before having the chance to evaluate \verb|main|.
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareGlobal}
-\ProseParagraph
 \RenderRelation{declare_global}
 
 \ExampleDef{Declaring a Global Storage Element}
@@ -917,11 +916,20 @@ Evaluating the specification in \listingref{DeclareGlobal}, results in updating 
 of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \ASLListing{Declaring a global storage element}{DeclareGlobal}{\semanticstests/SemanticsRule.DeclareGlobal.asl}
 
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\env$ is the environment-execution graph pair $(\tenv, \denv)$;
+  \item \Proseeqdef{$\newenv$}{the environment consisting of $\tenv$ and the dynamic environment
+        that is the same as $\denv$ except that in its $\dynamicenvsG.\storage$ map,
+        $\name$ is bound to $\vv$}.
+\end{itemize}
+
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \env \eqname (\tenv, (G^\denv, L^\denv))\\
-  \newenv \eqdef (\tenv, (G^\denv.\storage[\name\mapsto \vv], L^\denv))
+  \env \eqname (\tenv, \denv)\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG.\storage[\name\mapsto \vv], \dynamicenvsL: \denv.\dynamicenvsL\})
 }{
   \declareglobal(\name, \vv, \env) \evalarrow \newenv
 }
