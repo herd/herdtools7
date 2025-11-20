@@ -3172,7 +3172,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_block(tenv, s2) -> (s2', ses2);
     ses := UNION(ses_cond, ses1, ses2);
     --
-    (S_Cond(e_cond, s1', s2'), tenv);
+    (S_Cond(e_cond, s1', s2'), tenv, ses);
   }
 
   case SAssert {
@@ -3307,7 +3307,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
       annotate_expr(tenv, e) -> (t_e', e', ses);
       checked_typesat(tenv, t_e', t) -> True;
       --
-      (S_Return(SOME(e'), tenv, ses));
+      (S_Return(SOME(e')), tenv, ses);
     }
   }
 
@@ -3331,7 +3331,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (_, _, sess[i]));
     ses := UNION_LIST(sess);
     --
-    (S_Pass, tenv);
+    (S_Pass, tenv, ses);
   }
 ;
 

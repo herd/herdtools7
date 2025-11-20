@@ -139,6 +139,7 @@ let rec pp_expr fmt =
         short_circuit
   | Indexed { index; list; body } ->
       fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list pp_expr body
+  | NamedExpr (e, name) -> fprintf fmt "%a /* %s */" pp_expr e name
 
 and pp_application_lhs fmt =
   let open Rule in

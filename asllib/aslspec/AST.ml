@@ -427,6 +427,11 @@ module Rule = struct
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
     | Indexed of { index : string; list : string; body : expr }
+    | NamedExpr of expr * string
+        (** An (internally-)named expression. Used for giving names to
+            sub-expressions appearing in the output configuration of an output
+            judgment. Initially, all expressions are unnamed, names are assigned
+            during rule resolution. *)
 
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
