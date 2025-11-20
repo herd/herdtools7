@@ -878,12 +878,24 @@ module A.FaultType = A.FaultType)
                       "Architecture %s has no NOP instruction, compilation is impossible"
                       (Archs.pp A.arch)
                 | Some nop ->
-                    A.Instruction nop in
-              (* Except in user mode, where it will be added later *)
-              let c = if not is_user then nop::c else c in
-              let c = (* Append nop for faukt handler to return at end of code *)
-                if do_append_nop then c@[nop] else c in
-              p,(c,f)) prog
+                   A.Instruction nop in
+              if do_self && is_pte then
+                begin
+                  (* Add start marker and align the rest to the page boundary *)
+                  let c = [nop;A.Pagealign]@c in
+                  (* Align the rest to the page boundary and add marker *)
+                  let c = if do_append_nop then c@[A.Pagealign;nop] else c in
+                  p,(c,f)
+                end
+              else
+                begin
+                  (* Except in user mode, where it will be added later *)
+                  let c = if not is_user then nop::c else c in
+                  let c = (* Append nop for faukt handler to return at end of code *)
+                    if do_append_nop then c@[nop] else c in
+                  p,(c,f)
+                end
+            ) prog
         else prog in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
