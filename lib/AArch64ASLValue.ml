@@ -26,7 +26,7 @@ end) : Value.AArch64ASL = struct
       | S_BitVector bv -> S_Int (Asllib.Bitvector.printable  bv)
       | S_Bool b -> S_Int (if b then Z.one else Z.zero)
       | S_Int i -> S_Int (printable_z i)
-      | S_Label _ as s -> s
+      | (S_Label _ | S_String _) as s -> s
   end
   module AArch64Cst =
     SymbConstant.Make

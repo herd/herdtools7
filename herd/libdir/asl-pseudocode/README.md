@@ -21,8 +21,6 @@ Extra definitions that complete the one in the Arm ARM:
 
 - `implementations.asl`: Extra definitions in ASLv1 to complete what is not
   defined in the Arm ARM.
-- `implementations0.asl`: Extra definitions in ASLv0 to interface the ASLv1
-  code in `implementations.asl` with the ASLv0 code in the Arm ARM.
 - `implementations-vmsa.asl`: Extra definitions needed with the variant `vmsa`,
   i.e. when Stage 1 translation is activated.
 - `physmem-std.asl`: Definition of memory accesses.
