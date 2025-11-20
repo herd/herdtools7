@@ -26,14 +26,15 @@ let code_fun proc = sprintf "code%i" proc
 let code_fun_cpy proc = sprintf "_code%i" proc
 let code_fun_type proc =  code_fun proc ^ "_t"
 
-let dump_code_def chan noinline mode proc params =
+let dump_code_def chan noinline pagealign mode proc params =
   fprintf chan "typedef void (*%s)(%s);\n\n" (code_fun_type proc) params ;
-  fprintf chan "%sstatic void %s(%s) {\n"
+  fprintf chan "%s%sstatic void %s(%s) {\n"
     (if noinline then
        match mode with
        | Mode.Kvm -> "noinline "
        | _ -> "__attribute__((noinline)) "
     else "")
+    (if pagealign then "__attribute__((aligned (PAGE_SIZE))) " else "")
     (code_fun proc) params
 
 let dump_code_call chan indent f_id args =

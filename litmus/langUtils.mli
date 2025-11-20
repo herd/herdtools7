@@ -21,5 +21,5 @@ val end_comment : string -> int -> string
 val code_fun : int -> string
 val code_fun_cpy : int -> string
 val code_fun_type : int -> string
-val dump_code_def : out_channel -> bool -> Mode.t -> int -> string -> unit
+val dump_code_def : out_channel -> bool -> bool -> Mode.t -> int -> string -> unit
 val dump_code_call : out_channel -> string -> string -> string -> unit
