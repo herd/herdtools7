@@ -186,7 +186,7 @@ begin
    let mem_desc = ReadPteAgainPrimitive{N}(addr, descaccess.write);
 
 // For speed, using "if" construct us much more expensive
-   CheckProp(mem_desc == prev_desc);
+   CheckEq{N}(mem_desc,prev_desc);
 
    WritePtePrimitive{N}(addr, new_desc, descaccess.write);
    return (fault_in,new_desc);
