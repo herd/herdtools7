@@ -48,6 +48,12 @@ module RegMap = A.RegMap)
 
       let do_self = O.variant Variant_litmus.Self
 
+      let is_pte =
+        let open Mode in
+        match O.mode with
+        | Std|PreSi -> false
+        | Kvm -> true
+
       type arch_reg = Tmpl.arch_reg
       type t = Tmpl.t
 
@@ -655,7 +661,8 @@ module RegMap = A.RegMap)
         let params =
           String.concat ","
             (params0@labels@instrs@addrs@ptes@phys@ptevals@parel1s@cpys@outs) in
-        LangUtils.dump_code_def chan O.noinline O.mode proc params ;
+        let pagealign = do_self && is_pte in
+        LangUtils.dump_code_def chan O.noinline pagealign O.mode proc params ;
         do_dump
           args0
           (compile_init_val_fun globEnv ptevalEnv parel1Env)
