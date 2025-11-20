@@ -24,9 +24,11 @@ jobs:
           - ubuntu-latest
         cfg:
           - ocaml-version: "ocaml-base-compiler.4.08.1,dune.3.10.0,zarith.1.13,menhir.20220210"
+            with-type-check-asl: false
             job-name: "OCaml v4.08"
             dune-cache: "enabled"
           - ocaml-version: "dune,zarith,menhir"
+            with-type-check-asl: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml latest lts"
 
@@ -54,6 +56,9 @@ jobs:
       - run: opam exec -- make test DUNE_PROFILE=dev
 
       - run: opam exec -- make install
+
+      - run: opam exec -- make type-check-asl DUNE_PROFILE=dev
+        if: ${{ matrix.cfg.with-type-check-asl }}
 
   check-fmt:
     name: check format
