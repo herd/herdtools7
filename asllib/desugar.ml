@@ -201,7 +201,8 @@ let desugar_case_stmt e0 cases otherwise =
   | _ ->
       let x = fresh_var "__case__linearisation" in
       let decl_x = S_Decl (LDK_Let, LDI_Var x, None, Some e0) in
-      S_Seq (decl_x |> add_pos_from e0, cases_to_cond (var_ x) cases)
+      let var_x = E_Var x |> add_pos_from e0 in
+      S_Seq (decl_x |> add_pos_from e0, cases_to_cond var_x cases)
 (* End *)
 
 (* -------------------------------------------------------------------------

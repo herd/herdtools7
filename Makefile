@@ -918,10 +918,8 @@ diymicro-test-aarch64-asl: asl-pseudocode
 	@ echo "herd7 AArch64 diymicro7 (ASL) tests: OK"
 
 .PHONY: asl-pseudocode
-asl-pseudocode: herd/libdir/asl-pseudocode/shared_pseudocode.asl
-
-herd/libdir/asl-pseudocode/shared_pseudocode.asl:
-	@ $(MAKE) -C $(@D) build
+asl-pseudocode:
+	@ $(MAKE) -C herd/libdir/asl-pseudocode build
 
 .PHONY: clean-asl-pseudocode
 clean-asl-pseudocode:
@@ -935,6 +933,13 @@ asldoc: Version.ml
 .PHONY: clean-asldoc
 clean-asldoc:
 	@ $(MAKE) $(MFLAGS) -C asllib/doc clean
+
+.PHONY: type-check-asl
+type-check-asl: Version.ml
+	@ echo
+	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
+	@ $(MAKE) $(MFLAGS) -C herd/libdir/asl-pseudocode type-check ASLREF=$(CURDIR)/$(ASLREF)
+	@ echo "ASLRef type-checking of published Arm ASL code: OK"
 
 RUN_TESTS?=false
 $(V).SILENT:

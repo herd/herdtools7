@@ -734,7 +734,8 @@ let accessor_body == BEGIN; ~=accessors; end_semicolon;
 let spec := ~=terminated(list(decl), EOF); < List.concat >
 (* End *)
 
-let opn [@internal true] := body=stmt; EOF;
+let stmt_list0 == stmt_list | annotated({ S_Pass })
+let opn [@internal true] := body=stmt_list0; EOF;
     {
       [
         D_Func
