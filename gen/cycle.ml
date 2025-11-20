@@ -470,7 +470,7 @@ let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
 
 let same_loc e = Code.is_same_loc @@ E.loc_sd e
 
-let diff_loc e = not (same_loc e)
+let diff_loc e = Code.is_diff_loc @@ E.loc_sd e
 
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext

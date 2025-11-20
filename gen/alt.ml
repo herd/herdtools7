@@ -70,6 +70,10 @@ module Make(C:Builder.S)
           (fun f -> List.exists (equal_fence f) fs)
 
     let choice_sc po_safe e1 e2 =
+      let seq_sd e1 e2 =
+        match Code.seq_sd e1 e2 with
+        | None -> Warn.user_error "Unexpected UnspecLoc"
+        | Some b -> b in
       let r = match e1.edge,e2.edge with
 (*
   Now accept internal with internal composition
@@ -564,7 +568,7 @@ module Make(C:Builder.S)
 
     let count_ext es = count_e 0 es
 
-    let change_loc e = not @@ Code.is_same_loc @@ loc_sd e
+    let change_loc e = Code.is_diff_loc @@ loc_sd e
 
     let count_p p =
       List.fold_left ( fun acc x -> if p x then acc + 1 else acc ) 0

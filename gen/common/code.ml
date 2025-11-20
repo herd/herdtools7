@@ -97,18 +97,21 @@ let pp_sd = function
 
 let is_same_loc = function
   | Same -> true
-  | Diff -> false
-  | UnspecLoc -> assert false
+  | _ -> false
 
-let is_both_loc = function
+let is_diff_loc = function
+  | Diff -> true
+  | _ -> false
+
+let is_unspec_loc = function
   | UnspecLoc -> true
   | _ -> false
 
 let seq_sd sd1 sd2 =
   match sd1,sd2 with
-  | UnspecLoc,_|_, UnspecLoc -> assert false
-  | Same,Same -> Same
-  | Diff,_|_,Diff -> Diff
+  | UnspecLoc,_|_, UnspecLoc -> None
+  | Same,Same -> Some Same
+  | Diff,_|_,Diff -> Some Diff
 
 let fold_ie wildcard f r = let r = if wildcard then (f UnspecCom r) else r in f Ext (f Int r)
 let fold_sd wildcard f r = let r = if wildcard then (f UnspecLoc r) else r in f Diff (f Same r)
