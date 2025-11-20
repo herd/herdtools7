@@ -325,12 +325,12 @@ module A.FaultType = A.FaultType)
     open A.Out
 
     let rec do_extract_pseudo nop f ins = match ins with
+    | A.Pagealign
     | A.Nop -> nop
     | A.Label (_,ins) -> do_extract_pseudo nop f ins
     | A.Instruction ins -> f ins
     | A.Symbolic _ (*no symbolic in litmus *)
     | A.Macro (_,_) -> assert false 
-    | A.Pagealign -> assert false
     | A.Skip _ -> assert false (* used internally in herd7 only *)
 
     let extract_pseudo = do_extract_pseudo G.Set.empty C.extract_addrs
@@ -461,6 +461,11 @@ module A.FaultType = A.FaultType)
         memo=sprintf "%s:" (A.Out.dump_label (tr_label m lbl)) ;
         label = Some lbl ; branch=[Next] ; }
 
+    let emit_pagealign =
+      { empty_ins with
+        memo="xstr(PAGE_SHIFT)";
+        align=true;}
+
     let compile_pseudo_code code fhandler =
       let m =
         if O.numeric_labels then lblmap_code code fhandler
@@ -479,10 +484,11 @@ module A.FaultType = A.FaultType)
           let ilab = emit_label m lbl in
           let seen,k = compile_pseudo seen ins  in
           seen,ilab::k
+      | A.Pagealign -> seen,[emit_pagealign]
       | A.Instruction ins ->
           seen,C.compile_ins (tr_lab seen) ins []
       | A.Symbolic _ (*no symbolic in litmus *)
-      | A.Pagealign | A.Skip _
+      | A.Skip _
       | A.Macro (_,_) -> assert false in
 
       let rec do_rec seen = function

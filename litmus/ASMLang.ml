@@ -401,7 +401,11 @@ module RegMap = A.RegMap)
              fprintf chan "\"%s_litmus_P%i%s_%i\\n%s\"\n" Tmpl.comment proc func k
                (if ins.Tmpl.comment then "" else "\\t")
           end;
-          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          if ins.Tmpl.align then
+            fprintf chan "\".align \" %s \"\\n\"\n" ins.Tmpl.memo
+          else
+            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins)
+          ;
           k + 1 in
         fprintf chan "\"%s%s\\n\"\n" (LangUtils.start_comment Tmpl.comment proc) func ;
         let _ = List.fold_left dump_ins 0 code in
@@ -409,7 +413,11 @@ module RegMap = A.RegMap)
 
       let dump_code_labels chan proc func code =
         let dump_ins k ins =
-          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          if ins.Tmpl.align then
+            fprintf chan "\".align \" %s \"\\n\"\n" ins.Tmpl.memo
+          else
+            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins)
+          ;
           k + 1 in
         fprintf chan "\"%s%s:\\n\"\n" (LangUtils.start_label proc) func ;
         let _ = List.fold_left dump_ins 0 code in
