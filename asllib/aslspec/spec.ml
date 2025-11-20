@@ -328,22 +328,23 @@ let ast spec = spec.ast
 module ResolveRules = struct
   open Rule
 
-  (** [resolve_expr id_to_defining_node expr] resolves application expressions
-      appearing in [expr] by using [id_to_defining_node] to lookup type variants
-      and relations. *)
-  let rec resolve_expr id_to_defining_node expr =
+  (** [resolve_application_expr id_to_defining_node expr] resolves application
+      expressions appearing in [expr] by using [id_to_defining_node] to lookup
+      type variants and relations. *)
+  let rec resolve_application_expr id_to_defining_node expr =
     match expr with
     | Var _ | FieldAccess _ | ListIndex _ -> expr
     | Record { label; fields } ->
         let resolved_fields =
           List.map
             (fun (field_name, field_expr) ->
-              (field_name, resolve_expr id_to_defining_node field_expr))
+              ( field_name,
+                resolve_application_expr id_to_defining_node field_expr ))
             fields
         in
         Record { label; fields = resolved_fields }
     | Application ({ applicator; args } as app) -> (
-        let resolved_args = List.map (resolve_expr id_to_defining_node) args in
+        let resolved_args = List.map (resolve_application_expr id_to_defining_node) args in
         match applicator with
         | EmptyApplicator | Relation _ | ExprOperator _ | Fields _ ->
             Application { app with args = resolved_args }
@@ -366,10 +367,12 @@ module ResolveRules = struct
         | Unresolved _ ->
             Error.invalid_application_of_expression_to_arguments expr)
     | Transition { lhs; rhs; short_circuit } ->
-        let resolved_lhs = resolve_expr id_to_defining_node lhs in
-        let resolved_rhs = resolve_expr id_to_defining_node rhs in
+        let resolved_lhs = resolve_application_expr id_to_defining_node lhs in
+        let resolved_rhs = resolve_application_expr id_to_defining_node rhs in
         let resolved_short_circuit =
-          Option.map (List.map (resolve_expr id_to_defining_node)) short_circuit
+          Option.map
+            (List.map (resolve_application_expr id_to_defining_node))
+            short_circuit
         in
         Transition
           {
@@ -378,19 +381,61 @@ module ResolveRules = struct
             short_circuit = resolved_short_circuit;
           }
     | Indexed ({ body : expr } as indexed_expr) ->
-        let resolved_body = resolve_expr id_to_defining_node body in
+        let resolved_body = resolve_application_expr id_to_defining_node body in
         Indexed { indexed_expr with body = resolved_body }
+    | NamedExpr (sub_expr, name) ->
+        let resolved_sub_expr =
+          resolve_application_expr id_to_defining_node sub_expr
+        in
+        NamedExpr (resolved_sub_expr, name)
+
+  (** [extend_with_names expr type_term] recursively transforms [expr] by adding
+      names from [type_term] to sub-expressions of [expr]. Currently, only
+      tuples (labelled or unlabelled) are supported, which is sufficient for
+      most output configurations. *)
+  let rec extend_with_names expr type_term =
+    let opt_extend expr opt_name =
+      match opt_name with None -> expr | Some name -> NamedExpr (expr, name)
+    in
+    let applicator_matches_label applicator expr_label =
+      match (applicator, expr_label) with
+      | EmptyApplicator, None -> true
+      | TupleLabel label1, Some label2 -> label1 = label2
+      | _ -> false
+    in
+    match (expr, type_term) with
+    | _, LabelledTuple { label_opt = None; components = [ (opt_name, _) ] } ->
+        (* An unlabelled tuple with a single component serves as a named reference
+           to any type.*)
+        opt_extend expr opt_name
+    | Application { applicator; args }, LabelledTuple { label_opt; components }
+      when applicator_matches_label applicator label_opt ->
+        let extended_args =
+          List.map2
+            (fun arg (opt_name, arg_type) ->
+              opt_extend (extend_with_names arg arg_type) opt_name)
+            args components
+        in
+        Application { applicator; args = extended_args }
+    | _ -> expr
 
   (** [resolve_rule_element id_to_defining_node rule_element] performs
       resolution transformations on [rule_element] using [id_to_defining_node]
       to lookup type variants and relations. *)
-  let rec resolve_rule_element id_to_defining_node conclusion_lhs rule_element =
+  let rec resolve_rule_element id_to_defining_node conclusion_lhs
+      first_output_type rule_element =
     let open Rule in
     match rule_element with
     | Judgment ({ expr; is_output } as judgment) ->
-        let resolved_expr = resolve_expr id_to_defining_node expr in
+        let resolved_expr = resolve_application_expr id_to_defining_node expr in
         let resolved_expr =
           if is_output then
+            (* TODO: we currently use the first output type term to assign names,
+            but a more flexible approach is to find the output type term
+            that resolved_expr corresponds to. *)
+            let resolved_expr =
+              extend_with_names resolved_expr first_output_type
+            in
             Transition
               {
                 lhs = conclusion_lhs;
@@ -424,6 +469,8 @@ module ResolveRules = struct
       List.map (fun (name_opt, _) -> Var (Option.get name_opt)) input
     in
     Application { applicator = Relation name; args = input_vars }
+
+  let first_output_type { Relation.output } = List.hd output
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -519,6 +566,7 @@ module ResolveRules = struct
                 | Some elements ->
                     let elements = aggregate_case_blocks elements in
                     let conclusion_lhs = lhs_of_conclusion def in
+                    let first_output_type = first_output_type def in
                     let resolved_elements =
                       List.map
                         (resolve_rule_element id_to_defining_node conclusion_lhs)
