@@ -388,7 +388,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
   | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
-  let do_is_diff e = not @@ Code.is_same_loc @@ do_loc_sd e
+  let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
   let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
@@ -445,7 +445,7 @@ let fold_tedges f r =
   let ok_non_rmw e a1 a2 =
     (* `do_is_diff` is safe to call when `e` is not
        wildcard `*`/UnspecLoc location. *)
-    Code.is_both_loc @@ do_loc_sd e ||
+    Code.is_unspec_loc @@ do_loc_sd e ||
     do_is_diff e || do_disjoint ||
     (overlap_atoms a1 a2 &&
      not (do_strict_overlap && same_access_atoms a1 a2))
@@ -1039,7 +1039,11 @@ let fold_tedges f r =
 
 (* compact *)
 
-  let seq_sd e1 e2 = Code.seq_sd (loc_sd e1) (loc_sd e2)
+  let seq_sd e1 e2 =
+    match Code.seq_sd (loc_sd e1) (loc_sd e2) with
+    | None -> Warn.user_error "Unexpected UnspecLoc"
+    | Some b -> b
+
 
   let fst_dp e1 e2 k = match e1.edge with
   | Dp (d,_,_) ->
