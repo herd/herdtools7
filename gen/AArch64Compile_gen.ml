@@ -1754,6 +1754,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | None -> cs
 
     let emit_access st p init e =
+    let open WPTE in
     match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
@@ -1919,9 +1920,31 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
-        | R,Some (Pte (TTHM _),None) ->
+        (* A special case for TTHM HA on read. *)
+        | R,Some (Pte (Set pte),None) when WPTESet.mem HA pte ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
+        (* Special cases for TTHM.
+           - `HA` is on both read and write
+           - `HD` is only on write *)
+        | R,Some(Pte (Set pte),None) when pte = WPTESet.singleton HA ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some r,init,cs,st
+        | R,Some(Pte ReadHAAcq,None) ->
+            let r,init,cs,st = LDAR.emit_load st p init loc in
+            Some r,init,cs,st
+        | R,Some(Pte ReadHAAcqPc,None) ->
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
+            Some r,init,cs,st
+        | W,Some (Pte (Set pte),None) when is_tthm pte ->
+            let init,cs,st =
+              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            None,init,cs,st
+        | W,Some (Pte (SetRel pte),None) when is_tthm pte ->
+            let init,cs,st =
+              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            None,init,cs,st
+        (* END special cases for TTHM. *)
         | W,Some (Pte (Set _),None) ->
             let init,cs,st =
               emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
@@ -1929,10 +1952,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Pte (SetRel _),None) ->
             let init,cs,st =
               emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
-        | W,Some (Pte (TTHM _),None) ->
-            let init,cs,st =
-              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -2573,7 +2592,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
-            | Some (Pte pte,None) when (not @@ is_tthm pte) ->
+            | Some (Pte (Set pte|SetRel pte),None) when (not @@ is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
@@ -2607,7 +2626,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> r2,cs2@pseudo addi,init,st in
           let loc = add_tag loc e.C.tag in
           begin match atom with
-          | None|Some (Pte (TTHM _),None) ->
+          | None ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
@@ -2654,13 +2673,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
+          | Some (Pte (Set pte),None) when is_tthm pte ->
+              let init,cs,st =
+                STR.emit_store_reg st p init loc r2 None C.evt_null in
+              None,init,cs2@cs,st
+          | Some (Pte (SetRel pte),None) when is_tthm pte ->
+              let init,cs,st =
+                STLR.emit_store_reg st p init loc r2 None C.evt_null in
+              None,init,cs2@cs,st
           | Some (Pte (Set _),None) ->
               let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
           | Some (Pte (SetRel _),None) ->
               let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc),_))
+          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
             -> assert false
           | Some (Plain _,None) -> assert false
           | Some (Tag,Some _) -> assert false
@@ -2887,13 +2914,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some _|None -> fun _ -> []
 
     let get_archinfo n =
+      let open WPTE in
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
         match node.C.edge.E.a1 with
-        | Some(Pte(TTHM e), _) -> WPTESet.union e acc
+        | Some(Pte (Set e|SetRel e), _) when is_tthm e -> WPTESet.union e acc
+        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
         | _ -> acc
         ) n WPTESet.empty
-      |> WPTESet.pp_str " " WPTE.pp_tthm in
+      |> WPTESet.pp_str " " WPTE.pp in
       if tthm_value = "" then []
       else [("TTHM",tthm_value)]
 
