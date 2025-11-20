@@ -1,0 +1,13 @@
+Test RR+RW+ctrlcsel+amo.cas-po Allowed
+States 4
+0:X1=0; 0:X5=0; 1:X1=0;
+0:X1=0; 0:X5=1; 1:X1=0;
+0:X1=1; 0:X5=0; 1:X1=0;
+0:X1=1; 0:X5=1; 1:X1=0;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (0:X1=1 /\ 0:X5=0 /\ 1:X1=0)
+Observation RR+RW+ctrlcsel+amo.cas-po Sometimes 2 6
+Hash=894e0cd50ebe0a44c42eed1d858d9be8
+

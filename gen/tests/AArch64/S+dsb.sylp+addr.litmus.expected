@@ -1,0 +1,12 @@
+Test S+dsb.sylp+addr Allowed
+States 3
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+dsb.sylp+addr Never 0 3
+Hash=9000999b2586f3d62c40267a2d7c0e8c
+

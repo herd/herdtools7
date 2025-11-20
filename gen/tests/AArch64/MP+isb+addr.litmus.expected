@@ -1,0 +1,13 @@
+Test MP+isb+addr Allowed
+States 4
+1:X0=0; 1:X4=0;
+1:X0=0; 1:X4=1;
+1:X0=1; 1:X4=0;
+1:X0=1; 1:X4=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:X0=1 /\ 1:X4=0)
+Observation MP+isb+addr Sometimes 1 3
+Hash=fc9142961bff6e20b5b6ecc1b0d3d775
+

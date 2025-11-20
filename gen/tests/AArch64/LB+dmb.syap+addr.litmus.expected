@@ -1,0 +1,12 @@
+Test LB+dmb.syap+addr Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+dmb.syap+addr Never 0 3
+Hash=34653f0f0be88cc7742edb4231630c9f
+

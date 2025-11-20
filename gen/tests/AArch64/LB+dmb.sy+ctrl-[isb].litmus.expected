@@ -1,0 +1,12 @@
+Test LB+dmb.sy+ctrl-[isb] Allowed
+States 3
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=1 /\ 1:X1=1)
+Observation LB+dmb.sy+ctrl-[isb] Never 0 3
+Hash=a0620bf78a5a94130661a33c926014e8
+

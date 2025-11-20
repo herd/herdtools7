@@ -1,0 +1,13 @@
+Test RR+RW+addrcsel+rmw-po Allowed
+States 4
+0:X1=0; 0:X5=0; 1:X1=0;
+0:X1=0; 0:X5=1; 1:X1=0;
+0:X1=1; 0:X5=0; 1:X1=0;
+0:X1=1; 0:X5=1; 1:X1=0;
+Loop Ok
+Witnesses
+Positive: 3 Negative: 9
+Condition exists (0:X1=1 /\ 0:X5=0 /\ 1:X1=0)
+Observation RR+RW+addrcsel+rmw-po Sometimes 3 9
+Hash=b7e8cf76fefdfbf9a9a2404b9b6731f4
+
