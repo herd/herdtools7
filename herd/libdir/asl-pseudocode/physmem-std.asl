@@ -2,13 +2,13 @@
 // So called physical accesses in the standard case //
 // =================================================//
 
-func PhysMemWrite{N}(
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor,
-  value:bits(N*8)
-) => PhysMemRetStatus
+type PhysMemSize of integer{8, 16, 32, 64, 128, 256, 512};
+
+func PhysMemWrite{size : PhysMemSize}
+  (desc : AddressDescriptor, accdesc : AccessDescriptor, value : bits(size))
+  => PhysMemRetStatus
 begin
-  write_memory_gen{N*8}(desc.vaddress,value,accdesc,VIR);
+  write_memory_gen{size}(desc.vaddress,value,accdesc,VIR);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -19,12 +19,11 @@ end;
 
 // =============================================================================
 
-func PhysMemRead{N} (
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor
-) => (PhysMemRetStatus, bits(N*8))
+func PhysMemRead{size : PhysMemSize}
+  (desc : AddressDescriptor, accdesc : AccessDescriptor)
+  => (PhysMemRetStatus, bits(size))
 begin
-  let value = read_memory_gen{N*8}(desc.vaddress,accdesc,VIR);
+  let value = read_memory_gen{size}(desc.vaddress,accdesc,VIR);
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',

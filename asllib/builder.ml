@@ -111,15 +111,15 @@ let from_lexer_lexbuf ?ast_type ?(parser_config = default_parser_config) version
 let from_file_multi_version ?ast_type ?parser_config = function
   | `Any -> (
       fun fname ->
-        match from_file_result ?ast_type ?parser_config `ASLv0 fname with
+        match from_file_result ?ast_type ?parser_config `ASLv1 fname with
         | Error e ->
             let () =
               Format.eprintf
-                "@[Ignoring error on parser v0: %a.@ Trying with parser v1 \
+                "@[Ignoring error on parser v1: %a.@ Trying with parser v0 \
                  ...@]@."
                 Error.pp_error e
             in
-            from_file_result ?ast_type ?parser_config `ASLv1 fname
+            from_file_result ?ast_type ?parser_config `ASLv0 fname
         | Ok ast -> Ok ast)
   | (`ASLv0 | `ASLv1) as version ->
       from_file_result ?ast_type ?parser_config version
