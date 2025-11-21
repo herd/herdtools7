@@ -61,14 +61,74 @@ let parse_cmdline options get_cmd_arg =
     get_cmd_arg
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
 
+module type Monad = sig
+  type 'a t
+  val pure : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+
+  module Infix : sig
+    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+    val (let*) : 'a t -> ('a -> 'b t) -> 'b t
+  end
+end
+
 module List = struct
-  let concat_map f l =
-    let open List in
-    let rec aux f acc = function
-      | [] -> rev acc
-      | x :: l ->
-          let xs = f x in
-          aux f (rev_append xs acc) l
+  let concat_map : ('a -> 'b list) -> 'a list -> 'b list =
+    fun f l -> List.concat (List.map f l)
+
+  let pure x = [ x ]
+  let bind x f = concat_map f x
+
+  let uniq ~eq l =
+    let rec uniq eq acc l =
+      match l with
+      | [] -> List.rev acc
+      | x :: xs when List.exists (eq x) xs -> uniq eq acc xs
+      | x :: xs -> uniq eq (x :: acc) xs
     in
-    aux f [] l
+    uniq eq [] l
+
+  module Infix = struct
+    let (>>=) = fun x f -> concat_map f x
+    let (let*) = (>>=)
+  end
+
+  let rec sequence : 'a list list -> 'a list list =
+    let open Infix in
+    function [] -> [[]]
+      | x :: xs ->
+        let* x' = x in
+        let* xs' = sequence xs in
+        [ x' :: xs' ]
+
+  module Traversal (M: Monad) = struct
+    let rec fold_left (f : 'acc -> 'a -> 'acc M.t) (v : 'acc) : 'a list -> 'acc M.t =
+      let open M.Infix in
+      function
+        | [] -> M.pure v
+        | x :: xs ->
+          let* acc = f v x in
+          fold_left f acc xs
+  end
+end
+
+module Option = struct
+  let rec choice : 'a option list -> 'a option = function
+    | [] -> None
+    | None :: l -> choice l
+    | Some x :: _ -> Some x
+
+  let rec choice_fn : (unit -> 'a option) list -> 'a option = function
+    | [] -> None
+    | f :: l -> let x = f () in if Option.is_some x then x else choice_fn l
+
+  let pure x = Some x
+  let bind = Option.bind
+
+  let guard b = if b then Some () else None
+
+  module Infix = struct
+    let (>>=) = Option.bind
+    let (let*) = Option.bind
+  end
 end
