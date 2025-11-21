@@ -640,7 +640,7 @@ vmsa-test:
 		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
 
 
-#Too long to include in `make test-all` -verbose active to reassure us that something is running
+#Too long to include in `make test-all`. Add -verbose option to reassure us that something is running
 test-all-asl:: cata-asl-vmsa-test
 cata-asl-vmsa-test: asl-pseudocode
 	@ echo
