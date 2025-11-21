@@ -57,8 +57,9 @@ begin
     return (ret_status, value);
 
   elsif accdesc.acctype == AccessType_TTW then
+    assert (N IN {8, 16});
 
-    let value = ReadPtePrimitive{N*8}(desc.paddress.address);
+    let value = ReadPtePrimitive{8*N}(desc.paddress.address);
     return (ret_status, value);
 
   else unreachable;

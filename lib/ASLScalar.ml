@@ -417,3 +417,5 @@ let bv_of_bits bs =
 let printable_z z = norm_signed z
 
 include NoPromote
+
+let printable c = c
