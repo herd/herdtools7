@@ -59,6 +59,7 @@ module type Config = sig
   val lowercase : bool
   val variant : Variant_gen.t -> bool
   val naturalsize : MachSize.sz
+  val wildcard : bool
 end
 
 module Make(Co:Config) (A:Fence.S) = struct
@@ -97,6 +98,7 @@ let () =
     let lowercase = !lowercase
     let variant = !variant
     let naturalsize = TypBase.get_size !typ
+    let wildcard = false
   end in
   let module Build = Make(Co) in
   (match !arch with

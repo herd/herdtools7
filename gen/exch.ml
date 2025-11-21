@@ -32,7 +32,7 @@ module
 
     let is_one_instruction _ = I.is_one_instruction
 
-    let fold_rmw f r = f () r
+    let fold_rmw _b f r = f () r
     let fold_rmw_compat f r = f () r
 
     let applies_atom_rmw () ar aw = match ar,aw with
@@ -42,6 +42,8 @@ module
     let show_rmw_reg () = false
 
     let compute_rmw () _old co_cell  = co_cell
+
+    let expand_rmw rmw = [rmw]
   end
 
 module LxSx(A:sig type arch_atom end) = struct

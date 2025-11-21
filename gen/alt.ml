@@ -31,6 +31,7 @@ module type AltConfig = sig
   val variant : Variant_gen.t -> bool
   type fence
   val cumul : fence list Config.cumul
+  val wildcard : bool
 end
 
 module Make(C:Builder.S)
@@ -54,6 +55,7 @@ module Make(C:Builder.S)
     let is_int e = match get_ie e with
     | Int -> true
     | Ext -> false
+    | UnspecCom -> assert false
 
     let is_ext e = not (is_int e)
 
@@ -68,6 +70,10 @@ module Make(C:Builder.S)
           (fun f -> List.exists (equal_fence f) fs)
 
     let choice_sc po_safe e1 e2 =
+      let seq_sd e1 e2 =
+        match Code.seq_sd e1 e2 with
+        | None -> Warn.user_error "Unexpected UnspecLoc"
+        | Some b -> b in
       let r = match e1.edge,e2.edge with
 (*
   Now accept internal with internal composition
@@ -101,7 +107,8 @@ module Make(C:Builder.S)
     | _,_ ->
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
-        | Ext,_|_,Ext -> true  in
+        | Ext,_|_,Ext -> true
+        | UnspecCom,_ | _,UnspecCom -> assert false in
       if dbg then
         eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -122,7 +129,8 @@ module Make(C:Builder.S)
           (* Reject other internal followed by internal sequences *)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
-          | Ext,_|_,Ext -> true  in
+          | Ext,_|_,Ext -> true
+          | UnspecCom,_ | _,UnspecCom -> assert false in
       if dbg then
         eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -157,10 +165,11 @@ module Make(C:Builder.S)
                 | (Same,Same) | (Diff,Same) | (Same,Diff)
                   -> true
                 | Diff,Diff -> false
+                | _ -> assert false
                 end
             | Ext,Ext -> false
-            | (Ext,Int) | (Int,Ext)
-                -> true  in
+            | (Ext,Int) | (Int,Ext) -> true
+            | UnspecCom,_ | _,UnspecCom -> assert false in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
@@ -331,6 +340,7 @@ module Make(C:Builder.S)
         | (Back _|Leave _),_
         | _,Int -> c
         | _,Ext -> c + 1
+        | _,UnspecCom -> assert false
       ) c
 
     let c_minprocs_suff c =
@@ -348,6 +358,7 @@ module Make(C:Builder.S)
           match get_ie e with
           | Ext -> true,c
           | Int -> c_minint_es (c+1) es
+          | UnspecCom -> assert false
 
     let rec c_minint c = function
       | [] -> c
@@ -557,9 +568,7 @@ module Make(C:Builder.S)
 
     let count_ext es = count_e 0 es
 
-    let change_loc e = match loc_sd e with
-    | Same -> false
-    | Diff -> true
+    let change_loc e = Code.is_diff_loc @@ loc_sd e
 
     let count_p p =
       List.fold_left ( fun acc x -> if p x then acc + 1 else acc ) 0
@@ -738,7 +747,7 @@ module Make(C:Builder.S)
     let fold_ie f k = f (Int) (f (Ext) k)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
-    let fold_sd f k = f (Same) (f Diff k)
+    let fold_sd = Code.fold_sd O.wildcard
     let fold_sd_dir2 f =
       fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))

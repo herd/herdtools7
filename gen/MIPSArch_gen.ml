@@ -73,6 +73,11 @@ let ddw_default = Some DATA
 let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
 
+open Code
+let expand_dp_dir = function
+  | CTRL | ADDR -> [R;W]
+  | DATA -> [W]
+
 let is_ctrlr = function
   | CTRL -> true
   | _ -> false

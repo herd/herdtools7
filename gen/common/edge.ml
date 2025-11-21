@@ -20,6 +20,7 @@ module Config =
   struct
     let variant _ = false
     let naturalsize = TypBase.get_size TypBase.default
+    let wildcard = false
   end
 
 let dbg = 0
@@ -36,6 +37,7 @@ module type S = sig
   module Value : Value_gen.S with type atom = atom
   type rmw
   type value = Value.v
+  val wildcard : bool
 
   val pp_atom : atom -> string
   val tr_value : atom option -> value -> value
@@ -78,13 +80,10 @@ module type S = sig
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_mixed : (atom option -> 'a -> 'a) -> 'a -> 'a
-  val fold_atomo_list : atom list -> (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_atomo_list : atom option list -> (atom option -> 'a -> 'a) -> 'a -> 'a
 
   val fold_edges : (edge -> 'a -> 'a) -> 'a -> 'a
   val iter_edges : (edge -> unit) -> unit
-
-
-  val fold_pp_edges : (string -> 'a -> 'a) -> 'a -> 'a
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
@@ -94,8 +93,8 @@ module type S = sig
   val compare_atomo : atom option -> atom option -> int
   val compare : edge -> edge -> int
 
-  val parse_atom : string -> atom
-  val parse_atoms : string list -> atom list
+  val parse_atom : string -> atom option
+  val parse_atoms : string list -> atom option list
 
   val parse_fence : string -> fence
   val parse_edge : string -> edge
@@ -164,6 +163,7 @@ module
        sig
          val variant : Variant_gen.t -> bool
          val naturalsize : MachSize.sz
+         val wildcard : bool
        end)
     (F:Fence.S) : S
 with
@@ -180,6 +180,7 @@ and type rmw = F.rmw = struct
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
   let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
   let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+  let wildcard = Cfg.wildcard
 
   let debug = false
   open Code
@@ -265,7 +266,7 @@ and type rmw = F.rmw = struct
 
   let plain_edge e = { a1=None; a2=None; edge=e; }
 
-  let pp_arch = function
+  let pp_atom_option = function
     | None -> F.pp_plain
     | Some a -> F.pp_atom a
 
@@ -273,27 +274,9 @@ and type rmw = F.rmw = struct
   | Id -> pp_a a1
   | _ -> sprintf "%s%s" (pp_a a1) (pp_a a2)
 
-  let pp_archs e a1 a2 = match a1, a2 with
-  | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_arch e a1 a2
-
-  let pp_a = function
-    | None -> Code.plain
-    | Some a -> F.pp_atom a
-
-  let pp_atom_option = pp_a
-
   let pp_aa e a1 a2 = match a1, a2 with
-  | None,None when not (is_id e) -> ""
-  | _,_ ->  pp_one_or_two pp_a e a1 a2
-
-  let pp_a_bis = function
-    | None -> "P"
-    | Some a -> F.pp_atom a
-
-  let pp_aa_bis e a1 a2 = match a1,a2 with
   | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_a_bis e a1 a2
+  | _,_ -> pp_one_or_two pp_atom_option e a1 a2
 
   let pp_a_ter = function
     | None -> F.pp_plain
@@ -305,25 +288,22 @@ and type rmw = F.rmw = struct
   | None,None  when not (is_id e) -> ""
   | _,_ -> pp_one_or_two pp_a_ter e a1 a2
 
-  let pp_a_qua = function
-    | None -> "P"
-    | Some a as ao ->
-        if ao = F.pp_as_a then "A"
-        else F.pp_atom a
-
-  let pp_aa_qua e a1 a2 = match a1,a2 with
-  | None,None  when not (is_id e) -> ""
-  | _,_ -> pp_one_or_two pp_a_qua e a1 a2
 
   let do_pp_tedge compat = function
+    | Rf UnspecCom -> sprintf "Rf"
+    | Fr UnspecCom -> sprintf "Fr"
+    | Ws UnspecCom -> if compat then sprintf "Ws" else sprintf "Co"
     | Rf ie -> sprintf "Rf%s" (pp_ie ie)
     | Fr ie -> sprintf "Fr%s" (pp_ie ie)
     | Ws ie -> if compat then sprintf "Ws%s" (pp_ie ie) else sprintf "Co%s" (pp_ie ie)
-    | Po (sd,e1,e2) -> sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
+    | Po (UnspecLoc,Irr,Irr) -> "Po"
+    | Po (sd,e1,e2) ->
+      sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Fenced (f,sd,e1,e2) ->
-        sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
-    | Dp (dp,sd,e) -> sprintf "Dp%s%s%s"
-          (F.pp_dp dp) (pp_sd sd) (pp_extr e)
+      sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
+    | Dp (dp,UnspecLoc,Irr) -> sprintf "Dp%s" (F.pp_dp dp)
+    | Dp (dp,sd,e) ->
+      sprintf "Dp%s%s%s"(F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
     | Rmw rmw-> F.pp_rmw compat   rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
@@ -339,27 +319,22 @@ and type rmw = F.rmw = struct
   let debug_edge e =
     sprintf
       "{edge=%s, a1=%s, a2=%s}"
-      (do_pp_tedge false e.edge) (pp_a e.a1) (pp_a e.a2)
+      (do_pp_tedge false e.edge) (pp_atom_option e.a1) (pp_atom_option e.a2)
 
-  let do_pp_edge compat pp_aa e =
-    (match e.edge with Id -> "" | _ -> do_pp_tedge compat e.edge) ^
-    pp_aa e.edge e.a1 e.a2
-
-  let pp_edge e = do_pp_edge false pp_archs e
+  let do_pp_edge compat pp_atom_functor e =
+    let annotation = pp_atom_functor e.edge e.a1 e.a2 in
+    let edge = match e.edge with
+    | Id -> ""
+    | _ -> do_pp_tedge compat e.edge in
+    edge ^ annotation
 
   let pp_edge_with_xx compat e = do_pp_edge compat pp_aa e
 
-  let pp_edge_with_p compat e = do_pp_edge compat pp_aa_bis e
-
   let pp_edge_with_a compat e = do_pp_edge compat pp_aa_ter e
 
-  let pp_edge_with_pa compat e = do_pp_edge compat pp_aa_qua e
+  let pp_edge e = pp_edge_with_xx false e
 
-  let compare_atomo a1 a2 = match a1,a2 with
-  | None,None -> 0
-  | None,Some _ -> -1
-  | Some _,None -> 1
-  | Some a1,Some a2 -> F.compare_atom a1 a2
+  let compare_atomo = Option.compare F.compare_atom
 
   let compare e1 e2 = match compare_atomo e1.a1 e2.a1 with
   | 0 ->
@@ -413,34 +388,36 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
   | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
-  let do_is_diff e = match do_loc_sd e with
-  | Same -> false
-  | Diff -> true
+  let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
-  let r = fold_ie (fun ie -> f (Ws ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
   let r = F.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
-  let r = fold_ie (fun ie -> f (Rf ie)) r in
-  let r = fold_ie (fun ie -> f (Fr ie)) r in
-  let r = fold_ie (fun ie -> f (Ws ie)) r in
-  let r = F.fold_rmw (fun rmw -> f (Rmw rmw)) r in
-  let r = fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
+  let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
+  let r = F.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
+  let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
   let r =
     F.fold_all_fences
       (fun fe ->
-        fold_sd_extr_extr
+        fold_sd_extr_extr wildcard
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
     F.fold_dpr
-      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir R)))) r in
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir R)))) r in
   let r =
     F.fold_dpw
-      (fun dp -> fold_sd (fun sd -> f (Dp (dp,sd,Dir W)))) r in
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir W)))) r in
+  let r =
+    if wildcard then F.fold_dpw
+      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Irr)))) r
+    else r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -450,8 +427,7 @@ let fold_tedges f r =
 
   let fold_atomo f k = f None (F.fold_atom (fun a k -> f  (Some a) k) k)
   let fold_mixed f k = F.fold_mixed (fun a k -> f  (Some a) k) k
-  let fold_atomo_list aos f k =
-    List.fold_right (fun a k -> f (Some a) k) aos k
+  let fold_atomo_list aos f k = List.fold_right (fun a k -> f a k) aos k
 
   let overlap_atoms a1 a2 =
     match a1,a2 with
@@ -467,6 +443,9 @@ let fold_tedges f r =
     not (F.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
+    (* `do_is_diff` is safe to call when `e` is not
+       wildcard `*`/UnspecLoc location. *)
+    Code.is_unspec_loc @@ do_loc_sd e ||
     do_is_diff e || do_disjoint ||
     (overlap_atoms a1 a2 &&
      not (do_strict_overlap && same_access_atoms a1 a2))
@@ -552,19 +531,19 @@ let fold_tedges f r =
 (* Atom lexing *)
 (***************)
 
-  let iter_atom = Misc.fold_to_iter F.fold_atom
+  let iter_atom = Misc.fold_to_iter fold_atomo
 
   let ta = Hashtbl.create  37
 
-  let add_lxm lxm a =
+  let add_lxm_atom lxm a =
     if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
     try
       let old = Hashtbl.find ta lxm in
-      assert (F.compare_atom old a = 0) ;
+      assert (compare_atomo old a = 0) ;
     with Not_found ->
-      if not (F.is_ifetch (Some a)) then Hashtbl.add ta lxm a
+      if not (F.is_ifetch a) then Hashtbl.add ta lxm a
 
-  let () = iter_atom (fun a -> add_lxm (pp_atom a) a)
+  let () = iter_atom (fun a -> add_lxm_atom (pp_atom_option a) a)
 
   let parse_atom s =
     try Hashtbl.find ta s
@@ -591,7 +570,7 @@ let fold_tedges f r =
 
   let t = Hashtbl.create 40000
 
-  let add_lxm lxm e =
+  let add_lxm_edge lxm e =
     if dbg > 1 then eprintf "LXM: %s\n" lxm ;
     try
       let old = Hashtbl.find t lxm in
@@ -605,70 +584,56 @@ let fold_tedges f r =
       Hashtbl.add t lxm e
 
 (* Fill lexeme table *)
-  let iter_ie = Misc.fold_to_iter fold_ie
+  let iter_ie = Misc.fold_to_iter (fold_ie wildcard)
 
   let four_times_iter_edges compat iter_edges =
-    iter_edges  (fun e -> add_lxm (pp_edge_with_xx compat e) e) ;
-    iter_edges
-      (fun e -> match e.a1,e.a2 with
-      | (None,Some _)
-      | (Some _,None) ->
-          add_lxm (pp_edge_with_p compat e) e
-      | _,_ -> ()) ;
-    iter_edges
-      (fun e -> match e.a1,e.a2 with
-      | (_,(Some _ as a)) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a compat e) e
-      | ((Some _ as a),_) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_a compat e) e
-      | _,_ -> ()) ;
+    iter_edges  (fun e -> add_lxm_edge (pp_edge_with_xx compat e) e) ;
     iter_edges
       (fun e -> match e.a1,e.a2 with
       | (None,(Some _ as a))
       | ((Some _ as a),None) when a = F.pp_as_a ->
-          add_lxm (pp_edge_with_pa compat e) e
+          add_lxm_edge (pp_edge_with_a compat e) e
       | _,_ -> ())
-
 
   let () =
    four_times_iter_edges false iter_edges;
-   fold_sd_extr_extr
+   fold_sd_extr_extr wildcard
       (fun sd e1 e2 () ->
-        add_lxm
+        add_lxm_edge
           (pp_strong sd e1 e2) (plain_edge (Fenced (F.strong,sd,e1,e2)))) () ;
     let fill_opt tag dpo sd e = match dpo with
     | None -> ()
     | Some dp ->
-        add_lxm
+        add_lxm_edge
           (pp_dp_default tag sd e)
           (plain_edge (Dp (dp,sd,e))) in
-    fold_sd
+    fold_sd wildcard
       (fun sd () ->
-        fill_opt "Dp" F.ddr_default sd Irr ;
+        if wildcard then fill_opt "Dp" F.ddr_default sd Irr ;
+        if wildcard then fill_opt "Ctrl" F.ctrlr_default sd Irr ;
         fill_opt "Dp" F.ddr_default sd (Dir R) ;
         fill_opt "Ctrl" F.ctrlr_default sd (Dir R) ;
         fill_opt "Dp" F.ddw_default sd (Dir W) ;
         fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
         ()) () ;
-    if not (Hashtbl.mem t "R") then add_lxm "R" (plain_edge (Node R)) ;
-    if not (Hashtbl.mem t "W") then add_lxm "W" (plain_edge (Node W)) ;
+    if not (Hashtbl.mem t "R") then add_lxm_edge "R" (plain_edge (Node R)) ;
+    if not (Hashtbl.mem t "W") then add_lxm_edge "W" (plain_edge (Node W)) ;
 (*Co aka Ws and LxSx aka Rmw*)
    four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
 (* Backward compatibility *)
     if do_self && F.instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
-           add_lxm (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=F.instr_atom; edge=(Rf ie); } ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); } ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=F.instr_atom; a2=None; edge=(Fr ie); });
     ()
-
 
   let fold_pp_edges f =
     Hashtbl.fold
       (fun s e k ->
-        if e.a1=None && e.a2=None then
+        if e.a1=None && e.a2=None && e.edge <> Id then
           f s k
         else k)
       t
@@ -765,24 +730,48 @@ let fold_tedges f r =
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
 
-  let expand_dir d f = match d with
-  | Dir _|NoDir -> f d
-  | Irr -> fun k -> f (Dir W) (f (Dir R) k)
+  let expand_loc sd f acc = match sd with
+  | Same|Diff -> f sd acc
+  | UnspecLoc -> f Same (f Diff acc)
+
+  let expand_com com f acc = match com with
+  | Int|Ext -> f com acc
+  | UnspecCom -> f Int (f Ext acc)
+
+  let expand_dir d f acc = match d with
+  | Dir _|NoDir -> f d acc
+  | Irr -> f (Dir W) (f (Dir R) acc)
 
   let expand_dir2 e1 e2 f =
     expand_dir e1
       (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
 
-  let do_expand_edge e f =
-    match e.edge with
-    | Insert _|Store|Id|Node _|Rf _ | Fr _ | Ws _
-    | Hat |Rmw _|Dp _|Leave _|Back _
-      -> f e
-    | Po(sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Po(sd,d1,d2);})
-    | Fenced(fe,sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 -> f {e with edge=Fenced(fe,sd,d1,d2);})
+  let expand_dp_dir dp sd f acc = match sd with
+  | Dir _|NoDir -> f sd acc
+  | Irr ->
+    let expand_dir_list = F.expand_dp_dir dp in
+    List.fold_left (fun acc sd -> f (Dir sd) acc) acc expand_dir_list
 
+  let do_expand_edge e f acc =
+    match e.edge with
+    | Insert _|Store|Id|Node _
+    | Hat |Leave _|Back _
+      -> f e acc
+    | Rf com -> expand_com com ( fun new_com -> f {e with edge = Rf(new_com)}) acc
+    | Fr com -> expand_com com ( fun new_com -> f {e with edge = Fr(new_com)}) acc
+    | Ws com -> expand_com com ( fun new_com -> f {e with edge = Ws(new_com)}) acc
+    | Rmw rmw ->
+        let expand_rmw_list = F.expand_rmw rmw in
+        List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
+    | Dp (dp,sd,expr) ->
+      expand_dp_dir dp expr (fun new_expr ->
+        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
+    | Po(sd,e1,e2) ->
+        expand_dir2 e1 e2 (fun d1 d2 ->
+          expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);})) acc
+    | Fenced(fe,sd,e1,e2) ->
+        expand_dir2 e1 e2 (fun d1 d2 ->
+          expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);})) acc
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
@@ -1050,9 +1039,11 @@ let fold_tedges f r =
 
 (* compact *)
 
-  let seq_sd e1 e2 = match loc_sd e1,loc_sd e2 with
-  | Same,Same -> Same
-  | _,_ -> Diff
+  let seq_sd e1 e2 =
+    match Code.seq_sd (loc_sd e1) (loc_sd e2) with
+    | None -> Warn.user_error "Unexpected UnspecLoc"
+    | Some b -> b
+
 
   let fst_dp e1 e2 k = match e1.edge with
   | Dp (d,_,_) ->
@@ -1134,9 +1125,8 @@ let fold_tedges f r =
           eprintf "\n%!"
       | Annotations ->
           let es =
-            F.fold_atom
-              (fun a k ->
-                let ao = Some a in
+            fold_atomo
+              (fun ao k ->
                 if F.is_ifetch ao then k
                 else { edge=Id; a1=ao; a2=ao;}::k)
               [] in

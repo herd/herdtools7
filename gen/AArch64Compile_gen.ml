@@ -1632,7 +1632,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_ldp_reg opt idx st _p init rA =
       match opt,idx with
-      |  _,Both ->
+      |  _,UnspecLoc ->
           emit_ldp_reg opt st init rA
 
     let emit_ldp opt idx st p init loc =
@@ -1652,7 +1652,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_stp_reg opt idx st p init rA e =
       match opt,idx with
-      | _,Both ->
+      | _,UnspecLoc ->
       do_emit_stp_reg opt st p init (Value.to_int e.C.v) rA
 
     let emit_stp opt idx st p init loc e =
@@ -1669,7 +1669,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st =  U.next_init st p init loc in
       let r2,st = next_reg st in
       match idx with
-      | Both ->
+      | UnspecLoc ->
          init,pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
 
 (**************)
@@ -1704,7 +1704,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | _ -> LDN.emit_load n
        in
        emit_load
-    | Code.Pair -> emit_ldp Pa Both
+    | Code.Pair -> emit_ldp Pa UnspecLoc
 
 
     let emit_obs_not_value = OBS.emit_load_not_value
@@ -2164,6 +2164,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Cas -> map_some emit_cas
     | LdOp op -> map_some (emit_ldop op)
     | StOp op -> emit_stop op
+    | AllAmo -> assert false
 
 (* Fences *)
     let emit_cachesync s isb r =
@@ -2805,6 +2806,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
     | Cas -> map_some_dp emit_cas_dep
     | StOp op -> emit_stop_dep op
+    | AllAmo -> assert false
 
     let emit_fence_dp st p init n f (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in

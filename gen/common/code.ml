@@ -67,10 +67,10 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext
+type ie = Int|Ext|UnspecCom
 
 (* Change of location across edge *)
-type sd = Same|Diff
+type sd = Same|Diff|UnspecLoc
 
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
@@ -83,6 +83,7 @@ let pp_dir = function
 let pp_ie = function
   | Int -> "i"
   | Ext -> "e"
+  | UnspecCom -> "*"
 
 let pp_extr = function
   | Dir d -> pp_dir d
@@ -92,18 +93,32 @@ let pp_extr = function
 let pp_sd = function
   | Same -> "s"
   | Diff -> "d"
+  | UnspecLoc -> "*"
+
+let is_same_loc = function
+  | Same -> true
+  | _ -> false
+
+let is_diff_loc = function
+  | Diff -> true
+  | _ -> false
+
+let is_unspec_loc = function
+  | UnspecLoc -> true
+  | _ -> false
 
 let seq_sd sd1 sd2 =
   match sd1,sd2 with
-  | Same,Same -> Same
-  | Diff,_|_,Diff -> Diff
+  | UnspecLoc,_|_, UnspecLoc -> None
+  | Same,Same -> Some Same
+  | Diff,_|_,Diff -> Some Diff
 
-let fold_ie f r = f Ext (f Int r)
-let fold_sd f r = f Diff (f Same r)
-let fold_extr f r = f (Dir W) (f (Dir R) (f Irr r))
-let fold_sd_extr f = fold_sd (fun sd -> fold_extr (fun e -> f sd e))
-let fold_sd_extr_extr f =
-  fold_sd_extr (fun sd e1 -> fold_extr (fun e2 -> f sd e1 e2))
+let fold_ie wildcard f r = let r = if wildcard then (f UnspecCom r) else r in f Ext (f Int r)
+let fold_sd wildcard f r = let r = if wildcard then (f UnspecLoc r) else r in f Diff (f Same r)
+let fold_extr wildcard f r = let r = if wildcard then (f Irr r) else r in f (Dir W) (f (Dir R) r)
+let fold_sd_extr wildcard f = fold_sd wildcard (fun sd -> fold_extr wildcard (fun e -> f sd e))
+let fold_sd_extr_extr wildcard f =
+  fold_sd_extr wildcard (fun sd e1 -> fold_extr wildcard (fun e2 -> f sd e1 e2))
 
 type check =
   | Default | Sc | Uni | Thin | Critical

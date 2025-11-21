@@ -33,3 +33,7 @@ val is_addr : dp -> bool
 (* Dependencies compositin by sequence *)
 val fst_dp : dp -> dp list
 val sequence_dp : dp -> dp -> dp list
+
+open Code
+(* Expand wildcard `*` *)
+val expand_dp_dir: dp -> dir list
