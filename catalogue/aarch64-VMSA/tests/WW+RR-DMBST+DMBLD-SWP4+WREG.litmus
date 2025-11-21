@@ -1,0 +1,15 @@
+AArch64 WW+RR-DMBST+DMBLD-SWP4+WREG
+TTHM=P0:HD
+{
+0:X1=x; 1:X1=x;
+0:X3=y; 1:X3=y;
+pte_x=(af:0);
+1:X6=pte_x; 
+1:X4=(oa:phy_x,af:0)
+}
+P0          | P1            ;
+LDR W0,[X1] | MOV W2,#1     ;
+DMB LD      | STR W2,[X3]   ;
+LDR W2,[X3] | DMB ST        ;
+            | SWP X4,X5,[X6];
+exists(0:X0=0 /\ 0:X2=0 /\ 1:X5=(oa:phy_x,af:0))
