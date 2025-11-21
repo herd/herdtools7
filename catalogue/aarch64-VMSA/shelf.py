@@ -522,6 +522,7 @@ illustrative_tests = [
     "tests/RW+RR-DMBLD+DMBLD-SWP2.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP3.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP4+WREG.litmus",
+    "tests/WW+RR-DMBST+DMBLD-SWP4+WREG.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP5.litmus",
     "tests/RW+RR-DMBLD+DMBLD.litmus",
     "tests/RW+RR-DSB+DMBLD.litmus",

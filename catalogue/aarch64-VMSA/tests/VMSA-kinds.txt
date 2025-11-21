@@ -684,6 +684,7 @@ NT-11-tlbi-allha+dsb                           Forbidden
 NT-12-dmb-allha-variant1-LLSC                  Forbidden
 NT-20-dmb+dsb                                  Forbidden
 RW+RR-DMBLD+DMBLD-SWP4+WREG                    Forbidden
+WW+RR-DMBST+DMBLD-SWP4+WREG                    Forbidden
 NT-20-dsbld                                    Forbidden
 NT-20-dmbld                                    Forbidden
 NT-20-dsb                                      Forbidden
