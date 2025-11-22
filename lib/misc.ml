@@ -736,6 +736,33 @@ let pp_physical = sprintf "PA(%s)"
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"
 
+let int_of_tag t = match t with
+  | "green" -> 0
+  | "red" -> 1
+  | "blue" -> 2
+  | "black" -> 3
+  | "white" -> 4
+  | "cyan" -> 5
+  | "yellow" -> 6
+  | "magenta" -> 7
+  | _ -> raise (Fatal (sprintf "cannot convert %s of tag" t))
+
+
+let tag_of_int v = match v with
+  | 0 -> "green"
+  | 1 -> "red"
+  | 2 -> "blue"
+  | 3 -> "black"
+  | 4 -> "white"
+  | 5 -> "cyan"
+  | 6 -> "yellow"
+  | 7 -> "magenta"
+  | _ -> raise (Fatal (sprintf "cannot convert %d of int" v))
+
+let pp_tagged s t = sprintf "%s:%s" s (tag_of_int t)
+let pp_tag = sprintf "tag(%s)"
+let add_tag = sprintf "tag_%s"
+
 (******************)
 (* Hash utilities *)
 (******************)
