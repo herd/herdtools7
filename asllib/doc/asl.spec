@@ -86,6 +86,261 @@ typedef def_use_name { "subprogram identifier kind" } =
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Operator definitions
+// Some of the operators below will be removed once type parameters
+// are made available to ordinary relations.
+
+// Assignment is special as it defines the left-hand side.
+operator assign[T](T, T) -> Bool
+{
+  math_macro = \eqdef,
+};
+
+operator ast_label[T](T) -> ASTLabels
+{
+  math_macro = \astlabelop,
+};
+
+operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
+{
+  math_macro = \opupdate,
+};
+
+operator equal[T](a: T, b: T) -> (c: Bool)
+{
+  math_macro = \equal,
+  prose_application = "equating {a} to {b} yields {c}",
+};
+
+operator not_equal[T](T, T) -> Bool
+{
+  math_macro = \notequal,
+};
+
+operator if_then_else[T](Bool, T, T) -> T
+{
+  math_macro = \ifthenelseop,
+};
+
+operator some[T](T) -> option(T)
+{
+  math_macro = \some,
+};
+
+operator make_list[T](list0(T)) -> list0(T)
+{
+  math_macro = \makelist,
+};
+
+operator list_len[T](list0(T)) -> N
+{
+  math_macro = \listlen,
+};
+
+operator concat[T](list1(T)) -> list0(T)
+{
+  associative = true,
+  math_macro = \concat,
+};
+
+operator concat_list[T](list0(T)) -> list0(T)
+{
+  math_macro = \concatlist,
+};
+
+operator cons[T](T, list0(T)) -> list1(T)
+{
+  math_macro = \cons,
+};
+
+operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
+{
+  math_macro = \listcombine,
+};
+
+// Constructs a set out of a fixed list of expressions.
+operator make_set[T](list1(T)) -> powerset(T)
+{
+  math_macro = \makeset,
+};
+
+// The size of a finite set.
+operator cardinality[T](powerset(T)) -> N
+{
+  math_macro = \cardinality,
+};
+
+operator member[T](x: T, s: powerset(T)) -> Bool
+{
+  math_macro = \member,
+};
+
+operator not_member[T](x: T, s: powerset(T)) -> Bool
+{
+  math_macro = \notmember,
+};
+
+operator subset[T](A: powerset(T), B: powerset(T)) -> Bool
+{
+  math_macro = \subset,
+};
+
+operator union[T](list1(powerset(T))) -> powerset(T)
+{
+  math_macro = \cup,
+  associative = true,
+};
+
+operator union_list[T](list1(powerset(T))) -> powerset(T)
+{
+  math_macro = \UNIONLIST,
+};
+
+operator not(Bool) -> Bool
+{
+  math_macro = \opnot,
+};
+
+operator and(list1(Bool)) -> Bool
+{
+  associative = true,
+  math_macro = \land,
+};
+
+operator or(list1(Bool)) -> Bool
+{
+  associative = true,
+  math_macro = \lor,
+};
+
+operator list_and(list1(Bool)) -> Bool
+{
+  math_macro = \land,
+};
+
+operator list_or(list1(Bool)) -> Bool
+{
+  math_macro = \lor,
+};
+
+operator iff(Bool, Bool) -> Bool
+{
+  math_macro = \IFF,
+};
+
+operator implies(Bool, Bool) -> Bool
+{
+  math_macro = \implies,
+};
+
+operator int_plus(list1(N)) -> N
+{
+  associative = true,
+  math_macro = \intplus,
+};
+
+operator int_minus(list1(N)) -> N
+{
+  associative = true,
+  math_macro = \intminus,
+};
+
+operator int_negate(N) -> N
+{
+  math_macro = \intnegate,
+};
+
+operator int_times(list1(N)) -> N
+{
+  math_macro = \inttimes,
+};
+
+operator int_divide(N, N) -> N
+{
+  math_macro = \intdivide,
+};
+
+operator int_exponent(N, N) -> N
+{
+  math_macro = \intexponent,
+};
+
+operator int_less_than(N, N) -> Bool
+{
+  math_macro = \intlessthan,
+};
+
+operator int_less_or_equal(N, N) -> Bool
+{
+  math_macro = \intlessorequal,
+};
+
+operator int_greater_than(N, N) -> Bool
+{
+  math_macro = \intgreaterthan,
+};
+
+operator int_greater_or_equal(N, N) -> Bool
+{
+  math_macro = \intgreaterorequal,
+};
+
+operator round_up(Q) -> N
+{
+  math_macro = \roundup,
+};
+
+operator round_down(Q) -> N
+{
+  math_macro = \rounddown,
+};
+
+operator parallel(XGraphs, XGraphs) -> XGraphs
+{
+  math_macro = \parallelcomp,
+};
+
+operator ordered_data(list1(XGraphs)) -> XGraphs
+{
+  associative = true,
+  math_macro = \ordereddata,
+};
+
+operator ordered_ctrl(list1(XGraphs)) -> XGraphs
+{
+  associative = true,
+  math_macro = \orderedctrl,
+};
+
+operator ordered_po(list1(XGraphs)) -> XGraphs
+{
+  associative = true,
+  math_macro = \orderedpo,
+};
+
+operator graph_of[T](T) -> XGraphs
+{
+  math_macro = \graphof,
+};
+
+operator with_graph[T](T, XGraphs) -> T
+{
+  custom = true,
+  math_macro = \withgraph,
+};
+
+operator environ_of[T](T) -> envs
+{
+  math_macro = \environof,
+};
+
+operator with_environ[T](T, envs) -> T
+{
+  custom = true,
+  math_macro = \withenviron,
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // Types for Symbolic Equivalence Testing
 constant negative_sign { "negative sign", math_macro = \negativesign };
 constant positive_sign { "positive sign", math_macro = \positivesign };
@@ -193,10 +448,10 @@ ast expr { "expression" } =
     { "variable expression for {name}" }
     | E_ATC(source: expr, type: ty)
     { "asserting type conversion for the source expression {source} and type {type}" }
-    | E_Binop(operator: binop, left: expr, right: expr)
-    { "binary expression for the operator {operator}, left expression {left} and right expression {right}" }
-    | E_Unop(operator: unop, subexpression: expr)
-    { "unary expression for the unary operator {operator} and subexpression {subexpression}" }
+    | E_Binop(binary_operator: binop, left: expr, right: expr)
+    { "binary expression for the operator {binary_operator}, left expression {left} and right expression {right}" }
+    | E_Unop(unary_operator: unop, subexpression: expr)
+    { "unary expression for the unary operator {unary_operator} and subexpression {subexpression}" }
     | E_Call(call_descriptor: call)
     { "call expression for the call descriptor {call_descriptor}" }
     | E_Slice(base: expr, slices: list0(slice))
@@ -1330,7 +1585,7 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 } =
   case Int {
     l = L_Int(n);
-    cs := LIST(Constraint_Exact(E_Literal(L_Int(n))));
+    cs := make_list(Constraint_Exact(E_Literal(L_Int(n))));
     --
     T_Int(WellConstrained(cs));
   }
@@ -1355,7 +1610,7 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 
   case Bits {
     l = L_Bitvector(bits);
-    n := SIZE(bits);
+    n := cardinality(bits);
     --
     T_Bits(E_Literal(L_Int(n)), empty_list);
   }
@@ -1539,11 +1794,12 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(expr), vmlist:
         | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
+        | TDiverging
 {
     "evaluates multi-assignments. That is, the simultaneous assignment of the list of value-\executiongraphterm{} pairs {vmlist} to the corresponding list of \assignableexpressions{} {lelist}, in the environment {env}. The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration",
     prose_application = "evaluating multi-assignment of {vmlist} to {lelist} in {env} yields $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
     math_macro = \evalmultiassignment,
-    math_layout = (_, [_,_,_]),
+    math_layout = (_, [_,_,_,_]),
 };
 
 typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
@@ -3120,29 +3376,29 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s = S_Assign(le, re);
     annotate_expr(tenv, re) -> (t_re, re1, ses_re);
     annotate_lexpr(tenv, le, t_re) -> (le1, ses_le);
-    ses := UNION(ses_re, ses_le);
+    ses := union(ses_re, ses_le);
     --
     (S_Assign(le1, re1), tenv, ses);
   }
 
   case SDecl {
     case Some {
-      s = S_Decl(ldk, ldi, ty_opt, SOME(e));
+      s = S_Decl(ldk, ldi, ty_opt, some(e));
       annotate_expr(tenv, e) -> (t_e, e', ses_e);
       annotate_local_decl_type_annot(tenv, ty_opt, t_e, ldk, e', ldi) -> (tenv1, ty_opt', ses_ldi)
       { math_layout = [_,_] };
-      ses := UNION(ses_e, ses_ldi);
-      new_s := S_Decl(ldk, ldi, ty_opt', SOME(e'));
+      ses := union(ses_e, ses_ldi);
+      new_s := S_Decl(ldk, ldi, ty_opt', some(e'));
       --
       (new_s, tenv1, ses);
     }
 
     case None {
       s = S_Decl(LDK_Var, ldi, ty_opt, None);
-      te_check(ty_opt = SOME(_), TE_BD) -> True;
+      te_check(ty_opt = some(_), TE_BD) -> True;
       base_value(tenv, t') -> e_init;
       annotate_local_decl_item(tenv, t', LDK_Var, None, ldi') -> new_tenv;
-      new_s := S_Decl(LDK_Var, ldi, SOME(t'), SOME(e_init));
+      new_s := S_Decl(LDK_Var, ldi, some(t'), some(e_init));
       --
       (new_s, new_tenv, ses);
     }
@@ -3152,7 +3408,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s = S_Seq(s1, s2);
     annotate_stmt(tenv, s1) -> (new_s1, tenv1, ses1);
     annotate_stmt(tenv1, s2) -> (new_s2, new_tenv, ses2);
-    ses := UNION(ses1, ses2);
+    ses := union(ses1, ses2);
     --
     (S_Seq(new_s1, new_s2), new_tenv, ses);
   }
@@ -3170,7 +3426,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     checked_typesat(tenv, t_cond, T_Bool) -> True;
     annotate_block(tenv, s1) -> (s1', ses1);
     annotate_block(tenv, s2) -> (s2', ses2);
-    ses := UNION(ses_cond, ses1, ses2);
+    ses := union(ses_cond, ses1, ses2);
     --
     (S_Cond(e_cond, s1', s2'), tenv, ses);
   }
@@ -3191,7 +3447,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
     checked_typesat(tenv, t, T_Bool) -> True;
     annotate_block(tenv, s1) -> (s2, ses_block);
-    ses := UNION(ses_block, ses_e, ses_limit);
+    ses := union(ses_block, ses_e, ses_limit);
     --
     (S_While(e2, limit2, s2), tenv, ses);
   }
@@ -3202,7 +3458,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
     annotate_expr(tenv, e1) -> (t, e2, ses_e);
     checked_typesat(tenv, t, T_Bool) -> True;
-    ses := UNION(ses_block, ses_e, ses_limit);
+    ses := union(ses_block, ses_e, ses_limit);
     --
     (S_Repeat(s2, e2, limit2), tenv, ses);
   }
@@ -3221,7 +3477,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_limit_expr(tenv, limit) -> (limit', ses_limit);
     te_check(ses_is_readonly(ses_start), TE_SEV) -> True;
     te_check(ses_is_readonly(ses_end), TE_SEV) -> True;
-    ses_cond := UNION(ses_start, ses_end, ses_limit);
+    ses_cond := union(ses_start, ses_end, ses_limit);
     make_anonymous(tenv, start_t) -> start_struct;
     make_anonymous(tenv, end_t) -> end_struct;
     get_for_constraints(tenv, start_struct, end_struct, start_e', end_e', dir, cs) -> cs
@@ -3230,7 +3486,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     check_var_not_in_env(tenv, index_name) -> True;
     add_local(tenv, ty, index_name, LDK_Let) -> tenv';
     annotate_block(tenv', body) -> (body', ses_block);
-    ses := UNION(ses_block, ses_cond);
+    ses := union(ses_block, ses_cond);
     --
     (
       S_For[
@@ -3251,7 +3507,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_expr(tenv, e) -> (t_e, e', ses1);
     check_structure_label(tenv, t_e, T_Exception) -> True;
     t_e =: T_Named(exn_name);
-    ses := UNION(ses1, SET(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)));
+    ses := union(ses1, make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)));
     --
     (S_Throw(e', t_e), tenv, ses);
   }
@@ -3265,7 +3521,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_block(tenv, s') -> (s'', ses1);
     (INDEX(i, catchers : annotate_catcher(tenv, catchers[i]) -> (catchers'[i], xs[i])))
     { math_layout =  ([_,_]) };
-    ses_catchers := UNION_LIST(catchers');
+    ses_catchers := union_list(catchers');
     case No_Otherwise {
       otherwise = None;
       otherwise' := None;
@@ -3273,13 +3529,13 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     }
 
     case Otherwise {
-      otherwise = SOME(block);
+      otherwise = some(block);
       annotate_block(tenv, block) -> (block', ses_block);
-      otherwise' := SOME(otherwise');
+      otherwise' := some(otherwise');
       ses_otherwise := ses_block;
       ses_otherwise := ses_block;
     }
-    ses := UNION(ses2, ses_catchers, ses_otherwise);
+    ses := union(ses2, ses_catchers, ses_otherwise);
     new_s := S_Try(s'', catchers', otherwise');
     --
     (new_s, tenv, ses);
@@ -3288,7 +3544,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SReturn {
     case Error {
       s = S_Return(e_opt);
-      b := (tenv.static_envs_L.return_type = None) IFF (e_opt = None);
+      b := (tenv.static_envs_L.return_type = None) <=> (e_opt = None);
       b = False;
       --
       TypeError(TE_BSPD);
@@ -3302,12 +3558,12 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     }
 
     case Some {
-      s = S_Return(SOME(e));
-      tenv.static_envs_L.return_type = SOME(t);
+      s = S_Return(some(e));
+      tenv.static_envs_L.return_type = some(t);
       annotate_expr(tenv, e) -> (t_e', e', ses);
       checked_typesat(tenv, t_e', t) -> True;
       --
-      (S_Return(SOME(e')), tenv, ses);
+      (S_Return(some(e')), tenv, ses);
     }
   }
 
@@ -3315,7 +3571,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s = S_Print(args, newline);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
     INDEX(i, args : te_check(is_singular(tys[i]), TE_UT) -> True);
-    ses := UNION(SET(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), UNION_LIST(sess));
+    ses := union(make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), union_list(sess));
     --
     (S_Print(args', newline), tenv, ses);
   }
@@ -3329,7 +3585,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SPragma {
     s = S_Pragma(id, args);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (_, _, sess[i]));
-    ses := UNION_LIST(sess);
+    ses := union_list(sess);
     --
     (S_Pass, tenv, ses);
   }
@@ -3828,7 +4084,8 @@ typing relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
 };
 
 semantics relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0(expr)) ->
-    ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs) | TDynError | TDiverging
+    ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs)
+    | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates a call to the subprogram named {name} in
                         the environment {env}, with the parameter expressions

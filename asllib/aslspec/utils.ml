@@ -10,9 +10,11 @@ let list_is_equal eq l1 l2 =
   in
   aux l1 l2
 
-let is_singleton_list list = 1 == List.length list
+let is_singleton_list = function [ _ ] -> true | _ -> false
 let list_tl_or_empty list = match list with [] -> [] | _ :: t -> t
 
+(** [split_last lst] returns a pair consisting of the prefix up to the last and
+    the last element, assuming the list is non-empty. *)
 let split_last lst =
   match List.rev lst with [] -> assert false | x :: xs -> (List.rev xs, x)
 

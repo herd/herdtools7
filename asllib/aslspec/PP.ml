@@ -12,11 +12,11 @@ let pp_comma_list pp_elt fmt =
 let pp_sep_list ~sep pp_elem elements =
   Format.pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt sep) pp_elem elements
 
-let rec pp_math_shape fmt layout =
+let rec pp_layout fmt layout =
   match layout with
   | Unspecified -> pp_print_string fmt "_"
-  | Horizontal l -> fprintf fmt "(%a)" (pp_sep_list ~sep:"," pp_math_shape) l
-  | Vertical l -> fprintf fmt "[%a]" (pp_sep_list ~sep:"," pp_math_shape) l
+  | Horizontal l -> fprintf fmt "(%a)" (pp_sep_list ~sep:"," pp_layout) l
+  | Vertical l -> fprintf fmt "[%a]" (pp_sep_list ~sep:"," pp_layout) l
 
 let pp_attribute_key fmt key = pp_print_string fmt (AttributeKey.to_str key)
 
@@ -24,7 +24,7 @@ let pp_attribute fmt = function
   | StringAttribute s ->
       let s = Str.global_replace (Str.regexp "\n") " " s in
       fprintf fmt "\"@[<hov>%a@]\"" pp_print_text s
-  | MathLayoutAttribute layout -> pp_math_shape fmt layout
+  | MathLayoutAttribute layout -> pp_layout fmt layout
   | MathMacroAttribute macro -> pp_print_string fmt macro
   | BoolAttribute b -> pp_print_bool fmt b
 
@@ -99,31 +99,12 @@ let pp_variants_with_attributes fmt variants =
   pp_sep_list ~sep:"@,  | " pp_type_term_with_attributes fmt variants
 
 let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
-
-let expr_operator_to_string =
-  let open Rule in
-  function
-  | Operator_Assign -> tok_str COLON_EQ
-  | Operator_Equal -> tok_str EQ
-  | Operator_Iff -> tok_str IFF
-  | Operator_List -> tok_str LIST
-  | Operator_Set -> tok_str SET
-  | Operator_Size -> tok_str SIZE
-  | Operator_Some -> tok_str SOME
-  | Operator_Union -> tok_str UNION
-  | Operator_UnionList -> tok_str UNION_LIST
-
 let pp_output_opt fmt is_output = if is_output then fprintf fmt "--@," else ()
 
 let rec pp_expr fmt =
   let open Rule in
   function
   | Var name -> pp_print_string fmt name
-  | Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
-    when is_infix_operator op ->
-      fprintf fmt "%a %s %a" pp_expr lhs
-        (expr_operator_to_string op)
-        pp_expr rhs
   | Application { applicator; args } ->
       fprintf fmt "%a(%a)" pp_application_lhs applicator (pp_comma_list pp_expr)
         args
@@ -147,7 +128,7 @@ and pp_application_lhs fmt =
   | EmptyApplicator -> ()
   | Relation name -> pp_print_string fmt name
   | TupleLabel name -> pp_print_string fmt name
-  | ExprOperator op -> pp_print_string fmt (expr_operator_to_string op)
+  | ExprOperator op -> pp_print_string fmt op
   | Fields path -> pp_print_string fmt (String.concat "." path)
   | Unresolved expr -> pp_expr fmt expr
 
@@ -194,12 +175,33 @@ let relation_keyword_to_string =
   | RelationProperty_Relation -> tok_str RELATION
   | RelationProperty_Function -> tok_str FUNCTION
 
+(** [pp_parameters fmt parameters] pretty-prints the list of parameters
+    [parameters] with the formatter [fmt]. If the list is empty, nothing is
+    printed. *)
+let pp_parameters fmt parameters =
+  if not (Utils.list_is_empty parameters) then
+    fprintf fmt "[%a]" (pp_sep_list ~sep:", " pp_print_string) parameters
+  else ()
+
 let pp_relation_definition fmt
-    ({ Relation.name; property; category; input; output; rule_opt } as relation)
-    =
-  fprintf fmt "@[<b>%a%s %s(%a) -> %a@,%a%a@];" pp_relation_category category
-    (relation_keyword_to_string property)
-    name
+    ({
+       Relation.name;
+       parameters;
+       is_operator;
+       property;
+       category;
+       input;
+       output;
+       rule_opt;
+     } as relation) =
+  let pp_relation_prefix fmt () =
+    if is_operator then pp_print_string fmt (tok_str OPERATOR)
+    else
+      fprintf fmt "%a%s" pp_relation_category category
+        (relation_keyword_to_string property)
+  in
+  fprintf fmt "@[<b>%a %s%a(%a) -> %a@,%a%a@];" pp_relation_prefix () name
+    pp_parameters parameters
     (pp_sep_list ~sep:", " pp_opt_named_type_term)
     input pp_variants output pp_attribute_key_values
     (Relation.attributes_to_list relation)

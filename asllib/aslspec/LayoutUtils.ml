@@ -32,8 +32,15 @@ let rec contains_vertical = function
 let apply_layout_to_list layout elements =
   let args_layout =
     match layout with
+    | (Horizontal [ _ ] | Vertical [ _ ]) when List.length elements > 1 ->
+        unspecified_for_elements elements
     | Horizontal l | Vertical l -> l
     | Unspecified -> unspecified_for_elements elements
   in
-  assert (List.compare_lengths elements args_layout = 0);
+  if List.compare_lengths elements args_layout <> 0 then
+    failwith
+      (Format.asprintf
+         "LayoutUtils.apply_layout_to_list: number of layouts (%d) does not \
+          match number of elements (%d) for layout %a"
+         (List.length args_layout) (List.length elements) PP.pp_layout layout);
   List.combine elements args_layout

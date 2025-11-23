@@ -30,11 +30,13 @@ let bool_of_string s =
 %token <string> IDENTIFIER LATEX_MACRO STRING
 
 (* Keyword tokens *)
+%token ASSOCIATIVE
 %token AST
 %token CASE
 %token COLON_EQ
 %token CONSTANT
 %token CONSTANTS_SET
+%token CUSTOM
 %token FUN
 %token FUNCTION
 %token INDEX
@@ -45,6 +47,7 @@ let bool_of_string s =
 %token MATH_LAYOUT
 %token LHS_HYPERTARGETS
 %token OPTION
+%token OPERATOR
 %token PARTIAL
 %token POWERSET
 %token POWERSET_FINITE
@@ -72,6 +75,8 @@ let bool_of_string s =
 %token COLON
 %token DOT
 %token EQ
+%token IN
+%token NOT_IN
 %token SEMI
 %token VDASH
 %token LPAR
@@ -83,10 +88,40 @@ let bool_of_string s =
 %token MINUS
 %token MINUS_MINUS
 
+%token PLUS
+%token TIMES
+%token DIVIDE
+%token EXPONENT
+%token AND
+%token OR
+%token LE
+%token LT
+%token GE
+%token GT
+%token NEQ
+
+%token IF THEN ELSE
+
+%right MINUS
+%right PLUS
+%right TIMES
+%right DIVIDE
+%right EXPONENT
+%right AND
+%right OR
+%right ELSE
+
 %nonassoc ARROW
 %nonassoc EQ
+%nonassoc IN
+%nonassoc NOT_IN
 %nonassoc IFF
 %nonassoc COLON_EQ
+%nonassoc LE
+%nonassoc LT
+%nonassoc GE
+%nonassoc GT
+%nonassoc NEQ
 %left LPAR
 %right VDASH
 
@@ -157,6 +192,7 @@ let spec := elems=terminated(list(terminated(elem, SEMI)), EOF); { elems }
 let elem :=
     | type_definition
     | relation_definition
+    | operator_definition
     | constant_definition
     | render_types
     | render_rule
@@ -180,6 +216,16 @@ let relation_definition :=
     ~=relation_attributes; ~=opt_relation_rule;
     {   check_definition_name name;
         Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes opt_relation_rule) }
+
+let operator_definition :=
+    OPERATOR; name=IDENTIFIER; ~=parameters; input=plist0(opt_named_type_term); ARROW; output=type_term;
+    ~=operator_attributes;
+    {   check_definition_name name;
+        Elem_Relation (Relation.make_operator name parameters input output operator_attributes) }
+
+let parameters :=
+    | LBRACKET; params=tclist1(IDENTIFIER); RBRACKET; { params }
+    | { [] }
 
 let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes;
     {   check_definition_name name;
@@ -224,6 +270,18 @@ let relation_attributes ==
 let relation_attribute :=
     | prose_application_attribute
     | type_attribute
+
+let operator_attributes ==
+    LBRACE; pairs=tclist0(operator_attribute); RBRACE; { pairs }
+
+let operator_attribute :=
+    | math_macro_attribute
+    | operator_style_attribute
+    | prose_application_attribute
+
+let operator_style_attribute ==
+    | ASSOCIATIVE; EQ; value=IDENTIFIER; { (Associative, BoolAttribute (bool_of_string value)) }
+    | CUSTOM; EQ; value=IDENTIFIER; { (Custom, BoolAttribute (bool_of_string value)) }
 
 let prose_application_attribute ==
     PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
@@ -329,12 +387,8 @@ let expr :=
       { Rule.Var id }
     | components=plist1(expr);
       { Rule.make_tuple components }
-    | ~=prefix_expr_operator; args=plist0(expr);
-      { Rule.make_prefix_operator_application prefix_expr_operator args }
     | lhs=expr; args=plist0(expr);
       { Rule.make_application lhs args }
-    | lhs=expr; ~=infix_expr_operator; rhs=expr;
-      { Rule.make_infix_operator_application infix_expr_operator lhs rhs }
     | ~=field_path;
       { Rule.FieldAccess field_path }
     | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
@@ -345,24 +399,34 @@ let expr :=
       { Rule.Transition { lhs; rhs; short_circuit } }
     | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=expr; RPAR;
       { Rule.Indexed { index; list; body } }
+    | lhs=expr; ~=infix_expr_operator; rhs=expr;
+      { Rule.make_operator_application infix_expr_operator [lhs; rhs] }
+    | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
+      { Rule.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
 
 (** We currently do not need field paths longer than a variable with two fields. *)
 let field_path :=
   | id1=IDENTIFIER; DOT; id2=IDENTIFIER; { [ id1; id2 ] }
   | id1=IDENTIFIER; DOT; id2=IDENTIFIER; DOT; id3=IDENTIFIER; { [ id1; id2; id3 ] }
 
-let prefix_expr_operator ==
-    | UNION; { Rule.Operator_Union }
-    | UNION_LIST; { Rule.Operator_UnionList }
-    | LIST; { Rule.Operator_List }
-    | SET; { Rule.Operator_Set }
-    | SIZE; { Rule.Operator_Size }
-    | SOME; { Rule.Operator_Some }
-
 let infix_expr_operator ==
-    | COLON_EQ; { Rule.Operator_Assign }
-    | EQ; { Rule.Operator_Equal }
-    | IFF; { Rule.Operator_Iff }
+    | COLON_EQ; { "assign" }
+    | EQ; { "equal" }
+    | MINUS; { "int_minus" }
+    | PLUS;  { "int_plus" }
+    | TIMES; { "int_times" }
+    | DIVIDE; { "int_divide" }
+    | EXPONENT; { "int_exponent" }
+    | AND; { "and" }
+    | OR; { "or" }
+    | IN; { "member" }
+    | NOT_IN; { "not_member" }
+    | IFF; { "iff" }
+    | LE; { "less_than_or_equal" }
+    | LT; { "less_than" }
+    | GE; { "greater_than_or_equal" }
+    | GT; { "greater_than" }
+    | NEQ; { "not_equal" }
 
 let field_and_value == field=IDENTIFIER; COLON; value=expr; { (field, value) }
 

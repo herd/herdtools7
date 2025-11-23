@@ -1,0 +1,50 @@
+% ==================================================
+% AUTO-GENERATED - DO NOT EDIT
+% ==================================================
+
+% ------------------
+% Macros for symbols
+% ------------------
+
+\newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
+\newcommand\Bool[0]{ \hyperlink{type-Bool}{\textsf{Bool}} } % Generated from Bool
+
+
+
+
+
+\newcommand\f[0]{ \hyperlink{relation-f}{\textit{f}} } % Generated from f
+
+% -------------------
+% Macros for elements
+% -------------------
+
+\DefineType{N}{\texthypertarget{type-N}$\N$} % EndDefineType
+
+\DefineType{Bool}{\texthypertarget{type-Bool}$\Bool$} % EndDefineType
+
+
+
+
+
+
+
+
+
+
+
+\DefineRelation{f}{
+The relation
+\[
+\mathhypertarget{relation-f}\f\left(\overtext{\N}{\texttt{a}}, \overtext{\N}{\texttt{b}}, \overtext{\N}{\texttt{c}}, \overtext{\pow{\N}}{\texttt{S}}\right) \bigtimes \N
+\]
+} % EndDefineRelation
+
+\DefineRule{f}{\begin{mathpar}
+\inferrule{{\texttt{a}\intplus\texttt{b} \equal \texttt{c}}\\\\
+{\texttt{d} \eqdef \ifthenelseop{H}{\texttt{a} \member \texttt{S}}{\texttt{b}}{\texttt{c}}}}{
+{\f(\texttt{a}, \texttt{b}, \texttt{c}, \texttt{S}) \typearrow \texttt{d}}
+}
+\end{mathpar}} % EndDefineRule
+
+

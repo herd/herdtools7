@@ -7,6 +7,8 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec rule.spec --render; diff -w generated_macros.tex rule.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
+  Generated LaTeX macros into generated_macros.tex
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41

@@ -122,12 +122,18 @@ module Error = struct
          "The rule for relation %s must end with an output judgment"
          relation_name
 
+  let illegal_lhs_application expr =
+    spec_error
+    @@ Format.asprintf
+         "The left-hand side of an application must be a relation, type \
+          variant, or operator, but found expression %a"
+         PP.pp_expr expr
+
   let bad_layout term layout ~consistent_layout =
     spec_error
     @@ Format.asprintf
          "layout %a is inconsistent with %a. Here's a consistent layout: %a"
-         PP.pp_math_shape layout PP.pp_type_term term PP.pp_math_shape
-         consistent_layout
+         PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 end
 
 let rec vars_of_type_term term =
@@ -328,7 +334,42 @@ type t = {
       (** The list of identifiers defined in the spec in order of appearance. *)
 }
 
-let ast spec = spec.ast
+let defined_ids self = self.defined_ids
+
+let defining_node_opt_for_id self id =
+  StringMap.find_opt id self.id_to_defining_node
+
+let defining_node_for_id self id =
+  match defining_node_opt_for_id self id with
+  | Some def -> def
+  | None -> Error.undefined_element id
+
+let relation_for_id self id =
+  match defining_node_for_id self id with
+  | Node_Relation def -> def
+  | _ -> assert false
+
+let is_defined_id self id = StringMap.mem id self.id_to_defining_node
+let elements self = self.ast
+
+(** [symbol_table_for_id id_to_defining_node id] returns the symbol table for
+    the scope of the definition with identifier [id]. If [id] corresponds to a
+    relation definition, the parameters of the relation definition are added. *)
+let symbol_table_for_id id_to_defining_node id =
+  match StringMap.find_opt id id_to_defining_node with
+  | Some (Node_Relation { Relation.parameters }) ->
+      List.fold_left
+        (fun curr_table param ->
+          let type_for_param = Type.make TypeKind_Generic param [] [] in
+          StringMap.add param (Node_Type type_for_param) curr_table)
+        id_to_defining_node parameters
+  | _ -> id_to_defining_node
+
+(** [is_operator elem] tests whether [elem] is an operator. *)
+let is_operator elem =
+  match elem with
+  | Elem_Relation { Relation.is_operator } -> is_operator
+  | _ -> false
 
 (** [update_symbol_table ast] creates a symbol table from [ast]. *)
 let make_symbol_table ast =
@@ -391,6 +432,10 @@ module ResolveRules = struct
         (* Tuple labels appear only post resolution so not expected here. *)
         | Unresolved (Var id) -> (
             match StringMap.find_opt id id_to_defining_node with
+            | Some (Node_Relation { Relation.is_operator; name })
+              when is_operator ->
+                Application
+                  { applicator = ExprOperator name; args = resolved_args }
             | Some (Node_Relation _) ->
                 Application { applicator = Relation id; args = resolved_args }
             | Some (Node_TypeVariant _) ->
@@ -398,9 +443,8 @@ module ResolveRules = struct
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
-            | _ ->
-                Application { applicator = Fields [ id ]; args = resolved_args }
-            )
+            | None | Some (Node_RecordField _) ->
+                Error.illegal_lhs_application expr)
         | Unresolved (FieldAccess path) ->
             Application { applicator = Fields path; args = resolved_args }
         | Unresolved _ ->
@@ -838,10 +882,15 @@ module Check = struct
               pointers
         | Elem_RenderRule { RuleRender.relation_name } -> [ relation_name ]
       in
+      let elem_name = elem_name elem in
+      (* Update the symbol table by introducing types for parameters. *)
+      let id_to_defining_node =
+        symbol_table_for_id id_to_defining_node elem_name
+      in
       List.iter
         (fun id ->
           if not (StringMap.mem id id_to_defining_node) then
-            Error.undefined_reference id (elem_name elem))
+            Error.undefined_reference id elem_name)
         ids_referenced_by_elem
     in
     List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
@@ -946,6 +995,7 @@ module Check = struct
   module CheckRules = struct
     let check_well_formed_expanded relation_name expanded_rule =
       let open ExpandRules in
+      (* Reverse the list to easily access the last judgment. *)
       match List.rev expanded_rule.judgments with
       | [] -> Error.empty_rule relation_name
       | { expr = Transition _; is_output = true } :: prefix_rules ->
@@ -1347,7 +1397,11 @@ module Check = struct
           try
             match elem with
             | Elem_Constant _ | Elem_RenderTypes _ | Elem_RenderRule _ -> ()
-            | Elem_Relation { input; output } ->
+            | Elem_Relation { name; input; output } ->
+                (* The check must be made in a symbol table that contains the relation parameters. *)
+                let id_to_defining_node =
+                  symbol_table_for_id id_to_defining_node name
+                in
                 List.iter
                   (fun (_, term) -> check_well_typed id_to_defining_node term)
                   input;
@@ -1397,20 +1451,3 @@ let from_ast ast =
   let ast, id_to_defining_node = ExtendNames.extend ast in
   let () = Check.CheckRules.check ast in
   { ast; id_to_defining_node; defined_ids }
-
-let defined_ids self = self.defined_ids
-
-let defining_node_opt_for_id self id =
-  StringMap.find_opt id self.id_to_defining_node
-
-let defining_node_for_id self id =
-  match defining_node_opt_for_id self id with
-  | Some def -> def
-  | None -> Error.undefined_element id
-
-let relation_for_id self id =
-  match defining_node_for_id self id with
-  | Node_Relation def -> def
-  | _ -> assert false
-
-let is_defined_id self id = StringMap.mem id self.id_to_defining_node

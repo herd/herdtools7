@@ -31,19 +31,26 @@ rule token = parse
                                }
 
     (* Keywords *)
+    | "associative"         { ASSOCIATIVE }
     | "ast"                 { AST }
     | "case"                { CASE }
     | "constant"            { CONSTANT }
     | "constants_set"       { CONSTANTS_SET }
+    | "custom"              { CUSTOM }
     | "function"            { FUNCTION }
+    | "if"                  { IF }
+    | "in"                  { IN }
     | "INDEX"               { INDEX }
+    | "else"                { ELSE }
     | "latex"               { LATEX }
     | "lhs_hypertargets"    { LHS_HYPERTARGETS }
     | "list0"               { LIST0 }
     | "list1"               { LIST1 }
     | "math_macro"          { MATH_MACRO }
     | "math_layout"         { MATH_LAYOUT }
+    | "not_in"              { NOT_IN }
     | "option"              { OPTION }
+    | "operator"            { OPERATOR }
     | "fun"                 { FUN }
     | "partial"             { PARTIAL }
     | "powerset"            { POWERSET }
@@ -55,15 +62,9 @@ rule token = parse
     | "rule"                { RULE }
     | "semantics"           { SEMANTICS }
     | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
+    | "then"                { THEN }
     | "typedef"             { TYPEDEF }
     | "typing"              { TYPING }
-    | "UNION"             { UNION }
-    | "UNION_LIST"        { UNION_LIST }
-    | "IFF"               { IFF }
-    | "LIST"              { LIST }
-    | "SET"               { SET }
-    | "SIZE"              { SIZE }
-    | "SOME"              { SOME }
 
     (* Punctuation and operators *)
     | '.'            { DOT }
@@ -71,8 +72,6 @@ rule token = parse
     | ':'            { COLON }
     | ';'            { SEMI }
     | '|'            { VDASH }
-    | "=:"           { EQ }
-    | '='            { EQ }
     | '('            { LPAR }
     | ')'            { RPAR }
     | '['            { LBRACKET }
@@ -82,7 +81,22 @@ rule token = parse
     | '-'            { MINUS }
     | "->"           { ARROW }
     | "--"           { MINUS_MINUS }
+    (* Operator tokens *)
     | ":="           { COLON_EQ }
+    | "=:"           { EQ }
+    | '='            { EQ }
+    | '+'            { PLUS }
+    | '*'            { TIMES }
+    | '/'            { DIVIDE }
+    | '^'            { EXPONENT }
+    | "&&"           { AND }
+    | "||"           { OR }
+    | "<=>"          { IFF }
+    | "<="           { LE }
+    | "<"            { LT }
+    | ">="           { GE }
+    | ">"            { GT }
+    | "!="           { NEQ }
 
     | identifier as lxm { IDENTIFIER(lxm) }
     | latex_macro as lxm { LATEX_MACRO(lxm) }

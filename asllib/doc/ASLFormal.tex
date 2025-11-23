@@ -41,8 +41,8 @@ is the set of rational numbers.
 is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
 We employ these literals to represent the corresponding mathematical truth values,
 which are used to denote whether logical assertions hold or not.
-\hypertarget{def-land}{}
-\hypertarget{def-lor}{}
+\hypertarget{operator-land}{}
+\hypertarget{operator-lor}{}
 We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\lor$,
 and logical negation $\neg$, given next.
 For a set of Boolean values $A$:
@@ -57,12 +57,16 @@ For a set of Boolean values $A$:
   \begin{cases}
     \False & \text{if all values in A are }\False\\
     \True & \text{otherwise}
-  \end{cases}\\
+  \end{cases}
 \end{array}
 \]
-\hypertarget{def-neg}{}
+\hypertarget{operator-neg}{}
+\hypertarget{operator-IFF}{}
+\hypertarget{operator-implies}{}
 For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \land\{a, b\}$
 and $a \lor b \triangleq \lor\{a, b\}$.
+We define implication as $a \implies b \triangleq (\neg a) \lor b$, and
+bi-implication as $a \IFF b \triangleq (a \implies b) \land (b \implies a)$.
 Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
 \item \RenderType{Bit}
@@ -104,7 +108,7 @@ The function $\sign : \overname{\Q}{q} \rightarrow \Sign$ returns the sign of $\
   The \emph{empty set} --- the set that does not contain any element --- is denoted as \RenderConstant{empty_set}.
 \end{definition}
 
-\hypertarget{def-cardinality}{}
+\hypertarget{operator-cardinality}{}
 \begin{definition}[Set Cardinality]
   For a set $S$, the notation $\cardinality{S}$ stands for the number of elements in $S$.
 \end{definition}
@@ -239,7 +243,7 @@ and the \emph{\tail} of the list is the suffix obtained by removing $v_1$ from t
 
 We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\Npos$.
 
-\hypertarget{def-listlen}{}
+\hypertarget{operator-listlen}{}
 \begin{definition}[List Length]
 The \emph{length} of a list is the number of elements in that list:
 $\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
@@ -276,7 +280,7 @@ lists the elements of a set in an arbitrary order:
 \]
 \end{definition}
 
-\hypertarget{def-concat}{}
+\hypertarget{operator-concat}{}
 \begin{definition}[List Concatenation]
 The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \rightarrow \KleeneStar{T}$ concatenates two lists:
 \[
@@ -288,7 +292,7 @@ The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \righ
 \]
 \end{definition}
 
-\hypertarget{def-concatlist}{}
+\hypertarget{operator-concatlist}{}
 \begin{definition}[Concatenation of a List of Lists]
 The parametric function\\
 $\concatlist : \KleeneStar{\left(\KleeneStar{T}\right)} \rightarrow \KleeneStar{T}$ concatenates a list of lists:
@@ -298,6 +302,12 @@ $\concatlist : \KleeneStar{\left(\KleeneStar{T}\right)} \rightarrow \KleeneStar{
     \concatlist(l_{1..k}) &\triangleq& l_1 \concat \ldots \concat l_k \\
   \end{array}
 \]
+\end{definition}
+
+\begin{definition}[List Consing]
+\hypertarget{operator-cons}{}
+The notation $h \cons t$, where $h \in T$ and $t \in \KleeneStar{T}$,
+denotes $[h] \concat t$, that is, the list formed by prepending the element $h$ to the front of the list $t$.
 \end{definition}
 
 \hypertarget{def-equallength}{}
@@ -332,6 +342,7 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \]
 \end{definition}
 
+\hypertarget{operator-listcombine}{} % DO NOT LINT
 \hypertarget{def-unziplist}{}
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
@@ -416,7 +427,7 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-Option}{}
 \begin{definition}[Optional Data Type]
-\hypertarget{def-some}{}
+\hypertarget{operator-some}{}
 The notation $\some{x} \triangleq \{x\}$ stands for a singleton
 set containing $x$.
 %
