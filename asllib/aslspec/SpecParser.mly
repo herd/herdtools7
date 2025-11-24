@@ -159,7 +159,7 @@ let elem :=
     | relation_definition
     | constant_definition
     | render_types
-    |render_rule
+    | render_rule
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
@@ -337,8 +337,8 @@ let expr :=
       { Rule.make_infix_operator_application infix_expr_operator lhs rhs }
     | ~=field_path;
       { Rule.FieldAccess field_path }
-    | list=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
-      { Rule.make_list_index list index }
+    | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
+      { Rule.make_list_index list_var index }
     | name=IDENTIFIER; LBRACKET; fields=tclist1(field_and_value); RBRACKET;
       { Rule.make_record name fields }
     | lhs=expr; ARROW; rhs=expr; ~=short_circuit;

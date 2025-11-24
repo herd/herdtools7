@@ -147,9 +147,12 @@ let () =
   let config = CLI.parse_args () in
   if !CLI.arg_debug then
     (* Allow the exception stack trace to be printed for debugging. *)
-    execute config |> fun () -> exit 0
+    let () = execute config in
+    exit 0
   else
-    try execute config |> fun () -> exit 0
+    try
+      let () = execute config in
+      exit 0
     with error ->
       let error_type, msg =
         match error with

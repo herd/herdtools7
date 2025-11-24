@@ -411,7 +411,7 @@ module Rule = struct
         (** The first identifier is a variable and the rest are field names. *)
     | ListIndex of { var : string; index : string }
     | Record of { label : string; fields : (string * expr) list }
-        (** A record construction expression, optionally labelled. *)
+        (** A record construction expression. *)
     | Application of { applicator : applicator; args : expr list }
         (** An application of [applicator] to the list of argument expressions
             [args]. *)

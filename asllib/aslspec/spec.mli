@@ -77,13 +77,11 @@ val is_defined_id : t -> string -> bool
 module ExpandRules : sig
   type expanded_rule = {
     name_opt : string option;
-    category_opt : Relation.relation_category option;
     judgments : Rule.judgment list;
   }
   (** An expanded rule is a rule with no cases. *)
 
-  val expand : Relation.relation_category option -> Rule.t -> expanded_rule list
-  (** [expand category_opt elements] expands the rule whose list of elements is
-      [elements] into multiple rules without cases, all having the optional
-      category [category_opt]. *)
+  val expand : Rule.t -> expanded_rule list
+  (** [expand  elements] expands the rule whose list of elements is [elements]
+      into multiple rules without cases. *)
 end

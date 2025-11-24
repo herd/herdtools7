@@ -5,6 +5,7 @@ open AST
 open Format
 open Latex
 open LayoutUtils
+open Macros
 open Spec
 
 (** * A signature for modules that provide a specification to the Make functor.
@@ -20,6 +21,7 @@ module Make (S : SPEC_VALUE) = struct
       is given in which case it generates a math macro name and returns it. *)
   let get_or_gen_math_macro id =
     assert (not (String.equal id ""));
+    (* We add a prefix to the macro name to avoid potential clashes. *)
     let macro_prefix = function
       | Node_Relation _ | Node_Type _ | Node_TypeVariant _ | Node_Constant _ ->
           ""
@@ -69,7 +71,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_constant_definition fmt def] renders the definition of the constant
       given by [def] with the formatter [fmt]. *)
   let pp_constant_definition fmt { Constant.name } =
-    fprintf fmt {|$%a$|} pp_id_as_macro name
+    fprintf fmt "$%a$" pp_id_as_macro name
 
   (** [pp_constant_definition_macro fmt def] renders the LaTeX wrapper macro
       [\DefineConstant{name}{...}] around the rendering of a constant definition
@@ -83,11 +85,11 @@ module Make (S : SPEC_VALUE) = struct
       [arg] is rendered by [pp_arg fmt arg]. *)
   let pp_type_operator fmt op pp_arg arg =
     let operator_to_macro_name = function
-      | Powerset -> "pow"
-      | Powerset_Finite -> "powfin"
-      | List0 -> "KleeneStar"
-      | List1 -> "KleenePlus"
-      | Option -> "Option"
+      | Powerset -> pow_macro_name
+      | Powerset_Finite -> powfin_macro_name
+      | List0 -> kleene_star_macro_name
+      | List1 -> kleene_plus_macro_name
+      | Option -> option_macro_name
     in
     pp_one_arg_macro (operator_to_macro_name op) pp_arg fmt arg
 
@@ -124,18 +126,17 @@ module Make (S : SPEC_VALUE) = struct
               (field_name, field))
             fields
         in
-        fprintf fmt {|%a%a|} pp_id_opt_as_macro label_opt
+        fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
           (pp_fields pp_field_name pp_record_field_as_pair)
           (pp_record_fields_as_pairs, layout)
     | ConstantsSet constant_names ->
         let layout_contains_vertical = LayoutUtils.contains_vertical layout in
-        fprintf fmt {|%a|}
-          (pp_parenthesized Braces layout_contains_vertical
-             (PP.pp_sep_list ~sep:", " pp_id_as_macro))
-          constant_names
+        pp_parenthesized Braces layout_contains_vertical
+          (PP.pp_sep_list ~sep:", " pp_id_as_macro)
+          fmt constant_names
     | Function { from_type; to_type; total } ->
         let arrow_macro_name =
-          if total then {|rightarrow|} else {|partialto|}
+          if total then rightarrow_macro_name else partialto_macro_name
         in
         pp_connect_pair ~alignment:"r" fmt pp_opt_named_type_term from_type
           arrow_macro_name pp_opt_named_type_term to_type layout
@@ -145,7 +146,7 @@ module Make (S : SPEC_VALUE) = struct
       laid out according to [layout]. *)
   and pp_opt_named_type_term fmt ((name_opt, term), layout) =
     match name_opt with
-    | None -> fprintf fmt {|%a|} pp_type_term (term, layout)
+    | None -> pp_type_term fmt (term, layout)
     | Some name -> pp_overtext fmt pp_type_term (term, layout) pp_var name
 
   (** [pp_opt_named_type_terms fmt (opt_type_terms, layout)] formats a list of
@@ -163,7 +164,7 @@ module Make (S : SPEC_VALUE) = struct
       in with the given [layout]. *)
   let pp_output_types fmt (terms, layout) =
     if Utils.is_singleton_list terms then
-      fprintf fmt {|%a|} pp_type_term (List.hd terms, layout)
+      pp_type_term fmt (List.hd terms, layout)
     else
       let pp_multiple_terms fmt (terms, layout) =
         pp_aligned_elements_and_operators
@@ -181,8 +182,8 @@ module Make (S : SPEC_VALUE) = struct
     in
     let property_macro_name =
       match property with
-      | RelationProperty_Relation -> "bigtimes"
-      | RelationProperty_Function -> "longrightarrow"
+      | RelationProperty_Relation -> bigtimes_macro_name
+      | RelationProperty_Function -> longrightarrow_macro_name
     in
     pp_connect_pair ~alignment:"c" fmt pp_type_term input_as_labelled_tuple
       property_macro_name pp_output_types output layout
@@ -222,7 +223,7 @@ module Make (S : SPEC_VALUE) = struct
       | Some layout -> layout
       | None -> Layout.for_type_term term
     in
-    fprintf fmt "%a" pp_type_term (term, layout)
+    pp_type_term fmt (term, layout)
 
   (** [pp_typename_with_hypertarget fmt type_name] renders the type name
       [type_name] along with its hypertarget. *)
@@ -230,7 +231,7 @@ module Make (S : SPEC_VALUE) = struct
     let hyperlink_target = hypertarget_for_id type_name in
     (* The hypertarget macro must come after the type name macro.
        Otherwise LaTeX compilation fails. *)
-    fprintf fmt {|%a%a|} pp_id_as_macro type_name pp_mathhypertarget
+    fprintf fmt "%a%a" pp_id_as_macro type_name pp_mathhypertarget
       hyperlink_target
 
   (** [pp_variant_with_hypertarget fmt variant] renders the variant [variant]
@@ -247,13 +248,13 @@ module Make (S : SPEC_VALUE) = struct
               hypertarget_for_id field_name)
             fields
         in
-        fprintf fmt {|%a%a%a|}
+        fprintf fmt "%a%a%a"
           (Format.pp_print_option pp_mathhypertarget)
           hyperlink_target_opt
           (PP.pp_sep_list ~sep:"" pp_mathhypertarget)
           field_hyperlink_targets pp_variant variant
     | _ ->
-        fprintf fmt {|%a%a|} pp_variant variant
+        fprintf fmt "%a%a" pp_variant variant
           (Format.pp_print_option pp_mathhypertarget)
           hyperlink_target_opt
 
@@ -266,8 +267,8 @@ module Make (S : SPEC_VALUE) = struct
       ?(is_last = true) fmt ({ Type.type_kind; Type.name }, variants) =
     let equality_symbol, join_symbol =
       match type_kind with
-      | TypeKind_AST -> ({|\derives|}, "|")
-      | TypeKind_Generic -> ({|\triangleq|}, {|\cup|})
+      | TypeKind_AST -> (derivation_macro_name, pipe_macro_name)
+      | TypeKind_Generic -> (triangleq_macro_name, union_macro_name)
     in
     let first_variant, variants_tail =
       match variants with
@@ -282,24 +283,23 @@ module Make (S : SPEC_VALUE) = struct
       if lhs_hypertargets then pp_typename_with_hypertarget else pp_id_as_macro
     in
     let _first_line =
-      fprintf fmt {|@.%a %s\ & %a|} pp_typename name equality_symbol
+      fprintf fmt {|@.%a %a\ & %a|} pp_typename name pp_macro equality_symbol
         pp_variant_with_hypertarget first_variant
     in
     let _add_latex_line_break_only_if_more_variants =
       if List.length variants > 1 then fprintf fmt {|\\@.|}
-      else fprintf fmt {|@.|}
+      else fprintf fmt "@."
     in
     let num_variants_tail = List.length variants_tail in
     let _render_variants_tail =
       List.iteri
         (fun counter variant ->
           let () =
-            fprintf fmt {|@[<h>%s\ & %a@]|} join_symbol
+            fprintf fmt {|@[<h>%a\ & %a@]|} pp_macro join_symbol
               pp_variant_with_hypertarget variant
           in
           let _add_latex_line_break_except_on_last_line =
             if counter < num_variants_tail - 1 then fprintf fmt {|\\@.|}
-            else fprintf fmt {||}
           in
           ())
         variants_tail
@@ -311,8 +311,7 @@ module Make (S : SPEC_VALUE) = struct
       variants) [basic_type] with the formatter [fmt]. *)
   let pp_basic_type fmt { Type.name } =
     let hyperlink_target = hypertarget_for_id name in
-    fprintf fmt {|%a$%a$|} pp_texthypertarget hyperlink_target pp_id_as_macro
-      name
+    fprintf fmt "%a$%a$" pp_texthypertarget hyperlink_target pp_id_as_macro name
 
   (** [pp_type_definition fmt def] renders the type definition [def] with the
       formatter [fmt]. *)
@@ -393,34 +392,33 @@ module Make (S : SPEC_VALUE) = struct
 
     (** Returns the LaTeX macro name corresponding to an expression operator. *)
     let operator_to_macro_name = function
-      | Operator_Assign -> "eqdef"
-      | Operator_Equal -> "equal"
-      | Operator_Iff -> "leftrightarrow"
-      | Operator_List -> "LIST"
-      | Operator_Set -> "SET"
-      | Operator_Size -> "listlen"
-      | Operator_Union -> "cup"
-      | Operator_UnionList -> "UNIONLIST"
-      | Operator_Some -> "some"
+      | Operator_Assign -> eqdef_macro_name
+      | Operator_Equal -> equal_macro_name
+      | Operator_Iff -> leftrightarrow_macro_name
+      | Operator_List -> list_macro_name
+      | Operator_Set -> set_macro_name
+      | Operator_Size -> listlen_macro_name
+      | Operator_Union -> union_macro_name
+      | Operator_UnionList -> unionlist_macro_name
+      | Operator_Some -> some_macro_name
 
     (** Renders the field path [path] with [fmt]. *)
-    let pp_field_path fmt path =
-      let var, fields = (List.hd path, List.tl path) in
-      let pp_dot_field fmt field_name =
-        fprintf fmt ".%a" pp_field_name field_name
-      in
-      fprintf fmt "%a%a" pp_var var
-        (pp_print_list ~pp_sep:(fun _ _ -> ()) pp_dot_field)
-        fields
+    let pp_field_path fmt = function
+      | [] -> assert false
+      | var :: [] -> pp_var fmt var
+      | var :: path ->
+          fprintf fmt "%a.%a" pp_var var
+            (PP.pp_sep_list ~sep:"." pp_field_name)
+            path
 
     (** Returns the macro for a given relation category and a default long right
         arrow for [None]. *)
     let arrow_macro_name_for_category_opt =
       let open Relation in
       function
-      | Some RelationCategory_Typing -> "typearrow"
-      | Some RelationCategory_Semantics -> "evalarrow"
-      | None -> "longrightarrow"
+      | Some RelationCategory_Typing -> typearrow_macro_name
+      | Some RelationCategory_Semantics -> evalarrow_macro_name
+      | None -> longrightarrow_macro_name
 
     (** [short_circuit_macros_for_type_term type_term] returns the list of
         short-circuit macros for the given [type_term]. Currently only called
@@ -482,35 +480,36 @@ module Make (S : SPEC_VALUE) = struct
             | Fields path -> pp_field_path fmt path
             | ExprOperator _ | Unresolved _ -> assert false
           in
-          fprintf fmt {|%a%a|} pp_lhs applicator
+          fprintf fmt "%a%a" pp_lhs applicator
             (pp_parenthesized Parens (contains_vertical layout)
                (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr
                   layout))
             args
       | Record { label; fields } ->
-          fprintf fmt {|%a%a|} pp_id_as_macro label
+          fprintf fmt "%a%a" pp_id_as_macro label
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
-      | ListIndex { var; index } ->
-          fprintf fmt {|%a[%a]|} pp_var var pp_var index
+      | ListIndex { var; index } -> fprintf fmt "%a[%a]" pp_var var pp_var index
       | FieldAccess path -> pp_field_path fmt path
       | Indexed { index; list; body } ->
-          let list_of_indices_macro_name = "listrange" in
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
-            fprintf fmt {|%a \in %a(%a)|} pp_var index pp_macro
-              list_of_indices_macro_name pp_var list_var
+            fprintf fmt "%a \\in %a(%a)" pp_var index pp_macro
+              listrange_macro_name pp_var list_var
           in
           pp_connect_pair ~alignment:"ll" fmt pp_indexed_lhs (index, list)
-            "COLON" pp_expr body layout
-          (* fprintf fmt {|%a \;:\; %a|} pp_indexed_lhs (index, list) pp_expr
-            (body, layout) *)
-      | Transition
-          {
-            lhs =
-              Application { applicator = Relation relation_name; _ } as expr_lhs;
-            rhs;
-            short_circuit;
-          } ->
+            colon_macro_name pp_expr body layout
+      | Transition { lhs; rhs; short_circuit } ->
+          let relation_name =
+            match lhs with
+            | Application { applicator = Relation relation_name } ->
+                relation_name
+            | _ ->
+                let msg =
+                  Format.asprintf "Unexpected LHS in transition judgment: %a"
+                    PP.pp_expr expr
+                in
+                raise (SpecError msg)
+          in
           let { Relation.category } =
             Spec.relation_for_id S.spec relation_name
           in
@@ -520,14 +519,8 @@ module Make (S : SPEC_VALUE) = struct
               (pp_short_circuit relation_name)
               short_circuit
           in
-          pp_connect_pair ~alignment:"r" fmt pp_expr expr_lhs arrow_macro_name
+          pp_connect_pair ~alignment:"r" fmt pp_expr lhs arrow_macro_name
             pp_rhs_with_short_circuit rhs layout
-      | Transition _ ->
-          let msg =
-            Format.asprintf "Unexpected LHS in transition judgment: %a"
-              PP.pp_expr expr
-          in
-          raise (SpecError msg)
 
     (** [pp_associative_operator op layout fmt args] renders an associative
         operator [op] applied to [args] with [fmt] and laid out according to
@@ -544,7 +537,6 @@ module Make (S : SPEC_VALUE) = struct
         expressions are provided, then they are generated from the definition of
         the relation. *)
     and pp_short_circuit relation_name fmt short_circuit =
-      let short_circuit_separator_macro_name = "terminateas" in
       match short_circuit with
       | None -> (
           let { Relation.output } = Spec.relation_for_id S.spec relation_name in
@@ -556,20 +548,18 @@ module Make (S : SPEC_VALUE) = struct
           match alternative_macros with
           | [] -> ()
           | _ ->
-              fprintf fmt {|\;%a\;%a|} pp_macro
-                short_circuit_separator_macro_name
+              fprintf fmt {|\;%a\;%a|} pp_macro terminateas_macro_name
                 (PP.pp_sep_list ~sep:", " pp_print_string)
                 alternative_macros)
+      | Some [] -> ()
       | Some alternatives ->
-          if Utils.list_is_empty alternatives then ()
-          else
-            let layout =
-              Horizontal (List.map (fun _ -> Unspecified) alternatives)
-            in
-            let terms_with_layouts = apply_layout_to_list layout alternatives in
-            fprintf fmt {|\;%a\;%a|} pp_macro short_circuit_separator_macro_name
-              (PP.pp_sep_list ~sep:", " pp_expr)
-              terms_with_layouts
+          let layout =
+            Horizontal (List.map (fun _ -> Unspecified) alternatives)
+          in
+          let terms_with_layouts = apply_layout_to_list layout alternatives in
+          fprintf fmt {|\;%a\;%a|} pp_macro terminateas_macro_name
+            (PP.pp_sep_list ~sep:", " pp_expr)
+            terms_with_layouts
 
     (** [pp_judgmentfmt judgment] renders the judgment [judgment] with the
         formatter [fmt]. *)
@@ -592,7 +582,7 @@ module Make (S : SPEC_VALUE) = struct
         pp_case_name_opt name_opt
         (pp_print_list
          (* The quadruple backslash means the next premise definitely starts on a new line. *)
-           ~pp_sep:(fun fmt () -> fprintf fmt "\\\\\\\\@.")
+           ~pp_sep:(fun fmt () -> fprintf fmt {|\\\\@.|})
            pp_premise)
         premises pp_conclusion conclusion
 
@@ -606,16 +596,15 @@ module Make (S : SPEC_VALUE) = struct
     (** [pp_render_rule fmt rule_render] renders the mathematical inference
         rules referenced by [rule_render] with the formatter [fmt]. *)
     let pp_render_rule fmt { RuleRender.relation_name; path } =
-      let { Relation.rule_opt; category } =
-        Spec.relation_for_id S.spec relation_name
-      in
+      let { Relation.rule_opt } = Spec.relation_for_id S.spec relation_name in
       let rule = Option.get rule_opt in
-      let expanded_rules = ExpandRules.expand category rule in
+      let expanded_rules = ExpandRules.expand rule in
       let expanded_subset =
         List.filter
           (fun { ExpandRules.name_opt; _ } ->
             match name_opt with
             | None -> true
+            (* This corresponds to relations defined by a single rule, not containing any cases. *)
             | Some expanded_path ->
                 Utils.string_starts_with ~prefix:path expanded_path)
           expanded_rules
@@ -762,7 +751,7 @@ module Make (S : SPEC_VALUE) = struct
           fprintf fmt "\n\n")
         (Spec.ast S.spec)
     in
-    let _footer = fprintf fmt {|@.|} in
+    let _footer = fprintf fmt "@." in
     ()
 
   let render fmt =

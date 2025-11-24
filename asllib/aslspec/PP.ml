@@ -127,7 +127,7 @@ let rec pp_expr fmt =
   | Application { applicator; args } ->
       fprintf fmt "%a(%a)" pp_application_lhs applicator (pp_comma_list pp_expr)
         args
-  | FieldAccess path -> fprintf fmt "%s" (String.concat "." path)
+  | FieldAccess path -> pp_print_string fmt (String.concat "." path)
   | ListIndex { var; index } -> fprintf fmt "%s[%s]" var index
   | Record { label; fields } ->
       fprintf fmt "%s[%a]" label
@@ -147,7 +147,7 @@ and pp_application_lhs fmt =
   | Relation name -> pp_print_string fmt name
   | TupleLabel name -> pp_print_string fmt name
   | ExprOperator op -> pp_print_string fmt (expr_operator_to_string op)
-  | Fields path -> fprintf fmt "%s" (String.concat "." path)
+  | Fields path -> pp_print_string fmt (String.concat "." path)
   | Unresolved expr -> pp_expr fmt expr
 
 and pp_short_circuit fmt short_circuit =
@@ -221,9 +221,9 @@ let pp_constant_definition fmt ({ Constant.name } as def) =
     (Constant.attributes_to_list def)
 
 let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
-  if Utils.list_is_empty variant_names then fprintf fmt {|%s(-)|} type_name
+  if Utils.list_is_empty variant_names then fprintf fmt "%s(-)" type_name
   else
-    fprintf fmt {|%s(%a)|} type_name
+    fprintf fmt "%s(%a)" type_name
       (pp_sep_list ~sep:", " pp_print_string)
       variant_names
 

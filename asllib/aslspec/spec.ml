@@ -343,9 +343,7 @@ module ResolveRules = struct
         in
         Record { label; fields = resolved_fields }
     | Application ({ applicator; args } as app) -> (
-        let resolved_args =
-          List.map (fun e -> resolve_expr id_to_defining_node e) args
-        in
+        let resolved_args = List.map (resolve_expr id_to_defining_node) args in
         match applicator with
         | EmptyApplicator | Relation _ | ExprOperator _ | Fields _ ->
             Application { app with args = resolved_args }
@@ -371,9 +369,7 @@ module ResolveRules = struct
         let resolved_lhs = resolve_expr id_to_defining_node lhs in
         let resolved_rhs = resolve_expr id_to_defining_node rhs in
         let resolved_short_circuit =
-          Option.map
-            (List.map (fun e -> resolve_expr id_to_defining_node e))
-            short_circuit
+          Option.map (List.map (resolve_expr id_to_defining_node)) short_circuit
         in
         Transition
           {
@@ -400,7 +396,8 @@ module ResolveRules = struct
                 lhs = conclusion_lhs;
                 rhs = resolved_expr;
                 short_circuit = Some [];
-                (* Output transitions never have alternatives. *)
+                (* Output transitions never have alternatives.
+                   This ensures alternatives are not inserted. *)
               }
           else resolved_expr
         in
@@ -411,8 +408,7 @@ module ResolveRules = struct
             (fun { name; elements } ->
               let resolved_elements =
                 List.map
-                  (fun e ->
-                    resolve_rule_element id_to_defining_node conclusion_lhs e)
+                  (resolve_rule_element id_to_defining_node conclusion_lhs)
                   elements
               in
               { name; elements = resolved_elements })
@@ -473,15 +469,13 @@ module ResolveRules = struct
         rule_elements
     in
     (* Second, aggregate consecutive Cases elements. *)
-    List.fold_right
-      (fun rule_elem suffix_elements ->
-        match (rule_elem, suffix_elements) with
-        | Judgment _, _ | Rule.Cases _, Judgment _ :: _ ->
-            rule_elem :: suffix_elements
-        | Rule.Cases cases, [] -> [ Rule.Cases cases ]
-        | Rule.Cases cases, Cases next_cases :: tail ->
-            Rule.Cases (cases @ next_cases) :: tail)
-      rule_elements []
+    let rec aggregate = function
+      | [] -> []
+      | Rule.Cases cases1 :: Rule.Cases cases2 :: rest ->
+          aggregate (Rule.Cases (cases1 @ cases2) :: rest)
+      | rule_element :: rest -> rule_element :: aggregate rest
+    in
+    aggregate rule_elements
 
   (** Transforms relations in three ways:
       {ul
@@ -527,9 +521,7 @@ module ResolveRules = struct
                     let conclusion_lhs = lhs_of_conclusion def in
                     let resolved_elements =
                       List.map
-                        (fun rule_elem ->
-                          resolve_rule_element id_to_defining_node
-                            conclusion_lhs rule_elem)
+                        (resolve_rule_element id_to_defining_node conclusion_lhs)
                         elements
                     in
                     { def with rule_opt = Some resolved_elements }
@@ -552,10 +544,6 @@ module ExpandRules = struct
     name_opt : string option;
         (** The optional name of the expanded rule, if it originated from a
             case. *)
-    category_opt : Relation.relation_category option;
-        (** The optional category is associated with the expanded rule to make
-            it possible to later render the rule without having to look it up.
-        *)
     judgments : Rule.judgment list;
         (** After all cases have been expanded, the rule is simply a list of
             judgments. *)
@@ -566,16 +554,8 @@ module ExpandRules = struct
       [prefix] and [suffix], combining their optional names and categories as
       needed. *)
   let concat_expanded_rules
-      {
-        name_opt = prefix_name_opt;
-        category_opt = prefix_category_opt;
-        judgments = prefix_judgments;
-      }
-      {
-        name_opt = suffix_name_opt;
-        category_opt = suffix_category_opt;
-        judgments = suffix_judgments;
-      } =
+      { name_opt = prefix_name_opt; judgments = prefix_judgments }
+      { name_opt = suffix_name_opt; judgments = suffix_judgments } =
     let name_opt =
       match (prefix_name_opt, suffix_name_opt) with
       | None, None -> None
@@ -583,16 +563,7 @@ module ExpandRules = struct
       | Some prefix_name, Some suffix_name ->
           Some (Rule.join_case_names [ prefix_name; suffix_name ])
     in
-    let category_opt =
-      match (prefix_category_opt, suffix_category_opt) with
-      | Some category, None | None, Some category -> Some category
-      | Some prefix_category, Some suffix_category ->
-          if prefix_category = suffix_category then Some prefix_category
-          else assert false
-            (* This should not happen: the same category is set by [expand]. *)
-      | None, None -> None
-    in
-    { name_opt; category_opt; judgments = prefix_judgments @ suffix_judgments }
+    { name_opt; judgments = prefix_judgments @ suffix_judgments }
 
   (** [product_concat expanded_prefix expanded_suffix] performs a Cartesian
       product concatenation of two lists of expanded rules, [expanded_prefix]
@@ -606,20 +577,17 @@ module ExpandRules = struct
           expanded_prefix)
       expanded_suffix
 
-  (** [expand category_opt elements] expands the rule whose list of elements is
-      [elements] into multiple rules without cases, all having the optional
-      category [category_opt]. *)
-  let rec expand category_opt elements =
+  (** [expand elements] expands the rule whose list of elements is [elements]
+      into multiple rules without cases. *)
+  let rec expand elements =
     let open Rule in
     (* Transforms a single case into expanded rules and update the names
        of all resulting expanded cases by prefixing them with the case name
        and setting the optional category.
     *)
     let expand_case { name; elements } =
-      let name_as_expanded =
-        [ { name_opt = Some name; category_opt; judgments = [] } ]
-      in
-      let expanded_case_elements = expand category_opt elements in
+      let name_as_expanded = [ { name_opt = Some name; judgments = [] } ] in
+      let expanded_case_elements = expand elements in
       product_concat name_as_expanded expanded_case_elements
     in
     (* Expand cases by transforming the list bottom-up. *)
@@ -628,7 +596,7 @@ module ExpandRules = struct
         match rule_elem with
         | Judgment judgment ->
             let judgment_as_expanded_rule_list =
-              [ { name_opt = None; category_opt; judgments = [ judgment ] } ]
+              [ { name_opt = None; judgments = [ judgment ] } ]
             in
             product_concat judgment_as_expanded_rule_list suffix_expanded
         | Cases cases ->
@@ -637,7 +605,7 @@ module ExpandRules = struct
             in
             product_concat cases_as_expanded_rule suffix_expanded)
       elements
-      [ { name_opt = None; category_opt; judgments = [] } ]
+      [ { name_opt = None; judgments = [] } ]
 end
 
 module Check = struct
@@ -854,18 +822,18 @@ module Check = struct
       let open ExpandRules in
       match List.rev expanded_rule.judgments with
       | [] -> Error.empty_rule relation_name
-      | { expr = Transition _; is_output = true } :: prefix_fules ->
+      | { expr = Transition _; is_output = true } :: prefix_rules ->
           List.iter
             (fun { Rule.is_output } ->
               if is_output then
                 Error.multiple_output_judgments relation_name
                   expanded_rule.name_opt
               else ())
-            prefix_fules
+            prefix_rules
       | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
 
-    let check_rule_for_relation { Relation.name; category } elements =
-      let expanded_rules = ExpandRules.expand category elements in
+    let check_rule_for_relation { Relation.name } elements =
+      let expanded_rules = ExpandRules.expand elements in
       List.iter (check_well_formed_expanded name) expanded_rules
 
     (** Checks the rules in all relations. *)
