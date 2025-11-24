@@ -551,6 +551,10 @@ module Make (Conf : Config) = struct
       let* vprop = m_prop in
       M.assign (vbool true) vprop >>! []
 
+    let checkeq _ _ d1 d2 =
+      let* d1 = d1 and* d2 = d2 in
+      M.assign d1 d2 >>! []
+
     (*
      * Split the current execution candidate into two:
      * one candidate, has variable [v] value to be TRUE,
@@ -1045,6 +1049,9 @@ module Make (Conf : Config) = struct
           ("addr",bv_64)  ~returns:boolean is_virtual;
         p0r ~side_effecting "SomeBoolean" ~returns:boolean somebool;
         p1 ~side_effecting "CheckProp" ("prop", boolean) checkprop;
+        p1a2 ~side_effecting "CheckEq"
+          ("N", None) ("d1", bv_var "N") ("data", bv_var "N")
+          checkeq;
       ]
 
     let make_extra_funcs ii_env =

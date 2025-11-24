@@ -9,6 +9,7 @@ cfgs = [
 ]
 
 illustrative_tests = [
+    "tests/A031.litmus",
     "tests/2+2WNExpExp+NExpExp+DMBST+DMBST+SHOW.litmus",
     "tests/2+2WNExpExp+NExpExp+DMBST+DMBST.litmus",
     "tests/2+2WNExpExp+NExpExp+SHOW.litmus",
@@ -521,6 +522,7 @@ illustrative_tests = [
     "tests/RW+RR-DMBLD+DMBLD-SWP2.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP3.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP4+WREG.litmus",
+    "tests/WW+RR-DMBST+DMBLD-SWP4+WREG.litmus",
     "tests/RW+RR-DMBLD+DMBLD-SWP5.litmus",
     "tests/RW+RR-DMBLD+DMBLD.litmus",
     "tests/RW+RR-DSB+DMBLD.litmus",
