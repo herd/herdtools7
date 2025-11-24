@@ -88,6 +88,10 @@ module List = struct
     in
     uniq eq [] l
 
+  let rec drop_while (p : 'a -> bool) : 'a list -> 'a list = function
+    | [] -> []
+    | x :: xs -> if p x then drop_while p xs else x :: xs
+
   module Infix = struct
     let (>>=) = fun x f -> concat_map f x
     let (let*) = (>>=)
