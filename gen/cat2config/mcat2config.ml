@@ -147,14 +147,14 @@ let extract_let_binding (ins : AST.ins) =
 
 let run ~(opts : Arg.opts) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
-  let env =
+  let nf_map =
     Nf.normalize_bindings ~conditions:opts.conds ~unroll_depth:opts.unroll
       ~set_var:Ir.parse_set_id ~rel_var:Ir.parse_rel_id bindings
   in
   let results =
     opts.lets_to_print
     |> List.filter_map (fun var ->
-        match Nf.find_env_rel var env with
+        match nf_map var with
         | None ->
             Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
             None
