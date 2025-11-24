@@ -75,40 +75,43 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     let* nf = Lazy.force_val lazy_nf in
     Either.find_right nf
 
-  (* Normalize the given AST expression.
-     May fail by throwing NormalizationError.
-  *)
-  let normalize ~(conditions : string list) ~(unroll_depth : int)
-      ~(set_var : string -> set_nf option) ~(rel_var : string -> rel_nf option)
-      ~(env : env) (e : AST.exp) : (set_nf, rel_nf) Either.t =
+  type norm_config = {
+    conditions : string list;
+    unroll_depth : int;
+    set_var : string -> set_nf option;
+    rel_var : string -> rel_nf option;
+  }
+
+  let rec normalize_set ~(config : norm_config) ~(env : env) : AST.exp -> set_nf
+      =
     let open AST in
-    let rec normalize_set : AST.exp -> set_nf = function
+    let conditions = config.conditions in
+    let set_var = config.set_var in
+    let rel_var = config.rel_var in
+    let rec go = function
       | Op (_, Union, expl) ->
           let nfs =
             List.filter_map
-              (fun e ->
-                try Some (normalize_set e) with NormalizationError _ -> None)
+              (fun e -> try Some (go e) with NormalizationError _ -> None)
               expl
           in
           if List.length nfs = 0 then raise (NormalizationError Empty_union)
           else set_union_l nfs
-      | Op (_, Inter, expl) -> set_inter_l (List.map normalize_set expl)
-      | Op (_, Diff, [ e1; e2 ]) ->
-          set_diff (normalize_set e1) (normalize_set e2)
+      | Op (_, Inter, expl) -> set_inter_l (List.map go expl)
+      | Op (_, Diff, [ e1; e2 ]) -> set_diff (go e1) (go e2)
       | Op1 (_, Comp, exp) ->
-          let nf = normalize_set exp in
+          let nf = go exp in
           let res = set_comp nf in
           res
       | App (_, fn, e) -> (
           match fn with
-          | Var (_, v) when v = "domain" -> domain (normalize_rel e)
-          | Var (_, v) when v = "range" -> range (normalize_rel e)
+          | Var (_, v) when v = "domain" ->
+              domain (normalize_rel ~config ~env e)
+          | Var (_, v) when v = "range" -> range (normalize_rel ~config ~env e)
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~conditions a then normalize_set exp
-          else normalize_set exp2
-      | Try (_, e, e2) -> (
-          try normalize_set e with NormalizationError _ -> normalize_set e2)
+          if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
+      | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) -> (
           let bound_nf =
             if Option.is_some (rel_var var) then None
@@ -119,14 +122,22 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           match bound_nf with
           | Some nf -> nf
           | None -> raise (NormalizationError (Unknown_identifier var)))
-      | _ -> raise (NormalizationError (Exp_not_supported e))
-    and normalize_rel (e : AST.exp) : rel_nf =
+      | e -> raise (NormalizationError (Exp_not_supported e))
+    in
+    go
+
+  and normalize_rel ~(config : norm_config) ~(env : env) (e : AST.exp) : rel_nf
+      =
+    let open AST in
+    let conditions = config.conditions in
+    let rel_var = config.rel_var in
+    let rec go e =
       match e with
       | Op (_, Union, expl) ->
           let nfs =
             List.filter_map
               (fun e ->
-                try Some (normalize_rel e)
+                try Some (go e)
                 with NormalizationError err ->
                   Log.eprintv 1 "Skipping union branch: %s@." (pp_norm_err err);
                   None)
@@ -134,41 +145,39 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           in
           if List.length nfs = 0 then raise (NormalizationError Empty_union)
           else rel_union_l nfs
-      | Op (_, Seq, expl) -> rel_seq_l (List.map normalize_rel expl)
+      | Op (_, Seq, expl) -> rel_seq_l (List.map go expl)
       | Op (_, Inter, expl) -> (
-          let nfs = List.map normalize_rel expl in
+          let nfs = List.map go expl in
           match rel_inter_l nfs with
           | Some nf -> nf
           | None -> raise (NormalizationError (Exp_not_supported e)))
       | Op (_, Diff, [ e1; e2 ]) -> (
-          match rel_diff_opt (normalize_rel e1) (normalize_rel e2) with
+          match rel_diff_opt (go e1) (go e2) with
           | Some result -> result
           | None -> raise (NormalizationError (Exp_not_supported e)))
-      | Op1 (_, ToId, exp) -> to_id (normalize_set exp)
-      | Op1 (_, Inv, exp) -> inv (normalize_rel exp)
+      | Op1 (_, ToId, exp) -> to_id (normalize_set ~config ~env exp)
+      | Op1 (_, Inv, exp) -> inv (go exp)
       | Op1 (_, Comp, exp) -> (
-          match rel_comp_opt (normalize_rel exp) with
+          match rel_comp_opt (go exp) with
           | Some result -> result
           | None -> raise (NormalizationError (Exp_not_supported e)))
-      | Op1 (_, Plus, exp) -> unroll unroll_depth (normalize_rel exp)
+      | Op1 (_, Plus, exp) -> unroll config.unroll_depth (go exp)
       | Op1 (_, Star, exp) ->
-          let unrolled = unroll unroll_depth (normalize_rel exp) in
+          let unrolled = unroll config.unroll_depth (go exp) in
           rel_union_l [ unrolled; empty_rel ]
-      | Op1 (_, Opt, exp) -> rel_union_l [ normalize_rel exp; empty_rel ]
+      | Op1 (_, Opt, exp) -> rel_union_l [ go exp; empty_rel ]
       | Konst (_, Empty _) -> empty_rel
       | App (_, fexp, exp) -> (
           match fexp with
           | Var (_, "fencerel") -> (
-              let nf = normalize_set exp in
+              let nf = normalize_set ~config ~env exp in
               match find_fence nf with
               | Some fence -> fencerel fence
               | None -> raise (NormalizationError (Not_a_fence exp)))
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~conditions a then normalize_rel exp
-          else normalize_rel exp2
-      | Try (_, e, e2) -> (
-          try normalize_rel e with NormalizationError _ -> normalize_rel e2)
+          if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
+      | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) -> (
           let bound_nf =
             Util.Option.choice_fn
@@ -179,31 +188,72 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           | None -> raise (NormalizationError (Unknown_identifier var)))
       | _ -> raise (NormalizationError (Exp_not_supported e))
     in
-    try Either.Left (normalize_set e)
-    with NormalizationError _ -> Either.Right (normalize_rel e)
+    go e
 
-  type nf_map = string -> rel_nf option
+  (* Normalize the given AST expression.
+     May fail by throwing NormalizationError.
+  *)
+  (* TODO: properly handle recursive bindings *)
+  let normalize ~(config : norm_config) ~(env : env) (e : AST.exp) :
+      (set_nf, rel_nf) Either.t =
+    try Either.Left (normalize_set ~config ~env e)
+    with NormalizationError _ -> Either.Right (normalize_rel ~config ~env e)
 
-  let normalize_bindings ~(conditions : string list) ~(unroll_depth : int)
-      ~(set_var : string -> set_nf option) ~(rel_var : string -> rel_nf option)
+  type nf_map = string -> (rel_nf * AST.exp option) list
+
+  (* Assumes that the order of let-definitions in `bindings` is that of
+     the source cat file. This is important to properly scope bindings in
+     the presence of shadowing. *)
+  let normalize_bindings ~(config : norm_config)
       (bindings : (string * AST.exp) list) : nf_map =
-    let do_normalize = normalize ~conditions ~unroll_depth ~set_var ~rel_var in
-    let env =
-      List.fold_left
-        (fun (env : env) (v, e) ->
-          let f =
-           fun () ->
-            Log.eprintv 1 "Normalizing let binding `%s`.@." v;
-            try Some (do_normalize ~env e)
-            with NormalizationError err ->
-              Log.eprintv 1 "Skipping let binding `%s`: %s@." v
-                (pp_norm_err err);
-              None
-          in
-          StringMap.add v (Lazy.from_fun f) env)
-        StringMap.empty bindings
+   fun var ->
+    let bindings_in_scope_rev =
+      bindings |> List.rev |> Util.List.drop_while (fun (v, _) -> not (v = var))
     in
-    fun var ->
-      Util.Option.choice_fn
-        [ (fun _ -> rel_var var); (fun _ -> find_env_rel var env) ]
+    match bindings_in_scope_rev with
+    | [] ->
+        Log.eprintv 0 "Requested let binding `%s` not found in cat file.@." var;
+        []
+    | (_, e) :: env_rev -> begin
+        match config.rel_var var with
+        | Some nf -> [ (nf, None) ]
+        | None ->
+            let env =
+              List.fold_left
+                (fun (env : env) (v, e) ->
+                  let f =
+                   fun () ->
+                    Log.eprintv 1 "Normalizing let binding `%s`.@." v;
+                    try Some (normalize ~config ~env e)
+                    with NormalizationError err ->
+                      Log.eprintv 1 "Skipping let binding `%s`: %s@." v
+                        (pp_norm_err err);
+                      None
+                  in
+                  StringMap.add v (Lazy.from_fun f) env)
+                StringMap.empty (List.rev env_rev)
+            in
+            begin match e with
+            | AST.Op (_, AST.Union, expl) ->
+                let nfs =
+                  List.filter_map
+                    (fun e ->
+                      try
+                        let nf = normalize_rel ~config ~env e in
+                        Some (nf, Some e)
+                      with NormalizationError err ->
+                        Log.eprintv 1 "Skipping union branch: %s@."
+                          (pp_norm_err err);
+                        None)
+                    expl
+                in
+                nfs
+            | _ -> (
+                try [ (normalize_rel ~config ~env e, None) ]
+                with NormalizationError err ->
+                  Log.eprintv 1 "Skipping let binding `%s`: %s@." var
+                    (pp_norm_err err);
+                  [])
+            end
+      end
 end

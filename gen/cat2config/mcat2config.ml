@@ -15,6 +15,7 @@ module Arg = struct
     libdir : string option;
     show : show option;
     conf : bool;
+    show_rels : bool;
   }
 
   let parse_show : string -> show = function
@@ -34,6 +35,7 @@ module Arg = struct
     let libdir = ref None in
     let show = ref None in
     let conf = ref false in
+    let show_rels = ref false in
     let opts =
       [
         ("-v", Arg.Unit (fun () -> incr verbose), " be verbose");
@@ -57,6 +59,10 @@ module Arg = struct
           Arg.Bool (fun b -> conf := b),
           "<true|false> print output as diy configuration file. Default = \
            false." );
+        ( "-showrels",
+          Arg.Bool (fun b -> show_rels := b),
+          "<true|false> include source cat relations in configuration file. \
+           Default = false." );
       ]
     in
     let prog =
@@ -76,6 +82,7 @@ module Arg = struct
         libdir = !libdir;
         show = !show;
         conf = !conf;
+        show_rels = !show_rels;
       }
     in
     (opts, !file_paths)
@@ -147,22 +154,32 @@ let extract_let_binding (ins : AST.ins) =
 
 let run ~(opts : Arg.opts) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
-  let nf_map =
-    Nf.normalize_bindings ~conditions:opts.conds ~unroll_depth:opts.unroll
-      ~set_var:Ir.parse_set_id ~rel_var:Ir.parse_rel_id bindings
+  let norm_config : Nf.norm_config =
+    {
+      conditions = opts.conds;
+      unroll_depth = opts.unroll;
+      set_var = Ir.parse_set_id;
+      rel_var = Ir.parse_rel_id;
+    }
   in
+  let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
   let results =
     opts.lets_to_print
-    |> List.filter_map (fun var ->
-        match nf_map var with
-        | None ->
-            Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
-            None
-        | Some nf ->
-            let nf = Ir.expand_acq_rel nf in
-            let compressed = Ir.compress nf in
-            let expanded = Ir.expand_domain_range compressed in
-            Some (var, compressed, expanded))
+    |> List.map (fun var ->
+        let nfs = nf_map var in
+        if nfs = [] then (
+          Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
+          exit 1)
+        else
+          let nfs =
+            nfs
+            |> List.map (fun (nf, ast_expr) ->
+                let nf = Ir.expand_acq_rel nf in
+                let compressed = Ir.compress nf in
+                let expanded = Ir.expand_domain_range compressed in
+                (compressed, expanded, ast_expr))
+          in
+          (var, nfs))
   in
   if opts.conf then (
     let open Format in
@@ -171,35 +188,50 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     printf "-size 6@.";
     printf "-name cat2config-conf@.";
     results
-    |> List.iter (fun (var, _, expanded) ->
+    |> List.iter (fun (var, nfs) ->
         printf "@.";
         printf "### %s@." var;
         let _ =
           List.fold_left
-            (fun acc seq ->
-              let relaxs = Translation.try_translate_seq seq in
-              let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
-              if relaxs <> [] then begin
-                printf "-safe %s@."
-                  (String.concat " " (List.map Translation.pp_relax relaxs))
-              end;
-              acc @ relaxs)
-            [] (Ir.get_union expanded)
+            (fun acc (_, expanded, ast_e) ->
+              let print_cat_rel () =
+                if opts.show_rels then
+                  match ast_e with
+                  | Some e -> printf "## %a@." Ast_utils.pp_exp e
+                  | None -> ()
+              in
+              List.fold_left
+                (fun acc seq ->
+                  let relaxs = Translation.try_translate_seq seq in
+                  let relaxs =
+                    List.filter (fun r -> not (List.mem r acc)) relaxs
+                  in
+                  if relaxs <> [] then begin
+                    print_cat_rel ();
+                    printf "-safe %s@."
+                      (String.concat " " (List.map Translation.pp_relax relaxs))
+                  end;
+                  acc @ relaxs)
+                acc (Ir.get_union expanded))
+            [] nfs
         in
         ()))
   else
     results
-    |> List.iter (fun (_, compressed, expanded) ->
-        if opts.show = Some Tree then
-          Format.printf "%a@." Ir.pp_rel_nf compressed;
-        let relaxs =
-          Ir.get_union expanded
-          |> Util.List.concat_map (fun seq -> Translation.try_translate_seq seq)
-        in
-        let relaxs = Util.List.uniq ~eq:( = ) relaxs in
-        relaxs
-        |> List.iter (fun relax ->
-            Format.printf "%s@." (Translation.pp_relax relax)))
+    |> List.iter (fun (_, nfs) ->
+        nfs
+        |> List.iter (fun (compressed, expanded, _) ->
+            if opts.show = Some Tree then
+              Format.printf "%a@." Ir.pp_rel_nf compressed;
+            let relaxs =
+              Ir.get_union expanded
+              |> Util.List.concat_map (fun seq ->
+                  Translation.try_translate_seq seq)
+            in
+            let relaxs = Util.List.uniq ~eq:( = ) relaxs in
+            relaxs
+            |> List.iter (fun relax ->
+                Format.printf "%s@." (Translation.pp_relax relax))))
 
 let () =
   let opts, file_paths = Arg.parse () in
