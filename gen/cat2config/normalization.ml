@@ -183,9 +183,11 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     try Either.Left (normalize_set e)
     with NormalizationError _ -> Either.Right (normalize_rel e)
 
+  type nf_map = string -> rel_nf option
+
   let normalize_bindings ~(conditions : string list) ~(unroll_depth : int)
       ~(set_var : string -> set_nf option) ~(rel_var : string -> rel_nf option)
-      (bindings : (string * AST.exp) list) : env =
+      (bindings : (string * AST.exp) list) : nf_map =
     let do_normalize = normalize ~conditions ~unroll_depth ~set_var ~rel_var in
     let env =
       List.fold_left
@@ -202,5 +204,7 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           StringMap.add v (Lazy.from_fun f) env)
         StringMap.empty bindings
     in
-    env
+    fun var ->
+      Util.Option.choice_fn
+        [ (fun _ -> rel_var var); (fun _ -> find_env_rel var env) ]
 end
