@@ -37,8 +37,8 @@ module Layout : sig
       default layout based on its type term if no math layout is defined. *)
 
   val for_type_term : type_term -> layout
-  (** [for_type_term style term] returns a full default layout for [term]. That
-      is, a layout extending to the depth of [term]. *)
+  (** [for_type_term term] returns a full default layout for [term]. That is, a
+      layout extending to the depth of [term]. *)
 end
 
 val elem_name : elem -> string
@@ -68,7 +68,7 @@ val defining_node_opt_for_id : t -> string -> definition_node option
 
 val relation_for_id : t -> string -> Relation.t
 (** [relation_for_id spec id] returns the relation definition for [id] in
-    [spec]. Raises [SpecError] if [id] is not defined as a relation. *)
+    [spec], assuming it is defined as a relation. *)
 
 val is_defined_id : t -> string -> bool
 (** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
@@ -82,6 +82,5 @@ module ExpandRules : sig
   (** An expanded rule is a rule with no cases. *)
 
   val expand : Rule.t -> expanded_rule list
-  (** [expand  elements] expands the rule whose list of elements is [elements]
-      into multiple rules without cases. *)
+  (** [expand  rule] expands [rule] into multiple rules without cases. *)
 end
