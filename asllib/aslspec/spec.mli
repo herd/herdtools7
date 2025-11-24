@@ -61,3 +61,27 @@ val defined_ids : t -> string list
 val defining_node_for_id : t -> string -> definition_node
 (** [defining_node_for_id spec id] returns the defining node for [id] in [spec].
     Raises [SpecError] if [id] is not defined. *)
+
+val defining_node_opt_for_id : t -> string -> definition_node option
+(** [defining_node_opt_for_id spec id] returns [Some node] if [id] is defined in
+    [spec] with defining node [node], and [None] otherwise. *)
+
+val relation_for_id : t -> string -> Relation.t
+(** [relation_for_id spec id] returns the relation definition for [id] in
+    [spec]. Raises [SpecError] if [id] is not defined as a relation. *)
+
+val is_defined_id : t -> string -> bool
+(** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
+    [false] otherwise. *)
+
+module ExpandRules : sig
+  type expanded_rule = {
+    name_opt : string option;
+    judgments : Rule.judgment list;
+  }
+  (** An expanded rule is a rule with no cases. *)
+
+  val expand : Rule.t -> expanded_rule list
+  (** [expand  elements] expands the rule whose list of elements is [elements]
+      into multiple rules without cases. *)
+end

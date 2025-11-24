@@ -8,10 +8,12 @@ module CLI = struct
   let arg_pp = ref false
   let arg_render = ref false
   let arg_render_filename = ref "generated_macros.tex"
+  let arg_debug = ref false
   let arg_render_debug = ref false
   let arg_render_debug_filename = ref "debug_generated_elements.tex"
   let set_pp () = arg_pp := true
   let set_render () = arg_render := true
+  let set_debug () = arg_debug := true
 
   let set_render_out filename =
     set_render ();
@@ -39,6 +41,9 @@ module CLI = struct
         Arg.String set_render_debug,
         "Specify a filename for a stand-alone rendering of all generated LaTeX \
          macros. Implies --render." );
+      ( "--debug",
+        Arg.Unit set_debug,
+        "Enable debug mode (more verbose error messages)." );
     ]
 
   type configuration = { spec_files : string list; pp : bool; render : bool }
@@ -108,9 +113,9 @@ let write_to_file_with_formatter filename f =
       let file_formatter = Format.formatter_of_out_channel file_channel in
       f file_formatter)
 
-let parse_command_line_args_and_execute () =
+(** Execute aslspec with the given configuration. *)
+let execute config =
   let open CLI in
-  let config = parse_args () in
   let ast =
     (* Parse the abstract syntax tree (AST) from all specification files. *)
     Utils.list_concat_map parse_spec_from_file config.spec_files
@@ -139,15 +144,23 @@ let parse_command_line_args_and_execute () =
 
 (** Main entry point. Runs aslspec for the command-line options. *)
 let () =
-  try parse_command_line_args_and_execute () |> fun () -> exit 0
-  with error ->
-    let error_type, msg =
-      match error with
-      | CLI.CLIError msg -> ("Usage Error", msg)
-      | ParseError msg -> ("Syntax Error", msg)
-      | AST.SpecError msg -> ("Specification Error", msg)
-      | _ -> raise error
-    in
-    Format.eprintf "%s%s: %s%s\n" TextColor.red error_type msg
-      TextColor.reset_color;
-    exit 1
+  let config = CLI.parse_args () in
+  if !CLI.arg_debug then
+    (* Allow the exception stack trace to be printed for debugging. *)
+    let () = execute config in
+    exit 0
+  else
+    try
+      let () = execute config in
+      exit 0
+    with error ->
+      let error_type, msg =
+        match error with
+        | CLI.CLIError msg -> ("Usage Error", msg)
+        | ParseError msg -> ("Syntax Error", msg)
+        | AST.SpecError msg -> ("Specification Error", msg)
+        | _ -> raise error
+      in
+      Format.eprintf "%s%s: %s%s\n" TextColor.red error_type msg
+        TextColor.reset_color;
+      exit 1

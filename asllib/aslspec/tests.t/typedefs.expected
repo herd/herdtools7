@@ -56,6 +56,6 @@
 \DefineType{expr}{
 \begin{flalign*}
 \expr\mathhypertarget{ast-expr} \derives\ & \Number\left(\overtext{\Int}{\texttt{v}}\right)\mathhypertarget{ast-Number}\\
-|\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
+\PIPE\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
 
 

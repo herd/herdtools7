@@ -13,6 +13,9 @@ let list_is_equal eq l1 l2 =
 let is_singleton_list list = 1 == List.length list
 let list_tl_or_empty list = match list with [] -> [] | _ :: t -> t
 
+let split_last lst =
+  match List.rev lst with [] -> assert false | x :: xs -> (List.rev xs, x)
+
 (** [list_concat_map f l] gives the same result as List.concat (List.map f l).
 *)
 let list_concat_map f l = List.concat (List.map f l)
@@ -22,6 +25,9 @@ let list_concat_map f l = List.concat (List.map f l)
 let list_tail = function
   | [] -> raise (Invalid_argument "list_tail: empty list")
   | _ :: t -> t
+
+let list_match_two_elements lst =
+  match lst with [ x1; x2 ] -> (x1, x2) | _ -> assert false
 
 (** [string_exists p s] checks if at least one character of [s] satisfies the
     predicate [p]. *)
@@ -33,6 +39,12 @@ let string_exists p s =
     else check_from_index (i + 1)
   in
   check_from_index 0
+
+let string_starts_with ~prefix s =
+  let prefix_len = String.length prefix in
+  let s_len = String.length s in
+  if prefix_len > s_len then false
+  else String.equal (String.sub s 0 prefix_len) prefix
 
 (** [string_replace_all regexp f s] replaces all matches of [regexp] in [s] by
     the result of applying [f] to each matched substring. *)

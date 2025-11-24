@@ -31,10 +31,14 @@ let bool_of_string s =
 
 (* Keyword tokens *)
 %token AST
+%token CASE
+%token COLON_EQ
 %token CONSTANT
 %token CONSTANTS_SET
 %token FUN
 %token FUNCTION
+%token INDEX
+%token LATEX
 %token LIST0
 %token LIST1
 %token MATH_MACRO
@@ -48,15 +52,25 @@ let bool_of_string s =
 %token PROSE_DESCRIPTION
 %token RENDER
 %token RELATION
+%token RULE
 %token SEMANTICS
 %token SHORT_CIRCUIT_MACRO
 %token TYPEDEF
 %token TYPING
 
+%token IFF
+%token UNION
+%token UNION_LIST
+%token LIST
+%token SET
+%token SIZE
+%token SOME
+
 (* Punctuation and operator tokens *)
 %token ARROW
 %token COMMA
 %token COLON
+%token DOT
 %token EQ
 %token SEMI
 %token VDASH
@@ -67,6 +81,14 @@ let bool_of_string s =
 %token LBRACE
 %token RBRACE
 %token MINUS
+%token MINUS_MINUS
+
+%nonassoc ARROW
+%nonassoc EQ
+%nonassoc IFF
+%nonassoc COLON_EQ
+%left LPAR
+%right VDASH
 
 %%
 
@@ -115,6 +137,9 @@ let tclist1(x) :=
 (* A parenthesised comma-separated list *)
 let plist0(x) == pared(clist0(x))
 
+(* A parenthesised comma-separated list with at least one element. *)
+let plist1(x) == pared(clist1(x))
+
 (* A parenthesised comma-separated list with at least 2 elements. *)
 let plist2(x) == pared(clist2(x))
 
@@ -134,6 +159,7 @@ let elem :=
     | relation_definition
     | constant_definition
     | render_types
+    | render_rule
 
 let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
@@ -151,9 +177,9 @@ let type_definition :=
 
 let relation_definition :=
     ~=relation_category; ~=relation_property; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
-    ~=relation_attributes;
+    ~=relation_attributes; ~=opt_relation_rule;
     {   check_definition_name name;
-        Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes) }
+        Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes opt_relation_rule) }
 
 let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes;
     {   check_definition_name name;
@@ -273,3 +299,90 @@ let render_types_attribute :=
 
 let lhs_hypertargets ==
     | LHS_HYPERTARGETS; EQ; value=IDENTIFIER;{ (LHS_Hypertargets, BoolAttribute (bool_of_string value)) }
+
+let opt_relation_rule := { None }
+    | EQ; ~=rule; { Some rule }
+
+let rule := rule_elements=list1(rule_element); { rule_elements }
+
+let rule_element :=
+    | ~=judgment; SEMI; { Rule.Judgment judgment }
+    | ~=rule_case; { Rule.Cases [ rule_case ] }
+
+let rule_case := CASE; name=IDENTIFIER; LBRACE; elements=list(rule_element); RBRACE;
+      { Rule.make_case name elements }
+
+let judgment := ~=maybe_output_expr; ~=expr; ~=judgment_attributes;
+      { Rule.make_judgement expr maybe_output_expr judgment_attributes  }
+
+let maybe_output_expr :=
+    | { false }
+    | MINUS_MINUS; { true }
+
+let short_circuit ==
+    | { None }
+    | VDASH; alternatives=expr;
+      { Some [alternatives] }
+
+let expr :=
+    | id=IDENTIFIER;
+      { Rule.Var id }
+    | components=plist1(expr);
+      { Rule.make_tuple components }
+    | ~=prefix_expr_operator; args=plist0(expr);
+      { Rule.make_prefix_operator_application prefix_expr_operator args }
+    | lhs=expr; args=plist0(expr);
+      { Rule.make_application lhs args }
+    | lhs=expr; ~=infix_expr_operator; rhs=expr;
+      { Rule.make_infix_operator_application infix_expr_operator lhs rhs }
+    | ~=field_path;
+      { Rule.FieldAccess field_path }
+    | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
+      { Rule.make_list_index list_var index }
+    | name=IDENTIFIER; LBRACKET; fields=tclist1(field_and_value); RBRACKET;
+      { Rule.make_record name fields }
+    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
+      { Rule.Transition { lhs; rhs; short_circuit } }
+    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=expr; RPAR;
+      { Rule.Indexed { index; list; body } }
+
+(** We currently do not need field paths longer than a variable with two fields. *)
+let field_path :=
+  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; { [ id1; id2 ] }
+  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; DOT; id3=IDENTIFIER; { [ id1; id2; id3 ] }
+
+let prefix_expr_operator ==
+    | UNION; { Rule.Operator_Union }
+    | UNION_LIST; { Rule.Operator_UnionList }
+    | LIST; { Rule.Operator_List }
+    | SET; { Rule.Operator_Set }
+    | SIZE; { Rule.Operator_Size }
+    | SOME; { Rule.Operator_Some }
+
+let infix_expr_operator ==
+    | COLON_EQ; { Rule.Operator_Assign }
+    | EQ; { Rule.Operator_Equal }
+    | IFF; { Rule.Operator_Iff }
+
+let field_and_value == field=IDENTIFIER; COLON; value=expr; { (field, value) }
+
+let judgment_attributes ==
+    | { [] }
+    | LBRACE; pairs=tclist0(judgment_attribute); RBRACE; { pairs }
+
+let judgment_attribute := math_layout_attribute
+
+let render_rule :=
+  | RENDER; RULE; relation_name=IDENTIFIER; EQ; relation=IDENTIFIER; rule_name=pared(rule_name);
+    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation rule_name) }
+  | RENDER; RULE; relation_name=IDENTIFIER;
+    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation_name []) }
+    (** Stands for the entire rule for the given relation. *)
+
+let rule_name :=
+  | ~=rule_path; { rule_path }
+  | MINUS; { [ "" ] }
+    (** The empty string is a prefix of every rule name. *)
+
+let rule_path := name=IDENTIFIER; { [name] }
+  | name=IDENTIFIER; DOT; rest=rule_path; { name :: rest }

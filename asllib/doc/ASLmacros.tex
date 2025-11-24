@@ -165,6 +165,7 @@
 \setlist[itemize,19]{label=\textendash}
 \setlist[itemize,20]{label=\textendash}
 
+\newcommand\BackupOriginalRule[1]{}
 \newcommand\MarkedIgnoredRelationDefinition[1]{#1} % DO NOT LINT
 \newcommand\PendingRelationDefinition[1]{#1} % DO NOT LINT
 
@@ -275,12 +276,15 @@
 \renewcommand\triangleq[0]{\hyperlink{def-triangleq}{\OldTriangleq}}
 \newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
 
+\newcommand\equal[0]{=}
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
 \newcommand\overtext[2]{\overbracket{#1}^{#2}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
+\newcommand\COLON[0]{:}
+\newcommand\PIPE[0]{|}
 
 \newcommand\emptylist[0]{\hyperlink{constant-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
@@ -314,6 +318,10 @@
 \newcommand\Option[1]{\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)} % The optional type term
 \newcommand\optionalterm[0]{\hyperlink{def-Option}{optional}}
 \newcommand\some[1]{\hyperlink{def-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
+\newcommand\LIST[1]{\left[{#1}\right]} % A list of expressions
+\newcommand\SET[1]{\left\{{#1}\right\}} % A set of expressions
+\newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
+\newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
 \newcommand\KleeneStar[1]{{#1}^{\hyperlink{def-kleenestar}{*}}}
 \newcommand\KleenePlus[1]{{#1}^{\hyperlink{def-kleeneplus}{+}}}
 

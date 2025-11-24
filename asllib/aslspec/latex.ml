@@ -182,11 +182,7 @@ let pp_elements_and_separator ~pp_sep ~alignment ~same_column pp_elem layout fmt
                   pp_elem fmt elem_with_layout;
                   pp_cond_sep fmt);
               ]
-            else
-              [
-                (fun fmt -> pp_elem fmt elem_with_layout);
-                (fun fmt -> pp_cond_sep fmt);
-              ])
+            else [ (fun fmt -> pp_elem fmt elem_with_layout); pp_cond_sep ])
           elements_with_layouts
       in
       let alignment = if same_column then alignment else alignment ^ "c" in
@@ -199,7 +195,7 @@ let pp_elements_and_separator ~pp_sep ~alignment ~same_column pp_elem layout fmt
     separators are rendered in the same column as the elements, and the elements
     are aligned according to [alignment]. *)
 let pp_aligned_elements ~pp_sep ~alignment pp_elem layout fmt elements =
-  pp_elements_and_separator ~pp_sep ~alignment ~same_column:false pp_elem layout
+  pp_elements_and_separator ~pp_sep ~alignment ~same_column:true pp_elem layout
     fmt elements
 
 (** [pp_aligned_elements_and_operators ~pp_sep ~alignment pp_elem layout fmt
@@ -207,7 +203,7 @@ let pp_aligned_elements ~pp_sep ~alignment pp_elem layout fmt elements =
     [Vertical], the separators are rendered on a separate column. *)
 let pp_aligned_elements_and_operators ~pp_sep ~alignment pp_elem layout fmt
     elements =
-  pp_elements_and_separator ~pp_sep ~alignment ~same_column:true pp_elem layout
+  pp_elements_and_separator ~pp_sep ~alignment ~same_column:false pp_elem layout
     fmt elements
 
 (** [pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name
@@ -229,7 +225,7 @@ let pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name
   in
   match layout with
   | Horizontal _ ->
-      fprintf fmt {|%a %a %a|} pp_lhs_with_layout lhs_with_layout pp_macro
+      fprintf fmt "%a %a %a" pp_lhs_with_layout lhs_with_layout pp_macro
         connector_macro_name pp_rhs_with_layout rhs_with_layout
   | Vertical _ ->
       fprintf fmt {|\begin{array}{%s}@.  %a %a\\@.  %a@.\end{array}|} alignment
@@ -268,15 +264,13 @@ let pp_fields pp_field_name pp_field_value fmt (fields, layout) =
             ])
           fields_values_with_layouts
       in
-      fprintf fmt {|%a|}
-        (pp_parenthesized Braces true (pp_latex_array "lcl"))
-        field_pp_funs
+      pp_parenthesized Braces true (pp_latex_array "lcl") fmt field_pp_funs
   | Horizontal _ ->
       let pp_field fmt (field_name, (fields_value, layout)) =
-        fprintf fmt {|%a : %a|} pp_field_name field_name pp_field_value
+        fprintf fmt "%a : %a" pp_field_name field_name pp_field_value
           (fields_value, layout)
       in
-      fprintf fmt {|%a|}
-        (pp_parenthesized Braces true (PP.pp_sep_list ~sep:", " pp_field))
-        fields_values_with_layouts
+      pp_parenthesized Braces true
+        (PP.pp_sep_list ~sep:", " pp_field)
+        fmt fields_values_with_layouts
   | Unspecified -> assert false
