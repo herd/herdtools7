@@ -4,6 +4,8 @@ aarch64.cat
   Fri
   Coe
   Coi
+  $ mcat2config7 -set-libdir ./libdir -let lrs libdir/aarch64.cat
+  PosWR
   $ mcat2config7 -set-libdir ./libdir -let Exp-haz-ob libdir/aarch64.cat
   [PosRR, Fre]
   $ mcat2config7 -set-libdir ./libdir -let haz-ob libdir/aarch64.cat
