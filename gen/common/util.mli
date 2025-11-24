@@ -48,6 +48,7 @@ module List : sig
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
   val uniq : eq:('a -> 'a -> bool) -> 'a list -> 'a list
   val sequence : 'a list list -> 'a list list
+  val drop_while : ('a -> bool) -> 'a list -> 'a list
 
   include Monad with type 'a t := 'a list
 
