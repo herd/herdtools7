@@ -1,0 +1,78 @@
+(*
+ * Copyright (C) 2025-present, Arm Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+(*
+ * This file contains "try ... with" wrappings of primitive sets of
+ * effects exposed by herd. The wrappings are normally scattered around
+ * files included in the aarch64.cat model, but need to be predefined
+ * here in order to avoid "undefined" errors when running herd, as the
+ * aarch64 model has to be included only after the assumptions have been
+ * checked. This is because of shadowing (redefinition) of the primitives
+ * in the model (eg. let A = try A & (Exp & M) with emptyset). cat2table
+ * requires knowledge of the bare primitives as exported by herd, and not as
+ * redefined by the cat model, as the tool unwraps the redefinitions
+ * itself when checking effect intersection.
+ *)
+
+let DMB.ISH = try DMB.ISH with emptyset
+let DMB.ISHLD = try DMB.ISHLD with emptyset
+let DMB.ISHST = try DMB.ISHST with emptyset
+let DSB.ISH = try DSB.ISH with emptyset
+let DSB.ISHLD = try DSB.ISHLD with emptyset
+let DSB.ISHST = try DSB.ISHST with emptyset
+let DMB.SY = try DMB.SY with emptyset
+let DMB.ST = try DMB.ST with emptyset
+let DMB.LD = try DMB.LD with emptyset
+let DSB.SY = try DSB.SY with emptyset
+let DSB.ST = try DSB.ST with emptyset
+let DSB.LD = try DSB.LD with emptyset
+let DMB.OSH = try DMB.OSH with emptyset
+let DSB.OSH = try DSB.OSH with emptyset
+let DMB.OSHLD = try DMB.OSHLD with emptyset
+let DSB.OSHLD = try DSB.OSH with emptyset
+let DMB.OSHST = try DMB.OSHST with emptyset
+let DSB.OSHST = try DSB.OSHST with emptyset
+let ISB = try ISB with emptyset
+
+let A = try A with emptyset
+and L = try L with emptyset
+and Q = try Q with emptyset
+and NoRet = try NoRet with emptyset
+
+let PTE = if "vmsa" then PTE else emptyset
+let PTEV = if "vmsa" then PTEV else emptyset
+let inv-domain = if "vmsa" then inv-domain else 0
+let AF = if "vmsa" then AF else emptyset
+let DB = if "vmsa" then DB else emptyset
+let MMU = if "vmsa" then MMU else emptyset
+let Translation = if "vmsa" then Translation else emptyset
+let AccessFlag = if "vmsa" then AccessFlag else emptyset
+let Instr = if "ifetch" then Instr else emptyset

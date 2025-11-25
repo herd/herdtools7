@@ -37,5 +37,6 @@ dune install herdtools7 --prefix "${prefix}"
 
 # Copy libfiles
 cpdir herd/libdir   "${libdir}/herd"
+cpdir tools/libdir/. "${libdir}/tools"
 cpdir litmus/libdir "${libdir}/litmus"
 cpdir jingle/libdir "${libdir}/jingle"
