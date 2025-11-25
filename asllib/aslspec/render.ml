@@ -439,6 +439,8 @@ module Make (S : SPEC_VALUE) = struct
         formatter [fmt] and laid out according to [layout]. *)
     let rec pp_expr fmt (expr, layout) =
       match expr with
+      | NamedExpr (sub_expr, name) ->
+          pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
       | Var name -> (
           (* Constants/labels should render via their macros.
           So do tuples and records with labels, and type names, since their label

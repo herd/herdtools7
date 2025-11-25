@@ -1,0 +1,25 @@
+% ==================================================
+% AUTO-GENERATED - DO NOT EDIT
+% ==================================================
+
+% ------------------
+% Macros for symbols
+% ------------------
+
+\newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
+\newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
+
+% -------------------
+% Macros for elements
+% -------------------
+
+\DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
+
+\DefineRelation{r}{
+The relation
+\[
+\mathhypertarget{relation-r}\r\left(\overtext{\Num}{\texttt{a}}, \overtext{\Num}{\texttt{b}}\right) \bigtimes \overtext{\Num}{\texttt{c}}
+\]
+} % EndDefineRelation
+
+

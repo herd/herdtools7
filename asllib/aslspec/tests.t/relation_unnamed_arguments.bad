@@ -1,0 +1,10 @@
+typedef Num;
+
+typing relation unnamed_arg_no_rule(Num) -> Num
+{};
+
+typing relation unnamed_arg_has_rule(Num, b: Num) -> Num
+{} =
+    --
+    b;
+;
