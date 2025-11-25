@@ -1,0 +1,10 @@
+Test TABT008 Allowed
+States 1
+  ~Fault(P0,x,MMU:Translation);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (fault(P0,x,MMU:Translation))
+Observation TABT008 Never 0 1
+Hash=218377a6d9ba4fc9b59940775f66c7d6
+

@@ -485,7 +485,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 (* Compare id in fault and other id, at least one id must be allowed in fault *)
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
-        (* Matching descriptors or virtuals *)
+        (* Both ids allowed in fault, compare *)
           |(Virtual {name=s1;_},Virtual {name=s2;_})
           |(System (PTE,s1),System (PTE,s2))
           |(System (TTD {stage=S1; level=LV3}, s1), System (PTE, s2))

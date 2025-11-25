@@ -58,6 +58,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
  (*Replaces old KVM -> Virtual memory *)
   | VMSA
+  (* Multi-level page tables *)
+  | MLPT
 (* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2, FEAT_ETS3 *)
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)

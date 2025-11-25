@@ -316,7 +316,17 @@ let tr p =
   let r =
     match p.p_oa with
     | None -> r
-    | Some oa -> { r with oa; } in
+    | Some oa -> 
+      match oa with
+      | OutputAddress.PHY _->
+        if (p.p_dt = DescriptorType.Table)
+          then Warn.user_error "Table cannot be initialised with PA(x)."
+        else { r with oa; }
+      | OutputAddress.PTE _ ->
+        if not (p.p_dt = DescriptorType.Table)
+          then Warn.user_error "Leaf entry cannot be initialised with PTE(x)."
+        else { r with oa; }
+      in
   let r = StringMap.fold add_field p.p_kv r in
   r
 

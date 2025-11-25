@@ -1,5 +1,5 @@
 AArch64 TABT002
-Variant=vmsa
+Variant=vmsa,mlpt
 {
 uint64_t x;
 0:X0=x;
