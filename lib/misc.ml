@@ -154,6 +154,14 @@ let uppercase = String.uppercase_ascii
 let capitalize = String.capitalize_ascii
 let uncapitalize = String.uncapitalize_ascii
 
+(** [string_starts_with ~prefix s] checks if string [s] starts with [prefix].
+  Normally available natively in Ocaml 4.13. *)
+let string_starts_with ~prefix s =
+  let prefix_len = String.length prefix in
+  let s_len = String.length s in
+  if prefix_len > s_len then false
+  else String.equal (String.sub s 0 prefix_len) prefix
+
 let to_c_name =
   let tr c = match c with
     | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> Char.escaped c
