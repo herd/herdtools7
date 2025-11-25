@@ -657,15 +657,19 @@ module Make
 
       (* Fault types *)
 
-      let pp_data_zero = if Cfg.is_kvm then "UNKNOWN" else "0"
+      let pp_data_unknown = "UNKNOWN"
+      let data_unknown =  SkelUtil.data_symb_id pp_data_unknown
+
+      let pp_data_zero = "0"
       let data_zero =  SkelUtil.data_symb_id pp_data_zero
 
       let dump_data_indices test =
-        O.f "#define %-25s 0" data_zero ;
+        O.f "#define %-25s 0" data_unknown ;
+        O.f "#define %-25s 1" data_zero ;
         (* Define indices for data *)
         List.iteri
           (fun k (a,_) ->
-            let idx = if Cfg.is_kvm then 2*k else k in
+            let idx = 1 + if Cfg.is_kvm then 2*k else k in
             O.f "#define %-25s  %i" (SkelUtil.data_symb_id a) (idx+1);
             if Cfg.is_kvm then begin
                 O.f "#define %-25s  %i"
@@ -675,6 +679,7 @@ module Make
         O.o "" ;
         O.f "static const char *data_symb_name[] = {" ;
         (* Define names for data symbols *)
+        O.fi "\"%s\"," pp_data_unknown ;
         O.fi "\"%s\"," pp_data_zero ;
         List.iter
           (fun (a,_) ->
@@ -832,15 +837,12 @@ module Make
               O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
               if Cfg.variant Variant_litmus.Pac then
                 O.oi "v_addr = (intmax_t*) strip_pauth_data((void*) v_addr);" ;
-              begin match test.T.globals with
-              | _::_ when Cfg.is_kvm ->
+              if Cfg.is_kvm then begin
                  O.oi  "intmax_t *p_addr =" ;
                  O.oii "(intmax_t *)((uintptr_t)v_addr & PAGE_MASK);"
-              | _ -> ()
               end ;
-              if (not Cfg.is_kvm) then
-                (* Compatibility with standard mode, recognise NULL *)
-                O.fi "if (%s == NULL) return %s;" addr data_zero ;
+              (* Compatibility with standard mode, recognise NULL *)
+              O.fi "if (%s == NULL) return %s;" addr data_zero ;
               List.iter dump_test test.T.globals ;
               O.oi "fatal(\"Cannot find symbol for address\"); return -1;" ;
               O.o "}" ;
