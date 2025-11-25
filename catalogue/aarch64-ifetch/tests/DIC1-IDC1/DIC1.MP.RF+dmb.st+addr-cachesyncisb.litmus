@@ -1,6 +1,7 @@
 AArch64 DIC1.MP.RF+dmb.st+addr-cachesyncisb
 CacheType=DIC
-{ 0:X0=NOP;       0:X1=P1:m0; 1:X1=P1:m0;
+{ inst_t *z;
+  0:X0=NOP; 0:X1=P1:m0; 1:X1=P1:m0;
   0:X2=1; 1:X2=0; 0:X3=z; 1:X3=z; 1:X9=0; }
 P0           | P1            ;
 STR W0,[X1]  |     LDR X1,[X3] ;
