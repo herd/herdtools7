@@ -1206,7 +1206,7 @@ MP+dmb.sttp+addr_asynctagfault Forbidden
 MP+dmb.sttp+pickaddr--async Allowed
 S+dmb.st+addr_asynctagfault-po Forbidden
 async.S+dmb.sttp+data-noasyncfault Allowed
-S+dmb.sttp+data_asynctagfault Forbidden
+S+dmb.sttp+data_asynctagfault Allowed
 LB+dmb.sypp+addrpt-lrstt Forbidden
 LB+dmb.sypp+datapt-lrstt Forbidden
 MP+dmb.st+addrisb-Imp_Tag Forbidden
