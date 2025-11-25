@@ -27,6 +27,7 @@ DIY_REGRESSION_TEST           = _build/default/internal/diy_regression_test.exe
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
+HERD_ASSUMPTIONS_TEST		  = _build/default/internal/herd_assumptions_test.exe
 BENTO                         = _build/default/tools/bento.exe
 ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
@@ -86,6 +87,17 @@ dune-test:
 test:: dune-no-missing-file-in-runt
 dune-no-missing-file-in-runt:
 	asllib/tests/check-no-missing-file-in-run.sh ./
+
+test:: test.aarch64assumptions
+test-local:: test.aarch64assumptions
+test.aarch64assumptions:
+	@ echo
+	$(HERD_ASSUMPTIONS_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-dirs-and-confs-path ./dirs-and-confs.txt \
+		-assumptions-path ./tools/libdir/aarch64assumptions.cat
+	@ echo "cat2table AArch64 assumptions: OK"
 
 test:: test.aarch64
 test-local:: test.aarch64

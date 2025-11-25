@@ -96,6 +96,7 @@ val lowercase : string -> string
 val uppercase : string -> string
 val capitalize : string -> string
 val uncapitalize : string -> string
+val string_starts_with : prefix:string -> string -> bool
 
 (* strip characters to form a valid c variable/type/enum name *)
 val to_c_name : string -> string
