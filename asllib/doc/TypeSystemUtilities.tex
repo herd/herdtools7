@@ -522,11 +522,14 @@ in annotating statements.
 of the \globalstaticenvironmentterm{} and $\bot$ if it is unbound.}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \lookupconstant(\tenv, \vs) \typearrow \overname{\tenv.\staticenvsG.\constantvalues(\vs)}{\vv}
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{lookup_constant}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalConstant}

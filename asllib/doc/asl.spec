@@ -1623,8 +1623,6 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
   }
 ;
 
-render rule annotate_literal;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Relations and functions for Expressions
 ////////////////////////////////////////////////////////////////////////////////
@@ -5265,8 +5263,6 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
   --
   tenv.static_envs_G.constant_values(s);
 ;
-
-render rule lookup_constant;
 
 typing function add_global_constant(genv: global_static_envs, name: Identifier, v: literal) ->
          (new_genv: global_static_envs)

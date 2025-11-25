@@ -1437,6 +1437,42 @@ module Check = struct
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
 end
 
+(** [add_default_rule_renders ast] adds default render rules for relations that
+    have rules but do not have any rule render associated with them. That is,
+    for a relation
+    {[
+      relation r(A) -> B = ...
+    ]}
+    without any specified rule render, it adds the rule render
+    {[
+      render rule r
+    ]} *)
+let add_default_rule_renders ast =
+  (* First, gather the relations that have rule renders. *)
+  let relations_with_rules =
+    List.fold_left
+      (fun acc elem ->
+        match elem with
+        | Elem_RenderRule { RuleRender.relation_name } ->
+            StringSet.add relation_name acc
+        | _ -> acc)
+      StringSet.empty ast
+  in
+  (* For each relation without a rule render, add a render for all its cases,
+      with the same name as the relation. *)
+  let generated_elems =
+    List.filter_map
+      (fun elem ->
+        match elem with
+        | Elem_Relation { Relation.name; rule_opt = Some _ }
+          when not (StringSet.mem name relations_with_rules) ->
+            let rule_render = RuleRender.make ~name ~relation_name:name [] in
+            Some (Elem_RenderRule rule_render)
+        | _ -> None)
+      ast
+  in
+  ast @ generated_elems
+
 let from_ast ast =
   let definition_nodes = list_definition_nodes ast in
   let defined_ids = List.map definition_node_name definition_nodes in
@@ -1450,4 +1486,5 @@ let from_ast ast =
   let ast, _ = ResolveRules.resolve ast id_to_defining_node in
   let ast, id_to_defining_node = ExtendNames.extend ast in
   let () = Check.CheckRules.check ast in
+  let ast = add_default_rule_renders ast in
   { ast; id_to_defining_node; defined_ids }

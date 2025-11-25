@@ -437,10 +437,10 @@ let judgment_attributes ==
 let judgment_attribute := math_layout_attribute
 
 let render_rule :=
-  | RENDER; RULE; relation_name=IDENTIFIER; EQ; relation=IDENTIFIER; rule_name=pared(rule_name);
-    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation rule_name) }
-  | RENDER; RULE; relation_name=IDENTIFIER;
-    { check_definition_name relation_name; Elem_RenderRule (RuleRender.make relation_name relation_name []) }
+  | RENDER; RULE; name=IDENTIFIER; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);
+    { check_definition_name name; Elem_RenderRule (RuleRender.make ~name ~relation_name rule_name) }
+  | RENDER; RULE; name=IDENTIFIER;
+    { check_definition_name name; Elem_RenderRule (RuleRender.make ~name ~relation_name:name []) }
     (** Stands for the entire rule for the given relation. *)
 
 let rule_name :=
