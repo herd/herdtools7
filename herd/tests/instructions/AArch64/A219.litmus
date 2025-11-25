@@ -2,8 +2,8 @@ AArch64 A219
 (* This test should fail, because some valid execution
    attempts to dereference an integer *)
 {
- int x=1;
- int *p=x;
+ int64_t x=1;
+ int64_t *p=x;
  0:X2=p;
  1:X2=p;
  2:X2=p;

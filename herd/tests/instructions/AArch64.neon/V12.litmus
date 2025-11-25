@@ -1,7 +1,7 @@
 AArch64 V12
 (* Tests LD1R, no offset *)
 {
-uint64_t x=1;
+uint32_t x=1;
 0:X0=x;0:X1=y; 0:X2=z; 0:X3=a;
 }
 

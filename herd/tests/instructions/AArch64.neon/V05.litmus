@@ -2,6 +2,7 @@ AArch64 V05
 (* Tests LD1 multiple structure *)
 {
 uint8_t x[8]={255,0,0,0,0,0,0,0};
+uint8_t y; uint8_t z;
 0:X0=x; 0:X1=y; 0:X2=z;
 }
  P0                     ;

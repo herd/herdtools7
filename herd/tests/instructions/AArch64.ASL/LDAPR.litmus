@@ -5,6 +5,6 @@ int64_t x=15;
 int64_t 0:X0;
 }
   P0          ;
-LDAPR W0,[X1] ;
+LDAPR X0,[X1] ;
 
 forall 0:X0=15
