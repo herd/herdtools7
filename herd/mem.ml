@@ -2059,8 +2059,7 @@ let match_reg_events es =
 
     let check_sizes test es =
       if check_mixed then begin
-        (* No need to check initial writes, correct by construction. *)
-        let loc_mems = U.collect_mem_non_init es in
+        let loc_mems = U.collect_mem es in
         U.LocEnv.iter
           (fun loc evts ->
             let open Constant in
