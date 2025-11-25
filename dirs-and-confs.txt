@@ -1,0 +1,10 @@
+./herd/tests/instructions/AArch64
+./herd/tests/instructions/AArch64.mixed ./herd/tests/instructions/AArch64.mixed/mixed.cfg
+./herd/tests/instructions/AArch64.neon ./herd/tests/instructions/AArch64.neon/neon.cfg
+./herd/tests/instructions/AArch64.sve ./herd/tests/instructions/AArch64.sve/sve.cfg
+./herd/tests/instructions/AArch64.sme ./herd/tests/instructions/AArch64.sme/sme.cfg
+./herd/tests/instructions/AArch64.MTE ./herd/tests/instructions/AArch64.MTE/mte.cfg
+./herd/tests/instructions/AArch64.self ./herd/tests/instructions/AArch64.self/self.cfg
+./herd/tests/instructions/AArch64.kvm ./herd/tests/instructions/AArch64.kvm/kvm.cfg
+./herd/tests/instructions/AArch64.vmsa+mte ./herd/tests/instructions/AArch64.vmsa+mte/vmsa+mte.cfg
+catalogue/aarch64-ifetch/tests catalogue/aarch64-ifetch/cfgs/new-web.cfg
