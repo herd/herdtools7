@@ -13,6 +13,8 @@ let same-loc =
   [E-valid-PA & ~(Tag & M)]; loc; [E-valid-PA & ~(Tag & M)]
   | [Tag & M]; loc; [Tag & M]
 
+let same-low-order-bits = [E-valid-PA]; same-low-order-bits; [E-valid-PA]
+
 (* Same-cache-line relation *)
 (* NOTE : currently assumes all locations are on different cache lines *)
 (*        also extends to IC without a location specified              *)
@@ -20,5 +22,3 @@ let scl = loc
   | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
   | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
  
-let va-loc = ([Imp & TTD & R]; tr-ib; same-low-order-bits; tr-ib^-1; [Imp & TTD & R]) & loc
-let po-va-loc = po & va-loc

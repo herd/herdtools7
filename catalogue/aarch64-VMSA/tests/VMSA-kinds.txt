@@ -531,7 +531,7 @@ F2S+DSB-ETS                                    Allowed
 F2.mod-reduced-with-type                       Allowed
 F2.mod-reduced-noncache                        Allowed
 F2S+DSB-ETS                                    Allowed
-F2.mod-reduced-with-type+BBM                   Forbidden
+F2.mod-reduced-with-type+BBM                   Allowed
 F2.mod-reduced+BBM                             Allowed
 F2V                                            Allowed
 LBNExpExpInv                                   Forbidden
@@ -594,7 +594,7 @@ D15347-M-store-shoot+DMB.LD+VMALL              Forbidden
 D15347-M-store-shoot+DMB.LD                    Forbidden
 LDCLRptex-STRx+db                              Forbidden
 D15347-M-store-DSB+DSB-ISB                     Forbidden
-F2.mod-with-type+BBM2                          Forbidden
+F2.mod-with-type+BBM2                          Allowed
 LBNExpExp                                      Forbidden
 D15347-M-load-shoot+po                         Allow
 D15347-M-load-shoot+po+AF                      Allowed
@@ -612,7 +612,7 @@ LDCLRptex-STRx+db+BIS                          Forbidden
 D15347-M-load-DMBST+DMBLD                      Allowed
 D15347-M-load-shoot+acq-po+VMALL               Forbidden
 D15347-2+2W+DMBST+DSB-ISB                      Forbidden
-F2.mod-with-type+BBM                           Forbidden
+F2.mod-with-type+BBM                           Allowed
 CAS-AF                                         Required
 D15347-M-load-shoot+DMB.LD+VMALL               Forbidden
 CASAL+FAIL+FH                                  Forbidden
@@ -620,7 +620,7 @@ Artem2+TLBIx-UCy+dsb.ish                       Allowed
 D15347-2+2WExpNExp+DMBST+DSB-ISB               Allowed
 Artem2+TLBIx-HDy+dsb.ish                       Forbidden
 2+2WNExpExp+NExpNExp+SHOW                      Forbidden
-F2.mod-with-type+BBM-DSB-ISB                   Forbidden
+F2.mod-with-type+BBM-DSB-ISB                   Allowed
 2+2WNExpExp+NExpNExp+DMBST+DMBST               Forbidden
 2+2WNExpExp+NExpNExp+DMBST+DMBST+SHOW          Forbidden
 Artem2+TLBIx-TLBIy+dmb2                        Forbidden

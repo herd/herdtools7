@@ -1,0 +1,22 @@
+AArch64 coRR+alias-2BBM-alias
+Variant=vmsa
+{
+ [x]=0; [y]=1;
+ [PTE(va1)]=(oa:PA(x));
+ [PTE(va2)]=(oa:PA(x));
+ 0:X1=va1; 0:X2=va2; 1:X1=va1; 1:X2=va2;
+ 1:X5=(valid:0); 1:X4=PTE(va1); 1:X6=PTE(va2);
+ 1:X7=(oa:PA(y));
+}
+ P0                 | P1               ;
+ L1: (* read va1 *) | STR X5,[X4]      ; (* break va1 *)
+   LDR W0,[X1]      | STR X5,[X6]      ; (* break va2 *)
+ L2: (* read va2 *) | DSB ISH          ;
+   LDR W3,[X2]      | LSR X9,X1,#12    ;
+                    | LSR X10,X2,#12   ;
+                    | TLBI VAAE1IS,X9  ;
+                    | TLBI VAAE1IS,X10 ;
+                    | DSB ISH          ;
+                    | STR X7,[X4]      ; (* map va1 to y *)
+                    | STR X7,[X6]      ; (* map va2 to y *)
+exists (0:X0=1 /\ 0:X3=0 /\ not (fault(P0:L2,va2)))
