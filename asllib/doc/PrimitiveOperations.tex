@@ -469,7 +469,7 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
 
-\hypertarget{def-unopsignatures}{}
+\hypertarget{constant-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
 for a given unary operator:
 \[
@@ -530,7 +530,7 @@ not_bits: NOT '11 01' = 0x2
     \item define $\vr$ as the Boolean literal for $\neg\vb$.
   \end{itemize}
 
-  \item \AllApplyCase{not\_bits\_empty, not\_bits\_not\_empty}
+  \item \AllApplyCase{not\_bits}
   \begin{itemize}
     \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\bits$;
     \item $\vc$ is the sequence of bits of the same length as $\bits$ where in each position
@@ -540,6 +540,7 @@ not_bits: NOT '11 01' = 0x2
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error]{
   (\op, \astlabel(\vl)) \not\in \unopsignatures
@@ -559,20 +560,22 @@ not_bits: NOT '11 01' = 0x2
   \unopliterals(\overname{\BNOT}{\op}, \overname{\LBool(b)}{\vl}) \typearrow \overname{\LBool(\neg b)}{\vr}
 }
 \and
-\inferrule[not\_bits\_empty]{
+\inferrule[not\_bits.empty]{
   \bits \eqname \emptylist\\
   c \eqdef \emptylist
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \and
-\inferrule[not\_bits\_not\_empty]{
+\inferrule[not\_bits.non\_empty]{
   \bits \eqname \vb_{1..k}\\
   c \eqdef [i=1..k: (1-\vb_\vi)]
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
+}
+\RenderRule{unop_literals}
 
 \TypingRuleDef{BinopLiterals}
 \RenderRelation{binop_literals}

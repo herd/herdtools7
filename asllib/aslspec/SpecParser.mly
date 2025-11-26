@@ -46,6 +46,7 @@ let bool_of_string s =
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token LHS_HYPERTARGETS
+%token AUTO_NAME
 %token OPTION
 %token OPERATOR
 %token PARTIAL
@@ -434,7 +435,11 @@ let judgment_attributes ==
     | { [] }
     | LBRACE; pairs=tclist0(judgment_attribute); RBRACE; { pairs }
 
-let judgment_attribute := math_layout_attribute
+let judgment_attribute :=
+    | math_layout_attribute
+    | auto_name_attribute
+
+let auto_name_attribute := AUTO_NAME; EQ; value=IDENTIFIER; { (Auto_Name, BoolAttribute (bool_of_string value)) }
 
 let render_rule :=
   | RENDER; RULE; name=IDENTIFIER; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);

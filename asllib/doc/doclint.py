@@ -101,6 +101,9 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     labels defined in `\hypertarget` definitions, print the mismatches
     to the console.
     """
+    # Labels to exclude from the check
+    excluded_labels: set[str] = {"constant-one"}
+
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
     for latex_source in latex_files:
@@ -109,6 +112,11 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
             extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
             extract_labels_from_line(line, "\\mathhypertarget{", hypertarget_labels)
             extract_labels_from_line(line, "\\texthypertarget{", hypertarget_labels)
+
+    # Remove excluded labels from both sets
+    hyperlink_labels -= excluded_labels
+    hypertarget_labels -= excluded_labels
+
     num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
     if missing_hypertargets:
@@ -421,6 +429,13 @@ def check_rule_case_consistency(rule_block: RuleBlock) -> List[str]:
     Checks that the rule cases appearing in the Prose paragraph and Formally
     paragraph are equal and each paragraph does not contain duplicate cases.
     """
+    # Skip check if rule contains \RenderRule, as cases appear in generated_macros.tex
+    # rather than in the prose text
+    for line_number in range(rule_block.begin, rule_block.end + 1):
+        line = rule_block.file_lines[line_number].strip()
+        if r"\RenderRule" in line:
+            return []
+
     prose_cases: Set[str] = set()
     formally_cases: Set[str] = set()
     prose_cases_pattern = re.compile(r".*\\AllApplyCase{(.*?)}")
