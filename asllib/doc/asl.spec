@@ -41,6 +41,8 @@ typedef N
     math_macro = \N,
 };
 
+constant one { math_macro = \one, };
+
 typedef N_pos
 {  "positive natural number",
     math_macro = \Npos,
@@ -245,9 +247,10 @@ operator int_minus(list1(N)) -> N
   math_macro = \intminus,
 };
 
-operator int_negate(N) -> N
+// Negation for number types.
+operator negate[T](T) -> T
 {
-  math_macro = \intnegate,
+  math_macro = \negate,
 };
 
 operator int_times(list1(N)) -> N
@@ -2082,7 +2085,11 @@ typing relation annotate_block(tenv: static_envs, s: stmt) ->
   annotated statement {new_stmt} and inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotateblock}{annotating} block statement {s} in {tenv} yields statement {new_stmt} and side effects {ses}",
-};
+} =
+  annotate_stmt(tenv, s) -> (new_stmt, _, ses);
+  --
+  (new_stmt, ses);
+;
 
 semantics relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError | TDiverging
 {
@@ -2323,6 +2330,8 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
 
+constant unop_signatures;
+
 typing function unop_literals(op: unop, l: literal) ->
          (r: literal) | type_error
 {
@@ -2331,7 +2340,41 @@ typing function unop_literals(op: unop, l: literal) ->
   over a literal {l} and returns the resulting literal
   {r}. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case Error {
+    (op, ast_label(l)) not_in unop_signatures;
+    --
+    TypeError(TE_BO) { auto_name = false, };
+  }
+
+  case negate_int {
+    op = NEG;
+    l = L_Int(n);
+    --
+    L_Int(negate(n));
+  }
+
+  case negate_real {
+    op = NEG;
+    l = L_Real(n);
+    --
+    L_Real(negate(n));
+  }
+
+  case not_bool {
+    op = BNOT;
+    l = L_Bool(b);
+    --
+    L_Bool(not(b));
+  }
+
+  case not_bits {
+    op = NOT;
+    INDEX(i, bits: c[i] := one - bits[i]);
+    --
+    L_Bitvector(c);
+  }
+;
 
 typing function binop_literals(op: binop, v1: literal, v2: literal) ->
          (r: literal) | type_error

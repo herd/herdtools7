@@ -328,7 +328,7 @@
 
 \newcommand\intplus[0]{\mathbin{+}} % DO NOT LINT
 \newcommand\intminus[0]{\mathbin{-}} % DO NOT LINT
-\newcommand\intnegate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
+\newcommand\negate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
 \newcommand\inttimes[0]{\mathbin{\times}} % DO NOT LINT
 \newcommand\intdivide[0]{\mathbin{\div}} % DO NOT LINT
 \newcommand\intexponent[0]{\mathbin{{^}}} % DO NOT LINT
@@ -399,6 +399,7 @@
 \newcommand\Identifier[0]{\hyperlink{type-Identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{type-Strings}{\mathbb{S}}}
 \newcommand\ASTLabels[0]{\hyperlink{type-ASTLabels}{\mathbb{L}}}
+\newcommand\one[0]{{1}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}\left(#1\right)}
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)}
@@ -1126,7 +1127,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Primitive Operations macros
-\newcommand\unopsignatures[0]{\hyperlink{def-unopsignatures}{\textsf{unop\_signatures}}}
 \newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textsf{binop\_signatures}}}
 \newcommand\binoparithsignatures[0]{\hyperlink{def-binoparithsignatures}{\textsf{arith\_signatures}}}
 \newcommand\binoprelsignatures[0]{\hyperlink{def-binoprelsignatures}{\textsf{rel\_signatures}}}

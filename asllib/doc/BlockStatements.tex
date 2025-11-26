@@ -53,6 +53,7 @@ See \ExampleRef{Block Statements}.
   \item the modified environment $\newtenv$ is dropped.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatestmt(\tenv, \vs) \typearrow (\newstmt, \Ignore, \vses) \OrTypeError
@@ -60,6 +61,8 @@ See \ExampleRef{Block Statements}.
   \annotateblock(\tenv, \vs) \typearrow (\newstmt, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_block}
 \CodeSubsection{\BlockBegin}{\BlockEnd}{../Typing.ml}
 
 \subsection{Comments}
