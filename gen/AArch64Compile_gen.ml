@@ -2592,7 +2592,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let r3,st = tempo1 st in
                       let cs,st = calc0_gen csel st vdep r3 r1 in
                       sxtw r2 r3::cs,st in
-                let addi = [addi r2 r2 (Value.to_int e.C.v)] in
+                (* Put the `value` into a resgister,
+                   if it overflows the range of `immediate` number in `MOV` *)
+                let addi,init,st =
+                  match U.emit_const st p init (Value.to_int e.C.v) with
+                  | None,init,st -> [addi r2 r2 (Value.to_int e.C.v)],init,st
+                  | Some r_value,init,st -> [add V32 r2 r2 r_value],init,st
+                in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = match atom with
