@@ -275,7 +275,7 @@ end = struct
   let make name attributes = { name; att = Attributes.of_list attributes }
 
   let prose_description self =
-    Attributes.get_string_exn AttributeKey.Prose_Description self.att
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
     Attributes.find_math_macro AttributeKey.Math_Macro self.att
@@ -646,11 +646,15 @@ end
 module RuleRender : sig
   type t = { name : string; relation_name : string; path : string }
 
-  val make : string -> string -> string list -> t
+  val make : name:string -> relation_name:string -> string list -> t
 end = struct
   type t = { name : string; relation_name : string; path : string }
 
-  let make name relation_name path =
+  (** [make ~name ~relation_name path] creates a rule render named [name], for
+      the relation [relation_name] with [path] acting as a filter on the cases
+      to render. Only cases whose predicates match the path are included (so an
+      empty path selects all cases). *)
+  let make ~name ~relation_name path =
     { name; relation_name; path = Rule.join_case_names path }
 end
 

@@ -22,4 +22,10 @@ The relation
 \]
 } % EndDefineRelation
 
+\DefineRule{r}{\begin{mathpar}
+\inferrule{}{
+{\r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{b}}{\texttt{c}}}
+}
+\end{mathpar}} % EndDefineRule
+
 
