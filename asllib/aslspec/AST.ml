@@ -48,6 +48,9 @@ module AttributeKey = struct
         (** An attribute for [TypesRender] elements indicating whether
             hypertargets should be generated for the LHS of type definitions in
             the rendered output. *)
+    | Auto_Name
+        (** An attribute indicating whether automatic naming of sub-expressions
+            in rule judgments should be enabled. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -60,6 +63,7 @@ module AttributeKey = struct
       | LHS_Hypertargets -> 5
       | Associative -> 6
       | Custom -> 7
+      | Auto_Name -> 8
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -76,6 +80,7 @@ module AttributeKey = struct
     | LHS_Hypertargets -> "lhs_hypertargets"
     | Associative -> "associative"
     | Custom -> "custom"
+    | Auto_Name -> "auto_name"
 end
 
 (** A value associated with an attribute key. *)
@@ -449,6 +454,12 @@ module Rule = struct
     match Attributes.find_opt AttributeKey.Math_Layout att with
     | Some (MathLayoutAttribute layout) -> layout
     | _ -> Unspecified
+
+  (** [auto_name_judgment] returns [true] if automatic naming of sub-expressions
+      in the judgment is enabled, [false] otherwise. By default, automatic
+      naming is enabled unless the [auto_name] attribute is set to [false]. *)
+  let auto_name_judgment { att } =
+    Attributes.get_bool AttributeKey.Auto_Name ~default:true att
 
   (** A tree of elements. *)
   type rule_element =
