@@ -275,7 +275,7 @@ end = struct
   let make name attributes = { name; att = Attributes.of_list attributes }
 
   let prose_description self =
-    Attributes.get_string_exn AttributeKey.Prose_Description self.att
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
 
   let math_macro self =
     Attributes.find_math_macro AttributeKey.Math_Macro self.att
