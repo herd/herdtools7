@@ -34,6 +34,12 @@ module AttributeKey = struct
             format [{var}]. *)
     | Math_Macro  (** A LaTeX macro name for the element. *)
     | Math_Layout  (** The visual layout of the element. *)
+    | Associative
+        (** Whether an operator over a list of arguments should be rendered as a
+            list of expressions separated by the operator macro. *)
+    | Custom
+        (** Whether an operator over a list of arguments should be rendered as a
+            by a custom multi-argument macro. *)
     | Short_Circuit_Macro
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation
@@ -52,6 +58,8 @@ module AttributeKey = struct
       | Math_Layout -> 3
       | Short_Circuit_Macro -> 4
       | LHS_Hypertargets -> 5
+      | Associative -> 6
+      | Custom -> 7
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -66,6 +74,8 @@ module AttributeKey = struct
     | Math_Layout -> "math_layout"
     | Short_Circuit_Macro -> "short_circuit_macro"
     | LHS_Hypertargets -> "lhs_hypertargets"
+    | Associative -> "associative"
+    | Custom -> "custom"
 end
 
 (** A value associated with an attribute key. *)
@@ -107,7 +117,8 @@ module Attributes = struct
   (** Helper functions for typed attribute access *)
 
   (** [find_string key attrs] returns [Some s] if [key] maps to a
-      [StringAttribute s] in [attrs], [None] otherwise. *)
+      [StringAttribute s] in [attrs], [None] otherwise. This assumes that [key]
+      is indeed a string attribute. *)
   let find_string key attrs =
     match find_opt key attrs with
     | Some (StringAttribute s) -> Some s
@@ -123,14 +134,15 @@ module Attributes = struct
     | _ -> ""
 
   (** [get_string_exn key attrs] returns the string value for [key] in [attrs],
-      or raises [Assert_failure] if not found or wrong type. *)
+      or asserts false if not found or wrong type. *)
   let get_string_exn key attrs =
     match find_opt key attrs with
     | Some (StringAttribute s) -> s
     | _ -> assert false
 
   (** [find_math_macro key attrs] returns [Some s] if [key] is bound to the math
-      macro [s], and [None] otherwise. *)
+      macro [s], and [None] otherwise. This assumes that [key] is indeed a math
+      macro attribute. *)
   let find_math_macro key attrs =
     match find_opt key attrs with
     | Some (MathMacroAttribute s) -> Some s
@@ -138,7 +150,8 @@ module Attributes = struct
     | _ -> None
 
   (** [find_layout key attrs] returns [Some layout] if [key] is bound to
-      [layout] in [attrs], and [None] otherwise. *)
+      [layout] in [attrs], and [None] otherwise. This assumes that [key] is
+      indeed a math layout attribute. *)
   let find_layout key attrs =
     match find_opt key attrs with
     | Some (MathLayoutAttribute layout) -> Some layout
@@ -366,41 +379,13 @@ end
 
 (** A datatype for a set of inference rules for a given relation. *)
 module Rule = struct
-  (** An operator over expressions. *)
-  type expr_operator =
-    | Operator_Assign
-    | Operator_Equal
-    | Operator_Iff
-    | Operator_List
-    | Operator_Size
-    | Operator_Set
-    | Operator_Union
-    | Operator_UnionList
-    | Operator_Some
-
-  (** [is_infix_operator] returns [true] if the operator is a binary operator
-      that is typically written as [e1 op e2]. *)
-  let is_infix_operator = function
-    | Operator_Assign | Operator_Equal | Operator_Iff -> true
-    | Operator_List | Operator_Set | Operator_Size | Operator_Union
-    | Operator_UnionList | Operator_Some ->
-        false
-
-  (** [is_prefix_operator] returns [true] if the operator is a unary operator
-      that is typically written as [op(e1,...,ek)]. *)
-  let is_prefix_operator op = not (is_infix_operator op)
-
-  (** [is_associative_operator op] returns [true] if [op(e1,...,ek)] is
-      typically written as [e1 op e2 ... op ek]. *)
-  let is_associative_operator = function Operator_Union -> true | _ -> false
-
   (** The left-hand side of an application expression. *)
   type applicator =
     | EmptyApplicator
         (** This is used for tuples, for which there is no applicator. *)
     | Relation of string
     | TupleLabel of string
-    | ExprOperator of expr_operator
+    | ExprOperator of string
     | Fields of string list
     | Unresolved of expr
 
@@ -444,11 +429,11 @@ module Rule = struct
   let make_application lhs exprs =
     Application { applicator = Unresolved lhs; args = exprs }
 
-  let make_prefix_operator_application op args =
-    Application { applicator = ExprOperator op; args }
-
-  let make_infix_operator_application op lhs rhs =
-    Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
+  (** [make_operator_application op_name args] constructs an application
+      expression representing the application of operator [op_name] to [args].
+  *)
+  let make_operator_application op_name args =
+    Application { applicator = ExprOperator op_name; args }
 
   let make_record label fields = Record { label; fields }
   let make_list_index var index = ListIndex { var; index }
@@ -498,6 +483,9 @@ module Relation : sig
 
   type t = {
     name : string;
+    parameters : string list;
+        (** Type parameters. Currently, only available to operators. *)
+    is_operator : bool;
     property : relation_property;
     category : relation_category option;
     input : opt_named_type_term list;
@@ -516,10 +504,26 @@ module Relation : sig
     Rule.t option ->
     t
 
+  val make_operator :
+    string ->
+    string list ->
+    opt_named_type_term list ->
+    type_term ->
+    (AttributeKey.t * attribute) list ->
+    t
+
   val attributes_to_list : t -> (AttributeKey.t * attribute) list
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
+
+  val is_associative_operator : t -> bool
+  (** [is_associative_operator t] tests whether the operator represented by [t]
+      has the [associative] attributes set to [true]. *)
+
+  val is_custom_operator : t -> bool
+  (** [is_custom_operator t] tests whether the operator represented by [t] has
+      the [custom] attributes set to [true]. *)
 
   val math_layout : t -> layout option
   (** The layout used when rendered as a stand-alone relation definition. *)
@@ -534,6 +538,8 @@ end = struct
 
   type t = {
     name : string;
+    parameters : string list;
+    is_operator : bool;
     property : relation_property;
     category : relation_category option;
     input : opt_named_type_term list;
@@ -545,12 +551,27 @@ end = struct
   let make name property category input output attributes rule_opt =
     {
       name;
+      parameters = [];
+      is_operator = false;
       property;
       category;
       input;
       output;
       att = Attributes.of_list attributes;
       rule_opt;
+    }
+
+  let make_operator name parameters input output_type attributes =
+    {
+      name;
+      parameters;
+      is_operator = true;
+      property = RelationProperty_Function;
+      category = None;
+      input;
+      output = [ output_type ];
+      att = Attributes.of_list attributes;
+      rule_opt = None;
     }
 
   let attributes_to_list self = Attributes.bindings self.att
@@ -568,6 +589,12 @@ end = struct
 
   let math_layout self =
     Attributes.find_layout AttributeKey.Math_Layout self.att
+
+  let is_associative_operator self =
+    Attributes.get_bool AttributeKey.Associative ~default:false self.att
+
+  let is_custom_operator self =
+    Attributes.get_bool AttributeKey.Custom ~default:false self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)

@@ -262,12 +262,6 @@
 %% Mathematical notations and Inference Rule macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%$%%%%%%
 \usepackage{relsize}
-\let\OldLand\land
-\renewcommand\land[0]{\hyperlink{def-land}{\OldLand}}
-\let\OldLor\lor
-\renewcommand\lor[0]{\hyperlink{def-lor}{\OldLor}}
-\let\OldNeg\neg
-\renewcommand\neg[0]{\hyperlink{def-neg}{\OldNeg}}
 \let\OldTriangleq\triangleq
 \let\OldEmptyset\emptyset
 \renewcommand\emptyset[0]{\hyperlink{constant-emptyset}{\OldEmptyset}}
@@ -276,9 +270,96 @@
 \renewcommand\triangleq[0]{\hyperlink{def-triangleq}{\OldTriangleq}}
 \newcommand\cartimes[0]{\hyperlink{def-cartimes}{\times}}
 
-\newcommand\equal[0]{=}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Operator macros
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
+\newcommand\astlabelop[1]{\astlabel(#1)} % DO NOT LINT
+\newcommand\updateop[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
+
+\newcommand\equal[0]{\mathrel{=}}
+\newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
+% Old macro, still used but soon to be deprecated.
+\newcommand\ifthenelse[3]{
+  \left\{\begin{array}{ll}
+  \hyperlink{def-choice}{\textbf{if}} & #1\\
+  \hyperlink{def-choice}{\textbf{then}} & #2\\
+  \hyperlink{def-choice}{\textbf{else}} & #3\\
+  \end{array}\right.
+}
+
+% An if-then-else macro with optional layout parameter.
+% Usage:
+% \ifthenelseop[H]{condition}{then-clause}{else-clause}  % Horizontal layout
+% \ifthenelseop[V]{condition}{then-clause}{else-clause}  % Vertical layout
+% \ifthenelseop{condition}{then-clause}{else-clause}     % Default: Vertical layout
+\newcommand\ifthenelseop[4][V]{%
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \hyperlink{def-choice}{\textbf{if}} #2
+    \hyperlink{def-choice}{\textbf{then}} #3
+    \hyperlink{def-choice}{\textbf{else}} #4%
+  \else
+    \left\{\begin{array}{ll}
+    \hyperlink{def-choice}{\textbf{if}} & #2\\
+    \hyperlink{def-choice}{\textbf{then}} & #3\\
+    \hyperlink{def-choice}{\textbf{else}} & #4\\
+    \end{array}\right.%
+  \fi
+}
+
+
+\let\OldLand\land
+\renewcommand\land[0]{\hyperlink{operator-land}{\OldLand}}
+\let\OldLor\lor
+\renewcommand\lor[0]{\hyperlink{operator-lor}{\OldLor}}
+\let\OldNeg\neg
+\renewcommand\neg[0]{\hyperlink{operator-neg}{\OldNeg}}
+\newcommand\opnot[1]{\hyperlink{operator-neg}{\neg}{#1}} % DO NOT LINT
+\newcommand\IFF[0]{\hyperlink{operator-IFF}{\Leftrightarrow}}
+\renewcommand\implies[0]{\hyperlink{operator-implies}{\Rightarrow}}
+
+\newcommand\some[1]{\hyperlink{operator-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
+\newcommand\makeset[1]{\left\{{#1}\right\}} % A set of expressions
+\newcommand\cardinality[1]{\hyperlink{operator-cardinality}{|}#1\hyperlink{operator-cardinality}{|}}
+\newcommand\member[0]{\mathrel{\in}} % DO NOT LINT
+\newcommand\notmember[0]{\mathrel{\not\in}} % DO NOT LINT
+\newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
+\newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
+
+\newcommand\intplus[0]{\mathbin{+}} % DO NOT LINT
+\newcommand\intminus[0]{\mathbin{-}} % DO NOT LINT
+\newcommand\intnegate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
+\newcommand\inttimes[0]{\mathbin{\times}} % DO NOT LINT
+\newcommand\intdivide[0]{\mathbin{\div}} % DO NOT LINT
+\newcommand\intexponent[0]{\mathbin{{^}}} % DO NOT LINT
+\newcommand\intlessthan[0]{\mathbin{<}} % DO NOT LINT
+\newcommand\intlessorequal[0]{\mathbin{\leq}} % DO NOT LINT
+\newcommand\intgreaterthan[0]{\mathbin{>}} % DO NOT LINT
+\newcommand\intgreaterorequal[0]{\mathbin{\geq}} % DO NOT LINT
+
+\newcommand\roundup[1]{\left\lceil {#1} \right\rceil} % DO NOT LINT
+\newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor} % DO NOT LINT
+
+\newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
+\newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}
+\newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
+\newcommand\concatlist[0]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}}
+\newcommand\cons[0]{\hyperlink{operator-cons}{{+}{+}}}
+\newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\textfunc{combine}}} % DO NOT LINT
+
+\newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
+\newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
+\newcommand\orderedctrl[0]{\hyperlink{def-ordered}{\xrightarrow{\aslctrl}}} % DO NOT LINT
+\newcommand\ordereddata[0]{\hyperlink{def-ordered}{\xrightarrow{\asldata}}} % DO NOT LINT
+\newcommand\orderedpo[0]{\hyperlink{def-ordered}{\xrightarrow{\aslpo}}} % DO NOT LINT
+\newcommand\graphof[1]{\hyperlink{operator-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\environof[1]{\hyperlink{operator-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
+
+\newcommand\withgraph[3][H]{ {#2}(\hyperlink{operator-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
+\newcommand\withenviron[3][H]{ {#2}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \newcommand\overname[2]{\overbrace{#1}^{#2}}
 \newcommand\overtext[2]{\overbracket{#1}^{#2}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
@@ -290,26 +371,15 @@
 \newcommand\Proseemptylist[1]{#1 is the empty list}
 \newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
 \newcommand\choicename[0]{\hyperlink{def-choice}{\textfunc{choice}}}
-\newcommand\ifthenelse[3]{
-  \left\{\begin{array}{ll}
-  \hyperlink{def-choice}{\textbf{if}} & #1\\
-  \hyperlink{def-choice}{\textbf{then}} & #2\\
-  \hyperlink{def-choice}{\textbf{else}} & #3\\
-  \end{array}\right.
-}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
 \newcommand\Proselistrange[2]{\hyperlink{def-listrange}{index} #1 in the list of indices for #2}
-\newcommand\listlen[1]{\hyperlink{def-listlen}{|}#1\hyperlink{def-listlen}{|}}
-\newcommand\cardinality[1]{\hyperlink{def-cardinality}{|}#1\hyperlink{def-cardinality}{|}}
 \newcommand\unziplist[0]{\hyperlink{def-unziplist}{\textfunc{unzip}}}
 \newcommand\unziplistthree[0]{\hyperlink{def-unziplistthree}{\textfunc{unzip3}}}
 \newcommand\inlist[0]{\hyperlink{def-inlist}{\in}}
 \newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
-\newcommand\concat[0]{\hyperlink{def-concat}{+}}
-\newcommand\concatlist[0]{\hyperlink{def-concatlist}{\textfunc{concat}}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
 \newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
@@ -317,11 +387,6 @@
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\Option[1]{\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)} % The optional type term
 \newcommand\optionalterm[0]{\hyperlink{def-Option}{optional}}
-\newcommand\some[1]{\hyperlink{def-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
-\newcommand\LIST[1]{\left[{#1}\right]} % A list of expressions
-\newcommand\SET[1]{\left\{{#1}\right\}} % A set of expressions
-\newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
-\newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
 \newcommand\KleeneStar[1]{{#1}^{\hyperlink{def-kleenestar}{*}}}
 \newcommand\KleenePlus[1]{{#1}^{\hyperlink{def-kleeneplus}{+}}}
 
@@ -945,13 +1010,6 @@
 \newcommand\ReadEffect[0]{\hyperlink{def-readeffect}{\textsf{ReadEffect}}}
 
 \newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\mathbb{E}}}}
-\newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
-\newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\parallel}}
-
-\newcommand\graphof[1]{\hyperlink{def-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
-\newcommand\withgraph[2]{{#1}(\hyperlink{def-withgraph}{\textfunc{graph}}\mapsto{#2})} % NO_SPECIFICATION_REQUIRED
-\newcommand\environof[1]{\hyperlink{def-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
-\newcommand\withenviron[2]{{#1}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#2})} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}

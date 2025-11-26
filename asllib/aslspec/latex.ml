@@ -38,11 +38,16 @@ let pp_one_arg_macro macro_name pp_arg fmt arg =
   assert (Str.string_match regexp_only_letters macro_name 0);
   fprintf fmt "\\%s{%a}" macro_name pp_arg arg
 
-(** [pp_macro fmt macro_name] renders a LaTeX macro by prefixing it with a
-    backslash. *)
+(** [pp_macro fmt macro_name] renders a LaTeX macro by making sure it starts
+    with a backslash. *)
 let pp_macro fmt macro_name =
+  let macro, macro_name =
+    if Utils.string_starts_with ~prefix:"\\" macro_name then
+      (macro_name, String.sub macro_name 1 (String.length macro_name - 1))
+    else ("\\" ^ macro_name, macro_name)
+  in
   assert (Str.string_match regexp_only_letters macro_name 0);
-  fprintf fmt "\\%s" macro_name
+  pp_print_string fmt macro
 
 (** [spec_var_to_latex_var ~font_type var_str] returns a version of the
     specification variable [var_str] suitable for LaTeX math mode using the
@@ -66,6 +71,7 @@ let elem_name_to_math_macro elem_name =
   Format.asprintf "%a" pp_macro (StringOps.remove_underscores elem_name)
 
 let pp_comma = fun fmt () -> fprintf fmt ", "
+let pp_noop = fun _fmt () -> ()
 
 (** [substitute_spec_vars_by_latex_vars math_mode s vars] returns a string [s]
     with every instance of [{my_var}] substituted by [\texttt{my\_var}]. If

@@ -47,9 +47,6 @@ val elem_name : elem -> string
 type t
 (** A processed and validated specification. *)
 
-val ast : t -> AST.t
-(** [ast spec] returns the original AST from which [spec] was created. *)
-
 val from_ast : AST.t -> t
 (** [from_ast ast] converts an AST into a validated specification. Performs all
     correctness checks, and raises [SpecError] if any fail. *)
@@ -57,6 +54,9 @@ val from_ast : AST.t -> t
 val defined_ids : t -> string list
 (** [defined_ids spec] returns the list of all identifiers defined in [spec] in
     order of appearance. *)
+
+val elements : t -> elem list
+(** [elements spec] returns the list of all elements in [spec]. *)
 
 val defining_node_for_id : t -> string -> definition_node
 (** [defining_node_for_id spec id] returns the defining node for [id] in [spec].
@@ -74,6 +74,12 @@ val is_defined_id : t -> string -> bool
 (** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
     [false] otherwise. *)
 
+val is_operator : elem -> bool
+(** [is_operator elem] returns [true] if [elem] corresponds to an operator, and
+    [false] otherwise. *)
+
+(** A module for expanding rules with cases into multiple rules without cases.
+*)
 module ExpandRules : sig
   type expanded_rule = {
     name_opt : string option;

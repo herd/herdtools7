@@ -390,18 +390,6 @@ module Make (S : SPEC_VALUE) = struct
   module RenderRule = struct
     open Rule
 
-    (** Returns the LaTeX macro name corresponding to an expression operator. *)
-    let operator_to_macro_name = function
-      | Operator_Assign -> eqdef_macro_name
-      | Operator_Equal -> equal_macro_name
-      | Operator_Iff -> leftrightarrow_macro_name
-      | Operator_List -> list_macro_name
-      | Operator_Set -> set_macro_name
-      | Operator_Size -> listlen_macro_name
-      | Operator_Union -> union_macro_name
-      | Operator_UnionList -> unionlist_macro_name
-      | Operator_Some -> some_macro_name
-
     (** Renders the field path [path] with [fmt]. *)
     let pp_field_path fmt = function
       | [] -> assert false
@@ -459,20 +447,8 @@ module Make (S : SPEC_VALUE) = struct
           | Some (Node_Type _) ->
               pp_id_as_macro fmt name
           | _ -> pp_var fmt name)
-      | Application { applicator = ExprOperator op; args = [ lhs; rhs ] }
-        when is_infix_operator op ->
-          pp_connect_pair ~alignment:"l" fmt pp_expr lhs
-            (operator_to_macro_name op)
-            pp_expr rhs layout
-      | Application { applicator = ExprOperator op; args }
-        when is_associative_operator op ->
-          pp_associative_operator op layout fmt args
-      | Application { applicator = ExprOperator op; args }
-        when is_prefix_operator op ->
-          pp_one_arg_macro
-            (operator_to_macro_name op)
-            (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr layout)
-            fmt args
+      | Application { applicator = ExprOperator op; args } ->
+          pp_operator op layout fmt args
       | Application { applicator; args } ->
           let pp_lhs fmt lhs =
             match lhs with
@@ -524,14 +500,52 @@ module Make (S : SPEC_VALUE) = struct
           pp_connect_pair ~alignment:"r" fmt pp_expr lhs arrow_macro_name
             pp_rhs_with_short_circuit rhs layout
 
-    (** [pp_associative_operator op layout fmt args] renders an associative
-        operator [op] applied to [args] with [fmt] and laid out according to
-        [layout]. For example, [UNION(a, b, c)] is rendered as
-        [a \cup b \cup c]. *)
-    and pp_associative_operator op layout fmt args =
-      pp_aligned_elements_and_operators
-        ~pp_sep:(fun fmt () -> pp_macro fmt (operator_to_macro_name op))
-        ~alignment:"l" pp_expr layout fmt args
+    (** [pp_operator op_name layout fmt args] renders an operator named
+        [op_name] applied to [args] with [fmt] and laid out according to
+        [layout]. *)
+    and pp_operator op_name layout fmt args =
+      let is_prefix_list_operator def =
+        match def.Relation.input with
+        | [ (_, TypeOperator { op = List0 | List1 }) ] ->
+            not (Relation.is_associative_operator def)
+        | _ -> false
+      in
+      let op_macro = get_or_gen_math_macro op_name in
+      let operator = Spec.relation_for_id S.spec op_name in
+      match operator.Relation.input with
+      | [ _ ] when is_prefix_list_operator operator ->
+          (* A variadic operator over a list of arguments. *)
+          fprintf fmt "%a{%a}" pp_macro op_macro
+            (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr layout)
+            args
+      | [ _ ] when Relation.is_associative_operator operator ->
+          (* A variadic operator over a list of arguments rendered by separating arguments
+             with the operator macro. *)
+          pp_aligned_elements_and_operators
+            ~pp_sep:(fun fmt () -> pp_macro fmt op_macro)
+            ~alignment:"c" pp_expr layout fmt args
+      | [ _ ] ->
+          (* A simple unary operator. *)
+          let arg = List.hd args in
+          fprintf fmt "%a{%a}" pp_macro op_macro pp_expr (arg, layout)
+      | [ _; _ ] when not (Relation.is_custom_operator operator) ->
+          (* A simple binary operator. *)
+          let lhs_arg, rhs_arg =
+            match args with [ lhs; rhs ] -> (lhs, rhs) | _ -> assert false
+          in
+          pp_connect_pair ~alignment:"c" fmt pp_expr lhs_arg op_macro pp_expr
+            rhs_arg layout
+      | _ ->
+          let pp_arg fmt (arg, layout) =
+            fprintf fmt "{%a}" pp_expr (arg, layout)
+          in
+          let layout = horizontal_if_unspecified layout args in
+          let args_with_layouts = apply_layout_to_list layout args in
+          let vertical = LayoutUtils.contains_vertical layout in
+          let layout_arg = if vertical then "{V}" else "{H}" in
+          fprintf fmt "%a%s%a" pp_macro op_macro layout_arg
+            (PP.pp_sep_list ~sep:"" pp_arg)
+            args_with_layouts
 
     (** [pp_short_circuit relation_name fmt short_circuit] renders the optional
         short-circuit override expressions [short_circuit] for the relation
@@ -664,7 +678,8 @@ module Make (S : SPEC_VALUE) = struct
 %a
 |} latex_name pp_elem elem
           | Elem_Relation _ ->
-              fprintf fmt {|
+              if Spec.is_operator elem then ()
+              else fprintf fmt {|
 \section*{%s}
 %a
 |} latex_name pp_elem elem
@@ -683,7 +698,7 @@ module Make (S : SPEC_VALUE) = struct
 \section*{%s}
 %a
 |} latex_name pp_elem elem)
-        (Spec.ast S.spec)
+        (Spec.elements S.spec)
     in
     let _print_footer = fprintf fmt {|@.\end{document}@.|} in
     ()
@@ -717,7 +732,6 @@ module Make (S : SPEC_VALUE) = struct
       defined in [S.spec] using the formatter [fmt]. *)
   let generate_latex_macros fmt =
     let open AST in
-    let defined_ids = Spec.defined_ids S.spec in
     let _header =
       fprintf fmt
         {|%% ==================================================
@@ -735,7 +749,7 @@ module Make (S : SPEC_VALUE) = struct
         (fun id ->
           pp_id_macro fmt id;
           fprintf fmt "\n")
-        defined_ids
+        (Spec.defined_ids S.spec)
     in
     let _elements_header =
       fprintf fmt
@@ -749,9 +763,10 @@ module Make (S : SPEC_VALUE) = struct
     let _element_macros =
       List.iter
         (fun elem ->
-          pp_elem_definition_macro fmt elem;
+          if Spec.is_operator elem then ()
+          else pp_elem_definition_macro fmt elem;
           fprintf fmt "\n\n")
-        (Spec.ast S.spec)
+        (Spec.elements S.spec)
     in
     let _footer = fprintf fmt "@." in
     ()

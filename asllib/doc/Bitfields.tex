@@ -841,7 +841,7 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
   \vscopeone \eqdef \vf_{1..k-1}\\
   \vscopetwo \eqdef \vg_{1..n-1}\\
   \vsamescope \eqdef \listprefix(\vscopeone, \vscopetwo) \lor \listprefix(\vscopetwo, \vscopeone)\\
-  \vb \eqdef (\nameone = \nametwo\ \land\ \vsamescope) \Longrightarrow (\vsliceone = \vslicetwo)
+  \vb \eqdef (\nameone = \nametwo\ \land\ \vsamescope) \implies (\vsliceone = \vslicetwo)
 }{
   \absolutebitfieldsalign(\overname{(\vf_{1..k}, \vsliceone)}{\vf}, \overname{(\vg_{1..n}, \vslicetwo)}{\vf})
   \typearrow \vb
