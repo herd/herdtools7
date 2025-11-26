@@ -253,8 +253,10 @@ let rec pp_lexpr =
     | LE_SetEnumArray (le, e) ->
         bprintf f "LE_SetEnumArray (%a, %a)" pp_lexpr le pp_expr e
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
-    | LE_SetFields (le, x, _) ->
-        bprintf f "LE_SetFields (%a, %a)" pp_lexpr le (pp_list pp_string) x
+    | LE_SetFields (le, x, slices) ->
+        bprintf f "LE_SetFields (%a, %a, %a)" pp_lexpr le (pp_list pp_string) x
+          (pp_pair_list pp_int pp_int)
+          slices
     | LE_SetCollectionFields (le, fields, slices) ->
         bprintf f "LE_SetCollectionFields (%S, %a, %a)" le (pp_list pp_string)
           fields
@@ -354,9 +356,9 @@ let pp_decl f d =
         (pp_option pp_override_info)
         override
   | D_GlobalStorage { name; keyword; ty; initial_value } ->
-      bprintf f "D_GlobalConst { name=%S; keyword=%a; ty=%a; initial_value=%a}"
-        name pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr)
-        initial_value
+      bprintf f
+        "D_GlobalStorage { name=%S; keyword=%a; ty=%a; initial_value=%a}" name
+        pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr) initial_value
   | D_TypeDecl (name, type_desc, subty_opt) ->
       bprintf f "D_TypeDecl (%S, %a, %a)" name pp_ty type_desc
         (pp_option (pp_pair pp_string (pp_id_assoc pp_ty)))
@@ -369,3 +371,12 @@ let pp_t f ast =
   pp_list pp_decl f ast
 
 let t_to_string ast = with_buf @@ fun b -> pp_t b ast
+
+let output_to_chan ?(newline = false) chan ast =
+  let buf = Buffer.create 64 in
+  pp_t buf ast;
+  Buffer.output_buffer chan buf;
+  if newline then begin
+    output_char chan '\n';
+    flush chan
+  end
