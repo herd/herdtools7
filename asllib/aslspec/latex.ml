@@ -223,6 +223,9 @@ let pp_connect_pair ~alignment fmt pp_lhs_with_layout lhs connector_macro_name
   let layout = horizontal_if_unspecified layout [ (); () ] in
   let lhs_with_layout, rhs_with_layout =
     match layout with
+    | Horizontal [ Unspecified ] | Vertical [ Unspecified ] ->
+        (* A single Unspecified stands for a default layout for both lhs and rhs *)
+        ((lhs, Unspecified), (rhs, Unspecified))
     | Horizontal [ lhs_layout; rhs_layout ]
     | Vertical [ lhs_layout; rhs_layout ] ->
         ((lhs, lhs_layout), (rhs, rhs_layout))

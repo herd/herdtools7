@@ -169,6 +169,7 @@ are all well-typed.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single]{
   \annotateslice(\SliceLength(\vi, \eliteral{1})) \typearrow \vsp \OrTypeError
@@ -218,6 +219,8 @@ are all well-typed.
   \annotateslice(\tenv, \overname{\SliceStar(\factor, \length)}{\vs}) \typearrow \vsp
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_slice}
 \lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}
 \lrmcomment{\identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.}
 \lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
@@ -247,6 +250,7 @@ The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \sliceswidth(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\ELInt{0}}{\vwidth}
@@ -262,6 +266,8 @@ The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
   \sliceswidth(\tenv, \overname{[\vs]\concat\slicesone}{\vslices}) \typearrow \vwidth
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{slices_width}
 
 \TypingRuleDef{SliceWidth}
 \RenderRelation{slice_width}
@@ -304,6 +310,7 @@ the width of the slice \texttt{x[:3]} is $3$.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single]{}{
   \slicewidth(\overname{\SliceSingle(\Ignore)}{\vslice}) \typearrow \overname{\ELInt{1}}{\vwidth}
@@ -322,6 +329,8 @@ the width of the slice \texttt{x[:3]} is $3$.
   \overname{\AbbrevEBinop{\ADD}{\ELInt{1}}{(\AbbrevEBinop{\SUB}{\veone}{\vetwo})}}{\vwidth}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{slice_width}
 
 \TypingRuleDef{SymbolicConstrainedInteger}
 \RenderRelation{annotate_symbolic_constrained_integer}
@@ -346,6 +355,7 @@ the parameter \verb|N|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
@@ -355,6 +365,8 @@ the parameter \verb|N|.
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_symbolic_constrained_integer}
 \CodeSubsection{\SymbolicConstrainedIntegerBegin}{\SymbolicConstrainedIntegerEnd}{../Typing.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -432,6 +444,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single]{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vstart, \newg), \newenv) \OrAbnormal\\
@@ -482,6 +495,8 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \evalslice(\env, \vs) \evalarrow (((\vstart, \vlength), \newg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_slice}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \FormalRelationsDef{Lists of Bitvector Slices}
@@ -543,6 +558,7 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
   \item define $\vses$ as the union of all $\vxs_i$, for every \Proselistrange{$i$}{$\vslices$}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
@@ -552,6 +568,8 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
   \annotateslices(\tenv, \vslices) \typearrow (\slicesp, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_slices}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Lists of Bitvector Slices}
@@ -579,7 +597,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
     \item $\newenv$ is $\env$;
   \end{itemize}
 
-  \item \AllApplyCase{nonempty}
+  \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
     \item evaluating the slice $\vslice$ in $\env$ results in \\
@@ -592,6 +610,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -599,7 +618,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 }
 \end{mathpar}
 \begin{mathpar}
-\inferrule[nonempty]{
+\inferrule[non\_empty]{
   \slices \eqname [\vslice] \concat \slicesone\\
   \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\\\\
   \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
@@ -609,4 +628,6 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
   \evalslices(\env, \slices) \evalarrow \ResultSlices((\ranges, \newg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_slices}
 \CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}

@@ -331,6 +331,15 @@
   \fi
 }
 
+\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\LInt)}}}
+\newcommand\AbbrevEBinop[4][H]{
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+  \overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
+  \else
+  \overbracket{\begin{array}{c}#3\\#2\\#4\end{array}}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
+  \fi
+}
+
 \let\OldLand\land
 \renewcommand\land[0]{\hyperlink{operator-land}{\OldLand}}
 \let\OldLor\lor
@@ -367,7 +376,7 @@
 \newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}
 \newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
 \newcommand\concatlist[0]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}}
-\newcommand\cons[0]{\hyperlink{operator-cons}{{+}{+}}}
+\newcommand\cons[0]{\hyperlink{operator-cons}{\mathbin{{+}{+}}}}
 \newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\times}} % DO NOT LINT
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
@@ -422,7 +431,9 @@
 \newcommand\Identifier[0]{\hyperlink{type-Identifier}{\mathbb{I}}}
 \newcommand\Strings[0]{\hyperlink{type-Strings}{\mathbb{S}}}
 \newcommand\ASTLabels[0]{\hyperlink{type-ASTLabels}{\mathbb{L}}}
+\newcommand\zero[0]{{0}}
 \newcommand\one[0]{{1}}
+\newcommand\two[0]{{2}}
 
 \newcommand\pow[1]{\hyperlink{def-pow}{\mathcal{P}}\left(#1\right)}
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)}
@@ -1218,11 +1229,9 @@
 % AST abbreviations
 \newcommand\abbrevfont[1]{\scriptscriptstyle{\textsf{#1}}}
 \newcommand{\ETrue}{\hyperlink{def-etrue}{\textsf{E\_True}}}
-\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\LInt)}}}
 \newcommand\elint[1]{\ELiteral(\LInt(#1))}
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
-\newcommand\AbbrevEBinop[3]{\overbracket{#2\ #1\ #3}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
 \newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
