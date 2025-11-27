@@ -43,6 +43,7 @@ the builtin singular type \texttt{Color} consists in two constants:
 \ASLListing{An enumeration type}{typing-builtinenumerationtype}{\typingtests/TypingRule.EnumerationType.asl}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
@@ -50,12 +51,13 @@ the builtin singular type \texttt{Color} consists in two constants:
   \isbuiltinsingular(\tty) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_builtin_singular}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 \identd{PQCK} \identd{NZWT}
 
 \TypingRuleDef{NamedType}
 \RenderRelation{is_named}
-
 
 \Enumerationtypesterm{}, record types, collection types, and exception types
 must be declared and associated with a named type.
@@ -71,6 +73,7 @@ type ticks of integer;
 A named type is a type that is declared by using the \texttt{type ... of ...} syntax.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) = \TNamed
@@ -78,13 +81,14 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
   \isnamed(\tty) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_named}
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 \identd{vmzx}
 
 \TypingRuleDef{AnonymousType}
 \identd{VMZX} \identi{SBCK}%
 \RenderRelation{is_anonymous}
-
 
 \ExampleDef{Anonymous Types}
 The well-typed specification in \listingref{AnonymousType} illustrates the use
@@ -97,6 +101,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \bitvectortypesterm{}, \tupletypesterm{}, and \arraytypesterm{}.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) \neq \TNamed
@@ -104,12 +109,13 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
   \isanonymous(\tty) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_anonymous}
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
 \identr{GVZK}%
 \RenderRelation{is_singular}
-
 
 \ExampleDef{Singular types}
 In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
@@ -127,6 +133,7 @@ type C of B;
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
@@ -135,6 +142,8 @@ type C of B;
   \issingular(\tenv, \tty) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_singular}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
@@ -145,7 +154,6 @@ In ASL there are three such types --- record types, collection types, and
 exception types.
 
 \RenderRelation{is_structured}
-
 
 \ExampleDef{Structured Types}
 In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
@@ -161,12 +169,14 @@ collection type or an exception type, which is determined via the AST label of
 $\tty$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException, \TCollection\}}{\vb}
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{is_structured}
 \identd{WGQS} \identd{QXYC}
 
 \TypingRuleDef{Structure}
@@ -217,6 +227,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\\\\
@@ -260,6 +271,8 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
  L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{get_structure}
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 \identd{FXQV}
 
@@ -299,6 +312,7 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \tty \eqname \TNamed(\vx) \\
@@ -314,6 +328,8 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
   \makeanonymous(\tenv, \tty) \typearrow \tty
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{make_anonymous}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
 \TypingRuleDef{CheckConstrainedInteger}
@@ -357,6 +373,7 @@ is a \constrainedintegerterm{} type.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[well-constrained]{}
 {
@@ -380,4 +397,6 @@ is a \constrainedintegerterm{} type.
   \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_constrained_integer}
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}

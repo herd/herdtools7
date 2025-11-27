@@ -342,7 +342,6 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \]
 \end{definition}
 
-\hypertarget{operator-listcombine}{} % DO NOT LINT
 \hypertarget{def-unziplist}{}
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
@@ -357,6 +356,8 @@ transforms a list of pairs into the corresponding pair of lists:
   \end{cases}
 \]
 \end{definition}
+\hypertarget{operator-listcombine}{} % DO NOT LINT
+As a shorthand, we use the notation $a \listcombine b = c$ for $\unziplist(c) = (a, b)$.
 
 \hypertarget{def-unziplistthree}{}
 \begin{definition}[Unzipping a List of Triples]

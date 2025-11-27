@@ -279,6 +279,31 @@
 
 \newcommand\equal[0]{\mathrel{=}}
 \newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
+
+\newcommand\listfromindices[4][H]{% DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \left[#2 \in \listrange(#3) : #4\right]
+  \else
+    \left[\begin{array}{ll}
+    #2 \in \listrange(#3):\\
+    #4\\
+    \end{array}\right]
+  \fi
+}
+
+\newcommand\listmap[4][H]{%
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \left[#2 \in #3 : #4\right]
+  \else
+    \left[
+    \begin{array}{ll}
+    #2 \in #3:\\
+    #4\\
+    \end{array}
+    \right]
+  \fi
+}
+
 % Old macro, still used but soon to be deprecated.
 \newcommand\ifthenelse[3]{
   \left\{\begin{array}{ll}
@@ -287,7 +312,6 @@
   \hyperlink{def-choice}{\textbf{else}} & #3\\
   \end{array}\right.
 }
-
 % An if-then-else macro with optional layout parameter.
 % Usage:
 % \ifthenelseop[H]{condition}{then-clause}{else-clause}  % Horizontal layout
@@ -306,7 +330,6 @@
     \end{array}\right.%
   \fi
 }
-
 
 \let\OldLand\land
 \renewcommand\land[0]{\hyperlink{operator-land}{\OldLand}}
@@ -345,7 +368,7 @@
 \newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
 \newcommand\concatlist[0]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}}
 \newcommand\cons[0]{\hyperlink{operator-cons}{{+}{+}}}
-\newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\textfunc{combine}}} % DO NOT LINT
+\newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\times}} % DO NOT LINT
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
