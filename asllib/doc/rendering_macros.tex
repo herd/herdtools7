@@ -125,7 +125,7 @@
 }
 \newcommand{\RenderRule}[1]{%
   \@ifundefined{RenderRule@#1}{%
-    \textbf{Error: RenderRule '#1' not defined}%
+    \PackageError{rendering_macros}{RenderRule '#1' is not defined! Check that you have defined render rule '#1' and applied aslspec to generate \string\DefineRule}{}%
   }{%
     \csname RenderRule@#1\endcsname%
   }%
