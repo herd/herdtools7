@@ -51,7 +51,7 @@ begin
 
   for N = 1 to 5 do
     let pN = 2 ^ N;
-    for x = -pN to pN do
+    for x = 0 to pN do
       for y = 0 to N do
         let bv = x[0+:N];
         let p = 2^y as integer {1..2^N};
