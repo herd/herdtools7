@@ -139,7 +139,7 @@ end;
 // multiple of size that is less than or equal to x.
 pure func AlignDownSize(x: integer, size: integer) => integer
 begin
-    assert size > 0;
+    assert x >= 0 && size > 0;
     return (x DIVRM size) * size;
 end;
 
@@ -149,7 +149,7 @@ end;
 // multiple of size that is greater than or equal to x.
 pure func AlignUpSize(x: integer, size: integer) => integer
 begin
-    assert size > 0;
+    assert x >= 0 && size > 0;
     return AlignDownSize(x + (size - 1), size);
 end;
 
@@ -169,7 +169,7 @@ end;
 // that is less than or equal to x.
 pure func AlignDownP2(x: integer, p2: integer) => integer
 begin
-    assert p2 >= 0;
+    assert x >= 0 && p2 >= 0;
     return AlignDownSize(x, 2^p2);
 end;
 
@@ -179,7 +179,7 @@ end;
 // that is greater than or equal to x.
 pure func AlignUpP2(x: integer, p2: integer) => integer
 begin
-    assert p2 >= 0;
+    assert x >= 0 && p2 >= 0;
     return AlignUpSize(x, 2^p2);
 end;
 
