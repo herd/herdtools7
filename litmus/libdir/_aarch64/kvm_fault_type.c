@@ -13,6 +13,7 @@ enum fault_type_t {
   FaultMMUPermission,
   FaultTagCheck,
   FaultUnsupported,
+  FaultMMUTLBConflictAbort,
   FaultUnknown,
   FaultTypes,
 };
@@ -30,6 +31,7 @@ static const char *fault_type_names[] = {
   "MMU:Permission",
   "TagCheck",
   "Unsupported",
+  "MMU:TLBConflictAbort",
 };
 
 #define ESR_EL1_EC_PAC 0b011100
@@ -49,11 +51,16 @@ static enum fault_type_t get_fault_type(unsigned long esr)
     return FaultPacCheckIA + (esr & 0x3U);
   } else {
     dfsc = esr & 0x3fU;
-    fault_type = (dfsc >> 2) + FaultMMUAddressSize;
-    if (fault_type > FaultTagCheck)
-      return FaultUnsupported;
+    if (dfsc == 0x30U)
+      return FaultMMUTLBConflictAbort;
     else
-      return fault_type;
+    {
+      fault_type = (dfsc >> 2) + FaultMMUAddressSize;
+      if (fault_type > FaultTagCheck)
+        return FaultUnsupported;
+      else
+        return fault_type;
+    }
   }
 }
 

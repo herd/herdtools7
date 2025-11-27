@@ -51,6 +51,6 @@ static inline void litmus_flush_tlb(void *_p) {
 
 /* For AArch64, this performs BBM, not needed for X86_64, as
    no PTE change is performed. Yet? */
-static inline pteval_t litmus_set_pte_safe(void *q,pteval_t *p,pteval_t x) {
+static inline pteval_t litmus_set_descriptor_safe(void *q,pteval_t *p,pteval_t x) {
   return litmus_set_pte(p,x);
 }

@@ -20,6 +20,7 @@ type t =
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
+  | MLPT  (* Multi-level page table *)
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
@@ -40,6 +41,7 @@ let parse s = match Misc.lowercase s with
 | "self" -> Some Self
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
+| "mlpt" -> Some MLPT
 | "telechat" -> Some Telechat
 | "sve" -> Some SVE
 | "sme" -> Some SME
@@ -71,6 +73,7 @@ let pp = function
   | Mixed -> "mixed"
   | S128 -> "s128"
   | Vmsa -> "vmsa"
+  | MLPT -> "mlpt"
   | Telechat -> "telechat"
   | FaultHandling p -> Fault.Handling.pp p
   | SVE -> "sve"

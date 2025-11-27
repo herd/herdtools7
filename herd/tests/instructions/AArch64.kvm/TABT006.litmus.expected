@@ -1,0 +1,10 @@
+Test TABT006 Allowed
+States 1
+ Fault(P0,x,MMU:AccessFlag);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (fault(P0,x,MMU:AccessFlag))
+Observation TABT006 Always 1 0
+Hash=fcddd52ffbae3a31da77c2b8c6f75097
+

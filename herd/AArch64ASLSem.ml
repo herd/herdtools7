@@ -1342,6 +1342,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               | CapaStrip -> CapaStrip
               | TLBLoc -> TLBLoc
               | PTELoc -> PTELoc
+              | TTDLoc -> TTDLoc
               | Offset -> Offset
               | IsVirtual -> IsVirtual
               | IsInstr -> IsInstr

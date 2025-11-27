@@ -576,6 +576,7 @@ module
   let pteloc v = match v with
   | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (PTE,a)))
   | Val (Symbolic (System (PTE,a))) -> Val (Symbolic (System (PTE2,a)))
+  | Val (Symbolic (System(TTD {stage=_; level=LV3},a))) -> Val (Symbolic (System (PTE,a)))
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Label _|Tag _
@@ -583,6 +584,18 @@ module
       |Instruction _|Frozen _)
     ->
      Warn.user_error "Illegal pteloc on %s" (pp_v v)
+  | Var _ -> raise Undetermined
+
+
+  let ttdloc v = match v with
+  | Val (Symbolic (Virtual {name=a;_})) -> Val (Symbolic (System (TTD {stage=S1; level=LV2},a)))
+  | Val
+      (Concrete _|ConcreteRecord _|ConcreteVector _
+      |Label _|Tag _
+      |Symbolic _|PteVal _|AddrReg _
+      |Instruction _|Frozen _)
+    ->
+     Warn.user_error "Illegal ttdloc on %s" (pp_v v)
   | Var _ -> raise Undetermined
 
   let illegal_offset v =
@@ -916,6 +929,7 @@ module
     | CapaStrip -> capastrip
     | TLBLoc -> tlbloc
     | PTELoc -> pteloc
+    | TTDLoc -> ttdloc
     | Offset -> offset
     | IsVirtual -> is_virtual_v
     | IsInstr -> is_instr_v

@@ -28,6 +28,7 @@ type 'op1 unop =
   | Tagged (* get Tag attribute from PTE entry *)
   | CheckCanonical (* Check is a virtual address is canonical *)
   | MakeCanonical (* Make a virtual address canonical *)
+  | DT (* get the type of the descriptor *)
   | Extra1 of 'op1
 
 type 'op binop =
@@ -77,6 +78,7 @@ module
       | Tagged -> "Tagged"
       | CheckCanonical -> "CheckCanonical"
       | MakeCanonical -> "MakeCanonical"
+      | DT -> "DT"
       | Extra1 op1 -> Extra.pp_op1 hexa op1 |> Printf.sprintf "Extra:%s"
 
     type scalar = S.t
@@ -195,6 +197,12 @@ module
         Some (Symbolic (Virtual {v with pac}))
       | _ -> None
 
+    let getdt =
+      op_get_pteval (fun p ->
+        match p.dt with
+        | DescriptorType.Block | DescriptorType.Page -> true
+        | DescriptorType.Table -> false)
+
     let do_op = function
       | AddPAC (true, key) -> addOnePAC key
       | AddPAC (false, key) -> addPAC key
@@ -221,6 +229,7 @@ module
       | Tagged -> gettagged
       | CheckCanonical -> checkCanonical
       | MakeCanonical -> makeCanonical
+      | DT -> getdt
       | Extra1 op1 ->
           fun cst ->
            try

@@ -37,6 +37,7 @@ module Make
     let sve = C.variant Variant.SVE || sme
     let neon = C.variant Variant.Neon || sve
     let kvm = C.variant Variant.VMSA
+    let mlpt = C.variant Variant.MLPT
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && (C.variant Variant.PTE2 || C.variant Variant.ASL)
     let do_cu = C.variant Variant.ConstrainedUnpredictable
@@ -718,6 +719,7 @@ module Make
         valid_v : V.v;
         el0_v : V.v;
         tagged_v : V.v;
+        dt_v : V.v;
       }
 
       let arch_op1 op = M.op1 (Op.ArchOp1 op)
@@ -729,6 +731,7 @@ module Make
       let extract_el0 v = arch_op1 AArch64Op.EL0 v
       let extract_oa v = arch_op1 AArch64Op.OA v
       let extract_tagged v = arch_op1 AArch64Op.Tagged v
+      let extract_dt v = arch_op1 AArch64Op.DT v
 
       let mextract_whole_pte_val an nexp a_pte iiid =
         (M.do_read_loc Port.No
@@ -791,9 +794,10 @@ module Make
         extract_af pte_v >>|
         extract_db pte_v >>|
         extract_dbm pte_v >>|
-        extract_tagged pte_v) >>=
-        (fun ((((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v),tagged_v) ->
-          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v; tagged_v})
+        extract_tagged pte_v >>|
+        extract_dt pte_v) >>=
+        (fun (((((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v),tagged_v),dt_v) ->
+          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v; tagged_v; dt_v;})
 
       let get_oa a_virt mpte =
         (M.op1 Op.Offset a_virt >>| mpte)
@@ -828,8 +832,8 @@ module Make
 (* With choice operator *)
       let do_check_cond m m_cond k1 k2 =
         M.delay_kont "1"
-          (m >>= fun (_,pte_v as p) ->
-           m_cond pte_v >>= fun c -> M.unitT (c,p))
+          (m >>= fun (_,ipte as p) ->
+           m_cond ipte >>= fun c -> M.unitT (c,p))
           (fun (c,p) m ->
             let m = m >>= fun _ -> M.unitT p in
             M.choiceT c (k1 m) (k2 m))
@@ -924,6 +928,27 @@ module Make
         | X|N -> N
         | NoRet|S|NTA -> N
 
+      (** Does a single page-table walk for the memory access captured in [ma],
+          resulting in either the direct (physical access), success (address translated),
+          or fault (MMU fault on address translation) continuation.
+
+          - proc: Thread identifier.
+          - dir: Access direction (read or write).
+          - updatedb: Whether the hardware has to update the dirty state.
+          - is_tag: Whether the supplied address has a memory tag.
+          - a_virt: Original virtual address wrapped by [ma].
+          - ma: Monad containing the event structures for the address access [a_virt].
+          - an: Instruction annotation metadata.
+          - ii: Instruction instance record metadata.
+          - mdirect: Continuation when accessing a page-table entry location directly.
+          - mok: Continuation when the descriptor raises no MMU fault.
+          - mfault: Continuation when the descriptor raises an MMU fault.
+
+          During the walk several intermediate values are derived: [a_pte] (PTE location
+          computed from virtual address [a_virt]), [pte_v] (PTE value loaded
+          from that location), and [ipte] (interpreted PTE fields). The helper [mvirt]
+          performs the translation, with [mok] and [mfault] capturing its
+          successful and faulting paths respectively. *)
       let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
@@ -931,7 +956,7 @@ module Make
         let check_el0 m =
           (* Handler runs at level more priviledged than EL0 *)
           if not ii.A.in_handler && is_el0 then
-               fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
+               fun ipte -> m_op Op.Or (is_zero ipte.el0_v) (m ipte)
              else m in
 
         let open DirtyBit in
@@ -939,7 +964,7 @@ module Make
         and ha = dirty.ha proc
         and hd = dirty.hd proc in
         let ha = ha || hd in (* As far as we know hd => ha *)
-        let mfault (_,ipte) m =
+        let mfault' (_,ipte) m =
           let open FaultType.AArch64 in
           (is_zero ipte.valid_v) >>=
             (fun c ->
@@ -996,14 +1021,24 @@ module Make
             else m in
           mok m a in
 
-
 (* Action on case of page table access.
    Delay is used so as to have correct dependencies,
    getting content of PTE by anticipation. *)
-        let mvirt = begin
-          M.delay_kont "3"
+        let extract_l2 ma a_virt =
             begin
-              ma >>= fun _ -> M.op1 Op.PTELoc a_virt >>= fun a_pte ->
+              ma >>= fun _ ->
+              M.op1 Op.TTDLoc a_virt >>= fun a_table ->
+              let annot,nexp = an_pte an,AArch64.nexp_annot in
+              mextract_whole_pte_val
+                annot nexp a_table (E.IdSome ii) >>= fun table_v ->
+              (mextract_pte_vals table_v) >>= fun table_fields ->
+              M.unitT ((table_v, table_fields), a_table)
+            end in
+
+          let extract_pte ma a_virt =
+            begin
+              ma >>= fun _ ->
+              M.op1 Op.PTELoc a_virt >>= fun a_pte ->
               let an,nexp =
                 if hd then (* Atomic accesses, tagged with updated bits *)
                   an_xpte an,AArch64Explicit.NExp AArch64Explicit.AFDB
@@ -1017,6 +1052,11 @@ module Make
               (mextract_pte_vals pte_v) >>= fun ipte ->
               M.unitT ((pte_v,ipte),a_pte)
             end
+          in
+
+        let leaf_walk a_virt desc = begin
+          M.delay_kont "3"
+          desc
           (fun (pair_pte,a_pte) ma -> (* now we have PTE content *)
             (* Monad will carry changing internal pte value *)
             let ma = ma >>= fun (p,_) -> M.unitT p in
@@ -1024,39 +1064,66 @@ module Make
                only pte value may have changed *)
             let mok ma = mok pair_pte a_pte ma a_virt
 (* a_virt was (if pte2 then a_virt else pte_v.oa_v), why? *)
-            and mno ma =  mfault pair_pte ma in
+            and mno ma =  mfault' pair_pte ma in
             let check_cond cond =
               do_check_cond ma (check_el0 cond) mno mok in
 
             if (not tthm || (tthm && (not ha && not hd))) then
             (* No HW management *)
-              let cond_R pte_v =
-                m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.af_v) in
+              let cond_R ipte =
+                m_op Op.Or (is_zero ipte.valid_v) (is_zero ipte.af_v) in
               let cond = match dir with (* No mercy, check all flags *)
               | Dir.R -> cond_R
               | Dir.W ->
-                  fun pte_v ->
-                    m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
+                  fun ipte ->
+                    m_op Op.Or (cond_R ipte) (is_zero ipte.db_v) in
               check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun ipte -> is_zero ipte.valid_v
               | Dir.W ->
-                  fun pte_v ->
-                    m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
+                  fun ipte ->
+                    m_op Op.Or (is_zero ipte.valid_v) (is_zero ipte.db_v) in
               check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
-              | Dir.R -> fun pte_v -> is_zero pte_v.valid_v
+              | Dir.R -> fun ipte -> is_zero ipte.valid_v
               | Dir.W ->
 (* Check DB when dirty bit management disabled for this page *)
-                  fun pte_v ->
+                  fun ipte ->
                     m_op Op.Or
-                      (is_zero pte_v.valid_v)
+                      (is_zero ipte.valid_v)
                       (m_op Op.And
-                         (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
+                         (is_zero ipte.db_v) (is_zero ipte.dbm_v)) in
               check_cond cond)
           end in
+
+        let l3_walk a_virt ma = leaf_walk a_virt (extract_pte ma a_virt) in
+
+        let l2_walk table_virt ma = begin
+          let ml2 = extract_l2 ma table_virt in
+              M.delay_kont "table_desc" ml2
+                (fun ((_, ipte_l2), _) ml2 ->
+                  (is_zero ipte_l2.dt_v) >>= (fun is_table ->
+                    M.choiceT is_table
+                    (let ml2 = ml2 >>= fun (p,_) -> M.unitT p in
+            let valid = fun ipte -> is_zero ipte.valid_v in
+            let mno_table ma =
+              let open FaultType.AArch64 in
+              let ft = Some (MMU Translation) in
+              mfault (get_oa table_virt ma) table_virt ft in
+            let mok_table ml2 =
+              let prefix = if memtag && is_tag then "Tag, " else "Data, " in
+              let msg = prefix ^ "valid:1" in
+              let ml2 = append_commit ml2 (Some msg) ii in
+                      M.bind_ctrldata ml2 (fun ml2 ->
+                       l3_walk table_virt (M.unitT ml2))
+              in
+              do_check_cond ml2 valid mno_table mok_table)
+                    (leaf_walk table_virt ml2)))
+            end in
+
+        let mvirt = if mlpt then l2_walk a_virt ma else l3_walk a_virt ma in
         if pte2 then  mvirt
         else
           M.op1 Op.IsVirtual a_virt >>= fun cond ->

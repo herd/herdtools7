@@ -131,6 +131,7 @@ type 'aop op1 =
   | IsVirtual (* Detect virtual addresses *)
   | TLBLoc (* get TLB entry from location *)
   | PTELoc (* get PTE entry from location *)
+  | TTDLoc (* get level two descriptor from location *)
   | Offset (* get offset from base (symbolic) location *)
   | IsInstr (* Check nature of constant *)
   | Promote (* Promote to higher precision *)
@@ -165,6 +166,7 @@ let pp_op1 hexa pp_aop o = match o with
 | CapaStrip -> "capastrip"
 | TLBLoc -> "TLBloc"
 | PTELoc -> "PTEloc"
+| TTDLoc -> "TTDLoc"
 | Offset -> "offset"
 | IsVirtual -> "IsVirtual"
 | IsInstr -> "IsInstruction"

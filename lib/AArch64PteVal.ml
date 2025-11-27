@@ -188,6 +188,7 @@ type t = {
   dbm : int;
   el0 : int;
   attrs: Attrs.t;
+  dt: DescriptorType.t;
   }
 
 let fromExtra t = t
@@ -214,18 +215,33 @@ let writable ha hd p =
 let get_attrs {attrs;_ } = Attrs.as_list attrs
 
 (* For ordinary tests not to fault, the dirty bit has to be set. *)
-
 let prot_default =
   { oa=OutputAddress.PHY "";
-    valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
+    valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; dt=DescriptorType.Page }
 
 let default s = { prot_default with  oa=OutputAddress.PHY s; }
+let default_pmd s = { prot_default with  oa=OutputAddress.PTE s; dt=DescriptorType.Table }
 
 (* Page table entries for pointers into the page table
    have el0 flag unset. Namely, page table access from
    EL0 is disallowed. This correspond to expected behaviour:
    user code cannot access the page table. *)
 let of_pte s = { prot_default with  oa=OutputAddress.PTE s; el0=0; }
+
+let is_page p =
+  match p.dt with
+  | DescriptorType.Page -> true
+  | DescriptorType.Block | DescriptorType.Table -> false
+
+let is_block p =
+  match p.dt with
+  | DescriptorType.Block -> true
+  | DescriptorType.Page | DescriptorType.Table -> false
+
+let is_table p =
+  match p.dt with
+  | DescriptorType.Table -> true
+  | DescriptorType.Page | DescriptorType.Block -> false
 
 let pp_field ok pp eq ac p k =
   let f = ac p in if not ok && eq f (ac prot_default) then k else pp f::k
@@ -296,11 +312,21 @@ let add_field k v p =
 
 let tr p =
   let open ParsedPteVal in
-  let r = {prot_default with attrs=Attrs.of_list (StringSet.elements p.p_attrs)} in
+  let r = {prot_default with attrs=Attrs.of_list (StringSet.elements p.p_attrs); dt = p.p_dt} in
   let r =
     match p.p_oa with
     | None -> r
-    | Some oa -> { r with oa; } in
+    | Some oa -> 
+      match oa with
+      | OutputAddress.PHY _->
+        if (p.p_dt = DescriptorType.Table)
+          then Warn.user_error "Table cannot be initialised with PA(x)."
+        else { r with oa; }
+      | OutputAddress.PTE _ ->
+        if not (p.p_dt = DescriptorType.Table)
+          then Warn.user_error "Leaf entry cannot be initialised with PTE(x)."
+        else { r with oa; }
+      in
   let r = StringMap.fold add_field p.p_kv r in
   r
 
@@ -366,7 +392,7 @@ let dump_pack pp_oa p =
     p.af p.db p.dbm p.valid p.el0
 
 let as_physical p = OutputAddress.as_physical p.oa
-
+let as_pte p = OutputAddress.as_pte p.oa
 let as_flags p =
   if is_default p then None
   else

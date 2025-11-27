@@ -19,9 +19,14 @@ open Printf
 type t =
   { p_oa : OutputAddress.t option;
     p_kv : string StringMap.t;
-    p_attrs : StringSet.t; }
+    p_attrs : StringSet.t;
+    p_dt : DescriptorType.t;}
 
-let empty = { p_oa=None; p_kv=StringMap.empty; p_attrs=StringSet.empty; }
+let empty = { p_oa=None; p_kv=StringMap.empty; p_attrs=StringSet.empty; p_dt = DescriptorType.Page }
+
+let set_type dt p = { p with p_dt= dt; }
+
+let get_type p = p.p_dt
 
 let add_oa oa p =
   if Misc.is_some p.p_oa then
@@ -50,9 +55,9 @@ let apply_not_empty f = function
 
 let pp_comma = apply_not_empty (sprintf ", %s")
 
-let mk_pp pp_oa { p_oa; p_kv; p_attrs; } =
+let mk_pp pp_oa { p_oa; p_kv; p_attrs; p_dt; } =
   sprintf
-    "(%s%s%s)"
+    "(%s%s%s%s)"
     (match p_oa with
      | None -> ""
      | Some oa -> sprintf "oa:%s" (pp_oa oa))
@@ -61,6 +66,7 @@ let mk_pp pp_oa { p_oa; p_kv; p_attrs; } =
           (fun k v -> sprintf "%s:%s" k v)
           p_kv))
     (apply_not_empty (sprintf ", attrs:(%s)") (StringSet.pp_str ", " Misc.identity p_attrs))
+    (sprintf "dtype:(%s)" (DescriptorType.dtype2string p_dt))
 
 let pp_old = mk_pp OutputAddress.pp_old
 and pp = mk_pp  OutputAddress.pp

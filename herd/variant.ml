@@ -60,6 +60,8 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
  (*Replaces old KVM -> Virtual memory *)
   | VMSA
+  (* Multi-level page tables *)
+  | MLPT
 (* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)
@@ -123,7 +125,7 @@ type t =
 let tags =
   ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
    "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
+   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";"mlpt";]@
     Precision.tags @ Fault.Handling.tags @
    ["CutOff"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
    "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
@@ -163,6 +165,7 @@ let parse s = match Misc.lowercase s with
 | "instances"|"instance" -> Some Instances
 | "kvm"
 | "vmsa" -> Some VMSA
+| "mlpt" -> Some MLPT
 | "ets" -> Some ETS
 | "ets2" -> Some ETS2
 | "ets3" -> Some ETS3
@@ -268,6 +271,7 @@ let pp = function
   | Deps -> "Deps"
   | Instances -> "Instances"
   | VMSA -> "vmsa"
+  | MLPT -> "mlpt"
   | ETS -> "ets"
   | ETS2 -> "ets2"
   | ETS3 -> "ets3"

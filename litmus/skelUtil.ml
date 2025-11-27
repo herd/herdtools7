@@ -86,6 +86,15 @@ module PteValUtil(P:PteVal.S) = struct
     | Some msk ->
        sprintf "litmus_set_pte_flags(%s,%s)" s msk
     | None -> s
+
+  let dump_pmdval_flags s p =
+    match P.as_flags p with
+    | Some msk ->
+       sprintf "litmus_set_pmd_flags(%s,%s)" s msk
+    | None -> s
+
+  let mk_block s =
+    sprintf "litmus_block_from_pte(_vars->pte_%s)" s
 end
 
 module type PConfig = sig
@@ -172,6 +181,7 @@ module Make
       val get_displayed_locs : T.t -> A.RLocSet.t
       val get_displayed_globals : T.t -> Global_litmus.DisplayedSet.t
       val get_displayed_ptes : T.t -> StringSet.t
+      val get_displayed_pmds : T.t -> StringSet.t
       val get_observed_locs : T.t -> A.RLocSet.t
       val get_observed_globals : T.t -> Global_litmus.DisplayedSet.t
       val get_stabilized : T.t -> StringSet.t
@@ -371,14 +381,14 @@ end
       let select_global env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Ttd _|G.Phy _) -> None
             | A.Location_global (G.Addr a) -> Some a)
           env
 
       let select_aligned env =
         select_types
           (function
-            | A.Location_reg _|A.Location_global (G.Pte _|G.Phy _) -> None
+            | A.Location_reg _|A.Location_global (G.Pte _|G.Ttd _|G.Phy _) -> None
             | A.Location_global (G.Addr loc) ->
                 if is_aligned loc env then Some loc else None)
           env
@@ -478,15 +488,27 @@ end
       let filter_ptes locs =
         A.RLocSet.fold
           (fun a k -> match ConstrGen.loc_of_rloc a with
-          | A.Location_global (G.Pte a) ->  StringSet.add a k
+          | A.Location_global (G.Pte s)
+          | A.Location_global (G.Ttd {stage=_;level = G.Lv3;s}) ->  StringSet.add s k
           | A.Location_reg _
-          | A.Location_global (G.Phy _|G.Addr _)
+          | A.Location_global (G.Phy _|G.Addr _| G.Ttd _)
+            -> k)
+          locs StringSet.empty
+
+      let filter_pmds locs =
+        A.RLocSet.fold
+          (fun a k -> match ConstrGen.loc_of_rloc a with
+          | A.Location_global (G.Ttd {stage=_;level = G.Lv2;s}) ->  StringSet.add s k
+          | A.Location_reg _
+          | A.Location_global (G.Phy _|G.Addr _| G.Pte _ | G.Ttd _)
             -> k)
           locs StringSet.empty
 
       let get_displayed_globals t = filter_globals (get_displayed_locs t)
 
       let get_displayed_ptes t = filter_ptes (get_displayed_locs t)
+
+      let get_displayed_pmds t = filter_pmds (get_displayed_locs t)
 
       let get_observed_locs t =
         let locs =  get_displayed_locs t in

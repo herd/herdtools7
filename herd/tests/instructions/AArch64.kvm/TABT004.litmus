@@ -1,0 +1,11 @@
+AArch64 TABT004
+Variant=vmsa,mlpt
+{
+uint64_t x;
+0:X0=x;
+[TTD(x,S1,LV2)]=(oa:PA(x),db:0,dt:Block);
+}
+P0           ;
+MOV W8, #1        ;
+STR W8, [X0]      ;
+exists Fault(P0,x,MMU:Permission)

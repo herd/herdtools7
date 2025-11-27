@@ -1,0 +1,11 @@
+AArch64 TABT008
+Variant = vmsa,mlpt
+{
+uint64_t x=0;
+0: X0 = x;
+[TTD(x, S1, LV2)] = (oa: PTE(x), valid:1, dt:Table);
+[PTE(x)] = (oa:PA(x), valid:0);
+}
+P0;
+LDR X7, [X0];
+exists Fault(P0, x, MMU:Translation)

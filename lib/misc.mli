@@ -323,10 +323,12 @@ val tr_atag : string -> string option
 val is_atag : string -> bool
 
 val add_pte : string -> string
+val add_pmd : string -> string
 val add_parel1: string -> string
 val tr_pte : string ->  string option
 val is_pte : string -> bool
 val pp_pte : string -> string
+val pp_ttd : string -> string -> string -> string
 val add_tlb : string -> string
 val add_af : string -> string
 val tr_af : string ->  string option

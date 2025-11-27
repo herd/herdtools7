@@ -485,19 +485,28 @@ module Make(C:Config) (I:I) : S with module I = I
 
 (* Compare id in fault and other id, at least one id must be allowed in fault *)
         let same_sym_fault sym1 sym2 = match sym1,sym2 with
-(* Both ids allowed in fault, compare *)
+        (* Both ids allowed in fault, compare *)
           |(Virtual {name=s1;_},Virtual {name=s2;_})
           |(System (PTE,s1),System (PTE,s2))
+          |(System (TTD {stage=S1; level=LV3}, s1), System (PTE, s2))
+          |(System (PTE, s1), System (TTD {stage=S1; level=LV3}, s2))
+          |(System (TTD {stage=S1; level=LV3}, s1), System (TTD {stage=S1; level=LV3}, s2))
+          |(System (TTD {stage=S1; level=LV2}, s1), System (TTD {stage=S1; level=LV2}, s2))
            -> Misc.string_eq s1 s2
-(* One id allowed, the other on forbidden, does not match *)
-          | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
-          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)),Virtual _)
-          | (System (PTE,_),System ((TLB|PTE2),_))
-          | (System ((TLB|PTE2),_),System (PTE,_))
+        (* One id allowed, the other on forbidden, does not match *)
+          | (Virtual _,(System ((PTE|TLB|PTE2|TTD _),_)|Physical _|TagAddr _))
+          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2|TTD _),_)),Virtual _)
+          | (System (PTE,_),System ((TLB|PTE2|TTD _),_))
+          | (System ((TLB|PTE2|TTD _),_),System (PTE,_))
+          | (System (TTD _,_),System ((TLB|PTE2),_))
+          | (System ((TLB|PTE2),_),System (TTD _,_))
           | ((Physical _|TagAddr _),System (PTE,_))
+          | ((Physical _|TagAddr _),System (TTD _,_))
           | (System (PTE,_),(TagAddr _|Physical _))
+          | (System (TTD _,_),(TagAddr _|Physical _))
+          | (System (TTD _, _), System (TTD _, _))
             -> false
-(* Both forbidden, failure *)
+        (* Both forbidden, failure *)
           | (TagAddr _|Physical _|System ((TLB|PTE2),_)),
             (TagAddr _|Physical _|System ((TLB|PTE2),_))
             ->
@@ -821,8 +830,15 @@ module Make(C:Config) (I:I) : S with module I = I
           | Location_global (I.V.Var _)
           (* As called from look_address_in_state below *)
             -> assert false
-          | Location_global (I.V.Val (Symbolic (System (PTE,s)))) ->
+          | Location_global (I.V.Val (Symbolic (System (PTE,s))))
+          | Location_global (I.V.Val (Symbolic (System (TTD {stage=S1; level=LV3},s))))
+            ->
               I.V.Val (PteVal (I.V.Cst.PteVal.default s))
+          | Location_global (I.V.Val (Symbolic (System (TTD {stage=S1; level=LV2},s))))
+            ->
+              I.V.Val (PteVal (I.V.Cst.PteVal.default_pmd s))
+          | Location_global (I.V.Val (Symbolic (System (TTD _,_))))
+              -> assert false
           | Location_global (I.V.Val (Symbolic (TagAddr _))) ->
               I.V.Val default_tag
           | Location_global
