@@ -584,7 +584,9 @@ module Make (S : SPEC_VALUE) = struct
         formatter [fmt]. *)
     let pp_judgment fmt ({ Rule.expr } as judgment) =
       let layout = Rule.judgment_layout judgment in
-      fprintf fmt "{%a}" pp_expr (expr, layout)
+      (* The spaces are required to avoid weird LaTex issues arising
+         when several braces are adjacent. *)
+      fprintf fmt " { %a } " pp_expr (expr, layout)
 
     (** [pp_case_name_opt fmt name_opt] renders the optional case name
         [name_opt] with the formatter [fmt]. *)
