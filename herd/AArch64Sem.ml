@@ -754,7 +754,7 @@ module Make
         function
         | AF -> AArch64Op.SetAF
         | DB -> AArch64Op.SetDB
-        | IFetch|Other|AFDB -> assert false
+        | IFetch|Other|AFDB|GCS -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
         let nexp = AArch64Explicit.NExp set in
@@ -3605,9 +3605,10 @@ Arguments:
         let make_valid = set_cap V.one (V.intToV 0xfff)
         let make_inprogress = set_cap (V.intToV 0x5) (V.intToV 0x7)
 
-        let read ac an a ii = do_read_mem_ret quad an aexp ac a ii
-        and write ac an a v ii = do_write_mem quad an aexp ac a v ii
+        let read ac an a ii = do_read_mem_ret quad an AArch64Explicit.(NExp GCS) ac a ii
+        and write ac an a v ii = do_write_mem quad an AArch64Explicit.(NExp GCS) ac a v ii
       end
+
 
       let gcsstr r1 r2 ii =
         let an = Annot.N in
@@ -3890,7 +3891,7 @@ Arguments:
       (read_reg_addr rA ii)
       (fun a_virt ma ->
       let mop ac incoming =
-        let m = GCSSem.read ac an incoming ii >>= fun outgoing ->
+        let m = GCSSem.read ac Annot.A incoming ii >>= fun outgoing ->
           let mask = V.intToV 0x7 in
           GCSSem.get_cap mask outgoing >>= fun cap ->
             let(>>*=) = M.bind_control_set_data_input_first in
@@ -3903,8 +3904,7 @@ Arguments:
                   (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)) >>= fun v -> write_reg r v ii) >>|
                    (M.add a_virt (V.intToV (off)) >>= fun new_addr ->
                       write_reg rA new_addr ii) >>|
-                      (GCSSem.make_valid outgoing >>= fun outgoing_value -> GCSSem.write ac an a outgoing_value ii >>=
-                       M.ignore >>= fun() -> create_barrier GCSB ii)
+                      (GCSSem.make_valid outgoing >>= fun outgoing_value -> GCSSem.write ac Annot.L a outgoing_value ii)
                 in
                 lift_memop r Dir.W true false
                 (fun ac ma mv ->
