@@ -383,6 +383,8 @@ let short_circuit ==
     | { None }
     | VDASH; alternatives=expr;
       { Some [alternatives] }
+    | VDASH; (* states explicitly that there are no alternatives. *)
+      { Some [] }
 
 let expr :=
     | id=IDENTIFIER;
