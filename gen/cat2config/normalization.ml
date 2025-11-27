@@ -12,12 +12,11 @@ let pp_norm_err : normalization_error -> string =
   let open Format in
   match err with
   | Function_not_supported e ->
-      sprintf "Function_not_supported: %s" (Ast_utils.Pprinters.show_exp e)
-  | Exp_not_supported e ->
-      sprintf "Exp_not_supported: %s" (Ast_utils.Pprinters.show_exp e)
+      asprintf "Function_not_supported: %a" Ast_utils.pp_exp e
+  | Exp_not_supported e -> asprintf "Exp_not_supported: %a" Ast_utils.pp_exp e
   | Empty_union -> sprintf "Empty_union"
   | Unknown_identifier s -> sprintf "Unknown_identifier: %s" s
-  | Not_a_fence e -> sprintf "Not_a_fence: %s" (Ast_utils.Pprinters.show_exp e)
+  | Not_a_fence e -> asprintf "Not_a_fence: %a" Ast_utils.pp_exp e
 
 module type S = sig
   type fence
