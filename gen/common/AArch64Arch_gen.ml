@@ -768,9 +768,10 @@ let sequence_dp (d1,c1) (d2,c2) = match c1 with
 let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
+module RMW = struct
 type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
 
-type rmw_atom = atom (* Enforced by Rmw.S signature *)
+type nonrec atom = atom
 
 let pp_aop op =  Misc.capitalize (Misc.lowercase (pp_aop op))
 
@@ -863,6 +864,7 @@ let compute_rmw r old co =
     end
     | LrSc | Swp | Cas  -> co
     | AllAmo -> assert false
+end
 
 include
     ArchExtra_gen.Make

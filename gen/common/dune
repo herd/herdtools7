@@ -7,4 +7,4 @@
  (name gen_common)
  (wrapped false)
  (libraries herdtools unix)
- (modules_without_implementation atom fence rmw))
+ (modules_without_implementation atom fence))

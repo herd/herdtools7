@@ -14,10 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 module type S = sig
-(* Atoms *)
-  include Atom.S
-
-(* Fences *)
   type fence
 
   val is_isync : fence -> bool
@@ -60,8 +56,4 @@ module type S = sig
 
 (* Expand wildcard `*` *)
   val expand_dp_dir: dp -> dir list
-
-(* Read-Modify-Write *)
-  include Rmw.S with type rmw_atom = atom
-
 end
