@@ -1,40 +1,56 @@
-module Pprinters : sig
-  val show_exp : AST.exp -> string
-end = struct
-  type op1 = [%import: AST.op1] [@@deriving show { with_path = false }]
-  type op2 = [%import: AST.op2] [@@deriving show { with_path = false }]
-  type var = [%import: AST.var] [@@deriving show { with_path = false }]
-  type tag = [%import: AST.tag] [@@deriving show { with_path = false }]
-  type varset = [%import: AST.varset]
-
-  type set_or_rln = [%import: AST.set_or_rln]
-  [@@deriving show { with_path = false }]
-
-  type konst = [%import: AST.konst] [@@deriving show { with_path = false }]
-  type pat0 = [%import: AST.pat0] [@@deriving show { with_path = false }]
-  type pat = [%import: AST.pat] [@@deriving show { with_path = false }]
-
-  let pp_varset : Format.formatter -> varset -> unit =
-   fun fmt t -> Format.fprintf fmt "%s" (StringSet.pp_id "," t)
-
-  module TxtLoc = struct
-    type t = TxtLoc.t
-
-    let pp : Format.formatter -> t -> unit = fun fmt _ -> Format.fprintf fmt "_"
-  end
-
-  type exp = [%import: AST.exp] [@@deriving show { with_path = false }]
-  and cond = [%import: AST.cond] [@@deriving show { with_path = false }]
-
-  and variant_cond = [%import: AST.variant_cond]
-  [@@deriving show { with_path = false }]
-
-  and set_clause = [%import: AST.set_clause]
-  [@@deriving show { with_path = false }]
-
-  and clause = [%import: AST.clause] [@@deriving show { with_path = false }]
-  and binding = [%import: AST.binding] [@@deriving show { with_path = false }]
-end
+let pp_exp : Format.formatter -> AST.exp -> unit =
+  let open Format in
+  let open AST in
+  let wrapped with_parens pp =
+    if with_parens then fun fmt -> fprintf fmt "(%a)" pp else pp
+  in
+  let pp_binop str =
+    Format.pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt "%s" str)
+  in
+  let rec do_pp_exp ~(with_parens : bool) (fmt : Format.formatter) :
+      AST.exp -> unit = function
+    | Op (_, op, expl) ->
+        let op_str =
+          begin match op with
+          | Union -> " | "
+          | Seq -> "; "
+          | Inter -> " & "
+          | Diff -> " \\ "
+          | Cartesian -> " * "
+          | Add -> " + "
+          | Tuple -> ", "
+          end
+        in
+        wrapped with_parens
+          (pp_binop op_str (do_pp_exp ~with_parens:true))
+          fmt expl
+    | Op1 (_, ToId, exp) ->
+        fprintf fmt "[%a]" (do_pp_exp ~with_parens:false) exp
+    | Op1 (_, Inv, exp) -> fprintf fmt "%a^-1" (do_pp_exp ~with_parens:true) exp
+    | Op1 (_, Comp, exp) -> fprintf fmt "~%a" (do_pp_exp ~with_parens:true) exp
+    | Op1 (_, Plus, exp) -> fprintf fmt "%a+" (do_pp_exp ~with_parens:true) exp
+    | Op1 (_, Star, exp) -> fprintf fmt "%a*" (do_pp_exp ~with_parens:true) exp
+    | Op1 (_, Opt, exp) -> fprintf fmt "%a?" (do_pp_exp ~with_parens:true) exp
+    | Konst (_, Empty _) -> fprintf fmt "empty"
+    | Konst (_, Universe _) -> fprintf fmt "_"
+    | App (_, fexp, exp) ->
+        fprintf fmt "%a(%a)"
+          (do_pp_exp ~with_parens:true)
+          fexp
+          (do_pp_exp ~with_parens:false)
+          exp
+    | Try (_, e, e2) ->
+        fprintf fmt "try %a with %a"
+          (do_pp_exp ~with_parens:false)
+          e
+          (do_pp_exp ~with_parens:false)
+          e2
+    | Var (_, v) -> fprintf fmt "%s" v
+    | If _ -> fprintf fmt "<if>"
+    | Fun _ -> fprintf fmt "<fun>"
+    | _ -> fprintf fmt "<exp>"
+  in
+  do_pp_exp ~with_parens:false
 
 let eval_variant_cond ~(conditions : string list) : AST.variant_cond -> bool =
   let open AST in
