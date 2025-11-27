@@ -673,6 +673,7 @@ let do_fold_dmb_dsb f k =
 let fold_barrier f k =
   let k = do_fold_dmb_dsb f k in
   let k = f ISB k in
+  let k = f GCSB k in
   k
 
 let pp_option d t = match d,t with
@@ -684,7 +685,7 @@ let do_pp_barrier tag b = match b with
   | DMB (d,t) -> "DMB" ^ tag ^ pp_option d t
   | DSB (d,t) -> "DSB" ^ tag ^ pp_option d t
   | ISB -> "ISB"
-  | GCSB -> "GCSB DSYNC"
+  | GCSB -> "GCSB" ^ tag ^  "DSYNC"
 
 let pp_barrier b = do_pp_barrier " " b
 let pp_barrier_dot b = do_pp_barrier "." b
