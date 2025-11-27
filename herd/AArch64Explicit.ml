@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type nexp =  AF|DB|AFDB|IFetch|Other
+type nexp =  AF|DB|AFDB|IFetch|GCS|Other
 type explicit = Exp | NExp of nexp
 
 let pp = function
@@ -24,6 +24,7 @@ let pp = function
   | NExp AF-> "NExpAF"
   | NExp DB-> "NExpDB"
   | NExp AFDB-> "NExpAFDB"
+  | NExp GCS-> "GCS"
 
 let is_explicit_annot = function
   | Exp -> true

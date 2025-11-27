@@ -1,11 +1,12 @@
 Test G000 Required
-States 1
+States 2
+0:X1=0;  ~Fault(P0);
 0:X1=4;  ~Fault(P0);
-Ok
+No
 Witnesses
-Positive: 1 Negative: 0
+Positive: 1 Negative: 1
 Flag Guarded-Control-Stack-is-work-in-progress
 Condition forall (0:X1=4 /\ not (fault(P0)))
-Observation G000 Always 1 0
+Observation G000 Sometimes 1 1
 Hash=bbb803f126ac18b96561ecc28c790f82
 

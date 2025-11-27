@@ -48,17 +48,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_ifetch_annot = function
       | NExp IFetch -> true
-      | NExp (AF|DB|AFDB|Other)|Exp -> false
+      | NExp (AF|DB|AFDB|Other|GCS)|Exp -> false
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
-      | NExp (DB|IFetch|Other)|Exp -> false
+      | NExp (DB|IFetch|Other|GCS)|Exp -> false
 
     and is_db = function (* Setting of dirty bit flag *)
       | NExp (DB|AFDB) -> true
-      | NExp (AF|IFetch|Other)|Exp -> false
+      | NExp (AF|IFetch|Other|GCS)|Exp -> false
 
     module CMO = struct
       type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
@@ -130,11 +130,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
 
     let barrier_sets =
-      do_fold_dmb_dsb false true
+      fold_barrier false true
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
-        ["ISB",is_barrier ISB]
+        []
 
     let cmo_sets =
       DC.fold_op
