@@ -196,7 +196,7 @@ let common_specs () =
     (sprintf "specify variant")::
    ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
    ("-o", Arg.String (fun s -> tarfile := Some s),
-    "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
+    "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory). Note `-stdout true` overrides this flag.")::
    ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
   ("-list",
@@ -251,7 +251,7 @@ let common_specs () =
    sprintf "<bool> complete test name with number when identical (default %b)"
      !addnum)::
    ("-name",Arg.String (fun s -> name := Some s),
-     "<s> specify base name of tests")::
+     "<s> specify base name of tests. Note `-norm` overrides this flag.")::
    ("-sufname",Arg.String (fun s -> sufname := Some s),
      "<s> specify test name suffix")::
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
