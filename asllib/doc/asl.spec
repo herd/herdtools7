@@ -92,7 +92,18 @@ typedef def_use_name { "subprogram identifier kind" } =
 // Some of the operators below will be removed once type parameters
 // are made available to ordinary relations.
 
-// Assignment is special as it defines the left-hand side.
+operator list_from_indices[A,B](index: Identifier, list0(A), partial N -> B) -> list0(B)
+{
+  math_macro = \listfromindices
+};
+
+operator list_map[A,B](elem: A, elements: list0(A), elem_operation: partial N -> B) -> (new_elements: list0(B))
+{
+  "forms a new list where for each {elem} of {elements}, {new_elements} has an element obtained
+   by applying {elem_operation} to {elem}",
+  math_macro = \listmap
+};
+
 operator assign[T](T, T) -> Bool
 {
   math_macro = \eqdef,
@@ -158,6 +169,7 @@ operator cons[T](T, list0(T)) -> list1(T)
 operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
 {
   math_macro = \listcombine,
+  associative = true,
 };
 
 // Constructs a set out of a fixed list of expressions.
@@ -2369,8 +2381,9 @@ typing function unop_literals(op: unop, l: literal) ->
   }
 
   case not_bits {
+    l = L_Bitvector(bits);
     op = NOT;
-    INDEX(i, bits: c[i] := one - bits[i]);
+    c := list_map(b, bits, one - b);
     --
     L_Bitvector(c);
   }
@@ -5000,19 +5013,29 @@ typing function is_builtin_singular(ty: ty) -> (b: Bool)
 {
     "tests whether the type {ty} is a \emph{builtin singular type}, yielding the result in {b}.",
     prose_application = "testing whether {ty} is a builtin singular type yields {b}",
-};
+} =
+  b := ast_label(ty) in make_set(T_Real, T_String, T_Bool, T_Bits, T_Enum, T_Int);
+  --
+  b;
+;
 
 typing function is_named(ty: ty) -> (b: Bool)
 {
     "tests whether the type {ty} is a \emph{named type}.",
     prose_application = "testing whether {ty} is a named type yields {b}",
-};
+} =
+  --
+  ast_label(ty) = T_Named;
+;
 
 typing function is_anonymous(ty: ty) -> (b: Bool)
 {
     "tests whether the type {ty} is an \emph{\anonymoustype}.",
     prose_application = "testing whether {ty} is an \anonymoustype{} yields {b}",
-};
+} =
+  --
+  not_equal(ast_label(ty), T_Named);
+;
 
 typing function is_singular(tenv: static_envs, ty: ty) -> (b: Bool) | type_error
 {
@@ -5020,13 +5043,21 @@ typing function is_singular(tenv: static_envs, ty: ty) -> (b: Bool) | type_error
     yielding the result in {b}. \ProseOtherwiseTypeError",
     prose_application = "tests whether {ty} is a \singulartypeterm{} in {tenv},
     yields {b}\ProseOrTypeError",
-};
+} =
+  make_anonymous(tenv, ty) -> t1;
+  is_builtin_singular(t1) -> b;
+  --
+  b;
+;
 
 typing function is_structured(ty: ty) -> (b: Bool)
 {
     "tests whether the type {ty} is a \structuredtypeterm{}.",
     prose_application = "testing whether {ty} is a \structuredtypeterm{} yields {b}",
-};
+} =
+  --
+  ast_label(ty) in make_set(T_Record, T_Exception, T_Collection);
+;
 
 typing function get_structure(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
@@ -5039,7 +5070,44 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
   not associated with a declared type in {tenv}, a
   \typingerrorterm{} is returned.",
   prose_application = "",
-};
+} =
+  case named {
+    ty = T_Named(x);
+    declared_type(tenv, x) -> t1;
+    get_structure(tenv, t1) -> t;
+    --
+    t;
+  }
+
+  case builtin_singular {
+    is_builtin_singular(ty) -> True;
+    --
+    ty;
+  }
+
+  case tuple {
+    ty = T_Tuple(tys);
+    INDEX(i, tys: get_structure(tenv, tys[i]) -> tys'[i]);
+    --
+    T_Tuple(tys');
+  }
+
+  case array {
+    ty = T_Array(e, t);
+    get_structure(tenv, t) -> t1;
+    --
+    T_Array(e, t1);
+  }
+
+  case structured {
+    ty = L(fields);
+    L in make_set(T_Record, T_Exception, T_Collection);
+    list_combine(names, types) := fields;
+    INDEX(i, types: get_structure(tenv, types[i]) -> types'[i]);
+    --
+    L(list_combine(names, types'));
+  }
+;
 
 typing function make_anonymous(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
@@ -5052,7 +5120,21 @@ typing function make_anonymous(tenv: static_envs, ty: ty) ->
   types by their definition until the first non-named
   type is found but does not recurse further.",
   prose_application = "",
-};
+} =
+  case named {
+    ty = T_Named(x);
+    declared_type(tenv, x) -> t1;
+    make_anonymous(tenv, t1) -> t;
+    --
+    t;
+  }
+
+  case non_named {
+    not_equal(ast_label(ty), T_Named);
+    --
+    ty;
+  }
+;
 
 typing function check_constrained_integer(tenv: static_envs, t: ty) ->
          (constants_set(True)) | type_error
@@ -5061,7 +5143,32 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
   \constrainedintegerterm{} type. If so, the result is
   $\True$, otherwise the result is a \typingerrorterm.",
   prose_application = "",
-};
+} =
+  case well_constrained {
+    t = T_Int(WellConstrained(_));
+    --
+    True;
+  }
+
+  case parameterized {
+    t = T_Int(Parameterized(_));
+    --
+    True;
+  }
+
+  case unconstrained {
+    t = T_Int(c);
+    ast_label(c) = Unconstrained || ast_label(c) = PendingConstrained;
+    --
+    TypeError(TE_UT);
+  }
+
+  case conflicting_type {
+    not_equal(ast_label(t), T_Int);
+    --
+    TypeError(TE_UT);
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Type Declarations
