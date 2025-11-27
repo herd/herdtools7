@@ -431,7 +431,7 @@ module Make (S : SPEC_VALUE) = struct
           pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
       | Var name -> (
           (* Constants/labels should render via their macros.
-          So do tuples and records with labels, and type names, since their label
+          So do tuples and records with labels, since their label
           itself may be used as a constant in the spec (configuration domain).
           Plain variables should be rendered as text. *)
           match Spec.defining_node_opt_for_id S.spec name with
@@ -443,10 +443,13 @@ module Make (S : SPEC_VALUE) = struct
                      ( Label _
                      | LabelledTuple { label_opt = Some _ }
                      | LabelledRecord { label_opt = Some _ } );
-                 })
-          | Some (Node_Type _) ->
+                 }) ->
               pp_id_as_macro fmt name
-          | _ -> pp_var fmt name)
+          | Some (Node_Type _)
+          (* type named cannot be used as an expression so this case
+          corresponds to a variable that happens to share a name with a type. *)
+          | _ ->
+              pp_var fmt name)
       | Application { applicator = ExprOperator op; args } ->
           pp_operator op layout fmt args
       | Application { applicator; args } ->
