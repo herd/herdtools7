@@ -276,6 +276,7 @@ let operator_attributes ==
     LBRACE; pairs=tclist0(operator_attribute); RBRACE; { pairs }
 
 let operator_attribute :=
+    | prose_description_attribute
     | math_macro_attribute
     | operator_style_attribute
     | prose_application_attribute
