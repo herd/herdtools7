@@ -42,22 +42,23 @@ end
 module Make(O:Config) (M:Builder.S) =
   struct
 
-    let dump_stdout ?scope es =
-      let t = M.make_test "A" ~info:O.info ?scope es in
-      M.dump_test_channel stdout t ;
-      None
+    let dump_stdout t = M.dump_test_channel stdout t
 
     let litmus =
       if O.cpp then sprintf "%s.c"
       else sprintf "%s.litmus"
 
-    let dump_file name ?scope es =
-      if O.verbose > 0 then eprintf "Test name: %s\n" name ;
-      let t = M.make_test name ~info:O.info ?scope es in
-      let fname = litmus name in
+    module Tar =
+      Tar.Make
+        (struct
+          let verbose = O.verbose
+          let outname = O.tarfile
+        end)
+
+    let tar_output_protect t filename =
+      if O.verbose > 0 then eprintf "File name: %s\n" filename ;
       Misc.output_protect
-        (fun chan -> M.dump_test_channel chan t; Some fname)
-        fname
+        (fun chan -> M.dump_test_channel chan t) (Tar.outname filename)
 
     let gen_one_scope gen n =
       try
@@ -87,31 +88,37 @@ module Make(O:Config) (M:Builder.S) =
         | Some _ as st -> st
         end
 
-    let dump =
+    let dump name es =
+	    let es = M.E.resolve_edges es in
       let module Normer = Normaliser.Make(O)(M.E) in
-      let add_suffix = match  O.sufname with
-        | None -> fun n -> n
-        | Some s -> fun n -> n ^ s
-      in
-      if O.norm then
+      (* Default scope *)
+      let scope = Normer.get_nprocs es |> get_scope in
+      (* normalised name and scope *)
+      let normalised_name_scope es =
         let module Namer = Namer.Make(M.A)(M.A)(M.E) in
-        fun _name es ->
-	  let es = M.E.resolve_edges es in
-          let es,_ = M.C.resolve_edges es in
-          let base,es,nprocs = Normer.normalise_family es in
-          let scope = get_scope nprocs in
-          let name = add_suffix (Namer.mk_name base ?scope es) in
-          dump_file name ?scope es
-      else
-        fun name es ->
-          let es = M.E.resolve_edges es in
-          let nprocs = Normer.get_nprocs es in
-          let scope =  get_scope nprocs in
-          match name with
-          | None -> dump_stdout ?scope es
-          | Some name ->
-              let name = add_suffix name in
-              dump_file name ?scope es
+        let es = fst @@ M.C.resolve_edges es in
+        let base,es,nprocs = Normer.normalise_family es in
+        let scope = get_scope nprocs in
+        let name = Namer.mk_name base ?scope es in
+        name,scope in
+      (* Decide the test name *)
+      let test_name,scope = match O.norm,name with
+        (* User specified name *)
+        | false, Some name -> name,scope
+        | true, _
+        (* Default test name *)
+        | false, None -> normalised_name_scope es in
+      let test_name = test_name ^ (Option.value ~default:"" O.sufname) in
+      (* generate test from `es` *)
+      let t = M.make_test test_name ~info:O.info ?scope es in
+
+      (* Output to a stdout or file *)
+      if not O.stdout && ( O.norm || name <> None || O.tarfile <> None ) then begin
+        tar_output_protect t (litmus test_name);
+        Tar.tar()
+      end else
+        dump_stdout t
+
 
     module P = LineUtils.Make(M.E)
 
@@ -129,7 +136,7 @@ module Make(O:Config) (M:Builder.S) =
       else line
 
 (********)
-    let do_zyva name pp_rs =
+    let do_zyva name_opt pp_rs =
       try begin
         let pp_rs = List.map LexUtil.split pp_rs in
         let pp_rs = List.concat pp_rs in
@@ -178,7 +185,7 @@ module Make(O:Config) (M:Builder.S) =
                 | Some k -> do_rec k in
               do_rec in
             D.all gen
-        | _ -> ignore (dump name es)
+        | _ -> dump name_opt es
       end with Fatal msg ->
         eprintf "%s: Fatal error: %s\n" Config.prog msg ;
         exit 2
