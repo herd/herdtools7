@@ -542,8 +542,8 @@ module Make (S : SPEC_VALUE) = struct
           let layout = horizontal_if_unspecified layout args in
           let args_with_layouts = apply_layout_to_list layout args in
           let vertical = LayoutUtils.contains_vertical layout in
-          let layout_arg = if vertical then "{V}" else "{H}" in
-          fprintf fmt "%a%s%a" pp_macro op_macro layout_arg
+          let layout_arg = if vertical then "V" else "H" in
+          fprintf fmt "%a[%s]%a" pp_macro op_macro layout_arg
             (PP.pp_sep_list ~sep:"" pp_arg)
             args_with_layouts
 
