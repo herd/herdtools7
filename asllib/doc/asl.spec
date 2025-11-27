@@ -41,7 +41,9 @@ typedef N
     math_macro = \N,
 };
 
+constant zero { math_macro = \zero, };
 constant one { math_macro = \one, };
+constant two { math_macro = \two, };
 
 typedef N_pos
 {  "positive natural number",
@@ -353,6 +355,16 @@ operator with_environ[T](T, envs) -> T
 {
   custom = true,
   math_macro = \withenviron,
+};
+
+operator ELint(Z) -> E_Literal(L_Int(Z))
+{
+  math_macro = \ELInt,
+};
+
+operator EBinop(op: ASTLabels, lhs: expr, rhs: expr) -> E_Binop(binop, expr, expr)
+{
+  math_macro = \AbbrevEBinop,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3046,7 +3058,38 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | typ
   "annotates a single slice {s} in the \staticenvironmentterm{} {tenv},
   resulting in an annotated slice {s'}.\ProseOtherwiseTypeError",
   prose_application = "annotating the slice {s} in {tenv} yields {s'}\OrTypeError"
-};
+} =
+  case single {
+    s = Slice_Single(i);
+    annotate_slice(Slice_Length(i, E_Literal(one))) -> s';
+  }
+
+  case range {
+    s = Slice_Range(j, i);
+    binop_literals(SUB, j, i) -> length';
+    binop_literals(ADD, length', ELint(one)) -> length;
+    annotate_slice(Slice_Length(i, length)) -> s';
+  }
+
+  case length {
+    s = Slice_Length(offset, length);
+    annotate_expr(tenv, offset) -> (t_offset, offset', ses_offset);
+    annotate_symbolic_constrained_integer(tenv, length) -> (length', ses_length) { [_] };
+    te_check(ses_is_readonly(ses_offset), TE_SEV) -> True;
+    te_check(ses_is_readonly(ses_length), TE_SEV) -> True;
+    check_underlying_integer(tenv, t_offset) -> True;
+    ses := union(ses_offset, ses_length);
+    s' := Slice_Length(offset', length');
+  }
+
+  case scaled {
+    s = Slice_Star(factor, length);
+    binop_literals(MUL, factor, length) -> offset;
+    annotate_slice(Slice_Length(offset, length)) -> s';
+  }
+  --
+  s';
+;
 
 typing relation slices_width(tenv: static_envs, slices: list0(slice)) ->
          (width: expr) | type_error
@@ -3055,7 +3098,22 @@ typing relation slices_width(tenv: static_envs, slices: list0(slice)) ->
   width of all slices given by {slices} in the
   \staticenvironmentterm{} {tenv}.",
   prose_application = "",
-};
+} =
+  case empty {
+    slices = empty_list;
+    --
+    ELint(zero);
+  }
+
+  case non_empty {
+    slices = cons(s, slices1);
+    slice_width(s) -> e1;
+    slices_width(slices1) -> e2;
+    normalize(EBinop(ADD, e1, e2)) -> width;
+    --
+    width;
+  }
+;
 
 typing function slice_width(slice: slice) ->
          (width: expr)
@@ -3063,7 +3121,31 @@ typing function slice_width(slice: slice) ->
   "returns an expression {width} that represents the
   width of the slices given by {slice}.",
   prose_application = "",
-};
+} =
+  case single {
+    slice = Slice_Single(_);
+    --
+    ELint(one);
+  }
+
+  case scaled {
+    slice = Slice_Star(_, e);
+    --
+    e;
+  }
+
+  case length {
+    slice = Slice_Length(_, e);
+    --
+    e;
+  }
+
+  case range {
+    slice = Slice_Range(e1, e2);
+    --
+    EBinop(ADD, ELint(one), EBinop(SUB, e1, e2));
+  }
+;
 
 typing relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr) ->
          (e'': expr, ses: powerset(TSideEffect)) | type_error
@@ -3075,7 +3157,13 @@ typing relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr
   {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_symbolically_evaluable_expr(tenv, e) -> (t, e', ses);
+  check_constrained_integer(tenv, t) -> True;
+  normalize(tenv, e') -> e'';
+  --
+  (e'', ses);
+;
 
 typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
          (slices': list0(slice), ses: powerset(TSideEffect))
@@ -3086,7 +3174,12 @@ typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
   and \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  INDEX(i, slices: annotate_slice(tenv, slices[i]) -> (slices'[i], xs[i]));
+  ses := union_list(xs);
+  --
+  (slices', ses);
+;
 
 semantics relation eval_slice(env: envs, s: slice) ->
   | (((v_start: tint, v_length: tint), new_g: XGraphs), new_env: envs)
@@ -3098,7 +3191,46 @@ semantics relation eval_slice(env: envs, s: slice) ->
                         \ProseOtherwiseAbnormal",
  prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case single {
+    s = Slice_Single(e);
+    eval_expr(env, e) -> ResultExpr((v_start, new_g), new_env);
+    v_length := Int(one);
+  }
+
+  case range {
+    s = Slice_Range(e_top, e_start);
+    eval_expr(env, e_top) -> ResultExpr(m_top, env1);
+    (v_top, g1) := m_top;
+    eval_expr(env1, e_start) -> ResultExpr(m_start, new_env);
+    (v_start, g2) := m_start;
+    eval_binop(SUB, v_top, v_start) -> v_diff;
+    eval_binop(ADD, Int(one), v_diff) -> v_length;
+    new_g := parallel(g1, g2);
+  }
+
+  case length {
+    s = Slice_Length(e_start, length);
+    eval_expr(env, e_start) -> ResultExpr(m_start, env1);
+    (v_factor, g1) := m_factor;
+    eval_expr(env1, length) -> ResultExpr(m_length, new_env);
+    (v_length, g2) := m_length;
+    eval_binop(MUL, v_factor, v_length) -> v_start;
+    new_g := parallel(g1, g2);
+  }
+
+  case scaled {
+    s = Slice_Star(e_factor, e_length);
+    eval_expr(env, e_factor) -> ResultExpr(m_factor, env1);
+    (v_factor, g1) := m_factor;
+    eval_expr(env1, e_length) -> ResultExpr(m_length, new_env);
+    (v_length, g2) := m_length;
+    eval_binop(MUL, v_factor, v_length) -> v_start;
+    new_g := parallel(g1, g2);
+  }
+  --
+  (((v_start, v_length), new_g), new_env);
+;
 
 relation eval_slices(env: envs, slices: list0(slice)) ->
   | ResultSlices((ranges: list0((native_value, native_value)), new_g: XGraphs), new_env: envs)
@@ -3110,7 +3242,23 @@ relation eval_slices(env: envs, slices: list0(slice)) ->
                         \ProseOtherwiseAbnormal",
  prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    slices = empty_list;
+    --
+    ResultSlices((empty_list, empty_graph), env);
+  }
+
+  case non_empty {
+    slices = cons(slice, slices1);
+    eval_slice(env, slice) -> ((range, g1), env1);
+    eval_slices(env1, slices1) -> ResultSlices((ranges1, g2), new_env);
+    ranges := cons(range, ranges1);
+    new_g := parallel(g1, g2);
+    --
+    ResultSlices((ranges, new_g), new_env);
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Specifications

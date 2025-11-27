@@ -102,7 +102,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     to the console.
     """
     # Labels to exclude from the check
-    excluded_labels: set[str] = {"constant-one"}
+    excluded_labels: set[str] = {"constant-one", "constant-zero", "constant-two"}
 
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
