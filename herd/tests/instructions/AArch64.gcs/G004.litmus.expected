@@ -1,11 +1,13 @@
 Test G004 Required
-States 1
+States 3
 0:X0=0;  ~Fault(P0);
-Ok
+0:X0=0; Fault(P0,GCS:PRET);
+0:X0=0; Fault(P0:L2,GCS:PRET);
+No
 Witnesses
-Positive: 1 Negative: 0
+Positive: 1 Negative: 2
 Flag Guarded-Control-Stack-is-work-in-progress
 Condition forall (0:X0=0 /\ not (fault(P0)))
-Observation G004 Always 1 0
+Observation G004 Sometimes 1 2
 Hash=43c38dd46aee5d34461cbe32fef2fce2
 
