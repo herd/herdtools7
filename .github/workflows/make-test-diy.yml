@@ -24,11 +24,9 @@ jobs:
           - ubuntu-latest
         cfg:
           - ocaml-version: "ocaml-base-compiler.4.08.1,dune.3.10.0,zarith.1.13,menhir.20220210"
-            with-fmt: false
             job-name: "OCaml v4.08"
             dune-cache: "enabled"
           - ocaml-version: "dune,zarith,menhir"
-            with-fmt: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml latest lts"
 
@@ -54,24 +52,3 @@ jobs:
       - run: opam exec -- make build DUNE_PROFILE=dev
 
       - run: opam exec -- make diy-test DUNE_PROFILE=dev
-
-  check-fmt:
-    name: check format
-
-    runs-on: ubuntu-latest
-
-    env:
-      DUNE_CACHE: enabled-except-user-rules
-
-    steps:
-      - name: Checkout tree
-        uses: actions/checkout@v4
-
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: ocamlformat.0.28.1
-          dune-cache: true
-
-      - run: opam exec -- dune fmt
-
