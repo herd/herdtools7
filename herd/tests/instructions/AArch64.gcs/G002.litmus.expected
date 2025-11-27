@@ -1,11 +1,12 @@
 Test G002 Required
-States 1
+States 2
 0:X0=0;  ~Fault(P0);
-Ok
+0:X0=0; Fault(P0:L0,GCS:PRET);
+No
 Witnesses
-Positive: 1 Negative: 0
+Positive: 1 Negative: 1
 Flag Guarded-Control-Stack-is-work-in-progress
 Condition forall (0:X0=0 /\ not (fault(P0)))
-Observation G002 Always 1 0
+Observation G002 Sometimes 1 1
 Hash=74dba07a9762b35d3675d7eaae620658
 
