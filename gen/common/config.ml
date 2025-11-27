@@ -251,7 +251,7 @@ let common_specs () =
    sprintf "<bool> complete test name with number when identical (default %b)"
      !addnum)::
    ("-name",Arg.String (fun s -> name := Some s),
-     "<s> specify base name of tests")::
+     "<s> specify base name of tests. Note `-norm` overwrites this flag.")::
    ("-sufname",Arg.String (fun s -> sufname := Some s),
      "<s> specify test name suffix")::
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
