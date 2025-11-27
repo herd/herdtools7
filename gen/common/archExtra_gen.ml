@@ -137,6 +137,8 @@ and module Value := I.Value
     | Reg (i,r) ->
         if I.is_symbolic r then I.pp_reg r
         else sprintf "%i:%s" i (I.pp_reg r)
+    | Loc loc when Misc.tr_pte loc <> None
+      -> sprintf "[%s]" (pp_symbol loc)
     | Loc loc -> pp_symbol loc
 
   let pp_location_brk = function
