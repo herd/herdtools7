@@ -75,15 +75,14 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     let* nf = Lazy.force_val lazy_nf in
     Either.find_right nf
 
-  type norm_config = {
+  type config = {
     conditions : string list;
     unroll_depth : int;
     set_var : string -> set_nf option;
     rel_var : string -> rel_nf option;
   }
 
-  let rec normalize_set ~(config : norm_config) ~(env : env) : AST.exp -> set_nf
-      =
+  let rec normalize_set ~(config : config) ~(env : env) : AST.exp -> set_nf =
     let open AST in
     let conditions = config.conditions in
     let set_var = config.set_var in
@@ -126,8 +125,7 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     in
     go
 
-  and normalize_rel ~(config : norm_config) ~(env : env) (e : AST.exp) : rel_nf
-      =
+  and normalize_rel ~(config : config) ~(env : env) (e : AST.exp) : rel_nf =
     let open AST in
     let conditions = config.conditions in
     let rel_var = config.rel_var in
@@ -194,7 +192,7 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
      May fail by throwing NormalizationError.
   *)
   (* TODO: properly handle recursive bindings *)
-  let normalize ~(config : norm_config) ~(env : env) (e : AST.exp) :
+  let normalize ~(config : config) ~(env : env) (e : AST.exp) :
       (set_nf, rel_nf) Either.t =
     try Either.Left (normalize_set ~config ~env e)
     with NormalizationError _ -> Either.Right (normalize_rel ~config ~env e)
@@ -204,8 +202,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
   (* Assumes that the order of let-definitions in `bindings` is that of
      the source cat file. This is important to properly scope bindings in
      the presence of shadowing. *)
-  let normalize_bindings ~(config : norm_config)
-      (bindings : (string * AST.exp) list) : nf_map =
+  let normalize_bindings ~(config : config) (bindings : (string * AST.exp) list)
+      : nf_map =
    fun var ->
     let bindings_in_scope_rev =
       bindings |> List.rev |> Util.List.drop_while (fun (v, _) -> not (v = var))

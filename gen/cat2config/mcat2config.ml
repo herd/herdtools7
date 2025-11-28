@@ -154,7 +154,7 @@ let extract_let_binding (ins : AST.ins) =
 
 let run ~(opts : Arg.opts) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
-  let norm_config : Nf.norm_config =
+  let norm_config : Nf.config =
     {
       conditions = opts.conds;
       unroll_depth = opts.unroll;
