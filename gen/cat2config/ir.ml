@@ -167,6 +167,7 @@ and set_nf = prim_set inter union
 and rel_nf = (prim_set, prim_rel) seq union
 
 let prim_set : prim_set -> set_nf = fun p -> Union [ Inter [ p ] ]
+let prim_sets : prim_set list -> set_nf = fun p -> Union [ Inter p ]
 let prim_rel : prim_rel -> rel_nf = fun p -> Union [ Seq [ Rel (Inter [ p ]) ] ]
 
 let prim_set_comp : prim_set -> prim_set inter union = function
@@ -418,6 +419,18 @@ let compress : ('s, 'r) seq union -> ('s, 'r) seq union =
       Seq s)
     u
 
+let find_partition (p : 'a -> 'b option) (l : 'a list) : ('b * 'a list) option =
+  let rec go acc = function
+    | [] -> None
+    | x :: xs -> (
+        match p x with Some y -> Some (y, acc @ xs) | None -> go (x :: acc) xs)
+  in
+  go [] l
+
+let mem_partition (elem : 'a) (l : 'a list) : 'a list option =
+  find_partition (fun x -> if x = elem then Some () else None) l
+  |> Option.map snd
+
 let expand_domain_range (nf : rel_nf) : rel_nf =
   let can_expand (Seq seq : (prim_set, prim_rel) seq) : bool =
     let rels =
@@ -428,8 +441,19 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
   let expand_item :
       (prim_set, prim_rel) seq_item -> (prim_set, prim_rel) seq_item list =
     function
-    | Set (Inter [ Domain r ]) when can_expand r -> get_seq r
-    | Set (Inter [ Range r ]) when can_expand r -> get_seq r
+    | Set (Inter x) -> (
+        match
+          find_partition
+            (function
+              | Domain r when can_expand r ->
+                  Some (fun rest -> [ Set (Inter rest) ] @ get_seq r)
+              | Range r when can_expand r ->
+                  Some (fun rest -> get_seq r @ [ Set (Inter rest) ])
+              | _ -> None)
+            x
+        with
+        | Some (k, rest) -> k rest
+        | None -> [ Set (Inter x) ])
     | x -> [ x ]
   in
   map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
@@ -449,13 +473,22 @@ let expand_acq_rel (nf : rel_nf) : rel_nf =
           (fun (Inter x) ->
             let s = Union [ Seq [ Set (Inter x) ] ] in
             let s =
-              if List.mem atom_a x then union s (to_id (domain amo_ap)) else s
+              match mem_partition atom_a x with
+              | Some rest ->
+                  union s (to_id (set_inter (prim_sets rest) (domain amo_ap)))
+              | None -> s
             in
             let s =
-              if List.mem atom_q x then union s (to_id (domain amo_qp)) else s
+              match mem_partition atom_q x with
+              | Some rest ->
+                  union s (to_id (set_inter (prim_sets rest) (domain amo_qp)))
+              | None -> s
             in
             let s =
-              if List.mem atom_l x then union s (to_id (range amo_pl)) else s
+              match mem_partition atom_l x with
+              | Some rest ->
+                  union s (to_id (set_inter (prim_sets rest) (range amo_pl)))
+              | None -> s
             in
             s)
           (fun r -> Union [ Seq [ Rel r ] ]))
