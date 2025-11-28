@@ -1,0 +1,9 @@
+(rule
+ (copy ../../Version.ml Version.ml))
+
+(executable
+ (name mcat2config)
+ (public_name mcat2config7)
+ (preprocess
+  (staged_pps ppx_import ppx_deriving.show))
+ (libraries herdtools unix gen_common))
