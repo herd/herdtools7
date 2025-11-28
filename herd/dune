@@ -3,6 +3,23 @@
 (rule
  (copy ../Version.ml Version.ml))
 
+(rule
+ (target ASLSemPrimitives.ml)
+ (deps ASLSemPrimitives.asl)
+ (action
+  (run %{bin:primitives_to_ml} %{deps} %{target})))
+
+(rule
+ (deps ASLSemPrimitives.asl)
+ (target ASLSemPrimitivesSig.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (echo "let primitives_signatures = {|")
+    (cat %{deps})
+    (echo "|}")))))
+
 (ocamllex lexConf_herd)
 
 (executable
