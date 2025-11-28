@@ -80,7 +80,11 @@
   ## [Exp & M]; rmw; lrs; [A | Q]
   -safe [LxSx, PosWRPA] [Amo.Swp, PosWRPA] [Amo.Cas, PosWRPA]
   ## [Exp & M]; rmw; lrs; [A | Q]
+  -safe [LxSx, PosWRPA, Amo.SwpAP] [Amo.Swp, PosWRPA, Amo.SwpAP] [Amo.Cas, PosWRPA, Amo.SwpAP] [LxSx, PosWRPA, Amo.CasAP] [Amo.Swp, PosWRPA, Amo.CasAP] [Amo.Cas, PosWRPA, Amo.CasAP]
+  ## [Exp & M]; rmw; lrs; [A | Q]
   -safe [LxSx, PosWRPQ] [Amo.Swp, PosWRPQ] [Amo.Cas, PosWRPQ]
+  ## [Exp & M]; rmw; lrs; [A | Q]
+  -safe [LxSx, PosWRPQ, Amo.SwpQP] [Amo.Swp, PosWRPQ, Amo.SwpQP] [Amo.Cas, PosWRPQ, Amo.SwpQP] [LxSx, PosWRPQ, Amo.CasQP] [Amo.Swp, PosWRPQ, Amo.CasQP] [Amo.Cas, PosWRPQ, Amo.CasQP]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
