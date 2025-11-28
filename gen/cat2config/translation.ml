@@ -283,31 +283,43 @@ type state = {
   right : prim_set inter;
 }
 
+let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
+    'a list -> 'acc = function
+  | [] -> acc
+  | x :: xs ->
+      let acc = f acc x xs in
+      fold_with_rest f acc xs
+
 let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list =
   let l = [ Set (Inter [ M ]) ] @ l @ [ Set (Inter [ M ]) ] in
   let st =
-    List.fold_left
-      (fun st item ->
+    fold_with_rest
+      (fun st item rest ->
         match (st.core, item) with
         | [], Set s ->
             let left = inter st.left s in
             { st with left }
-        | _, Set s -> (
+        | _, Set s ->
             let right = inter st.right s in
             let st = { st with right } in
-            match
-              try_match_edge (get_inter st.left) st.core (get_inter st.right)
-            with
-            | Some edge_alts ->
-                let relaxs =
-                  let open Util.List.Infix in
-                  let* edge = edge_alts in
-                  let* prev_edges = st.relaxs in
-                  [ join_relax prev_edges edge ]
-                in
-                let left = st.right in
-                { relaxs; left; core = []; right = Inter [] }
-            | None -> st)
+            let should_try_match =
+              match rest with [] -> true | Rel _ :: _ -> true | _ -> false
+            in
+            if should_try_match then
+              match
+                try_match_edge (get_inter st.left) st.core (get_inter st.right)
+              with
+              | Some edge_alts ->
+                  let relaxs =
+                    let open Util.List.Infix in
+                    let* edge = edge_alts in
+                    let* prev_edges = st.relaxs in
+                    [ join_relax prev_edges edge ]
+                  in
+                  let left = st.right in
+                  { relaxs; left; core = []; right = Inter [] }
+              | None -> st
+            else st
         | core, Rel r ->
             let core =
               if st.right = Inter [] then core @ [ Rel r ]
