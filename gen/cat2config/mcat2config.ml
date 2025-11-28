@@ -1,8 +1,7 @@
 [@@@warning "-40-42"]
+[@@@warning "-69"]
 
 (* Create a set of relaxations for diy using a cat file *)
-
-module StringMap = Map.Make (String)
 
 module Arg = struct
   type show = Tree | TreeOnly | Lets
@@ -144,12 +143,14 @@ end
 
 module Nf = Normalization.Make (Ir) (Log)
 
-let extract_let_binding (ins : AST.ins) =
+let extract_let_binding (ins : AST.ins) :
+    (string * Normalization.binding) option =
   let open AST in
   match ins with
-  | Rec (_, (_, Pvar (Some varname), expression) :: _, _)
-  | Let (_, (_, Pvar (Some varname), expression) :: _) ->
-      Some (varname, expression)
+  | Rec (_, (_, Pvar (Some name), body) :: _, _) ->
+      Some (name, { body; is_recursive = true })
+  | Let (_, (_, Pvar (Some name), body) :: _) ->
+      Some (name, { body; is_recursive = false })
   | _ -> None
 
 let run ~(opts : Arg.opts) (tree : AST.ins list) =
@@ -165,21 +166,26 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
   let results =
     opts.lets_to_print
-    |> List.map (fun var ->
-        let nfs = nf_map var in
-        if nfs = [] then (
-          Log.eprintv 0 "Failed to evaluate let binding: `%s`@." var;
-          exit 1)
-        else
-          let nfs =
-            nfs
-            |> List.map (fun (nf, ast_expr) ->
-                let nf = Ir.expand_acq_rel nf in
-                let compressed = Ir.compress nf in
-                let expanded = Ir.expand_domain_range compressed in
-                (compressed, expanded, ast_expr))
-          in
-          (var, nfs))
+    |> List.filter_map (fun var ->
+        match StringMap.find_opt var nf_map with
+        | None ->
+            Log.eprintv 0 "Requested let binding `%s` not found.@." var;
+            None
+        | Some [] ->
+            Log.eprintv 0 "Failed to evaluate let binding `%s`.@." var;
+            None
+        | Some nfs ->
+            let nfs =
+              nfs
+              |> List.map (fun (nf, ast_expr) ->
+                  let nf = Ir.expand_acq_rel nf in
+                  let nf = Ir.compress nf in
+                  (* if opts.show = Some Tree then *)
+                  (*   Format.printf "%a@." Ir.pp_rel_nf nf; *)
+                  let nf = Ir.expand_domain_range nf in
+                  (nf, ast_expr))
+            in
+            Some (var, nfs))
   in
   if opts.conf then (
     let open Format in
@@ -193,12 +199,9 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
         printf "### %s@." var;
         let _ =
           List.fold_left
-            (fun acc (_, expanded, ast_e) ->
+            (fun acc (nf, ast_e) ->
               let print_cat_rel () =
-                if opts.show_rels then
-                  match ast_e with
-                  | Some e -> printf "## %a@." Ast_utils.pp_exp e
-                  | None -> ()
+                if opts.show_rels then printf "## %a@." Ast_utils.pp_exp ast_e
               in
               List.fold_left
                 (fun acc seq ->
@@ -212,7 +215,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
                       (String.concat " " (List.map Translation.pp_relax relaxs))
                   end;
                   acc @ relaxs)
-                acc (Ir.get_union expanded))
+                acc (Ir.get_union nf))
             [] nfs
         in
         ()))
@@ -220,11 +223,9 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     results
     |> List.iter (fun (_, nfs) ->
         nfs
-        |> List.iter (fun (compressed, expanded, _) ->
-            if opts.show = Some Tree then
-              Format.printf "%a@." Ir.pp_rel_nf compressed;
+        |> List.iter (fun (nf, _) ->
             let relaxs =
-              Ir.get_union expanded
+              Ir.get_union nf
               |> Util.List.concat_map (fun seq ->
                   Translation.try_translate_seq seq)
             in

@@ -4,6 +4,7 @@ type normalization_error =
   | Empty_union
   | Unknown_identifier of string
   | Not_a_fence of AST.exp
+  | Recursion_not_supported of string
 
 exception NormalizationError of normalization_error
 
@@ -17,6 +18,9 @@ let pp_norm_err : normalization_error -> string =
   | Empty_union -> sprintf "Empty_union"
   | Unknown_identifier s -> sprintf "Unknown_identifier: %s" s
   | Not_a_fence e -> asprintf "Not_a_fence: %a" Ast_utils.pp_exp e
+  | Recursion_not_supported v -> asprintf "Recursion_not_supported: %s" v
+
+type binding = { body : AST.exp; is_recursive : bool }
 
 module type S = sig
   type fence
@@ -51,6 +55,9 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     rel_union_l
       (List.init n (fun i -> rel_seq_l (List.init (n - i) (fun _ -> e))))
 
+  (* A normal form is either a normal set or normal relation. *)
+  type nf = (set_nf, rel_nf) Either.t
+
   (* Environments store the result of normalizing previous let bindings.
 
      Normalizations are wrapped in Lazy.t so that they are only performed if
@@ -61,19 +68,15 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
      As normalization can potentially fail, environment values are also wrapped
      in `optional` to signal whether a normalization succeeded or failed.
   *)
-  type env = (set_nf, rel_nf) Either.t option Lazy.t StringMap.t
+  type env = nf option Lazy.t StringMap.t
 
-  let find_env_set (v : string) (env : env) : set_nf option =
+  let find_env (v : string) (env : env) : nf option =
     let open Util.Option.Infix in
     let* lazy_nf = StringMap.find_opt v env in
-    let* nf = Lazy.force_val lazy_nf in
-    Either.find_left nf
+    Lazy.force_val lazy_nf
 
-  let find_env_rel (v : string) (env : env) : rel_nf option =
-    let open Util.Option.Infix in
-    let* lazy_nf = StringMap.find_opt v env in
-    let* nf = Lazy.force_val lazy_nf in
-    Either.find_right nf
+  let find_env_set v env = Option.bind (find_env v env) Either.find_left
+  let find_env_rel v env = Option.bind (find_env v env) Either.find_right
 
   type config = {
     conditions : string list;
@@ -82,7 +85,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     rel_var : string -> rel_nf option;
   }
 
-  let rec normalize_set ~(config : config) ~(env : env) : AST.exp -> set_nf =
+  let rec normalize_set ~(config : config) ~(env : env) ~(name : string)
+      ~(is_recursive : bool) : AST.exp -> set_nf =
     let open AST in
     let conditions = config.conditions in
     let set_var = config.set_var in
@@ -105,12 +109,15 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
       | App (_, fn, e) -> (
           match fn with
           | Var (_, v) when v = "domain" ->
-              domain (normalize_rel ~config ~env e)
-          | Var (_, v) when v = "range" -> range (normalize_rel ~config ~env e)
+              domain (normalize_rel ~config ~env ~name ~is_recursive e)
+          | Var (_, v) when v = "range" ->
+              range (normalize_rel ~config ~env ~name ~is_recursive e)
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
           if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
+      | Var (_, var) when var = name && is_recursive ->
+          raise (NormalizationError (Recursion_not_supported var))
       | Var (_, var) -> (
           let bound_nf =
             if Option.is_some (rel_var var) then None
@@ -125,7 +132,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     in
     go
 
-  and normalize_rel ~(config : config) ~(env : env) (e : AST.exp) : rel_nf =
+  and normalize_rel ~(config : config) ~(env : env) ~(name : string)
+      ~(is_recursive : bool) (e : AST.exp) : rel_nf =
     let open AST in
     let conditions = config.conditions in
     let rel_var = config.rel_var in
@@ -153,7 +161,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           match rel_diff_opt (go e1) (go e2) with
           | Some result -> result
           | None -> raise (NormalizationError (Exp_not_supported e)))
-      | Op1 (_, ToId, exp) -> to_id (normalize_set ~config ~env exp)
+      | Op1 (_, ToId, exp) ->
+          to_id (normalize_set ~config ~env ~name ~is_recursive exp)
       | Op1 (_, Inv, exp) -> inv (go exp)
       | Op1 (_, Comp, exp) -> (
           match rel_comp_opt (go exp) with
@@ -168,7 +177,7 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
       | App (_, fexp, exp) -> (
           match fexp with
           | Var (_, "fencerel") -> (
-              let nf = normalize_set ~config ~env exp in
+              let nf = normalize_set ~config ~env ~name ~is_recursive exp in
               match find_fence nf with
               | Some fence -> fencerel fence
               | None -> raise (NormalizationError (Not_a_fence exp)))
@@ -176,6 +185,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
       | If (_, VariantCond a, exp, exp2) ->
           if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
+      | Var (_, var) when var = name && is_recursive ->
+          raise (NormalizationError (Recursion_not_supported var))
       | Var (_, var) -> (
           let bound_nf =
             Util.Option.choice_fn
@@ -189,69 +200,69 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
     go e
 
   (* Normalize the given AST expression.
-     May fail by throwing NormalizationError.
-  *)
-  (* TODO: properly handle recursive bindings *)
-  let normalize ~(config : config) ~(env : env) (e : AST.exp) :
-      (set_nf, rel_nf) Either.t =
-    try Either.Left (normalize_set ~config ~env e)
-    with NormalizationError _ -> Either.Right (normalize_rel ~config ~env e)
+     Since AST.exp does not carry type information, and normalization operates
+     differently for sets vs relations, we first attempt to normalize the
+     expression as a set, then attempt it as a relation on failure.
 
-  type nf_map = string -> (rel_nf * AST.exp option) list
+     May fail by throwing NormalizationError if both attempts fail.
+  *)
+  let normalize_binding ~(config : config) ~(env : env) ~(name : string)
+      (b : binding) : nf =
+    Log.eprintv 1 "Normalizing let binding `%s`@." name;
+    let e = b.body in
+    let is_recursive = b.is_recursive in
+    try Either.Left (normalize_set ~config ~env ~name ~is_recursive e)
+    with NormalizationError _ ->
+      Either.Right (normalize_rel ~config ~env ~name ~is_recursive e)
+
+  type nf_map = (rel_nf * AST.exp) list StringMap.t
 
   (* Assumes that the order of let-definitions in `bindings` is that of
      the source cat file. This is important to properly scope bindings in
      the presence of shadowing. *)
-  let normalize_bindings ~(config : config) (bindings : (string * AST.exp) list)
+  let normalize_bindings ~(config : config) (bindings : (string * binding) list)
       : nf_map =
-   fun var ->
-    let bindings_in_scope_rev =
-      bindings |> List.rev |> Util.List.drop_while (fun (v, _) -> not (v = var))
+    let _, nf_bindings_rev =
+      List.fold_left
+        (fun (env, l) (name, b) ->
+          let do_normalize () =
+            try Some (normalize_binding ~config ~env ~name b)
+            with NormalizationError err ->
+              Log.eprintv 1 "Skipping let binding `%s`: %s@." name
+                (pp_norm_err err);
+              None
+          in
+          let new_env = StringMap.add name (Lazy.from_fun do_normalize) env in
+          let item = (name, b, env) in
+          (new_env, item :: l))
+        (StringMap.empty, []) bindings
     in
-    match bindings_in_scope_rev with
-    | [] ->
-        Log.eprintv 0 "Requested let binding `%s` not found in cat file.@." var;
-        []
-    | (_, e) :: env_rev -> begin
-        match config.rel_var var with
-        | Some nf -> [ (nf, None) ]
-        | None ->
-            let env =
-              List.fold_left
-                (fun (env : env) (v, e) ->
-                  let f =
-                   fun () ->
-                    Log.eprintv 1 "Normalizing let binding `%s`.@." v;
-                    try Some (normalize ~config ~env e)
-                    with NormalizationError err ->
-                      Log.eprintv 1 "Skipping let binding `%s`: %s@." v
-                        (pp_norm_err err);
-                      None
-                  in
-                  StringMap.add v (Lazy.from_fun f) env)
-                StringMap.empty (List.rev env_rev)
-            in
-            begin match e with
-            | AST.Op (_, AST.Union, expl) ->
-                let nfs =
-                  List.filter_map
-                    (fun e ->
-                      try
-                        let nf = normalize_rel ~config ~env e in
-                        Some (nf, Some e)
-                      with NormalizationError err ->
-                        Log.eprintv 1 "Skipping union branch: %s@."
-                          (pp_norm_err err);
-                        None)
-                    expl
-                in
-                nfs
-            | _ -> (
-                try [ (normalize_rel ~config ~env e, None) ]
-                with NormalizationError err ->
-                  Log.eprintv 1 "Skipping let binding `%s`: %s@." var
-                    (pp_norm_err err);
-                  [])
-            end
-      end
+    let nf_bindings = List.rev nf_bindings_rev in
+    nf_bindings
+    |> List.map (fun (name, b, env) ->
+        let nfs =
+          match config.rel_var name with
+          | Some nf -> [ (nf, b.body) ]
+          | None ->
+              let expl =
+                match b.body with
+                | AST.Op (_, AST.Union, expl) -> expl
+                | e -> [ e ]
+              in
+              List.filter_map
+                (fun e ->
+                  try
+                    let nf =
+                      normalize_rel ~config ~env ~name
+                        ~is_recursive:b.is_recursive e
+                    in
+                    Some (nf, e)
+                  with NormalizationError err ->
+                    Log.eprintv 1 "Skipping `%s` component `%a`: %s@." name
+                      Ast_utils.pp_exp e (pp_norm_err err);
+                    None)
+                expl
+        in
+        (name, nfs))
+    |> StringMap.of_list
 end
