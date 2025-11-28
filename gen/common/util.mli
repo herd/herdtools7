@@ -34,7 +34,7 @@ val parse_cmdline : spec list -> (string -> unit) -> unit
 
 module type Monad = sig
   type 'a t
-  val pure : 'a -> 'a t
+  val return : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 
   module Infix : sig

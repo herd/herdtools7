@@ -63,7 +63,7 @@ let parse_cmdline options get_cmd_arg =
 
 module type Monad = sig
   type 'a t
-  val pure : 'a -> 'a t
+  val return : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
 
   module Infix : sig
@@ -76,7 +76,7 @@ module List = struct
   let concat_map : ('a -> 'b list) -> 'a list -> 'b list =
     fun f l -> List.concat (List.map f l)
 
-  let pure x = [ x ]
+  let return x = [ x ]
   let bind x f = concat_map f x
 
   let uniq ~eq l =
@@ -109,7 +109,7 @@ module List = struct
     let rec fold_left (f : 'acc -> 'a -> 'acc M.t) (v : 'acc) : 'a list -> 'acc M.t =
       let open M.Infix in
       function
-        | [] -> M.pure v
+        | [] -> M.return v
         | x :: xs ->
           let* acc = f v x in
           fold_left f acc xs
@@ -126,7 +126,7 @@ module Option = struct
     | [] -> None
     | f :: l -> let x = f () in if Option.is_some x then x else choice_fn l
 
-  let pure x = Some x
+  let return x = Some x
   let bind = Option.bind
 
   let guard b = if b then Some () else None
