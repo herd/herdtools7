@@ -9,4 +9,4 @@ Variant=memtag,async
  DMB ST      |             ;
  MOV W2,#1   |             ;
  STR W2,[X3] | STR W2,[X1] ;
-exists 1:X2=1 /\ TFSR_ELx=1 
+exists 1:X2=1 /\ 1:TFSR_ELx=1
