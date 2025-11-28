@@ -428,30 +428,28 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
   in
   map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
 
-(* TODO: modify this so that it also works with id relations
-   of the form `[A & ...]` etc. *)
 let expand_acq_rel (nf : rel_nf) : rel_nf =
   let mem = to_id (prim_set M) in
   let amo = prim_rel (Edge Amo) in
-  let amo_ap : rel_nf =
-    rel_seq_l [ to_id (prim_set (Atom (Acq None))); amo; mem ]
-  in
-  let amo_qp : rel_nf =
-    rel_seq_l [ to_id (prim_set (Atom (AcqPc None))); amo; mem ]
-  in
-  let amo_pl : rel_nf =
-    rel_seq_l [ mem; amo; to_id (prim_set (Atom (Rel None))) ]
-  in
+  let atom_a = Atom (Acq None) in
+  let atom_q = Atom (AcqPc None) in
+  let atom_l = Atom (Rel None) in
+  let amo_ap = rel_seq_l [ to_id (prim_set atom_a); amo; mem ] in
+  let amo_qp = rel_seq_l [ to_id (prim_set atom_q); amo; mem ] in
+  let amo_pl = rel_seq_l [ mem; amo; to_id (prim_set atom_l) ] in
   nf
   |> union_flat_map
        (seq_flat_map
-          (fun x ->
-            match x with
-            | Inter [ Atom (Acq None) ] ->
-                union_l [ Union [ Seq [ Set x ] ]; to_id (domain amo_ap) ]
-            | Inter [ Atom (AcqPc None) ] ->
-                union_l [ Union [ Seq [ Set x ] ]; to_id (domain amo_qp) ]
-            | Inter [ Atom (Rel None) ] ->
-                union_l [ Union [ Seq [ Set x ] ]; to_id (range amo_pl) ]
-            | s -> Union [ Seq [ Set s ] ])
+          (fun (Inter x) ->
+            let s = Union [ Seq [ Set (Inter x) ] ] in
+            let s =
+              if List.mem atom_a x then union s (to_id (domain amo_ap)) else s
+            in
+            let s =
+              if List.mem atom_q x then union s (to_id (domain amo_qp)) else s
+            in
+            let s =
+              if List.mem atom_l x then union s (to_id (range amo_pl)) else s
+            in
+            s)
           (fun r -> Union [ Seq [ Rel r ] ]))
