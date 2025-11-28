@@ -4,8 +4,8 @@ Test A176 + indirection, should work
 *)
 
 {
-  uint64_t x = 0x0000000100000002;
-  uint64_t *p = &x;
+  int x[2] = {2, 1};
+  int *p = &x;
   0:X2=p;
 }
 
