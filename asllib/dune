@@ -67,7 +67,7 @@
 (library
  (name asllib)
  (modules
-  (:standard \ aslref))
+  (:standard \ aslref primitives_to_ml))
  (public_name herdtools7.asllib)
  (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
  (modules_without_implementation Backend AST ParserConfig)
@@ -82,3 +82,9 @@
  (public_name aslref)
  (libraries asllib)
  (modules aslref))
+
+(executable
+ (name primitives_to_ml)
+ (public_name primitives_to_ml)
+ (libraries asllib str)
+ (modules primitives_to_ml))
