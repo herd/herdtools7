@@ -11,6 +11,7 @@
   -safe Coe Coi
   
   ### Exp-haz-ob
+  ## [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
   -safe [PosRR, Fre]
   
   ### haz-ob
