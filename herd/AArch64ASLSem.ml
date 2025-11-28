@@ -451,7 +451,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                let s = UInt(imms);\n\
                var wmask : bits(datasize);\n\
                var tmask : bits(datasize) ;\n\
-               (wmask,tmask) = DecodeBitMasks{datasize}(N, imms, immr, FALSE, datasize);"
+               (wmask,tmask) = DecodeBitMasks{datasize}(N, imms, immr, FALSE);"
           in
           let fname =
             "dpimm/bitfield/" ^
@@ -1138,7 +1138,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         |> state_add (global_loc "PSTATE") pstate_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
-        |> add_reg_if_present AArch64Base.SP (global_loc "SP_EL0")
+        |> add_reg_if_present AArch64Base.SP (global_loc "_SP_EL0")
         |> (if is_vmsa then
               state_add (global_loc "D128")
                 (ASLS.A.V.scalarToV (ASLScalar.of_bool is_d128))
@@ -1160,21 +1160,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       profile "build fake test" @@ fun () ->
       let init = [] in
       let prog =
-        let version =
-          if TopConf.C.variant (Variant.ASLVersion `ASLv0) then `ASLv0
-          else if TopConf.C.variant (Variant.ASLVersion `ASLv1) then `ASLv1
-          else `Any
-        in
-        let () =
-          if _dbg then
-            Format.eprintf "Trying with ASL parser for version %a.@."
-              Asllib.PP.pp_version version
-        in
         let main =
           let execute =
             Filename.concat "asl-pseudocode/aarch64" fname
             |> TopConf.C.libfind
-            |> ASLBase.build_ast_from_file ~ast_type:`Opn version
+            |> ASLBase.build_ast_from_file ~ast_type:`Opn `ASLv1
           in
           let open Asllib.AST in
           let open Asllib.ASTUtils in

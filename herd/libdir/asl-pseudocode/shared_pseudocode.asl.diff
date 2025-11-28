@@ -1,0 +1,4 @@
+44820c44820
+<     M : bits (5);        // Mode field                         [AArch32 only]
+---
+>     M : bits (5),        // Mode field                         [AArch32 only]

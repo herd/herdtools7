@@ -57,7 +57,18 @@ end;
 
 // =============================================================================
 
-var SP_EL0: bits(64);
+var _SP_EL0: bits(64);
+
+accessor SP_EL0() <=> v: bits(64)
+begin
+  getter
+    return _SP_EL0;
+  end;
+
+  setter
+    _SP_EL0 = v;
+  end;
+end;
 
 // =============================================================================
 
@@ -114,19 +125,6 @@ end;
 func ClearExclusiveByAddress(paddress : FullAddress, processorid : integer, size : integer)
 begin
   pass;
-end;
-
-// =============================================================================
-
-accessor _R (n : integer) <=> value: bits(64)
-begin
-  getter
-    return read_register(n);
-  end;
-
-  setter
-    write_register(n, value);
-  end;
 end;
 
 // =============================================================================
@@ -205,3 +203,17 @@ type EventAccess of enumeration {
      TAG,
      PHY_PTE,
 };
+
+type BRBINF_EL1_Type of bits(64);
+type BRBSRC_EL1_Type of bits(64);
+type BRBTGT_EL1_Type of bits(64);
+
+readonly func ImpDefBool(s: string) => boolean
+begin
+  case s of
+    when "Secure-only implementation" => return FALSE;
+    otherwise =>
+      print "Unknown ImpDef: " ++ s;
+      assert FALSE;
+  end;
+end;

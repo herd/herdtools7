@@ -228,7 +228,7 @@ end;
 
 func BranchNotTaken(branchtype:BranchType, branch_conditional:boolean)
 begin
-    _PC() = _PC()+4;
+    _PC = _PC+4;
    let branchtaken = FALSE;
    if IsFeatureImplemented(FEAT_SPE) then
      SPEBranch{64}
@@ -298,3 +298,31 @@ type SecurityState of enumeration {
 
 constant VMID_NONE : bits(16) = Zeros{16};
 constant ASID_NONE : bits(16) = Zeros{16};
+
+// X - accessor
+// ============
+
+accessor X{width}(n : integer) <=> value : bits(width)
+begin
+    // Write a 32-bit or 64-bit value to a general-purpose register.
+    setter
+        assert n >= 0 && n <= 31;
+        assert width IN {32,64};
+        if n != 31 then
+            write_register(n, ZeroExtend{64}(value));
+        end;
+        return;
+    end;
+
+    // Read the least-significant 8, 16, 32, or 64 bits from a general-purpose register.
+    getter
+        assert n >= 0 && n <= 31;
+        let rw : integer{} = width as integer{8, 16, 32, 64};
+        if n != 31 then
+            return read_register(n)[rw-1:0];
+        else
+            return Zeros{rw};
+        end;
+    end;
+end;
+
