@@ -295,11 +295,11 @@ The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \righ
 \hypertarget{operator-concatlist}{}
 \begin{definition}[Concatenation of a List of Lists]
 The parametric function\\
-$\concatlist : \KleeneStar{\left(\KleeneStar{T}\right)} \rightarrow \KleeneStar{T}$ concatenates a list of lists:
+$\concatlist{\KleeneStar{\left(\KleeneStar{T}\right)}} \rightarrow \KleeneStar{T}$ concatenates a list of lists:
 \[
   \begin{array}{rcl}
-    \concatlist(\emptylist) &\triangleq& \emptylist\\
-    \concatlist(l_{1..k}) &\triangleq& l_1 \concat \ldots \concat l_k \\
+    \concatlist{\emptylist} &\triangleq& \emptylist\\
+    \concatlist{l_{1..k}} &\triangleq& l_1 \concat \ldots \concat l_k \\
   \end{array}
 \]
 \end{definition}

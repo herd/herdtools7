@@ -94,19 +94,29 @@ typedef def_use_name { "subprogram identifier kind" } =
 // Some of the operators below will be removed once type parameters
 // are made available to ordinary relations.
 
-operator list_from_indices[A,B](index: Identifier, list0(A), partial N -> B) -> list0(B)
+// This type represents variables appearing in aslspec expressions.
+// It is used by operators to introduce bound variables.
+typedef variable { "variable" };
+
+operator forall[T](bound_var: variable, domain: powerset(T), fun T -> Bool) -> Bool
 {
-  math_macro = \listfromindices
+  math_macro = \forallop,
+};
+
+operator list_from_indices[A,B](index: variable, elements: list0(A), operation: partial N -> B) -> list0(B)
+{
+  "forms a new list by applying {operation} to each index of {elements} via the bound variable {index}",
+  math_macro = \listfromindices,
 };
 
 operator list_map[A,B](elem: A, elements: list0(A), elem_operation: partial N -> B) -> (new_elements: list0(B))
 {
   "forms a new list where for each {elem} of {elements}, {new_elements} has an element obtained
    by applying {elem_operation} to {elem}",
-  math_macro = \listmap
+  math_macro = \listmap,
 };
 
-operator assign[T](T, T) -> Bool
+operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
 };
@@ -174,10 +184,28 @@ operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
   associative = true,
 };
 
+operator list_min[T](list0(T)) -> N
+{
+  math_macro = \listmin,
+};
+
+operator list_max[T](list0(T)) -> N
+{
+  math_macro = \listmax,
+};
+
 // Constructs a set out of a fixed list of expressions.
 operator make_set[T](list1(T)) -> powerset(T)
 {
   math_macro = \makeset,
+};
+
+operator range(from: Z, to: Z) -> powerset(Z)
+{
+  "the set of values between {from} and {to}, inclusive, if {from} is less than {to},
+   and the set of values between {to} and {from}, inclusive, otherwise.",
+  math_macro = \rangeop,
+  custom = true,
 };
 
 // The size of a finite set.
@@ -210,6 +238,12 @@ operator union[T](list1(powerset(T))) -> powerset(T)
 operator union_list[T](list1(powerset(T))) -> powerset(T)
 {
   math_macro = \UNIONLIST,
+};
+
+operator intersect[T](list1(powerset(T))) -> powerset(T)
+{
+  math_macro = \cap,
+  associative = true,
 };
 
 operator not(Bool) -> Bool
@@ -282,24 +316,24 @@ operator int_exponent(N, N) -> N
   math_macro = \intexponent,
 };
 
-operator int_less_than(N, N) -> Bool
+operator less_than[NumType](NumType, NumType) -> Bool
 {
-  math_macro = \intlessthan,
+  math_macro = \lessthan,
 };
 
-operator int_less_or_equal(N, N) -> Bool
+operator less_or_equal[NumType](NumType, NumType) -> Bool
 {
-  math_macro = \intlessorequal,
+  math_macro = \lessorequal,
 };
 
-operator int_greater_than(N, N) -> Bool
+operator greater_than[NumType](NumType, NumType) -> Bool
 {
-  math_macro = \intgreaterthan,
+  math_macro = \greaterthan,
 };
 
-operator int_greater_or_equal(N, N) -> Bool
+operator greater_or_equal[NumType](NumType, NumType) -> Bool
 {
-  math_macro = \intgreaterorequal,
+  math_macro = \greaterorequal,
 };
 
 operator round_up(Q) -> N
@@ -1929,14 +1963,33 @@ typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: lis
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotatebitfields}{annotating} bitfields {fields} with width {e_width} in {tenv} yields {new_fields} and side effects {ses}",
   math_layout = [_,_],
-};
+} =
+  names := list_map(field, fields, bitfield_get_name(field));
+  check_no_duplicates(names) -> True;
+  static_eval(tenv, e_width) -> L_Int(width);
+  (
+    INDEX(i, fields: annotate_bitfield(tenv, width, field) -> (fields'[i], xs[i]))
+  ) { math_layout = ([_])};
+  ses := union_list(xs);
+  --
+  (fields', ses);
+;
 
 typing function bitfield_get_name(bf: bitfield) ->
          (name: Identifier)
 {
   "given a bitfield {bf}, returns {name}, the name of the bitfield {bf}.",
   prose_application = "\hyperlink{relation-bitfieldgetname}{extracting} name from bitfield {bf} yields {name}"
-};
+} =
+  or(
+    bf = BitField_Simple(name, _),
+    bf = BitField_Nested(name, _, _),
+    bf = BitField_Type(name, _, _)
+  )
+  { math_layout = [_,_,_] };
+  --
+  name;
+;
 
 typing function bitfield_get_slices(bf: bitfield) ->
          (slices: list0(slice))
@@ -1944,7 +1997,16 @@ typing function bitfield_get_slices(bf: bitfield) ->
   "returns the list of slices {slices} associated with
   the bitfield {bf}.",
   prose_application = "\hyperlink{relation-bitfieldgetslices}{extracting} slices from bitfield {bf} yields {slices}",
-};
+} =
+  or(
+    bf = BitField_Simple(_, slices),
+    bf = BitField_Nested(_, slices, _),
+    bf = BitField_Type(_, slices, _)
+  )
+  { math_layout = [_,_,_] };
+  --
+  slices;
+;
 
 typing function bitfield_get_nested(bf: bitfield) ->
          (nested: list0(bitfield))
@@ -1953,7 +2015,11 @@ typing function bitfield_get_nested(bf: bitfield) ->
   the bitfield {bf}, if there are any, and an empty list
   if there are none.",
   prose_application = "\hyperlink{relation-bitfieldgetnested}{extracting} nested bitfields from {bf} yields {nested}",
-};
+} =
+  --
+  if bf = BitField_Nested(_, _, nested) then nested else empty_list
+  { math_layout = (_, [_,_,_])};
+;
 
 typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) ->
          (new_field: bitfield, ses: powerset(TSideEffect)) | type_error
@@ -1965,7 +2031,45 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
   {new_field} or a \typingerrorterm{}, if one is
   detected.",
   prose_application = "\hyperlink{relation-annotatebitfield}{annotating} bitfield {field} with width {width} in {tenv} yields {new_field} and {ses}",
-};
+} =
+  case simple {
+    field = BitField_Simple(name, slices);
+    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    check_slices_in_width(tenv, width, slices1) -> True;
+    --
+    (BitField_Simple(name, slices1), ses_slices)
+    { math_layout = [_] };
+  }
+
+  case nested {
+    field = BitField_Nested(name, slices, bitfields');
+    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    disjoint_slices_to_positions(tenv, True, slices1) -> positions;
+    check_positions_in_width(tenv, slices1, width, positions) -> True;
+    width' := cardinality(positions);
+    annotate_bitfields(tenv, width', bitfields') -> (bitfields'', ses_bitfields)
+    { math_layout = [_] };
+    ses := union(ses_slices, ses_bitfields);
+    --
+    (BitField_Nested(slices1, bitfields''), ses)
+    { math_layout = [_]};
+  }
+
+  case type {
+    field = BitField_Type(name, slices, t);
+    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    annotate_type(tenv, t) -> (t', ses_ty);
+    check_slices_in_width(tenv, width, slices1) -> True;
+    disjoint_slices_to_positions(tenv, True, slices1) -> positions;
+    check_positions_in_width(tenv, slices1, width, positions) -> True;
+    width' := cardinality(positions);
+    check_bits_equal_width(T_Bits(width', empty_list, t)) -> True;
+    ses := union(ses_slices, ses_ty);
+    --
+    (BitField_Type(name, slices1, t'), ses)
+    { math_layout = [_]};
+  }
+;
 
 typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
          (constants_set(True)) | type_error
@@ -1974,7 +2078,12 @@ typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0
   bitvector width given by {width} in {tenv}, yielding
   $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkslicesinwidth}{verifying} slices {slices} fit within width {width} in {tenv} yields True",
-};
+} =
+  disjoint_slices_to_positions(tenv, True, slices) -> positions;
+  check_positions_in_width(width, positions) -> True;
+  --
+  True;
+;
 
 typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
          (constants_set(True)) | type_error
@@ -1983,7 +2092,13 @@ typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
   within the bitvector width given by {width}, yielding
   $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkpositionsinwidth}{verifying} positions {positions} fit within width {width} yields True",
-};
+} =
+  min_pos := list_min(positions);
+  max_pos := list_max(positions);
+  te_check( zero <= min_pos && max_pos < width, TE_BS ) -> True;
+  --
+  True;
+;
 
 typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool, slices: list0(slice)) ->
          (positions: powerset_finite(Z)) | type_error
@@ -2005,7 +2120,24 @@ typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool,
   otherwise they are normalized.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-disjointslicestopositions}{converting} disjoint slices {slices} in {tenv} with static flag {is_static} yields positions {positions}",
-};
+} =
+  case empty {
+    slices = empty_list;
+    --
+    empty_set;
+  }
+
+  case non_empty {
+    slices = cons(s, slices1);
+    bitfield_slice_to_positions(tenv, is_static, s) -> positions1_opt;
+    positions1 := if positions1_opt = some(s1) then s1 else empty_set;
+    disjoint_slices_to_positions(tenv, is_static, slices1) -> positions2_opt;
+    positions2 := if positions2_opt = some(s2) then s2 else empty_set;
+    te_check(intersect(positions1, positions2) = empty_set, TE_BS) -> True;
+    --
+    union(positions1, positions2);
+  }
+;
 
 typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, slice: slice) ->
          (positions: option(powerset_finite(Z))) | type_error
@@ -2016,7 +2148,14 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   {is_static}, and $\None$ if it cannot be determined.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-bitfieldslicetopositions}{converting} slice {slice} in {tenv} with static flag {is_static} yields optional positions {positions}",
-};
+} =
+  slice = Slice_Length(e1, e2);
+  eval_slice_expr(tenv, is_static, e1) -> some(offset);
+  eval_slice_expr(tenv, is_static, e2) -> some(length);
+  te_check(offset <= offset + length - one, TE_BS) -> True;
+  --
+  some(range(offset, offset + length - one)) { math_layout = [_] };
+;
 
 semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) ->
          (z_opt: option(Z)) | type_error
@@ -2031,7 +2170,21 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
   transformation is carried out via normalization.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-evalsliceexpr}{evaluating} slice expression {e} in {tenv} with static flag {is_static} yields optional integer {z_opt}",
-};
+} =
+  case static {
+    is_static = True;
+    static_eval(tenv, e) -> z;
+    --
+    some(z);
+  }
+
+  case symbolic {
+    is_static = False;
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    --
+    z_opt;
+  }
+;
 
 typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
          (constants_set(True)) | type_error
@@ -2042,7 +2195,24 @@ typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkcommonbitfieldsalign}{checking} alignment of bitfields {bitfields} of width {width} in {tenv} yields True",
-};
+} =
+  case empty {
+    bitfields = empty_list;
+    --
+    True;
+  }
+
+  case non_empty {
+    not_equal(bitfields, empty_list);
+    last_index := width - one;
+    top_absolute := (empty_list, range(last_index, zero));
+    bitfields_to_absolute(tenv, bitfields, top_absolute) -> fs;
+    te_check(forall(f1, fs, forall(f2, fs, absolute_bitfields_align(f1, f2))), TE_BS) -> True
+    { math_layout = [_] };
+    --
+    True;
+  }
+;
 
 typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfield), absolute_parent: TAbsField) ->
          (abs_bitfields: powerset(TAbsField))
@@ -2053,7 +2223,13 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfie
   {absolute_parent}, in the \staticenvironmentterm{}
   {tenv}.",
   prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
-};
+} =
+  abs_field_sets := list_from_indices(i, bitfields, bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
+  { math_layout = (_, [_])};
+  abs_bitfields := union_list(abs_field_sets);
+  --
+  abs_bitfields;
+;
 
 typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->
          (abs_bitfields: powerset(TAbsField))
@@ -2065,7 +2241,21 @@ typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_p
   {absolute_parent}, in the \staticenvironmentterm{}
   {tenv}.",
   prose_application = "\hyperlink{relation-bitfieldtoabsolute}{converting} bitfield {bf} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
-};
+} =
+  bitfield_get_name(bf) -> name;
+  (absolute_name, absolute_slices) := absolute_parent;
+  bf_name := concat(absolute_name, make_list(name));
+  bitfield_get_slices(bf) -> slices;
+  list_from_indices(i, slices, slice_to_indices(tenv, slices[i]) -> indices[i]);
+  slices_as_indices := concat_list(indices);
+  select_indices_by_slices(absolute_slices, slices_as_indices) -> bf_indices;
+  bf_absolute := (bf_name, bf_indices);
+  bitfield_get_nested(bf) -> nested;
+  bitfields_to_absolute(tenv, nested, bf_absolute) -> abs_bitfields1;
+  --
+  union(make_set(bf_absolute), abs_bitfields1)
+  { math_layout = [_] };
+;
 
 typing function select_indices_by_slices(indices: list1(N), slice_indices: list1(N)) ->
          (absolute_slice: list0(N))
@@ -2096,7 +2286,15 @@ typing function slice_to_indices(tenv: static_envs, s: slice) ->
   the bitvector slice {s} in the
   \staticenvironmentterm{} {tenv}.",
   prose_application = "\hyperlink{relation-slicetoindices}{converting} slice {s} in {tenv} yields indices {indices}",
-};
+} =
+  s = Slice_Length(i, w);
+  static_eval(tenv, i) -> L_Int(z_i) | ; // This evaluation always succeeds since i is a bound variable.
+  static_eval(tenv, w) -> L_Int(z_w) | ; // This evaluation always succeeds since i is a bound variable.
+  v_start := z_i;
+  v_end := z_i + z_w - one;
+  --
+  range(v_end, v_start);
+;
 
 //////////////////////////////////////////////////
 // Relations for Block Statements
@@ -3074,7 +3272,7 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | typ
   case length {
     s = Slice_Length(offset, length);
     annotate_expr(tenv, offset) -> (t_offset, offset', ses_offset);
-    annotate_symbolic_constrained_integer(tenv, length) -> (length', ses_length) { [_] };
+    annotate_symbolic_constrained_integer(tenv, length) -> (length', ses_length) { math_layout = [_] };
     te_check(ses_is_readonly(ses_offset), TE_SEV) -> True;
     te_check(ses_is_readonly(ses_length), TE_SEV) -> True;
     check_underlying_integer(tenv, t_offset) -> True;

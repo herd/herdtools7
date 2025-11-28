@@ -383,6 +383,8 @@ let short_circuit ==
     | { None }
     | VDASH; alternatives=expr;
       { Some [alternatives] }
+    | VDASH; (* states explicitly that there are no alternatives. *)
+      { Some [] }
 
 let expr :=
     | id=IDENTIFIER;
@@ -424,9 +426,9 @@ let infix_expr_operator ==
     | IN; { "member" }
     | NOT_IN; { "not_member" }
     | IFF; { "iff" }
-    | LE; { "less_than_or_equal" }
+    | LE; { "less_or_equal" }
     | LT; { "less_than" }
-    | GE; { "greater_than_or_equal" }
+    | GE; { "greater_or_equal" }
     | GT; { "greater_than" }
     | NEQ; { "not_equal" }
 

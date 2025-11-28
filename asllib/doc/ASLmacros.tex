@@ -280,6 +280,18 @@
 \newcommand\equal[0]{\mathrel{=}}
 \newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
 
+\newcommand\forallop[4][H]{% DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \forall {#2} \in {#3} : {#4}
+  \else
+    \forall
+    \begin{array}{ll}
+    {#2} \in {#3}:\\
+    {#4}\\
+    \end{array}
+  \fi
+}
+
 \newcommand\listfromindices[4][H]{% DO NOT LINT
   \ifnum\pdfstrcmp{#1}{H}=0\relax
     \left[#2 \in \listrange(#3) : #4\right]
@@ -319,9 +331,9 @@
 % \ifthenelseop{condition}{then-clause}{else-clause}     % Default: Vertical layout
 \newcommand\ifthenelseop[4][V]{%
   \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \hyperlink{def-choice}{\textbf{if}} #2
-    \hyperlink{def-choice}{\textbf{then}} #3
-    \hyperlink{def-choice}{\textbf{else}} #4%
+    \hyperlink{def-choice}{\textbf{if }}#2
+    \hyperlink{def-choice}{\textbf{ then }}#3
+    \hyperlink{def-choice}{\textbf{ else }}#4%
   \else
     \left\{\begin{array}{ll}
     \hyperlink{def-choice}{\textbf{if}} & #2\\
@@ -353,6 +365,20 @@
 \newcommand\some[1]{\hyperlink{operator-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
 \newcommand\makeset[1]{\left\{{#1}\right\}} % A set of expressions
 \newcommand\cardinality[1]{\hyperlink{operator-cardinality}{|}#1\hyperlink{operator-cardinality}{|}}
+\newcommand\rangeop[3][H]{ % DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \left[{#2} \ldots {#3}\right]
+  \else
+    \left[
+    \begin{array}{l}
+    {#2} \ldots\\
+    {#3}\\
+    \end{array}
+    \right]
+  \fi
+}
+\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
+\newcommand\listmax[1]{\max(#1)} % DO NOT LINT
 \newcommand\member[0]{\mathrel{\in}} % DO NOT LINT
 \newcommand\notmember[0]{\mathrel{\not\in}} % DO NOT LINT
 \newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
@@ -364,10 +390,10 @@
 \newcommand\inttimes[0]{\mathbin{\times}} % DO NOT LINT
 \newcommand\intdivide[0]{\mathbin{\div}} % DO NOT LINT
 \newcommand\intexponent[0]{\mathbin{{^}}} % DO NOT LINT
-\newcommand\intlessthan[0]{\mathbin{<}} % DO NOT LINT
-\newcommand\intlessorequal[0]{\mathbin{\leq}} % DO NOT LINT
-\newcommand\intgreaterthan[0]{\mathbin{>}} % DO NOT LINT
-\newcommand\intgreaterorequal[0]{\mathbin{\geq}} % DO NOT LINT
+\newcommand\lessthan[0]{\mathbin{<}} % DO NOT LINT
+\newcommand\lessorequal[0]{\mathbin{\leq}} % DO NOT LINT
+\newcommand\greaterthan[0]{\mathbin{>}} % DO NOT LINT
+\newcommand\greaterorequal[0]{\mathbin{\geq}} % DO NOT LINT
 
 \newcommand\roundup[1]{\left\lceil {#1} \right\rceil} % DO NOT LINT
 \newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor} % DO NOT LINT
@@ -375,7 +401,7 @@
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
 \newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}
 \newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
-\newcommand\concatlist[0]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}}
+\newcommand\concatlist[1]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}(#1)}
 \newcommand\cons[0]{\hyperlink{operator-cons}{\mathbin{{+}{+}}}}
 \newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\times}} % DO NOT LINT
 

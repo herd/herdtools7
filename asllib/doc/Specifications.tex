@@ -110,7 +110,7 @@ We define this function for subprogram declarations, type declarations, and glob
 \begin{mathpar}
 \inferrule{
     \buildlist[\builddecl](\vdecls) \astarrow \vdeclsone \\
-    \concatlist(\vdeclsone) \astarrow \vadecls
+    \concatlist{\vdeclsone} \astarrow \vadecls
 }{
     \buildast(\overname{\Nspec(\namednode{\vdecls}{\maybeemptylist{\Ndecl}})}{\vparsednode}) \astarrow \overname{\vadecls}{\vastnode}
 }
