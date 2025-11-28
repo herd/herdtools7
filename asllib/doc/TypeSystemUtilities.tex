@@ -8,7 +8,6 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{Sort} allows sorting a list;
   \item \TypingRuleRef{FindBitfieldOpt} a recursive lookup for a bitfield in a list of bitfields;
   \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
-  \item \TypingRuleRef{AssocOpt} looks for the value associated with a key in a list of key-values pairs;
   \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} out of a \globalstaticenvironmentterm;
   \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{};
   \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm;
@@ -246,70 +245,6 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 }
 \end{mathpar}
 \CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
-
-\TypingRuleDef{AssocOpt}
-\MarkedIgnoredRelationDefinition{
-\hypertarget{def-assocopt}{}
-The function
-\[
-  \assocopt(\overname{\KleeneStar{(\Identifier\times T)}}{\vli} \aslsep \overname{\Identifier}{\id}) \typearrow \Option{\overname{T}{\vv}}
-\]
-returns the value $\vv$ associated with the identifier $\id$ in the list of pairs $\vli$ or $\None$, if no such association exists.
-} % END_OF_IGNORED_RELATION
-
-\ExampleDef{Finding a Value Associated with an Identifier}
-In \listingref{eget-record-field}, annotating the expressions \verb|my_record.i|
-and \verb|my_record.b| require finding the types associated with the fields \verb|i| and \verb|b|
-of the type \\
-\verb|record{i: integer, b: boolean}|, respectively:
-\begin{mathpar}
-\inferrule{}{
-  {\begin{array}{r}\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vi) \typearrow \\ \some{\unconstrainedinteger}\end{array}}
-}
-\and
-\inferrule{}{
-\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \vb) \typearrow \some{\TBool}
-}
-\end{mathpar}
-
-In \listingref{eget-bad-record-field}, however, annotating the expression \\
-\verb|my_record.undeclared_identifier| fails:
-\begin{mathpar}
-\inferrule{}{
-{\begin{array}{r}\assocopt([(\vi, \unconstrainedinteger), (\vb, \TBool)], \undeclaredidentifier) \typearrow \\ \None\end{array}}
-}
-\end{mathpar}
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{member}
-  \begin{itemize}
-    \item a pair $(\id,\vv)$ exists in the list $\vli$;
-    \item the result is $\some{\vv}$.
-  \end{itemize}
-
-  \item \AllApplyCase{not\_member}
-  \begin{itemize}
-    \item every pair $(\vx,\Ignore)$ in the list $\vli$ has $\vx\neq\id$;
-    \item the result is $\None$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[not\_member]{
-  (\vx, \vv) \in \vli: \vx \neq \id
-}{
-  \assocopt(\vli, \id) \typearrow \None
-}
-\and
-\inferrule[member]{
-  (\id, \vv) \in \vli
-}{
-  \assocopt(\vli, \id) \typearrow \some{ \vv }
-}
-\end{mathpar}
 
 \section{Static Environment Utilities}
 

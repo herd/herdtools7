@@ -357,7 +357,7 @@ transforms a list of pairs into the corresponding pair of lists:
 \]
 \end{definition}
 \hypertarget{operator-listcombine}{} % DO NOT LINT
-As a shorthand, we use the notation $a \listcombine b = c$ for $\unziplist(c) = (a, b)$.
+As a shorthand, we use the notation $\listcombine{a}{b} = c$ for $\unziplist(c) = (a, b)$.
 
 \hypertarget{def-unziplistthree}{}
 \begin{definition}[Unzipping a List of Triples]
@@ -373,6 +373,8 @@ transforms a list of triples into the corresponding triple of lists:
   \end{cases}
 \]
 \end{definition}
+\hypertarget{operator-listcombinethree}{} % DO NOT LINT
+As a shorthand, we use the notation $\listcombinethree{a}{b}{c} = d$ for $\unziplistthree(d) = (a, b, c)$.
 
 \hypertarget{def-uniquelist}{}
 \hypertarget{def-uniquep}{}
@@ -396,6 +398,16 @@ It relies on the helper function $\uniquep$:
 \]
 \end{definition}
 
+\begin{definition}[Finding a Value in a List of Pairs]
+\hypertarget{operator-assocopt}{}
+The function
+\[
+  \assocopt{\overname{\KleeneStar{(\Identifier\times T)}}{\vli}}{\overname{\Identifier}{\id}} \aslto \Option{\overname{T}{\vv}}
+\]
+returns $\some{\vv}$ for the first pair $(\id, \vv)$ in the list of pairs $\vli$,
+or $\None$ if no such pair exists.
+\end{definition}
+
 \begin{definition}[Taking the union of a list of sets]
 The parametric function
 \hypertarget{def-unionlist}{}
@@ -409,8 +421,8 @@ takes the union of a list of sets:
 \end{definition}
 
 \subsection{Strings}
-\hypertarget{def-stringconcat}{}
-The function $\stringconcat : \Strings \times \Strings \rightarrow \Strings$
+\hypertarget{operator-stringconcat}{}
+The function $\concatstrings : \Strings \times \Strings \rightarrow \Strings$
 concatenates two strings.
 
 \hypertarget{def-stringofnat}{}

@@ -383,6 +383,18 @@
 \newcommand\notmember[0]{\mathrel{\not\in}} % DO NOT LINT
 \newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
 \newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
+\newcommand\assocopt[3][H]{% DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}({#2}, {#3})
+  \else
+    \hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}
+    \left(\begin{array}{l}
+    ({#2},\\
+    {#3})\\
+    \end{array}\right)
+  \fi
+}
+\newcommand\assocoptname[0]{\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}} % DO NOT LINT
 
 \newcommand\intplus[0]{\mathbin{+}} % DO NOT LINT
 \newcommand\intminus[0]{\mathbin{-}} % DO NOT LINT
@@ -403,7 +415,29 @@
 \newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
 \newcommand\concatlist[1]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}(#1)}
 \newcommand\cons[0]{\hyperlink{operator-cons}{\mathbin{{+}{+}}}}
-\newcommand\listcombine[0]{\hyperlink{operator-listcombine}{\times}} % DO NOT LINT
+\newcommand\listcombine[3][H]{ % DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    {#2} \mathbin{\hyperlink{operator-listcombine}{\times}} {#3} % DO NOT LINT
+  \else
+    \hyperlink{operator-listcombine}{\textfunc{list\_combine}} % DO NOT LINT
+    \left(\begin{array}{l}
+    {#2} \hyperlink{operator-listcombine}{\times}\\ % DO NOT LINT
+    {#3}\\
+    \end{array}\right)
+  \fi
+}
+\newcommand\listcombinethree[4][H]{ % DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    {#2} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#3} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#4} % DO NOT LINT
+  \else
+    \hyperlink{operator-listcombinethree}{\textfunc{list\_combine\_3}} % DO NOT LINT
+    \left(\begin{array}{l}
+    {#2} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
+    {#3} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
+    {#4}\\
+    \end{array}\right)
+  \fi
+}
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
@@ -415,6 +449,10 @@
 
 \newcommand\withgraph[3][H]{ {#2}(\hyperlink{operator-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
 \newcommand\withenviron[3][H]{ {#2}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
+
+\newcommand\concatstrings[0]{\hyperlink{operator-stringconcat}{\mathbin{+}}}
+\newcommand\decimaltolitname[0]{\hyperlink{operator-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\decimaltolit[1]{\decimaltolitname\left(#1\right)} % NO_SPECIFICATION_REQUIRED
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -439,7 +477,6 @@
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
-\newcommand\stringconcat[0]{\hyperlink{def-stringconcat}{\texttt{+}}}
 \newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
@@ -897,7 +934,6 @@
 \newcommand\remaxmatch[0]{\hyperlink{def-rematch}{\textfunc{re\_max\_match}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Token[0]{\hyperlink{def-token}{\mathbb{T}\mathbb{O}\mathbb{K}\mathbb{E}\mathbb{N}}}
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
-\newcommand\decimaltolit[0]{\hyperlink{def-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textfunc{real\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textfunc{str\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
@@ -913,7 +949,7 @@
 \newcommand\Terror[0]{\hyperlink{def-terror}{\terminal{T\_ERR}}}
 \newcommand\Twhitespace[0]{\hyperlink{def-twhitespace}{\textsf{WHITE\_SPACE}}}
 \newcommand\LexSpec[0]{\hyperlink{def-lexspec}{\textsf{LexSpec}}}
-\newcommand\Lang[0]{\hyperlink{def-lang}{\textsf{Lang}}}
+\newcommand\Lang[1]{\hyperlink{def-lang}{\textsf{Lang}}\left(#1\right)}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
 \newcommand\vnewline[0]{\hyperlink{def-newline}{\texttt{newline}}}
@@ -1144,7 +1180,6 @@
 \newcommand\Supers{\textsf{Supers}}
 \newcommand\Prosecheckisnotcollection[2]{\hyperlink{relation-checkisnotcollection}{determining}
   whether #2 is not a \collectiontypeterm{} in #1 yields $\True$\ProseOrTypeError}
-\newcommand\assocopt[0]{\hyperlink{def-assocopt}{\textfunc{assoc\_opt}}} % SPECIFICATION_DEFERRED
 \newcommand\Proseannotatesymbolicallyevaluableexpr[3]{\hyperlink{relation-annotatesymbolicallyevaluableexpr}{annotating} the
     \symbolicallyevaluableterm\ expression #2 in the static environment #1 yields #3}
 \newcommand\checkstructurelabel[0]{\hyperlink{relation-checkstructurelabel}{\textfunc{check\_structure}}} % SPECIFIED

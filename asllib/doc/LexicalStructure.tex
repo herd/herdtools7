@@ -83,7 +83,7 @@ $\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \asci
 \end{center}
 
 \hypertarget{def-lang}{}
-The notation $\Lang(e)$ stands for \emph{formal language} of a regular expression $e$.
+The notation $\Lang{e}$ stands for \emph{formal language} of a regular expression $e$.
 That is, the set of strings that match that regular expression.
 
 \section{Whitespace\label{sec:Whitespace}}
@@ -348,13 +348,13 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{array}{rcll}
 \Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \} & \cup\\
         & & \{\ \Treallit(q) \;|\; q\in\Q\ \} & \cup\\
-        & & \{\ \Tstringlit(s) \;|\; s\in \Lang(\REstringlit) \} & \cup\\
-        & & \{\ \Tstringchar(c) \;|\; c \in \Lang(\REchar) \} & \cup\\
+        & & \{\ \Tstringlit(s) \;|\; s\in \Lang{\REstringlit} \} & \cup\\
+        & & \{\ \Tstringchar(c) \;|\; c \in \Lang{\REchar} \} & \cup\\
         & & \{\ \Tstringend \} & \cup\\
         & & \{\ \Tbitvectorlit(b) \;|\; b\in\KleeneStar{\Bit}\ \} & \cup\\
         & & \{\ \Tmasklit(m) \;|\; m\in\KleeneStar{\{0,1,x\}}\ \} & \cup\\
         & & \{\ \Tboollit(\True), \Tboollit(\False)\ \} & \cup \\
-        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang(\REidentifier)\ \} & \cup \\
+        & & \{\ \Tidentifier(\id) \;|\; \id\in \Lang{\REidentifier}\ \} & \cup \\
         & & \{\ \Tlexeme(s) \;|\; s\in\Strings\ \} & \cup \\
         & & \{\ \Twhitespace, \Teof, \Terror\ \} &
 \end{array}
@@ -398,7 +398,7 @@ The function
 \]
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
 More precisely:
-$\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang(e)$ and $s = s_1 \concat s_2$.
+$\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang{e}$ and $s = s_1 \concat s_2$.
 If no match exists, it is indicated by returning $\bot$.
 
 \hypertarget{def-maxmatch}{}
@@ -506,12 +506,12 @@ switches to scanning literal strings via $\scanstring$.
 switches to scanning multi-line comments by changing the lexical specification
 to $\speccomment$.
 
-\hypertarget{def-decimaltolit}{}
-\item The function $\decimaltolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
-by decimal representation.
+\hypertarget{operator-decimaltolit}{}
+\item The function $\decimaltolit{s}$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
+in decimal representation.
 \hypertarget{def-hextolit}{}
 \item The function $\hextolit(s)$ returns $\Tintlit(n)$ where $n$ is the integer represented by $s$
-by hexadecimal representation.
+in hexadecimal representation.
 \hypertarget{def-realtolit}{}
 \item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the rational number for
 $s$, which is given via a floating point representation.
@@ -580,7 +580,7 @@ $\REwhitespace$                       & $\discard$ \\
 $\RElinecomment$                      & $\discard$ \\
 $\texttt{"/*"}$                       & $\actionstartcomment$ \\
 \anycharacter{\texttt{"}}             & $\actionstartstring$ \\
-$\REintlit$                           & $\actiontoken(\decimaltolit)$ \\
+$\REintlit$                           & $\actiontoken(\decimaltolitname)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
 $\REreallit$                          & $\actiontoken(\realtolit)$ \\
 $\REstringlit$                        & $\actiontoken(\strtolit)$ \\
