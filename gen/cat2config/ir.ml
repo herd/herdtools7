@@ -31,8 +31,14 @@ let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
 
+let seq (s1 : ('s, 'r) seq) (s2 : ('s, 'r) seq) : ('s, 'r) seq =
+  match (s1, s2) with
+  | Seq [ (Rel (Inter []) | Set (Inter [])) ], _ -> s2
+  | _, Seq [ (Rel (Inter []) | Set (Inter [])) ] -> s1
+  | Seq s1, Seq s2 -> Seq (List.append s1 s2)
+
 let seq_l : ('s, 'r) seq list -> ('s, 'r) seq =
- fun l -> l |> List.map get_seq |> List.concat |> fun l -> Seq l
+ fun l -> List.fold_right seq l (Seq [ Rel (Inter []) ])
 
 let seq_flat_map (f : 's inter -> ('s, 'r) seq union)
     (g : 'r inter -> ('s, 'r) seq union) (Seq seq : ('s, 'r) seq) :
@@ -45,13 +51,13 @@ let seq_flat_map (f : 's inter -> ('s, 'r) seq union)
 let inter (e1 : 'a inter) (e2 : 'a inter) : 'a inter =
   match (e1, e2) with Inter i1, Inter i2 -> Inter (List.append i1 i2)
 
-let seq (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) : ('a, 'b) seq union
-    =
+let seq_of_unions (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) :
+    ('a, 'b) seq union =
   Union
     (let open Util.List.Infix in
-     let* (Seq x) = get_union e1 in
-     let* (Seq y) = get_union e2 in
-     [ Seq (List.append x y) ])
+     let* x = get_union e1 in
+     let* y = get_union e2 in
+     [ seq x y ])
 
 let rev_seq (Seq l : ('a, 'b) seq) : ('a, 'b) seq = Seq (List.rev l)
 
@@ -180,7 +186,7 @@ let rel_union_l : rel_nf list -> rel_nf = union_l
 let set_union_l : set_nf list -> set_nf = union_l
 
 let rel_seq_l : rel_nf list -> rel_nf =
- fun l -> List.fold_right seq l neutral_rel
+ fun l -> List.fold_right seq_of_unions l neutral_rel
 
 let set_inter_l : set_nf list -> set_nf =
  fun l -> List.fold_right set_inter l neutral_set
