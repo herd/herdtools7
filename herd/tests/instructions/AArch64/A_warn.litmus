@@ -1,0 +1,8 @@
+AArch64 A_warn
+{
+}
+
+P0;
+  MOV X1, #1;
+
+exists (x=3)
