@@ -423,3 +423,7 @@ val transitive_closure : ISet.t IMap.t -> ISet.t IMap.t
 val get_cycle : ISet.t IMap.t -> identifier list option
 (** [get_cycle m] is [None] if the graph whose transition function is given by
     [m] is acyclic, [Some li] if [li] is a cycle in [m]. *)
+
+val plug_primitives : AST.t -> ('f * string) list -> (AST.func * 'f) list
+(** [plug_primitives ast arg primitives] is the list of primitives as accepted
+    by [Backend.mli]. *)

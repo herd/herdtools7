@@ -909,3 +909,25 @@ let get_cycle m =
     let _ = IMap.fold (fun x _ -> dfs path0 above0 x) m seen0 in
     None
   with Cycle e -> Some (List.rev e)
+
+let func_to_primitive f =
+  let side_effecting =
+    match f.qualifier with Some (Pure | Readonly) -> false | _ -> true
+  in
+  { f with body = SB_Primitive side_effecting }
+
+let plug_primitives ast =
+  let signatures =
+    ast
+    |> List.map (fun f ->
+        match f.desc with
+        | D_Func f -> (f.name, func_to_primitive f)
+        | _ -> raise (Invalid_argument "plug_primitives: non function argument"))
+    |> IMap.of_list
+  in
+  let plug_one (f, name) =
+    try (IMap.find name signatures, f)
+    with Not_found ->
+      raise (Invalid_argument "plug_primitives: badly referenced primitive")
+  in
+  List.map plug_one

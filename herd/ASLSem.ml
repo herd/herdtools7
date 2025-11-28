@@ -144,16 +144,6 @@ module Make (Conf : Config) = struct
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
-  let aneutral = AArch64Annot.N
-  let aatomic = AArch64Annot.X
-  and aexp = AArch64Explicit.Exp
-  and aifetch = AArch64Explicit.(NExp IFetch)
-  and areg = Access.REG
-  and avir = Access.VIR
-  and apte = Access.PTE
-  and aphy = Access.PHY
-  let areg_std = (aneutral,aexp,Access.REG)
-
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
     val spurious_setaf : A.V.v -> unit M.t
@@ -164,7 +154,14 @@ module Make (Conf : Config) = struct
     let ( and* ) = M.( >>| )
     let return = M.unitT
     let ( >>= ) = M.asl_data
-    let ( >>! ) = M.( >>! )
+
+    let aneutral = AArch64Annot.N
+    let aatomic = AArch64Annot.X
+    and aexp = AArch64Explicit.Exp
+    and areg = Access.REG
+    and avir = Access.VIR
+    and apte = Access.PTE
+    let areg_std = (aneutral,aexp,Access.REG)
 
     (**************************************************************************)
     (* ASL-PO handling                                                        *)
@@ -345,7 +342,7 @@ module Make (Conf : Config) = struct
     (* Special monad interactions                                              *)
     (**************************************************************************)
 
-    let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii >>! []
+    let create_barrier b ii = M.mk_singleton_es (Act.Barrier b) ii
 
     let write_loc sz loc v a e acc ii =
       let mk_action loc' = Act.Access (Dir.W, loc', v, sz, (a, e, acc)) in
@@ -561,22 +558,18 @@ module Make (Conf : Config) = struct
      * discard of execution candidate if a
      * contradiction appears.
      *)
+    let check_prop _ii ~prop = prop >>= M.assign (vbool true)
 
-    let checkprop _ m_prop =
-      let* vprop = m_prop in
-      M.assign (vbool true) vprop >>! []
-
-    let checkeq _ _ d1 d2 =
+    let check_eq _ii ~n:_ ~d1 ~d2 =
       let* d1 = d1 and* d2 = d2 in
-      M.assign d1 d2 >>! []
+      M.assign d1 d2
 
     (*
      * Split the current execution candidate into two:
      * one candidate, has variable [v] value to be TRUE,
      * while the value is FALSE for the other.
      *)
-
-    let somebool _ _ =
+    let somebool _ii () =
       let v = V.fresh_var () in
       let mbool b =
         (* The underlying choice operator operates
@@ -613,7 +606,7 @@ module Make (Conf : Config) = struct
       let open AArch64Base in
       function 0 -> LD | 1 -> ST | 2 -> FULL | _ -> assert false
 
-    let primitive_db constr (ii, poi) dom_m btyp_m =
+    let primitive_db constr (ii, poi) ~d:dom_m ~t:btyp_m =
       let* dom = dom_m and* btyp = btyp_m in
       let dom = v_as_int dom and btyp = v_as_int btyp in
       let dom = dom_of dom and btyp = btyp_of btyp in
@@ -636,34 +629,34 @@ module Make (Conf : Config) = struct
           let arch_reg = AArch64Base.Ireg tgprs.(i) in
           A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
-    let read_register (ii, poi) r_m =
+    let read_register (ii, poi) ~reg:r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
       read_loc MachSize.Quad loc aneutral aexp areg (use_ii_with_poi ii poi)
       >>= from_aarch64_val
 
-    let write_register (ii, poi) r_m v_m =
+    let write_register (ii, poi) ~reg:r_m ~data:v_m =
       let* v = v_m >>= to_aarch64_val and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
+      write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = M.as_addr_port addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
       read_loc sz (A.Location_global addr) an aexp acc (use_ii_with_poi ii poi)
 
-    let read_memory ii datasize_m addr_m =
-      do_read_memory ii addr_m datasize_m aneutral aexp avir
+    let read_memory ii ~n ~addr =
+      do_read_memory ii addr n aneutral aexp avir
 
-    let read_pte ii n_m addr_m =
+    let read_pte ii ~n ~addr =
       (* We do all the operations with 64 bits, even if the argument passed is different. *)
-      let* _ = n_m in
-      do_read_memory ii addr_m (M.unitT (V.intToV 64))
+      let* _ = n in
+      do_read_memory ii addr (M.unitT (V.intToV 64))
         aneutral (AArch64Explicit.(NExp Other)) apte
 
-    let read_memory_gen ii datasize_m addr_m accdesc_m access_m =
-      let* accdesc = accdesc_m and* access = access_m in
-      do_read_memory ii addr_m datasize_m (accdesc_to_annot Read accdesc)
+    let read_memory_gen ii ~n ~addr ~accdesc ~access =
+      let* accdesc = accdesc and* access = access in
+      do_read_memory ii addr n (accdesc_to_annot Read accdesc)
         aexp (access_to_access access)
 
     let do_write_memory (ii, poi) addr_m datasize_m value_m an aexp acc =
@@ -673,8 +666,6 @@ module Make (Conf : Config) = struct
       let sz = datasize_to_machsize datasize in
       write_loc sz (A.Location_global addr) value an aexp acc
         (use_ii_with_poi ii poi)
-      >>! []
-
 
     (**************)
     (* PTE update *)
@@ -712,43 +703,31 @@ module Make (Conf : Config) = struct
     let size_m_64 =  M.unitT (V.intToV 64)
 
     (* Second pte read, used for flag update *)
-    let read_pte_again (iinst,_ as ii) _N addr_m write_m =
-      let* is_write =  as_bool write_m in
+    let read_pte_again (iinst,_ as ii) ~n:_ ~addr ~is_write =
+      let* is_write = as_bool is_write in
       let nexp_nat = pte_nexp_nat iinst.A.proc is_write in
-      do_read_memory  ii addr_m size_m_64
+      do_read_memory ii addr size_m_64
         aatomic nexp_nat apte
 
     (* Pte write for flag update *)
-    let write_pte (iinst,_ as ii) _N addr_m val_m write_m =
-      let* is_write =  as_bool write_m in
+    let write_pte (iinst,_ as ii) ~n:_ ~addr ~data ~is_write =
+      let* is_write = as_bool is_write in
       let nexp_nat = pte_nexp_nat iinst.A.proc is_write in
-      do_write_memory ii addr_m size_m_64 val_m
-        aatomic nexp_nat apte
+      do_write_memory ii addr size_m_64 data aatomic nexp_nat apte
 
     (*********************)
     (* End of PTE update *)
     (*********************)
 
-    let write_memory ii datasize_m addr_m value_m =
-      do_write_memory ii addr_m datasize_m value_m aneutral aexp avir
+    let write_memory ii ~n ~addr ~data =
+      do_write_memory ii addr n data aneutral aexp avir
 
-    let write_memory_gen ii datasize_m addr_m value_m accdesc_m access_m =
-      let* accdesc = accdesc_m and* access = access_m in
-      do_write_memory ii addr_m datasize_m value_m
-        (accdesc_to_annot Write accdesc)  aexp (access_to_access access)
+    let write_memory_gen ii ~n ~addr ~data ~accdesc ~access =
+      let* accdesc = accdesc and* access = access in
+      do_write_memory ii addr n data (accdesc_to_annot Write accdesc) aexp
+        (access_to_access access)
 
-    let uint _ bv_m = bv_m >>= to_int_unsigned
-    let sint _ bv_m = bv_m >>= to_int_signed
-    let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
-    let is_virtual _ addr_m =
-      addr_m >>= M.op1 Op.IsVirtual
-
-
-    let compute_pte _ addr = addr >>= M.op1 Op.PTELoc
-    and get_oa _ _n pte = pte >>= M.op1 (Op.ArchOp1 ASLOp.OA)
-    and get_offset _ ma = ma >>= M.op1 Op.Offset
-
-    let data_abort_fault (ii,_) addr write statuscode accessdesc =
+    let data_abort_fault (ii,_) ~addr ~write ~statuscode ~accdesc =
       (*
        * Notice: write specifies that writing yields a fault.
        * The executed instruction may be a store or a RMO.
@@ -756,7 +735,7 @@ module Make (Conf : Config) = struct
       let* loc = addr
       and* write = write
       and* statuscode = statuscode
-      and* accessdesc = accessdesc in
+      and* accessdesc = accdesc in
       let d =
         match Option.bind (V.as_scalar write) ASLScalar.as_bool with
         | Some true -> Dir.W
@@ -780,7 +759,7 @@ module Make (Conf : Config) = struct
           assert false
       and loc = A.Location_global loc in
       let a = accdesc_to_annot Fault accessdesc in
-      M.mk_singleton_es (Act.Fault (ii,loc,d,a,ft)) ii >>! []
+      M.mk_singleton_es (Act.Fault (ii,loc,d,a,ft)) ii
 
     let get_ha_or_hd get (ii,_) () =
       let dirty =
@@ -790,272 +769,61 @@ module Make (Conf : Config) = struct
       let h = get dirty ii.A.proc in
       V.Val (Constant.Concrete (ASLScalar.bv_of_bool h)) |> M.unitT
 
-    let get_ha  = get_ha_or_hd  (fun d p -> d.DirtyBit.ha p || d.DirtyBit.hd p)
-    and get_hd  = get_ha_or_hd  (fun d -> d.DirtyBit.hd)
+    let get_ha = get_ha_or_hd (fun d p -> d.DirtyBit.ha p || d.DirtyBit.hd p)
+    and get_hd = get_ha_or_hd (fun d -> d.DirtyBit.hd)
 
     (**************************************************************************)
     (* ASL environment                                                        *)
     (**************************************************************************)
 
-    (* Helpers *)
-    let build_primitive ?(args = []) ?returns ?(parameters = []) ~side_effecting
-        name f : AST.func * (_ -> primitive_t) =
-      let open AST in
-      let subprogram_type =
-        match returns with None -> ST_Procedure | _ -> ST_Function
-      and body = SB_Primitive side_effecting
-      and qualifier = if side_effecting then None else Some Pure
-      and recurse_limit = None
-      and return_type = returns in
-      ( {
-          name;
-          args;
-          body;
-          return_type;
-          parameters;
-          subprogram_type;
-          recurse_limit;
-          builtin = true;
-          qualifier;
-          override = None;
-        }
-        [@warning "-40-42"],
-        f )
+    module RawPrimitives = struct
+      type v = V.v
+      type 'a m = 'a M.t
+      type ii = A.inst_instance_id * A.program_order_index ref
 
-    (*
-     * Functions that build primitives from underlying OCaml functions.
-     *
-     * The function [pX] is building primitives with arity X
-     * and no return value.
-     * The function [pXr] is building primitives with arity X
-     * and a return value.
-     * All those conveniently ignore the parameters,
-     * which can thus be of any type in any number.
-     *
-     * A few primitive builder pass parameters to the
-     * underlying OCaml function: for instance,
-     * `p1a3` accepts one parameter, three arguments
-     * and returns no value.
-     *)
+      let return = return
+      let bind = ( >>= )
 
-    (** Build a primitive with arity 0 and no return value. *)
-    let p0 name ?parameters ?(side_effecting = false) f =
-      let f ii_env _ = function
-        | [] -> f ii_env ()
-        | _ :: _ -> Warn.fatal "Arity error for function %s." name
+      let arity_error s ~expected ~actual =
+        Warn.fatal "Arity error for function %s: expected %d and received %d."
+          s expected actual
+
+      let u_int _ii ~n:_ ~x = x >>= to_int_unsigned
+      let s_int _ii ~n:_ ~x = x >>= to_int_signed
+      let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
+      let is_virtual _ii ~addr = addr >>= M.op1 Op.IsVirtual
+      let compute_pte_primitive _ii ~addr = addr >>= M.op1 Op.PTELoc
+      and get_oa_primitive _ii ~n:_ ~addr = addr >>= M.op1 (Op.ArchOp1 ASLOp.OA)
+      and offset_primitive _ii ~addr = addr >>= M.op1 Op.Offset
+
+      let primitive_isb = primitive_isb
+      let primitive_dmb = primitive_dmb
+      let primitive_dsb = primitive_dsb
+      let read_register = read_register
+      let write_register = write_register
+      let read_memory = read_memory
+      let read_memory_gen = read_memory_gen
+      let write_memory = write_memory
+      let write_memory_gen = write_memory_gen
+      let read_pte_primitive = read_pte
+      let data_abort_primitive = data_abort_fault
+      let get_ha_primitive = get_ha
+      let get_hd_primitive = get_hd
+      let read_pte_again_primitive = read_pte_again
+      let write_pte_primitive = write_pte
+      let some_boolean = somebool
+      let check_prop = check_prop
+      let check_eq = check_eq
+    end
+
+    module Primitives = ASLSemPrimitives.Make(RawPrimitives)
+
+    let primitives =
+      let signatures =
+        Asllib.Builder.from_string `ASLv1 ~filename:"primitives.asl"
+          ~ast_string:ASLSemPrimitivesSig.primitives_signatures
       in
-      build_primitive ?parameters ~side_effecting name f
-
-    (** Build a primitive with arity 0 and a return value. *)
-    let p0r name ~returns ?(side_effecting = false) f =
-      let f ii_env _ = function
-        | [] -> return [ f ii_env () ]
-        | _ :: _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ?returns:(Some returns) ~side_effecting name f
-
-    (** Build a primitive with arity 1 and no return value. *)
-    let p1 name arg ?parameters ?(side_effecting = false) f =
-      let f ii_env _ = function
-        | [ v ] -> f ii_env v
-        | [] | _ :: _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg ] ~side_effecting ?parameters name f
-
-    (** Build a primitive with arity 1 and a return value. *)
-    let p1r name arg ~returns ?(side_effecting = false) ?parameters f =
-      let f ii_env _ = function
-        | [ v ] -> return [ f ii_env v ]
-        | [] | _ :: _ :: _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ?returns:(Some returns) ~args:[ arg ] ~side_effecting
-        ?parameters name f
-
-    (** Build a primitive with arity 2 and no return value. *)
-    let p2 name arg1 arg2 ?parameters ?(side_effecting = false) f =
-      let f ii_env _ = function
-        | [ v1; v2 ] -> f ii_env v1 v2
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg1; arg2 ] ~side_effecting ?parameters name f
-
-    (** Build a primitive with arity 2 and a return value. *)
-    let p1a2r name param1 arg1 arg2 ~returns ?(side_effecting = false) f =
-      let f ii_env params args =
-        match params,args with
-        | [p1;],[ v1; v2;] -> return [ f ii_env p1 v1 v2 ]
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ?returns:(Some returns) ~args:[ arg1; arg2; ] ~parameters:[param1;]
-        ~side_effecting
-        name f
-
-    (** Build a primitive with arity 4 and no return value. *)
-    let p4 name arg1 arg2 arg3 arg4 ?(side_effecting = false) ?parameters f =
-      let f ii_env _ = function
-        | [ v1; v2; v3; v4; ] -> f ii_env v1 v2 v3 v4
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ~args:[ arg1; arg2; arg3; arg4; ] ?parameters
-        ~side_effecting name f
-
-    (** Build various primitives with 1 parameter. *)
-    let p1a1r name param1 arg1 ?(side_effecting = false) ~returns f =
-      let f ii_env params args =
-        match (params, args) with
-        | [ v1 ], [ v2 ] -> return [ f ii_env v1 v2 ]
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ?returns:(Some returns)
-        ~args:[ arg1; ] ~parameters:[param1;]
-        ~side_effecting name f
-
-    let p1a2 name param1 arg1 arg2 ?(side_effecting = false) f =
-      let f ii_env params args =
-        match params,args with
-        | [v1],[v2; v3; ] -> f ii_env v1 v2 v3
-        | _ -> Warn.fatal "Arity error for function %s." name in
-      build_primitive
-        ~args:[ arg1; arg2; ] ~parameters:[param1;]
-        ~side_effecting name f
-
-    let p1a3r name param1 arg1 arg2 arg3 ~returns
-        ?(side_effecting = false)  f =
-      let f ii_env params args =
-        match params,args with
-        | [ v1; ], [ v2; v3; v4; ] -> return [ f ii_env v1 v2 v3 v4; ]
-        | _ -> Warn.fatal "Arity error for function %s." name
-      in
-      build_primitive ?returns:(Some returns)
-        ~args:[ arg1; arg2; arg3; ] ~parameters:[param1;]
-        ~side_effecting name f
-
-    let p1a3 name param1 arg1 arg2 arg3
-        ?(side_effecting = false) f =
-      let f ii_env params args =
-        match params,args with
-        | [p1;],[v1; v2; v3; ] -> f ii_env p1 v1 v2 v3
-        | _ -> Warn.fatal "Arity error for function %s." name in
-      build_primitive
-        ~args:[ arg1; arg2; arg3;]
-        ~parameters:[param1;]
-        ~side_effecting name f
-
-    let p1a4 name param1 arg1 arg2 arg3 arg4
-        ?(side_effecting = false) f =
-      let f ii_env params args =
-        match params,args with
-        | [v1],[v2; v3; v4; v5; ] -> f ii_env v1 v2 v3 v4 v5
-        | _ -> Warn.fatal "Arity error for function %s." name in
-      build_primitive
-        ~args:[ arg1; arg2; arg3; arg4;]
-        ~parameters:[param1;]
-        ~side_effecting name f
-
-    (* Primitives *)
-    let extra_funcs =
-      let open AST in
-      let with_pos e = Asllib.ASTUtils.add_dummy_annotation ~version:V0 e in
-      let integer = Asllib.ASTUtils.integer in
-      let int_ctnt e1 e2 = Asllib.ASTUtils.integer_range' e1 e2 |> with_pos in
-      let boolean = Asllib.ASTUtils.boolean in
-      let reg = integer in
-      let var x = E_Var x |> with_pos in
-      let lit x = E_Literal (L_Int (Z.of_int x)) |> with_pos in
-      let bv x = T_Bits (x, []) |> with_pos in
-      let bv_var x = bv @@ var x in
-      let bv_lit x = bv @@ lit x in
-      let bv_64 = bv_lit 64 in
-      let bv_56 = bv_lit 56 in
-      let binop = Asllib.ASTUtils.binop in
-      let minus_one e = binop `SUB e (lit 1) in
-      let pow_2 = binop `POW (lit 2) in
-      let t_named x = T_Named x |> with_pos in
-      let side_effecting = true in
-      let uint_returns = int_ctnt (lit 0) (minus_one (pow_2 (var "N")))
-      and sint_returns =
-        let big_pow = pow_2 (minus_one (var "N")) in
-        int_ctnt (E_Unop (NEG, big_pow) |> with_pos) (minus_one big_pow)
-      in
-      [
-        (* Fences *)
-        p0 "primitive_isb" ~side_effecting primitive_isb;
-        p2 "primitive_dmb" ~side_effecting ("d", integer) ("t", integer)
-          primitive_dmb;
-        p2 "primitive_dsb" ~side_effecting ("d", integer) ("t", integer)
-          primitive_dsb;
-        (* Registers *)
-        p1r "read_register" ~side_effecting
-          ("reg", reg) ~returns:bv_64 read_register;
-        p2 "write_register" ~side_effecting
-          ("reg", reg) ("data", bv_64) write_register;
-        (* Memory *)
-        p1a1r "read_memory"  ("N", None) ("addr", bv_64)
-          ~returns:(bv_var "N")
-          ~side_effecting read_memory;
-        p1a3r "read_memory_gen" ("N",None)
-          ("addr", bv_56)
-          ("accdesc", t_named "AccessDescriptor")
-          ("access", t_named "EventAccess")
-          ~returns:(bv_var "N")
-          ~side_effecting read_memory_gen;
-        p1a2 "write_memory" ("N", None)
-          ("addr", bv_64)
-          ("data", bv_var "N")
-          ~side_effecting write_memory;
-        p1a4 "write_memory_gen" ("N",None)
-          ("addr", bv_56)
-          ("data", bv_var "N")
-          ("accdesc", t_named "AccessDescriptor")
-          ("access", t_named "EventAccess")
-          ~side_effecting
-          write_memory_gen;
-(* VMSA *)
-        p1r ~side_effecting "ComputePtePrimitive"
-          ("addr", bv_64) ~returns:bv_56 compute_pte;
-        p1a1r ~side_effecting "ReadPtePrimitive" ("N", None)
-          ("addr", bv_56) ~returns:(bv_var "N") read_pte;
-        p1a1r ~side_effecting "GetOAPrimitive" ("N", None)
-          ("addr", bv_var "N") ~returns:bv_56 get_oa;
-        p1r ~side_effecting "OffsetPrimitive"
-          ("addr", bv_64) ~returns:integer get_offset;
-        p4 ~side_effecting "DataAbortPrimitive"
-          ("addr",bv_64) ("write",boolean) ("statuscode", t_named "Fault")
-          ("accdesc",t_named "AccessDescriptor")
-          data_abort_fault;
-        p0r "GetHaPrimitive" ~returns:(bv_lit 1) get_ha;
-        p0r "GetHdPrimitive" ~returns:(bv_lit 1) get_hd;
-        p1a2r ~side_effecting "ReadPteAgainPrimitive"
-          ("N", None) ("addr", bv_56) ("is_write",boolean)
-          ~returns:(bv_var "N")
-          read_pte_again;
-        p1a3 "WritePtePrimitive"
-          ("N",None) ("addr", bv_56) ("data", bv_var "N")
-          ("is_write",boolean) write_pte;
-(* Translations *)
-         p1r "UInt"
-          ~parameters:[ ("N", None) ]
-          ("x", bv_var "N")
-          ~returns:uint_returns uint;
-        p1r "SInt"
-          ~parameters:[ ("N", None) ]
-          ("x", bv_var "N")
-          ~returns:sint_returns sint;
-(* Misc *)
-        p0r "ProcessorID" ~side_effecting ~returns:integer processor_id;
-        p1r "IsVirtual" ~side_effecting
-          ("addr",bv_64)  ~returns:boolean is_virtual;
-        p0r ~side_effecting "SomeBoolean" ~returns:boolean somebool;
-        p1 ~side_effecting "CheckProp" ("prop", boolean) checkprop;
-        p1a2 ~side_effecting "CheckEq"
-          ("N", None) ("d1", bv_var "N") ("data", bv_var "N")
-          checkeq;
-      ]
-
-    let make_extra_funcs ii_env =
-      List.map
-        (fun (func, make_primitive) -> (func, make_primitive ii_env))
-        extra_funcs
+      Asllib.ASTUtils.plug_primitives signatures Primitives.primitives
 
     let build_shared_pseudocode () =
       let open AST in
@@ -1065,7 +833,7 @@ module Make (Conf : Config) = struct
           List.fold_left
             (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
                ISet.add name acc)
-            ISet.empty extra_funcs
+            ISet.empty primitives
         in
         fun name -> ISet.mem name set
       in
@@ -1132,7 +900,7 @@ module Make (Conf : Config) = struct
       let ( @! ) = List.rev_append in
       let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
       Asllib.Builder.with_stdlib ast
-      |> Asllib.Builder.with_primitives extra_funcs
+      |> Asllib.Builder.with_primitives primitives
       |> TypeCheck.type_check_ast
 
     let typed_shared_pseudocode : unit -> AST.t * Asllib.StaticEnv.global =
@@ -1140,7 +908,7 @@ module Make (Conf : Config) = struct
       and otherwise =
         lazy
           (Lazy.force Asllib.Builder.stdlib
-          |> Asllib.Builder.with_primitives extra_funcs
+          |> Asllib.Builder.with_primitives primitives
           |> TypeCheck.type_check_ast)
       in
       fun () ->
@@ -1195,7 +963,7 @@ module Make (Conf : Config) = struct
         let concat_bitvectors = concat_bitvectors
         let bitvector_length = bitvector_length
         let v_unknown_of_type = v_unknown_of_type
-        let primitives = make_extra_funcs ii_env
+        let primitives = List.map (fun (func, f) -> (func, f ii_env)) primitives
         let fail = M.failT
       end in
       let module ASLInterpreter =
