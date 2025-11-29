@@ -45,29 +45,34 @@ catdep (* This option tells that the cat file computes dependencies *)
 
 include "aarch64util.cat"
 
-(* Local write or MMU Fault successor *)
-let lwfs =
+(* Local register read successor *)
+let lrrs =
+  [Wreg]; (po & same-gpr & ~(intervening(Wreg,(po & same-gpr)))); [Rreg]
+
+(* Local memory write successor *)
+let lmws =
  [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
- | [Exp & M]; (po & same-loc); [MMU & FAULT]
  | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
 
-(* Local read successor *)
-let lrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
+(* Local MMU Fault successor *)
+let lfs =
+ [Exp & M]; (po & same-loc); [MMU & FAULT]
+
+(* Local memory read successor *)
+let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
 
 (* Dependency through registers and memory *)
 let rec dtrm =
-  [~range(lxsx)]; rf-reg
-  | lrs 
+  [~range(lxsx)]; lrrs
+  | lmrs
   | iico_data
   | dtrm; dtrm
 
 (** Data, Address and Control dependencies *)
 
-let basic-dep =
-   [Exp & R | Rreg]; dtrm?
-let data = [Exp & R]; (basic-dep; [DATA]; iico_data+; [Exp & W]) & ~same-instance
-let addr = [Exp & R]; (basic-dep; [ADDR]; iico_data+; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]) & ~same-instance
-let ctrl = [Exp & R]; basic-dep; [BCC]; po
+let data = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
+let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
+let ctrl = [Exp & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
 
 (** Pick dependencies *)
 let rec pick-dtrm =
@@ -79,11 +84,11 @@ let pick-basic-dep =
    [Exp & R | Rreg];  pick-dtrm?
 
 let pick-addr-dep =
-   [Exp & R]; (pick-basic-dep; [ADDR]; iico_data+; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]) & ~same-instance
+   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
 let pick-data-dep =
-   [Exp & R]; (pick-basic-dep; [DATA]; (iico_data|iico_ctrl)+; [Exp & W]) & ~same-instance
+   [Exp & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
 let pick-ctrl-dep =
-   [Exp & R]; pick-basic-dep; [BCC]; po
+   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data; [BCC]; po
 
 let pick-dep =
    ( pick-basic-dep

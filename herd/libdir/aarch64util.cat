@@ -44,6 +44,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
+let iico_data = iico_data+
+let iico_ctrl = iico_ctrl+
+let iico_order = iico_order+
+let ii_addr = [ADDR]; iico_data
+let ii_data = [DATA]; (iico_data|iico_ctrl)+
+
 (*
  * Include default definitions for sets that are undefined without
  * -variant vmsa
