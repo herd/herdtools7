@@ -423,6 +423,9 @@ module Rule = struct
             judgment. Initially, all expressions are unnamed, names are assigned
             during rule resolution. *)
 
+  (** [make_var id] constructs a variable expression with identifier [id]. *)
+  let make_var id = Var id
+
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
   let make_tuple args = Application { applicator = EmptyApplicator; args }
@@ -474,7 +477,7 @@ module Rule = struct
   (** The absolute path of a case name. *)
   let join_case_names names = String.concat "." names
 
-  let make_judgement expr is_output attributes =
+  let make_judgement expr ~is_output attributes =
     { expr; is_output; att = Attributes.of_list attributes }
 
   let make_case name elements = { name; elements }

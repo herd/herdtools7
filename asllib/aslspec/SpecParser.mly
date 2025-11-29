@@ -112,7 +112,6 @@ let bool_of_string s =
 %right OR
 %right ELSE
 
-%nonassoc ARROW
 %nonassoc EQ
 %nonassoc IN
 %nonassoc NOT_IN
@@ -124,7 +123,6 @@ let bool_of_string s =
 %nonassoc GT
 %nonassoc NEQ
 %left LPAR
-%right VDASH
 
 %%
 
@@ -372,23 +370,48 @@ let rule_element :=
 let rule_case := CASE; name=IDENTIFIER; LBRACE; elements=list(rule_element); RBRACE;
       { Rule.make_case name elements }
 
-let judgment := ~=maybe_output_expr; ~=expr; ~=judgment_attributes;
-      { Rule.make_judgement expr maybe_output_expr judgment_attributes  }
+let judgment :=
+    | ~=maybe_output_expr; ~=expr; ~=judgment_attributes;
+      { Rule.make_judgement expr ~is_output:maybe_output_expr judgment_attributes  }
+    | ~=judgment_expr; ~=judgment_attributes;
+      { Rule.make_judgement judgment_expr ~is_output:false judgment_attributes }
 
-let maybe_output_expr :=
+let maybe_output_expr ==
     | { false }
     | MINUS_MINUS; { true }
 
-let short_circuit ==
-    | { None }
-    | VDASH; alternatives=expr;
-      { Some [alternatives] }
-    | VDASH; (* states explicitly that there are no alternatives. *)
+let judgment_expr :=
+    | transition_expr
+    | LPAR; ~=transition_expr; RPAR;
+      { Rule.make_tuple [ transition_expr ] }
+    | index_judgement
+    | LPAR; ~=index_judgement; RPAR;
+      { Rule.make_tuple [ index_judgement ] }
+
+let transition_expr :=
+    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
+      { Rule.Transition { lhs; rhs; short_circuit } }
+
+let short_circuit :=
+    | { None } (* Short-circuiting expressions will be inserted automatically. *)
+    | VDASH; (* Explicitly no alternatives. *)
       { Some [] }
+    | VDASH; alternatives=clist1(short_circuit_expr);
+      { Some alternatives }
+
+let short_circuit_expr :=
+    | id=IDENTIFIER;
+      { Rule.make_var id }
+    | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
+      { Rule.make_application (Rule.make_var lhs) (List.map Rule.make_var args) }
+
+let index_judgement :=
+    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=transition_expr; RPAR;
+      { Rule.Indexed { index; list; body } }
 
 let expr :=
     | id=IDENTIFIER;
-      { Rule.Var id }
+      { Rule.make_var id }
     | components=plist1(expr);
       { Rule.make_tuple components }
     | lhs=expr; args=plist0(expr);
@@ -398,11 +421,7 @@ let expr :=
     | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
       { Rule.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
-      { Rule.make_record label_opt fields }
-    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
-      { Rule.Transition { lhs; rhs; short_circuit } }
-    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=expr; RPAR;
-      { Rule.Indexed { index; list; body } }
+      { Rule.make_record label_opt fields }    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
       { Rule.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
