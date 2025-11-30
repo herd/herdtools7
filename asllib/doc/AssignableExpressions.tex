@@ -613,7 +613,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \inferrule[local]{
   \tenv.\staticenvsL.\localstoragetypes(\vx) = (\tty, k)\\
   \techeck(k = \LDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \{\LocalEffect(\SEImpure), \Immutability(\False)\}
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -625,7 +625,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \inferrule[global]{
   \tenv.\staticenvsL.\globalstoragetypes(\vx) = (\tty, k)\\
   \techeck(k = \GDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \{\GlobalEffect(\SEImpure), \Immutability(\False)\}
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -922,10 +922,10 @@ for examples of well-typed assignable array expressions.
 \inferrule{
   \sizeelem = (\size, \telem)\\
   \basesesindex = (\ebasep, \vsesbase, \eindex)\\\\
-  \checktypesat(\tenv, \rhsty, \telem) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \rhsty, \telem) \typearrow \True \OrTypeError\\\\
   \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
-  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesbase \cup \vsesindex \\
   \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
   \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
@@ -1094,7 +1094,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \sliceswidth(\tenv, \slicesannotated) \typearrow \widthp\\
   \normalize(\tenv, \widthp) \typearrow \vwidth\\
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \checkdisjointslices(\tenv, \slicesannotated) \typearrow \True \OrTypeError\\\\
   \techeck(\slicesannotated \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESlice(\vletwo, \slicesannotated)\\
@@ -1362,7 +1362,7 @@ are well-typed.
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetField(\vletwo, \vfield)
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
@@ -1408,7 +1408,7 @@ All of the collection field assignable expressions in
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \newle \eqdef \LESetCollectionFields(\vbase, [\vfield])
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
@@ -1511,7 +1511,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
   \tbaseanon = \TRecord(\vbasefields)\\
   \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
   \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
-  \checktypesat(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
+  \checktypesatisfies(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
 }{
   {
    \begin{array}{r}
@@ -1532,7 +1532,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
   \lebase = \LEVar(\vbase) \\
   \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
   \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
-  \checktypesat(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
+  \checktypesatisfies(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
 }{
   {
    \begin{array}{r}
@@ -1848,7 +1848,7 @@ are well-typed.
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \emptylist)\\\\
   \commonsuffixline\\\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
@@ -1871,7 +1871,7 @@ are well-typed.
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \bitfieldsp)\\\\
   \commonsuffixline\\\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
@@ -1888,9 +1888,9 @@ are well-typed.
   \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vtp \eqdef \TBits(\vw , \emptylist)\\
-  \checktypesat(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
   \commonsuffixline\\\\
-  \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
