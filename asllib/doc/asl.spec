@@ -2629,7 +2629,7 @@ typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_p
   (absolute_name, absolute_slices) := absolute_parent;
   bf_name := concat(absolute_name, make_list(name));
   bitfield_get_slices(bf) -> slices;
-  list_from_indices(i, slices, slice_to_indices(tenv, slices[i]) -> indices[i]);
+  INDEX(i, slices: slice_to_indices(tenv, slices[i]) -> indices[i]);
   slices_as_indices := concat_list(indices);
   select_indices_by_slices(absolute_slices, slices_as_indices) -> bf_indices;
   bf_absolute := (bf_name, bf_indices);
@@ -4217,7 +4217,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SAssert {
     s =: S_Assert(e);
     annotate_expr(tenv, e) -> (t_e', e', ses_e);
-    te_check( ses_is_readonly(ses_e) -> True, TE_SEV ) -> True;
+    te_check( ses_is_readonly(ses_e), TE_SEV ) -> True;
     checked_typesat(tenv, t_e', T_Bool) -> True;
     ses := ses_e;
     --
