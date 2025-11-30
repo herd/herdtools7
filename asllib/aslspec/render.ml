@@ -466,8 +466,10 @@ module Make (S : SPEC_VALUE) = struct
                (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr
                   layout))
             args
-      | Record { label; fields } ->
-          fprintf fmt "%a%a" pp_id_as_macro label
+      | Record { label_opt; fields } ->
+          fprintf fmt "%a%a"
+            (Format.pp_print_option pp_id_as_macro)
+            label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
       | ListIndex { var; index } -> fprintf fmt "%a[%a]" pp_var var pp_var index

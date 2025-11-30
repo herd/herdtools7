@@ -397,8 +397,8 @@ let expr :=
       { Rule.FieldAccess field_path }
     | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
       { Rule.make_list_index list_var index }
-    | name=IDENTIFIER; LBRACKET; fields=tclist1(field_and_value); RBRACKET;
-      { Rule.make_record name fields }
+    | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
+      { Rule.make_record label_opt fields }
     | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
       { Rule.Transition { lhs; rhs; short_circuit } }
     | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=expr; RPAR;
