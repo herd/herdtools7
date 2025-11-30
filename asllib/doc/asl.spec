@@ -1918,7 +1918,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
         { math_layout = [_] };
         e3 := E_Slice(e2, slices);
         annotate_expr(tenv, e3) -> (t, new_e, ses_new);
-        checked_typesat(tenv, t_e4, t) -> True;
+        check_type_satisfies(tenv, t_e4, t) -> True;
         --
         (t, new_e, ses_new);
       }
@@ -2088,9 +2088,36 @@ typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfiel
   in {slices}. \ProseOtherwiseTypeError",
   prose_application = "finding the slices associated with the bitfield named {name} among the list of bitfields {bitfields}
   yields {slices}\ProseOtherwiseTypeError",
-};
+} =
+  case non_empty {
+    bitfields = cons(field, bitfields1);
+    bitfield_get_name(field) -> name';
+    case found {
+      name' = name;
+      bitfield_get_slices(field) -> slices;
+      --
+      slices;
+    }
 
-typing relation annotate_field_init(tenv: static_envs, (name: Identifier, e': expr), field_types: list0(field)) ->
+    case tail {
+      name' != name;
+      find_bitfields_slices(name, bitfields1) -> slices;
+      --
+      slices;
+    }
+  }
+
+  case empty {
+    bitfields = empty_list;
+    --
+    TypeError(TE_BF);
+  }
+;
+
+typing relation annotate_field_init(
+  tenv: static_envs,
+  initializer: (name: Identifier, e': expr),
+  field_types: list0(field)) ->
         (name: Identifier, e'': expr, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a field initializer $({name}, {e'})$ in a record expression
@@ -2099,14 +2126,20 @@ typing relation annotate_field_init(tenv: static_envs, (name: Identifier, e': ex
   prose_application = "annotating the field initializer $({name}, {e'})$ with respect to
   the list of fields {field_types}, yields {e''} and {ses}\ProseOrTypeError",
   math_layout = [_,_],
-};
+} =
+  annotate_expr(tenv, e') -> (t', e'', ses);
+  te_check(field_type(field_types, name) != bot, TE_BF) -> True;
+  field_type(field_types, name) = t_spec';
+  check_type_satisfies(tenv, t', t_spec') -> True;
+  --
+  (name, e'', ses);
+;
 
 typing relation annotate_get_array(
         tenv: static_envs,
         (size: expr, t_elem: ty),
-        (e_base: expr, ses_base: powerset(TSideEffect),
-        e_index: expr)) ->
-         (t: ty, new_e: expr, ses: powerset(TSideEffect))
+        (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
+        (t: ty, new_e: expr, ses: powerset(TSideEffect))
 {
   "annotates an array access expression with the
   following elements: {size} is the expression
@@ -2118,7 +2151,20 @@ typing relation annotate_get_array(
   and the inferred \sideeffectdescriptorterm{} {ses}.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  type_of_array_length(size) -> wanted_t_index;
+  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  ses := union(ses_index, ses_base);
+  new_e :=
+    if (astlabel(size) = ArrayLengthExpr) then
+      E_GetArray(e_base, e_index')
+    else
+      E_GetEnumArray(e_base, e_index')
+  { math_layout = (lhs, [_]) };
+  --
+  (t_elem, new_e, ses);
+;
 
 typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(field)) ->
          (e_width: expr) | type_error
@@ -3063,11 +3109,11 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     prose_application = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
 };
 
-typing function checked_typesat(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
+typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
 {
   "returns $\True$ if {t} \typesatisfiesterm{} a type {s} in the static environment {tenv}. \ProseOtherwiseTypeError",
   prose_application = "checking whether {t} \typesatisfiesterm{} {s} in {tenv} yields $\True$\ProseOrTypeError",
-  math_macro = \checktypesat,
+  math_macro = \checktypesatisfies,
 };
 
 typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: ty) | type_error
@@ -4206,7 +4252,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SCond {
     s =: S_Cond(e, s1, s2);
     annotate_expr(tenv, e) -> (t_cond, e_cond, ses_cond);
-    checked_typesat(tenv, t_cond, T_Bool) -> True;
+    check_type_satisfies(tenv, t_cond, T_Bool) -> True;
     annotate_block(tenv, s1) -> (s1', ses1);
     annotate_block(tenv, s2) -> (s2', ses2);
     ses := union(ses_cond, ses1, ses2);
@@ -4218,7 +4264,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s =: S_Assert(e);
     annotate_expr(tenv, e) -> (t_e', e', ses_e);
     te_check( ses_is_readonly(ses_e) -> True, TE_SEV ) -> True;
-    checked_typesat(tenv, t_e', T_Bool) -> True;
+    check_type_satisfies(tenv, t_e', T_Bool) -> True;
     ses := ses_e;
     --
     (S_Assert(e'), tenv, ses);
@@ -4228,7 +4274,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s =: S_While(e1, limit1, s1);
     annotate_expr(tenv, e1) -> (t, e2, ses_e);
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
-    checked_typesat(tenv, t, T_Bool) -> True;
+    check_type_satisfies(tenv, t, T_Bool) -> True;
     annotate_block(tenv, s1) -> (s2, ses_block);
     ses := union(ses_block, ses_e, ses_limit);
     --
@@ -4240,7 +4286,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_block(tenv, s1) -> (s2, ses_block);
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
     annotate_expr(tenv, e1) -> (t, e2, ses_e);
-    checked_typesat(tenv, t, T_Bool) -> True;
+    check_type_satisfies(tenv, t, T_Bool) -> True;
     ses := union(ses_block, ses_e, ses_limit);
     --
     (S_Repeat(s2, e2, limit2), tenv, ses);
@@ -4344,7 +4390,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
       s =: S_Return(some(e));
       tenv.static_envs_L.return_type = some(t);
       annotate_expr(tenv, e) -> (t_e', e', ses);
-      checked_typesat(tenv, t_e', t) -> True;
+      check_type_satisfies(tenv, t_e', t) -> True;
       --
       (S_Return(some(e')), tenv, ses);
     }

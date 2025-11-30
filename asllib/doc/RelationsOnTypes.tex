@@ -527,7 +527,7 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{CheckTypeSatisfaction}
-\RenderRelation{checked_typesat}
+\RenderRelation{check_type_satisfies}
 
 The function assumes that both $\vt$ and $\vs$ are well-typed according to \secref{Types}.
 
@@ -561,7 +561,7 @@ yields a \typingerrorterm.
 \inferrule[okay]{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \True
 }{
-  \checktypesat(\tenv, \vt, \vs) \typearrow \True
+  \checktypesatisfies(\tenv, \vt, \vs) \typearrow \True
 }
 \end{mathpar}
 
@@ -569,7 +569,7 @@ yields a \typingerrorterm.
 \inferrule[error]{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \False
 }{
-  \checktypesat(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
+  \checktypesatisfies(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
 
@@ -932,7 +932,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[bnot\_t\_bool]{
-  \checktypesat(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
+  \checktypesatisfies(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
 }{
   \applyunoptype(\tenv, \BNOT, \vtone) \typearrow \TBool
 }

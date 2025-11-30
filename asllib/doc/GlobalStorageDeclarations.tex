@@ -560,7 +560,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
-  \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
   \techeck(\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
@@ -593,7 +593,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtpp \OrTypeError \\\\
   \annotatetype(\tenv, \vtpp) \typearrow (\vtp, \vsest) \OrTypeError\\\\
   \typede \eqdef (\vte, \vep, \vsese)\\
-  \checktypesat(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vtp) \typearrow \True \OrTypeError\\\\
   \techeck(\lnot\vmustbepure \lor \sesispure(\vsest \cup \vsese), \SideEffectViolation) \typearrow \True \OrTypeError
 }{
   {
