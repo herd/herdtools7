@@ -735,6 +735,9 @@ module ExpandRules = struct
   }
   (** An expanded rule is a rule with no [Cases]. *)
 
+  let split_absolute_rule_name abs_name =
+    Str.split (Str.regexp_string ".") abs_name
+
   (** [concat_expanded_rules prefix suffix] concatenates two expanded rules,
       [prefix] and [suffix], combining their optional names and categories as
       needed. *)

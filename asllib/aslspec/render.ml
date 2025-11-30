@@ -621,6 +621,7 @@ module Make (S : SPEC_VALUE) = struct
     let pp_render_rule fmt { RuleRender.relation_name; path } =
       let { Relation.rule_opt } = Spec.relation_for_id S.spec relation_name in
       let rule = Option.get rule_opt in
+      let rule_name_components = ExpandRules.split_absolute_rule_name path in
       let expanded_rules = ExpandRules.expand rule in
       let expanded_subset =
         List.filter
@@ -629,7 +630,11 @@ module Make (S : SPEC_VALUE) = struct
             | None -> true
             (* This corresponds to relations defined by a single rule, not containing any cases. *)
             | Some expanded_path ->
-                Utils.string_starts_with ~prefix:path expanded_path)
+                let expanded_rule_components =
+                  ExpandRules.split_absolute_rule_name expanded_path
+                in
+                Utils.list_starts_with String.equal ~prefix:rule_name_components
+                  expanded_rule_components)
           expanded_rules
       in
       pp_math_expanded_rules fmt expanded_subset
