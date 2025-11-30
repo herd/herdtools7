@@ -102,7 +102,13 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     to the console.
     """
     # Labels to exclude from the check
-    excluded_labels: set[str] = {"constant-one", "constant-zero", "constant-two"}
+    excluded_labels: set[str] = {
+        "constant-one",
+        "constant-zero",
+        "constant-two",
+        "constant-intlitregex",
+        "type-INTLIT",
+    }
 
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
@@ -731,23 +737,23 @@ def check_mathpar_macro_usage(filename: str) -> int:
 
     # List of macros that are excluded from this check
     excluded_macros = {
-        r'\polynomialdividebyterm',
+        r"\polynomialdividebyterm",
     }
 
     # Pattern to match macros that end with 'term' or 'Term', or start with 'Prose'
-    prohibited_macro_pattern = re.compile(r'\\([a-zA-Z]+(?:term|Term)|Prose[a-zA-Z]+)')
+    prohibited_macro_pattern = re.compile(r"\\([a-zA-Z]+(?:term|Term)|Prose[a-zA-Z]+)")
 
     file_str = read_file_str(filename)
 
     # Find all mathpar blocks
-    mathpar_pattern = re.compile(r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', re.DOTALL)
+    mathpar_pattern = re.compile(r"\\begin\{mathpar\}(.*?)\\end\{mathpar\}", re.DOTALL)
 
     for match in mathpar_pattern.finditer(file_str):
         mathpar_content = match.group(1)
         start_pos = match.start()
 
         # Calculate approximate line number for error reporting
-        lines_before = file_str[:start_pos].count('\n')
+        lines_before = file_str[:start_pos].count("\n")
         line_number = lines_before + 1
 
         # Find prohibited macros in this mathpar block
@@ -759,7 +765,7 @@ def check_mathpar_macro_usage(filename: str) -> int:
                 continue
 
             # Calculate line within the mathpar block
-            mathpar_lines_before = mathpar_content[:macro_match.start()].count('\n')
+            mathpar_lines_before = mathpar_content[: macro_match.start()].count("\n")
             error_line = line_number + mathpar_lines_before
 
             print(
@@ -786,9 +792,9 @@ def check_balanced_parentheses_in_math(filename: str) -> int:
 
     # Patterns to extract mathematical environments
     math_patterns = [
-        (r'\$([^\$]+)\$', 'inline math $...$'),
-        (r'\\\[(.*?)\\\]', 'display math \\[...\\]'),
-        (r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', 'mathpar environment'),
+        (r"\$([^\$]+)\$", "inline math $...$"),
+        (r"\\\[(.*?)\\\]", "display math \\[...\\]"),
+        (r"\\begin\{mathpar\}(.*?)\\end\{mathpar\}", "mathpar environment"),
     ]
 
     def check_balance(content: str, env_type: str, start_pos: int) -> int:
@@ -796,7 +802,7 @@ def check_balanced_parentheses_in_math(filename: str) -> int:
         errors = 0
 
         # Calculate line number for error reporting
-        lines_before = file_str[:start_pos].count('\n')
+        lines_before = file_str[:start_pos].count("\n")
         line_number = lines_before + 1
 
         # Single stack to track all parentheses in nesting order
@@ -806,25 +812,29 @@ def check_balanced_parentheses_in_math(filename: str) -> int:
         i = 0
         while i < len(content):
             # Check for \left variants (any \left<char> can match any \right<char>)
-            if i < len(content) - 5 and content[i:i+5] == r'\left':
+            if i < len(content) - 5 and content[i : i + 5] == r"\left":
                 # Check if followed by a non-letter delimiter
-                if i + 5 < len(content) and not content[i+5].isalpha():
-                    delimiter = content[i+5]
-                    stack.append((r'\left', i))
+                if i + 5 < len(content) and not content[i + 5].isalpha():
+                    delimiter = content[i + 5]
+                    stack.append((r"\left", i))
                     i += 6  # Skip \left and the delimiter
                     continue
             # Check for \right variants (can match any \left)
             # Must ensure it's not part of \rightarrow or similar commands
-            elif i < len(content) - 6 and content[i:i+6] == r'\right':
+            elif i < len(content) - 6 and content[i : i + 6] == r"\right":
                 # Check if followed by a non-letter delimiter (not part of \rightarrow, etc.)
-                if i + 6 < len(content) and not content[i+6].isalpha():
-                    delimiter = content[i+6]
+                if i + 6 < len(content) and not content[i + 6].isalpha():
+                    delimiter = content[i + 6]
                     # Any \right matches any \left
-                    if not stack or not stack[-1][0].startswith(r'\left'):
+                    if not stack or not stack[-1][0].startswith(r"\left"):
                         if not stack:
-                            print(f"{filename}:{line_number}: Unmatched \\right in {env_type}")
+                            print(
+                                f"{filename}:{line_number}: Unmatched \\right in {env_type}"
+                            )
                         else:
-                            print(f"{filename}:{line_number}: Improperly nested \\right (expected to close '{stack[-1][0]}') in {env_type}")
+                            print(
+                                f"{filename}:{line_number}: Improperly nested \\right (expected to close '{stack[-1][0]}') in {env_type}"
+                            )
                         errors += 1
                     else:
                         stack.pop()
@@ -832,48 +842,58 @@ def check_balanced_parentheses_in_math(filename: str) -> int:
                     continue
 
             # Check regular parentheses
-            if content[i] == '(':
-                stack.append(('(', i))
-            elif content[i] == ')':
-                if not stack or stack[-1][0] != '(':
+            if content[i] == "(":
+                stack.append(("(", i))
+            elif content[i] == ")":
+                if not stack or stack[-1][0] != "(":
                     if not stack:
                         print(f"{filename}:{line_number}: Unmatched ')' in {env_type}")
                     else:
-                        print(f"{filename}:{line_number}: Improperly nested ')' (expected to close '{stack[-1][0]}') in {env_type}")
+                        print(
+                            f"{filename}:{line_number}: Improperly nested ')' (expected to close '{stack[-1][0]}') in {env_type}"
+                        )
                     errors += 1
                 else:
                     stack.pop()
-            elif content[i] == '[':
-                stack.append(('[', i))
-            elif content[i] == ']':
-                if not stack or stack[-1][0] != '[':
+            elif content[i] == "[":
+                stack.append(("[", i))
+            elif content[i] == "]":
+                if not stack or stack[-1][0] != "[":
                     if not stack:
                         print(f"{filename}:{line_number}: Unmatched ']' in {env_type}")
                     else:
-                        print(f"{filename}:{line_number}: Improperly nested ']' (expected to close '{stack[-1][0]}') in {env_type}")
+                        print(
+                            f"{filename}:{line_number}: Improperly nested ']' (expected to close '{stack[-1][0]}') in {env_type}"
+                        )
                     errors += 1
                 else:
                     stack.pop()
-            elif content[i] == '{':
+            elif content[i] == "{":
                 # Only track { if it's not preceded by a backslash (not part of a LaTeX command)
-                if i == 0 or content[i-1] != '\\':
-                    stack.append(('{', i))
-            elif content[i] == '}':
+                if i == 0 or content[i - 1] != "\\":
+                    stack.append(("{", i))
+            elif content[i] == "}":
                 # Only track } if it's not preceded by a backslash (not part of a LaTeX command)
-                if i == 0 or content[i-1] != '\\':
-                    if not stack or stack[-1][0] != '{':
+                if i == 0 or content[i - 1] != "\\":
+                    if not stack or stack[-1][0] != "{":
                         if not stack:
-                            print(f"{filename}:{line_number}: Unmatched '}}' in {env_type}")
+                            print(
+                                f"{filename}:{line_number}: Unmatched '}}' in {env_type}"
+                            )
                         else:
-                            print(f"{filename}:{line_number}: Improperly nested '}}' (expected to close '{stack[-1][0]}') in {env_type}")
+                            print(
+                                f"{filename}:{line_number}: Improperly nested '}}' (expected to close '{stack[-1][0]}') in {env_type}"
+                            )
                         errors += 1
                     else:
                         stack.pop()
 
-            i += 1        # Check for unclosed parentheses
+            i += 1  # Check for unclosed parentheses
         if stack:
             for opening_symbol, pos in stack:
-                print(f"{filename}:{line_number}: Unclosed '{opening_symbol}' in {env_type}")
+                print(
+                    f"{filename}:{line_number}: Unclosed '{opening_symbol}' in {env_type}"
+                )
                 errors += len(stack)
                 break  # Only report once per environment
 
@@ -902,30 +922,68 @@ def check_math_content_validity(filename: str) -> int:
     # Remove verbatim and code environments before checking math
     # These environments should not be validated
     verbatim_patterns = [
-        r'\\begin\{Verbatim\}.*?\\end\{Verbatim\}',
-        r'\\begin\{verbatim\}.*?\\end\{verbatim\}',
-        r'\\begin\{lstlisting\}.*?\\end\{lstlisting\}',
-        r'\\verb\|.*?\|',
-        r'\\verb\+.*?\+',
-        r'\\verb\!.*?\!',
+        r"\\begin\{Verbatim\}.*?\\end\{Verbatim\}",
+        r"\\begin\{verbatim\}.*?\\end\{verbatim\}",
+        r"\\begin\{lstlisting\}.*?\\end\{lstlisting\}",
+        r"\\verb\|.*?\|",
+        r"\\verb\+.*?\+",
+        r"\\verb\!.*?\!",
     ]
 
     for pattern in verbatim_patterns:
-        file_str = re.sub(pattern, '', file_str, flags=re.DOTALL)
+        file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
 
     # Known LaTeX mathematical symbols and operators that don't require backslash
-    known_symbols = set([
-        '+', '-', '*', '/', '=', '<', '>', '!', '?', '|', ':', ';', ',', '.',
-        '(', ')', '[', ']', '{', '}', '_', '^', '~', "'", '`', '"',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        ' ', '\n', '\t', '&',  # Whitespace and alignment
-    ])
+    known_symbols = set(
+        [
+            "+",
+            "-",
+            "*",
+            "/",
+            "=",
+            "<",
+            ">",
+            "!",
+            "?",
+            "|",
+            ":",
+            ";",
+            ",",
+            ".",
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}",
+            "_",
+            "^",
+            "~",
+            "'",
+            "`",
+            '"',
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            " ",
+            "\n",
+            "\t",
+            "&",  # Whitespace and alignment
+        ]
+    )
 
     # Patterns to extract mathematical environments
     math_patterns = [
-        (r'\$([^\$]+)\$', 'inline math $...$'),
-        (r'\\\[(.*?)\\\]', 'display math \\[...\\]'),
-        (r'\\begin\{mathpar\}(.*?)\\end\{mathpar\}', 'mathpar environment'),
+        (r"\$([^\$]+)\$", "inline math $...$"),
+        (r"\\\[(.*?)\\\]", "display math \\[...\\]"),
+        (r"\\begin\{mathpar\}(.*?)\\end\{mathpar\}", "mathpar environment"),
     ]
 
     def check_content_validity(content: str, env_type: str, start_pos: int) -> int:
@@ -933,7 +991,7 @@ def check_math_content_validity(filename: str) -> int:
         errors = 0
 
         # Calculate line number for error reporting using original file
-        lines_before = original_file_str[:start_pos].count('\n')
+        lines_before = original_file_str[:start_pos].count("\n")
         line_number = lines_before + 1
 
         i = 0
@@ -941,16 +999,16 @@ def check_math_content_validity(filename: str) -> int:
             char = content[i]
 
             # Check for LaTeX comments (% to end of line)
-            if char == '%':
+            if char == "%":
                 # Skip until newline
-                while i < len(content) and content[i] != '\n':
+                while i < len(content) and content[i] != "\n":
                     i += 1
                 if i < len(content):
                     i += 1  # Skip the newline itself
                 continue
 
             # Check for LaTeX commands (start with backslash)
-            if char == '\\':
+            if char == "\\":
                 # Find the end of the command
                 j = i + 1
                 # Command name consists of letters, or is a single special character
@@ -961,11 +1019,11 @@ def check_math_content_validity(filename: str) -> int:
                     cmd_name = content[cmd_start:j]
                 else:
                     # Single character command like \\ or \{ or \}
-                    cmd_name = content[j] if j < len(content) else ''
+                    cmd_name = content[j] if j < len(content) else ""
                     j += 1
 
                 # Skip optional asterisk (e.g., \inferrule*)
-                if j < len(content) and content[j] == '*':
+                if j < len(content) and content[j] == "*":
                     j += 1
 
                 # Skip any whitespace and optional arguments in square brackets
@@ -974,21 +1032,21 @@ def check_math_content_validity(filename: str) -> int:
                 # Exception: \text, \texttt, \textXY commands contain regular text, not math, so skip their content
                 while True:
                     # Skip whitespace
-                    while j < len(content) and content[j] in ' \t\n':
+                    while j < len(content) and content[j] in " \t\n":
                         j += 1
 
                     # Check for optional argument [...]
                     # These we DO skip because they're not typically math content (they're options/names)
-                    if j < len(content) and content[j] == '[':
+                    if j < len(content) and content[j] == "[":
                         bracket_count = 1
                         j += 1
                         while j < len(content) and bracket_count > 0:
-                            if content[j] == '\\' and j + 1 < len(content):
+                            if content[j] == "\\" and j + 1 < len(content):
                                 j += 2  # Skip escaped characters
                                 continue
-                            elif content[j] == '[':
+                            elif content[j] == "[":
                                 bracket_count += 1
-                            elif content[j] == ']':
+                            elif content[j] == "]":
                                 bracket_count -= 1
                             j += 1
                         continue
@@ -997,32 +1055,36 @@ def check_math_content_validity(filename: str) -> int:
                     # For \text, \texttt, \textXY (any text command), skip the text content
                     # For \hypertarget, skip the target name
                     # For \emph, skip the emphasized text
-                    if j < len(content) and content[j] == '{':
+                    if j < len(content) and content[j] == "{":
                         should_skip = False
 
                         # Skip for \begin and \end
-                        if cmd_name in ('begin', 'end'):
+                        if cmd_name in ("begin", "end"):
                             should_skip = True
                         # Skip for \text and any \textXY variant
-                        elif cmd_name == 'text' or (cmd_name.startswith('text') and len(cmd_name) > 4 and cmd_name[4:].isalpha()):
+                        elif cmd_name == "text" or (
+                            cmd_name.startswith("text")
+                            and len(cmd_name) > 4
+                            and cmd_name[4:].isalpha()
+                        ):
                             should_skip = True
                         # Skip for \hypertarget
-                        elif cmd_name == 'hypertarget':
+                        elif cmd_name == "hypertarget":
                             should_skip = True
                         # Skip for \emph
-                        elif cmd_name == 'emph':
+                        elif cmd_name == "emph":
                             should_skip = True
 
                         if should_skip:
                             brace_count = 1
                             j += 1
                             while j < len(content) and brace_count > 0:
-                                if content[j] == '\\' and j + 1 < len(content):
+                                if content[j] == "\\" and j + 1 < len(content):
                                     j += 2  # Skip escaped characters
                                     continue
-                                elif content[j] == '{':
+                                elif content[j] == "{":
                                     brace_count += 1
-                                elif content[j] == '}':
+                                elif content[j] == "}":
                                     brace_count -= 1
                                 j += 1
                             continue
@@ -1051,7 +1113,9 @@ def check_math_content_validity(filename: str) -> int:
                     context_start = max(0, i - 10)
                     context_end = min(len(content), j + 10)
                     context = content[context_start:context_end]
-                    print(f"{filename}:{line_number}: Multi-letter identifier '{word}' in {env_type} should use LaTeX command, context: ...{context}...")
+                    print(
+                        f"{filename}:{line_number}: Multi-letter identifier '{word}' in {env_type} should use LaTeX command, context: ...{context}..."
+                    )
                     errors += 1
                     i = j
                     continue
@@ -1063,7 +1127,9 @@ def check_math_content_validity(filename: str) -> int:
             context_start = max(0, i - 10)
             context_end = min(len(content), i + 10)
             context = content[context_start:context_end]
-            print(f"{filename}:{line_number}: Invalid character '{char}' (ord={ord(char)}) in {env_type}, context: ...{context}...")
+            print(
+                f"{filename}:{line_number}: Invalid character '{char}' (ord={ord(char)}) in {env_type}, context: ...{context}..."
+            )
             errors += 1
             i += 1
 
@@ -1119,7 +1185,9 @@ def check_relation_references(latex_files: list[str]) -> int:
 
     # Extract all relation and function names from .spec files
     defined_relations = set()
-    relation_pattern = re.compile(r"^(?:\w+\s+)*(relation|function)\s+([a-zA-Z_][a-zA-Z0-9_]*)\(")
+    relation_pattern = re.compile(
+        r"^(?:\w+\s+)*(relation|function)\s+([a-zA-Z_][a-zA-Z0-9_]*)\("
+    )
 
     for spec_file in spec_files:
         try:

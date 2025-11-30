@@ -412,7 +412,7 @@ The function
 \[
   \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\Option{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$. \\
+transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$.
 
 \ExampleDef{Desugaring a left-hand side fields tuple}
 \listingref{DesugarLHSFieldsTuple} shows an example of desugaring a left-hand side fields tuple.
@@ -1359,7 +1359,7 @@ are well-typed.
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
   L \in \{\TException, \TRecord\}\\
-  \assocopt(\fields, \vfield) \typearrow \tyopt\\
+  \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
@@ -1405,7 +1405,7 @@ All of the collection field assignable expressions in
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
   \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\\\\
-  \assocopt(\fields, \vfield) \typearrow \tyopt\\
+  \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyopt \eqname \some{\vt}\\
   \checktypesat(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
@@ -1582,7 +1582,7 @@ $(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|sta
   \begin{itemize}
     \item $\vlefields$ is the list with prefix $\vlefieldsone$ (the elements excluding the last one) and last element $\vfield$;
     \item applying $\foldbitvectorfields$ to $\vbasefields$ and $\vlefieldsone$ in $\tenv$ yields $(\vstart, \vslicesone)$\ProseOrTypeError;
-    \item applying $\assocopt$ to $\vbasefields$ and $\vfield$ yields $\tyopt$;
+    \item applying $\assocoptname$ to $\vbasefields$ and $\vfield$ yields $\tyopt$;
     \item checking that $\tyopt$ is different to $\None$ yields $\True$\ProseTerminateAs{\BadField};
     \item view $\tyopt$ as $\some{\vtfield}$;
     \item applying $\getbitvectorconstwidth$ to $\vtfield$ in $\tenv$ yields \\$\vfieldwidth$\ProseOrTypeError;
@@ -1601,7 +1601,7 @@ $(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|sta
 \begin{mathpar}
 \inferrule[non\_empty]{
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
-  \assocopt(\vbasefields, \vfield) \typearrow \tyopt\\
+  \assocopt{\vbasefields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
   \tyoptp \eqname \some{\vtfield}\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\

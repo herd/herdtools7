@@ -583,14 +583,14 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
   \item \AllApplyCase{e\_var\_in\_substs}
   \begin{itemize}
     \item $\ve$ is a variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
-    \item applying $\assocopt$ to $\vs$ and $\substs$ yields the expression $\newe$.
+    \item applying $\assocoptname$ to $\vs$ and $\substs$ yields the expression $\newe$.
           That is, $\vs$ is a parameter with an associated expression;
   \end{itemize}
 
   \item \AllApplyCase{e\_var\_not\_in\_substs}
   \begin{itemize}
     \item $\ve$ is the variable expression for the identifier $\vs$, that is, $\EVar(\vs)$;
-    \item applying $\assocopt$ to $\vs$ and $\substs$ yields $\None$.
+    \item applying $\assocoptname$ to $\vs$ and $\substs$ yields $\None$.
           That is, $\vs$ is not a parameter with an associated expression;
     \item define $\newe$ is $\ve$.
   \end{itemize}
@@ -750,7 +750,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[e\_var\_in\_substs]{
-  \assocopt(\vs, \substs) \typearrow \some{\newe}
+  \assocopt{\vs}{\substs} \typearrow \some{\newe}
 }{
   \substexpr(\tenv, \substs, \overname{\EVar(\vs)}{\ve}) \typearrow \newe
 }
@@ -758,7 +758,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
 \begin{mathpar}
 \inferrule[e\_var\_not\_in\_substs]{
-  \assocopt(\vs, \substs) \typearrow \None
+  \assocopt{\vs}{\substs} \typearrow \None
 }{
   \substexpr(\tenv, \substs, \overname{\EVar(\vs)}{\ve}) \typearrow \overname{\ve}{\newe}
 }

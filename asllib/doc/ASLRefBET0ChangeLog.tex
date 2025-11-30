@@ -23,7 +23,8 @@ end;
 A subprogram marked \texttt{readonly} or \texttt{pure} identifies a \readonlyterm{} or \pureterm{} subprogram respectively.
 These have the following behaviour:
 \begin{itemize}
-  \item A \readonlyterm{} subprogram does not modify global storage elements or throw exceptions, but can read global storage elements and use non-determinism ($\ARBITRARY$).
+  \item A \readonlyterm{} subprogram does not modify global storage elements or throw exceptions, but can read global storage elements
+    and use non-determinism\\ ($\ARBITRARY$).
     It can only call read-only or pure subprograms.
   \item A \pureterm{} subprogram does not read or modify global storage elements, throw exceptions, or use non-determinism. It can only call pure subprograms. It can therefore be considered read-only too.
   \item Both pure and read-only subprograms may use assertions (including asserting type conversions), or cause \dynamicerrorsterm{} (e.g.\ divide by zero, calling the \unreachablestatementterm{}, etc.).

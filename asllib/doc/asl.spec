@@ -181,7 +181,13 @@ operator cons[T](T, list0(T)) -> list1(T)
 operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
 {
   math_macro = \listcombine,
-  associative = true,
+  custom = true,
+};
+
+operator list_combine_three[A,B,C](list0(A), list0(B), list0(C)) -> list0((A, B, C))
+{
+  math_macro = \listcombinethree,
+  custom = true,
 };
 
 operator list_min[T](list0(T)) -> N
@@ -192,6 +198,12 @@ operator list_min[T](list0(T)) -> N
 operator list_max[T](list0(T)) -> N
 {
   math_macro = \listmax,
+};
+
+operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
+{
+  math_macro = \assocopt,
+  custom = true,
 };
 
 // Constructs a set out of a fixed list of expressions.
@@ -346,6 +358,16 @@ operator round_down(Q) -> N
   math_macro = \rounddown,
 };
 
+operator concat_strings(prefix: Strings, suffix: Strings) -> (result: Strings)
+{
+  "concatenates {prefix} and {suffix} to yield {result}",
+  math_macro = \concatstrings,
+  associative = true,
+};
+
+////////////////////////////////////////
+// Execution graph operators
+
 operator parallel(XGraphs, XGraphs) -> XGraphs
 {
   math_macro = \parallelcomp,
@@ -391,6 +413,9 @@ operator with_environ[T](T, envs) -> T
   math_macro = \withenviron,
 };
 
+////////////////////////////////////////
+// AST abbreviations
+
 operator ELint(Z) -> E_Literal(L_Int(Z))
 {
   math_macro = \ELInt,
@@ -399,6 +424,32 @@ operator ELint(Z) -> E_Literal(L_Int(Z))
 operator EBinop(op: ASTLabels, lhs: expr, rhs: expr) -> E_Binop(binop, expr, expr)
 {
   math_macro = \AbbrevEBinop,
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Syntax-related definitions
+typedef regex { "regular expression" };
+
+constant int_lit_regex
+{
+  "regular expression for integer literals",
+  math_macro = \REintlit,
+};
+
+operator Lang(r : regex) -> (l: powerset(Strings))
+{
+  "{l} the set of strings defined by {r}",
+  math_macro = \Lang,
+};
+
+typedef int_literal_tokens =
+  INT_LIT(N) { math_macro = \Tintlit }
+;
+
+operator decimal_to_lit(s: Strings) -> INT_LIT(n: N)
+{
+  "returns an integer literal where {n} is the integer corresponding to {s} in decimal representation",
+  math_macro = \decimaltolit,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1645,39 +1696,39 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
     prose_application = "annotating {l} in {tenv} yields {t}",
 } =
   case Int {
-    l = L_Int(n);
+    l =: L_Int(n);
     cs := make_list(Constraint_Exact(E_Literal(L_Int(n))));
     --
     T_Int(WellConstrained(cs));
   }
 
   case Bool {
-    l = L_Bool(_);
+    l =: L_Bool(_);
     --
     T_Bool;
   }
 
   case Real {
-    l = L_Real(_);
+    l =: L_Real(_);
     --
     T_Real;
   }
 
   case String {
-    l = L_String(_);
+    l =: L_String(_);
     --
     T_String;
   }
 
   case Bits {
-    l = L_Bitvector(bits);
+    l =: L_Bitvector(bits);
     n := cardinality(bits);
     --
     T_Bits(E_Literal(L_Int(n)), empty_list);
   }
 
   case Label {
-    l = L_Label(label);
+    l =: L_Label(label);
     tenv.static_envs_G.declared_types(label) = (t, _);
     --
     t;
@@ -1697,7 +1748,339 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
    and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError",
     prose_application = "annotating {e} in {tenv} yields
     {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError",
-};
+} =
+  case ELit {
+    e =: E_Literal(v);
+    annotate_literal(tenv, v) -> t;
+    --
+    (t, e, empty_set);
+  }
+
+  case EVar {
+    e =: E_Var(x);
+    case local {
+      tenv.static_envs_L.local_storage_types(x) = (t, k);
+      ses_ldk(k) -> ses;
+      --
+      (t, E_Var(x), ses);
+    }
+
+    case global {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) = (ty, k);
+      case const {
+        k = GDK_Constant;
+        tenv.static_envs_G.constant_values(x) = v;
+        --
+        (ty, E_Literal(v), empty_set);
+      }
+
+      case non_const {
+        k != GDK_Constant || tenv.static_envs_G.constant_values(x) = bot;
+        ses_gdk(k) -> ses;
+        --
+        (ty, E_Var(x), ses);
+      }
+    }
+
+    case error_undefined {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) = bot;
+      --
+      TypeError(TE_UI);
+    }
+  }
+
+  case EBinop {
+    e =: E_Binop(op, e1, e2);
+    annotate_expr(tenv, e1) -> (t1, e1', ses1);
+    annotate_expr(tenv, e2) -> (t2, e2', ses2);
+    apply_binop_types(tenv, op, t1, t2) -> t;
+    ses := union(ses1, ses2);
+    --
+    (t, E_Binop(op, e1', e2'), ses);
+  }
+
+  case EUnop {
+    e =: E_Unop(op, e');
+    annotate_expr(tenv, e') -> (t'', e'', ses);
+    apply_unop_type(tenv, op, t'') -> t;
+    --
+    (t, E_Unop(op, e''), ses);
+  }
+
+  case ECond {
+    e =: E_Cond(e_cond, e_true, e_false);
+    annotate_expr(tenv, e_cond) -> (t_cond, e_cond', ses_cond);
+    annotate_expr(tenv, e_true) -> (t_true, e_true', ses_true);
+    annotate_expr(tenv, e_false) -> (t_false, e_false', ses_false);
+    lowest_common_ancestor(t_true, t_false) -> t;
+    ses := union(ses_cond, ses_true, ses_false);
+    --
+    (t, E_Cond(e_cond', e_true', e_false'), ses);
+  }
+
+  case ECall {
+    e = E_Call(call);
+    annotate_call(tenv, call) -> (call', some(t), ses);
+    --
+    (t, E_Call(call'), ses);
+  }
+
+  case ESlice {
+    e = E_Slice(e', slices);
+    annotate_expr(tenv, e') -> (t_e', e'', ses1);
+    get_structure(tenv, t_e') -> struct_t_e';
+    case okay {
+      ast_label(struct_t_e') in make_set(T_Int, T_Bits);
+      te_check(slices != empty_list, TE_BS) -> True;
+      annotate_slices(tenv, slices) -> (slices', ses2);
+      slices_width(tenv, slices) -> w;
+      ses := union(ses1, ses2);
+      --
+      (T_Bits(w, empty_list), E_Slice(e'', slices'), ses);
+    }
+    case error {
+      ast_label(struct_t_e') not_in make_set(T_Int, T_Bits);
+      --
+      TypeError(TE_BS);
+    }
+  }
+
+  case EGetArray {
+    e = E_GetArray(e_base, e_index);
+    annotate_expr(tenv, e_base) -> (t_base, e_base', ses_base);
+    make_anonymous(tenv, t_base) -> t_anon_base;
+    te_check(ast_label(t_anon_base) = T_Array, TE_UT) -> True;
+    t_anon_base =: T_Array(size, t_elem);
+    annotate_get_array(tenv, (size, t_elem), (e_base', ses_base, e_index)) -> (t, new_e, ses)
+    { math_layout = [_] };
+    --
+    (t, new_e, ses);
+  }
+
+  case EGetField {
+    e = E_GetField(e1, field_name);
+    annotate_expr(tenv, e1) -> (t_e1, e2, ses1);
+    make_anonymous(tenv, t_e1) -> t_e2;
+    case structured {
+      t_e2 =: L(fields);
+      case record_or_exception {
+        L in make_set(T_Record, T_Exception);
+        case okay {
+          assoc_opt(fields, field_name) = some(t);
+          --
+          (t, E_GetField(e2, field_name), ses1);
+        }
+        case error {
+          assoc_opt(fields, field_name) = None;
+          --
+          TypeError(TE_BF);
+        }
+      }
+      case collection {
+        L = T_Collection;
+        case okay {
+          assoc_opt(fields, field_name) = Some(t);
+          --
+          (t, E_GetCollectionFields(base, make_list(field_name)), ses1)
+          { math_layout = [_] };
+        }
+        case error {
+          assoc_opt(fields, field_name) = None;
+          --
+          TypeError(TE_BF);
+        }
+      }
+    }
+
+    case bitfield {
+      T_Bits(_, bitfields) := t_e2;
+      case simple {
+        find_bitfield_opt(bitfields, field_name) -> some(BitField_Simple(_, slices));
+        e3 := E_Slice(e2, slices);
+        annotate_expr(tenv, e3) -> (t, new_e, ses);
+        --
+        (t, new_e, ses);
+      }
+      case nested {
+        find_bitfield_opt(bitfields, field_name) -> some(BitField_Nested(_, slices, bitfields'))
+        { math_layout = [_] };
+        e3 := E_Slice(e2, slices);
+        annotate_expr(tenv, e3) -> (t, new_e, ses_new);
+        T_Bits(width, _) := t_e4;
+        t := T_Bits(width, bitfields');
+        --
+        (t, new_e, ses_new);
+      }
+      case typed {
+        find_bitfield_opt(bitfields, field_name) -> some(BitField_Type(_, slices, t))
+        { math_layout = [_] };
+        e3 := E_Slice(e2, slices);
+        annotate_expr(tenv, e3) -> (t, new_e, ses_new);
+        checked_typesat(tenv, t_e4, t) -> True;
+        --
+        (t, new_e, ses_new);
+      }
+      case error {
+        find_bitfield_opt(bitfields, field_name) -> None;
+        --
+        TypeError(TE_BF);
+      }
+    }
+
+    case tuple_item {
+      t_e2 =: T_Tuple(tys);
+      field_name =: concat_strings(item, num);
+      num in Lang(int_lit_regex);
+      decimal_to_lit(num) = INT_LIT(index);
+      te_check(zero <= index && index <= list_len(tys), TE_BTI) -> True;
+      t := tys[index];
+      new_e := E_GetItem(e2, index);
+      --
+      (t, new_e, ses1);
+    }
+
+    case error {
+      ast_label(t_e2) not_in make_set(T_Record, T_Exception, T_Collection, T_Bits, T_Tuple)
+      { math_layout = (_, [_]) };
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+  case EGetFields {
+    e =: E_GetFields(e1, fields);
+    annotate_expr(tenv, e_base) -> (t_base_annot, e_base_annot, ses_base);
+
+    case bits {
+      make_anonymous(tenv, t_base_annot) -> T_Bits(_, bitfields);
+      INDEX(i, fields: find_bitfields_slices(fields[i], bitfields) -> slices[i]);
+      e_slice := E_Slice(e_base, slices);
+      annotate_expr(tenv, e_slice) -> (t, new_e, ses);
+      --
+      (t, new_e, ses);
+    }
+    case record {
+      make_anonymous(tenv, t_base_annot) -> T_Record(base_fields);
+      INDEX(i, base_fields: get_bitfield_width(tenv, f, tfields) -> e_width[i]);
+      width_plus(tenv, e_width) -> e_slice_width;
+      --
+      (T_Bits(e_slice_width, empty_list), E_GetFields(e_base_annot, fields), ses_base)
+      { math_layout = (_, [_]) };
+    }
+    case collection {
+      make_anonymous(tenv, t_base_annot) -> T_Collection(base_fields);
+      e_base_annot =: E_Var(base_collection_name);
+      INDEX(i, base_fields: get_bitfield_width(tenv, f, tfields) -> e_width[i]);
+      width_plus(tenv, e_width) -> e_slice_width;
+      --
+      (T_Bits(e_slice_width, empty_list), E_GetCollectionFields(base_collection_name, fields), ses_base)
+      { math_layout = [_, [_]] };
+    }
+    case error {
+      make_anonymous(tenv, t_base_annot) -> t_base_annot_anon;
+      ast_label(t_base_annot_anon) not_in make_set(T_Bits, T_Record, T_Collection);
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+  case EATC {
+    e =: E_ATC(e', ty);
+    annotate_expr(tenv, e') -> (t, e'', ses_e);
+    get_structure(tenv, t) -> t_struct;
+    annotate_type(tenv, ty) -> (ty', ses_ty);
+    get_structure(tenv, ty') -> ty_struct;
+    check_atc(tenv, t_struct, ty_struct) -> True;
+    ses' := union(ses_ty, ses_e);
+    subtype_satisfies(tenv, t_struct, ty_struct) -> always_succeeds;
+    (new_e, ses) := if always_succeeds then (e'', ses_e) else (E_ATC(e'', ty'), ses');
+    --
+    (ty', new_e, ses);
+  }
+
+  case EPattern {
+    e =: E_Pattern(e1, pat);
+    annotate_expr(tenv, e1) -> (t_e2, e2, ses_e);
+    annotate_pattern(tenv, t_e2, pat) -> (pat', ses_pat);
+    ses := union(ses_e, ses_pat);
+    --
+    (T_Bool, E_Pattern(e2, pat'), ses);
+  }
+
+  case EArbitrary {
+    e =: E_Arbitrary(ty);
+    annotate_type(tenv, ty) -> (ty1, ses_ty);
+    get_structure(tenv, ty1) -> ty2;
+    ses := union(ses_ty,
+          make_set(
+            LocalEffect(SE_Readonly),
+            GlobalEffect(SE_Readonly),
+            Immutability(False)))
+    { math_layout = (lhs, (_, [_])) };
+    --
+    (ty1, E_Arbitrary(ty2), ses);
+  }
+
+  case ERecord {
+    e =: E_Record(ty, fields);
+    te_check(ast_label(ty) = T_Named, TE_UT) -> True;
+    make_anonymous(tenv, ty) -> ty_anon;
+    te_check(ast_label(ty_anon) in make_set(T_Record, T_Exception, T_Collection), TE_UT) -> True
+    { math_layout = ( appl( condition(label, labels[_]) ,err ) , output) };
+    ty_anon =: L(field_types);
+    list_combine(initialized_fields, _) := fields;
+    names := field_names(field_types);
+    te_check(make_set(names) = initialized_fields, TE_BF) -> True;
+    check_no_duplicates(initialized_fields) -> True;
+    INDEX(i, fields: annotate_field_init(tenv, fields[i], field_types) ->
+                     list_combine_three(field_names, field_inits, field_effects))
+    { math_layout = (_, [_]) };
+    fields' := list_combine(field_names, field_inits);
+    ses := union_list(field_effects);
+    --
+    (ty, E_Record(ty, fields'), ses);
+  }
+
+  case ETuple {
+    e =: E_Tuple(li);
+    case parenthesized {
+      li =: make_list(e');
+      annotate_expr(tenv, e') -> (t, new_e, ses);
+      --
+      (t, new_e, ses);
+    }
+
+    case list {
+      list_len(li) > one;
+      INDEX(i, li: annotate_expr(tenv, li[i]) -> (t[i], es[i], xs[i]));
+      ses := union_list(xs);
+      --
+      (T_Tuple(t), E_Tuple(es), ses);
+    }
+  }
+;
+
+render rule annotate_expr_ELit = annotate_expr(ELit);
+render rule annotate_expr_EVar = annotate_expr(EVar);
+render rule annotate_expr_EBinop = annotate_expr(EBinop);
+render rule annotate_expr_EUnop = annotate_expr(EUnop);
+render rule annotate_expr_ECond = annotate_expr(ECond);
+render rule annotate_expr_ECall = annotate_expr(ECall);
+render rule annotate_expr_ESlice = annotate_expr(ESlice);
+render rule annotate_expr_EGetArray = annotate_expr(EGetArray);
+render rule annotate_expr_EGetField_record_or_exception = annotate_expr(EGetField.structured.record_or_exception);
+render rule annotate_expr_EGetField_collection = annotate_expr(EGetField.structured.collection);
+render rule annotate_expr_EGetField_bitfield = annotate_expr(EGetField.bitfield);
+render rule annotate_expr_EGetField_tuple_item = annotate_expr(EGetField.tuple_item);
+render rule annotate_expr_EGetField_error = annotate_expr(EGetField.error);
+render rule annotate_expr_EGetFields = annotate_expr(EGetFields);
+render rule annotate_expr_EATC = annotate_expr(EATC);
+render rule annotate_expr_EPattern = annotate_expr(EPattern);
+render rule annotate_expr_EArbitrary = annotate_expr(EArbitrary);
+render rule annotate_expr_ERecord = annotate_expr(ERecord);
+render rule annotate_expr_ETuple = annotate_expr(ETuple);
 
 typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfield)) -> (slices: list0(slice)) | type_error
 {
@@ -1872,7 +2255,7 @@ typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, t
     and the index expression {e_index}.
     The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
     prose_application = "annotating array update in {tenv} with {size_elem}, {rhs_ty}, and {base_ses_index} yields {new_le} and {ses}\ProseOrTypeError",
-    math_layout = [_,_],
+    math_layout = [[_,_,_,_],_],
 };
 
 typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
@@ -1982,9 +2365,9 @@ typing function bitfield_get_name(bf: bitfield) ->
   prose_application = "\hyperlink{relation-bitfieldgetname}{extracting} name from bitfield {bf} yields {name}"
 } =
   or(
-    bf = BitField_Simple(name, _),
-    bf = BitField_Nested(name, _, _),
-    bf = BitField_Type(name, _, _)
+    bf =: BitField_Simple(name, _),
+    bf =: BitField_Nested(name, _, _),
+    bf =: BitField_Type(name, _, _)
   )
   { math_layout = [_,_,_] };
   --
@@ -1999,9 +2382,9 @@ typing function bitfield_get_slices(bf: bitfield) ->
   prose_application = "\hyperlink{relation-bitfieldgetslices}{extracting} slices from bitfield {bf} yields {slices}",
 } =
   or(
-    bf = BitField_Simple(_, slices),
-    bf = BitField_Nested(_, slices, _),
-    bf = BitField_Type(_, slices, _)
+    bf =: BitField_Simple(_, slices),
+    bf =: BitField_Nested(_, slices, _),
+    bf =: BitField_Type(_, slices, _)
   )
   { math_layout = [_,_,_] };
   --
@@ -2128,7 +2511,7 @@ typing function disjoint_slices_to_positions(tenv: static_envs, is_static: Bool,
   }
 
   case non_empty {
-    slices = cons(s, slices1);
+    slices =: cons(s, slices1);
     bitfield_slice_to_positions(tenv, is_static, s) -> positions1_opt;
     positions1 := if positions1_opt = some(s1) then s1 else empty_set;
     disjoint_slices_to_positions(tenv, is_static, slices1) -> positions2_opt;
@@ -2149,7 +2532,7 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-bitfieldslicetopositions}{converting} slice {slice} in {tenv} with static flag {is_static} yields optional positions {positions}",
 } =
-  slice = Slice_Length(e1, e2);
+  slice =: Slice_Length(e1, e2);
   eval_slice_expr(tenv, is_static, e1) -> some(offset);
   eval_slice_expr(tenv, is_static, e2) -> some(length);
   te_check(offset <= offset + length - one, TE_BS) -> True;
@@ -2287,7 +2670,7 @@ typing function slice_to_indices(tenv: static_envs, s: slice) ->
   \staticenvironmentterm{} {tenv}.",
   prose_application = "\hyperlink{relation-slicetoindices}{converting} slice {s} in {tenv} yields indices {indices}",
 } =
-  s = Slice_Length(i, w);
+  s =: Slice_Length(i, w);
   static_eval(tenv, i) -> L_Int(z_i) | ; // This evaluation always succeeds since i is a bound variable.
   static_eval(tenv, w) -> L_Int(z_w) | ; // This evaluation always succeeds since i is a bound variable.
   v_start := z_i;
@@ -2571,27 +2954,27 @@ typing function unop_literals(op: unop, l: literal) ->
 
   case negate_int {
     op = NEG;
-    l = L_Int(n);
+    l =: L_Int(n);
     --
     L_Int(negate(n));
   }
 
   case negate_real {
     op = NEG;
-    l = L_Real(n);
+    l =: L_Real(n);
     --
     L_Real(negate(n));
   }
 
   case not_bool {
     op = BNOT;
-    l = L_Bool(b);
+    l =: L_Bool(b);
     --
     L_Bool(not(b));
   }
 
   case not_bits {
-    l = L_Bitvector(bits);
+    l =: L_Bitvector(bits);
     op = NOT;
     c := list_map(b, bits, one - b);
     --
@@ -3327,19 +3710,19 @@ typing function slice_width(slice: slice) ->
   }
 
   case scaled {
-    slice = Slice_Star(_, e);
+    slice =: Slice_Star(_, e);
     --
     e;
   }
 
   case length {
-    slice = Slice_Length(_, e);
+    slice =: Slice_Length(_, e);
     --
     e;
   }
 
   case range {
-    slice = Slice_Range(e1, e2);
+    slice =: Slice_Range(e1, e2);
     --
     EBinop(ADD, ELint(one), EBinop(SUB, e1, e2));
   }
@@ -3773,7 +4156,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SAssign {
-    s = S_Assign(le, re);
+    s =: S_Assign(le, re);
     annotate_expr(tenv, re) -> (t_re, re1, ses_re);
     annotate_lexpr(tenv, le, t_re) -> (le1, ses_le);
     ses := union(ses_re, ses_le);
@@ -3783,7 +4166,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
 
   case SDecl {
     case Some {
-      s = S_Decl(ldk, ldi, ty_opt, some(e));
+      s =: S_Decl(ldk, ldi, ty_opt, some(e));
       annotate_expr(tenv, e) -> (t_e, e', ses_e);
       annotate_local_decl_type_annot(tenv, ty_opt, t_e, ldk, e', ldi) -> (tenv1, ty_opt', ses_ldi)
       { math_layout = [_,_] };
@@ -3794,7 +4177,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     }
 
     case None {
-      s = S_Decl(LDK_Var, ldi, ty_opt, None);
+      s =: S_Decl(LDK_Var, ldi, ty_opt, None);
       te_check(ty_opt = some(_), TE_BD) -> True;
       base_value(tenv, t') -> e_init;
       annotate_local_decl_item(tenv, t', LDK_Var, None, ldi') -> new_tenv;
@@ -3805,7 +4188,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SSeq {
-    s = S_Seq(s1, s2);
+    s =: S_Seq(s1, s2);
     annotate_stmt(tenv, s1) -> (new_s1, tenv1, ses1);
     annotate_stmt(tenv1, s2) -> (new_s2, new_tenv, ses2);
     ses := union(ses1, ses2);
@@ -3814,14 +4197,14 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SCall {
-    s = S_Call(call);
+    s =: S_Call(call);
     annotate_call(call) -> (call', None, ses);
     --
     (S_Call(call'), tenv, ses);
   }
 
   case SCond {
-    s = S_Cond(e, s1, s2);
+    s =: S_Cond(e, s1, s2);
     annotate_expr(tenv, e) -> (t_cond, e_cond, ses_cond);
     checked_typesat(tenv, t_cond, T_Bool) -> True;
     annotate_block(tenv, s1) -> (s1', ses1);
@@ -3832,7 +4215,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SAssert {
-    s = S_Assert(e);
+    s =: S_Assert(e);
     annotate_expr(tenv, e) -> (t_e', e', ses_e);
     te_check( ses_is_readonly(ses_e) -> True, TE_SEV ) -> True;
     checked_typesat(tenv, t_e', T_Bool) -> True;
@@ -3842,7 +4225,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SWhile {
-    s = S_While(e1, limit1, s1);
+    s =: S_While(e1, limit1, s1);
     annotate_expr(tenv, e1) -> (t, e2, ses_e);
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
     checked_typesat(tenv, t, T_Bool) -> True;
@@ -3853,7 +4236,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SRepeat {
-    s = S_Repeat(s1, e1, limit1);
+    s =: S_Repeat(s1, e1, limit1);
     annotate_block(tenv, s1) -> (s2, ses_block);
     annotate_limit_expr(tenv, limit1) -> (limit2, ses_limit);
     annotate_expr(tenv, e1) -> (t, e2, ses_e);
@@ -3864,7 +4247,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SFor {
-    s = S_For[
+    s =: S_For[
       index_name : index_name,
       start_e    : start_e,
       dir        : dir,
@@ -3903,7 +4286,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SThrow {
-    s = S_Throw(e);
+    s =: S_Throw(e);
     annotate_expr(tenv, e) -> (t_e, e', ses1);
     check_structure_label(tenv, t_e, T_Exception) -> True;
     t_e =: T_Named(exn_name);
@@ -3917,7 +4300,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   // Specifically, there's no need to call `SES.remove_thrown_exceptions`
   // and thus ses3 and ses2 are equal.
   case STry {
-    s = S_Try(s', catchers, otherwise);
+    s =: S_Try(s', catchers, otherwise);
     annotate_block(tenv, s') -> (s'', ses1);
     (INDEX(i, catchers : annotate_catcher(tenv, catchers[i]) -> (catchers'[i], xs[i])))
     { math_layout =  ([_,_]) };
@@ -3929,7 +4312,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     }
 
     case Otherwise {
-      otherwise = some(block);
+      otherwise =: some(block);
       annotate_block(tenv, block) -> (block', ses_block);
       otherwise' := some(otherwise');
       ses_otherwise := ses_block;
@@ -3943,7 +4326,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
 
   case SReturn {
     case Error {
-      s = S_Return(e_opt);
+      s =: S_Return(e_opt);
       b := (tenv.static_envs_L.return_type = None) <=> (e_opt = None);
       b = False;
       --
@@ -3958,7 +4341,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     }
 
     case Some {
-      s = S_Return(some(e));
+      s =: S_Return(some(e));
       tenv.static_envs_L.return_type = some(t);
       annotate_expr(tenv, e) -> (t_e', e', ses);
       checked_typesat(tenv, t_e', t) -> True;
@@ -3968,7 +4351,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SPrint {
-    s = S_Print(args, newline);
+    s =: S_Print(args, newline);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
     INDEX(i, args : te_check(is_singular(tys[i]), TE_UT) -> True);
     ses := union(make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), union_list(sess));
@@ -3983,7 +4366,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SPragma {
-    s = S_Pragma(id, args);
+    s =: S_Pragma(id, args);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (_, _, sess[i]));
     ses := union_list(sess);
     --
@@ -4780,7 +5163,7 @@ typing relation add_new_func(tenv: static_envs, name: Identifier, qualifier: opt
   environment {new_tenv}, which is updated with
   {new_name}. \ProseOtherwiseTypeError",
   prose_application = "",
-  math_layout = [_,_],
+  math_layout = ([_,_,_,_,_],_),
 };
 
 typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(TSideEffect)) ->
@@ -5418,7 +5801,7 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
   prose_application = "",
 } =
   case named {
-    ty = T_Named(x);
+    ty =: T_Named(x);
     declared_type(tenv, x) -> t1;
     get_structure(tenv, t1) -> t;
     --
@@ -5432,21 +5815,21 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
   }
 
   case tuple {
-    ty = T_Tuple(tys);
+    ty =: T_Tuple(tys);
     INDEX(i, tys: get_structure(tenv, tys[i]) -> tys'[i]);
     --
     T_Tuple(tys');
   }
 
   case array {
-    ty = T_Array(e, t);
+    ty =: T_Array(e, t);
     get_structure(tenv, t) -> t1;
     --
     T_Array(e, t1);
   }
 
   case structured {
-    ty = L(fields);
+    ty =: L(fields);
     L in make_set(T_Record, T_Exception, T_Collection);
     list_combine(names, types) := fields;
     INDEX(i, types: get_structure(tenv, types[i]) -> types'[i]);

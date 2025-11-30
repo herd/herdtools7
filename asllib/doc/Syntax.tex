@@ -717,12 +717,12 @@ $n$ such that $\yield(n)=\ts$.
 
 The \emph{language of a grammar} $G$ is defined as follows:
 \[
-\Lang(G) = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
+\Lang{G} = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
 \]
 
 \section{Priority and Associativity\label{sec:PriorityAndAssociativity}}
 A context-free grammar $G$ is \emph{ambiguous} if there can be more than one parse tree for a given list of tokens
-$\ts \in \Lang(G)$.
+$\ts \in \Lang{G}$.
 Indeed the expanded ASL grammar is ambiguous, for example, due to its definition of binary operation expressions.
 To allow assigning a unique parse tree to each sequence of tokens in the language of the ASL grammar,
 we utilize the standard technique of associating priority levels to productions and using them to resolve
