@@ -511,13 +511,28 @@ module ResolveRules = struct
   (** [lhs_of_conclusion] returns an expression representing the LHS of the
       conclusion judgment for relation definition with the given [name] and
       [input] arguments. This function assumes
-      [relation_names_arguments_if_exists_rule] has been called on the AST to
-      ensure that all input arguments have names. *)
+      [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; input } =
-    let input_vars =
-      List.map (fun (name_opt, _) -> Var (Option.get name_opt)) input
+    let rec arg_of (name_opt, arg_type) =
+      if Option.is_some name_opt then Var (Option.get name_opt)
+      else
+        match arg_type with
+        | LabelledTuple { components } ->
+            let args = List.map arg_of components in
+            make_tuple args
+        | LabelledRecord { label_opt; fields } ->
+            let field_exprs =
+              List.map
+                (fun { name_and_type = field_name, field_type; _ } ->
+                  (field_name, arg_of (None, field_type)))
+                fields
+            in
+            (* TODO: pass label_opt down to `Record` when it changes to an optional label. *)
+            Record { label = Option.get label_opt; fields = field_exprs }
+        | _ -> Error.missing_relation_argument_name name
     in
-    Application { applicator = Relation name; args = input_vars }
+    let args = List.map arg_of input in
+    Application { applicator = Relation name; args }
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -1424,17 +1439,29 @@ module Check = struct
         elems
   end
 
-  (** [relation_names_arguments_if_exists_rule ast] checks that for each
-      relation in [ast] that has a rule, all its input arguments have names. *)
-  let relation_names_arguments_if_exists_rule ast =
+  (** [relation_named_arguments_if_exists_rule ast] checks that for each
+      relation in [ast] that has a rule, all its input arguments are either
+      named or can be deconstructed into named components. That is, arguments
+      are either named, tuples whose components are named or recursively named,
+      or records. *)
+  let relation_named_arguments_if_exists_rule ast =
     let open Rule in
+    let rec is_named_argument (opt_name, term) =
+      if Option.is_some opt_name then true
+      else
+        match term with
+        | LabelledTuple { components } ->
+            List.for_all is_named_argument components
+        | LabelledRecord _ -> true
+        | _ -> false
+    in
     let check_relation { Relation.name; input; rule_opt } =
       match rule_opt with
       | None -> ()
       | Some _ ->
           List.iter
-            (fun (opt_name, _) ->
-              if Option.is_none opt_name then
+            (fun arg ->
+              if not (is_named_argument arg) then
                 Error.missing_relation_argument_name name)
             input
     in
@@ -1486,7 +1513,7 @@ let from_ast ast =
   let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
-  let () = Check.relation_names_arguments_if_exists_rule ast in
+  let () = Check.relation_named_arguments_if_exists_rule ast in
   let ast, _ = ResolveRules.resolve ast id_to_defining_node in
   let ast, id_to_defining_node = ExtendNames.extend ast in
   let () = Check.CheckRules.check ast in
