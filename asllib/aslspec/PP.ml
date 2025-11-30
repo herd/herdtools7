@@ -110,8 +110,9 @@ let rec pp_expr fmt =
         args
   | FieldAccess path -> pp_print_string fmt (String.concat "." path)
   | ListIndex { var; index } -> fprintf fmt "%s[%s]" var index
-  | Record { label; fields } ->
-      fprintf fmt "%s[%a]" label
+  | Record { label_opt; fields } ->
+      fprintf fmt "%s[%a]"
+        (Option.value label_opt ~default:"")
         (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
              fprintf fmt "%s : %a" field pp_expr expr))
         fields

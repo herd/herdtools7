@@ -2116,7 +2116,7 @@ typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfiel
 
 typing relation annotate_field_init(
   tenv: static_envs,
-  initializer: (name: Identifier, e': expr),
+  (name: Identifier, e': expr),
   field_types: list0(field)) ->
         (name: Identifier, e'': expr, ses: powerset(TSideEffect)) | type_error
 {
@@ -2157,13 +2157,14 @@ typing relation annotate_get_array(
   check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
   ses := union(ses_index, ses_base);
   new_e :=
-    if (astlabel(size) = ArrayLengthExpr) then
+    if astlabel(size) = ArrayLengthExpr then
       E_GetArray(e_base, e_index')
     else
       E_GetEnumArray(e_base, e_index')
   { math_layout = (lhs, [_]) };
   --
-  (t_elem, new_e, ses);
+  (t_elem, new_e, ses)
+  { math_layout = [_] };
 ;
 
 typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields: list0(field)) ->

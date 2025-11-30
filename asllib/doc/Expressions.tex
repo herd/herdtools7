@@ -1423,7 +1423,7 @@ See \ExampleRef{Array Access Expressions}.
 \end{itemize}
 
 \FormallyParagraph
-\pagebreak
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
@@ -1440,6 +1440,7 @@ See \ExampleRef{Array Access Expressions}.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP
 \RenderRule{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 

@@ -412,7 +412,7 @@ module ResolveRules = struct
   let rec resolve_application_expr id_to_defining_node expr =
     match expr with
     | Var _ | FieldAccess _ | ListIndex _ -> expr
-    | Record { label; fields } ->
+    | Record { label_opt; fields } ->
         let resolved_fields =
           List.map
             (fun (field_name, field_expr) ->
@@ -420,7 +420,7 @@ module ResolveRules = struct
                 resolve_application_expr id_to_defining_node field_expr ))
             fields
         in
-        Record { label; fields = resolved_fields }
+        Record { label_opt; fields = resolved_fields }
     | Application ({ applicator; args } as app) -> (
         let resolved_args =
           List.map (resolve_application_expr id_to_defining_node) args
@@ -527,8 +527,7 @@ module ResolveRules = struct
                   (field_name, arg_of (None, field_type)))
                 fields
             in
-            (* TODO: pass label_opt down to `Record` when it changes to an optional label. *)
-            Record { label = Option.get label_opt; fields = field_exprs }
+            Record { label_opt; fields = field_exprs }
         | _ -> Error.missing_relation_argument_name name
     in
     let args = List.map arg_of input in
