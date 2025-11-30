@@ -1,0 +1,11 @@
+Test TABT001 Allowed
+States 1
+  ~Fault(P0,x,MMU:Translation);
+No
+Witnesses
+Positive: 0 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (fault(P0,x,MMU:Translation))
+Observation TABT001 Never 0 2
+Hash=ff03c028999284ce6e8a1fb716a74100
+

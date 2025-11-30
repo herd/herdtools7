@@ -79,9 +79,10 @@ let mk_lab (p, l) = Label (p, l)
 %token LBRK RBRK LPAR RPAR LCURLY RCURLY SEMI COLON AMPER COMMA
 %token ATOMIC
 %token ATOMICINIT
-%token ATTRS TOK_OA
-%token TOK_PTE TOK_PA
+%token ATTRS DTYPE TOK_OA
+%token TOK_PTE TOK_PA TOK_TTD
 %token TOK_TAG
+%token LEVEL_LV2 LEVEL_LV3 STAGE_S1 STAGE_S2
 %token TOK_NOP
 %token <string> INSTR
 %token <int * string> LABEL
@@ -127,6 +128,11 @@ location_global:
 | NAME { Constant.mk_sym $1 }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
+| TOK_TTD LPAR name=NAME RPAR { Constant.mk_sym_pte name }
+| TOK_TTD LPAR name=NAME COMMA s=stage COMMA l=level RPAR
+    { Constant.mk_sym_ttd name s l }
+| TOK_TTD LPAR name=NAME COMMA l=level RPAR
+    { Constant.mk_sym_ttd name S1 l }  (* default stage 1 *)
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
@@ -140,9 +146,9 @@ name_or_num:
 | NUM { $1 }
 
 output_address:
-| name=NAME { OutputAddress.parse name }
 | TOK_PA LPAR name=NAME RPAR { OutputAddress.PHY name }
 | TOK_PTE LPAR name=NAME RPAR { OutputAddress.PTE name }
+| name=NAME { OutputAddress.parse name }
 
 prop_tail:
 | { ParsedPteVal.empty }
@@ -158,9 +164,19 @@ prop_head:
 | ATTRS COLON LPAR attrs=separated_nonempty_list(COMMA, NAME) RPAR
   tail=prop_tail
     { ParsedPteVal.add_attrs attrs tail }
+| DTYPE COLON dt=NAME tail=prop_tail
+    { ParsedPteVal.set_type (DescriptorType.of_string dt) tail}
 
 pteval:
 | LPAR pteval=prop_head RPAR { pteval }
+
+stage:
+| STAGE_S1 { S1 }
+| STAGE_S2 { S2 }
+
+level:
+| LEVEL_LV2 { LV2 }
+| LEVEL_LV3 { LV3 }
 
 addrregval_update_tail:
 | { ParsedAddrReg.empty }
@@ -284,7 +300,15 @@ atom_init:
 | typ=NAME loc=left_loc EQUAL v=pteval
   { (loc,(Ty typ, MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=pteval
-  { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
+  {
+    let dt = ParsedPteVal.get_type v in
+    let ty =
+      match dt with
+      | DescriptorType.Page -> "pteval_t"
+      | DescriptorType.Block | DescriptorType.Table -> "pmdval_t"
+    in
+    (loc, (Ty ty, MiscParser.add_oa_if_none loc v))
+  }
 
 init_semi_list:
 | {[]}

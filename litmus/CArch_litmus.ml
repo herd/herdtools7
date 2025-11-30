@@ -84,6 +84,9 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
     | Location_global (G.Addr s) -> s
     | Location_global (G.Pte s) -> Printf.sprintf "pte_%s" s
+    | Location_global (G.Ttd {stage=G.Stage1;level=G.Lv3;s}) -> Printf.sprintf "pte_%s" s
+    | Location_global (G.Ttd {stage=G.Stage1;level=G.Lv2;s}) -> Printf.sprintf "pmd_%s" s
+    | Location_global (G.Ttd _)
     | Location_global (G.Phy _)
       -> assert false
 

@@ -145,6 +145,9 @@ module Make(O:Config)(I:I) : S with module I = I
     | Location_reg (proc,reg) -> Out.dump_out_reg proc reg
     | Location_global (G.Addr s) -> s
     | Location_global (G.Pte s) -> Misc.add_pte s
+    | Location_global (G.Ttd {stage=G.Stage1;level=G.Lv3;s}) -> Misc.add_pte s
+    | Location_global (G.Ttd {stage=G.Stage1;level=G.Lv2;s}) -> Misc.add_pmd s
+    | Location_global (G.Ttd _)
     | Location_global (G.Phy _)
       -> assert false
 

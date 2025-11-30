@@ -1,0 +1,11 @@
+Test TABT005 Allowed
+States 1
+  ~Fault(P0,x,MMU:AccessFlag);
+No
+Witnesses
+Positive: 0 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (fault(P0,x,MMU:AccessFlag))
+Observation TABT005 Never 0 2
+Hash=ffffe97d23b6f779557d818f674776b0
+
