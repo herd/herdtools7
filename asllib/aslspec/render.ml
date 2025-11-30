@@ -518,6 +518,9 @@ module Make (S : SPEC_VALUE) = struct
       let op_macro = get_or_gen_math_macro op_name in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
+      | [] ->
+          (* A nullary operator. *)
+          fprintf fmt "%a" pp_macro op_macro
       | [ _ ] when is_prefix_list_operator operator ->
           (* A variadic operator over a list of arguments. *)
           fprintf fmt "%a{%a}" pp_macro op_macro
