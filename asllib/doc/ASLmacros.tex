@@ -274,6 +274,7 @@
 %% Operator macros
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
+\newcommand\freshidentifier[0]{\text{fresh from }\Identifier}
 \newcommand\astlabelop[1]{\astlabel(#1)} % DO NOT LINT
 \newcommand\makestructured[3][H]{ % DO NOT LINT
     {#2}\left({#3}\right)
@@ -290,6 +291,30 @@
     \forall
     \begin{array}{ll}
     {#2} \in {#3}:\\
+    {#4}\\
+    \end{array}
+  \fi
+}
+
+\newcommand\listforall[4][H]{% DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \forall {#2} \in \listrange({#3}) : {#4}
+  \else
+    \forall
+    \begin{array}{ll}
+    {#2} \in \listrange({#3}):\\
+    {#4}\\
+    \end{array}
+  \fi
+}
+
+\newcommand\listexists[4][H]{% DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \exists {#2} \in \listrange({#3}) : {#4}
+  \else
+    \exists
+    \begin{array}{ll}
+    {#2} \in \listrange({#3}):\\
     {#4}\\
     \end{array}
   \fi
@@ -449,6 +474,8 @@
 \newcommand\orderedpo[0]{\hyperlink{def-ordered}{\xrightarrow{\aslpo}}} % DO NOT LINT
 \newcommand\graphof[1]{\hyperlink{operator-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
 \newcommand\environof[1]{\hyperlink{operator-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\WriteEffectop[1]{\WriteEffect\langle{#1}\rangle}
+\newcommand\ReadEffectop[1]{\ReadEffect\langle{#1}\rangle} % DO NOT LINT
 
 \newcommand\withgraph[3][H]{ {#2}(\hyperlink{operator-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
 \newcommand\withenviron[3][H]{ {#2}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
@@ -458,6 +485,8 @@
 \newcommand\decimaltolit[1]{\decimaltolitname\left(#1\right)} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\nvintop[1]{\nvint\left(#1\right)}
+\newcommand\nvboolop[1]{\nvbool\left(#1\right)}
+\newcommand\nvstringop[1]{\nvstring\left(#1\right)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -957,7 +986,7 @@
 \newcommand\Lang[1]{\hyperlink{def-lang}{\textsf{Lang}}\left(#1\right)}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
-\newcommand\vnewline[0]{\hyperlink{def-newline}{\texttt{newline}}}
+\newcommand\vnewline[0]{\hyperlink{constant-newline}{\texttt{newline}}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
@@ -1104,12 +1133,12 @@
 \newcommand\aslpo[0]{\hyperlink{constant-aslpo}{\mathtt{asl\_po}}}
 
 \newcommand\Nodes[0]{\hyperlink{type-Nodes}{\mathcal{N}}}
-\newcommand\Read[0]{\hyperlink{constant-Read}{\text{Read}}}
-\newcommand\Write[0]{\hyperlink{constant-Write}{\text{Write}}}
+\newcommand\Read[0]{\hyperlink{type-Read}{\text{Read}}}
+\newcommand\Write[0]{\hyperlink{type-Write}{\text{Write}}}
 \newcommand\Labels[0]{\hyperlink{type-Labels}{\mathcal{L}}}
 \newcommand\XGraphs[0]{\hyperlink{type-XGraphs}{\mathcal{G}}}
-\newcommand\WriteEffect[0]{\hyperlink{def-writeeffect}{\textsf{WriteEffect}}}
-\newcommand\ReadEffect[0]{\hyperlink{def-readeffect}{\textsf{ReadEffect}}}
+\newcommand\WriteEffect[0]{\hyperlink{operator-writeeffect}{\textsf{WriteEffect}}}
+\newcommand\ReadEffect[0]{\hyperlink{operator-readeffect}{\textsf{ReadEffect}}}
 
 \newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\mathbb{E}}}}
 

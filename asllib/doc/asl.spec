@@ -70,6 +70,11 @@ typedef Strings
    math_macro = \Strings,
 };
 
+constant new_line
+{
+  math_macro = \vnewline,
+};
+
 typedef ASTLabels
 { "AST label",
    math_macro = \ASTLabels,
@@ -94,6 +99,11 @@ typedef def_use_name { "subprogram identifier kind" } =
 // Some of the operators below will be removed once type parameters
 // are made available to ordinary relations.
 
+operator fresh_identifier() -> Identifier
+{
+  math_macro = \freshidentifier,
+};
+
 // This type represents variables appearing in aslspec expressions.
 // It is used by operators to introduce bound variables.
 typedef variable { "variable" };
@@ -101,6 +111,16 @@ typedef variable { "variable" };
 operator forall[T](bound_var: variable, domain: powerset(T), fun T -> Bool) -> Bool
 {
   math_macro = \forallop,
+};
+
+operator list_forall[T](bound_var: variable, domain: list0(T), fun T -> Bool) -> Bool
+{
+  math_macro = \listforall,
+};
+
+operator list_exists[T](bound_var: variable, domain: list0(T), fun T -> Bool) -> Bool
+{
+  math_macro = \listexists,
 };
 
 operator list_from_indices[A,B](index: variable, elements: list0(A), operation: partial N -> B) -> list0(B)
@@ -381,9 +401,20 @@ operator concat_strings(prefix: Strings, suffix: Strings) -> (result: Strings)
 ////////////////////////////////////////
 // Execution graph operators
 
-operator parallel(XGraphs, XGraphs) -> XGraphs
+operator WriteEffect(x: Identifier) -> (N, write: effect_type, Identifier)
+{
+  math_macro = \WriteEffectop,
+};
+
+operator ReadEffect(x: Identifier) -> (N, read: effect_type, Identifier)
+{
+  math_macro = \ReadEffectop,
+};
+
+operator parallel(list1(XGraphs)) -> XGraphs
 {
   math_macro = \parallelcomp,
+  associative = true,
 };
 
 operator ordered_data(list1(XGraphs)) -> XGraphs
@@ -426,9 +457,39 @@ operator with_environ[T](T, envs) -> T
   math_macro = \withenviron,
 };
 
+operator ReturningConfig() -> TReturning
+{
+  math_macro = \ReturningConfig,
+};
+
+operator ThrowingConfig() -> TThrowing
+{
+  math_macro = \ThrowingConfig,
+};
+
+operator DynErrorConfig() -> TDynError
+{
+  math_macro = \DynErrorConfig,
+};
+
+operator DivergingConfig() -> TDiverging
+{
+  math_macro = \DivergingConfig,
+};
+
+operator nvbool(b: Bool) -> NV_Literal(L_Bool(Bool))
+{
+  math_macro = \nvboolop,
+};
+
 operator nvint(z: Z) -> NV_Literal(L_Int(Z))
 {
   math_macro = \nvintop,
+};
+
+operator nvstring(z: Z) -> NV_Literal(L_String(Strings))
+{
+  math_macro = \nvstringop,
 };
 
 ////////////////////////////////////////
@@ -1452,11 +1513,12 @@ typedef envs
 ////////////////////////////////////////////////////////////////////////////////
 // Concurrent Execution Graphs
 
-constant Read
-{ "read effect", math_macro = \Read };
-
-constant Write
-{ "write effect", math_macro = \Write };
+typedef effect_type =
+  | Read
+    { "read effect", math_macro = \Read }
+  | Write
+  { "write effect", math_macro = \Write }
+;
 
 constant asldata
 { "data dependency", math_macro = \asldata };
@@ -1481,7 +1543,7 @@ typedef Nodes
     "execution graph nodes",
     math_macro = \Nodes,
 } =
-    (node_id: N, effect_type: constants_set(Read, Write), storage_element: Identifier)
+    (node_id: N, effect_type, storage_element: Identifier)
     {
         "execution graph node with identifier {node_id}, operation type {operation_type}, and storage element {storage_element}",
     }
@@ -1498,7 +1560,7 @@ typedef XGraphs
     }
 ;
 
-render xgraphs_and_components = XGraphs(-), Nodes(-), Labels(-);
+render xgraphs_and_components = XGraphs(-), Nodes(-), Labels(-), effect_type(-);
 
 constant empty_graph { "empty execution graph", math_macro = \emptygraph };
 
@@ -1596,7 +1658,7 @@ typedef TThrowing
     "throwing execution result",
     short_circuit_macro = \ThrowingConfig,
 } =
-    Throwing(exception_value: native_value, exception_type: ty, graph: XGraphs, environment: envs)
+    Throwing(exception_value: value_read_from, exception_type: ty, graph: XGraphs, environment: envs)
     { "throwing result with exception value {exception_value}, type {exception_type}, {graph}, and {environment}" }
 ;
 
@@ -1630,6 +1692,7 @@ typedef TDynError
 
 typedef dynamic_error_code { "dynamic error code" } =
   | DE_UNR  { "Dynamic unreachable error" }
+  | DE_DAF  { "Dynamic assertion failure" }
   | DE_TAF  { "Dynamic type assertion failure" }
   | DE_AET  { "ARBITRARY empty type" }
   | DE_BO   { "Bad operands" }
@@ -4282,7 +4345,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SAssert {
     s =: S_Assert(e);
     annotate_expr(tenv, e) -> (t_e', e', ses_e);
-    te_check( ses_is_readonly(ses_e) -> True, TE_SEV ) -> True;
+    te_check( ses_is_readonly(ses_e), TE_SEV ) -> True;
     check_type_satisfies(tenv, t_e', T_Bool) -> True;
     ses := ses_e;
     --
@@ -4569,7 +4632,275 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
                         \end{itemize}",
  prose_application = "",
  math_layout = (_, [_,_,_,_,_]),
-};
+} =
+  case SPass {
+    s = SPass;
+    --
+    Continuing(empty_graph, env);
+  }
+
+  case SAssignCall {
+    s =: S_Assign(LE_Destructuring(les), E_Call(call));
+    list_forall(i, les, lexpr_is_var(les[i]));
+    eval_call(env, call.name, call.params, call.args) -> ResultCall(ms, env1)
+    { math_layout = [_] };
+    eval_multi_assignment(env1, les, ms) -> ResultLexpr(new_g, new_env);
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case SAssign {
+    s =: S_Assign(le, re);
+    (or(
+      ast_label(le) != LE_Destructuring,
+      ast_label(re) != E_Call,
+      le =: LE_Destructuring(les) &&
+      list_exists(i, les, not(lexpr_is_var(les[i])))
+    ))
+    { math_layout = ( [_] ) };
+    eval_expr(env, re) -> ResultExpr(vm, env1);
+    eval_lexpr(env1, le, vm) -> ResultLexpr(new_g, new_env);
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case SDecl {
+    s =: S_Decl(_, ldi, _, some(e));
+    eval_expr(env, e) -> ResultExpr(vm, env1);
+    eval_local_decl(env1, ldi, vm) -> ResultLexpr(new_g, new_env);
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case SSeq {
+    s =: S_Seq(s1, s2);
+    eval_stmt(env, s1) -> Continuing(g1, env1);
+    case continuing {
+      eval_stmt(env1, s2) -> Continuing(g2, new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      new_g := ordered_po(g1, g2);
+      --
+      Continuing(new_g, new_env);
+    }
+    case returning {
+      eval_stmt(env1, s2) -> Returning((vs, g2), new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      new_g := ordered_po(g1, g2);
+      --
+      Returning((vs, new_g), new_env);
+    }
+  }
+
+  case SCall {
+    s =: S_Call(call);
+    eval_call(env, call.name, call.params, call.args) -> ResultCall(new_g, new_env)
+    { math_layout = [_] };
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case SCond {
+    s =: S_Cond(e, s1, s2);
+    eval_expr(env, e) -> ResultExpr((v, g1), env1);
+    v =: nvbool(b);
+    s' := if b then s1 else s2;
+    case continuing {
+      eval_block(env1, s') -> Continuing(g2, new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      new_g := ordered_ctrl(g1, g2);
+      --
+      Continuing(new_g, new_env);
+    }
+    case returning {
+      eval_block(env1, s') -> Returning((vs, g2), new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      new_g := ordered_ctrl(g1, g2);
+      --
+      Returning((vs, new_g), new_env);
+    }
+  }
+
+  case SAssert {
+    s =: S_Assert(e);
+    eval_expr(env, e) -> ResultExpr((v, new_g), new_env);
+    case okay {
+      v =: nvbool(True);
+      --
+      Continuing(new_g, new_env);
+    }
+    case error {
+      v =: nvbool(False);
+      --
+      DynamicError(DE_DAF);
+    }
+  }
+
+  case SWhile {
+    s =: S_While(e, e_limit_opt, body);
+    eval_limit(env, e_limit_opt) -> (limit_opt, g1);
+    case continuing {
+      eval_loop(env, True, limit_opt, e, body) -> Continuing(g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_data(g1, g2);
+      --
+      Continuing(new_g, new_env);
+    }
+    case returning {
+      eval_loop(env, True, limit_opt, e, body) -> Returning((vs, g2), new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_data(g1, g2);
+      --
+      Returning((vs, new_g), new_env);
+    }
+    case throwing {
+      eval_loop(env, True, limit_opt, e, body) -> Throwing(v, t, g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_data(g1, g2);
+      --
+      Throwing(v, t, new_g, new_env);
+    }
+  }
+
+  case SRepeat {
+    s =: S_Repeat(body, e, e_limit_opt);
+    eval_limit(env, e_limit_opt) -> (limit_opt1, g1);
+    tick_loop_limit(limit_opt1) -> limit_opt2;
+    eval_block(env, body) -> Continuing(g2, env1);
+    case continuing {
+      eval_loop(env1, False, limit_opt2, e, body) -> Continuing(g3, new_env) | DynErrorConfig(), DivergingConfig()
+      { math_layout = [_] };
+      new_g := ordered_data(g1, ordered_po(g2, g3));
+      --
+      Continuing(new_g, new_env);
+    }
+    case returning {
+      eval_loop(env1, False, limit_opt2, e, body) -> Returning((vs, g3), new_env) | DynErrorConfig(), DivergingConfig()
+      { math_layout = [_] };
+      new_g := ordered_data(g1, ordered_po(g2, g3));
+      --
+      Returning((vs, new_g), new_env);
+    }
+    case throwing {
+      eval_loop(env1, False, limit_opt2, e, body) -> Throwing(v, t, g4, new_env) | DynErrorConfig(), DivergingConfig()
+      { math_layout = [_] };
+      new_g := ordered_data(g1, ordered_po(g2, g3));
+      --
+      Throwing(v, t, new_g, new_env);
+    }
+  }
+
+  case SFor {
+    s =: S_For [
+      index_name: index_name,
+      start_e:    e_start,
+      dir:        dir,
+      end_e:      e_end,
+      body:       body,
+      limit:      e_limit_opt
+    ];
+    eval_expr_sef(env, e_start) -> ResultExprSEF(start_v, g1);
+    eval_expr_sef(env, e_end) -> ResultExprSEF(end_v, g2);
+    eval_limit(env, e_limit_opt) -> (limit_opt, g3);
+    declare_local_identifier(env, index_name, start_v) -> (g4, env1);
+    eval_for(env1, index_name, limit_opt, start_v, dir, end_v, body) -> Continuing(g5, env2)
+    { math_layout = [_] };
+    remove_local(env2, index_name) -> env3;
+    new_g := ordered_data((parallel(g1, g2, g3)), ordered_po(g4, g5));
+    new_env := env3;
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case SThrow {
+    s =: S_Throw(e, t);
+    eval_expr(env, e) -> ResultExpr((v, g1), new_env);
+    name := fresh_identifier();
+    g2 := WriteEffect(name);
+    new_g := ordered_data(g1, g2);
+    ex := (v, name_fresh);
+    --
+    Throwing(ex, t, new_g, new_env);
+  }
+
+  case STry {
+    s =: S_Try(s1, catchers, otherwise_opt);
+    case continuing {
+      eval_block(env, s1) -> Continuing(g, new_env) | DynErrorConfig(), DivergingConfig();
+      eval_catchers(env, catchers, otherwise_opt, Continuing(g, new_env)) -> C | ;
+    }
+    case returning {
+      eval_block(env, s1) -> Returning((vs, g), new_env) | DynErrorConfig(), DivergingConfig();
+      eval_catchers(env, catchers, otherwise_opt, Returning((vs, g), new_env)) -> C | ;
+    }
+    case throwing {
+      eval_block(env, s1) -> Throwing(v, t, g, new_env) | DynErrorConfig(), DivergingConfig();
+      eval_catchers(env, catchers, otherwise_opt, Throwing(v, t, g, new_env)) -> C | ;
+    }
+    eval_catchers(env, catchers, otherwise_opt, sm) -> C | ;
+    --
+    C;
+  }
+
+  case SReturn {
+    case none {
+      s =: S_Return(None);
+      --
+      Returning((empty_list, empty_graph), env);
+    }
+    case one {
+      s =: S_Return(some(e));
+      eval_expr(env, e) -> ResultExpr((v, g1), new_env);
+      wid := fresh_identifier();
+      write_identifier(wid, v) -> g2;
+      new_g := ordered_data(g1, g2);
+      --
+      Returning((make_list(v), new_g), new_env);
+    }
+    case tuple {
+      s =: S_Return(some(E_Tuple(es)));
+      eval_expr_list_m(env, es) -> ResultExprListM(ms, new_env);
+      write_folder(ms) -> (vs, new_g);
+      --
+      Returning((vs, new_g), new_env);
+    }
+  }
+
+ case SPrint {
+   case print {
+     s =: S_Print(elist, False);
+     eval_expr_list(env, e_list) -> ResultExprList((v_list, g), env_1);
+     envs[one] = env;
+     INDEX(i, list: output_to_console(envs[i], v_list[i]) -> envs[i + one]);
+     n := list_len(v_list);
+     new_env := envs[n + one];
+     --
+     Continuing(g, new_env);
+   }
+   case println {
+     s =: S_Print(elist, True);
+     eval_stmt(env, S_Print(elist, False)) -> Continuing(g, env1);
+     output_to_console(env1, nvstring(new_line)) -> new_env;
+     --
+     Continuing(g, new_env);
+   }
+ }
+
+ case SUnreachable {
+   s =: S_Unreachable;
+   --
+   DynamicError(DE_UNR);
+ }
+;
+
+render rule eval_stmt_SPass = eval_stmt(SPass);
+render rule eval_stmt_SAssignCall = eval_stmt(SAssignCall);
+render rule eval_stmt_SAssign = eval_stmt(SAssign);
+render rule eval_stmt_SDecl = eval_stmt(SDecl);
+render rule eval_stmt_SSeq = eval_stmt(SSeq);
+render rule eval_stmt_SCall = eval_stmt(SCall);
+render rule eval_stmt_SCond = eval_stmt(SCond);
+render rule eval_stmt_SAssert = eval_stmt(SAssert);
+render rule eval_stmt_SWhile = eval_stmt(SWhile);
+render rule eval_stmt_SRepeat = eval_stmt(SRepeat);
+render rule eval_stmt_SFor = eval_stmt(SFor);
+render rule eval_stmt_SThrow = eval_stmt(SThrow);
+render rule eval_stmt_STry = eval_stmt(STry);
+render rule eval_stmt_SReturn = eval_stmt(SReturn);
+render rule eval_stmt_SPrint = eval_stmt(SPrint);
+render rule eval_stmt_SUnreachable = eval_stmt(SUnreachable);
 
 semantics function output_to_console(env: envs, v: native_value) -> (new_env: envs)
 {

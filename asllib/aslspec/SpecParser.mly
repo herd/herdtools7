@@ -421,7 +421,7 @@ let expr :=
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
       { Rule.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
-      { Rule.make_record label_opt fields }    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
+      { Rule.make_record label_opt fields }
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
       { Rule.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;

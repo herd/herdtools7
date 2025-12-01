@@ -209,12 +209,8 @@ is defined via a set of \emph{nodes} ($N^\xgraph$), a set of \emph{edges} ($E^\x
 
 \RenderTypes{xgraphs_and_components}
 
-
-The label
-\RenderConstant{Read}
-stands for a \emph{read effect type}, and the label
-\RenderConstant{Write}
-stands for a \emph{write effect type}.
+The label $\Read$ stands for a \emph{read effect type}, and the label
+$\Write$ stands for a \emph{write effect type}.
 %
 Nodes represent unique Read and Write Effects. Formally, a node $(u,l,\id) \in \Nodes$ associates a unique instance counter $u$
 to an \emph{ordering label} $l$, which specifies whether it represents a Read Effect or a Write Effect to a storage element named $\id$.
@@ -252,8 +248,8 @@ and the output nodes are contained in the set of nodes:
 We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
 %
 We define the following functions, which return an execution graph that represents a single Read/Write Effect to a variable \texttt{x}.
-\hypertarget{def-writeeffect}{}
-\hypertarget{def-readeffect}{}
+\hypertarget{operator-writeeffect}{}
+\hypertarget{operator-readeffect}{}
 \begin{definition}[Read/Write Effects]
 \[
   \begin{array}{rclll}
