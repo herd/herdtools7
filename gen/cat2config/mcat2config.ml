@@ -164,7 +164,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     }
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
-  let results =
+  let requested_bindings =
     opts.lets_to_print
     |> List.filter_map (fun var ->
         match StringMap.find_opt var nf_map with
@@ -175,13 +175,14 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             Log.eprintv 0 "Failed to evaluate let binding `%s`.@." var;
             None
         | Some nfs ->
+            if opts.show = Some Tree then (
+              let compressed = Ir.union_l (List.map fst nfs) |> Ir.compress in
+              Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed;
+              ());
             let nfs =
               nfs
               |> List.map (fun (nf, ast_expr) ->
                   let nf = Ir.expand_acq_rel nf in
-                  let nf = Ir.compress nf in
-                  (* if opts.show = Some Tree then *)
-                  (*   Format.printf "%a@." Ir.pp_rel_nf nf; *)
                   let nf = Ir.expand_domain_range nf in
                   (nf, ast_expr))
             in
@@ -193,7 +194,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     printf "-nprocs 2@.";
     printf "-size 6@.";
     printf "-name cat2config-conf@.";
-    results
+    requested_bindings
     |> List.iter (fun (var, nfs) ->
         printf "@.";
         printf "### %s@." var;
@@ -220,7 +221,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
         in
         ()))
   else
-    results
+    requested_bindings
     |> List.iter (fun (_, nfs) ->
         nfs
         |> List.iter (fun (nf, _) ->
