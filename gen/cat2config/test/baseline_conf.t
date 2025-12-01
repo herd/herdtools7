@@ -1,8 +1,4 @@
   $ mcat2config7 -set-libdir ./libdir -conf true -showrels true -let ca -let Exp-haz-ob -let haz-ob -let Exp-obs -let DSB-ob -let IFB-ob -let dob -let pob -let aob -let bob -let lwfs libdir/aarch64.cat
-  -arch AArch64
-  -nprocs 2
-  -size 6
-  -name cat2config-conf
   
   ### ca
   ## fr
