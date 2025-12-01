@@ -6,5 +6,5 @@ Witnesses
 Positive: 1 Negative: 0
 Condition forall ([y]=1 /\ [z]=1 /\ [a]=0)
 Observation V12 Always 1 0
-Hash=10f848be208c3461171aba83166de18b
+Hash=76a31d316f87b77db6cd8d67f86c6ebe
 

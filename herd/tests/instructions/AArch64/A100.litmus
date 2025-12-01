@@ -1,7 +1,7 @@
 AArch64 A100
 (* Strb immediate, no offset, symbolic location *)
 
- { 0:x0=1; 0:x2=x}
+ { int8_t x; 0:x0=1; 0:x2=x}
 
 P0;
   STRB W0, [X2];
