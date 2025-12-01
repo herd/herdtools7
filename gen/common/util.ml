@@ -88,10 +88,6 @@ module List = struct
     in
     uniq eq [] l
 
-  let rec drop_while (p : 'a -> bool) : 'a list -> 'a list = function
-    | [] -> []
-    | x :: xs -> if p x then drop_while p xs else x :: xs
-
   module Infix = struct
     let (>>=) = fun x f -> concat_map f x
     let (let*) = (>>=)
@@ -105,23 +101,13 @@ module List = struct
         let* xs' = sequence xs in
         [ x' :: xs' ]
 
-  module Traversal (M: Monad) = struct
-    let rec fold_left (f : 'acc -> 'a -> 'acc M.t) (v : 'acc) : 'a list -> 'acc M.t =
-      let open M.Infix in
-      function
-        | [] -> M.return v
-        | x :: xs ->
-          let* acc = f v x in
-          fold_left f acc xs
-  end
+  let rec fold_left_opt (f : 'acc -> 'a -> 'acc option) (v : 'acc) : 'a list -> 'acc option =
+    function
+      | [] -> Some v
+      | x :: xs -> Option.bind (f v x) (fun acc -> fold_left_opt f acc xs)
 end
 
 module Option = struct
-  let rec choice : 'a option list -> 'a option = function
-    | [] -> None
-    | None :: l -> choice l
-    | Some x :: _ -> Some x
-
   let rec choice_fn : (unit -> 'a option) list -> 'a option = function
     | [] -> None
     | f :: l -> let x = f () in if Option.is_some x then x else choice_fn l

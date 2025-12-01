@@ -48,20 +48,14 @@ module List : sig
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
   val uniq : eq:('a -> 'a -> bool) -> 'a list -> 'a list
   val sequence : 'a list list -> 'a list list
-  val drop_while : ('a -> bool) -> 'a list -> 'a list
+  val fold_left_opt : ('acc -> 'a -> 'acc option) -> 'acc -> 'a list -> 'acc option
 
   include Monad with type 'a t := 'a list
-
-  module Traversal : (M : Monad) ->
-    sig
-      val fold_left : ('acc -> 'a -> 'acc M.t) -> 'acc -> 'a list -> 'acc M.t
-    end
 end
 
 module Option : sig
   (* Returns the first non-None element in the given list,
      or None if all elements are None. *)
-  val choice : 'a option list -> 'a option
   val choice_fn : (unit -> 'a option) list -> 'a option
   val guard : bool -> unit option
 

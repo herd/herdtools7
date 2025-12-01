@@ -1,13 +1,6 @@
 [@@@warning "-42"]
 
 module UList = Util.List
-
-module List_traversal = Util.List.Traversal (struct
-  type 'a t = 'a option
-
-  include Util.Option
-end)
-
 open Ir
 
 let merge_dir_opt d1 d2 =
@@ -119,7 +112,7 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
     | _ -> None
 
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
-  List_traversal.fold_left apply_prim_set
+  UList.fold_left_opt apply_prim_set
 
 let build_tedges : prim_rel -> E.tedge list =
   let sds = Code.[ Diff; Same ] in
@@ -162,7 +155,7 @@ let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
     | _ -> None
 
 let build_edge : partial_edge -> prim_rel list -> partial_edge option =
-  List_traversal.fold_left apply_prim_rel
+  UList.fold_left_opt apply_prim_rel
 
 let implied_constraints (l : prim_rel list) :
     prim_set list * prim_rel list * prim_set list =
