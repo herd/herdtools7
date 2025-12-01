@@ -7,6 +7,7 @@ type ('s, 'r) seq_item = Set of 's inter | Rel of 'r inter
 type ('s, 'r) seq = Seq of ('s, 'r) seq_item list
 type 'a union = Union of 'a list
 
+let get_inter (Inter l : 'a inter) = l
 let get_union (Union l : 'a union) : 'a list = l
 let get_seq (Seq l : ('s, 'r) seq) : ('s, 'r) seq_item list = l
 
