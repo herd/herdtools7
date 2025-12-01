@@ -188,12 +188,8 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             in
             Some (var, nfs))
   in
-  if opts.conf then (
+  if opts.conf then
     let open Format in
-    printf "-arch AArch64@.";
-    printf "-nprocs 2@.";
-    printf "-size 6@.";
-    printf "-name cat2config-conf@.";
     requested_bindings
     |> List.iter (fun (var, nfs) ->
         printf "@.";
@@ -219,7 +215,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
                 acc (Ir.get_union nf))
             [] nfs
         in
-        ()))
+        ())
   else
     requested_bindings
     |> List.iter (fun (_, nfs) ->
