@@ -45,8 +45,8 @@ module Arg = struct
           "<cond> choose what variant conditions to set" );
         ( "-unroll",
           Arg.Int (fun i -> unroll := i),
-          "<unroll> choose how many times transitive and reflexive and \
-           transitive operators unroll. Default = 1" );
+          "<unroll> choose how many times reflexive and transitive operators \
+           unroll. Default = 1" );
         ( "-set-libdir",
           Arg.String (fun s -> libdir := Some s),
           "<path> set location of libdir to <path>" );
