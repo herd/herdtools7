@@ -70,30 +70,14 @@ module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
 module E = Edge.Make (Edge.Config) (A : Fence.S)
 
 type fence = AArch64Base.barrier
-
-(* type edge = { edge : E.tedge; pprinted : string } *)
-type prim_edge =
-  | Po
-  | Co
-  | Fr
-  | Rf
-  | Fence of fence
-  | Dp of A.D.dp
-  | PickDp of A.D.dp
-  | Amo
-  | Rmw
-  | LxSx
-
-type prim_rel = Loc | Ext | Edge of prim_edge
+type prim_rel = Fence of fence | Prim of string
 
 type prim_set =
   | Domain of seq_item seq
   | Range of seq_item seq
   | Fence of fence option
-  | Atom of A.atom_acc
-  | Dir of Code.dir
-  | M
   | Comp of prim_set
+  | Prim of string
 
 and seq_item = Set of prim_set inter | Rel of prim_rel inter
 and set_nf = prim_set inter union
@@ -172,10 +156,10 @@ let prim_sets : prim_set list -> set_nf = fun p -> Union [ Inter p ]
 let prim_rel : prim_rel -> rel_nf = fun p -> Union [ Seq [ Rel (Inter [ p ]) ] ]
 
 let prim_set_comp : prim_set -> prim_set inter union = function
-  | Fence None -> prim_set M
-  | M -> prim_set (Fence None)
-  | Dir R -> union_l [ prim_set (Dir W); prim_set (Fence None) ]
-  | Dir W -> union_l [ prim_set (Dir R); prim_set (Fence None) ]
+  | Fence None -> prim_set (Prim "M")
+  | Prim "M" -> prim_set (Fence None)
+  | Prim "R" -> union_l [ prim_set (Prim "W"); prim_set (Fence None) ]
+  | Prim "W" -> union_l [ prim_set (Prim "R"); prim_set (Fence None) ]
   | Comp s -> prim_set s
   | s -> prim_set (Comp s)
 
@@ -183,7 +167,7 @@ let empty_set : set_nf = Union []
 let empty_rel : rel_nf = Union []
 let domain : rel_nf -> set_nf = map_union (fun s -> Inter [ Domain s ])
 let range : rel_nf -> set_nf = map_union (fun s -> Inter [ Range s ])
-let fencerel (f : fence) : rel_nf = prim_rel (Edge (Fence f))
+let fencerel (f : fence) : rel_nf = prim_rel (Fence f)
 let rel_union_l : rel_nf list -> rel_nf = union_l
 let set_union_l : set_nf list -> set_nf = union_l
 
@@ -244,26 +228,16 @@ let parse_set_id (s : string) : set_nf option =
   let try_other_prims () =
     match s with
     | "Exp" -> Some universe_set
-    | "NExp" -> Some empty_set
-    | "Imp" -> Some empty_set
-    | "R" -> Some (prim_set (Dir Code.R))
-    | "W" -> Some (prim_set (Dir Code.W))
-    | "M" -> Some (prim_set M)
-    | "A" -> Some (prim_set (Atom (Acq None)))
-    | "L" -> Some (prim_set (Atom (Rel None)))
-    | "Q" -> Some (prim_set (Atom (AcqPc None)))
+    | "R" | "W" | "M" | "A" | "L" | "Q" -> Some (prim_set (Prim s))
     | "F" -> Some (prim_set (Fence None))
-    | "TTD" -> Some empty_set
-    | "Instr" -> Some empty_set
-    | "emptyset" -> Some empty_set
-    | "NoRet" -> Some empty_set
-    | "T" -> Some empty_set
-    | "dmb.sy" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
-    | "dmb.full" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
+    | "TTD" | "Instr" | "emptyset" | "NoRet" | "T" | "NExp" | "Imp" ->
+        Some empty_set
+    | "dmb.sy" | "dmb.full" ->
+        Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
+    | "dsb.sy" | "dsb.full" ->
+        Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
     | "dmb.st" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, ST)))))
     | "dmb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, LD)))))
-    | "dsb.sy" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
-    | "dsb.full" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
     | "dsb.st" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, ST)))))
     | "dsb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, LD)))))
     | _ -> None
@@ -271,43 +245,33 @@ let parse_set_id (s : string) : set_nf option =
   let try_fences () =
     Option.map (fun b -> prim_set (Fence (Some b))) (Diy_utils.parse_barrier s)
   in
-  Util.Option.choice [ try_other_prims (); try_fences () ]
+  Util.Option.choice_fn [ try_other_prims; try_fences ]
 
 let parse_rel_id (s : string) : rel_nf option =
   let poswr =
     rel_seq_l
       [
-        to_id (prim_set (Dir W));
-        prim_rel_inter_l [ Edge Po; Loc ];
-        to_id (prim_set (Dir R));
+        to_id (prim_set (Prim "W"));
+        prim_rel_inter_l [ Prim "po"; Prim "loc" ];
+        to_id (prim_set (Prim "R"));
       ]
   in
   let pick_basic_dep = poswr in
-  let pick_addr_dep = prim_rel (Edge (PickDp A.D.ADDR)) in
-  let pick_data_dep = prim_rel (Edge (PickDp A.D.DATA)) in
-  let pick_ctrl_dep = prim_rel (Edge (PickDp A.D.CTRL)) in
   match s with
-  | "po" -> Some (prim_rel (Edge Po))
-  | "loc" -> Some (prim_rel Loc)
-  | "co" -> Some (prim_rel (Edge Co))
-  | "fr" -> Some (prim_rel (Edge Fr))
-  | "rf" -> Some (prim_rel (Edge Rf))
-  | "ext" -> Some (prim_rel Ext)
-  | "addr" -> Some (prim_rel (Edge (Dp ADDR)))
-  | "data" -> Some (prim_rel (Edge (Dp DATA)))
-  | "ctrl" -> Some (prim_rel (Edge (Dp CTRL)))
-  | "rmw" -> Some (prim_rel (Edge Rmw))
-  | "amo" -> Some (prim_rel (Edge Amo))
-  | "lxsx" -> Some (prim_rel (Edge LxSx))
+  | "po" | "loc" | "co" | "fr" | "rf" | "ext" | "addr" | "data" | "ctrl" | "rmw"
+  | "amo" | "lxsx" | "pick-addr-dep" | "pick-data-dep" | "pick-ctrl-dep" ->
+      Some (prim_rel (Prim s))
   | "lrs" -> Some poswr
   | "pick-basic-dep" -> Some pick_basic_dep
-  | "pick-addr-dep" -> Some pick_addr_dep
-  | "pick-data-dep" -> Some pick_data_dep
-  | "pick-ctrl-dep" -> Some pick_ctrl_dep
   | "pick-dep" ->
       Some
         (rel_union_l
-           [ pick_basic_dep; pick_addr_dep; pick_data_dep; pick_ctrl_dep ])
+           [
+             pick_basic_dep;
+             prim_rel (Prim "pick-addr-dep");
+             prim_rel (Prim "pick-data-dep");
+             prim_rel (Prim "pick-ctrl-dep");
+           ])
   | _ -> None
 
 (* Pretty-printing *)
@@ -338,26 +302,11 @@ let pp_union pp_item fmt (Union l) =
       List.iter (fun y -> fprintf fmt "@,| %a" pp_item y) xs;
       fprintf fmt "@]"
 
-let pp_prim_edge fmt =
+let pp_prim_rel fmt (r : prim_rel) =
   let open Format in
-  function
-  | Po -> fprintf fmt "po"
-  | Co -> fprintf fmt "co"
-  | Fr -> fprintf fmt "fr"
-  | Rf -> fprintf fmt "rf"
-  | Amo -> fprintf fmt "amo"
-  | LxSx -> fprintf fmt "lxsx"
-  | Rmw -> fprintf fmt "rmw"
+  match r with
+  | Prim x -> fprintf fmt "%s" x
   | Fence f -> fprintf fmt "%s" (AArch64Base.pp_barrier f)
-  | Dp dp -> fprintf fmt "%s" (Diy_utils.pp_dp dp)
-  | PickDp dp -> fprintf fmt "pick-%s-dep" (Diy_utils.pp_dp dp)
-
-let pp_prim_rel fmt =
-  let open Format in
-  function
-  | Loc -> fprintf fmt "loc"
-  | Ext -> fprintf fmt "ext"
-  | Edge e -> fprintf fmt "%a" pp_prim_edge e
 
 let rec pp_prim_set fmt =
   let open Format in
@@ -366,9 +315,7 @@ let rec pp_prim_set fmt =
   | Range r -> fprintf fmt "range(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Fence None -> fprintf fmt "F"
   | Fence (Some f) -> fprintf fmt "%s" (Diy_utils.pp_barrier f)
-  | Dir dir -> fprintf fmt "%s" (Code.pp_dir dir)
-  | M -> fprintf fmt "M"
-  | Atom a -> fprintf fmt "%s" (A.pp_atom_acc a)
+  | Prim x -> fprintf fmt "%s" x
   | Comp x -> fprintf fmt "~(%a)" pp_prim_set x
 
 and pp_set_nf fmt (nf : set_nf) = pp_union (pp_inter pp_prim_set) fmt nf
@@ -393,7 +340,7 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
     let rels =
       List.filter_map (function Set _ -> None | Rel r -> Some r) seq
     in
-    match rels with [] -> true | [ Inter [ Edge Amo ] ] -> true | _ -> false
+    match rels with [] -> true | [ Inter [ Prim "amo" ] ] -> true | _ -> false
   in
   let expand_item : seq_item -> seq_item list = function
     | Set (Inter x) -> (
@@ -414,11 +361,11 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
   map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
 
 let expand_acq_rel (nf : rel_nf) : rel_nf =
-  let mem = to_id (prim_set M) in
-  let amo = prim_rel (Edge Amo) in
-  let atom_a = Atom (Acq None) in
-  let atom_q = Atom (AcqPc None) in
-  let atom_l = Atom (Rel None) in
+  let mem = to_id (prim_set (Prim "M")) in
+  let amo = prim_rel (Prim "amo") in
+  let atom_a = Prim "A" in
+  let atom_q = Prim "Q" in
+  let atom_l = Prim "L" in
   let amo_ap = rel_seq_l [ to_id (prim_set atom_a); amo; mem ] in
   let amo_qp = rel_seq_l [ to_id (prim_set atom_q); amo; mem ] in
   let amo_pl = rel_seq_l [ mem; amo; to_id (prim_set atom_l) ] in

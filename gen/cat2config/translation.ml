@@ -97,70 +97,86 @@ let initial_effect : partial_effect =
 
 let initial_edge : partial_edge = { tedges = None; ie = None; sd = None }
 
-let build_effect (eff : partial_effect) (l : prim_set list) :
-    partial_effect option =
-  List_traversal.fold_left
-    (fun eff x ->
-      match x with
-      | Dir d -> (
-          match merge_dir_opt eff.extr (Code.Dir d) with
-          | Some extr -> Some { eff with extr; explicit_mem = true }
-          | None -> None)
-      | M -> Some { eff with explicit_mem = true }
-      | Atom a ->
-          Option.map
-            (fun atom -> { eff with atom; explicit_mem = true })
-            (merge_atomo_opt eff.atom (Some (a, None)))
-      | _ -> None)
-    eff l
+let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
+  let build_dir_eff eff d =
+    match merge_dir_opt eff.extr (Code.Dir d) with
+    | Some extr -> Some { eff with extr; explicit_mem = true }
+    | None -> None
+  in
+  let build_atom_eff eff a =
+    Option.map
+      (fun atom -> { eff with atom; explicit_mem = true })
+      (merge_atomo_opt eff.atom (Some (a, None)))
+  in
+  fun eff x ->
+    match x with
+    | Prim "R" -> build_dir_eff eff Code.R
+    | Prim "W" -> build_dir_eff eff Code.W
+    | Prim "M" -> Some { eff with explicit_mem = true }
+    | Prim "A" -> build_atom_eff eff (A.Acq None)
+    | Prim "Q" -> build_atom_eff eff (A.AcqPc None)
+    | Prim "L" -> build_atom_eff eff (A.Rel None)
+    | _ -> None
 
-let build_tedges (ed : prim_edge) : E.tedge list =
+let build_effect : partial_effect -> prim_set list -> partial_effect option =
+  List_traversal.fold_left apply_prim_set
+
+let build_tedges : prim_rel -> E.tedge list =
   let sds = Code.[ Diff; Same ] in
   let ies = Code.[ Ext; Int ] in
-  let open Util.List.Infix in
-  match ed with
-  | Po -> UList.concat_map (fun sd -> [ E.(Po (sd, Code.Irr, Code.Irr)) ]) sds
-  | Fr -> UList.concat_map (fun ie -> [ E.Fr ie ]) ies
-  | Co -> UList.concat_map (fun ie -> [ E.Ws ie ]) ies
-  | Rf -> UList.concat_map (fun ie -> [ E.Rf ie ]) ies
+  let dp_tedges dp csel =
+    UList.concat_map (fun sd -> [ E.Dp ((dp, csel), sd, Code.Irr) ]) sds
+  in
+  function
+  | Prim "po" ->
+      UList.concat_map (fun sd -> [ E.(Po (sd, Code.Irr, Code.Irr)) ]) sds
+  | Prim "fr" -> UList.concat_map (fun ie -> [ E.Fr ie ]) ies
+  | Prim "co" -> UList.concat_map (fun ie -> [ E.Ws ie ]) ies
+  | Prim "rf" -> UList.concat_map (fun ie -> [ E.Rf ie ]) ies
   | Fence f ->
       UList.concat_map
         (fun sd -> [ E.Fenced (A.Barrier f, sd, Code.Irr, Code.Irr) ])
         sds
-  | Amo -> amo_tedges
-  | LxSx -> [ E.Rmw A.LrSc ]
-  | Rmw -> [ E.Rmw A.LrSc ] @ amo_tedges
-  | Dp dp ->
-      UList.concat_map (fun sd -> [ E.Dp ((dp, A.NoCsel), sd, Code.Irr) ]) sds
-  | PickDp dp ->
-      UList.concat_map (fun sd -> [ E.Dp ((dp, A.OkCsel), sd, Code.Irr) ]) sds
+  | Prim "amo" -> amo_tedges
+  | Prim "lxsx" -> [ E.Rmw A.LrSc ]
+  | Prim "rmw" -> [ E.Rmw A.LrSc ] @ amo_tedges
+  | Prim "addr" -> dp_tedges Dep.ADDR A.NoCsel
+  | Prim "ctrl" -> dp_tedges Dep.CTRL A.NoCsel
+  | Prim "data" -> dp_tedges Dep.DATA A.NoCsel
+  | Prim "pick-addr-dep" -> dp_tedges Dep.ADDR A.OkCsel
+  | Prim "pick-ctrl-dep" -> dp_tedges Dep.CTRL A.OkCsel
+  | Prim "pick-data-dep" -> dp_tedges Dep.DATA A.OkCsel
+  | _ -> []
 
-let build_edge (edge : partial_edge) (l : prim_rel list) : partial_edge option =
-  List_traversal.fold_left
-    (fun ed x ->
-      match x with
-      | Edge e when ed.tedges = None ->
-          let tedges = build_tedges e in
-          let relaxs =
-            List.map (fun edge -> Tedge { edge; insert = None }) tedges
-          in
-          Some { ed with tedges = Some relaxs }
-      | Loc when ed.sd <> Some Code.Diff -> Some { ed with sd = Some Code.Same }
-      | Ext when ed.ie <> Some Code.Int -> Some { ed with ie = Some Code.Ext }
-      | _ -> None)
-    edge l
+let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
+  let tedges = build_tedges r in
+  if tedges <> [] && ed.tedges = None then
+    let relaxs = List.map (fun edge -> Tedge { edge; insert = None }) tedges in
+    Some { ed with tedges = Some relaxs }
+  else
+    match r with
+    | Prim "loc" when ed.sd <> Some Code.Diff ->
+        Some { ed with sd = Some Code.Same }
+    | Prim "ext" when ed.ie <> Some Code.Int ->
+        Some { ed with ie = Some Code.Ext }
+    | _ -> None
+
+let build_edge : partial_edge -> prim_rel list -> partial_edge option =
+  List_traversal.fold_left apply_prim_rel
 
 let implied_constraints (l : prim_rel list) :
     prim_set list * prim_rel list * prim_set list =
+  let loc : prim_rel = Prim "loc" in
   l
-  |> List.map (function
-    | Edge Fr -> ([ Dir Code.R ], [ Loc ], [ Dir Code.W ])
-    | Edge Rf -> ([ Dir Code.W ], [ Loc ], [ Dir Code.R ])
-    | Edge Co -> ([ Dir Code.W ], [ Loc ], [ Dir Code.W ])
-    | Edge Amo -> ([ Dir Code.R ], [ Loc ], [ Dir Code.W ])
-    | Edge (Dp A.D.DATA) -> ([ Dir Code.R ], [], [ Dir Code.W ])
-    | Edge (Dp _) -> ([ Dir Code.R ], [], [])
-    | _ -> ([], [], []))
+  |> List.map (fun (x : prim_rel) ->
+      match x with
+      | Prim "fr" -> ([ Prim "R" ], [ loc ], [ Prim "W" ])
+      | Prim "rf" -> ([ Prim "W" ], [ loc ], [ Prim "R" ])
+      | Prim "co" -> ([ Prim "W" ], [ loc ], [ Prim "W" ])
+      | Prim "amo" -> ([ Prim "R" ], [ loc ], [ Prim "W" ])
+      | Prim "data" -> ([ Prim "R" ], [], [ Prim "W" ])
+      | Prim ("ctrl" | "addr") -> ([ Prim "R" ], [], [])
+      | _ -> ([], [], []))
   |> List.fold_left
        (fun (x, y, z) (x', y', z') -> (x @ x', y @ y', z @ z'))
        ([], [], [])
@@ -182,7 +198,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
         let* pedge = build_edge initial_edge (rs @ implied_core) in
         Some (implied_left, pedge, implied_right)
     | [
-     Rel (Inter [ Edge Po ]); Set (Inter [ Fence f ]); Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
+     Set (Inter [ Fence f ]);
+     Rel (Inter [ Prim "po" ]);
     ] ->
         let f =
           match f with None -> AArch64Base.(DSB (SY, FULL)) | Some f -> f
@@ -197,9 +215,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
         let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = None } in
         Some ([], pedge, [])
     | [
-     Rel (Inter [ Edge (Dp Dep.CTRL) ]);
+     Rel (Inter [ Prim "ctrl" ]);
      Set (Inter [ Fence (Some AArch64Base.ISB) ]);
-     Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
     ] ->
         let tedges =
           [
@@ -212,9 +230,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
         let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = None } in
         Some ([], pedge, [])
     | [
-     Rel (Inter [ Edge (PickDp Dep.CTRL) ]);
+     Rel (Inter [ Prim "pick-ctrl-dep" ]);
      Set (Inter [ Fence (Some AArch64Base.ISB) ]);
-     Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
     ] ->
         let tedges =
           [
@@ -227,11 +245,11 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
         let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = None } in
         Some ([], pedge, [])
     | [
-     Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
      Set (Inter [ Fence (Some f) ]);
-     Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
      Set (Inter [ Fence (Some ins) ]);
-     Rel (Inter [ Edge Po ]);
+     Rel (Inter [ Prim "po" ]);
     ] ->
         let insert = Some (A.Barrier ins) in
         let tedges =
@@ -290,7 +308,7 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       fold_with_rest f acc xs
 
 let try_translate_seq (Seq l : seq_item seq) : relax list =
-  let l = [ Set (Inter [ M ]) ] @ l @ [ Set (Inter [ M ]) ] in
+  let l = [ Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
   let st =
     fold_with_rest
       (fun st item rest ->
