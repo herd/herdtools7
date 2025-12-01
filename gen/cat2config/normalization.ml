@@ -256,5 +256,5 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
                 expl
         in
         (name, nfs))
-    |> StringMap.of_list
+    |> StringMap.from_bindings
 end
