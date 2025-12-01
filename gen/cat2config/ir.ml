@@ -18,12 +18,7 @@ let union : 'a union -> 'a union -> 'a union =
  fun (Union x) (Union y) -> Union (List.append x y)
 
 let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
-  Union
-    (Util.List.concat_map
-       (fun x ->
-         let y = f x in
-         get_union y)
-       u)
+  Union (Util.List.concat_map (fun x -> get_union (f x)) u)
 
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
