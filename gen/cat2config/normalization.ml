@@ -1,3 +1,7 @@
+let src = Logs.Src.create "normalization"
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 type normalization_error =
   | Function_not_supported of AST.exp
   | Exp_not_supported of AST.exp
@@ -46,7 +50,7 @@ module type S = sig
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
 end
 
-module Make (NormalForms : S) (Log : Logger.S) = struct
+module Make (NormalForms : S) = struct
   open NormalForms
 
   let unroll (n : int) (e : rel_nf) : rel_nf =
@@ -143,7 +147,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
               (fun e ->
                 try Some (go e)
                 with NormalizationError err ->
-                  Log.eprintv 1 "Skipping union branch: %s@." (pp_norm_err err);
+                  Log.debug (fun m ->
+                      m "Skipping union branch: %s@." (pp_norm_err err));
                   None)
               expl
           in
@@ -200,7 +205,7 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
   *)
   let normalize_binding ~(config : config) ~(env : env) ~(name : string)
       (b : binding) : nf =
-    Log.eprintv 1 "Normalizing let binding `%s`@." name;
+    Log.info (fun m -> m "Processing let binding `%s`@." name);
     let e = b.body in
     let is_recursive = b.is_recursive in
     try Either.Left (normalize_set ~config ~env ~name ~is_recursive e)
@@ -220,8 +225,8 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           let do_normalize () =
             try Some (normalize_binding ~config ~env ~name b)
             with NormalizationError err ->
-              Log.eprintv 1 "Skipping let binding `%s`: %s@." name
-                (pp_norm_err err);
+              Log.warn (fun m ->
+                  m "Skipping let binding `%s`: %s@." name (pp_norm_err err));
               None
           in
           let new_env = StringMap.add name (Lazy.from_fun do_normalize) env in
@@ -250,8 +255,9 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
                     in
                     Some (nf, e)
                   with NormalizationError err ->
-                    Log.eprintv 1 "Skipping `%s` component `%a`: %s@." name
-                      Ast_utils.pp_exp e (pp_norm_err err);
+                    Log.debug (fun m ->
+                        m "Skipping `%s` component `%a`: %s@." name
+                          Ast_utils.pp_exp e (pp_norm_err err));
                     None)
                 expl
         in

@@ -20,6 +20,7 @@ depends: [
   "menhir" {>= "20220210"}
   "zarith" {>= "1.13"}
   "conf-which"
+  "logs"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {

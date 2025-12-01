@@ -4,4 +4,4 @@
 (executable
  (name mcat2config)
  (public_name mcat2config7)
- (libraries herdtools unix gen_common))
+ (libraries herdtools unix logs gen_common))

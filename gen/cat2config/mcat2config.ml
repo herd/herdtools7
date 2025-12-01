@@ -6,7 +6,7 @@ module Arg = struct
   type show = Tree | TreeOnly | Lets
 
   type opts = {
-    verbose : int;
+    log_level : Logs.level;
     lets_to_print : string list;
     conds : string list;
     unroll : int;
@@ -24,7 +24,7 @@ module Arg = struct
 
   let parse : unit -> opts * string list =
    fun () ->
-    let verbose = ref 0 in
+    let log_level = ref Logs.Error in
     let lets_to_print = ref [] in
     let conds = ref [] in
     let unroll = ref 1 in
@@ -36,7 +36,7 @@ module Arg = struct
     let show_rels = ref false in
     let opts =
       [
-        ("-v", Arg.Unit (fun () -> incr verbose), " be verbose");
+        ("-v", Arg.Unit (fun () -> log_level := Logs.Info), " be verbose");
         ( "-let",
           Arg.String (fun s -> lets_to_print := !lets_to_print @ [ s ]),
           "<statement> print out selected let statements" );
@@ -73,7 +73,7 @@ module Arg = struct
     in
     let opts =
       {
-        verbose = !verbose;
+        log_level = !log_level;
         lets_to_print = !lets_to_print;
         conds = !conds;
         unroll = !unroll;
@@ -123,24 +123,7 @@ struct
     included_asts @ ast
 end
 
-module Log = struct
-  let verbose : int ref = ref 0
-
-  (* Conditionally print if global verbosity level is at least the required level. *)
-  let fprintv :
-      'a. Format.formatter -> int -> ('a, Format.formatter, unit) format -> 'a =
-   fun f required_level fmt ->
-    let open Format in
-    if required_level <= !verbose then fprintf f fmt else ifprintf f fmt
-
-  let printv : 'a. int -> ('a, Format.formatter, unit) format -> 'a =
-   fun required_level fmt -> fprintv Format.std_formatter required_level fmt
-
-  let eprintv : 'a. int -> ('a, Format.formatter, unit) format -> 'a =
-   fun required_level fmt -> fprintv Format.err_formatter required_level fmt
-end
-
-module Nf = Normalization.Make (Ir) (Log)
+module Nf = Normalization.Make (Ir)
 
 let extract_let_binding (ins : AST.ins) :
     (string * Normalization.binding) option =
@@ -168,10 +151,10 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     |> List.filter_map (fun var ->
         match StringMap.find_opt var nf_map with
         | None ->
-            Log.eprintv 0 "Requested let binding `%s` not found.@." var;
+            Logs.err (fun m -> m "Requested let binding `%s` not found.@." var);
             None
         | Some [] ->
-            Log.eprintv 0 "Failed to evaluate let binding `%s`.@." var;
+            Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
             if opts.show = Some Tree then (
@@ -181,8 +164,11 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             let nfs =
               nfs
               |> List.map (fun (nf, ast_expr) ->
+                  (* Format.printf "Base: %a@." Ir.pp_rel_nf nf; *)
                   let nf = Ir.expand_acq_rel nf in
+                  (* Format.printf "A/L expanded: %a@." Ir.pp_rel_nf nf; *)
                   let nf = Ir.expand_domain_range nf in
+                  (* Format.printf "Domain/range expanded: %a@." Ir.pp_rel_nf nf; *)
                   (nf, ast_expr))
             in
             Some (var, nfs))
@@ -231,12 +217,13 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
                 Format.printf "%s@." (Translation.pp_relax relax))))
 
 let () =
+  Logs.set_reporter (Logs.format_reporter ());
   let opts, file_paths = Arg.parse () in
+  Logs.set_level (Some opts.log_level);
   let module Parser = Make_parser (struct
-    let debug = opts.verbose > 2
+    let debug = false
     let libdir = opts.libdir
   end) in
-  Log.verbose := opts.verbose;
   file_paths
   |> List.iter (fun file_path ->
       let tree = Parser.find_parse_deep file_path in
