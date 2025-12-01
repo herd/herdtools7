@@ -3,24 +3,24 @@
 (* Create a set of relaxations for diy using a cat file *)
 
 module Arg = struct
-  type show = Tree | TreeOnly | Lets
-
   type opts = {
     log_level : Logs.level;
     lets_to_print : string list;
     conds : string list;
     unroll : int;
     libdir : string option;
-    show : show option;
+    dump : StringSet.t;
     conf : bool;
-    show_rels : bool;
   }
 
-  let parse_show : string -> show = function
-    | "tree" -> Tree
-    | "tree-only" -> TreeOnly
-    | "lets" -> Lets
-    | _ -> raise (Arg.Bad "Wrong value for -show")
+  let valid_dump_opts = [ "tree"; "origin" ]
+
+  let parse_dump_opt (opts : StringSet.t) (s : string) : StringSet.t =
+    if List.mem s valid_dump_opts then StringSet.add s opts
+    else raise (Arg.Bad "Wrong value for -dump")
+
+  let should_dump_tree (o : opts) : bool = StringSet.mem "tree" o.dump
+  let should_dump_origin (o : opts) : bool = StringSet.mem "origin" o.dump
 
   let parse : unit -> opts * string list =
    fun () ->
@@ -31,9 +31,8 @@ module Arg = struct
     let file_paths = ref [] in
     let add_file_path fp = file_paths := !file_paths @ [ fp ] in
     let libdir = ref None in
-    let show = ref None in
+    let dump = ref StringSet.empty in
     let conf = ref false in
-    let show_rels = ref false in
     let opts =
       [
         ("-v", Arg.Unit (fun () -> log_level := Logs.Info), " be verbose");
@@ -50,17 +49,14 @@ module Arg = struct
         ( "-set-libdir",
           Arg.String (fun s -> libdir := Some s),
           "<path> set location of libdir to <path>" );
-        ( "-show",
-          Arg.String (fun s -> show := Some (parse_show s)),
-          "<tree|tree-only|lets> show info on parsed model" );
+        ( "-dump",
+          Arg.String (fun s -> dump := parse_dump_opt !dump s),
+          Format.sprintf "<%s> dump info on parsed model"
+            (String.concat "|" valid_dump_opts) );
         ( "-conf",
           Arg.Bool (fun b -> conf := b),
           "<true|false> print output as diy configuration file. Default = \
            false." );
-        ( "-showrels",
-          Arg.Bool (fun b -> show_rels := b),
-          "<true|false> include source cat relations in configuration file. \
-           Default = false." );
       ]
     in
     let prog =
@@ -78,9 +74,8 @@ module Arg = struct
         conds = !conds;
         unroll = !unroll;
         libdir = !libdir;
-        show = !show;
+        dump = !dump;
         conf = !conf;
-        show_rels = !show_rels;
       }
     in
     (opts, !file_paths)
@@ -157,7 +152,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
-            if opts.show = Some Tree then (
+            if Arg.should_dump_tree opts then (
               let compressed = Ir.union_l (List.map fst nfs) |> Ir.compress in
               Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed;
               ());
@@ -183,7 +178,8 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
           List.fold_left
             (fun acc (nf, ast_e) ->
               let print_cat_rel () =
-                if opts.show_rels then printf "## %a@." Ast_utils.pp_exp ast_e
+                if Arg.should_dump_origin opts then
+                  printf "## %a@." Ast_utils.pp_exp ast_e
               in
               List.fold_left
                 (fun acc seq ->
