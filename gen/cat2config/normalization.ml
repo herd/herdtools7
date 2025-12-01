@@ -40,9 +40,7 @@ module type S = sig
   val set_inter_l : set_nf list -> set_nf
   val inv : rel_nf -> rel_nf
   val to_id : set_nf -> rel_nf
-  val rel_diff_opt : rel_nf -> rel_nf -> rel_nf option
   val set_diff : set_nf -> set_nf -> set_nf
-  val rel_comp_opt : rel_nf -> rel_nf option
   val set_comp : set_nf -> set_nf
   val pp_set_nf : Format.formatter -> set_nf -> unit
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
@@ -157,17 +155,11 @@ module Make (NormalForms : S) (Log : Logger.S) = struct
           match rel_inter_l nfs with
           | Some nf -> nf
           | None -> raise (NormalizationError (Exp_not_supported e)))
-      | Op (_, Diff, [ e1; e2 ]) -> (
-          match rel_diff_opt (go e1) (go e2) with
-          | Some result -> result
-          | None -> raise (NormalizationError (Exp_not_supported e)))
+      | Op (_, Diff, _) -> raise (NormalizationError (Exp_not_supported e))
       | Op1 (_, ToId, exp) ->
           to_id (normalize_set ~config ~env ~name ~is_recursive exp)
       | Op1 (_, Inv, exp) -> inv (go exp)
-      | Op1 (_, Comp, exp) -> (
-          match rel_comp_opt (go exp) with
-          | Some result -> result
-          | None -> raise (NormalizationError (Exp_not_supported e)))
+      | Op1 (_, Comp, _) -> raise (NormalizationError (Exp_not_supported e))
       | Op1 (_, Plus, exp) -> unroll config.unroll_depth (go exp)
       | Op1 (_, Star, exp) ->
           let unrolled = unroll config.unroll_depth (go exp) in

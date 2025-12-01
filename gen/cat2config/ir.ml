@@ -217,18 +217,7 @@ let comp (atom_comp : 'a -> 'a inter union) : 'a inter union -> 'a inter union =
     (List.map (fun (Inter i_l) -> union_l (List.map atom_comp i_l)) u_l)
 
 let set_comp : set_nf -> set_nf = comp prim_set_comp
-
-let rel_comp_opt : rel_nf -> rel_nf option =
- fun _ ->
-  (* TODO: how to deal with relation complement? *)
-  None
-
 let set_diff : set_nf -> set_nf -> set_nf = fun a b -> set_inter a (set_comp b)
-
-let rel_diff_opt : rel_nf -> rel_nf -> rel_nf option =
- fun _ _ ->
-  (* TODO: how to deal with relation difference? *)
-  None
 
 let find_fence : set_nf -> fence option = function
   | Union [ Inter [ Fence None ] ] -> Some (DSB (SY, FULL))
