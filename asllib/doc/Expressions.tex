@@ -2092,7 +2092,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
   \item \AllApplyCase{found}
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
-    \item applying $\bitfieldgetname$ to $\vfield$ yields $\name'$, which equals $\name$;
+    \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which equals $\name$;
     \item applying $\bitfieldgetslices$ to $\vfield$ yields $\vslices$.
   \end{itemize}
 
@@ -2114,7 +2114,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
 \BackupOriginalRule{
   \begin{mathpar}
   \inferrule[found]{
-    \bitfieldgetname(\vfield) \typearrow \name'\\
+    \bitfieldgetname(\vfield) \typearrow \namep\\
     \namep = \name\\
     \bitfieldgetslices(\vfield) \typearrow \vslices
   }{

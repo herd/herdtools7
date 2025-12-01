@@ -126,6 +126,19 @@ operator ast_label[T](T) -> ASTLabels
   math_macro = \astlabelop,
 };
 
+typedef TStructured = (T_Record(list0(field))) | (T_Exception(list0(field))) | (T_Collection(list0(field)));
+operator make_structured(l: ASTLabels, fields: list0(field)) -> TStructured
+{
+  math_macro = \makestructured,
+  custom = true,
+};
+
+operator destructure(s: TStructured) -> (l: ASTLabels, fields: list0(field))
+{
+  math_macro = \destructure,
+  custom = true,
+};
+
 operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
 {
   math_macro = \opupdate,
@@ -411,6 +424,11 @@ operator with_environ[T](T, envs) -> T
 {
   custom = true,
   math_macro = \withenviron,
+};
+
+operator nvint(z: Z) -> NV_Literal(L_Int(Z))
+{
+  math_macro = \nvintop,
 };
 
 ////////////////////////////////////////
@@ -1864,7 +1882,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     annotate_expr(tenv, e1) -> (t_e1, e2, ses1);
     make_anonymous(tenv, t_e1) -> t_e2;
     case structured {
-      t_e2 =: L(fields);
+      t_e2 =: make_structured(L, fields);
       case record_or_exception {
         L in make_set(T_Record, T_Exception);
         case okay {
@@ -1881,7 +1899,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       case collection {
         L = T_Collection;
         case okay {
-          assoc_opt(fields, field_name) = Some(t);
+          assoc_opt(fields, field_name) = some(t);
           --
           (t, E_GetCollectionFields(base, make_list(field_name)), ses1)
           { math_layout = [_] };
@@ -2029,7 +2047,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     make_anonymous(tenv, ty) -> ty_anon;
     te_check(ast_label(ty_anon) in make_set(T_Record, T_Exception, T_Collection), TE_UT) -> True
     { math_layout = ( appl( condition(label, labels[_]) ,err ) , output) };
-    ty_anon =: L(field_types);
+    ty_anon =: make_structured(L, field_types);
     list_combine(initialized_fields, _) := fields;
     names := field_names(field_types);
     te_check(make_set(names) = initialized_fields, TE_BF) -> True;
@@ -2157,7 +2175,7 @@ typing relation annotate_get_array(
   check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
   ses := union(ses_index, ses_base);
   new_e :=
-    if astlabel(size) = ArrayLengthExpr then
+    if ast_label(size) = ArrayLength_Expr then
       E_GetArray(e_base, e_index')
     else
       E_GetEnumArray(e_base, e_index')
@@ -3823,7 +3841,7 @@ semantics relation eval_slice(env: envs, s: slice) ->
   case single {
     s = Slice_Single(e);
     eval_expr(env, e) -> ResultExpr((v_start, new_g), new_env);
-    v_length := Int(one);
+    v_length := nvint(one);
   }
 
   case range {
@@ -3833,7 +3851,7 @@ semantics relation eval_slice(env: envs, s: slice) ->
     eval_expr(env1, e_start) -> ResultExpr(m_start, new_env);
     (v_start, g2) := m_start;
     eval_binop(SUB, v_top, v_start) -> v_diff;
-    eval_binop(ADD, Int(one), v_diff) -> v_length;
+    eval_binop(ADD, nvint(one), v_diff) -> v_length;
     new_g := parallel(g1, g2);
   }
 
@@ -5876,12 +5894,12 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
   }
 
   case structured {
-    ty =: L(fields);
+    ty =: make_structured(L, fields);
     L in make_set(T_Record, T_Exception, T_Collection);
     list_combine(names, types) := fields;
     INDEX(i, types: get_structure(tenv, types[i]) -> types'[i]);
     --
-    L(list_combine(names, types'));
+    make_structured(L, list_combine(names, types'));
   }
 ;
 

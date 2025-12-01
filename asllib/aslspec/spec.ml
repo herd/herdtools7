@@ -443,9 +443,8 @@ module ResolveRules = struct
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
-            | None ->
-                Application { applicator = Fields [ id ]; args = resolved_args }
-            | Some (Node_RecordField _) -> Error.illegal_lhs_application expr)
+            | None | Some (Node_RecordField _) ->
+                Error.illegal_lhs_application expr)
         | Unresolved (FieldAccess path) ->
             Application { applicator = Fields path; args = resolved_args }
         | Unresolved _ ->
@@ -508,27 +507,25 @@ module ResolveRules = struct
         in
         Cases resolved_cases
 
-  (** [lhs_of_conclusion] returns an expression representing the LHS of the
-      conclusion judgment for relation definition with the given [name] and
-      [input] arguments. This function assumes
-      [relation_named_arguments_if_exists_rule] has been called. *)
+  (** [lhs_of_conclusion def] returns an expression representing the LHS of the
+      conclusion judgment for the relation definition [def]. This function
+      assumes [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; input } =
-    let rec arg_of (name_opt, arg_type) =
-      if Option.is_some name_opt then Var (Option.get name_opt)
-      else
-        match arg_type with
-        | LabelledTuple { components } ->
-            let args = List.map arg_of components in
-            make_tuple args
-        | LabelledRecord { label_opt; fields } ->
-            let field_exprs =
-              List.map
-                (fun { name_and_type = field_name, field_type; _ } ->
-                  (field_name, arg_of (None, field_type)))
-                fields
-            in
-            Record { label_opt; fields = field_exprs }
-        | _ -> Error.missing_relation_argument_name name
+    (* Converts an optionally-named type term into an expression. *)
+    let rec arg_of = function
+      | Some name, _ -> Var name
+      | None, LabelledTuple { components } ->
+          let args = List.map arg_of components in
+          make_tuple args
+      | None, LabelledRecord { label_opt; fields } ->
+          let field_exprs =
+            List.map
+              (fun { name_and_type = field_name, _; _ } ->
+                (field_name, Var field_name))
+              fields
+          in
+          Record { label_opt; fields = field_exprs }
+      | None, _ -> Error.missing_relation_argument_name name
     in
     let args = List.map arg_of input in
     Application { applicator = Relation name; args }
@@ -1445,24 +1442,15 @@ module Check = struct
       or records. *)
   let relation_named_arguments_if_exists_rule ast =
     let open Rule in
-    let rec is_named_argument (opt_name, term) =
-      if Option.is_some opt_name then true
-      else
-        match term with
-        | LabelledTuple { components } ->
-            List.for_all is_named_argument components
-        | LabelledRecord _ -> true
-        | _ -> false
+    let rec is_named_argument = function
+      | Some _, _ | None, LabelledRecord _ -> true
+      | None, LabelledTuple { components } ->
+          List.for_all is_named_argument components
+      | None, _ -> false
     in
     let check_relation { Relation.name; input; rule_opt } =
-      match rule_opt with
-      | None -> ()
-      | Some _ ->
-          List.iter
-            (fun arg ->
-              if not (is_named_argument arg) then
-                Error.missing_relation_argument_name name)
-            input
+      if Option.is_some rule_opt && not (List.for_all is_named_argument input)
+      then Error.missing_relation_argument_name name
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
 end

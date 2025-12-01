@@ -249,13 +249,13 @@ module Make (S : SPEC_VALUE) = struct
             fields
         in
         fprintf fmt "%a%a%a"
-          (Format.pp_print_option pp_mathhypertarget)
+          (pp_print_option pp_mathhypertarget)
           hyperlink_target_opt
           (PP.pp_sep_list ~sep:"" pp_mathhypertarget)
           field_hyperlink_targets pp_variant variant
     | _ ->
         fprintf fmt "%a%a" pp_variant variant
-          (Format.pp_print_option pp_mathhypertarget)
+          (pp_print_option pp_mathhypertarget)
           hyperlink_target_opt
 
   (** [pp_type_and_variants ~is_first ~is_last fmt (type_def, variants)] renders
@@ -324,7 +324,7 @@ module Make (S : SPEC_VALUE) = struct
         (* A complex type like `typedef A = V1 | ... | Vk` *)
         try pp_type_and_variants fmt (def, variants)
         with SpecError e ->
-          stack_spec_error e (Format.sprintf "While checking: %s" name))
+          stack_spec_error e (sprintf "While checking: %s" name))
 
   (** [pp_type_definition_macro name fmt pp_value value] renders a wrapper
       around the rendering of a type definition for the type. The wrapper uses
@@ -468,7 +468,7 @@ module Make (S : SPEC_VALUE) = struct
             args
       | Record { label_opt; fields } ->
           fprintf fmt "%a%a"
-            (Format.pp_print_option pp_id_as_macro)
+            (pp_print_option pp_id_as_macro)
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
@@ -488,7 +488,7 @@ module Make (S : SPEC_VALUE) = struct
                 relation_name
             | _ ->
                 let msg =
-                  Format.asprintf "Unexpected LHS in transition judgment: %a"
+                  asprintf "Unexpected LHS in transition judgment: %a"
                     PP.pp_expr expr
                 in
                 raise (SpecError msg)

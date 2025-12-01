@@ -10,7 +10,7 @@ let pp_comma_list pp_elt fmt =
   pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt ", ") pp_elt fmt
 
 let pp_sep_list ~sep pp_elem elements =
-  Format.pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt sep) pp_elem elements
+  pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt sep) pp_elem elements
 
 let rec pp_layout fmt layout =
   match layout with
@@ -111,8 +111,9 @@ let rec pp_expr fmt =
   | FieldAccess path -> pp_print_string fmt (String.concat "." path)
   | ListIndex { var; index } -> fprintf fmt "%s[%s]" var index
   | Record { label_opt; fields } ->
-      fprintf fmt "%s[%a]"
-        (Option.value label_opt ~default:"")
+      fprintf fmt "%a[%a]"
+        (pp_print_option pp_print_string)
+        label_opt
         (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
              fprintf fmt "%s : %a" field pp_expr expr))
         fields

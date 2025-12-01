@@ -275,6 +275,9 @@
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\astlabelop[1]{\astlabel(#1)} % DO NOT LINT
+\newcommand\makestructured[3][H]{ % DO NOT LINT
+    {#2}\left({#3}\right)
+}
 \newcommand\updateop[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
 
 \newcommand\equal[0]{\mathrel{=}}
@@ -453,6 +456,8 @@
 \newcommand\concatstrings[0]{\hyperlink{operator-stringconcat}{\mathbin{+}}}
 \newcommand\decimaltolitname[0]{\hyperlink{operator-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\decimaltolit[1]{\decimaltolitname\left(#1\right)} % NO_SPECIFICATION_REQUIRED
+
+\newcommand\nvintop[1]{\nvint\left(#1\right)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
