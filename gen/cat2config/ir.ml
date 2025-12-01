@@ -3,13 +3,12 @@
 (* Sets and relations in normal form, and operations on them. *)
 
 type 'a inter = Inter of 'a list
-type ('s, 'r) seq_item = Set of 's inter | Rel of 'r inter
-type ('s, 'r) seq = Seq of ('s, 'r) seq_item list
+type 'a seq = Seq of 'a list
 type 'a union = Union of 'a list
 
 let get_inter (Inter l : 'a inter) = l
 let get_union (Union l : 'a union) : 'a list = l
-let get_seq (Seq l : ('s, 'r) seq) : ('s, 'r) seq_item list = l
+let get_seq (Seq l : 'a seq) : 'a list = l
 
 let map_union (f : 'a -> 'b) : 'a union -> 'b union =
  fun (Union l) -> Union (List.map f l)
@@ -23,31 +22,38 @@ let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
 
-let seq (s1 : ('s, 'r) seq) (s2 : ('s, 'r) seq) : ('s, 'r) seq =
+let seq (s1 : 'a seq) (s2 : 'a seq) : 'a seq =
   match (s1, s2) with Seq s1, Seq s2 -> Seq (List.append s1 s2)
 
-let seq_l : ('s, 'r) seq list -> ('s, 'r) seq = function
+let seq_l : 'a seq list -> 'a seq = function
   | [] -> raise (Invalid_argument "Sequence on empty list")
   | x :: xs -> List.fold_left seq x xs
 
-let seq_flat_map (f : 's inter -> ('s, 'r) seq union)
-    (g : 'r inter -> ('s, 'r) seq union) (Seq seq : ('s, 'r) seq) :
-    ('s, 'r) seq union =
+let seq_flat_map (f : 'a -> 'a seq union) (Seq seq : 'a seq) : 'a seq union =
   seq
-  |> List.map (function Set s -> get_union (f s) | Rel r -> get_union (g r))
+  |> List.map (fun s -> get_union (f s))
   |> Util.List.sequence |> List.map seq_l
   |> fun l -> Union l
 
 let inter (e1 : 'a inter) (e2 : 'a inter) : 'a inter =
   match (e1, e2) with Inter i1, Inter i2 -> Inter (List.append i1 i2)
 
-let seq_of_unions (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) :
-    ('a, 'b) seq union =
+(* The sequence of unions is the union of sequences. *)
+let seq_of_unions (e1 : 'a seq union) (e2 : 'a seq union) : 'a seq union =
   Union
     (let open Util.List.Infix in
      let* x = get_union e1 in
      let* y = get_union e2 in
      [ seq x y ])
+
+(* The intersection of unions is the union of intersections. *)
+let inter_of_unions ~(inter : 'a -> 'a -> 'a) (e1 : 'a union) (e2 : 'a union) :
+    'a union =
+  Union
+    (let open Util.List.Infix in
+     let* x = get_union e1 in
+     let* y = get_union e2 in
+     [ inter x y ])
 
 let set_inter (e1 : 'a inter union) (e2 : 'a inter union) : 'a inter union =
   Union
@@ -55,67 +61,6 @@ let set_inter (e1 : 'a inter union) (e2 : 'a inter union) : 'a inter union =
      let* x = get_union e1 in
      let* y = get_union e2 in
      [ inter x y ])
-
-(* Checks if the input relation is of the form
-
-     [s1 & s2 & ... & sn]; (r1 & r2 & ... & rk); [t1 & t2 & ... & tm]
-
-   and returns the three components if so.
-*)
-let split_single_rel (l : ('a, 'b) seq_item list) :
-    ('a inter * 'b inter * 'a inter) option =
-  let result =
-    try
-      Some
-        (l
-        |> List.fold_left
-             (fun (left, r, right) item ->
-               match (r, item) with
-               | None, Set s -> (inter s left, None, right)
-               | None, Rel r -> (left, Some r, right)
-               | Some _, Set s -> (left, r, inter s right)
-               | Some _, Rel (Inter []) -> (left, r, right)
-               | _ -> raise (Failure "not supported"))
-             (Inter [], None, Inter []))
-    with Failure _ -> None
-  in
-  match result with
-  | Some (left, Some r, right) -> Some (left, r, right)
-  | _ -> None
-
-(* Computes the intersection of two relations in normal form.
-
-   This operation is only well-defined on a subset of normal forms.
-   In particular, computing the intersection of two relations
-   where one of them is a non-trivial sequence. For example:
-
-     r1 & (r2; r3)
-
-   Raises @Failure@ on such cases.
-*)
-let rel_inter (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) :
-    ('a, 'b) seq union =
-  let l =
-    let open Util.List.Infix in
-    let* (Seq x) = get_union e1 in
-    let* (Seq y) = get_union e2 in
-    match (x, y) with
-    (* | [ Rel x ], [ Rel y ] -> [ Seq [ Rel (inter x y) ] ] *)
-    | [ Set x ], [ Set y ] -> [ Seq [ Set (inter x y) ] ]
-    | _, _ -> (
-        match (split_single_rel x, split_single_rel y) with
-        | Some (left1, r1, right1), Some (left2, r2, right2) ->
-            [
-              Seq
-                [
-                  Set (inter left1 left2);
-                  Rel (inter r1 r2);
-                  Set (inter right1 right2);
-                ];
-            ]
-        | _ -> raise (Failure "unsupported intersection"))
-  in
-  Union l
 
 let universe_set = Union [ Inter [] ]
 
@@ -142,16 +87,85 @@ type prim_edge =
 type prim_rel = Loc | Ext | Edge of prim_edge
 
 type prim_set =
-  | Domain of (prim_set, prim_rel) seq
-  | Range of (prim_set, prim_rel) seq
+  | Domain of seq_item seq
+  | Range of seq_item seq
   | Fence of fence option
   | Atom of A.atom_acc
   | Dir of Code.dir
   | M
   | Comp of prim_set
 
+and seq_item = Set of prim_set inter | Rel of prim_rel inter
 and set_nf = prim_set inter union
-and rel_nf = (prim_set, prim_rel) seq union
+and rel_nf = seq_item seq union
+
+(* Compression *)
+
+let compress_seq (l : seq_item list) : seq_item list =
+  l
+  |> List.fold_left
+       (fun acc x ->
+         match (acc, x) with
+         | [], x -> [ x ]
+         | Set s :: acc, Set s' -> Set (inter s s') :: acc
+         | Rel r :: acc, Set s -> Set s :: Rel r :: acc
+         | acc, Rel (Inter []) -> acc
+         | acc, Rel r -> Rel r :: acc)
+       []
+  |> List.rev
+
+let compress : seq_item seq union -> seq_item seq union =
+  let rec compress_set : prim_set -> prim_set = function
+    | Domain (Seq r) -> Domain (Seq (compress_seq r))
+    | Range (Seq r) -> Range (Seq (compress_seq r))
+    | Comp s -> Comp (compress_set s)
+    | s -> s
+  in
+  map_union (fun (Seq s) ->
+      let s = compress_seq s in
+      let s =
+        List.map
+          (function
+            | Set (Inter set) -> Set (Inter (List.map compress_set set))
+            | Rel rel -> Rel rel)
+          s
+      in
+      Seq s)
+
+(* Operations on normal forms *)
+
+(* Computes the intersection of two relations in normal form.
+
+   This operation is only well-defined on a subset of expressions.
+   In particular, computing the intersection of two relations
+   where one of them is a non-trivial sequence. For example:
+
+     r1 & (r2; r3)
+
+   Raises @Failure@ on such cases.
+*)
+let rel_inter : rel_nf -> rel_nf -> rel_nf =
+  let can_intersect (Seq s : seq_item seq) :
+      ( prim_set inter,
+        prim_set inter * prim_rel inter * prim_set inter )
+      Either.t
+      option =
+    match compress_seq s with
+    | [ Set s ] -> Some (Either.Left s)
+    | [ Rel r ] -> Some (Either.Right (Inter [], r, Inter []))
+    | [ Set s; Rel r ] -> Some (Either.Right (s, r, Inter []))
+    | [ Rel r; Set s ] -> Some (Either.Right (Inter [], r, s))
+    | [ Set s1; Rel r; Set s2 ] -> Some (Either.Right (s1, r, s2))
+    | _ -> None
+  in
+  let inter (s1 : seq_item seq) (s2 : seq_item seq) : seq_item seq =
+    match (can_intersect s1, can_intersect s2) with
+    | Some (Left s1), Some (Left s2) -> Seq [ Set (inter s1 s2) ]
+    | Some (Right (s1, r, s2)), Some (Right (s1', r', s2')) ->
+        Seq [ Set (inter s1 s1'); Rel (inter r r'); Set (inter s2 s2') ]
+    | _, _ -> raise (Invalid_argument "Invalid intersection")
+  in
+  inter_of_unions ~inter
 
 let prim_set : prim_set -> set_nf = fun p -> Union [ Inter [ p ] ]
 let prim_sets : prim_set list -> set_nf = fun p -> Union [ Inter p ]
@@ -362,43 +376,6 @@ and pp_set_nf fmt (nf : set_nf) = pp_union (pp_inter pp_prim_set) fmt nf
 and pp_rel_nf fmt (nf : rel_nf) =
   pp_union (pp_seq pp_prim_set pp_prim_rel) fmt nf
 
-(* Compression *)
-
-let compress_seq : ('s, 'r) seq_item list -> ('s, 'r) seq_item list =
- fun l ->
-  l
-  |> List.fold_left
-       (fun acc x ->
-         match (acc, x) with
-         | [], x -> [ x ]
-         | Set s :: acc, Set s' -> Set (inter s s') :: acc
-         | Rel r :: acc, Set s -> Set s :: Rel r :: acc
-         | acc, Rel (Inter []) -> acc
-         | acc, Rel r -> Rel r :: acc)
-       []
-  |> List.rev
-
-let rec compress_set : prim_set -> prim_set = function
-  | Domain (Seq r) -> Domain (Seq (compress_seq r))
-  | Range (Seq r) -> Range (Seq (compress_seq r))
-  | Comp s -> Comp (compress_set s)
-  | s -> s
-
-let compress : ('s, 'r) seq union -> ('s, 'r) seq union =
- fun u ->
-  map_union
-    (fun (Seq s) ->
-      let s = compress_seq s in
-      let s =
-        List.map
-          (function
-            | Set (Inter set) -> Set (Inter (List.map compress_set set))
-            | Rel rel -> Rel rel)
-          s
-      in
-      Seq s)
-    u
-
 let find_partition (p : 'a -> 'b option) (l : 'a list) : ('b * 'a list) option =
   let rec go acc = function
     | [] -> None
@@ -412,15 +389,13 @@ let mem_partition (elem : 'a) (l : 'a list) : 'a list option =
   |> Option.map snd
 
 let expand_domain_range (nf : rel_nf) : rel_nf =
-  let can_expand (Seq seq : (prim_set, prim_rel) seq) : bool =
+  let can_expand (Seq seq : seq_item seq) : bool =
     let rels =
       List.filter_map (function Set _ -> None | Rel r -> Some r) seq
     in
     match rels with [] -> true | [ Inter [ Edge Amo ] ] -> true | _ -> false
   in
-  let expand_item :
-      (prim_set, prim_rel) seq_item -> (prim_set, prim_rel) seq_item list =
-    function
+  let expand_item : seq_item -> seq_item list = function
     | Set (Inter x) -> (
         match
           find_partition
@@ -449,26 +424,26 @@ let expand_acq_rel (nf : rel_nf) : rel_nf =
   let amo_pl = rel_seq_l [ mem; amo; to_id (prim_set atom_l) ] in
   nf
   |> union_flat_map
-       (seq_flat_map
-          (fun (Inter x) ->
-            let s = Union [ Seq [ Set (Inter x) ] ] in
-            let s =
-              match mem_partition atom_a x with
-              | Some rest ->
-                  union s (to_id (set_inter (prim_sets rest) (domain amo_ap)))
-              | None -> s
-            in
-            let s =
-              match mem_partition atom_q x with
-              | Some rest ->
-                  union s (to_id (set_inter (prim_sets rest) (domain amo_qp)))
-              | None -> s
-            in
-            let s =
-              match mem_partition atom_l x with
-              | Some rest ->
-                  union s (to_id (set_inter (prim_sets rest) (range amo_pl)))
-              | None -> s
-            in
-            s)
-          (fun r -> Union [ Seq [ Rel r ] ]))
+       (seq_flat_map (function
+         | Set (Inter x) ->
+             let s = Union [ Seq [ Set (Inter x) ] ] in
+             let s =
+               match mem_partition atom_a x with
+               | Some rest ->
+                   union s (to_id (set_inter (prim_sets rest) (domain amo_ap)))
+               | None -> s
+             in
+             let s =
+               match mem_partition atom_q x with
+               | Some rest ->
+                   union s (to_id (set_inter (prim_sets rest) (domain amo_qp)))
+               | None -> s
+             in
+             let s =
+               match mem_partition atom_l x with
+               | Some rest ->
+                   union s (to_id (set_inter (prim_sets rest) (range amo_pl)))
+               | None -> s
+             in
+             s
+         | Rel r -> Union [ Seq [ Rel r ] ]))

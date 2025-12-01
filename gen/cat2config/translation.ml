@@ -170,9 +170,8 @@ type relax = Relax of E.edge list
 let join_relax (Relax r1 : relax) (Relax r2 : relax) : relax =
   Relax (List.append r1 r2)
 
-let try_match_edge (left : prim_set list)
-    (core : (prim_set, prim_rel) seq_item list) (right : prim_set list) :
-    relax list option =
+let try_match_edge (left : prim_set list) (core : seq_item list)
+    (right : prim_set list) : relax list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
     match core with
@@ -279,7 +278,7 @@ let try_match_edge (left : prim_set list)
 type state = {
   relaxs : relax list;
   left : prim_set inter;
-  core : (prim_set, prim_rel) seq_item list;
+  core : seq_item list;
   right : prim_set inter;
 }
 
@@ -290,7 +289,7 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       let acc = f acc x xs in
       fold_with_rest f acc xs
 
-let try_translate_seq (Seq l : (prim_set, prim_rel) seq) : relax list =
+let try_translate_seq (Seq l : seq_item seq) : relax list =
   let l = [ Set (Inter [ M ]) ] @ l @ [ Set (Inter [ M ]) ] in
   let st =
     fold_with_rest
