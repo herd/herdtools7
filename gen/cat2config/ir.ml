@@ -56,8 +56,6 @@ let seq_of_unions (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) :
      let* y = get_union e2 in
      [ seq x y ])
 
-let rev_seq (Seq l : ('a, 'b) seq) : ('a, 'b) seq = Seq (List.rev l)
-
 let set_inter (e1 : 'a inter union) (e2 : 'a inter union) : 'a inter union =
   Union
     (let open Util.List.Infix in
@@ -197,7 +195,8 @@ let rel_inter_l : rel_nf list -> rel_nf option =
 let prim_rel_inter_l (l : prim_rel list) : rel_nf =
   Union [ Seq [ Rel (Inter l) ] ]
 
-let inv : rel_nf -> rel_nf = fun (Union l) -> Union (List.map rev_seq l)
+let inv : rel_nf -> rel_nf =
+ fun (Union l) -> Union (List.map (fun (Seq l) -> Seq (List.rev l)) l)
 
 let to_id : set_nf -> rel_nf =
  fun (Union s) -> Union (List.map (fun x -> Seq [ Set x ]) s)
