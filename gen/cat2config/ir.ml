@@ -24,13 +24,11 @@ let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
 
 let seq (s1 : ('s, 'r) seq) (s2 : ('s, 'r) seq) : ('s, 'r) seq =
-  match (s1, s2) with
-  | Seq [ (Rel (Inter []) | Set (Inter [])) ], _ -> s2
-  | _, Seq [ (Rel (Inter []) | Set (Inter [])) ] -> s1
-  | Seq s1, Seq s2 -> Seq (List.append s1 s2)
+  match (s1, s2) with Seq s1, Seq s2 -> Seq (List.append s1 s2)
 
-let seq_l : ('s, 'r) seq list -> ('s, 'r) seq =
- fun l -> List.fold_right seq l (Seq [ Rel (Inter []) ])
+let seq_l : ('s, 'r) seq list -> ('s, 'r) seq = function
+  | [] -> raise (Invalid_argument "Sequence on empty list")
+  | x :: xs -> List.fold_left seq x xs
 
 let seq_flat_map (f : 's inter -> ('s, 'r) seq union)
     (g : 'r inter -> ('s, 'r) seq union) (Seq seq : ('s, 'r) seq) :
@@ -119,8 +117,7 @@ let rel_inter (e1 : ('a, 'b) seq union) (e2 : ('a, 'b) seq union) :
   in
   Union l
 
-let neutral_set = Union [ Inter [] ]
-let neutral_rel = Union [ Seq [ Rel (Inter []) ] ]
+let universe_set = Union [ Inter [] ]
 
 (* Intermediate representation *)
 
@@ -176,16 +173,18 @@ let fencerel (f : fence) : rel_nf = prim_rel (Edge (Fence f))
 let rel_union_l : rel_nf list -> rel_nf = union_l
 let set_union_l : set_nf list -> set_nf = union_l
 
-let rel_seq_l : rel_nf list -> rel_nf =
- fun l -> List.fold_right seq_of_unions l neutral_rel
+let rel_seq_l : rel_nf list -> rel_nf = function
+  | [] -> raise (Invalid_argument "Sequence of empty list")
+  | x :: xs -> List.fold_left seq_of_unions x xs
 
 let set_inter_l : set_nf list -> set_nf =
- fun l -> List.fold_right set_inter l neutral_set
+ fun l -> List.fold_right set_inter l universe_set
 
 let rel_inter_l : rel_nf list -> rel_nf option =
- fun l ->
-  let compute_inter () = List.fold_right rel_inter l neutral_rel in
-  try Some (compute_inter ()) with Failure _ -> None
+  let neutral_rel = Union [ Seq [ Rel (Inter []) ] ] in
+  fun l ->
+    let compute_inter () = List.fold_right rel_inter l neutral_rel in
+    try Some (compute_inter ()) with Failure _ -> None
 
 let prim_rel_inter_l (l : prim_rel list) : rel_nf =
   Union [ Seq [ Rel (Inter l) ] ]
@@ -230,7 +229,7 @@ let find_fence : set_nf -> fence option = function
 let parse_set_id (s : string) : set_nf option =
   let try_other_prims () =
     match s with
-    | "Exp" -> Some neutral_set
+    | "Exp" -> Some universe_set
     | "NExp" -> Some empty_set
     | "Imp" -> Some empty_set
     | "R" -> Some (prim_set (Dir Code.R))
