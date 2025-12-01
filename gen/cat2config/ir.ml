@@ -11,9 +11,6 @@ let get_inter (Inter l : 'a inter) = l
 let get_union (Union l : 'a union) : 'a list = l
 let get_seq (Seq l : ('s, 'r) seq) : ('s, 'r) seq_item list = l
 
-let over_inter (f : 'a list -> 'b list) (Inter i : 'a inter) : 'b inter =
-  Inter (f i)
-
 let map_union (f : 'a -> 'b) : 'a union -> 'b union =
  fun (Union l) -> Union (List.map f l)
 
@@ -402,7 +399,7 @@ let compress : ('s, 'r) seq union -> ('s, 'r) seq union =
       let s =
         List.map
           (function
-            | Set set -> Set (over_inter (List.map compress_set) set)
+            | Set (Inter set) -> Set (Inter (List.map compress_set set))
             | Rel rel -> Rel rel)
           s
       in
