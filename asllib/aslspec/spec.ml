@@ -412,7 +412,7 @@ module ResolveRules = struct
   let rec resolve_application_expr id_to_defining_node expr =
     match expr with
     | Var _ | FieldAccess _ | ListIndex _ -> expr
-    | Record { label; fields } ->
+    | Record { label_opt; fields } ->
         let resolved_fields =
           List.map
             (fun (field_name, field_expr) ->
@@ -420,7 +420,7 @@ module ResolveRules = struct
                 resolve_application_expr id_to_defining_node field_expr ))
             fields
         in
-        Record { label; fields = resolved_fields }
+        Record { label_opt; fields = resolved_fields }
     | Application ({ applicator; args } as app) -> (
         let resolved_args =
           List.map (resolve_application_expr id_to_defining_node) args
@@ -443,9 +443,8 @@ module ResolveRules = struct
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
-            | None ->
-                Application { applicator = Fields [ id ]; args = resolved_args }
-            | Some (Node_RecordField _) -> Error.illegal_lhs_application expr)
+            | None | Some (Node_RecordField _) ->
+                Error.illegal_lhs_application expr)
         | Unresolved (FieldAccess path) ->
             Application { applicator = Fields path; args = resolved_args }
         | Unresolved _ ->
@@ -508,16 +507,28 @@ module ResolveRules = struct
         in
         Cases resolved_cases
 
-  (** [lhs_of_conclusion] returns an expression representing the LHS of the
-      conclusion judgment for relation definition with the given [name] and
-      [input] arguments. This function assumes
-      [relation_names_arguments_if_exists_rule] has been called on the AST to
-      ensure that all input arguments have names. *)
+  (** [lhs_of_conclusion def] returns an expression representing the LHS of the
+      conclusion judgment for the relation definition [def]. This function
+      assumes [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; input } =
-    let input_vars =
-      List.map (fun (name_opt, _) -> Var (Option.get name_opt)) input
+    (* Converts an optionally-named type term into an expression. *)
+    let rec arg_of = function
+      | Some name, _ -> Var name
+      | None, LabelledTuple { components } ->
+          let args = List.map arg_of components in
+          make_tuple args
+      | None, LabelledRecord { label_opt; fields } ->
+          let field_exprs =
+            List.map
+              (fun { name_and_type = field_name, _; _ } ->
+                (field_name, Var field_name))
+              fields
+          in
+          Record { label_opt; fields = field_exprs }
+      | None, _ -> Error.missing_relation_argument_name name
     in
-    Application { applicator = Relation name; args = input_vars }
+    let args = List.map arg_of input in
+    Application { applicator = Relation name; args }
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -1424,19 +1435,22 @@ module Check = struct
         elems
   end
 
-  (** [relation_names_arguments_if_exists_rule ast] checks that for each
-      relation in [ast] that has a rule, all its input arguments have names. *)
-  let relation_names_arguments_if_exists_rule ast =
+  (** [relation_named_arguments_if_exists_rule ast] checks that for each
+      relation in [ast] that has a rule, all its input arguments are either
+      named or can be deconstructed into named components. That is, arguments
+      are either named, tuples whose components are named or recursively named,
+      or records. *)
+  let relation_named_arguments_if_exists_rule ast =
     let open Rule in
+    let rec is_named_argument = function
+      | Some _, _ | None, LabelledRecord _ -> true
+      | None, LabelledTuple { components } ->
+          List.for_all is_named_argument components
+      | None, _ -> false
+    in
     let check_relation { Relation.name; input; rule_opt } =
-      match rule_opt with
-      | None -> ()
-      | Some _ ->
-          List.iter
-            (fun (opt_name, _) ->
-              if Option.is_none opt_name then
-                Error.missing_relation_argument_name name)
-            input
+      if Option.is_some rule_opt && not (List.for_all is_named_argument input)
+      then Error.missing_relation_argument_name name
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
 end
@@ -1486,7 +1500,7 @@ let from_ast ast =
   let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
-  let () = Check.relation_names_arguments_if_exists_rule ast in
+  let () = Check.relation_named_arguments_if_exists_rule ast in
   let ast, _ = ResolveRules.resolve ast id_to_defining_node in
   let ast, id_to_defining_node = ExtendNames.extend ast in
   let () = Check.CheckRules.check ast in

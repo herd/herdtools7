@@ -400,7 +400,7 @@ module Rule = struct
     | FieldAccess of string list
         (** The first identifier is a variable and the rest are field names. *)
     | ListIndex of { var : string; index : string }
-    | Record of { label : string; fields : (string * expr) list }
+    | Record of { label_opt : string option; fields : (string * expr) list }
         (** A record construction expression. *)
     | Application of { applicator : applicator; args : expr list }
         (** An application of [applicator] to the list of argument expressions
@@ -440,7 +440,7 @@ module Rule = struct
   let make_operator_application op_name args =
     Application { applicator = ExprOperator op_name; args }
 
-  let make_record label fields = Record { label; fields }
+  let make_record label_opt fields = Record { label_opt; fields }
   let make_list_index var index = ListIndex { var; index }
 
   type judgment = { expr : expr; is_output : bool; att : Attributes.t }

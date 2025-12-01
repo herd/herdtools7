@@ -1398,7 +1398,7 @@ an \atcexpressionterm{}.
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
-  \checktypesat(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock(\tenv, \vsone) \typearrow (\vsonep, \vsesone) \OrTypeError\\\\
   \annotateblock(\tenv, \vstwo) \typearrow (\vstwop, \vsestwo) \OrTypeError\\\\
   \vses \eqdef \vsescond \cup \vsesone \cup \vsestwo
@@ -1865,7 +1865,7 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
   \techeck(\sesisreadonly(\vsese) \typearrow \True, \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \checktypesat(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsese
   }{
   \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
@@ -2033,7 +2033,7 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
   \vs = \SWhile(\veone, \vlimitone, \vsone)\\
   \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
-  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
@@ -2376,7 +2376,7 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
   \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
   \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
   \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
-  \checktypesat(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   {
@@ -3326,7 +3326,7 @@ since \verb|proc| is not a function but a procedure.
   \vs = \SReturn(\some{ \ve })\\
   \tenv.\staticenvsL.\returntype = \some{ \vt }\\
   \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
-  \checktypesat(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
+  \checktypesatisfies(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
   \annotatestmt(\tenv, \vs) \typearrow
   (\overname{\SReturn(\some{ \vep })}{\news}, \overname{\tenv}{\newtenv}, \vses)

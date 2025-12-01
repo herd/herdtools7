@@ -275,6 +275,9 @@
 \newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
 \newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
 \newcommand\astlabelop[1]{\astlabel(#1)} % DO NOT LINT
+\newcommand\makestructured[3][H]{ % DO NOT LINT
+    {#2}\left({#3}\right)
+}
 \newcommand\updateop[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
 
 \newcommand\equal[0]{\mathrel{=}}
@@ -453,6 +456,8 @@
 \newcommand\concatstrings[0]{\hyperlink{operator-stringconcat}{\mathbin{+}}}
 \newcommand\decimaltolitname[0]{\hyperlink{operator-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\decimaltolit[1]{\decimaltolitname\left(#1\right)} % NO_SPECIFICATION_REQUIRED
+
+\newcommand\nvintop[1]{\nvint\left(#1\right)}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1170,7 +1175,7 @@
 \newcommand\Prosestaticeval[3]{\hyperlink{relation-staticeval}{statically evaluating} the expression #2 in the static environment #1 yields the literal #3}
 
 \newcommand\Prosemakeanonymous[3]{\hyperlink{relation-makeanonymous}{obtaining} the \underlyingtypeterm\ of #2 in the static environment #1 yields #3}
-\newcommand\checktypesat[0]{\hyperlink{relation-checkedtypesat}{\textfunc{checked\_typesat}}} % SPECIFIED
+\newcommand\checktypesatisfies[0]{\hyperlink{relation-checktypesatisfies}{\textfunc{check\_type\_satisfies}}} % SPECIFIED
 \newcommand\Prosetypeclashes[0]{\hyperlink{relation-typeclashes}{type-clashes}}
 \newcommand\Prosetypeclash[0]{\hyperlink{relation-typeclashes}{type-clash}}
 \newcommand\Prosetypeclashing[0]{\hyperlink{relation-typeclashes}{type-clashing}}

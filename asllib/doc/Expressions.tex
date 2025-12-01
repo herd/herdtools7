@@ -1405,7 +1405,6 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 
 \TypingRuleDef{AnnotateGetArray}
 \RenderRelation{annotate_get_array}
-
 See \ExampleRef{Array Access Expressions}.
 
 \ProseParagraph
@@ -1424,11 +1423,12 @@ See \ExampleRef{Array Access Expressions}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
   \typeofarraylength(\size) \typearrow \wantedtindex\\
-  \checktypesat(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesindex \cup \vsesbase \\
   \newe \eqdef \ifthenelse{\astlabel(\size) = \ArrayLengthExpr}{\EGetArray(\ebase, \eindexp)}{\EGetEnumArray(\ebase, \eindexp)}
 }{
@@ -1440,6 +1440,8 @@ See \ExampleRef{Array Access Expressions}.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
 \SemanticsRuleDef{EGetArray}
@@ -1775,7 +1777,7 @@ which includes the type annotation \verb|bits(4)|.
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
-  \checktypesat(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
+  \checktypesatisfies(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
 }
@@ -2090,7 +2092,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
   \item \AllApplyCase{found}
   \begin{itemize}
     \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
-    \item applying $\bitfieldgetname$ to $\vfield$ yields $\name$;
+    \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which equals $\name$;
     \item applying $\bitfieldgetslices$ to $\vfield$ yields $\vslices$.
   \end{itemize}
 
@@ -2109,30 +2111,34 @@ yields a \typingerrorterm, since it is a nested bitfield.
 \end{itemize}
 
 \FormallyParagraph
-\begin{mathpar}
-\inferrule[found]{
-  \bitfieldgetname(\vfield) \typearrow \name\\
-  \bitfieldgetslices(\vfield) \typearrow \vslices
-}{
-  \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
-}
-\end{mathpar}
+\BackupOriginalRule{
+  \begin{mathpar}
+  \inferrule[found]{
+    \bitfieldgetname(\vfield) \typearrow \namep\\
+    \namep = \name\\
+    \bitfieldgetslices(\vfield) \typearrow \vslices
+  }{
+    \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
+  }
+  \end{mathpar}
 
-\begin{mathpar}
-\inferrule[tail]{
-  \bitfieldgetname(\vfield) \typearrow \namep\\
-  \namep \neq \name\\
-  \findbitfieldsslices(\name, \vbitfieldsone) \typearrow \vslices \OrTypeError
-}{
-  \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
-}
-\end{mathpar}
+  \begin{mathpar}
+  \inferrule[tail]{
+    \bitfieldgetname(\vfield) \typearrow \namep\\
+    \namep \neq \name\\
+    \findbitfieldsslices(\name, \vbitfieldsone) \typearrow \vslices \OrTypeError
+  }{
+    \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
+  }
+  \end{mathpar}
 
-\begin{mathpar}
-\inferrule[empty]{}{
-  \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
-}
-\end{mathpar}
+  \begin{mathpar}
+  \inferrule[empty]{}{
+    \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
+  }
+  \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{find_bitfields_slices}
 
 \TypingRuleDef{GetBitfieldWidth}
 \RenderRelation{get_bitfield_width}
@@ -3182,16 +3188,19 @@ See \listingref{semantics-erecord} for an example.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
   \techeck(\fieldtype(\fieldtypes, \name) \neq \bot, \BadField) \typearrow \True \OrTypeError\\\\
   \fieldtype(\fieldtypes, \name) = \tspecp\\
-  \checktypesat(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
+  \checktypesatisfies(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
 }{
   \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{annotate_field_init}
 
 \subsection{Semantics}
 \SemanticsRuleDef{ERecord}
