@@ -472,7 +472,8 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
-      | ListIndex { var; index } -> fprintf fmt "%a[%a]" pp_var var pp_var index
+      | ListIndex { var; index } ->
+          fprintf fmt "%a[%a]" pp_var var pp_expr (index, layout)
       | FieldAccess path -> pp_field_path fmt path
       | Indexed { index; list; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
@@ -539,7 +540,15 @@ module Make (S : SPEC_VALUE) = struct
       | [ _; _ ] when not (Relation.is_custom_operator operator) ->
           (* A simple binary operator. *)
           let lhs_arg, rhs_arg =
-            match args with [ lhs; rhs ] -> (lhs, rhs) | _ -> assert false
+            match args with
+            | [ lhs; rhs ] -> (lhs, rhs)
+            | _ ->
+                let msg =
+                  Format.asprintf
+                    "Expected exactly two arguments for binary operator %s"
+                    op_name
+                in
+                failwith msg
           in
           pp_connect_pair ~alignment:"c" fmt pp_expr lhs_arg op_macro pp_expr
             rhs_arg layout

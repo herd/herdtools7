@@ -443,7 +443,7 @@ module ResolveRules = struct
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
-            | None | Some (Node_RecordField _) ->
+            | Some (Node_RecordField _) | None ->
                 Error.illegal_lhs_application expr)
         | Unresolved (FieldAccess path) ->
             Application { applicator = Fields path; args = resolved_args }

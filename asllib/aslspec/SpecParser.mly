@@ -418,7 +418,7 @@ let expr :=
       { Rule.make_application lhs args }
     | ~=field_path;
       { Rule.FieldAccess field_path }
-    | list_var=IDENTIFIER; LBRACKET; index=IDENTIFIER; RBRACKET;
+    | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
       { Rule.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
       { Rule.make_record label_opt fields }    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;

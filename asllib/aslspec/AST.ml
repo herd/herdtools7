@@ -399,7 +399,9 @@ module Rule = struct
     | Var of string
     | FieldAccess of string list
         (** The first identifier is a variable and the rest are field names. *)
-    | ListIndex of { var : string; index : string }
+    | ListIndex of { var : string; index : expr }
+        (** An expression indexing into the list variable [var] at position
+            [index]. *)
     | Record of { label_opt : string option; fields : (string * expr) list }
         (** A record construction expression. *)
     | Application of { applicator : applicator; args : expr list }
