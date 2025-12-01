@@ -10,6 +10,7 @@ module Arg = struct
     unroll : int;
     libdir : string option;
     dump : StringSet.t;
+    log : (string * Logs.level option) list;
     conf : bool;
   }
 
@@ -22,6 +23,31 @@ module Arg = struct
   let should_dump_tree (o : opts) : bool = StringSet.mem "tree" o.dump
   let should_dump_origin (o : opts) : bool = StringSet.mem "origin" o.dump
 
+  let parse_log_opt : string -> (string * Logs.level option) list =
+    let level_of_string s : Logs.level option =
+      match String.lowercase_ascii s with
+      | "debug" -> Some Logs.Debug
+      | "info" -> Some Logs.Info
+      | "warn" | "warning" -> Some Logs.Warning
+      | "error" -> Some Logs.Error
+      | "none" -> None
+      | _ ->
+          let err = Format.sprintf "-log: unrecognized level `%s`" s in
+          raise (Arg.Bad err)
+    in
+    fun input ->
+      String.split_on_char ',' input
+      |> List.map (fun source ->
+          match String.split_on_char ':' (String.trim source) with
+          | [ src ] ->
+              let src = String.trim src in
+              (src, Some Logs.Info)
+          | [ src; lvl ] ->
+              let src = String.trim src in
+              let lvl = String.trim lvl in
+              (src, level_of_string lvl)
+          | _ -> raise (Arg.Bad "Wrong value for -log"))
+
   let parse : unit -> opts * string list =
    fun () ->
     let log_level = ref Logs.Error in
@@ -32,6 +58,7 @@ module Arg = struct
     let add_file_path fp = file_paths := !file_paths @ [ fp ] in
     let libdir = ref None in
     let dump = ref StringSet.empty in
+    let log = ref [] in
     let conf = ref false in
     let opts =
       [
@@ -53,6 +80,9 @@ module Arg = struct
           Arg.String (fun s -> dump := parse_dump_opt !dump s),
           Format.sprintf "<%s> dump info on parsed model"
             (String.concat "|" valid_dump_opts) );
+        ( "-log",
+          Arg.String (fun s -> log := parse_log_opt s),
+          "<src1,src2,...> fine-grained logging control for specific modules" );
         ( "-conf",
           Arg.Bool (fun b -> conf := b),
           "<true|false> print output as diy configuration file. Default = \
@@ -75,6 +105,7 @@ module Arg = struct
         unroll = !unroll;
         libdir = !libdir;
         dump = !dump;
+        log = !log;
         conf = !conf;
       }
     in
@@ -216,6 +247,12 @@ let () =
   Logs.set_reporter (Logs.format_reporter ());
   let opts, file_paths = Arg.parse () in
   Logs.set_level (Some opts.log_level);
+  Logs.Src.list ()
+  |> List.iter (fun src ->
+      let src_name = Logs.Src.name src in
+      match List.assoc_opt src_name opts.log with
+      | Some lvl -> Logs.Src.set_level src lvl
+      | None -> ());
   let module Parser = Make_parser (struct
     let debug = false
     let libdir = opts.libdir
