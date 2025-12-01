@@ -338,10 +338,11 @@ let pp_union pp_item fmt (Union l) =
   let open Format in
   match l with
   | [] -> fprintf fmt "emptyset"
+  | [ x ] -> fprintf fmt "%a" pp_item x
   | x :: xs ->
       fprintf fmt "@[<v 0>";
-      fprintf fmt "%a" pp_item x;
-      List.iter (fun y -> fprintf fmt "@,%a" pp_item y) xs;
+      fprintf fmt "  %a" pp_item x;
+      List.iter (fun y -> fprintf fmt "@,| %a" pp_item y) xs;
       fprintf fmt "@]"
 
 let pp_prim_edge fmt =
