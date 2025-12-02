@@ -2,9 +2,9 @@
   
   ### ca
   ## fr
-  -safe Fre Fri
+  -safe Fr
   ## co
-  -safe Coe Coi
+  -safe Co
   
   ### Exp-haz-ob
   ## [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
@@ -24,51 +24,51 @@
   
   ### DSB-ob
   ## [M | DC.CVAU | IC]; po; [dsb.full]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.SYd** DSB.SYs**
+  -safe DSB.SY***
   ## [((Exp & R) \ NoRet) | (Imp & (Tag & R))]; po; [dsb.ld]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.LDdR* DSB.LDsR*
+  -safe DSB.LD*R*
   ## [Exp & W]; po; [dsb.st]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.STdW* DSB.STsW*
+  -safe DSB.ST*W*
   
   ### IFB-ob
   ## [Exp & R]; ctrl; [IFB]; po
-  -safe [DpCtrld*, ISB] [DpCtrls*, ISB]
+  -safe [DpCtrl, ISB]
   ## [Exp & R]; pick-ctrl-dep; [IFB]; po
-  -safe [DpCtrlCseld*, ISB] [DpCtrlCsels*, ISB]
+  -safe [DpCtrlCsel, ISB]
   ## [Exp & R]; addr; [Exp & M]; po; [IFB]; po
-  -safe [DpAddrd*, ISBd**] [DpAddrs*, ISBd**] [DpAddrd*, ISBs**] [DpAddrs*, ISBs**]
+  -safe [DpAddr, ISB***]
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
-  -safe [DpAddrCseld*, ISBd**] [DpAddrCsels*, ISBd**] [DpAddrCseld*, ISBs**] [DpAddrCsels*, ISBs**]
+  -safe [DpAddrCsel, ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.SYd**, ISB] [DSB.SYs**, ISB]
+  -safe [DSB.SY***, ISB]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.LDdR*, ISB] [DSB.LDsR*, ISB]
+  -safe [DSB.LD*R*, ISB]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.STdW*, ISB] [DSB.STsW*, ISB]
+  -safe [DSB.ST*W*, ISB]
   
   ### dob
   ## addr
-  -safe DpAddrd* DpAddrs*
+  -safe DpAddr
   ## data
-  -safe DpDatadW DpDatasW
+  -safe DpData*W
   ## ctrl; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpCtrldW DpCtrlsW
+  -safe DpCtrl*W
   ## addr; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddrd*, Pod*W] [DpAddrs*, Pod*W] [DpAddrd*, Pos*W] [DpAddrs*, Pos*W]
+  -safe [DpAddr, Po**W]
   ## addr; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpAddrdW, PosWR] [DpAddrsW, PosWR]
+  -safe [DpAddr*W, PosWR]
   ## data; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpDatadW, PosWR] [DpDatasW, PosWR]
+  -safe [DpData*W, PosWR]
   
   ### pob
   ## pick-addr-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpAddrCseldW DpAddrCselsW
+  -safe DpAddrCsel*W
   ## pick-data-dep
-  -safe DpDataCseld* DpDataCsels*
+  -safe DpDataCsel
   ## pick-ctrl-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpCtrlCseldW DpCtrlCselsW
+  -safe DpCtrlCsel*W
   ## pick-addr-dep; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddrCseld*, Pod*W] [DpAddrCsels*, Pod*W] [DpAddrCseld*, Pos*W] [DpAddrCsels*, Pos*W]
+  -safe [DpAddrCsel, Po**W]
   
   ### aob
   ## [Exp & M]; rmw; [Exp & M]
@@ -84,33 +84,33 @@
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe DMB.SYd** DMB.SYs**
+  -safe DMB.SY***
   ## [(Exp & (R \ NoRet)) | (Imp & (Tag & R))]; po; [dmb.ld]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe DMB.LDdR* DMB.LDsR*
+  -safe DMB.LD*R*
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
-  -safe DMB.STdWW DMB.STsWW
+  -safe DMB.ST*WW
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoAL, Pod**LP] [AmoAL, Pos**LP]
+  -safe [AmoAL, PoLP]
   ## [L]; po; [A]
-  -safe Pod**LA Pos**LA
+  -safe PoLA
   ## [L]; po; [A]
-  -safe [Pod**LA, AmoAP] [Pos**LA, AmoAP]
+  -safe [PoLA, AmoAP]
   ## [L]; po; [A]
-  -safe [AmoPL, Pod**LA] [AmoPL, Pos**LA]
+  -safe [AmoPL, PoLA]
   ## [L]; po; [A]
-  -safe [AmoPL, Pod**LA, AmoAP] [AmoPL, Pos**LA, AmoAP]
+  -safe [AmoPL, PoLA, AmoAP]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe Pod**AP Pos**AP
+  -safe PoAP
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoAP, Pod**] [AmoAP, Pos**]
+  -safe [AmoAP, Po]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe Pod**QP Pos**QP
+  -safe PoQP
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoQP, Pod**] [AmoQP, Pos**]
+  -safe [AmoQP, Po]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe Pod**PL Pos**PL
+  -safe PoPL
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe [Pod**, AmoPL] [Pos**, AmoPL]
+  -safe [Po, AmoPL]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
