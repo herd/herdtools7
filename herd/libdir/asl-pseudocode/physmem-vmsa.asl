@@ -2,11 +2,11 @@
 // Physical accesses in the VMSA case  //
 // ====================================//
 
-func PhysMemWrite{N}(
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor,
-  value:bits(N*8)
-) => PhysMemRetStatus
+type PhysMemSize of integer{8, 16, 32, 64, 128, 256, 512};
+
+func PhysMemWrite{size : PhysMemSize}
+  (desc : AddressDescriptor, accdesc : AccessDescriptor, value : bits(size))
+  => PhysMemRetStatus
 begin
 // No write when CAS reduces to a read
   CheckProp(accdesc.write);
@@ -20,9 +20,9 @@ begin
   else
     eventaccess = PHY_PTE;
   end;
-  CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), N);
+  CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), size);
 // Now, we can write, physically.
-  write_memory_gen{N*8}(desc.paddress.address, value,accdesc,eventaccess);
+  write_memory_gen{size}(desc.paddress.address, value,accdesc,eventaccess);
   return PhysMemRetStatus {
     statuscode = Fault_None,
     extflag = '0',
@@ -33,10 +33,9 @@ end;
 
 // =============================================================================
 
-func PhysMemRead{N}(
-  desc:AddressDescriptor,
-  accdesc:AccessDescriptor
-) => (PhysMemRetStatus, bits(N*8))
+func PhysMemRead{size : PhysMemSize}
+  (desc : AddressDescriptor, accdesc : AccessDescriptor)
+  => (PhysMemRetStatus, bits(size))
 begin
   let ret_status = PhysMemRetStatus {
     statuscode = Fault_None,
@@ -52,13 +51,13 @@ begin
     else
       eventaccess = PHY_PTE;
     end;
-    CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), N);
-    let value = read_memory_gen{N*8}(desc.paddress.address,accdesc,eventaccess);
+    CheckExclusiveDuplicatedTranslate(desc.paddress, ProcessorID(), size);
+    let value = read_memory_gen{size}(desc.paddress.address,accdesc,eventaccess);
     return (ret_status, value);
 
   elsif accdesc.acctype == AccessType_TTW then
 
-    let value = ReadPtePrimitive{N*8}(desc.paddress.address);
+    let value = ReadPtePrimitive{size}(desc.paddress.address);
     return (ret_status, value);
 
   else unreachable;

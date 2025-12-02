@@ -40,6 +40,8 @@ type 'a constr_op =
   | SetField of string
   | Concat
   | BVSliceSet of int list
+  | StringConcat
+  | Pow
 
 type op = extra_op constr_op
 
@@ -72,6 +74,8 @@ let pp_op = function
   | SetIndex i -> Printf.sprintf "Set[%d]" i
   | SetField x -> Printf.sprintf "Set[%S]" x
   | Concat -> "Concat"
+  | StringConcat -> "StringConcat"
+  | Pow -> "Pow"
   | BVSliceSet positions ->
       Printf.sprintf "SliceSet[%s]"
       @@ String.concat ", "
@@ -190,6 +194,16 @@ let do_op op c1 c2 =
         let* s = ASLScalar.try_concat s1 s2 in
         return_concrete s
       | _ -> None)
+  | StringConcat ->
+      let* s1 = as_concrete c1 in
+      let* s2 = as_concrete c2 in
+      let* s = ASLScalar.try_string_concat s1 s2 in
+      return_concrete s
+  | Pow ->
+      let* s1 = as_concrete c1 in
+      let* s2 = as_concrete c2 in
+      let* s = ASLScalar.try_pow s1 s2 in
+      return_concrete s
   | BVSliceSet positions ->
       if is_mask_64 positions then
         match c2 with

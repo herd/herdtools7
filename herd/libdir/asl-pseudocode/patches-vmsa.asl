@@ -179,7 +179,7 @@ end;
 
 func AArch64_MemSwapTableDesc
   {N}(fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
-   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor,n:integer)
+   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
 => (FaultRecord, bits(N))
 begin
    let addr: bits(56) = descpaddr.paddress.address;

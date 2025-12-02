@@ -213,7 +213,7 @@ module Make (Conf : Config) = struct
         | L_Real _f ->
             Printf.eprintf "real: %s\n%!" (Q.to_string _f);
             Warn.fatal "Cannot use reals yet."
-        | L_String _f -> Warn.fatal "Cannot instantiate strings in herd yet."
+        | L_String s -> S_String s |> concrete
         | L_Label s -> S_Label s |> concrete
       in
       fun v -> V.Val (tr v)
@@ -394,6 +394,18 @@ module Make (Conf : Config) = struct
           return v
       | _ -> M.op (Op.ArchOp ASLOp.Concat) v1 v2
 
+    let is_valid_trailing_bits z =
+      let open Z in
+      fits_int z && match to_int z with 1 | 2 | 4 | 8 -> true | _ -> false
+
+    let binop_mod v1 v2 =
+      match (v1, v2) with
+      | ( (V.Val Constant.(Symbolic _ | Label _) | V.Var _),
+          V.Val (Constant.Concrete (ASLScalar.S_Int z)) )
+        when is_valid_trailing_bits z ->
+          return V.zero
+      | _ -> M.op Op.Rem v1 v2
+
     let binop =
       let open AST in
       let v_true = V.Val (Constant.Concrete (ASLScalar.S_Bool true))
@@ -404,7 +416,7 @@ module Make (Conf : Config) = struct
       | `BEQ -> M.op Op.Eq
       | `BOR -> boolop Op.Or (fun b v -> if b then v_true else v)
       | `DIV -> M.op Op.Div
-      | `MOD -> M.op Op.Rem
+      | `MOD -> binop_mod
       | `DIVRM -> M.op (Op.ArchOp ASLOp.Divrm)
       | `XOR -> M.op Op.Xor
       | `EQ -> M.op Op.Eq
@@ -421,7 +433,9 @@ module Make (Conf : Config) = struct
       | `SHR -> M.op Op.ShiftRight
       | `BV_CONCAT -> concat
       | `BIC -> M.op Op.AndNot2
-      | (`POW | `IMPL | `RDIV | `STR_CONCAT) as op ->
+      | `STR_CONCAT -> M.op (Op.ArchOp ASLOp.StringConcat)
+      | `POW -> M.op (Op.ArchOp ASLOp.Pow)
+      | (`IMPL | `RDIV) as op ->
           Warn.fatal "ASL operation %s not yet implement in ASLSem."
             (Asllib.PP.binop_to_string op)
 
@@ -445,11 +459,12 @@ module Make (Conf : Config) = struct
     let reg_of_scope_id x scope =
       match (x, scope) with
       | "RESADDR", Scope.Global false -> ArchReg AArch64Base.ResAddr
-      | "SP_EL0", Scope.Global false -> ArchReg AArch64Base.SP
+      | "_SP_EL0", Scope.Global false -> ArchReg AArch64Base.SP
       | "PSTATE.N", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.N)
       | "PSTATE.Z", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.Z)
       | "PSTATE.C", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.C)
       | "PSTATE.V", Scope.Global false -> ArchReg AArch64Base.(PState PSTATE.V)
+      | "_PC", Scope.Global false -> ArchReg AArch64Base.PC
       | _ -> ASLLocalId (scope, x)
 
     let loc_of_scoped_id ii x scope =
@@ -631,21 +646,6 @@ module Make (Conf : Config) = struct
       let* v = v_m >>= to_aarch64_val and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
-
-    let loc_arch_reg reg ii = A.Location_reg (ii.A.proc, ASLBase.ArchReg reg)
-
-    let read_aarch64_reg reg (ii, poi) () =
-      read_loc MachSize.Quad (loc_arch_reg reg ii)
-        aneutral aexp areg (use_ii_with_poi ii poi)
-      >>= from_aarch64_val
-
-    let write_aarch64_reg reg (ii, poi) v_m =
-      let* v = v_m >>= to_aarch64_val in
-      write_loc MachSize.Quad (loc_arch_reg reg ii)
-        v aneutral aexp areg (use_ii_with_poi ii poi) >>! []
-
-    let read_pc = read_aarch64_reg AArch64Base.PC
-    let write_pc = write_aarch64_reg AArch64Base.PC
 
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = M.as_addr_port addr_m and* datasize = datasize_m in
@@ -989,8 +989,6 @@ module Make (Conf : Config) = struct
           ("reg", reg) ~returns:bv_64 read_register;
         p2 "write_register" ~side_effecting
           ("reg", reg) ("data", bv_64) write_register;
-        p0r "read_pc" ~side_effecting ~returns:bv_64 read_pc;
-        p1 "write_pc" ~side_effecting ("data", bv_64) write_pc;
         (* Memory *)
         p1a1r "read_memory"  ("N", None) ("addr", bv_64)
           ~returns:(bv_var "N")
@@ -1071,19 +1069,19 @@ module Make (Conf : Config) = struct
         in
         fun name -> ISet.mem name set
       in
-      let build ?ast_type version fname =
+      let build ?ast_type fname =
         Filename.concat "asl-pseudocode" fname
         |> Conf.libfind
-        |> ASLBase.build_ast_from_file ?ast_type version
+        |> ASLBase.build_ast_from_file ?ast_type `ASLv1
       in
       let patches =
-        let patches = build `ASLv1 "patches.asl" in
+        let patches = build "patches.asl" in
         if is_vmsa then
           (* Adapt for VMSA:
            * 1. Use default address translation.
            * 2. Override some functions (see file patches-vmsa.asl)
           *)
-          let patches_vmsa = build `ASLv1 "patches-vmsa.asl" in
+          let patches_vmsa = build "patches-vmsa.asl" in
           List.fold_right
             (fun d k ->
                match ASTUtils.identifier_of_decl d  with
@@ -1096,19 +1094,16 @@ module Make (Conf : Config) = struct
           let name =
             if is_vmsa then "physmem-vmsa.asl"
             else "physmem-std.asl" in
-          build `ASLv1 name in
-        let impls =
-          build `ASLv1 "implementations.asl"
-          @ build `ASLv0 "implementations0.asl" in
-        let impls =  impls @ physmem in
+          build name in
+        let impls = build "implementations.asl" @ physmem in
         if is_vmsa then
-          let impls_vmsa =  build `ASLv1 "implementations-vmsa.asl" in
+          let impls_vmsa =  build "implementations-vmsa.asl" in
           patch ~patches:impls_vmsa ~src:impls
         else impls
       and shared =
-        build `ASLv1 "system_registers.asl"
-        @ build `ASLv1 "features.asl"
-        @ build `ASLv0 "shared_pseudocode.asl"
+        build "system_registers.asl"
+        @ build "features.asl"
+        @ build "shared_pseudocode.asl"
       in
       let shared =
         (*

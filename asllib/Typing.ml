@@ -189,6 +189,11 @@ module Property (C : ANNOTATE_CONFIG) = struct
     | TypeCheckNoWarn | Silence -> fun ~loc:_ _ -> ()
     | TypeCheck | Warn -> EP.warn_from
 
+  let can_continue_on_error =
+    match C.check with
+    | TypeCheck | TypeCheckNoWarn -> false
+    | Silence | Warn -> true
+
   let best_effort : 'a -> ('a, 'a) property -> 'a = fun x f -> best_effort' f x
   let[@inline] ( let+ ) m f = check m () |> f
 
@@ -1759,10 +1764,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | _ -> acc)
         | _ -> acc
       in
-      match C.check with
-      | TypeCheckNoWarn | TypeCheck -> eqs1
-      | Warn | Silence ->
-          List.fold_left2 folder eqs1 callee.args caller_args_typed
+      if can_continue_on_error then
+        List.fold_left2 folder eqs1 callee.args caller_args_typed
+      else eqs1
     in
     let eqs3 =
       (* Checking that all parameter-defining arguments are static constrained integers. *)
@@ -3667,7 +3671,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 if ASTUtils.is_noreturn f then abnormal
                 else abnormal_or_continuing
             | None ->
-                assert (s.version = V0);
+                assert can_continue_on_error;
                 (* V0 subprograms in the shared pseudo-code. *)
                 top)
         | S_Return _ -> abnormal_or_returning

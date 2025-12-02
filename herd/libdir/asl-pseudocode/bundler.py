@@ -71,11 +71,15 @@ RE_FIELD_WITH_SLICES_OPT_V1 = re.compile(
 RE_RANGE = re.compile(r"\[(?P<n1>\d+):(?P<n2>\d+)]")
 RE_SINGLE = re.compile(r"\[(?P<n>\d+)]")
 RE_RANGE_PART_SPECIFIER = re.compile(
-    r"(?P<factor>\d+)?(\((?P<var>\w)(?P<shift>[+-]\d+)\)|(?P<var2>\w))(?P<constant>[+-]\d+)?"
+    r"((?P<constant>\d+)\+)?(?P<factor>\d+)?(\((?P<var>[a-zA-Z])(?P<shift>[+-]\d+)\)|(?P<var2>[a-zA-Z]))(?P<constant2>[+-]\d+)?"
 )
 
 
 SEEN_REG_NAMES: set[str] = set()
+ALLOW_CONDITIONAL_FIELDS_FOR: set[str] = set()
+ALLOW_MOVING_FIELDS_FOR: set[str] = set()
+ALLOW_INCLUDED_FIELDS_FOR: set[str] = set()
+DO_NOT_GENERATE_VARIABLES_FOR: set[str] = set()
 
 
 def o_path_of_tree(root: Element, o_dir: Path) -> Path:
@@ -108,11 +112,14 @@ def o_path_of_tree(root: Element, o_dir: Path) -> Path:
     elif root.tag == "register":
         assert False
 
-    else:
-        if root_type != "pseudocode":
-            _logger.warning("Unknown root type %s", root_type)
+    elif root_type == "pseudocode":
+        if o_dir.is_dir():
+            o_path = o_dir / (root.get("id").lower() + ".asl")
+        else:
+            o_path = o_dir
 
-        o_path = o_dir / (root.get("id").lower() + ".asl")
+    else:
+        _logger.warning("Unknown root type %s", root_type)
 
     if (
         o_path.exists()
@@ -131,7 +138,8 @@ def header_of_tree(root: Element, o_path: Optional[Path] = None) -> str:
     """Find a nice title for the written file."""
     post_header = []
 
-    if root.tag == "instructionsection":
+    root_type = root.get("type")
+    if root_type == "instruction":
         title = r if (r := root.get("title")) is not None else ""
         titles = [title]
 
@@ -150,7 +158,7 @@ def header_of_tree(root: Element, o_path: Optional[Path] = None) -> str:
         post_header.append("// =======")
         post_header.append("")
 
-    elif root.tag == "register":
+    elif root_type == "register":
         titles = [
             root.find("reg_long_name").text
             + " ("
@@ -401,7 +409,11 @@ def make_funs(args: argparse.Namespace):
             for i_file in args.i_files
         )
 
-        o_file = args.o_dir / "instructions.asl"
+        if args.o_dir.is_dir():
+            o_file = args.o_dir / "instructions.asl"
+        else:
+            o_file = args.o_dir
+
         with open(o_file, "w", encoding="utf8") as f:
             f.write(MESSAGE_ON_TOP)
 
@@ -419,8 +431,14 @@ def process_one_instruction_to_a_file(i_file: Path, o_dir: Path):
         _logger.error("Cannot interpret file %s -- Skipping.", i_file)
         return
 
-    if root.get("type") == "alias":
+    root_type = root.get("type")
+
+    if root_type == "alias":
         _logger.info("Skipping alias at %s.", i_file)
+        return
+
+    if root_type != "instruction":
+        _logger.info("Skipping non-instruction file at %s", i_file)
         return
 
     o_path = o_path_of_tree(root, o_dir)
@@ -436,6 +454,41 @@ def process_one_instruction_to_a_file(i_file: Path, o_dir: Path):
                 continue
 
             _logger.debug("Writing section %s", ps.get("name"))
+            f.writelines(ps.find("pstext").itertext())
+            f.write("\n\n")
+
+    _logger.debug("Processed %s", i_file)
+
+
+def make_shared_pseudocode(args: argparse.Namespace):
+    """Process the shared pseudocode from file and write it to output."""
+
+    if len(args.i_files) < 0:
+        return
+
+    if len(args.i_files) > 1:
+        _logger.warning(
+            "There are more than one argument for make_shared_pseudocode, ignoring the rest."
+        )
+        return
+
+    i_file = args.i_files[0]
+    root = parse(i_file).getroot()
+
+    root_type = root.get("type")
+    if root_type != "pseudocode":
+        _logger.error("Wrong type of root for shared-pseudocode.")
+        return
+
+    o_path = o_path_of_tree(root, args.o_dir)
+    _logger.info("Writing to %s", o_path)
+
+    header = header_of_tree(root, o_path)
+    with o_path.open("w") as f:
+        f.write(header)
+
+        for ps in root.findall("./ps_section/ps"):
+            _logger.info("Writing section %s", ps.get("name"))
             f.writelines(ps.find("pstext").itertext())
             f.write("\n\n")
 
@@ -660,16 +713,57 @@ def built_field_join_dicts(
     if bfs1 is None or bfs2 is None:
         return None
 
-    res: dict[str, BuiltField] = dict()
+    res: dict[str, BuiltField] = {}
 
-    for n, f1 in bfs1.items():
-        if n in bfs2 and (f2 := bfs2[n]).range == f1.range:
-            res[n] = BuiltField(
-                n,
-                f1.range,
-                cond=add_cond(f1.cond, f2.cond),
-                bitfields=built_field_join_dicts(reg_name, f1.bitfields, f2.bitfields),
-            )
+    if reg_name in ALLOW_INCLUDED_FIELDS_FOR:
+        res = dict(bfs1, **bfs2)
+
+        for n in bfs1.keys() & bfs2.keys():
+            bf1 = bfs1[n]
+            bf2 = bfs2[n]
+            l1 = range_get_length(bf1.range)
+            l2 = range_list_get_length(bf2.range)
+            if l1 < l2:
+                res[n] = bf2
+            else:
+                res[n] = bf1
+
+    elif reg_name in ALLOW_MOVING_FIELDS_FOR:
+        res = dict(bfs1, **bfs2)
+
+        for n in bfs1.keys() & bfs2.keys():
+            if not range_same_length(bfs1[n].range, bfs2[n].range):
+                _logger.debug("Removing non same length field %s", n)
+                del res[n]
+
+    elif reg_name in ALLOW_CONDITIONAL_FIELDS_FOR:
+        # Rough union
+        res = dict(bfs1, **bfs2)
+        # Otherwise we only keep one of those
+        for n in bfs1.keys() & bfs2.keys():
+            if (r := (f2 := bfs2[n]).range) == (f1 := bfs1[n]).range:
+                res[n] = BuiltField(
+                    n,
+                    r,
+                    cond=add_cond(f1.cond, f2.cond),
+                    bitfields=built_field_join_dicts(
+                        reg_name, f1.bitfields, f2.bitfields
+                    ),
+                )
+            else:
+                del res[n]
+
+    else:
+        for n, f1 in bfs1.items():
+            if n in bfs2 and (f2 := bfs2[n]).range == f1.range:
+                res[n] = BuiltField(
+                    n,
+                    f1.range,
+                    cond=add_cond(f1.cond, f2.cond),
+                    bitfields=built_field_join_dicts(
+                        reg_name, f1.bitfields, f2.bitfields
+                    ),
+                )
 
     return res
 
@@ -775,7 +869,7 @@ def process_part_specifier(
         return None
 
     factor = int(f) if (f := m["factor"]) is not None else 1
-    constant = int(c) if (c := m["constant"]) is not None else 0
+    constant = int(m["constant"] or m["constant2"] or 0)
 
     if m["var2"] is not None:
         return lambda x: factor * x + constant
@@ -839,9 +933,22 @@ def inline_array_indexes(
     )
 
     range_specifier = array_indexes.get("range_specifier")
-    assert range_specifier is not None
+    if range_specifier is None:
+        _logger.warning(
+            "Field '%s' has no range qualitifier for its array indexes. Skipping it.",
+            field_name,
+        )
+        return []
+
     create_range_from_specifier = range_specifier_to_asl(range_specifier)
-    assert create_range_from_specifier is not None
+    if create_range_from_specifier is None:
+        print(range_specifier)
+        _logger.warning(
+            "Field '%s' has bad syntax for its array indexes: %s. Skipping it.",
+            field_name,
+            range_specifier,
+        )
+        return []
 
     return [
         BuiltField(
@@ -995,7 +1102,7 @@ def build_fieldset(reg_name, type_name: str, fieldset: Element) -> Iterable[str]
 
 ARRAY_ACCESSOR_TEMPLATE = """accessor {accessor_name}(i: integer) <=> v: {type_name}
 begin
-  getter
+  readonly getter
     case i of
 {getter_case_body}
     end;
@@ -1010,7 +1117,7 @@ end;"""
 
 ACCESSOR_TEMPLATE = """accessor {accessor_name}() <=> v: {type_name}
 begin
-  getter
+  readonly getter
     return {variable_name};
   end;
 
@@ -1056,9 +1163,11 @@ def build_global_variable_declarations(
     assert reg_root.tag == "register"
 
     declarations = []
-    type_name = type_name
 
-    if (reg_variables := reg_root.find("reg_variables")) is not None:
+    if reg_name in DO_NOT_GENERATE_VARIABLES_FOR:
+        declarations.append("// Variable generation avoided for this register")
+
+    elif (reg_variables := reg_root.find("reg_variables")) is not None:
         assert reg_root.find("reg_array") is not None
 
         reg_variables = reg_variables.findall("reg_variable")
@@ -1076,12 +1185,18 @@ def build_global_variable_declarations(
     else:
         if (reg_banking := reg_root.find("reg_banking")) is not None:
             bank_text = reg_banking.findtext("reg_bank/bank_text")
-            expected_bank_text = f"This register is banked between {reg_name} and {reg_name}_S and {reg_name}_NS."
-            assert bank_text == expected_bank_text
+
+            assert (
+                re.fullmatch(
+                    f"This register is banked between {reg_name}( and {reg_name}_\\w+)+.",
+                    bank_text,
+                )
+                is not None
+            )
+
             accessor_names = [
                 reg_name,
-                reg_name + "_S",
-                reg_name + "_NS",
+                *re.findall(reg_name + r"_\w+", bank_text),
             ]
         else:
             accessor_names = [reg_name]
@@ -1225,12 +1340,31 @@ def process_one_reg_file(i_file) -> str:
     return res
 
 
+def process_regs_options(args: argparse.Namespace):
+    """Set up the correct global variables based on options in args."""
+    ALLOW_INCLUDED_FIELDS_FOR.update(
+        *(s.split(",") for s in args.allow_included_fields_for)
+    )
+    ALLOW_MOVING_FIELDS_FOR.update(
+        *(s.split(",") for s in args.allow_moving_fields_for)
+    )
+    ALLOW_CONDITIONAL_FIELDS_FOR.update(
+        *(s.split(",") for s in args.allow_optional_fields_for)
+    )
+    SEEN_REG_NAMES.update(*(s.split(",") for s in args.ignored_regs))
+    DO_NOT_GENERATE_VARIABLES_FOR.update(
+        *(s.split(",") for s in args.do_not_generate_variables_for)
+    )
+
+
 def make_regs(args: argparse.Namespace):
     """Parse the xml files and write an ASL file with it."""
     if args.o_dir.is_dir():
         o_file = args.o_dir / "system-registers.asl"
     else:
         o_file = args.o_dir
+
+    process_regs_options(args)
 
     if args.jobs == 1:
         results = [process_one_reg_file(i_file) for i_file in args.i_files]
@@ -1267,6 +1401,8 @@ def get_all_paths(paths: Iterable[Path]) -> list[Path]:
             i_files.append(f)
         else:
             _logger.warning("Ignoring %s", f)
+
+    i_files.sort()
 
     return i_files
 
@@ -1344,10 +1480,7 @@ def get_parser() -> argparse.ArgumentParser:
     options = parser.add_mutually_exclusive_group(required=True)
     options.add_argument(
         "--make-opns",
-        help=(
-            "Write the shared pseudocode to the file shared_pseudocode.asl, "
-            "and instructions in opn files."
-        ),
+        help=("Write the instructions in opn files."),
         action="store_const",
         const=make_opns,
         dest="func",
@@ -1363,11 +1496,51 @@ def get_parser() -> argparse.ArgumentParser:
         dest="func",
     )
     options.add_argument(
+        "--make-shared-pseudocode",
+        help="Write the shared pseudocode to the file shared_pseudocode.asl",
+        action="store_const",
+        const=make_shared_pseudocode,
+        dest="func",
+    )
+    options.add_argument(
         "--make-regs",
         help="Write the register definitions in a sysregs.asl file.",
         action="store_const",
         const=make_regs,
         dest="func",
+    )
+
+    parser.add_argument(
+        "--ignored-regs",
+        help="Ignore the registers in this list.",
+        action="append",
+        default=[],
+    )
+    parser.add_argument(
+        "--allow-optional-fields-for",
+        help="Allow register fields only present in certain conditions for registers in this list.",
+        action="append",
+        default=[],
+    )
+    parser.add_argument(
+        "--allow-moving-fields-for",
+        help="Allow register fields that move for registers in this list.",
+        action="append",
+        default=[],
+    )
+    parser.add_argument(
+        "--allow-included-fields-for",
+        help="Allow register fields that shrink under certain conditions for registers in this"
+        "list.",
+        action="append",
+        default=[],
+    )
+    parser.add_argument(
+        "--do-not-generate-variables-for",
+        help="Do not generate global declarations for the registers in this list, only type"
+        "declarations.",
+        action="append",
+        default=[],
     )
 
     parser.add_argument(
