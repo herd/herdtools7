@@ -1,5 +1,3 @@
-[@@@warning "-42"]
-
 module UList = Util.List
 open Ir
 

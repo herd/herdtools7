@@ -1,5 +1,3 @@
-[@@@warning "-40-42"]
-
 (* Create a set of relaxations for diy using a cat file *)
 
 module Arg = struct

@@ -1,5 +1,3 @@
-[@@@warning "-40-42"]
-
 let parse_barrier : string -> AArch64Base.barrier option = function
   | "DMB.ISH" -> Some (DMB (ISH, FULL))
   | "DMB.ISHLD" -> Some (DMB (ISH, LD))

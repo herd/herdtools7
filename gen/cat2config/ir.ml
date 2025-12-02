@@ -1,5 +1,3 @@
-[@@@warning "-40-42"]
-
 (* Sets and relations in normal form, and operations on them. *)
 
 type 'a inter = Inter of 'a list
