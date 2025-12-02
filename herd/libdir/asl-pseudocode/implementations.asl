@@ -34,6 +34,10 @@ type S1PIRType of S2PIRType;
 type SCRType of SCR_Type;
 type SCTLRType of SCTLR_EL1_Type;
 
+// Our extractor for the system register types does not yet support those.
+type BRBINF_EL1_Type of bits(64);
+type BRBTGT_EL1_Type of bits(64);
+type BRBSRC_EL1_Type of bits(64);
 
 // =============================================================================
 
@@ -80,7 +84,27 @@ end;
 
 // =============================================================================
 
-readonly func IsFeatureImplemented(f : Feature) => boolean
+// Not declared in shared_pseudocode
+
+// We only implement the minimum necessary
+
+readonly func ImpDefBool(s: string) => boolean
+begin
+  case s of
+    when "Secure-only implementation" => return FALSE;
+    otherwise =>
+      print "Unknown ImpDef: " ++ s;
+      assert FALSE;
+  end;
+end;
+
+// =============================================================================
+
+// Not declared in shared_pseudoocode
+
+// We only implement the mininum required features.
+
+func IsFeatureImplemented(f : Feature) => boolean
 begin
   case f of
     when FEAT_AA64EL0 => return TRUE;
@@ -137,10 +161,30 @@ end;
 // Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
 // the next instruction.
 
+// We do not support any hint.
+
 func Hint_Branch(hint : BranchType)
 begin
   return;
 end;
+
+// =============================================================================
+
+// SecureOnlyImplementation()
+// ==========================
+// Returns TRUE if the security state is always Secure for this implementation.
+
+// Is Implementation defined in the Arm ARM.
+
+func SecureOnlyImplementation() => boolean
+begin
+  return FALSE;
+end;
+
+// =============================================================================
+
+// Code used by our interface with herd, in either `physmem-std.asl` or
+// `physmem-vmsa.asl`
 
 // Type of underlying accesses (same order as lib/access.mli),
 // as recorder un events.
@@ -154,17 +198,3 @@ type EventAccess of enumeration {
      TAG,
      PHY_PTE,
 };
-
-type BRBINF_EL1_Type of bits(64);
-type BRBSRC_EL1_Type of bits(64);
-type BRBTGT_EL1_Type of bits(64);
-
-readonly func ImpDefBool(s: string) => boolean
-begin
-  case s of
-    when "Secure-only implementation" => return FALSE;
-    otherwise =>
-      print "Unknown ImpDef: " ++ s;
-      assert FALSE;
-  end;
-end;
