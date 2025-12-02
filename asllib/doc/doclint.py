@@ -236,9 +236,16 @@ def check_repeated_words(filename: str) -> int:
     r"""
     Checks if 'file' contains occurrences of the same word
     repeated twice, independent of case. For example, "the the".
+    Also detects problematic word pairs like "a the" and "the a".
     Errors are reported for the file name 'filename' and the total
     number of found errors is returned.
     """
+    # Pairs of words that shouldn't occur together (order matters)
+    forbidden_pairs = {
+        ("a", "the"),
+        ("the", "a"),
+    }
+
     num_errors = 0
     line_number = 0
     last_token = ""
@@ -249,6 +256,8 @@ def check_repeated_words(filename: str) -> int:
         for current_token in tokens:
             current_token_lower = current_token.lower()
             last_token_lower = last_token.lower()
+
+            # Check for repeated words
             if (
                 current_token_lower.isalpha()
                 and last_token_lower == current_token_lower
@@ -258,6 +267,19 @@ def check_repeated_words(filename: str) -> int:
                     f"./{filename} line {line_number}: \
                         word repetition ({last_token} {current_token}) in '{line}'"
                 )
+
+            # Check for forbidden word pairs
+            if (
+                current_token_lower.isalpha()
+                and last_token_lower.isalpha()
+                and (last_token_lower, current_token_lower) in forbidden_pairs
+            ):
+                num_errors += 1
+                print(
+                    f"./{filename} line {line_number}: \
+                        problematic word pair ({last_token} {current_token}) in '{line}'"
+                )
+
             last_token = current_token
     return num_errors
 
