@@ -26,7 +26,7 @@ begin
     // Several fields can be assigned simultaneously.
     r.[data, time, status] = Ones{8} :: Zeros{16} :: '1';
 
-    // Assignable expressions can be compound:
+    // Compound assignable expressions:
     r.data[0] = '1';
     r.a[[2]][1] = '0';
 

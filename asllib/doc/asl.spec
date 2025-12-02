@@ -1766,7 +1766,7 @@ semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_s
 function bool_transition(cond: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {cond} holds and $\False$ otherwise",
+    "returns $\True$ if {cond} holds and $\False$ otherwise.",
     prose_application = "testing whether {cond} holds returns {result}",
 };
 
@@ -1903,6 +1903,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
   case ECond {
     e =: E_Cond(e_cond, e_true, e_false);
     annotate_expr(tenv, e_cond) -> (t_cond, e_cond', ses_cond);
+    check_structure_label(tenv, t_cond, T_Bool) -> True;
     annotate_expr(tenv, e_true) -> (t_true, e_true', ses_true);
     annotate_expr(tenv, e_false) -> (t_false, e_false', ses_false);
     lowest_common_ancestor(t_true, t_false) -> t;
@@ -1998,8 +1999,8 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
         find_bitfield_opt(bitfields, field_name) -> some(BitField_Nested(_, slices, bitfields'))
         { math_layout = [_] };
         e3 := E_Slice(e2, slices);
-        annotate_expr(tenv, e3) -> (t, new_e, ses_new);
-        T_Bits(width, _) := t_e4;
+        annotate_expr(tenv, e3) -> (t_e4, new_e, ses_new);
+        t_e4 =: T_Bits(width, _);
         t := T_Bits(width, bitfields');
         --
         (t, new_e, ses_new);
@@ -2025,7 +2026,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       field_name =: concat_strings(item, num);
       num in Lang(int_lit_regex);
       decimal_to_lit(num) = INT_LIT(index);
-      te_check(zero <= index && index <= list_len(tys), TE_BTI) -> True;
+      te_check(zero <= index && index < list_len(tys), TE_BTI) -> True;
       t := tys[index];
       new_e := E_GetItem(e2, index);
       --
@@ -2116,17 +2117,16 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
 
   case ERecord {
     e =: E_Record(ty, fields);
-    te_check(ast_label(ty) = T_Named, TE_UT) -> True;
+    te_check(is_named(ty), TE_UT) -> True;
     make_anonymous(tenv, ty) -> ty_anon;
-    te_check(ast_label(ty_anon) in make_set(T_Record, T_Exception, T_Collection), TE_UT) -> True
-    { math_layout = ( appl( condition(label, labels[_]) ,err ) , output) };
+    te_check(is_structured(ty_non), TE_UT) -> True;
     ty_anon =: make_structured(L, field_types);
-    list_combine(initialized_fields, _) := fields;
+    fields =: list_combine(initialized_fields, _);
     names := field_names(field_types);
-    te_check(make_set(names) = initialized_fields, TE_BF) -> True;
+    te_check(names = initialized_fields, TE_BF) -> True;
     check_no_duplicates(initialized_fields) -> True;
     INDEX(i, fields: annotate_field_init(tenv, fields[i], field_types) ->
-                     list_combine_three(field_names, field_inits, field_effects))
+                     (field_names[i], field_inits[i], field_effects[i]))
     { math_layout = (_, [_]) };
     fields' := list_combine(field_names, field_inits);
     ses := union_list(field_effects);
@@ -2419,7 +2419,7 @@ semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint)
 };
 
 typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
-         (length: N, slices: list0((N, N)))
+         (length: N, slices: list0((start: N, width: N)))
 {
     "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of {base_fields} about to be assigned to, and yields the total width across {le_fields} and the ranges corresponding to {le_fields} in terms of pairs where the first component is the start position and the second component is the width of the field.",
     prose_application = "folding bitvector fields {le_fields} from {base_fields} in {tenv} yields length {length} and slices {slices}",
@@ -3066,7 +3066,7 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
 
 semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bit) -> (res: Bool)
 {
-  "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}",
+  "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}.",
   prose_application = "testing whether the bit {b} matches the mask value {mv}, yields {res}",
 };
 
@@ -3775,12 +3775,12 @@ typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
 typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | type_error
 {
   "annotates a single slice {s} in the \staticenvironmentterm{} {tenv},
-  resulting in an annotated slice {s'}.\ProseOtherwiseTypeError",
+  resulting in an annotated slice {s'}. \ProseOtherwiseTypeError",
   prose_application = "annotating the slice {s} in {tenv} yields {s'}\OrTypeError"
 } =
   case single {
     s = Slice_Single(i);
-    annotate_slice(Slice_Length(i, E_Literal(one))) -> s';
+    annotate_slice(Slice_Length(i, ELint(one))) -> s';
   }
 
   case range {
@@ -3872,7 +3872,7 @@ typing relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr
   "annotates a \symbolicallyevaluableterm{} integer
   expression {e} of a constrained integer type in the
   \staticenvironmentterm{} {tenv} and returns the
-  annotated expression {e''} and \sideeffectsetterm\
+  annotated expression {e''} and a \sideeffectsetterm{}
   {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
@@ -3890,7 +3890,7 @@ typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
   "annotates a list of slices {slices} in the
   \staticenvironmentterm{} {tenv}, yielding a list of
   annotated slices (that is, slices in the \typedast)
-  and \sideeffectsetterm{} {ses}.
+  and a \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
@@ -3905,7 +3905,7 @@ semantics relation eval_slice(env: envs, s: slice) ->
   | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates an individual slice {s} in an environment
-                        {env} is, resulting either in \\
+                        {env}, resulting in \\
                         $((({v_start}, {v_length}), {new_g}), {new_env})$.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
@@ -3929,12 +3929,11 @@ semantics relation eval_slice(env: envs, s: slice) ->
   }
 
   case length {
-    s = Slice_Length(e_start, length);
+    s = Slice_Length(e_start, e_length);
     eval_expr(env, e_start) -> ResultExpr(m_start, env1);
-    (v_factor, g1) := m_factor;
-    eval_expr(env1, length) -> ResultExpr(m_length, new_env);
+    (v_start, g1) := m_start;
+    eval_expr(env1, e_length) -> ResultExpr(m_length, new_env);
     (v_length, g2) := m_length;
-    eval_binop(MUL, v_factor, v_length) -> v_start;
     new_g := parallel(g1, g2);
   }
 
@@ -3956,7 +3955,7 @@ relation eval_slices(env: envs, slices: list0(slice)) ->
   | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates a list of slices {slices} in an environment
-                        {env}, resulting in either \\
+                        {env}, resulting in \\
                         $\ResultSlices((\ranges, \newg), \newenv)$.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
@@ -4401,8 +4400,8 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     ses_cond := union(ses_start, ses_end, ses_limit);
     make_anonymous(tenv, start_t) -> start_struct;
     make_anonymous(tenv, end_t) -> end_struct;
-    get_for_constraints(tenv, start_struct, end_struct, start_e', end_e', dir, cs) -> cs
-    { ([_,_,_,_,_,_,_], _) };
+    get_for_constraints(tenv, start_struct, end_struct, start_e', end_e', dir) -> cs
+    { ([_,_,_,_,_,_], _) };
     ty := T_Int(cs);
     check_var_not_in_env(tenv, index_name) -> True;
     add_local(tenv, ty, index_name, LDK_Let) -> tenv';
@@ -4615,7 +4614,7 @@ typing relation get_for_constraints(
   \item the annotated start expression {e1'}
   \item the annotated end expression {e2'}
   \item the loop direction {dir}
-  \end{itemize} The result is {vis}.
+  \end{itemize} The result is the integer constraint {vis}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \getforconstraints,
@@ -6273,8 +6272,8 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
   }
 
   case structured {
+    is_structured(ty);
     ty =: make_structured(L, fields);
-    L in make_set(T_Record, T_Exception, T_Collection);
     list_combine(names, types) := fields;
     INDEX(i, types: get_structure(tenv, types[i]) -> types'[i]);
     --

@@ -22,8 +22,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 
 \ChapterOutline
 \begin{itemize}
-  \item \FormalRelationsRef{Primitive Operations} defines the formal relations
-        primitive operations;
+  \item \FormalRelationsRef{Primitive Operations} defines the formal relations for primitive operations;
   \item \SyntaxRef{Primitive Operations} defines the syntax for unary operations and binary operations;
   \item \AbstractSyntaxRef{Primitive Operations} defines the AST for unary operations and binary operations;
   \item \secref{PrimitiveOperationSignatures} defines the signatures for all primitive operations;
@@ -656,7 +655,7 @@ followed by the resulting console output.
 eq_int: 5 == 10 = FALSE
 ne_int: 5 != 10 = TRUE
 le_int: 10 <= 10 = TRUE
-lt_int: 10 < 10 = TRUE
+lt_int: 10 < 10 = FALSE
 lt_int: 5 < 10 = TRUE
 gt_int: 10 > 10 = FALSE
 gt_int: 11 > 10 = TRUE
@@ -1592,8 +1591,8 @@ and as $0$ for an empty bit sequence:
 \inferrule[concat\_bits]{}{
   {
   \begin{array}{r}
-  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..l})}{\vvtwo}) \typearrow \\
-  \overname{\LBitvector(a_{1..k})\LBitvector(b_{1..l})}{\vr}
+  \binopliterals(\overname{\BVCONCAT}{\op}, \overname{\LBitvector(\va)}{\vvone}, \overname{\LBitvector(\vb)}{\vvtwo}) \typearrow \\
+  \overname{\LBitvector(\va \concat \vb)}{\vr}
   \end{array}
   }
 }

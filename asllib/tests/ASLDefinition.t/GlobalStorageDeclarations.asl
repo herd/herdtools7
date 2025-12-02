@@ -6,11 +6,11 @@ constant PI = 3.14;
 // Must have an initializing expression.
 let K: integer{0..1000} = 500;
 
-// Declarations mutable storage elements.
+// Declarations of mutable storage elements.
 var PC: bits (32) = Zeros{32};
 var Regs: array[[16]] of bits(32);
 
-// An mutable storage element without an initializing expressions.
+// A mutable storage element without an initializing expression.
 var c : collection { data: bits(16), status: bits(8) };
 
 // Declaration of a configurable storage element.

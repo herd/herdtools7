@@ -6,12 +6,6 @@ var c_var_well_constrained : integer{0..10} = 5;
 var c_var_inherited_constrained : integer{} = 2^128;
 var c_var_no_type_annotation = (x - 1) + y;
 
-// The next two declarations in comment are illegal,
-// as inherited constraints require an initializing
-// expression.
-// var c_var_inherited_illegal : integer{};
-// var c_let_illegal : integer{};
-
 let c_let : integer{1..x} = (x - 1) + y;
 let c_let_unconstrained_int : integer = 5;
 let c_let_inherited_constrained : integer{} = c_var;

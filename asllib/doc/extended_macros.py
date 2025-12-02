@@ -305,6 +305,7 @@ def apply_console_macros(aslref_path: str):
         print(f"Using aslref path {ASLREF_EXE}")
     print("Extended macros: applying console macros... ")
     pruned_latex_sources = get_latex_sources(True)
+    ConsoleMacro.apply_to_files(pruned_latex_sources)
     transform_by_line(
         pruned_latex_sources,
         r"\\AllApplyCase{(.*?)}:",

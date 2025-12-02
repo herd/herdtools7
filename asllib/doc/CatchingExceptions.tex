@@ -228,7 +228,12 @@ That is, no \dynamicerrorterm{} occurs.
 
 \SemanticsRuleDef{CatchNamed}
 \ExampleDef{Catching a Named Exception}
-The specification in \listingref{semantics-catchnamed}, prints \texttt{My exception with my message}.
+The specification in \listingref{semantics-catchnamed} prints the following:
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchNamed.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+caught MyExceptionType with msg=42
+\end{Verbatim}
+% CONSOLE_END
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \ProseParagraph
@@ -273,7 +278,12 @@ The specification in \listingref{semantics-catchnamed}, prints \texttt{My except
 
 \SemanticsRuleDef{CatchOtherwise}
 \ExampleDef{Evaluation of a Catch with an Otherwise}
-The specification in \listingref{semantics-catchotherwise} prints \texttt{Otherwise}.
+The specification in \listingref{semantics-catchotherwise} prints the following:
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchOtherwise.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+Otherwise
+\end{Verbatim}
+% CONSOLE_END
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \ProseParagraph
@@ -323,7 +333,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
   (that is, neither of the \texttt{catch} clauses matches the raised exception);
-  \item since there no \texttt{otherwise} clause, the result is $\sm$.
+  \item since there is no \texttt{otherwise} clause, the result is $\sm$.
 \end{itemize}
 \FormallyParagraph
 \begin{mathpar}
@@ -339,7 +349,12 @@ that matches the exception type (\texttt{MyExceptionType1}).
 
 \SemanticsRuleDef{CatchNoThrow}
 \ExampleDef{Evaluation of a Try Statement that Does Not Raise an Exception}
-The specification in \listingref{semantics-nothrow} prints \texttt{No exception raised}.
+The specification in \listingref{semantics-nothrow} prints the following:
+% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchNoThrow.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+No exception raised
+\end{Verbatim}
+% CONSOLE_END
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \ProseParagraph
@@ -366,7 +381,7 @@ The specification in \listingref{semantics-nothrow} prints \texttt{No exception 
 In \listingref{annotate-catcher}, the second catch clause --- for the exception type ExceptionType2
 is matched for the type of the exception value thrown by \verb|update_and_throw|.
 
-In \listingref{annotate-catcher}, no catch clause is matched for the type of the exception value thrown by \verb|update_and_throw|,
+In \listingref{catcher-not-found}, no catch clause is matched for the type of the exception value thrown by \verb|update_and_throw|,
 resulting in a \dynamicerrorterm{}.
 \ASLListing{Looking for a catch clause and failing to find one}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
 

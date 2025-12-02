@@ -315,6 +315,7 @@ def detect_incorrect_latex_macros_spacing(filename: str) -> int:
         r"\\item",  # \item occurrences
         r"\\noindent",  # \noindent occurrences
         r"\\tt",  # \tt occurrences
+        r"\\pagebreak",  # \pagebreak occurrences
     ]
     for pattern in patterns_to_remove:
         file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
@@ -622,6 +623,8 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\AllApplyCase{.*?}",
         r"\% CONSOLE_BEGIN.*\% CONSOLE_END",
         r"\\hypertarget{.*?}",
+        r"\\texthypertarget{.*?}",
+        r"\\mathhypertarget{.*?}",
         r"\\href{.*?}",
         r"\\begin{.*?}",
         r"\\end{.*?}",
@@ -645,8 +648,11 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
     ]
-    asl_listing_pattern = r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}"
-
+    extract_patterns = [
+        # Patterns for extracting words from specific macros:
+        r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}",
+        r"\\hyperlink{.*?}{(.*?)}",
+    ]
     num_errors = 0
     for filename in latex_files:
         file_str: str = read_file_str(filename)
@@ -658,11 +664,11 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         # Remove text blocks where spelling is not needed.
         for pattern in patterns_to_remove:
             file_str = re.sub(pattern, "", file_str, flags=re.DOTALL)
-        # Replace instances of \ASLListing with just the caption.
-        file_str = re.sub(asl_listing_pattern, r"\1", file_str)
+        for pattern in extract_patterns:
+            file_str = re.sub(pattern, r"\1", file_str, flags=re.DOTALL)
         file_lines = file_str.splitlines()
         for line in file_lines:
-            tokens = re.split(" |{|}", line)
+            tokens = re.split(" |{|}|-", line)
             tokens = [token.lower() for token in tokens if token.isalpha()]
             for token in tokens:
                 token_in_dict = token in dict_words
@@ -1273,6 +1279,57 @@ def check_relation_references(latex_files: list[str]) -> int:
     return num_errors
 
 
+def check_duplicate_asllisting_references(latex_files: list[str]) -> int:
+    r"""
+    Checks that no two \ASLListing commands have the same label or the same file.
+    Returns the total number of errors found across all files.
+    """
+    num_errors = 0
+
+    # Pattern to match \ASLListing{name}{label}{file}
+    asllisting_pattern = re.compile(r"\\ASLListing\{([^}]*)\}\{([^}]*)\}\{([^}]*)\}")
+
+    # Track seen labels and files
+    seen_labels: dict[str, tuple[str, int]] = {}  # label -> (filename, line_number)
+    seen_files: dict[str, tuple[str, int]] = {}  # file -> (filename, line_number)
+
+    for filename in latex_files:
+        lines = read_file_lines(filename)
+        for line_number, line in enumerate(lines, start=1):
+            if is_skipped_line(line):
+                continue
+
+            for match in asllisting_pattern.finditer(line):
+                name = match.group(1)
+                label = match.group(2)
+                file_path = match.group(3)
+
+                # Check for duplicate labels
+                if label in seen_labels:
+                    prev_filename, prev_line = seen_labels[label]
+                    print(
+                        f"ERROR: Duplicate \\ASLListing label '{label}' found in {filename}:{line_number} "
+                        f"(previously in {prev_filename}:{prev_line})"
+                    )
+                    num_errors += 1
+                else:
+                    seen_labels[label] = (filename, line_number)
+
+                # Check for duplicate files
+                if file_path in seen_files:
+                    prev_filename, prev_line = seen_files[file_path]
+                    print(
+                        f"ERROR: Duplicate \\ASLListing file '{file_path}' found in {filename}:{line_number} "
+                        f"(previously in {prev_filename}:{prev_line})"
+                    )
+                    num_errors += 1
+                else:
+                    seen_files[file_path] = (filename, line_number)
+
+    return num_errors
+
+
+
 def check_per_file(latex_files: list[str], checks):
     r"""
     Applies the list of functions in 'checks' to each file in 'latex files',
@@ -1294,6 +1351,8 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
+    standard_files = ['disclaimer.tex', 'notice.tex']
+    content_latex_sources = [f for f in content_latex_sources if not any(f.endswith(sf) for sf in standard_files)]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
@@ -1308,6 +1367,7 @@ def main():
     num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_zero_arg_macro_misuse(content_latex_sources)
     num_errors += check_relation_references(content_latex_sources)
+    num_errors += check_duplicate_asllisting_references(content_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
         [

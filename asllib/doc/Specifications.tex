@@ -25,7 +25,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
   \item \secref{Abstract Syntax of Specifications} defines the abstract syntax of specifications;
   \item \secref{Typing Specifications} defines the type rules for specifications;
   \item \secref{Overriding Subprograms} defines subprogram overriding and the associated type rules;
-  \item \secref{TopologicalOrdering} defines def-use relations between global declarations,
+  \item \secref{TopologicalOrdering} defines defined-used relations between global declarations,
         which is needed to sort them;
   \item \secref{Dependencies} defines how the global declarations in a specification are sorted;
   \item \secref{Semantics Of Specifications} defines the dynamic semantics of specifications.
@@ -774,7 +774,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 }
 \end{mathpar}
 
-\section{Def-Use Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
+\section{Defined-Used Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
 with global declarations.
 This is achieved by associating, for each declaration $d$, the set identifiers \emph{used} by $d$,
@@ -2112,7 +2112,7 @@ and the identifiers used by it, appearing in comments to its right.
 }
 \end{mathpar}
 
-\section{Ordering Global Declarations via Def-Use Dependencies\label{sec:Dependencies}}
+\section{Ordering Global Declarations via Defined-Used Dependencies\label{sec:Dependencies}}
 
 \begin{definition}[Strongly Connected Components]
 \hypertarget{def-scc}{}

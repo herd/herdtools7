@@ -28,7 +28,7 @@ In particular, implementations may provide mechanisms to override \texttt{config
 \end{itemize}
 Note that if modifying values after typechecking, care must be taken to ensure that the modified values remain compatible with the expected types of the original values.
 For example, a \texttt{config} value declared with type \verb|integer{0..10}| can be modified to \texttt{5} but should not be modified to \texttt{11}.
-This is because as \texttt{5} is compatible with \verb|integer{0..10}|, but \texttt{11} is not.
+This is because \texttt{5} is compatible with \verb|integer{0..10}|, but \texttt{11} is not.
 
 The language supports such overriding mechanisms (and in particular, simplifies tracking of types for \texttt{config} storage elements) as follows:
 \begin{itemize}
@@ -51,7 +51,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 
 \paragraph{Semantics:} The semantics of a list of global storage declarations is defined in \SemanticsRuleRef{EvalGlobals},
   where the list is ordered via \SemanticsRuleRef{BuildGlobalEnv}.
-  The semantics of a single global storage declarations is defined in \SemanticsRuleRef{DeclareGlobal}.
+  The semantics of a single global storage declaration is defined in \SemanticsRuleRef{DeclareGlobal}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef{Global Storage Declarations}
@@ -59,7 +59,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 \RequirementDef{DiscardingGlobalStorageDeclarations}
 Global storage declarations must\\ bind a name.
 This is ensured by the ASL grammar.
-All the global storage declarations in \listingref{local-storage-discards} are illegal,
+All the global storage declarations in \listingref{global-storage-discards} are illegal,
 as they discard their declared storage elements.
 \ASLListing{Illegal global storage declarations that discard storage elements}{global-storage-discards}{\syntaxtests/GuideRule.DiscardingGlobalStorageDeclarations.asl}
 
@@ -370,15 +370,18 @@ See \ExampleRef{Declaring Global Storage}.
 \listingref{DeclareGlobalStorage} shows examples of well-typed global storage declarations.
 \ASLListing{Global storage elements}{DeclareGlobalStorage}{\typingtests/TypingRule.DeclareGlobalStorage.asl}
 
-\listingref{DeclareGlobalStorage-config} shows examples of well-typed global storage declarations
-and ill-typed global storage declarations in comments,
-focused on \verb|config| storage elements.
-\ASLListing{Configuration storage elements}{DeclareGlobalStorage-config}{\typingtests/TypingRule.DeclareGlobalStorage.config.asl}
+\listingref{DeclareGlobalStorage-config} shows examples of well-typed global storage configuration declarations.
+\ASLListing{Well-typed configuration storage elements}{DeclareGlobalStorage-config}{\typingtests/TypingRule.DeclareGlobalStorage.config.asl}
+
+\listingref{DeclareGlobalStorage-config-bad} shows an example of an ill-typed global storage configuration declaration.
+\ASLListing{Ill-typed configuration storage elements}{DeclareGlobalStorage-config-bad}{\typingtests/TypingRule.DeclareGlobalStorage.config.bad.asl}
 
 \listingref{DeclareGlobalStorage-non-config} shows examples of well-typed global storage declarations,
-and ill-typed global storage declarations in comments,
-focused on storage elements that are not \verb|config|.
-\ASLListing{Well-typed non-config storage elements}{DeclareGlobalStorage-non-config}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.asl}
+focused on storage elements that are not configurations.
+\ASLListing{Well-typed non-configuration storage elements}{DeclareGlobalStorage-non-config}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.asl}
+
+\listingref{DeclareGlobalStorage-non-config} shows an example of an ill-typed global storage declaration.
+\ASLListing{Ill-typed non-configuration storage element}{DeclareGlobalStorage-non-config-bad}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.bad.asl}
 
 The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
 \texttt{config} storage elements must have an initializing expression.

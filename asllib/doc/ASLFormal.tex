@@ -37,12 +37,11 @@ is the set of rational numbers.
 
 \hypertarget{constant-False}{}
 \hypertarget{constant-True}{}
-\item \RenderType{Bool}
-is the set of ASL Boolean literals, which consists of $\True$ and $\False$.
+\item The set of ASL Boolean literals consists of $\True$ and $\False$:
+\RenderType{Bool}
 We employ these literals to represent the corresponding mathematical truth values,
 which are used to denote whether logical assertions hold or not.
-\hypertarget{operator-land}{}
-\hypertarget{operator-lor}{}
+\hypertarget{operator-land}{}\hypertarget{operator-lor}{}%
 We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\lor$,
 and logical negation $\neg$, given next.
 For a set of Boolean values $A$:
@@ -65,7 +64,7 @@ For a set of Boolean values $A$:
 \hypertarget{operator-implies}{}
 For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \land\{a, b\}$
 and $a \lor b \triangleq \lor\{a, b\}$.
-We define implication as $a \implies b \triangleq (\neg a) \lor b$, and
+We define implication as $a \implies b \triangleq \neg{}a \lor b$, and
 bi-implication as $a \IFF b \triangleq (a \implies b) \land (b \implies a)$.
 Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
@@ -80,6 +79,13 @@ is the set of all ASCII strings.
 
 \item \RenderType{ASTLabels}
 is the set of all labels of Abstract Syntax Tree (AST) nodes.
+\end{itemize}
+
+\paragraph{Quantifiers}
+We employ the standard notation for first-order logic quantifiers:
+\begin{itemize}
+  \item $\forall x \in A.\ P(x)$ stands for ``for all $x$ in set $A$, the property $P(x)$ holds'';
+  \item $\exists x \in A.\ P(x)$ stands for ``there exists an $x$ in set $A$ such that the property $P(x)$ holds''.
 \end{itemize}
 
 We utilize the notation $\overname{a}{b}$ to enable us to name the mathematical term $a$ as $b$ so that
@@ -138,7 +144,7 @@ The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subset
 \hypertarget{def-graphtransitive}{}
 \hypertarget{def-graphtransitivereflexive}{}
 \begin{definition}[Transitive Closure of a Relation]
-We denote the transitive closure of a relation $E = V \times V$ by $\graphtransitive{E}$
+We denote the transitive closure of a relation $E = V \cartimes V$ by $\graphtransitive{E}$
 and the reflexive-transitive closure of $E$ by $\graphtransitivereflexive{E}$.
 \end{definition}
 
@@ -191,15 +197,7 @@ in terms of the set of input-output pairs:
 \]
 \end{definition}
 
-\begin{definition}[Function Graph]
-\hypertarget{def-funcgraph}{}
-The \emph{graph} of a finite-domain function $f : X \rightarrowfin Y$
-is the list of input-output pairs for $f$, given in any order:
-\[
-\funcgraph(f) \triangleq \{ (x, f(x)) \;|\; x \in \dom(f) \} \enspace.
-\]
-\end{definition}
-
+\paragraph{Naming Notation}
 Throughout this document, we will annotate arguments of relations and functions, wherever it is useful,
 by writing a name or an expression above the corresponding argument type.
 This makes it convenient to refer to arguments by referring to the corresponding names, and helps identify
@@ -211,6 +209,7 @@ For example,
 defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
 the third argument as $y$, and to the result as $z$.
 
+\paragraph{Parametric Functions and Relations}
 A \emph{parametric function} is a function whose domain is not a priori fixed but rather
 parameterized by the type of its arguments. An example is the $\choicename$ function where the type $T$ of
 $x$, $y$, and $z$ is unspecified and inferred from the context where the function is used.
@@ -260,23 +259,23 @@ stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of t
 
 \hypertarget{def-kleenestar}{}
 \hypertarget{def-kleeneplus}{}
-We write $\KleeneStar{T}$ to denote a the type of a possibly-empty list of elements of type $T$,
+We write $\KleeneStar{T}$ to denote the type of a possibly-empty list of elements of type $T$,
 and $\KleenePlus{T}$ for a non-empty list of elements of type $T$.
 
 \hypertarget{def-inlist}{}
-We slightly abuse notation by employing the notation for set membership to lists.
+We slightly abuse notation by employing the notation for set membership for lists.
 Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ stands for $\exists i\in\N.\ L[i]=e$.
 
 \hypertarget{def-listset}{}
 \begin{definition}[Listing a Set]
-The parametric relation $\listset : \pow{T} \times \KleeneStar{T}$
+The parametric relation $\listset : \pow{T} \cartimes \KleeneStar{T}$
 lists the elements of a set in an arbitrary order:
+
 \[
-\begin{array}{c}
-  \listset(X) = x_{1..k}\\
-  |X| = k\\
-  \forall x\in X.\ \exists 1 \leq i \leq k.\ x = x_i
-\end{array}
+\listset(X) \triangleq \begin{cases}
+  \emptylist & \text{if }X = \emptyset\\
+  x_{1..k}\text{ such that }|X| = k\text{ and }\forall x\in X.\ \exists 1 \leq i \leq k.\ x = x_i & \text{otherwise } \enspace.
+\end{cases}
 \]
 \end{definition}
 
@@ -284,11 +283,12 @@ lists the elements of a set in an arbitrary order:
 \begin{definition}[List Concatenation]
 The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \rightarrow \KleeneStar{T}$ concatenates two lists:
 \[
-    \begin{array}{rcl}
-    \emptylist \concat L &\triangleq& L\\
-    L \concat \emptylist &\triangleq& L\\
-    l_{1..k} \concat m_{1..n} &\triangleq& [l_{1..k}, m_{1..n}]
-    \end{array}
+  L \concat{} M \triangleq
+  \begin{cases}
+    L & \text{if } M = \emptylist\\
+    M & \text{if } L = \emptylist\\
+    L_1 \ldots L_k {} M_1 \ldots M_n & \text{if } L = L_1 \ldots L_k \text{ and } M = M_1 \ldots M_n \enspace.
+  \end{cases}
 \]
 \end{definition}
 
@@ -352,7 +352,7 @@ transforms a list of pairs into the corresponding pair of lists:
 \[
   \unziplist(\pairs) \triangleq \begin{cases}
     (\emptylist, \emptylist)  & \text{if }\pairs = \emptylist\\
-    (a_{1..k}, b_{1..k})      & \text{else }\pairs = (a_1,b_1) \ldots (a_k,b_k)  \enspace.
+    (a_{1..k}, b_{1..k})      & \text{if } \pairs = (a_1,b_1) \ldots (a_k,b_k)  \enspace.
   \end{cases}
 \]
 \end{definition}
@@ -369,7 +369,7 @@ transforms a list of triples into the corresponding triple of lists:
 \[
   \unziplistthree(\triples) \triangleq \begin{cases}
     (\emptylist, \emptylist, \emptylist)  & \text{if }\triples = \emptylist\\
-    (a_{1..k}, b_{1..k}, c_{1..k})      & \text{else }\triples = (a_1,b_1,c_1) \ldots (a_k,b_k,c_k)  \enspace.
+    (a_{1..k}, b_{1..k}, c_{1..k})      & \text{if }\triples = (a_1,b_1,c_1) \ldots (a_k,b_k,c_k)  \enspace.
   \end{cases}
 \]
 \end{definition}
@@ -383,16 +383,16 @@ The parametric function
 \[
 \uniquelist : \overname{\KleeneStar{T}}{l} \rightarrow \KleeneStar{T}
 \]
-retains only the first occurrence of each element of the list $l$.
+retains a single copy of each element of the list $l$.
 It relies on the helper function $\uniquep$:
 \[
 \begin{array}{rcl}
 \uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\\\\
-\uniquep(\emptylist, \acc) &\triangleq& \acc\\
-\uniquep([h] \concat t, \acc) &\triangleq&
+\uniquep(l, \acc) &\triangleq&
   \begin{cases}
-    \uniquep(t, \acc) & \text{if }h \inlist t\\
-    \uniquep(t, \acc \concat [h]) & \text{otherwise}\\
+    \acc & \text{if }l = \emptylist\\
+    \uniquep(t, \acc)& \text{if }l = h \cons{} t \text{ and } h \inlist \acc\\
+    \uniquep(t, \acc \concat [h]) & \text{if }l = h \cons{} t \text{ and } h \not\inlist \acc\\
   \end{cases}
 \end{array}
 \]
@@ -402,7 +402,7 @@ It relies on the helper function $\uniquep$:
 \hypertarget{operator-assocopt}{}
 The function
 \[
-  \assocopt{\overname{\KleeneStar{(\Identifier\times T)}}{\vli}}{\overname{\Identifier}{\id}} \aslto \Option{\overname{T}{\vv}}
+  \assocopt{\overname{\KleeneStar{(\Identifier\cartimes T)}}{\vli}}{\overname{\Identifier}{\id}} \aslto \Option{\overname{T}{\vv}}
 \]
 returns $\some{\vv}$ for the first pair $(\id, \vv)$ in the list of pairs $\vli$,
 or $\None$ if no such pair exists.
@@ -422,12 +422,12 @@ takes the union of a list of sets:
 
 \subsection{Strings}
 \hypertarget{operator-stringconcat}{}
-The function $\concatstrings : \Strings \times \Strings \rightarrow \Strings$
+The function $\concatstrings : \Strings \cartimes \Strings \rightarrow \Strings$
 concatenates two strings.
 
 \hypertarget{operator-stringofnat}{}
 The function $\stringofnatname : \N \rightarrow \Strings$ converts a natural number
-to the corresponding string.
+to the corresponding decimal string.
 
 \subsection{OCaml-style Notations}
 We use the following notations, which are in the style of the OCaml programming language,
@@ -488,7 +488,7 @@ and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has four premises
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
-  \annotateexpr(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veone', \vetwo'), \vses)
+  \annotateexpr(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veonep, \vetwop), \vses)
 }
 \end{mathpar}
 
@@ -660,7 +660,7 @@ different from any other free variable in the rule.
 \end{definition}
 
 For example, the rule \SemanticsRuleRef{PAll}, shown \hyperlink{SemanticsRule.PAll-example}{above},
-uses an ignore variable to stand for the value being matched by a \texttt{-} pattern.
+uses an ignore variable to stand for the value being matched by a \hyperlink{any-pattern}{\Tminus{} pattern}.
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
@@ -704,7 +704,7 @@ shown here:
   of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
   hand side exposes the internal structure of $v$ by introducing the variables
   $u_{1..k}$, allowing us to alias internal components of $v$.
-  Intuitively, $v$ is re-interpreted as $\textit{f}(u_{1..k})$.
+  Intuitively, $v$ is reinterpreted as $\textit{f}(u_{1..k})$.
   For example, suppose we know that $v$ is a pair of values.
   Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
   In \SemanticsRuleRef{ECond}, we know from the definition of $\evalexpr$ that
@@ -753,8 +753,7 @@ $\funcbuiltin$.
 The notation $\{ \funcbody:\vbody,\ \FIELDargs:\vargdecls, \ldots \}$
 allows us to deconstruct a given \func\ node by matching only the $\funcbody$ and $\FIELDargs$ fields.
 
-Recall that a subset of AST nodes are either labels or labelled tuples.
-\hypertarget{def-astlabel}{}
+Recall that a subset of AST nodes are either labels or labelled tuples.\texthypertarget{def-astlabel}
 The partial function $\astlabel$ returns the label $\vl\in\ASTLabels$ of an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed$.
 
@@ -777,7 +776,7 @@ Consider the following examples, which is a simplified version of \SemanticsRule
 To parse a rule, start by examining the conclusion and the variables appearing in the rule.
 In this case, the rule describes a transition from an input configuration \\
 $\evalexpr( \env, \EBinop(\op, \veone, \vetwo) )$,
-whose configuration domain is \evalexpr, to an output configuration $\ResultExpr((\vv, \vg), \newenv)$
+whose configuration domain is $\evalexpr$, to an output configuration $\ResultExpr((\vv, \vg), \newenv)$
 whose configuration domain is\\$\ResultExpr$.
 %
 A rule uses the free variables appearing in the input configuration of the conclusion
@@ -854,7 +853,7 @@ in the conclusion transitions into $E$.
 
 We allow more than one premise to include short-circuiting alternatives and also
 a single premise to include several alternatives.
-That is, a rule macro of the form
+That is, a rule macro of the following form:
 \begin{mathpar}
   \inferrule{
     \XP\\\\
@@ -865,7 +864,7 @@ That is, a rule macro of the form
     V \rulearrow V'
   }
 \end{mathpar}
-Stands for the set of rule macros
+Stands for the following set of rule macros:
 \begin{mathpar}
   \inferrule{
     \XP\\\\
@@ -1046,8 +1045,6 @@ We define a similar function for dynamic errors.
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
 
-
-
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}
 We define the following rules to allow us to treat Boolean values as transition judgments,
@@ -1091,11 +1088,11 @@ and applies it to an optional value:
 \inferrule[Some]{
   f(v) \longrightarrow v'
 }{
-  \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow \some{v'}
+  \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow \overname{\some{v'}}{\vvoptnew}
 }
 \and
 \inferrule[None]{}{
-  \mapopt{f}(\overname{\None}{\vvopt}) \longrightarrow \None
+  \mapopt{f}(\overname{\None}{\vvopt}) \longrightarrow \overname{\None}{\vvoptnew}
 }
 \end{mathpar}
 
@@ -1135,8 +1132,8 @@ cases. Two of these cases are the following ones:
 }
 \end{mathpar}
 
-The full name of the first case is then \TypingRuleRef{BaseValue}.BOOL
-and the full name of the second case is \TypingRuleRef{BaseValue}.REAL.
+The full name of the first case is then \TypingRuleRef{BaseValue}.\textsc{T\_BOOL}
+and the full name of the second case is \TypingRuleRef{BaseValue}.\textsc{T\_REAL}.
 
 When explaining rules in English prose, we include the name of the case rules
 in parenthesis to make it easier to relate the prose to the corresponding mathematical

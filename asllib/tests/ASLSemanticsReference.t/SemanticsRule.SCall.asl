@@ -23,9 +23,5 @@ begin
     assert g == '1101 111';
 
     - = zero();
-    // The following statement in comment is illegal as 'zero'
-    // a function, not a procedure, and its returned value
-    // must be consumed.
-    // zero();
     return 0;
 end;

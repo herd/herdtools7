@@ -262,7 +262,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-typedidentifier}{}
 The function
 \[
-\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \ty)}{\vastnode}
+\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \ty)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -279,7 +279,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
-\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \times \Option{\ty})}{\vastnode}
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \Option{\ty})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -323,7 +323,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\vastnode}
+  \overname{\KleeneStar{(\Identifier\cartimes\Option{\ty})}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -352,7 +352,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier\times\ty)}}{\vastnode}
+  \overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -465,7 +465,7 @@ The function
     \begin{array}{l}
     \overname{\overrideinfo}{\voverride} \aslsep \\
     \overname{\Identifier}{\name} \aslsep \\
-    \overname{\KleeneStar{(\Identifier \times \Option{\ty})}}{\vparameters} \aslsep \\
+    \overname{\KleeneStar{(\Identifier \cartimes \Option{\ty})}}{\vparameters} \aslsep \\
     \overname{\KleeneStar{\typedidentifier}}{\vargs} \aslsep \\
     \overname{\Identifier}{\vsetterarg} \aslsep \\
     \overname{\ty}{\tty} \aslsep \\
@@ -822,13 +822,11 @@ is not a constrained expression.
 \RenderRelation{annotate_params}
 
 \ExampleDef{Annotating Parameters}
-In \listingref{typing-parameterofconstraint}, the list of explicitly defined parameters
+In \listingref{AnnotateFuncSig}, the list of explicitly defined parameters
 of the function \\
 \verb|signature_example| is $\{\texttt{A},\texttt{B}\}$.
 Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 \verb|let A: integer{A}| and \verb|let B: integer{B}|.
-
-\ASLListing{A function with parameters}{typing-parameterofconstraint}{\typingtests/TypingRule.AnnotateFuncSig.asl}
 
 \ProseParagraph
 \OneApplies
@@ -971,7 +969,7 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \RenderRelation{extract_parameters}
 
 \ExampleDef{The Parameters of a Function}
-In \listingref{typing-parameterofconstraint}, the set of identifiers that may correspond
+In \listingref{AnnotateFuncSig}, the set of identifiers that may correspond
 to parameters of the function \texttt{signature\_example} is $\{\texttt{A}, \texttt{B}\}$,
 since they appear in the type \texttt{bits(A)}
 of the argument \texttt{bv} and the type \texttt{bits(A+B)} of the argument \texttt{bv3}.
@@ -1367,7 +1365,7 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
 \RenderRelation{annotate_args}
 
 \ExampleDef{Annotating Subprogram Arguments}
-In \listingref{typing-parameterofconstraint}, the annotated arguments are
+In \listingref{AnnotateFuncSig}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
 
 \ProseParagraph

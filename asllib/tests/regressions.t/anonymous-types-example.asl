@@ -19,7 +19,7 @@ begin
 
   let dataT2: T2 = 10;
   pair = (1, dataT2);
-  // illegal since right hand side has anonymous, non-primitive type (integer, T2)
+  // illegal: right hand side has anonymous, non-primitive type (integer, T2)
   // which does not subtype-satisfy named type pairT
 end;
 

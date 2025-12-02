@@ -131,6 +131,7 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.For.asl
   $ aslref SemanticsRule.Catch.asl
   $ aslref SemanticsRule.CatchNamed.asl
+  caught MyExceptionType with msg=42
   $ aslref SemanticsRule.CatchOtherwise.asl
   Otherwise
   $ aslref SemanticsRule.CatchNone.asl

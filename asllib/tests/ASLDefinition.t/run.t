@@ -16,7 +16,7 @@ Examples used in ASL High-level Definition:
 
   $ aslref CaseStatement.discriminant.asl
   num_tests: 0
-  selected case 2
+  selected case x=51
 
   $ aslref CaseStatement.otherwise.asl
   num_tests: 0

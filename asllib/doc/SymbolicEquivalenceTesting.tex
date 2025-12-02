@@ -116,7 +116,7 @@ For example,
       \begin{array}{ll}
         \vfone(\vx) & \text{if } \vx \in \dom(\vfone) \setminus \dom(\vftwo)\\
         \vftwo(\vx) & \text{if } \vx \in \dom(\vftwo) \setminus \dom(\vfone)\\
-        \vfone(\vx)+\vftwo(\vx) & \text{else } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
+        \vfone(\vx)+\vftwo(\vx) & \text{if } \vx \in \dom(\vfone) \cap \dom(\vftwo)\\
       \end{array}
       \right.
     }
@@ -165,7 +165,7 @@ For example,
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
       \vftwo(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
       \bot        & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) = 0\\
-      \vfone(\vm)+\vftwo(\vm) & \text{else } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
+      \vfone(\vm)+\vftwo(\vm) & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
     \end{array}
     \right.
     \end{array}
@@ -1999,11 +1999,12 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
     \item $\vp$ is the polynomial $f$;
-    \item sorting (see $\sort$ for details) the graph of $f$ (see $\funcgraph$ for details)
+    \item sorting (see $\sort$ for details) the list of monomial-to-factor bindings in $f$,
+          that is, the set of pairs $(\vm, \vq)$ such that $\vm$ is in the domain of $f$
+          and $f(\vm) = \vq$,
           yields $\monoms$ --- a list consisting of pairs of unitary monomials and rationals.
           In principle, any total order of the graph of $f$ is acceptable for sorting.
-          The function $\comparemonomialbindings$ provides one such way of ordering
-          the graph of $f$;
+          The function $\comparemonomialbindings$ provides one such way of ordering;
     \item transforming $\monoms$ to an expression and sign via $\monomialstoexpr$ yields the expression $\veone$
           and sign $\vsone$;
     \item define $\ve$ as $\veone$ if $\vsone$ is $1$, the integer literal expression for $0$ if $\vsone$ is $0$,
@@ -2020,7 +2021,9 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 }
 \and
 \inferrule[non\_empty]{
-  \sort(\funcgraph(f), \comparemonomialbindings) = \monoms\\
+  \monomsandfactors \eqdef \{ (\vm,\vq) \;|\; \vm\in\dom(f) \land f(\vm) = \vq \}\\
+  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\\
+  \monoms \eqdef \sort(\monomsandfactorslist, \comparemonomialbindings)\\
   \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
   {
   \ve \eqdef \begin{cases}

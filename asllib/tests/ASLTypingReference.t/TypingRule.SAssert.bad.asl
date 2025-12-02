@@ -8,7 +8,7 @@ end;
 
 func main() => integer
 begin
-    assert(increment()); // Illegal, since increment is not readonly.
+    assert(increment()); // illegal: increment is not readonly.
     assert(1); // Illegal as 1 is not boolean-typed.
     return 0;
 end;

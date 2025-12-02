@@ -13,13 +13,13 @@ begin
   underconstrainedBits = argN;      // legal since widths match
                                     // and domains are identical
 
-  // underconstrainedBits = argM;      // illegal since widths do not match
-  // underconstrainedBits = eightBits; // illegal since widths do not match
-  // underconstrainedBits = someBits;  // illegal since widths do not match
+  // underconstrainedBits = argM;      // illegal: widths do not match
+  // underconstrainedBits = eightBits; // illegal: widths do not match
+  // underconstrainedBits = someBits;  // illegal: widths do not match
                                        // (someWid==N may be false)
 
-  // eightBits = underconstrainedBits; // illegal since widths do not match
-  // someBits  = underconstrainedBits; // illegal since widths do not match
+  // eightBits = underconstrainedBits; // illegal: widths do not match
+  // someBits  = underconstrainedBits; // illegal: widths do not match
                                        // (someWid==N may be false)
 end;
 
