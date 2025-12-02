@@ -42,11 +42,6 @@ let set_src (extr : Code.extr) (e : E.edge) : E.edge =
 let set_tgt (extr : Code.extr) (e : E.edge) : E.edge =
   match extr with Code.Dir dir -> E.set_tgt dir e | _ -> e
 
-let amo_tedges : E.tedge list =
-  (* Keeping it simple with just Swp and Cas for now *)
-  let amo_ops = A.[ Swp; Cas ] in
-  List.map (fun x -> E.Rmw x) amo_ops
-
 type tedge = Tedge of { edge : E.tedge; insert : E.fence option }
 
 let has_ie (ie : Code.ie) (Tedge { edge; _ } : tedge) : bool = get_ie edge = ie
@@ -124,9 +119,9 @@ let build_tedges : prim_rel -> E.tedge list =
       UList.concat_map
         (fun sd -> [ E.Fenced (A.Barrier f, sd, Code.Irr, Code.Irr) ])
         sds
-  | Prim "amo" -> amo_tedges
+  | Prim "amo" -> [ E.Rmw A.AllAmo ]
   | Prim "lxsx" -> [ E.Rmw A.LrSc ]
-  | Prim "rmw" -> [ E.Rmw A.LrSc ] @ amo_tedges
+  | Prim "rmw" -> [ E.Rmw A.LrSc; E.Rmw A.AllAmo ]
   | Prim "addr" -> dp_tedges Dep.ADDR A.NoCsel
   | Prim "ctrl" -> dp_tedges Dep.CTRL A.NoCsel
   | Prim "data" -> dp_tedges Dep.DATA A.NoCsel
