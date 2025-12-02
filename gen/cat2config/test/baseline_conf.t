@@ -72,15 +72,15 @@
   
   ### aob
   ## [Exp & M]; rmw; [Exp & M]
-  -safe LxSx Amo.Swp Amo.Cas
+  -safe LxSx Amo
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPA] [Amo.Swp, PosWRPA] [Amo.Cas, PosWRPA]
+  -safe [LxSx, PosWRPA] [Amo, PosWRPA]
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPA, Amo.SwpAP] [Amo.Swp, PosWRPA, Amo.SwpAP] [Amo.Cas, PosWRPA, Amo.SwpAP] [LxSx, PosWRPA, Amo.CasAP] [Amo.Swp, PosWRPA, Amo.CasAP] [Amo.Cas, PosWRPA, Amo.CasAP]
+  -safe [LxSx, PosWRPA, AmoAP] [Amo, PosWRPA, AmoAP]
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPQ] [Amo.Swp, PosWRPQ] [Amo.Cas, PosWRPQ]
+  -safe [LxSx, PosWRPQ] [Amo, PosWRPQ]
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPQ, Amo.SwpQP] [Amo.Swp, PosWRPQ, Amo.SwpQP] [Amo.Cas, PosWRPQ, Amo.SwpQP] [LxSx, PosWRPQ, Amo.CasQP] [Amo.Swp, PosWRPQ, Amo.CasQP] [Amo.Cas, PosWRPQ, Amo.CasQP]
+  -safe [LxSx, PosWRPQ, AmoQP] [Amo, PosWRPQ, AmoQP]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
@@ -90,27 +90,27 @@
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
   -safe DMB.STdWW DMB.STsWW
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [Amo.SwpAL, Pod**LP] [Amo.CasAL, Pod**LP] [Amo.SwpAL, Pos**LP] [Amo.CasAL, Pos**LP]
+  -safe [AmoAL, Pod**LP] [AmoAL, Pos**LP]
   ## [L]; po; [A]
   -safe Pod**LA Pos**LA
   ## [L]; po; [A]
-  -safe [Pod**LA, Amo.SwpAP] [Pos**LA, Amo.SwpAP] [Pod**LA, Amo.CasAP] [Pos**LA, Amo.CasAP]
+  -safe [Pod**LA, AmoAP] [Pos**LA, AmoAP]
   ## [L]; po; [A]
-  -safe [Amo.SwpPL, Pod**LA] [Amo.CasPL, Pod**LA] [Amo.SwpPL, Pos**LA] [Amo.CasPL, Pos**LA]
+  -safe [AmoPL, Pod**LA] [AmoPL, Pos**LA]
   ## [L]; po; [A]
-  -safe [Amo.SwpPL, Pod**LA, Amo.SwpAP] [Amo.CasPL, Pod**LA, Amo.SwpAP] [Amo.SwpPL, Pos**LA, Amo.SwpAP] [Amo.CasPL, Pos**LA, Amo.SwpAP] [Amo.SwpPL, Pod**LA, Amo.CasAP] [Amo.CasPL, Pod**LA, Amo.CasAP] [Amo.SwpPL, Pos**LA, Amo.CasAP] [Amo.CasPL, Pos**LA, Amo.CasAP]
+  -safe [AmoPL, Pod**LA, AmoAP] [AmoPL, Pos**LA, AmoAP]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
   -safe Pod**AP Pos**AP
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [Amo.SwpAP, Pod**] [Amo.CasAP, Pod**] [Amo.SwpAP, Pos**] [Amo.CasAP, Pos**]
+  -safe [AmoAP, Pod**] [AmoAP, Pos**]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
   -safe Pod**QP Pos**QP
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [Amo.SwpQP, Pod**] [Amo.CasQP, Pod**] [Amo.SwpQP, Pos**] [Amo.CasQP, Pos**]
+  -safe [AmoQP, Pod**] [AmoQP, Pos**]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
   -safe Pod**PL Pos**PL
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe [Pod**, Amo.SwpPL] [Pos**, Amo.SwpPL] [Pod**, Amo.CasPL] [Pos**, Amo.CasPL]
+  -safe [Pod**, AmoPL] [Pos**, AmoPL]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
