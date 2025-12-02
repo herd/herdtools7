@@ -610,7 +610,6 @@ determining
 determinism
 deterministic
 deterministically
-dev
 development
 diagnostic
 dictates

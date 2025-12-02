@@ -755,6 +755,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderType\[.*?\]{.*?}",
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
+        r"\\TERM{.*?}",
     ]
     extract_patterns = [
         # Patterns for extracting words from specific macros:
