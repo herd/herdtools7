@@ -23,9 +23,9 @@ let arch = ref `PPC
 
 let opts = [Util.arch_opt arch]
 
-module Make (A:Fence.S) =
+module Make (A:Arch_gen.FenceAtom) =
     struct
-      module E = Edge.Make(Edge.Config)(A)
+      module E = Edge.Make(Edge.Config)(A)(A)
 
       let is_atom es =
         List.exists
