@@ -511,7 +511,8 @@
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
 \newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
-\newcommand\stringofnat[0]{\hyperlink{def-stringofnat}{\texttt{string\_of\_nat}}}
+\newcommand\stringofnatname[0]{\hyperlink{operator-stringofnat}{\texttt{string\_of\_nat}}}
+\newcommand\stringofnat[1]{\stringofnatname(#1)}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\Option[1]{\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)} % The optional type term
@@ -1139,7 +1140,7 @@
 \newcommand\XGraphs[0]{\hyperlink{type-XGraphs}{\mathcal{G}}}
 \newcommand\WriteEffect[0]{\hyperlink{operator-writeeffect}{\textsf{WriteEffect}}}
 \newcommand\ReadEffect[0]{\hyperlink{operator-readeffect}{\textsf{ReadEffect}}}
-
+\newcommand\returnvarprefix[0]{\texttt{"return-"}} % DO NOT LINT
 \newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\mathbb{E}}}}
 
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
@@ -1173,7 +1174,6 @@
 \newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}} % SPECIFICATION_DEFERRED
 \newcommand\Proseevallimit[3]{\hyperlink{relation-evallimit}{evaluating the limit expression} #2 in the static environment #1 yields #3}
 \newcommand\Proseticklooplimit[2]{\hyperlink{relation-ticklooplimit}{decrementing} the optional loop limit value #1 yields the updated optional limit value #2}
-\newcommand\Proseoutputtoconsole[1]{\hyperlink{relation-outputtoconsole}{outputs} #1 to the console, if one exists}
 
 \newcommand\DynamicError[0]{\hyperlink{type-DynamicError}{\textsf{DynError}}}
 \newcommand\DynamicErrorConfigurationTerm[0]{\hyperlink{type-DynamicError}{dynamic error configuration}}

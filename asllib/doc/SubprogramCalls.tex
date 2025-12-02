@@ -1726,7 +1726,6 @@ while calling \\
 \SemanticsRuleDef{EvalSubprogram}
 \RenderRelation{eval_subprogram}
 
-
 \ExampleDef{Subprogram Calls}
 In \listingref{semantics-fcall},
 the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
@@ -1943,7 +1942,7 @@ these variable values and evaluates to $\nvint(15)$.
 \end{mathpar}
 
 \SemanticsRuleDef{MatchFuncRes}
-Using the type \RenderType{TContinuingOrReturning}, we define the following relation.
+Using the type \RenderType{TContinuingOrReturning} we define the following relation.
 
 \RenderRelation{match_func_res}
 \ExampleDef{Converting Configurations Upon Subprogram Return}
@@ -1970,15 +1969,16 @@ with the same value and a fresh identifier for it.
 
   \item \AllApplyCase{returning}
   \begin{itemize}
-    \item the given configuration is $\Returning(\xs, \retenv)$, which is the case of a function;
-    \item $\xs$ is the list $\vv_i$, for $i=1..k$;
-    \item define the list of fresh identifiers $\id_i$, for $i=1..k$;
-    \item define $\vvs$ to be $(\vv_i, \id_i)$, for $i=1..k$;
+    \item the given configuration is $\Returning(\xs, \retenv)$. \ProseNote{This is the case of a function};
+    \item define the list of strings $\ids$ as the concatenation of \returnvarprefix{} and the decimal string
+          for every index of $\xs$;
+    \item define $\vvs$ to be the list of pairs obtained by the element-wise pairing of the elements of $\xs$ and $\ids$;
     \item the result is $\ResultCall((\vvs, \emptygraph), \retenv)$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[continuing]{}
   {
@@ -1987,10 +1987,12 @@ with the same value and a fresh identifier for it.
   \and
   \inferrule[returning]{
     \xs \eqname [i=1..k: \vv_i]\\
-    i=1..k: \id_i \in \Identifier\text{ is fresh}\\
+    i \in \listrange(\xs): \ids[i] = \returnvarprefix \concatstrings \stringofnat{i-1}\\
     \vvs \eqdef [i=1..k: (\vv_i, \id_i)]
   }
   {
     \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultCall((\vvs, \emptygraph), \retenv)
   }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{match_func_res}

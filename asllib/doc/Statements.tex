@@ -3409,8 +3409,9 @@ In \listingref{semantics-sreturntuple},
     \item $\vs$ is a \texttt{return} statement;
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\some{\ve})$;
     \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item \Proseeqdef{$\wid$}{the string with the prefix \returnvarprefix{} and the string \texttt{"0"}};
     \item $\vvs$ is $[\vv]$;
-    \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
+    \item $\vgtwo$ is the result of adding a Write Effect for $\wid$ and the value $\vv$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 
@@ -3658,9 +3659,10 @@ Notice that empty bitvectors are displayed as \verb|0x|.
   \item \AllApplyCase{print}
   \begin{itemize}
     \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\False$;
-    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-    \item \Proseoutputtoconsole{all the elements in $\elist$, without a separator,};
-    \item if $\vnewline$ is $\True$, \Proseoutputtoconsole{a newline character};
+    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \venvs[1])$\ProseOrAbnormal;
+    \item for each element of $\vlist$ at index $\vi$, outputting that element to the console (without any separator),
+          if one exists, at environment $\venvs[i]$ yields environment $\venvs[\vi+1]$;
+    \item \Proseeqdef{$\newenv$}{the last environment, that is, $\venvs[\vn+1]$ where $\vn$ is the number of elements in $\vlist$};
   \end{itemize}
 
   \item \AllApplyCase{println}
@@ -3669,7 +3671,7 @@ Notice that empty bitvectors are displayed as \verb|0x|.
     \item the evaluation of the same statement with a newline indicator set to $\False$, that is,
           $\SPrint(\elist, \False)$ yields the configuration \\
           $\Continuing(\vg, \envone)$\ProseOrAbnormal;
-    \item \Proseoutputtoconsole{a newline character};
+    \item outputting a newline character to the console, if one exists, with environment $\envone$ yields $\newenv$;
   \end{itemize}
   \item the resulting configuration is $\Continuing(\vg, \newenv)$.
 \end{itemize}

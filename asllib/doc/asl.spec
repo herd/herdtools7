@@ -1564,6 +1564,16 @@ render xgraphs_and_components = XGraphs(-), Nodes(-), Labels(-), effect_type(-);
 
 constant empty_graph { "empty execution graph", math_macro = \emptygraph };
 
+constant return_var_prefix
+{
+  math_macro = \returnvarprefix,
+};
+
+operator string_of_nat(n: Z) -> Strings
+{
+  math_macro = \stringofnat,
+};
+
 ast symdom { "\symbolicdomain{}" } =
     | Finite(powerset_finite(Z))
     { "symbolic finite set integer domain" }
@@ -4676,16 +4686,22 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     s =: S_Seq(s1, s2);
     eval_stmt(env, s1) -> Continuing(g1, env1);
     case continuing {
-      eval_stmt(env1, s2) -> Continuing(g2, new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      eval_stmt(env1, s2) -> Continuing(g2, new_env) | DynErrorConfig(), DivergingConfig();
       new_g := ordered_po(g1, g2);
       --
       Continuing(new_g, new_env);
     }
     case returning {
-      eval_stmt(env1, s2) -> Returning((vs, g2), new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      eval_stmt(env1, s2) -> Returning((vs, g2), new_env) | DynErrorConfig(), DivergingConfig();
       new_g := ordered_po(g1, g2);
       --
       Returning((vs, new_g), new_env);
+    }
+    case throwing {
+      eval_stmt(env1, s2) -> Throwing(v, t, g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_po(g1, g2);
+      --
+      Throwing(v, t, new_g, new_env);
     }
   }
 
@@ -4703,16 +4719,22 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     v =: nvbool(b);
     s' := if b then s1 else s2;
     case continuing {
-      eval_block(env1, s') -> Continuing(g2, new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      eval_block(env1, s') -> Continuing(g2, new_env) | DynErrorConfig(), DivergingConfig();
       new_g := ordered_ctrl(g1, g2);
       --
       Continuing(new_g, new_env);
     }
     case returning {
-      eval_block(env1, s') -> Returning((vs, g2), new_env) | ThrowingConfig(), DynErrorConfig(), DivergingConfig();
+      eval_block(env1, s') -> Returning((vs, g2), new_env) | DynErrorConfig(), DivergingConfig();
       new_g := ordered_ctrl(g1, g2);
       --
       Returning((vs, new_g), new_env);
+    }
+    case throwing {
+      eval_block(env1, s') -> Throwing(v, t, g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_ctrl(g1, g2);
+      --
+      Throwing(v, t, new_g, new_env);
     }
   }
 
@@ -4758,27 +4780,41 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     s =: S_Repeat(body, e, e_limit_opt);
     eval_limit(env, e_limit_opt) -> (limit_opt1, g1);
     tick_loop_limit(limit_opt1) -> limit_opt2;
-    eval_block(env, body) -> Continuing(g2, env1);
-    case continuing {
-      eval_loop(env1, False, limit_opt2, e, body) -> Continuing(g3, new_env) | DynErrorConfig(), DivergingConfig()
-      { math_layout = [_] };
-      new_g := ordered_data(g1, ordered_po(g2, g3));
-      --
-      Continuing(new_g, new_env);
-    }
     case returning {
-      eval_loop(env1, False, limit_opt2, e, body) -> Returning((vs, g3), new_env) | DynErrorConfig(), DivergingConfig()
-      { math_layout = [_] };
-      new_g := ordered_data(g1, ordered_po(g2, g3));
+      eval_block(env, body) -> Returning(g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_data(g1, g2);
       --
-      Returning((vs, new_g), new_env);
+      Returning(new_g, new_env);
     }
     case throwing {
-      eval_loop(env1, False, limit_opt2, e, body) -> Throwing(v, t, g4, new_env) | DynErrorConfig(), DivergingConfig()
-      { math_layout = [_] };
-      new_g := ordered_data(g1, ordered_po(g2, g3));
+      eval_block(env, body) -> Throwing(v, t, g2, new_env) | DynErrorConfig(), DivergingConfig();
+      new_g := ordered_data(g1, g2);
       --
       Throwing(v, t, new_g, new_env);
+    }
+    case continuing {
+      eval_block(env, body) -> Continuing(g2, env1);
+      case continuing {
+        eval_loop(env1, False, limit_opt2, e, body) -> Continuing(g3, new_env) | DynErrorConfig(), DivergingConfig()
+        { math_layout = [_] };
+        new_g := ordered_data(g1, ordered_po(g2, g3));
+        --
+        Continuing(new_g, new_env);
+      }
+      case returning {
+        eval_loop(env1, False, limit_opt2, e, body) -> Returning((vs, g3), new_env) | DynErrorConfig(), DivergingConfig()
+        { math_layout = [_] };
+        new_g := ordered_data(g1, ordered_po(g2, g3));
+        --
+        Returning((vs, new_g), new_env);
+      }
+      case throwing {
+        eval_loop(env1, False, limit_opt2, e, body) -> Throwing(v, t, g4, new_env) | DynErrorConfig(), DivergingConfig()
+        { math_layout = [_] };
+        new_g := ordered_data(g1, ordered_po(g2, g3));
+        --
+        Throwing(v, t, new_g, new_env);
+      }
     }
   }
 
@@ -4810,7 +4846,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     name := fresh_identifier();
     g2 := WriteEffect(name);
     new_g := ordered_data(g1, g2);
-    ex := (v, name_fresh);
+    ex := (v, name);
     --
     Throwing(ex, t, new_g, new_env);
   }
@@ -4829,7 +4865,6 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
       eval_block(env, s1) -> Throwing(v, t, g, new_env) | DynErrorConfig(), DivergingConfig();
       eval_catchers(env, catchers, otherwise_opt, Throwing(v, t, g, new_env)) -> C | ;
     }
-    eval_catchers(env, catchers, otherwise_opt, sm) -> C | ;
     --
     C;
   }
@@ -4843,7 +4878,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     case one {
       s =: S_Return(some(e));
       eval_expr(env, e) -> ResultExpr((v, g1), new_env);
-      wid := fresh_identifier();
+      wid := concat_strings(return_var_prefix, string_of_nat(zero));
       write_identifier(wid, v) -> g2;
       new_g := ordered_data(g1, g2);
       --
@@ -4861,9 +4896,8 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
  case SPrint {
    case print {
      s =: S_Print(elist, False);
-     eval_expr_list(env, e_list) -> ResultExprList((v_list, g), env_1);
-     envs[one] = env;
-     INDEX(i, list: output_to_console(envs[i], v_list[i]) -> envs[i + one]);
+     eval_expr_list(env, e_list) -> ResultExprList((v_list, g), envs[one]);
+     INDEX(i, v_list: output_to_console(envs[i], v_list[i]) -> envs[i + one]);
      n := list_len(v_list);
      new_env := envs[n + one];
      --
@@ -5309,7 +5343,7 @@ semantics relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier),
  prose_application = "",
 };
 
-semantics relation match_func_res(TContinuingOrReturning) ->
+semantics relation match_func_res(C: TContinuingOrReturning) ->
     (ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs), envs)
 {
    prose_description = "converts continuing configurations and returning
@@ -5318,7 +5352,21 @@ semantics relation match_func_res(TContinuingOrReturning) ->
                         evaluation.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case continuing {
+    C := Continuing(g, env);
+    --
+    ResultCall((empty_list, g), env);
+  }
+
+  case returning {
+    C =: Returning(xs, ret_env);
+    ids := list_from_indices(i, xs, concat_strings(return_var_prefix, string_of_nat(i - one)));
+    vs := list_combine(xs, ids);
+    --
+    ResultCall((vs, empty_graph), ret_env);
+  }
+;
 
 semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) ->
          (g: XGraphs) | TDynError
