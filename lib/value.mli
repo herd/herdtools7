@@ -39,10 +39,12 @@ module type S =
       val equal_csym : csym -> csym -> bool
       val compare_csym : csym -> csym -> int
 
+      module SData : SymData.S
+
 (* Values, ie constants + variables, that should be instanciated
    to constants later *)
       type v =
-        | Var of csym
+        | Var of csym * SData.t
         | Val of Cst.v
 
       val pp_v_old  : v -> string
@@ -57,7 +59,6 @@ module type S =
 (* Some architecture may somehow normalize values before
    printing them. *)
       val printable : v -> v
-
 
 (* produce a fresh variable *)
       val fresh_var : unit -> v

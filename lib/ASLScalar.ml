@@ -433,3 +433,5 @@ let try_pow s1 s2 =
   | _ -> None
 
 include NoPromote
+
+let printable c = c

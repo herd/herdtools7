@@ -1,9 +1,9 @@
 (tests
- (names toposort ConstraintBinops)
+ (names toposort ConstraintBinops mask)
  (modes native)
  (enabled_if %{lib-available:qcheck})
  (libraries asllib qcheck)
- (modules toposort ConstraintBinops))
+ (modules toposort ConstraintBinops mask))
 
 (library
  (name testhelpers)
@@ -17,7 +17,7 @@
   (:standard ../libdir/stdlib.asl))
  (libraries asllib zarith testhelpers)
  (modules
-  (:standard \ toposort helpers ConstraintBinops Lexer))
+  (:standard \ toposort helpers ConstraintBinops Lexer mask))
  (flags
   (:standard -w -40-42))
  (action
