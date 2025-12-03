@@ -120,15 +120,15 @@ type t =
 (* 128 bit mode for asl,vmsa *)
   | D128
 
-(* Identity function to prompt developers to insert variant into list used for help message when adding a new variant*)
+(* Identity function to prompt developers to insert variant into list used for help message when adding a new variant *)
 let (mode_variants, arch_variants) : t list * t list =
-  let f = function 
+  let f = function
   | Success -> Success
   | Instr -> Instr
   | SpecialX0 -> SpecialX0
   | NoRMW -> NoRMW
   | AcqRelAsFence -> AcqRelAsFence
-  | BackCompat ->BackCompat
+  | BackCompat -> BackCompat
   | FullScDepend -> FullScDepend
   | SplittedRMW -> SplittedRMW
   | SwitchDepScWrite -> SwitchDepScWrite
@@ -143,14 +143,14 @@ let (mode_variants, arch_variants) : t list * t list =
   | MemTag -> MemTag
   | MTEPrecision p -> MTEPrecision p
   | MTEStoreOnly -> MTEStoreOnly
-  | FaultHandling p -> FaultHandling p 
+  | FaultHandling p -> FaultHandling p
   | CutOff -> CutOff
   | Morello -> Morello
   | Neon -> Neon
   | SVE -> SVE
-  | SVELength k ->  SVELength k 
+  | SVELength k -> SVELength k
   | SME -> SME
-  | SMELength k ->  SMELength k 
+  | SMELength k -> SMELength k
   | Deps -> Deps
   | Instances -> Instances
   | VMSA -> VMSA
@@ -171,18 +171,18 @@ let (mode_variants, arch_variants) : t list * t list =
   | IDC -> IDC
   | CosOpt -> CosOpt
   | Test -> Test
-  | T n -> T n 
+  | T n -> T n
   | ASL -> ASL
   | ASL_AArch64 -> ASL_AArch64
-  | ASLVersion `ASLv0 ->  ASLVersion `ASLv0
+  | ASLVersion `ASLv0 -> ASLVersion `ASLv0
   | ASLVersion `ASLv1 -> ASLVersion `ASLv1
+  | ASLType `Warn -> ASLType `Warn
+  | ASLType `Silence -> ASLType `Silence
+  | ASLType `TypeCheck -> ASLType `TypeCheck
+  | ASL_AArch64_UDF -> ASL_AArch64_UDF
   | S128 -> S128
   | Strict -> Strict
   | Warn -> Warn
-  | ASLType `Warn -> ASLType `Warn 
-  | ASLType `Silence ->  ASLType `Silence 
-  | ASLType `TypeCheck -> ASLType `TypeCheck
-  | ASL_AArch64_UDF -> ASL_AArch64_UDF 
   | Telechat -> Telechat
   | NV2 -> NV2
   | OldSolver -> OldSolver
@@ -191,29 +191,36 @@ let (mode_variants, arch_variants) : t list * t list =
   | ConstPacField -> ConstPacField
   | FPac -> FPac
   | D128 -> D128
-
-in 
-  (*Modes of operation*)
- (List.map f 
- [ Success;  Instr;  SpecialX0;  NoRMW;  AcqRelAsFence;
-   BackCompat;  FullScDepend;  SplittedRMW; SwitchDepScWrite;
-   SwitchDepScResult; LrScDiffOk; Mixed; Unaligned; DontCheckMixed; NotWeakPredicated;
-   LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
-  CutOff; Morello; Neon;  Deps; Instances; VMSA; 
-  SVE; SVELength 128; SME; SMELength 128;
-  NoPteBranch; PTE2;
-  PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
-  Exp; Ifetch; CosOpt; Test; T 0; ASL;
-  ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1; S128; D128; Strict; Warn;
-  ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
-  Telechat; OldSolver; OOTA; ], 
-  (*Architectural Features*)
-  List.map f 
-  [MemTag; MTEStoreOnly; MTEPrecision Precision.default; FaultHandling  Fault.Handling.default;
-  ETS; ETS2; ETS3; ExS; EIS; EOS;
-  DIC; IDC; NV2;
-  Pac; ConstPacField; FPac])
-
+  in
+  let base_modes =
+    List.map f
+      [ Success; Instr; SpecialX0; NoRMW; AcqRelAsFence;
+        BackCompat; FullScDepend; SplittedRMW; SwitchDepScWrite;
+        SwitchDepScResult; LrScDiffOk; Mixed; Unaligned; DontCheckMixed;
+        NotWeakPredicated;
+        LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
+        CutOff; Morello; Neon; Deps; Instances; VMSA;
+        SVE; SVELength 128; SME; SMELength 128;
+        NoPteBranch; PTE2;
+        PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
+        Exp; Ifetch; CosOpt; Test; T 0;
+        ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
+        S128; D128; Strict; Warn;
+        ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
+        Telechat; OldSolver; OOTA ]
+  and precision_variants =
+    List.map (fun precision -> f (MTEPrecision precision))
+      [ Precision.Synchronous; Precision.Asynchronous; Precision.Asymmetric ]
+  and fault_variants =
+    List.map (fun handling -> f (FaultHandling handling))
+      [ Fault.Handling.Handled; Fault.Handling.Fatal; Fault.Handling.Skip ]
+  and arch_feat =
+    List.map f
+      [ MemTag; MTEStoreOnly; ETS; ETS2; ETS3; ExS; EIS; EOS;
+        DIC; IDC; NV2;
+        Pac; ConstPacField; FPac ]
+  in
+  (base_modes, arch_feat @ precision_variants @ fault_variants)
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
