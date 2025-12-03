@@ -93,19 +93,15 @@ readonly func ImpDefBool(s: string) => boolean
 begin
   case s of
     when "Secure-only implementation" => return FALSE;
-    otherwise =>
-      println "Unknown ImpDef: " ++ s;
-      assert FALSE;
+    otherwise => unreachable;
   end;
 end;
 
-readonly func ImpDefInt(s: string) => boolean
+readonly func ImpDefInt(s: string) => integer
 begin
   case s of
-  when "Maximum Physical Address Size" => return 48;
-  otherwise =>
-      println "Unknwon ImpDef: " ++ s;
-      assert FALSE;
+    when "Maximum Physical Address Size" => return 48;
+    otherwise => unreachable;
   end;
 end;
 
@@ -116,7 +112,7 @@ end;
 
 // We only implement the mininum required features.
 
-func IsFeatureImplemented(f : Feature) => boolean
+readonly func IsFeatureImplemented(f : Feature) => boolean
 begin
   case f of
     when FEAT_AA64EL0 => return TRUE;
@@ -199,6 +195,34 @@ begin
 end;
 
 // =============================================================================
+
+// NormalWBISHMemAttr
+// ==================
+
+// The memory-attributes used by all memory accesses
+
+var NormalWBISHMemAttr: MemoryAttributes =
+  MemoryAttributes {
+    memtype = MemType_Normal,
+    inner = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    outer = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    shareability = Shareability_ISH,
+    tags = MemTag_Untagged, // ??
+    device = DeviceType_GRE, // Not relevant for Normal
+    notagaccess = TRUE, // Not used in shared_pseudocode
+    xs = '0' // If I understand correctly WalkMemAttrs
+  };
+
+// =============================================================================
+
 
 // Code used by our interface with herd, in either `physmem-std.asl` or
 // `physmem-vmsa.asl`

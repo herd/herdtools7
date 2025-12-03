@@ -74,16 +74,6 @@ begin
     return descaddress;
 end;
 
-// AArch64.MAIRAttr()
-// ==================
-// Retrieve the memory attribute encoding indexed in the given MAIR
-// Temporary ? Origin does not work for unknown index!
-
-func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
-begin
-  return Zeros{8};
-end;
-
 // DecodeShareability()
 // ====================
 // Decode shareability of target memory region
@@ -233,21 +223,6 @@ begin
   throw SilentExit {-};
 end;
 
-
-// S1TranslationRegime()
-// =====================
-// Stage 1 translation regime for the given Exception level
-
-func S1TranslationRegime(el:bits(2)) => bits(2)
-begin
-  return EL1;
-end;
-
-func S1TranslationRegime() => bits(2)
-begin
-  return EL1;
-end;
-
 // AArch64.GetS1TTWParams()
 // ========================
 // Returns stage 1 translation table walk parameters from respective controlling
@@ -265,7 +240,7 @@ begin
   walkparams.d128 = if D128 then '1' else '0'; // Much faster!
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
-  walkparams.txsz = 16[4:0];
+  walkparams.txsz = 16[5:0];
   return walkparams;
 end;
 
@@ -280,10 +255,30 @@ begin
   return '0';
 end;
 
+// AArch64.MAIRAttr()
+// ==================
+// Retrieve the memory attribute encoding indexed in the given MAIR
+// Temporary ? Origin does not work for unknown index!
+// the value returned is irrelevant because we override the S1DecodeMemAttrs
+
+func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
+begin
+  return Ones{8};
+end;
+
 // S1DecodeMemAttrs()
 // ==================
 // Decode MAIR-format memory attributes assigned in stage 1
-// Luc: for speed (?) handle the case of Mormal memory, untagged, WB, ISH
+// Luc: for speed, handle the case of Mormal memory, untagged, WB, ISH
+// Hadrien: sh received here is read from the translation table descriptor, so
+// is in general symbolic. The attr_in are a redirection away from being
+// symbolic, see AArch64_MAIRAttr.
+// Given this, the function DecodeShareability() results in 4+ executions: this
+// is too much of a performance loss. We thus have to override
+// DecodeShareability() or one of its parent. Because S1DecodeMemAttrs is just
+// a wrapper around the decoding of sharability and the MAIR_Attr, that we had
+// overiden earlier, we decided that it was more explicit to simply override
+// S1DecodeMemAttrs.
 
 func
   S1DecodeMemAttrs
@@ -291,19 +286,7 @@ func
   walparams:S1TTWParams,acctype:AccessType)
   => MemoryAttributes
 begin
-  var memattrs : MemoryAttributes;
-  memattrs.memtype = MemType_Normal;
-  memattrs.outer.attrs     = MemAttr_WB;
-  memattrs.outer.hints     = MemHint_RWA;
-  memattrs.outer.transient = FALSE;
-  memattrs.inner.attrs     = MemAttr_WB;
-  memattrs.inner.hints     = MemHint_RWA;
-  memattrs.inner.transient = FALSE;
-  memattrs.xs              = '0';
-  memattrs.tags = MemTag_Untagged;
-  memattrs.notagaccess = FALSE;
-  memattrs.shareability = Shareability_ISH;
-  return memattrs;
+  return NormalWBISHMemAttr;
 end;
 
 // AArch64.CheckDebug()
