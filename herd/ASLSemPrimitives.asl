@@ -184,9 +184,6 @@ begin return ARBITRARY: bits(1); end;
 readonly func GetHdPrimitive() => bits(1)
 begin return ARBITRARY: bits(1); end;
 
-readonly func ProcessorID() => integer
-begin return 0; end;
-
 // Fault handling
 // --------------
 
