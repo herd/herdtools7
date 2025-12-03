@@ -113,6 +113,19 @@ test.aarch64.asl: asl-pseudocode
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests (ASL): OK"
 
+test-all-asl:: test.aarch64.asl.with.vmsa
+test.aarch64.asl.with.vmsa: asl-pseudocode
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64 \
+		-conf ./herd/tests/instructions/AArch64/asl-with-vmsa.cfg \
+		-checkstates \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 instructions tests (ASL with VMSA): OK"
+
 test:: test.riscv
 test-local:: test.riscv
 test.riscv:
@@ -323,6 +336,18 @@ test-aarch64-asl: asl-pseudocode
 		-conf ./herd/tests/instructions/AArch64.ASL/asl.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64+ASL instructions tests: OK"
+
+test-all-asl:: test-aarch64-asl-with-vmsa
+test-aarch64-asl-with-vmsa: asl-pseudocode
+	@echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) -checkstates  \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
+		-conf ./herd/tests/instructions/AArch64.ASL/asl-with-vmsa.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64+ASL (with VMSA) instructions tests: OK"
 
 test:: test-aarch64-noasl
 test-local:: test-aarch64-noasl
