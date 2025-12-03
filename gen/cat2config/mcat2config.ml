@@ -21,7 +21,7 @@ module Arg = struct
   let should_dump_tree (o : opts) : bool = StringSet.mem "tree" o.dump
   let should_dump_origin (o : opts) : bool = StringSet.mem "origin" o.dump
 
-  let parse_log_opt : string -> (string * Logs.level option) list =
+  let parse_log_opt : string -> string * Logs.level option =
     let level_of_string s : Logs.level option =
       match String.lowercase_ascii s with
       | "debug" -> Some Logs.Debug
@@ -33,18 +33,16 @@ module Arg = struct
           let err = Format.sprintf "-log: unrecognized level `%s`" s in
           raise (Arg.Bad err)
     in
-    fun input ->
-      String.split_on_char ',' input
-      |> List.map (fun source ->
-          match String.split_on_char ':' (String.trim source) with
-          | [ src ] ->
-              let src = String.trim src in
-              (src, Some Logs.Info)
-          | [ src; lvl ] ->
-              let src = String.trim src in
-              let lvl = String.trim lvl in
-              (src, level_of_string lvl)
-          | _ -> raise (Arg.Bad "Wrong value for -log"))
+    fun source ->
+      match String.split_on_char ':' (String.trim source) with
+      | [ src ] ->
+          let src = String.trim src in
+          (src, Some Logs.Info)
+      | [ src; lvl ] ->
+          let src = String.trim src in
+          let lvl = String.trim lvl in
+          (src, level_of_string lvl)
+      | _ -> raise (Arg.Bad "Wrong value for -log")
 
   let parse : unit -> opts * string list =
    fun () ->
@@ -79,7 +77,7 @@ module Arg = struct
           Format.sprintf "<%s> dump info on parsed model"
             (String.concat "|" valid_dump_opts) );
         ( "-log",
-          Arg.String (fun s -> log := parse_log_opt s),
+          Arg.String (fun s -> log := parse_log_opt s :: !log),
           "<src1,src2,...> fine-grained logging control for specific modules" );
         ( "-conf",
           Arg.Bool (fun b -> conf := b),
