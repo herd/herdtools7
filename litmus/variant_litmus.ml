@@ -31,7 +31,7 @@ type t =
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 
 let (mode_variants, arch_variants) : t list * t list =
-  let f = function 
+  let f = function
   | Self -> Self
   | FaultHandling p -> FaultHandling p 
   | S128 -> S128
@@ -46,10 +46,22 @@ let (mode_variants, arch_variants) : t list * t list =
   | Pac -> Pac
   | FPac -> FPac
   | ConstPacField -> ConstPacField
-in
-(List.map f [Self; FaultHandling Fault.Handling.default; S128; Mixed; Vmsa;
- Telechat; NoInit],
- List.map f [SVE; SME; MemTag; MTEPrecision Precision.default; Pac; FPac; ConstPacField])
+  in
+  let base_modes =
+    List.map f [NoInit; S128; Telechat]
+  and archs =
+    List.map f [SVE; SME; Self; Mixed; Vmsa; Pac; FPac; ConstPacField; MemTag;]
+  and mte_precisions =
+    List.map (fun precision -> f (MTEPrecision precision)) Precision.all
+  and fault_modes =
+    List.filter_map
+      (fun tag ->
+        match Fault.Handling.parse (Misc.lowercase tag) with
+        | Some fh -> Some (f (FaultHandling fh))
+        | None -> None)
+      Fault.Handling.tags
+  in
+  (base_modes, archs @ mte_precisions @ fault_modes)
 
 let compare = compare
 
@@ -124,11 +136,19 @@ let mode_tags =
   List.map pp mode_variants
 
 let arch_tags =
-  List.map pp arch_variants
+  List.concat
+    (List.map
+       (function
+         | MTEPrecision p -> [Precision.pp p; Precision.alias p]
+         | v -> [pp v])
+       arch_variants)
 
 let tags = 
   mode_tags @ arch_tags
 
 
 let helper_message =
-  Printf.sprintf "<tags> where:\n Mode tags:\n  {%s}\n Arch tags:\n {%s}" (String.concat "," mode_tags) (String.concat "," arch_tags) 
+  Printf.sprintf
+    "<tags> mode tags={%s}; arch tags={%s}"
+    (String.concat "," mode_tags)
+    (String.concat "," arch_tags)

@@ -21,6 +21,8 @@ type t =
 
 let default = Synchronous
 
+let all = [Synchronous; Asynchronous; Asymmetric]
+
 let tags =  [ "synchronous"; "sync"; "asynchronous"; "async"; "asymmetric"; "asym" ]
 
 let parse = function
@@ -28,6 +30,11 @@ let parse = function
   | "asynchronous"|"async" -> Some Asynchronous
   | "asymmetric"|"asym" -> Some Asymmetric
   | _ -> None
+
+let alias = function
+  | Synchronous -> "sync"
+  | Asynchronous -> "async"
+  | Asymmetric -> "asym"
 
 let pp = function
   | Synchronous -> "synchronous"

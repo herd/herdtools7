@@ -138,7 +138,6 @@ let common_options = Arg.align ~limit:40 [
 let runmode_options = Arg.align ~limit:40 [
   "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "" ;
-  "", Arg.Unit Fun.id, "\n";
   parse_tag "-speedcheck"
     (fun tag -> match Speed.parse tag with
     | None -> false
@@ -180,7 +179,6 @@ let runmode_options = Arg.align ~limit:40 [
 let filter_options = Arg.align ~limit:40 [
   "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "" ;
-  ("", Arg.Unit Fun.id, "\n");
   gen_model_opt "-model";
   cat_option ;
   through_option;
@@ -216,8 +214,7 @@ let graph_content_options = Arg.align ~limit:40 [
   "-help", Arg.Unit (Fun.id), "" ;
   "--help", Arg.Unit (Fun.id), "" ;
   (* Edges *)
-  ("", Arg.Unit Fun.id, "\n");
-  ("Edge options", Arg.Unit Fun.id, " ");
+  ("\nEdge options:", Arg.Unit Fun.id, "\n");
   parse_bool "-showinitrf" PP.showinitrf "show read-from edges from initial state in pictures" ;
   parse_bool "-showfinalrf" PP.showfinalrf "show read-from edges to final state in pictures" ;
   doshow_option ;
@@ -228,8 +225,7 @@ let graph_content_options = Arg.align ~limit:40 [
   parse_stringset "-showraw" PP.showraw "do not perform transitivity removal on those edges" ;
 
   (* Events *)
-  ("", Arg.Unit Fun.id, "\n");
-  ("Event options", Arg.Unit Fun.id, " ");
+  ("\nEvent options:", Arg.Unit Fun.id, "\n");
   parse_bool "-oneinit" PP.oneinit "show an init writes pseudo-event, with all initial writes grouped" ;
   showevents_option;
   parse_bool "-showinitwrites" PP.showinitwrites
@@ -243,7 +239,6 @@ let graph_content_options = Arg.align ~limit:40 [
 let graph_presentation_options = Arg.align ~limit:40 [
   "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "" ;
-  ("", Arg.Unit Fun.id, "\n");
   parse_bool "-showobserved" PP.showobserved
     "highlight observed memory reads in execution graphs" ;
   parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
@@ -343,7 +338,6 @@ let graph_presentation_options = Arg.align ~limit:40 [
 let setup_options = Arg.align ~limit:40 ([
    "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "";
-  ("", Arg.Unit Fun.id, "\n");
   ("-version", Arg.Unit
      (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
    " ") ;
@@ -394,8 +388,7 @@ let setup_options = Arg.align ~limit:40 ([
     "Show debug messages for specific parts" ;
 
   (* Input *)
-  ("", Arg.Unit Fun.id, "\n");
-  ("Input options", Arg.Unit Fun.id, " ");
+  ("\nInput options:", Arg.Unit Fun.id, "\n");
 
   ( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
@@ -406,8 +399,7 @@ let setup_options = Arg.align ~limit:40 ([
     ]
    @ parse_noselect @ [
   (* Output *)
-  ("", Arg.Unit Fun.id, "\n");
-  ("Output options", Arg.Unit Fun.id, " ");
+  ("\nOutput options:", Arg.Unit Fun.id, "\n");
 
   ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
    "<name> insert the contents of <name> at the beginning of generated dot files");
@@ -421,53 +413,69 @@ let setup_options = Arg.align ~limit:40 ([
   hexa_option ;
    ])
   let help_options = Arg.align ~limit:40 [
-  ("", Arg.Unit Fun.id, "\n");
-  ("-help", Arg.Unit Fun.id, " show option categories");
-  ("--help", Arg.Unit Fun.id, " show all options" )
+  ("-help", Arg.Unit Fun.id, " alias of --help");
+  ("--help", Arg.Unit Fun.id, " show help. Optional arguments: short or category" )
 ]
 (*Usage messages*)
-let usg_setup = (sprintf "\n Control the command environment: paths, config, input and output handling")
-let usg_runmode = (sprintf "\n Configure herd")
-let usg_filter = (sprintf"\n Select model and control which executions are filtered or allowed")
+let usg_setup = (sprintf "\n Control the command environment: paths, config, input and output handling \n")
+let usg_runmode = (sprintf "\n Configure herd \n")
+let usg_filter = (sprintf"\n Select model and control which executions are filtered or allowed \n")
 let usg_graph_content = (sprintf "\n Control what events and edges are included in the graph")
-let usg_graph_presentation = (sprintf "\n Control graph layout, sizing, annotations and visual clarity")
+let usg_graph_presentation = (sprintf "\n Control graph layout, sizing, annotations and visual clarity \n")
 
-let usg_default = String.concat "\n"
-  [
-  Arg.usage_string common_options "Common herd options: \n";
-"For advanced options, use `-help <category>`:
+let help_footer =
+  "Use --help short for commonly used options and introduction to --help <category>."
+
+let usage_line = "Usage: herd7 [options] [test]*"
+
+let usg_default =
+  String.concat "\n"
+    [
+      usage_line;
+      "";
+      Arg.usage_string common_options "Commonly-used options:\n";
+"For advanced options, use `--help <category>`, where <category> is one of the following options:
   setup               Control the command environment: paths, config, input and
                       output handling
   runmode             Configure herd
-  filter              Select model and control which executions are filtered or 
+  filter              Select model and control which executions are filtered or
                       allowed
-  graph_content       Control what events and edges are included in the 
+  graph_content       Control what events and edges are included in the
                       graph
-  graph_presentation  Control graph layout, sizing, annotations, and visual 
+  graph_presentation  Control graph layout, sizing, annotations, and visual
                       clarity
-  Help commands
-    -help        Show this help message
-    -help all    Show all available options
-    --help       Show all available options
-"
-]
+  variant             List available variant tags
+
+Help commands
+  --help              Show all available options
+  --help short        Show commonly-used options
+  --help <category>   Show options for <category>
+  -help               Alias of --help
+";
+    ]
 
 let show_short_help () =
   print_endline usg_default;
   exit 0
 
 let show_long_help () =
+  print_endline usage_line;
+  print_endline "";
   print_endline "Available options:";
   Printf.printf "%s" (Arg.usage_string setup_options usg_setup);
+  Printf.printf "\n";
   Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode);
+  Printf.printf "\n";
   Printf.printf "%s" (Arg.usage_string filter_options usg_filter);
+  Printf.printf "\n";
   Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content);
+  Printf.printf "\n";
   Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation);
+  Printf.printf "\n";
   Printf.printf "%s" (Arg.usage_string help_options "\n Help commands");
+  print_endline "";
+  print_endline help_footer;
   exit 0
-
-let help_exists () =
-  Array.exists (fun s -> s = "-help" || s = "--help") Sys.argv
 
 let options = setup_options @
   runmode_options @
@@ -477,46 +485,54 @@ let options = setup_options @
   help_options
 
 let is_known_category = function
-  | "setup" 
-  | "runmode" 
+  | "setup"
+  | "runmode"
   | "filter"
-  | "graph_content" 
+  | "graph_content"
   | "graph_presentation"
-  | "variant" 
-  | "all" -> true
+  | "variant" -> true
   | _ -> false
 
 let display_help = function
   | "setup" ->
+      print_endline usage_line;
       Printf.printf "%s" (Arg.usage_string setup_options usg_setup); exit 0
   | "runmode" ->
+      print_endline usage_line;
       Printf.printf "%s" (Arg.usage_string runmode_options usg_runmode); exit 0
   | "filter" ->
+      print_endline usage_line;
       Printf.printf "%s" (Arg.usage_string filter_options usg_filter); exit 0
   | "graph_content" ->
-     Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0  
+      print_endline usage_line;
+     Printf.printf "%s" (Arg.usage_string graph_content_options usg_graph_content); exit 0
   | "graph_presentation" ->
+      print_endline usage_line;
      Printf.printf "%s" (Arg.usage_string graph_presentation_options usg_graph_presentation); exit 0
   | "variant" ->
+      print_endline usage_line;
      Printf.printf "%s" (Variant.variants_help_page); exit 0
-  | "all" ->
-     show_long_help ()
-  |  _ -> 
-      show_short_help ()
+  | _ ->
+     show_short_help ()
 
 let handle_help_or_return () =
+  let rec find_help = function
+    | [] -> None
+    | "-help" :: rest -> Some rest
+    | "--help" :: rest -> Some rest
+    | _ :: tl -> find_help tl
+  in
   let inputs = Array.to_list Sys.argv |> List.tl in
-  let has_long_help = List.exists ((=) "--help") inputs in
-  let has_short_help = List.exists ((=) "-help") inputs in
+  match find_help inputs with
+  | None -> ()
+  | Some [] -> show_long_help ()
+  | Some (arg :: _) ->
+      (match arg with
+      | "-help" | "--help" -> show_long_help ()
+      | "short" -> show_short_help ()
+      | categ when is_known_category categ -> display_help categ
+      | _ -> show_short_help ())
 
-  if has_long_help then  show_long_help () else
-    if has_short_help then 
-      let rest = List.filter (fun s -> s <> "-help") inputs in
-      let (categories, others) = List.partition is_known_category rest in
-      match (categories, others) with      
-      | ([category], []) -> display_help category         
-      | _ -> show_short_help ()              
-  
 (* Parse command line *)
 let () =
   try
