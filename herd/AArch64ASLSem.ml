@@ -36,14 +36,16 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_annotation (S_Try (body,[catcher],None))
 
-let setup_registers =
+let setup_registers is_vmsa =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
   add_dummy_annotation
     (S_Call
        {
          name = "_SetUpRegisters";
-         args = [];
+         args = [
+           expr_of_bool is_vmsa;
+         ];
          params = [];
          call_type = ST_Procedure;
        })
@@ -1161,7 +1163,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let open Asllib.ASTUtils in
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
-              let s = stmt_from_list [ setup_registers; decode; s; return_0 ] in
+              let s = stmt_from_list [ setup_registers is_vmsa; decode; s; return_0 ] in
               let s = if is_vmsa then catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
