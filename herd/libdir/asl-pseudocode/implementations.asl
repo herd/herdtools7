@@ -93,10 +93,21 @@ begin
   case s of
     when "Secure-only implementation" => return FALSE;
     otherwise =>
-      print "Unknown ImpDef: " ++ s;
+      println "Unknown ImpDef: " ++ s;
       assert FALSE;
   end;
 end;
+
+readonly func ImpDefInt(s: string) => boolean
+begin
+  case s of
+  when "Maximum Physical Address Size" => return 48;
+  otherwise =>
+      println "Unknwon ImpDef: " ++ s;
+      assert FALSE;
+  end;
+end;
+
 
 // =============================================================================
 
@@ -149,6 +160,8 @@ end;
 // ThisInstrLength()
 // =================
 
+// In herd, instructions are always 32-bits long
+
 func ThisInstrLength() => integer
 begin
   return 32;
@@ -156,29 +169,32 @@ end;
 
 // =============================================================================
 
-// Hint_Branch()
-// =============
-// Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
-// the next instruction.
+// ExternalInvasiveDebugEnabled()
+// ==============================
+// The definition of this function is IMPLEMENTATION DEFINED.
+// In the recommended interface, this function returns the state of the DBGEN signal.
 
-// We do not support any hint.
+// We do not support external debug.
 
-func Hint_Branch(hint : BranchType)
+func ExternalInvasiveDebugEnabled() => boolean
 begin
-  return;
+    return FALSE;
 end;
 
 // =============================================================================
 
-// SecureOnlyImplementation()
-// ==========================
-// Returns TRUE if the security state is always Secure for this implementation.
+// ProcessorID()
+// =============
+// Return the ID of the currently executing PE.
 
-// Is Implementation defined in the Arm ARM.
+// We override a impdef declaration in shared_pseudocode. The processor id is
+// set directly by herd as an integer, in the variable _ProcesorID.
 
-func SecureOnlyImplementation() => boolean
+var _ProcessorID: integer = 0;
+
+func ProcessorID() => integer
 begin
-  return FALSE;
+  return _ProcessorID;
 end;
 
 // =============================================================================
