@@ -186,11 +186,8 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             let nfs =
               nfs
               |> List.map (fun (nf, ast_expr) ->
-                  (* Format.printf "Base: %a@." Ir.pp_rel_nf nf; *)
                   let nf = Ir.expand_acq_rel nf in
-                  (* Format.printf "A/L expanded: %a@." Ir.pp_rel_nf nf; *)
                   let nf = Ir.expand_domain_range nf in
-                  (* Format.printf "Domain/range expanded: %a@." Ir.pp_rel_nf nf; *)
                   (nf, ast_expr))
             in
             Some (var, nfs))
