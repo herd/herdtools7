@@ -1,4 +1,4 @@
-  $ mcat2config7 -set-libdir ./libdir -conf true -dump origin -let ca -let Exp-haz-ob -let haz-ob -let Exp-obs -let DSB-ob -let IFB-ob -let dob -let pob -let aob -let bob -let lwfs libdir/aarch64.cat
+  $ mcat2config7 -set-libdir ./libdir -conf -dump origin -let ca -let Exp-haz-ob -let haz-ob -let Exp-obs -let DSB-ob -let IFB-ob -let dob -let pob -let aob -let bob -let lwfs libdir/aarch64.cat
   
   ### ca
   ## fr
