@@ -46,6 +46,8 @@ module type S = sig
   val to_id : set_nf -> rel_nf
   val set_diff : set_nf -> set_nf -> set_nf
   val set_comp : set_nf -> set_nf
+  val parse_set_id : string -> set_nf option
+  val parse_rel_id : string -> rel_nf option
   val pp_set_nf : Format.formatter -> set_nf -> unit
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
 end
@@ -80,19 +82,12 @@ module Make (NormalForms : S) = struct
   let find_env_set v env = Option.bind (find_env v env) Either.find_left
   let find_env_rel v env = Option.bind (find_env v env) Either.find_right
 
-  type config = {
-    conditions : string list;
-    unroll_depth : int;
-    set_var : string -> set_nf option;
-    rel_var : string -> rel_nf option;
-  }
+  type config = { conditions : string list; unroll_depth : int }
 
   let rec normalize_set ~(config : config) ~(env : env) ~(name : string)
       ~(is_recursive : bool) : AST.exp -> set_nf =
     let open AST in
     let conditions = config.conditions in
-    let set_var = config.set_var in
-    let rel_var = config.rel_var in
     let rec go = function
       | Op (_, Union, expl) ->
           let nfs =
@@ -122,10 +117,10 @@ module Make (NormalForms : S) = struct
           raise (NormalizationError (Recursion_not_supported var))
       | Var (_, var) -> (
           let bound_nf =
-            if Option.is_some (rel_var var) then None
+            if Option.is_some (parse_rel_id var) then None
             else
               Util.Option.choice_fn
-                [ (fun _ -> set_var var); (fun _ -> find_env_set var env) ]
+                [ (fun _ -> parse_set_id var); (fun _ -> find_env_set var env) ]
           in
           match bound_nf with
           | Some nf -> nf
@@ -138,7 +133,6 @@ module Make (NormalForms : S) = struct
       ~(is_recursive : bool) (e : AST.exp) : rel_nf =
     let open AST in
     let conditions = config.conditions in
-    let rel_var = config.rel_var in
     let rec go e =
       match e with
       | Op (_, Union, expl) ->
@@ -187,7 +181,7 @@ module Make (NormalForms : S) = struct
       | Var (_, var) -> (
           let bound_nf =
             Util.Option.choice_fn
-              [ (fun () -> rel_var var); (fun () -> find_env_rel var env) ]
+              [ (fun () -> parse_rel_id var); (fun () -> find_env_rel var env) ]
           in
           match bound_nf with
           | Some nf -> nf
@@ -238,7 +232,7 @@ module Make (NormalForms : S) = struct
     nf_bindings
     |> List.map (fun (name, b, env) ->
         let nfs =
-          match config.rel_var name with
+          match parse_rel_id name with
           | Some nf -> [ (nf, b.body) ]
           | None ->
               let expl =

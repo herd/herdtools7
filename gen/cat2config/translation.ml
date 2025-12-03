@@ -1,7 +1,6 @@
 module UList = Util.List
 module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
 module E = Edge.Make (Edge.Config) (A : Fence.S)
-open Ir
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -88,6 +87,9 @@ type partial_effect = {
 }
 
 type partial_edge = { tedges : tedge list option; ie : Code.ie; sd : Code.sd }
+type prim_set = Ir.prim_set
+type prim_rel = Ir.prim_rel
+type seq_item = Ir.seq_item
 
 let initial_effect : partial_effect =
   { extr = Code.Irr; atom = None; explicit_mem = false }
@@ -158,7 +160,7 @@ let implied_constraints (l : prim_rel list) :
   l
   |> List.map (fun (x : prim_rel) ->
       match x with
-      | Prim "fr" -> ([ Prim "R" ], [ loc ], [ Prim "W" ])
+      | Prim "fr" -> ([ Ir.Prim "R" ], [ loc ], [ Ir.Prim "W" ])
       | Prim "rf" -> ([ Prim "W" ], [ loc ], [ Prim "R" ])
       | Prim "co" -> ([ Prim "W" ], [ loc ], [ Prim "W" ])
       | Prim "amo" -> ([ Prim "R" ], [ loc ], [ Prim "W" ])
@@ -257,9 +259,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
 
 type state = {
   relaxs : relax list;
-  left : prim_set inter;
+  left : prim_set Ir.inter;
   core : seq_item list;
-  right : prim_set inter;
+  right : prim_set Ir.inter;
 }
 
 let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
@@ -269,24 +271,25 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       let acc = f acc x xs in
       fold_with_rest f acc xs
 
-let try_translate_seq (Seq l : seq_item seq) : relax list =
-  let l = [ Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
+let try_translate_seq (Seq l : seq_item Ir.seq) : relax list =
+  let l = [ Ir.Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
   let st =
     fold_with_rest
       (fun st item rest ->
         match (st.core, item) with
-        | [], Set s ->
-            let left = inter st.left s in
+        | [], Ir.Set s ->
+            let left = Ir.inter st.left s in
             { st with left }
         | _, Set s ->
-            let right = inter st.right s in
+            let right = Ir.inter st.right s in
             let st = { st with right } in
             let should_try_match =
               match rest with [] -> true | Rel _ :: _ -> true | _ -> false
             in
             if should_try_match then
               match
-                try_match_edge (get_inter st.left) st.core (get_inter st.right)
+                try_match_edge (Ir.get_inter st.left) st.core
+                  (Ir.get_inter st.right)
               with
               | Some edge_alts ->
                   let relaxs =

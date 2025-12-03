@@ -160,12 +160,7 @@ let extract_let_binding (ins : AST.ins) :
 let run ~(opts : Arg.opts) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
   let norm_config : Nf.config =
-    {
-      conditions = opts.conds;
-      unroll_depth = opts.unroll;
-      set_var = Ir.parse_set_id;
-      rel_var = Ir.parse_rel_id;
-    }
+    { conditions = opts.conds; unroll_depth = opts.unroll }
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
   let requested_bindings =
@@ -180,7 +175,9 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             None
         | Some nfs ->
             if Arg.should_dump_tree opts then (
-              let compressed = Ir.union_l (List.map fst nfs) |> Ir.compress in
+              let compressed =
+                Ir.rel_union_l (List.map fst nfs) |> Ir.compress
+              in
               Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed;
               ());
             let nfs =
