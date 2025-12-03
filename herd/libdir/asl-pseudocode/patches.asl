@@ -47,6 +47,7 @@ end;
 // Check correct stack pointer alignment for AArch64 state.
 
 // By construction in herd7 this is always the case.
+
 func CheckSPAlignment()
 begin
   return;

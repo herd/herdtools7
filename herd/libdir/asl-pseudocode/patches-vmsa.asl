@@ -238,43 +238,6 @@ begin
   return EL1;
 end;
 
-// PEErrorState()
-// ==============
-// Returns the error state of the PE on taking an error exception:
-// The PE error state reported to software through the exception syndrome also
-// depends on how the exception is taken, and so might differ from the value
-// returned from this function.
-// LUC: Dubious
-
-func PEErrorState(fault:FaultRecord) => ErrorState
-begin
-  return ErrorState_UEO;
-end;
-
-// IsFault()
-// =========
-// Return TRUE if a fault is associated with status returned by memory.
-// Luc: and then call  HandleExternalAbort()
-//func IsFault(retstatus:PhysMemRetStatus) => boolean
-// begin
-//  return FALSE;
-// end;
-
-
-// HandleExternalAbort()
-// =====================
-// Takes a Synchronous/Asynchronous abort based on fault.
-// Luc Should not be called.
-func
-  HandleExternalAbort
-    (memretstatus:PhysMemRetStatus,iswrite:boolean,
-     memaddrdesc:AddressDescriptor,size:integer,
-     accdesc:AccessDescriptor)
-begin
-//  assert FALSE;
-  return;
-end;
-
 // AArch64.GetS1TTWParams()
 // ========================
 // Returns stage 1 translation table walk parameters from respective controlling
@@ -292,6 +255,7 @@ begin
   walkparams.d128 = if D128 then '1' else '0'; // Much faster!
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
+  walkparams.txsz = 16[4:0];
   return walkparams;
 end;
 
@@ -304,17 +268,6 @@ func AArch64_ContiguousBit{N}
   (tgx:TGx, d128:bit,level:integer, descriptor:bits(N)) => bit
 begin
   return '0';
-end;
-
-
-// AArch64.S1TxSZFaults()
-// ======================
-// Detect whether configuration of stage 1 TxSZ field generates a fault
-// Luc: Override: does not occur, never.
-
-func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
-begin
-  return FALSE;
 end;
 
 // S1DecodeMemAttrs()
