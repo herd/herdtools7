@@ -32,17 +32,6 @@ val arch_opt : Archs.t ref -> spec
 
 val parse_cmdline : spec list -> (string -> unit) -> unit
 
-module type Monad = sig
-  type 'a t
-  val return : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-
-  module Infix : sig
-    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-    val (let*) : 'a t -> ('a -> 'b t) -> 'b t
-  end
-end
-
 module List : sig
   (* For compatibility with ocaml <= 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
@@ -50,7 +39,9 @@ module List : sig
   val sequence : 'a list list -> 'a list list
   val fold_left_opt : ('acc -> 'a -> 'acc option) -> 'acc -> 'a list -> 'acc option
 
-  include Monad with type 'a t := 'a list
+  module Infix : sig
+    val (let*) : 'a list -> ('a -> 'b list) -> 'b list
+  end
 end
 
 module Option : sig
@@ -59,5 +50,7 @@ module Option : sig
   val choice_fn : (unit -> 'a option) list -> 'a option
   val guard : bool -> unit option
 
-  include Monad with type 'a t := 'a option
+  module Infix : sig
+    val (let*) : 'a option -> ('a -> 'b option) -> 'b option
+  end
 end

@@ -61,23 +61,9 @@ let parse_cmdline options get_cmd_arg =
     get_cmd_arg
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
 
-module type Monad = sig
-  type 'a t
-  val return : 'a -> 'a t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-
-  module Infix : sig
-    val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-    val (let*) : 'a t -> ('a -> 'b t) -> 'b t
-  end
-end
-
 module List = struct
   let concat_map : ('a -> 'b list) -> 'a list -> 'b list =
     fun f l -> List.concat (List.map f l)
-
-  let return x = [ x ]
-  let bind x f = concat_map f x
 
   let uniq ~eq l =
     let rec uniq eq acc l =
@@ -89,8 +75,7 @@ module List = struct
     uniq eq [] l
 
   module Infix = struct
-    let (>>=) = fun x f -> concat_map f x
-    let (let*) = (>>=)
+    let (let*) = fun x f -> concat_map f x
   end
 
   let rec sequence : 'a list list -> 'a list list =
@@ -112,13 +97,9 @@ module Option = struct
     | [] -> None
     | f :: l -> let x = f () in if Option.is_some x then x else choice_fn l
 
-  let return x = Some x
-  let bind = Option.bind
-
   let guard b = if b then Some () else None
 
   module Infix = struct
-    let (>>=) = Option.bind
     let (let*) = Option.bind
   end
 end
