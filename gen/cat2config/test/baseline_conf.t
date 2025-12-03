@@ -18,9 +18,7 @@
   ## [Exp & M]; (rf & ext); [Exp & M]
   -safe Rfe
   ## [Exp & M]; (ca & ext); [Exp & M]
-  -safe Fre
-  ## [Exp & M]; (ca & ext); [Exp & M]
-  -safe Coe
+  -safe Fre Coe
   
   ### DSB-ob
   ## [M | DC.CVAU | IC]; po; [dsb.full]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
@@ -40,11 +38,7 @@
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
   -safe [DpAddrCsel, ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.SY***, ISB]
-  ## DSB-ob; [IFB]; po
-  -safe [DSB.LD*R*, ISB]
-  ## DSB-ob; [IFB]; po
-  -safe [DSB.ST*W*, ISB]
+  -safe [DSB.SY***, ISB] [DSB.LD*R*, ISB] [DSB.ST*W*, ISB]
   
   ### dob
   ## addr
@@ -74,13 +68,7 @@
   ## [Exp & M]; rmw; [Exp & M]
   -safe LxSx Amo
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPA] [Amo, PosWRPA]
-  ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPA, AmoAP] [Amo, PosWRPA, AmoAP]
-  ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPQ] [Amo, PosWRPQ]
-  ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPQ, AmoQP] [Amo, PosWRPQ, AmoQP]
+  -safe [LxSx, PosWRPA] [Amo, PosWRPA] [LxSx, PosWRPA, AmoAP] [Amo, PosWRPA, AmoAP] [LxSx, PosWRPQ] [Amo, PosWRPQ] [LxSx, PosWRPQ, AmoQP] [Amo, PosWRPQ, AmoQP]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
@@ -92,25 +80,11 @@
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
   -safe [AmoAL, PoLP]
   ## [L]; po; [A]
-  -safe PoLA
-  ## [L]; po; [A]
-  -safe [PoLA, AmoAP]
-  ## [L]; po; [A]
-  -safe [AmoPL, PoLA]
-  ## [L]; po; [A]
-  -safe [AmoPL, PoLA, AmoAP]
+  -safe PoLA [PoLA, AmoAP] [AmoPL, PoLA] [AmoPL, PoLA, AmoAP]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe PoAP
-  ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoAP, Po]
-  ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe PoQP
-  ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoQP, Po]
+  -safe PoAP [AmoAP, Po] PoQP [AmoQP, Po]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe PoPL
-  ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe [Po, AmoPL]
+  -safe PoPL [Po, AmoPL]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
