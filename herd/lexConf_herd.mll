@@ -93,17 +93,18 @@ let lex_stringset v arg =
 open Lexing
 
 let dolex main fname =
+  let dir = Filename.dirname fname in
   let dolex chan =
     let lexbuf = Lexing.from_channel chan in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname=fname;};
-    try main lexbuf
+    try main dir lexbuf
     with LocError msg -> LexMisc.error msg lexbuf in
   try Misc.input_protect dolex fname
   with Error (msg,pos) ->
     eprintf "%a: %s\n" Pos.pp_pos pos msg ;
     exit 2
 
-let handle_key main key arg = match key with
+let handle_key dir main key arg = match key with
 | "conf" ->
      let module ML =
       MyLib.Make
@@ -113,7 +114,8 @@ let handle_key main key arg = match key with
           let libdir = !Opts.libdir
           let debug = !debug.Debug_herd.files
         end) in
-      dolex main (ML.find arg)
+     dolex main (ML.find arg)
+| "local-conf" -> dolex main (Filename.concat dir arg)
 | "verbose" ->  lex_int verbose arg
 | "suffix" ->  suffix := arg
 | "include" ->
@@ -298,22 +300,22 @@ let handle_key main key arg = match key with
 let blank = [' ''\t''\r']
 let not_blank = [^' ''\t''\n''\r']
 let arg = ((blank* '=' blank*|blank+) (not_blank [^'\n']* as arg) blank* ('\n'|eof))
-
-rule main = parse
+let alpha = ['a'-'z''A'-'Z']
+rule main dir = parse
 | eof
     { () }
 | '#' [^'\n']* '\n'
 | blank* '\n'
-    {  incr_lineno lexbuf; main lexbuf }
+    {  incr_lineno lexbuf; main dir lexbuf }
 | ""
-    { opt lexbuf ;  incr_lineno lexbuf; main lexbuf }
+    { opt dir lexbuf ;  incr_lineno lexbuf; main dir lexbuf }
 
-and opt = parse
-| (['a'-'z''A'-'Z']+ as key) arg
-   { handle_key main key arg }
+and opt dir = parse
+| (alpha+ | (alpha+ '-'? alpha+) as key) arg
+   { handle_key dir main key arg }
 | ""
    { error "Unknown key in configuration file" }
 {
 
-let lex fname = dolex main fname
+  let lex fname = dolex main fname
 }

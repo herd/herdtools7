@@ -1153,7 +1153,9 @@ let match_reg_events es =
               let v = S.E.global_loc_of er in
               match v with
               | None|Some (V.Val (Constant.(Symbolic _|Label _))) -> ws
-              | Some v -> NoSymbol v::ws in
+              | Some v ->
+                  if S.E.is_explicit er then NoSymbol v::ws
+                  else ws in
             (* Add reading from nowhere for speculated reads *)
             let ws = if is_spec es er then NoWrite::ws else ws in
             er,ws)
