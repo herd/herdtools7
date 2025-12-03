@@ -183,8 +183,8 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
   if opts.conf then
     let open Format in
     requested_bindings
-    |> List.iter (fun (var, nfs) ->
-        printf "@.";
+    |> List.iteri (fun i (var, nfs) ->
+        if i <> 0 then printf "@.";
         printf "### %s@." var;
         let _ =
           List.fold_left
