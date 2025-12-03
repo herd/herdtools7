@@ -44,8 +44,7 @@ module Arg = struct
           (src, level_of_string lvl)
       | _ -> raise (Arg.Bad "Wrong value for -log")
 
-  let parse : unit -> opts * string list =
-   fun () ->
+  let parse () : opts * string list =
     let log_level = ref Logs.Error in
     let lets_to_print = ref [] in
     let conds = ref [] in
