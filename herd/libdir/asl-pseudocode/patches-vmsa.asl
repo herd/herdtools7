@@ -91,20 +91,7 @@ end;
 
 func DecodeShareability(sh:bits(2)) => Shareability
 begin
-  return Shareability_OSH;
-end;
-
-// AArch64.S1AMECFault()
-// =====================
-// Returns TRUE if a Translation fault should occur for Realm EL2 and Realm EL2&0
-// stage 1 translated addresses to Realm PA space.
-// Temporary: do not fault
-
-func AArch64_S1AMECFault{N}
-  (wallparams:S1TTWParams, paspace:PASpace,regime:Regime,descriptor:bits(N))
-=> boolean
-begin
-    return FALSE;
+  return Shareability_ISH;
 end;
 
 // AArch64.OAOutOfRange()
