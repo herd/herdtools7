@@ -1,4 +1,6 @@
 module UList = Util.List
+module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
+module E = Edge.Make (Edge.Config) (A : Fence.S)
 open Ir
 
 let merge_dir_opt d1 d2 =

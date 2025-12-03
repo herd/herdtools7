@@ -64,9 +64,6 @@ let universe_set = Union [ Inter [] ]
 
 (* Intermediate representation *)
 
-module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
-module E = Edge.Make (Edge.Config) (A : Fence.S)
-
 type fence = AArch64Base.barrier
 type prim_rel = Fence of fence | Prim of string
 
