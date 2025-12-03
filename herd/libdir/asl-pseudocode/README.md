@@ -21,14 +21,14 @@ Extra definitions that complete the one in the Arm ARM:
 
 - `implementations.asl`: Extra definitions in ASLv1 to complete what is not
   defined in the Arm ARM.
-- `implementations-vmsa.asl`: Extra definitions needed with the variant `vmsa`,
-  i.e. when Stage 1 translation is activated.
 - `physmem-std.asl`: Definition of memory accesses.
 - `physmem-vmsa.asl`: Definition of memory accesses with variant `vmsa`.
 
 Definitions that replace the ones in the Arm ARM:
 
 - `patches.asl`: ASL definitions that replace the ones in the Arm ARM.
+- `patches-std.asl`: ASL definitions that replace the ones in the Arm ARM,
+  when the variant `vmsa` is not actiaved.
 - `patches-vmsa.asl`: ASL definitions that replace the ones in the Arm ARM,
   needed by the variant `vmsa`.
 
