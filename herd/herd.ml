@@ -466,9 +466,6 @@ let show_long_help () =
   Printf.printf "%s" (Arg.usage_string help_options "\n Help commands");
   exit 0
 
-let help_exists () =
-  Array.exists (fun s -> s = "-help" || s = "--help") Sys.argv
-
 let options = setup_options @
   runmode_options @
   filter_options @
