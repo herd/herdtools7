@@ -230,6 +230,25 @@ end;
 
 // =============================================================================
 
+// IsExclusiveLocal()
+// ==================
+// Return TRUE if the local Exclusives monitor for processorid includes all of
+// the physical address region of size bytes starting at paddress.
+
+// We only rely on the global exclusive monitor, so we want to leave the local
+// exclusive monitor as permissive as possible.
+// The impdef in shared_pseudocode always return FALSE, we always return TRUE.
+
+func IsExclusiveLocal
+   (paddress : FullAddress,
+    processorid : integer,
+    size : integer) => boolean
+begin
+  return TRUE;
+end;
+
+// =============================================================================
+
 // Optimisations: those functions are very used all over the reference, and so
 // we experience a significant slow-down if we don't override them.
 
