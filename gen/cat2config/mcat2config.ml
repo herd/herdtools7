@@ -80,9 +80,9 @@ module Arg = struct
           Arg.String (fun s -> log := parse_log_opt s :: !log),
           "<src1,src2,...> fine-grained logging control for specific modules" );
         ( "-conf",
-          Arg.Bool (fun b -> conf := b),
-          "<true|false> print output as diy configuration file. Default = \
-           false." );
+          Arg.Unit (fun () -> conf := true),
+          "when enabled, causes the tool's results to be formatted as diy7 \
+           configuration file. Default = disabled." );
       ]
     in
     let prog =
