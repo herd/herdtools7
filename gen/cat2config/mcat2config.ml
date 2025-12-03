@@ -174,19 +174,11 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
-            if Arg.should_dump_tree opts then (
-              let compressed =
-                Ir.rel_union_l (List.map fst nfs) |> Ir.compress
-              in
-              Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed;
-              ());
-            let nfs =
-              nfs
-              |> List.map (fun (nf, ast_expr) ->
-                  let nf = Ir.expand_acq_rel nf in
-                  let nf = Ir.expand_domain_range nf in
-                  (nf, ast_expr))
-            in
+            (if Arg.should_dump_tree opts then
+               let compressed =
+                 Ir.rel_union_l (List.map fst nfs) |> Ir.compress
+               in
+               Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed);
             Some (var, nfs))
   in
   if opts.conf then
@@ -202,19 +194,13 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
                 if Arg.should_dump_origin opts then
                   printf "## %a@." Ast_utils.pp_exp ast_e
               in
-              List.fold_left
-                (fun acc seq ->
-                  let relaxs = Translation.try_translate_seq seq in
-                  let relaxs =
-                    List.filter (fun r -> not (List.mem r acc)) relaxs
-                  in
-                  if relaxs <> [] then begin
-                    print_cat_rel ();
-                    printf "-safe %s@."
-                      (String.concat " " (List.map Translation.pp_relax relaxs))
-                  end;
-                  acc @ relaxs)
-                acc (Ir.get_union nf))
+              let relaxs = Translation.translate nf in
+              let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
+              if relaxs <> [] then (
+                print_cat_rel ();
+                printf "-safe %s@."
+                  (String.concat " " (List.map Translation.pp_relax relaxs)));
+              acc @ relaxs)
             [] nfs
         in
         ())
@@ -223,13 +209,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     |> List.iter (fun (_, nfs) ->
         nfs
         |> List.iter (fun (nf, _) ->
-            let relaxs =
-              Ir.get_union nf
-              |> Util.List.concat_map (fun seq ->
-                  Translation.try_translate_seq seq)
-            in
-            let relaxs = Util.List.uniq ~eq:( = ) relaxs in
-            relaxs
+            nf |> Translation.translate
             |> List.iter (fun relax ->
                 Format.printf "%s@." (Translation.pp_relax relax))))
 

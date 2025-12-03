@@ -271,7 +271,7 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       let acc = f acc x xs in
       fold_with_rest f acc xs
 
-let try_translate_seq (Seq l : seq_item Ir.seq) : relax list =
+let translate_seq (Seq l : seq_item Ir.seq) : relax list =
   let l = [ Ir.Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
   let st =
     fold_with_rest
@@ -312,6 +312,15 @@ let try_translate_seq (Seq l : seq_item Ir.seq) : relax list =
       l
   in
   if st.core = [] then st.relaxs else []
+
+let translate (nf : Ir.rel_nf) : relax list =
+  let nf = Ir.expand_acq_rel nf in
+  let nf = Ir.expand_domain_range nf in
+  let relaxs =
+    List.fold_left (fun acc seq -> acc @ translate_seq seq) [] (Ir.get_union nf)
+  in
+  let relaxs = Util.List.uniq ~eq:( = ) relaxs in
+  relaxs
 
 let pp_relax : relax -> string = function
   | Relax [ rlx ] -> E.pp_edge rlx
