@@ -1,3 +1,26 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/*
+
+    patches-vmsa.asl
+    ----------------
+
+This file is a list of re-implementations of ASL functions from the ARM
+Reference Manual. They are completely re-written or simply edited by hand. When
+re-written completely, this is often time the minimal code that type-checks.
+The code is also translated from ASLv0 to ASLv1 by hand.
+
+The ARM Reference Manual is available here:
+    https://developer.arm.com/documentation/ddi0602/2023-09/
+
+This file is complementary to the file patches.asl, to be included with it when
+Stage 1 Translation is activated.
+
+*/
+
 // AArch64.S1Enabled()
 // ===================
 // Determine if stage 1 is enabled for the access type for this translation regime
@@ -8,11 +31,8 @@ begin
   return TRUE;
 end;
 
-// AArch64.PAMax()
-// ===============
-// Returns the IMPLEMENTATION DEFINED maximum number of bits capable of representing
-// physical address for this processor
-// Let us define it.
+// This constant is set to 3 in the Arm ARM. We change it to ensure a flat
+// translation table.
 
 func AArch64_PAMax() => integer
 begin

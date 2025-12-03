@@ -41,7 +41,7 @@ type BRBSRC_EL1_Type of bits(64);
 
 // =============================================================================
 
-func _SetUpRegisters ()
+func _SetUpRegisters (is_vmsa: boolean)
 begin
   // Value found on Rasberry 4B, ArmBian
   // uname -a:
@@ -58,6 +58,8 @@ begin
     // Another value from the same machine
     // '0000000000000000000000000000000000110000110100000001100110000101'
     ;
+
+  _SCTLR_EL1.M = if is_vmsa then '1' else '0';
 end;
 
 // =============================================================================
