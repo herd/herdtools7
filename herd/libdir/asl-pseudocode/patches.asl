@@ -42,24 +42,6 @@ end;
 
 // =============================================================================
 
-// IsAligned()
-// ===========
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-common?lang=en#impl-shared.IsAligned.2
-// We disable alignment checks.
-
-func IsAligned{N}(x : bits(N), y:integer) => boolean
-begin
-  return TRUE;
-end;
-
-func IsAligned(x:integer, y:integer) => boolean
-begin
-  return TRUE;
-end;
-
-// =============================================================================
-
 // CheckSPAlignment()
 // ==================
 // Check correct stack pointer alignment for AArch64 state.
