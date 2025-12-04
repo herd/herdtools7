@@ -34,3 +34,9 @@ val pp_t : t printer
 
 val t_to_string : t -> string
 (** Converts the AST into an ocaml string. *)
+
+val output_to_chan : ?newline:bool -> out_channel -> t -> unit
+(** Dump the AST as an ocaml string to the output channel.
+
+    If [newline] is [true], then prints a new line character and flush the
+    channel. *)

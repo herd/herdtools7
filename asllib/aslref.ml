@@ -32,6 +32,7 @@ type args = {
   print_ast : bool;
   print_lisp : bool;
   print_serialized : bool;
+  print_serialized_typed : bool;
   print_typed : bool;
   show_rules : bool;
   strictness : strictness;
@@ -59,6 +60,7 @@ let parse_args () =
   let exec = ref true in
   let print_ast = ref false in
   let print_serialized = ref false in
+  let print_serialized_typed = ref false in
   let print_typed = ref false in
   let print_lisp = ref false in
   let opn = ref "" in
@@ -87,6 +89,10 @@ let parse_args () =
       ( "--serialize",
         Arg.Set print_serialized,
         " Print the parsed AST to stdout in the serialized format." );
+      ( "--serialize-typed",
+        Arg.Set print_serialized_typed,
+        " Print the parsed AST after typing to stdout in the serialized format."
+      );
       ( "--print-typed",
         Arg.Set print_typed,
         " Print the parsed AST after typing and before executing it." );
@@ -192,6 +198,7 @@ let parse_args () =
       opn = (match !opn with "" -> None | s -> Some s);
       print_ast = !print_ast;
       print_serialized = !print_serialized;
+      print_serialized_typed = !print_serialized_typed;
       print_typed = !print_typed;
       print_lisp = !print_lisp;
       strictness = !strictness;
@@ -296,9 +303,7 @@ let run_with (args : args) : unit =
 
   let () = if args.print_ast then Format.printf "%a@." PP.pp_t ast in
 
-  let () =
-    if args.print_serialized then print_string (Serialize.t_to_string ast)
-  in
+  let () = if args.print_serialized then Serialize.output_to_chan stdout ast in
 
   let ast =
     let open Builder in
@@ -324,7 +329,10 @@ let run_with (args : args) : unit =
   let module C = struct
     let output_format = args.output_format
     let check = args.strictness
-    let print_typed = args.print_typed || args.print_lisp
+
+    let print_typed =
+      args.print_typed || args.print_lisp || args.print_serialized_typed
+
     let use_field_getter_extension = args.use_field_getter_extension
     let override_mode = args.override_mode
 
@@ -337,6 +345,11 @@ let run_with (args : args) : unit =
   end in
   let module T = Annotate (C) in
   let typed_ast, static_env = or_exit @@ fun () -> T.type_check_ast ast in
+
+  let () =
+    if args.print_serialized_typed then
+      Serialize.output_to_chan ?newline:(Some true) stdout typed_ast
+  in
 
   let () =
     if args.print_typed then
