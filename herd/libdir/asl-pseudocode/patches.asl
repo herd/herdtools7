@@ -72,19 +72,6 @@ end;
 
 // =============================================================================
 
-// BigEndian()
-// ===========
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-memory?lang=en#impl-shared.BigEndian.1
-// We only use small-endian
-
-func BigEndian(acctype: AccessType) => boolean
-begin
-  return FALSE;
-end;
-
-// =============================================================================
-
 // AArch64.TranslateAddress()
 // ==========================
 // Main entry point for translating an address

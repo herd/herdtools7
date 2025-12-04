@@ -32,6 +32,7 @@ type MAIRType of MAIR_EL1_Type;
 type S2PIRType of S2PIR_EL2_Type;
 type S1PIRType of S2PIRType;
 type SCRType of SCR_Type;
+type SCTLRType of SCTLR_EL1_Type;
 
 
 // =============================================================================
