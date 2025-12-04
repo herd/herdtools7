@@ -89,20 +89,6 @@ end;
 
 // =============================================================================
 
-// ClearExclusiveByAddress()
-// =========================
-// Clear the global Exclusives monitors for all PEs EXCEPT processorid if they
-// record any part of the physical address region of size bytes starting at paddress.
-// It is IMPLEMENTATION DEFINED whether the global Exclusives monitor for processorid
-// is also cleared if it records any part of the address region.
-
-func ClearExclusiveByAddress(paddress : FullAddress, processorid : integer, size : integer)
-begin
-  pass;
-end;
-
-// =============================================================================
-
 // InstructionSynchronizationBarrier()
 // ===================================
 func InstructionSynchronizationBarrier()
