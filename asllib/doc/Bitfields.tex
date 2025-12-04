@@ -39,28 +39,26 @@ and slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
 \end{itemize}
 
 \section{Nested Bitfields\label{sec:Nested Bitfields}}
-Bitfields may have nested bitfields. This can have several uses, one of which being able to define two
+Bitfields may have nested bitfields. This can have several uses, one of which is being able to define two
 different views of a register.
 
 This section defines several properties of bitfields, illustrated by the example below.
-These are used to define \RequirementRef{BitfieldAlignment}.
-
-The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers starting from the
+These are used to define \RequirementRef{BitfieldAlignment}:
+\begin{itemize}
+\item The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers starting from the
 name of the top-level bitfield containing it and following with the names of the nested bitfields,
-until the name of the bitfield at hand. We denote an absolute name by separating the names with a
-period, similar to the expression used to refer to it.
-%
-The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield are the slices it defines with respected to its containing
-bitvector type.
-%
-The \hypertarget{def-absolutebitfield}{\absolutebitfield} of a given bitfield consists of bits absolute name and its
-\absoluteslices.
-
-Further, the \hypertarget{def-bitfieldscope}{\bitfieldscope} of a bitfield is its \absolutename, with the last
+until the name of the bitfield at hand. We denote an absolute name by a period-separated list of names,
+similar to the expression referring to it;
+\item The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield comprises of the slices it defines with respect to its containing
+bitvector type;
+\item The \hypertarget{def-absolutebitfield}{\absolutebitfield} of a given bitfield consists of absolute name and its
+\absoluteslices; and
+\item The \hypertarget{def-bitfieldscope}{\bitfieldscope} of a bitfield is its \absolutename, with the last
 identifier (the bitfield's name) removed.
-For example, the \bitfieldscope\ of a bitfield with the absolute name \texttt{fmt0.later1.remainder.moving}
-is \texttt{fmt0.later1.remainder} and the \bitfieldscope\ of a bitfield with the absolute name
+For example, the \bitfieldscope{} of a bitfield with the absolute name \texttt{fmt0.later1.remainder.moving}
+is \texttt{fmt0.later1.remainder} and the \bitfieldscope{} of a bitfield with the absolute name
 \texttt{fmt0} is the empty list.
+\end{itemize}
 
 We say that two bitfields exist in the same \bitfieldscope\ if the \bitfieldscope\ of one is a prefix
 of the \bitfieldscope\ of the other. For example, consider two bitfields whose corresponding \absolutenames\ are
@@ -68,8 +66,8 @@ of the \bitfieldscope\ of the other. For example, consider two bitfields whose c
 \texttt{fmt0.later1.remainder.moving}, respectively.
 They exist in the same scope, since \texttt{fmt0.later1} is a prefix of
 \texttt{fmt0.later1.remainder}.
-In contrast, a pair of bitfields with \absolutenames\ \texttt{fmt0.common}
-and \texttt{fmt1.common}, since neither of \texttt{fmt0} and \texttt{fmt1} is a prefix of the other.
+In contrast, the pair of bitfields with \absolutenames{} \texttt{fmt0.common}
+and \texttt{fmt1.common} are not in the same scope, since neither \texttt{fmt0} nor \texttt{fmt1} is a prefix of the other.
 
 \RequirementDef{BitfieldAlignment}
 For every two bitfields of a given bitvector type,
@@ -686,7 +684,7 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
     \item $\vbitfields$ is not the empty list;
     \item define $\vlastindex$ as $\vwidth - 1$;
     \item define $\vtopabsolute$ as an \absolutebitfield\ with the empty list
-          for a name and a the interval $\vlastindex..0$ (that is, the entire range
+          for a name and the interval $\vlastindex..0$ (that is, the entire range
           of indices for the containing bitvector type),
           as an artificial top-level \absolutebitfield\ for the entire bitvector type;
     \item \Prosebitfieldstoabsolute{$\tenv$}{$\vbitfields$}{$\vtopabsolute$}{$\vfs$};

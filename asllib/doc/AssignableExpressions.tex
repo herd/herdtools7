@@ -38,14 +38,14 @@ These refer to storage that needs to be updated.
 \paragraph{Semantics:} Assignable expressions are evaluated by $\evallexpr$.
 \RenderRelation{eval_lexpr}
 \paragraph{A Convention for Assignable Expressions Semantics Rules:}
-In this chapter, variables containing $\vm$ range over $\nativevalue\times\XGraphs$
+In this chapter, variables containing $\vm$ range over $\nativevalue\cartimes\XGraphs$
 while variables where the $\vm$ is replaced with $\vv$ correspond to their value component.
 For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vgone)$.
 
 \paragraph{Viewing Assignable Expressions as Right-hand-side Expressions:}
 Some of the typing rules and semantics rules require viewing \assignableexpressions\
 as \rhsexpressions.
-The correspondence is given by the function $\torexpr : \lexpr \rightarrow \expr$., defined in \secref{LeftToRight}.
+The correspondence is given by the function $\torexpr : \lexpr \rightarrow \expr$, defined in \secref{LeftToRight}.
 %
 For example, \SemanticsRuleRef{LESetField}
 needs to evaluate the record subexpression $\rerecord$, which is an \assignableexpression.
@@ -589,7 +589,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
     \item checking that $k$ corresponds to a mutable variable, that is, $\LDKVar$, yields $\True$\ProseTerminateAs{\AssignmentToImmutable};
     \item determining whether $\tty$ \typesatisfiesterm\ $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
     \item $\newle$ is $\vle$;
-    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} with \purity{} $\SEImpure$, and a \ImmutabilityTerm{} with immutability $\False$}.
+    \item \Proseeqdef{$\vses$}{the set containing a \LocalEffectTerm{} with \purity{} $\SEImpure$, and an \ImmutabilityTerm{} with immutability $\False$}.
   \end{itemize}
 
   \item \AllApplyCase{global}
@@ -1566,7 +1566,9 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 In \listingref{lesetfields}, applying $\foldbitvectorfields$ to the list of fields
 [\verb|data, time, status|] in the statement \verb|x.[status, time, data] = '1' :: Zeros{16} :: Ones{8};|,
 yields the total width $25$ and ranges
-$(17, 8)$ for \verb|data|, $(1, 16)$ for \verb|time|, and $(0, 1)$ for \verb|status|.
+$(\overtext{17}{\start}, \overtext{8}{\vwidth})$ for \verb|data|,
+$(\overtext{1}{\start}, \overtext{16}{\vwidth})$ for \verb|time|,
+and $(\overtext{0}{\start}, \overtext{1}{\vwidth})$ for \verb|status|.
 
 \ProseParagraph
 \OneApplies
@@ -1635,7 +1637,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
     $\vvtwo$\ProseOrError;
   \item \Proseeqdef{\vmtwo}{%
     the pair consisting of $\vvtwo$ and the parallel composition of $\vg$ and
-    $\vgone$}
+    $\vgone$};
   \item \Proseevallexpr{$\envone$}{$\vlerecord$}{$\vmtwo$}{$C$}.
 \end{itemize}
 
@@ -1741,7 +1743,7 @@ All of the collection field assignable expressions in
   \item $\newenv$ is $\env$ where $\vbase$ is bound to $\recordone$ in the $\storage$ map
     of the global dynamic environment $\denv.\dynamicenvsG$.
   \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vg$
-    and $\vgzero$;
+    and $\vgzero$.
 \end{itemize}
 
 \FormallyParagraph

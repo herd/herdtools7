@@ -42,7 +42,6 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
 \RenderRelation{eval_pattern}
 
-
 \section{Matching All Values\label{sec:MatchingAllValues}}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
@@ -53,7 +52,6 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_all}
-
 
 \ASTRuleDef{PAll}
 \begin{mathpar}
@@ -114,7 +112,6 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_single}
-
 
 \ASTRuleDef{PSingle}
 \begin{mathpar}
@@ -274,7 +271,6 @@ whereas \\
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_range}
 
-
 \ASTRuleDef{PRange}
 \begin{mathpar}
 \inferrule{}{
@@ -307,7 +303,7 @@ whereas \\
   \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ for $\vt$, $\vteone$, and $\vtetwo$ yields
         $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
-  \item a check the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
+  \item checking that the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
         $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a \typingerrorterm{}, which short-circuits the entire rule.
         The \typingerrorterm{} indicates that the types of
         $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
@@ -385,7 +381,6 @@ range given by \texttt{3..42}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_leq}
-
 
 \ASTRuleDef{PLeq}
 \begin{mathpar}
@@ -479,7 +474,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_geq}
 
-
 \ASTRuleDef{PGeq}
 \begin{mathpar}
 \inferrule{}{
@@ -563,6 +557,9 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
 \section{Matching a Bitmask\label{sec:MatchingABitmask}}
+Bitmasks are used to match sets of bitvectors where occurrences of $\xbit$,
+and bit sequences in parentheses represent, don't-care values.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Tmasklit &
@@ -570,7 +567,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_mask}
-
 
 \ASTRuleDef{PMask}
 \begin{mathpar}
@@ -646,8 +642,7 @@ whereas \texttt{match\_false} evaluates to \False, since
 
 \FormallyParagraph
 \RenderRelation{mask_match}
-
-is defined by the following table:
+It is defined by the following table:
 \[
 \begin{array}{|c|c|c|c|}
   \hline
@@ -705,9 +700,10 @@ is defined by the following table:
 \TypingRuleDef{PTuple}
 \ExampleDef{Typing Tuple Patterns}
 The tuple patterns in \listingref{semantics-ptuple} are well-typed.
-
-The tuple patterns in \listingref{typing-ptuple-bad} are ill-typed.
-\ASLListing{Ill-typed tuple patterns}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
+%
+In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingref{typing-ptuple-bad} are ill-typed.
+\ASLListing{Ill-typed tuple pattern due to order of elements}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
+\ASLListing{Ill-typed tuple pattern due to number of elements}{typing-ptuple-bad2}{\typingtests/TypingRule.PTuple.bad2.asl}
 
 \ProseParagraph
 \AllApply
@@ -998,7 +994,6 @@ The function
 \[
   \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
 \]
-
 transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
 

@@ -125,7 +125,7 @@ Formally:
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
-The \emph{\integertypesterm{}} represent mathematical integer value.
+The \emph{\integertypesterm{}} represent the mathematical integer values.
 
 There are four kinds of integer types, and we
 use the term \integertypeterm{} to refer to them collectively:
@@ -387,7 +387,7 @@ correspond to \CaseName{pending\_constrained}.
   \item \AllApplyCase{well\_constrained}
     \begin{itemize}
       \item $\tty$ is the well-constrained integer type constrained by
-        constraints $\vc_i$, for $u=1..k$;
+        constraints $\vc_i$, for $i=1..k$;
       \item annotating each constraint $\vc_i$, for $i=1..k$,
       yields $(\newc_i, \vxs_i)$\ProseOrTypeError;
       \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
@@ -524,8 +524,8 @@ There is no mechanism in the language to generate an irrational value of \realty
 Conversions from an \integertypeterm{} value to a \realtypeterm{} value are performed
 using the \stdlibfunc{Real}.
 %
-Conversions from a \realtypeterm{} value an \integertypeterm{} value to are performed
-using the \stdlibfunc{RoundDown}, \stdlibfunc{RoundUp}. and \stdlibfunc{RoundTowardsZero}.
+Conversions from a \realtypeterm{} value to an \integertypeterm{} value to are performed
+using the \stdlibfunc{RoundDown}, the \stdlibfunc{RoundUp}, and the \stdlibfunc{RoundTowardsZero}.
 
 \ExampleDef{Well-typed Real Types}
 In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed.
@@ -871,7 +871,7 @@ to be \constrainedintegersterm.
   {
     \begin{array}{r}
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
-  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \overname{\seswidth}{\seswidth})
+  (\overname{\TBits(\ewidthp, \emptylist)}{\newty}, \overname{\seswidth}{\seswidth})
     \end{array}
   }
 }
@@ -1171,10 +1171,10 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
     \begin{itemize}
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields the enumeration variable
-      name $\vs$ of size $\vi$, that is, $\some{ \vs, \vi }$\ProseOrTypeError;
+      name $\vs$ and list of labels $\vlabels$, that is, $\some{ \vs, \vlabels }$\ProseOrTypeError;
       \item $\newty$ is the array type indexed by an \enumerationtypeterm{}
-      named $\vs$ of length $\vi$ and of elements of type $\vtp$\\ ($\TArray(\ArrayLengthEnum(\vs, \vi), \vtp)$);
-      \item define $\vses$ as $\vsest$.
+      named $\vs$ with list of labels $\vlabels$ and of elements of type $\vtp$\\ ($\TArray(\ArrayLengthEnum(\vs, \vlabels), \vtp)$);
+      \item \Proseeqdef{$\vses$}{the empty set}.
     \end{itemize}
 
     \item \AllApplyCase{expr\_not\_enum}
@@ -1182,7 +1182,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
       \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
       via $\getvariableenum$ yields $\None$ (meaning it does not
       correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the \symbolicallyevaluableterm{} \constrainedintegerterm{} expression $\ve$ yields\\
+      \item annotating the \symbolicallyevaluableterm{} \constrainedintegerterm{} expression $\ve$ yields
       $(\vep, \vsesindex)$\ProseOrTypeError;
       \item $\newty$ the array type indexed by integer bounded by
       the expression $\vep$ and of elements of type $\vtp$
@@ -1201,7 +1201,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
   \getvariableenum(\tenv, \ve) \typearrow \some{ \vs, \vlabels }
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow
-  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vsest})
+  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
 
@@ -1545,7 +1545,7 @@ collection types in comments.
 \end{mathpar}
 
 \section{Named Types\label{sec:NamedTypes}}
-Named type declarations allow declaring new types names with a given type.
+A named type declaration allows declaring a new type associated with the given name.
 The intent is that, by default, any named type should not be assignable to or from any other named type, even
 if they coincidentally have the same \structureterm. Where assignment between named types is desired it is usually
 achieved by grouping related types via a common supertype.

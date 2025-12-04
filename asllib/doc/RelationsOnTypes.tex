@@ -1850,7 +1850,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   {
   \vcopt \eqdef  \begin{cases}
     \some{\vc}& \text{if }\vp(\vzone)\\
-    \some{\vrangezeroorone}& \text{else}\\
+    \some{\vrangezeroorone}& \text{otherwise}\\
   \end{cases}
   }
 }{
@@ -1868,7 +1868,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   {
   \vcopt \eqdef \begin{cases}
     \some{\vc}& \text{if }\vp(\vztwo)\\
-    \some{\vrangezeroorminusone}& \text{else}\\
+    \some{\vrangezeroorminusone}& \text{otherwise}\\
   \end{cases}
   }
 }{
@@ -2153,7 +2153,7 @@ Specifically, notice the following:
     \vcopt \eqdef
     \begin{cases}
       \None & \text{if }\vztwo > 0 \land \frac{\vzone}{\vztwo} \not\in \Z\\
-      \some{\vc} & \text{else}
+      \some{\vc} & \text{otherwise}
     \end{cases}
   }
 }{
@@ -2168,7 +2168,7 @@ Specifically, notice the following:
     \vzoneopt \eqdef
     \begin{cases}
       \left\lceil\frac{\vzone}{\vztwo}\right\rceil & \text{if }\veoneopt = \some{(\vzone, \vztwo)} \land \vztwo > 0\\
-      \None & \text{else}
+      \None & \text{otherwise}
     \end{cases}
   }\\
   \getliteraldivopt(\vetwo) \typearrow \vetwoopt\\
@@ -2176,7 +2176,7 @@ Specifically, notice the following:
     \vztwoopt \eqdef
     \begin{cases}
       \left\lfloor\frac{\vzthree}{\vzfour}\right\rfloor & \text{if }\vetwoopt = \some{(\vzthree, \vzfour)} \land \vzfour > 0\\
-      \None & \text{else}
+      \None & \text{otherwise}
     \end{cases}
   }\\
   \vczfive \eqdef \AbbrevConstraintExact{\ELInt{\vzfive}}\\
@@ -2658,7 +2658,7 @@ See \ExampleRef{The Structure of a Type}.
 \TypingRuleDef{ToWellConstrained}
 \RenderRelation{to_well_constrained}
 
-\ExampleDef{Converting Parameterized Integer Types to Well-constrainted Integer Types}
+\ExampleDef{Converting Parameterized Integer Types to Well-constrained Integer Types}
 The following are two examples of applying $\towellconstrained$ to various types:
 \begin{mathpar}
 \inferrule{}{

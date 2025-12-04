@@ -184,7 +184,7 @@ let clist0(x) := { [] } | clist1(x)
 (* A comma separated list with at least 2 elements. *)
 let clist2(x) := ~=x; COMMA; li=clist1(x); { x :: li }
 
-(* A comma-separated trailing list. *)
+(* A possibly-empty comma-separated trailing list. *)
 let tclist0(x) := { [] } | tclist1(x)
 
 (* A comma-separated non-empty trailing list. *)

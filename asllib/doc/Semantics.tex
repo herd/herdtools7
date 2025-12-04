@@ -278,7 +278,7 @@ in the arguments graphs.
 Given two execution graphs, \\ $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ and an ordering label $l$,
 the ordered composition $\ordered{S_1}{l}{S_2}$ is defined as follows:
 \[
-  \ordered{S_1}{l}{S_2} \triangleq (N_1 \cup N_2,\ E_1 \cup E_2 \cup (O_1 \times \{l\} \times N_2),\ O_2) \enspace.
+  \ordered{S_1}{l}{S_2} \triangleq (N_1 \cup N_2,\ E_1 \cup E_2 \cup (O_1 \cartimes \{l\} \cartimes N_2),\ O_2) \enspace.
 \]
 Intuitively, this composition constrains the output effects of $S_1$ to appear before any effect of $S_2$ with respect
 to the given ordering label.
@@ -375,25 +375,25 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 
 \hypertarget{operator-graphof}{}
 \hypertarget{operator-environof}{}
-Given a semantic configuration $C$, we define the graph component of the semantic configuration, \\
+Given a semantic configuration $C$, we define the graph component of the semantic configuration,
 $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}$, as follows:
 \[
 \begin{array}{lcc}
   C & \graphof{C} & \environof{C}\\
   \hline
-  \ResultExpr((\vv, \vg), \env) & \vg & \env\\
-  \ResultExprSEF(\vv, \vg) & \vg & \text{undefined}\\
+  \ResultExpr((\Ignore, \vg), \env) & \vg & \env\\
+  \ResultExprSEF(\Ignore, \vg) & \vg & \text{undefined}\\
   \ResultLexpr(\vg, \env) & \vg & \env \\
   \ResultLDI(\vg, \env) & \vg & \env \\
-  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \vg & \env \\
-  \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \vg & \env \\
-  \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
-  \ResultPattern(\vb, \vg) & \vg & \text{undefined}\\
-  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined} & \env\\
-  \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \vg & \env\\
-  \Returning(([\vv_{1..k}],\vg), \env) & \vg & \env\\
+  \ResultSlices((\Ignore, \vg), \env) & \vg & \env \\
+  \ResultExprList((\Ignore, \vg), \env) & \vg & \env \\
+  \ResultExprListM(\Ignore, \env) & \text{undefined} & \env\\
+  \ResultPattern(\Ignore, \Ignore) & \vg & \text{undefined}\\
+  \ResultCall(\Ignore, \env) & \text{undefined} & \env\\
+  \Throwing(\Ignore, \Ignore,\vg, \env) & \vg & \env\\
+  \Returning((\Ignore,\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
-  \DynamicError(\vs) & \text{undefined} & \text{undefined}\\
+  \DynamicError(\Ignore) & \text{undefined} & \text{undefined}\\
   \Diverging & \text{undefined} & \text{undefined}\\
 \end{array}
 \]
@@ -460,9 +460,9 @@ $\evalexpr$, $\evalstmt$, etc.
 
 \subsection{Natural Operational Semantics}
 We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
-(also known as \emph{big step semantics}).
+(also known as \emph{big-step semantics}).
 Natural operational semantics evaluates the AST inductively.
-That is, it concludes transitions for semantic configurations starting from
+That is, it concludes transitions from semantic configurations starting from
 non-leaf AST nodes by concluding transitions from semantic configurations starting from their children nodes.
 
 \subsubsection{No Undefined Behaviors}

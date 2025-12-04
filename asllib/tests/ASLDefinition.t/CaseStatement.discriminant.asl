@@ -15,9 +15,9 @@ func main() => integer
 begin
     var x = 50;
     case test_and_increment(x) of
-        when 50 => println "selected case 1";
-        when 51 => println "selected case 2";
-        when 52 => println "selected case 2";
+        when 50 => println "selected case x=50";
+        when 51 => println "selected case x=51";
+        when 52 => println "selected case x=52";
     end;
     return 0;
 end;

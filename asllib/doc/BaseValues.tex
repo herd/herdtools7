@@ -7,15 +7,13 @@ if an initializer is not supplied.
 \RequirementDef{NoBaseValue}
 The following types do not have a \basevalueterm{}:
 \begin{itemize}
-    \item \parameterizedintegertypesterm{};
+    \item \parameterizedintegertypesterm{} ---
+          only subprogram parameters can be parameterized integers, and since they will be initialized by their
+          invocation, there is no need to define a \basevalueterm{} for them; \identi{WVQZ}
     \item a \wellconstrainedintegertypeterm{} whose list of constraints
-        represents the empty set;
+          represents the empty set;
     \item a \bitvectortypeterm{} whose length is negative.
 \end{itemize}
-
-\identi{WVQZ}
-Subprogram parameters can be parameterized integers, and since they will be initialized by their
-invocation, there is no need to have a \basevalueterm{} for them.
 
 \ExampleDef{Base Values}
 \listingref{base-values} shows a specification with examples of well-typed \basevalueterm{}
@@ -96,8 +94,9 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
     \item \AllApplyCase{t\_int\_parameterized} \identr{QGGH}
     \begin{itemize}
-        \item $\vt$ is the \parameterizedintegertypeterm;
+        \item $\vt$ is a \parameterizedintegertypeterm;
         \item the result is a \typingerrorterm{} indicating the lack of a statically known base value.
+        \ProseNote{See \RequirementRef{NoBaseValue}}
     \end{itemize}
 
     \item \AllApplyCase{t\_int\_wellconstrained} \identr{CFTD}

@@ -77,7 +77,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \hypertarget{build-subtype}{}
 The function
 \[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \times \KleeneStar{(\Identifier\times \ty)})}{\vastnode}
+  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \KleeneStar{(\Identifier\cartimes \ty)})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -112,7 +112,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
    \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\Option{\Identifier \times \Option{\KleeneStar{(\Identifier\times \ty)}}}}{\vastnode}
+    \overname{\Option{\Identifier \cartimes \Option{\KleeneStar{(\Identifier\cartimes \ty)}}}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION

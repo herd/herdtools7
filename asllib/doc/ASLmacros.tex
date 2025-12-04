@@ -371,7 +371,7 @@
   \fi
 }
 
-\newcommand\ELInt[1]{\overbracket{#1}^{\hyperlink{def-elint}{\ELiteral(\LInt)}}}
+\newcommand\ELInt[1]{\hyperlink{def-elint}{\textsf{ELint}}(#1)}
 \newcommand\AbbrevEBinop[4][H]{
   \ifnum\pdfstrcmp{#1}{H}=0\relax
   \overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
@@ -490,9 +490,9 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newcommand\overname[2]{\overbrace{#1}^{#2}}
+\newcommand\overname[2]{\overbracket{#1}^{#2}}
 \newcommand\overtext[2]{\overbracket{#1}^{#2}}
-\newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\emptyset}_\lambda}}
+\newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\OldEmptyset}_\lambda}}
 \newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 \newcommand\COLON[0]{:}
 \newcommand\PIPE[0]{|}
@@ -537,7 +537,6 @@
 \newcommand\powfin[1]{\hyperlink{def-powfin}{\mathcal{P}_{\text{fin}}}\left(#1\right)}
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
-\newcommand\funcgraph[0]{\hyperlink{def-funcgraph}{\texttt{func\_graph}}}
 \DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
 \newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
 \newcommand\positivesign[0]{\hyperlink{constant-positivesign}{\texttt{1}}}
@@ -837,7 +836,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for AST builders
-\newcommand\BuildError[1]{\hyperlink{type-builderror}{\textsf{BuildError}}(\texttt{#1})}
+\newcommand\BuildError[0]{\hyperlink{type-builderror}{\textsf{BuildError}}}
 \newcommand\BuildErrorConfig[0]{\hyperlink{def-builderrorconfig}{\texttt{\#BE}}}
 \newcommand\TBuildError[0]{\hyperlink{def-tbuilderror}{\textsf{TBuildError}}}
 \newcommand\ProseOtherwiseBuildError[0]{Otherwise, the result is a build error.}
@@ -1077,7 +1076,7 @@
 \newcommand\localstaticenvironmentterm[0]{\hyperlink{type-localstaticenvs}{local static environment}}
 \newcommand\globalstaticenvs[0]{\hyperlink{type-globalstaticenvs}{\mathbb{GSE}}}
 \newcommand\globalstaticenvironmentterm[0]{\hyperlink{type-globalstaticenvs}{global static environment}}
-\newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\emptyset_{\mathbb{SE}}}}
+\newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\OldEmptyset_{\mathbb{SE}}}}
 \newcommand\tstruct[0]{\hyperlink{def-tstruct}{\textfunc{get\_structure}}} % SPECIFIED
 \newcommand\astlabel[0]{\hyperlink{def-astlabel}{\textfunc{ast\_label}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\ProsetypesatTrue[3]{#2 \typesatisfiesterm{} #3 in the static environment #1}
@@ -1123,11 +1122,11 @@
 \newcommand\dynamicenvs[0]{\hyperlink{type-dynamicenvs}{\mathbb{DE}}}
 \newcommand\localdynamicenvs[0]{\hyperlink{type-localdynamicenvs}{\mathbb{LDE}}}
 \newcommand\globaldynamicenvs[0]{\hyperlink{type-globaldynamicenvs}{\mathbb{GDE}}}
-\newcommand\emptydenv[0]{\hyperlink{constant-emptydenv}{\emptyset_{\mathbb{DE}}}}
+\newcommand\emptydenv[0]{\hyperlink{constant-emptydenv}{\OldEmptyset_{\mathbb{DE}}}}
 \newcommand\storage[0]{\hyperlink{def-storage}{\textsf{storage}}}
 \newcommand\pendingcalls[0]{\hyperlink{def-pending-calls}{\textsf{pending\_calls}}}
 \newcommand\xgraph[0]{\textsf{g}}
-\newcommand\emptygraph[0]{{\hyperlink{constant-emptygraph}{\emptyset_\xgraph}}}
+\newcommand\emptygraph[0]{{\hyperlink{constant-emptygraph}{\OldEmptyset_\xgraph}}}
 \newcommand\Proseemptygraph[1]{#1 is the empty \executiongraphterm{}}
 \newcommand\asldata[0]{\hyperlink{constant-asldata}{\mathtt{asl\_data}}}
 \newcommand\aslctrl[0]{\hyperlink{constant-aslctrl}{\mathtt{asl\_ctrl}}}
@@ -1141,7 +1140,7 @@
 \newcommand\WriteEffect[0]{\hyperlink{operator-writeeffect}{\textsf{WriteEffect}}}
 \newcommand\ReadEffect[0]{\hyperlink{operator-readeffect}{\textsf{ReadEffect}}}
 \newcommand\returnvarprefix[0]{\texttt{"return-"}} % DO NOT LINT
-\newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\emptyset_{\mathbb{E}}}}
+\newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\OldEmptyset_{\mathbb{E}}}}
 
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
 \newcommand\ThrowingConfig[0]{\hyperlink{def-throwingconfig}{\texttt{\#T}}}

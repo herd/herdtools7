@@ -66,7 +66,7 @@ generate a \typedast.
 In an ASL abstract syntax tree, a node is one the following data types:
 \begin{description}
 \item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
-\item[Label Node.] A label
+\item[Label Node.] A label;
 \item[Unlabelled Tuple Node.] A tuple of children nodes, denoted as $(n_1,\ldots,n_k)$;
 \item[Labelled Tuple Node.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
 \item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
@@ -247,7 +247,7 @@ The following rules define the types of left-hand side of assignments:
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
 \RenderType{local_decl_keyword}
 
-A local declaration item is the left-hand side of a declaration statements.
+A local declaration item is the left-hand side of a declaration statement.
 In the following example of a declaration statement:
 \begin{lstlisting}
 let (x, -, z): (integer, integer, integer {0..32}) = (2, 3, 4);
@@ -417,7 +417,7 @@ avoid name clashes, for example, by employing counters.
 Notice that there is only one instance of $\Nexpr$ and one instance of $\Nstmtlist$ in this production.
 This is very common and we therefore use the following shorthand notation for such cases, as explained next.
 
-In a non-terminal $N$ appears only once in the right-hand-side of a derivation,
+If a non-terminal $N$ appears only once in the right-hand-side of a derivation,
 we use the name $\texttt{N}$ to name the corresponding child parse node.
 For example, $\namednode{\vexpr}{\Nexpr}$ and $\namednode{\vstmtlist}{\Nstmtlist}$.
 In such cases, we always have the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
@@ -582,7 +582,7 @@ to the value if it exists --- $\vsymasts$.
 \end{mathpar}
 
 When this relation is applied to a sentence consisting of a prefix of terminals $t_{1..k}$, ending with a non-terminal $\vv$,
-it ignore the terminals and returns the result for the non-terminal.
+it ignores the terminals and returns the result for the non-terminal.
 \begin{mathpar}
 \inferrule[last]{
   \buildoption[b](\vv) \astarrow \vsymast

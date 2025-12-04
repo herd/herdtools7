@@ -256,8 +256,8 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
   \item \OneApplies
   \begin{itemize}
     \item $\vre$ is not a call expression;
-    \item $\vle$ is not a multi-var expression (that is, not a $\LEDestructuring$);
-    \item $\vle$ is a multi-var expression, but one of its components is neither a variable
+    \item $\vle$ is not a multi-variable expression (that is, not a $\LEDestructuring$);
+    \item $\vle$ is a multi-variable expression, but one of its components is neither a variable
           nor a discarded variable.
   \end{itemize}
   \item evaluating the expression $\vre$ in $\env$ yields
@@ -429,7 +429,6 @@ The function
 \]
 builds a sequence of statements to read from the getter invocation $\vcall.\callname$, modify the resulting value using $\vmodify$, and write it to a setter invocation $\vcall.\callname$.
 } % END_OF_IGNORED_RELATION
-
 
 \ExampleDef{A Setter Call as a Read-Modify-Write}
 \listingref{ReadModifyWriteSlice} shows how a setter call followed by a slice is
@@ -676,6 +675,7 @@ See \ExampleRef{Typing Declaration Statements}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
+  \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\\\\
   \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
 }{
   {
@@ -792,28 +792,30 @@ In \listingref{typing-imprecisetype}, the statement \verb|var b = a * a;|
 corresponds to the \typingerrorterm{} raised in the \CaseName{Well-Constrained}
 below.
 The type of the right-hand-side (\texttt{a * a}) is imprecise because the multiplication of two
-constant types would result in more than $2^17$ elements, see
+constant types would result in more than $\maxconstraintsize$ elements, see
 \TypingRuleRef{ApplyBinopTypes}.
 \ASLListing{Type-checking a declaration with an imprecise type}{typing-imprecisetype}{\typingtests/TypingRule.CheckNoPrecisionLoss.asl}
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{Well-Constrained}
-    \begin{itemize}
-      \item $\vt$ is a \wellconstrainedintegertypeterm{} with a precision $\PrecisionFull$ or $\vt$ is a \wellconstrainedintegertypeterm{} with a precision $\PrecisionLost$
-      \item a \typingerrorterm{} is raised;
-    \end{itemize}
-  \item \AllApplyCase{Integer}
-    \begin{itemize}
-      \item $\vt$ is not a \wellconstrainedintegertypeterm{};
-      \item no \typingerrorterm{} is raised.
-    \end{itemize}
-  \item \AllApplyCase{Other}
-    \begin{itemize}
-      \item $\vt$ is not an \integertypeterm{};
-      \item no \typingerrorterm{} is raised.
-    \end{itemize}
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{Well-Constrained}
+      \begin{itemize}
+        \item $\vt$ is a \wellconstrainedintegertypeterm{} with \precisionlossindicatorterm{} $\vp$;
+        \item checking that $\vp = \PrecisionFull$ yields $\True$\ProseOrTypeError;
+      \end{itemize}
+    \item \AllApplyCase{Integer}
+      \begin{itemize}
+        \item $\vt$ is not a \wellconstrainedintegertypeterm{};
+      \end{itemize}
+    \item \AllApplyCase{Other}
+      \begin{itemize}
+        \item $\vt$ is not an \integertypeterm{};
+      \end{itemize}
+  \end{itemize}
+  \item the result is $\True$. That is, no \typingerrorterm{} is raised.
 \end{itemize}
 
 \FormallyParagraph
@@ -1234,7 +1236,6 @@ Call statements are used to invoke procedures and setters.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_call}
 
-
 \ASTRuleDef{SCall}
 \begin{mathpar}
 \inferrule{
@@ -1248,10 +1249,32 @@ Call statements are used to invoke procedures and setters.
 }
 \end{mathpar}
 
+\ASTRuleDef{SetCallType}
+\hypertarget{def-setcalltype}{}
+In \ASTRuleRef{Call}, $\STFunction$ is inserted as a default call type for any parsed $\call$.
+The function
+\[
+  \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\calltype}) \aslto \overname{\call}{\vcallp}
+\]
+changes the call type of $\vcall$ to $\calltype$.
+
+\begin{mathpar}
+\inferrule{}{
+  \setcalltype(\vcall, \calltype) \aslto
+  \overname{\vcall[\callcalltype\mapsto\calltype]}{\vcallp}
+}
+\end{mathpar}
+
 \subsection{Typing}
 \TypingRuleDef{SCall}
-The call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
-in \listingref{scall} is\\ well-typed.
+In \listingref{scall}, the call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
+is\\ well-typed.
+
+\ExampleDef{Ill-defined Call to a Function}
+In \listingref{scall-bad}, the call statement \verb|zero();| is ill-typed,
+since call statements are only allowed for procedures, not functions.
+
+\ASLListing{An ill-defined call statement}{scall-bad}{\typingtests/TypingRule.SCall.bad.asl}
 
 \ProseParagraph
 \AllApply
@@ -1289,11 +1312,8 @@ in \listingref{scall} is\\ well-typed.
 \subsection{Semantics}
 \SemanticsRuleDef{SCall}
 \ExampleDef{Evaluation of Call Statements}
-The call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
-assigns the global variable \verb|g| to \verb|'1101 111'|.
-
-A call statement \verb|zero();| is ill-typed, since call statements
-can only be used for procedures, not functions.
+In \listingref{scall}, the call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
+assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 \ProseParagraph
 \AllApply
@@ -1453,7 +1473,7 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
 \item evaluating $\ve$ in $\env$ yields $\ResultExpr((\vv, \vgone), \envone)$\ProseOrAbnormal;
 \item $\vv$ is a native Boolean for $\vb$;
-\item the statement $\vsp$ is $\vsone$ is $\vb$ is $\True$ and $\vstwo$ otherwise
+\item the statement $\vsp$ is $\vsone$ if $\vb$ is $\True$ and $\vstwo$ otherwise
       (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
       $\vstwo$ will be evaluated);
 \item evaluating $\vsp$ in $\envone$ as per \chapref{BlockStatements} is a non-abnormal configuration
@@ -1492,11 +1512,14 @@ and the output to a console when it is evaluated.
 % CONSOLE_BEGIN aslref \definitiontests/CaseStatement.discriminant.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 num_tests: 0
-selected case 2
+selected case x=51
 \end{Verbatim}
 % CONSOLE_END
 \listingref{case-discriminant} shows an example of a \casestatementterm{}
 and the output to a console when it is evaluated.
+%
+\listingref{CaseStatement.where} shows an example of a \casestatementterm{}
+with a \texttt{where} guard expression.
 
 \hypertarget{def-casediscriminantterm}{}
 \hypertarget{def-casealternativeterm}{}
@@ -1670,7 +1693,6 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
 
-
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildcasealt](\vcases) \typearrow \vastnode
@@ -1688,7 +1710,6 @@ The function
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
-
 
 \begin{mathpar}
 \inferrule{
@@ -1723,7 +1744,6 @@ The relation
 transforms a \casediscriminantterm\ $\vezero$, a list of \casealternativesterm\ $\vcases$,
 and a statement $\votherwise$ into a statement $\news$.
 } % END_OF_IGNORED_RELATION
-
 
 \begin{mathpar}
 \inferrule[var]{
@@ -1765,7 +1785,6 @@ and a statement $\votherwise$
 into a statement $\news$.
 } % END_OF_IGNORED_RELATION
 
-
 \begin{mathpar}
 \inferrule[last]{
   \casetocond(\ve, \vcase, \votherwise) \astarrow \news
@@ -1797,7 +1816,6 @@ transforms an expression $\vezero$ (the condition used for a \texttt{case} state
 a single \texttt{case} alternative $\vcase$, and a statement $\vtail$, which represents
 a list of \texttt{case} alternatives already converted to conditionals, into a condition statement $\news$.
 } % END_OF_IGNORED_RELATION
-
 
 \begin{mathpar}
 \inferrule{
@@ -2027,8 +2045,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \TypingRuleDef{SWhile}
 \ExampleDef{Typing While Loops}
 The specification in \listingref{typing-swhile} is well-typed
-and shows two \whilestatementterm{} --- the first one without a loop limit
-and the second one with a loop limit.
+and shows two \whilestatementterm{} --- the one in \verb|scan| contains a loop limit
+and the one in \verb|main| does not contain a loop limit.
 \ASLListing{Typing while statements}{typing-swhile}{\typingtests/TypingRule.SWhile.asl}
 
 The specification in \listingref{typing-swhile-bad-limit}
@@ -2200,10 +2218,10 @@ and the specification terminates with exit code $0$.
     \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
     \item $\vb$ is equal to $\iswhile$;
     \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
-    \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} is either \\
-          $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \TDiverging};
-    \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop is \\
-          $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \TDiverging};
+    \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} yields \\
+          $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig};
+    \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop yields \\
+          $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig};
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
           and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
     \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
@@ -2296,7 +2314,7 @@ of the \whilestatementterm.
 
 \ExampleDef{Decrementing a Loop Limit Value}
 In \listingref{semantics-swhile}, the loop limit value
-starts at $\nvint(20)$ and decrements towards $\nvint(0)$,
+starts at $\nvint(4)$ and decrements towards $\nvint(0)$,
 stopping at $\nvint(1)$ on the last iteration of the loop.
 
 \ProseParagraph
@@ -2354,7 +2372,6 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_repeat}
-
 
 \ASTRuleDef{SRepeat}
 \begin{mathpar}
@@ -2741,6 +2758,7 @@ environment. The type system ensures, via \TypingRuleRef{SFor}, that the index v
 is not already declared in the scope of the subprogram containing the \texttt{for}
 statement.
 
+\pagebreak % To avoid cutting the example output.
 \ExampleDef{Evaluation of For Statements}
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
 % CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
@@ -2890,7 +2908,9 @@ or an abnormal configuration.
     \item \AllApplyCase{return}
     \begin{itemize}
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
-            Boolean for $\True$;
+            Boolean for $\True$
+            (\ProseNote{notice that this tests whether $\vend < \vstart$
+            for $\dir = \UP$, which is the same as $\neg(\vstart \leq \vend)$});
       \item $\newg$ is $\vgone$;
       \item $\newenv$ is $\env$;
       \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
@@ -3718,7 +3738,7 @@ and how it is modelled when the runtime does not support a console
 To support a console, the definition of environments needs
 to include an extra component to capture the string of characters sent to the console:
 \[
-\envs \triangleq \staticenvs \times \dynamicenvs \times \Strings \enspace.
+\envs \triangleq \staticenvs \cartimes \dynamicenvs \cartimes \Strings \enspace.
 \]
 We omit this component in the rest of this document to avoid clutter, and include it
 only here to explain the modeling of a console.

@@ -16,7 +16,7 @@ definition of LR(1) grammars and parser construction.
 
 The expanded context-free grammar is an LR(1) grammar, modulo shift-reduce
 conflicts that are resolved via appropriate precedence definitions.
-That is, given a list of token, returned from $\aslscan$, it is possible to apply
+That is, given a list of tokens, returned from $\aslscan$, it is possible to apply
 an LR(1) parser to obtain a parse tree if the list of tokens is in the formal language
 of the grammar and return a parse error otherwise.
 
@@ -172,7 +172,7 @@ We define the following parametric productions for various types of lists and op
 \paragraph{Parenthesized Comma-separated List With At Least Two Elements}
 \hypertarget{def-plisttwo}{}
 \begin{flalign*}
-\Plisttwo{x}   \derivesinline \ & \Tlpar \parsesep x \parsesep \Tcomma \parsesep \ClistOne{x} \parsesep \Trpar &\\
+\Plisttwo{x}   \derivesinline \ & \Tlpar \parsesep \Clisttwo{x} \parsesep \Trpar &\\
 \end{flalign*}
 
 \paragraph{Non-empty Comma-separated Trailing List}
@@ -182,7 +182,7 @@ We define the following parametric productions for various types of lists and op
                           |\  & x \parsesep \Tcomma \parsesep \TClistOne{x}
 \end{flalign*}
 
-\paragraph{Comma-separated Trailing List}
+\paragraph{Possibly-empty Comma-separated Trailing List}
 \hypertarget{def-tclistzero}{}
 \begin{flalign*}
 \TClistZero{x}   \derives \ & \option{\TClistOne{x}} &\\
@@ -520,7 +520,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
                     |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
                     |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
                     |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
+                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace & \mathhypertarget{any-pattern}\\
                     |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
                     |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
 \end{flalign*}
@@ -658,13 +658,13 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \end{flalign*}
 
 \section{Parse Trees\label{sec:ParseTrees}}
-We now define \emph{parse trees} for the ASL expanded grammar. Those are later used for build Abstract Syntax Trees.
+We now define \emph{parse trees} for the ASL expanded grammar. Those are later used to build Abstract Syntax Trees.
 
 \begin{definition}[Parse Trees]
 A \emph{parse tree} has one of the following forms:
 \begin{itemize}
   \item A \emph{token node}, given by the token itself, for example, $\Tlexeme(\Tarrow)$ and $\Tidentifier(\id)$;
-  \item \hypertarget{def-epsilonnode}{} $\epsilonnode$, which represents the empty sentence --- $\emptysentence$.
+  \item \hypertarget{def-epsilonnode}{} $\epsilonnode$, which represents the empty sentence --- $\emptysentence$; or
   \item A \emph{non-terminal node} of the form $N(n_{1..k})$ where $N$ is a non-terminal symbol,
         which is said to label the node,
         and $n_{1..k}$ are its children parse nodes,
@@ -741,7 +741,7 @@ the conflict is resolved based on the associativity associated with the token be
 reduce for $\leftassoc$, shift for $\rightassoc$, and a parsing error for $\nonassoc$.
 
 The two rules involving a unary minus operation are not assigned the priority level of $\Tminus$,
-but rather then the priority level $\Tunops$, as denoted by the notation \\
+but rather the priority level $\Tunops$, as denoted by the notation \\
 $\precedence{\Tunops}$
 appearing to their right. This is a standard way of dealing with a unary minus operation
 in many programming languages, which involves defining an artificial token $\Tunops$,

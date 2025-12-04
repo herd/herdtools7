@@ -5,6 +5,6 @@ end;
 
 func illegal_fun_parameterized_actual{N: integer}() => bits(N)
 begin
-    // Illegal since integer{N} does not type-satisfy integer{1,2,3}.
+    // illegal: integer{N} does not type-satisfy integer{1,2,3}.
     return constrained_func{N}(); // requires an asserting type conversion
 end;

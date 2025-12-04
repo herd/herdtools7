@@ -376,11 +376,10 @@ and the effect of operator precedence.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_binop}
 
-
 \ASTRuleDef{EBinop}
-The following rule constructs a binary expression AST
-and ensures that\\
-\RequirementRef{OperatorPrecedence} holds.
+The following rule constructs a binary expression AST from a parse tree,
+which possibly contains parentheses,
+ensuring that \RequirementRef{OperatorPrecedence} holds.
 
 The specification in \listingref{BinaryExpressions}
 shows examples where \RequirementRef{OperatorPrecedence} holds.
@@ -892,6 +891,7 @@ an example of typing a conditional expression.
 \begin{itemize}
   \item $\ve$ denotes a conditional expression with condition $\econd$ with two options $\etrue$ and $\efalse$;
   \item annotating $\econd$ in $\tenv$ results in $(\tcond, \econdp, \vsescond)$\ProseOrTypeError;
+  \item checking that $\tcond$ has the \structureterm{} of the \booleantypeterm{} in $\tenv$ yields \True\ProseOrTypeError;
   \item annotating $\etrue$ in $\tenv$ results in $(\ttrue, \etruep, \vsestrue)$\ProseOrTypeError;
   \item annotating $\efalse$ in $\tenv$ results in $(\tfalse, \efalsep, \vsesfalse)$;
   \item obtaining the lowest common ancestor of $\ttrue$ and $\tfalse$ results in $\vt$\ProseOrTypeError;
@@ -926,8 +926,7 @@ an example of typing a conditional expression.
 \ExampleDef{Evaluation of Conditional Expressions}
 In \listingref{semantics-econdfalse},
 the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \texttt{3}.
-\ASLListing{Evaluating a conditional expression yielding the result of the \texttt{else} subexpression}
-{semantics-econdfalse}{\semanticstests/SemanticsRule.ECondFalse.asl}
+\ASLListing{Evaluating a conditional expression yielding the result of the \texttt{else} subexpression}{semantics-econdfalse}{\semanticstests/SemanticsRule.ECondFalse.asl}
 
 \ExampleDef{Evaluation of a Non-deterministic Conditional Expression}
 In \listingref{semantics-econdarbitrary},
@@ -935,7 +934,7 @@ the expression \texttt{if ARBITRARY: boolean then 3 else Return42()} will
 evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 (non-deterministic) result of \\
 \texttt{ARBITRARY: boolean}.
-\ASLListing{Evaluating a conditional expression with non-determinic choice}{semantics-econdarbitrary}
+\ASLListing{Evaluating a conditional expression with non-deterministic choice}{semantics-econdarbitrary}
 {\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
 
 % Transliteration note: the code uses an optimized semantics for the case where
@@ -951,7 +950,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
   \item $\mcond$ consists of a native Boolean for $\vb$ and execution graph $\vgone$;
   \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
   \item the evaluation of $\vep$ in $\envone$ yields $\ResultExpr((\vvtwo, \vgtwo), \newenv)$\ProseOrAbnormal;
-  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
+  \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ edge.
 \end{itemize}
 
 \FormallyParagraph
@@ -999,7 +998,6 @@ conditional expression evaluates to the \texttt{else} expression.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_call}
 
-
 \ASTRuleDef{Call}
 \hypertarget{build-call}{}
 \begin{mathpar}
@@ -1044,22 +1042,6 @@ conditional expression evaluates to the \texttt{else} expression.
               \callcalltype &:& \STFunction
       \end{array}
     \right\}}{\vastnode} }
-}
-\end{mathpar}
-
-\ASTRuleDef{SetCallType}
-\hypertarget{def-setcalltype}{}
-Above, $\STFunction$ is inserted as a default call type for any parsed $\call$.
-The function
-\[
-  \setcalltype(\overname{\call}{\vcall} \aslsep \overname{\subprogramtype}{\calltype}) \aslto \overname{\call}{\vcallp}
-\]
-changes the call type of $\vcall$ to $\calltype$.
-
-\begin{mathpar}
-\inferrule{}{
-  \setcalltype(\vcall, \calltype) \aslto
-  \overname{\vcall[\callcalltype\mapsto\calltype]}{\vcallp}
 }
 \end{mathpar}
 
@@ -1110,7 +1092,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
-  \item the evaluation of that subprogram call in $\env$ is either\\
+  \item the evaluation of that subprogram call in $\env$ yields\\
   $\ResultExpr(\vms, \newenv)$\ProseOrAbnormal;
   \item \OneApplies
   \begin{itemize}
@@ -1194,7 +1176,7 @@ The well-typed specification in \listingref{Bitvector_slices2} shows examples of
 \subsection{Typing}
 \TypingRuleDef{ESlice}
 \ExampleDef{Typing of Slicing Expressions}
-\listingref{semantics-eslice} the type inferred for the
+In \listingref{semantics-eslice}, the type inferred for the
 slicing expression \verb|'1 1110 000'[6:3, 7]| is \\
 \verb|bits(5){}|.
 That is, a bitvector of width \verb|5| without any bitfields.
@@ -1204,14 +1186,11 @@ The same type is inferred for the slicing expressions
 (\verb|240| is equivalent to \verb|'1 111 0 000'|
 and \verb|496| is equivalent to \verb|'11 111 0 000'|).
 
-The specifications in \listingref{ESlice-bad1}
-and \listingref{ESlice-bad2} show examples of ill-typed bitvector slicing expressions.
-\ASLListing{Ill-typed slicing expressions}{ESlice-bad1}{\typingtests/TypingRule.ESlice.bad1.asl}
-\ASLListing{Ill-typed slicing expressions}{ESlice-bad2}{\typingtests/TypingRule.ESlice.bad2.asl}
-
 \ExampleDef{Ill-typed Slicing Expressions}
-The expression \verb|5.0[2:0]| is ill-typed, since the type of \verb|5.0|
-is neither an \integertypeterm{} nor a \bitvectortypeterm.
+The specifications in \listingref{ESlice-bad1} and \listingref{ESlice-bad2}
+show examples of ill-typed slicing expressions.
+\ASLListing{Ill-typed slicing expression due to incorrect width}{ESlice-bad1}{\typingtests/TypingRule.ESlice.bad1.asl}
+\ASLListing{Ill-typed slicing expression due to incorrect type}{ESlice-bad2}{\typingtests/TypingRule.ESlice.bad2.asl}
 
 \ProseParagraph
 \AllApply
@@ -1283,7 +1262,7 @@ initializer expression.
 \subsection{Semantics}
 \SemanticsRuleDef{ESlice}
 \ExampleDef{Evaluation of Slicing Expressions}
-\listingref{semantics-eslice} the slicing expression \verb|'1 1110 000'[6:3, 7]|
+In \listingref{semantics-eslice}, the slicing expression \verb|'1 1110 000'[6:3, 7]|
 evaluates to the bitvector value \texttt{'1110 1'},
 same as the slicing expressions
 \verb|240[6:3, 7]| and \verb|496[6:3, 7]|.
@@ -1817,7 +1796,7 @@ for its verbatim string.
   \item $\vtetwo$ is \tupletypeterm{} with list of types $\tys$, that is, $\TTuple(\tys)$;
   \item $\fieldname$ is an identifier consisting of the prefix \itemprefix{} and the suffix $\num$;
   \item $\num$ is lexically an integer numeral with the integer value $\vindex$;
-  \item determining whether $\vindex$ is between $0$ and the number of types in $\tys$, inclusive, yields $\True$\ProseOrTypeError;
+  \item determining whether $\vindex$ is between $0$, inclusive, and the number of types in $\tys$, exclusive, yields $\True$\ProseOrTypeError;
   \item $\vt$ is the type at position $\vindex$ of $\tys$;
   \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$;
   \item define $\vses$ as $\vsesone$.
@@ -1844,10 +1823,7 @@ for its verbatim string.
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadField}
-\ExampleDef{An Ill-typed Field Expression}
-\listingref{eget-bad-field} shows an example of an ill-typed field expression
-\verb|a.f|.
-\ASLListing{An ill-typed field expression}{eget-bad-field}{\typingtests/TypingRule.EGetBadBitField.asl}
+\listingref{eget-bad-bitfield} shows an example of an ill-typed bitfield expression.
 
 \ProseParagraph
 \AllApply
@@ -2402,7 +2378,7 @@ as it is applied to unrelated kinds of types.
         $\valwayssucceeds$\ProseOrTypeError\
         (if $\valwayssucceeds$ holds then the type assertion will always succeed dynamically, and therefore can be omitted);
   \item $\newe$ is $\vepp$ if $\valwayssucceeds$ is $\True$ and $\EATC(\ttyp, \vepp)$ otherwise;
-  \item $\vses$ is $\vsese$ if $\valwayssucceeds$ is $\True$ and $\vses$ otherwise;
+  \item $\vses$ is $\vsese$ if $\valwayssucceeds$ is $\True$ and $\vsesp$ otherwise;
   \item $\vt$ is $\ttyp$.
 \end{itemize}
 
@@ -2734,7 +2710,7 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 \begin{itemize}
   \item \AllApplyCase{Constraint\_Exact\_Sat}
   \begin{itemize}
-    \item $\vc$ is a constraint for the expression $\ve$;
+    \item $\vc$ is an \Proseexactconstraint{$\ve$};
     \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
           by the native integer value for $m$ and the \executiongraphterm\ $\vg$\ProseOrDynErrorDiverging.
     \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
@@ -2742,7 +2718,7 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 
   \item \AllApplyCase{Constraint\_Range\_Sat}
   \begin{itemize}
-    \item $\vc$ is a constraint for the expressions $\veone$ and $\vetwo$;
+    \item $\vc$ is a \Proserangeconstraint{$\veone$}{$\vetwo$};
     \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
           by the native integer value for $a$ and the \executiongraphterm\ $\vgone$\ProseOrDynErrorDiverging.
     \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
@@ -3048,7 +3024,7 @@ Notice that this rule introduces non-determinism.
 
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
 \hypertarget{def-recordexpressionterm}{}
-\ASLListing{Record construction expression}{semantics-erecord}{\semanticstests/SemanticsRule.ERecord.asl}
+\listingref{semantics-egetfield} shows an example of a well-typed record construction expression.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -3101,7 +3077,7 @@ Notice that this rule introduces non-determinism.
 \hypertarget{build-fieldassign}{}
 The function
 \[
-  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\Identifier\times\expr)}{\vastnode}
+  \buildfieldassign(\overname{\parsenode{\Nfieldassign}}{\vparsednode}) \;\aslto\; \overname{(\Identifier\cartimes\expr)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_IGNORED_RELATION
@@ -3116,7 +3092,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \subsection{Typing}
 \TypingRuleDef{ERecord}
-\listingref{semantics-erecord} shows an example of a well-typed record construction expression
+\listingref{semantics-egetfield} shows an example of a well-typed record construction expression
 and an example (in comment) where the same field is initialized twice, which is invalid.
 
 \ProseParagraph
@@ -3124,9 +3100,10 @@ and an example (in comment) where the same field is initialized twice, which is 
 \begin{itemize}
   \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
         that is, $\ERecord(\tty, \vfields)$;
-  \item obtaining the \underlyingtypeterm\ of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
-  \item checking that $\ttyanon$ is a \structuredtypeterm\ yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\ttyanon$ is a \structuredtypeterm\ with a list of $\vfield$ elements (consisting of a field name and a field type);
+  \item checking that $\tty$ is a \namedtypeterm{} yields $\True$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm{} of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
+  \item checking that $\ttyanon$ is a \structuredtypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
+  \item $\ttyanon$ is a \structuredtypeterm{} with a list of $\vfield$ elements (each consisting of a field name and a field type);
   \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
         $\initializedfields$;
   \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
@@ -3134,12 +3111,13 @@ and an example (in comment) where the same field is initialized twice, which is 
         yields $\True$\ProseOrTypeError;
   \item checking that the list $\initializedfields$ does not contain duplicates yields \\
         $\True$\ProseOrTypeError;
-  \item applying $\annotatefieldinit$ to annotate each $\vfield$ element $(\name,\vep)$ of \\
-        $\vfields$ in $\tenv$ yields $(\name,\ve_\name,\vxs_\name)$\ProseOrTypeError;
-  \item define $\fieldsp$ as the list containing $(\name,\ve_\name)$ for each $\vfield$ element $(\name,\vep)$ of $\vfields$;
+  \item applying $\annotatefieldinit$ to annotate each $\vfield[\vi]$ of $\vfields$ with\\ $\fieldtypes$
+         in $\tenv$ yields the list of triples comprised of the respective lists
+         $\fieldnames$, $\fieldinits$, and $\fieldeffects$\ProseOrTypeError;
+  \item define $\fieldsp$ as the list of pairs obtained by combining the lists $\fieldnames$ and $\fieldinits$;
   \item $\vt$ is $\tty$;
   \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
-  \item define $\vsess$ as the union of the \sideeffectdescriptorsetsterm\ given by $\vxs_\name$ for each $\vfield$ element $(\name,\Ignore)$ of $\vfields$.
+  \item define $\vses$ as the union of the lists in $\fieldeffects$.
 \end{itemize}
 
 \FormallyParagraph
@@ -3176,7 +3154,7 @@ and an example (in comment) where the same field is initialized twice, which is 
 \TypingRuleDef{AnnotateFieldInit}
 \RenderRelation{annotate_field_init}
 
-See \listingref{semantics-erecord} for an example.
+See \listingref{semantics-egetfield} for an example.
 
 \ProseParagraph
 \AllApply
@@ -3205,7 +3183,7 @@ See \listingref{semantics-erecord} for an example.
 \subsection{Semantics}
 \SemanticsRuleDef{ERecord}
 \ExampleDef{Evaluation of Record Construction Expressions}
-In \listingref{semantics-erecord},
+In \listingref{semantics-egetfield},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 
@@ -3493,7 +3471,7 @@ since side-effect-free expressions do not modify the environment.
 \RenderRelation{eval_expr_list}
 
 \ExampleDef{Evaluating a List of Expressions}
-In \listingref{semantics-erecord},
+In \listingref{semantics-egetfield},
 evaluating the expression \verb|MyRecordType{a=3, b=42}| entails evaluating
 the expression list \verb|3, 42|, which yields
 the list of values $[\nvint(3), \nvint(42)]$.

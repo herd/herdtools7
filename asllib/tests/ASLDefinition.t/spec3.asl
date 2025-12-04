@@ -4,7 +4,7 @@ begin
     for i = 0 to (N DIV 8) - 1 do
         n = n + UInt(a[i*:8]) * UInt(b[i*:8]);
     end;
-    return n[0 +: N];
+    return n[:N];
 end;
 
 var X: bits(16) = '1010 1111 0101 0000';

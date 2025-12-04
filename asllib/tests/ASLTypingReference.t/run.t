@@ -161,7 +161,7 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TBits.bad.asl
   File TypingRule.TBits.bad.asl, line 3, characters 16 to 17:
-      var R: bits(I); // Illegal since I is unconstrained.
+      var R: bits(I); // illegal: I is unconstrained.
                   ^
   ASL Type error: constrained integer expected, provided integer.
   [1]
@@ -331,7 +331,7 @@ ASL Typing Tests / annotating types:
   eq_int: 5 == 10 = FALSE
   ne_int: 5 != 10 = TRUE
   le_int: 10 <= 10 = TRUE
-  lt_int: 10 < 10 = TRUE
+  lt_int: 10 < 10 = FALSE
   lt_int: 5 < 10 = TRUE
   gt_int: 10 > 10 = FALSE
   gt_int: 11 > 10 = TRUE
@@ -421,7 +421,7 @@ ASL Typing Tests / annotating types:
     integer.
   [1]
   $ aslref --no-exec TypingRule.CheckATC.asl
-  File TypingRule.CheckATC.asl, line 8, characters 12 to 32:
+  File TypingRule.CheckATC.asl, line 7, characters 12 to 32:
       var a = 3.0 as integer{1, 2};
               ^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot perform Asserted Type Conversion on real by
@@ -475,6 +475,12 @@ ASL Typing Tests / annotating types:
   ASL Static error: overlapping slices 0+:4, 3+:1.
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.asl
+  $ aslref --no-exec TypingRule.SCall.bad.asl
+  File TypingRule.SCall.bad.asl, line 11, characters 4 to 11:
+      zero();
+      ^^^^^^^
+  ASL Type error: No subprogram declaration matches the invocation: zero().
+  [1]
   $ aslref --no-exec TypingRule.SCond.asl
   $ aslref TypingRule.SDecl.asl
   $ aslref TypingRule.SDecl.bad1.asl
@@ -494,7 +500,7 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
-      assert(increment()); // Illegal, since increment is not readonly.
+      assert(increment()); // illegal: increment is not readonly.
             ^^^^^^^^^^^^^
   ASL Type error: expected a readonly expression/subprogram.
   [1]
@@ -636,10 +642,16 @@ ASL Typing Tests / annotating types:
     integer {42}.
   [1]
   $ aslref TypingRule.PTuple.bad.asl
-  File TypingRule.PTuple.bad.asl, line 8, characters 11 to 45:
+  File TypingRule.PTuple.bad.asl, line 4, characters 11 to 45:
       assert (3, '101010') IN { ('xx1010', 5) };
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of bits(-) was expected, provided integer {3}.
+  [1]
+  $ aslref TypingRule.PTuple.bad2.asl
+  File TypingRule.PTuple.bad2.asl, line 5, characters 11 to 26:
+      assert 3 IN { (3, 4) };
+             ^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of () was expected, provided integer {3}.
   [1]
   $ aslref TypingRule.PMask.asl
   $ aslref TypingRule.PMask.bad.asl
@@ -730,6 +742,13 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.DeclareConst.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.asl
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.bad.asl
+  File TypingRule.DeclareGlobalStorage.config.bad.asl, line 2,
+    characters 0 to 47:
+  config c_inherited_constrained : integer{} = 5;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a pending constrained integer is illegal here.
+  [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.bad1.asl
   File TypingRule.DeclareGlobalStorage.bad1.asl, line 3, characters 0 to 29:
   config c : integer{1..5} = x;
@@ -752,6 +771,13 @@ ASL Typing Tests / annotating types:
     
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
+  $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.bad.asl
+  File TypingRule.DeclareGlobalStorage.non_config.bad.asl, line 2,
+    characters 0 to 36:
+  var c_inherited_illegal : integer{};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a pending constrained integer is illegal here.
+  [1]
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.constant.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.asl
   $ aslref --no-exec TypingRule.UpdateGlobalStorage.config.bad.asl
@@ -1186,18 +1212,16 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.ECond.asl
   $ aslref TypingRule.ESlice.bad1.asl
-  File TypingRule.ESlice.bad1.asl, line 16, characters 4 to 7:
+  File TypingRule.ESlice.bad1.asl, line 10, characters 4 to 7:
       dst = src[w:1];
       ^^^
-  ASL Type error: a subtype of bits((k - 1)) was expected,
-    provided bits(offset).
+  ASL Type error: a subtype of bits((k - 1)) was expected, provided bits(w).
   [1]
   $ aslref TypingRule.ESlice.bad2.asl
-  File TypingRule.ESlice.bad2.asl, line 9, characters 4 to 7:
-      dst = src[w:1];
-      ^^^
-  ASL Type error: a subtype of bits((k - 1)) was expected,
-    provided bits(offset).
+  File TypingRule.ESlice.bad2.asl, line 4, characters 12 to 20:
+      let x = 5.0[2:0];
+              ^^^^^^^^
+  ASL Type error: real does not subtype any of: integer, bits(-).
   [1]
   $ aslref --no-exec TypingRule.Structure.asl
   $ aslref --no-exec TypingRule.AnonymousType.asl

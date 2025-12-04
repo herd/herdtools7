@@ -120,15 +120,15 @@ as exemplified in \listingref{LexicalComments}.
 
 \ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
-Line comments are formally defined via the following regular expressions:
+Line comments are formally defined via the following regular expression:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})* \texttt{|} \texttt{"/*"} \REchar* \texttt{"*/"}\\
+$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})*\\
 \end{tabular}
 \end{center}
 
-Multi-line comments are defined via $\actionstartcomment$ and in \secref{scanningmultilinecomments}.
+Multi-line comments are defined by \hyperlink{start-multiline-comment}{intercepting \texttt{"/*"}} (see \secref{scanningmultilinecomments}).
 
 \section{Integer Literals\label{sec:Integer Literals}}
 Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
@@ -155,11 +155,11 @@ $\REforbiddenhexremaining$ &$\triangleq$& $\REhexlit$ (\REletter{} \regexminus{}
 \end{center}
 
 \section{Rational Number Literals\label{sec:Rational Number Literals}}
-Rational numbers are written in decimal and consist of one or more decimal digits, a decimal point and one
-or more decimal digits. Underscores can be added between digits to aid readability
+Rational numbers are written in decimal form and consist of one or more decimal digits, a decimal point, and one
+or more decimal digits. Underscores can be added between digits to aid readability.
 
 Underscores in numbers are not significant, and their only purpose is to separate groups of digits to make constants
-such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read,
+such as \texttt{0xefff\_fffe}, \texttt{1\_000\_000} or \texttt{3.141\_592\_654} easier to read.
 
 The patterns $\REforbiddenrealfirst$ and $\REforbiddenrealremaining$ are
 forbidden and trigger a lexical error.
@@ -327,7 +327,7 @@ can be useful for declaring a constant specific to the platform \verb|my_platfor
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[
-\aslscan : \LexSpec \times \KleeneStar{\REasciichar} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
+\aslscan : \LexSpec \cartimes \KleeneStar{\REasciichar} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
 \]
 \hypertarget{def-lexicalerrorresult}{}
 which takes a \emph{lexical specification} (explained soon), an ASL specification string
@@ -388,13 +388,13 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{definition}[Lexical Specification]
 A \emph{lexical specification} consists of a list of pairs $[(r_1,a_1),\ldots,(r_k,a_k)] \in \LexSpec$
 where each pair $(r_i,a_i)$ consists of a lexical regular expression $r_i$
-and a \emph{lexeme action} $a_i : \Strings\times\Strings \aslto \KleeneStar{\Token}$.
+and a \emph{lexeme action} $a_i : \Strings\cartimes\Strings \aslto \KleeneStar{\Token}$.
 \end{definition}
 
 \hypertarget{def-rematch}{}
 The function
 \[
-\remaxmatch : \overname{\RegExp}{e} \times \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \times \overname{\Strings}{s_2}) \cup \{\bot\}
+\remaxmatch : \overname{\RegExp}{e} \cartimes \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \cartimes \overname{\Strings}{s_2}) \cup \{\bot\}
 \]
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
 More precisely:
@@ -402,7 +402,7 @@ $\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang{e}$ and $s = s_1 \concat
 If no match exists, it is indicated by returning $\bot$.
 
 \hypertarget{def-maxmatch}{}
-The function $\maxmatches : \overname{\LexSpec}{R} \times \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
+The function $\maxmatches : \overname{\LexSpec}{R} \cartimes \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
 returns the sublist of $R$ consisting of pairs whose maximal matches for $s$ are equal. Importantly, the result sublist $R'$ maintains
 the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\bot$ for all pairs in $R$), then $R'$ is the empty list.
 
@@ -436,7 +436,7 @@ identifying the respective tokens via shortest match.
 %
 For this purpose, most lexical analyzers split the analysis into separate ``states'' ---
 one for keywords, symbols, single-line comments, and identifiers, one for string literals,
-and one for multi-line comments. The lexical analyzers switches between the states as
+and one for multi-line comments. The lexical analyzers switch between the states as
 needed, and analyzing string literals involves concatenating the individual characters
 of the string literal into a single token.
 
@@ -480,7 +480,7 @@ The lexeme action
 \begin{cases}
   \LexicalErrorConfig & \text{if }f(s_1) = \Terror \text{ or}\\
    & \aslscan(\spectoken, s_2) = \Terror\\
-  [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{else}
+  [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{otherwise}
 \end{cases}
 \end{array}
 \]
@@ -537,7 +537,7 @@ $s$, which is given via a floating point representation.
 \[
 \eoftoken(s_1, s_2) \triangleq \begin{cases}
   \emptylist & s_2 = \emptylist\\
-  \LexicalErrorConfig & \text{else}
+  \LexicalErrorConfig & \text{otherwise}
 \end{cases}
 \]
 checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
@@ -557,7 +557,7 @@ $\Tidentifier(s)$.
 \[
   \toidentifier(s) = \begin{cases}
     \LexicalError & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
-    \Tidentifier(s) & \text{else}
+    \Tidentifier(s) & \text{otherwise}
   \end{cases}
 \]
 
@@ -577,8 +577,8 @@ token function.
 \textbf{Lexical Regular Expressions} & \textbf{Lexeme Action}\\
 \hline
 $\REwhitespace$                       & $\discard$ \\
-$\RElinecomment$                      & $\discard$ \\
-$\texttt{"/*"}$                       & $\actionstartcomment$ \\
+$\RElinecomment$                      & $\discard$ \texthypertarget{start-multiline-comment}\\
+$\texttt{"/*"}$                       & $\actionstartcomment$\\
 \anycharacter{\texttt{"}}             & $\actionstartstring$ \\
 $\REintlit$                           & $\actiontoken(\decimaltolitname)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
@@ -668,7 +668,7 @@ $\eof$            & $\eoftoken$ \\
 To scan string literals, we define the following specialized scanning function.
 The function
 \[
-\scanstring : \overname{\KleeneStar{\REasciichar}}{\buff} \times \overname{\KleeneStar{\REasciichar}}{s} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
+\scanstring : \overname{\KleeneStar{\REasciichar}}{\buff} \cartimes \overname{\KleeneStar{\REasciichar}}{s} \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
 \]
 scans string with the $\specstring$ specification while building the final string literal in $\buff$.
 It is defined via the following rules:
@@ -760,7 +760,7 @@ $\REchar$                                             &  $\stringchar$\\
 The lexeme action
 \hypertarget{def-discardcommentchar}{}
 \[
-\discardcommentchar(s_1, s_2) \triangleq \aslscan(\spectoken, s_2)
+\discardcommentchar(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
 \]
 discards the string $s_1$ (which is always a single character) and continues scanning $s_2$ with $\speccomment$.
 This is the same as $\discard$, except that $s_2$ is scanned with $\speccomment$ instead of $\spectoken$.

@@ -6,7 +6,7 @@ Subprogram calls include invocations of getters and setters.
 \ExampleDef{Recursive Subprogram Calls}
 Subprograms can call each other recursively.
 For example, in \listingref{MutualRecursion},
-the longest possible call path is \verb|foo->bar->foo->bar->foo->bar-foo->bar|.
+the longest possible call path is \verb|foo->bar->foo->bar->foo->bar->foo->bar|.
 The final call to \verb|bar| is a \dynamicerrorterm.
 \ASLListing{Mutual recursion}{MutualRecursion}{\definitiontests/MutualRecursion.bad.asl}
 
@@ -345,7 +345,7 @@ func Ones{N}() => bits(N)
     \declaredparam \eqdef \begin{cases}
       \some{\vn} & \text{if }\funcsig.\FIELDparameters = [(\vn, \Ignore)]\\
       \some{\vn} & \text{if }\funcsig.\FIELDparameters = [\Ignore, (\vn, \Ignore)]\\
-      \None      & \text{else}
+      \None      & \text{otherwise}
     \end{cases}
   }\\
   \vb \eqdef \declaredparam = \some{\vn} \land
@@ -395,7 +395,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
     \begin{itemize}
       \item \AllApplyCase{parameterized}
       \begin{itemize}
-        \item $\tyactual$ is a \parameterizedintegertypeterm{} for the parameter $\vx$, that is, \\
+        \item $\tyactual$ is a \parameterizedintegertypeterm{} for the parameter $\vx$, that is,
               $\some{\TInt(\Parameterized(\vx))}$.
       \end{itemize}
 
@@ -408,7 +408,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
       \end{itemize}
     \end{itemize}
     \item applying $\checkparamstypesat$ to $\funcsigparamsone$ and $\paramsone$ in $\tenv$
-          yields \\ $\True$\ProseOrTypeError.
+          yields $\True$\ProseOrTypeError.
   \end{itemize}
 \end{itemize}
 

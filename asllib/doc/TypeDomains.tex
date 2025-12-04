@@ -17,7 +17,7 @@ via a conservative subsumption test as defined in \chapref{SymbolicDomainSubsetT
 \hypertarget{def-dyndomain}{}
 The dynamic domain is defined via the partial function
 \[
-  \dynamicdomain : \overname{\envs}{\env} \times \overname{\ty}{\vt}
+  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\ty}{\vt}
   \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 which assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
@@ -41,7 +41,7 @@ in the type definitions.
 Expressions appearing in types are guaranteed to be side-effect-free by the
 function $\annotatetype$.
 %
-Evaluation is defined by the relation $\evalexprsef\empty$.
+Evaluation is defined by the relation $\evalexprsef\empty$,
 which evaluates side-effect-free expressions and either returns
 a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
@@ -60,7 +60,7 @@ That is, if $\annotatetype(\tenv, \vt) \typearrow \TypeErrorConfig$.
 As part of the definition, we also associate dynamic domains to integer constraints
 by overloading $\dynamicdomain$:
 \[
-  \dynamicdomain : \overname{\envs}{\env} \times \overname{\intconstraint}{\vc}
+  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\intconstraint}{\vc}
   \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 

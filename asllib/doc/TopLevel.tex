@@ -34,7 +34,7 @@ The relation
 \checkandinterpret(\overname{\Strings}{\vspectext}, \overname{\Strings}{\vstdtext}) \;\aslrel\;
 \left(
     \begin{array}{cc}
-        (\overname{\tint}{\vret} \times \overname{\XGraphs}{\vg})   & \cup\\
+        (\overname{\tint}{\vret} \cartimes \overname{\XGraphs}{\vg})   & \cup\\
         \{\ \LexicalErrorConfig, \ParseErrorConfig, \BuildErrorConfig\ \}    & \cup\\
         \overname{\typeerror}{\TypeErrorConfig}    & \cup\\
         \overname{\TDynError}{\DynErrorConfig}      & \cup\\
@@ -278,8 +278,8 @@ yielding the subprogram description $\vnewf$.
 \hypertarget{def-renamelocalsargs}{}
 The function
 \[
-\renamelocalsargs(\overname{\KleeneStar{(\Identifier\times\ty)}}{\args}) \aslto
-\overname{\KleeneStar{(\Identifier\times\ty)}}{\newargs}
+\renamelocalsargs(\overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\args}) \aslto
+\overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\newargs}
 \]
 renames the local storage elements appearing in the list of arguments
 $\args$, yielding the list of arguments $\newargs$.
@@ -327,8 +327,8 @@ $\args$, yielding the list of arguments $\newargs$.
 \hypertarget{def-renamelocalsnamedargs}{}
 The function
 \[
-\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\params}) \aslto
-\overname{\KleeneStar{(\Identifier\times\Option{\ty})}}{\newparams}
+\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier\cartimes\Option{\ty})}}{\params}) \aslto
+\overname{\KleeneStar{(\Identifier\cartimes\Option{\ty})}}{\newparams}
 \]
 renames the local storage elements appearing in the list of parameters $\params$,
 yielding the list of parameters $\newparams$.
