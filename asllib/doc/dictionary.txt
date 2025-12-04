@@ -2365,6 +2365,7 @@ why
 width
 widths
 will
+wise
 wish
 with
 within

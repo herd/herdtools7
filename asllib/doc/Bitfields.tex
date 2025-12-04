@@ -49,7 +49,7 @@ These are used to define \RequirementRef{BitfieldAlignment}:
 name of the top-level bitfield containing it and following with the names of the nested bitfields,
 until the name of the bitfield at hand. We denote an absolute name by a period-separated list of names,
 similar to the expression referring to it;
-\item The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield comprises of the slices it defines with respected to its containing
+\item The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield comprises of the slices it defines with respect to its containing
 bitvector type;
 \item The \hypertarget{def-absolutebitfield}{\absolutebitfield} of a given bitfield consists of absolute name and its
 \absoluteslices; and
@@ -67,7 +67,7 @@ of the \bitfieldscope\ of the other. For example, consider two bitfields whose c
 They exist in the same scope, since \texttt{fmt0.later1} is a prefix of
 \texttt{fmt0.later1.remainder}.
 In contrast, the pair of bitfields with \absolutenames{} \texttt{fmt0.common}
-and \texttt{fmt1.common} are not in the same scope, since neither \texttt{fmt0} nor \texttt{fmt1} are a prefix of the other.
+and \texttt{fmt1.common} are not in the same scope, since neither \texttt{fmt0} nor \texttt{fmt1} is a prefix of the other.
 
 \RequirementDef{BitfieldAlignment}
 For every two bitfields of a given bitvector type,

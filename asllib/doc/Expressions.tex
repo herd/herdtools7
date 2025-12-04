@@ -378,7 +378,7 @@ and the effect of operator precedence.
 
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST from a parse tree,
-which possibly containing parentheses,
+which possibly contains parentheses,
 ensuring that \RequirementRef{OperatorPrecedence} holds.
 
 The specification in \listingref{BinaryExpressions}
@@ -3103,7 +3103,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   \item checking that $\tty$ is a \namedtypeterm{} yields $\True$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm{} of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
   \item checking that $\ttyanon$ is a \structuredtypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\ttyanon$ is a \structuredtypeterm{} with a list of $\vfield$ elements (consisting of a field name and a field type);
+  \item $\ttyanon$ is a \structuredtypeterm{} with a list of $\vfield$ elements (each consisting of a field name and a field type);
   \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
         $\initializedfields$;
   \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
