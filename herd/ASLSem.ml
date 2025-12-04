@@ -141,6 +141,12 @@ module Make (Conf : Config) = struct
 
   let is_vmsa = variant Variant.VMSA
 
+  let build ?ast_type fname =
+    Filename.concat "asl-pseudocode" fname
+    |> Conf.libfind
+    |> ASLBase.build_ast_from_file ?ast_type `ASLv1
+
+  let built_shared_pseudocode = lazy (build "shared_pseudocode.asl")
   let barriers = []
   let isync = None
   let atomic_pair_allowed _ _ = true
@@ -846,11 +852,6 @@ module Make (Conf : Config) = struct
         in
         fun name -> ISet.mem name set
       in
-      let build ?ast_type fname =
-        Filename.concat "asl-pseudocode" fname
-        |> Conf.libfind
-        |> ASLBase.build_ast_from_file ?ast_type `ASLv1
-      in
       let patches =
         let patches = build "patches.asl" in
         if is_vmsa then
@@ -880,7 +881,7 @@ module Make (Conf : Config) = struct
       and shared =
         build "system_registers.asl"
         @ build "features.asl"
-        @ build "shared_pseudocode.asl"
+        @ Lazy.force built_shared_pseudocode
       in
       let shared =
         (*
