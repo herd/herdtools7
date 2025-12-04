@@ -354,30 +354,6 @@ begin
     return NoFault(accdesc, vaddress);
 end;
 
-// AArch64.BlocknTFaults()
-// =======================
-// Identify whether the nT bit in a block descriptor is effectively set
-// causing a translation fault
-
-func AArch64_BlocknTFaults{N}(d128:bit,descriptor:bits(N)) => boolean
-begin
-  return FALSE;
-end;
-
-// EL2Enabled()
-// ============
-// Returns TRUE if EL2 is present and executing
-// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
-// - with the PE in Realm state when Realm EL2 is implemented, or
-// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
-// - when EL3 is not implemented.
-
-// Luc: Petty optimisation
-func EL2Enabled() => boolean
-begin
-  return FALSE;
-end;
-
 // CreateAccDescAtomicOp()
 // =======================
 // Access descriptor for atomic read-modify-write memory accesses

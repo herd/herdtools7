@@ -79,38 +79,12 @@ end;
 
 // =============================================================================
 
-func IsFeatureImplemented(f : Feature) => boolean
+readonly func IsFeatureImplemented(f : Feature) => boolean
 begin
-  return FALSE;
-end;
-
-// =============================================================================
-
-func HaveAArch32() => boolean
-begin
-  return FALSE;
-end;
-
-// =============================================================================
-
-func HaveAArch64() => boolean
-begin
-  return TRUE;
-end;
-
-// =============================================================================
-
-// HaveEL()
-// ========
-// Return TRUE if Exception level 'el' is supported
-
-func HaveEL(el: bits(2)) => boolean
-begin
-    if el IN {EL1,EL0} then
-        return TRUE;                             // EL1 and EL0 must exist
-    else
-        return FALSE; // boolean IMPLEMENTATION_DEFINED;
-    end;
+  case f of
+    when FEAT_AA64EL0 => return TRUE;
+    otherwise => return FALSE;
+  end;
 end;
 
 // =============================================================================
