@@ -108,6 +108,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
         "constant-two",
         "constant-intlitregex",
         "type-INTLIT",
+        "constant-returnvarprefix",
     }
 
     hyperlink_labels: set[str] = set()

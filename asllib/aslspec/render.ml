@@ -472,7 +472,8 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
-      | ListIndex { var; index } -> fprintf fmt "%a[%a]" pp_var var pp_var index
+      | ListIndex { var; index } ->
+          fprintf fmt "%a[%a]" pp_var var pp_expr (index, layout)
       | FieldAccess path -> pp_field_path fmt path
       | Indexed { index; list; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
@@ -518,6 +519,9 @@ module Make (S : SPEC_VALUE) = struct
       let op_macro = get_or_gen_math_macro op_name in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
+      | [] ->
+          (* A nullary operator. *)
+          fprintf fmt "%a" pp_macro op_macro
       | [ _ ] when is_prefix_list_operator operator ->
           (* A variadic operator over a list of arguments. *)
           fprintf fmt "%a{%a}" pp_macro op_macro
@@ -536,7 +540,15 @@ module Make (S : SPEC_VALUE) = struct
       | [ _; _ ] when not (Relation.is_custom_operator operator) ->
           (* A simple binary operator. *)
           let lhs_arg, rhs_arg =
-            match args with [ lhs; rhs ] -> (lhs, rhs) | _ -> assert false
+            match args with
+            | [ lhs; rhs ] -> (lhs, rhs)
+            | _ ->
+                let msg =
+                  Format.asprintf
+                    "Expected exactly two arguments for binary operator %s"
+                    op_name
+                in
+                failwith msg
           in
           pp_connect_pair ~alignment:"c" fmt pp_expr lhs_arg op_macro pp_expr
             rhs_arg layout
@@ -621,6 +633,7 @@ module Make (S : SPEC_VALUE) = struct
     let pp_render_rule fmt { RuleRender.relation_name; path } =
       let { Relation.rule_opt } = Spec.relation_for_id S.spec relation_name in
       let rule = Option.get rule_opt in
+      let rule_name_components = ExpandRules.split_absolute_rule_name path in
       let expanded_rules = ExpandRules.expand rule in
       let expanded_subset =
         List.filter
@@ -629,7 +642,11 @@ module Make (S : SPEC_VALUE) = struct
             | None -> true
             (* This corresponds to relations defined by a single rule, not containing any cases. *)
             | Some expanded_path ->
-                Utils.string_starts_with ~prefix:path expanded_path)
+                let expanded_rule_components =
+                  ExpandRules.split_absolute_rule_name expanded_path
+                in
+                Utils.list_starts_with String.equal ~prefix:rule_name_components
+                  expanded_rule_components)
           expanded_rules
       in
       pp_math_expanded_rules fmt expanded_subset

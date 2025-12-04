@@ -1489,8 +1489,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let genv2 = IEnv.decr_pending_calls name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return (Throwing (v, v_ty, new_env)) |: SemanticsRule.Call
-    | Normal (ms, global) ->
-        let ms2 = List.map read_value_from ms in
+    | Normal (values_read_from, global) ->
+        let ms2 = List.map read_value_from values_read_from in
         let genv2 = IEnv.decr_pending_calls name global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return_normal (ms2, new_env) |: SemanticsRule.Call
@@ -1584,7 +1584,7 @@ module Make (B : Backend.S) (C : Config) = struct
          let () =
            if false then Format.eprintf "Finished evaluating %s.@." name
          in
-         (* MatchFuncRest( *)
+         (* MatchFuncRes( *)
          match res with
          | Continuing env4 -> return_normal ([], env4.global)
          | Returning (xs, ret_genv) ->
@@ -1592,7 +1592,7 @@ module Make (B : Backend.S) (C : Config) = struct
                List.mapi (fun i v -> (v, return_identifier i, scope)) xs
              in
              return_normal (vs, ret_genv))
-        (* MatchFuncRest) *)
+        (* MatchFuncRes) *)
         |: SemanticsRule.FCall
   (* End *)
 

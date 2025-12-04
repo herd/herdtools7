@@ -399,7 +399,9 @@ module Rule = struct
     | Var of string
     | FieldAccess of string list
         (** The first identifier is a variable and the rest are field names. *)
-    | ListIndex of { var : string; index : string }
+    | ListIndex of { var : string; index : expr }
+        (** An expression indexing into the list variable [var] at position
+            [index]. *)
     | Record of { label_opt : string option; fields : (string * expr) list }
         (** A record construction expression. *)
     | Application of { applicator : applicator; args : expr list }
@@ -422,6 +424,9 @@ module Rule = struct
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
             during rule resolution. *)
+
+  (** [make_var id] constructs a variable expression with identifier [id]. *)
+  let make_var id = Var id
 
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
@@ -474,7 +479,7 @@ module Rule = struct
   (** The absolute path of a case name. *)
   let join_case_names names = String.concat "." names
 
-  let make_judgement expr is_output attributes =
+  let make_judgement expr ~is_output attributes =
     { expr; is_output; att = Attributes.of_list attributes }
 
   let make_case name elements = { name; elements }

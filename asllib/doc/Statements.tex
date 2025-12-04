@@ -113,11 +113,14 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \evalstmt(\env, \SPass) \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SPass}
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
 \hypertarget{def-assignmentstatementterm}{}
@@ -217,6 +220,7 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vs = \SAssign(\LEDestructuring(\les),\ECall(\vcall))\\
@@ -234,6 +238,8 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
   \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SAssignCall}
 \CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{SAssign}
@@ -261,6 +267,7 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {\left(
@@ -277,6 +284,8 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
   \evalstmt(\env, \SAssign(\vle, \vre)) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SAssign}
 \CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LexprIsVar}
@@ -904,6 +913,7 @@ In \listingref{semantics-sdeclnone},
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
@@ -912,6 +922,8 @@ In \listingref{semantics-sdeclnone},
   \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \some{\ve})) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SDecl}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
 \section{Declaration Statements with an Elided Parameter\label{sec:DeclarationStatementsElidedParameter}}
@@ -1193,6 +1205,7 @@ evaluates \texttt{let y = x + 1}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalstmt(\env, \vsone) \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\\\\
@@ -1203,6 +1216,8 @@ evaluates \texttt{let y = x + 1}.
   \evalstmt(\env, \SSeq(\vsone, \vstwo)) \evalarrow D
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SSeq}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
 \section{Call Statements\label{sec:CallStatements}}
@@ -1290,6 +1305,7 @@ can only be used for procedures, not functions.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
 {
@@ -1302,6 +1318,8 @@ can only be used for procedures, not functions.
   \evalstmt(\env, \overname{\SCall(\vcall)}{\vs}) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SCall}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
 \identd{KCYT}
 
@@ -1445,6 +1463,7 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\\\\
@@ -1457,6 +1476,8 @@ The specification in \listingref{semantics-scond4} does not result in any error.
   \evalstmt(\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \evalarrow D
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SCond}
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \hypertarget{def-casestatementterm}{}
@@ -1911,6 +1932,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\\\\
@@ -1928,6 +1950,8 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
   \evalstmt(\env, \SAssert(\ve)) \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SAssert}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 \identd{QJYV} \identr{WZSL} \identr{WQRN}
 
@@ -2128,6 +2152,7 @@ the output configuration $C$.
         substituted with $\vgtwo$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\\\\
@@ -2138,6 +2163,8 @@ the output configuration $C$.
   \evalstmt(\env, \overname{\SWhile(\ve, \velimitopt, \vbody)}{\vs}) \evalarrow D
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SWhile}
 \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{Loop}
@@ -2437,6 +2464,7 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
         substituted with $\vgthree$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\\\\
@@ -2449,6 +2477,8 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
   \evalstmt(\env, \overname{\SRepeat(\ve, \vbody, \velimitopt)}{\vs}) \evalarrow D
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SRepeat}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
 \section{For Statements\label{sec:ForStatements}}
@@ -2767,7 +2797,8 @@ whose body does not evaluate since its lower bound is greater than its upper bou
 \FormallyParagraph
 Recall that the expressions for the \texttt{for} loop range are
 side-effect-free, as guaranteed by \TypingRuleRef{SFor}, which is why
-they are evaluated via the rule for evaluating side-effect-free expressions.
+they are evaluated via $\evalexprsef$.
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
@@ -2801,6 +2832,8 @@ they are evaluated via the rule for evaluating side-effect-free expressions.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SFor}
 \CodeSubsection{\EvalSForBegin}{\EvalSForEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalFor}
@@ -3034,6 +3067,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
   \item the result of the entire evaluation is $\Throwing(\vex, \vt, \newg, \env)$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
@@ -3046,6 +3080,8 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
   \Throwing(\vex, \vt, \newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SThrow}
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
 \hypertarget{def-trystatementterm}{}
@@ -3222,6 +3258,7 @@ does not result in any Assertion error, and the specification terminates with th
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalblock(\env, \vsone) \evalarrow \sm \OrDynErrorDiverging\\\\
@@ -3230,6 +3267,8 @@ does not result in any Assertion error, and the specification terminates with th
   \evalstmt(\env, \STry(\vsone, \catchers, \otherwiseopt)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_STry}
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
 \hypertarget{def-returnstatementterm}{}
@@ -3370,8 +3409,9 @@ In \listingref{semantics-sreturntuple},
     \item $\vs$ is a \texttt{return} statement;
     \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\some{\ve})$;
     \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
+    \item \Proseeqdef{$\wid$}{the string with the prefix \returnvarprefix{} and the string \texttt{"0"}};
     \item $\vvs$ is $[\vv]$;
-    \item $\vgtwo$ is the result of adding a Write Effect for a fresh identifier and the value $\vv$;
+    \item $\vgtwo$ is the result of adding a Write Effect for $\wid$ and the value $\vv$;
     \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
   \end{itemize}
 
@@ -3385,6 +3425,7 @@ In \listingref{semantics-sreturntuple},
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}
 {
@@ -3412,6 +3453,8 @@ In \listingref{semantics-sreturntuple},
   \evalstmt(\env, \vs) \evalarrow \Returning((\vvs, \newg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SReturn}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EExprListM}
@@ -3616,9 +3659,10 @@ Notice that empty bitvectors are displayed as \verb|0x|.
   \item \AllApplyCase{print}
   \begin{itemize}
     \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\False$;
-    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-    \item \Proseoutputtoconsole{all the elements in $\elist$, without a separator,};
-    \item if $\vnewline$ is $\True$, \Proseoutputtoconsole{a newline character};
+    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \venvs[1])$\ProseOrAbnormal;
+    \item for each element of $\vlist$ at index $\vi$, outputting that element to the console (without any separator),
+          if one exists, at environment $\venvs[i]$ yields environment $\venvs[\vi+1]$;
+    \item \Proseeqdef{$\newenv$}{the last environment, that is, $\venvs[\vn+1]$ where $\vn$ is the number of elements in $\vlist$};
   \end{itemize}
 
   \item \AllApplyCase{println}
@@ -3627,12 +3671,16 @@ Notice that empty bitvectors are displayed as \verb|0x|.
     \item the evaluation of the same statement with a newline indicator set to $\False$, that is,
           $\SPrint(\elist, \False)$ yields the configuration \\
           $\Continuing(\vg, \envone)$\ProseOrAbnormal;
-    \item \Proseoutputtoconsole{a newline character};
+    \item outputting a newline character to the console, if one exists, with environment $\envone$ yields $\newenv$;
   \end{itemize}
   \item the resulting configuration is $\Continuing(\vg, \newenv)$.
 \end{itemize}
 
 \FormallyParagraph
+\hypertarget{constant-newline}{}
+We define the newline character $\vnewline \triangleq \ascii{10}$.
+
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[print]{
   \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
@@ -3644,9 +3692,6 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 }
 \end{mathpar}
 
-\hypertarget{def-newline}{}
-We define the newline character $\vnewline \triangleq \ascii{10}$.
-
 \begin{mathpar}
 \inferrule[println]{
   \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
@@ -3655,6 +3700,8 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
   \evalstmt(\env, \SPrint(\elist, \True)) \evalarrow \Continuing(\vg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SPrint}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
@@ -3793,11 +3840,14 @@ since the \unreachablestatementterm{} is evaluated.
 \ProseParagraph
 Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorConfigurationTerm{} indicating this ($\UnreachableError$).
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \evalstmt(\env, \SUnreachable) \evalarrow \DynamicErrorVal{\UnreachableError}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_stmt_SUnreachable}
 
 \section{Pragma Statements\label{sec:PragmaStatements}}
 \hypertarget{def-pragmastatementterm}{}

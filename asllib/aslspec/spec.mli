@@ -89,4 +89,8 @@ module ExpandRules : sig
 
   val expand : Rule.t -> expanded_rule list
   (** [expand  rule] expands [rule] into multiple rules without cases. *)
+
+  val split_absolute_rule_name : string -> string list
+  (** [split_absolute_rule_name abs_name] splits an absolute rule name
+      [abs_name] into its components by splitting at the '.' character. *)
 end

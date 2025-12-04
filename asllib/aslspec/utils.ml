@@ -42,6 +42,15 @@ let string_exists p s =
   in
   check_from_index 0
 
+(** [string_starts_with eq ~prefix lst] checks if [prefix] is a prefix of [lst]
+    according to the equality function [eq]. *)
+let rec list_starts_with eq ~prefix lst =
+  match (prefix, lst) with
+  | [], _ -> true
+  | _, [] -> false
+  | p :: pt, l :: lt -> eq p l && list_starts_with eq ~prefix:pt lt
+
+(** [string_starts_with ~prefix s] checks if string [s] starts with [prefix]. *)
 let string_starts_with ~prefix s =
   let prefix_len = String.length prefix in
   let s_len = String.length s in

@@ -109,7 +109,7 @@ let rec pp_expr fmt =
       fprintf fmt "%a(%a)" pp_application_lhs applicator (pp_comma_list pp_expr)
         args
   | FieldAccess path -> pp_print_string fmt (String.concat "." path)
-  | ListIndex { var; index } -> fprintf fmt "%s[%s]" var index
+  | ListIndex { var; index } -> fprintf fmt "%s[%a]" var pp_expr index
   | Record { label_opt; fields } ->
       fprintf fmt "%a[%a]"
         (pp_print_option pp_print_string)

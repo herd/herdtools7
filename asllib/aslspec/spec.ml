@@ -443,7 +443,7 @@ module ResolveRules = struct
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
-            | None | Some (Node_RecordField _) ->
+            | Some (Node_RecordField _) | None ->
                 Error.illegal_lhs_application expr)
         | Unresolved (FieldAccess path) ->
             Application { applicator = Fields path; args = resolved_args }
@@ -734,6 +734,9 @@ module ExpandRules = struct
             judgments. *)
   }
   (** An expanded rule is a rule with no [Cases]. *)
+
+  let split_absolute_rule_name abs_name =
+    Str.split (Str.regexp_string ".") abs_name
 
   (** [concat_expanded_rules prefix suffix] concatenates two expanded rules,
       [prefix] and [suffix], combining their optional names and categories as

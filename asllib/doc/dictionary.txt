@@ -1465,6 +1465,7 @@ own
 page
 pair
 paired
+pairing
 pairs
 paragraph
 parallel
