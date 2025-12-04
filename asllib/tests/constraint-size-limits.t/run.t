@@ -58,9 +58,9 @@
   File constraint-mul-06.asl, line 6, characters 12 to 21:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
               ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..512 and 1..512. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..512 and 1..512.
+  Continuing with the non-expanded constraints.
   File constraint-mul-06.asl, line 6, characters 4 to 22:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
       ^^^^^^^^^^^^^^^^^^
@@ -72,9 +72,9 @@
   File constraint-mul-07.asl, line 6, characters 12 to 21:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
               ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File constraint-mul-07.asl, line 6, characters 4 to 22:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
       ^^^^^^^^^^^^^^^^^^
@@ -86,9 +86,9 @@
   File constraint-mul-08.asl, line 6, characters 12 to 21:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
               ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..2048 and 1..2048. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..2048 and 1..2048.
+  Continuing with the non-expanded constraints.
   File constraint-mul-08.asl, line 6, characters 4 to 22:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
       ^^^^^^^^^^^^^^^^^^
@@ -100,9 +100,9 @@
   File constraint-mul-09.asl, line 6, characters 12 to 21:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
               ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..4096 and 1..4096. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..4096 and 1..4096.
+  Continuing with the non-expanded constraints.
   File constraint-mul-09.asl, line 6, characters 4 to 22:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
       ^^^^^^^^^^^^^^^^^^
@@ -114,9 +114,9 @@
   File constraint-mul-10.asl, line 6, characters 12 to 21:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
               ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..8192 and 1..8192. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..8192 and 1..8192.
+  Continuing with the non-expanded constraints.
   File constraint-mul-10.asl, line 6, characters 4 to 22:
       let n = a DIVRM b;     // 10 DIVRM 3 == 3
       ^^^^^^^^^^^^^^^^^^
@@ -129,9 +129,9 @@ Other operations
   File constraint-div.asl, line 7, characters 10 to 17:
     var z = a DIV b;
             ^^^^^^^
-  Exploding sets for the binary operation DIV could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIV could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File constraint-div.asl, line 7, characters 2 to 18:
     var z = a DIV b;
     ^^^^^^^^^^^^^^^^
@@ -142,9 +142,9 @@ Other operations
   File constraint-divrm.asl, line 7, characters 10 to 19:
     var z = a DIVRM b;
             ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File constraint-divrm.asl, line 7, characters 2 to 20:
     var z = a DIVRM b;
     ^^^^^^^^^^^^^^^^^^
@@ -156,7 +156,7 @@ Other operations
   File constraint-mod.asl, line 7, characters 10 to 17:
     var z = a MOD b;
             ^^^^^^^
-  Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
   File constraint-mod.asl, line 7, characters 2 to 18:
     var z = a MOD b;
     ^^^^^^^^^^^^^^^^
@@ -169,9 +169,9 @@ Other operations
   File constraint-pow.asl, line 7, characters 10 to 15:
     var z = a ^ b;
             ^^^^^
-  Exploding sets for the binary operation ^ could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation ^ could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File constraint-pow.asl, line 7, characters 2 to 16:
     var z = a ^ b;
     ^^^^^^^^^^^^^^
@@ -182,9 +182,9 @@ Other operations
   File constraint-shl.asl, line 7, characters 10 to 16:
     var z = a << b;
             ^^^^^^
-  Exploding sets for the binary operation << could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation << could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File constraint-shl.asl, line 7, characters 2 to 17:
     var z = a << b;
     ^^^^^^^^^^^^^^^
@@ -195,9 +195,9 @@ Other operations
   File constraint-shr.asl, line 7, characters 10 to 16:
     var z = a >> b;
             ^^^^^^
-  Exploding sets for the binary operation >> could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation >> could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File constraint-shr.asl, line 7, characters 2 to 17:
     var z = a >> b;
     ^^^^^^^^^^^^^^^
@@ -208,9 +208,9 @@ Other operations
   File global-constraint-div.asl, line 8, characters 8 to 15:
   var z = a DIV b;
           ^^^^^^^
-  Exploding sets for the binary operation DIV could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIV could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-div.asl, line 8, characters 0 to 16:
   var z = a DIV b;
   ^^^^^^^^^^^^^^^^
@@ -221,9 +221,9 @@ Other operations
   File global-constraint-divrm.asl, line 8, characters 8 to 17:
   var z = a DIVRM b;
           ^^^^^^^^^
-  Exploding sets for the binary operation DIVRM could result in a constraint
-  set bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with
-  the non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation DIVRM could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-divrm.asl, line 8, characters 0 to 18:
   var z = a DIVRM b;
   ^^^^^^^^^^^^^^^^^^
@@ -235,7 +235,7 @@ Other operations
   File global-constraint-mod.asl, line 8, characters 8 to 15:
   var z = a MOD b;
           ^^^^^^^
-  Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
   File global-constraint-mod.asl, line 8, characters 0 to 16:
   var z = a MOD b;
   ^^^^^^^^^^^^^^^^
@@ -247,9 +247,9 @@ Other operations
   File global-constraint-pow.asl, line 8, characters 8 to 13:
   var z = a ^ b;
           ^^^^^
-  Exploding sets for the binary operation ^ could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation ^ could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-pow.asl, line 8, characters 0 to 14:
   var z = a ^ b;
   ^^^^^^^^^^^^^^
@@ -260,9 +260,9 @@ Other operations
   File global-constraint-shl.asl, line 8, characters 8 to 14:
   var z = a << b;
           ^^^^^^
-  Exploding sets for the binary operation << could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation << could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-shl.asl, line 8, characters 0 to 15:
   var z = a << b;
   ^^^^^^^^^^^^^^^
@@ -273,9 +273,9 @@ Other operations
   File global-constraint-shr.asl, line 8, characters 8 to 14:
   var z = a >> b;
           ^^^^^^
-  Exploding sets for the binary operation >> could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 0..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation >> could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 0..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-shr.asl, line 8, characters 0 to 15:
   var z = a >> b;
   ^^^^^^^^^^^^^^^
@@ -286,9 +286,9 @@ Other operations
   File global-constraint-mul.asl, line 7, characters 8 to 13:
   var z = a * b;
           ^^^^^
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation * could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File global-constraint-mul.asl, line 7, characters 0 to 14:
   var z = a * b;
   ^^^^^^^^^^^^^^
@@ -301,7 +301,7 @@ With pending constraints
   File pending.asl, line 6, characters 22 to 27:
     var z : integer{} = a * b;
                         ^^^^^
-  Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 1 .. 1048576 ]. Keeping it as an interval.
   File pending.asl, line 6, characters 2 to 28:
     var z : integer{} = a * b;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -312,9 +312,9 @@ With pending constraints
   File global-pending.asl, line 7, characters 19 to 24:
   var z: integer{} = a * b;
                      ^^^^^
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 0..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation * could result in a
+  constraint set bigger than 2^17 with constraints 0..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File global-pending.asl, line 7, characters 0 to 25:
   var z: integer{} = a * b;
   ^^^^^^^^^^^^^^^^^^^^^^^^^

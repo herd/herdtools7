@@ -12,8 +12,8 @@ Tests using ASLRef OCaml primitives for some stdlib functions
   File set-bits.asl, line 29, characters 15 to 28:
           assert k MOD 2^(m+1) == 2^m;
                  ^^^^^^^^^^^^^
-  Warning: Removing some values that would fail with op MOD from constraint set
-  {0..(2 ^ (n + 1)), 1, (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))} gave
+  ASL Warning: Removing some values that would fail with op MOD from constraint
+  set {0..(2 ^ (n + 1)), 1, (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))} gave
   {1, 1..(2 ^ (n + 1)), (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))}. Continuing
   with this constraint set.
 
@@ -68,8 +68,8 @@ Tests using ASL stdlib only
   File set-bits.asl, line 29, characters 15 to 28:
           assert k MOD 2^(m+1) == 2^m;
                  ^^^^^^^^^^^^^
-  Warning: Removing some values that would fail with op MOD from constraint set
-  {0..(2 ^ (n + 1)), 1, (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))} gave
+  ASL Warning: Removing some values that would fail with op MOD from constraint
+  set {0..(2 ^ (n + 1)), 1, (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))} gave
   {1, 1..(2 ^ (n + 1)), (- ((- 2) ^ (n + 1)))..((- 2) ^ (n + 1))}. Continuing
   with this constraint set.
 

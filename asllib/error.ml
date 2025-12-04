@@ -588,46 +588,44 @@ module PPrint = struct
           "no entrypoint supplied. Have you defined `func main() => integer`, \
            or did you mean to pass `--no-exec`?"
 
-  let pp_warning_desc f w =
+  let fprintf_warn f =
+    kdprintf (fun msg -> fprintf f "@[ASL Warning:@ %t@]" msg)
+
+  let pp_warning_desc formatter w =
+    let pp_warn format_string = fprintf_warn formatter format_string in
     match w.desc with
     | NoRecursionLimit [ name ] ->
-        fprintf f "@[ASL Warning:@ the recursive function %s%a@]" name
-          pp_print_text " has no recursive limit annotation."
+        pp_warn "the recursive function %s%a" name pp_print_text
+          " has no recursive limit annotation."
     | NoRecursionLimit li ->
-        fprintf f "@[ASL Warning:@ the mutually-recursive functions @[%a@]%a@]"
+        pp_warn "the mutually-recursive functions @[%a@]%a"
           (pp_comma_list pp_print_string)
           li pp_print_text " have no recursive limit annotation."
-    | NoLoopLimit ->
-        fprintf f "@[%a@]" pp_print_text
-          "ASL Warning: Loop does not have a limit."
+    | NoLoopLimit -> pp_warn "%a" pp_print_text "Loop does not have a limit."
     | ConstraintSetPairToBigToBeExploded { op; left; right; log_max } ->
-        fprintf f "@[%a@ %s@ %a%d@ with@ constraints@ %a@ and@ %a.@ %a@]"
+        pp_warn "%a@ %s@ %a%d@ with@ constraints@ %a@ and@ %a.@ %a"
           pp_print_text "Exploding sets for the binary operation"
           (binop_to_string op) pp_print_text
           "could result in a constraint set bigger than 2^" log_max
           PP.pp_int_constraints left PP.pp_int_constraints right pp_print_text
           "Continuing with the non-expanded constraints."
     | IntervalTooBigToBeExploded (za, zb) ->
-        fprintf f
-          "@[Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an \
-           interval.@]"
+        pp_warn
+          "Interval too large: @[<h>[ %a .. %a ]@].@ Keeping it as an interval."
           Z.pp_print za Z.pp_print zb
     | RemovingValuesFromConstraints { op; prev; after } ->
-        fprintf f
-          "@[Warning:@ Removing@ some@ values@ that@ would@ fail@ with@ op %s@ \
-           from@ constraint@ set@ @[<h>{%a}@]@ gave@ @[<h>{%a}@].@ Continuing@ \
-           with@ this@ constraint@ set.@]"
+        pp_warn
+          "Removing@ some@ values@ that@ would@ fail@ with@ op %s@ from@ \
+           constraint@ set@ @[<h>{%a}@]@ gave@ @[<h>{%a}@].@ Continuing@ with@ \
+           this@ constraint@ set."
           (binop_to_string op) PP.pp_int_constraints prev PP.pp_int_constraints
           after
-    | PragmaUse id ->
-        fprintf f "@[ASL Warning:@ pragma %s%a@]" id pp_print_text
-          " will be ignored."
+    | PragmaUse id -> pp_warn "pragma %s%a" id pp_print_text " will be ignored."
     | UnexpectedImplementation ->
-        fprintf f "@[%a@]" pp_print_text
-          "ASL Warning: Unexpected `implementation` function."
+        pp_warn "%a" pp_print_text "Unexpected `implementation` function."
     | MissingOverride ->
-        fprintf f "@[%a@]" pp_print_text
-          "ASL Warning: Missing `implementation` for `impdef` function."
+        pp_warn "%a" pp_print_text
+          "Missing `implementation` for `impdef` function."
 
   let pp_pos_begin f pos =
     match display_error_context pos with

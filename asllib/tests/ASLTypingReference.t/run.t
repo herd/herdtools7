@@ -65,24 +65,24 @@ ASL Typing Tests:
   File TypingRule.ApplyBinopTypes.constraints.asl, line 22, characters 51 to 78:
       var a_div : integer{A, (A DIV 2), (A DIV 3)} = a DIV (1 as integer{-5..3});
                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {-5..3} gave {1..3}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {-5..3} gave {1..3}. Continuing with this constraint set.
   File TypingRule.ApplyBinopTypes.constraints.asl, line 26, characters 39 to 65:
       var a_mod_0_to_3 : integer{0..2} = a MOD (1 as integer{0..3});
                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Warning: Removing some values that would fail with op MOD from constraint set
-  {0..3} gave {1..3}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op MOD from constraint
+  set {0..3} gave {1..3}. Continuing with this constraint set.
   File TypingRule.ApplyBinopTypes.constraints.asl, line 42, characters 31 to 82:
       var y : integer{0..2^14} = (1 as integer{0..2^14}) DIV (2 as integer{0..2^14});
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {0..16384} gave {1..16384}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {0..16384} gave {1..16384}. Continuing with this constraint set.
   $ aslref --no-exec TypingRule.ApplyBinopTypes.constraints2.asl
   File TypingRule.ApplyBinopTypes.constraints2.asl, line 6, characters 12 to 19:
       let z = x DIV y;
               ^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {-1..1} gave {1..1}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {-1..1} gave {1..1}. Continuing with this constraint set.
   $ aslref TypingRule.LDDiscard.asl
   File TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
     let - = 42;
@@ -580,9 +580,9 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 8 to 13:
   var b = a * a;
           ^^^^^
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation * could result in a
+  constraint set bigger than 2^17 with constraints 1..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File TypingRule.CheckNoPrecisionLoss.asl, line 3, characters 0 to 14:
   var b = a * a;
   ^^^^^^^^^^^^^^
@@ -593,9 +593,9 @@ ASL Typing Tests / annotating types:
   File TypingRule.PrecisionJoin.asl, line 3, characters 9 to 14:
   var b = (a * a) + 2;
            ^^^^^
-  Exploding sets for the binary operation * could result in a constraint set
-  bigger than 2^17 with constraints 1..1024 and 1..1024. Continuing with the
-  non-expanded constraints.
+  ASL Warning: Exploding sets for the binary operation * could result in a
+  constraint set bigger than 2^17 with constraints 1..1024 and 1..1024.
+  Continuing with the non-expanded constraints.
   File TypingRule.PrecisionJoin.asl, line 3, characters 0 to 20:
   var b = (a * a) + 2;
   ^^^^^^^^^^^^^^^^^^^^
@@ -1142,7 +1142,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 23 to 28:
       var z: integer{} = b * 2;
                          ^^^^^
-  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
   File TypingRule.IntervalTooLarge.bad.asl, line 9, characters 4 to 29:
       var z: integer{} = b * 2;
       ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1153,7 +1153,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 23 to 28:
       var z: integer{} = b * 2;
                          ^^^^^
-  Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
   File TypingRule.ExplodeIntervals.bad.asl, line 10, characters 4 to 29:
       var z: integer{} = b * 2;
       ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1166,14 +1166,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.RefineConstraintBySign.asl, line 14, characters 23 to 30:
       var z: integer{} = A DIV y;
                          ^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
   {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
   File TypingRule.RefineConstraintBySign.asl, line 28, characters 8 to 15:
       } = A DIV y;
           ^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {-4..-3, -1..2, -1..B, 0, 1, 3..4, A..B, B, B..-1} gave
   {1..2, 1..B, 1, 3..4, A..B, B, B..-1}. Continuing with this constraint set.
   $ aslref --no-exec TypingRule.EBinop.asl
   $ aslref --no-exec TypingRule.EBinop2.asl
