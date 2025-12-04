@@ -276,39 +276,6 @@ module NativeBackend (C : Config) = struct
           Error.fatal_unknown_pos
           @@ Error.BadArity (Dynamic, "SInt", 1, List.length li)
 
-    let dec_str = function
-      | [ NV_Literal (L_Int i) ] ->
-          L_String (Z.to_string i) |> nv_literal |> return_one
-      | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "DecStr", 1, List.length li)
-
-    let hex_str = function
-      | [ NV_Literal (L_Int i) ] ->
-          L_String (Printf.sprintf "%a" Z.sprint i) |> nv_literal |> return_one
-      | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "HexStr", 1, List.length li)
-
-    let ascii_integer = integer_range' !$0 !$127
-
-    let ascii_str = function
-      | [ NV_Literal (L_Int i) ] ->
-          if Z.(zero <= i && i <= of_int 127) then
-            L_String (char_of_int (Z.to_int i) |> String.make 1)
-            |> nv_literal |> return_one
-          else
-            Error.fatal_unknown_pos
-            @@ Error.BadPrimitiveArgument
-                 ( "AsciiStr",
-                   "greater than or equal to 0 and less than or equal to 127" )
-      | [ v ] -> mismatch_type v [ ascii_integer ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "AsciiStr", 1, List.length li)
-
     let floor_log2 = function
       | [ NV_Literal (L_Int i) ] ->
           if Z.gt i Z.zero then [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
@@ -400,9 +367,6 @@ module NativeBackend (C : Config) = struct
            ~parameters:[ ("N", None) ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "SInt" sint);
-        p ~args:[ ("x", integer) ] ~returns:string "DecStr" dec_str;
-        p ~args:[ ("x", integer) ] ~returns:string "HexStr" hex_str;
-        p ~args:[ ("x", integer) ] ~returns:string "AsciiStr" ascii_str;
         p ~args:[ ("x", integer) ] ~returns:integer "FloorLog2" floor_log2;
         p ~args:[ ("x", real) ] ~returns:integer "RoundDown" round_down;
         p ~args:[ ("x", real) ] ~returns:integer "RoundUp" round_up;

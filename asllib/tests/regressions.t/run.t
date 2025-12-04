@@ -485,7 +485,6 @@ Required tests:
   $ aslref subprogram-local-name-clash.asl
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
-  $ aslref asciistr.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
   $ aslref --no-exec accessor-overloading-1.asl
   $ aslref atc-tuple.asl
