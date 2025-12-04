@@ -121,6 +121,16 @@ end;
 
 // =============================================================================
 
+// ThisInstrLength()
+// =================
+
+func ThisInstrLength() => integer
+begin
+  return 32;
+end;
+
+// =============================================================================
+
 // Hint_Branch()
 // =============
 // Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
