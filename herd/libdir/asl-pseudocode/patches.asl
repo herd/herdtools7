@@ -122,23 +122,6 @@ end;
 
 // =============================================================================
 
-// ELStateUsingAArch32K()
-// ======================
-// Returns (known, aarch32):
-//   'known'   is FALSE for EL0 if the current Exception level is not EL0 and EL1 is
-//             using AArch64, since it cannot determine the state of EL0; TRUE otherwise.
-//   'aarch32' is TRUE if the specified Exception level is using AArch32; FALSE otherwise.
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#impl-shared.ELStateUsingAArch32K.2
-// We are always on AArch64
-
-func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
-begin
-    return (TRUE, FALSE);
-end;
-
-// =============================================================================
-
 // GenerateAddress()
 // =================
 // Generate and address by adding a pointer with an offset and returning the result.
@@ -236,22 +219,6 @@ begin
   return;
 end;
 
-// Here because it is defined 2 times in the release
-
-// SecurityState
-// =============
-// The Security state of an execution context
-
-type SecurityState of enumeration {
-    SS_NonSecure,
-    SS_Root,
-    SS_Realm,
-    SS_Secure
-};
-
-constant VMID_NONE : bits(16) = Zeros{16};
-constant ASID_NONE : bits(16) = Zeros{16};
-
 // X - accessor
 // ============
 
@@ -279,3 +246,62 @@ begin
     end;
 end;
 
+// =============================================================================
+
+// Optimisations: those functions are very used all over the reference, and so
+// we experience a significant slow-down if we don't override them.
+
+// EL2Enabled()
+// ============
+// Returns TRUE if EL2 is present and executing
+// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
+// - with the PE in Realm state when Realm EL2 is implemented, or
+// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
+// - when EL3 is not implemented.
+
+readonly func EL2Enabled() => boolean
+begin
+    return FALSE;
+end;
+
+// HaveAArch32()
+// =============
+// Return TRUE if AArch32 state is supported at at least EL0.
+
+func HaveAArch32() => boolean
+begin
+  return FALSE;
+end;
+
+// HaveAArch64()
+// =============
+// Return TRUE if the highest Exception level is using AArch64 state.
+
+readonly func HaveAArch64() => boolean
+begin
+    return TRUE;
+end;
+
+// HaveEL()
+// ========
+// Return TRUE if Exception level 'el' is supported
+
+func HaveEL(el: bits(2)) => boolean
+begin
+    return el == EL0 || el == EL1;
+end;
+
+// ELStateUsingAArch32K()
+// ======================
+// Returns (known, aarch32):
+//   'known'   is FALSE for EL0 if the current Exception level is not EL0 and EL1 is
+//             using AArch64, since it cannot determine the state of EL0; TRUE otherwise.
+//   'aarch32' is TRUE if the specified Exception level is using AArch32; FALSE otherwise.
+
+// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#impl-shared.ELStateUsingAArch32K.2
+// We are always on AArch64
+
+func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
+begin
+    return (TRUE, FALSE);
+end;
