@@ -132,7 +132,7 @@ module Make (Conf : Config) = struct
     let error_handling_time = Asllib.Error.Dynamic
     let empty_branching_effects_optimization = false
     let log_nondet_choice = Conf.C.debug.Debug_herd.asl_symb
-    let display_call_stack_on_error = Conf.C.debug.Debug_herd.asl_symb
+    let display_call_stack_on_error = Conf.C.debug.Debug_herd.asl_stack
     let track_symbolic_path = true
     let bit_clear_optimisation = true
 
