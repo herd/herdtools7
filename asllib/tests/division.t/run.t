@@ -148,8 +148,8 @@ Examples with multiple constraints in slices:
   File div-multi-slices-zero.asl, line 6, characters 10 to 17:
     let z = x DIV y;
             ^^^^^^^
-  Warning: Removing some values that would fail with op DIV from constraint set
-  {0, 1, 2} gave {1, 2}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {0, 1, 2} gave {1, 2}. Continuing with this constraint set.
 
 Example with constant:
 

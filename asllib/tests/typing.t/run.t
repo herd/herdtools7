@@ -270,11 +270,13 @@ Large constraint sets
   File TPositive13.asl, line 8, characters 17 to 34:
       let testA =  UInt(a) * UInt(b);
                    ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TPositive13.asl, line 8, characters 17 to 34:
       let testA =  UInt(a) * UInt(b);
                    ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TPositive13.asl, line 8, characters 4 to 35:
       let testA =  UInt(a) * UInt(b);
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -285,11 +287,13 @@ Large constraint sets
   File TDegraded13.asl, line 7, characters 29 to 46:
       let temp               = UInt(a) * UInt(b);
                                ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13.asl, line 7, characters 29 to 46:
       let temp               = UInt(a) * UInt(b);
                                ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13.asl, line 7, characters 4 to 47:
       let temp               = UInt(a) * UInt(b);
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -300,11 +304,13 @@ Large constraint sets
   File TDegraded13-sets1.asl, line 3, characters 10 to 27:
     var z = UInt(a) * UInt(b);
             ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13-sets1.asl, line 3, characters 10 to 27:
     var z = UInt(a) * UInt(b);
             ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13-sets1.asl, line 3, characters 2 to 28:
     var z = UInt(a) * UInt(b);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -315,11 +321,13 @@ Large constraint sets
   File TDegraded13-sets2.asl, line 3, characters 10 to 27:
     var z = UInt(a) * UInt(b);
             ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13-sets2.asl, line 3, characters 10 to 27:
     var z = UInt(a) * UInt(b);
             ^^^^^^^^^^^^^^^^^
-  Interval too large: [ 0 .. 18446744073709551615 ]. Keeping it as an interval.
+  ASL Warning: Interval too large: [ 0 .. 18446744073709551615 ].
+  Keeping it as an interval.
   File TDegraded13-sets2.asl, line 3, characters 2 to 28:
     var z = UInt(a) * UInt(b);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
