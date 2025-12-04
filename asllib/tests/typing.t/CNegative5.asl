@@ -1,11 +1,11 @@
 // width of bv must be equal to i
 func printLengths{N}(i: integer {N}, bv: bits(N))
 begin
-  print DecStr(i);
+  print i;
   print " == ";
-  print DecStr(N);
+  print N;
   print " == ";
-  print DecStr(Len(bv));
+  print Len(bv);
   print "\n";
 end;
 func negative5() => integer
