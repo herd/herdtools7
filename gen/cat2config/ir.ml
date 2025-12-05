@@ -220,6 +220,23 @@ let find_fence : set_nf -> fence option = function
   the empty set.
 *)
 let parse_set_id (s : string) : set_nf option =
+  let try_fences () =
+    match s with
+    | "DMB.ISH" | "DMB.OSH" | "DMB.SY" | "dmb.sy" | "dmb.full" ->
+        Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
+    | "DSB.ISH" | "DSB.OSH" | "DSB.SY" | "dsb.sy" | "dsb.full" ->
+        Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
+    | "DMB.ISHST" | "DMB.OSHST" | "DMB.ST" | "dmb.st" ->
+        Some (prim_set (Fence (Some (AArch64Base.DMB (SY, ST)))))
+    | "DMB.ISHLD" | "DMB.OSHLD" | "DMB.LD" | "dmb.ld" ->
+        Some (prim_set (Fence (Some (AArch64Base.DMB (SY, LD)))))
+    | "DSB.ISHST" | "DSB.OSHST" | "DSB.ST" | "dsb.st" ->
+        Some (prim_set (Fence (Some (AArch64Base.DSB (SY, ST)))))
+    | "DSB.ISHLD" | "DSB.OSHLD" | "DSB.LD" | "dsb.ld" ->
+        Some (prim_set (Fence (Some (AArch64Base.DSB (SY, LD)))))
+    | "ISB" -> Some (prim_set (Fence (Some AArch64Base.ISB)))
+    | _ -> None
+  in
   let try_other_prims () =
     match s with
     | "Exp" -> Some universe_set
@@ -227,18 +244,7 @@ let parse_set_id (s : string) : set_nf option =
     | "F" -> Some (prim_set (Fence None))
     | "TTD" | "Instr" | "emptyset" | "NoRet" | "T" | "NExp" | "Imp" ->
         Some empty_set
-    | "dmb.sy" | "dmb.full" ->
-        Some (prim_set (Fence (Some (AArch64Base.DMB (SY, FULL)))))
-    | "dsb.sy" | "dsb.full" ->
-        Some (prim_set (Fence (Some (AArch64Base.DSB (SY, FULL)))))
-    | "dmb.st" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, ST)))))
-    | "dmb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DMB (SY, LD)))))
-    | "dsb.st" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, ST)))))
-    | "dsb.ld" -> Some (prim_set (Fence (Some (AArch64Base.DSB (SY, LD)))))
     | _ -> None
-  in
-  let try_fences () =
-    Option.map (fun b -> prim_set (Fence (Some b))) (Diy_utils.parse_barrier s)
   in
   Util.Option.choice_fn [ try_other_prims; try_fences ]
 
@@ -309,7 +315,7 @@ let rec pp_prim_set fmt =
   | Domain r -> fprintf fmt "domain(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Range r -> fprintf fmt "range(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Fence None -> fprintf fmt "F"
-  | Fence (Some f) -> fprintf fmt "%s" (Diy_utils.pp_barrier f)
+  | Fence (Some f) -> fprintf fmt "%s" (AArch64Base.pp_barrier_dot f)
   | Prim x -> fprintf fmt "%s" x
   | Comp x -> fprintf fmt "~(%a)" pp_prim_set x
 
