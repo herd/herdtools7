@@ -17,11 +17,11 @@ let pp_norm_err : normalization_error -> string =
   let open Format in
   match err with
   | Function_not_supported e ->
-      asprintf "Function_not_supported: %a" Ast_utils.pp_exp e
-  | Exp_not_supported e -> asprintf "Exp_not_supported: %a" Ast_utils.pp_exp e
+      asprintf "Function_not_supported: %a" AstUtils.pp_exp e
+  | Exp_not_supported e -> asprintf "Exp_not_supported: %a" AstUtils.pp_exp e
   | Empty_union -> sprintf "Empty_union"
   | Unknown_identifier s -> sprintf "Unknown_identifier: %s" s
-  | Not_a_fence e -> asprintf "Not_a_fence: %a" Ast_utils.pp_exp e
+  | Not_a_fence e -> asprintf "Not_a_fence: %a" AstUtils.pp_exp e
   | Recursion_not_supported v -> asprintf "Recursion_not_supported: %s" v
 
 type binding = { body : AST.exp; is_recursive : bool }
@@ -147,7 +147,7 @@ end = struct
               range (normalize_rel ~config ~env ~name ~is_recursive e)
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~variants a then go exp else go exp2
+          if AstUtils.eval_variant_cond ~variants a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) when var = name && is_recursive ->
           raise (NormalizationError (Recursion_not_supported var))
@@ -210,7 +210,7 @@ end = struct
               | None -> raise (NormalizationError (Not_a_fence exp)))
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~variants a then go exp else go exp2
+          if AstUtils.eval_variant_cond ~variants a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) when var = name && is_recursive ->
           raise (NormalizationError (Recursion_not_supported var))
@@ -289,7 +289,7 @@ end = struct
                   with NormalizationError err ->
                     Log.debug (fun m ->
                         m "Skipping `%s` component `%a`: %s" name
-                          Ast_utils.pp_exp e (pp_norm_err err));
+                          AstUtils.pp_exp e (pp_norm_err err));
                     None)
                 expl
         in

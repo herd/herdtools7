@@ -208,7 +208,7 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             (fun acc (relaxs, ast_e) ->
               let print_cat_rel () =
                 if Opts.should_dump_origin opts then
-                  printf "## %a@." Ast_utils.pp_exp ast_e
+                  printf "## %a@." AstUtils.pp_exp ast_e
               in
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
               if relaxs <> [] then (
