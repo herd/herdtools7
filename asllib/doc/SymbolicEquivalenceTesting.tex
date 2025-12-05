@@ -2087,13 +2087,14 @@ via the lexicographic ordering.
   \ids \eqname \idsone \concat \idstwo\\
   \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
   \vv \eqdef \idstwo[1]\\
-  \vs \eqdef {
+  {
+  \vs \eqdef
     \begin{cases}
     1 & f(\vv) = \bot \land g(\vv) \neq \bot\\
     -1  & f(\vv) \neq \bot \land g(\vv) = \bot\\
     \sign(g(\vv) - f(\vv))  & f(\vv) \neq \bot \land g(\vv) \neq \bot\\
     \end{cases}
-}
+  }
 }{
   \comparemonomialbindings((\vmone, \vqone), (\vmtwo, \vqtwo)) \typearrow \vs
 }

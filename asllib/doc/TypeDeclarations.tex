@@ -218,7 +218,7 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
   \item annotating the \optionalterm\ extra fields $\vs$ for $\vtone$ in $\tenv$ yields via \\ $\annotateextrafields$
         yields the modified environment $\tenvone$, type $\vttwo$, and annotated \optionalterm{} extra fields $\vsp$\ProseOrTypeError;
   \item applying $\sesispure$ to $\vsest$ yields $\vb$;
-  \item \Proseeqdef{$\vpurity$} as $\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$;
+  \item \Proseeqdef{$\vpurity$}{$\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$};
   \item applying $\addtype$ to $\name$, $\vttwo$, and $\vpurity$ in $\tenv$ yields $\tenvtwo$;
   \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
   \item \OneApplies
