@@ -150,6 +150,19 @@ let prim_set : prim_set -> set_nf = fun p -> Union [ Inter [ p ] ]
 let prim_sets : prim_set list -> set_nf = fun p -> Union [ Inter p ]
 let prim_rel : prim_rel -> rel_nf = fun p -> Union [ Seq [ Rel (Inter [ p ]) ] ]
 
+(* Computes the complement of a primitive set.
+
+   Currently the tool only handles explicit memory or fence effects.
+   Therefore:
+
+       ~M  -->  F
+       ~F  -->  M
+       ~R  -->  W | F
+
+    The [Comp] constructor is used to mark primitive sets X for which
+    we don't know how to compute complement, but still want to be able to
+    reduce away double complements: ~~X  -->  X.
+ *)
 let prim_set_comp : prim_set -> prim_set inter union = function
   | Fence None -> prim_set (Prim "M")
   | Prim "M" -> prim_set (Fence None)
@@ -323,6 +336,8 @@ and pp_set_nf fmt (nf : set_nf) = pp_union (pp_inter pp_prim_set) fmt nf
 
 and pp_rel_nf fmt (nf : rel_nf) =
   pp_union (pp_seq pp_prim_set pp_prim_rel) fmt nf
+
+(* Symbol expansion functions *)
 
 let find_partition (p : 'a -> 'b option) (l : 'a list) : ('b * 'a list) option =
   let rec go acc = function
