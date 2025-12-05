@@ -182,7 +182,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             let translated =
               nfs
               |> List.map (fun (nf, ast_e) ->
-                  let relaxs = Translation.translate nf in
+                  let relaxs = Translation.translate ~binding:var nf in
                   (relaxs, ast_e))
             in
             Some (var, translated))

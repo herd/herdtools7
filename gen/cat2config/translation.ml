@@ -1,3 +1,4 @@
+module Log = (val Logs.src_log (Logs.Src.create "translation") : Logs.LOG)
 module UList = Util.List
 module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
 module E = Edge.Make (Edge.Config) (A : Fence.S)
@@ -313,9 +314,14 @@ let translate_seq (Seq l : seq_item Ir.seq) : relax list =
   in
   if st.core = [] then st.relaxs else []
 
-let translate (nf : Ir.rel_nf) : relax list =
+let translate ~binding (nf : Ir.rel_nf) : relax list =
+  Log.info (fun m -> m "Translating component of `%s`" binding);
+  Log.debug (fun m -> m "`%s` expression:@.%a" binding Ir.pp_rel_nf nf);
   let nf = Ir.expand_acq_rel nf in
+  Log.debug (fun m -> m "`%s` after expanding A/L:@.%a" binding Ir.pp_rel_nf nf);
   let nf = Ir.expand_domain_range nf in
+  Log.debug (fun m ->
+      m "`%s` after expanding domain/range:@.%a" binding Ir.pp_rel_nf nf);
   let relaxs =
     List.fold_left (fun acc seq -> acc @ translate_seq seq) [] (Ir.get_union nf)
   in
