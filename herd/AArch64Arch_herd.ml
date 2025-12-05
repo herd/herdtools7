@@ -50,6 +50,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp IFetch -> true
       | NExp (AF|DB|AFDB|Other|GCS)|Exp -> false
 
+    let is_gcs = function
+      | NExp GCS -> true
+      | NExp (AF|DB|AFDB|IFetch|Other)|Exp -> false
+
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_af = function (* Setting of access flag *)

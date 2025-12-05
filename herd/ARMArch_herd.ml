@@ -85,6 +85,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     and is_ifetch_annot _ = false
 
+    and is_gcs _ = false
+
     let nexp_annot = NExp
     let exp_annot = Exp
 
