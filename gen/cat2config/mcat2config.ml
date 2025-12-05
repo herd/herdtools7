@@ -169,7 +169,7 @@ let extract_let_binding (ins : AST.ins) :
 
 let run ~(opts : Opts.t) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
-  let norm_config : Nf.config =
+  let norm_config : Normalization.config =
     { conditions = opts.conds; unroll_depth = opts.unroll }
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
@@ -177,7 +177,7 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
       (string * (Translation.relax list * AST.exp) list) list =
     opts.lets_to_print
     |> List.filter_map (fun var ->
-        match StringMap.find_opt var nf_map with
+        match Nf.find_opt var nf_map with
         | None ->
             Logs.err (fun m -> m "Requested let binding `%s` not found.@." var);
             None

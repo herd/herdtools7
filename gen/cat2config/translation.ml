@@ -332,6 +332,3 @@ let pp_relax : relax -> string = function
   | Relax [ rlx ] -> E.pp_edge rlx
   | Relax rlxs ->
       Format.sprintf "[%s]" (String.concat ", " (List.map E.pp_edge rlxs))
-
-let pp_relax_list : relax list -> string =
- fun rl -> String.concat " " (List.map pp_relax rl)

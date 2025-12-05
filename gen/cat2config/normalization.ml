@@ -52,8 +52,33 @@ module type S = sig
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
 end
 
-module Make (NormalForms : S) = struct
-  open NormalForms
+type config = { conditions : string list; unroll_depth : int }
+
+module Make (NF : S) : sig
+  type nf_map
+
+  (* Compute normal forms for the provided bindings.
+     Results are stored in a map of type [nf_map] which can be accessed
+     via [find_opt].
+   *)
+  val normalize_bindings : config:config -> (string * binding) list -> nf_map
+
+  (* Find a normalized binding within a [nf_map], by name.
+
+     Successful results are given as a list of normal forms and source AST expression,
+     such that if the requested binding is, in the source AST, of the form
+
+         let b = exp1 | exp2 | ... | expn
+
+     then the result of [find_opt "b" m] is a list
+
+         [ (nf1, exp1); (nf2, exp2); ...; (nfn; expn) ]
+
+     where nf_i is the normal form of exp_i for all i.
+   *)
+  val find_opt : string -> nf_map -> (NF.rel_nf * AST.exp) list option
+end = struct
+  open NF
 
   let unroll (n : int) (e : rel_nf) : rel_nf =
     rel_union_l
@@ -81,8 +106,6 @@ module Make (NormalForms : S) = struct
 
   let find_env_set v env = Option.bind (find_env v env) Either.find_left
   let find_env_rel v env = Option.bind (find_env v env) Either.find_right
-
-  type config = { conditions : string list; unroll_depth : int }
 
   let rec normalize_set ~(config : config) ~(env : env) ~(name : string)
       ~(is_recursive : bool) : AST.exp -> set_nf =
@@ -207,6 +230,8 @@ module Make (NormalForms : S) = struct
       Either.Right (normalize_rel ~config ~env ~name ~is_recursive e)
 
   type nf_map = (rel_nf * AST.exp) list StringMap.t
+
+  let find_opt = StringMap.find_opt
 
   (* Assumes that the order of let-definitions in `bindings` is that of
      the source cat file. This is important to properly scope bindings in
