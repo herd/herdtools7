@@ -1,7 +1,7 @@
 (* Create a set of relaxations for diy using a cat file *)
 
-module Arg = struct
-  type opts = {
+module Opts = struct
+  type t = {
     log_level : Logs.level;
     lets_to_print : string list;
     conds : string list;
@@ -16,10 +16,10 @@ module Arg = struct
 
   let parse_dump_opt (opts : StringSet.t) (s : string) : StringSet.t =
     if List.mem s valid_dump_opts then StringSet.add s opts
-    else raise (Arg.Bad "Wrong value for -dump")
+    else raise (Arg.Bad "Wrong value for --dump")
 
-  let should_dump_tree (o : opts) : bool = StringSet.mem "tree" o.dump
-  let should_dump_origin (o : opts) : bool = StringSet.mem "origin" o.dump
+  let should_dump_tree (o : t) : bool = StringSet.mem "tree" o.dump
+  let should_dump_origin (o : t) : bool = StringSet.mem "origin" o.dump
 
   let parse_log_opt : string -> string * Logs.level option =
     let level_of_string s : Logs.level option =
@@ -42,9 +42,9 @@ module Arg = struct
           let src = String.trim src in
           let lvl = String.trim lvl in
           (src, level_of_string lvl)
-      | _ -> raise (Arg.Bad "Wrong value for -log")
+      | _ -> raise (Arg.Bad "Wrong value for --log")
 
-  let parse () : opts * string list =
+  let parse () : t * string =
     let log_level = ref Logs.Error in
     let lets_to_print = ref [] in
     let conds = ref [] in
@@ -55,33 +55,39 @@ module Arg = struct
     let dump = ref StringSet.empty in
     let log = ref [] in
     let conf = ref false in
+    let valid_srcs = Logs.Src.list () |> List.map Logs.Src.name in
+    let log_opt_msg =
+      Format.sprintf "<%s>  Fine-grained logging control for specific modules."
+        (String.concat "|" valid_srcs)
+    in
     let opts =
       [
-        ("-v", Arg.Unit (fun () -> log_level := Logs.Info), " be verbose");
-        ( "-let",
+        ("-v", Arg.Unit (fun () -> log_level := Logs.Info), "  Be verbose.");
+        ( "--let",
           Arg.String (fun s -> lets_to_print := !lets_to_print @ [ s ]),
-          "<statement> print out selected let statements" );
-        ( "-conds",
+          "<str>  Print out selected let statements." );
+        ( "--conds",
           Arg.String (fun s -> conds := !conds @ [ s ]),
-          "<cond> choose what variant conditions to set" );
-        ( "-unroll",
+          "<str>  Choose what variant conditions to set. Can be passed \
+           multiple times." );
+        ( "--unroll",
           Arg.Int (fun i -> unroll := i),
-          "<unroll> choose how many times reflexive and transitive operators \
-           unroll. Default = 1" );
-        ( "-set-libdir",
+          "<n>  Specify how many times reflexive and transitive closure \
+           operators should be unrolled. Default = 1." );
+        ( "--set-libdir",
           Arg.String (fun s -> libdir := Some s),
-          "<path> set location of libdir to <path>" );
-        ( "-dump",
+          "<path>  Set location of libdir to <path>." );
+        ( "--dump",
           Arg.String (fun s -> dump := parse_dump_opt !dump s),
-          Format.sprintf "<%s> dump info on parsed model"
+          Format.sprintf "<%s>  Dump info on parsed model."
             (String.concat "|" valid_dump_opts) );
-        ( "-log",
+        ( "--log",
           Arg.String (fun s -> log := parse_log_opt s :: !log),
-          "<src1,src2,...> fine-grained logging control for specific modules" );
-        ( "-conf",
+          log_opt_msg );
+        ( "--conf",
           Arg.Unit (fun () -> conf := true),
-          "when enabled, causes the tool's results to be formatted as diy7 \
-           configuration file. Default = disabled." );
+          " Causes the tool to print its output in diy7 configuration file \
+           format." );
       ]
     in
     let prog =
@@ -90,7 +96,12 @@ module Arg = struct
     in
     let () =
       Arg.parse opts add_file_path
-        (Format.sprintf "Usage: %s [options]* cats*" prog)
+        (Format.sprintf "Usage: %s [OPTIONS] FILE" prog)
+    in
+    let file_path =
+      match !file_paths with
+      | [ fp ] -> fp
+      | _ -> raise (Arg.Bad "Must provide exactly one input file")
     in
     let opts =
       {
@@ -104,7 +115,7 @@ module Arg = struct
         conf = !conf;
       }
     in
-    (opts, !file_paths)
+    (opts, file_path)
 end
 
 module Make_parser (O : sig
@@ -156,7 +167,7 @@ let extract_let_binding (ins : AST.ins) :
       Some (name, { body; is_recursive = false })
   | _ -> None
 
-let run ~(opts : Arg.opts) (tree : AST.ins list) =
+let run ~(opts : Opts.t) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
   let norm_config : Nf.config =
     { conditions = opts.conds; unroll_depth = opts.unroll }
@@ -174,7 +185,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
             Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
-            (if Arg.should_dump_tree opts then
+            (if Opts.should_dump_tree opts then
                let compressed =
                  Ir.rel_union_l (List.map fst nfs) |> Ir.compress
                in
@@ -197,7 +208,7 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
           List.fold_left
             (fun acc (relaxs, ast_e) ->
               let print_cat_rel () =
-                if Arg.should_dump_origin opts then
+                if Opts.should_dump_origin opts then
                   printf "## %a@." Ast_utils.pp_exp ast_e
               in
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
@@ -220,7 +231,12 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
 
 let () =
   Logs.set_reporter (Logs.format_reporter ());
-  let opts, file_paths = Arg.parse () in
+  let opts, file_path =
+    try Opts.parse ()
+    with Arg.Bad msg ->
+      Logs.err (fun m -> m "%s" msg);
+      exit 1
+  in
   Logs.set_level (Some opts.log_level);
   Logs.Src.list ()
   |> List.iter (fun src ->
@@ -232,7 +248,5 @@ let () =
     let debug = false
     let libdir = opts.libdir
   end) in
-  file_paths
-  |> List.iter (fun file_path ->
-      let tree = Parser.find_parse_deep file_path in
-      run ~opts tree)
+  let tree = Parser.find_parse_deep file_path in
+  run ~opts tree
