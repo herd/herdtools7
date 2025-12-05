@@ -35,4 +35,22 @@ val parse_cmdline : spec list -> (string -> unit) -> unit
 module List : sig
   (* For compatibility with ocaml <= 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+  val uniq : eq:('a -> 'a -> bool) -> 'a list -> 'a list
+  val sequence : 'a list list -> 'a list list
+  val fold_left_opt : ('acc -> 'a -> 'acc option) -> 'acc -> 'a list -> 'acc option
+
+  module Infix : sig
+    val (let*) : 'a list -> ('a -> 'b list) -> 'b list
+  end
+end
+
+module Option : sig
+  (* Returns the first non-None element in the given list,
+     or None if all elements are None. *)
+  val choice_fn : (unit -> 'a option) list -> 'a option
+  val guard : bool -> unit option
+
+  module Infix : sig
+    val (let*) : 'a option -> ('a -> 'b option) -> 'b option
+  end
 end
