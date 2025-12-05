@@ -142,7 +142,7 @@ module Make (NormalForms : S) = struct
                 try Some (go e)
                 with NormalizationError err ->
                   Log.debug (fun m ->
-                      m "Skipping union branch: %s@." (pp_norm_err err));
+                      m "Skipping union branch: %s" (pp_norm_err err));
                   None)
               expl
           in
@@ -199,7 +199,7 @@ module Make (NormalForms : S) = struct
   *)
   let normalize_binding ~(config : config) ~(env : env) ~(name : string)
       (b : binding) : nf =
-    Log.info (fun m -> m "Processing let binding `%s`@." name);
+    Log.info (fun m -> m "Processing let binding `%s`" name);
     let e = b.body in
     let is_recursive = b.is_recursive in
     try Either.Left (normalize_set ~config ~env ~name ~is_recursive e)
@@ -220,7 +220,7 @@ module Make (NormalForms : S) = struct
             try Some (normalize_binding ~config ~env ~name b)
             with NormalizationError err ->
               Log.warn (fun m ->
-                  m "Skipping let binding `%s`: %s@." name (pp_norm_err err));
+                  m "Skipping let binding `%s`: %s" name (pp_norm_err err));
               None
           in
           let new_env = StringMap.add name (Lazy.from_fun do_normalize) env in
@@ -250,7 +250,7 @@ module Make (NormalForms : S) = struct
                     Some (nf, e)
                   with NormalizationError err ->
                     Log.debug (fun m ->
-                        m "Skipping `%s` component `%a`: %s@." name
+                        m "Skipping `%s` component `%a`: %s" name
                           Ast_utils.pp_exp e (pp_norm_err err));
                     None)
                 expl
