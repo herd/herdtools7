@@ -268,7 +268,10 @@ end = struct
                 let allocated = allocate parsed in
                 let compiled = compile doc allocated in
                 let src = MyName.outname name ".c" in
-                let pac = O.variant Variant_litmus.Pac in
+                let flags =
+                  { Flags.pac = O.variant Variant_litmus.Pac;
+                    Flags.self = O.variant Variant_litmus.Self;
+                    Flags.memtag = O.variant Variant_litmus.MemTag } in
                 dump src doc compiled;
                 if not OT.is_out then begin
                     let _utils =
@@ -282,16 +285,16 @@ end = struct
                           | _ -> false
                       end in
                       let module Obj = ObjUtil.Make(OO)(Tar) in
-                      Obj.dump pac in
+                      Obj.dump flags in
                     ()
                   end ;
                 R.run name out_chan doc allocated src ;
                 Completed
                   { arch = A'.arch; doc; src; fullhash = hash ;
-                    nprocs; pac; self = O.variant Variant_litmus.Self; }
+                    nprocs; flags; }
               end else begin
                 let cause = if limit_ok then "" else " (too many threads)" in
-                W.warn "%s test not compiled%s"
+                Warn.warn_always "%s test not compiled%s"
                   (Pos.str_pos0 doc.Name.file) cause ;
                 Absent
               end
@@ -439,6 +442,7 @@ end = struct
           include OT
           let hash = HashInfo.Std
           let precision = TestConf.fault_handling
+          let tagcheck = TestConf.mte_precision
           let variant = TestConf.variant
           include ODep
           let debuglexer = debuglexer
