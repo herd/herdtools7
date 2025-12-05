@@ -32,11 +32,16 @@ type MAIRType of MAIR_EL1_Type;
 type S2PIRType of S2PIR_EL2_Type;
 type S1PIRType of S2PIRType;
 type SCRType of SCR_Type;
+type SCTLRType of SCTLR_EL1_Type;
 
+// Our extractor for the system register types does not yet support those.
+type BRBINF_EL1_Type of bits(64);
+type BRBTGT_EL1_Type of bits(64);
+type BRBSRC_EL1_Type of bits(64);
 
 // =============================================================================
 
-func _SetUpRegisters ()
+func _SetUpRegisters (is_vmsa: boolean)
 begin
   // Value found on Rasberry 4B, ArmBian
   // uname -a:
@@ -53,6 +58,8 @@ begin
     // Another value from the same machine
     // '0000000000000000000000000000000000110000110100000001100110000101'
     ;
+
+  _SCTLR_EL1.M = if is_vmsa then '1' else '0';
 end;
 
 // =============================================================================
@@ -79,52 +86,39 @@ end;
 
 // =============================================================================
 
-func IsFeatureImplemented(f : Feature) => boolean
+// Not declared in shared_pseudocode
+
+// We only implement the minimum necessary
+
+readonly func ImpDefBool(s: string) => boolean
 begin
-  return FALSE;
+  case s of
+    when "Secure-only implementation" => return FALSE;
+    otherwise => unreachable;
+  end;
 end;
+
+readonly func ImpDefInt(s: string) => integer
+begin
+  case s of
+    when "Maximum Physical Address Size" => return 48;
+    otherwise => unreachable;
+  end;
+end;
+
 
 // =============================================================================
 
-func HaveAArch32() => boolean
+// Not declared in shared_pseudoocode
+
+// We only implement the mininum required features.
+
+readonly func IsFeatureImplemented(f : Feature) => boolean
 begin
-  return FALSE;
-end;
-
-// =============================================================================
-
-func HaveAArch64() => boolean
-begin
-  return TRUE;
-end;
-
-// =============================================================================
-
-// HaveEL()
-// ========
-// Return TRUE if Exception level 'el' is supported
-
-func HaveEL(el: bits(2)) => boolean
-begin
-    if el IN {EL1,EL0} then
-        return TRUE;                             // EL1 and EL0 must exist
-    else
-        return FALSE; // boolean IMPLEMENTATION_DEFINED;
-    end;
-end;
-
-// =============================================================================
-
-// ClearExclusiveByAddress()
-// =========================
-// Clear the global Exclusives monitors for all PEs EXCEPT processorid if they
-// record any part of the physical address region of size bytes starting at paddress.
-// It is IMPLEMENTATION DEFINED whether the global Exclusives monitor for processorid
-// is also cleared if it records any part of the address region.
-
-func ClearExclusiveByAddress(paddress : FullAddress, processorid : integer, size : integer)
-begin
-  pass;
+  case f of
+    when FEAT_AA64EL0 => return TRUE;
+    otherwise => return FALSE;
+  end;
 end;
 
 // =============================================================================
@@ -141,55 +135,98 @@ end;
 // DataMemoryBarrier()
 // ===================
 
-// We use our own integer codings of enumerations
-// to guard against enumeration type change
-
-func MBReqDomainToInteger(domain : MBReqDomain) => integer
-begin
-  case domain of
-    when MBReqDomain_Nonshareable => return 0;
-    when MBReqDomain_InnerShareable => return 1;
-    when MBReqDomain_OuterShareable => return 2;
-    when MBReqDomain_FullSystem => return 3;
-  end;
-end;
-
-func MBReqTypesToInteger(types : MBReqTypes) => integer
-begin
-  case types of
-    when MBReqTypes_Reads => return 0;
-    when MBReqTypes_Writes => return 1;
-    when MBReqTypes_All => return 2;
-  end;
-end;
-
 func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
 begin
-  primitive_dmb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+  primitive_dmb(domain, types);
 end;
 
 // DataSynchronizationBarrier()
 // ============================
+
+// nXS is not implemented in herd
 
 func DataSynchronizationBarrier
   (domain : MBReqDomain,
    types : MBReqTypes,
    nXS : boolean)
 begin
-  primitive_dsb(MBReqDomainToInteger(domain),MBReqTypesToInteger(types));
+  primitive_dsb(domain, types);
 end;
 
 // =============================================================================
 
-// Hint_Branch()
-// =============
-// Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
-// the next instruction.
+// ThisInstrLength()
+// =================
 
-func Hint_Branch(hint : BranchType)
+// In herd, instructions are always 32-bits long
+
+func ThisInstrLength() => integer
 begin
-  return;
+  return 32;
 end;
+
+// =============================================================================
+
+// ExternalInvasiveDebugEnabled()
+// ==============================
+// The definition of this function is IMPLEMENTATION DEFINED.
+// In the recommended interface, this function returns the state of the DBGEN signal.
+
+// We do not support external debug.
+
+func ExternalInvasiveDebugEnabled() => boolean
+begin
+    return FALSE;
+end;
+
+// =============================================================================
+
+// ProcessorID()
+// =============
+// Return the ID of the currently executing PE.
+
+// We override a impdef declaration in shared_pseudocode. The processor id is
+// set directly by herd as an integer, in the variable _ProcesorID.
+
+var _ProcessorID: integer = 0;
+
+func ProcessorID() => integer
+begin
+  return _ProcessorID;
+end;
+
+// =============================================================================
+
+// NormalWBISHMemAttr
+// ==================
+
+// The memory-attributes used by all memory accesses
+
+var NormalWBISHMemAttr: MemoryAttributes =
+  MemoryAttributes {
+    memtype = MemType_Normal,
+    inner = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    outer = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    shareability = Shareability_ISH,
+    tags = MemTag_Untagged, // ??
+    device = DeviceType_GRE, // Not relevant for Normal
+    notagaccess = TRUE, // Not used in shared_pseudocode
+    xs = '0' // If I understand correctly WalkMemAttrs
+  };
+
+// =============================================================================
+
+
+// Code used by our interface with herd, in either `physmem-std.asl` or
+// `physmem-vmsa.asl`
 
 // Type of underlying accesses (same order as lib/access.mli),
 // as recorder un events.
@@ -203,17 +240,3 @@ type EventAccess of enumeration {
      TAG,
      PHY_PTE,
 };
-
-type BRBINF_EL1_Type of bits(64);
-type BRBSRC_EL1_Type of bits(64);
-type BRBTGT_EL1_Type of bits(64);
-
-readonly func ImpDefBool(s: string) => boolean
-begin
-  case s of
-    when "Secure-only implementation" => return FALSE;
-    otherwise =>
-      print "Unknown ImpDef: " ++ s;
-      assert FALSE;
-  end;
-end;

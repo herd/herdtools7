@@ -1,3 +1,26 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2022-2023 Arm Limited and/or its affiliates <open-source-office@arm.com>
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/*
+
+    patches-vmsa.asl
+    ----------------
+
+This file is a list of re-implementations of ASL functions from the ARM
+Reference Manual. They are completely re-written or simply edited by hand. When
+re-written completely, this is often time the minimal code that type-checks.
+The code is also translated from ASLv0 to ASLv1 by hand.
+
+The ARM Reference Manual is available here:
+    https://developer.arm.com/documentation/ddi0602/2023-09/
+
+This file is complementary to the file patches.asl, to be included with it when
+Stage 1 Translation is activated.
+
+*/
+
 // AArch64.S1Enabled()
 // ===================
 // Determine if stage 1 is enabled for the access type for this translation regime
@@ -8,11 +31,8 @@ begin
   return TRUE;
 end;
 
-// AArch64.PAMax()
-// ===============
-// Returns the IMPLEMENTATION DEFINED maximum number of bits capable of representing
-// physical address for this processor
-// Let us define it.
+// This constant is set to 3 in the Arm ARM. We change it to ensure a flat
+// translation table.
 
 func AArch64_PAMax() => integer
 begin
@@ -51,16 +71,6 @@ begin
     return descaddress;
 end;
 
-// AArch64.MAIRAttr()
-// ==================
-// Retrieve the memory attribute encoding indexed in the given MAIR
-// Temporary ? Origin does not work for unknown index!
-
-func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
-begin
-  return Zeros{8};
-end;
-
 // DecodeShareability()
 // ====================
 // Decode shareability of target memory region
@@ -68,20 +78,7 @@ end;
 
 func DecodeShareability(sh:bits(2)) => Shareability
 begin
-  return Shareability_OSH;
-end;
-
-// AArch64.S1AMECFault()
-// =====================
-// Returns TRUE if a Translation fault should occur for Realm EL2 and Realm EL2&0
-// stage 1 translated addresses to Realm PA space.
-// Temporary: do not fault
-
-func AArch64_S1AMECFault{N}
-  (wallparams:S1TTWParams, paspace:PASpace,regime:Regime,descriptor:bits(N))
-=> boolean
-begin
-    return FALSE;
+  return Shareability_ISH;
 end;
 
 // AArch64.OAOutOfRange()
@@ -223,58 +220,6 @@ begin
   throw SilentExit {-};
 end;
 
-
-// S1TranslationRegime()
-// =====================
-// Stage 1 translation regime for the given Exception level
-
-func S1TranslationRegime(el:bits(2)) => bits(2)
-begin
-  return EL1;
-end;
-
-func S1TranslationRegime() => bits(2)
-begin
-  return EL1;
-end;
-
-// PEErrorState()
-// ==============
-// Returns the error state of the PE on taking an error exception:
-// The PE error state reported to software through the exception syndrome also
-// depends on how the exception is taken, and so might differ from the value
-// returned from this function.
-// LUC: Dubious
-
-func PEErrorState(fault:FaultRecord) => ErrorState
-begin
-  return ErrorState_UEO;
-end;
-
-// IsFault()
-// =========
-// Return TRUE if a fault is associated with status returned by memory.
-// Luc: and then call  HandleExternalAbort()
-//func IsFault(retstatus:PhysMemRetStatus) => boolean
-// begin
-//  return FALSE;
-// end;
-
-
-// HandleExternalAbort()
-// =====================
-// Takes a Synchronous/Asynchronous abort based on fault.
-// Luc Should not be called.
-func
-  HandleExternalAbort
-    (memretstatus:PhysMemRetStatus,iswrite:boolean,
-     memaddrdesc:AddressDescriptor,size:integer,
-     accdesc:AccessDescriptor)
-begin
-//  assert FALSE;
-  return;
-end;
-
 // AArch64.GetS1TTWParams()
 // ========================
 // Returns stage 1 translation table walk parameters from respective controlling
@@ -292,6 +237,7 @@ begin
   walkparams.d128 = if D128 then '1' else '0'; // Much faster!
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
+  walkparams.txsz = 16[5:0];
   return walkparams;
 end;
 
@@ -306,21 +252,30 @@ begin
   return '0';
 end;
 
+// AArch64.MAIRAttr()
+// ==================
+// Retrieve the memory attribute encoding indexed in the given MAIR
+// Temporary ? Origin does not work for unknown index!
+// the value returned is irrelevant because we override the S1DecodeMemAttrs
 
-// AArch64.S1TxSZFaults()
-// ======================
-// Detect whether configuration of stage 1 TxSZ field generates a fault
-// Luc: Override: does not occur, never.
-
-func AArch64_S1TxSZFaults (regime:Regime,walkparams:S1TTWParams) => boolean
+func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
 begin
-  return FALSE;
+  return Ones{8};
 end;
 
 // S1DecodeMemAttrs()
 // ==================
 // Decode MAIR-format memory attributes assigned in stage 1
-// Luc: for speed (?) handle the case of Mormal memory, untagged, WB, ISH
+// Luc: for speed, handle the case of Mormal memory, untagged, WB, ISH
+// Hadrien: sh received here is read from the translation table descriptor, so
+// is in general symbolic. The attr_in are a redirection away from being
+// symbolic, see AArch64_MAIRAttr.
+// Given this, the function DecodeShareability() results in 4+ executions: this
+// is too much of a performance loss. We thus have to override
+// DecodeShareability() or one of its parent. Because S1DecodeMemAttrs is just
+// a wrapper around the decoding of sharability and the MAIR_Attr, that we had
+// overiden earlier, we decided that it was more explicit to simply override
+// S1DecodeMemAttrs.
 
 func
   S1DecodeMemAttrs
@@ -328,19 +283,7 @@ func
   walparams:S1TTWParams,acctype:AccessType)
   => MemoryAttributes
 begin
-  var memattrs : MemoryAttributes;
-  memattrs.memtype = MemType_Normal;
-  memattrs.outer.attrs     = MemAttr_WB;
-  memattrs.outer.hints     = MemHint_RWA;
-  memattrs.outer.transient = FALSE;
-  memattrs.inner.attrs     = MemAttr_WB;
-  memattrs.inner.hints     = MemHint_RWA;
-  memattrs.inner.transient = FALSE;
-  memattrs.xs              = '0';
-  memattrs.tags = MemTag_Untagged;
-  memattrs.notagaccess = FALSE;
-  memattrs.shareability = Shareability_ISH;
-  return memattrs;
+  return NormalWBISHMemAttr;
 end;
 
 // AArch64.CheckDebug()
@@ -352,30 +295,6 @@ func AArch64_CheckDebug
 => FaultRecord
 begin
     return NoFault(accdesc, vaddress);
-end;
-
-// AArch64.BlocknTFaults()
-// =======================
-// Identify whether the nT bit in a block descriptor is effectively set
-// causing a translation fault
-
-func AArch64_BlocknTFaults{N}(d128:bit,descriptor:bits(N)) => boolean
-begin
-  return FALSE;
-end;
-
-// EL2Enabled()
-// ============
-// Returns TRUE if EL2 is present and executing
-// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
-// - with the PE in Realm state when Realm EL2 is implemented, or
-// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
-// - when EL3 is not implemented.
-
-// Luc: Petty optimisation
-func EL2Enabled() => boolean
-begin
-  return FALSE;
 end;
 
 // CreateAccDescAtomicOp()

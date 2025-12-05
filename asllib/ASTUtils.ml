@@ -464,6 +464,9 @@ let unop op = map_desc (fun e -> E_Unop (op, e))
 let literal v = E_Literal v |> add_dummy_annotation
 let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
+let e_true = literal (L_Bool true)
+let e_false = literal (L_Bool false)
+let expr_of_bool b = if b then e_true else e_false
 let zero_expr = expr_of_z Z.zero
 let one_expr = expr_of_z Z.one
 let minus_one_expr = expr_of_z Z.minus_one
@@ -909,3 +912,25 @@ let get_cycle m =
     let _ = IMap.fold (fun x _ -> dfs path0 above0 x) m seen0 in
     None
   with Cycle e -> Some (List.rev e)
+
+let func_to_primitive f =
+  let side_effecting =
+    match f.qualifier with Some (Pure | Readonly) -> false | _ -> true
+  in
+  { f with body = SB_Primitive side_effecting }
+
+let plug_primitives ast =
+  let signatures =
+    ast
+    |> List.map (fun f ->
+        match f.desc with
+        | D_Func f -> (f.name, func_to_primitive f)
+        | _ -> raise (Invalid_argument "plug_primitives: non function argument"))
+    |> IMap.of_list
+  in
+  let plug_one (f, name) =
+    try (IMap.find name signatures, f)
+    with Not_found ->
+      raise (Invalid_argument "plug_primitives: badly referenced primitive")
+  in
+  List.map plug_one

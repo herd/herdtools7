@@ -190,6 +190,9 @@ val minus_one_expr : expr
 val expr_of_rational : Q.t -> expr
 (** [expr_of_rational q] is the rational literal for [q]. *)
 
+val expr_of_bool : bool -> expr
+(** [expr_of_bool b] is the boolean literal for [b]. *)
+
 val mul_expr : expr -> expr -> expr
 (** [mul_expr e1 e2] is an expression representing [e1 * e2]. *)
 
@@ -423,3 +426,7 @@ val transitive_closure : ISet.t IMap.t -> ISet.t IMap.t
 val get_cycle : ISet.t IMap.t -> identifier list option
 (** [get_cycle m] is [None] if the graph whose transition function is given by
     [m] is acyclic, [Some li] if [li] is a cycle in [m]. *)
+
+val plug_primitives : AST.t -> ('f * string) list -> (AST.func * 'f) list
+(** [plug_primitives ast arg primitives] is the list of primitives as accepted
+    by [Backend.mli]. *)

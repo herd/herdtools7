@@ -36,14 +36,16 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_annotation (S_Try (body,[catcher],None))
 
-let setup_registers =
+let setup_registers is_vmsa =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
   add_dummy_annotation
     (S_Call
        {
          name = "_SetUpRegisters";
-         args = [];
+         args = [
+           expr_of_bool is_vmsa;
+         ];
          params = [];
          call_type = ST_Procedure;
        })
@@ -1055,36 +1057,27 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let pstate_default_fields =
       let open Asllib.AST in
       lazy
-        (let proc_state_decl =
-           C.libfind "asl-pseudocode/patches.asl"
-           |> ASLBase.build_ast_from_file ~ast_type:`Ast `ASLv1
-           |> List.find (fun d ->
-                  match d.desc with
-                  | D_GlobalStorage { keyword = GDK_Var; name = "PSTATE"; ty = Some _ ; _ } -> true
-                  | _ -> false)
-         in
-         let proc_state_fields =
-           match proc_state_decl.desc with
-           | D_GlobalStorage { keyword = GDK_Var; name = "PSTATE"; ty = Some ty; _ } -> (
-               match ty.desc with
-               | T_Collection fields -> fields
-               | _ -> assert false)
-           | _ -> assert false
-         in
-         List.map
-           (fun (name, ty) ->
-             match ty.desc with
-             | T_Bits (e_length, []) -> (
-                 match e_length.desc with
-                 | E_Literal (L_Int z) ->
-                     ( name,
-                       Constant.Concrete
-                         (ASLScalar.S_BitVector
-                            (Asllib.Bitvector.zeros (Z.to_int z))) )
-                 | _ -> assert false)
-             | _ -> assert false)
-           proc_state_fields
-         |> StringMap.from_bindings)
+        (Lazy.force ASLS.built_shared_pseudocode
+        |> Misc.find_map (fun d ->
+            match d.desc with
+            | D_GlobalStorage
+                { keyword = GDK_Var; name = "PSTATE"; ty = Some ty; _ } -> (
+                match ty.desc with
+                | T_Collection fields -> Some fields
+                | _ -> None)
+            | _ -> None)
+        |> Option.get
+        |> List.map (fun (name, ty) ->
+            let e_length =
+              match ty.desc with T_Bits (e, []) -> e | _ -> assert false
+            in
+            let length =
+              match e_length.desc with
+              | E_Literal (L_Int z) -> Z.to_int z
+              | _ -> assert false
+            in
+            (name, Constant.Concrete (ASLScalar.zeros length)))
+        |> StringMap.from_bindings)
 
     let build_pstate_val is_el0 ii =
       let fields_to_update =
@@ -1170,7 +1163,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let open Asllib.ASTUtils in
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
-              let s = stmt_from_list [ setup_registers; decode; s; return_0 ] in
+              let s = stmt_from_list [ setup_registers is_vmsa; decode; s; return_0 ] in
               let s = if is_vmsa then catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false
