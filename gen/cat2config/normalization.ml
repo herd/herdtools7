@@ -33,21 +33,34 @@ module type S = sig
 
   val empty_set : set_nf
   val empty_rel : rel_nf
-  val domain : rel_nf -> set_nf
-  val range : rel_nf -> set_nf
-  val find_fence : set_nf -> fence option
-  val fencerel : fence -> rel_nf
+
+  (* Operations on sets and relations *)
   val rel_union_l : rel_nf list -> rel_nf
   val set_union_l : set_nf list -> set_nf
   val rel_seq_l : rel_nf list -> rel_nf
   val rel_inter_l : rel_nf list -> rel_nf option
   val set_inter_l : set_nf list -> set_nf
-  val inv : rel_nf -> rel_nf
-  val to_id : set_nf -> rel_nf
-  val set_diff : set_nf -> set_nf -> set_nf
-  val set_comp : set_nf -> set_nf
+  val inv : rel_nf -> rel_nf (* Relation inversion *)
+  val to_id : set_nf -> rel_nf (* Construct identity/reflexive relation *)
+  val set_diff : set_nf -> set_nf -> set_nf (* Set difference *)
+  val set_comp : set_nf -> set_nf (* Set complement *)
+
+  (* These functions determines the interpretation of set-typed and
+     relation-typed identifiers.
+     They can be used to define the meaning of builtin cat symbols, or to
+     override the interpretation of user-defined bindings. *)
   val parse_set_id : string -> set_nf option
   val parse_rel_id : string -> rel_nf option
+
+  (* Check whether the given set expression represents a fence effect *)
+  val find_fence : set_nf -> fence option
+
+  (* Builtin cat functions *)
+  val domain : rel_nf -> set_nf
+  val range : rel_nf -> set_nf
+  val fencerel : fence -> rel_nf
+
+  (* Pretty-printing *)
   val pp_set_nf : Format.formatter -> set_nf -> unit
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
 end
@@ -90,9 +103,9 @@ end = struct
   (* Environments store the result of normalizing previous let bindings.
 
      Normalizations are wrapped in Lazy.t so that they are only performed if
-     and when needed.
-     If also ensures that we only report errors for bindings that are relevant
-     to the user's request.
+     downstream callers actually need them.
+     Among other things, this makes it easier to only report errors for
+     bindings that are relevant to the user's request.
 
      As normalization can potentially fail, environment values are also wrapped
      in `optional` to signal whether a normalization succeeded or failed.
