@@ -38,11 +38,11 @@ module Make (O:Opt) =
       match d with
       | Some d ->
           sprintf
-            "<%s> %s, default %s"
+            "<tags> where tags is <%s> %s, default %s"
             (String.concat "|" O.tags) msg
             (O.pp d)
       | None ->
-          sprintf "<%s> %s" (String.concat "|" O.tags) msg
+          sprintf "<tags> where tags is <%s>. %s" (String.concat "|" O.tags) msg
 
     let parse_withfun opt f msg d =
       complete opt msg
@@ -107,8 +107,7 @@ module MakeS (O:OptS)
 
       let parse opt add msg =
         let spec = do_parse_tag_set opt (add_tag add) in
-        opt,Arg.String spec,
-        Printf.sprintf "<tags> where tags in {%s}, %s" taglist msg
+        opt,Arg.String spec, msg
     end
 
 module type SArg = sig
