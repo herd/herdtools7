@@ -52,10 +52,10 @@ let pp_exp : Format.formatter -> AST.exp -> unit =
   in
   do_pp_exp ~with_parens:false
 
-let eval_variant_cond ~(conditions : string list) : AST.variant_cond -> bool =
+let eval_variant_cond ~(variants : string list) : AST.variant_cond -> bool =
   let open AST in
   let rec go : AST.variant_cond -> bool = function
-    | Variant v -> List.mem v conditions
+    | Variant v -> List.mem v variants
     | OpNot v -> not (go v)
     | OpAnd (v1, v2) -> go v1 && go v2
     | OpOr (v1, v2) -> go v1 || go v2

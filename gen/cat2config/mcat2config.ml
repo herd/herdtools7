@@ -4,7 +4,7 @@ module Opts = struct
   type t = {
     log_level : Logs.level;
     lets_to_print : string list;
-    conds : string list;
+    variants : string list;
     unroll : int;
     libdir : string option;
     dump : StringSet.t;
@@ -47,7 +47,7 @@ module Opts = struct
   let parse () : t * string =
     let log_level = ref Logs.Error in
     let lets_to_print = ref [] in
-    let conds = ref [] in
+    let variants = ref [] in
     let unroll = ref 1 in
     let file_paths = ref [] in
     let add_file_path fp = file_paths := !file_paths @ [ fp ] in
@@ -66,10 +66,9 @@ module Opts = struct
         ( "--let",
           Arg.String (fun s -> lets_to_print := !lets_to_print @ [ s ]),
           "<str>  Print out selected let statements." );
-        ( "--conds",
-          Arg.String (fun s -> conds := !conds @ [ s ]),
-          "<str>  Choose what variant conditions to set. Can be passed \
-           multiple times." );
+        ( "--variant",
+          Arg.String (fun s -> variants := !variants @ [ s ]),
+          "<str>  Enable variant. Can be set multiple times." );
         ( "--unroll",
           Arg.Int (fun i -> unroll := i),
           "<n>  Specify how many times reflexive and transitive closure \
@@ -107,7 +106,7 @@ module Opts = struct
       {
         log_level = !log_level;
         lets_to_print = !lets_to_print;
-        conds = !conds;
+        variants = !variants;
         unroll = !unroll;
         libdir = !libdir;
         dump = !dump;
@@ -170,7 +169,7 @@ let extract_let_binding (ins : AST.ins) :
 let run ~(opts : Opts.t) (tree : AST.ins list) =
   let bindings = List.filter_map extract_let_binding tree in
   let norm_config : Normalization.config =
-    { conditions = opts.conds; unroll_depth = opts.unroll }
+    { variants = opts.variants; unroll_depth = opts.unroll }
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
   let requested_bindings :

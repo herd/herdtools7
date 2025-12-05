@@ -65,7 +65,7 @@ module type S = sig
   val pp_rel_nf : Format.formatter -> rel_nf -> unit
 end
 
-type config = { conditions : string list; unroll_depth : int }
+type config = { variants : string list; unroll_depth : int }
 
 module Make (NF : S) : sig
   type nf_map
@@ -123,7 +123,7 @@ end = struct
   let rec normalize_set ~(config : config) ~(env : env) ~(name : string)
       ~(is_recursive : bool) : AST.exp -> set_nf =
     let open AST in
-    let conditions = config.conditions in
+    let variants = config.variants in
     let rec go = function
       | Op (_, Union, expl) ->
           let nfs =
@@ -147,7 +147,7 @@ end = struct
               range (normalize_rel ~config ~env ~name ~is_recursive e)
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
+          if Ast_utils.eval_variant_cond ~variants a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) when var = name && is_recursive ->
           raise (NormalizationError (Recursion_not_supported var))
@@ -168,7 +168,7 @@ end = struct
   and normalize_rel ~(config : config) ~(env : env) ~(name : string)
       ~(is_recursive : bool) (e : AST.exp) : rel_nf =
     let open AST in
-    let conditions = config.conditions in
+    let variants = config.variants in
     let rec go e =
       match e with
       | Op (_, Union, expl) ->
@@ -210,7 +210,7 @@ end = struct
               | None -> raise (NormalizationError (Not_a_fence exp)))
           | _ -> raise (NormalizationError (Function_not_supported e)))
       | If (_, VariantCond a, exp, exp2) ->
-          if Ast_utils.eval_variant_cond ~conditions a then go exp else go exp2
+          if Ast_utils.eval_variant_cond ~variants a then go exp else go exp2
       | Try (_, e, e2) -> ( try go e with NormalizationError _ -> go e2)
       | Var (_, var) when var = name && is_recursive ->
           raise (NormalizationError (Recursion_not_supported var))
