@@ -26,7 +26,6 @@ let prog =
 let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
-let earley = ref false
 let cat = ref "aarch64.cat"
 let name = ref None
 let arg = ref None
@@ -47,7 +46,6 @@ let options =
    "<default> do not show diagnostics");
     ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
-   ("-earley", Arg.Set earley, "select earley parser");
     ("-cat", Arg.String (fun s -> cat := s),
      sprintf "<name.cat> set base model, default %s" !cat);
     ("-name",Arg.String (fun s -> name := Some s),
@@ -69,12 +67,8 @@ module Config = struct
 end
 
 let zyva =
-  if !earley then
-    let module Zyva = EParser.Make(Config) in
-    Zyva.zyva
-  else
-    let module Zyva = StdParser.Make(Config) in
-    Zyva.zyva
+  let module Zyva = StdParser.Make(Config) in
+  Zyva.zyva
 
 let zyva name chan =
   try zyva name chan

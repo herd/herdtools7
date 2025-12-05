@@ -23,9 +23,4 @@
  (public_names uoaim7 extractdefs7)
  (optional)
  (modules_without_implementation ParserConfig)
- (preprocess
-  (per_module
-   ((action
-     (system "pa_ocaml %{input-file}"))
-    EParser)))
- (libraries herdtools earley.core earley.str))
+ (libraries herdtools))
