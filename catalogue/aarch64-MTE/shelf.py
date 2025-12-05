@@ -1177,7 +1177,6 @@ illustrative_tests = [
     "tests/asorted-async/MP+dmb.sttp+addr_asynctagfault.litmus",
     "tests/asorted-async/MP+dmb.sttp+pickaddr--async.litmus",
     "tests/asorted-async/S+dmb.st+addr_asynctagfault-po.litmus",
-    "tests/asorted-async/S+dmb.sttp+data_asynctagfault.litmus",
     "tests/asorted-async/S+dmb.sttp+data-noasyncfault.litmus",
     "tests/from-tagcheck-async/LB-notagfault+po+dmb.ldpt--async.litmus",
     "tests/from-tagcheck-async/LB-tagfault+addr+dmb.ldpt--async.litmus",
