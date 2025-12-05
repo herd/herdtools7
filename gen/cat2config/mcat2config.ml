@@ -162,7 +162,8 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
     { conditions = opts.conds; unroll_depth = opts.unroll }
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
-  let requested_bindings =
+  let requested_bindings :
+      (string * (Translation.relax list * AST.exp) list) list =
     opts.lets_to_print
     |> List.filter_map (fun var ->
         match StringMap.find_opt var nf_map with
@@ -178,37 +179,42 @@ let run ~(opts : Arg.opts) (tree : AST.ins list) =
                  Ir.rel_union_l (List.map fst nfs) |> Ir.compress
                in
                Format.printf "(%s)@.  %a@." var Ir.pp_rel_nf compressed);
-            Some (var, nfs))
+            let translated =
+              nfs
+              |> List.map (fun (nf, ast_e) ->
+                  let relaxs = Translation.translate nf in
+                  (relaxs, ast_e))
+            in
+            Some (var, translated))
   in
   if opts.conf then
     let open Format in
     requested_bindings
-    |> List.iteri (fun i (var, nfs) ->
+    |> List.iteri (fun i (var, relaxss) ->
         if i <> 0 then printf "@.";
         printf "### %s@." var;
         let _ =
           List.fold_left
-            (fun acc (nf, ast_e) ->
+            (fun acc (relaxs, ast_e) ->
               let print_cat_rel () =
                 if Arg.should_dump_origin opts then
                   printf "## %a@." Ast_utils.pp_exp ast_e
               in
-              let relaxs = Translation.translate nf in
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
               if relaxs <> [] then (
                 print_cat_rel ();
                 printf "-safe %s@."
                   (String.concat " " (List.map Translation.pp_relax relaxs)));
               acc @ relaxs)
-            [] nfs
+            [] relaxss
         in
         ())
   else
     requested_bindings
-    |> List.iter (fun (_, nfs) ->
-        nfs
-        |> List.iter (fun (nf, _) ->
-            nf |> Translation.translate
+    |> List.iter (fun (_, relaxss) ->
+        relaxss
+        |> List.iter (fun (relaxs, _) ->
+            relaxs
             |> List.iter (fun relax ->
                 Format.printf "%s@." (Translation.pp_relax relax))))
 
