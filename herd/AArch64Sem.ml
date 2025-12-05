@@ -1363,21 +1363,30 @@ module Make
 
       let lift_fault_memtag mfault mm dir ii =
         let lbl_v = get_instr_label ii in
-        if has_handler ii then
-          fun ma ->
-            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-            B.fault [AArch64Base.elr_el1, lbl_v]
+        let open Precision in
+        let is_sync =
+          match C.mte_precision, dir with
+          | (Synchronous, _) -> true
+          | (Asymmetric, Dir.R) -> true
+          | _ -> false in
+        if is_sync then
+          if has_handler ii then
+            fun ma ->
+              M.bind_ctrldata ma
+                (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
+              B.fault [AArch64Base.elr_el1, lbl_v]
+          else
+            fun ma ->
+              ma >>*= (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
+              B.fault [AArch64Base.elr_el1, lbl_v]
         else
-          let open Precision in
-          match C.mte_precision,dir with
-          | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-               B.fault [AArch64Base.elr_el1, lbl_v]
-          | (Asynchronous,_)|(Asymmetric,Dir.W) ->
-             fun ma ->
-             let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
-             let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
-             mm ma >>! B.Next []
+          let () =
+            if has_handler ii && (not kvm) then
+              Warn.warn_always "If -variant mte,async the fault handler isn't executed." in
+          fun ma ->
+            let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
+            let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
+            mm ma >>! B.Next []
 
 (* KVM mode *)
 
