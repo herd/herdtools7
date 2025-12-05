@@ -712,10 +712,12 @@ let do_tr prf =
       None
 
 let add_pte = sprintf "pte_%s"
+let add_pmd = sprintf "pmd_%s"
 let add_parel1 = sprintf "parel1_t %s"
 let tr_pte = do_tr "pte_"
 let is_pte = is_prefix "pte_"
 let pp_pte = sprintf "PTE(%s)"
+let pp_ttd = sprintf "TTD(%s, %s, %s)"
 
 let add_tlb = sprintf "tlb_%s"
 

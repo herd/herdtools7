@@ -32,7 +32,7 @@ module Make(V:Constant.S)(O:Arch_litmus.Config) =
 
     let internal_addr name = match name with
     | G.Addr n -> Misc.string_eq n sig_cell
-    | G.Pte _|G.Phy _ -> false
+    | G.Pte _| G.Ttd _|G.Phy _ -> false
 
     let extract_rm32 r = match r with
     |  Rm32_reg _

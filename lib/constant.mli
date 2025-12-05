@@ -38,12 +38,23 @@ val default_symbolic_data : symbolic_data
    used by all tools. Abstract later?
 *)
 
+(* Descriptors metadata for multi-level page tables *)
+
+type transl_stage =
+  | S1
+  | S2
+
+type transl_level =
+  | LV2
+  | LV3
+
 (* Various kinds of system memory *)
 
 type syskind =
   | PTE  (* Page table entry *)
   | PTE2 (* Page table entry of page table entry (non-writable) *)
   | TLB  (* TLB key *)
+  | TTD of { stage : transl_stage; level : transl_level; } (* Multi-level page table descriptors *)
 
 (*
  * Tag location are based upon physical or virtual addresses.
@@ -64,6 +75,8 @@ type symbol =
   | System of syskind * string     (* System memory *)
 
 val get_index : symbol -> int option
+val string_of_stage : transl_stage -> string
+val string_of_level : transl_level -> string
 val pp_symbol_old : symbol -> string
 val pp_symbol : symbol -> string
 
@@ -143,6 +156,7 @@ val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar, 'pte,'addrreg, 'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pte2 : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_sym_ttd: string -> transl_stage -> transl_level -> ('scalar, 'pte, 'addrreg, 'instr) t
 val mk_sym_pa : string -> ('scalar,'pte,'addrreg,'instr) t
 val old2new : string -> string
 

@@ -100,7 +100,20 @@ let symbolic_data_collision s1 s2 =
   then Some (s1.pac, s2.pac)
   else None
 
-type syskind = PTE|PTE2|TLB
+type transl_stage =
+  | S1
+  | S2
+
+type transl_level =
+  | LV2
+  | LV3
+
+type syskind =
+  | PTE
+  | PTE2
+  | TLB
+  | TTD of { stage: transl_stage; level: transl_level }
+
 type tagkind = PHY|VIR
 
 type symbol =
@@ -112,8 +125,16 @@ type symbol =
 let get_index = function
   | Virtual s -> Some s.offset
   | Physical (_,o)|TagAddr (_,_,o) -> Some o
-  | System ((PTE|PTE2), _) -> Some 0
+  | System ((PTE|PTE2|TTD(_)), _) -> Some 0
   | System (TLB, _) -> None
+
+let string_of_stage = function
+  | S1 -> "s1"
+  | S2 -> "s2"
+
+let string_of_level = function
+  | LV2 -> "lv2"
+  | LV3 -> "lv3"
 
 let pp_physical s = sprintf "PA(%s)" s
 
@@ -137,8 +158,12 @@ let pp_symbol_old = function
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | TagAddr (t,s,o) -> pp_tagaddr t s o
   | System (TLB,s) -> Misc.add_tlb s
-  | System (PTE,s) -> Misc.add_pte s
+  | System (PTE,s)
+  | System (TTD { stage = S1; level = LV3 }, s)
+    -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | System (TTD { stage = S1; level = LV2 }, s)-> Misc.add_pmd s
+  | System (TTD _, _) -> assert false
 
 
 let pp_symbol = function
@@ -148,6 +173,8 @@ let pp_symbol = function
   | System (TLB,s) -> sprintf "TLB(%s)" s
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
+  | System (TTD {stage; level},s) ->
+    sprintf "TTD(%s, %s, %s)" (string_of_stage stage) (string_of_level level) s
 
 let pp_symbol_init = function
   | Virtual s -> pp_index_init (pp_symbolic_data s) s.offset
@@ -431,6 +458,13 @@ let mk_sym_pte2 s =
   let s = as_virtual s in
   Symbolic (System (PTE2,s))
 
+let mk_sym_ttd var stage level =
+  match level with
+  | LV3 -> mk_sym_pte var  (* Same as existing PTE(x) *)
+  | LV2 ->
+    let v = as_virtual var in
+    Symbolic (System (TTD { stage; level }, v))
+
 let mk_sym_pa s =
   let s = as_virtual s in
   Symbolic (Physical (s,0))
@@ -516,7 +550,7 @@ let as_pte v = match v with
 | _ -> None
 
 let is_pt v = match v with
-| Symbolic (System ((PTE|PTE2),_)) -> true
+| Symbolic (System ((PTE|PTE2|TTD _),_)) -> true
 | _ -> false
 
 let make_canonical = function

@@ -55,6 +55,7 @@ module Generic
       let tag = Base "tag_t"
       let base_array sz = CType.Array ("int", sz)
       let pteval_t = CType.pteval_t
+      let pmdval_t = CType.pmdval_t
       let parel1_t = CType.parel1_t
       let ins_t = CType.ins_t
 
@@ -692,13 +693,17 @@ module A.FaultType = A.FaultType)
           prog in
       List.map
         (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
-          let addrs,ptes =
+          let addrs,ptes,pmds =
             G.Set.fold
-              (fun s (a,p) -> match s with
-              | G.Addr s -> StringSet.add s a,p
-              | G.Pte s -> a,StringSet.add s p
-              | G.Phy _ -> assert false)
-              addrs (StringSet.empty,StringSet.empty) in
+              (fun s (a,p,pm) -> match s with
+              | G.Addr s -> StringSet.add s a,p,pm
+              | G.Pte s -> a,StringSet.add s p,pm
+              | G.Ttd { stage = G.Stage1; level = G.Lv3; s } -> a,StringSet.add s p,pm
+              | G.Ttd { stage = G.Stage1; level = G.Lv2; s } -> a,p,StringSet.add s pm
+              | G.Ttd _
+              | G.Phy _
+                -> assert false)
+              addrs (StringSet.empty,StringSet.empty,StringSet.empty) in
           let all_clobbers =
             List.fold_left
               (fun k i -> match i.A.Out.clobbers with
@@ -731,6 +736,7 @@ module A.FaultType = A.FaultType)
           { init ;
             addrs ;
             ptes = StringSet.elements ptes ;
+            pmds = StringSet.elements pmds ;
             stable;
             final;
             all_clobbers;
@@ -792,7 +798,7 @@ module A.FaultType = A.FaultType)
             | _ -> env)
           init env in
       G.Map.fold
-        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _| G.Phy _ -> k)
+        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _| G.Ttd _| G.Phy _ -> k)
         env []
 
     let type_out env p t =

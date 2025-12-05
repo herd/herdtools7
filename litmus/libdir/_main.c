@@ -49,7 +49,11 @@ int RUN(int argc,char **argv,FILE *out) {
 #endif
 #else
   global_t *glo_ptr = &global;
+#ifdef MLPT
+    glo_ptr->mem = static_mem_ptr();
+#else
   glo_ptr->mem = mem;
+#endif
 #endif
   init_getinstrs();
   init_global(glo_ptr);

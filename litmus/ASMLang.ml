@@ -236,6 +236,11 @@ module RegMap = A.RegMap)
                     let a = Misc.add_pte a in
                     sprintf "[%s] \"=m\" (*(_vars->%s))" a a::k)
                   t.Tmpl.ptes
+             @@List.fold_right
+                  (fun a k ->
+                    let a = Misc.add_pmd a in
+                    sprintf "[%s] \"=m\" (*(_vars->%s))" a a::k)
+                  t.Tmpl.pmds
              @@RegSet.fold
                   (fun reg k ->
                     (if O.cautious then
@@ -484,17 +489,19 @@ module RegMap = A.RegMap)
 
       let add_pteval k = sprintf "_pteval%d" k
 
+      let add_pmdval k = sprintf "_pmdval%d" k
+
       let add_parel1val k = sprintf "_parel1%d" k
 
       let find_pteval_index p =
         let rec find_rec k = function
-          | [] -> assert false
-          | q::rem ->
+           | [] -> assert false
+           | q::rem ->
               if A.V.PteVal.eq p q then k
               else find_rec (k+1) rem in
         find_rec 0
 
-      let find_parel1_index p =
+       let find_parel1_index p =
         let rec find_rec k = function
           | [] -> assert false
           | q::rem ->
@@ -535,8 +542,12 @@ module RegMap = A.RegMap)
           -> AL.GetInstr.dump_instr Tmpl.dump_v v
         | Label (p,lbl) -> OutUtils.fmt_lbl_var p lbl
         | PteVal p ->
-            let idx = find_pteval_index p ptevalEnv in
+          let idx = find_pteval_index p ptevalEnv in
+          if A.V.PteVal.is_page p then
             add_pteval idx
+          else if A.V.PteVal.is_block p || A.V.PteVal.is_table p then
+            add_pmdval idx
+          else assert false
         | AddrReg a ->
           let idx = find_parel1_index a parel1Env in
             add_parel1val idx
@@ -551,14 +562,14 @@ module RegMap = A.RegMap)
           (fun k (_,v) -> match v with
           | Constant.PteVal p -> p::k
           | _ -> k)
-          [] t.Tmpl.init
+        [] t.Tmpl.init
 
-      let extract_parel1s t =
+       let extract_parel1s t =
         List.fold_left
           (fun k (_,v) -> match v with
           | Constant.AddrReg p -> p::k
           | _ -> k)
-          [] t.Tmpl.init
+        [] t.Tmpl.init
 
       let is_nop_v = function
         | Constant.Instruction i -> AL.is_nop i
@@ -580,7 +591,7 @@ module RegMap = A.RegMap)
           List.map
             (fun (p,lbl) -> sprintf "ins_t *%s" (OutUtils.fmt_lbl_var p lbl))
             labels in
-        let addrs_proc,ptes_proc = Tmpl.get_addrs t
+        let addrs_proc,ptes_proc,pmds_proc = Tmpl.get_addrs t
         and phys_proc = Tmpl.get_phys_only t in
         let addrs =
           List.map
@@ -605,13 +616,19 @@ module RegMap = A.RegMap)
           List.map
             (fun x -> sprintf "pteval_t *%s" (Misc.add_pte x))
             ptes_proc in
+        let pmds =
+          List.map
+            (fun x -> sprintf "pmdval_t *%s" (Misc.add_pmd x))
+            pmds_proc in
         let phys =
           List.map
             (fun x -> sprintf "pteval_t %s" (Misc.add_physical x))
             phys_proc in
         let ptevals =
           List.mapi
-            (fun i _ -> sprintf "pteval_t %s" (add_pteval i))
+            (fun i p ->
+              if A.V.PteVal.is_page p then sprintf "pteval_t %s" (add_pteval i)
+              else Printf.sprintf "pmdval_t %s" (add_pmdval i))
             ptevalEnv in
         let parel1s =
           List.mapi
@@ -639,7 +656,7 @@ module RegMap = A.RegMap)
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in
         let params =
           String.concat ","
-            (params0@labels@instrs@addrs@ptes@phys@ptevals@parel1s@cpys@outs) in
+            (params0@labels@instrs@addrs@ptes@pmds@phys@ptevals@parel1s@cpys@outs) in
         LangUtils.dump_code_def chan O.noinline O.mode proc params ;
         do_dump
           args0
@@ -713,13 +730,15 @@ module RegMap = A.RegMap)
         let env = t.Tmpl.ty_env in
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let instrs = List.map compile_instr_call (Tmpl.get_instructions t) in
-        let addrs_proc,ptes = Tmpl.get_addrs t
+        let addrs_proc,ptes,pmds = Tmpl.get_addrs t
         and phys = Tmpl.get_phys_only t in
         let addrs =
           List.map (compile_addr_call alignedEnv) addrs_proc @
           List.map OutUtils.fmt_pte_kvm ptes @
+          List.map OutUtils.fmt_pmd_kvm pmds @
           List.map OutUtils.fmt_phy_kvm phys in
-        let ptevals = extract_ptevals t in
+        let all_ptevals = extract_ptevals t in
+        let ptevals = List.filter A.V.PteVal.is_page all_ptevals in
         let ptevals =
           List.map
             (fun p ->
@@ -730,6 +749,29 @@ module RegMap = A.RegMap)
               | Some s ->
                   PU.dump_pteval_flags (OutUtils.fmt_phy_kvm s) p)
             ptevals in
+        let pmdvals =
+          let pmdvals = List.filter (fun p -> A.V.PteVal.is_block p || A.V.PteVal.is_table p) all_ptevals in
+          List.map
+            (fun p ->
+              if A.V.PteVal.is_block p then
+                match A.V.PteVal.as_physical p with
+                | None | Some "" ->
+                    Warn.user_error
+                      "litmus cannot handle block initialisation with '%s'"
+                      (A.V.PteVal.pp O.hexa p)
+                | Some s ->
+                    PU.dump_pmdval_flags (PU.mk_block s) p
+              else
+                if A.V.PteVal.is_table p then
+                  match A.V.PteVal.as_pte p with
+                  | None | Some "" ->
+                      Warn.user_error
+                        "litmus cannot handle table initialisation with '%s'"
+                        (A.V.PteVal.pp O.hexa p)
+                  | Some s ->
+                      PU.dump_pmdval_flags (OutUtils.fmt_phy_pmd_kvm s) p
+              else assert false)
+            pmdvals in
         let parel1s = extract_parel1s t in
         let parel1s = List.map (fun a -> A.V.AddrReg.dump_pack SkelUtil.data_symb_id a) parel1s in
         let addrs_cpy =
@@ -739,7 +781,7 @@ module RegMap = A.RegMap)
         and outs = List.map (compile_out_reg_call env proc) t.Tmpl.final in
         let args =
           String.concat ","
-            (args0@labels@instrs@addrs@ptevals@parel1s@addrs_cpy@outs) in
+            (args0@labels@instrs@addrs@ptevals@pmdvals@parel1s@addrs_cpy@outs) in
         LangUtils.dump_code_call chan indent f_id args
 
     end
