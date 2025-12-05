@@ -1,0 +1,22 @@
+AArch64 RFZRGP-000a
+variant=shadowstack
+(*
+
+Two effects E1 and E2 to the Same Location follow the same ordering
+requirements as two Explicit Memory effects to the Same Location if
+one of the following applies:
+ - E1 and E2 are both GCS Memory effects.
+*)
+{
+
+  SS(x,1);
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=x;
+}
+P0         ;
+MOV X1,#4  ;
+GCSPUSHM X1; (* GCS (Write) effect *)
+GCSPOPM X2 ; (* GCS (Read) effect  *)
+
+forall 0:X2=4

@@ -1,0 +1,17 @@
+AArch64 G003
+variant=shadowstack
+{
+  SS(x,1);
+
+  0:GCSPR_EL1=&x[0];
+  0:X1=&x[0];
+}
+
+P0               ;
+ADR X29,L1       ;
+GCSSTR X29,[X1]  ;
+RET X29          ;
+MOV W0,#1        ; (* unreachable *)
+L1:              ;
+
+forall 0:X0=0 /\ ~fault(P0)

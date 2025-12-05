@@ -707,4 +707,6 @@ include Arch.MakeArch(struct
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     -> Warn.fatal "SME instructions are not implemented yet"
+    | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
+    -> Warn.fatal "GCS instructions are not implemented yet"
 end)
