@@ -58,7 +58,7 @@ or a \dynamicerrorterm{}.
     \item \Proseaslscan{$\vstdtext$}{$\spectoken$}{$\vstdtokens$\ProseTerminateAs{\LexicalErrorConfig}};
     \item \Proseaslparse{$\vstdtokens$}{$\vstdparse$\ProseTerminateAs{\ParseErrorConfig}};
     \item \Prosebuildast{$\vstdparse$}{$\vstdast$\ProseTerminateAs{\BuildErrorConfig}};
-    \item \Proserenamelocals{\vstdast}{\vstdastrenamed};
+    \item renaming the local storage elements in the list of global declarations $\vstdast$ yields the list of global declarations $\vstdastrenamed$;
     \item define $\vstdasbuiltin$ by applying $\setbuiltin$ to each top-level declaration in\\
           $\vstdastrenamed$\ProseTerminateAs{\BuildErrorConfig};
     %%%%%
@@ -68,7 +68,7 @@ or a \dynamicerrorterm{}.
     %%%%%
     \item define $\vuntypedast$ as the concatenation of the AST $\vstdasbuiltin$ and
           the AST $\vspecast$ (both are lists of $\decl$);
-    \item \Prosetypecheckast{$\vuntypedast$}{empty static global environment}{$\vtypedast$}{$\tenv$\ProseOrTypeError};
+    \item \Prosetypecheckast{$\vuntypedast$}{the empty static global environment}{$\vtypedast$}{$\tenv$\ProseOrTypeError};
     \item \Proseevalspec{$\vtypedast$}{$\tenv$}{the integer $\vret$ and the execution graph $\vg$\ProseOrDynErrorDiverging}.
 \end{itemize}
 
@@ -82,10 +82,9 @@ or a \dynamicerrorterm{}.
     {
     \begin{array}{r}
       \vi \in \listrange(\vstdastrenamed): \setbuiltin(\vstdastrenamed[\vi]) \typearrow \\
-      \vstddeclast_i \OrBuildError
+      \vstdasbuiltin[i] \OrBuildError
     \end{array}
     }\\
-    \vstdasbuiltin \eqdef [\vi \in \listrange(\vstdast): \vstddeclast_i]\\
     \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\\\\
     \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\\\\
     \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
@@ -318,7 +317,7 @@ $\args$, yielding the list of arguments $\newargs$.
   \renamelocalsty(\vt) \astarrow \vtp\\
   \renamelocalsargs(\vargsone) \astarrow \vargsonep
 }{
-  \renamelocalsargs(\overname{(\name,\vt) \concat \vargsone}{\args}) \astarrow \overname{[(\namep, \vtp)] \concat \vargsonep}{\newargs}
+  \renamelocalsargs(\overname{(\name,\vt) \cons \vargsone}{\args}) \astarrow \overname{(\namep, \vtp) \cons \vargsonep}{\newargs}
 }
 \end{mathpar}
 
@@ -346,11 +345,11 @@ yielding the list of parameters $\newparams$.
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
-    \item $\newparams$ is the list with \head\ $(\name,\tyopt)$ and \tail\ $\paramsone$;
+    \item $\params$ is the list with \head\ $(\name,\tyopt)$ and \tail\ $\paramsone$;
     \item \Proserenamelocalsname{$\name$}{$\namep$};
     \item \Prosemapopt{$\renamelocalsty$}{$\tyopt$}{$\tyoptp$};
     \item \Proserenamelocalsnamedargs{$\paramsone$}{$\paramsonep$};
-    \item \Proseeqdef{$\newargs$}{the list with \head{} $(\namep,\tyoptp)$ and \tail\ $\paramsonep$}.
+    \item \Proseeqdef{$\newparams$}{the list with \head{} $(\namep,\tyoptp)$ and \tail\ $\paramsonep$}.
   \end{itemize}
 \end{itemize}
 
@@ -363,12 +362,12 @@ yielding the list of parameters $\newparams$.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \params = (\name,\tyopt) \concat \vargsone\\
+  \params \eqname (\name,\tyopt) \cons \vargsone\\
   \renamelocalsname(\name) \astarrow \namep\\
   \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
   \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
 }{
-  \renamelocalsnamedargs(\params) \astarrow \overname{[(\namep, \tyoptp)] \concat \paramsonep}{\newparams}
+  \renamelocalsnamedargs(\params) \astarrow \overname{(\namep, \tyoptp) \cons \paramsonep}{\newparams}
 }
 \end{mathpar}
 
@@ -420,7 +419,7 @@ yielding the type $\newty$.
   \item \AllApplyCase{t\_tuple}
   \begin{itemize}
     \item $\tty$ is the \tupletypeterm\ for the list of types $\vli$;
-    \item \Proserenamelocalsexpr{$\newli$}{the list obtained by applying $\renamelocalsty$ to each type in $\vli$};
+    \item renaming the local storage elements in the list of types $\vli$ yields the list of types $\newli$;
     \item \Proseeqdef{$\newty$}{the \tupletypeterm\ for the list of types $\newli$}.
   \end{itemize}
 
@@ -434,7 +433,7 @@ yielding the type $\newty$.
 
   \item \AllApplyCase{structured}
   \begin{itemize}
-    \item $\tty$ is \structuredtypeterm\ with AST label $L$ list of pairs consisting of identifiers and types $\vli$;
+    \item $\tty$ is a \structuredtypeterm{} with AST label $L$ and list of pairs consisting of identifiers and types $\vli$;
     \item \Proseeqdef{$\newli$}{the list of pairs $(\name, \renamelocalsty(\vt))$ for each pair
           $(\name, \vt)$ in $\vli$}
     \item \Proseeqdef{$\newty$}{the \structuredtypeterm\ with AST label $L$ and $\newli$}.
@@ -549,7 +548,7 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_assign}
   \begin{itemize}
-    \item $\vs$ is a \assignmentstatement{$\vle$}{$\ve$};
+    \item $\vs$ is an \assignmentstatement{$\vle$}{$\ve$};
     \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
     \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
     \item \Proseeqdef{$\news$}{an \assignmentstatement{$\vlep$}{$\vep$}}.
@@ -642,7 +641,7 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_unreachable}
   \begin{itemize}
-    \item $\vs$ is a \unreachablestatementterm;
+    \item $\vs$ is an \unreachablestatementterm;
     \item \Proseeqdef{$\news$}{\unreachablestatementterm}.
   \end{itemize}
 
@@ -892,14 +891,14 @@ yielding the expression $\newe$.
 
   \item \AllApplyCase{e\_arbitrary}
   \begin{itemize}
-    \item $\ve$ is a \arbitraryexpression{$\vt$};
+    \item $\ve$ is an \arbitraryexpression{$\vt$};
     \item \Proserenamelocalsty{$\vt$}{$\vtp$};
     \item \Proseeqdef{$\newe$}{the \arbitraryexpression{$\vtp$}}.
   \end{itemize}
 
   \item \AllApplyCase{e\_atc}
   \begin{itemize}
-    \item $\ve$ is a \atcexpression{$\veone$}{$\vt$};
+    \item $\ve$ is an \atcexpression{$\veone$}{$\vt$};
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsty{$\vt$}{$\vtp$};
     \item \Proseeqdef{$\newe$}{the \atcexpression{$\veonep$}{$\vtp$}}.
@@ -947,7 +946,7 @@ yielding the expression $\newe$.
 
   \item \AllApplyCase{e\_getarray}
   \begin{itemize}
-    \item $\ve$ is a \getarrayexpression{$\veone$}{$\vetwo$};
+    \item $\ve$ is an \getarrayexpression{$\veone$}{$\vetwo$};
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
     \item \Proseeqdef{$\newe$}{the \getarrayexpression{$\veonep$}{$\vetwop$}}.
@@ -955,7 +954,7 @@ yielding the expression $\newe$.
 
   \item \AllApplyCase{e\_getenumarray}
   \begin{itemize}
-    \item $\ve$ is a \getenumarrayexpression{$\veone$}{$\vetwo$};
+    \item $\ve$ is an \getenumarrayexpression{$\veone$}{$\vetwo$};
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
     \item \Proseeqdef{$\newe$}{the \getenumarrayexpression{$\veonep$}{$\vetwop$}}.
@@ -999,7 +998,7 @@ yielding the expression $\newe$.
   \item \AllApplyCase{e\_pattern}
   \begin{itemize}
     \item $\ve$ is a \patternexpressionterm{} with expression $\veone$ and pattern $\vp$;
-    \item \Proserenamelocals{$\ve$}{$\vep$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item applying $\renamelocalspattern$ to $\vp$ yields $\vpp$;
     \item \Proseeqdef{$\newe$}{the \patternexpressionterm{} with expression $\veonep$ and pattern $\vpp$}.
   \end{itemize}
@@ -1134,7 +1133,7 @@ yielding the expression $\newe$.
 \inferrule[e\_getfield]{
   \renamelocalsexpr(\veone) \astarrow \veonep
 }{
-  \renamelocalsexpr(\overname{\EGetField(\veone, \vf)}{\ve}) \astarrow \overname{\EGetField(\veone, \vf)}{\newe}
+  \renamelocalsexpr(\overname{\EGetField(\veone, \vf)}{\ve}) \astarrow \overname{\EGetField(\veonep, \vf)}{\newe}
 }
 \end{mathpar}
 
@@ -1176,7 +1175,7 @@ yielding the expression $\newe$.
   \renamelocalspattern(\vp) \astarrow \vpp
 }{
   \renamelocalsexpr(\overname{\EPattern(\veone, \vp)}{\ve}) \astarrow
-  \EPattern(\veonep, \vpp)
+  \overname{\EPattern(\veonep, \vpp)}{\newe}
 }
 \end{mathpar}
 
@@ -1236,7 +1235,7 @@ yielding the \assignableexpression\ $\newle$.
   \item \AllApplyCase{le\_setfields}
   \begin{itemize}
     \item $\vle$ is an \setfieldslexpr{$\vleone$}{$\vfl$};
-    \item \Proserenamelocalslexpr{$\vle$}{$\vlep$};
+    \item \Proserenamelocalslexpr{$\vle$}{$\vleonep$};
     \item \Proseeqdef{$\newle$}{the \setfieldslexpr{$\vleonep$}{$\vfl$}}.
   \end{itemize}
 
@@ -1268,7 +1267,7 @@ yielding the \assignableexpression\ $\newle$.
   \renamelocalslexpr(\vleone) \astarrow \vleonep\\
   \vslicesp \eqdef [\vs\in\vslices: \renamelocalsslice(\vs)]
 }{
-  \renamelocalslexpr(\overname{\LESlice(\vleone, \vslices)}{\vle}) \astarrow \overname{\LESlice(\vlep, \vslicesp)}{\newle}
+  \renamelocalslexpr(\overname{\LESlice(\vleone, \vslices)}{\vle}) \astarrow \overname{\LESlice(\vleonep, \vslicesp)}{\newle}
 }
 \end{mathpar}
 
@@ -1368,15 +1367,15 @@ yielding the constraint $\newc$.
   \item \AllApplyCase{exact}
   \begin{itemize}
     \item $\vx$ is an \Proseexactconstraint{$\ve$};
-    \item \Proserenamelocals{$\ve$}{$\vep$};
-    \item \Proseeqdef{$\newc$}{\Proseexactconstraint{$\vep$}}.
+    \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
+    \item \Proseeqdef{$\newc$}{the \Proseexactconstraint{$\vep$}}.
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
     \item $\vx$ is a \Proserangeconstraint{$\veone$}{$\vetwo$};
-    \item \Proserenamelocals{$\veone$}{$\veonep$};
-    \item \Proserenamelocals{$\vetwo$}{$\vetwop$};
+    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
+    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
     \item \Proseeqdef{$\newc$}{the \Proserangeconstraint{$\veonep$}{$\vetwop$}}.
   \end{itemize}
 \end{itemize}
@@ -1428,7 +1427,7 @@ yielding $\vnewslice$.
           $S \in \{\SliceLength, \SliceRange, \SliceStar\}$;
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
-    \item \Proseeqdef{$\vnewslice$}{the slice with AST label $S$ over the two expression $\veonep$ and $\vetwop$};
+    \item \Proseeqdef{$\vnewslice$}{the slice with AST label $S$ over the two expressions $\veonep$ and $\vetwop$};
   \end{itemize}
 \end{itemize}
 
@@ -1550,7 +1549,7 @@ pattern $\vp$, yielding the pattern $\newp$.
     \item $\vp$ is a pattern with AST label $L$ and list of patterns $\pl$,
           where $L$ is one of $\PatternAny$ and $\PatternTuple$;
     \item \Proseeqdef{$\newpl$}{the list obtained by applying $\renamelocalspattern$ to each pattern in $\pl$};
-    \item the pattern with AST label $L$ and list of patterns $\newpl$.
+    \item \Proseeqdef{$\newp$}{the pattern with AST label $L$ and list of patterns $\newpl$}.
   \end{itemize}
 
   \item \AllApplyCase{single\_expr}
@@ -1559,12 +1558,12 @@ pattern $\vp$, yielding the pattern $\newp$.
           where $L$ is one of $\PatternGeq$, $\PatternLeq$, $\PatternNot$, and
           $\PatternSingle$;
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
-    \item \Proseeqdef{$\newp$}{the pattern with AST label $L$ and expression $\veonep$}.
+    \item \Proseeqdef{$\vpe$}{the pattern with AST label $L$ and expression $\vnewpe$}.
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vp$ is the range pattern with expressions $\veone$ and $\vetwo$;
+    \item $\vp$ is a range pattern with expressions $\veone$ and $\vetwo$;
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
     \item \Proseeqdef{$\newp$}{the range pattern with expressions $\veonep$ and $\vetwop$}.
@@ -1662,10 +1661,10 @@ The function
   \overname{\decl}{\vdeclp}
   \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-sets the $\funcbuiltin$ flag of a top-level function declaration, which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
-It produces a build error when given a top-level declaration which is not a function.
+sets the $\funcbuiltin$ flag of a top-level function declaration $\decl$,
+which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
+It produces a build error when $\decl$ is not a function.
 } % END_OF_IGNORED_RELATION
-
 
 \ProseParagraph
 \AllApply

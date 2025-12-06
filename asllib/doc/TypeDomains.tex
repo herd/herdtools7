@@ -119,22 +119,22 @@ by overloading $\dynamicdomain$:
 
   \item \AllApplyCase{constraint\_range\_okay}
   \begin{itemize}
-    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
     \item evaluating $\vetwo$ in $\env$ results in a configuration with the native integer for $b$;
-    \item $\vd$ is the set containing all native integer values for integers greater or equal to $a$ and less than or equal to $b$.
+    \item $\vd$ is the set containing all native integer values for integers greater than or equal to $a$ and less than or equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{constraint\_range\_abnormal1}
   \begin{itemize}
-    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.
   \end{itemize}
 
   \item \AllApplyCase{constraint\_range\_abnormal2}
   \begin{itemize}
-    \item $\vc$ is a range constraint consisting of a two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
+    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
     \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
     \item evaluating $\vetwo$ in $\env$ results in either a dynamic error configuration or diverges;
     \item $\vd$ is the empty set.

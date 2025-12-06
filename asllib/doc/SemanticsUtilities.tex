@@ -13,6 +13,8 @@ This chapter defines the following helper relations for operating on \nativevalu
   \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraphterm{} representing a Read Effect for a given identifier;
   \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraphterm{} representing a Write Effect for a given identifier;
   \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevaluesterm{};
+  \item \SemanticsRuleRef{SlicesToPositions} converts a list of slices into a list of indices;
+  \item \SemanticsRuleRef{MaxPosOfSlice} finds the maximum position in a slice;
   \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalueterm{};
   \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalueterm{};
   \item \SemanticsRuleRef{GetIndex} reads a vector \nativevalueterm{} at a given index;
@@ -369,8 +371,6 @@ Notice that the bits of a bitvector go from the least significant bit being on t
 which is reflected by how the rules list the bits.
 The effect of placing the bits in sequence is that of concatenating the results
 from all of the given slices.
-Also notice that bitvector bits are numbered from 1 and onwards, which is why we add 1 to the indices specified
-by the slices when accessing a bit.
 
 \ExampleDef{Reading From a Bitvector}
 The specification in \listingref{ReadFromBitvector} shows examples of reading slices from a bitvector
@@ -427,8 +427,8 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
-  \bits \eqname \bv[n] ... \bv[1]\\
-  \decheck(\maxpos < n, \BadIndex) \evalarrow \OrDynError\\\\
+  \bits \eqname \bv[n] ... \bv[0]\\
+  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\\\\
   \commonsuffixline\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
@@ -487,7 +487,7 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in 0..n.\left\{ \begin{array}{ll}
-    \vs_j & \exists j\in 1..m.\ i = I_j\\
+    \vs_j & \exists j\in 0..m.\ i = I_j\\
     \vd_i & \text{otherwise}
   \end{array} \right.}\\\\
   \vbits\eqdef [i=n..0: \bitfunc(i)]\\
@@ -537,8 +537,8 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 \ExampleDef{Reading a Vector at an Index}
 The specification in \listingref{GetIndex} shows examples of accessing indices of native vectors:
 \begin{itemize}
-  \item evaluating \verb|assert arr[[3]] == 3| involves \\
-        $\getindex(3, \NVVector(\nvint(0), \nvint(3), \nvint(0))) \evalarrow \nvint(3)$;
+  \item evaluating \verb|assert arr[[1]] == 3| involves \\
+        $\getindex(1, \NVVector(\nvint(0), \nvint(3), \nvint(0))) \evalarrow \nvint(3)$;
   \item evaluating \verb|assert (5, 7).item0 == 5| involves \\
         $\getindex(0, \NVVector(\nvint(5), \nvint(7))) \evalarrow \nvint(5)$;
   \item evaluating \verb|(5, 7) as (integer, integer)| involves \\
