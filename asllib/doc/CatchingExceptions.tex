@@ -177,17 +177,17 @@ We demonstrate this with the following example.
 
 \ExampleDef{Evaluating a Try Statement}
 In \listingref{semantics-evalcatchers}, the statement \verb|update_and_throw();|
-makes up the whole try-block.
+makes up the entire try-block.
 Evaluating the call to \verb|update_and_throw| employs an environment $\env$ where
 \texttt{g} is bound to $0$.
 Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before raising an exception.
 Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
 of the form
 $\Throwing(\Ignore, \Ignore, \Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
-When the catch clause is evaluated the semantics takes the global environment from $\envthrow$
+When the catch clause is evaluated, the semantics takes the global environment from $\envthrow$
 to account for the update to \texttt{g} and the local environment from $\env$ to account for the
-updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$, and use this
-environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
+updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$.
+The evaluation uses this environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
 
 \ASLListing{Semantics of exception catching}{semantics-evalcatchers}{\semanticstests/EvalCatchers.asl}
 
@@ -296,7 +296,7 @@ Otherwise
         and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
         (that is, neither of the \texttt{catch} clauses matches the raised exception);
   \item evaluating the \texttt{otherwise} statement $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block})
-        is not an error configuration $C$\ProseOrDynErrorDiverging;
+        does not yield an error configuration $C$\ProseOrDynErrorDiverging;
   \item $\newg$ is the ordered composition of $\sg$ and the graph of $C$,
         with the $\aslpo$ edge;
   \item the result of the entire evaluation is $C$ with its graph substituted with $\newg$.

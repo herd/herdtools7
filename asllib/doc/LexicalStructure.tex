@@ -51,7 +51,7 @@ In particular, it is an error to use a tab character in ASL specification text (
 \hline
 \anycharacter{\texttt{a\_string}}     & Any character in \texttt{a\_string}\\
 $\square$                             & The space character (decimal 32) \hypertarget{def-ascii}{}\\
-\ascii{$a$}                           & The ASCII with decimal $a$\\
+\ascii{$a$}                           & The ASCII character with decimal $a$\\
 \ascii{$a$-$b$}                       & The ASCII range between decimals $a$ and $b$\\
 (\texttt{$A$})                        & $A$\\
 $A$ $B$                               & $A$ followed by $B$\\
@@ -83,7 +83,7 @@ $\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \asci
 \end{center}
 
 \hypertarget{def-lang}{}
-The notation $\Lang{e}$ stands for \emph{formal language} of a regular expression $e$.
+The notation $\Lang{e}$ stands for the \emph{formal language} of a regular expression $e$.
 That is, the set of strings that match that regular expression.
 
 \section{Whitespace\label{sec:Whitespace}}
@@ -336,7 +336,7 @@ and returns a sequence of tokens (tokens are defined below) or a \emph{lexical e
 
 Tokens have one of two forms:
 \begin{description}
-  \item[Value-carrying] Tokens that carry value have the form $L(v)$ where $L$ is a token label,
+  \item[Value-carrying] Tokens that carry a value have the form $L(v)$ where $L$ is a token label,
         signifying the meaning of the token, and $v$ is a value carried by the token,
         which is used to construct the respective Abstract Syntax Tree nodes.
   \item[Valueless] Tokens that do not carry values have the form $L$ where $L$ is a token label.

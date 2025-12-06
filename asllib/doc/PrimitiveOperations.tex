@@ -8,7 +8,7 @@ and pairs of \nativevaluesterm{} (binary operations) into other \nativevaluester
 The term \emph{Primitive Operations} denotes the set of operations available
 in the expression syntax that use an \emph{Operator} derived from either
 $\unop$ or $\binop$.
-This chapter defines the Primitive Operations as functions over literals.
+This chapter defines the Primitive Operations as functions on literals.
 
 Primitive operations are evaluated both statically and dynamically.
 We define the static evaluation of primitive operations on literals
@@ -256,7 +256,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \section{Primitive Operation Signatures\label{sec:PrimitiveOperationSignatures}}
-ASL follows mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
+ASL follows the mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
 to refer to one of several different operations.
 %
 \taref{BooleanOperators}, \taref{IntegerOperators}, \taref{BitvectorOperators}, \taref{RealOperators},
@@ -957,19 +957,19 @@ The set of valid signatures for string concatenation operations is defined as fo
   \item \AllApplyCase{lt\_int}
   \begin{itemize}
     \item $\op$ is $\LT$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
-    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$.
   \end{itemize}
 
   \item \AllApplyCase{ge\_int}
   \begin{itemize}
     \item $\op$ is $\GE$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
-    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than or equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{gt\_int}
   \begin{itemize}
     \item $\op$ is $\GT$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
-    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$.
   \end{itemize}
 
   \item \AllApplyCase{and\_bool}

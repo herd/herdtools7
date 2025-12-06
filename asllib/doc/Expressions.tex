@@ -95,7 +95,7 @@ is annotated with the type \verb|integer{3}|.
 \AllApply
 \begin{itemize}
 \item $\ve$ is the literal expression $\vv$;
-\item annotating the literal $\vv$ in the \staticenvironmentterm{} $\tenv$ yields is the type $\vt$;
+\item annotating the literal $\vv$ in the \staticenvironmentterm{} $\tenv$ yields the type $\vt$;
 \item \Proseeqdef{$\newe$}{$\ve$};
 \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
@@ -308,7 +308,7 @@ uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-When there exists a global variable $\vx$, the type system
+When a global variable, $\vx$, exists, the type system
 forbids having $\vx$ as a local variable.
 This is enforced by \TypingRuleRef{LDVar} in the Chapter ``Typing of Local Declarations'',
 and
@@ -331,7 +331,7 @@ $(x\ \opone\ y)\ \optwo\ z$ or as $x\ \opone\ (y\ \optwo\ z)$ since there is no 
 Otherwise it is a static operator precedence error (\BinopPrecedence).
 See \ASTRuleRef{EBinop} for the formal details.
 
-The operator classes and precedence order is defined by the following table
+The operator classes and precedence order are defined by the following table
 (a subset of the table in \secref{PriorityAndAssociativity},
 which contains tokens that are not operators, but are needed for parsing disambiguation):
 
@@ -420,7 +420,7 @@ We define the helper function
 \[
   \binopprec(\overname{\binop}{\op}) \aslto \N
 \]
-which assigns a precedence level to each binary operator $\op$, as defined below:
+which assigns a precedence level to each binary operator, $\op$, as defined below:
 \begin{mathpar}
 \inferrule{}{
   {
@@ -1306,7 +1306,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \hypertarget{def-getenumarrayexpression}{}
 \section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
-In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed arrays is represented
+In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed array is represented
 the same way. The type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
 The semantics utilizes a rule matching the corresponding type of array ---
@@ -2164,7 +2164,7 @@ yields the literal expression for \verb|2|.
 \RenderRelation{width_plus}
 
 \ExampleDef{Summing Widths}
-Summing the list of expression \verb|2, 3|,
+Summing the list of expressions \verb|2, 3|,
 yields the expression \verb|2+3|,
 (in AST terms, \\
 $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
@@ -2519,7 +2519,7 @@ In \listingref{semantics-atcvalue}, both type assertions ---
 In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
 does not yield a \DynamicErrorConfigurationTerm{}, since the invocation of \texttt{f1} returns $\False$ when
 evaluated:
-\ASLListing{A asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
+\ASLListing{An asserting type conversion that is never evaluated}{semantics-atcnotevaluated}
 {\semanticstests/SemanticsRule.ATCNotDynamicErrorIfFalse.asl}
 
 \ExampleDef{Asserting Type Conversions with Dynamic Errors}
@@ -2576,7 +2576,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \ProseParagraph
 \RenderRelation{is_val_of_type}
 
-This relation is used in the context of a asserted type conversion,
+This relation is used in the context of an asserted type conversion,
 which means the typechecker rule \TypingRuleRef{ATC} was already applied,
 thus filtering cases where the type inferred for the converted expression
 does not type-satisfy $\vt$. The semantics takes this into account and
@@ -2723,7 +2723,7 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
           by the native integer value for $a$ and the \executiongraphterm\ $\vgone$\ProseOrDynErrorDiverging.
     \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
           by the native integer value for $b$ and the \executiongraphterm\ $\vgtwo$\ProseOrDynErrorDiverging.
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater or equal to $a$ and less than or equal to $b$};
+    \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater than or equal to $a$ and less than or equal to $b$};
     \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$}.
   \end{itemize}
 \end{itemize}

@@ -38,7 +38,7 @@ with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.\\
 That is, $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \ProseParagraph
-define $\vs$ is $0$ if no value is associated with $\name$ in $\denv.\pendingcalls$ and the value bound to
+define $\vs$ as $0$ if no value is associated with $\name$ in $\denv.\pendingcalls$ and the value bound to
 $\name$ in $\denv.\pendingcalls$ otherwise.
 
 \FormallyParagraph
@@ -244,7 +244,7 @@ the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypet
     \item applying $\concatbitvectors$ to $\vvs'$ yields the
           \nativevalueterm{} bitvector for the sequence of bits $\bv$;
     \item \Proseeqdef{$\vres$}{the concatenation of $\bv$ and $\bv'$};
-    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for sequence of bits $\vres$}.
+    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for the sequence of bits $\vres$}.
   \end{itemize}
 \end{itemize}
 
@@ -274,7 +274,7 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \ExampleDef{Converting Slices to Lists of Indices}
 In \listingref{SlicesToPositions}, the slices \verb|1+:3, 7:5|
-are converted into the list of position $3, 2, 1, 7, 6, 5$.
+are converted into the list of positions $3, 2, 1, 7, 6, 5$.
 \ASLListing{Converting slices to lists of indices}{SlicesToPositions}{\semanticstests/SemanticsRule.SlicesToPositions.asl}
 
 The specification in \listingref{SlicesToPositions-bad} terminates with a \dynamicerrorterm,
@@ -367,8 +367,9 @@ The slice \verb|42+:0| has maximum position 42.
 \SemanticsRuleDef{ReadFromBitvector}
 \RenderRelation{read_from_bitvector}
 
-Notice that the bits of a bitvector go from the least significant bit being on the right to the most significant bit being on the left,
-which is reflected by how the rules list the bits.
+Notice that the bits of a bitvector go from the least-significant bit on the right
+to the most-significant bit on the left.
+This is reflected by how the rules list the bits.
 The effect of placing the bits in sequence is that of concatenating the results
 from all of the given slices.
 
@@ -402,7 +403,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \begin{itemize}
     \item $\vv$ is a native bitvector for the list of bits $\bv$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
+    \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
     \item let $\bits$ be the sequence of bits $\bv[n] ... \bv[1]$;
     \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
     \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
@@ -413,7 +414,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \begin{itemize}
     \item $\vv$ is a native integer for the integer $\vi$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
+    \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
     \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement little endian form of $\maxpos + 1$ bits};
     \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
     \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
@@ -464,7 +465,7 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \item $\dst$ is a native bitvector consisting of bits $\vd_n \ldots \vd_0$;
   \item applying $\slicestopositions$ to $\slices$ yields the list of indices $\positions$;
   \item checking that the length of $\positions$ is equal to the length of $\src$ yields $\True$\ProseTerminateAs{\BadIndex};
-  \item \Proseeqdef{$\maxpos$}{the maximal position in $\slices$};
+  \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
   \item checking that $\maxpos$ is less than the length of $\dst$ yields $\True$\ProseTerminateAs{\BadIndex};
   \item view $\positions$ as the list $I_m \ldots I_0$;
   \item define the function $\bitfunc$ as mapping an index $i$ in $0$ to $n$ to

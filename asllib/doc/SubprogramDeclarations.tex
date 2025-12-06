@@ -1,7 +1,7 @@
 \chapter{Subprogram Declarations\label{chap:SubprogramDeclarations}}
 
-The \Tfunc{} keyword declares a subprogram. If a return type is included it is a \emph{function declaration},
-otherwise it is a \emph{procedure declaration}. \identr{RXHX}
+The \Tfunc{} keyword declares a subprogram. If a return type is included, it is a \emph{function declaration}.
+Otherwise, it is a \emph{procedure declaration}. \identr{RXHX}
 
 \ExampleDef{Subprogram Declarations}
 In \listingref{SubprogramDeclarations}, \verb|Add| is a function whereas \verb|IncrementCounter| is a procedure.
@@ -1239,7 +1239,7 @@ for the expression \verb|A| appearing in the return type.
 
   \item \AllApplyCase{etuple}
     \begin{itemize}
-      \item $\ve$ is a tuple over the list of expression $\es$, that is, $\ETuple(\es)$;
+      \item $\ve$ is a tuple over the list of expressions $\es$, that is, $\ETuple(\es)$;
       \item checking that $\es$ is a singleton list yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
       \item view $\es$ as the singleton list for the expression $\ve$;
       \item applying $\paramsofexpr$ to $\ve$ $\ids$\ProseOrTypeError.

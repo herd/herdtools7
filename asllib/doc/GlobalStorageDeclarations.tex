@@ -20,11 +20,11 @@ Global storage declarations introduce storage elements into the \globalstaticenv
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Configurable Global Storage Declarations\label{sec:ConfigurableGlobalStorageDeclarations}}
-Global storage declarations with keyword \texttt{config} aim to assist implementation-specific support for ``configuration'' of an ASL specification.
+Global storage declarations with the keyword \texttt{config} aim to assist implementation-specific support for ``configuration'' of an ASL specification.
 In particular, implementations may provide mechanisms to override \texttt{config} values, such as:
 \begin{itemize}
-  \item Preprocessing source code before typechecking of a specification to rewrite initialisation expressions.
-  \item Internally modifying \texttt{config} values after typechecking but before evaluation of a specification.
+  \item Preprocessing source code before typechecking a specification to rewrite initialisation expressions.
+  \item Internally modifying \texttt{config} values after typechecking but before evaluating a specification.
 \end{itemize}
 Note that if modifying values after typechecking, care must be taken to ensure that the modified values remain compatible with the expected types of the original values.
 For example, a \texttt{config} value declared with type \verb|integer{0..10}| can be modified to \texttt{5} but should not be modified to \texttt{11}.
@@ -35,7 +35,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
   \item The \texttt{config} keyword syntactically identifies configurable storage elements.
   \item Types of \texttt{config} storage elements must be \emph{both} explicitly declared \emph{and} singular (\TypingRuleRef{SingularType}).
   \item The \purity{} of \texttt{config} storage elements is $\SEReadonly$, so their values are not relied upon by typechecking.
-  \item Values of \texttt{config} storage elements must have \purity{} of $\SEPure$, so they can depend only on constant values (and not other \texttt{config} storage elements for example).
+  \item Values of \texttt{config} storage elements must have \purity{} of $\SEPure$, so they can depend only on constant values (and not other \texttt{config} storage elements, for example).
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -320,7 +320,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \RequirementDef{GlobalStorageCycles} \identr{TTMQ}
-The declarations, and any associated initialization expressions, for global storage elements must not include cycles.
+The declarations, and any associated initialization expressions, for global storage elements, must not include cycles.
 
 The specifications in \listingref{GlobalStorageCycles-bad1} and \listingref{GlobalStorageCycles-bad2}
 are illegal, since they contain cycles.
@@ -808,7 +808,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \ExampleDef{Adding Global Storage Elements to the Static Environment}
 Declaring the global storage elements in \listingref{EvalGlobals},
 adds the following bindings to the $\globalstoragetypes$ map of a given
-static environments:
+static environment:
 \[
 \begin{array}{rcl}
   \PI           &\mapsto& (\TReal, \GDKConstant)\\
@@ -857,7 +857,7 @@ This section defines the following relations:
 
 \ExampleDef{Evaluating a List of Global Declarations}
 Evaluating the global storage declarations in \listingref{EvalGlobals}
-results in updating the $\storage$ map of global dynamic environment by binding
+results in updating the $\storage$ map of the global dynamic environment by binding
 \verb|PI| to $\nvreal(157/50)$,
 \verb|PC| to \\
 $\nvbitvector(\overbrace{0 \ldots 0}^{32})$,

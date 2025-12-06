@@ -6,9 +6,9 @@ This chapter defines functions and relations used by the type system.
 \begin{itemize}
   \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list;
   \item \TypingRuleRef{Sort} allows sorting a list;
-  \item \TypingRuleRef{FindBitfieldOpt} a recursive lookup for a bitfield in a list of bitfields;
+  \item \TypingRuleRef{FindBitfieldOpt} recursively looks up a bitfield in a list of bitfields;
   \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
-  \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} out of a \globalstaticenvironmentterm;
+  \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} from a \globalstaticenvironmentterm;
   \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{};
   \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm;
   \item \TypingRuleRef{AddLocal} updates a \staticenvironmentterm{} with a local storage element;

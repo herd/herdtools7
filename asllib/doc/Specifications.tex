@@ -74,7 +74,7 @@ The case rules for building global declarations are the following:
 \end{itemize}
 
 We note that, since global pragma declarations are discarded after they are checked
-via \TypingRuleRef{CheckGlobalPragma} and do not generated a declarations.
+via \TypingRuleRef{CheckGlobalPragma} and do not generate a declarations.
 Therefore, they have no corresponding rule to implement $\typecheckdecl$.
 
 \paragraph{Semantics:} Only global storage declarations and subprogram declarations are associated
@@ -155,7 +155,7 @@ the list of global subprogram declarations remains the same.
 The global declarations are separated into the list of pragmas --- \verb|pragma1| --- and the remaining
 global declarations.
 
-The \dependencygraphterm{} for this specifications contains a node for each one of
+The \dependencygraphterm{} for this specification contains a node for each one of
 $\vWORDSIZE$, $\MyRecord$, $\vmain$,
 $\Color$, $\RED$, $\GREEN$, $\BLUE$,
 $\rotatecolor$, $\rotatezero$, $\rotateone$, $\vg$,
@@ -184,7 +184,7 @@ and the following edges
 \]
 
 Constructing the strongly-connected components for this graph with its edges reversed,
-and topologically ordering the strongly-connected yields the following list of
+and topologically ordering the strongly-connected components yields the following list of
 components:
 \[
 \begin{array}{l}
@@ -200,7 +200,7 @@ components:
   \{ \Subprogram(\vmain) \}
 \end{array}
 \]
-The only non-trivial component (that is, a component with more than a single global declaration)
+The only non-trivial component (that is, a component with more than one global declaration)
 is $\{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \}$, since these are the only
 mutually-recursive subprograms in this specification.
 
@@ -259,7 +259,7 @@ any kind of global declaration ---
 a type declaration, a global storage declaration, or a subprogram declaration ---
 whereas a strongly-connected component containing multiple declarations must be checked
 to contain only subprograms. This is because the only type of mutually-recursive declarations
-allows in ASL are between subprograms. The rules below handle these cases separately (\textsc{single}
+allowed in ASL are between subprograms. The rules below handle these cases separately (\textsc{single}
 for single declarations and \textsc{mutually\_recursive} for more than one declaration).
 
 \ExampleDef{Annotating Strongly-connected Components of Declarations}
@@ -425,8 +425,8 @@ the subprogram signatures:
 \end{center}
 
 Using the name \texttt{add\_10-1} for \verb|func add_10(x: integer) => integer|
-and \texttt{add\_10} for \verb|func add_10(x: real) => real|, rather than
-the other way around is due to the arbitrary choice of a topological ordering
+and \texttt{add\_10} for \verb|func add_10(x: real) => real| (rather than
+the other way around) is due to the arbitrary choice of a topological ordering
 of the subprogram declarations.
 
 \ASLListing{Updating static environments for subprogram declarations}{DeclareSubprograms}{\typingtests/TypingRule.DeclareSubprograms.asl}

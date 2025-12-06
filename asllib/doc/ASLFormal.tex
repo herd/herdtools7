@@ -248,7 +248,7 @@ The \emph{length} of a list is the number of elements in that list:
 $\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
 \end{definition}
 
-We use the notation $a..b$, where $a,b\in\Z$ and as a shorthand for the interval $[a\ldots b]$
+We use the notation $a..b$, where $a,b\in\Z$ as a shorthand for the interval $[a\ldots b]$
 (counting up when $a \leq b$ and counting down when $a \geq b$).
 We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
 %
@@ -646,7 +646,7 @@ Our rules always define relations whose sets of input configurations and output 
 
 \hypertarget{def-freshvariables}{}
 \begin{definition}[Fresh Element]
-  Premises of the form \texttt{$x\in T$ is fresh} mean that in any
+  Premises of the form ``\texttt{$x\in T$ is fresh}'' mean that in any
   instantiation in a derivation tree, the value of $x$ is unique.
   That is, different from all other values instantiated for any other variable.
 \end{definition}
@@ -701,8 +701,7 @@ shown here:
 
   \hypertarget{def-deconstruction}{}
   \item[Deconstruction / ``View as'':] some values, such as tuples, are compound. In order to refer to the structure
-  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right
-  hand side exposes the internal structure of $v$ by introducing the variables
+  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right-hand side exposes the internal structure of $v$ by introducing the variables
   $u_{1..k}$, allowing us to alias internal components of $v$.
   Intuitively, $v$ is reinterpreted as $\textit{f}(u_{1..k})$.
   For example, suppose we know that $v$ is a pair of values.
@@ -895,7 +894,7 @@ not matter.
 \paragraph{Alternative Outcomes Expressed in English Prose:}
 In English prose, we use
 \ProseTerminateAs{x, y, \ldots} to mean
-``if the outcome is one of $x, y, \ldots$ then the result short-circuits the rule.
+``if the outcome is one of $x, y, \ldots$ then the result short-circuits the rule''.
 
 As an example, consider the rule \SemanticsRuleRef{Binop}.
 This time, not simplified:

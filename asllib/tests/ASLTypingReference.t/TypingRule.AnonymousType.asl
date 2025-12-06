@@ -7,9 +7,9 @@ func tsub01()
 begin
     var dataT1: T1;
     var pair: pairT = (1,dataT1);
-    // legal since right hand side has anonymous, non-primitive type (integer, T1)
+    // legal since right-hand side has anonymous, non-primitive type (integer, T1)
     let dataAsInt: integer = dataT1;
     pair = (1, dataAsInt);
-    // legal since right hand side has anonymous, primitive type (integer, integer)
+    // legal since right-hand side has anonymous, primitive type (integer, integer)
     let dataT2: T2 = 10;
 end;
