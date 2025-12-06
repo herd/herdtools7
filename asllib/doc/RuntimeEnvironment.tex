@@ -39,13 +39,16 @@ interpreter can be printed to the console as follows:
 
 \RequirementDef{RuntimeUncaught}
 Uncaught exceptions cause termination of the application by the runtime.
-If an exception is thrown from the entry point, it is an uncaught exception.
+If a thrown exception is never caught, it is an uncaught exception.
 The runtime should signal an error to the hosting environment.
+%
+A specific implementation may report the origin of the uncaught exception,
+for example by printing a stack trace to the console.
 
 \ExampleDef{An Uncaught Exception}
 \listingref{main-uncaught} shows a specification throwing an exception
-without catching it and the error status it returns --- \texttt{1} ---
-when evaluated with the \aslrefterm{} in a \linuxbashshellterm{}:
+without catching it and the error status returned by \aslrefterm{},
+\texttt{1} in this case, in a \linuxbashshellterm{}:
 \begin{verbatim}
 > aslref main_uncaught.asl; echo "status="$?
 > status=1

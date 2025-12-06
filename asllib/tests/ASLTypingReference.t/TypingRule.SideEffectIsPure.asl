@@ -22,13 +22,15 @@ begin        // Side effects for RHS expression
     - = cfg; // GlobalEffect(SE_Readonly), Immutability(TRUE)
     - = vg;  // GlobalEffect(SE_Readonly), Immutability(FALSE)
 
-            // LocalEffect(SE_Readonly), GlobalEffect(SE_Readonly), Immutability(FALSE)
+             // LocalEffect(SE_Readonly),
+             // GlobalEffect(SE_Readonly),
+             // Immutability(FALSE)
     - = ARBITRARY: integer;
 
-            // LocalEffect(SE_Readonly), Immutability(FALSE)
+             // LocalEffect(SE_Readonly), Immutability(FALSE)
     - = x as integer{0};
 
-            // GlobalEffect(SE_Readonly)
+             // GlobalEffect(SE_Readonly)
     - = factorial(10);
 
              // Side effect for LHS expression

@@ -742,11 +742,11 @@ is not a constrained expression.
         $(\vrecurselimit, \vsesrecurselimit)$\ProseOrTypeError;
   \item annotating and declaring the parameters $\funcsig.\FIELDparameters$ in $\tenv$ using \\
         $\annotateparams$ yields $(\tenvwithparams, \vseswithparams, \params)$\ProseOrTypeError;
-  \item checking that the parameters $\funcsig.\FIELDparameters$ are declared correctly using $\checkparamdecls$, yields $\True$\ProseOrTypeError;
+  \item checking that the parameters $\funcsig.\FIELDparameters$ are declared correctly, using $\checkparamdecls$, yields $\True$\ProseOrTypeError;
   \item annotating and declaring the arguments $\funcsig.\FIELDargs$ in $\tenvwithparams$ using $\annotateargs$
         and $\vseswithparams$ yields\\
         $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
-  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$, yields\\
+  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$ yields\\
         $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
   \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
   \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
