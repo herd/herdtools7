@@ -864,32 +864,32 @@ The set of valid signatures for string concatenation operations is defined as fo
 \begin{itemize}
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item $(\op, \astlabel(\vlone), \astlabel(\vltwo))$ is not included in $\binopsignatures$;
+    \item $(\op, \astlabel(\vvone), \astlabel(\vvtwo))$ is not included in $\binopsignatures$;
     \item the result is a \typingerrorterm{} indicating the $\op$ cannot be applied to the arguments
-          with the types given by $\astlabel(\vlone)$ and $\astlabel(\vltwo)$.
+          with the types given by $\astlabel(\vvone)$ and $\astlabel(\vvtwo)$.
   \end{itemize}
 
   \item \AllApplyCase{add\_int}
   \begin{itemize}
-    \item $\op$ is $\ADD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\ADD$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a+b$.
   \end{itemize}
 
   \item \AllApplyCase{sub\_int}
   \begin{itemize}
-    \item $\op$ is $\SUB$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\SUB$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a-b$.
   \end{itemize}
 
   \item \AllApplyCase{mul\_int}
   \begin{itemize}
-    \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\MUL$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal integer for $a\times b$.
   \end{itemize}
 
   \item \AllApplyCase{div\_int}
   \begin{itemize}
-    \item $\op$ is $\DIV$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\DIV$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
     \item define $n$ as $a$ divided by $b$ (note that $n$ is potentially a fraction);
     \item checking that $n$ is an integer yields $\True$\ProseOrTypeError;
@@ -898,7 +898,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{fdiv\_int}
   \begin{itemize}
-    \item $\op$ is $\DIVRM$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\DIVRM$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item checking that $b$ is positive yields $\True$\ProseOrTypeError;
     \item define $n$ as $a$ divided by $b$, rounded down (if $a$ is negative, $n$ is rounded down towards infinity);
     \item define $\vr$ as the literal integer for $n$.
@@ -906,15 +906,15 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{frem\_int}
   \begin{itemize}
-    \item $\op$ is $\MOD$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
-    \item applying $\binopliterals$ to $\DIVRM$ with $\vlone$ and $\vltwo$ yields $c$\ProseOrTypeError;
+    \item $\op$ is $\MOD$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
+    \item applying $\binopliterals$ to $\DIVRM$ with $\vvone$ and $\vvtwo$ yields $c$\ProseOrTypeError;
     \item define $n$ as $a - (c \times b)$;
     \item define $\vr$ as the literal integer for $n$.
   \end{itemize}
 
   \item \AllApplyCase{exp\_int}
   \begin{itemize}
-    \item $\op$ is $\POW$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\POW$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
     \item define $n$ as $a^b$;
     \item define $\vr$ as the literal integer for $n$.
@@ -922,126 +922,126 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{shl}
   \begin{itemize}
-    \item $\op$ is $\SHL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\SHL$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
-    \item applying $\binopliterals$ to $\POW$ with $2$ and $\vltwo$ yields the literal integer for $e$;
-    \item applying $\binopliterals$ to $\MUL$ with $2$ and the literal integer for $e$ yields $\vr$.
+    \item applying $\binopliterals$ to $\POW$ with the literal integer for $2$ and $\vvtwo$ yields the literal integer for $e$;
+    \item applying $\binopliterals$ to $\MUL$ with $\vvone$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
   \item \AllApplyCase{shr}
   \begin{itemize}
-    \item $\op$ is $\SHR$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\SHR$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item checking that $b$ is non-negative yields $\True$\ProseOrTypeError;
-    \item applying $\binopliterals$ to $\POW$ with $2$ and $\vltwo$ yields the literal integer for $e$;
-    \item applying $\binopliterals$ to $\DIVRM$ with $2$ and the literal integer for $e$ yields $\vr$.
+    \item applying $\binopliterals$ to $\POW$ with the literal integer for $2$ and $\vvtwo$ yields the literal integer for $e$;
+    \item applying $\binopliterals$ to $\DIVRM$ with the literal integer for $2$ and the literal integer for $e$ yields $\vr$.
   \end{itemize}
 
   \item \AllApplyCase{eq\_int}
   \begin{itemize}
-    \item $\op$ is $\EQ$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\EQ$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{ne\_int}
   \begin{itemize}
-    \item $\op$ is $\NE$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\NE$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$ holds.
   \end{itemize}
 
   \item \AllApplyCase{le\_int}
   \begin{itemize}
-    \item $\op$ is $\LE$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
-    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$s.
+    \item $\op$ is $\LE$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
+    \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{lt\_int}
   \begin{itemize}
-    \item $\op$ is $\LT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\LT$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$s.
   \end{itemize}
 
   \item \AllApplyCase{ge\_int}
   \begin{itemize}
-    \item $\op$ is $\GE$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\GE$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater or equal than $b$s.
   \end{itemize}
 
   \item \AllApplyCase{gt\_int}
   \begin{itemize}
-    \item $\op$ is $\GT$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\GT$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$s.
   \end{itemize}
 
   \item \AllApplyCase{and\_bool}
   \begin{itemize}
-    \item $\op$ is $\BAND$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is $\BAND$, $\vvone$ is the literal Boolean for $a$, and $\vvtwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if both $a$ and $b$ are $\True$.
   \end{itemize}
 
   \item \AllApplyCase{or\_bool}
   \begin{itemize}
-    \item $\op$ is $\BOR$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is $\BOR$, $\vvone$ is the literal Boolean for $a$, and $\vvtwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if at least one of $a$ and $b$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{implies\_bool}
   \begin{itemize}
-    \item $\op$ is $\IMPL$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is $\IMPL$, $\vvone$ is the literal Boolean for $a$, and $\vvtwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is $\False$ or $b$ is $\True$.
   \end{itemize}
 
   \item \AllApplyCase{eq\_bool}
   \begin{itemize}
-    \item $\op$ is either $\BEQ$ or $\EQ$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is either $\BEQ$ or $\EQ$, $\vvone$ is the literal Boolean for $a$, and $\vvtwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{ne\_bool}
   \begin{itemize}
-    \item $\op$ is $\NE$, $\vlone$ is the literal Boolean for $a$, and $\vltwo$ is the literal Boolean for $b$;
+    \item $\op$ is $\NE$, $\vvone$ is the literal Boolean for $a$, and $\vvtwo$ is the literal Boolean for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
   \item \AllApplyCase{mul\_int\_real}
   \begin{itemize}
-    \item $\op$ is $\MUL$, $\vlone$ is the literal integer for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\MUL$, $\vvone$ is the literal integer for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the literal real for $a\times b$.
   \end{itemize}
 
   \item \AllApplyCase{mul\_real\_int}
   \begin{itemize}
-    \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\MUL$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item define $\vr$ as the literal real for $a\times b$.
   \end{itemize}
 
   \item \AllApplyCase{add\_real}
   \begin{itemize}
-    \item $\op$ is $\ADD$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\ADD$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a + b$.
   \end{itemize}
 
   \item \AllApplyCase{sub\_real}
   \begin{itemize}
-    \item $\op$ is $\SUB$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\SUB$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a - b$.
   \end{itemize}
 
   \item \AllApplyCase{mul\_real}
   \begin{itemize}
-    \item $\op$ is $\MUL$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\MUL$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the real literal for $a \times b$.
   \end{itemize}
 
   \item \AllApplyCase{div\_real}
   \begin{itemize}
-    \item $\op$ is $\RDIV$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\RDIV$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item checking whether $b$ is different from $0$ yields $\True$\ProseOrTypeError;
     \item define $\vr$ as the real literal for $a \div b$.
   \end{itemize}
 
   \item \AllApplyCase{exp\_real}
   \begin{itemize}
-    \item $\op$ is $\POW$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal integer for $b$;
+    \item $\op$ is $\POW$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal integer for $b$;
     \item since exponentiation is undefined when $a$ is 0 and $b$ is negative,
           checking whether $a$ is different from $0$ or $b$ is non-negative yields $\True$\ProseOrTypeError;
     \item define $\vr$ as the real literal for $a^b$.
@@ -1049,37 +1049,37 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{eq\_real}
   \begin{itemize}
-    \item $\op$ is $\EQ$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\EQ$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{ne\_real}
   \begin{itemize}
-    \item $\op$ is $\NE$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\NE$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
   \item \AllApplyCase{le\_real}
   \begin{itemize}
-    \item $\op$ is $\LE$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\LE$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than or equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{lt\_real}
   \begin{itemize}
-    \item $\op$ is $\LT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\LT$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is less than $b$.
   \end{itemize}
 
   \item \AllApplyCase{ge\_real}
   \begin{itemize}
-    \item $\op$ is $\GE$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\GE$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than or equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{gt\_real}
   \begin{itemize}
-    \item $\op$ is $\GT$, $\vlone$ is the literal real for $a$, and $\vltwo$ is the literal real for $b$;
+    \item $\op$ is $\GT$, $\vvone$ is the literal real for $a$, and $\vvtwo$ is the literal real for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is greater than $b$.
   \end{itemize}
 
@@ -1204,13 +1204,13 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{eq\_string}
   \begin{itemize}
-    \item $\op$ is $\EQ$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
+    \item $\op$ is $\EQ$, $\vvone$ is the literal string for $a$, and $\vvtwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{ne\_string}
   \begin{itemize}
-    \item $\op$ is $\NE$, $\vlone$ is the literal string for $a$, and $\vltwo$ is the literal string for $b$;
+    \item $\op$ is $\NE$, $\vvone$ is the literal string for $a$, and $\vvtwo$ is the literal string for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
@@ -1225,13 +1225,13 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{eq\_label}
   \begin{itemize}
-    \item $\op$ is $\EQ$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
+    \item $\op$ is $\EQ$, $\vvone$ is the literal label for $a$, and $\vvtwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is equal to $b$.
   \end{itemize}
 
   \item \AllApplyCase{ne\_label}
   \begin{itemize}
-    \item $\op$ is $\NE$, $\vlone$ is the literal label for $a$, and $\vltwo$ is the literal label for $b$;
+    \item $\op$ is $\NE$, $\vvone$ is the literal label for $a$, and $\vvtwo$ is the literal label for $b$;
     \item define $\vr$ as the Boolean literal that is $\True$ if and only if $a$ is different from $b$.
   \end{itemize}
 
@@ -1241,9 +1241,9 @@ The set of valid signatures for string concatenation operations is defined as fo
 
 \begin{mathpar}
 \inferrule[error]{
-  (\op, \astlabel(\vlone), \astlabel(\vltwo)) \not\in \binopsignatures
+  (\op, \astlabel(\vvone), \astlabel(\vvtwo)) \not\in \binopsignatures
 }{
-  \binopliterals(\op, \overname{\vlone}{\vvone}, \overname{\vltwo}{\vvtwo}) \typearrow \TypeErrorVal{\BadOperands}
+  \binopliterals(\op, \vvone, \vvtwo) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
 
@@ -1496,16 +1496,21 @@ and as $0$ for an empty bit sequence:
 }
 \and
 \inferrule[bitwise\_empty]{
-  \op \in \{\OR, \AND, \XOR, \ADD, \SUB\}
+  \op \in \{\OR, \AND, \XOR, \ADD, \SUB\}\\
+  a = \emptylist\\
+  b = \emptylist
 }{
-  \binopliterals(\op, \overname{\LBitvector(\emptylist)}{\vvone}, \overname{\LBitvector(\emptylist)}{\vvtwo}) \typearrow
+  \binopliterals(\op, \overname{\LBitvector(a)}{\vvone}, \overname{\LBitvector(b)}{\vvtwo}) \typearrow
   \overname{\LBitvector(\emptylist)}{\vr}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[eq\_bits\_empty]{}{
-  \binopliterals(\overname{\EQ}{\op}, \overname{\LBitvector(\emptylist)}{\vvone}, \overname{\LBitvector(\emptylist)}{\vvtwo}) \typearrow
+\inferrule[eq\_bits\_empty]{
+  a = \emptylist\\
+  b = \emptylist
+}{
+  \binopliterals(\overname{\EQ}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LBitvector(b)}{\vvtwo}) \typearrow
   \overname{\LBool(\True)}{\vr}
 }
 \and
