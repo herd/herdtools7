@@ -1390,7 +1390,7 @@ See \ExampleRef{Array Access Expressions}.
 \AllApply
 \begin{itemize}
   \item \Proseannotateexpr{$\tenv$}{$\eindex$}{(\tindexp, \eindexp, \vsesindex)}\ProseOrTypeError;
-  \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length, yields
+  \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length yields
         $\wantedtindex$;
   \item checking that $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesindex$ and $\vsesbase$;
@@ -1888,7 +1888,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
         given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
   \item evaluating the expression $\etuple$ yields \\ $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
-  \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$, yields
+  \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$ yields
         the native value $\vv$.
 \end{itemize}
 \FormallyParagraph
