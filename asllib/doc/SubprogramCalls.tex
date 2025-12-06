@@ -1041,7 +1041,7 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
 
 \ExampleDef{Annotating the Return Type of a Subprogram Call}
 In \listingref{AnnotateRetTy}, annotating the return type \verb|bits(N)| of the subprogram \verb|flip|
-for call expression \verb|flip{64}(bv)|, yields the annotated type \verb|bits(64)|.
+for call expression \verb|flip{64}(bv)| yields the annotated type \verb|bits(64)|.
 
 Since \verb|proc| does not have a return type, the call statement \verb|proc()| does not require
 annotating a return type (thus $\annotateretty$ yields $\None$ for $\rettyopt$).
