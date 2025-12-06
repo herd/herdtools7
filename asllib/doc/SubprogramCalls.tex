@@ -1834,7 +1834,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
     \item applying $\evallimit$ to $\velimitopt$ in $\env$ yields $(\some{\vlimit}, \vg)$\ProseOrDynErrorDiverging;
     \item view $\env$ as $(\tenv, \denv)$;
     \item applying $\getpendingcalls$ to $\name$ in $\denv$ yields $\vpendingcalls$;
-    \item $\vpendingcalls$ is greater or equal to $\vlimit$;
+    \item $\vpendingcalls$ is greater than or equal to $\vlimit$;
     \item the result is a \dynamicerrorterm{} (\LimitExceeded).
   \end{itemize}
 \end{itemize}

@@ -346,7 +346,7 @@ range given by \texttt{3..42}.
 \AllApply
 \begin{itemize}
   \item $\vp$ is the condition corresponding to being greater than or equal
-    to $\veone$, and lesser or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
+    to $\veone$, and less or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
   \item $\veone$ and $\vetwo$ are side-effect-free expressions;
   \item the side-effect-free evaluation of $\veone$ in $\env$ is $\ResultExprSEF(\vvone, \vgone)$\ProseOrDynErrorDiverging;
   \item the side-effect-free evaluation of $\vetwo$ in $\env$ is $\ResultExprSEF(\vvtwo, \vgtwo)$\ProseOrDynErrorDiverging;
@@ -530,8 +530,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \SemanticsRuleDef{PGeq}
 \ExampleDef{Evaluation of a Greater-or-equal Pattern}
 In \listingref{semantics-pgeq},
-\texttt{match\_true} evaluates to \True, since \texttt{42} is greater or equal to \texttt{3},
-whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater or equal to \texttt{42}.
+\texttt{match\_true} evaluates to \True, since \texttt{42} is greater than or equal to \texttt{3},
+whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater than or equal to \texttt{42}.
 \ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
 \ProseParagraph

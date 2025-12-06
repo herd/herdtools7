@@ -2376,7 +2376,9 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(expr), vmlist:
         | TDynError
         | TDiverging
 {
-    "evaluates multi-assignments. That is, the simultaneous assignment of the list of value-\executiongraphterm{} pairs {vmlist} to the corresponding list of \assignableexpressions{} {lelist}, in the environment {env}. The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration",
+    "evaluates multi-assignments. That is, the simultaneous assignment of the list of value-\executiongraphterm{} pairs {vmlist}
+    to the corresponding list of \assignableexpressions{} {lelist}, in the environment {env}.
+    The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration",
     prose_application = "evaluating multi-assignment of {vmlist} to {lelist} in {env} yields $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
     math_macro = \evalmultiassignment,
     math_layout = (_, [_,_,_,_]),
@@ -4452,7 +4454,6 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
       otherwise =: some(block);
       annotate_block(tenv, block) -> (block', ses_block);
       otherwise' := some(otherwise');
-      ses_otherwise := ses_block;
       ses_otherwise := ses_block;
     }
     ses := union(ses2, ses_catchers, ses_otherwise);
