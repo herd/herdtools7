@@ -29,7 +29,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
       - run: |
-          sudo apt install qemu-system -qq
+          sudo apt update && sudo apt install qemu-system -qq
           opam install dune menhir zarith
           opam exec -- make Version.ml
           opam exec -- dune build litmus/litmus.exe internal/check_obs.exe
