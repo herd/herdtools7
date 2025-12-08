@@ -20,7 +20,7 @@ jobs:
           - os: ubuntu-24.04-arm
             make-test-target: litmus-aarch64-test
         ocaml-compiler:
-          - "5.2"
+          - 5
 
     runs-on: ${{ matrix.arch.os }}
 
