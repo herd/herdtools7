@@ -211,14 +211,14 @@ In particular, rather than directly building the abstract syntax for accessors, 
 \end{mathpar}
 
 \ASTRuleDef{AccessorBody}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-accessorbody}{}
 The relation
 \[
   \buildaccessorbody : \overname{\parsenode{\Naccessorbody}}{\vparsednode} \;\aslrel\; \overname{\accessorpair}{\vaccessorpair}
 \]
 transforms a parse node $\vparsednode$ into an $\accessorpair$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -231,14 +231,14 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \end{mathpar}
 
 \ASTRuleDef{RecurseLimit}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-recurselimit}{}
 The function
 \[
 \buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -258,14 +258,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{TypedIdentifier}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-typedidentifier}{}
 The function
 \[
 \buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \ty)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -275,14 +275,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{OptTypedIdentifier}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
 \buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \Option{\ty})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -300,14 +300,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{ReturnType}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-returntype}{}
 The function
 \[
 \buildreturntype(\overname{\parsenode{\Nreturntype}}{\vparsednode}) \aslto \overname{\ty}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -318,7 +318,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{ParamsOpt}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-paramsopt}{}
 The function
 \[
@@ -326,7 +326,7 @@ The function
   \overname{\KleeneStar{(\Identifier\cartimes\Option{\ty})}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -347,7 +347,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{FuncArgs}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-funcargs}{}
 The function
 \[
@@ -355,7 +355,7 @@ The function
   \overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -368,7 +368,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{FuncBody}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-funcbody}{}
 The function
 \[
@@ -376,7 +376,7 @@ The function
   \overname{\stmt}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -391,7 +391,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Accessors}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-accessors}{}
 The function
 \[
@@ -399,7 +399,7 @@ The function
   \overname{\accessorpair}{\vaccessorpair}
 \]
 transforms a parse node $\vparsednode$ into an $\accessorpair$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -457,7 +457,7 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 \end{mathpar}
 
 \ASTRuleDef{DesugarAccessorPair}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{def-desugaraccessorpair}{}
 The function
 \[
@@ -474,7 +474,7 @@ The function
   \overname{\KleeneStar{\decl}}{\vastnode}
 \]
 transforms an $\accessorpair$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -534,7 +534,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Qualifier}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-qualifier}{}
 The function
 \[
@@ -542,7 +542,7 @@ The function
   \overname{\Option{\funcqualifier}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -570,7 +570,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{IsReadonly}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-isreadonly}{}
 The function
 \[
@@ -578,7 +578,7 @@ The function
   \overname{\Bool}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -594,7 +594,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Override}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-override}{}
 The function
 \[
@@ -602,7 +602,7 @@ The function
   \overname{\Option{\overrideinfo}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
