@@ -119,39 +119,6 @@ end;
 
 // =============================================================================
 
-// UsingAArch32()
-// ==============
-// Return TRUE if the current Exception level is using AArch32, FALSE if using AArch64.
-// Let us return FALSE, called by BranchTo(...) for checking tgt address size.
-
-func UsingAArch32() => boolean
-begin
-  return FALSE;
-end;
-
-// MemSingleGranule()
-// ==================
-// When FEAT_LSE2 is implemented, for some memory accesses if all bytes
-// of the accesses are within 16-byte quantity aligned to 16-bytes and
-// satisfy additional requirements - then the access is guaranteed to
-// be single copy atomic.
-// However, when the accesses do not all lie within such a boundary, it
-// is CONSTRAINED UNPREDICTABLE if the access is single copy atomic.
-// In the pseudocode, this CONSTRAINED UNPREDICTABLE aspect is modeled via
-// MemSingleGranule() which is IMPLEMENTATION DEFINED and, is at least 16 bytes
-// and at most 4096 bytes.
-// This is a limitation of the pseudocode.
-//
-// LUC Granule size set to 32, why not!
-func MemSingleGranule() => integer
-  begin
-    let size = 32;
-    // access is assumed to be within 4096 byte aligned quantity to
-    // avoid multiple translations for a single copy atomic access.
-    assert (size >= 16) && (size <= 4096);
-    return size;
-  end;
-
 // CheckOriginalSVEEnabled()
 // =========================
 // Checks for traps on SVE instructions and instructions that access SVE System
@@ -278,3 +245,14 @@ func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
 begin
     return (TRUE, FALSE);
 end;
+
+// UsingAArch32()
+// ==============
+// Return TRUE if the current Exception level is using AArch32, FALSE if using AArch64.
+// Let us return FALSE, called by BranchTo(...) for checking tgt address size.
+
+func UsingAArch32() => boolean
+begin
+  return FALSE;
+end;
+
