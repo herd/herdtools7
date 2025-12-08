@@ -145,6 +145,14 @@ let checklog litmus  = function
   | Obs -> obs_diff litmus
   | Sta -> states_diff litmus
 
+let checkerrlog = function
+  | All -> log_diff
+  | Obs|Sta ->
+  fun _ xs ys ->
+    match xs,ys with
+    | ([],[])|(_::_,_::_) -> false
+    | ([],_::_)|(_::_,[]) -> true
+
 let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
   let timeout =
     match timeout with
@@ -307,7 +315,7 @@ let do_check_output
          match read_some_file litmus expected_failure with
          | None -> false
          | Some expected_failure_output ->
-            if log_diff nohash stderr expected_failure_output then begin
+            if checkerrlog check nohash stderr expected_failure_output then begin
               Printf.printf
                   "Failed %s : Expected Failure Logs do not match\n" litmus ;
               false
