@@ -238,7 +238,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
 \end{mathpar}
 
 \ASTRuleDef{GlobalDeclKeywordNonConfig}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-globaldeclkeywordnonconfig}{}
 The function
 \[
@@ -248,7 +248,7 @@ The function
 \end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -282,7 +282,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{GlobalDeclKeyword}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-globaldeclkeyword}{}
 The function
 \[
@@ -292,7 +292,7 @@ The function
 \end{array}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -806,14 +806,21 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \RenderRelation{add_global_storage}
 
 \ExampleDef{Adding Global Storage Elements to the Static Environment}
-Adding the global storage elements in \listingref{EvalGlobals},
+Declaring the global storage elements in \listingref{EvalGlobals},
 adds the following bindings to the $\globalstoragetypes$ map of a given
 static environments:
 \[
 \begin{array}{rcl}
-  \PI &\mapsto& (\TReal, \GDKConstant)\\
-  \vx &\mapsto& (\unconstrainedinteger, \GDKVar)\\
-  \vc &\mapsto& (\TInt(\WellConstrained(\AbbrevConstraintExact{\LInt(42)})), \GDKConfig)
+  \PI           &\mapsto& (\TReal, \GDKConstant)\\
+  \verb|PC|     &\mapsto& (\TBits(\ELInt{32}, \emptylist), \GDKVar)\\
+  \verb|MaxIrq| &\mapsto& (\unconstrainedinteger, \GDKConfig)\\
+  \verb|Regs|   &\mapsto& \left(
+                          \TArray\left(\begin{array}{l}
+                              \ArrayLengthExpr(\ELInt{16}),\\
+                              \TBits(\ELInt{32}, \emptylist)
+                            \end{array}\right),
+                          \GDKVar
+                          \right)
 \end{array}
 \]
 
@@ -915,7 +922,7 @@ before having the chance to evaluate \verb|main|.
 \RenderRelation{declare_global}
 
 \ExampleDef{Declaring a Global Storage Element}
-Evaluating the specification in \listingref{DeclareGlobal}, results in updating the $\storage$ map
+Evaluating the specification in \listingref{DeclareGlobal} results in updating the $\storage$ map
 of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \ASLListing{Declaring a global storage element}{DeclareGlobal}{\semanticstests/SemanticsRule.DeclareGlobal.asl}
 

@@ -2215,7 +2215,7 @@ typing relation annotate_field_init(
   with list of fields \\ {field_types} and returns the annotated initializing expression {e''}
   and its \sideeffectdescriptorterm\ {ses}. \ProseOtherwiseTypeError",
   prose_application = "annotating the field initializer $({name}, {e'})$ with respect to
-  the list of fields {field_types}, yields {e''} and {ses}\ProseOrTypeError",
+  the list of fields {field_types} yields {e''} and {ses}\ProseOrTypeError",
   math_layout = [_,_],
 } =
   annotate_expr(tenv, e') -> (t', e'', ses);
@@ -2271,7 +2271,7 @@ typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: e
 {
   "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
   normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
-  prose_application = "generating the expression representing the summation of {exprs} in {tenv}, yields {e_width}",
+  prose_application = "generating the expression representing the summation of {exprs} in {tenv} yields {e_width}",
 };
 
 typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
@@ -3010,7 +3010,7 @@ typing relation annotate_local_decl_item(
   in the context of the \staticenvironmentterm{} {tenv} --- yielding the updated \staticenvironmentterm{}
   {new_tenv}. \ProseOtherwiseTypeError",
   prose_application = "annotating the local storage declaration with {ldi} and {ldk} with
-  {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt}, yields {new_tenv}\OrTypeError",
+  {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt} yields {new_tenv}\OrTypeError",
   math_layout = [[_,_,_,_,_], _],
 };
 
@@ -3067,7 +3067,7 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
 semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bit) -> (res: Bool)
 {
   "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}.",
-  prose_application = "testing whether the bit {b} matches the mask value {mv}, yields {res}",
+  prose_application = "testing whether the bit {b} matches the mask value {mv} yields {res}",
 };
 
 //////////////////////////////////////////////////
@@ -3144,7 +3144,7 @@ typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
   "converts the integer {val} to its two's complement little endian representation
   of {width} bits, yielding the result in {bits}.",
   prose_application = "converting the integer {val} to its two's complement little endian representation
-  of {width} bits, yields {bits}",
+  of {width} bits yields {bits}",
 };
 
 semantics function eval_unop(op: unop, v: native_value) ->
@@ -5666,7 +5666,7 @@ typing function reduce_constraint(tenv: static_envs, c: int_constraint) ->
          (new_c: int_constraint)
 {
   "\symbolicallysimplifiesterm{} an integer constraint
-  {c}, yielding the integer constraint {new_c}",
+  {c}, yielding the integer constraint {new_c}.",
   prose_application = "",
 };
 
@@ -5675,7 +5675,7 @@ typing function reduce_constraints(tenv: static_envs, cs: list0(int_constraint))
 {
   "\symbolicallysimplifiesterm{} a list of integer
   constraints {cs}, yielding a list of integer
-  constraints {new_cs}",
+  constraints {new_cs}.",
   prose_application = "",
 };
 
@@ -5816,7 +5816,7 @@ typing function array_length_equal(l1: array_index, l2: array_index) ->
 typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m: unitary_monomial)
 {
   "multiplies the unitary monomial {m1} with the unitary monomial {m2},
-  yielding the unitary monomial {m}",
+  yielding the unitary monomial {m}.",
   prose_application = "multiplying the unitary monomial {m1} with unitary monomial {m2}
                       yields the unitary monomial {m}",
 };
@@ -6646,7 +6646,7 @@ typing function add_immutable_expression(
          (new_tenv: static_envs) | type_error
 {
   "conditionally updates the \staticenvironmentterm{}
-  {tenv} for a \localdeclarationitem{} {ldk}, an
+  {tenv} for a \localdeclarationkeyword{} {ldk}, an
   optional pair {e_opt} consisting of an expression and
   its associated \sideeffectdescriptorsterm{}, and an
   identifier {x}, yielding the updated

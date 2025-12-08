@@ -74,12 +74,10 @@ Our symbolic reduction and equivalence testing rules employ \emph{\symbolicexpre
 \hypertarget{type-Qnonzero}{}
 \RenderTypes{symbolic_expressions}
 
-
-
 These \symbolicexpressionsterm{} provide a canonical representation for multivariate polynomials
 (that is, polynomials over multiple variables). The motivation for choosing this representation
-is examples similar to the one in \listingref{IR}, which requires representing the
-multivariate polynomials \verb|8*M*N| and \verb|M*N*8| in the same way.
+is examples similar to the one in \listingref{IR}, which require assigning the
+multivariate polynomials \verb|8*M*N| and \verb|M*N*8| a unique representation.
 \ASLListing{Example requiring a canonical polynomial representation}{IR}{\definitiontests/IR.asl}
 
 We now explain each component of a \symbolicexpressionterm{} and how it can be interpreted as a mathematical formula
@@ -107,7 +105,6 @@ For example,
 
 \RenderRelation{mul_monomials}
 
-
 \begin{mathpar}
   \inferrule{
     {
@@ -127,14 +124,12 @@ For example,
 \end{mathpar}
 For example,
 \[
-  \begin{array}{ll}
-  \mulmonomials( & \{\vx\mapsto 3, \vy\mapsto 1, \vz\mapsto2\}, \{\vx\mapsto 1, \vw\mapsto 2\}\ ) =\\
-                 & \{\vx\mapsto 4, \vy\mapsto 1, \vz\mapsto2, \vw\mapsto2\}
-  \end{array}
+\mulmonomials(\{\vx\mapsto{}3, \vy\mapsto{}1, \vz\mapsto{}2\}, \{\vx\mapsto{}1, \vw\mapsto{}2\}) =
+              \{\vx\mapsto{}4, \vy\mapsto{}1, \vz\mapsto{}2, \vw\mapsto{}2\}
 \]
 
 \begin{definition}[Polynomial]
-  \emph{Polynomials} are partial functions from monomials to rationals other than zero.
+  \emph{Polynomials} are partial functions from unitary monomials to rationals other than zero.
   Intuitively, each unitary monomial is mapped to its factor in the polynomial.
   A polynomial $\vp$ can be interpreted as follows:
   %
@@ -195,7 +190,7 @@ adds a list of polynomials:
 
 For example, if $\alpha(\vpone) = 3\cdot{}x^2\cdot{}y$,
 $\alpha(\vptwo) = 4\cdot{}x^2\cdot{}y$, and
-$\alpha(\vptwo) = x\cdot{}y^2$,
+$\alpha(\vpthree) = x\cdot{}y^2$,
 then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
 
 \RenderRelation{mul_polynomials}
@@ -248,6 +243,11 @@ In contrast, if $\alpha(\vpone) = x$
 and $\alpha(\vm) = x^2$ and $\vf=1$ then
 \[
 \alpha(\polynomialdividebyterm(\vpone, \vm, \vf)) =  \CannotBeTransformed \enspace.
+\]
+
+Notice that for all $\vpone$ and $\vm$ the following holds:
+\[
+\alpha(\polynomialdividebyterm(\vpone, \vm, 0)) =  \CannotBeTransformed \enspace.
 \]
 
 \section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
@@ -330,15 +330,15 @@ and their simplified counterparts.
   \begin{itemize}
     \item $\vc$ is an exact integer constraint for $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$;
-    \item define $\newc$ as the exact integer constraint for $\vep$ ($\ConstraintExact(\ve)$).
+    \item define $\newc$ as the \Proseexactconstraint{$\vep$}, that is, \\ $\ConstraintExact(\vep)$.
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vc$ is an range integer constraint for $\veone$ and $\vetwo$ ($\ConstraintRange(\veone, \vetwo)$);
+    \item $\vc$ is a range integer constraint for $\veone$ and $\vetwo$ ($\ConstraintRange(\veone, \vetwo)$);
     \item applying $\normalize$ to $\veone$ in $\tenv$ yields $\veonep$;
     \item applying $\normalize$ to $\vetwo$ in $\tenv$ yields $\vetwop$;
-    \item define $\newc$ as the exact integer constraint for $\vep$, that is, \\ $\ConstraintRange(\veonep, \vetwop)$.
+    \item define $\newc$ as the \Proserangeconstraint{$\veonep$}{$\vetwop$}, that is, \\ $\ConstraintRange(\veonep, \vetwop)$.
   \end{itemize}
 \end{itemize}
 
@@ -390,7 +390,7 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
 \RenderRelation{to_ir}
 
 \ExampleDef{Transforming Expressions into Symbolic Expressions}
-The specification in \listingref{ToIR} shows examples of expressions (on the right-hand-sides of assignments and declarations)
+The specification in \listingref{ToIR} shows examples of expressions (on the right-hand sides of assignments and declarations)
 and their corresponding symbolic representations (in comments, as ASL expressions).
 \ASLListing{Transforming expressions into symbolic expressions}{ToIR}{\typingtests/TypingRule.ToIR.asl}
 
@@ -407,7 +407,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
   \item \AllApplyCase{literal\_other}
   \begin{itemize}
-    \item $\ve$ is a variable expression other than an integer literal;
+    \item $\ve$ is a literal expression other than an integer literal;
     \item $\vp$ is $\CannotBeTransformed$.
   \end{itemize}
 
@@ -473,7 +473,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \item \AllApplyCase{ebinop\_minus}
   \begin{itemize}
     \item $\ve$ is a binary subtraction expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\SUB, \veone, \vetwo)$;
-    \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\ADD, \veone, \EUnop(\SUB, \vetwo))$;
+    \item $\vep$ is the addition expression with operands $\veone$ and the negation of $\vetwo$, that is, \\ $\EBinop(\ADD, \veone, \EUnop(\NEG, \vetwo))$;
     \item converting $\vep$ into a \symbolicexpressionterm{} in $\tenv$ yields $\vp$\ProseOrTypeErrorOrCannotBeTransformed.
   \end{itemize}
 
@@ -498,7 +498,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \item \AllApplyCase{ebinop\_mul}
   \begin{itemize}
     \item $\ve$ is a binary multiplication expression with operands $\veone$ and $\vetwo$, that is, \\ $\EBinop(\MUL, \veone, \vetwo)$;
-    \item neither $\veone$ nor $\vetwo$ are binary vision expressions;
+    \item neither $\veone$ nor $\vetwo$ is a binary division expression;
     \item converting $\veone$ to a \symbolicexpressionterm{} in $\tenv$ yields $\irone$\ProseOrTypeErrorOrCannotBeTransformed;
     \item converting $\vetwo$ to a \symbolicexpressionterm{} in $\tenv$ yields $\irtwo$\ProseOrTypeErrorOrCannotBeTransformed;
     \item $\vp$ is the \symbolicexpressionterm{} multiplying $\irone$ and $\irtwo$.
@@ -640,7 +640,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[evar\_immutable\_expr]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
   \lookupimmutableexpr(\tenv, \vs) \typearrow \vep\\
-  \toir(\vep) \typearrow \vp
+  \toir(\tenv, \vep) \typearrow \vp
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
@@ -654,7 +654,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
   \astlabel(\ttyone) = \TInt\\
   \ttyone = \TInt(\WellConstrained([\ConstraintExact(\ve)]))\\
-  \toir(\ve) \typearrow \vp \terminateas \CannotBeTransformed
+  \toir(\tenv, \ve) \typearrow \vp \terminateas \CannotBeTransformed
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \vp
 }
@@ -697,7 +697,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_minus]{
-  \vep \eqdef \EBinop(\ADD, \veone, \EUnop(\SUB, \vetwo))\\
+  \vep \eqdef \EBinop(\ADD, \veone, \EUnop(\NEG, \vetwo))\\
   \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
 }{
   \toir(\tenv, \overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}) \typearrow \vp

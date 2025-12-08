@@ -31,22 +31,22 @@ These are known as \purities{}.
 \RenderType{TPurity}
 
 \begin{description}
-    \item[\RenderConstant{SE_Pure}] describes evaluation of a \pureterm{} construct, one that can be evaluated at type-checking.
+\item[\RenderConstant{SE_Pure}] describes the evaluation of a \pureterm{} construct --- one that can be evaluated during type-checking.
 
-\item[\RenderConstant{SE_Readonly}] describes evaluation of a \readonlyterm{} construct, one that can read mutable global storage elements but not modify them.
+\item[\RenderConstant{SE_Readonly}] describes the evaluation of a \readonlyterm{} construct --- one that can read mutable global storage elements but not modify them.
 
-\item[\RenderConstant{SE_Impure}] describes evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}.
+\item[\RenderConstant{SE_Impure}] describes the evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}.
 \end{description}
 
 Formally, \purities{} are totally ordered via $\purityless$ as follows:
 \hypertarget{def-purityless}{}
 \[
-\SEImpure \purityless \SEReadonly \purityless \SEPure \enspace.
+\SEImpure \purityless \SEReadonly \purityless \SEPure
 \]
 Additionally, we define the greater-than-or-equal ordering as follows:
 \hypertarget{def-puritygeq}{}
 \[
-f \puritygeq f' \triangleq \lnot(f \purityless f') \enspace.
+f \puritygeq f' \triangleq \lnot(f \purityless f')
 \]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,11 +61,11 @@ which are configurations used to describe side effects, as explained below:
 
 \hypertarget{def-term-LocalEffect}{}
 \begin{description}
-    \item[$\LocalEffect$] a \LocalEffectTerm{} describes an evaluation of a construct whose minimum \purity{} for local reads/writes is $\vp$.
+    \item[$\LocalEffect$] is a \LocalEffectTerm{} describing an evaluation of a construct whose minimum \purity{} for local reads/writes is $\vpurity$.
     \hypertarget{def-term-GlobalEffect}{}
-    \item[$\GlobalEffect$] a \GlobalEffectTerm{} describes an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vp$.
+    \item[$\GlobalEffect$] is a \GlobalEffectTerm{} describing an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vpurity$.
     \hypertarget{def-term-Immutability}{}
-    \item[$\Immutability$] an \ImmutabilityTerm{} describes an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
+    \item[$\Immutability$] is an \ImmutabilityTerm{} describing an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
 \end{description}
 
 We now define a few helper functions over \sideeffectdescriptorsterm.
@@ -77,6 +77,7 @@ an expression can be evaluated during type-checking.
 
 \ExampleDef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}
 The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pureterm{}, \readonlyterm{}, and \symbolicallyevaluableterm{}.
+\texthypertarget{def-effect}%
 Here, \Effect{} stands for either \LocalEffect{} or \GlobalEffect{}.
 
 \begin{center}
@@ -149,7 +150,7 @@ and always yielding the same result, that is, deterministically.
 See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
 
 \ProseParagraph
-\Proseeqdef{$\vb$}{$\True$ if and only if one of the following conditions holds:
+\ProseEqdef{$\vb$}{$\True$ if and only if one of the following conditions holds:
   \begin{itemize}
     \item $\vs$ is a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
     \item $\vs$ is a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
@@ -242,7 +243,7 @@ See \ExampleRef{Checking Whether Expressions are Symbolically Evaluable}.
 The specification in \listingref{SESIsSymbolicallyEvaluable} is well-typed.
 Specifically, it shows how the fact that an expression is \symbolicallyevaluableterm{}
 is used to reason about the equivalence of bitwidth expressions.
-\ASLListing{Why Symbolically Evaluability Matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
+\ASLListing{Why symbolic evaluability matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
 
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$

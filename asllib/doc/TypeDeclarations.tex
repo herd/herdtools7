@@ -73,14 +73,14 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \end{mathpar}
 
 \ASTRuleDef{Subtype}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-subtype}{}
 The function
 \[
   \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \KleeneStar{(\Identifier\cartimes \ty)})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -107,7 +107,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Subtypeopt}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-subtypeopt}{}
 The function
 \[
@@ -115,7 +115,7 @@ The function
     \overname{\Option{\Identifier \cartimes \Option{\KleeneStar{(\Identifier\cartimes \ty)}}}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}
@@ -127,14 +127,14 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Fields}
-\MarkedIgnoredRelationDefinition{
+\NotImportedToASLSpecYet{
 \hypertarget{build-fields}{}
 The function
 \[
   \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\field}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_IGNORED_RELATION
+} % END_OF_UNIMPORTED_RELATION
 
 
 \begin{mathpar}

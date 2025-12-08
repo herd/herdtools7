@@ -33,7 +33,7 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 
 \paragraph{Typing:} Global pragma declarations are checked by $\checkglobalpragma$ (see \TypingRuleRef{CheckGlobalPragma}); and
 
-\paragraph{Semantics:} since global pragma declarations are discarded after typechecking,
+\paragraph{Semantics:} Since global pragma declarations are discarded after typechecking,
     they have no associated dynamic semantics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,7 +77,8 @@ The specification in \listingref{CheckGlobalPragma} shows a well-typed global pr
 whereas the specification in \listingref{CheckGlobalPragma-bad} shows an ill-typed
 global pragma where the expression \verb|x| is ill-typed, since the identifier \verb|x|
 is undefined and the expression \verb|(2==3.0)| uses the operator \verb|==|
-without matching any operation.
+without matching any operation (see \secref{PrimitiveOperationSignatures}) due to mismatched operand types
+(\integertypeterm{} and \realtypeterm{}).
 \ASLListing{A well-typed global pragma}{CheckGlobalPragma}{\typingtests/TypingRule.CheckGlobalPragma.asl}
 \ASLListing{An ill-typed global pragma}{CheckGlobalPragma-bad}{\typingtests/TypingRule.CheckGlobalPragma.bad.asl}
 
@@ -87,7 +88,7 @@ without matching any operation.
   \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. that is, $\DPragma(\Ignore, \vargs)$;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item applying $\annotateexprlist$ to $\vargs$ in $\tenv$ yields $\vargsp$ \ProseOrTypeError;
-  \item $\vargsp$ is ignored;
+  \item $\vargsp$ is ignored.
 \end{itemize}
 
 \FormallyParagraph

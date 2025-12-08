@@ -9,7 +9,7 @@ end;
 // results in a thrown exception.
 var x = f();
 
-// main will no be evaluated because of the failure to evaluate `x`.
+// main will not be evaluated because of the failure to evaluate `x`.
 func main() => integer
 begin
     return 0;

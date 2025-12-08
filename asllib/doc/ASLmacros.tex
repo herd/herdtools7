@@ -166,8 +166,8 @@
 \setlist[itemize,20]{label=\textendash}
 
 \newcommand\BackupOriginalRule[1]{}
-\newcommand\MarkedIgnoredRelationDefinition[1]{#1} % DO NOT LINT
-\newcommand\PendingRelationDefinition[1]{#1} % DO NOT LINT
+% Ignored here means, it is not yet considered for auto-generation.
+\newcommand\NotImportedToASLSpecYet[1]{#1} % DO NOT LINT
 
 \newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
 \newcommand\FormalRelationsDef[1]{\section{Formal Relations for #1\label{sec:Formal Relations for #1}}}
@@ -1094,7 +1094,7 @@
 
 \newcommand\Prosebinopliterals[2]{statically evaluating #1 yields #2}
 
-\newcommand\Effect[0]{\textsf{Effect}}
+\newcommand\Effect[0]{\hyperlink{def-effect}{\textsf{Effect}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
@@ -1163,7 +1163,7 @@
 
 \newcommand\Proseevalexpr[3]{
     \hyperlink{relation-evalexpr}{evaluating} the expression #2 in the environment #1 yields #3}
-\newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3, yields #4}
+\newcommand\Proseevallexpr[4]{\hyperlink{relation-evalexpr}{evaluating} the left-hand-side expression #2 in the environment #1 and #3 yields #4}
 \newcommand\Prosepoplocalscope[2]{#2 after \hyperlink{relation-poplocalscope}{restoring} the variable bindings of #1 with the updated values of #2}
 \newcommand\evalmultiassignment[0]{\hyperlink{relation-evalmultiassignment}{\textfunc{multi\_assign}}} % SPECIFIED
 \newcommand\Prosebuildgenv[4]{\hyperlink{relation-buildgenv}{building} an environment from the static environment #1 and specification #2 yields #3 and the execution graph #4}
@@ -1338,11 +1338,9 @@
 \newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}} % SPECIFICATION_DEFERRED
 
 \newcommand\renamelocals[0]{\hyperlink{def-renamelocals}{\textfunc{rename\_locals}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocals[2]{\hyperlink{def-renamelocals}{renaming}
-  the local storage elements in the list of global declarations #1 yields the list of global declarations #2}
 \newcommand\renamelocalsname[0]{\hyperlink{def-renamelocalsname}{\textfunc{rename\_locals\_name}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsname[2]{\hyperlink{def-renamelocalsname}{renames}
-  the identifier #1, yielding the identifier #2}
+\newcommand\Proserenamelocalsname[2]{\hyperlink{def-renamelocalsname}{renaming}
+  the identifier #1 yields the identifier #2}
 \newcommand\renamelocalsdecl[0]{\hyperlink{def-renamelocalsdecl}{\textfunc{rename\_locals\_decl}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsdecl[2]{\hyperlink{def-renamelocalsdecl}{renaming}
   the local storage elements in declaration #1 yields the declaration #2}
@@ -1351,7 +1349,7 @@
   the local storage elements in subprogram description #1 yields the function description #2}
 \newcommand\renamelocalsargs[0]{\hyperlink{def-renamelocalsargs}{\textfunc{rename\_locals\_args}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsargs[2]{\hyperlink{def-renamelocalsargs}{renaming}
-  the list local arguments #1 yields the list of arguments #2}
+  the list of local arguments #1 yields the list of arguments #2}
 \newcommand\renamelocalsnamedargs[0]{\hyperlink{def-renamelocalsnamedargs}{\textfunc{rename\_locals\_named\_args}}} % SPECIFICATION_DEFERRED
 \newcommand\Proserenamelocalsnamedargs[2]{\hyperlink{def-renamelocalsnamedargs}{renaming}
   the local storage elements in the list of parameters #1 yields the list of parameters #2}
@@ -1583,9 +1581,9 @@
 %% Assignable expression macros
 \newcommand\discardlexprterm[0]{\hyperlink{def-discardlexprterm}{discarding assignment expression}}
 \newcommand\varlexpr[1]{\hyperlink{def-varlexprterm}{assignable variable expression} for the identifier #1}
-\newcommand\slicelexpr[2]{\hyperlink{def-slicelexprterm}{assignable slicing expression} for the assignable expression #1 and list of slices #1}
+\newcommand\slicelexpr[2]{\hyperlink{def-slicelexprterm}{assignable slicing expression} for the assignable expression #1 and list of slices #2}
 \newcommand\setarraylexpr[2]{\hyperlink{def-setarraylexprterm}{assignable array expression} for the assignable array base expression #1 and index expression #2}
-\newcommand\setfieldslexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable multi-field expression} for the assignable record base expression #1 and list of field identifier #2}
+\newcommand\setfieldslexpr[2]{\hyperlink{def-setfieldlexprterm}{assignable multi-field expression} for the assignable record base expression #1 and list of field identifiers #2}
 \newcommand\destructuringlexpr[1]{\hyperlink{def-destructuringlexprterm}{assignable multi-expression} for the list of assignable expressions #1}
 
 %% Statement macros
@@ -1731,7 +1729,7 @@
 \newcommand\OrLexicalError[0]{\;\terminateas\;\LexicalErrorConfig}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
 \newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\texttt{\#}\BuildErrorCode{PE}}}
-\newcommand\OrParseError[0]{\;\terminateas\;\BuildErrorCode{PE}}
+\newcommand\OrParseError[0]{\;\terminateas\;\ParseErrorConfig}
 \newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}

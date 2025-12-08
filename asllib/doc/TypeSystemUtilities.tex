@@ -142,7 +142,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \ExampleDef{Finding Bitfields}
 In \listingref{eget-bitfield}, annotating the expressions
 \verb|p.flag|, \verb|p.data|, \verb|p.detailed_data.info|
-require finding the corresponding bitfields, which all exist in the \verb|Packet| \bitvectortypeterm.
+requires finding the corresponding bitfields, which all exist in the \verb|Packet| \bitvectortypeterm.
 
 In contrast, in \listingref{eget-bad-bitfield}, annotating the expression \verb|p.undeclared_identifier|
 requires finding the bitfield \verb|undeclared_identifier| in the \verb|Packet| \bitvectortypeterm,
@@ -198,7 +198,7 @@ which does not exist.
 
 \ExampleDef{Retrieving the Type of an Array from an Array Index}
 
-In \listingref{typing-tarray}, annotating the expression \verb|int_arr[[3]]|,
+In \listingref{typing-tarray}, annotating the expression \verb|int_arr[[3]]|
 yields \\
 $\ArrayLengthExpr(\ELInt{3})$, and
 \[
@@ -498,19 +498,19 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \begin{itemize}
   \item \AllApplyCase{local}
   \begin{itemize}
-    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\ve$.
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$ yields $\ve$.
   \end{itemize}
 
   \item \AllApplyCase{global}
   \begin{itemize}
-    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
-    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\ve$.
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$ yields $\bot$;
+    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$ yields $\ve$.
   \end{itemize}
 
   \item \AllApplyCase{none}
   \begin{itemize}
-    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$, yields $\bot$;
-    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$, yields $\bot$;
+    \item applying $\exprequiv$ to $\vx$ in the local component of $\tenv$ yields $\bot$;
+    \item applying $\exprequiv$ to $\vx$ in the global component of $\tenv$ yields $\bot$;
     \item $\ve$ is $\bot$.
   \end{itemize}
 \end{itemize}
@@ -623,7 +623,7 @@ yields $\True$.
 \RenderRelation{add_immutable_expression}
 
 \ExampleDef{Updating Static Environments for Immutable Expressions}
-In \listingref{AddImmutableExpr}, determining that the declarations for \verb|t|
+In \listingref{AddImmutableExpr}, determining that the declaration for \verb|t|
 is well-typed succeeds since $\addimmutableexpression$ is used to bind \verb|x| to \verb|1|.
 Similarly, determining that the declaration for \verb|y|
 is well-typed succeeds since $\addimmutableexpression$ is used to bind \verb|k| to \verb|64|
@@ -636,23 +636,23 @@ specification.
 \ProseParagraph
 \OneApplies
 \begin{itemize}
-  \item \AllApplyCase{ok}
+  \item \AllApplyCase{add}
   \begin{itemize}
-    \item $\vep$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$;
+    \item $\veopt$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$;
     \item $\ldk$ is $\LDKLet$;
     \item applying $\shouldrememberimmutableexpression$ to $\vsese$ yields $\True$;
     \item applying $\normalize$ to $\ve$ in $\tenv$ yields $\vep$\ProseOrTypeError;
-    \item applying $\addlocalimmutableexpr$ to $\vx$ and $\ve$ yields $\newtenv$.
+    \item applying $\addlocalimmutableexpr$ to $\vx$ and $\vep$ yields $\newtenv$.
   \end{itemize}
 
-  \item \AllApplyCase{fail}
+  \item \AllApplyCase{noop}
   \begin{itemize}
     \item \OneApplies
     \begin{itemize}
-      \item $\vep$ is $\None$;
       \item $\ldk$ is not $\LDKLet$;
-      \item $\vep$ contains the expression $\ve$ and \sideeffectsetterm\ $\vsese$ and
-            applying $\shouldrememberimmutableexpression$ to $\vsese$ yields $\True$;
+      \item $\veopt$ is $\None$;
+      \item $\veopt$ contains the expression $\ve$ and \sideeffectsetterm{} $\vsese$ and
+            applying $\shouldrememberimmutableexpression$ to $\vsese$ yields $\False$;
     \end{itemize}
     \item define $\newtenv$ as $\tenv$.
   \end{itemize}
@@ -660,7 +660,7 @@ specification.
 
 \FormallyParagraph
 \begin{mathpar}
-\inferrule[ok]{
+\inferrule[add]{
   \shouldrememberimmutableexpression(\vsese) \typearrow \True\\
   \normalize(\tenv, \ve) \typearrow \vep \OrTypeError\\\\
   \addlocalimmutableexpr(\vx, \vep) \typearrow \newtenv
@@ -670,7 +670,7 @@ specification.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[fail]{
+\inferrule[noop]{
   {
     \begin{array}{ll}
       \ldk \neq \LDKLet & \lor\\
