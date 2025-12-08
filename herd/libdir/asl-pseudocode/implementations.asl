@@ -40,6 +40,18 @@ type BRBSRC_EL1_Type of bits(64);
 
 // =============================================================================
 
+// _SetUpRegisters()
+// =================
+
+// This procedure is called before the decode of any intruction, and is used to
+// correctly set up the registers with their runtime values.
+
+// This allows us to leave the register declaration as they are by default,
+// only to set up their values when necessary.
+
+// Argument is_vmsa is a boolean reflecting if stage 1 translation is activated
+// or not.
+
 func _SetUpRegisters (is_vmsa: boolean)
 begin
   // Value found on Rasberry 4B, ArmBian
@@ -63,6 +75,14 @@ end;
 
 // =============================================================================
 
+// SP_EL0 - accessor
+// =================
+
+// The various Stack pointers are not declared in shared-pseudocode.asl.
+// We only need the EL0 stack pointer.
+// Its implementation is simply an indirection to a backing global storage
+// _SP_EL0.
+
 var _SP_EL0: bits(64);
 
 accessor SP_EL0() <=> v: bits(64)
@@ -78,6 +98,15 @@ end;
 
 // =============================================================================
 
+// ConstrainUnpredictableBool()
+// ============================
+// This is a variant of the ConstrainUnpredictable function where the result is either
+// Constraint_TRUE or Constraint_FALSE.
+
+// We override this function directly and not the ConstrainUnpredictable to
+// use directly ARBITRARY: boolean and not do some complex manipulations with
+// Constraint_TRUE and Constraint_FALSE.
+
 func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
   return ARBITRARY: boolean;
@@ -85,9 +114,13 @@ end;
 
 // =============================================================================
 
+// ImpDefBool(), ImpDefInt()
+// =========================
+
 // Not declared in shared_pseudocode
 
-// We only implement the minimum necessary
+// We only implement the minimum necessary, i.e. for example this is only used
+// in one case each, the rest is guarded with unreachable.
 
 readonly func ImpDefBool(s: string) => boolean
 begin
@@ -101,16 +134,27 @@ readonly func ImpDefInt(s: string) => integer
 begin
   case s of
     when "Maximum Physical Address Size" => return 48;
+    when "Aligned quantity for atomic access" => return 32;
     otherwise => unreachable;
   end;
 end;
 
-
 // =============================================================================
+
+// IsFeatureImplemented()
+// ======================
 
 // Not declared in shared_pseudoocode
 
 // We only implement the mininum required features.
+
+// This implementation is probably a bit errouneous, as some features might be
+// implemented in herd.
+// For example, `FEAT_LSE` is needed to implement `CAS` according to the
+// [Arm ARM](https://developer.arm.com/documentation/ddi0602/2025-09/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-?lang=en).
+// However, we don't need to say we implement it because it is only tested once
+// in the whole `shared_pseudocode.asl`, in a function we don't use
+// (`TakeGPCException`).
 
 readonly func IsFeatureImplemented(f : Feature) => boolean
 begin
@@ -124,6 +168,10 @@ end;
 
 // InstructionSynchronizationBarrier()
 // ===================================
+
+// This function generates a ISB Effect, and is just calling the
+// `primitive_isb` primitive.
+
 func InstructionSynchronizationBarrier()
 begin
   primitive_isb();
@@ -134,6 +182,9 @@ end;
 // DataMemoryBarrier()
 // ===================
 
+// This function generates a DMB Effect, with the correct parameters. In
+// practice it is just a call to the `primitive_dmb` primitive.
+
 func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
 begin
   primitive_dmb(domain, types);
@@ -141,6 +192,9 @@ end;
 
 // DataSynchronizationBarrier()
 // ============================
+
+// This function generates a DSB Effect, with the correct parameters. In
+// practice it is just a call to the `primitive_dsb` primitive.
 
 // nXS is not implemented in herd
 
@@ -171,7 +225,8 @@ end;
 // The definition of this function is IMPLEMENTATION DEFINED.
 // In the recommended interface, this function returns the state of the DBGEN signal.
 
-// We do not support external debug.
+// We do not support external debug, and thus can implement this function by
+// always returning FALSE.
 
 func ExternalInvasiveDebugEnabled() => boolean
 begin
@@ -185,7 +240,9 @@ end;
 // Return the ID of the currently executing PE.
 
 // We override a impdef declaration in shared_pseudocode. The processor id is
-// set directly by herd as an integer, in the variable _ProcesorID.
+// set directly by herd as an integer, in the variable _ProcesorID. The
+// initialization value of _ProcessorID is edited by herd to have the correct
+// value.
 
 var _ProcessorID: integer = 0;
 
@@ -198,6 +255,9 @@ end;
 
 // NormalWBISHMemAttr
 // ==================
+
+// This variable is not present in shared_pseudocode, but is used in other
+// parts of the interface, see patches.asl.
 
 // The memory-attributes used by all memory accesses
 

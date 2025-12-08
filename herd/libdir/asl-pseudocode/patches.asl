@@ -163,8 +163,18 @@ begin
   return;
 end;
 
+// =============================================================================
+
 // X - accessor
 // ============
+
+// We override the original declaration in shared_pseudocode to substitute the
+// accesses to a backing array to calls to our read_register and write_register
+// primitives.
+// This does not make any difference functionally but avoid the synchronisation
+// between the different register accesses: with a backing array, a read to
+// X[4] would be asl-data after a previous write to X[5], where our primitive
+// guarantee independence of those registers.
 
 accessor X{width}(n : integer) <=> value : bits(width)
 begin
