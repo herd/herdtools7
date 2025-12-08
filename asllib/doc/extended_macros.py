@@ -11,16 +11,6 @@ ASLREF_EXE: str = "aslref"
 debug = False
 
 
-def read_file_lines(filename: str) -> List[str]:
-    with open(filename, "r", encoding="utf-8") as file:
-        return file.readlines()
-
-
-def read_file_str(filename: str) -> List[str]:
-    with open(filename, "r", encoding="utf-8") as file:
-        return file.read()
-
-
 def yellow_error_message(msg: str) -> str:
     YELLOW = "\033[43m"
     COLOR_RESET = "\033[m"
