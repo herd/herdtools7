@@ -389,12 +389,18 @@ let pp_decl f =
         body = _;
         qualifier;
         override;
+        recurse_limit;
       } =
     let pp_args f =
       fprintf f "@[<hv>%a@]" (pp_comma_list pp_typed_identifier)
     in
     let pp_return_type_opt f = function
       | Some return_type -> fprintf f "@ => %a" pp_ty return_type
+      | None -> ()
+    in
+    let pp_recurse_limit_opt f = function
+      | Some recurse_limit ->
+          fprintf f "@ recurselimit %a" pp_expr recurse_limit
       | None -> ()
     in
     let pp_parameters f = function
@@ -419,9 +425,9 @@ let pp_decl f =
     in
     match subprogram_type with
     | ST_Function | ST_Procedure ->
-        fprintf f "@[<hv 2>%s%sfunc @[%s%a@]@ (%a)%a@]" qualifier_keyword
+        fprintf f "@[<hv 2>%s%sfunc @[%s%a@]@ (%a)%a%a@]" qualifier_keyword
           override_keyword name pp_parameters parameters pp_args args
-          pp_return_type_opt return_type
+          pp_return_type_opt return_type pp_recurse_limit_opt recurse_limit
     | ST_Getter ->
         fprintf f "@[<hv 2>%s%sgetter %s%a [%a]%a@]" qualifier_keyword
           override_keyword name pp_parameters parameters pp_args args
