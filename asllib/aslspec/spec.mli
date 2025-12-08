@@ -78,6 +78,10 @@ val is_operator : elem -> bool
 (** [is_operator elem] returns [true] if [elem] corresponds to an operator, and
     [false] otherwise. *)
 
+val is_variadic_operator : t -> Relation.t -> bool
+(** [is_variadic_operator spec relation] returns [true] if [relation]
+    corresponds to a variadic operator in [spec], and [false] otherwise. *)
+
 (** A module for expanding rules with cases into multiple rules without cases.
 *)
 module ExpandRules : sig

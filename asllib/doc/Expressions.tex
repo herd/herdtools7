@@ -2369,7 +2369,7 @@ as it is applied to unrelated kinds of types.
   \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \vsese)$\ProseOrTypeError;
   \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-  \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
+  \item annotating the type $\tty$ as a non-declaration in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structureterm\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
   \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
         will always fail yields $\True$\ProseOrTypeError;
@@ -2924,7 +2924,7 @@ Note that there are two important consequences of producing an arbitrary value w
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$ ($\EArbitrary(\tty)$);
-  \item annotating the type $\tty$ in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
+  \item annotating the type $\tty$ as a non-declaration in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
   \item obtaining the \structureterm\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
   \item $\vt$ is $\ttyone$;
   \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$ ($\EArbitrary(\ttytwo)$);
