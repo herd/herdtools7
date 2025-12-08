@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
 import sys
+from utils import read_file_lines, read_file_str, is_skipped_line
 from extended_macros import (
     apply_console_macros,
     get_latex_sources,
-    read_file_lines,
-    read_file_str,
 )
+from check_macro_usage import check_zero_arg_macro_misuse, check_macro_arity
 import re
 from dataclasses import dataclass
 from typing import List, Set
@@ -36,16 +36,7 @@ cli_parser.add_argument(
 )
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
-DO_NOT_LINT_STR = "DO NOT LINT"
 GENERATED_ELEMENTS_FILENAME = "generated_elements.tex"
-
-
-def is_skipped_line(line: str):
-    return DO_NOT_LINT_STR in line or line.strip().startswith("%")
-
-
-def is_content_line(line: str):
-    return not is_skipped_line(line)
 
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
@@ -701,61 +692,6 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     return num_errors
 
 
-def check_zero_arg_macro_misuse(latex_files: list[str]) -> int:
-    r"""
-    Scans ASLmacros.tex to find all zero-argument macros, then checks content .tex files
-    for incorrect usage of these macros (i.e., using them with arguments like \macro{arg}).
-    Returns the total number of errors found.
-    """
-    # First, find all zero-argument macros in ASLmacros.tex
-    aslmacros_path = "ASLmacros.tex"
-    lines = read_file_lines(aslmacros_path)
-    zero_arg_macros: set[str] = set()
-    # Pattern to match \newcommand\macroname[0]{...}
-    zero_arg_pattern = re.compile(r"\\newcommand\\([a-zA-Z]+)\[0\]")
-    for line in lines:
-        if is_skipped_line(line):
-            continue
-        matches = re.findall(zero_arg_pattern, line)
-        for match in matches:
-            # Exclude macros that end with "term" as they can be used with {} for styling
-            if (
-                not match.endswith("term")
-                and not match.endswith("Term")
-                and not match.startswith("Prose")
-                and not match.startswith("terminateas")
-            ):
-                zero_arg_macros.add(match)
-    if not zero_arg_macros:
-        return 0
-
-    # Now check content files for incorrect usage
-    num_errors = 0
-    for filename in latex_files:
-        lines = read_file_lines(filename)
-        line_number = 0
-
-        for line in lines:
-            line_number += 1
-            if is_skipped_line(line):
-                continue
-
-            # Find all macro usages with arguments and check if they're zero-argument macros
-            # Pattern to match \macroname{content} where content doesn't contain unescaped braces
-            macro_usage_pattern = r"\\([a-zA-Z]+)\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
-            matches = re.findall(macro_usage_pattern, line)
-
-            for macro_name, match_content in matches:
-                # Check if this macro is a zero-argument macro and has non-empty content
-                if macro_name in zero_arg_macros and match_content.strip():
-                    print(
-                        f"{filename}:{line_number}: Zero-argument macro \\{macro_name} used with arguments: {match_content}"
-                    )
-                    num_errors += 1
-
-    return num_errors
-
-
 def check_mathpar_macro_usage(filename: str) -> int:
     r"""
     Scans a .tex file and checks that within \begin{mathpar} ... \end{mathpar} blocks,
@@ -1329,7 +1265,6 @@ def check_duplicate_asllisting_references(latex_files: list[str]) -> int:
     return num_errors
 
 
-
 def check_per_file(latex_files: list[str], checks):
     r"""
     Applies the list of functions in 'checks' to each file in 'latex files',
@@ -1351,8 +1286,12 @@ def main():
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)
-    standard_files = ['disclaimer.tex', 'notice.tex']
-    content_latex_sources = [f for f in content_latex_sources if not any(f.endswith(sf) for sf in standard_files)]
+    standard_files = ["disclaimer.tex", "notice.tex"]
+    content_latex_sources = [
+        f
+        for f in content_latex_sources
+        if not any(f.endswith(sf) for sf in standard_files)
+    ]
     num_errors = 0
     num_spelling_errors = spellcheck(args.dictionary, content_latex_sources)
     if num_spelling_errors > 0:
@@ -1366,6 +1305,7 @@ def main():
     num_errors += check_undefined_references_and_multiply_defined_labels()
     num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_zero_arg_macro_misuse(content_latex_sources)
+    num_errors += check_macro_arity(content_latex_sources)
     num_errors += check_relation_references(content_latex_sources)
     num_errors += check_duplicate_asllisting_references(content_latex_sources)
     num_errors += check_per_file(

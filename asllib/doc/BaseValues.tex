@@ -104,7 +104,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
         \item $\vt$ is the \wellconstrainedintegertypeterm\ with a list of constraints $\cs$;
         \item define $\vzminlist$ as the concatenation of lists obtained for each
               constraint $\cs[\vi]$ in $\tenv$, for each $\vi\in\listrange(\cs)$, via $\constraintabsmin$;
-        \item checking whether $\vzminlist$ is empty yields $\True$\ProseOrTypeError{\NoBaseValue};
+        \item checking whether $\vzminlist$ is empty yields $\True$ or a \typingerrorterm{} with \errorcodeterm{} \NoBaseValue;
         \item determining the minimal absolute integer in $\vzminlist$ via $\listminabs$ yields $\vzmin$;
         \item $\veinit$ is the integer literal expression for $\vzmin$.
     \end{itemize}
@@ -349,7 +349,8 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
     \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
     \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
     \vzopttwo \eqname \some{\vvtwo}\\
-    \vzs \eqdef {
+    {
+    \vzs \eqdef
         \begin{cases}
            \emptylist & \vvone > \vvtwo\\
            [\vvtwo] & \vvone \leq \vvtwo < 0\\

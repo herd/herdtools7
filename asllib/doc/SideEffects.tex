@@ -194,7 +194,7 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item \Proseeqdef{$\vb$} as $\True$ if and only if $\ldk$ is $\LDKLet$;
+  \item \Proseeqdef{$\vb$}{$\True$ if and only if $\ldk$ is $\LDKLet$};
   \item the result is a set containing a \LocalEffectTerm{} with \purity{} $\SEReadonly$, and an \ImmutabilityTerm{} with immutability $\vb$.
 \end{itemize}
 
@@ -219,7 +219,7 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \AllApply
 \begin{itemize}
   \item \Proseeqdef{$\vpurity$}{$\SEPure$ if $\gdk$ is $\GDKConstant$, and $\SEReadonly$ otherwise};
-  \item \Proseeqdef{$\vb$} as $\False$ if and only if $\gdk$ is $\GDKVar$;
+  \item \Proseeqdef{$\vb$}{$\False$ if and only if $\gdk$ is $\GDKVar$};
   \item the result is a set containing a \GlobalEffectTerm{} with \purity{} $\vpurity$ and \ImmutabilityTerm{} with immutability $\vb$.
 \end{itemize}
 
