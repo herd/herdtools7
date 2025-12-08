@@ -24,6 +24,7 @@ module Make
     val verbose: bool
     val includes: string list
     val libdir: string
+    val assumptions_file: string
   end) =
 struct
 
@@ -79,6 +80,9 @@ struct
     | Some idx -> String.sub s 0 idx
     | None -> s
 
+  let contains_alias s =
+    String.contains s sep
+
   let make_var id = Var (TxtLoc.none, id)
 
   let pp_expr_with_loc e = ASTUtils.exp2loc e |> Cache.extract
@@ -101,6 +105,27 @@ struct
       Printf.sprintf "if _some_cond then %s else %s" (do_pp_expr false e1) (do_pp_expr false e2)
     | e -> pp_expr_with_loc e in
     do_pp_expr false
+
+  let can_be_effect id defs primitives =
+    let rec loop looked_up_ids = function
+    | Fun _
+    | Tag _
+    | Op (_, (Seq | Cartesian | Tuple), _)
+    | Op1 (_, (Plus | Star | Opt | Inv | ToId), _) -> false
+    | Try (_, e1, e2) | If (_, _, e1, e2) ->
+      loop looked_up_ids e1 && loop looked_up_ids e2
+    | Op (_, (Union | Inter | Diff | Add), es) ->
+      List.for_all (loop looked_up_ids) es
+    | Var (_, id) ->
+      if StringSet.mem id looked_up_ids then true
+      else begin
+        match StringMap.find_opt id defs with
+        | None -> StringSet.mem (from_alias id) primitives
+        | Some expr -> loop (StringSet.add id looked_up_ids) expr
+      end
+    | _ -> true
+    in
+    loop StringSet.empty (make_var id)
 
   (** Comparison function on expressions - assumes that sub-expression in op
     case are sorted based on itself *)
@@ -241,6 +266,17 @@ struct
           ) (seen, acc) (neighbours v g)
       in
       go start 1 seen acc0
+
+    let dfs_fold_multiple_starts
+        ~(per_vertex : vertex -> int -> 'acc -> 'acc)
+        ~(per_neighbour  : vertex -> vertex -> 'acc -> 'acc)
+        (g : t)
+        (acc0 : 'acc)
+      : 'acc =
+      let _, res = VMap.fold (fun v _ (seen, acc) ->
+        dfs_fold ~per_vertex ~per_neighbour g v seen acc
+      ) g (VSet.empty, acc0) in
+      res
   end
 
   module OrderedExpr = struct
@@ -252,131 +288,122 @@ struct
   module ExprMap = MyMap.Make(OrderedExpr)
   module ExprGraph = MakeGraph(ExprSet)(ExprMap)
 
-  let barriers = ["DMB.ISH"; "DMB.ISHLD"; "DMB.ISHST"; "DMB.LD"; "DMB.OSH";
-    "DMB.OSHLD"; "DMB.OSHST"; "DMB.ST"; "DMB.SY"; "DSB.ISH"; "DSB.ISHLD";
-    "DSB.ISHST"; "DSB.LD"; "DSB.OSH"; "DSB.OSHST"; "DSB.ST"; "DSB.SY"; "ISB"]
+  module VarGraph = MakeGraph(StringSet)(StringMap)
 
-  let pte_accesses = ["PTEDevice"; "PTEDevice-GRE"; "PTEDevice-nGRE";
-    "PTEDevice-nGnRE"; "PTEDevice-nGnRnE"; "PTEInner-non-cacheable";
-    "PTEInner-shareable"; "PTEInner-write-back"; "PTEInner-write-through";
-    "PTENon-shareable"; "PTENormal"; "PTEOuter-non-cacheable";
-    "PTEOuter-shareable"; "PTEOuter-write-back"; "PTEOuter-write-through";
-    "PTETaggedNormal"; "PTEXS"]
+  (* Takes the assumptions in the form of a cat AST and returns 3 data structures:
+     - supersets: represents pairs of effects where one is a superset of
+     the other
+     - intersects: represents pairs of effects that are intersectable
+     - rel_effects: represents the effects that can sit on either side of
+     a primitive relation
+     The data structures as returned by this function are not ready to be used
+     by the intersection algorithm, and need to be post-processed using the
+     propagate_supersets and propagate_intersects functions.
+  *)
+  let get_assumptions ast =
+    let pp_opt_string name = Option.fold ~none:"(unknown)" ~some:Fun.id name in
+    let add_to_map key value els =
+      let existing_els = StringMap.safe_find [] key els in
+      StringMap.add key (value :: existing_els) els in
+    
+    let invalid_assert_err e name =
+        Warn.fatal "Assertion %s inside assumptions file %s contains invalid \
+          expression: %s\n" (pp_opt_string name) O.assumptions_file (pp_expr e) in
 
-  let pte_vals = ["PTEINV"; "PTEV"]
-  let all_ptes = "PTEMemAttr" :: (pte_vals @ pte_accesses)
+    List.fold_left (fun (supersets, intersects, rel_effects) ins ->
+      match ins with
+      | Test ((_, _, Yes TestEmpty, Op (_, Diff, [subs_expr; Var (_, super)]), name), Assert) ->
+        (* subs is either a primitive or a disjunction of primitives *)
+        let supersets = match subs_expr with
+        | Var (_, id) -> VarGraph.add_edge id super supersets
+        | Op (_, Union, subs) ->
+          List.fold_left (fun supersets sub ->
+            match sub with
+            | Var (_, id) -> VarGraph.add_edge id super supersets
+            | _ -> invalid_assert_err subs_expr name
+          ) supersets subs
+        | e ->  invalid_assert_err e name in
+        supersets, intersects, rel_effects
+      | Test ((_, _, Yes TestEmpty, Op (_, Diff, [Var (_, rel); e]), name), Assert) ->
+        let rel_effects = match e with
+        | Op (_, Cartesian, [e1; e2]) -> add_to_map rel (e1, e2) rel_effects
+        | Op (_, Union, es) ->
+          List.fold_left (fun rel_effects e ->
+            match e with
+            | Op (_, Cartesian, [e1; e2]) -> add_to_map rel (e1, e2) rel_effects
+            | _ -> invalid_assert_err e name
+          ) rel_effects es
+        | e -> invalid_assert_err e name in
+        supersets, intersects, rel_effects
+      | Test ((_, _, No TestEmpty, (Op (_, Inter, [e1; e2]) as e), name), Flagged) ->
+        let intersects = match e1, e2 with
+        | Var (_, id1), Var (_, id2) -> VarGraph.add_edge id1 id2 intersects
+        | _, _ ->
+          Warn.fatal "Flag %s inside assumptions file %s contains invalid \
+            expression %s\n" (pp_opt_string name) O.assumptions_file (pp_expr e) in
+        supersets, intersects, rel_effects
+      | _ -> supersets, intersects, rel_effects
+    ) (StringMap.empty, StringMap.empty, StringMap.empty) ast
 
-  let supersets = [
-    ("A", ["M"; "R"; "Exp"]);
-    ("AF", ["NExp"]);
-    ("AccessFlag", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("BCC", ["B"]);
-    ("DB", ["NExp"]);
-    ("EXC-ENTRY", ["FAULT"]);
-    ("EXC-RET", ["B"]);
-    ("Instr", ["M"]);
-    ("IW", ["W"; "M"]);
-    ("L", ["M"; "W"; "Exp"]);
-    ("MMU", ["EXC-ENTRY"; "FAULT"]);
-    ("NoRet", ["R"; "M"]);
-    ("PA", ["M"]);
-    ("Permission", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("PTE", ["M"]);
-    ("PTEMemAttr", ["PTE"; "M"]);
-    ("Q", ["M"; "R"; "Exp"]);
-    ("R", ["M"]);
-    ("Restricted-CMODX", ["Instr"; "M"]);
-    ("SupervisorCall", ["EXC-ENTRY"; "FAULT"]);
-    ("T", ["M"]);
-    ("TagCheck", ["FAULT"]);
-    ("Translation", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("TLBIIS", ["TLBI"]);
-    ("TLBInXS", ["TLBI"]);
-    ("UndefinedInstruction", ["EXC-ENTRY"; "FAULT"]);
-    ("W", ["M"]);
-  ] @ List.map (fun b -> b, ["F"]) barriers
-    @ List.map (fun e -> e, ["PTE"; "M"; "PTEMemAttr"]) pte_accesses
+  let propagate_supersets supersets =
+    VarGraph.dfs_fold_multiple_starts
+      ~per_vertex:(fun _ _ acc -> acc)
+      ~per_neighbour:(fun id n acc ->
+        let id_supers = VarGraph.neighbours id acc |> StringSet.of_list in
+        let n_supers = VarGraph.neighbours n acc |> StringSet.of_list in
+        let new_supers = StringSet.diff n_supers id_supers in
+        StringSet.fold (VarGraph.add_edge id) new_supers acc
+      ) supersets supersets |>
+    StringMap.map StringSet.of_list
 
-  let intersects = [
-    ("DATA", ["Exp"; "NExp"; "R"; "M"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"] @ all_ptes);  (* TODO: Get confirmation on this *)
-    ("EXC-ENTRY", ["TagCheck"]);
-    ("Exp", ["DATA"; "M"; "R"; "W"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"; "Wreg"] @ all_ptes);
-    ("Instr", ["DATA"; "Exp"; "NExp"; "R"; "W"]);
-    ("IW", ["PTE"; "PA"; "T"] @ all_ptes);
-    ("M", ["DATA"; "Exp"; "NExp"] @ pte_vals);
-    ("NExp", ["DATA"; "M"; "R"; "W"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"; "Wreg"] @ all_ptes);
-    ("PA", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"]);
-    ("PTE", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals);
-    ("PTEINV", ["DATA"; "Exp"; "NExp"; "M"; "R"; "W"; "IW"; "PTE"; "PTEMemAttr"; "Wreg"; "Rreg"] @ pte_accesses);
-    ("PTEMemAttr", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals);
-    ("PTEV", ["DATA"; "Exp"; "NExp"; "M"; "R"; "W"; "IW"; "PTE"; "PTEMemAttr"; "Wreg"; "Rreg"] @ pte_accesses);
-    ("R", ["DATA"; "Exp"; "NExp"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"] @ all_ptes);
-    ("Restricted-CMODX", ["DATA"; "Exp"; "NExp"; "R"; "W"]);
-    ("Rreg", ["DATA"; "Exp"; "NExp"] @ pte_vals);
-    ("T", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"]);
-    ("TagCheck", ["EXC-ENTRY"]);
-    ("W", ["Exp"; "NExp"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"] @ all_ptes);
-    ("Wreg", ["Exp"; "NExp"] @ pte_vals);
-  ] @ List.map (fun e -> e, ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals) pte_accesses
+  let propagate_intersects intersects supersets =
+    let get_children key map = StringMap.safe_find StringSet.empty key map in
+    StringMap.fold (fun id _ intersects ->
+      let id_supersets = get_children id supersets |> StringSet.add id in
+      let vals = get_children id intersects in
+      StringSet.fold (fun id2 intersects ->
+        (* All supersets of id will also intersect with all supersets of id2 *)
+        let id2_supersets = get_children id2 supersets |> StringSet.add id2 in
+        let id1_diff_supersets = StringSet.diff id_supersets id2_supersets in
+        let id2_diff_supersets = StringSet.diff id2_supersets id_supersets in
 
-  let read_effect = make_var "R"
-  let write_effect = make_var "W"
-  let memory_effect = make_var "M"
-  let fault_effect = make_var "FAULT"
-  let reg_read_effect = make_var "Rreg"
-  let pte_effect = make_var "PTE"
-  let exp_effect = make_var "Exp"
-  let nexp_effect = make_var "NExp"
-  let instr_effect = make_var "Instr"
-  let exp_write_effect = Op (TxtLoc.none, Inter, [exp_effect; write_effect])
-  let nexp_pte_r_effect = Op (TxtLoc.none, Inter, [nexp_effect; pte_effect; read_effect])
-  let nexp_instr_r_effect = Op (TxtLoc.none, Inter, [nexp_effect; instr_effect; read_effect])
-  let dc_cvau_effect = make_var "DC.CVAU"
-  let ic_effect = make_var "IC"
-  let tlbi_effect = make_var "TLBI"
-  let mem_or_fault = Op (TxtLoc.none, Union, [memory_effect; fault_effect])
+        let update_intersects id1_diff_supersets id2_diff_supersets intersects =
+          StringSet.fold (fun e intersects ->
+            let new_intersects = get_children e intersects
+              |> StringSet.union id1_diff_supersets in
+            StringMap.add e new_intersects intersects
+          ) id2_diff_supersets intersects in
 
-  let build_map f = List.fold_left (fun map (key, value) ->
-    StringMap.add key (f value) map
-  ) StringMap.empty
+        intersects |>
+          update_intersects id1_diff_supersets id2_diff_supersets |>
+          update_intersects id2_diff_supersets id1_diff_supersets
+      ) vals intersects
+    ) intersects intersects
 
-  let build_map_of_sets = build_map (List.fold_left (fun set e ->
-      StringSet.add e set
-    ) StringSet.empty
-  )
-  
-  let supersets = build_map_of_sets supersets
-  let intersects = build_map_of_sets intersects
-  let rel_effects = build_map Fun.id [
-    ("po", [(universe_effect, universe_effect)]);
-    ("ext", [(universe_effect, universe_effect)]);
+  let supersets, intersects, rel_effects =
+    let (_, _, ast) = P.parse O.assumptions_file in
+    let supersets, intersects, rel_effects = get_assumptions ast in
+    let supersets = propagate_supersets supersets in
+    (* Make sure to propagate the supersets before the intersects *)
+    let intersects = VarGraph.VMap.map StringSet.of_list intersects in
+    let intersects = propagate_intersects intersects supersets in
+    supersets, intersects, rel_effects
 
-    (* When extremities are not specified (only f-ib), we assume universe *)
-    ("iico_data", [(universe_effect, universe_effect)]);
-    ("iico_ctrl", [(universe_effect, universe_effect)]);
-    ("iico_order", [(universe_effect, universe_effect)]);
-
-    (* Imprecise, the effects also need to be to the same type of location *)
-    ("loc", [(universe_effect, universe_effect)]);
-    ("amo", [(read_effect, write_effect)]);
-    ("rmw", [(read_effect, write_effect)]);
-    ("lxsx", [(read_effect, write_effect)]);
-    ("co", [(write_effect, write_effect)]);
-    ("co0", [(write_effect, write_effect)]);
-    ("rf", [(write_effect, read_effect)]);
-    ("rf-reg", [(write_effect, reg_read_effect)]);
-    ("fr", [(read_effect, write_effect)]);
-    ("sm", [(mem_or_fault, mem_or_fault)]);
-
-    (* These are approximated, as the complete version is generated through
-      function interpreteation in cat *)
-    ("TLBI-after", [(tlbi_effect, nexp_pte_r_effect); (nexp_pte_r_effect, tlbi_effect)]);
-    ("DC-after", [(dc_cvau_effect, exp_write_effect); (exp_write_effect, dc_cvau_effect)]);
-    ("IC-after", [(ic_effect, nexp_instr_r_effect); (nexp_instr_r_effect, ic_effect)]);
-
-    ("same-low-order-bits", [(mem_or_fault, mem_or_fault)]);
-    ("inv-domain", [(pte_effect, tlbi_effect); (tlbi_effect, pte_effect)])
-  ]
+  let valid_primitives =
+    let lambda k d s =
+      let s = StringSet.add k s in
+      StringSet.union s d
+    in
+    StringSet.empty
+      |> StringMap.fold lambda supersets
+      |> StringMap.fold lambda intersects
+      |> StringMap.fold (fun _ pairs s ->
+        List.fold_left (fun s (e1, e2) ->
+          let ids1 = ASTUtils.free_body [] e1 in
+          let ids2 = ASTUtils.free_body [] e2 in
+          s |> StringSet.union ids1 |> StringSet.union ids2
+      ) s pairs
+    ) rel_effects
 
   let check_map_of_sets map e1 e2 =
     let sups = StringMap.safe_find StringSet.empty e1 map in
@@ -809,10 +836,8 @@ struct
         if id = "same-instance" then
           sol, e1s
         else
-          let pairs = try StringMap.find id rel_effects
-          with Not_found ->
-            Printf.eprintf "Relation %s not supported\n" id;
-            [] in
+          let default = [(universe_effect, universe_effect)] in
+          let pairs = StringMap.safe_find default id rel_effects in
           let pairs = if is_inv then
             List.map (fun (a, b) -> b, a) pairs
           else pairs in
@@ -954,7 +979,7 @@ struct
     defs, crt_nums
 
   let execute fname e1 e2 start_rel =
-    let stdlib_fname = Filename.concat O.libdir "stdlib.cat" in
+    let stdlib_fname = libfind "stdlib.cat" in
     let stdlib_num_defs = count_defs stdlib_fname StringMap.empty in
     let num_defs = count_defs fname stdlib_num_defs in
     let stdlib_defs, crt_nums = get_defs stdlib_fname
@@ -966,10 +991,28 @@ struct
     let defs = StringMap.map (fun def ->
       replace_ifs_and_tries (ASTUtils.flatten def)
     ) defs in
+    let is_valid_user_defined_eff (id, _) =
+      if not (contains_alias id) && can_be_effect id defs valid_primitives then
+        Some id
+      else None
+    in
+    let user_defined_effs = StringMap.bindings defs
+      |> List.filter_map is_valid_user_defined_eff
+      |> StringSet.of_list in
+    let valid_effs = StringSet.union valid_primitives user_defined_effs in
+    let check_valid_eff e =
+      if not (StringSet.mem e valid_effs) then begin
+        Warn.warn_always "Effects %s not supported or non existent" e;
+        Printf.printf "No solutions\n";
+        exit 1
+      end
+    in
     match e1, e2 with
     | Some e1, Some e2 ->
       let e1 = parse_effect_from_string "e1" e1 |> ASTUtils.flatten in
       let e2 = parse_effect_from_string "e2" e2 |> ASTUtils.flatten in
+      ASTUtils.free_body [] e1 |> StringSet.iter check_valid_eff;
+      ASTUtils.free_body [] e2 |> StringSet.iter check_valid_eff;
       let sol = tr_rel e1 e2 start_rel defs in
       if sol = ExprGraph.empty then
         Printf.printf "No solutions\n"
@@ -989,9 +1032,11 @@ struct
 end
 
 let verbose = ref false
-let libdir = ref (Filename.concat Version.libdir "herd")
+let herd_libdir = ref (Filename.concat Version.libdir "herd")
+let libdir = ref (Filename.concat Version.libdir "tools")
 let includes = ref []
-let model = ref (Filename.concat !libdir "aarch64.cat")
+let model = ref (Filename.concat !herd_libdir "aarch64.cat")
+let assumptions_file = ref (Filename.concat !libdir "aarch64assumptions.cat")
 let e1 = ref None
 let e2 = ref None
 let start_rel = ref "ob"
@@ -1004,7 +1049,15 @@ let options = [
     " show installation directory and exit");
   ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
+  ("-herd-libdir", Arg.Unit (fun () -> print_endline !herd_libdir; exit 0),
+    " show herd installation directory and exit");
+  ("-set-herd-libdir", Arg.String (fun s -> herd_libdir := s),
+    "<path> set herd installation directory to <path>");
+  ("-I", Arg.String (fun s -> includes := !includes @ [s]),
+    "<dir> add <dir> to search path. Files inside <dir> must not conflict \
+    with herd-libdir");
   (ArgUtils.parse_string "-model" model "path to cat model");
+  (ArgUtils.parse_string "-assumptions-file" assumptions_file "path to assumptions file");
   (ArgUtils.parse_string_opt "-e1" e1 "first effect");
   (ArgUtils.parse_string_opt "-e2" e2 "second effect");
   (ArgUtils.parse_string "-start-rel" start_rel "top level relation");
@@ -1023,6 +1076,8 @@ let () =
   with
   | Misc.Fatal msg -> Printf.eprintf "%s: %s\n" prog msg; exit 2
 
+let () = includes := !herd_libdir :: !includes
+
 let () =
   let module Run =
     Make
@@ -1030,5 +1085,6 @@ let () =
         let verbose = !verbose
         let includes = !includes
         let libdir = !libdir
+        let assumptions_file = !assumptions_file
       end) in
   ignore (Run.execute !model !e1 !e2 !start_rel)
