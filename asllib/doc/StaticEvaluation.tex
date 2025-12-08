@@ -1,7 +1,7 @@
 \chapter{Static Evaluation\label{chap:StaticEvaluation}}
 
 In this chapter, we define how to employ dynamic evaluation of expressions
-during typechecking in order to yield a literal value.
+during typechecking to yield a literal value.
 
 The rest of this chapter defines \TypingRuleRef{StaticEnvToEnv},
 which converts a \staticenvironmentterm{} into an environment for dynamic evaluation,
@@ -29,7 +29,7 @@ The expressions defining the slices for bitfields \verb|upper| and \verb|lower|,
 and the width of the bitvector type \verb|Word| are also statically evaluated.
 \ASLListing{Static evaluation of expressions}{static-eval}{\typingtests/TypingRule.StaticEval.asl}
 
-In \listingref{static-eval-bad}, a typo replaced \verb|2| by \verb|3| in the definition
+In \listingref{static-eval-bad}, a typo replaced \verb|2| with \verb|3| in the definition
 of the bitfield \verb|upper|, which fails the static evaluation of the expression \verb|WORD_SIZE DIV 3|
 (as \verb|64| is not divisible by \verb|3|), which results in a \typingerrorterm.
 \ASLListing{Static evaluation of expressions}{static-eval-bad}{\typingtests/TypingRule.StaticEval.bad.asl}

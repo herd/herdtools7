@@ -1,7 +1,7 @@
 \section{Base Values\label{sec:BaseValues}}
 \hypertarget{def-basevalueterm}{}
-Each type, with the exceptions stated below, have a \basevalueterm,
-which is used to initialize storage elements (either local of global),
+Each type, with the exceptions stated below, has a \basevalueterm,
+which is used to initialize storage elements (either local or global),
 if an initializer is not supplied.
 
 \RequirementDef{NoBaseValue}
@@ -67,7 +67,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
         \item applying $\reducetozopt$ to $\ve$ in $\tenv$ yields $\vzopt$;
         \item $\vzopt$ is not $\None$;
         \item view $\vzopt$ as the singleton integer $\length$;
-        \item checking that $\length$ is greater or equal to $0$ yields $\True$\ProseTerminateAs{\NoBaseValue};
+        \item checking that $\length$ is greater than or equal to $0$ yields $\True$\ProseTerminateAs{\NoBaseValue};
         \item $\veinit$ is the literal expression for a bitvector made of a sequence of $\length$ values of $0$.
     \end{itemize}
 
@@ -128,7 +128,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
         \item applying $\basevalue$ to $\vtefield$ in $\tenv$ for each $(\name, \vtefield)$ in $\fields$
               yields $\ve_\name$\ProseOrTypeError;
         \item $\veinit$ is the record construction expression assigning each field $\name$
-              where $(\name, \vtefield)$ is an element of $\fields$ to $\vtefield$, that is, \\
+              (where $(\name, \vtefield)$ is an element of $\fields$) to $\vtefield$, that is, \\
               $\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))$.
     \end{itemize}
 
@@ -141,13 +141,13 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \item \AllApplyCase{t\_tuple} \identr{QWSQ}
     \begin{itemize}
         \item $\vt$ is the \tupletypeterm{} over the list of types $\vt_{1..k}$, that is, $\TTuple(\vt_{1..k})$;
-        \item applying $\basevalue$ to each type $\vt_\vi$ in $\tenv$ for $\vi=1..k$; yields the list of expressions $\ve_{1..k}$;
+        \item applying $\basevalue$ to each type $\vt_\vi$ in $\tenv$, for $\vi=1..k$, yields the list of expressions $\ve_{1..k}$;
         \item $\veinit$ is the tuple expression $\ETuple(\ve_{1..k})$.
     \end{itemize}
 
     \item \AllApplyCase{t\_array\_enum}
     \begin{itemize}
-        \item $\vt$ is the enumerated array type over for the enumeration $\venum$ and labels $\vlabels$ and element type $\tty$
+        \item $\vt$ is the enumerated array type over the enumeration $\venum$ and labels $\vlabels$ and element type $\tty$
               ($\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)$);
         \item applying $\basevalue$ to $\tty$ in $\tenv$ yields the expression $\vvalue$\ProseOrTypeError;
         \item $\veinit$ is the array construction expression for an enumerated array with labels $\vlabels$ and initial value $\vvalue$,
@@ -325,7 +325,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
             \item the empty list, if $\vvone$ is greater than $\vvtwo$ (since there are no integers satisfying the constraint);
             \item the single element list for $\vvtwo$, if $\vvone$ is less than $\vvtwo$ and both are negative;
             \item the single element list for $0$, if $\vvone$ is negative and $\vvtwo$ is non-negative;
-            \item the single element list for $\vvone$, if $\vvone$ is non-negative and $\vvtwo$ is greater or equal to $\vvone$.
+            \item the single element list for $\vvone$, if $\vvone$ is non-negative and $\vvtwo$ is greater than or equal to $\vvone$.
         \end{itemize}
     \end{itemize}
 \end{itemize}
@@ -383,7 +383,7 @@ and the minimal absolute value of $[2, -2]$ is $2$.
         \item $\vl$ is the list where $\vzone$ is its \head\ and $\vltwo$ is its \tail;
         \item $\vltwo$ is not the empty list;
         \item applying $\listminabs$ to $\vltwo$ yields $\vztwo$;
-        \item define $\vz$ based on $\vzone$ and $\vztwo$ by the following cases:
+        \item define $\vz$ based on $\vzone$ and $\vztwo$ according to the following cases:
         \begin{itemize}
             \item $\vzone$ if the absolute value of $\vzone$ is less than the absolute value of $\vztwo$;
             \item $\vztwo$ if the absolute value of $\vzone$ is greater than the absolute value of $\vztwo$;

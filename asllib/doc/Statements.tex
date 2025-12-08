@@ -184,6 +184,7 @@ There are two rules for evaluating assignments:
 \end{itemize}
 
 Although the sequential semantics of both types of statements is the same,
+their concurrent semantics are different.
 \SemanticsRuleRef{SAssignCall} generates a different execution graph ---
 one where each value of the left-hand-side tuple depends on the \executiongraphterm{}
 for the corresponding (that is, at the same position) value returned from the \callexpressionterm{}.
@@ -193,8 +194,8 @@ expression and the entire \executiongraphterm{} for the left-hand-side \executio
 
 The rules for assignments first produce a value for the right-hand side expression
 and then complete the update to the environment via an appropriate rule for evaluating the
-\assignableexpression{} on the left-hand-side of the assignment,
-which in turn handles variables, tuples, bitvectors, etc.
+\assignableexpression{} on the left-hand-side of the assignment.
+The rules for updating the \assignableexpression{} handle variables, tuples, bitvectors, etc.
 
 \SemanticsRuleDef{SAssignCall}
 \ExampleDef{Evaluation of Multi-variable Assignment from Subprogram Calls}
@@ -435,7 +436,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \desugared.
 \ASLListing{A Setter followed by a Slice}{ReadModifyWriteSlice}{\syntaxtests/ASTRule.ReadModifyWriteSlice.asl}
 
-\listingref{ReadModifyWriteSlice} shows how a setter call followed by a field access is
+\listingref{ReadModifyWriteField} shows how a setter call followed by a field access is
 \desugared.
 \ASLListing{A Setter followed by a Field Access}{ReadModifyWriteField}{\syntaxtests/ASTRule.ReadModifyWriteField.asl}
 
@@ -3726,7 +3727,7 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
 
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
-Therefore, the semantics is parameterized by the following function.
+Therefore, the semantics are parameterized by the following function.
 \RenderRelation{output_to_console}
 
 We now explain how printing is modelled when the runtime supports a console
@@ -3905,7 +3906,7 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. that is, $\SPragma(\id, \vargs)$;
+  \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. That is, $\SPragma(\id, \vargs)$;
   \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
   \item define $\vses$ as the union of $\vxs_i$, for every \Proselistrange{$i$}{$\vargs$};
   \item define $\news$ as the \passstatementterm, that is, $\SPass$

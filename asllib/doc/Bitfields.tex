@@ -26,7 +26,7 @@ bits |8:5|, which is a different order from their occurrence in \texttt{myData}.
 We refer to a slice of the form \texttt{[$\ve$]} as a \singleslice,
 a slice of the form \texttt{[$\veone$:$\vetwo$]} as a \rangeslice,
 a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice,
-and slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
+and a slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
 
 \ChapterOutline
 \begin{itemize}
@@ -45,11 +45,12 @@ different views of a register.
 This section defines several properties of bitfields, illustrated by the example below.
 These are used to define \RequirementRef{BitfieldAlignment}:
 \begin{itemize}
-\item The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers starting from the
-name of the top-level bitfield containing it and following with the names of the nested bitfields,
+\item The \hypertarget{def-absolutename}{\absolutename} of a (possibly-nested) bitfield is the list of identifiers
+that start from the
+name of the top-level bitfield containing it and follows with the names of the nested bitfields,
 until the name of the bitfield at hand. We denote an absolute name by a period-separated list of names,
 similar to the expression referring to it;
-\item The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield comprises of the slices it defines with respect to its containing
+\item The \hypertarget{def-absoluteslice}{\absoluteslice} of a bitfield is comprised of the slices it defines, with respect to its containing
 bitvector type;
 \item The \hypertarget{def-absolutebitfield}{\absolutebitfield} of a given bitfield consists of absolute name and its
 \absoluteslices; and
@@ -91,7 +92,7 @@ defined for each bitfield.
 \paragraph{Typing:} Bitfields are annotated by $\annotatebitfields$.
 
 \paragraph{Semantics:} Bitfields are not directly associated with a dynamic semantics.
-  Their semantics is given as part of slicing expressions
+  Their semantics are given as part of slicing expressions
   by $\evalexpr$ (see \secref{SlicingExpressions}) and
   $\evallexpr$ (see \secref{BitvectorSliceAssignmentExpressions}).
 
@@ -335,7 +336,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
     \item \AllApplyCase{nested}
     \begin{itemize}
       \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluableterm), \\
+            $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), \\
             and $\slicesone$
             yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
@@ -352,7 +353,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
       \item Annotating the type $\vt$ yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising of $\slicesone$ must be \staticallyevaluableterm), \\
+            $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), \\
             and $\slicesone$
             yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
@@ -462,7 +463,7 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \AllApply
 \begin{itemize}
     \item define $\minpos$ as the minimal position in $\positions$;
-    \item define $\maxpos$ as the maximal position in $\positions$;
+    \item define $\maxpos$ as the maximum position in $\positions$;
     \item checking that $\minpos$ is non-negative and that $\maxpos$ is less than $\vwidth$
           yields $\True$\ProseTerminateAs{\BadSlices}.
     \item the result is $\True$.

@@ -12,8 +12,8 @@ such as punctuation and scoping syntax, which are useful for readability and par
 \begin{definition}[Syntactic Sugar]
 \hypertarget{def-syntacticsugar}
 Some ASL syntax is \emph{\syntacticsugar}. That is, some constructs (statements, expressions, etc.)
-have no explicit corresponding AST nodes, and are rather represented by AST for other constructs.
-We call the constructing the AST for such constructs \emph{\desugaring}.
+have no explicit corresponding AST nodes, and are represented by the AST for other constructs.
+We call the building of the AST for such constructs \emph{\desugaring}.
 \end{definition}
 
 \hypertarget{def-typedast}{}
@@ -57,13 +57,13 @@ generate a \typedast.
   \item \secref{TypedAbstractSyntaxGrammar} defines the \typedast;
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
   \item \secref{BuildingParameterizedProductions} presents rules for building ASTs from parameterized productions;
-  \item \secref{LeftToRight} maps \assignableexpressions{} to right hand side expressions;
-  \item \secref{AbstractSyntaxAbreviations} defines AST abbreviations used by inference rules through this reference.
+  \item \secref{LeftToRight} maps \assignableexpressions{} to right-hand side expressions;
+  \item \secref{AbstractSyntaxAbreviations} defines AST abbreviations used by inference rules throughout this reference.
 \end{itemize}
 
 \section{Abstract Syntax Trees\label{sec:AbstractSyntaxTrees}}
 
-In an ASL abstract syntax tree, a node is one the following data types:
+In an ASL abstract syntax tree, a node is one of the following data types:
 \begin{description}
 \item[Token Node.] A lexical token, denoted as in the lexical description of ASL;
 \item[Label Node.] A label;
@@ -323,7 +323,7 @@ The rules for statements refine the throw statement by annotating it with
 the type of the thrown exception.
 \RenderTypes{typed_stmt}
 
-The rules for slices is replaced by the following single derivation:
+The rules for slices are replaced by the following single derivation:
 \RenderTypes{typed_slice}
 
 This reflects the fact that all other slicing constructs are syntactic sugar

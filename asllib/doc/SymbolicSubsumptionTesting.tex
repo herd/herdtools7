@@ -1,7 +1,7 @@
 \chapter{Symbolic Domain Subset Testing\label{chap:SymbolicDomainSubsetTesting}}
 
 Whether an assignment statement is well-typed depends on whether the dynamic domain of the
-right hand side type is contained in the dynamic domain of the left hand side type,
+right-hand side type is contained in the dynamic domain of the left-hand side type,
 for any given dynamic environment.
 
 \begin{definition}[Domain Subset]
@@ -425,7 +425,7 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
     \item applying $\symdomeval$ to $\vetwo$ in $\tenv$ yields $\vvtwo$;
     \item define $\vd$ as the constrained symbolic integer domain for $\vc$ if either $\vvone$ or $\vvtwo$
           are $\Top$ ($\ConstrainedDom(\vc)$) and otherwise the finite symbolic integer domain for the
-          set integers that are both greater or equal to $\vvone$ and less than or equal to $\vvtwo$
+          set integers that are both greater than or equal to $\vvone$ and less than or equal to $\vvtwo$
           ($\Finite(\{ n \;|\; \vvone \leq n \leq \vvtwo\})$).
   \end{itemize}
 \end{itemize}

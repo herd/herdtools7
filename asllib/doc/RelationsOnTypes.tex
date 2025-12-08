@@ -25,7 +25,7 @@ declared in \listingref{subtype}:\\
 \hline
   \texttt{subInt}     & \texttt{subInt}   & yes             & subtyping is reflexive for \namedtypesterm{}\\
   \texttt{subInt}     & \texttt{superInt} & yes             & declared as a \subtypeterm{}\\
-  \texttt{superInt}   & \texttt{subInt}   & no              & subtyping is anti-symmetric\\
+  \texttt{superInt}   & \texttt{subInt}   & no              & subtyping is antisymmetric\\
   \texttt{subsubInt}  & \texttt{superInt} & yes             & subtyping is transitive\\
   \texttt{otherInt}   & \texttt{superInt} & no              & no chain of subtyping between the types\\
   \texttt{superInt}   & \texttt{integer}  & no              & \texttt{integer} is not a \namedtypeterm{}\\
@@ -58,7 +58,7 @@ declared in \listingref{subtype}:\\
   \begin{itemize}
     \item $\vtone$ is a named type with name $\idone$, that is $\TNamed(\idone)$;
     \item $\vttwo$ is a named type with name $\idtwo$, that is $\TNamed(\idtwo)$, such that $\idone$ is different from $\idtwo$;
-    \item the \globalstaticenvironmentterm{} maintains that $\idone$ does subtype any named type;
+    \item the \globalstaticenvironmentterm{} maintains that $\idone$ does not subtype any named type;
     \item $\vb$ is $\False$.
   \end{itemize}
 
@@ -650,11 +650,11 @@ of different widths.
 
       \item \AllApplyCase{t\_int\_parameterized}
       \begin{itemize}
-        \item neither $\vt$ nor $\vs$ are the unconstrained integer type;
+        \item neither $\vt$ nor $\vs$ is an unconstrained integer type;
         \item one of $\vt$ and $\vs$ is a \parameterizedintegertypeterm;
         \item the \wellconstrainedversionterm\ of $\vt$ is $\vtone$;
         \item the \wellconstrainedversionterm\ of $\vs$ is $\vsone$;
-        \item $\tty$ the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$ is $\tty$\ProseOrTypeError.
+        \item $\tty$ is the lowest common ancestor of $\vtone$ and $\vsone$ in $\tenv$\ProseOrTypeError.
       \end{itemize}
 
       \item \AllApplyCase{t\_int\_wellconstrained}
@@ -1164,14 +1164,14 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \item \AllApplyCase{arith\_t\_int\_unconstrained}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}$;
-    \item both $\vtone$ and $\vttwo$ are integer types and at least one them is the unconstrained integer type;
+    \item both $\vtone$ and $\vttwo$ are integer types and at least one of them is the unconstrained integer type;
     \item $\vt$ is the unconstrained integer type;
   \end{itemize}
 
   \item \AllApplyCase{arith\_t\_int\_parameterized}
   \begin{itemize}
     \item $\op$ is one of $\{\MUL, \DIV, \DIVRM, \MOD, \SHL,  \SHR, \POW, \ADD, \SUB\}$;
-    \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one them is a \parameterizedintegertypeterm;
+    \item both $\vtone$ and $\vttwo$ are integer types, neither is an unconstrained integer type, and at least one of them is a \parameterizedintegertypeterm;
     \item applying $\towellconstrained$ to $\vtone$ yields $\vtonewellconstrained$;
     \item applying $\towellconstrained$ to $\vttwo$ yields $\vttwowellconstrained$;
     \item \Proseapplybinoptypes{$\tenv$}{$\op$}{\\ $\vtonewellconstrained$}{$\vttwowellconstrained$}{$\vt$}.
@@ -1651,7 +1651,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
   \begin{itemize}
     \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
     \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
-          $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater or equal to $0$;
+          $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater than or equal to $0$;
     \item refining the list of constraints $\cs$ with $\vf$ and $\vapprox$ via $\refineconstraints$ yields \\
           $\newcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
     \item checking whether $\newcs$ is empty yields $\True$\ProseTerminateAs{\BadOperands}.

@@ -9,13 +9,13 @@ Otherwise, it returns a \typingerrorterm{}.
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
 based on the definition of the semantics in this reference, to test and analyze a given specification.
 
-We note that the dynamic semantics is only used to define the set of valid behaviors
+We note that the dynamic semantics are only used to define the set of valid behaviors
 of a given specification without assigning any other quantification, such as the time
 required to evaluate it.
 
 \paragraph{Understanding the Dynamic Semantics Formalization:}
 We assume basic familiarity with the ASL language constructs.
-The ASL dynamic semantics is defined in terms of its AST,
+The ASL dynamic semantics are defined in terms of its AST,
 and as a consequence familiarity with the AST is required to understand the semantics.
 The few components of the type system needed to understand the ASL dynamic semantics are explained in context.
 The mathematical background needed to understand the mathematical formalization
@@ -33,9 +33,9 @@ of the ASL dynamic semantics appears in \chapref{FormalSystem}.
   \item \secref{Semantics of Diverging Specifications} defines the semantics of diverging specifications.
 \end{itemize}
 
-\section{When Do ASL Specifications Have Meaning\label{sec:MeaningfulASLSpecifications}}
+\section{Meaningful ASL Specifications\label{sec:MeaningfulASLSpecifications}}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
-More specifically, the semantics is only defined for a \typedast{} produced by the typechecker
+More specifically, the semantics are only defined for a \typedast{} produced by the typechecker
 from some \untypedast{} (rather than a \typingerrorterm{}).
 Specifications that are not well-typed have no defined semantics.
 In the rest of this reference, we assume well-typed specifications.
@@ -75,7 +75,7 @@ We define two types of semantics --- \emph{sequential semantics} and \emph{concu
 
 \paragraph{Concurrent Semantics:}
 The concurrent semantics operate over concurrent execution graphs.
-Intuitively, these graphs define Read Effects and Write Effects to variables and constraints over those effects.
+Intuitively, these graphs define Read Effects and Write Effects on variables and constraints over those effects.
 Together with the constraints that define a given memory model (such as the ARM memory model~\cite{AlglaveDGHM21}),
 these graphs axiomatically define
 the valid interactions of shared variables of a given specification.
@@ -264,7 +264,7 @@ We also define two ways to compose execution graphs --- \emph{unordered composit
 
 \hypertarget{def-parallel}{}
 \begin{definition}[Unordered Graph Composition]
-Given two execution graphs $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ their unordered composition,
+Given two execution graphs $S_1 = (N_1, E_1, O_1)$ and $S_2 = (N_2, E_2, O_2)$ their unordered composition,
 denoted $S_1 \parallelcomp S_2$ is defined as follows:
 \[
   S_1 \parallelcomp S_2\triangleq (N_1 \cup N_2, E_1 \cup E_2, O_1 \cup O_2) \enspace.

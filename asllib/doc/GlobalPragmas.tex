@@ -8,7 +8,7 @@ The specification in \listingref{GlobalPragma} contains two global pragmas,
 which are ignored by the dynamic semantics.
 \ASLListing{Global pragmas}{GlobalPragma}{\definitiontests/GlobalPragma.asl}
 
-It is recommended that tools which process ASL should warn users of unrecognized tool specific pragmas.
+It is recommended that tools that process ASL should warn users of unrecognized, tool-specific, pragmas.
 \identi{SLNQ}
 
 For example, a tool processing the specification in \listingref{GlobalPragma2} may recognize \\
@@ -85,7 +85,7 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. that is, $\DPragma(\Ignore, \vargs)$;
+  \item $\vd$ is a global pragma declaration with any identifier and expression list $\vargs$. That is, $\DPragma(\Ignore, \vargs)$;
   \item applying $\withemptylocal$ to $\genv$ yields $\tenv$;
   \item applying $\annotateexprlist$ to $\vargs$ in $\tenv$ yields $\vargsp$ \ProseOrTypeError;
   \item $\vargsp$ is ignored.

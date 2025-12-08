@@ -1,7 +1,8 @@
 \chapter{Local Storage Declarations\label{chap:LocalStorageDeclarations}}
 
 Local storage declarations introduce new variables into the \localstaticenvironmentterm.
-A list of mutable (\Tvar) storage elements can be introduced without initializing them.
+A list of mutable (\Tvar) storage elements can be introduced without initializing any
+of the storage elements.
 ASL also supports tuples of (mutable or immutable) local storage declarations.
 
 \ExampleDef{Local Storage Declarations}
@@ -198,7 +199,7 @@ with the type inferred type \texttt{integer{3}}.
 \TypingRuleDef{CheckIsNotCollection}%
 \RenderRelation{check_is_not_collection}
 
-\ExampleDef{Check is not collection}
+\ExampleDef{Check that a Type is not a Collection}
 In \listingref{checkisnotcollection}, the statement
 \verb|var test: MyCollection;| fails with a \typingerrorterm{} because
 \TypingRuleRef{LDVar} calls \TypingRuleRef{CheckIsNotCollection}.

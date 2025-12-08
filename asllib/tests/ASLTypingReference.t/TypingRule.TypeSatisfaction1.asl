@@ -9,7 +9,7 @@ func main() => integer
 begin
   var dataT1: T1;
   var pair: pairT = (1, dataT1);
-  // legal since the right hand side has anonymous, non-primitive type (integer, T1)
+  // legal since the right-hand side has anonymous, non-primitive type (integer, T1)
   var intWid: integer {32,64} = 32;
   // legal since the type of 32 is integer {32}
 return 0;
