@@ -24,6 +24,7 @@ module Make
     val verbose: bool
     val includes: string list
     val libdir: string
+    val axioms_file: string
   end) =
 struct
 
@@ -197,131 +198,116 @@ struct
 
   let expr_equal e1 e2 = compare_expr e1 e2 = 0
 
-  let barriers = ["DMB.ISH"; "DMB.ISHLD"; "DMB.ISHST"; "DMB.LD"; "DMB.OSH";
-    "DMB.OSHLD"; "DMB.OSHST"; "DMB.ST"; "DMB.SY"; "DSB.ISH"; "DSB.ISHLD";
-    "DSB.ISHST"; "DSB.LD"; "DSB.OSH"; "DSB.OSHST"; "DSB.ST"; "DSB.SY"; "ISB"]
+  (* Takes the axioms in the form of a cat AST and returns 3 data structures:
+     - supersets: represents pairs of effects where one is a superset of
+     the other
+     - intersects: represents pairs of effects that are intersectable
+     - rel_effects: represents the effects that can sit on either side of
+     a primitive relation
+     The data structures as returned by this function are not ready to be used
+     by the intersection algorithm, and need to be post-processed using the
+     propagate_supersets and propagate_intersects functions.
+  *)
+  let get_axioms ast =
+    let pp_opt_string name = Option.fold ~none:"(unknown)" ~some:Fun.id name in
+    let add_to_map default add key value els =
+      let existing_els = StringMap.safe_find default key els in
+      StringMap.add key (add value existing_els) els in
+    let add_to_map_of_sets = add_to_map StringSet.empty StringSet.add in
+    let add_to_map_of_lists = add_to_map [] List.cons in
+    
+    let invalid_assert_err e name =
+        Warn.fatal "Assertion %s inside axioms file %s contains invalid \
+          expression: %s\n" (pp_opt_string name) O.axioms_file (pp_expr e) in
 
-  let pte_accesses = ["PTEDevice"; "PTEDevice-GRE"; "PTEDevice-nGRE";
-    "PTEDevice-nGnRE"; "PTEDevice-nGnRnE"; "PTEInner-non-cacheable";
-    "PTEInner-shareable"; "PTEInner-write-back"; "PTEInner-write-through";
-    "PTENon-shareable"; "PTENormal"; "PTEOuter-non-cacheable";
-    "PTEOuter-shareable"; "PTEOuter-write-back"; "PTEOuter-write-through";
-    "PTETaggedNormal"; "PTEXS"]
+    List.fold_left (fun (supersets, intersects, rel_effects) ins ->
+      match ins with
+      | Test ((_, _, Yes TestEmpty, Op (_, Diff, [subs_expr; Var (_, super)]), name), Assert) ->
+        (* subs is either a primitive or a disjunction of primitives *)
+        let supersets = match subs_expr with
+        | Var (_, id) -> add_to_map_of_sets id super supersets
+        | Op (_, Union, subs) ->
+          List.fold_left (fun supersets sub ->
+            match sub with
+            | Var (_, id) -> add_to_map_of_sets id super supersets
+            | _ -> invalid_assert_err subs_expr name
+          ) supersets subs
+        | e ->  invalid_assert_err e name in
+        supersets, intersects, rel_effects
+      | Test ((_, _, Yes TestEmpty, Op (_, Diff, [Var (_, rel); e]), name), Assert) ->
+        let rel_effects = match e with
+        | Op (_, Cartesian, [e1; e2]) -> add_to_map_of_lists rel (e1, e2) rel_effects
+        | Op (_, Union, es) ->
+          List.fold_left (fun rel_effects e ->
+            match e with
+            | Op (_, Cartesian, [e1; e2]) -> add_to_map_of_lists rel (e1, e2) rel_effects
+            | _ -> invalid_assert_err e name
+          ) rel_effects es
+        | e -> invalid_assert_err e name in
+        supersets, intersects, rel_effects
+      | Test ((_, _, No TestEmpty, (Op (_, Inter, [e1; e2]) as e), name), Flagged) ->
+        let intersects = match e1, e2 with
+        | Var (_, id1), Var (_, id2) -> add_to_map_of_sets id1 id2 intersects
+        | _, _ ->
+          Warn.fatal "Flag %s inside axioms file %s contains invalid \
+            expression %s\n" (pp_opt_string name) O.axioms_file (pp_expr e) in
+        supersets, intersects, rel_effects
+      | _ -> supersets, intersects, rel_effects
+    ) (StringMap.empty, StringMap.empty, StringMap.empty) ast
 
-  let pte_vals = ["PTEINV"; "PTEV"]
-  let all_ptes = "PTEMemAttr" :: (pte_vals @ pte_accesses)
+  let get_children key map = StringMap.safe_find StringSet.empty key map
 
-  let supersets = [
-    ("A", ["M"; "R"; "Exp"]);
-    ("AF", ["NExp"]);
-    ("AccessFlag", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("BCC", ["B"]);
-    ("DB", ["NExp"]);
-    ("EXC-ENTRY", ["FAULT"]);
-    ("EXC-RET", ["B"]);
-    ("Instr", ["M"]);
-    ("IW", ["W"; "M"]);
-    ("L", ["M"; "W"; "Exp"]);
-    ("MMU", ["EXC-ENTRY"; "FAULT"]);
-    ("NoRet", ["R"; "M"]);
-    ("PA", ["M"]);
-    ("Permission", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("PTE", ["M"]);
-    ("PTEMemAttr", ["PTE"; "M"]);
-    ("Q", ["M"; "R"; "Exp"]);
-    ("R", ["M"]);
-    ("Restricted-CMODX", ["Instr"; "M"]);
-    ("SupervisorCall", ["EXC-ENTRY"; "FAULT"]);
-    ("T", ["M"]);
-    ("TagCheck", ["FAULT"]);
-    ("Translation", ["MMU"; "EXC-ENTRY"; "FAULT"]);
-    ("TLBIIS", ["TLBI"]);
-    ("TLBInXS", ["TLBI"]);
-    ("UndefinedInstruction", ["EXC-ENTRY"; "FAULT"]);
-    ("W", ["M"]);
-  ] @ List.map (fun b -> b, ["F"]) barriers
-    @ List.map (fun e -> e, ["PTE"; "M"; "PTEMemAttr"]) pte_accesses
+  let rec dfs key map seen =
+    let vals = get_children key map in
+    if StringSet.is_empty vals then
+      map, seen
+    else
+      let vals, map, seen = StringSet.fold (fun id (vals, map, seen) ->
+        let map, seen = if StringSet.mem id seen then map, seen
+        else dfs id map seen in
+        let children = get_children id map in
+        let vals = StringSet.union vals children in
+        vals, map, seen
+      ) vals (vals, map, seen) in
+      let map = StringMap.add key vals map in
+      map, seen
 
-  let intersects = [
-    ("DATA", ["Exp"; "NExp"; "R"; "M"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"] @ all_ptes);  (* TODO: Get confirmation on this *)
-    ("EXC-ENTRY", ["TagCheck"]);
-    ("Exp", ["DATA"; "M"; "R"; "W"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"; "Wreg"] @ all_ptes);
-    ("Instr", ["DATA"; "Exp"; "NExp"; "R"; "W"]);
-    ("IW", ["PTE"; "PA"; "T"] @ all_ptes);
-    ("M", ["DATA"; "Exp"; "NExp"] @ pte_vals);
-    ("NExp", ["DATA"; "M"; "R"; "W"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"; "Rreg"; "Wreg"] @ all_ptes);
-    ("PA", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"]);
-    ("PTE", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals);
-    ("PTEINV", ["DATA"; "Exp"; "NExp"; "M"; "R"; "W"; "IW"; "PTE"; "PTEMemAttr"; "Wreg"; "Rreg"] @ pte_accesses);
-    ("PTEMemAttr", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals);
-    ("PTEV", ["DATA"; "Exp"; "NExp"; "M"; "R"; "W"; "IW"; "PTE"; "PTEMemAttr"; "Wreg"; "Rreg"] @ pte_accesses);
-    ("R", ["DATA"; "Exp"; "NExp"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"] @ all_ptes);
-    ("Restricted-CMODX", ["DATA"; "Exp"; "NExp"; "R"; "W"]);
-    ("Rreg", ["DATA"; "Exp"; "NExp"] @ pte_vals);
-    ("T", ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"]);
-    ("TagCheck", ["EXC-ENTRY"]);
-    ("W", ["Exp"; "NExp"; "Instr"; "Restricted-CMODX"; "PTE"; "PA"; "T"] @ all_ptes);
-    ("Wreg", ["Exp"; "NExp"] @ pte_vals);
-  ] @ List.map (fun e -> e, ["DATA"; "Exp"; "NExp"; "R"; "W"; "IW"] @ pte_vals) pte_accesses
+  let propagate_supersets supersets =
+    let supersets, _ = StringMap.fold (fun key _ (supersets, seen) ->
+      if StringSet.mem key seen then supersets, seen
+      else dfs key supersets seen
+    ) supersets (supersets, StringSet.empty) in
+    supersets
 
-  let read_effect = Var (TxtLoc.none, "R")
-  let write_effect = Var (TxtLoc.none, "W")
-  let memory_effect = Var (TxtLoc.none, "M")
-  let fault_effect = Var (TxtLoc.none, "FAULT")
-  let reg_read_effect = Var (TxtLoc.none, "Rreg")
-  let pte_effect = Var (TxtLoc.none, "PTE")
-  let exp_effect = Var (TxtLoc.none, "Exp")
-  let nexp_effect = Var (TxtLoc.none, "NExp")
-  let instr_effect = Var (TxtLoc.none, "Instr")
-  let exp_write_effect = Op (TxtLoc.none, Inter, [exp_effect; write_effect])
-  let nexp_pte_r_effect = Op (TxtLoc.none, Inter, [nexp_effect; pte_effect; read_effect])
-  let nexp_instr_r_effect = Op (TxtLoc.none, Inter, [nexp_effect; instr_effect; read_effect])
-  let dc_cvau_effect = Var (TxtLoc.none, "DC.CVAU")
-  let ic_effect = Var (TxtLoc.none, "IC")
-  let tlbi_effect = Var (TxtLoc.none, "TLBI")
-  let mem_or_fault = Op (TxtLoc.none, Union, [memory_effect; fault_effect])
+  let propagate_intersects intersects supersets =
+    StringMap.fold (fun id _ intersects ->
+      let id_supersets = get_children id supersets |> StringSet.add id in
+      let vals = get_children id intersects in
+      StringSet.fold (fun id2 intersects ->
+        let id2_supersets = get_children id2 supersets |> StringSet.add id2 in
+        let id1_diff_supersets = StringSet.diff id_supersets id2_supersets in
+        let id2_diff_supersets = StringSet.diff id2_supersets id_supersets in
 
-  let build_map f = List.fold_left (fun map (key, value) ->
-    StringMap.add key (f value) map
-  ) StringMap.empty
+        let update_intersects id1_diff_supersets id2_diff_supersets intersects =
+          StringSet.fold (fun e intersects ->
+            let new_intersects = get_children e intersects
+              |> StringSet.union id1_diff_supersets in
+            StringMap.add e new_intersects intersects
+          ) id2_diff_supersets intersects in
 
-  let build_map_of_sets = build_map (List.fold_left (fun set e ->
-      StringSet.add e set
-    ) StringSet.empty
-  )
-  
-  let supersets = build_map_of_sets supersets
-  let intersects = build_map_of_sets intersects
-  let rel_effects = build_map Fun.id [
-    ("po", [(universe_effect, universe_effect)]);
-    ("ext", [(universe_effect, universe_effect)]);
+        intersects |>
+          update_intersects id1_diff_supersets id2_diff_supersets |>
+          update_intersects id2_diff_supersets id1_diff_supersets
+      ) vals intersects
+    ) intersects intersects
 
-    (* When extremities are not specified (only f-ib), we assume universe *)
-    ("iico_data", [(universe_effect, universe_effect)]);
-    ("iico_ctrl", [(universe_effect, universe_effect)]);
-    ("iico_order", [(universe_effect, universe_effect)]);
-
-    (* Imprecise, the effects also need to be to the same type of location *)
-    ("loc", [(universe_effect, universe_effect)]);
-    ("amo", [(read_effect, write_effect)]);
-    ("rmw", [(read_effect, write_effect)]);
-    ("lxsx", [(read_effect, write_effect)]);
-    ("co", [(write_effect, write_effect)]);
-    ("co0", [(write_effect, write_effect)]);
-    ("rf", [(write_effect, read_effect)]);
-    ("rf-reg", [(write_effect, reg_read_effect)]);
-    ("fr", [(read_effect, write_effect)]);
-    ("sm", [(mem_or_fault, mem_or_fault)]);
-
-    (* These are approximated, as the complete version is generated through
-      function interpreteation in cat *)
-    ("TLBI-after", [(tlbi_effect, nexp_pte_r_effect); (nexp_pte_r_effect, tlbi_effect)]);
-    ("DC-after", [(dc_cvau_effect, exp_write_effect); (exp_write_effect, dc_cvau_effect)]);
-    ("IC-after", [(ic_effect, nexp_instr_r_effect); (nexp_instr_r_effect, ic_effect)]);
-
-    ("same-low-order-bits", [(mem_or_fault, mem_or_fault)]);
-    ("inv-domain", [(pte_effect, tlbi_effect); (tlbi_effect, pte_effect)])
-  ]
+  let supersets, intersects, rel_effects =
+    let (_, _, ast) = P.parse O.axioms_file in
+    let supersets, intersects, rel_effects = get_axioms ast in
+    let supersets = propagate_supersets supersets in
+    (* Make sure to propagate the supersets before the intersects *)
+    let intersects = propagate_intersects intersects supersets in
+    supersets, intersects, rel_effects
 
   let check_map_of_sets map e1 e2 =
     let sups = StringMap.safe_find StringSet.empty e1 map in
@@ -739,10 +725,8 @@ struct
         if id = "same-instance" then
           sol, e1s
         else
-          let pairs = try StringMap.find id rel_effects
-          with Not_found ->
-            Printf.eprintf "Relation %s not supported\n" id;
-            [] in
+          let default = [(universe_effect, universe_effect)] in
+          let pairs = StringMap.safe_find default id rel_effects in
           let pairs = if is_inv then
             List.map (fun (a, b) -> b, a) pairs
           else pairs in
@@ -912,6 +896,7 @@ let verbose = ref false
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let model = ref "herd/libdir/aarch64.cat"
+let axioms_file = ref "herd/libdir/aarch64axioms.cat"
 let e1 = ref None
 let e2 = ref None
 let start_rel = ref "ob"
@@ -925,6 +910,7 @@ let options = [
   ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
   (ArgUtils.parse_string "-model" model !model);
+  (ArgUtils.parse_string "-axioms_file" axioms_file !axioms_file);
   ("-e1", Arg.String (fun s -> e1 := Some s), "<str> first effect");
   ("-e2", Arg.String (fun s -> e2 := Some s), "<str> second effect");
   ("-start", Arg.String (fun s -> start_rel := s), "<str> top level relation");
@@ -950,5 +936,6 @@ let () =
         let verbose = !verbose
         let includes = !includes
         let libdir = !libdir
+        let axioms_file = !axioms_file
       end) in
   ignore (Run.tr_ast !model !e1 !e2 !start_rel)
