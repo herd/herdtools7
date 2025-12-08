@@ -345,16 +345,24 @@ let pp_override_info f override =
 let pp_decl f d =
   match d.desc with
   | D_Func
-      { name; args; body; return_type; parameters; subprogram_type; override }
-    ->
+      {
+        name;
+        args;
+        body;
+        return_type;
+        parameters;
+        subprogram_type;
+        override;
+        recurse_limit;
+      } ->
       bprintf f
         "D_Func { name=%S; args=%a; body=%a; return_type=%a; parameters=%a; \
-         subprogram_type=%a; override=%a }"
+         subprogram_type=%a; override=%a; recurse_limit=%a }"
         name (pp_id_assoc pp_ty) args pp_body body (pp_option pp_ty) return_type
         (pp_list (pp_pair pp_string (pp_option pp_ty)))
         parameters pp_subprogram_type subprogram_type
         (pp_option pp_override_info)
-        override
+        override (pp_option pp_expr) recurse_limit
   | D_GlobalStorage { name; keyword; ty; initial_value } ->
       bprintf f
         "D_GlobalStorage { name=%S; keyword=%a; ty=%a; initial_value=%a}" name
