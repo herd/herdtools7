@@ -24,15 +24,7 @@ let typearrow_macro_name = "typearrow"
 let evalarrow_macro_name = "evalarrow"
 
 (* Expression operators *)
-let eqdef_macro_name = "eqdef"
-let equal_macro_name = "equal"
-let leftrightarrow_macro_name = "leftrightarrow"
-let list_macro_name = "LIST"
-let set_macro_name = "SET"
-let listlen_macro_name = "listlen"
 let union_macro_name = "cup"
-let unionlist_macro_name = "UNIONLIST"
-let some_macro_name = "some"
 
 (* Expression-related macros *)
 let listrange_macro_name = "listrange"
