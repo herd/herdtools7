@@ -88,19 +88,19 @@ where $p_{1..m}$ are place holders for grammar symbols and may appear in any of 
 We refer to $N(p_{1..m})$ as a \emph{parametric non-terminal}.
 
 Given sentences $S_{1..m}$, we can expand $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
-by creating a unique symbol for $N(p_{1..m})$, denoted as $\uniquesymb{N(S_{1..m})}$, defining the
+by creating a unique symbol for $N(S_{1..m})$, denoted as $\uniquesymb{N(S_{1..m})}$, defining the
 derivations
 \[
   \uniquesymb{N(S_{1..m})} \derives R_1[S_1/p_1,\ldots,S_m/p_m] \;|\; \ldots \;|\; R_k[S_1/p_1,\ldots,S_m/p_m]
 \]
 where for each $i= 1..k$, $R_i[S_1/p_1,\ldots,S_m/p_m]$ means replacing each instance of $p_j$ with $S_j$, for each $j=1..m$.
-Then, each instance of $S_{1..m}$ in the grammar is replaced by $\uniquesymb{N(S_{1..m})}$.
-If all instances of a parametric non-terminal are expanded this way, we can remove the derivations of the parametric
-non-terminal altogether.
+Then, each instance of $N(S_{1..m})$ in the grammar is replaced by $\uniquesymb{N(S_{1..m})}$.
+Expanding all instances of parametric productions results in a grammar without any parametric productions.
 
 We note that a parametric production can be either a normal derivation or an inlined derivation.
 
-For example, the derivation for a list of ASL global declarations is as follows:
+\ExampleDef{Parametric List of Global Declaration}
+The derivation for a list of ASL global declarations is as follows:
 \begin{flalign*}
 \Nspec \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
@@ -121,8 +121,6 @@ which results in the following derivation replacing the original derivation for 
 \begin{flalign*}
 \Nspec \derives\ & \Ndecllist &
 \end{flalign*}
-
-Expanding all instances of parametric productions results in a grammar without any parametric productions.
 
 \section{ASL Parametric Productions\label{sec:ASLParametricProductions}}
 We define the following parametric productions for various types of lists and optional productions.

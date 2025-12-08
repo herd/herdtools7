@@ -435,11 +435,11 @@ let field_path :=
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }
     | EQ; { "equal" }
-    | MINUS; { "int_minus" }
-    | PLUS;  { "int_plus" }
-    | TIMES; { "int_times" }
-    | DIVIDE; { "int_divide" }
-    | EXPONENT; { "int_exponent" }
+    | MINUS; { "num_minus" }
+    | PLUS;  { "num_plus" }
+    | TIMES; { "num_times" }
+    | DIVIDE; { "num_divide" }
+    | EXPONENT; { "num_exponent" }
     | AND; { "and" }
     | OR; { "or" }
     | IN; { "member" }

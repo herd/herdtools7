@@ -328,37 +328,37 @@ operator implies(Bool, Bool) -> Bool
   math_macro = \implies,
 };
 
-operator int_plus(list1(N)) -> N
+operator num_plus(list1(Z)) -> Z
 {
   associative = true,
-  math_macro = \intplus,
+  math_macro = \numplus,
 };
 
-operator int_minus(list1(N)) -> N
+operator num_minus(list1(Z)) -> Z
 {
   associative = true,
-  math_macro = \intminus,
+  math_macro = \numminus,
 };
 
 // Negation for number types.
-operator negate[T](T) -> T
+operator negate[NumType](NumType) -> NumType
 {
   math_macro = \negate,
 };
 
-operator int_times(list1(N)) -> N
+operator num_times[NumType](list1(NumType)) -> NumType
 {
-  math_macro = \inttimes,
+  math_macro = \numtimes,
 };
 
-operator int_divide(N, N) -> N
+operator num_divide[NumType](NumType, NumType) -> NumType
 {
-  math_macro = \intdivide,
+  math_macro = \numdivide,
 };
 
-operator int_exponent(N, N) -> N
+operator num_exponent[NumType](NumType, NumType) -> NumType
 {
-  math_macro = \intexponent,
+  math_macro = \numexponent,
 };
 
 operator less_than[NumType](NumType, NumType) -> Bool
@@ -487,7 +487,7 @@ operator nvint(z: Z) -> NV_Literal(L_Int(Z))
   math_macro = \nvintop,
 };
 
-operator nvstring(z: Z) -> NV_Literal(L_String(Strings))
+operator nvstring(s: Strings) -> NV_Literal(L_String(Strings))
 {
   math_macro = \nvstringop,
 };
@@ -517,17 +517,17 @@ constant int_lit_regex
 
 operator Lang(r : regex) -> (l: powerset(Strings))
 {
-  "{l} the set of strings defined by {r}",
+  "{l} is the set of strings defined by {r}",
   math_macro = \Lang,
 };
 
 typedef int_literal_tokens =
-  INT_LIT(N) { math_macro = \Tintlit }
+  INT_LIT(Z) { math_macro = \Tintlit }
 ;
 
-operator decimal_to_lit(s: Strings) -> INT_LIT(n: N)
+operator decimal_to_lit(s: Strings) -> INT_LIT(z: Z)
 {
-  "returns an integer literal where {n} is the integer corresponding to {s} in decimal representation",
+  "returns an integer literal where {z} is the integer corresponding to {s} in decimal representation",
   math_macro = \decimaltolit,
 };
 
@@ -794,7 +794,7 @@ ast call { "call descriptor" } =
         call_args: list0(expr) { math_macro = \callargs },
         call_type: subprogram_type,
     ]
-    { "call of {call_type} subprogram {name}with parameters {params}, arguments {args}" }
+    { "call of {call_type} subprogram {call_name} with parameters {params}, arguments {call_args}" }
 ;
 
 render calls = expr(E_Call), stmt(S_Call);
@@ -811,9 +811,9 @@ ast ty { "type" } =
     | T_Bits(width: expr, bitfields: list0(bitfield))
     { "bitvector type of bitwidth {width} and bitfields {bitfields}" }
     | T_Tuple(component_types: list0(ty))
-    { "tuple type with components types {component_types}" }
+    { "tuple type with component types {component_types}" }
     | T_Array(index: array_index, element_type: ty)
-    { "integer type with {index} and element_type {element_type}" }
+    { "array type with {index} and element_type {element_type}" }
     | T_Named(type_name: Identifier)
     { "named type with name {type_name}" }
     | T_Enum(labels: list1(Identifier))
@@ -1569,7 +1569,7 @@ constant return_var_prefix
   math_macro = \returnvarprefix,
 };
 
-operator string_of_nat(n: Z) -> Strings
+operator string_of_nat(n: N) -> Strings
 {
   math_macro = \stringofnat,
 };
@@ -1742,7 +1742,7 @@ typedef TContinuingOrReturning { "continuing or returning configuration" } =
 
 typedef value_read_from { "value-reading effect" } =
     (v: native_value, id: Identifier)
-    { "{v} is read with {id}" }
+    { "value-reading effect for {v} and {id}" }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1813,7 +1813,7 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 
   case Bits {
     l =: L_Bitvector(bits);
-    n := cardinality(bits);
+    n := list_len(bits);
     --
     T_Bits(E_Literal(L_Int(n)), empty_list);
   }

@@ -44,7 +44,7 @@ generate a \typedast.
     \item \secref{BitFields} defines the AST for bitfields;
     \item \secref{ArrayIndices} defines the AST for array indices;
     \item \secref{FieldsAndTypedIdentifiers} defines the AST for fields and typed identifiers;
-    \item \secref{AssignableExoressions} defines the AST for assignable expressions;
+    \item \secref{AssignableExpressions} defines the AST for assignable expressions;
     \item \secref{LocalDeclarations} defines the AST for local declarations;
     \item \secref{Statements} defines the AST for statements;
     \item \secref{CaseAlternatives} defines the AST for case alternatives;
@@ -58,7 +58,7 @@ generate a \typedast.
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
   \item \secref{BuildingParameterizedProductions} presents rules for building ASTs from parameterized productions;
   \item \secref{LeftToRight} maps \assignableexpressions{} to right-hand side expressions;
-  \item \secref{AbstractSyntaxAbreviations} defines AST abbreviations used by inference rules throughout this reference.
+  \item \secref{AbstractSyntaxAbbreviations} defines AST abbreviations used by inference rules throughout this reference.
 \end{itemize}
 
 \section{Abstract Syntax Trees\label{sec:AbstractSyntaxTrees}}
@@ -240,7 +240,7 @@ The following rule corresponds to a field of a record-like structure:
 The following rule corresponds to an identifier with its associated type:
 \RenderType{typed_identifier}
 
-\subsection{Assignable Expressions \label{sec:AssignableExoressions}}
+\subsection{Assignable Expressions \label{sec:AssignableExpressions}}
 The following rules define the types of left-hand side of assignments:
 \RenderTypes{untyped_lexpr}
 
@@ -626,7 +626,7 @@ It is defined recursively by the following table:
 \end{array}
 \]
 
-\section{Abstract Syntax Abbreviations\label{sec:AbstractSyntaxAbreviations}}
+\section{Abstract Syntax Abbreviations\label{sec:AbstractSyntaxAbbreviations}}
 We employ the following abbreviations for various AST nodes:
 \begin{center}
 \begin{tabular}{ll}
