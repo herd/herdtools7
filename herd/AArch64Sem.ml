@@ -4758,7 +4758,7 @@ Arguments:
                 let base = Label.Map.find lbl test.Test_herd.program in
                 let cand_a = base + offset in
                 let cand_i = match IntMap.find cand_a test.Test_herd.code_segment with
-                | (_,(_,i)::_) -> i
+                | (_,(_,i)::_) -> i.A.CodeInstr.instr
                 (* this case means that we have found a relevant page, but it
                 does not have an instruction -- currently throws an error, but
                 a convention to assume NOP could be envisioned *)

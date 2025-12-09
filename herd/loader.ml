@@ -86,21 +86,22 @@ struct
     | Offset _ as x -> x in
     A.map_labels_base labelmap instr
 
-  let rec load_code proc addr mem = function
+  let rec load_code ~proc ~addr ~static_poi mem = function
     | [] -> []
-    | ins::code -> load_ins proc addr mem code ins
+    | ins::code -> load_ins ~proc ~addr ~static_poi mem code ins
 
-  and load_ins proc addr mem code = function
+  and load_ins ~proc ~addr ~static_poi mem code = function
     | A.Nop ->
-       load_code proc addr mem code
+       load_code ~proc ~addr ~static_poi mem code
     | A.Instruction ins ->
         let start =
-          load_code proc (addr+A.size_of_ins ins) mem code in
+          load_code ~proc ~addr:(addr+A.size_of_ins ins) ~static_poi:(static_poi+1) mem code in
         let new_ins =
           convert_lbl_to_offset proc addr mem ins in
-        (addr,new_ins)::start
+        let code_ins = A.CodeInstr.{ instr = new_ins; static_poi; } in
+        (addr,code_ins)::start
     | A.Label (_,A.Nop) ->
-        load_code proc addr mem code
+        load_code ~proc ~addr ~static_poi mem code
     | A.Label (_,_) -> assert false (* Expected to have been normalised already! *)
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
@@ -108,7 +109,7 @@ struct
       assert false
     | A.Skip n ->
       let new_addr = addr + n in
-      load_code proc new_addr mem code
+      load_code ~proc ~addr:new_addr ~static_poi mem code
 
   let make_padding old_addr new_addr =
     let offset = new_addr - old_addr in
@@ -170,7 +171,7 @@ struct
     | [] ->
       IntMap.add addr (proc,[]) rets
     | (addr, ins)::start_tl ->
-      let ins_sz = A.size_of_ins ins in
+      let ins_sz = A.size_of_ins ins.A.CodeInstr.instr in
       let new_rets = IntMap.add addr (proc,start) rets in
       mk_rets_from_starts proc (addr+ins_sz) new_rets start_tl
 
@@ -183,7 +184,7 @@ struct
       | ((proc,_,func),code)::pseudo_prog_tl ->
          let starts,rets = load_iter pseudo_prog_tl in
          let addr = func_start_addr proc func in
-         let start = load_code proc addr mem code in
+         let start = load_code ~proc ~addr ~static_poi:0 mem code in
          let fin_rets = mk_rets_from_starts proc addr rets start in
          (proc,func,start)::starts,fin_rets in
     let starts,code_segments = load_iter pseudo_prog in
