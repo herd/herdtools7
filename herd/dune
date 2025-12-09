@@ -9,6 +9,7 @@
  (name herd)
  (public_name herd7)
  (libraries unix herdtools)
+ (flags :standard -w -42)
  (modules_without_implementation
   AArch64Sig
   action
