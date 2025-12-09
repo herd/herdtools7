@@ -80,7 +80,9 @@ val is_operator : elem -> bool
 
 val is_variadic_operator : t -> Relation.t -> bool
 (** [is_variadic_operator spec relation] returns [true] if [relation]
-    corresponds to a variadic operator in [spec], and [false] otherwise. *)
+    corresponds to a variadic operator in [spec], and [false] otherwise. A
+    variadic operator is an operator that can take a variable number of
+    arguments and handle them as though they were given in a list. *)
 
 (** A module for expanding rules with cases into multiple rules without cases.
 *)

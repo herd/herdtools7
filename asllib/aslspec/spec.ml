@@ -404,9 +404,9 @@ let is_applicator_variadic_operator id_to_defining_node applicator =
                when the attribute is specified. *)
   match applicator with
   | Rule.ExprOperator rel_name -> (
-      let { Relation.input } =
+      let input =
         match StringMap.find rel_name id_to_defining_node with
-        | Node_Relation def -> def
+        | Node_Relation def -> def.Relation.input
         | _ -> assert false
       in
       match input with
@@ -1082,6 +1082,23 @@ module Check = struct
             prefix_rules
       | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
 
+    (** [formals_of_relation id_to_defining_node rel_name] returns the list of
+        formal arguments for the relation named [rel_name] using
+        [id_to_defining_node] to lookup the relation definition node. *)
+    let formals_of_relation id_to_defining_node rel_name =
+      match StringMap.find rel_name id_to_defining_node with
+      | Node_Relation { Relation.input } -> input
+      | _ -> failwith "Expected relation definition node."
+
+    (** [components_of_labelled_tuple id_to_defining_node label] returns the
+        components of the labelled tuple type variant named [label] using
+        [id_to_defining_node] to lookup the type variant definition node. *)
+    let components_of_labelled_tuple id_to_defining_node label =
+      match StringMap.find label id_to_defining_node with
+      | Node_TypeVariant { TypeVariant.term = LabelledTuple { components } } ->
+          components
+      | _ -> failwith "Expected labelled tuple type variant."
+
     (** [check_expr id_to_defining_node expr] checks that the expression [expr]
         is well-formed in the context of [id_to_defining_node]. That is, it has
         the correct structure in terms of number of arguments (or fields) with
@@ -1097,35 +1114,29 @@ module Check = struct
           let () = check_exprs_in_context args in
           match applicator with
           | Relation rel_name | ExprOperator rel_name ->
-              let { Relation.input } =
-                match StringMap.find rel_name id_to_defining_node with
-                | Node_Relation def -> def
-                | _ -> Error.illegal_lhs_application expr
+              let formal_args =
+                formals_of_relation id_to_defining_node rel_name
               in
               if
                 (not
                    (is_applicator_variadic_operator id_to_defining_node
                       applicator))
                 (* A variadic operator accepts any number of arguments. *)
-                && List.compare_lengths input args <> 0
+                && List.compare_lengths formal_args args <> 0
               then
                 Error.invalid_number_of_arguments rel_name expr
-                  (List.length input) (List.length args)
+                  (List.length formal_args) (List.length args)
           | TupleLabel label ->
-              let () = check_exprs_in_context args in
               let components =
-                match StringMap.find label id_to_defining_node with
-                | Node_TypeVariant
-                    { TypeVariant.term = LabelledTuple { components } } ->
-                    components
-                | _ -> Error.illegal_lhs_application expr
+                components_of_labelled_tuple id_to_defining_node label
               in
               if List.compare_lengths components args <> 0 then
                 Error.invalid_number_of_components label expr
                   (List.length components) (List.length args)
           | EmptyApplicator | Fields _ | Unresolved _ -> ())
       | Record { label_opt; fields } -> (
-          let () = check_exprs_in_context (List.map snd fields) in
+          let expr_field_names, expr_field_inits = List.split fields in
+          let () = check_exprs_in_context expr_field_inits in
           match label_opt with
           | Some label ->
               let record_type_fields =
@@ -1135,7 +1146,6 @@ module Check = struct
                     fields
                 | _ -> Error.illegal_lhs_application expr
               in
-              let expr_field_names = List.map fst fields in
               let record_type_field_names =
                 List.map
                   (fun { name_and_type = name, _ } -> name)
