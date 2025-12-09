@@ -81,26 +81,27 @@ struct
     | Offset _ as x -> x in
     A.map_labels_base labelmap instr
 
-  let rec load_code proc addr mem rets = function
+  let rec load_code proc addr static_poi mem rets = function
     | [] ->
-       [],IntMap.add addr (proc,[]) rets
+       [], IntMap.add addr (proc,[]) rets
     | ins::code ->
-       load_ins proc addr mem rets code ins
+       load_ins proc addr static_poi mem rets code ins
 
-  and load_ins proc addr mem rets code = fun x ->
+  and load_ins proc addr static_poi mem rets code = fun x ->
     match x with
     | A.Nop ->
-       load_code proc addr mem rets code
+       load_code proc addr static_poi mem rets code
     | A.Instruction ins ->
         let start,new_rets =
-          load_code proc (addr+A.size_of_ins ins) mem rets code in
+          load_code proc (addr+A.size_of_ins ins) (static_poi+1) mem rets code in
         let new_ins =
           convert_lbl_to_offset proc addr mem ins in
-        let new_start = (addr,new_ins)::start in
+        let code_ins = { A.instr = new_ins; A.static_poi; } in
+        let new_start = (addr, code_ins) :: start in
         let newer_rets = IntMap.add addr (proc,new_start)  new_rets in
         new_start,newer_rets
     | A.Label (_,ins) ->
-        let start,new_rets = load_ins proc addr mem rets code ins in
+        let start,new_rets = load_ins proc addr static_poi mem rets code ins in
         start,new_rets
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
@@ -112,7 +113,7 @@ struct
       | ((proc,_,func),code)::prog ->
          let starts,rets = load_iter prog in
          let addr = func_start_addr proc func in
-         let start,fin_rets = load_code proc addr mem rets code in
+         let start,fin_rets = load_code proc addr 0 mem rets code in
          (proc,func,start)::starts,fin_rets in
     let starts,codes = load_iter prog in
     let mains,fhandlers =
