@@ -1906,7 +1906,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     check_structure_label(tenv, t_cond, T_Bool) -> True;
     annotate_expr(tenv, e_true) -> (t_true, e_true', ses_true);
     annotate_expr(tenv, e_false) -> (t_false, e_false', ses_false);
-    lowest_common_ancestor(t_true, t_false) -> t;
+    lowest_common_ancestor(tenv, t_true, t_false) -> t;
     ses := union(ses_cond, ses_true, ses_false);
     --
     (t, E_Cond(e_cond', e_true', e_false'), ses);
@@ -2082,7 +2082,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     e =: E_ATC(e', ty);
     annotate_expr(tenv, e') -> (t, e'', ses_e);
     get_structure(tenv, t) -> t_struct;
-    annotate_type(tenv, ty) -> (ty', ses_ty);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
     get_structure(tenv, ty') -> ty_struct;
     check_atc(tenv, t_struct, ty_struct) -> True;
     ses' := union(ses_ty, ses_e);
@@ -2103,7 +2103,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
 
   case EArbitrary {
     e =: E_Arbitrary(ty);
-    annotate_type(tenv, ty) -> (ty1, ses_ty);
+    annotate_type(False, tenv, ty) -> (ty1, ses_ty);
     get_structure(tenv, ty1) -> ty2;
     ses := union(ses_ty,
           make_set(
@@ -2568,25 +2568,25 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
     field = BitField_Nested(name, slices, bitfields');
     annotate_slices(tenv, slices) -> (slices1, ses_slices);
     disjoint_slices_to_positions(tenv, True, slices1) -> positions;
-    check_positions_in_width(tenv, slices1, width, positions) -> True;
+    check_positions_in_width(width, positions) -> True;
     width' := cardinality(positions);
     annotate_bitfields(tenv, width', bitfields') -> (bitfields'', ses_bitfields)
     { math_layout = [_] };
     ses := union(ses_slices, ses_bitfields);
     --
-    (BitField_Nested(slices1, bitfields''), ses)
+    (BitField_Nested(name, slices1, bitfields''), ses)
     { math_layout = [_]};
   }
 
   case type {
     field = BitField_Type(name, slices, t);
     annotate_slices(tenv, slices) -> (slices1, ses_slices);
-    annotate_type(tenv, t) -> (t', ses_ty);
+    annotate_type(False, tenv, t) -> (t', ses_ty);
     check_slices_in_width(tenv, width, slices1) -> True;
     disjoint_slices_to_positions(tenv, True, slices1) -> positions;
-    check_positions_in_width(tenv, slices1, width, positions) -> True;
+    check_positions_in_width(width, positions) -> True;
     width' := cardinality(positions);
-    check_bits_equal_width(T_Bits(width', empty_list, t)) -> True;
+    check_bits_equal_width(tenv, T_Bits(width', empty_list), t) -> True;
     ses := union(ses_slices, ses_ty);
     --
     (BitField_Type(name, slices1, t'), ses)
@@ -3782,14 +3782,14 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | typ
 } =
   case single {
     s = Slice_Single(i);
-    annotate_slice(Slice_Length(i, ELint(one))) -> s';
+    annotate_slice(tenv, Slice_Length(i, ELint(one))) -> s';
   }
 
   case range {
     s = Slice_Range(j, i);
     binop_literals(SUB, j, i) -> length';
     binop_literals(ADD, length', ELint(one)) -> length;
-    annotate_slice(Slice_Length(i, length)) -> s';
+    annotate_slice(tenv, Slice_Length(i, length)) -> s';
   }
 
   case length {
@@ -3806,7 +3806,7 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice) | typ
   case scaled {
     s = Slice_Star(factor, length);
     binop_literals(MUL, factor, length) -> offset;
-    annotate_slice(Slice_Length(offset, length)) -> s';
+    annotate_slice(tenv, Slice_Length(offset, length)) -> s';
   }
   --
   s';
@@ -3829,8 +3829,8 @@ typing relation slices_width(tenv: static_envs, slices: list0(slice)) ->
   case non_empty {
     slices = cons(s, slices1);
     slice_width(s) -> e1;
-    slices_width(slices1) -> e2;
-    normalize(EBinop(ADD, e1, e2)) -> width;
+    slices_width(tenv, slices1) -> e2;
+    normalize(tenv, EBinop(ADD, e1, e2)) -> width;
     --
     width;
   }
@@ -4337,7 +4337,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
 
   case SCall {
     s =: S_Call(call);
-    annotate_call(call) -> (call', None, ses);
+    annotate_call(tenv, call) -> (call', None, ses);
     --
     (S_Call(call'), tenv, ses);
   }
@@ -4431,7 +4431,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     t_e =: T_Named(exn_name);
     ses := union(ses1, make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)));
     --
-    (S_Throw(e', t_e), tenv, ses);
+    (typed_S_Throw(e', t_e), tenv, ses);
   }
 
   // The implementation includes code for fine-grained side-effect analysis,
@@ -4441,7 +4441,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case STry {
     s =: S_Try(s', catchers, otherwise);
     annotate_block(tenv, s') -> (s'', ses1);
-    (INDEX(i, catchers : annotate_catcher(tenv, catchers[i]) -> (catchers'[i], xs[i])))
+    (INDEX(i, catchers : annotate_catcher(tenv, ses1, catchers[i]) -> (catchers'[i], xs[i])))
     { math_layout =  ([_,_]) };
     ses_catchers := union_list(catchers');
     case No_Otherwise {
@@ -4491,7 +4491,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SPrint {
     s =: S_Print(args, newline);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
-    INDEX(i, args : te_check(is_singular(tys[i]), TE_UT) -> True);
+    INDEX(i, args : te_check(is_singular(tenv, tys[i]), TE_UT) -> True);
     ses := union(make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), union_list(sess));
     --
     (S_Print(args', newline), tenv, ses);
@@ -4841,7 +4841,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
   }
 
   case SThrow {
-    s =: S_Throw(e, t);
+    s =: typed_S_Throw(e, t);
     eval_expr(env, e) -> ResultExpr((v, g1), new_env);
     name := fresh_identifier();
     g2 := WriteEffect(name);

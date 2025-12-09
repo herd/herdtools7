@@ -399,8 +399,8 @@ module Rule = struct
     | Var of string
     | FieldAccess of string list
         (** The first identifier is a variable and the rest are field names. *)
-    | ListIndex of { var : string; index : expr }
-        (** An expression indexing into the list variable [var] at position
+    | ListIndex of { list_var : string; index : expr }
+        (** An expression indexing into the list variable [list_var] at position
             [index]. *)
     | Record of { label_opt : string option; fields : (string * expr) list }
         (** A record construction expression. *)
@@ -446,7 +446,7 @@ module Rule = struct
     Application { applicator = ExprOperator op_name; args }
 
   let make_record label_opt fields = Record { label_opt; fields }
-  let make_list_index var index = ListIndex { var; index }
+  let make_list_index list_var index = ListIndex { list_var; index }
 
   type judgment = { expr : expr; is_output : bool; att : Attributes.t }
   (** A judgment represents either a premise or the the output configuration of

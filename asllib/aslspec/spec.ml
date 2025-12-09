@@ -129,6 +129,30 @@ module Error = struct
           variant, or operator, but found expression %a"
          PP.pp_expr expr
 
+  let invalid_number_of_arguments rel_name expr num_input_args num_actual_args =
+    spec_error
+    @@ Format.asprintf
+         "The application of relation '%s' in expression %a has an invalid \
+          number of arguments: expected %d but found %d"
+         rel_name PP.pp_expr expr num_input_args num_actual_args
+
+  let invalid_number_of_components label expr num_components
+      num_actual_components =
+    spec_error
+    @@ Format.asprintf
+         "The application of tuple label '%s' in expression %a has an invalid \
+          number of components: expected %d but found %d"
+         label PP.pp_expr expr num_components num_actual_components
+
+  let invalid_record_field_names expr expr_field_names record_type_field_names =
+    spec_error
+    @@ Format.asprintf
+         "The record expression %a has invalid field names: expected %s but \
+          found %s"
+         PP.pp_expr expr
+         (String.concat ", " expr_field_names)
+         (String.concat ", " record_type_field_names)
+
   let bad_layout term layout ~consistent_layout =
     spec_error
     @@ Format.asprintf
@@ -369,6 +393,33 @@ let symbol_table_for_id id_to_defining_node id =
 let is_operator elem =
   match elem with
   | Elem_Relation { Relation.is_operator } -> is_operator
+  | _ -> false
+
+(** [is_applicator_variadic_operator id_to_defining_node applicator] checks if
+    [applicator] represents a variadic operator. That is, an operator whose only
+    argument is a list type. Variadic operators accept any number of actual
+    arguments. *)
+let is_applicator_variadic_operator id_to_defining_node applicator =
+  (* TODO: add an explicit `variadic` attribute to operators and check the operator signature
+               when the attribute is specified. *)
+  match applicator with
+  | Rule.ExprOperator rel_name -> (
+      let input =
+        match StringMap.find rel_name id_to_defining_node with
+        | Node_Relation def -> def.Relation.input
+        | _ -> assert false
+      in
+      match input with
+      | [ (_, TypeOperator { op = List0 | List1 }) ] -> true
+      | _ -> false)
+  | _ -> false
+
+let is_variadic_operator spec relation =
+  match StringMap.find relation.Relation.name spec.id_to_defining_node with
+  | Node_Relation { Relation.is_operator } ->
+      is_operator
+      && is_applicator_variadic_operator spec.id_to_defining_node
+           (Rule.ExprOperator relation.Relation.name)
   | _ -> false
 
 (** [update_symbol_table ast] creates a symbol table from [ast]. *)
@@ -1007,10 +1058,15 @@ module Check = struct
       List.iter check_prose_template_for_definition_node defining_nodes
   end
 
-  (** A module for checking that all rules are well-formed. That is, that they
-      end with an output judgment and that all preceding judgments are
-      non-output judgments. *)
+  (** A module for checking the correctness of the rules in all relations. The
+      checks in this module assume that [ResolveRules.resolve] has already been
+      applied to the AST. *)
   module CheckRules = struct
+    (** [check_well_formed_expanded relation_name expanded_rule] checks that the
+        [expanded_rule] is well-formed, that is, it has at least one judgment,
+        and that the last judgment, and only the last judgment, is an output
+        judgment. If not, raises a [SpecError] describing the issue.
+        [relation_name] is used when reporting errors. *)
     let check_well_formed_expanded relation_name expanded_rule =
       let open ExpandRules in
       (* Reverse the list to easily access the last judgment. *)
@@ -1026,12 +1082,109 @@ module Check = struct
             prefix_rules
       | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
 
-    let check_rule_for_relation { Relation.name } elements =
+    (** [formals_of_relation id_to_defining_node rel_name] returns the list of
+        formal arguments for the relation named [rel_name] using
+        [id_to_defining_node] to lookup the relation definition node. *)
+    let formals_of_relation id_to_defining_node rel_name =
+      match StringMap.find rel_name id_to_defining_node with
+      | Node_Relation { Relation.input } -> input
+      | _ -> failwith "Expected relation definition node."
+
+    (** [components_of_labelled_tuple id_to_defining_node label] returns the
+        components of the labelled tuple type variant named [label] using
+        [id_to_defining_node] to lookup the type variant definition node. *)
+    let components_of_labelled_tuple id_to_defining_node label =
+      match StringMap.find label id_to_defining_node with
+      | Node_TypeVariant { TypeVariant.term = LabelledTuple { components } } ->
+          components
+      | _ -> failwith "Expected labelled tuple type variant."
+
+    (** [check_expr id_to_defining_node expr] checks that the expression [expr]
+        is well-formed in the context of [id_to_defining_node]. That is, it has
+        the correct structure in terms of number of arguments (or fields) with
+        respect to the symbols it references. If not, raises a [SpecError]
+        describing the issue. *)
+    let rec check_expr id_to_defining_node expr =
+      let check_expr_in_context = check_expr id_to_defining_node in
+      let check_exprs_in_context = List.iter check_expr_in_context in
+      let open Rule in
+      match expr with
+      | NamedExpr (sub_expr, _) -> check_expr_in_context sub_expr
+      | Application { applicator; args } -> (
+          let () = check_exprs_in_context args in
+          match applicator with
+          | Relation rel_name | ExprOperator rel_name ->
+              let formal_args =
+                formals_of_relation id_to_defining_node rel_name
+              in
+              if
+                (not
+                   (is_applicator_variadic_operator id_to_defining_node
+                      applicator))
+                (* A variadic operator accepts any number of arguments. *)
+                && List.compare_lengths formal_args args <> 0
+              then
+                Error.invalid_number_of_arguments rel_name expr
+                  (List.length formal_args) (List.length args)
+          | TupleLabel label ->
+              let components =
+                components_of_labelled_tuple id_to_defining_node label
+              in
+              if List.compare_lengths components args <> 0 then
+                Error.invalid_number_of_components label expr
+                  (List.length components) (List.length args)
+          | EmptyApplicator | Fields _ | Unresolved _ -> ())
+      | Record { label_opt; fields } -> (
+          let expr_field_names, expr_field_inits = List.split fields in
+          let () = check_exprs_in_context expr_field_inits in
+          match label_opt with
+          | Some label ->
+              let record_type_fields =
+                match StringMap.find label id_to_defining_node with
+                | Node_TypeVariant
+                    { TypeVariant.term = LabelledRecord { fields } } ->
+                    fields
+                | _ -> Error.illegal_lhs_application expr
+              in
+              let record_type_field_names =
+                List.map
+                  (fun { name_and_type = name, _ } -> name)
+                  record_type_fields
+              in
+              if
+                not
+                  (Utils.list_is_equal String.equal expr_field_names
+                     record_type_field_names)
+              then
+                Error.invalid_record_field_names expr expr_field_names
+                  record_type_field_names
+              else ()
+          | None -> ())
+      | Transition { lhs; rhs; short_circuit } ->
+          check_expr_in_context lhs;
+          check_expr_in_context rhs;
+          Option.iter check_exprs_in_context short_circuit
+      | Indexed { body } -> check_expr_in_context body
+      | ListIndex { index } -> check_expr_in_context index
+      | Var _ | FieldAccess _ -> ()
+
+    (** [check_rule_for_relation id_to_defining_node relation elements] checks
+        the elements of the rule for [relation] using [id_to_defining_node] to
+        lookup definition nodes. If any check fails, raises a [SpecError]
+        describing the issue using [relation.name]. *)
+    let check_rule_for_relation id_to_defining_node { Relation.name } elements =
       let expanded_rules = ExpandRules.expand elements in
-      List.iter (check_well_formed_expanded name) expanded_rules
+      List.iter
+        (fun expanded_rule ->
+          let () = check_well_formed_expanded name expanded_rule in
+          let open ExpandRules in
+          List.iter
+            (fun { Rule.expr } -> check_expr id_to_defining_node expr)
+            expanded_rule.judgments)
+        expanded_rules
 
     (** Checks the rules in all relations. *)
-    let check ast =
+    let check ast id_to_defining_node =
       let open Rule in
       List.iter
         (fun elem ->
@@ -1041,7 +1194,7 @@ module Check = struct
           | Elem_Relation { rule_opt = None } ->
               ()
           | Elem_Relation ({ rule_opt = Some elements } as def) ->
-              check_rule_for_relation def elements)
+              check_rule_for_relation id_to_defining_node def elements)
         ast
   end
 
@@ -1506,6 +1659,6 @@ let from_ast ast =
   let () = Check.relation_named_arguments_if_exists_rule ast in
   let ast, _ = ResolveRules.resolve ast id_to_defining_node in
   let ast, id_to_defining_node = ExtendNames.extend ast in
-  let () = Check.CheckRules.check ast in
+  let () = Check.CheckRules.check ast id_to_defining_node in
   let ast = add_default_rule_renders ast in
   { ast; id_to_defining_node; defined_ids }

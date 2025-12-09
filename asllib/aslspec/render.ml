@@ -472,8 +472,8 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
-      | ListIndex { var; index } ->
-          fprintf fmt "%a[%a]" pp_var var pp_expr (index, layout)
+      | ListIndex { list_var; index } ->
+          fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
       | FieldAccess path -> pp_field_path fmt path
       | Indexed { index; list; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
@@ -510,29 +510,26 @@ module Make (S : SPEC_VALUE) = struct
         [op_name] applied to [args] with [fmt] and laid out according to
         [layout]. *)
     and pp_operator op_name layout fmt args =
-      let is_prefix_list_operator def =
-        match def.Relation.input with
-        | [ (_, TypeOperator { op = List0 | List1 }) ] ->
-            not (Relation.is_associative_operator def)
-        | _ -> false
-      in
       let op_macro = get_or_gen_math_macro op_name in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
       | [] ->
           (* A nullary operator. *)
           fprintf fmt "%a" pp_macro op_macro
-      | [ _ ] when is_prefix_list_operator operator ->
-          (* A variadic operator over a list of arguments. *)
-          fprintf fmt "%a{%a}" pp_macro op_macro
-            (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr layout)
-            args
-      | [ _ ] when Relation.is_associative_operator operator ->
-          (* A variadic operator over a list of arguments rendered by separating arguments
+      | [ _ ] when Spec.is_variadic_operator S.spec operator ->
+          if Relation.is_associative_operator operator then
+            (* A variadic operator rendered by separating its arguments
              with the operator macro. *)
-          pp_aligned_elements_and_operators
-            ~pp_sep:(fun fmt () -> pp_macro fmt op_macro)
-            ~alignment:"c" pp_expr layout fmt args
+            pp_aligned_elements_and_operators
+              ~pp_sep:(fun fmt () -> pp_macro fmt op_macro)
+              ~alignment:"c" pp_expr layout fmt args
+          else
+            (* A variadic operator rendered by separating its arguments
+             with a comma. *)
+            fprintf fmt "%a{%a}" pp_macro op_macro
+              (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr
+                 layout)
+              args
       | [ _ ] ->
           (* A simple unary operator. *)
           let arg = List.hd args in
