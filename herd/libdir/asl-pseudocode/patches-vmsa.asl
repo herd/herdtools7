@@ -215,28 +215,6 @@ begin
   return GetOAPrimitive{N}(descriptor);
 end;
 
-// =============================================================================
-
-// AArch64.MemSwapTableDesc()
-// ==========================
-// Perform HW update of table descriptor as an atomic operation
-// Modified -> write only
-
-func AArch64_MemSwapTableDesc
-  {N}(fault_in:FaultRecord,prev_desc:bits(N),new_desc:bits(N),
-   ee:bit,descaccess:AccessDescriptor,descpaddr:AddressDescriptor)
-=> (FaultRecord, bits(N))
-begin
-   let addr: bits(56) = descpaddr.paddress.address;
-   let mem_desc = ReadPteAgainPrimitive{N}(addr, descaccess.write);
-
-// For speed, using "if" construct us much more expensive
-   CheckEq{N}(mem_desc,prev_desc);
-
-   WritePtePrimitive{N}(addr, new_desc, descaccess.write);
-   return (fault_in,new_desc);
-end;
-
 // AArch64.DataAbort()
 // ===================
 
