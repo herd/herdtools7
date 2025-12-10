@@ -73,10 +73,13 @@ module type S = sig
    and ready to start, plus some items that describe
    the test, such as its name (cf. Test.mli) *)
 
-  type code_instr = { instr: instr; static_poi: int }
+
+  module CodeInstr : sig
+    type t = { instr: instr; static_poi: int }
+  end
 
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type code = (int * code_instr) list
+  type code = (int * CodeInstr.t) list
 
   val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
 
@@ -338,10 +341,12 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Components of test structures *)
       (*********************************)
 
-      type code_instr = { instr: instr; static_poi: int }
+      module CodeInstr = struct
+        type t = { instr: instr; static_poi: int }
+      end
 
       (* Code memory is a mapping from globals locs, to instructions *)
-      type code = (int * code_instr) list
+      type code = (int * CodeInstr.t) list
 
       (* This function is a default behaviour for all architectures.
          When variant -self is enabled, it fails trying to convert a branch

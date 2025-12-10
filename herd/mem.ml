@@ -164,6 +164,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module VC = EM.VC
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
+    module CodeInstr = A.CodeInstr
 
     let dbg = C.debug.Debug_herd.mem
     let morello = C.variant Variant.Morello
@@ -297,14 +298,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | Some fh_code -> code@fh_code
               | None -> code in
             List.fold_left
-              (fun locs (_, (i : A.code_instr)) ->
+              (fun locs (_, (i : CodeInstr.t)) ->
                 A.fold_addrs
                   (fun x ->
                     let loc = A.maybev_to_location x in
                     match loc with
                     | A.Location_global _ -> A.LocSet.add loc
                     | _ -> fun locs -> locs)
-                  locs i.A.instr)
+                  locs i.CodeInstr.instr)
               locs code)
           locs
           test.Test_herd.start_points in
@@ -435,7 +436,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   | Some lbl ->
                       let symb = Constant.mk_sym_virtual_label proc lbl in
                       let loc = A.Location_global (A.V.cstToV symb)
-                      and v = A.V.instructionToV i.A.instr in
+                      and v = A.V.instructionToV i.CodeInstr.instr in
                       A.state_add env loc v)
                 init_state lbls2i
             in
@@ -518,10 +519,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | e -> raise e in
 
 (* Call instruction semantics proper *)
-        let wrap re_exec fetch_proc proc (inst : A.code_instr) addr env m poi =
+        let wrap re_exec fetch_proc proc (code_instr : CodeInstr.t) addr env m poi =
           profile "build semantics" @@ fun () ->
-        let static_poi = inst.A.static_poi in
-        let inst = inst.A.instr in
+        let static_poi = code_instr.CodeInstr.static_poi in
+        let inst = code_instr.CodeInstr.instr in
         let ii =
            { A.program_order_index = poi;
              static_poi;
@@ -544,9 +545,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         m ii in
 
       let  sem_instr =  SM.build_semantics test in
-      let rec add_next_instr re_exec fetch_proc proc env seen addr (i : A.code_instr) nexts =
-        wrap re_exec fetch_proc proc i addr env sem_instr >>> fun branch ->
-          let inst = i.A.instr in
+      let rec add_next_instr re_exec fetch_proc proc env seen addr (code_instr : CodeInstr.t) nexts =
+        wrap re_exec fetch_proc proc code_instr addr env sem_instr >>> fun branch ->
+          let inst = code_instr.CodeInstr.instr in
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env = A.kill_regs (A.killed inst) env
           and szo =
@@ -564,7 +565,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   bds env
             | _ -> env in
           next_instr
-            re_exec i fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
+            re_exec code_instr fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
             seen addr nexts branch
 
       and add_code re_exec fetch_proc proc env seen nexts = match nexts with
@@ -618,7 +619,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                else (* execute  again the same instruction *)
                  add_next_instr true fetch_proc proc env seen addr inst nexts
 
-      and next_instr re_exec (inst : A.code_instr) fetch_proc proc env seen addr nexts b =
+      and next_instr re_exec (code_instr : CodeInstr.t) fetch_proc proc env seen addr nexts b =
         match b with
       | S.B.Exit -> EM.unitcodeT true
       | S.B.Next _ ->
@@ -626,7 +627,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
       | S.B.Fault (syscall,_) ->
-          add_fault re_exec inst fetch_proc proc env seen addr syscall nexts
+          add_fault re_exec code_instr fetch_proc proc env seen addr syscall nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt
       | S.B.CondJump (v,tgt) ->
@@ -2152,7 +2153,7 @@ let match_reg_events es =
                    Warn.user_error
                      "Instruction %s:%s cannot be overwritten"
                      (Label.pp lbl)
-                     (A.dump_instruction i.A.instr)
+                     (A.dump_instruction i.CodeInstr.instr)
               with
               | Not_found ->
                  Warn.user_error
