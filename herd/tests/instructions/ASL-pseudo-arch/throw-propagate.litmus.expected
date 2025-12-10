@@ -4,8 +4,8 @@ States 2
 0:g.0.a=1; 0:t=2; 0:main.0.y=1; 0:z=2;
 Ok
 Witnesses
-Positive: 9 Negative: 0
+Positive: 7 Negative: 0
 Condition forall (0:z=2 /\ 0:t=2 /\ (0:g.0.a=0 /\ 0:main.0.y=0 \/ 0:g.0.a=1 /\ 0:main.0.y=1))
-Observation throw-propagate Always 9 0
-Hash=1ee24fd6ffac8ef8ae8c87f3ab258919
+Observation throw-propagate Always 7 0
+Hash=b13d2986880c6471a89df5d45548dc1a
 

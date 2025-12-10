@@ -299,3 +299,22 @@ type EventAccess of enumeration {
      TAG,
      PHY_PTE,
 };
+
+// =============================================================================
+
+// SomeBoolean()
+// =============
+
+// Function concretising a random boolean: it is functionally equivalent to
+// ARBITRARY: boolean, but instead of returning a symbolic value, it will
+// create 2 executions, one where it returns TRUE and one where it returns
+// FALSE.
+
+readonly func SomeBoolean() => boolean
+begin
+  if ARBITRARY: boolean then
+    return TRUE;
+  else
+    return FALSE;
+  end;
+end;
