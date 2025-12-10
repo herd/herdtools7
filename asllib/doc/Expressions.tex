@@ -9,14 +9,17 @@ Expressions can have side effects and can raise exceptions.
 Therefore, ASL specifies an evaluation order to ensure that the side-effects/exceptions are predictable (see \secref{EvaluationOrder}).
 
 \ExampleDef{Expressions}
-\listingref{Expressions} shows some examples of expressions.
+\listingref{Expressions}, \listingref{expr1}, and \listingref{expr2} exemplify the different kinds of expressions,
+as indicated by respective comments.
 \ASLListing{Examples of expressions}{Expressions}{\definitiontests/Expressions.asl}
+\ASLListing{Examples of expressions}{expr1}{\syntaxtests/expr1.asl}
+\ASLListing{More examples of expressions}{expr2}{\syntaxtests/expr2.asl}
 
 \ChapterOutline
 \begin{itemize}
   \item \FormalRelationsRef{Expressions} defines the formal relations for expressions;
   \item \secref{LiteralExpressions} defines \literalexpressionsterm;
-  \item \secref{VariablExpressions} defines \variableexpressionsterm;
+  \item \secref{VariabelExpressions} defines \variableexpressionsterm;
   \item \secref{BinaryExpressions} defines \binopexpressionsterm;
   \item \secref{UnaryExpressions} defines \unopexpressionsterm;
   \item \secref{ConditionalExpressions} defines \condexpressionsterm;
@@ -136,7 +139,7 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
 \hypertarget{def-variableexpressionterm}{}
-\section{Variable Expressions\label{sec:VariablExpressions}}
+\section{Variable Expressions\label{sec:VariabelExpressions}}
 A variable expression consists of an identifier for a storage element.
 
 \subsection{Syntax}
@@ -200,7 +203,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
     \item \AllApplyCase{error\_undefined}
     \begin{itemize}
       \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
-      \item $\vx$ is not bound via the $\globalstoragetypes$ map of the local component of $\tenv$;
+      \item $\vx$ is not bound via the $\globalstoragetypes$ map of the global component of $\tenv$;
       \item the result is a \typingerrorterm{} indicating that $\vx$ is an undefined identifier\\ ($\UndefinedIdentifier$).
     \end{itemize}
   \end{itemize}
@@ -254,12 +257,12 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 
 \ExampleDef{Evaluation of a Local Variable Expression}
 In \listingref{localvarsemantics}, the evaluation of \texttt{x} within \texttt{assert x == 3;}
-uses \\ \SemanticsRuleRef{EVar}.LOCAL.
+applies the rule \SemanticsRuleRef{EVar}.LOCAL.
 \ASLListing{Semantics of local variables}{localvarsemantics}{\semanticstests/SemanticsRule.ELocalVar.asl}
 
 \ExampleDef{Evaluation of a Global Variable Expression}
 In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~\texttt{assert global\_x == 3;}
-uses the rule \SemanticsRuleRef{EVar}.GLOBAL.
+applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
 \ProseParagraph
@@ -341,11 +344,11 @@ which contains tokens that are not operators, but are needed for parsing disambi
 7 (Highest) & \textbf{Membership} & \Tin\\
 6 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
 5 & \textbf{Power}                & \Tpow\\
-4 & \textbf{Mul-Div-Shift}        & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
-3 & \textbf{Add-Sub-Logic}        & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
+4 & \textbf{Mul--Div--Shift}      & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
+3 & \textbf{Add--Sub--Logic}      & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
 2 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
 1 & \textbf{(In-)Equality}        & \Teqop, \Tneq\\
-0 & \textbf{Boolean}              & \Tbor, \Tband, \Timpl, \Tbeq\\
+0 & \textbf{Boolean}              & \Tbor, \Tband, \Tbimpl, \Tbeq\\
 \hline
 \end{tabular}
 \end{center}
@@ -1059,7 +1062,7 @@ and the inferred types of the expressions, as type annotations on the left-hand-
 \AllApply
 \begin{itemize}
   \item $\ve$ denotes a call to a subprogram, that is, $\ECall(\vcall)$;
-  \item applying $\annotatecall$ to $\vcall$ and in $\tenv$
+  \item applying $\annotatecall$ to $\vcall$ in $\tenv$
         annotates the call of the subprogram in $\tenv$ as a function (see Chapter~\ref{chap:SubprogramCalls})
         and yields $(\vcallp, \some{ \vt }, \vses)$\ProseOrTypeError.
   \item $\newe$ is the call using $\vcallp$, that is, $\ECall(\vcallp)$.
@@ -1089,7 +1092,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \begin{itemize}
   \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
   \item the evaluation of that subprogram call in $\env$ yields\\
-  $\ResultExpr(\vms, \newenv)$\ProseOrAbnormal;
+  $\ResultCall(\vms, \newenv)$\ProseOrAbnormal;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{single\_returned\_value}
@@ -1113,7 +1116,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \inferrule[single\_returned\_value]{
   {
     \begin{array}{r}
-  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultExpr(\vms, \newenv) \OrAbnormal
+  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
   \end{array}
   }\\\\
   \commonprefixline\\\\
@@ -1127,7 +1130,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \inferrule[multiple\_returned\_values]{
   {
     \begin{array}{r}
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\ \ResultExpr(\vms, \newenv) \OrAbnormal
+  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
   \end{array}
   }\\\\
   \commonprefixline\\\\
@@ -1604,8 +1607,7 @@ All of the collection field expressions in
 \begin{itemize}
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vetwo$ is a variable expression for $\vbase$, that is, $\EVar(\vbase)$;
+  \item obtaining the \underlyingtypeterm{} of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
   \item $\vtetwo$ is a collection type with fields $\fields$;
   \item \OneApplies
   \begin{itemize}
@@ -1617,7 +1619,7 @@ All of the collection field expressions in
     \end{itemize}
     \item \AllApplyCase{error}
     \begin{itemize}
-      \item the field $\fieldname$ is not associated with any type  in $\fields$
+      \item the field $\fieldname$ is not associated with any type in $\fields$
       \item the result is a \typingerrorterm{} indicating the missing field.
     \end{itemize}
   \end{itemize}
@@ -3252,11 +3254,11 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \begin{itemize}
     \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
     \item $\vli$ consists of at least two expressions;
-    \item annotating each expression $\vle[i]$ in $\tenv$, for $i=1..k$, yields \\
+    \item annotating each expression $\vli[i]$ in $\tenv$, for $i=1..k$, yields \\
           $(\vt[i], \es[i], \vxs[i])$\ProseOrTypeError;
     \item $\vt$ is the \tupletypeterm{} with list of types $\vt_i$, for $i=1..k$;
     \item $\newe$ is tuple expression over list of expressions $\es[i]$, for $i=1..k$;
-    \item defining $\vses$ as the union of $\vxs_i$ for $i=1..k$.
+    \item defining $\vses$ as the union of all sets listed by $\vxs$.
   \end{itemize}
 \end{itemize}
 

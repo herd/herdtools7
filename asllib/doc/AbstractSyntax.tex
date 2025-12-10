@@ -95,7 +95,8 @@ Node types are defined recursively as follows:
 \item[Labelled Tuple.] A tuple labelled~$L$, denoted as~$L(n_1,\ldots,n_k)$;
 \item[List.] A list node type, denoted as $\KleeneStar{n}$;
 \item[Optional.] An optional node type, denoted as $\Option{n}$;
-\item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding node types.
+\item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$,
+     which associates each field name with the corresponding node type.
 \end{description}
 
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
@@ -148,13 +149,13 @@ The following table shows the token associated to each binary operator:
 \IMPL{}       & \Tbimpl\\
 \BEQ{}        & \Tbeq\\
 \EQ{}         & \Teqop\\
-\NE{}        & \Tneq\\
+\NE{}         & \Tneq\\
 \GT{}         & \Tgt\\
-\GE{}        & \Tgeq\\
+\GE{}         & \Tgeq\\
 \LT{}         & \Tlt\\
-\LE{}        & \Tleq\\
-\ADD{}       & \Tplus\\
-\SUB{}      & \Tminus\\
+\LE{}         & \Tleq\\
+\ADD{}        & \Tplus\\
+\SUB{}        & \Tminus\\
 \OR{}         & \Tor\\
 \XOR{}        & \Txor\\
 \AND{}        & \Tand\\
@@ -162,8 +163,8 @@ The following table shows the token associated to each binary operator:
 \DIV{}        & \Tdiv\\
 \DIVRM{}      & \Tdivrm\\
 \MOD{}        & \Tmod\\
-\SHL{}        & \shiftleftlexeme\\
-\SHR{}        & \shiftrightlexeme\\
+\SHL{}        & \Tshl\\
+\SHR{}        & \Tshr\\
 \RDIV{}       & \Trdiv\\
 \POW{}        & \Tpow\\
 \BVCONCAT{}   & \Tcoloncolon\\
@@ -180,29 +181,6 @@ record and exception construction expressions, tuple expressions, arbitrary-valu
 and pattern matching expressions.
 
 \RenderTypes{untyped_expr}
-
-\listingref{expr1} and \listingref{expr2} exemplify the different kinds of expressions,
-as indicated by respective comments.
-\ASLListing{Examples of expressions}{expr1}{\syntaxtests/expr1.asl}
-\ASLListing{More examples of expressions}{expr2}{\syntaxtests/expr2.asl}
-
-\begin{itemize}
-  \item $\EVar(\vx)$ represents variables (\texttt{E\_Var}).
-
-  \item $\EATC(\ve, \vt)$ represents type assertions. For example: \texttt{x as integer}.
-  Here $\ve$ corresponds to \texttt{x} and $\vt$ corresponds to \texttt{integer}.
-
-  \item $\ESlice(\ve, \vslices)$ represents slices of bitvectors (\texttt{E\_Slice 1}),
-  slices of integers \\
-  (\texttt{E\_Slice 2}),
-  and access to array elements (\texttt{E\_Slice 3}).
-
-  \item $\EGetField(\ve, \id)$ represents an access to a record (\texttt{E\_GetField 1})
-        or exception field
-        as well as an access to a tuple component (\texttt{E\_GetField 2}).
-
-  \item $\EGetFields(\ve, \ids)$ represents an access to multiple record fields (\texttt{E\_GetFields 1}).
-\end{itemize}
 
 \subsection{Patterns \label{sec:Patterns}}
 \hypertarget{constant-zerobit}{}

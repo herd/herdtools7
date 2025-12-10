@@ -57,7 +57,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 \begin{flalign*}
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
-                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Tbimpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
@@ -173,7 +173,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[impl]{}{
-  \buildbinop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
+  \buildbinop(\Nbinop(\Tbimpl)) \astarrow \overname{\IMPL}{\vastnode}
 }
 \end{mathpar}
 
@@ -312,7 +312,7 @@ $\Tband$  & $\LBool$ & $\LBool$ & $\LBool$ & $\andbool$\\
 $\Tbor$   & $\LBool$ & $\LBool$ & $\LBool$ & $\orbool$\\
 $\Teqop$  & $\LBool$ & $\LBool$ & $\LBool$ & $\eqbool$\\
 $\Tneq$   & $\LBool$ & $\LBool$ & $\LBool$ & $\nebool$\\
-$\Timpl$  & $\LBool$ & $\LBool$ & $\LBool$ & $\impliesbool$\\
+$\Tbimpl$  & $\LBool$ & $\LBool$ & $\LBool$ & $\impliesbool$\\
 $\Tbeq$   & $\LBool$ & $\LBool$ & $\LBool$ & $\equivbool$\\
 \hline
 \end{tabular}
