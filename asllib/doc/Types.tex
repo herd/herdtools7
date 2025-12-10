@@ -669,7 +669,7 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 
 \section{Bitvector Types\label{sec:BitvectorTypes}}
 \hypertarget{bitvectortypeterm}{}
-\emph{Bitvectors} represent sequences of $0$ and $1$ bits.
+\emph{Bitvectors} represent sequences of $0$ and $1$ bits ordered according to \RequirementRef{BitvectorOrdering}.
 %
 The \texttt{bits(N)} type represents a bitvector of width \texttt{N},
 where \texttt{N} may specify a fixed width or a constrained width.
@@ -695,12 +695,6 @@ as exemplified by \listingref{Bit}.
 It is \desugared{} by \ASTRuleCaseRef{Ty.TBits}{BIT}.
 
 \ASLListing{Syntactic sugar for single bit bitvector types}{Bit}{\definitiontests/Bit.asl}
-
-\RequirementDef{BitvectorsMSB}
-In a bitvector literal, the most significant bit (\ProseMSB) is the leftmost value
-and the least significant bit (\ProseLSB) is the rightmost value.
-% INLINED_EXAMPLE
-For example, in \verb|'10'| the \ProseMSB{} is \verb|1| and the \ProseLSB{} is \verb|0|.
 
 \RequirementDef{BitvectorWidthImmutable}
 The width of a bitvector cannot be modified.

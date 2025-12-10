@@ -210,9 +210,8 @@ before
 begin
 beginning
 behave
-behavior
-behaviors
 behaviour
+behaviours
 being
 belongs
 below

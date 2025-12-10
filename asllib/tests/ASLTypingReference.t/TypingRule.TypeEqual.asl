@@ -1,7 +1,7 @@
 type Color of enumeration { RED, GREEN, BLUE };
 type MyRecord of record { flag: boolean };
 
-impdef          func Foo{N}(
+impdef func Foo{N}(
     s: string,
     r: real,
     i: integer,
@@ -13,7 +13,7 @@ impdef          func Foo{N}(
     t: (boolean, integer)
 ) begin pass; end;
 
-implementation  func Foo{N}(
+implementation func Foo{N}(
     s: string,
     r: real,
     i: integer,

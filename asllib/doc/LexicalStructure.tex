@@ -201,6 +201,15 @@ $\REbitvectorlit$ &$\triangleq$& \anycharacter{\texttt{'}} \REbit* \anycharacter
 The spaces in a bitvector are not significant and are only used to improve readability.
 For example, \texttt{'1111 1111 1111 1111'} is the same as \texttt{'1111111111111111'}.
 
+\RequirementDef{BitvectorOrdering}
+ASL bitvectors have the least significant bit (\ProseLSB) at index $0$,
+and the most significant bit (\ProseMSB) at the highest index.
+In terms of notation, the \ProseMSB{} is the leftmost bit and the
+\ProseLSB{} is the rightmost bit.
+% INLINED_EXAMPLE
+For example, in \verb|'10100'| the \ProseMSB{} \verb|1| is at index $4$,
+and the \ProseLSB{} is \verb|0| at index $0$.
+
 \section{Bitmasks\label{sec:Bitmasks}}
 Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x}, and \texttt{0}s/\texttt{1}s enclosed in parentheses.
 Any \texttt{x}s or characters enclosed in parentheses represent don't care characters.
@@ -221,11 +230,7 @@ Similarly, the specific characters enclosed within parentheses are not significa
 For example, the bitmask \verb|'0xx1'| is equivalent to \verb|'0(00)1'|, \verb|'0(01)1'|, \verb|'0(10)1'|, and \verb|'0(11)1'|.
 Similarly, \verb|'0xx(1)'| is equivalent to \verb|'0xxx'|.
 
-\RequirementDef{BitmasksMSB}
-The most significant bit (\ProseMSB) of a bitmask is its leftmost value and
-the least significant bit (\ProseLSB) is its rightmost value.
-% INLINED_EXAMPLE
-For example, in \verb|'10'| the \ProseMSB{} is \verb|1| and the \ProseLSB{} is \verb|0|.
+Bitmasks follow \RequirementRef{BitvectorOrdering}.
 
 \section{String Literals\label{sec:String Literals}}
 String literals consist of printable characters surrounded by double quotes.

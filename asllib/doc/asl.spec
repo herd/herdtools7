@@ -648,10 +648,7 @@ ast expr { "expression" } =
     | E_Slice(base: expr, slices: list0(slice))
     { "slice expression for the base expression {base} and slices {slices}" }
     | E_Cond(test: expr, true_branch: expr, false_branch: expr)
-    { "condition expression for the test expression {test}
-            true branch expression {true_branch} and
-            false branch expression {false_branch}",
-    }
+    { "condition expression with test {test}, true branch {true_branch}, and false branch {false_branch}", }
     | E_GetArray(base: expr, index: expr)
     { "array read expression for the base expression {base} and index expression {index}" }
     | E_GetField(record: expr, field_name: Identifier)
@@ -1068,7 +1065,7 @@ ast stmt { "statement" } =
 ////////////////////////////////////////////////
 // Typed AST
 ////////////////////////////////////////////////
-   | typed_S_Throw(exception: expr, exception_type: ty)
+  | typed_S_Throw(exception: expr, exception_type: ty)
     {
         "throw statement with exception expression {exception} and inferred type {exception_type}",
         math_macro = \typedSThrow,
@@ -1179,8 +1176,8 @@ ast func { "subprogram descriptor" } =
         optional recursion limit {recurse_limit},
         builtin flag {builtin},
         subprogram qualifier {qualifier},
-        and override qualifier {override}
-    " }
+        and override qualifier {override}"
+    }
 ;
 
 ast global_decl_keyword { "global declaration keyword" } =
@@ -3143,10 +3140,8 @@ typing function binary_to_unsigned(bits: list0(Bit)) -> (num: N)
 
 typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
 {
-  "converts the integer {val} to its two's complement little endian representation
-  of {width} bits, yielding the result in {bits}.",
-  prose_application = "converting the integer {val} to its two's complement little endian representation
-  of {width} bits yields {bits}",
+  "converts the integer {val} to its two's complement representation with {width} bits, yielding the result in {bits}.",
+  prose_application = "converting the integer {val} to its two's complement representation of {width} bits yields {bits}",
 };
 
 semantics function eval_unop(op: unop, v: native_value) ->
@@ -5705,7 +5700,7 @@ typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
 typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
 {
-  "conservatively tests whether the {e1} and {e2} are
+  "conservatively tests whether {e1} and {e2} are
   \equivalentexprsterm{} in the \staticenvironmentterm{}
   {tenv} by attempting to transform both expressions to
   their \symbolicexpressionterm{} form and, if
@@ -5879,7 +5874,7 @@ typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
                         yields absolute value {e} and sign {s}",
 };
 
-typing function monomial_to_expr(e: expr, q: N) ->
+typing function monomial_to_expr(e: expr, q: Q) ->
          (new_e: expr, s: Sign)
 {
   "transforms an expression {e} and rational $q$ into the
@@ -5904,7 +5899,7 @@ typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
 {
   "transforms a list of single-variable unitary monomials
   {monoms} into an expression {e}. Intuitively, {monoms}
-  represented a multiplication of the single-variable
+  represent a multiplication of the single-variable
   unitary monomials.",
   prose_application = "",
 };

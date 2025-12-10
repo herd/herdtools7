@@ -800,7 +800,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 }
 \and
 \inferrule[ebinop\_other\_literals\_non\_int\_result]{
-  \op \not\in \{\ADD, \SUB, \MUL, \SHL\}\\
+  \op \not\in \{\ADD, \SUB, \MUL, \DIV, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \vl\\
   \vl \neq \LInt(\Ignore)
 }{
@@ -808,7 +808,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 }
 \and
 \inferrule[ebinop\_other\_literals\_int\_result]{
-  \op \not\in \{\ADD, \SUB, \MUL, \SHL\}\\
+  \op \not\in \{\ADD, \SUB, \MUL, \DIV, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \LInt(k)\\
   \vp \eqdef \{ \emptyfunc\mapsto k \}
 }{
@@ -854,7 +854,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \ExampleDef{Expression Equivalence}
 The specification in \listingref{ExprEqual} is well-typed as the expressions
-comprising the array lengths are equivalent, as details in comments.
+comprising the array lengths are equivalent, as detailed in comments.
 \ASLListing{Equivalent expressions}{ExprEqual}{\typingtests/TypingRule.ExprEqual.asl}
 
 \ProseParagraph
@@ -921,21 +921,21 @@ See \ExampleRef{Expression Equivalence}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[all\_supported]{
-  \toir(\veone) \typearrow \irone \OrTypeError\\\\
-  \toir(\vetwo) \typearrow \irtwo \OrTypeError
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError
 }{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\irone = \irtwo}{\vb}
 }
 \and
 \inferrule[unsupported1]{
-  \toir(\veone) \typearrow \CannotBeTransformed
+  \toir(\tenv, \veone) \typearrow \CannotBeTransformed
 }{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
 \and
 \inferrule[unsupported2]{
-  \toir(\veone) \typearrow \irone\\
-  \toir(\vetwo) \typearrow \CannotBeTransformed
+  \toir(\tenv, \veone) \typearrow \irone\\
+  \toir(\tenv, \vetwo) \typearrow \CannotBeTransformed
 }{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
@@ -996,7 +996,7 @@ See \ExampleRef{Expression Equivalence}.
   \begin{itemize}
     \item $\veone$ is a slicing expression with expression $\veoneone$ and list of slices $\slicesone$,
           that is, $\ESlice(\veoneone, \slicesone)$;
-    \item $\veone$ is a slicing expression with expression $\vetwoone$ and list of slices $\slicestwo$,
+    \item $\vetwo$ is a slicing expression with expression $\vetwoone$ and list of slices $\slicestwo$,
           that is, $\ESlice(\vetwoone, \slicestwo)$;
     \item testing whether $\veoneone$ is equivalent to $\vetwoone$ yields $\vbone$\ProseOrTypeError;
     \item testing whether the lists of slices $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
@@ -1086,17 +1086,17 @@ See \ExampleRef{Expression Equivalence}.
     \item $\vetwo$ is an array construction expression with length expression $\vltwo$ and value expression $\vvtwo$,
           that is, $\EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}$;
     \item applying $\exprequal$ to $\vlone$ and $\vltwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
-    \item applying $\exprequal$ to $\vvone$ and $\vvtwo$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item applying $\exprequal$ to $\vvone$ and $\vvtwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
   \item \AllApplyCase{e\_unop}
   \begin{itemize}
-    \item $\veone$ is a unary operator expression with operator $\opone$ and operand expressions $\veoneone$,
+    \item $\veone$ is a unary operator expression with operator $\opone$ and operand expression $\veoneone$,
           that is, $\EUnop(\opone, \veoneone)$;
-    \item $\vetwo$ is a unary operator expression with operator $\optwo$ and operand expressions $\vetwoone$,
+    \item $\vetwo$ is a unary operator expression with operator $\optwo$ and operand expression $\vetwoone$,
           that is, $\EUnop(\optwo, \vetwoone)$;
-    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if $\opone$ is equal to $\optwo$ and $\vbone$ is $\True$.
   \end{itemize}
 
@@ -1108,12 +1108,12 @@ See \ExampleRef{Expression Equivalence}.
 
   \item \AllApplyCase{e\_atc}
   \begin{itemize}
-    \item $\veone$ is a type assertion with subexpression with operator $\veoneone$ and type $\vtone$,
+    \item $\veone$ is an \atcexpression{$\veoneone$}{$\vtone$},
           that is, $\EATC(\veoneone, \vtone)$;
-    \item $\vetwo$ is a type assertion with subexpression with operator $\vetwoone$ and type $\vttwo$,
+    \item $\vetwo$ is an  \atcexpression{$\vetwoone$}{$\vttwo$},
           that is, $\EATC(\vetwoone, \vttwo)$;
-    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$;
-    \item testing whether $\vtone$ is equivalent to $\vttwo$ in $\tenv$ yields $\vbtwo$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\vtone$ is equivalent to $\vttwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
@@ -1121,7 +1121,7 @@ See \ExampleRef{Expression Equivalence}.
   \begin{itemize}
     \item $\veone$ is a variable expression with identifier $\nameone$, that is, $\EVar(\nameone)$;
     \item $\vetwo$ is a variable expression with identifier $\nametwo$, that is, $\EVar(\nametwo)$;
-    \item $\vb$ is $\True$ if and only if both $\nameone$ is equal to $\nametwo$.
+    \item $\vb$ is $\True$ if and only if $\nameone$ is equal to $\nametwo$.
   \end{itemize}
 \end{itemize}
 
@@ -1169,7 +1169,7 @@ See \ExampleRef{Expression Equivalence}.
   \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo \land \vbthree
 }{
-  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \True
+  \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1276,7 +1276,7 @@ See \ExampleRef{Expression Equivalence}.
   \veone = \EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}\\
   \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\\
   \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbone \OrTypeError\\\\
+  \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1345,7 +1345,7 @@ of \verb|Foo|.
 
   \item \AllApplyCase{tbool\_treal\_tstring}
   \begin{itemize}
-    \item both $\vtone$ and $\vttwo$ are both either $\TBool$, $\TReal$, or $\TString$;
+    \item $\vtone$ and $\vttwo$ are equal and are one of $\TBool$, $\TReal$, or $\TString$;
     \item $\vb$ is $\True$.
   \end{itemize}
 
@@ -1641,8 +1641,8 @@ or different nested bitfields.
           $\BitFieldNested(\nameone, \slicesone, \bfoneone)$;
     \item $\bftwo$ is a nested bitfield with name $\nametwo$, list of slices $\slicestwo$, and nested bitfields $\bftwoone$, that is,
           $\BitFieldNested(\nametwo, \slicestwo, \bftwoone)$;
-    \item checking whether $\nameone$ is equal to $\nametwo$ yields $\vbone$;
-    \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item checking whether $\nameone$ is equal to $\nametwo$ yields $\True$\ProseTerminateAs{\False};
+    \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbone$\ProseOrTypeError;
     \item testing whether the bitfields $\bfoneone$ and $\bftwoone$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
@@ -1811,13 +1811,13 @@ corresponding constraint on the left-hand-side of that assignment.
 \begin{itemize}
   \item \AllApplyCase{different\_lengths}
   \begin{itemize}
-    \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\False$;
+    \item checking whether the number of slices in $\slicesone$ is equal to the number of slices in $\slicestwo$ yields $\False$;
     \item $\vb$ is $\False$.
   \end{itemize}
 
   \item \AllApplyCase{same\_lengths}
   \begin{itemize}
-    \item checking whether the number of slices in $\slicesone$ is equal to the number of slice in $\slicestwo$ yields $\True$;
+    \item checking whether the number of slices in $\slicesone$ is equal to the number of slices in $\slicestwo$ yields $\True$;
     \item determining whether the expression $\slicesone[i]$ is equivalent to $\slicestwo[i]$ in $\tenv$
           for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone)$), yields $\vb_i$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\slicesone$.
@@ -1844,9 +1844,6 @@ corresponding constraint on the left-hand-side of that assignment.
 \TypingRuleDef{SliceEqual}
 \RenderRelation{slice_equal}
 
-This function operates both on \typedast{} nodes, where both slices are only
-of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
-are possible. The latter is used during checking overriding subprograms (\secref{Overriding Subprograms}).
 This function operates both on \typedast{} nodes, where both slices are only
 of the form $\SliceLength(\ \cdot\ ,\ \cdot\ )$, as well as \untypedast{} nodes where all slice forms
 are possible. The latter is used during checking overriding subprograms (\secref{Overriding Subprograms}).
@@ -2062,9 +2059,12 @@ first identifier for which the two monomials differ.
           and sorting them according to the lexical order for identifiers (ASCII string order);
     \item $\vv$ is the first identifier in $\ids$ for which $f$ and $g$ behave differently (either one of them is defined
           for $\vv$ and the other is not, or they both bind $\vv$ to a different value);
-    \item $s$ is determined as follows: $1$ if $\vv$ is not in the domain of $f$ and is in the domain of $g$;
-          $-1$ if $\vv$ is not in the domain of $f$ and is in the domain of $g$;
-          otherwise it is the sign of $g(\vv)-f(\vv)$.
+    \item $s$ is determined as follows:
+    \begin{itemize}
+      \item $1$ if $\vv$ is only in the domain of $g$;
+      \item $-1$ if $\vv$ is only in the domain of $f$;
+      \item otherwise ($\vv$ is in the domains of both $f$ and $g$) it is the sign of $g(\vv)-f(\vv)$.
+    \end{itemize}
   \end{itemize}
 \end{itemize}
 
@@ -2182,23 +2182,23 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 
   \item \AllApplyCase{q\_natural}
   \begin{itemize}
-    \item $q$ a strictly positive;
+    \item $q$ is a strictly positive natural number;
     \item symbolically multiplying the literal expression for $q$ and $\ve$ via $\symmulexpr$ yields $\newe$;
     \item $\vs$ is $1$.
   \end{itemize}
 
   \item \AllApplyCase{q\_positive\_fraction}
   \begin{itemize}
-    \item $q$ a strictly positive fraction, that is, not an integer;
+    \item $q$ is a strictly positive number that is not an integer;
     \item the reduced representation of the fraction $q$ is $\frac{d}{n}$;
-    \item symbolically multiplying the literal expression for $q$ and $\ve$ via $\symmulexpr$ yields $\vetwo$;
+    \item symbolically multiplying the literal expression for $d$ and $\ve$ via $\symmulexpr$ yields $\vetwo$;
     \item $\ve$ is the binary expression with operator $\DIV$ and operands $\vetwo$ and the literal expression for $n$;
     \item $\vs$ is $1$.
   \end{itemize}
 
   \item \AllApplyCase{q\_negative}
   \begin{itemize}
-    \item $q$ a strictly negative;
+    \item $q$ is strictly negative;
     \item transforming $\ve$ with $-q$ to an expression and a sign via $\monomialtoexpr$ yields $(\newe, 1)$;
     \item $\vs$ is $-1$.
   \end{itemize}
@@ -2312,14 +2312,14 @@ The following are some examples of inputs and outputs for symbolic addition:
   \vsone \neq 0 \land \vstwo \neq 0\\
   \vsone = \vstwo
 }{
-  \symaddexpr(\veone, \vetwo) \typearrow (\overname{\EBinop(\ADD, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
+  \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\overname{\EBinop(\ADD, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
 }
 \and
 \inferrule[different\_signs]{
   \vsone \neq 0 \land \vstwo \neq 0\\
   \vsone \neq \vstwo
 }{
-  \symaddexpr(\veone, \vetwo) \typearrow (\overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
+  \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
 }
 \end{mathpar}
 
@@ -2343,13 +2343,13 @@ and the corresponding expressions, in comments.
 
   \item \AllApplyCase{exp\_zero}
   \begin{itemize}
-    \item $\monoms$ is a list where the first element is $(\vv, 0)$ and its tail is $\monoms$;
+    \item $\monoms$ is a list where the first element is $(\vv, 0)$ and its tail is $\monomsone$;
     \item transforming $\monomsone$ to an expression yields $\ve$.
   \end{itemize}
 
   \item \AllApplyCase{exp\_one}
   \begin{itemize}
-    \item $\monoms$ is a list where the first element is $(\vv, 1)$ and its tail is $\monoms$;
+    \item $\monoms$ is a list where the first element is $(\vv, 1)$ and its tail is $\monomsone$;
     \item $\veone$ is the variable expression for $\vv$;
     \item transforming $\monomsone$ to an expression yields $\vetwo$;
     \item symbolically multiplying $\veone$ and $\vetwo$ via $\symmulexpr$ yields $\ve$.
@@ -2357,7 +2357,7 @@ and the corresponding expressions, in comments.
 
   \item \AllApplyCase{exp\_two}
   \begin{itemize}
-    \item $\monoms$ is a list where the first element is $(\vv, 2)$ and its tail is $\monoms$;
+    \item $\monoms$ is a list where the first element is $(\vv, 2)$ and its tail is $\monomsone$;
     \item $\veone$ is the binary expression with operator $\MUL$ and operands $\EVar(\vv)$ and $\EVar(\vv)$
           (that is, $\vv$ squared);
     \item transforming $\monomsone$ to an expression yields $\vetwo$;
@@ -2366,7 +2366,7 @@ and the corresponding expressions, in comments.
 
   \item \AllApplyCase{exp\_gt\_two}
   \begin{itemize}
-    \item $\monoms$ is a list where the first element is $(\vv, n)$ and its tail is $\monoms$;
+    \item $\monoms$ is a list where the first element is $(\vv, n)$ and its tail is $\monomsone$;
     \item $n$ is greater than $1$;
     \item $\veone$ is the binary expression with operator $\POW$ and base operand being the variable expression for $\vv$
           and the exponent operand being the variable expression for $n$;

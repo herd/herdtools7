@@ -98,8 +98,6 @@ Node types are defined recursively as follows:
 \item[Record.] A record, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$ where $\text{name}_i$, which associates names with corresponding node types.
 \end{description}
 
-\newpage
-
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
 \section{Untyped Abstract Grammar\label{sec:UntypedAbstractGrammar}}
@@ -245,6 +243,7 @@ The following rules define the types of left-hand side of assignments:
 \RenderTypes{untyped_lexpr}
 
 \subsection{Local Declarations \label{sec:LocalDeclarations}}
+A local declaration keyword specifies whether a local storage declaration is mutable or immutable:
 \RenderType{local_decl_keyword}
 
 A local declaration item is the left-hand side of a declaration statement.

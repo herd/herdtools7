@@ -1,6 +1,6 @@
 \chapter{Dynamic Semantics Definitions\label{chap:Semantics}}
 
-The dynamic semantics of ASL define all valid behaviors of a given ASL specification.
+The dynamic semantics of ASL define all valid behaviours of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a typechecker analyzes the \emph{\untypedast} to determine whether it
 is well-typed and, if successful, returns a \emph{\staticenvironmentterm{}} and a \emph{\typedast}.
@@ -9,7 +9,7 @@ Otherwise, it returns a \typingerrorterm{}.
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
 based on the definition of the semantics in this reference, to test and analyze a given specification.
 
-We note that the dynamic semantics are only used to define the set of valid behaviors
+We note that the dynamic semantics are only used to define the set of valid behaviours
 of a given specification without assigning any other quantification, such as the time
 required to evaluate it.
 
@@ -465,7 +465,7 @@ Natural operational semantics evaluates the AST inductively.
 That is, it concludes transitions from semantic configurations starting from
 non-leaf AST nodes by concluding transitions from semantic configurations starting from their children nodes.
 
-\subsubsection{No Undefined Behaviors}
+\subsubsection{No Undefined Behaviours}
 When an input semantic configuration does not satisfy any semantic rule,
 there is no output semantic configuration for it to transition to. We say that
 the semantic configuration is \emph{stuck} and the ASL dynamic semantics are undefined for that
