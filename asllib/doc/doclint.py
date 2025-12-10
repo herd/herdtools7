@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import sys
+import time
 from utils import read_file_lines, read_file_str, is_skipped_line
 from extended_macros import (
     apply_console_macros,
@@ -197,7 +198,8 @@ def check_undefined_references_and_multiply_defined_labels():
 def check_repeated_lines(filename: str) -> int:
     r"""
     Checks whether `file` contains the same line appearing twice in a row.
-    The exception is inside `CONSOLE_BEGIN...CONSOLE_END` blocks.
+    This check excludes lines inside `CONSOLE_BEGIN...CONSOLE_END` blocks,
+    since they tend to contain repeated lines as a correct behavior.
     Errors are reported for the file name 'filename' and the total
     number of found errors is returned.
     """
@@ -220,6 +222,119 @@ def check_repeated_lines(filename: str) -> int:
         ):
             print(f"./{filename} line {line_number}: repeated twice")
         last_line = line
+    return num_errors
+
+
+def check_repeated_line_sequences(
+    filename: str, min_sequence_length: int = 1, max_sequence_length: int = 4
+) -> int:
+    r"""
+    Checks whether `file` contains consecutive repeated sequences of lines.
+    A consecutive repeated sequence is a block of lines L1...Lk that appears twice
+    in a row, like: L1...Lk L1...Lk.
+    This check excludes lines inside `CONSOLE_BEGIN...CONSOLE_END` blocks,
+    since they tend to contain repeated lines as a correct behavior.
+
+    Args:
+        filename: The file to check
+        min_sequence_length: Minimum length of sequence to detect (default: 1)
+        max_sequence_length: Maximum length of sequence to detect (default: 4)
+
+    Returns:
+        The number of errors found
+    """
+    num_errors = 0
+    lines = read_file_lines(filename)
+
+    # Skip empty or very short files
+    if len(lines) < min_sequence_length * 2:
+        return 0
+
+    # Precompute hash for each line for O(1) early rejection
+    line_hashes = [hash(line) for line in lines]
+
+    # Track which positions we've already reported to avoid duplicates
+    reported_positions: set[int] = set()
+
+    # Track whether we're inside console output blocks (for length-1 sequences)
+    inside_console_output = False
+
+    # Scan through the file looking for consecutive repeated blocks
+    i = 0
+    while i < len(lines):
+        # Track console output blocks for special handling of length-1 sequences
+        if r"CONSOLE_BEGIN" in lines[i]:
+            inside_console_output = True
+        if r"CONSOLE_END" in lines[i]:
+            inside_console_output = False
+
+        # Skip if we already reported a sequence starting here
+        if i in reported_positions:
+            i += 1
+            continue
+
+        # Try all possible block sizes starting from the largest possible
+        max_block_size = min((len(lines) - i) // 2, max_sequence_length)
+        if max_block_size < min_sequence_length:
+            i += 1
+            continue
+
+        best_match = 0
+
+        # Try block sizes from largest to smallest
+        for block_size in range(max_block_size, min_sequence_length - 1, -1):
+            if i + 2 * block_size > len(lines):
+                continue
+
+            # Quick hash-based check: compare all line hashes in the two blocks
+            hashes_match = True
+            for offset in range(block_size):
+                if line_hashes[i + offset] != line_hashes[i + block_size + offset]:
+                    hashes_match = False
+                    break
+
+            if not hashes_match:
+                continue
+
+            # Hashes match, do full string comparison to confirm
+            is_match = True
+            for offset in range(block_size):
+                if lines[i + offset] != lines[i + block_size + offset]:
+                    is_match = False
+                    break
+
+            if is_match:
+                # For length-1 sequences, apply filters
+                if block_size == 1:
+                    line = lines[i]
+                    if (
+                        inside_console_output
+                        or not line
+                        or not line.strip()
+                        or line.strip() == "}"
+                    ):
+                        break
+
+                best_match = block_size
+                break
+
+        if best_match > 0:
+            # Report the match
+            reported_positions.add(i)
+            if best_match == 1:
+                print(f"./{filename} line {i + 2}: repeated twice")
+            else:
+                print(
+                    f"./{filename}: consecutive repeated sequence of {best_match} lines: "
+                    f"lines {i + 1}-{i + best_match} repeated at "
+                    f"lines {i + best_match + 1}-{i + 2 * best_match}"
+                )
+            num_errors += 1
+            # Skip past this repeated block to avoid reporting overlapping matches
+            i += 2 * best_match
+        else:
+            i += 1
+
     return num_errors
 
 
@@ -1279,6 +1394,7 @@ def check_per_file(latex_files: list[str], checks):
 
 
 def main():
+    start_time = time.time()
     args = cli_parser.parse_args()
     if args.console_macros:
         aslref_path = args.aslref if args.aslref else "aslref"
@@ -1313,6 +1429,7 @@ def main():
         [
             check_repeated_words,
             check_repeated_lines,
+            check_repeated_line_sequences,
             detect_incorrect_latex_macros_spacing,
             check_rules,
             check_mathpar_macro_usage,
@@ -1321,9 +1438,12 @@ def main():
         ],
     )
 
+    elapsed_time = time.time() - start_time
     if num_errors > 0:
         print(f"There were {num_errors} errors!", file=sys.stderr)
         sys.exit(1)
+    else:
+        print(f"Linting completed successfully in {elapsed_time:.2f} seconds.")
 
 
 if __name__ == "__main__":
