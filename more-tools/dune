@@ -1,0 +1,26 @@
+(rule
+ (copy ../Version.ml Version.ml))
+
+(rule
+ (copy ../tools/miaouNames.ml miaouNames.ml))
+
+(rule
+ (copy ../tools/miaouNames.mli miaouNames.mli))
+
+(ocamllex subst extractdefs Lexer)
+
+(menhir
+ (modules Tokens)
+ (flags --only-tokens))
+
+(menhir
+ (modules Tokens Parser)
+ (merge_into Parser)
+ (flags --fixed-exception --external-tokens Tokens))
+
+(executables
+ (names uoaim extractdefs)
+ (public_names uoaim7 extractdefs7)
+ (optional)
+ (modules_without_implementation ParserConfig)
+ (libraries herdtools))
