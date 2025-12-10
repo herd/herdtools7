@@ -213,12 +213,6 @@ begin return 0; end;
 // Symbolic Interpreter control
 // ----------------------------
 
-// SomeBoolean() splits the execution, and returns TRUE in one execution, FALSE
-// in the other.
-
-func SomeBoolean() => boolean
-begin return ARBITRARY: boolean; end;
-
 // CheckProp() add the assumption that prop is TRUE. This will silently discard
 // all executions where the argument is FALSE.
 

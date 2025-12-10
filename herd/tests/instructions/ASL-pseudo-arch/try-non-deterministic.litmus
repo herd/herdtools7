@@ -7,7 +7,7 @@ type  Coucou of exception {-};
 func g(a:integer) => integer
 begin
   try
-    let b = SomeBoolean();
+    let b = ARBITRARY: boolean;
     if b then
       throw Coucou {-};
     end;

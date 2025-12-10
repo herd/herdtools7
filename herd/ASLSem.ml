@@ -571,29 +571,6 @@ module Make (Conf : Config) = struct
       M.assign d1 d2
 
     (*
-     * Split the current execution candidate into two:
-     * one candidate, has variable [v] value to be TRUE,
-     * while the value is FALSE for the other.
-     *)
-    let somebool _ii () =
-      let v = V.fresh_var () in
-      let mbool b =
-        (* The underlying choice operator operates
-         * by adding equations ToInt(v) := 1
-         * and ToInt(v) := 0, which our naive solver
-         * does not resolve as v=TRUE and v=FALSE,
-         * Thereby leaving the equation unsolved.
-         * To correct this, we add
-         * the direct equations on "v":
-         * v := TRUE and v := FALSE in the
-         * positive and negative branches of choice.
-         *)
-        let* () = M.assign v (vbool b) in
-        M.unitT (vbool b) in
-      (* Using "choice" and not returning "v" directly performs the split *)
-      choice (M.unitT v) (mbool true) (mbool false)
-
-    (*
      * Primitives that generate fence events.
      * Notice that ASL fence events take
      * an AArch64 barrier as argument.
@@ -825,7 +802,6 @@ module Make (Conf : Config) = struct
       let get_hd_primitive = get_hd
       let read_pte_again_primitive = read_pte_again
       let write_pte_primitive = write_pte
-      let some_boolean = somebool
       let check_prop = check_prop
       let check_eq = check_eq
     end

@@ -1374,6 +1374,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_cnstrnt acc = function
         | ASLVC.Warn s -> M.VC.Warn s :: acc
         | ASLVC.Failed e -> M.VC.Failed e :: acc
+        | ASLVC.(Assign (la, Unop (Op.ArchOp1 ASLOp.BoolNot, la'))) ->
+            let bnot = Op.ArchOp1 (AArch64Op.Extra1 ASLOp.BoolNot) in
+            let assign v1 v2 = M.VC.Assign (v1, M.VC.Unop (bnot, v2)) in
+            let la = tr_v la and la' = tr_v la' in
+            assign la la' :: assign la' la :: acc
         | ASLVC.Assign (la, ex) ->
             let expr, acc = tr_expr acc ex in
             M.VC.Assign (tr_v la, expr) :: acc
