@@ -85,7 +85,7 @@ using $\texttt{eval\_expr}$ to evaluate it.
 \end{flalign*}
 
 \SyntacticSugarDef{MultiFieldAssignment}
-The syntax \\
+The syntax
 \texttt{x.(f1, ..., fk) = (v1, ..., vk);} is
 \syntacticsugar{} for \texttt{x.f1=v1; ... x.fk=vk;},
 modulo assignments to \discardvarstr{}.
@@ -315,8 +315,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 This section defines three desugaring relations which produce assignable expression abstract syntax, that is, $\lexpr$.
 They are used to build $\lexpr$ abstract syntax.
 \begin{itemize}
-  \item $\desugarlhsaccess$, which desugars a pair consisting of an $\Identifier$ and an \\
-        $\lhsaccess$ into an $\lexpr$.
+  \item $\desugarlhsaccess$, which desugars a pair consisting of an $\Identifier$ and an $\lhsaccess$ into an $\lexpr$.
   \item $\desugarlhstuple$, which desugars a tuple of optional $\lhsaccess$ elements into an $\lexpr$.
         This represents a multi-assignment of a tuple value, where $\None$ means that element of the tuple is discarded.
   \item $\desugarlhsfieldstuple$, which desugars a multi-assignment of a tuple value to multiple fields of an identifier.
@@ -368,7 +367,7 @@ The function
 \[
   \desugarlhstuple(\overname{\KleeneStar{\Option{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
 \]
-transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$. \\
+transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$.
 
 \ExampleDef{Desugaring a left-hand side tuple}
 \listingref{DesugarLHSTuple} shows an example of desugaring a left-hand side tuple.
@@ -442,7 +441,7 @@ In \listingref{DesugarLHSFieldsTuple},
 the \assignableexpression{} \verb|x.(fld1, -, fld2)|
 requires desugaring into a list of \assignableexpressions{} via \ASTRuleRef{DesugarLHSFieldsTuple}.
 The list of fields is represented in the \untypedast{} as $[\some{\fldone}, \None, \some{\fldtwo}]$.
-Before checking the list \verb|fld1, -, fld2| for absence of duplicates, it is filtered as follows:\\
+Before checking the list \verb|fld1, -, fld2| for absence of duplicates, it is filtered as follows:
 $\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fldtwo]$.
 
 \ProseParagraph
@@ -806,7 +805,7 @@ See \ExampleRef{Multi-assignments}.
     \item $\vmlist$ is a \Proselist{$\vm$}{$\vmlistone$};
     \item \Proseevallexpr{$\env$}{$\vle$}{$\vm$}{$\ResultLexpr(\vgone, \envone)$}\ProseOrAbnormal;
     \item applying $\evalmultiassignment$ to $\envone$, $\vlelistone$, and $\vmlistone$
-          yields \\
+          yields\\
           $\ResultLexpr(\vgtwo, \newenv)$\ProseOrAbnormal;
     \item \Proseeqdef{$\newg$}{the ordered composition of $\vgone$ and $\vgtwo$
           with the edge $\aslpo$}.
@@ -864,13 +863,12 @@ are well-typed.
 \AllApply
 \begin{itemize}
   \item $\vle$ denotes the array access of a left-hand-side expression $\ebase$ by the index $\eindex$, that is, $\LESetArray(\ebase, \eindex)$;
-  \item annotating the \rhsexpression{} corresponding to $\ebase$ in $\tenv$ yields \\ $(\tbase, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} corresponding to $\ebase$ in $\tenv$ yields $(\tbase, \Ignore, \Ignore)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
   \item checking that $\tanonbase$ is an array type yields $\True$\ProseOrTypeError;
   \item view $\tanonbase$ as an array type of size $\size$ and element type $\telem$, that is, $\TArray(\size, \telem)$;
   \item annotating the left-hand-side expression $\ebase$ with type $\tbase$ in $\tenv$ yields $(\ebasep, \vsesbase)$\ProseOrTypeError;
-  \item applying $\annotatesetarray$ to $(\size, \telem)$, $\vte$, and \\
-        $(\ebasep, \vsesbase, \eindex)$ in $\tenv$ yields $(\newle, \vses)$\ProseOrTypeError.
+  \item applying $\annotatesetarray$ to $(\size, \telem)$, $\vte$, and\\ $(\ebasep, \vsesbase, \eindex)$ in $\tenv$ yields $(\newle, \vses)$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
@@ -902,17 +900,14 @@ for examples of well-typed assignable array expressions.
 \AllApply
 \begin{itemize}
   \item determining that $\telem$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item annotating the index expression $\eindex$ in $\tenv$ yields \\
-        $(\tindexp, \eindexp, \vsesindex)$\ProseOrTypeError;
-  \item determining the array length type of $\size$ (via $\typeofarraylength$) yields \\
-        $\wantedtindex$;
-  \item determining whether $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields \\
-        $\True$\ProseOrTypeError;
+    \item annotating the index expression $\eindex$ in $\tenv$ yields\\ $(\tindexp, \eindexp, \vsesindex)$\ProseOrTypeError;
+    \item determining the array length type of $\size$ (via $\typeofarraylength$) yields $\wantedtindex$;
+    \item determining whether $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesbase$ and $\vsesindex$;
   \item \Proseeqdef{$\newle$}{
     an integer-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetArray(\ebasep, \eindexp)$,
     if $\size$ is an integer-typed array index, and
-    an enumeration-based array update for $\ebasep$ at index $\eindexp$, that is, \\ $\LESetEnumArray(\ebasep, \eindexp)$,
+    an enumeration-based array update for $\ebasep$ at index $\eindexp$, that is, $\LESetEnumArray(\ebasep, \eindexp)$,
     if $\size$ is an enumeration-typed array index.
     }
 \end{itemize}
@@ -949,8 +944,7 @@ for examples of well-typed assignable array expressions.
 \SemanticsRuleDef{LESetArray}
 \ExampleDef{Integer-indexed Array Update Assignments}
 In \listingref{semantics-lesetarray}, the assignment \verb|my_array[[3]] = 53;| binds the third element
-of \\
-\texttt{my\_array} to the value \texttt{53}.
+of \texttt{my\_array} to the value \texttt{53}.
 \ASLListing{Assignment to an integer-indexed array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 \ProseParagraph
@@ -1069,8 +1063,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
 \AllApply
 \begin{itemize}
   \item $\vle$ denotes the slicing of a left-hand-side expression $\vleone$ by the slices $\slices$, that is, $\LESlice(\vleone, \slices)$;
-  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\
-        $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields $\tleoneanon$\ProseOrTypeError;
   \item checking that $\tleoneanon$ is a bitvector type yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vsesone)$\ProseOrTypeError;
@@ -1080,7 +1073,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item checking whether $\vte$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
   \item checking that the slices $\slicesannotated$ are all disjoint yields $\True$\ProseOrTypeError;
   \item checking that $\slicesannotated$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
-  \item $\newle$ is the slicing of $\vletwo$ by $\slicesannotated$ \\($\LESlice(\vletwo, \slicesannotated)$);
+  \item $\newle$ is the slicing of $\vletwo$ by $\slicesannotated$\\ ($\LESlice(\vletwo, \slicesannotated)$);
   \item define $\vses$ as the union of $\vsesone$ and $\sesslices$.
 \end{itemize}
 \FormallyParagraph
@@ -1130,8 +1123,8 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \subsection{Semantics}
 \SemanticsRuleDef{LESlice}
 \ExampleDef{Slice Assignments}
-In \listingref{semantics-leslice}, the assignment \texttt{x[3:0, 7:6] = '000000';} binds
-\texttt{x} to \\ $\nvbitvector(00110000)$
+In \listingref{semantics-leslice}, the assignment\\ \texttt{x[3:0, 7:6] = '000000';} binds
+\texttt{x} to $\nvbitvector(00110000)$
 via the rule \SemanticsRuleRef{LESlice}
 in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 
@@ -1143,8 +1136,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
         (given by applying $\torexpr$ to $\ebv$) in $\env$
         is $\ResultExpr(\mbv,\envone)$\ProseOrAbnormal;
   \item evaluating $\slices$ in $\envone$ is $\ResultSlices(\msliceranges, \envtwo)$\ProseOrAbnormal;
-  \item $\msliceranges$ consists of the execution graph $\vgone$ and the list of indices\\
-        $\sliceranges$;
+    \item $\msliceranges$ consists of the execution graph $\vgone$ and the list of indices $\sliceranges$;
   \item applying $\checknonoverlappingslices$ to $\sliceranges$ yields $\True$\ProseOrError;
   \item $\mbv$ consists of the native bitvector $\vbv$ and the execution graph $\vgtwo$;
   \item writing to the bitvector $\vbv$ at indices $\sliceranges$ using the values from $\vv$
@@ -1193,8 +1185,7 @@ getter invocation
 \RenderRelation{check_non_overlapping_slices}
 \ExampleDef{Checking Slices for Overlaps}
 In \listingref{semantics-checknonoverlappingslices},
-the slices \verb|N-1:N-2| and \verb|0| do not overlap, \\
-and $\checknonoverlappingslices$ yields $\True$.
+the slices \verb|N-1:N-2| and \verb|0| do not overlap, and\\ $\checknonoverlappingslices$ yields $\True$.
 \ASLListing{Non-overlapping slices}{semantics-checknonoverlappingslices}{\semanticstests/SemanticsRule.CheckNonOverlappingSlices.asl}
 
 In \listingref{semantics-checknonoverlappingslices-bad},
@@ -1208,8 +1199,7 @@ writes \verb|1| to the common position $0$.
 \begin{itemize}
   \item view $\valueranges$ as the list $\vrange_{1..k}$;
   \item for every pair of indices $\vi$ and $\vj$ such that $1 \leq \vi < \vj \leq k$,
-        applying \\
-        $\checktworangesnonoverlapping$ to $\vrange_\vi$ and $\vrange_\vj$
+      applying $\checktworangesnonoverlapping$ to $\vrange_\vi$ and $\vrange_\vj$
         yields $\True$\ProseOrError;
   \item the result is $\True$.
 \end{itemize}
@@ -1276,8 +1266,8 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is, \\ $\LESetField(\vleone, \vfield)$;
-  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is,\\ $\LESetField(\vleone, \vfield)$;
+  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
   \item \OneApplies
@@ -1342,8 +1332,8 @@ are well-typed.
 \AllApply
 \begin{itemize}
   \item $\vle$ denotes the access to the field named \texttt{field} in $\vleone$;
-  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
-  \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression  $\vleone$ with type $\vtleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a record
     or exception type with fields $\fields$\ProseOrTypeError;
   \item checking that there exists a type associated with the field $\vfield$ in $\fields$ $\True$ \ProseTerminateAs{\BadField};
@@ -1383,9 +1373,9 @@ All of the collection field assignable expressions in
   \item $\vle$ denotes the access to the field named \texttt{field} in
     $\vleone$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$
-    in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+    in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression  $\vleone$ with type
-    $\vtleone$ in $\tenv$ yields \\ $(\vletwo, \vses)$\ProseOrTypeError;
+    $\vtleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a
     collection type with fields $\fields$\ProseOrTypeError;
   \item $\vletwo$ denotes a left-hand-side variable expression for $\vbase$,
@@ -1395,8 +1385,7 @@ All of the collection field assignable expressions in
   \item the type associated with the field $\vfield$ in $\fields$ is $\vt$;
   \item determining whether $\vte$ \typesatisfiesterm\ $\vt$ yields
     $\True$\ProseOrTypeError;
-  \item $\newle$ is the access to the field $\vfield$ in $\vletwo$\\
-    ($\LESetCollectionFields(\vbase, [\vfield])$).
+  \item $\newle$ is the access to the field $\vfield$ in $\vletwo$\\ ($\LESetCollectionFields(\vbase, [\vfield])$).
 \end{itemize}
 
 \FormallyParagraph

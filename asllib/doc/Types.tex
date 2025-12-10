@@ -472,15 +472,14 @@ expressions of \texttt{let} storage elements.
 \begin{itemize}
   \item \AllApplyCase{exact}
   \begin{itemize}
-    \item $\vc$ is the exact integer constraint for the expression $\ve$, that is, \\ $\ConstraintExact(\ve)$;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields \\
-          $(\vep, \vses)$\ProseOrTypeError;
-    \item define $\newc$ as the exact integer constraint for $\vep$ \\ ($\ConstraintExact(\vep)$).
+        \item $\vc$ is the exact integer constraint for the expression $\ve$, that is,\\ $\ConstraintExact(\ve)$;
+        \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields\\ $(\vep, \vses)$\ProseOrTypeError;
+        \item define $\newc$ as the exact integer constraint for $\vep$ ($\ConstraintExact(\vep)$).
   \end{itemize}
 
   \item \AllApplyCase{range}
   \begin{itemize}
-    \item $\vc$ is the range integer constraint for expressions $\veone$ and $\vetwo$, that is, \\ $\ConstraintRange(\veone, \vetwo)$;
+    \item $\vc$ is the \Proserangeconstraint{$\veone$}{$\vetwo$} ($\ConstraintRange(\veone, \vetwo)$);
     \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
     \item applying $\annotatesymbolicconstrainedinteger$ to $\vetwo$ in $\tenv$ yields\\ $(\vetwop, \vsestwo)$\ProseOrTypeError;
     \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$;
@@ -805,13 +804,11 @@ to be \constrainedintegersterm.
     \begin{itemize}
       \item $\bitfields$ is not empty;
       \item checking that $\seswidth$ is \pureterm{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
-      \item annotating the bitfields $\bitfields$ yields \\
-            $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
+      \item annotating the bitfields $\bitfields$ yields\\ $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\LInt(\vwidth)$};
       \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
       \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
-            $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, \\
-            $\TBits(\ewidthp, \bitfieldsp)$};
+            $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$};
       \item \Proseeqdef{$\vses$}{the union of $\seswidth$ and $\vsesbitfields$}.
     \end{itemize}
 

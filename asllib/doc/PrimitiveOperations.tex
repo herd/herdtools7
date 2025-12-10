@@ -41,14 +41,14 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   and $\buildbinop$ (see \ASTRuleRef{Binop}).
 
 \paragraph{Typing:} primitive operations are not directly annotated; rather \unopexpressionsterm{}
-  and \binopexpressionsterm{} are annotated (see \TypingRuleRef{EUnop} and \TypingRuleRef{EBinop}).\\
+  and \binopexpressionsterm{} are annotated (see \TypingRuleRef{EUnop} and \TypingRuleRef{EBinop}).
   Unary operations are statically evaluated by $\unopliterals$
   (see \TypingRuleRef{UnopLiterals}) and binary operations are statically evaluated
-  by $\binopliterals$ \\
+  by $\binopliterals$
   (see \TypingRuleRef{BinopLiterals}).
 
 \paragraph{Semantics:} unary operations are dynamically evaluated via
-  $\evalunop$ \\
+  $\evalunop$
   (see \SemanticsRuleRef{UnopValues})
   and binary operations are dynamically evaluated via
   $\evalbinop$ (see \SemanticsRuleRef{BinopValues}).

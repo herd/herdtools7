@@ -5,12 +5,14 @@
 \usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{url}  % Automatically escapes urls
+\usepackage[final]{microtype} % Helps with breaking links across lines to reduce overfull hboxes
 \usepackage{hyperref}  % Insert links inside pdfs
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
     filecolor=magenta,
-    urlcolor=cyan
+    urlcolor=cyan,
+    breaklinks=true % Helps with breaking links across lines to reduce overfull hboxes
 }
 
 % The \hypertarget macro suffers from having the corresponding \hyperlink

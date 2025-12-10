@@ -174,9 +174,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   \begin{itemize}
     \item \AllApplyCase{local}
     \begin{itemize}
-    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$
-          via the \\
-          $\localstoragetypes$ map of the local environment component of $\tenv$;
+    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$ via the $\localstoragetypes$ map of the local environment component of $\tenv$;
     \item define $\newe$ as $\ve$;
     \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesldk$.
     \end{itemize}
@@ -829,7 +827,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \AllApply
 \begin{itemize}
 \item $\ve$ denotes a unary operator $\op$ over an expression, $\EUnop(\op, \veone)$;
-\item the evaluation of the expression $\veone$ in $\env$ yields \\ $\ResultExpr((\vvone, \vg), \newenv)$\ProseOrAbnormal;
+\item the evaluation of the expression $\veone$ in $\env$ yields\\ $\ResultExpr((\vvone, \vg), \newenv)$\ProseOrAbnormal;
 \item applying the unary operator $\op$ to $\vvone$ is $\vv$.
 \end{itemize}
 \FormallyParagraph
@@ -932,8 +930,7 @@ the expression \texttt{if FALSE then Return42() else 3} evaluates to the value \
 In \listingref{semantics-econdarbitrary},
 the expression \texttt{if ARBITRARY: boolean then 3 else Return42()} will
 evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
-(non-deterministic) result of \\
-\texttt{ARBITRARY: boolean}.
+(non-deterministic) result of \texttt{ARBITRARY: boolean}.
 \ASLListing{Evaluating a conditional expression with non-deterministic choice}{semantics-econdarbitrary}
 {\semanticstests/SemanticsRule.ECondARBITRARY3or42.asl}
 
@@ -945,8 +942,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \begin{itemize}
   \item $\ve$ denotes a conditional expression $\econd$ with two options $\veone$ and $\vetwo$,
         that is, $\ECond(\econd, \veone, \vetwo)$;
-  \item the evaluation of the conditional expression $\econd$ in $\env$ yields \\
-        $\ResultExpr(\mcond, \envone)$\ProseOrAbnormal;
+  \item the evaluation of the conditional expression $\econd$ in $\env$ yields\\ $\ResultExpr(\mcond, \envone)$\ProseOrAbnormal;
   \item $\mcond$ consists of a native Boolean for $\vb$ and execution graph $\vgone$;
   \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
   \item the evaluation of $\vep$ in $\envone$ yields $\ResultExpr((\vvtwo, \vgtwo), \newenv)$\ProseOrAbnormal;
@@ -1177,7 +1173,7 @@ The well-typed specification in \listingref{Bitvector_slices2} shows examples of
 \TypingRuleDef{ESlice}
 \ExampleDef{Typing of Slicing Expressions}
 In \listingref{semantics-eslice}, the type inferred for the
-slicing expression \verb|'1 1110 000'[6:3, 7]| is \\
+slicing expression \verb|'1 1110 000'[6:3, 7]| is
 \verb|bits(5){}|.
 That is, a bitvector of width \verb|5| without any bitfields.
 %
@@ -1195,7 +1191,7 @@ show examples of ill-typed slicing expressions.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is, \\
+  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is,\\
         $\ESlice(\vep, \slices)$;
   \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp, \vsesone)$\ProseOrTypeError;
   \item obtaining the \structureterm\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
@@ -1208,7 +1204,7 @@ show examples of ill-typed slicing expressions.
       \item annotating $\slices$ in $\tenv$ yields $(\slicesp, \vsestwo)$\ProseOrTypeError;
       \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
       \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
-      \item define $\newe$ as the slicing of expression $\vepp$ by the slices $\slicesp$, that is, \\
+      \item define $\newe$ as the slicing of expression $\vepp$ by the slices $\slicesp$, that is,
             $\ESlice(\vepp, \slicesp)$;
       \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
     \end{itemize}
@@ -1887,7 +1883,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \begin{itemize}
   \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
         given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
-  \item evaluating the expression $\etuple$ yields \\ $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
+  \item evaluating the expression $\etuple$ yields\\ $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
   \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$ yields
         the native value $\vv$.
 \end{itemize}
@@ -1941,14 +1937,14 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
         that is, $\EGetFields(\ebase, \vfields)$;
   \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\tbaseannot$ in $\tenv$ yields \\
+  \item obtaining the \underlyingtypeterm\ of $\tbaseannot$ in $\tenv$ yields\\
         $\tbaseannotanon$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{bits}
     \begin{itemize}
       \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
-      \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields \\
+      \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields
             $\vslices_\name$\ProseOrTypeError;
       \item define $\veslice$ as the slicing expression for $\ebase$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
       \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.

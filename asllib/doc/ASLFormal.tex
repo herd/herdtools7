@@ -164,7 +164,7 @@ Notice that the domain of a partial function need not be finite, which is what t
 
 \hypertarget{def-finfunction}{}
 \begin{definition}[Finite-domain Function]
-The notation $\rightarrowfin$ stands for a function \\ whose domain is finite.
+The notation $\rightarrowfin$ stands for a function whose domain is finite.
 \end{definition}
 
 \hypertarget{def-emptyfunc}{}
@@ -294,8 +294,11 @@ The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \righ
 
 \hypertarget{operator-concatlist}{}
 \begin{definition}[Concatenation of a List of Lists]
-The parametric function\\
-$\concatlist{\KleeneStar{\left(\KleeneStar{T}\right)}} \rightarrow \KleeneStar{T}$ concatenates a list of lists:
+The parametric function
+\[
+\concatlist{\KleeneStar{\left(\KleeneStar{T}\right)}} \rightarrow \KleeneStar{T}
+\]
+concatenates a list of lists:
 \[
   \begin{array}{rcl}
     \concatlist{\emptylist} &\triangleq& \emptylist\\

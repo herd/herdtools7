@@ -73,7 +73,7 @@ In an ASL abstract syntax tree, a node is one of the following data types:
       when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
 \item[Optional.] An optional node stands for a set of 0 or 1 occurrences of a sub-node $n$.
       We denote an empty optional by $\None$ and the non-empty optional by $\some{n}$;
-\item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where \\
+\item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where
       $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
 
@@ -326,8 +326,7 @@ The rules for slices are replaced by the following single derivation:
 \RenderTypes{typed_slice}
 
 This reflects the fact that all other slicing constructs are syntactic sugar
-for \\
-$\SliceLength$.
+for $\SliceLength$.
 
 The following extra rule enables expressing array indices based on enumeration:
 \RenderTypes[remove_hypertargets]{typed_array_index}
@@ -619,7 +618,7 @@ It is defined recursively by the following table:
   \torexpr(\LESetArray(\vle, \ve)) &=& \EGetArray(\torexpr(\vle), \ve)\\
   \torexpr(\LESetEnumArray(\vle, \ve)) &=& \EGetEnumArray(\torexpr(\vle), \ve)\\
   \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
-  \torexpr(\LESetFields(\vle, \vx)) &=& \EGetFields(\torexpr(\vle), \vx)\\
+  \torexpr(\LESetFields(\vle, [\vx_{1..k}])) &=& \EGetFields(\torexpr(\vle), [\vx_{1..k}])\\
   \torexpr(\LEDiscard) &=& \EVar(\discardvar)\\
   \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
 \end{array}

@@ -154,7 +154,7 @@ is well-typed.
 \begin{itemize}
   \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
   \item annotating the \rhsexpression{} $\vre$ in $\tenv$ yields $(\vtre, \vreone, \vsesre)$\ProseOrTypeError;
-  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields \\ $(\vleone, \vsesle)$\ProseOrTypeError;
+  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $(\vleone, \vsesle)$\ProseOrTypeError;
   \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
@@ -210,14 +210,12 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vs$ assigns an \assignableexpression\ list from a subprogram call, \\
-        $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
-  \item $\les$ is a list of \assignableexpressions, each of which is either \\ a variable ($\LEVar(\Ignore)$)
+  \item $\vs$ assigns an \assignableexpression{} list from a subprogram call,\\ $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
+  \item $\les$ is a list of \assignableexpressions, each of which is either a variable ($\LEVar(\Ignore)$)
         or a discarded variable ($\LEDiscard$);
   \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
         $\ResultCall(\vms, \envone)$\ProseOrAbnormal;
-  \item assigning each value in $\vms$ to the respective element of the tuple $\les$ is \\
-        $\ResultLexpr(\vgtwo, \newg)$\ProseOrAbnormal.
+  \item assigning each value in $\vms$ to the respective element of the tuple $\les$ is $\ResultLexpr(\vgtwo, \newg)$\ProseOrAbnormal.
 \end{itemize}
 
 \FormallyParagraph
@@ -582,9 +580,8 @@ since immutable local storage elements require an initializing expression.
 \begin{itemize}
   \item \AllApplyCase{some}
   \begin{itemize}
-    \item $\vs$ is a declaration with an initializing expression $\ve$,
-          that is, \\
-          $\SDecl(\ldk, \ldi, \tyopt, \some{\ve})$;
+        \item $\vs$ is a declaration with an initializing expression $\ve$,\\
+          ($\SDecl(\ldk, \ldi, \tyopt, \some{\ve})$);
     \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
     \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
     \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
@@ -655,7 +652,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\None$;
     \item \Prosenoprecisionloss{\vte};
-    \item $\newtenv$ is the result of \\ $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$\ProseOrTypeError;
+    \item applying $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$ yields\\ $\newtenv$\ProseOrTypeError;
     \item $\tyoptp$ is $\tyopt$;
     \item \Proseeqdef{$\vses$}{the empty set}.
   \end{itemize}
@@ -664,7 +661,7 @@ See \ExampleRef{Typing Declaration Statements}.
   \begin{itemize}
     \item $\tyopt$ is $\some{\vt}$;
     \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
-    \item propagating integer constraints from $\vtep$ to $\vt$ using \\$\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
+    \item propagating integer constraints from $\vtep$ to $\vt$ using\\ $\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
     \item annotating the type $\vtp$ in $\tenv$ yields $(\vtpp, \vses)$\ProseOrTypeError;
   \item determining whether $\vtpp$ can be initialized with $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the local declaration keyword $\ldk$, given
@@ -952,8 +949,7 @@ as detailed by \ASTRuleRef{ElidedParamCall} (See also \secref{ParameterElision})
 
 \ASTRuleDef{ElidedParamCall}
 \hypertarget{build-elided-param-call}{}
-The function $\buildelidedparamcall$ builds a $\call$ from a parsed \\
-$\Nelidedparamcall$.
+The function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedparamcall$.
 
 \begin{mathpar}
 \inferrule{
@@ -1200,8 +1196,7 @@ evaluates \texttt{let y = x + 1}.
         the evaluation continues,
         or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)
         or an abnormal configuration, which short-circuit the entire evaluation;
-  \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration \\
-        (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
+  \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
   \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
         $\aslpo$ edge;
   \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
@@ -1269,7 +1264,7 @@ changes the call type of $\vcall$ to $\calltype$.
 \subsection{Typing}
 \TypingRuleDef{SCall}
 In \listingref{scall}, the call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
-is\\ well-typed.
+is well-typed.
 
 \ExampleDef{Ill-defined Call to a Function}
 In \listingref{scall-bad}, the call statement \verb|zero();| is ill-typed,
@@ -1282,8 +1277,7 @@ since call statements are only allowed for procedures, not functions.
 \begin{itemize}
   \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
   \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
-        yields \\
-        $(\vcallp, \None, \vses)$\ProseOrTypeError;
+      yields $(\vcallp, \None, \vses)$\ProseOrTypeError;
   \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
   \item $\newtenv$ is $\tenv$.
 \end{itemize}
@@ -1320,8 +1314,8 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 \AllApply
 \begin{itemize}
   \item $\vs$ is a call statement, $\SCall(\vcall)$;
-  \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
-  \\ $\ResultCall(\newg, \newenv)$\ProseOrAbnormal;
+  \item evaluating the subprogram call as per \chapref{SubprogramCalls} yields\\
+  $\ResultCall(\newg, \newenv)$\ProseOrAbnormal;
   \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
 \end{itemize}
 
@@ -1423,12 +1417,11 @@ an \atcexpressionterm{}.
 \AllApply
 \begin{itemize}
   \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
-  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields \\
-        $(\tcond, \econd, \vsescond)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields\\ $(\tcond, \econd, \vsescond)$\ProseOrTypeError;
   \item checking that $\tcond$ \typesatisfiesterm\ $\TBool$ yields $\True$\ProseOrTypeError;
   \item annotating the statement $\vsone$ in $\tenv$ yields $(\vsonep, \vsesone)$\ProseOrTypeError;
   \item annotating the statement $\vstwo$ in $\tenv$ yields $(\vstwop, \vsestwo)$\ProseOrTypeError;
-  \item $\news$ is the condition $\econd$ with the statements $\vsonep$ and $\vstwop$, that is, \\ $\SCond(\econd, \vsonep, \vstwop)$;
+  \item $\news$ is the condition $\econd$ with the statements $\vsonep$ and $\vstwop$, that is, $\SCond(\econd, \vsonep, \vstwop)$;
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsescond$, $\vsesone$, and $\vsestwo$}.
 \end{itemize}
@@ -2062,8 +2055,7 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 \item annotating the \rhsexpression{} $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
 \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
 \item checking that $\vt$ \typesatisfiesterm\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item annotating $\vsone$ as a block statement as per \TypingRuleRef{Block} in $\tenv$ yields \\
-      $(\vstwo, \vsesblock)$\ProseOrTypeError;
+\item annotating $\vsone$ as a block statement as per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
 \item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
       and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
 \item $\newtenv$ is $\tenv$;
@@ -2116,8 +2108,7 @@ limit expressions.
   \item \AllApplyCase{some}
   \begin{itemize}
     \item $\ve$ is $\some{\vlimit}$;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields \\
-          $(\vlimitp, \vses)$\ProseOrTypeError;
+    \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields $(\vlimitp, \vses)$\ProseOrTypeError;
     \item \Proseeqdef{$\vep$}{$\some{\vlimitp}$}.
   \end{itemize}
 \end{itemize}
@@ -2404,8 +2395,7 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 \begin{itemize}
   \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
         optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
-  \item annotating $\vsone$ as a block statement per \TypingRuleRef{Block} in $\tenv$ yields \\
-        $(\vstwo, \vsesblock)$\ProseOrTypeError;
+  \item annotating $\vsone$ as a block statement per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
   \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
   \item annotating the \rhsexpression{} $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
   \item checking that $\vt$ \typesatisfiesterm\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -2605,9 +2595,8 @@ show examples of ill-typed \texttt{for} loops.
           \Forbody &:& \vbody\\
           \Forlimit &:& \vlimit
         \end{array}\right\}$;
-  \item annotating the \rhsexpression{} $\vstarte$ in $\tenv$ yields \\
-        $(\vstartt, \vstartep, \vsesstart)$\ProseOrTypeError;
-  \item annotating the \rhsexpression{} $\vende$ in $\tenv$ yields \\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} $\vstarte$ in $\tenv$ yields\\ $(\vstartt, \vstartep, \vsesstart)$\ProseOrTypeError;
+  \item annotating the \rhsexpression{} $\vende$ in $\tenv$ yields\\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
   \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
         yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
   \item checking that $\vsesstart$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
@@ -2879,11 +2868,10 @@ they are evaluated via $\evalexprsef$.
 \subsubsection{Running the Loop Body}
 \AllApply
 \begin{itemize}
-  \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
-        yields \\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+    \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
+      yields\\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
-        that is, $\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$ yields \\
-        $((\vstep, \envtwo), \vgtwo)$;
+        ($\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$) yields\\ $((\vstep, \envtwo), \vgtwo)$;
   \item evaluating the \texttt{for} loop with $(\vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody)$
         in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
   \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
@@ -2921,8 +2909,8 @@ or an abnormal configuration.
       \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
             Boolean for $\False$;
       \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
-      \item evaluating the loop body via $\evalforloop$ with \\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
-      in $\env$ is \\ $\Continuing(\vgtwo, \newenv)$\ProseOrAbnormalReturning;
+      \item evaluating the loop body via $\evalforloop$ with\\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
+      in $\env$ yields\\ $\Continuing(\vgtwo, \newenv)$\ProseOrAbnormalReturning;
       \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
     \end{itemize}
   \end{itemize}
@@ -3043,8 +3031,7 @@ shows examples of well-typed \throwstatementsterm.
   \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
   \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
   \item view $\vte$ as the named type for $\exnname$;
-  \item $\news$ is a throw statement with expression $\vep$ and type $\vte$, that is, \\
-        $\SThrow(\vep, \vte)$;
+  \item $\news$ is a throw statement with expression $\vep$ and type $\vte$ ($\SThrow(\vep, \vte)$);
   \item $\newtenv$ is $\tenv$;
   \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
 \end{itemize}
@@ -3198,8 +3185,7 @@ the \trystatementsterm{} are all well-typed.
     \begin{itemize}
       \item there is no \texttt{otherwise} statement;
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
-            that is \\
-            $\STry(\vspp, \catchersp, \None)$;
+            that is $\STry(\vspp, \catchersp, \None)$;
       \item \Proseeqdef{$\vsesotherwise$}{the empty set};
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
@@ -3209,8 +3195,7 @@ the \trystatementsterm{} are all well-typed.
       \item there is an \texttt{otherwise} statement $\otherwise$;
       \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
-            $\otherwisep$, that is \\
-            $\STry(\vspp, \catchersp, \some{\otherwisep})$;
+            $\otherwisep$\\ ($\STry(\vspp, \catchersp, \some{\otherwisep})$);
       \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}
@@ -3333,8 +3318,7 @@ since \verb|proc| is not a function but a procedure.
 \begin{itemize}
   \item \AllApplyCase{error}
   \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$, that is, \\
-          $\SReturn(\veopt)$;
+    \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$\\ ($\SReturn(\veopt)$);
     \item the condition that $\veopt$ is $\None$ if and only if the enclosing subprogram does not have a return type
           (that is, $\returntype$ in the \localstaticenvironmentterm{} is $\None$) does not hold;
     \item the result is an error indicating the mismatch between the declared (existence of the) return type
@@ -3439,8 +3423,7 @@ In \listingref{semantics-sreturntuple},
   \item \AllApplyCase{tuple}
   \begin{itemize}
     \item $\vs$ is a \texttt{return} statement for a list of expressions,\\ $\SReturn(\some{\ETuple(\es)})$;
-    \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM}
-    is \\ $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
+    \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM} yields $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
     \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
   \end{itemize}
 \end{itemize}
@@ -3498,8 +3481,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
   \begin{itemize}
     \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
     \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\vmone, \envone)$\ProseOrAbnormal;
-    \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields \\
-          $\ResultExprListM(\vmsone, \newenv)$\ProseOrAbnormal;
+    \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields\\ $\ResultExprListM(\vmsone, \newenv)$\ProseOrAbnormal;
     \item the result is a configuration consisting of a list with $\vmone$ as its \head\ and $\vmsone$
           as its \tail\ and $\newenv$.
   \end{itemize}
