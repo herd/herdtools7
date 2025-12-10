@@ -283,6 +283,23 @@ var NormalWBISHMemAttr: MemoryAttributes =
 
 // =============================================================================
 
+// PhysMemRetStatus_NoFault
+// ========================
+
+// This variable is not present in shared_pseudocode, but is used in other
+// parts of the interface, see physmem-std.asl and physmem-vmsa.asl.
+
+// The status return of PhysMemRead and PhysMemWrite.
+
+var PhysMemRetStatus_NoFault =
+  PhysMemRetStatus {
+    statuscode = Fault_None,
+    extflag = '0',
+    merrorstate = ErrorState_CE,  // Irrelevant as statuscode is Fault_None
+    store64bstatus = Zeros{64}
+  };
+
+// =============================================================================
 
 // Code used by our interface with herd, in either `physmem-std.asl` or
 // `physmem-vmsa.asl`
