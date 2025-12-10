@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 module type SIMD = sig
+    (* Atom particular for SIMD *)
     type atom
     val nregs : atom -> int
     val pp : atom -> string
@@ -25,14 +26,39 @@ module type SIMD = sig
     val reduce: int list list -> int
 end
 
+module type RMW = sig
+  (* The `rmw` edge *)
+  type rmw
+  (* Types `atom` and `value` should be passed from outside *)
+  type atom
+
+  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
+  val is_one_instruction : rmw -> bool
+  (* The first boolean indicates whether wildcard syntax is included in the fold *)
+  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
+  (* Second round of fold, for rmw with back compatible name *)
+  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val applies_atom_rmw : rmw -> atom option -> atom option -> bool
+  val show_rmw_reg : rmw -> bool
+  val compute_rmw : rmw  -> int (* old *) -> int (* operand *) -> int
+  val expand_rmw : rmw -> rmw list
+end
+
+module type AtomType = sig
+  (* The type for all annotations *)
+  type atom
+  (* The module and type `Value.v` for value. *)
+  module Value : Value_gen.S with type atom = atom
+  (* SIMD writes and reads *)
+  module SIMD : SIMD
+  (* RMW operation *)
+  module RMW : RMW with type atom = atom
+end
+
 module type S = sig
   val bellatom : bool (* true if bell style atoms *)
 
-  type atom
-
-(* SIMD writes and reads *)
-  module SIMD : SIMD
-  module Value : Value_gen.S with type atom = atom
+  include AtomType
 
   val default_atom : atom
   val instr_atom : atom option

@@ -351,7 +351,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let emit_exch st p init er ew  = emit_exch_idx st p init er ew r0
 
-    let emit_rmw () st p init er ew  =
+    let emit_rmw _ st p init er ew  =
       let rR,init,cs,st = emit_exch st p init er ew in
       Some rR,init,cs,st
 
@@ -498,7 +498,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
     | PPC.CTRL -> emit_exch_ctrl false st p init er ew rd
     | PPC.CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
 
-    let emit_rmw_dep () st p init er ew dp rd _n =
+    let emit_rmw_dep _ st p init er ew dp rd _n =
       let r,init,cs,st = emit_exch_dep  st p init er ew dp rd in
       Some r,init,cs,st
 

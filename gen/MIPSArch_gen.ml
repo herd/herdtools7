@@ -94,7 +94,6 @@ let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL -> []
 
-include Exch.LxSx(struct type arch_atom = atom end)
 include
     ArchExtra_gen.Make
     (struct

@@ -14,20 +14,16 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Signature of Rmw helper modules *)
-
-module type S = sig
-  type rmw
-  type rmw_atom
-
-  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
-  val is_one_instruction : rmw -> bool
-  (* The first boolean indicates whether wildcard syntax is included in the fold *)
-  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
-  (* Second round of fold, for rmw with back compatible name *)
-  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
-  val applies_atom_rmw : rmw -> rmw_atom option -> rmw_atom option -> bool
-  val show_rmw_reg : rmw -> bool
-  val compute_rmw : rmw  -> int (* old *) -> int (* operand *) -> int
-  val expand_rmw : rmw -> rmw list
+module type RmwType = sig
+  type arch_atom
 end
+
+(** No rmw instruction *)
+module No(A:RmwType) : Atom.RMW with type rmw = unit and type atom = A.arch_atom
+
+(** The only RMW is exchange *)
+(* Implemented as load reserve store conditional *)
+module LxSx(A:RmwType) : Atom.RMW with type rmw = unit and type atom = A.arch_atom
+
+(* Implemented as exchange instruction *)
+module Exch(A:RmwType) : Atom.RMW with type rmw = unit and type atom = A.arch_atom
