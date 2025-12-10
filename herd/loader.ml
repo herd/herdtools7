@@ -96,7 +96,7 @@ struct
           load_code proc (addr+A.size_of_ins ins) (static_poi+1) mem rets code in
         let new_ins =
           convert_lbl_to_offset proc addr mem ins in
-        let code_ins = { A.instr = new_ins; A.static_poi; } in
+        let code_ins = { A.CodeInstr.instr = new_ins; static_poi; } in
         let new_start = (addr, code_ins) :: start in
         let newer_rets = IntMap.add addr (proc,new_start)  new_rets in
         new_start,newer_rets
