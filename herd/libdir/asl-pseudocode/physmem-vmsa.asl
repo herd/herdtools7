@@ -58,29 +58,42 @@ func PhysMemWrite{size : PhysMemSize}
   (desc : AddressDescriptor, accdesc : AccessDescriptor, value : bits(size))
   => PhysMemRetStatus
 begin
-  // No write when CAS reduces to a read
-  CheckProp(accdesc.write);
+  if accdesc.acctype == AccessType_GPR then
+    // No write when CAS reduces to a read
+    CheckProp(accdesc.write);
 
-  // Event access for herd7
-  let eventaccess = _PhysEventAccess(desc.vaddress);
+    // Event access for herd7
+    let eventaccess = _PhysEventAccess(desc.vaddress);
 
-  // In the case of exclusive monitors, we force the equality of the double
-  // translation by checking that the physical address here is the same as the
-  // one that was stored by the exclusive monitor.
-  // In the Arm ARM, there is a comment in the operation code of STXR saying:
-  //   This atomic write will be rejected if it does not refer to the same
-  //   physical locations after address translation.
-  // See: https://developer.arm.com/documentation/ddi0602/2025-09/Base-Instructions/STXR--Store-exclusive-register-?lang=en
-  // This does nothing if it isn't in a store exclusive instruction.
-  CheckExclusiveDuplicatedTranslate(desc.paddress, _ProcessorID, size);
+    // In the case of exclusive monitors, we force the equality of the double
+    // translation by checking that the physical address here is the same as the
+    // one that was stored by the exclusive monitor.
+    // In the Arm ARM, there is a comment in the operation code of STXR saying:
+    //   This atomic write will be rejected if it does not refer to the same
+    //   physical locations after address translation.
+    // See: https://developer.arm.com/documentation/ddi0602/2025-09/Base-Instructions/STXR--Store-exclusive-register-?lang=en
+    // This does nothing if it isn't in a store exclusive instruction.
+    CheckExclusiveDuplicatedTranslate(desc.paddress, _ProcessorID, size);
 
-  // Generate the Physical Write Memory Effects
-  write_memory_gen{size}(desc.paddress.address, value,accdesc,eventaccess);
+    // Generate the Physical Write Memory Effects
+    write_memory_gen{size}(desc.paddress.address, value,accdesc,eventaccess);
+
+  elsif accdesc.acctype == AccessType_TTW then
+   WritePtePrimitive{size}(desc.paddress.address, value, accdesc.write);
+
+  else unreachable;
+  end;
 
   return PhysMemRetStatus_NoFault;
 end;
 
 // =============================================================================
+
+// Underlining storage for the value read in the case of hardware updates.
+// This is reset by herd between 2 instructions.
+
+var PteRead64 : bits(64) = Zeros{64};
+var PteRead128 : bits(128) = Zeros{128};
 
 // Our implementation of PhysMemRead creates a Physical Read Memory Effect
 // with the correct annotation. It also has to take into account:
@@ -110,10 +123,29 @@ begin
     return (PhysMemRetStatus_NoFault, value);
 
   elsif accdesc.acctype == AccessType_TTW then
-    let value = ReadPtePrimitive{size}(desc.paddress.address);
+    if accdesc.atomicop then
+      let value = ReadPteAgainPrimitive{size}(desc.paddress.address, accdesc.write);
 
-    return (PhysMemRetStatus_NoFault, value);
+      // Does not type-check, and pteread128 tests do not pass until we store
+      // size information with symbolic bitvectors
+      let pte_read = if size == 128 then PteRead128 /* as bits(size) */
+                                    else PteRead64 /* as bits(size) */;
+      CheckEq(value, pte_read);
 
+      return (PhysMemRetStatus_NoFault, pte_read);
+
+    else
+      let value = ReadPtePrimitive{size}(desc.paddress.address);
+
+      if size == 128 then
+        PteRead128 = value /* as bits(128) */;
+      else
+        assert size == 64;
+        PteRead64 = value /* as bits(64) */;
+      end;
+
+      return (PhysMemRetStatus_NoFault, value);
+    end;
   else unreachable;
   end;
 end;
