@@ -896,7 +896,7 @@ module Make
           (fun _ ->
              set_elr_el1 lbl_v ii
              >>|
-             mk_fault (Some a) dir an ii ft msg) None ii
+             mk_fault a dir an ii ft msg) None ii
         >>!  B.fault [AArch64Base.elr_el1, lbl_v]
 
       (* Specific fault when accessing PTE from EL0. *)
@@ -904,7 +904,7 @@ module Make
         let open FaultType.AArch64 in
         let ft = Some (MMU Permission)
         and msg = Some "EL0" in
-        emit_fault a ma dir an ft msg ii
+        emit_fault (Some a) ma dir an ft msg ii
 
       let an_xpte =
         let open Annot in
@@ -1395,7 +1395,7 @@ module Make
         else m
 
       let lift_kvm dir updatedb mop ma an ii mphy =
-        let mfault ma a ft = emit_fault a ma dir an ft None ii in
+        let mfault ma a ft = emit_fault (Some a) ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -3290,6 +3290,25 @@ Arguments:
             reduce (dim-1) (M.unitT [()])
 
 
+      let fault_sme r ft inverse action ii =
+        let mk_sme_fault a = emit_fault None a Dir.R Annot.N (Some ft) None ii in
+        M.delay_kont "pstate"
+          (if sme then read_reg_ord r ii else mzero)
+          (fun v a ->
+            if inverse then
+              M.choiceT v action (mk_sme_fault a)
+            else
+              M.choiceT v (mk_sme_fault a) action)
+
+      let fault_if_streaming =
+        fault_sme AArch64.(PState PSTATE.SM) FaultType.AArch64.(SME Streaming) false
+
+      let fault_if_not_streaming =
+        fault_sme AArch64.(PState PSTATE.SM) FaultType.AArch64.(SME NotStreaming) true
+
+      let fault_if_inactive_za =
+        fault_sme AArch64.(PState PSTATE.ZA) FaultType.AArch64.(SME InactiveZA) true
+
       (* Data cache operations *)
       let dc_loc op a ii =
         let mk_act loc = Act.CMO (AArch64.CMO.DC op,Some loc) in
@@ -3734,172 +3753,229 @@ Arguments:
         (* Neon operations *)
         | I_ADDV(var,r1,r2) ->
             check_neon inst;
-            !(addv var r1 r2 ii)
+            let action =
+              !(addv var r1 r2 ii) in
+            fault_if_streaming action ii
         | I_DUP(r1,var,r2) ->
             check_neon inst;
-            !(let sz = tr_variant var  in
+            let action =
+              !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>= promote >>=
-              fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
+              fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii) in
+            fault_if_streaming action ii
         | I_FMOV_TG(_,r1,_,r2) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             read_reg_neon Port.No r2 ii >>= demote
             >>= fun v -> write_reg_dest r1 v ii >>= nextSet r1
         | I_MOV_VE(r1,i1,r2,i2) ->
             check_neon inst;
-            !(read_reg_neon_elem Port.No r2 i2 ii >>=
-              fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
+            let action =
+              !(read_reg_neon_elem Port.No r2 i2 ii >>=
+              fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii) in
+            fault_if_streaming action ii
         | I_MOV_FG(r1,i,var,r2) ->
             check_neon inst;
-            !(let sz = tr_variant var in
+            let action =
+              !(let sz = tr_variant var in
               read_reg_ord_sz sz r2 ii >>= promote >>=
-              fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
+              fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii) in
+            fault_if_streaming action ii
         | I_MOV_TG(_,r1,r2,i) ->
             check_neon inst;
-            !(read_reg_neon_elem Port.No r2 i ii >>= demote >>=
-              fun v -> write_reg r1 v ii)
+            let action =
+              !(read_reg_neon_elem Port.No r2 i ii >>= demote >>=
+              fun v -> write_reg r1 v ii) in
+            if i != 0 then
+              fault_if_streaming action ii
+            else
+              action
         | I_MOV_V(r1,r2) ->
             check_neon inst;
-            !(read_reg_neon Port.No r2 ii >>=
-              fun v -> write_reg_neon r1 v ii)
+            let action =
+              !(read_reg_neon Port.No r2 ii >>=
+              fun v -> write_reg_neon r1 v ii) in
+            fault_if_streaming action ii
         | I_MOV_S(var,r1,r2,i) ->
             check_neon inst;
-            !(let sz = tr_simd_variant var in
+            let action =
+              !(let sz = tr_simd_variant var in
               read_reg_neon_elem Port.No r2 i ii >>=
-              fun v -> write_reg_neon_sz sz r1 v ii)
+              fun v -> write_reg_neon_sz sz r1 v ii) in
+            fault_if_streaming action ii
         | I_MOVI_V(r,k,shift) ->
             check_neon inst;
-            !(movi_v r k shift ii)
+            let action =
+              !(movi_v r k shift ii) in
+            fault_if_streaming action ii
         | I_MOVI_S(var,r,k) ->
             check_neon inst;
-            !(movi_s var r k ii)
+            let action =
+              !(movi_s var r k ii) in
+            fault_if_streaming action ii
         | I_OP3_SIMD(EOR,r1,r2,r3) ->
             check_neon inst;
             let sz = neon_sz r1 in
-            !(read_reg_neon Port.No r3 ii >>|
+            let action =
+              !(read_reg_neon Port.No r3 ii >>|
               read_reg_neon Port.No r2 ii >>= fun (v1,v2) ->
                 M.op Op.Xor v1 v2 >>= fun v ->
-                  write_reg_neon_sz sz r1 v ii)
+                  write_reg_neon_sz sz r1 v ii) in
+            fault_if_streaming action ii
         | I_ADD_SIMD(r1,r2,r3) ->
             check_neon inst;
-            !(simd_add r1 r2 r3 ii)
+            let action = !(simd_add r1 r2 r3 ii) in
+            fault_if_streaming action ii
         | I_ADD_SIMD_S(r1,r2,r3) ->
             check_neon inst;
             let sz = MachSize.Quad in
-            !(read_reg_neon Port.No r3 ii >>|
+            let action =
+              !(read_reg_neon Port.No r3 ii >>|
               read_reg_neon Port.No r2 ii >>= sum_elems
-              >>= fun v -> write_reg_neon_sz sz r1 v ii)
+              >>= fun v -> write_reg_neon_sz sz r1 v ii) in
+            fault_if_streaming action ii
         (* Neon loads and stores *)
         | I_LDAP1(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!(read_reg_addr rA ii >>= fun addr ->
+              (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_LD1(rs,i,rA,kr)
         | I_LD2(rs,i,rA,kr)
         | I_LD3(rs,i,rA,kr)
         | I_LD4(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!(read_reg_addr rA ii >>= fun addr ->
+              (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_LD1R(rs,rA,kr)
         | I_LD2R(rs,rA,kr)
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!(read_reg_addr rA ii >>= fun addr ->
+              (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_LD1M(rs,rA,kr) ->
             check_neon inst;
-            !!(read_reg_addr rA ii >>= fun addr ->
-            (load_m_contigous addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!(read_reg_addr rA ii >>= fun addr ->
+              (load_m_contigous addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_LD2M(rs,rA,kr)
         | I_LD3M(rs,rA,kr)
         | I_LD4M(rs,rA,kr) ->
             check_neon inst;
-            !!(read_reg_addr rA ii >>= fun addr ->
-            (load_m addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!(read_reg_addr rA ii >>= fun addr ->
+              (load_m addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_STL1(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (store_elem_stlr i) addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!(read_reg_addr rA ii >>= fun addr ->
+              (mem_ss (store_elem_stlr i) addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_ST1(rs,i,rA,kr)
         | I_ST2(rs,i,rA,kr)
         | I_ST3(rs,i,rA,kr)
         | I_ST4(rs,i,rA,kr) ->
             check_neon inst;
-            !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (store_elem i) addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!(read_reg_addr rA ii >>= fun addr ->
+              (mem_ss (store_elem i) addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_ST1M(rs,rA,kr) ->
             check_neon inst;
-            !!!!(read_reg_addr rA ii >>= fun addr ->
-            (store_m_contigous addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!!(read_reg_addr rA ii >>= fun addr ->
+              (store_m_contigous addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_ST2M(rs,rA,kr)
         | I_ST3M(rs,rA,kr)
         | I_ST4M(rs,rA,kr) ->
             check_neon inst;
-            !!!!(read_reg_addr rA ii >>= fun addr ->
-            (store_m addr rs ii >>|
-            post_kr rA addr kr ii))
+            let action =
+              !!!!(read_reg_addr rA ii >>= fun addr ->
+              (store_m addr rs ii >>|
+              post_kr rA addr kr ii)) in
+            fault_if_streaming action ii
         | I_LDR_SIMD(var,r1,rA,MemExt.Reg(v,kr,sext,s)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             get_ea_reg rA v kr sext s ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             get_ea_idx rA k ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             get_ea_preindexed rA k ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             read_reg_addr rA ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>|
             post_kr rA addr (K k) ii >>= B.next2T
         | I_LDUR_SIMD(var,r1,rA,k) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             get_ea rA (K k) S_NOEXT ii >>= fun addr ->
             simd_ldr access_size addr r1 ii >>= B.next1T
         | I_LDAPUR_SIMD(var,r1,rA,k) ->
             check_neon inst;
             let access_size = tr_simd_variant var in
-            get_ea rA (K k) S_NOEXT ii >>= fun addr ->
-            simd_ldar access_size addr r1 ii >>= B.next1T
+            let action =
+              get_ea rA (K k) S_NOEXT ii >>= fun addr ->
+              simd_ldar access_size addr r1 ii >>= B.next1T in
+            fault_if_streaming action ii
         | I_STR_SIMD(var,r1,rA,MemExt.Reg (v,kr,sext,s)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             let ma = get_ea_reg rA v kr sext s ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,Idx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PreIdx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             let ma = get_ea_preindexed rA k ii in
             simd_str access_size ma r1 ii
         | I_STR_SIMD(var,r1,rA,MemExt.Imm (k,PostIdx)) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             let ma = read_reg_addr rA ii in
             simd_str_p access_size ma r1 rA (K k) ii
         | I_STUR_SIMD(var,r1,rA,k) ->
             check_neon inst;
+            (* Allowed in Streaming mode *)
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
             simd_str access_size ma r1 ii
@@ -3907,9 +3983,12 @@ Arguments:
             check_neon inst;
             let access_size = tr_simd_variant var in
             let ma = get_ea_idx rA k ii in
-            simd_stlr access_size ma r1 ii
+            let action =
+              simd_stlr access_size ma r1 ii in
+            fault_if_streaming action ii
         | I_LDP_SIMD(tnt,var,r1,r2,r3,idx) ->
           check_neon inst;
+          (* Allowed in Streaming mode *)
           begin
             match idx with
             | k,Idx ->
@@ -3926,6 +4005,7 @@ Arguments:
           end
         | I_STP_SIMD(tnt,var,r1,r2,r3,idx) ->
           check_neon inst;
+          (* Allowed in Streaming mode *)
           begin
             match idx with
             | k,Idx ->
@@ -3946,6 +4026,7 @@ Arguments:
         | I_LD3SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_LD4SP(var,rs,p,rA,MemExt.Imm (k,Idx)) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !!!(let sz = tr_simd_variant var in
               let ma = get_ea_idx rA k ii in
               load_predicated_elem_or_zero_m sz p ma rs ii >>|
@@ -3955,21 +4036,25 @@ Arguments:
         | I_LD3SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_LD4SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !!!(let sz = tr_simd_variant var in
               let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
               load_predicated_elem_or_zero_m sz p ma rs ii >>|
               M.unitT ())
         | I_LD1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
           check_sve inst;
-          !(let sz = tr_simd_variant var in
-            let ma = read_reg_addr rA ii in
-            let mo = read_reg_scalable Port.Addr rM ii in
-            load_gather_predicated_elem_or_zero sz p ma mo rs sext s ii)
+          let action =
+            !(let sz = tr_simd_variant var in
+              let ma = read_reg_addr rA ii in
+              let mo = read_reg_scalable Port.Addr rM ii in
+              load_gather_predicated_elem_or_zero sz p ma mo rs sext s ii) in
+          fault_if_streaming action ii
         | I_ST1SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST2SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST3SP(var,rs,p,rA,MemExt.Imm (k,Idx))
         | I_ST4SP(var,rs,p,rA,MemExt.Imm (k,Idx)) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !!!!(let sz = tr_simd_variant var in
               let ma = get_ea_idx rA k ii in
                store_predicated_elem_or_merge_m sz p ma rs ii >>|
@@ -3979,35 +4064,44 @@ Arguments:
         | I_ST3SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s))
         | I_ST4SP(var,rs,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !!!!(let sz = tr_simd_variant var in
               let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
                store_predicated_elem_or_merge_m sz p ma rs ii >>|
                M.unitT ())
         | I_ST1SP (var,rs,p,rA,MemExt.ZReg (rM,sext,s)) ->
           check_sve inst;
-          !!!(let sz = tr_simd_variant var in
-              let ma = read_reg_addr rA ii in
-              let mo = read_reg_scalable Port.Addr rM ii in
-              store_scatter_predicated_elem_or_merge sz p ma mo rs sext s ii >>|
-              M.unitT ())
+          let action =
+            !!!(let sz = tr_simd_variant var in
+                let ma = read_reg_addr rA ii in
+                let mo = read_reg_scalable Port.Addr rM ii in
+                store_scatter_predicated_elem_or_merge sz p ma mo rs sext s ii >>|
+                M.unitT ()) in
+          fault_if_streaming action ii
         | I_PTRUE(p,pattern) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           ptrue p pattern ii
           >>= nextSet p
         | I_WHILELT(p,var,r1,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           while_op (M.op Op.Lt) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELO(p,var,r1,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           while_op (M.op Op.Lt) true p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELE(p,var,r1,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           while_op (M.op Op.Le) false p var r1 r2 ii >>= B.nextBdsT
         | I_WHILELS(p,var,r1,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           while_op (M.op Op.Le) true p var r1 r2 ii >>= B.nextBdsT
         |  I_ADD_SV (r1,r2,r3) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(add_sv r1 r2 r3 ii)
         |  I_OP3_SV (EOR,r1,r2,r3) ->
           check_sve inst;
@@ -4017,51 +4111,62 @@ Arguments:
                 write_reg_scalable r1 v ii)
         | I_UADDV(var,v,p,z) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(uaddv var v p z ii)
         | I_MOVPRFX(r1,pg,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(movprfx r1 pg r2 ii)
         | I_NEG_SV(r1,pg,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(neg r1 pg r2 ii)
         | I_MOV_SV(r,k,shift) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(mov_sv r k shift ii)
         | I_DUP_SV(r1,var,r2) ->
           check_sve inst;
+          (* Allowed in Streaming mode *)
           !(let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>= promote >>= fun v ->
             write_reg_scalable_rep r1 v ii)
         | I_INDEX_SI (r1,var,r2,k) ->
             check_sve inst;
+            (* Allowed in Streaming mode *)
             let sz = tr_variant var  in
             let v2 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v1 ->
             index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_IS (r1,var,k,r2) ->
             check_sve inst;
+            (* Allowed in Streaming mode *)
             let sz = tr_variant var  in
             let v1 = V.intToV k in
             read_reg_ord_sz sz r2 ii >>= fun v2 ->
             index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_SS (r1,var,r2,r3) ->
             check_sve inst;
+            (* Allowed in Streaming mode *)
             let sz = tr_variant var  in
             read_reg_ord_sz sz r2 ii >>|
             read_reg_ord_sz sz r3 ii >>= fun (v1,v2) ->
             index r1 v1 v2 ii >>= nextSet r1
         | I_INDEX_II (r1,k1,k2) ->
             check_sve inst;
+            (* Allowed in Streaming mode *)
             let v1 = V.intToV k1 in
             let v2 = V.intToV k2 in
             index r1 v1 v2 ii >>= nextSet r1
         | I_RDVL (rd,k) ->
            check_sve inst;
+           (* Allowed in Streaming mode *)
            let v = scalable_nbytes * k |> V.intToV in
            write_reg_sz_dest MachSize.Quad rd v ii
            >>= nextSet rd
         |I_ADDVL (rd,rn,k) ->
            check_sve inst;
+           (* Allowed in Streaming mode *)
            let sz = MachSize.Quad in
            let off = scalable_nbytes * k in
            read_reg_ord_sz sz rn ii
@@ -4070,6 +4175,7 @@ Arguments:
            >>= nextSet rd
         | I_CNT_INC_SVE (op,r,pat,k) ->
            check_sve inst;
+           (* Allowed in Streaming mode *)
            cnt_inc op r pat k ii >>= nextSet r
         | I_CTERM (cond,v,rn,rm) ->
             check_sve inst;
@@ -4171,38 +4277,52 @@ Arguments:
               (B.nextT)
         | I_MOVA_VT (za,ri,k,p,z) ->
            check_sme inst;
-           mova_vt za ri k p z ii
-           >>= nextSet za
+           let action =
+              mova_vt za ri k p z ii >>= nextSet za in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_MOVA_TV (z,p,za,ri,k) ->
            check_sme inst;
-           mova_tv z p za ri k ii
-           >>= nextSet z
+           let action =
+              mova_tv z p za ri k ii >>= nextSet z in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_ADDA (dir,za,p1,p2,z) ->
            check_sme inst;
            let pslice, pelem = match dir with
            | AArch64.Vertical -> p2,p1
            | AArch64.Horizontal -> p1,p2 in
-           adda dir za pslice pelem z ii >>= nextSet za
+           let action =
+              adda dir za pslice pelem z ii >>= nextSet za in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_LD1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
            check_sme inst;
-           !(let sz = tr_simd_variant var in
-             let ma = read_reg_addr rA ii in
-             load_predicated_slice sz za ri k p ma ii)
+           let action =
+              !(let sz = tr_simd_variant var in
+                let ma = read_reg_addr rA ii in
+                load_predicated_slice sz za ri k p ma ii) in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_LD1SPT(var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
-          !(let sz = tr_simd_variant var in
-            let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
-            load_predicated_slice sz za ri k p ma ii)
+           check_sme inst;
+           let action =
+              !(let sz = tr_simd_variant var in
+                let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
+                load_predicated_slice sz za ri k p ma ii) in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Imm(0,Idx)) ->
            check_sme inst;
-           !!!(let sz = tr_simd_variant var in
-               let ma = read_reg_addr rA ii in
-               store_predicated_slice sz za ri k p ma ii >>|
-               M.unitT ())
+           let action =
+              !!!(let sz = tr_simd_variant var in
+                  let ma = read_reg_addr rA ii in
+                  store_predicated_slice sz za ri k p ma ii >>|
+                  M.unitT ()) in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         | I_ST1SPT (var,za,ri,k,p,rA,MemExt.Reg (V64,rM,MemExt.LSL,s)) ->
-          !!!(let sz = tr_simd_variant var in
-              let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
-              store_predicated_slice sz za ri k p ma ii >>|
-              M.unitT ())
+           check_sme inst;
+           let action =
+              !!!(let sz = tr_simd_variant var in
+                  let ma = get_ea_reg rA V64 rM MemExt.LSL s ii in
+                  store_predicated_slice sz za ri k p ma ii >>|
+                  M.unitT ()) in
+           fault_if_not_streaming (fault_if_inactive_za action ii) ii
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;

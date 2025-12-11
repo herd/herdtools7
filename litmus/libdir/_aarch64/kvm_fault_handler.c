@@ -67,6 +67,7 @@ static void fault_handler(struct pt_regs *regs,unsigned int esr) {
 
 static void install_fault_handler(int cpu) {
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_DABT_EL1, fault_handler);
+  install_exception_handler(EL1H_SYNC, ESR_EL1_EC_SME, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_UNKNOWN, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_SVC64, fault_handler);
   // Pointer Authentication Code error code is not present in KVM-unit-tests
@@ -74,6 +75,7 @@ static void install_fault_handler(int cpu) {
 #ifdef USER_MODE
   struct thread_info *ti = thread_info_sp(user_stack[cpu]);
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_DABT_EL0] = fault_handler;
+  ti->exception_handlers(EL0_SYNC_64, ESR_EL1_EC_SME, fault_handler);
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_UNKNOWN] = fault_handler;
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_SVC64] = fault_handler;
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_PAC] = fault_handler;

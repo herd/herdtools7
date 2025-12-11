@@ -12,6 +12,9 @@ enum fault_type_t {
   FaultMMUAccessFlag,
   FaultMMUPermission,
   FaultTagCheck,
+  FaultSMEStreaming,
+  FaultSMENotStreaming,
+  FaultSMEInactiveZA,
   FaultUnsupported,
   FaultUnknown,
   FaultTypes,
@@ -29,6 +32,9 @@ static const char *fault_type_names[] = {
   "MMU:AccessFlag",
   "MMU:Permission",
   "TagCheck",
+  "SME:Streaming",
+  "SME:NotStreaming",
+  "SME:InactiveZA",
   "Unsupported",
 };
 
@@ -37,8 +43,6 @@ static const char *fault_type_names[] = {
 static enum fault_type_t get_fault_type(unsigned long esr)
 {
   unsigned int ec;
-  unsigned int dfsc;
-  int fault_type;
 
   ec = esr >> ESR_EL1_EC_SHIFT;
   if (ec == ESR_EL1_EC_UNKNOWN) {
@@ -47,9 +51,17 @@ static enum fault_type_t get_fault_type(unsigned long esr)
     return FaultSupervisorCall;
   } else if (ec == ESR_EL1_EC_PAC) {
     return FaultPacCheckIA + (esr & 0x3U);
+  } else if (ec == ESR_EL1_EC_SME) {
+    unsigned int smtc = esr & 0x7;
+    switch (smtc) {
+    case 1: return FaultSMEStreaming;
+    case 2: return FaultSMENotStreaming;
+    case 3: return FaultSMEInactiveZA;
+    default: return FaultUnsupported;
+    }
   } else {
-    dfsc = esr & 0x3fU;
-    fault_type = (dfsc >> 2) + FaultMMUAddressSize;
+    unsigned int dfsc = esr & 0x3fU;
+    int fault_type = (dfsc >> 2) + FaultMMUAddressSize;
     if (fault_type > FaultTagCheck)
       return FaultUnsupported;
     else
