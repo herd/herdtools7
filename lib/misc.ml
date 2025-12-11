@@ -165,6 +165,12 @@ let find_opt = List.find_opt
 let filter_map = List.filter_map
 let split_on_char = String.split_on_char
 
+let rec find_map f = function
+  | [] -> None
+  | x :: t ->
+      let res = f x in
+      if is_some res then res else find_map f t
+
 (********************)
 (* Position parsing *)
 (********************)
