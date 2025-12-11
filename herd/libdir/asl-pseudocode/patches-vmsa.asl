@@ -215,42 +215,39 @@ begin
   return GetOAPrimitive{N}(descriptor);
 end;
 
+// =============================================================================
+
+// Exeption thrown at the end of an instruction. This is caught by the main
+// fault handler that surrounds an instruction operational code, as generated
+// by AArch64ASLSem.
+type SilentExit of exception {-};
+
 // AArch64.DataAbort()
 // ===================
 
-
-// Identify writes by their access descriptor.
-func IsWrite(a:AccessDescriptor) => boolean
-begin
-  return a.write;
-end;
-
-// Get rid of CAS as LOAD execution
-
-func IsCasAsLoad(a:AccessDescriptor) => boolean
-begin
-  return a.modop == MemAtomicOp_CAS && !a.write;
-end;
-
-func CheckNotCasAsLoad(a:AccessDescriptor)
-begin
-  CheckProp(!(IsCasAsLoad(a)));
-end;
-
-type SilentExit of exception {-};
+// Our implementation simply creates a fault effect here with the correct
+// parameters. It then interrupts the execution of the instruction with the
+// help of an exception that is caught in the asl main, as constructed by
+// AArch64ASLSem.
 
 func AArch64_DataAbort(fault:FaultRecord)
 begin
-  CheckNotCasAsLoad(fault.accessdesc);
-  DataAbortPrimitive(fault.vaddress,fault.write,fault.statuscode,fault.accessdesc);
+  // Create a Fault Effect
+  DataAbortPrimitive(fault.vaddress, fault.write, fault.statuscode, fault.accessdesc);
+
+  // Interrupt control-flow and terminate execution of the instruction
   throw SilentExit {-};
 end;
+
+// =============================================================================
 
 // AArch64.GetS1TTWParams()
 // ========================
 // Returns stage 1 translation table walk parameters from respective controlling
 // System registers.
-// Luc: we assume EL10 regime, return minimal parameters
+
+// Luc: we assume EL10 regime, return minimal parameters, use primitives
+// returning configuration in herd
 
 var D128:boolean;
 
@@ -258,18 +255,31 @@ func AArch64_GetS1TTWParams
   (regime:Regime, el:bits(2), ss:SecurityState, va:bits(64))
   => S1TTWParams
 begin
-  var walkparams : S1TTWParams;
   assert (regime == Regime_EL10);
+
+  var walkparams : S1TTWParams;
+
+  // We use the d128 variant to avoid some costly bitvector operations on
+  // symbolic variables.
   walkparams.d128 = if D128 then '1' else '0'; // Much faster!
+
+  // Hardware update settings from herd
   walkparams.ha = GetHaPrimitive();
   walkparams.hd = GetHdPrimitive();
+
+  // Irrelevant in our case because we have overriden the corresponding chekcs
+  // 16 passes the checks in S1Translate.
   walkparams.txsz = 16[5:0];
+
   return walkparams;
 end;
+
+// =============================================================================
 
 // AArch64.ContiguousBit()
 // =======================
 // Get the value of the contiguous bit
+
 // Luc: Returns 0 to avoid faults in 128 bit mode
 
 func AArch64_ContiguousBit{N}
@@ -277,6 +287,8 @@ func AArch64_ContiguousBit{N}
 begin
   return '0';
 end;
+
+// =============================================================================
 
 // AArch64.MAIRAttr()
 // ==================
@@ -288,6 +300,8 @@ func AArch64_MAIRAttr(index:integer,  mair2:MAIRType, mair:MAIRType) => bits(8)
 begin
   return Ones{8};
 end;
+
+// =============================================================================
 
 // S1DecodeMemAttrs()
 // ==================
@@ -312,21 +326,38 @@ begin
   return NormalWBISHMemAttr;
 end;
 
+// =============================================================================
+
+
 // AArch64.CheckDebug()
 // ====================
 // Called on each access to check for a debug exception or entry to Debug state.
 
+// We do not support debugging.
+
 func AArch64_CheckDebug
   (vaddress:bits(64), accdesc:AccessDescriptor, size:integer)
-=> FaultRecord
+  => FaultRecord
 begin
     return NoFault(accdesc, vaddress);
 end;
 
+// =============================================================================
+
 // CreateAccDescAtomicOp()
 // =======================
 // Access descriptor for atomic read-modify-write memory accesses
-// Luc: A CAS can reduce to a load.
+
+// We override this to allow the following non-supported behaviour in
+// shared_pseudocode: if we correctly predict that the CAS is going to fail, we
+// do not need to update the nDirty bit in the page table descriptor of the
+// corresponding address.
+// To support this, we create two executions: one where the CAS will fail, and
+// we can write the CAS as a simple READ, and one where the CAS will succeed,
+// and we can treat the CAS as a write. Once we've read in memory, we need to
+// discard the executions where the CAS is a load, which is done in
+// PhysMemWrite and DataAbort.
+
 func
   CreateAccDescAtomicOp
     (modop:MemAtomicOp, acquire:boolean, release:boolean,
@@ -350,7 +381,10 @@ begin
   accdesc.atomicop        = TRUE;
   accdesc.modop           = modop;
   accdesc.read            = TRUE;
+
+  // The next line is the one edited:
   accdesc.write           = modop != MemAtomicOp_CAS || SomeBoolean();
+
   accdesc.pan             = TRUE;
   accdesc.tagchecked      = tagchecked;
   accdesc.Rs              = Rs;
@@ -361,51 +395,88 @@ begin
   return accdesc;
 end;
 
-// AArch64.SetAccessFlag()
+// =============================================================================
+
+// Work around to allow not setting the AF flag in case of a permission fault.
+// Because the function AArch64_SetAccessFlag does not have the information
+// about a possible permission fault, and because we want to avoid overriding
+// AArch64_S1Translate, we do it in AArch64_SetDirtyState. We do the
+// communication between SetAccessFlag and SetDirtyState with the help of a
+// underlying boolean UpdatedAF, with which we can discard executions that
+// do not satisfy conditions for not-setting the AFUpdate, namely when there is
+// a permission fault.
+
+// UpdatedAF is the underlying storage to communicate between
+// SetAccessFlag and SetDirtyState.
+var UpdatedAF : boolean = FALSE;
+
+// NeedCheckPermissionFault is a flag indicating to SetDirtyState that
+// SetAccessFlag would have needed to check that there was a permission fault.
+var NeedCheckPermissionFault : boolean = FALSE;
+
+// AArch64_SetAccessFlag()
 // =======================
 // Determine whether the access flag could be set by HW given the fault status
 
-var ForceNoAFUpdate : boolean;
+// We edit SetAccessFlag to allow not-setting the AccessFlag when there is a
+// permission fault. When such a choice is made, we store it in the underlying
+// storage UpdatedAF, which will be checked against the permission fault
+// record in SetDirtyState.
 
-func
-  AArch64_SetAccessFlag
-    (ha:bit, accdesc:AccessDescriptor, fault:FaultRecord)
-    => boolean
+func AArch64_SetAccessFlag(ha : bit, accdesc : AccessDescriptor, fault : FaultRecord) => boolean
 begin
     if ha == '0' || !AArch64_SettingAccessFlagPermitted(fault) then
         return FALSE;
     elsif accdesc.acctype == AccessType_AT then
-        return ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+        return ImpDefBool("AT updates AF");
     elsif accdesc.acctype IN {AccessType_DC, AccessType_IC} then
-        return ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+        return ImpDefBool("Generate access flag fault on IC/DC operations");
     else
+        // Only edited lines are the following:
+        NeedCheckPermissionFault = TRUE;
+
         // Set descriptor AF bit
-        let b = !IsWrite(accdesc) || ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
-        ForceNoAFUpdate = !b;
-        return b;
+        if !accdesc.write && accdesc.modop != MemAtomicOp_CAS then
+          // There can't be any permission fault, so we have to update AF
+          UpdatedAF = TRUE;
+
+        // There can be a permission fault, so we generate 2 executions:
+        else
+          UpdatedAF = ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
+        end;
+
+        return UpdatedAF;
     end;
 end;
 
-// AArch64.SetDirtyState()
+// AArch64_SetDirtyState()
 // =======================
 // Determine whether dirty state is required to be updated by HW given the fault status
 
-func
-  AArch64_SetDirtyState
-    (hd:bits(1), dbm:bits(1),
-     accdesc:AccessDescriptor,
-     fault:FaultRecord, fault_perm:FaultRecord) => boolean
+// This function is edited to guarantee that if there isn't a permission fault,
+// the AF should have been updated.
+
+func AArch64_SetDirtyState(hd : bits(1), dbm : bits(1),
+                           accdesc : AccessDescriptor,
+                           fault : FaultRecord,
+                           fault_perm : FaultRecord) => boolean
 begin
-  CheckProp(fault_perm.statuscode != Fault_None || !ForceNoAFUpdate);
-  if hd == '0' then
-      return FALSE;
-  elsif !AArch64_SettingDirtyStatePermitted(fault, fault_perm) then
-      return FALSE;
-  elsif accdesc.acctype IN {AccessType_AT, AccessType_IC, AccessType_DC} then
-      return FALSE;
-  elsif !accdesc.write then
-      return FALSE;
-  else
-      return dbm == '1';
-  end;
+    // Only edited line is this added check:
+    if NeedCheckPermissionFault && fault_perm.statuscode == Fault_None then
+      // If there has not been a fault, we have to update AF
+      CheckProp(UpdatedAF);
+    end;
+
+    if hd == '0' then
+        return FALSE;
+    elsif !AArch64_SettingDirtyStatePermitted(fault, fault_perm) then
+        return FALSE;
+    elsif accdesc.acctype IN {AccessType_AT, AccessType_IC, AccessType_DC} then
+        return FALSE;
+    elsif !accdesc.write then
+        return FALSE;
+    else
+        return dbm == '1';
+    end;
 end;
+
