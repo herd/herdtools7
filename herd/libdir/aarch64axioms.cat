@@ -1,0 +1,226 @@
+(*
+ * The Armv8 Application Level Memory Model.
+ *
+ * This is a machine-readable, executable and formal artefact, which aims to be
+ * the latest stable version of the Armv8 memory model.
+ * If you have comments on the content of this file, please send an email to
+ * memory-model@arm.com
+ * For a textual version of the model, see section B2.3 of the Armv8 ARM:
+ * https://developer.arm.com/documentation/ddi0487/
+ *
+ * Authors:
+ * Tiberiu Bucur <tiberiu.bucur@arm.com>
+ *
+ * Copyright (C) 2025-present, Arm Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+(*
+* This file contains "try ... with" wrappings of primitive sets of
+* effects exposed by herd. The wrappings are normally scattered around
+* files included in the aarch64.cat model, but need to be predefined
+* here in order to avoid "undefined" errors when running herd, as the
+* aarch64 model has to be included only after the axioms have been checked.
+* This is because of shadowing (redefinition) of the primitives in the
+* model (eg. let A = try A & (Exp & M) with emptyset). cat2table requires
+* knowledge of the bare primitives as exported by herd, and not as
+* redefined by the cat model, as the tool unwraps the redefinitions
+* itself when checking effect intersection.
+*)
+
+catdep (* This option says that the cat file computes dependencies *)
+
+(*
+* The file below contains "try ... with" wrappings of primitive sets of
+* effects exposed by herd. The wrappings are normally scattered around
+* files included in the aarch64.cat model, but need to be predefined
+* here in order to avoid "undefined" errors when running herd, as the
+* aarch64 model has to be included only after the axioms have been checked.
+* This is because of shadowing (redefinition) of the primitives in the
+* model (eg. let A = try A & (Exp & M) with emptyset). cat2table requires
+* knowledge of the bare primitives as exported by herd, and not as
+* redefined by the cat model, as the tool unwraps the redefinitions
+* itself when checking effect intersection.
+*)
+
+include "aarch64_wrapped_primitives.cat"
+
+(* Effect superset-subset relations.
+*  These expressions should ALWAYS be empty, hence they are asserted.
+*)
+
+assert empty (R | W | Instr | PTE | PA | T) \ M as Subsets-of-M
+assert empty NoRet \ R as NoRet-is-R
+assert empty IW \ W as IW-is-W
+assert empty (AF | DB) \ NExp as Subsets-of-NExp
+assert empty (AccessFlag | Permission | Translation) \ MMU as Subsets-of-MMU
+assert empty (BCC | EXC-RET) \ B as Subsets-of-B
+assert empty (EXC-ENTRY | TagCheck) \ FAULT as Subsets-of-FAULT
+assert empty (MMU | SVC | UndefinedInstruction) \ EXC-ENTRY as Subsets-of-EXC-ENTRY
+assert empty PTEMemAttr \ PTE as PTEMemAttr-is-PTE
+assert empty (TLBIIS | TLBInXS) \ TLBI as Subsets-of-TLBI
+assert empty DATA \ Rreg as DATA-is-Rreg
+
+assert empty (
+    DMB.ISH |
+    DMB.ISHLD |
+    DMB.ISHST |
+    DSB.ISH |
+    DSB.ISHLD |
+    DSB.ISHST |
+    DMB.SY |
+    DMB.ST |
+    DMB.LD |
+    DSB.SY |
+    DSB.ST |
+    DSB.LD |
+    DMB.OSH |
+    DSB.OSH |
+    DMB.OSHLD |
+    DSB.OSHLD |
+    DMB.OSHST |
+    DSB.OSHST |
+    ISB
+) \ F as Subsets-of-F
+
+(** assert empty (
+    PTEDevice-GRE |
+    PTEDevice-nGRE |
+    PTEDevice-nGnRE |
+    PTEDevice-nGnRnE |
+    PTENSH |
+    PTEISH |
+    PTEOSH |
+    PTEiWB |
+    PTEiWT |
+    PTEiNC |
+    PTEoWB |
+    PTEoWT |
+    PTEoNC |
+    PTENormal |
+    PTETaggedNormal |
+    PTEXS
+) \ PTEMemAttr as Subsets-of-PTEMemAttr **)
+
+(* Pairs of effects that are intersectable.
+* These expressions are not meant to be non-empty all the time. Rather,
+* all of these flags should be raised AT LEAST ONCE. This is checked by
+* the herd_axioms_test.ml runner.
+*)
+
+flag ~empty A & R as A-and-R
+flag ~empty A & Exp as A-and-Exp
+flag ~empty L & Exp as L-and-Exp
+flag ~empty L & W as L-and-W
+flag ~empty Q & R as Q-and-R
+flag ~empty Q & Exp as Q-and-Exp
+flag ~empty EXC-ENTRY & TagCheck as EXC-ENTRY-and-TagCheck
+flag ~empty Exp & R as Exp-and-R
+flag ~empty Exp & W as Exp-and-W
+flag ~empty Exp & Instr as Exp-and-Instr
+flag ~empty Exp & PA as Exp-and-PA
+flag ~empty Exp & T as Exp-and-T
+flag ~empty Instr & NExp as Instr-and-NExp
+flag ~empty Instr & R as Instr-and-R
+flag ~empty Instr & W as Instr-and-W
+flag ~empty IW & PTE as IW-and-PTE
+flag ~empty IW & PA as IW-and-PA
+flag ~empty IW & T as IW-and-T
+flag ~empty NExp & R as NExp-and-R
+flag ~empty NExp & W as NExp-and-W
+flag ~empty NExp & T as NExp-and-T
+flag ~empty PA & R as PA-and-R
+flag ~empty PA & W as PA-and-W
+flag ~empty T & R as T-and-R
+flag ~empty T & W as T-and-W
+
+(* PTE effects *)
+flag ~empty PTE & R as PTE-and-R
+flag ~empty PTE & W as PTE-and-W
+flag ~empty PTE & PTEV as PTE-and-PTEV
+flag ~empty PTE & PTEINV as PTE-and-PTEINV
+flag ~empty PTE & PTEAF0 as PTE-and-PTEAF0
+flag ~empty PTE & PTEDB0 as PTE-and-PTEDB0
+flag ~empty PTE & Exp as PTE-and-Exp
+flag ~empty PTE & NExp as PTE-and-NExp
+flag ~empty PTEMemAttr & R as PTEMemAttr-and-R
+flag ~empty PTEMemAttr & W as PTEMemAttr-and-W
+flag ~empty PTEMemAttr & PTEV as PTEMemAttr-and-PTEV
+flag ~empty PTEMemAttr & PTEINV as PTEMemAttr-and-PTEINV
+flag ~empty PTEMemAttr & PTEAF0 as PTEMemAttr-and-PTEAF0
+flag ~empty PTEMemAttr & PTEDB0 as PTEMemAttr-and-PTEDB0
+flag ~empty PTEMemAttr & Exp as PTEMemAttr-and-Exp
+flag ~empty PTEMemAttr & NExp as PTEMemAttr-and-NExp
+flag ~empty Exp & PTEV as Exp-and-PTEV
+flag ~empty Exp & PTEINV as Exp-and-PTEINV
+flag ~empty Exp & PTEAF0 as Exp-and-PTEAF0
+flag ~empty Exp & PTEDB0 as Exp-and-PTEDB0
+flag ~empty NExp & PTEV as NExp-and-PTEV
+flag ~empty NExp & PTEINV as NExp-and-PTEINV
+flag ~empty NExp & PTEAF0 as NExp-and-PTEAF0
+flag ~empty NExp & PTEDB0 as NExp-and-PTEDB0
+flag ~empty R & PTEV as R-and-PTEV
+flag ~empty R & PTEINV as R-and-PTEINV
+flag ~empty R & PTEAF0 as R-and-PTEAF0
+flag ~empty R & PTEDB0 as R-and-PTEDB0
+flag ~empty W & PTEV as W-and-PTEV
+flag ~empty W & PTEINV as W-and-PTEINV
+flag ~empty W & PTEAF0 as W-and-PTEAF0
+flag ~empty W & PTEDB0 as W-and-PTEDB0
+flag ~empty DATA & PTEV as DATA-and-PTEV
+flag ~empty DATA & PTEINV as DATA-and-PTEINV
+flag ~empty DATA & PTEAF0 as DATA-and-PTEAF0
+flag ~empty DATA & PTEDB0 as DATA-and-PTEDB0
+flag ~empty Wreg & PTEV as Wreg-and-PTEV
+flag ~empty Wreg & PTEAF0 as Wreg-and-PTEAF0
+
+include "aarch64.cat"
+
+(* 
+* Keep the relation extremities checking after the aarch64 model has been included,
+* as some relations are not primitives, but defined using function computation, whose
+* interpretation is not support in cat2table. Therefore, all such relations should be
+* documented here alongside primitives. If cat2table encounters a relation that is
+* not defined through a let bind and is not specified here either, it assumes its
+* extremities are Universe.
+*)
+
+assert empty amo \ (R * W) as amo-extremities
+assert empty rmw \ (R * W) as rmw-extremities
+assert empty co \ (W * W) as co-extremities
+assert empty co0 \ (W * W) as co0-extremities
+assert empty rf \ (W * R) as rf-extremities
+assert empty rf-reg \ (Wreg * Rreg) as rf-reg-extremities
+assert empty fr \ (R * W) as fr-extremities
+assert empty sm \ ((M | FAULT) * (M | FAULT)) as sm-extremities
+assert empty TLBI-after \ ((TLBI * (Imp & PTE & R)) | ((Imp & PTE & R) * TLBI)) as TLBI-after-extremities
+assert empty DC-after \ ((DC.CVAU * (Exp & W)) | ((Exp & W) * DC.CVAU)) as DC-after-extremities
+assert empty IC-after \ ((IC * (Imp & Instr & R)) | ((Imp & Instr & R) * IC)) as IC-after-extremities
+assert empty same-low-order-bits \ ((M | DC.CVAU | IC | FAULT) * (M | DC.CVAU | IC | FAULT)) as same-low-order-bits-extremities
+assert empty inv-domain \ ((PTE * TLBI) | (TLBI * PTE)) as inv-domain-extremities
