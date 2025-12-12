@@ -1,0 +1,10 @@
+AArch64 unrolling-limit
+{ 0:X1=x; x=3; }
+ P0            ;
+ MOV W0,#0     ;
+loop:          ;
+ ADD W0,W0,#1  ;
+ LDR W2,[X1]   ;
+ CMP W0,W2     ;
+ B.NE loop     ;
+exists (0:X0=3)

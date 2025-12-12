@@ -110,6 +110,12 @@ let o_option =
      | "-" -> outputdir := PrettyConf.StdoutOutput
      | _ -> outputdir := PrettyConf.Outputdir s),
    " select the <dir> in which output files are saved. If not set, then files are not generated.") 
+let output_format_option =
+  ("-output-format", Arg.String (function
+    | "dot" -> output_format := PrettyConf.Dot
+    | "json" -> output_format := PrettyConf.Json
+    | _ -> raise (Arg.Bad "Invalid value for `-output-format`.")),
+   "<dot|json> generate output files in the specified format, default: dot")
 let hexa_option =
   parse_bool "-hexa" PP.hexa "print numbers in hexadecimal"
 let doshow_option =
@@ -409,6 +415,7 @@ let setup_options = Arg.align ~limit:40 ([
   (* Output *)
   ("\nOutput options:", Arg.Unit Fun.id, "\n");
 
+  output_format_option ;
   ("-dotheader",Arg.String (fun s -> PP.dotheader := Some s),
    "<name> insert the contents of <name> at the beginning of generated dot files");
   parse_bool "-tikz" PP.tikz "generate dot files suitable for processing with TikZ";
@@ -667,8 +674,10 @@ let () =
     let byte = !byte
     let endian = !endian
     let outputdir = !outputdir
+    let output_format = !output_format
     let suffix = !suffix
     let dumpes = !dumpes
+    let invoked_with_cli = Some (Array.to_list Sys.argv |> List.tl)
 
     module PC = struct
       let debug = debug.Debug_herd.pretty

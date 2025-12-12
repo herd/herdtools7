@@ -28,6 +28,8 @@ module Make (O : sig
   include Top_herd.PrinterConfig
   val timeout : float option
   val outputdir : PrettyConf.outputdir_mode
+  val output_format : PrettyConf.output_format
+  val invoked_with_cli : string list option
   val suffix : string
   val dumpes : bool
 end) = struct
@@ -75,6 +77,188 @@ end) = struct
        | PrettyConf.StdoutOutput ->
           Printf.fprintf stdout "\nDOTEND %s\n" fname
 
+  let json_output_file test =
+    let base = Test_herd.basename test ^ O.suffix in
+    match O.outputdir with
+    | PrettyConf.Outputdir dir ->
+        Some (`File (Filename.concat dir (base ^ ".json")))
+    | PrettyConf.StdoutOutput -> Some (`Stdout base)
+    | PrettyConf.NoOutputdir -> None
+
+  let write_json_output test json =
+    match json_output_file test with
+    | None -> ()
+    | Some (`Stdout base) ->
+        Printf.printf "\nJSONBEGIN %s\n" base;
+        print_endline (Json.pretty_to_string json);
+        Printf.printf "JSONEND %s\n" base
+    | Some (`File file) ->
+        begin try
+          let chan = open_out file in
+          Fun.protect
+            ~finally:(fun () -> close_out chan)
+            (fun () -> output_string chan (Json.pretty_to_string json);
+                       output_char chan '\n')
+        with Sys_error msg -> Warn.warn_always "Cannot create %s: %s" file msg
+        end
+
+  let warn_cutoff test c =
+    match TR.cutoff c with
+    | Some msg ->
+        Warn.warn_always
+          "%a: unrolling limit exceeded at %s, legal outcomes may be missing."
+          Pos.pp_pos0 test.Test_herd.name.Name.file msg
+    | None -> ()
+
+  let dump_json_results ~start_time (module R : RunTest.Outcome) =
+    let open R in
+    let module S = M.S in
+    let module A = S.A in
+    let module PP = Top_herd.Printer (O) (S) in
+    let json_test test =
+      let module C = S.Cons in
+      let instruction_rows code =
+        let rec instruction labels rows = function
+          | A.Label (label, rest) ->
+              instruction (Label.pp label :: labels) rows rest
+          | A.Instruction (_, ins) ->
+              let labels =
+                if labels = [] then []
+                else ["labels", Json.list (List.rev_map Json.string labels)] in
+              let row = Json.assoc
+                (["static_poi", Json.int ins.A.CodeInstr.static_poi;
+                  "instruction", Json.string
+                    (A.pp_instruction PPMode.Ascii ins.A.CodeInstr.instr)] @ labels) in
+              [], row :: rows
+          | A.Nop | A.Symbolic _ | A.Macro _ | A.Pagealign | A.Skip _ ->
+              labels, rows in
+        let labels, rows = List.fold_left
+          (fun (labels, rows) pseudo -> instruction labels rows pseudo)
+          ([], []) code in
+        (* Trailing labels have no instruction or static program-order index. *)
+        let rows = match labels with
+          | [] -> rows
+          | _ ->
+              Json.assoc
+                ["labels", Json.list (List.rev_map Json.string labels)] :: rows in
+        List.rev rows in
+      let program =
+        List.map
+          (fun (proc, code) ->
+            let function_name = match MiscParser.proc_func proc with
+            | MiscParser.Main -> "main"
+            | MiscParser.FaultHandler -> "fault_handler" in
+            Json.assoc
+              ["proc", Json.int (MiscParser.proc_num proc);
+               "function", Json.string function_name;
+               "instructions", Json.list (instruction_rows code)])
+          test.Test_herd.annotated_prog in
+      let tr_out = OutMapping.info_to_tr test.Test_herd.info in
+      let filter = match test.Test_herd.filter with
+      | None -> []
+      | Some prop ->
+          ["filter", Json.string
+             (C.do_constraints_to_string tr_out
+                (ConstrGen.ExistsState prop))] in
+      Json.assoc
+        (["name", Json.string test.Test_herd.name.Name.name;
+         "kind", Json.string (C.dump_as_kind test.Test_herd.cond);
+         "architecture", Json.string (Archs.pp test.Test_herd.arch);
+         "info", Json.list
+           (List.map
+              (fun (key,value) ->
+                Json.assoc
+                  ["key", Json.string key; "value", Json.string value])
+              test.Test_herd.info);
+         "program", Json.list program;
+         "init", Json.string (A.dump_state test.Test_herd.init_state);
+         "condition", Json.string
+           (C.do_constraints_to_string tr_out test.Test_herd.cond)] @ filter) in
+    let executions = ref [] in
+    let collect_execution exec =
+      if O.outputdir <> PrettyConf.NoOutputdir then
+        executions := exec :: !executions in
+    let execution_graph_count, c = iter_count result.TR.exec_iter collect_execution in
+    let outcome =
+      if TR.positive c = 0 then "Never"
+      else if TR.negative c = 0 then "Always"
+      else "Sometimes" in
+    let states = A.StateSet.elements (TR.states c) in
+    let state_ids =
+      List.mapi
+        (fun i state ->
+          PP.dump_final_state test state, Printf.sprintf "state-%i" i)
+        states in
+    (* The aggregate outcomes already contain the final -outcomereads
+       projection. Use their locations to apply it to individual executions. *)
+    let displayed_locations =
+      List.fold_left
+        (fun locs (state,_,_) ->
+          List.fold_left
+            (fun locs (loc,_) -> A.RLocSet.add loc locs)
+            locs (A.rstate_to_list state))
+        A.RLocSet.empty states in
+    let graphs =
+      List.mapi
+        (fun i exec ->
+          let state,faults,solver = TR.final_state exec in
+          let state =
+            A.rstate_filter
+              (fun loc -> A.RLocSet.mem loc displayed_locations) state in
+          let state_text = PP.dump_final_state test (state,faults,solver) in
+          let final_state_id = List.assoc state_text state_ids in
+          let module Pretty = Pretty.Make(S) in
+          Pretty.Json.graph ~id:(Printf.sprintf "execution-%i" i)
+            ~is_valid:(TR.is_valid exec)
+            ~satisfies_post_condition:(TR.passes_check exec)
+            ~final_state_id (TR.concrete exec) (TR.relations exec))
+        (List.rev !executions) in
+    let final_states =
+      List.map
+        (fun (value,id) ->
+          Json.assoc ["id", Json.string id; "value", Json.string value])
+        state_ids in
+    let module TRS = TR.Make(S) in
+    let result_json = Json.assoc
+      ((["model", Json.string (Model.pp M.model);
+       "verdict", Json.string (PP.verdict test c);
+       "observation", Json.string outcome;
+       "positive", Json.int (TR.positive c);
+       "negative", Json.int (TR.negative c);
+       "candidates", Json.int (TR.candidates c);
+       "failed_candidates", Json.int (TR.failed_candidates c);
+       "execution_graph_count", Json.int execution_graph_count;
+       "final_states", Json.list final_states]) @
+       (match O.invoked_with_cli with
+       | None -> []
+       | Some args ->
+           ["invoked_with_cli", Json.list (List.map Json.string args)])) in
+    let json = Json.assoc
+      ["schema_version", Json.int 1;
+       "test", json_test test;
+       "result", result_json;
+       "execution_graphs", Json.list graphs] in
+    let suppress = match O.restrict with
+    | Restrict.Observed -> TR.candidates c = 0
+    | Restrict.NonAmbiguous ->
+        TR.candidates c <> A.StateSet.cardinal (TR.states c)
+    | Restrict.CondOne ->
+        TR.positive c <> TRS.count_prop ~byte:O.byte test c
+    | Restrict.No -> false in
+    if not suppress &&
+       not (not O.badexecs && TR.has_bad_execs ~badflag:O.badflag c) then begin
+          Itimer.stop O.timeout;
+          let time = Sys.time () -. start_time in
+          Format.printf "%a@." (fun fmt () -> PP.pp_stats ~time test c fmt) ();
+          if O.debug.Debug_herd.timers then
+            Format.printf "Timers: %a, %a, %a@."
+              O.Timer.pp O.Timer.run
+              O.Timer.pp O.Timer.semantics
+              O.Timer.pp O.Timer.model;
+          write_json_output test json;
+          warn_cutoff test c
+    end
+
   let my_remove name =
     try Sys.remove name
     with e ->
@@ -86,6 +270,9 @@ end) = struct
   | (_,PrettyConf.Outputdir _)|(_,PrettyConf.StdoutOutput)|(true,PrettyConf.NoOutputdir) -> (function _ -> ())
 
   let dump_results ~start_time (module R : RunTest.Outcome) =
+    if O.output_format = PrettyConf.Json then
+      dump_json_results ~start_time (module R)
+    else
     let open R in
     let module S = M.S in
     let module A = S.A in
@@ -162,15 +349,7 @@ end) = struct
             O.Timer.pp O.Timer.semantics
             O.Timer.pp O.Timer.model;
         do_show ();
-        begin
-          match TR.cutoff c with
-          | Some msg ->
-              Warn.warn_always
-                "%a: unrolling limit exceeded at %s, legal outcomes may be missing."
-                Pos.pp_pos0   test.Test_herd.name.Name.file
-                msg
-          | None -> ()
-        end
+        warn_cutoff test c
 
   let collect_graph_data = match O.outputdir with
     | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
