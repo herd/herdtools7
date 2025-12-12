@@ -66,6 +66,7 @@ val candidates : bool ref
 val restrict : Restrict.t ref
 val outcomereads : bool ref
 val outputdir : PrettyConf.outputdir_mode ref
+val output_format : PrettyConf.output_format ref
 val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref
