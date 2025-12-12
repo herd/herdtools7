@@ -1117,8 +1117,8 @@ used by them appearing as comments to their right.
 
   \item \AllApplyCase{t\_bits}
   \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\ve$ and bitfields $\bitfields$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usebitfield$ to each field in $\bitfields$.
+    \item $\vt$ is a bitvector type with width expression $\ve$ and bitfields $\vbitfields$;
+    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usebitfield$ to each field in $\vbitfields$.
   \end{itemize}
 \end{itemize}
 
@@ -1186,7 +1186,7 @@ used by them appearing as comments to their right.
 
 \begin{mathpar}
 \inferrule[t\_bits]{}{
-  \usety(\overname{\TBits(\ve, \bitfields)}{\vt}) \typearrow \overname{\useexpr(\ve) \cup \bigcup_{\vf \in\bitfields}\usebitfield(\vf)}{\ids}
+  \usety(\overname{\TBits(\ve, \vbitfields)}{\vt}) \typearrow \overname{\useexpr(\ve) \cup \bigcup_{\vf \in\vbitfields}\usebitfield(\vf)}{\ids}
 }
 \end{mathpar}
 
@@ -1773,9 +1773,9 @@ appearing as comments to their right.
 
   \item \AllApplyCase{nested}
   \begin{itemize}
-    \item $\vbf$ is the nested bitfield with slices $\slices$ and bitfields $\bitfields$;
+    \item $\vbf$ is the nested bitfield with slices $\slices$ and bitfields $\vbitfields$;
     \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$ and applying
-          $\usebitfield$ to each bitfield in $\bitfields$.
+          $\usebitfield$ to each bitfield in $\vbitfields$.
   \end{itemize}
 
   \item \AllApplyCase{type}
@@ -1793,9 +1793,9 @@ appearing as comments to their right.
 }
 \and
 \inferrule[nested]{
-  \ids \eqdef \bigcup_{\bfone\in\bitfields}\usebitfield(\vs) \cup \bigcup_{\vs\in\slices}\useslice(\vs)
+  \ids \eqdef \bigcup_{\vbfone\in\vbitfields}\usebitfield(\vs) \cup \bigcup_{\vs\in\slices}\useslice(\vs)
 }{
-  \usebitfield(\overname{\BitFieldNested(\Ignore, \slices, \bitfields)}{\vbf}) \typearrow \ids
+  \usebitfield(\overname{\BitFieldNested(\Ignore, \slices, \vbitfields)}{\vbf}) \typearrow \ids
 }
 \and
 \inferrule[type]{

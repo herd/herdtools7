@@ -1373,7 +1373,7 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
 \begin{itemize}
   \item \AllApplyCase{empty}
   \begin{itemize}
-    \item $\args$ is the empty list;
+    \item $\vargs$ is the empty list;
     \item $\tenvwithargs$ is $\newtenv$;
     \item $\newargs$ is $\acc$;
     \item \Proseeqdef{$\vses$}{$\vsesin$}
@@ -1381,7 +1381,7 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
-    \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
+    \item $\vargs$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
     \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields
           $(\newtenvp, \ttyp, \vsesty)$\ProseOrTypeError;
     \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \ttyp)$;
@@ -1394,7 +1394,7 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc), \vsesin) \typearrow
+  \annotateargs(\tenv, \overname{\emptylist}{\vargs}, (\newtenv, \acc), \vsesin) \typearrow
   (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs}, \overname{\vsesin}{\vses})
 }
 \and
@@ -1405,7 +1405,7 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
   {\begin{array}{r}\annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \newses) \OrTypeError\end{array}}\\\\
   \vses \eqdef \vsesty \cup\ \newses
 }{
-  {\begin{array}{r}\annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
+  {\begin{array}{r}\annotateargs(\tenv, \vargs, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
 }
 \end{mathpar}
 

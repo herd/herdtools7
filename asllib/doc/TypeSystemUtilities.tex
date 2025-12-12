@@ -153,21 +153,21 @@ which does not exist.
 \begin{itemize}
   \item \AllApplyCase{match}
   \begin{itemize}
-    \item $\bitfields$ starts with a bitfield $\vbf$;
+    \item $\vbitfields$ starts with a bitfield $\vbf$;
     \item obtaining the name associated with $\vbf$ yields $\name$;
     \item the result is $\vbf$.
   \end{itemize}
 
   \item \AllApplyCase{tail}
   \begin{itemize}
-    \item $\bitfields$ starts with a bitfield $\vbf$ and continues with the tail list $\bitfieldsp$;
+    \item $\vbitfields$ starts with a bitfield $\vbf$ and continues with the tail list $\bitfieldsp$;
     \item obtaining the name associated with $\vbf$ yields $\namep$, which is different than $\name$;
     \item finding the bitfield associated with $\name$ in $\bitfieldsp$ yields the result $\vr$.
   \end{itemize}
 
   \item \AllApplyCase{empty}
   \begin{itemize}
-    \item $\bitfields$ is an empty list;
+    \item $\vbitfields$ is an empty list;
     \item the result is $\None$.
   \end{itemize}
 \end{itemize}
@@ -177,7 +177,7 @@ which does not exist.
 \inferrule[match]{
   \bitfieldgetname(\vbf) \typearrow \name
 }{
-  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \overname{\some{\vbf}}{\vr}
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\vbitfields}) \typearrow \overname{\some{\vbf}}{\vr}
 }
 \and
 \inferrule[tail]{
@@ -185,11 +185,11 @@ which does not exist.
   \name \neq \namep\\
   \findbitfieldopt(\name, \bitfieldsp) \typearrow \vr
 }{
-  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \vr
+  \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\vbitfields}) \typearrow \vr
 }
 \and
 \inferrule[empty]{}{
-  \findbitfieldopt(\name, \overname{\emptylist}{\bitfields}) \typearrow \None
+  \findbitfieldopt(\name, \overname{\emptylist}{\vbitfields}) \typearrow \None
 }
 \end{mathpar}
 
@@ -209,11 +209,11 @@ $\ArrayLengthExpr(\ELInt{3})$, and
 \]
 
 Annotating the expression \verb|big_little_arr[[LITTLE]]| yields\\
-$\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
+$\ArrayLengthEnum(\vbitsArray, [\vBIG, \vLITTLE])$, and
 \[
 \begin{array}{r}
-\typeofarraylength(\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])) \typearrow \\
-\TNamed(\BitsArray) \enspace.
+\typeofarraylength(\ArrayLengthEnum(\vbitsArray, [\vBIG, \vLITTLE])) \typearrow \\
+\TNamed(\vbitsArray) \enspace.
 \end{array}
 \]
 

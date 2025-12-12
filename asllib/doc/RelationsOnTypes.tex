@@ -518,8 +518,8 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \tstruct(\tenv, \vs) \typearrow \vsstruct\\
   \astlabel(\vt) = \TBits \land \astlabel(\vsstruct) = \TBits\\
-  \vt = \TBits(\widtht, \bitfields)\\
-  \bitfields \neq \emptylist
+  \vt = \TBits(\widtht, \vbitfields)\\
+  \vbitfields \neq \emptylist
 }{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
