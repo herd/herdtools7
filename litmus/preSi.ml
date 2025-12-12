@@ -1035,6 +1035,8 @@ module Make
               | Constant.(Symbolic (Virtual {pac; _}))
                 when not (PAC.is_canonical pac) ->
                   Warn.user_error "PAC not supported in post-conditions in litmus"
+              | Constant.(Symbolic (Virtual { name = Symbol.Label(p, lbl); _ }))
+                   -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p lbl)
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
@@ -1572,10 +1574,10 @@ module Make
             Warn.fatal "Record used as scalar"
           | Symbolic (Virtual a) when not (PAC.is_canonical a.pac) ->
             Warn.user_error "Litmus cannot initialize a virtual address with a non-canonical PAC field"
-          | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
-            sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
           | Symbolic (Virtual {name=Constant.Symbol.Label(p,lbl);_}) ->
             sprintf "_vars->labels.%s" (OutUtils.fmt_lbl_var p lbl)
+          | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
+            sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
           | Tag _|Symbolic _ ->
             Warn.user_error "Litmus cannot handle this initial value %s"
               (A.V.pp_v v)
