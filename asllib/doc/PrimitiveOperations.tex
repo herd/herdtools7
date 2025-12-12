@@ -26,10 +26,11 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   \item \SyntaxRef{Primitive Operations} defines the syntax for unary operations and binary operations;
   \item \AbstractSyntaxRef{Primitive Operations} defines the AST for unary operations and binary operations;
   \item \secref{PrimitiveOperationSignatures} defines the signatures for all primitive operations;
+  \item \secref{PrimitiveOperationDomains} defines the valid sets of operand values for primitive operations;
   \item \TypeRulesRef{Primitive Operations} defines the static evaluation of primitive operations for literal values;
-  \item \SemanticsRulesRef{Primitive Operations} defines how to adapt $\unopliterals$
-        and $\binopliterals$ to be used by the dynamic semantics. Essentially this is done by unwrapping
-        \nativevaluesterm{} into literal values, applying $\unopliterals$ and $\binopliterals$,
+  \item \SemanticsRulesRef{Primitive Operations} defines how to adapt the static evaluation of the primitive operations
+        (given by $\unopliterals$ and $\binopliterals$) for the dynamic semantics. Essentially this is done by unwrapping
+        \nativevaluesterm{} into literal values, applying either $\unopliterals$ or $\binopliterals$,
         and finally wrapping the results by \nativevaluesterm{}.
 \end{itemize}
 
@@ -463,6 +464,44 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \end{tabular}
 \end{table}
 
+\clearpage
+\section{Primitive Operation Domains\label{sec:PrimitiveOperationDomains}}
+The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are defined for all possible literal values,
+and most binary operations are also defined for all possible combinations of literal values of their operands.
+However, some binary operations are only defined for a subset of possible operand values.
+For a given primitive operation, its \emph{domain} is the set of
+all possible combinations of argument values for which the operation is defined.
+%
+If the domain of a binary operation is not all possible combinations of argument values,
+then the operation is said to have a \emph{restricted domain}.
+%
+Otherwise, the operation results in a \typingerrorterm{}.
+
+The following table summarizes the conditions that must hold for a binary operation whose domain is restricted:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Operation} $a\;\op\;b$& \textbf{Condition}\\
+\hline
+$\divint$         & $b > 0$ and $b$ divides $a$ evenly (that is, $a \mod b = 0$)\\
+$\fdivint$        & $b > 0$\\
+$\fremint$        & $b > 0$\\
+$\expint$         & $b \geq 0$\\
+$\shiftleftint$   & $b \geq 0$\\
+$\shiftrightint$  & $b \geq 0$\\
+$\divreal$        & $b \neq 0$\\
+$\expreal$        & $a \neq 0$ and $b \geq 0$\\
+$\addbits$        & length of $a$ = length of $b$\\
+$\subbits$        & length of $a$ = length of $b$\\
+$\andbits$        & length of $a$ = length of $b$\\
+$\orbits$         & length of $a$ = length of $b$\\
+$\xorbits$        & length of $a$ = length of $b$\\
+$\eqbits$         & length of $a$ = length of $b$\\
+$\nebits$         & length of $a$ = length of $b$\\
+\hline
+\end{tabular}
+\end{center}
+
 \TypeRulesDef{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
@@ -470,6 +509,7 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \hypertarget{constant-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
 for a given unary operator:
+
 \[
 \unopsignatures \triangleq
 \left\{
