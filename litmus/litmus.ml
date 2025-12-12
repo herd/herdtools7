@@ -26,6 +26,11 @@ open OptNames
 
 module PStride = ParseTag.Make(Stride)
 
+module Refs = struct
+    let fault_handling = ref Fault.Handling.default
+    let mte_precision = ref Precision.default
+end
+
 let opts =
   [
 (* General behavior *)
@@ -306,8 +311,8 @@ let () =
           end
       | Some b -> b
       let ascall = !ascall
-      let fault_handling = !fault_handling
-      let mte_precision = Precision.Synchronous
+      let fault_handling = !Refs.fault_handling
+      let mte_precision = !Refs.mte_precision
       let variant = !variant
       let nocatch = false
       let crossrun = match !mode,!crossrun with

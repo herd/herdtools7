@@ -332,7 +332,7 @@ module Make
           | Indirect ->
               sprintf "*(%s%s[_i])" pref s
           end
-      | A.Location_global (G.Pte _|G.Phy _)
+      | A.Location_global (G.Pte _|G.Phy _|G.AddrT _|G.Tag _)
         -> assert false
 
       let dump_ctx_rloc pref =

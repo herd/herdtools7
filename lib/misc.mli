@@ -343,6 +343,12 @@ val tr_physical : string -> string option
 val is_physical : string -> bool
 val pp_physical : string -> string
 
+val int_of_tag: string -> int
+val tag_of_int: int -> string
+val pp_tagged : string -> int -> string
+val pp_tag : string -> string
+val add_tag : string -> string
+
 (******************)
 (* Hash utilities *)
 (******************)
