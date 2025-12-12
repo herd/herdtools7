@@ -1,0 +1,14 @@
+AArch64 CoRR+amo.swph0h0-posh0a.w0+w0
+Variant=mixed
+{
+ uint32_t 0:X3; uint32_t 0:X2;
+ 0:X0=x;
+ uint32_t 1:X1=0xccddeeff; 1:X0=x;
+}
+ P0              | P1          ;
+ MOV W2,#42      | STR W1,[X0] ;
+ SWPH W2,W1,[X0] |             ;
+ LDAR W3,[X0]    |             ;
+exists (0:X1=0xeeff /\ 0:X3=42)
+
+(* Linux's qspinlock for systems without FEAT_LSE requires that this is forbidden *)

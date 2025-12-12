@@ -2,13 +2,15 @@ record = "AArch64-mixed"
 
 cats = [
     "cats/aarch64.cat",
-    ]
+]
 
 cfgs = [
     "cfgs/web-mixed.cfg",
 ]
 
 illustrative_tests = [
+    "tests/CoRR+amo.swph0h0-posh0a.w0+w0.litmus",
+    "tests/CoRR+rmwh0h0-posh0a.w0+w0.litmus",
     "tests/MP-Koeln.litmus",
     "tests/LB+dmb.sy+data-wsi-wsi+MIXED+H.litmus",
     "tests/MP+HAmo+BAcqAmo.litmus",
