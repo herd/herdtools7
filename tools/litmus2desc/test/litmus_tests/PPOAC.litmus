@@ -1,0 +1,15 @@
+AArch64 PPOAC
+{
+0:X1=x; 0:X3=y;
+1:X3=y; 1:X5=z; 1:X1=x;
+}
+P0          | P1                  ;
+MOV W0,#1   | LDR W0,[X3]         ;
+STR W0,[X1] | EOR W2,W0,W0        ;
+MOV W2,#1   | MOV W4,#1           ;
+STR W2,[X3] | STR W4,[X5,W2,SXTW] ;
+            | LDR W6,[X5]         ;
+            | CBNZ W6,LC00        ;
+            | LC00:               ;
+            | LDR W7,[X1]         ;
+exists (1:X0=1 /\ 1:X6=1 /\ 1:X7=0)

@@ -1,0 +1,6 @@
+(executable
+ (name main)
+ (public_name litmus2desc)
+ (flags
+  (:standard -w -42))
+ (libraries herdtools unix litmus2desc))

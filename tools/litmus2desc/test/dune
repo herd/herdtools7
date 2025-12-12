@@ -1,0 +1,6 @@
+(cram
+ (deps
+  (glob_files litmus_tests/*.litmus)
+  (source_tree libdir)
+  %{bin:herd7}
+  %{bin:litmus2desc}))
