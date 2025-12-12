@@ -229,6 +229,8 @@ def check_repeated_line_sequences(
     filename: str, min_sequence_length: int = 1, max_sequence_length: int = 4
 ) -> int:
     r"""
+    THIS IS AN AI-GENRATED LINTER.
+
     Checks whether `file` contains consecutive repeated sequences of lines.
     A consecutive repeated sequence is a block of lines L1...Lk that appears twice
     in a row, like: L1...Lk L1...Lk.
