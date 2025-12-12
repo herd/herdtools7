@@ -1,0 +1,4 @@
+(cram
+ (deps
+  (glob_files litmus_tests/*.litmus)
+  %{bin:litmus2desc}))

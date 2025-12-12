@@ -1,0 +1,17 @@
+AArch64 WW+RW+R
+"PodWW Rfe PodRW Rfe Fre"
+Generator=diyone7 (version 7.58)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+Com=Rf Rf Fr
+Orig=PodWW Rfe PodRW Rfe Fre
+{
+0:X1=x; 0:X3=y;
+1:X0=y; 1:X3=x;
+2:X0=x;
+}
+ P0          | P1          | P2          ;
+ MOV W0,#2   | LDR W1,[X0] | LDR W1,[X0] ;
+ STR W0,[X1] | MOV W2,#1   |             ;
+ MOV W2,#1   | STR W2,[X3] |             ;
+ STR W2,[X3] |             |             ;
+exists ([x]=2 /\ 1:X1=1 /\ 2:X1=1)

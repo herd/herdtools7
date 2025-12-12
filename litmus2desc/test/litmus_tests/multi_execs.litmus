@@ -1,0 +1,17 @@
+AArch64 multi_execs
+"PosWW PosWW Rfe PosRR Fre"
+Generator=diyone7 (version 7.58)
+Com=Rf Fr
+Orig=PosWW PosWW Rfe PosRR Fre
+{
+0:X1=x;
+1:X0=x;
+}
+ P0          | P1          ;
+ MOV W0,#1   | LDR W1,[X0] ;
+ STR W0,[X1] | LDR W2,[X0] ;
+ MOV W2,#1   | LDR W3,[X0] ;
+ STR W2,[X1] |             ;
+ MOV W3,#3   |             ;
+ STR W3,[X1] |             ;
+exists ([x]=3 /\ 1:X1=3 /\ 1:X2=1 /\ 1:X3=0)
