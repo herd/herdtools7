@@ -10,7 +10,8 @@
     linkcolor=blue,
     filecolor=magenta,
     urlcolor=cyan,
-    breaklinks=true % Helps with breaking links across lines to reduce overfull hboxes
+    breaklinks=true,
+    pageanchor=false
 }
 
 % The \hypertarget macro suffers from having the corresponding \hyperlink
@@ -122,8 +123,6 @@
 \usepackage{comment}
 \usepackage{fancyvrb}
 \usepackage[
-  % Even pages have notes on the left, odd on the right
-  twoside,
   % Notes on the right, should be less than outer
   marginparwidth=100pt,
   % margins
@@ -137,6 +136,7 @@
 
 \newcommand\aslrefterm[0]{\href{https://github.com/herd/herdtools7/tree/master/asllib}{aslref}}
 \newcommand\linuxbashshellterm[0]{Linux bash shell}
+\newcommand\TERM[1]{#1} % escape hatch for spellchecking
 
 \fvset{fontsize=\small}
 
