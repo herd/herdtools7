@@ -87,6 +87,89 @@ def check_unused_latex_macros(latex_files: list[str]):
     return num_errors
 
 
+def check_duplicate_macro_content(latex_files: list[str]) -> int:
+    r"""
+    THIS IS AN AI-GENRATED LINTER.
+
+    Scans LaTeX sources for \newcommand macro definitions and reports cases
+    where different macro names have identical bodies (after normalization).
+
+    Handles definitions of the form:
+      \newcommand\foo{...}
+      \newcommand{\foo}{...}
+      \newcommand\foo[<arity>]{...}
+      \newcommand{\foo}[<arity>]{...}
+
+    Normalization removes comments, trims surrounding whitespace, collapses
+    internal whitespace sequences, and strips line breaks for robust matching.
+
+    Returns the number of duplicates found (sum over groups of size>1 of size-1).
+    """
+    num_errors = 0
+
+    # Build regex to capture macro name and body. Use DOTALL to allow bodies across lines.
+    # Groups:
+    # 1: name when using \foo form
+    # 2: name when using {\foo} form
+    # 3: body
+    macro_def_re = re.compile(
+        r"\\newcommand\s*(?:\\([a-zA-Z]+)|\{\\([a-zA-Z]+)\})\s*(?:\[[^\]]*\])?\s*\{(.*?)\}",
+        re.DOTALL,
+    )
+
+    # Map normalized body -> list of (macro_name, filename, line_number)
+    content_map: dict[str, list[tuple[str, str, int]]] = {}
+
+    def strip_comments(text: str) -> str:
+        # Remove comments starting with % to end of line
+        return "\n".join([line.split("%", 1)[0] for line in text.splitlines()])
+
+    def normalize_body(body: str) -> str:
+        # Remove comments again within body, trim, collapse whitespace
+        body_no_comments = strip_comments(body)
+        # Replace any sequence of whitespace (including newlines) with a single space
+        collapsed = re.sub(r"\s+", " ", body_no_comments).strip()
+        return collapsed
+
+    for filename in latex_files:
+        # Skip generated or special line include files
+        if filename.endswith("Lines.tex") or filename == "control.tex":
+            continue
+        try:
+            raw = read_file_str(filename)
+        except Exception as e:
+            print(f"ERROR: Could not read LaTeX file {filename}: {e}", file=sys.stderr)
+            return 1
+
+        # Skip files that explicitly opt-out
+        if "DO NOT LINT" in raw:
+            continue
+
+        # Remove full-line comments and trailing comments for line number estimation
+        no_comments = strip_comments(raw)
+
+        for m in macro_def_re.finditer(raw):
+            name = m.group(1) if m.group(1) else m.group(2)
+            body = m.group(3)
+            norm = normalize_body(body)
+            # Estimate line number from raw string up to match start
+            start_pos = m.start()
+            line_number = raw[:start_pos].count("\n") + 1
+            content_map.setdefault(norm, []).append((name, filename, line_number))
+
+    # Report duplicates: content mapped to multiple macro names
+    for norm_body, entries in content_map.items():
+        if len(entries) > 1:
+            # Build readable list
+            macros_list = ", ".join([f"\\{n} ({fn}:{ln})" for n, fn, ln in entries])
+            print(
+                f"ERROR: Duplicate macro bodies detected for: {macros_list}"
+            )
+            num_errors += len(entries) - 1
+
+    return num_errors
+
+
 def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     r"""
     Checks whether all labels defined in `\hyperlink` definitions match
@@ -1476,9 +1559,9 @@ def main():
     num_errors += check_unused_latex_macros(all_latex_sources)
     num_errors += check_zero_arg_macro_misuse(content_latex_sources)
     num_errors += check_macro_arity(content_latex_sources)
+    num_errors += check_duplicate_macro_content(all_latex_sources)
     num_errors += check_relation_references(content_latex_sources)
     num_errors += check_duplicate_asllisting_references(content_latex_sources)
-    # Ensure each \usepackage appears at most once across all .tex sources
     num_errors += check_duplicate_usepackage(all_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,

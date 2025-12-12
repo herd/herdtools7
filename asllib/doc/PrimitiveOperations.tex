@@ -571,9 +571,9 @@ not_bits: NOT '11 01' = 0x2
 
   \item \AllApplyCase{not\_bits}
   \begin{itemize}
-    \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\bits$;
-    \item $\vc$ is the sequence of bits of the same length as $\bits$ where in each position
-          the bit in $\vr$ is defined as the negation of the bit of $\bits$ in the same position;
+    \item $\op$ is $\NOT$ and $\vl$ is a bitvector literal for the sequence of bits $\vbits$;
+    \item $\vc$ is the sequence of bits of the same length as $\vbits$ where in each position
+          the bit in $\vr$ is defined as the negation of the bit of $\vbits$ in the same position;
     \item define $\vr$ as the bitvector literal for $\vc$.
   \end{itemize}
 \end{itemize}
@@ -600,17 +600,17 @@ not_bits: NOT '11 01' = 0x2
 }
 \and
 \inferrule[not\_bits.empty]{
-  \bits \eqname \emptylist\\
+  \vbits \eqname \emptylist\\
   c \eqdef \emptylist
 }{
-  \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
+  \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\vbits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \and
 \inferrule[not\_bits.non\_empty]{
-  \bits \eqname \vb_{k..0}\\
+  \vbits \eqname \vb_{k..0}\\
   c \eqdef [i=k..0: (1-\vb_\vi)]
 }{
-  \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
+  \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\vbits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
 } % END_OF_BACKUP_RULE

@@ -1371,10 +1371,10 @@ of \verb|Foo|.
 
   \item \AllApplyCase{tbits}
   \begin{itemize}
-    \item $\vtone$ is the bitvector type with width expression $\vwone$ and list of bitfields $\bfone$, that is, $\TBits(\vwone, \bfone)$;
-    \item $\vttwo$ is the bitvector type with width expression $\vwtwo$ and list of bitfields $\bftwo$, that is, $\TBits(\vwtwo, \bftwo)$;
+    \item $\vtone$ is the bitvector type with width expression $\vwone$ and list of bitfields $\vbfone$, that is, $\TBits(\vwone, \vbfone)$;
+    \item $\vttwo$ is the bitvector type with width expression $\vwtwo$ and list of bitfields $\vbftwo$, that is, $\TBits(\vwtwo, \vbftwo)$;
     \item testing whether $\vwone$ and $\vwtwo$ are equivalent bitwidths in $\tenv$ yields $\vbone$\ProseOrTypeError;
-    \item testing whether $\bfone$ and $\bftwo$ are equivalent lists of bitfields in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item testing whether $\vbfone$ and $\vbftwo$ are equivalent lists of bitfields in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
   \end{itemize}
 
@@ -1473,10 +1473,10 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[tbits]{
   \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone \OrTypeError\\\\
-  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo \OrTypeError\\\\
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \typeequal(\tenv, \overname{\TBits(\vwone, \bfone)}{\vtone}, \overname{\TBits(\vwtwo, \bftwo)}{\vttwo}) \typearrow \vb
+  \typeequal(\tenv, \overname{\TBits(\vwone, \vbfone)}{\vtone}, \overname{\TBits(\vwtwo, \vbftwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1571,33 +1571,33 @@ of \verb|Foo| are not equivalent.
 \begin{itemize}
   \item \AllApplyCase{different\_lengths}
   \begin{itemize}
-    \item the number of bitfields in $\bfone$ is different from the number of bitfields in $\bftwo$;
+    \item the number of bitfields in $\vbfone$ is different from the number of bitfields in $\vbftwo$;
     \item $\vb$ is $\False$.
   \end{itemize}
 
   \item \AllApplyCase{same\_lengths}
   \begin{itemize}
-    \item the number of bitfields in $\bfone$ is the same as the number of bitfields in $\bftwo$;
-    \item testing whether the bitfield $\bfone[i]$ is equivalent to $\bftwo[i]$ in $\tenv$ for every index
-          of $\bfone$ yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for every index of $\bfone$.
+    \item the number of bitfields in $\vbfone$ is the same as the number of bitfields in $\vbftwo$;
+    \item testing whether the bitfield $\vbfone[i]$ is equivalent to $\vbftwo[i]$ in $\tenv$ for every index
+          of $\vbfone$ yields $\vb_i$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for every index of $\vbfone$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_lengths]{
-  \equallength(\bfone, \bftwo) \typearrow \False
+  \equallength(\vbfone, \vbftwo) \typearrow \False
 }{
-  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \False
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \False
 }
 \and
 \inferrule[same\_lengths]{
-  \equallength(\bfone, \bftwo) \typearrow \True\\
-  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
-  \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
+  \equallength(\vbfone, \vbftwo) \typearrow \True\\
+  i\in\listrange(\vbfone): \bitfieldequal(\tenv, \vbfone[i], \vbftwo[i]) \typearrow \vb_i\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\vbfone)} \vb_i
 }{
-  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
+  \bitfieldsequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1622,14 +1622,14 @@ or different nested bitfields.
 \begin{itemize}
   \item \AllApplyCase{different\_labels}
   \begin{itemize}
-    \item the AST labels of $\bfone$ and $\bftwo$ are different;
+    \item the AST labels of $\vbfone$ and $\vbftwo$ are different;
     \item $\vb$ is $\False$.
   \end{itemize}
 
   \item \AllApplyCase{bitfield\_simple}
   \begin{itemize}
-    \item $\bfone$ is a simple bitfield with name $\nameone$ and list of slices $\slicesone$, that is, \\ $\BitFieldSimple(\nameone, \slicesone)$;
-    \item $\bftwo$ is a simple bitfield with name $\nametwo$ and list of slices $\slicestwo$, that is, \\ $\BitFieldSimple(\nametwo, \slicestwo)$;
+    \item $\vbfone$ is a simple bitfield with name $\nameone$ and list of slices $\slicesone$, that is, \\ $\BitFieldSimple(\nameone, \slicesone)$;
+    \item $\vbftwo$ is a simple bitfield with name $\nametwo$ and list of slices $\slicestwo$, that is, \\ $\BitFieldSimple(\nametwo, \slicestwo)$;
     \item checking whether $\nameone$ is equal to $\nametwo$ yields $\vbone$;
     \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
     \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
@@ -1637,9 +1637,9 @@ or different nested bitfields.
 
   \item \AllApplyCase{bitfield\_nested}
   \begin{itemize}
-    \item $\bfone$ is a nested bitfield with name $\nameone$, list of slices $\slicesone$, and nested bitfields $\bfoneone$, that is,
+    \item $\vbfone$ is a nested bitfield with name $\nameone$, list of slices $\slicesone$, and nested bitfields $\bfoneone$, that is,
           $\BitFieldNested(\nameone, \slicesone, \bfoneone)$;
-    \item $\bftwo$ is a nested bitfield with name $\nametwo$, list of slices $\slicestwo$, and nested bitfields $\bftwoone$, that is,
+    \item $\vbftwo$ is a nested bitfield with name $\nametwo$, list of slices $\slicestwo$, and nested bitfields $\bftwoone$, that is,
           $\BitFieldNested(\nametwo, \slicestwo, \bftwoone)$;
     \item checking whether $\nameone$ is equal to $\nametwo$ yields $\True$\ProseTerminateAs{\False};
     \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbone$\ProseOrTypeError;
@@ -1649,9 +1649,9 @@ or different nested bitfields.
 
   \item \AllApplyCase{bitfield\_typed}
   \begin{itemize}
-    \item $\bfone$ is a typed bitfield with name $\nameone$, list of slices $\slicesone$, and type $\vtone$, that is,
+    \item $\vbfone$ is a typed bitfield with name $\nameone$, list of slices $\slicesone$, and type $\vtone$, that is,
           $\BitFieldType(\nameone, \slicesone, \vtone)$;
-    \item $\bftwo$ is a typed bitfield with name $\nametwo$, list of slices $\slicestwo$, and type $\vttwo$, that is,
+    \item $\vbftwo$ is a typed bitfield with name $\nametwo$, list of slices $\slicestwo$, and type $\vttwo$, that is,
           $\BitFieldType(\nametwo, \slicestwo, \vttwo)$;
     \item checking whether $\nameone$ is equal to $\nametwo$ yields $\True$\ProseTerminateAs{\False};
     \item testing whether $\slicesone$ and $\slicestwo$ are equivalent in $\tenv$ yields $\vbone$\ProseOrTypeError;
@@ -1663,40 +1663,40 @@ or different nested bitfields.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[different\_labels]{
-  \astlabel(\bfone) \neq \astlabel(\bftwo)
+  \astlabel(\vbfone) \neq \astlabel(\vbftwo)
 }{
-  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
+  \bitfieldequal(\tenv, \vbfone, \vbftwo) \typearrow \False
 }
 \and
 \inferrule[bitfield\_simple]{
-  \bfone = \BitFieldSimple(\nameone, \slicesone)\\
-  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
+  \vbfone = \BitFieldSimple(\nameone, \slicesone)\\
+  \vbftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
   \booltrans(\nameone = \nametwo) \booltransarrow \vbone\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+  \bitfieldequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }
 \and
 \inferrule[bitfield\_nested]{
-  \bfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
-  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+  \vbfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
+  \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
   \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\\\\
   \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
 }{
-  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+  \bitfieldequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }
 \and
 \inferrule[bitfield\_typed]{
-  \bfone = \BitFieldType(\nameone, \slicesone, \vtone)\\
-  \bftwo = \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
+  \vbfone = \BitFieldType(\nameone, \slicesone, \vtone)\\
+  \vbftwo = \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
   \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False \\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\\\\
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
+  \bitfieldequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }
 \end{mathpar}
 
@@ -1789,13 +1789,13 @@ corresponding constraint on the left-hand-side of that assignment.
 }
 \and
 \inferrule[constraint\_range]{
-  \bfone = \ConstraintRange(\veoneone, \veonetwo)\\
-  \bftwo = \ConstraintRange(\vetwoone, \vetwotwo)\\
+  \vbfone = \ConstraintRange(\veoneone, \veonetwo)\\
+  \vbftwo = \ConstraintRange(\vetwoone, \vetwotwo)\\
   \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
-  \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
+  \constraintequal(\tenv, \vbfone, \vbftwo) \typearrow \vb
 }
 \end{mathpar}
 

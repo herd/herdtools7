@@ -1116,7 +1116,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \inferrule[single\_returned\_value]{
   {
     \begin{array}{r}
-  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
+  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\vargs) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
   \end{array}
   }\\\\
   \commonprefixline\\\\
@@ -1673,19 +1673,19 @@ which includes the type annotation \verb|bits(4)|.
   \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
   \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
   \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
+  \item $\vtetwo$ is a bitvector type with bit fields $\vbitfields$;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{simple}
     \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
+      \item $\fieldname$ is declared in $\vbitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
       \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
       \item annotating $\vethree$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
     \end{itemize}
 
     \item \AllApplyCase{nested}
     \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and nested bitfields $\bitfieldsp$
+      \item $\fieldname$ is declared in $\vbitfields$ with a slice list $\slices$ and nested bitfields $\bitfieldsp$
             ($\BitFieldNested(\Ignore, \slices, \bitfieldsp)$);
       \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
       \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
@@ -1696,7 +1696,7 @@ which includes the type annotation \verb|bits(4)|.
 
     \item \AllApplyCase{typed}
     \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and typed bitfield with type $\vt$ that is,
+      \item $\fieldname$ is declared in $\vbitfields$ with a slice list $\slices$ and typed bitfield with type $\vt$ that is,
             $\BitFieldType(\Ignore, \slices, \vt)$;
       \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
       \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
@@ -1706,7 +1706,7 @@ which includes the type annotation \verb|bits(4)|.
 
     \item \AllApplyCase{error}
     \begin{itemize}
-      \item the field $\fieldname$ is not found in $\bitfields$
+      \item the field $\fieldname$ is not found in $\vbitfields$
       \item the result is a \typingerrorterm{} indicating the missing field.
     \end{itemize}
   \end{itemize}
@@ -1718,8 +1718,8 @@ which includes the type annotation \verb|bits(4)|.
 \inferrule{
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldSimple(\Ignore, \slices)}\\
+  \vtetwo = \TBits(\Ignore, \vbitfields)\\
+  \findbitfieldopt(\vbitfields, \fieldname) \typearrow \some{ \BitFieldSimple(\Ignore, \slices)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
@@ -1731,10 +1731,10 @@ which includes the type annotation \verb|bits(4)|.
 \inferrule{
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\\\
+  \vtetwo = \TBits(\Ignore, \vbitfields)\\\\
   {
     \begin{array}{r}
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp)}
+  \findbitfieldopt(\vbitfields, \fieldname) \typearrow \\ \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp)}
     \end{array}
   }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
@@ -1750,8 +1750,8 @@ which includes the type annotation \verb|bits(4)|.
 \inferrule{
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
+  \vtetwo = \TBits(\Ignore, \vbitfields)\\
+  \findbitfieldopt(\vbitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
   \checktypesatisfies(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
@@ -1764,8 +1764,8 @@ which includes the type annotation \verb|bits(4)|.
 \inferrule{
   \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
   \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
+  \vtetwo = \TBits(\Ignore, \vbitfields)\\
+  \findbitfieldopt(\vbitfields, \fieldname) \typearrow \None
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }

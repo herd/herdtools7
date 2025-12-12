@@ -209,10 +209,10 @@ yielding the subprogram description $\vnewf$.
 \AllApply
 \begin{itemize}
   \item view $\vf$ as a subprogram description consisting of a subprogram named $\name$,
-        list of parameters $\params$, list of arguments $\args$, body $\vbody$,
+        list of parameters $\params$, list of arguments $\vargs$, body $\vbody$,
         optional return type $\rettyopt$, optional subtype $\vsubtype$,
         optional limit expression $\vlimitexpr$, and builtin flag $\vbuiltin$;
-  \item \Proserenamelocalsargs{$\args$}{$\newargs$};
+  \item \Proserenamelocalsargs{$\vargs$}{$\newargs$};
   \item \Proserenamelocalsnamedargs{$\params$}{$\newparams$};
   \item \Proserenamelocalsstmt{$\vbody$}{$\vnewbody$};
   \item \Prosemapopt{$\renamelocalsty$}{$\rettyopt$}{\\ $\newrettyopt$};
@@ -232,7 +232,7 @@ yielding the subprogram description $\vnewf$.
     \begin{array}{rcl}
    \FIELDname &:& \name, \\
    \FIELDparameters &:& \params,\\
-   \FIELDargs &:& \args,\\
+   \FIELDargs &:& \vargs,\\
    \funcbody &:& \vbody,\\
    \FIELDreturntype &:& \rettyopt,\\
    \funcsubprogramtype &:& \vsubtype\\
@@ -244,7 +244,7 @@ yielding the subprogram description $\vnewf$.
   \right\}
   }
   }\\
-  \renamelocalsargs(\args) \astarrow \newargs\\
+  \renamelocalsargs(\vargs) \astarrow \newargs\\
   \renamelocalsnamedargs(\params) \astarrow \newparams\\
   \renamelocalsstmt(\vbody) \astarrow \vnewbody\\
   \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\\
@@ -277,11 +277,11 @@ yielding the subprogram description $\vnewf$.
 \hypertarget{def-renamelocalsargs}{}
 The function
 \[
-\renamelocalsargs(\overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\args}) \aslto
+\renamelocalsargs(\overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\vargs}) \aslto
 \overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\newargs}
 \]
 renames the local storage elements appearing in the list of arguments
-$\args$, yielding the list of arguments $\newargs$.
+$\vargs$, yielding the list of arguments $\newargs$.
 } % END_OF_UNIMPORTED_RELATION
 
 
@@ -290,13 +290,13 @@ $\args$, yielding the list of arguments $\newargs$.
 \begin{itemize}
   \item \AllApplyCase{empty}
   \begin{itemize}
-    \item $\args$ is the empty list;
+    \item $\vargs$ is the empty list;
     \item \Proseeqdef{$\newargs$}{the empty list}.
   \end{itemize}
 
   \item \AllApplyCase{non\_empty}
   \begin{itemize}
-    \item $\args$ is the list with \head\ $(\name,\vt)$ and \tail\ $\vargsone$;
+    \item $\vargs$ is the list with \head\ $(\name,\vt)$ and \tail\ $\vargsone$;
     \item \Proserenamelocalsname{$\name$}{$\namep$};
     \item \Proserenamelocalsty{$\vt$}{$\vtp$};
     \item \Proserenamelocalsargs{$\vargsone$}{$\vargsonep$};
@@ -307,7 +307,7 @@ $\args$, yielding the list of arguments $\newargs$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \renamelocalsargs(\overname{\emptylist}{\args}) \astarrow \overname{\emptylist}{\newargs}
+  \renamelocalsargs(\overname{\emptylist}{\vargs}) \astarrow \overname{\emptylist}{\newargs}
 }
 \end{mathpar}
 
@@ -317,7 +317,7 @@ $\args$, yielding the list of arguments $\newargs$.
   \renamelocalsty(\vt) \astarrow \vtp\\
   \renamelocalsargs(\vargsone) \astarrow \vargsonep
 }{
-  \renamelocalsargs(\overname{(\name,\vt) \cons \vargsone}{\args}) \astarrow \overname{(\namep, \vtp) \cons \vargsonep}{\newargs}
+  \renamelocalsargs(\overname{(\name,\vt) \cons \vargsone}{\vargs}) \astarrow \overname{(\namep, \vtp) \cons \vargsonep}{\newargs}
 }
 \end{mathpar}
 
@@ -411,9 +411,9 @@ yielding the type $\newty$.
 
   \item \AllApplyCase{t\_bits}
   \begin{itemize}
-    \item $\tty$ is the \bitvectortypeterm\ with width expression $\ve$ and bitfields $\bitfields$;
+    \item $\tty$ is the \bitvectortypeterm\ with width expression $\ve$ and bitfields $\vbitfields$;
     \item \Proserenamelocalsexpr{$\ve$}{$\vep$};
-    \item \Proseeqdef{$\newty$}{the \bitvectortypeterm\ with width expression $\vep$ bitfields\\ $\bitfields$}.
+    \item \Proseeqdef{$\newty$}{the \bitvectortypeterm\ with width expression $\vep$ bitfields\\ $\vbitfields$}.
   \end{itemize}
 
   \item \AllApplyCase{t\_tuple}
@@ -478,7 +478,7 @@ yielding the type $\newty$.
 \inferrule[t\_bits]{
   \renamelocalsexpr(\ve) \astarrow \vep
 }{
-  \renamelocalsty(\overname{\TBits(\ve, \bitfields)}{\tty}) \astarrow \overname{\TBits(\vep, \bitfields)}{\newty}
+  \renamelocalsty(\overname{\TBits(\ve, \vbitfields)}{\tty}) \astarrow \overname{\TBits(\vep, \vbitfields)}{\newty}
 }
 \end{mathpar}
 
@@ -556,8 +556,8 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_call}
   \begin{itemize}
-    \item $\vs$ is a \callstatement{$\name$}{$\args$}{$\params$}{$\calltype$};
-    \item \Proserenamelocalsargs{$\args$}{$\newargs$};
+    \item $\vs$ is a \callstatement{$\name$}{$\vargs$}{$\params$}{$\calltype$};
+    \item \Proserenamelocalsargs{$\vargs$}{$\newargs$};
     \item \Proserenamelocalsnamedargs{$\params$}{$\newparams$};
     \item \Proseeqdef{$\news$}{\callstatement{$\name$}{$\newargs$}{$\newparams$}{$\calltype$}}.
   \end{itemize}
@@ -634,8 +634,8 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_print}
   \begin{itemize}
-    \item $\vs$ is a \printstatement{$\args$}{$\vnewline$};
-    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item $\vs$ is a \printstatement{$\vargs$}{$\vnewline$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\vargs$};
     \item \Proseeqdef{$\news$}{\printstatement{$\newargs$}{$\vnewline$}}.
   \end{itemize}
 
@@ -647,8 +647,8 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_pragma}
   \begin{itemize}
-    \item $\vs$ is a \pragmastatement{$\name$}{$\args$};
-    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item $\vs$ is a \pragmastatement{$\name$}{$\vargs$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\vargs$};
     \item \Proseeqdef{$\news$}{\pragmastatement{$\name$}{$\newargs$}}.
   \end{itemize}
 \end{itemize}
@@ -690,7 +690,7 @@ yielding the statement $\news$.
 
 \begin{mathpar}
 \inferrule[s\_call]{
-  \renamelocalsargs(\args) \astarrow \newargs\\
+  \renamelocalsargs(\vargs) \astarrow \newargs\\
   \renamelocalsnamedargs(\params) \astarrow \newparams
 }{
   {
@@ -701,7 +701,7 @@ yielding the statement $\news$.
           \begin{array}{rcl}
          \callname &:& \name, \\
          \callparams &:& \params, \\
-         \callargs &:& \args, \\
+         \callargs &:& \vargs, \\
          \callcalltype &:& \calltype
         \end{array}
         \right\}
@@ -835,11 +835,11 @@ yielding the statement $\news$.
 
 \begin{mathpar}
 \inferrule[s\_print]{
-  \newargs = [\ve\in\args: \renamelocalsexpr(\ve)]
+  \newargs = [\ve\in\vargs: \renamelocalsexpr(\ve)]
 }{
   {
   \begin{array}{r}
-  \renamelocalsstmt(\overname{\SPrint(\args, \vnewline)}{\vs}) \astarrow\\
+  \renamelocalsstmt(\overname{\SPrint(\vargs, \vnewline)}{\vs}) \astarrow\\
   \overname{\SPrint(\newargs, \vnewline)}{\news}
   \end{array}
   }
@@ -854,9 +854,9 @@ yielding the statement $\news$.
 
 \begin{mathpar}
 \inferrule[s\_pragma]{
-  \newargs \eqdef [\ve\in\args: \renamelocalsexpr(\ve)]
+  \newargs \eqdef [\ve\in\vargs: \renamelocalsexpr(\ve)]
 }{
-  \renamelocalsstmt(\overname{\SPragma(\name, \args)}{\vs}) \astarrow \overname{\SPragma(\name, \newargs)}{\news}
+  \renamelocalsstmt(\overname{\SPragma(\name, \vargs)}{\vs}) \astarrow \overname{\SPragma(\name, \newargs)}{\news}
 }
 \end{mathpar}
 \CodeSubsection{\RenameLocalsStmtBegin}{\RenameLocalsStmtEnd}{../ASTUtils.ml}
@@ -921,8 +921,8 @@ yielding the expression $\newe$.
 
   \item \AllApplyCase{e\_call}
   \begin{itemize}
-    \item $\ve$ is a \callexpression{$\name$}{$\params$}{$\args$}{$\calltype$};
-    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
+    \item $\ve$ is a \callexpression{$\name$}{$\params$}{$\vargs$}{$\calltype$};
+    \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\vargs$};
     \item \Proseeqdef{$\newparams$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\params$};
     \item \Proseeqdef{$\newe$}{the \callexpression{$\name$}{$\newparams$}{$\newargs$}{$\calltype$}}.
   \end{itemize}
@@ -1057,7 +1057,7 @@ yielding the expression $\newe$.
 
 \begin{mathpar}
 \inferrule[e\_call]{
-  \newargs \eqdef [\ve\in\args: \renamelocalsexpr(\ve)]\\
+  \newargs \eqdef [\ve\in\vargs: \renamelocalsexpr(\ve)]\\
   \newparams \eqdef [\ve\in\params: \renamelocalsexpr(\ve)]
 }{
   {
@@ -1069,7 +1069,7 @@ yielding the expression $\newe$.
           \begin{array}{rcl}
          \callname &:& \name, \\
          \callparams &:& \params, \\
-         \callargs &:& \args, \\
+         \callargs &:& \vargs, \\
          \callcalltype &:& \calltype
         \end{array}
         \right\}
