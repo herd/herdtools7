@@ -45,6 +45,7 @@ let run_asl code version exec =
       print_ast = false;
       print_lisp = false;
       print_serialized = false;
+      print_serialized_typed = false;
       print_typed = false;
       show_rules = false;
       strictness = (if String.equal _version "v0" then Silence else TypeCheck);
