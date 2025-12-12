@@ -9,8 +9,7 @@ Bitfields can be read from and written to. \identi{KGMC}
 \ASLListing{A bitvector type with bitfields}{bitfields1}{\definitiontests/Bitfields.asl}
 \begin{itemize}
   \item The expression \texttt{myData.flag} evaluates to the same value as \verb|myData[4]|, with type \verb|bits(1)|;
-  \item The expression \texttt{myData.data} evaluates to the same value as \\
-        \verb|myData[3:0] :: myData[8:5]|, with type \verb|bits(8)|;
+  \item The expression \texttt{myData.data} evaluates to the same value as\\ \verb|myData[3:0] :: myData[8:5]|, with type \verb|bits(8)|;
   \item There is no bitfield which accesses \verb|myData[15:10]|;
   \item The \verb|value| field overlaps with the other fields;
   \item The slices \verb|3:0| and \verb|8:5| which define \texttt{data} do not overlap each other,
@@ -61,14 +60,29 @@ is \texttt{fmt0.later1.remainder} and the \bitfieldscope{} of a bitfield with th
 \texttt{fmt0} is the empty list.
 \end{itemize}
 
-We say that two bitfields exist in the same \bitfieldscope\ if the \bitfieldscope\ of one is a prefix
-of the \bitfieldscope\ of the other. For example, consider two bitfields whose corresponding \absolutenames\ are
-\texttt{fmt0.later1.remainder} and \\
-\texttt{fmt0.later1.remainder.moving}, respectively.
-They exist in the same scope, since \texttt{fmt0.later1} is a prefix of
+\begin{definition}[Common Bitfield Scope]
+We say that two bitfields exist in the same \bitfieldscope{} if the \bitfieldscope{} of one is a prefix
+of the \bitfieldscope{} of the other.
+\end{definition}
+
+\ExampleDef{Bitfields in the Same Scope}
+The following table shows pairs of bitfields given by their \absolutenames{}.
+The pair in the left column exist in the same \bitfieldscope{},
+since \texttt{fmt0.later1} is a prefix of
 \texttt{fmt0.later1.remainder}.
-In contrast, the pair of bitfields with \absolutenames{} \texttt{fmt0.common}
-and \texttt{fmt1.common} are not in the same scope, since neither \texttt{fmt0} nor \texttt{fmt1} is a prefix of the other.
+In contrast, the pair in the right column do not,
+as neither \texttt{fmt0} nor \texttt{fmt1} is a prefix of the other.
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+\textbf{Same scope} & \textbf{Different scopes}\\
+\hline
+\texttt{fmt0.later1.remainder} & \texttt{fmt0.common} \\
+\texttt{fmt0.later1.remainder.moving} & \texttt{fmt1.common}\\
+\hline
+\end{tabular}
+\end{center}
 
 \RequirementDef{BitfieldAlignment}
 For every two bitfields of a given bitvector type,
@@ -335,16 +349,11 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
     \item \AllApplyCase{nested}
     \begin{itemize}
-      \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), \\
-            and $\slicesone$
-            yields the list of positions $\positions$\ProseOrTypeError;
-      \item checking that all positions in $\positions$ fit inside $0..\width$ yields \\
-            $\True$\ProseOrTypeError;
+      \item applying $\disjointslicestopositions$ to $\tenv$, $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), and $\slicesone$ yields the list of positions $\positions$\ProseOrTypeError;
+      \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
       \item annotating the bitfields $\bitfieldsp$ with $\widthp$ in \staticenvironmentterm{} $\tenv$ yields $ (\bitfieldspp, \vsesbitfields)$\ProseOrTypeError;
-      \item define $\newfields$ as the nested bitfield named $\name$ with $\slicesone$ and bitfields \\
-            $\bitfieldspp$, that is, $\BitFieldNested(\name, \slicesone, \bitfieldspp)$;
+      \item define $\newfields$ as the nested bitfield named $\name$ with $\slicesone$ and bitfields $\bitfieldspp$, that is,\\ $\BitFieldNested(\name, \slicesone, \bitfieldspp)$;
       \item define $\vses$ as the union of $\vsesslices$ and $\vsesbitfields$.
     \end{itemize}
 
@@ -352,15 +361,11 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
     \begin{itemize}
       \item Annotating the type $\vt$ as a non-declaration yields $(\vtp, \vsesty)$\ProseOrTypeError;
       \item checking whether the range of positions in $\slicesone$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
-      \item applying $\disjointslicestopositions$ to $\tenv$,
-            $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), \\
-            and $\slicesone$
-            yields the list of positions $\positions$\ProseOrTypeError;
+      \item applying $\disjointslicestopositions$ to $\tenv$, $\True$ (indicating that the expressions comprising $\slicesone$ must be \staticallyevaluableterm), and $\slicesone$ yields the list of positions $\positions$\ProseOrTypeError;
       \item checking that all positions in $\positions$ fit inside $0..\width$ yields $\True$\ProseOrTypeError;
       \item let $\widthp$ be the length of the list $\positions$;
       \item checking whether the $\vt$ and the bitvector with $\widthp$ bits have the same width yields $\True$\ProseOrTypeError
-      \item define $\newfield$ as the typed bitfield with name $\name$, list of slices \\
-            $\slicesone$ and type $\vtp$, that is, $\BitFieldType(\name, \slicesone, \vtp)$;
+      \item define $\newfield$ as the typed bitfield with name $\name$, list of slices $\slicesone$ and type $\vtp$, that is, $\BitFieldType(\name, \slicesone, \vtp)$;
       \item define $\vses$ as the union of $\vsesslices$ and $\vsesty$.
     \end{itemize}
   \end{itemize}

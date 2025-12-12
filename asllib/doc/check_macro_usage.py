@@ -130,6 +130,12 @@ def check_macro_arity(latex_files: list[str]) -> int:
                 required_arity, has_optional = macro_arities[macro_name]
                 actual_arity = len(args)
 
+                # If the macro is referenced without braced arguments, skip.
+                # This avoids false positives for typographic mentions or
+                # usages with only optional [..] parameters.
+                if actual_arity == 0:
+                    continue
+
                 # Allow 0-argument macros to be used with empty braces {}
                 # But reject them if used with non-empty content
                 if required_arity == 0 and actual_arity == 1:

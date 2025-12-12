@@ -100,7 +100,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \begin{itemize}
     \item the catcher has no named identifier, that is, $\vc$ is $(\overname{\None}{\nameopt}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields \\ $\True$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields $\True$\ProseOrTypeError;
     \item annotating the block $\vstmt$ in $\tenv$ yields $\newstmt$;
     \item \Proseeqdef{$\newcatcher$}{$(\overname{\None}{\nameopt}, \ttyp, \newstmt)$};
   \end{itemize}
@@ -109,7 +109,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \begin{itemize}
     \item the catcher has a named identifier, that is, $\vc$ is $(\some{\name}, \tty, \vstmt)$;
     \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields \\ $\True$\ProseOrTypeError;
+    \item determining whether $\ttyp$ has the \structureterm\ of an exception type yields $\True$\ProseOrTypeError;
     \item the identifier $\name$ is not bound in $\tenv$;
     \item binding $\name$ in the local environment of $\tenv$ with the type $\ttyp$ as an immutable variable
           (that is, with the local declaration keyword $\LDKLet$) yields the \staticenvironmentterm{} $\tenvp$;
@@ -202,7 +202,7 @@ That is, no \dynamicerrorterm{} occurs.
 \begin{itemize}
   \item $\sm$ is $\Throwing(\vv, \vvty, \sg, \envthrow)$;
   \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+    \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
         and the list of catchers $\catchers$ gives a catcher that does not declare a name ($\None$) and gives a statement $\vs$;
   \item evaluating $\vs$ in $\envthrow$ as a block (\SemanticsRuleRef{Block}) yields a (non-error)
@@ -241,7 +241,7 @@ caught MyExceptionType with msg=42
 \begin{itemize}
   \item $\sm$ is $\Throwing(\vv, \vvty, \sg, \envthrow)$;
   \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+    \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives a statement $\vs$;
   \item applying $\readvaluefrom$ to $\vv$ yields $(\vv, \vgone)$;
@@ -291,7 +291,7 @@ Otherwise
 \begin{itemize}
   \item $\sm$ is $\Throwing(\vv, \vvty, \sg, \envthrow)$;
   \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+    \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
         and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
         (that is, neither of the \texttt{catch} clauses matches the raised exception);
@@ -329,7 +329,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \begin{itemize}
   \item $\sm$ is $\Throwing(\vv, \vvty, \sg, \envthrow)$;
   \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
-  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment \\ $\denvthrow$;
+  \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
   (that is, neither of the \texttt{catch} clauses matches the raised exception);

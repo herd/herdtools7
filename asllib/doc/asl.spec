@@ -328,37 +328,37 @@ operator implies(Bool, Bool) -> Bool
   math_macro = \implies,
 };
 
-operator int_plus(list1(N)) -> N
+operator num_plus[NumType](list1(NumType)) -> NumType
 {
   associative = true,
-  math_macro = \intplus,
+  math_macro = \numplus,
 };
 
-operator int_minus(list1(N)) -> N
+operator num_minus[NumType](list1(NumType)) -> NumType
 {
   associative = true,
-  math_macro = \intminus,
+  math_macro = \numminus,
 };
 
 // Negation for number types.
-operator negate[T](T) -> T
+operator negate[NumType](NumType) -> NumType
 {
   math_macro = \negate,
 };
 
-operator int_times(list1(N)) -> N
+operator num_times[NumType](list1(NumType)) -> NumType
 {
-  math_macro = \inttimes,
+  math_macro = \numtimes,
 };
 
-operator int_divide(N, N) -> N
+operator num_divide[NumType](NumType, NumType) -> NumType
 {
-  math_macro = \intdivide,
+  math_macro = \numdivide,
 };
 
-operator int_exponent(N, N) -> N
+operator num_exponent[NumType](NumType, NumType) -> NumType
 {
-  math_macro = \intexponent,
+  math_macro = \numexponent,
 };
 
 operator less_than[NumType](NumType, NumType) -> Bool
@@ -487,7 +487,7 @@ operator nvint(z: Z) -> NV_Literal(L_Int(Z))
   math_macro = \nvintop,
 };
 
-operator nvstring(z: Z) -> NV_Literal(L_String(Strings))
+operator nvstring(s: Strings) -> NV_Literal(L_String(Strings))
 {
   math_macro = \nvstringop,
 };
@@ -517,17 +517,17 @@ constant int_lit_regex
 
 operator Lang(r : regex) -> (l: powerset(Strings))
 {
-  "{l} the set of strings defined by {r}",
+  "{l} is the set of strings defined by {r}",
   math_macro = \Lang,
 };
 
 typedef int_literal_tokens =
-  INT_LIT(N) { math_macro = \Tintlit }
+  INT_LIT(Z) { math_macro = \Tintlit }
 ;
 
-operator decimal_to_lit(s: Strings) -> INT_LIT(n: N)
+operator decimal_to_lit(s: Strings) -> INT_LIT(z: Z)
 {
-  "returns an integer literal where {n} is the integer corresponding to {s} in decimal representation",
+  "returns an integer literal where {z} is the integer corresponding to {s} in decimal representation",
   math_macro = \decimaltolit,
 };
 
@@ -648,10 +648,7 @@ ast expr { "expression" } =
     | E_Slice(base: expr, slices: list0(slice))
     { "slice expression for the base expression {base} and slices {slices}" }
     | E_Cond(test: expr, true_branch: expr, false_branch: expr)
-    { "condition expression for the test expression {test}
-            true branch expression {true_branch} and
-            false branch expression {false_branch}",
-    }
+    { "condition expression with test {test}, true branch {true_branch}, and false branch {false_branch}", }
     | E_GetArray(base: expr, index: expr)
     { "array read expression for the base expression {base} and index expression {index}" }
     | E_GetField(record: expr, field_name: Identifier)
@@ -794,7 +791,7 @@ ast call { "call descriptor" } =
         call_args: list0(expr) { math_macro = \callargs },
         call_type: subprogram_type,
     ]
-    { "call of {call_type} subprogram {name}with parameters {params}, arguments {args}" }
+    { "call of {call_type} subprogram {call_name} with parameters {params}, arguments {call_args}" }
 ;
 
 render calls = expr(E_Call), stmt(S_Call);
@@ -811,9 +808,9 @@ ast ty { "type" } =
     | T_Bits(width: expr, bitfields: list0(bitfield))
     { "bitvector type of bitwidth {width} and bitfields {bitfields}" }
     | T_Tuple(component_types: list0(ty))
-    { "tuple type with components types {component_types}" }
+    { "tuple type with component types {component_types}" }
     | T_Array(index: array_index, element_type: ty)
-    { "integer type with {index} and element_type {element_type}" }
+    { "array type with {index} and element_type {element_type}" }
     | T_Named(type_name: Identifier)
     { "named type with name {type_name}" }
     | T_Enum(labels: list1(Identifier))
@@ -1068,7 +1065,7 @@ ast stmt { "statement" } =
 ////////////////////////////////////////////////
 // Typed AST
 ////////////////////////////////////////////////
-   | typed_S_Throw(exception: expr, exception_type: ty)
+  | typed_S_Throw(exception: expr, exception_type: ty)
     {
         "throw statement with exception expression {exception} and inferred type {exception_type}",
         math_macro = \typedSThrow,
@@ -1179,8 +1176,8 @@ ast func { "subprogram descriptor" } =
         optional recursion limit {recurse_limit},
         builtin flag {builtin},
         subprogram qualifier {qualifier},
-        and override qualifier {override}
-    " }
+        and override qualifier {override}"
+    }
 ;
 
 ast global_decl_keyword { "global declaration keyword" } =
@@ -1569,7 +1566,7 @@ constant return_var_prefix
   math_macro = \returnvarprefix,
 };
 
-operator string_of_nat(n: Z) -> Strings
+operator string_of_nat(n: N) -> Strings
 {
   math_macro = \stringofnat,
 };
@@ -1742,7 +1739,7 @@ typedef TContinuingOrReturning { "continuing or returning configuration" } =
 
 typedef value_read_from { "value-reading effect" } =
     (v: native_value, id: Identifier)
-    { "{v} is read with {id}" }
+    { "value-reading effect for {v} and {id}" }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1813,7 +1810,7 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 
   case Bits {
     l =: L_Bitvector(bits);
-    n := cardinality(bits);
+    n := list_len(bits);
     --
     T_Bits(E_Literal(L_Int(n)), empty_list);
   }
@@ -3143,10 +3140,8 @@ typing function binary_to_unsigned(bits: list0(Bit)) -> (num: N)
 
 typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
 {
-  "converts the integer {val} to its two's complement little endian representation
-  of {width} bits, yielding the result in {bits}.",
-  prose_application = "converting the integer {val} to its two's complement little endian representation
-  of {width} bits yields {bits}",
+  "converts the integer {val} to its two's complement representation with {width} bits, yielding the result in {bits}.",
+  prose_application = "converting the integer {val} to its two's complement representation of {width} bits yields {bits}",
 };
 
 semantics function eval_unop(op: unop, v: native_value) ->
@@ -5705,7 +5700,7 @@ typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
 typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
 {
-  "conservatively tests whether the {e1} and {e2} are
+  "conservatively tests whether {e1} and {e2} are
   \equivalentexprsterm{} in the \staticenvironmentterm{}
   {tenv} by attempting to transform both expressions to
   their \symbolicexpressionterm{} form and, if
@@ -5879,7 +5874,7 @@ typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
                         yields absolute value {e} and sign {s}",
 };
 
-typing function monomial_to_expr(e: expr, q: N) ->
+typing function monomial_to_expr(e: expr, q: Q) ->
          (new_e: expr, s: Sign)
 {
   "transforms an expression {e} and rational $q$ into the
@@ -5904,7 +5899,7 @@ typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
 {
   "transforms a list of single-variable unitary monomials
   {monoms} into an expression {e}. Intuitively, {monoms}
-  represented a multiplication of the single-variable
+  represent a multiplication of the single-variable
   unitary monomials.",
   prose_application = "",
 };

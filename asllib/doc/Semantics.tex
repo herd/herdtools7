@@ -1,6 +1,6 @@
 \chapter{Dynamic Semantics Definitions\label{chap:Semantics}}
 
-The dynamic semantics of ASL define all valid behaviors of a given ASL specification.
+The dynamic semantics of ASL define all valid behaviours of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
 or AST, for short. Second, a typechecker analyzes the \emph{\untypedast} to determine whether it
 is well-typed and, if successful, returns a \emph{\staticenvironmentterm{}} and a \emph{\typedast}.
@@ -9,7 +9,7 @@ Otherwise, it returns a \typingerrorterm{}.
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
 based on the definition of the semantics in this reference, to test and analyze a given specification.
 
-We note that the dynamic semantics are only used to define the set of valid behaviors
+We note that the dynamic semantics are only used to define the set of valid behaviours
 of a given specification without assigning any other quantification, such as the time
 required to evaluate it.
 
@@ -151,8 +151,8 @@ We define the following types of \nativevaluesterm{}:
 A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
-\hypertarget{def-pending-calls}{}
-\hypertarget{def-storage}{}
+\hypertarget{def-pending-calls}{}%
+\hypertarget{def-storage}{}%
 In turn, a dynamic global environment maps identifiers corresponding to global storage elements to \nativevaluesterm{}
 via the $\storage$ map and identifiers corresponding to subprograms to natural numbers corresponding
 to the number of calls being evaluated for those subprograms via the $\pendingcalls$ map.
@@ -164,7 +164,7 @@ The dynamic local environment maps identifiers corresponding to local storage el
 \end{definition}
 
 \begin{definition}[Well-formed Dynamic Environments]
-A dynamic environment \\
+A dynamic environment
 $\denv\in\dynamicenvs$ is \emph{well-formed} if it satisfies the following invariant:
 \[
 \dom(\denv.\dynamicenvsG.\storage) \cap \dom(\denv.\dynamicenvsL) = \emptyset \enspace.
@@ -286,7 +286,7 @@ to the given ordering label.
 
 \subsection{Concurrent Values\label{sec:ConcurrentValues}}
 \hypertarget{def-concurrentnativevalue}{}
-The ASL dynamic semantics operate over pairs consisting of \nativevaluesterm{} and \executiongraphs,
+The ASL dynamic semantics operate over pairs consisting of \nativevaluesterm{} and \executiongraphsterm,
 which we refer to as \concurrentnativevalues.
 
 \subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
@@ -465,7 +465,7 @@ Natural operational semantics evaluates the AST inductively.
 That is, it concludes transitions from semantic configurations starting from
 non-leaf AST nodes by concluding transitions from semantic configurations starting from their children nodes.
 
-\subsubsection{No Undefined Behaviors}
+\subsubsection{No Undefined Behaviours}
 When an input semantic configuration does not satisfy any semantic rule,
 there is no output semantic configuration for it to transition to. We say that
 the semantic configuration is \emph{stuck} and the ASL dynamic semantics are undefined for that
@@ -682,7 +682,7 @@ for the same macro rule:
 \end{mathpar}
 
 \begin{definition}[Meaning of ASL Big-step Rules]
-We say that a judgment\\
+We say that a judgment
 $g = C \evalarrow D$ holds if and only if one of the following applies:
 \begin{itemize}
   \item $D\not\in\TDiverging$ and there exists a \underline{finite} \derivationtreeterm{}

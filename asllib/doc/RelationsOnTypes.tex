@@ -1601,13 +1601,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   \vpzero \eqdef \precisionjoin(\vpone, \vptwo)\\
   \vexpectedconstraintlength \eqdef \choice{\op = \MOD}{\listlen{\cstwoe}}{\listlen{\csonee} \times \listlen{\cstwoe}}\\
   {
-  (\csonearg, \cstwoarg, \vp) \eqdef \left\{
-  \begin{array}{ll}
-    \textbf{if }&\vexpectedconstraintlength < \maxconstraintsize\text{ then}\\
-    & (\csonee, \cstwoe, \vpzero)\\
-    \textbf{else}&\\
-    & (\csone, \cstwof, \PrecisionLost )
-  \end{array}\right.
+  (\csonearg, \cstwoarg, \vp) \eqdef
+  \ifthenelseop[V]{\vexpectedconstraintlength < \maxconstraintsize}{(\csonee, \cstwoe, \vpzero)}{(\csone, \cstwof, \PrecisionLost)}
   }\\\\
   \commonsuffixline\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
@@ -1689,7 +1684,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \begin{mathpar}
 \inferrule[greater\_than]{
   \op \in \{\MOD, \DIV, \DIVRM\}\\\\
-  \vf \eqdef \refineconstraintbysign(\tenv, \lambda x.\ x > 0)\\
+  \refineconstraintbysign(\tenv, \lambda x.\ x > 0) \typearrow \vf\\
   \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \techeck(\newcs \neq \emptylist, \BadOperands) \typearrow \True\OrTypeError
 }{
@@ -2056,7 +2051,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
-  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{\vcp}{\epsilon}]\\
+  \vres \eqdef \concatlist{\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
   \vres \neq \emptylist
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \vres
@@ -2067,7 +2062,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
-  \vres \eqdef [\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{\vcp}{\epsilon}]\\
+  \vres \eqdef \concatlist{\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
   \vres = \emptylist\\
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \choice{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}

@@ -26,10 +26,11 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   \item \SyntaxRef{Primitive Operations} defines the syntax for unary operations and binary operations;
   \item \AbstractSyntaxRef{Primitive Operations} defines the AST for unary operations and binary operations;
   \item \secref{PrimitiveOperationSignatures} defines the signatures for all primitive operations;
+  \item \secref{PrimitiveOperationDomains} defines the valid sets of operand values for primitive operations;
   \item \TypeRulesRef{Primitive Operations} defines the static evaluation of primitive operations for literal values;
-  \item \SemanticsRulesRef{Primitive Operations} defines how to adapt $\unopliterals$
-        and $\binopliterals$ to be used by the dynamic semantics. Essentially this is done by unwrapping
-        \nativevaluesterm{} into literal values, applying $\unopliterals$ and $\binopliterals$,
+  \item \SemanticsRulesRef{Primitive Operations} defines how to adapt the static evaluation of the primitive operations
+        (given by $\unopliterals$ and $\binopliterals$) for the dynamic semantics. Essentially this is done by unwrapping
+        \nativevaluesterm{} into literal values, applying either $\unopliterals$ or $\binopliterals$,
         and finally wrapping the results by \nativevaluesterm{}.
 \end{itemize}
 
@@ -41,14 +42,14 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   and $\buildbinop$ (see \ASTRuleRef{Binop}).
 
 \paragraph{Typing:} primitive operations are not directly annotated; rather \unopexpressionsterm{}
-  and \binopexpressionsterm{} are annotated (see \TypingRuleRef{EUnop} and \TypingRuleRef{EBinop}).\\
+  and \binopexpressionsterm{} are annotated (see \TypingRuleRef{EUnop} and \TypingRuleRef{EBinop}).
   Unary operations are statically evaluated by $\unopliterals$
   (see \TypingRuleRef{UnopLiterals}) and binary operations are statically evaluated
-  by $\binopliterals$ \\
+  by $\binopliterals$
   (see \TypingRuleRef{BinopLiterals}).
 
 \paragraph{Semantics:} unary operations are dynamically evaluated via
-  $\evalunop$ \\
+  $\evalunop$
   (see \SemanticsRuleRef{UnopValues})
   and binary operations are dynamically evaluated via
   $\evalbinop$ (see \SemanticsRuleRef{BinopValues}).
@@ -57,7 +58,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 \begin{flalign*}
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
-                      |\ & \Tgt \;|\; \Tgeq \;|\; \Timpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
+                      |\ & \Tgt \;|\; \Tgeq \;|\; \Tbimpl \;|\; \Tlt \;|\; \Tleq \;|\; \Tplus \;|\; \Tminus \;|\; \Tmod \;|\; \Tmul &\\
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
@@ -173,7 +174,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[impl]{}{
-  \buildbinop(\Nbinop(\Timpl)) \astarrow \overname{\IMPL}{\vastnode}
+  \buildbinop(\Nbinop(\Tbimpl)) \astarrow \overname{\IMPL}{\vastnode}
 }
 \end{mathpar}
 
@@ -312,7 +313,7 @@ $\Tband$  & $\LBool$ & $\LBool$ & $\LBool$ & $\andbool$\\
 $\Tbor$   & $\LBool$ & $\LBool$ & $\LBool$ & $\orbool$\\
 $\Teqop$  & $\LBool$ & $\LBool$ & $\LBool$ & $\eqbool$\\
 $\Tneq$   & $\LBool$ & $\LBool$ & $\LBool$ & $\nebool$\\
-$\Timpl$  & $\LBool$ & $\LBool$ & $\LBool$ & $\impliesbool$\\
+$\Tbimpl$  & $\LBool$ & $\LBool$ & $\LBool$ & $\impliesbool$\\
 $\Tbeq$   & $\LBool$ & $\LBool$ & $\LBool$ & $\equivbool$\\
 \hline
 \end{tabular}
@@ -463,6 +464,45 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \end{tabular}
 \end{table}
 
+\clearpage
+\section{Primitive Operation Domains\label{sec:PrimitiveOperationDomains}}
+The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are valid for all possible literal values,
+and most binary operations are also valid for all possible combinations of literal values of their operands.
+However, some binary operations are only considered valid for a subset of possible operand values.
+For a given primitive operation, its \emph{domain} is the set of
+all possible combinations of argument values for which the operation is considered valid.
+%
+If the domain of a binary operation is not all possible combinations of argument values,
+then the operation is said to have a \emph{restricted domain}.
+%
+If an operation is applied to arguments that are outside its domain,
+the results is a \typingerrorterm{}.
+
+The following table summarises the conditions that must hold for a binary operation whose domain is restricted:
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Operation} $a\;\op\;b$& \textbf{Condition}\\
+\hline
+$\divint$         & $b > 0$ and $b$ divides $a$ evenly (that is, $a \mod b = 0$)\\
+$\fdivint$        & $b > 0$\\
+$\fremint$        & $b > 0$\\
+$\expint$         & $b \geq 0$\\
+$\shiftleftint$   & $b \geq 0$\\
+$\shiftrightint$  & $b \geq 0$\\
+$\divreal$        & $b \neq 0$\\
+$\expreal$        & $a \neq 0$ and $b \geq 0$\\
+$\addbits$        & length of $a$ = length of $b$\\
+$\subbits$        & length of $a$ = length of $b$\\
+$\andbits$        & length of $a$ = length of $b$\\
+$\orbits$         & length of $a$ = length of $b$\\
+$\xorbits$        & length of $a$ = length of $b$\\
+$\eqbits$         & length of $a$ = length of $b$\\
+$\nebits$         & length of $a$ = length of $b$\\
+\hline
+\end{tabular}
+\end{center}
+
 \TypeRulesDef{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
@@ -470,6 +510,7 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \hypertarget{constant-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
 for a given unary operator:
+
 \[
 \unopsignatures \triangleq
 \left\{
@@ -566,8 +607,8 @@ not_bits: NOT '11 01' = 0x2
 }
 \and
 \inferrule[not\_bits.non\_empty]{
-  \bits \eqname \vb_{1..k}\\
-  c \eqdef [i=1..k: (1-\vb_\vi)]
+  \bits \eqname \vb_{k..0}\\
+  c \eqdef [i=k..0: (1-\vb_\vi)]
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
@@ -1109,10 +1150,10 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{eq\_bits\_not\_empty}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\EQ$;
-    \item define $\vb$ as $\True$ if and only if $a_i$ is equal to $b_i$, for $i=1..k$;
+    \item define $\vb$ as $\True$ if and only if $a_i$ is equal to $b_i$, for $i=k..0$;
     \item define $\vr$ as the Boolean literal for $\vb$.
   \end{itemize}
 
@@ -1127,59 +1168,59 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{or\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\OR$;
-    \item define $c_i$ as the maximum of $a_i$ and $b_i$ for $i=1..k$;
-    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+    \item define $c_i$ as the maximum of $a_i$ and $b_i$ for $i=k..0$;
+    \item define $\vr$ as the bitvector literal for $c_{k..0}$.
   \end{itemize}
 
   \item \AllApplyCase{and\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\AND$;
-    \item define $c_i$ as the minimum of $a_i$ and $b_i$ for $i=1..k$;
-    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+    \item define $c_i$ as the minimum of $a_i$ and $b_i$ for $i=k..0$;
+    \item define $\vr$ as the bitvector literal for $c_{k..0}$.
   \end{itemize}
 
   \item \AllApplyCase{xor\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\XOR$;
-    \item define $c_i$ as $1$ if $a_i$ is different from $b_i$ and $0$ otherwise, for $i=1..k$;
-    \item define $\vr$ as the bitvector literal for $c_{1..k}$.
+    \item define $c_i$ as $1$ if $a_i$ is different from $b_i$ and $0$ otherwise, for $i=k..0$;
+    \item define $\vr$ as the bitvector literal for $c_{k..0}$.
   \end{itemize}
 
   \item \AllApplyCase{add\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\ADD$;
-    \item define $a$ as the natural number represented by $a_{1..k}$;
-    \item define $b$ as the natural number represented by $b_{1..k}$;
-    \item define $c$ as the two's complement little endian representation of $a+b$ in $k$ bits;
+    \item define $a$ as the natural number represented by $a_{k..0}$;
+    \item define $b$ as the natural number represented by $b_{k..0}$;
+    \item define $c$ as the two's complement representation of $a+b$ in $k$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
   \item \AllApplyCase{sub\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..k}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{k..0}$;
     \item $\op$ is $\SUB$;
-    \item define $a$ as the natural number represented by $a_{1..k}$;
-    \item define $b$ as the natural number represented by $b_{1..k}$;
-    \item define $c$ as the two's complement little endian representation of $a-b$ in $k$ bits;
+    \item define $a$ as the natural number represented by $a_{k..0}$;
+    \item define $b$ as the natural number represented by $b_{k..0}$;
+    \item define $c$ as the two's complement representation of $a-b$ in $k$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
   \item \AllApplyCase{concat\_bits}
   \begin{itemize}
-    \item $\vvone$ is a bitvector literal for $a_{1..k}$;
-    \item $\vvtwo$ is a bitvector literal for $b_{1..l}$;
+    \item $\vvone$ is a bitvector literal for $a_{k..0}$;
+    \item $\vvtwo$ is a bitvector literal for $b_{l..0}$;
     \item $\op$ is $\BVCONCAT$;
-    \item define $\vr$ as the bitvector literal for $a_{1..k}b_{1..l}$.
+    \item define $\vr$ as the bitvector literal for $a_{k..0}b_{l..0}$.
   \end{itemize}
 
   \item \AllApplyCase{add\_bits\_int}
@@ -1188,7 +1229,7 @@ The set of valid signatures for string concatenation operations is defined as fo
     \item $\vvtwo$ is an integer literal for $b$;
     \item $\op$ is $\ADD$;
     \item define $y$ as the natural number represented by $a$;
-    \item define $c$ as the two's complement little endian representation of $y+b$ in $\listlen{a}$ bits;
+    \item define $c$ as the two's complement representation of $y+b$ in $\listlen{a}$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
@@ -1198,7 +1239,7 @@ The set of valid signatures for string concatenation operations is defined as fo
     \item $\vvtwo$ is an integer literal for $b$;
     \item $\op$ is $\SUB$;
     \item define $y$ as the natural number represented by $a$;
-    \item define $c$ as the two's complement little endian representation of $y-b$ in $\listlen{a}$ bits;
+    \item define $c$ as the two's complement representation of $y-b$ in $\listlen{a}$ bits;
     \item define $\vr$ as the bitvector literal for $c$.
   \end{itemize}
 
@@ -1216,7 +1257,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{concat\_strings}
   \begin{itemize}
-    \item $\vvone$ and $\vvtwo$ are not both bitvector literals;
+    \item $\vvone$ and $\vvtwo$ are not both bitvector literals \ProseNote{(otherwise the case \textsc{concat\_bits} would apply)};
     \item $\op$ is $\STRCONCAT$;
     \item define $\vsone$ as $\literaltostring(\vvone)$;
     \item define $\vstwo$ as $\literaltostring(\vvtwo)$;
@@ -1515,9 +1556,9 @@ and as $0$ for an empty bit sequence:
 }
 \and
 \inferrule[eq\_bits\_not\_empty]{
-  \vb \eqdef \bigwedge_{i=1}^k a_i = b_i
+  \vb \eqdef \bigwedge_{i=0}^k a_i = b_i
 }{
-  \binopliterals(\overname{\EQ}{\op}, \overname{\LBitvector(a_{1..k})}{\vvone}, \overname{\LBitvector(b_{1..k})}{\vvtwo}) \typearrow
+  \binopliterals(\overname{\EQ}{\op}, \overname{\LBitvector(a_{k..0})}{\vvone}, \overname{\LBitvector(b_{k..0})}{\vvtwo}) \typearrow
   \overname{\LBool(\vb)}{\vr}
 }
 \end{mathpar}
@@ -1532,28 +1573,28 @@ and as $0$ for an empty bit sequence:
 
 \begin{mathpar}
 \inferrule[or\_bits]{
-  \vvone = \LBitvector(a_{1..k})\\
-  \vvtwo = \LBitvector(b_{1..k})\\
-  i=1..k: c_i = \max(a_i, b_i)
+  \vvone = \LBitvector(a_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\\
+  i=k..0: c_i = \max(a_i, b_i)
 }{
-  \binopliterals(\overname{\OR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\OR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{k..0})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[and\_bits]{
-  \vvone = \LBitvector(a_{1..k})\\
-  \vvtwo = \LBitvector(b_{1..k})\\
-  i=1..k: c_i = \min(a_i, b_i)
+  \vvone = \LBitvector(a_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\\
+  i=k..0: c_i = \min(a_i, b_i)
 }{
-  \binopliterals(\overname{\AND}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\AND}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{k..0})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[xor\_bits]{
-  \vvone = \LBitvector(a_{1..k})\\
-  \vvtwo = \LBitvector(b_{1..k})\\
+  \vvone = \LBitvector(a_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\\
   {
     \textit{xor\_bit} = \lambda a,b\in\Bit.\ \left\{
       \begin{array}{ll}
@@ -1562,18 +1603,18 @@ and as $0$ for an empty bit sequence:
       \end{array}
     \right.
   }\\
-  i=1..k: c_i=\textit{xor\_bit}(a_i, b_i)
+  i=k..0: c_i=\textit{xor\_bit}(a_i, b_i)
 }{
-  \binopliterals(\overname{\XOR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{1..k})
+  \binopliterals(\overname{\XOR}{\op}, \vvone, \vvtwo) \typearrow \LBitvector(c_{k..0})
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[add\_bits]{
-  \vvone = \LBitvector(a_{1..k})\\
-  \vvtwo = \LBitvector(b_{1..k})\\
-  a \eqdef \binarytounsigned(a_{1..k})\\
-  b \eqdef \binarytounsigned(b_{1..k})\\
+  \vvone = \LBitvector(a_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\\
+  a \eqdef \binarytounsigned(a_{k..0})\\
+  b \eqdef \binarytounsigned(b_{k..0})\\
   c \eqdef \inttobits(a + b, k)
 }{
   \binopliterals(\overname{\ADD}{\op}, \vvone, \vvtwo) \typearrow \overname{\LBitvector(c)}{\vr}
@@ -1582,10 +1623,10 @@ and as $0$ for an empty bit sequence:
 
 \begin{mathpar}
 \inferrule[sub\_bits]{
-  \vvone = \LBitvector(a_{1..k})\\
-  \vvtwo = \LBitvector(b_{1..k})\\
-  a \eqdef \binarytounsigned(a_{1..k})\\
-  b \eqdef \binarytounsigned(b_{1..k})\\
+  \vvone = \LBitvector(a_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\\
+  a \eqdef \binarytounsigned(a_{k..0})\\
+  b \eqdef \binarytounsigned(b_{k..0})\\
   c \eqdef \inttobits(a - b, k)
 }{
   \binopliterals(\overname{\SUB}{\op}, \vvone, \vvtwo) \typearrow \overname{\LBitvector(c)}{\vr}

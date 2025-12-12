@@ -1,16 +1,16 @@
 \usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
 \usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
-\usepackage{mathtools}  % Additional math package
 \usepackage{url}  % Automatically escapes urls
+\usepackage[final]{microtype} % Helps with breaking links across lines to reduce overfull hboxes
 \usepackage{hyperref}  % Insert links inside pdfs
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
     filecolor=magenta,
-    urlcolor=cyan
+    urlcolor=cyan,
+    breaklinks=true % Helps with breaking links across lines to reduce overfull hboxes
 }
 
 % The \hypertarget macro suffers from having the corresponding \hyperlink
@@ -112,13 +112,11 @@
   backgroundcolor=\color{yellow!10}
 }
 
-% "Dark theme"
 \usepackage{xcolor}
+% "Dark theme"
 % \pagecolor[rgb]{0.2,0.2,0.2}
 % \color[rgb]{0.5,0.5,0.5}
 
-\usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
@@ -142,7 +140,7 @@
 
 \fvset{fontsize=\small}
 
-\usepackage{enumitem}
+\usepackage[inline]{enumitem}  % For inline lists
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
 \setlist[itemize,2]{label=\textasteriskcentered}
@@ -424,12 +422,12 @@
 }
 \newcommand\assocoptname[0]{\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}} % DO NOT LINT
 
-\newcommand\intplus[0]{\mathbin{+}} % DO NOT LINT
-\newcommand\intminus[0]{\mathbin{-}} % DO NOT LINT
+\newcommand\numplus[0]{\mathbin{+}} % DO NOT LINT
+\newcommand\numminus[0]{\mathbin{-}} % DO NOT LINT
 \newcommand\negate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
-\newcommand\inttimes[0]{\mathbin{\times}} % DO NOT LINT
-\newcommand\intdivide[0]{\mathbin{\div}} % DO NOT LINT
-\newcommand\intexponent[0]{\mathbin{{^}}} % DO NOT LINT
+\newcommand\numtimes[0]{\mathbin{\times}} % DO NOT LINT
+\newcommand\numdivide[0]{\mathbin{\div}} % DO NOT LINT
+\newcommand\numexponent[0]{\mathbin{{^}}} % DO NOT LINT
 \newcommand\lessthan[0]{\mathbin{<}} % DO NOT LINT
 \newcommand\lessorequal[0]{\mathbin{\leq}} % DO NOT LINT
 \newcommand\greaterthan[0]{\mathbin{>}} % DO NOT LINT
@@ -596,7 +594,7 @@
 \newcommand\Tas[0]{\verbatimterminal{AS}{as}}
 \newcommand\Tassert[0]{\verbatimterminal{ASSERT}{assert}}
 \newcommand\Tband[0]{\verbatimterminal{BAND}{\&\&}}
-\newcommand\Tbimpl[0]{\verbatimterminal{BAND}{==>}}
+\newcommand\Tbimpl[0]{\verbatimterminal{BIMPL}{==>}}
 \newcommand\Tbegin[0]{\verbatimterminal{BEGIN}{begin}}
 \newcommand\Tbeq[0]{\verbatimterminal{BEQ}{<=>}}
 \newcommand\Tbit[0]{\verbatimterminal{BIT}{bit}}
@@ -633,7 +631,6 @@
 \newcommand\Tif[0]{\verbatimterminal{IF}{if}}
 \newcommand\Timpdef[0]{\verbatimterminal{IMPDEF}{impdef}}
 \newcommand\Timplementation[0]{\verbatimterminal{IMPLEMENTATION}{implementation}}
-\newcommand\Timpl[0]{\verbatimterminal{IMPL}{==>}}
 \newcommand\Tin[0]{\verbatimterminal{IN}{IN}}
 \newcommand\Tinteger[0]{\verbatimterminal{INTEGER}{integer}}
 \newcommand\Tlbrace[0]{\verbatimterminal{LBRACE}{\{}}
@@ -1497,7 +1494,7 @@
 
 \newcommand\nativevalueterm[0]{\hyperlink{def-nativevalue}{native value}}
 \newcommand\executiongraphterm[0]{\hyperlink{def-executiongraph}{execution graph}}
-\newcommand\executiongraphs[0]{\hyperlink{def-executiongraph}{execution graphs}}
+\newcommand\executiongraphsterm[0]{\hyperlink{def-executiongraph}{execution graphs}}
 \newcommand\nativevaluesterm[0]{\hyperlink{def-nativevalues}{native values}}
 \newcommand\concurrentnativevalue[0]{\hyperlink{def-concurrentnativevalue}{concurrent native value}}
 \newcommand\concurrentnativevalues[0]{\hyperlink{def-concurrentnativevalue}{concurrent native values}}

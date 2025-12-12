@@ -42,9 +42,9 @@ ASL Type error: Illegal application of operator + on types integer {5}
 \end{Verbatim}
 % CONSOLE_END
 
-\RequirementDef{DynamicErrorBehavior} The behaviour of an implementation when a \dynamicerrorterm{}
+\RequirementDef{DynamicErrorBehaviour} The behaviour of an implementation when a \dynamicerrorterm{}
 occurs is implementation-defined, including, but not limited to,
-(incorrect) behavior not following the dynamic semantics, termination of execution or raising an exception.
+(incorrect) behaviour not following the dynamic semantics, termination of execution or raising an exception.
 %
 Implementations should detect and report \dynamicerrorsterm{} on a ``best effort'' basis
 (that is, they are not required to detect and/or report \dynamicerrorsterm{}).
@@ -176,6 +176,7 @@ The following table summarises all error codes.
   $\PrecisionLostDefining$       & Declaration with an imprecise type & "         \\
   \hline
   $\UnreachableError$            & Unreachable error              & Dynamic       \\
+  $\DynamicAssertionFailure$     & Dynamic assertion failure      & "             \\
   $\DynamicTypeAssertionFailure$ & Dynamic type assertion failure & "             \\
   $\ArbitraryEmptyType$          & \ARBITRARY{} empty type        & "             \\
   $\DynamicBadOperands$          & Bad operands                   & "             \\

@@ -210,9 +210,8 @@ before
 begin
 beginning
 behave
-behavior
-behaviors
 behaviour
+behaviours
 being
 belongs
 below
@@ -358,6 +357,7 @@ collection
 collections
 collectively
 colloquially
+column
 combination
 combinations
 combine
