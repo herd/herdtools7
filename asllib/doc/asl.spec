@@ -328,13 +328,13 @@ operator implies(Bool, Bool) -> Bool
   math_macro = \implies,
 };
 
-operator num_plus(list1(Z)) -> Z
+operator num_plus[NumType](list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numplus,
 };
 
-operator num_minus(list1(Z)) -> Z
+operator num_minus[NumType](list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numminus,

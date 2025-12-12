@@ -466,16 +466,17 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 
 \clearpage
 \section{Primitive Operation Domains\label{sec:PrimitiveOperationDomains}}
-The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are defined for all possible literal values,
-and most binary operations are also defined for all possible combinations of literal values of their operands.
-However, some binary operations are only defined for a subset of possible operand values.
+The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are valid for all possible literal values,
+and most binary operations are also valid for all possible combinations of literal values of their operands.
+However, some binary operations are only considered valid for a subset of possible operand values.
 For a given primitive operation, its \emph{domain} is the set of
-all possible combinations of argument values for which the operation is defined.
+all possible combinations of argument values for which the operation is considered valid.
 %
 If the domain of a binary operation is not all possible combinations of argument values,
 then the operation is said to have a \emph{restricted domain}.
 %
-Otherwise, the operation results in a \typingerrorterm{}.
+If an operation is applied to arguments that are outside its domain,
+the results is a \typingerrorterm{}.
 
 The following table summarises the conditions that must hold for a binary operation whose domain is restricted:
 \begin{center}

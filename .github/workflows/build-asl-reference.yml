@@ -28,8 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y build-essential m4
-          apt-get install -y gcc libgmp-dev pkg-config python3 bzip2
+          apt-get install -y build-essential m4 gcc libgmp-dev pkg-config python3 bzip2
 
       - name: Checkout tree
         uses: actions/checkout@v4
