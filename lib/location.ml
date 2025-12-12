@@ -42,6 +42,7 @@ module type S = sig
   val global : location -> loc_global option
   val map_global :
     (loc_global -> loc_global) -> location -> location
+  val location_to_json_view : location -> Json.t
 
 (*
  * Group locations as follows
@@ -102,6 +103,20 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     let pp_rval l = match l with
     | Location_reg (proc,r) -> string_of_int proc ^ ":" ^ A.pp_reg r
     | Location_global a -> sprintf "*%s" (A.pp_global a)
+
+    let location_to_json_view (l : location) : Json.t =
+      match l with
+      | Location_reg (proc,r) ->
+          `Assoc [
+            ("type", `String "reg");
+            ("proc", `Int proc);
+            ("reg", `Assoc [ ("pprinted", `String (A.pp_reg r))]);
+          ]
+      | Location_global a ->
+          `Assoc [
+            ("type", `String "global");
+            ("pprinted", `String (A.pp_global a));
+          ]
 
     let env_for_pp env =
       Misc.group_by_int

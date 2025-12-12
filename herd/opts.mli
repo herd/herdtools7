@@ -68,6 +68,7 @@ val showkind : bool ref
 val shortlegend : bool ref
 val outcomereads : bool ref
 val outputdir : PrettyConf.outputdir_mode ref
+val output_format : PrettyConf.output_format ref
 val suffix : string ref
 val dumpes : bool ref
 val dumplem : bool ref

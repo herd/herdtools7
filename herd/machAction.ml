@@ -183,6 +183,68 @@ end = struct
   | NoAction -> "Empty"
   | Arch a -> A.ArchAction.pp a
 
+  let to_json_view a =
+    let pprinted j = `Assoc [ ("pprinted", j) ] in
+    match a with
+    | Access (d,l,v,_,_,_,_) ->
+        `Assoc [
+          ("type", `String "Access");
+          ("dir", `String (pp_dirn d));
+          ("loc", A.location_to_json_view l);
+          ("val", pprinted (`String (V.pp C.hexa v)));
+        ]
+    | Barrier b ->
+        `Assoc [
+          ("type", `String "Barrier");
+          ("pprinted", `String (A.pp_barrier_short b));
+        ]
+    | Commit (b,_) ->
+        let kind_str = (
+          match b with
+          | Bcc -> "Bcc"
+          | Pred -> "Pred"
+          | ExcReturn -> "ExcReturn")
+        in
+        `Assoc
+          [
+            ("type", `String "Commit");
+            ("kind", `String kind_str);
+          ]
+    | Amo (loc,v1,v2,_,_,_,_) ->
+        `Assoc [
+          ("type", `String "Amo");
+          ("loc", A.location_to_json_view loc);
+          ("read", `String (V.pp C.hexa v1));
+          ("written", `String (V.pp C.hexa v2));
+        ]
+    | Fault (_,oloc,d,_,_,ftype,_) ->
+        let base =
+          [
+            ("type", `String "Fault");
+            ("dir", `String (pp_dirn d));
+          ]
+        in
+        let loc_f =
+          match oloc with
+          | None -> []
+          | Some l -> [("loc", A.location_to_json_view l)]
+        in
+        let ftype_f =
+          match ftype with
+          | None -> []
+          | Some ft -> [("fault_type", `String (A.I.FaultType.pp ft))]
+        in
+        `Assoc (base @ loc_f @ ftype_f)
+    | CutOff _ -> `Assoc [ ("type", `String "CutOff"); ]
+    | Inv _ -> `Assoc [("type", `String "Inv")]
+    | CMO _ -> `Assoc [("type", `String "CMO")]
+    | NoAction -> `Assoc [ ("type", `String "NoAction") ]
+    | Arch a ->
+        `Assoc [
+          ("type", `String "Arch");
+          ("action", `Assoc [("pprinted", `String (A.ArchAction.pp a))])
+        ]
+
 (* Utility functions to pick out components *)
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)

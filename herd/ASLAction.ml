@@ -92,6 +92,8 @@ module Make (C: Config) (A : S) = struct
     | CutOff msg -> Printf.sprintf "CutOff:%s" msg
     | NoAction -> ""
 
+  let to_json_view a : Json.t = `Assoc [("pprinted", `String (pp_action a))]
+
   let is_local = function
     | Access (_, A.Location_reg (_, r), _, _, _) -> A.is_local r
     | Access _|Fault _|Barrier _|Branching _|CutOff _|NoAction

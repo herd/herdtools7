@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Producing .dot output *)
+(** Producing .dot and .json output *)
 
 open Test_herd
 open Printf
@@ -46,6 +46,15 @@ module type S = sig
       out_channel -> test -> event_structure -> unit
   val dump_es_rfm :
       out_channel -> test -> event_structure -> rfmap -> unit
+
+(********************************************************)
+(* Functions generating execution graphs in JSON format *)
+(********************************************************)
+
+  module Json : sig
+    val to_json_view : S.concrete -> S.rel_pp -> Json.t
+    val es_to_json_view : event_structure -> Json.t
+  end
 
 (************************************)
 (* Show feature: pop up a gv window *)
@@ -1613,5 +1622,127 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         let legend = if PC.showlegend then Some legend else None in
         pp_dot_event_structure
           chan test legend conc.S.str conc.S.rfmap sets vbs conc)
+
+  module Json = struct
+    let event_to_json_view (e : E.event) : Json.t =
+      let iiid_json : Json.t =
+        match e.E.iiid with
+        | E.IdInit -> `String "init"
+        | E.IdSpurious -> `String "spurious"
+        | E.IdSome ii ->
+          let inst_str = A.pp_instruction PPMode.Ascii ii.A.inst in
+          `Assoc [
+            ("proc", `Int ii.A.proc);
+            ("poi", `Int ii.A.program_order_index);
+            ("inst", `Assoc [ ("pprinted", `String inst_str) ]);
+          ]
+      in
+      `Assoc [
+        ("act", (E.Act.to_json_view e.E.action));
+        ("eiid", `Int e.E.eiid);
+        ("iiid", iiid_json);
+      ]
+
+    let rel_to_json_view (r : E.event_rel) =
+      let mk_eiid_obj n = `Assoc [ ("eiid", `Int n) ] in
+      let l =
+        E.EventRel.elements r
+        |> List.map (fun (e, e') ->
+             `Assoc [ ("src", mk_eiid_obj e.E.eiid); ("tgt", mk_eiid_obj e'.E.eiid) ])
+      in `List l
+
+    let eiid_view (e : E.event) : Json.t = `Assoc [ ("eiid", `Int e.E.eiid) ]
+
+    let make_json_view es rfmap (vbss : (string * E.event_rel) list) : Json.t =
+      let vbss =
+        vbss
+        |> List.filter_map
+          (fun (tag,r) ->
+            if StringSet.mem tag PC.unshow then None
+            else
+              let r =
+                if StringSet.mem tag PC.noid then
+                  E.EventRel.filter (fun (e1,e2) -> not (E.event_equal e1 e2)) r
+                else r
+              in Some (tag,r))
+      in
+      let events_json =
+        `List (
+          E.EventSet.elements es.S.E.events
+          |> List.map event_to_json_view)
+      in
+      let speculated_json =
+        `List (
+          E.EventSet.elements es.S.E.events
+          |> List.map eiid_view)
+      in
+      let es_fields =
+        [
+          ("events", events_json);
+          ("iico_data", rel_to_json_view es.S.E.intra_causality_data);
+          ("iico_ctrl", rel_to_json_view es.S.E.intra_causality_control);
+          ("speculated", speculated_json); (* TODO: is this a subset of [events]? *)
+        ]
+      in
+      let rfm_json : Json.t =
+        let mk_eiid_obj n = `Assoc [ ("eiid", `Int n) ] in
+        let l =
+          rfmap
+          |> S.RFMap.bindings
+          |> List.map (fun (wt, rf) ->
+               let wt_j =
+                 match wt with
+                 | S.Final loc ->
+                     `Assoc [
+                        ("type", `String "final");
+                        ("loc", A.location_to_json_view loc);
+                     ]
+                 | S.Load ev ->
+                     `Assoc [
+                        ("type", `String "load");
+                        ("event", mk_eiid_obj ev.S.E.eiid);
+                     ]
+               in
+               let rf_j =
+                 match rf with
+                 | S.Init -> `Assoc [ ("type", `String "init"); ]
+                 | S.Store ev ->
+                     `Assoc [
+                        ("type", `String "store");
+                        ("event", mk_eiid_obj ev.S.E.eiid);
+                     ]
+               in
+               `Assoc [("src", wt_j); ("tgt", rf_j)])
+        in
+        `List l
+      in
+      let vbss_json =
+        `Assoc (List.map (fun (lbl, vb) -> (lbl, rel_to_json_view vb)) vbss)
+      in
+      let visible_po_field =
+        if PC.showpo then
+          let events_by_proc_and_poi = PU.make_by_proc_and_poi es in
+          let po_edges = make_visible_po es events_by_proc_and_poi in
+          [ ("visible_po", rel_to_json_view po_edges) ]
+        else []
+      in
+      `Assoc (
+        es_fields @
+        [
+          ("rfmap", rfm_json);
+          ("viewed_before", vbss_json);
+        ] @
+        visible_po_field)
+
+    let to_json_view conc vbss =
+      let es = conc.S.str in
+      let rfmap = conc.S.rfmap in
+      make_json_view
+        (select_es es)
+        (select_rfmap rfmap)
+        (List.map (fun (tag, rel) -> tag, select_rel rel) vbss)
+
+    let es_to_json_view es = make_json_view es S.RFMap.empty []
+  end
 
 end
