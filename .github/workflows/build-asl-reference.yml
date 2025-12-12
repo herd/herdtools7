@@ -34,7 +34,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: dune,zarith,menhir,conf-which
+          ocaml-compiler: ocaml-base-compiler.5.4.0,dune,zarith,menhir,conf-which
           opam-disable-sandboxing: true
           dune-cache: true
 
