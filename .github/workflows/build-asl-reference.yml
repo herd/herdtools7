@@ -26,17 +26,10 @@ jobs:
 
     steps:
       - name: Install dependencies
-        run: apt-get update && apt-get install -y gcc libgmp-dev pkg-config python3 bzip2
+        run: apt-get update && apt-get install -y gcc libgmp-dev pkg-config python3 bzip2 opam
 
       - name: Checkout tree
         uses: actions/checkout@v4
-
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: ocaml-base-compiler.5.4.0,dune,zarith,menhir,conf-which
-          opam-disable-sandboxing: true
-          dune-cache: true
 
       - name: Mark working directory as "safe"
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
