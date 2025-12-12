@@ -1,9 +1,7 @@
 \usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
 \usepackage{amsmath}  % Classic math package
-\usepackage{amssymb}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
-\usepackage{mathtools}  % Additional math package
 \usepackage{url}  % Automatically escapes urls
 \usepackage[final]{microtype} % Helps with breaking links across lines to reduce overfull hboxes
 \usepackage{hyperref}  % Insert links inside pdfs
@@ -119,8 +117,6 @@
 % \pagecolor[rgb]{0.2,0.2,0.2}
 % \color[rgb]{0.5,0.5,0.5}
 
-\usepackage[inline]{enumitem}  % For inline lists
-\usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage[export]{adjustbox}  % For centering too wide figures
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \usepackage{comment}
@@ -144,7 +140,7 @@
 
 \fvset{fontsize=\small}
 
-\usepackage{enumitem}
+\usepackage[inline]{enumitem}  % For inline lists
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
 \setlist[itemize,2]{label=\textasteriskcentered}
@@ -1498,7 +1494,7 @@
 
 \newcommand\nativevalueterm[0]{\hyperlink{def-nativevalue}{native value}}
 \newcommand\executiongraphterm[0]{\hyperlink{def-executiongraph}{execution graph}}
-\newcommand\executiongraphs[0]{\hyperlink{def-executiongraph}{execution graphs}}
+\newcommand\executiongraphsterm[0]{\hyperlink{def-executiongraph}{execution graphs}}
 \newcommand\nativevaluesterm[0]{\hyperlink{def-nativevalues}{native values}}
 \newcommand\concurrentnativevalue[0]{\hyperlink{def-concurrentnativevalue}{concurrent native value}}
 \newcommand\concurrentnativevalues[0]{\hyperlink{def-concurrentnativevalue}{concurrent native values}}

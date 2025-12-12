@@ -1380,6 +1380,58 @@ def check_duplicate_asllisting_references(latex_files: list[str]) -> int:
     return num_errors
 
 
+def check_duplicate_usepackage(latex_files: list[str]) -> int:
+    r"""
+    Checks that each LaTeX package included via \usepackage appears at most once
+    across all provided .tex files. Supports comma-separated packages and
+    optional options (e.g., \usepackage[opts]{pkg1,pkg2}).
+
+    Returns the total number of errors found.
+    """
+    num_errors = 0
+
+    # Matches \usepackage{pkg} and \usepackage[opts]{pkg1,pkg2}
+    usepackage_pattern = re.compile(r"\\usepackage(?:\[[^\]]*\])?\{([^}]*)\}")
+
+    # Track occurrences: package name -> list of (filename, line_number)
+    occurrences: dict[str, list[tuple[str, int]]] = {}
+
+    for filename in latex_files:
+        lines = read_file_lines(filename)
+        for line_number, raw_line in enumerate(lines, start=1):
+            line = raw_line
+            # Skip full-line comments
+            stripped = line.strip()
+            if stripped.startswith("%"):
+                continue
+            # Remove trailing comments (content after %)
+            comment_pos = line.find("%")
+            if comment_pos != -1:
+                line = line[:comment_pos]
+
+            for match in usepackage_pattern.finditer(line):
+                pkg_block = match.group(1)
+                # Split by commas to handle multiple packages in one \usepackage
+                for pkg in [p.strip() for p in pkg_block.split(",") if p.strip()]:
+                    if pkg not in occurrences:
+                        occurrences[pkg] = []
+                    occurrences[pkg].append((filename, line_number))
+
+    # Report packages included more than once
+    for pkg, locs in occurrences.items():
+        if len(locs) > 1:
+            # First occurrence is allowed; subsequent ones are errors
+            first_file, first_line = locs[0]
+            for dup_file, dup_line in locs[1:]:
+                print(
+                    f"ERROR: LaTeX package '{pkg}' included multiple times: "
+                    f"first at {first_file}:{first_line}, duplicate at {dup_file}:{dup_line}"
+                )
+                num_errors += 1
+
+    return num_errors
+
+
 def check_per_file(latex_files: list[str], checks):
     r"""
     Applies the list of functions in 'checks' to each file in 'latex files',
@@ -1424,6 +1476,8 @@ def main():
     num_errors += check_macro_arity(content_latex_sources)
     num_errors += check_relation_references(content_latex_sources)
     num_errors += check_duplicate_asllisting_references(content_latex_sources)
+    # Ensure each \usepackage appears at most once across all .tex sources
+    num_errors += check_duplicate_usepackage(all_latex_sources)
     num_errors += check_per_file(
         content_latex_sources,
         [
