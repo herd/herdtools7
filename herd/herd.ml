@@ -87,6 +87,12 @@ let options = [
      | "-" -> outputdir := PrettyConf.StdoutOutput
      | _ -> outputdir := PrettyConf.Outputdir s),
    "<dir> generated files will go into <dir>, default: do not generate") ;
+  ("-output-format", Arg.String (fun s ->
+    match s with
+    | "dot" -> output_format := PrettyConf.Dot
+    | "json" -> output_format := PrettyConf.Json
+    | _ -> raise (Arg.Bad "Invalid value for `-output-format`.")),
+    "<dot|json> generate output files in the specified format, default: dot");
   ("-suffix", Arg.String (fun s -> suffix := s),
    "<suf> add <suf> at the end of the base of generated files") ;
   parse_bool "-dumpes" Opts.dumpes "dump event structures";
@@ -471,6 +477,7 @@ let () =
   let byte = !byte
     let endian = !endian
     let outputdir = !outputdir
+    let output_format = !output_format
     let suffix = !suffix
     let dumpes = !dumpes
 
