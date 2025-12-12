@@ -1689,8 +1689,8 @@ which includes the type annotation \verb|bits(4)|.
             ($\BitFieldNested(\Ignore, \slices, \bitfieldsp)$);
       \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
       \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
-      \item $\vtefour$ is a bitvector type with length expression $\width$ ($\TBits(\width, \Ignore)$);
-      \item define $\vt$ as a bitvector type with length expression $\width$ and bitfields $\bitfieldsp$;
+      \item $\vtefour$ is a bitvector type with length expression $\vwidth$ ($\TBits(\vwidth, \Ignore)$);
+      \item define $\vt$ as a bitvector type with length expression $\vwidth$ and bitfields $\bitfieldsp$;
       \item define $\vses$ as $\vsesnew$.
     \end{itemize}
 
@@ -1739,8 +1739,8 @@ which includes the type annotation \verb|bits(4)|.
   }\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
-  \vtefour \eqname \TBits(\width, \Ignore)\\
-  \vt \eqdef \TBits(\width, \bitfieldsp)
+  \vtefour \eqname \TBits(\vwidth, \Ignore)\\
+  \vt \eqdef \TBits(\vwidth, \bitfieldsp)
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
 }

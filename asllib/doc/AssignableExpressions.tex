@@ -726,8 +726,8 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
   \item $\les$ is a list $\ve_{1..k}$;
   \item checking whether $\vte$ is a \tupletypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
   \item $\vte$ is a \tupletypeterm{} over the list of types $\tys$, that is, $\TTuple(\tys)$;
-  \item determining whether $\les$ and $\subtys$ have the same length yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\subtys$ is the list of types $\vt_{1..k}$;
+  \item determining whether $\les$ and $\tys$ have the same length yields $\True$\ProseTerminateAs{\UnexpectedType};
+  \item $\tys$ is the list of types $\vt_{1..k}$;
   \item annotating the left-hand-side expression $\ve_i$ with the type $\vt_i$, for $i=1..k$, yields $(\vep_i, \vxs_i)$\ProseOrTypeError;
   \item the list of expressions $\lesp$ is $\vep_i$, for $i=1..k$;
   \item $\newle$ is the list of left-hand-side expressions $\lesp$ ($\LEDestructuring(\lesp)$);
@@ -834,7 +834,7 @@ See \ExampleRef{Multi-assignments}.
 \end{mathpar}
 Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
 To see this, notice that
-to form a derivation tree, we must employ the \textsc{nonempty} case, which ensures both lists
+to form a derivation tree, we must employ the \textsc{non\_empty} case, which ensures both lists
 have at least one element and shortens the lengths of both lists by one,
 until both lists become empty
 which is when the \textsc{empty} axiom case is used.
@@ -1069,7 +1069,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vsesone)$\ProseOrTypeError;
   \item annotating $\slices$ in $\tenv$ yields $(\slicesannotated, \sesslices)$\ProseOrTypeError;
   \item obtaining the width of the slices $\slicesannotated$ in $\tenv$ and simplifying them yields $\vwidth$;
-  \item $\vt$ is the bitvector type of width $\width$ and empty list of bitfields;
+  \item $\vt$ is the bitvector type of width $\vwidth$ and empty list of bitfields;
   \item checking whether $\vte$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
   \item checking that the slices $\slicesannotated$ are all disjoint yields $\True$\ProseOrTypeError;
   \item checking that $\slicesannotated$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
@@ -1146,7 +1146,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
   \item the steps so far computed the updated bitvector, but have not assigned it to the
   variable bound to the bitvector given by $\ebv$, which is achieved next.
   Evaluating the left-hand-side expression $\ebv$ with
-  $\newmbv$ in an environment $\envtwo$ is the output configuration $C$,
+  $\newmbv$ in an environment $\envtwo$ is the output configuration $C$.
 \end{itemize}
 
 \FormallyParagraph
