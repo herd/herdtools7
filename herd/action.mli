@@ -25,6 +25,7 @@ module type S = sig
   val mk_init_write : A.location -> MachSize.sz -> A.V.v -> action
 
   val pp_action : action -> string
+  val to_json_view : action -> Json.t
 
 (* Some architecture-specific sets and relations, with their definitions *)
   val arch_sets : (string * (action -> bool)) list

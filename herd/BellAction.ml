@@ -80,6 +80,8 @@ end = struct
   | Commit -> "Commit"
   | CutOff msg -> "CutOff:" ^ msg
 
+  let to_json_view a = `Assoc [("pprinted", `String (pp_action a))]
+
 (* Utility functions to pick out components *)
   let value_of a = match a with
   | Access (_,_ ,v,_,_,_) -> Some v

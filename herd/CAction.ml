@@ -147,6 +147,8 @@ end = struct
     -> Some loc
   | Fence _|CutOff _ -> None
 
+  let to_json_view a = `Assoc [("pprinted", `String (pp_action a))]
+
 (* relative to memory *)
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_,_)

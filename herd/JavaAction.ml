@@ -37,7 +37,7 @@ end = struct
     | RMW of A.location * A.V.v * A.V.v * AccessModes.t * MachSize.sz
     | CutOff of string
 
-  
+
   let mk_init_write l sz v = Access (W, l, v, AccessModes.NA, sz)
 
   let par f x = sprintf "(%s)" (f x) (*for access modes*)
@@ -62,6 +62,8 @@ end = struct
                 (V.pp_v v1)
                 (V.pp_v v2))
     | CutOff m -> (sprintf "CutOff: %s" m)
+
+  let to_json_view a = `Assoc [("pprinted", `String (pp_action a))]
 
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
@@ -208,7 +210,7 @@ end = struct
 
 
 
-  let mo_matches target a = 
+  let mo_matches target a =
   match a with
   | Access(_,_,_,mo,_)
   | RMW (_,_,_,mo,_)
