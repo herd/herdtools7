@@ -947,7 +947,7 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  k \geq 2\\
+  k > 1\\
   \tys \eqname \tty_{1..k}\\
   i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i

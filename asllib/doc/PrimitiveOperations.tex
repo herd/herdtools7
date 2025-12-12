@@ -477,7 +477,7 @@ then the operation is said to have a \emph{restricted domain}.
 %
 Otherwise, the operation results in a \typingerrorterm{}.
 
-The following table summarizes the conditions that must hold for a binary operation whose domain is restricted:
+The following table summarises the conditions that must hold for a binary operation whose domain is restricted:
 \begin{center}
 \begin{tabular}{|l|l|}
 \hline
@@ -1256,7 +1256,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 
   \item \AllApplyCase{concat\_strings}
   \begin{itemize}
-    \item $\vvone$ and $\vvtwo$ are not both bitvector literals;
+    \item $\vvone$ and $\vvtwo$ are not both bitvector literals \ProseNote{(otherwise the case \textsc{concat\_bits} would apply)};
     \item $\op$ is $\STRCONCAT$;
     \item define $\vsone$ as $\literaltostring(\vvone)$;
     \item define $\vstwo$ as $\literaltostring(\vvtwo)$;
