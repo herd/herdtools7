@@ -1,0 +1,15 @@
+AArch64 Co+gcsss1+R
+variant=shadowstack
+{
+  SS(x,2);
+  SS(y,1) = ssval_t: {SSCap(y,1)};
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=y;
+}
+
+P0          ;
+GCSSS1 X0   ; (* GCSSS1 Memory effect, GCSPR = y[0], y[0] = SSCap(x[1],5)  *)
+LDR X1,[X0] ; (* Memory (Read) effect                                      *)
+
+forall 0:X1=SSCap(x[1],5) (* SSCap not supported in herd, yet *)
