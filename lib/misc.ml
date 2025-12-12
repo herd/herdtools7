@@ -814,3 +814,34 @@ let group_by_int get_key env =
        (IntMap.fold
           (fun _ env_p k -> List.rev env_p::k)
           m []))
+
+module Option = struct
+  module Infix = struct
+    let (let*) = Option.bind
+  end
+end
+
+module String = struct
+  (* Copied from OCaml 4.13 stdlib *)
+  let starts_with ~prefix s =
+    let len_s = String.length s
+    and len_pre = String.length prefix in
+    let rec aux i =
+      if i = len_pre then true
+      else if String.unsafe_get s i <> String.unsafe_get prefix i then false
+      else aux (i + 1)
+    in len_s >= len_pre && aux 0
+end
+
+module List = struct
+  (* Copied from OCaml 5.1 stdlib *)
+  let find_index p =
+    let rec aux i = function
+      [] -> None
+      | a::l -> if p a then Some i else aux (i+1) l in
+    aux 0
+
+  let is_empty l = l = []
+
+  let concat_map f l = List.(concat (map f l))
+end

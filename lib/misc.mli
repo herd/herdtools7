@@ -360,3 +360,41 @@ val mix : int -> int -> int -> int
 (*********************************)
 
 val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list
+
+(*************************************************)
+(* Stdlib shims and other ecosystem-common utils *)
+(*************************************************)
+
+module Option : sig
+  module Infix : sig
+    val (let*) : 'a option -> ('a -> 'b option) -> 'b option
+  end
+end
+
+module String : sig
+
+  (** [starts_with ~prefix s] is [true] if and only if [s] starts with [prefix].
+
+      For compatibility with OCaml < 4.13 *)
+  val starts_with : prefix:string -> string -> bool
+end
+
+module List : sig
+  (** [find_index f xs] returns [Some i], where [i] is the index of
+      the first element of the list [xs] that satisfies [f x],
+      if there is such an element.
+
+      It returns None if there is no such element.
+
+      For compatibility with OCaml <= 5.1 *)
+  val find_index : ('a -> bool) -> 'a list -> int option
+
+  (** [is_empty l] is true if and only if [l] has no elements.
+
+      For compatibility with OCaml <= 5.1 *)
+  val is_empty : 'a list -> bool
+
+  (** [concat_map f l] gives the same result as [List.concat (List.map f l)].
+      For compatibility with OCaml < 4.10 *)
+  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+end
