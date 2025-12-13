@@ -1,0 +1,13 @@
+AArch64 R019
+TTHM=P0:HA
+
+{
+ int x=42;
+ [PTE(x)]=(oa:PA(x), dbm:1, db:0, af:0);
+ 0:X1=x; 0:X2=7; 0:X0=42;
+}
+ P0             ;
+ CAS W0,W2,[X1] ;
+
+locations [x;]
+exists ([PTE(x)]=(oa:PA(x), dbm:1, db:0, af:0) /\ fault(P0,x))

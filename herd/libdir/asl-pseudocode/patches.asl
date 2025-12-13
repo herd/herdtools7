@@ -33,29 +33,10 @@ The ARM Reference Manual is available here:
 // From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-mpam?lang=en#impl-shared.GenMPAMatEL.2
 // The whole logic is too complex for our simple use, so we return the base value of the return type.
 
-// MPAMinfo GenMPAMAtEL(AccessType acctype, bits(2) el)
 func GenMPAMAtEL(acctype: AccessType, el: bits(2)) => MPAMinfo
 begin
   var x : MPAMinfo;
   return x;
-end;
-
-// =============================================================================
-
-// IsAligned()
-// ===========
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-common?lang=en#impl-shared.IsAligned.2
-// We disable alignment checks.
-
-func IsAligned{N}(x : bits(N), y:integer) => boolean
-begin
-  return TRUE;
-end;
-
-func IsAligned(x:integer, y:integer) => boolean
-begin
-  return TRUE;
 end;
 
 // =============================================================================
@@ -65,6 +46,7 @@ end;
 // Check correct stack pointer alignment for AArch64 state.
 
 // By construction in herd7 this is always the case.
+
 func CheckSPAlignment()
 begin
   return;
@@ -82,62 +64,6 @@ func BigEndian(acctype: AccessType) => boolean
 begin
   return FALSE;
 end;
-
-// =============================================================================
-
-// AArch64.TranslateAddress()
-// ==========================
-// Main entry point for translating an address
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/aarch64-translation-vmsa-translation?lang=en#AArch64.TranslateAddress.4
-// We disable address translation
-
-func NormalWBISHMemAttr() => MemoryAttributes
-begin
-  return MemoryAttributes {
-    memtype = MemType_Normal,
-    inner = MemAttrHints {
-      attrs = MemAttr_WB,
-      hints = MemHint_No, // ??
-      transient = FALSE // Only applies to cacheable memory
-    },
-    outer = MemAttrHints {
-      attrs = MemAttr_WB,
-      hints = MemHint_No, // ??
-      transient = FALSE // Only applies to cacheable memory
-    },
-    shareability = Shareability_ISH,
-    tags = MemTag_Untagged, // ??
-    device = DeviceType_GRE, // Not relevant for Normal
-    notagaccess = TRUE, // Not used in shared_pseudocode
-    xs = '0' // If I understand correctly WalkMemAttrs
-  };
-end;
-
-func AArch64_TranslateAddress(address:bits(64), accdesc:AccessDescriptor, aligned:boolean, size:integer) => AddressDescriptor
-begin
-  var full_addr : FullAddress;
-  return CreateAddressDescriptor(address, full_addr, NormalWBISHMemAttr(), accdesc);
-end;
-
-// =============================================================================
-
-// ELStateUsingAArch32K()
-// ======================
-// Returns (known, aarch32):
-//   'known'   is FALSE for EL0 if the current Exception level is not EL0 and EL1 is
-//             using AArch64, since it cannot determine the state of EL0; TRUE otherwise.
-//   'aarch32' is TRUE if the specified Exception level is using AArch32; FALSE otherwise.
-
-// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#impl-shared.ELStateUsingAArch32K.2
-// We are always on AArch64
-
-func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
-begin
-    return (TRUE, FALSE);
-end;
-
-// =============================================================================
 
 // GenerateAddress()
 // =================
@@ -192,39 +118,6 @@ end;
 
 // =============================================================================
 
-// UsingAArch32()
-// ==============
-// Return TRUE if the current Exception level is using AArch32, FALSE if using AArch64.
-// Let us return FALSE, called by BranchTo(...) for checking tgt address size.
-
-func UsingAArch32() => boolean
-begin
-  return FALSE;
-end;
-
-// MemSingleGranule()
-// ==================
-// When FEAT_LSE2 is implemented, for some memory accesses if all bytes
-// of the accesses are within 16-byte quantity aligned to 16-bytes and
-// satisfy additional requirements - then the access is guaranteed to
-// be single copy atomic.
-// However, when the accesses do not all lie within such a boundary, it
-// is CONSTRAINED UNPREDICTABLE if the access is single copy atomic.
-// In the pseudocode, this CONSTRAINED UNPREDICTABLE aspect is modeled via
-// MemSingleGranule() which is IMPLEMENTATION DEFINED and, is at least 16 bytes
-// and at most 4096 bytes.
-// This is a limitation of the pseudocode.
-//
-// LUC Granule size set to 32, why not!
-func MemSingleGranule() => integer
-  begin
-    let size = 32;
-    // access is assumed to be within 4096 byte aligned quantity to
-    // avoid multiple translations for a single copy atomic access.
-    assert (size >= 16) && (size <= 4096);
-    return size;
-  end;
-
 // CheckOriginalSVEEnabled()
 // =========================
 // Checks for traps on SVE instructions and instructions that access SVE System
@@ -236,24 +129,18 @@ begin
   return;
 end;
 
-// Here because it is defined 2 times in the release
-
-// SecurityState
-// =============
-// The Security state of an execution context
-
-type SecurityState of enumeration {
-    SS_NonSecure,
-    SS_Root,
-    SS_Realm,
-    SS_Secure
-};
-
-constant VMID_NONE : bits(16) = Zeros{16};
-constant ASID_NONE : bits(16) = Zeros{16};
+// =============================================================================
 
 // X - accessor
 // ============
+
+// We override the original declaration in shared_pseudocode to substitute the
+// accesses to a backing array to calls to our read_register and write_register
+// primitives.
+// This does not make any difference functionally but avoid the synchronisation
+// between the different register accesses: with a backing array, a read to
+// X[4] would be asl-data after a previous write to X[5], where our primitive
+// guarantee independence of those registers.
 
 accessor X{width}(n : integer) <=> value : bits(width)
 begin
@@ -277,5 +164,94 @@ begin
             return Zeros{rw};
         end;
     end;
+end;
+
+// =============================================================================
+
+// IsExclusiveLocal()
+// ==================
+// Return TRUE if the local Exclusives monitor for processorid includes all of
+// the physical address region of size bytes starting at paddress.
+
+// We only rely on the global exclusive monitor, so we want to leave the local
+// exclusive monitor as permissive as possible.
+// The impdef in shared_pseudocode always return FALSE, we always return TRUE.
+
+func IsExclusiveLocal
+   (paddress : FullAddress,
+    processorid : integer,
+    size : integer) => boolean
+begin
+  return TRUE;
+end;
+
+// =============================================================================
+
+// Optimisations: those functions are very used all over the reference, and so
+// we experience a significant slow-down if we don't override them.
+
+// EL2Enabled()
+// ============
+// Returns TRUE if EL2 is present and executing
+// - with the PE in Non-secure state when Non-secure EL2 is implemented, or
+// - with the PE in Realm state when Realm EL2 is implemented, or
+// - with the PE in Secure state when Secure EL2 is implemented and enabled, or
+// - when EL3 is not implemented.
+
+readonly func EL2Enabled() => boolean
+begin
+    return FALSE;
+end;
+
+// HaveAArch32()
+// =============
+// Return TRUE if AArch32 state is supported at at least EL0.
+
+func HaveAArch32() => boolean
+begin
+  return FALSE;
+end;
+
+// HaveAArch64()
+// =============
+// Return TRUE if the highest Exception level is using AArch64 state.
+
+readonly func HaveAArch64() => boolean
+begin
+    return TRUE;
+end;
+
+// HaveEL()
+// ========
+// Return TRUE if Exception level 'el' is supported
+
+func HaveEL(el: bits(2)) => boolean
+begin
+    return el == EL0 || el == EL1;
+end;
+
+// ELStateUsingAArch32K()
+// ======================
+// Returns (known, aarch32):
+//   'known'   is FALSE for EL0 if the current Exception level is not EL0 and EL1 is
+//             using AArch64, since it cannot determine the state of EL0; TRUE otherwise.
+//   'aarch32' is TRUE if the specified Exception level is using AArch32; FALSE otherwise.
+
+// From https://developer.arm.com/documentation/ddi0602/2023-09/Shared-Pseudocode/shared-functions-system?lang=en#impl-shared.ELStateUsingAArch32K.2
+// We are always on AArch64
+
+func ELStateUsingAArch32K(el:bits(2), secure:boolean) => (boolean, boolean)
+begin
+    return (TRUE, FALSE);
+end;
+
+// UsingAArch32()
+// ==============
+// Return TRUE if the current Exception level is using AArch32, FALSE if using AArch64.
+// Let us return FALSE, called by BranchTo(...) for checking tgt address size.
+
+func UsingAArch32() => boolean
+begin
+  return FALSE;
 end;
 

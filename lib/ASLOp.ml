@@ -274,6 +274,10 @@ let do_op1 op cst =
       | Constant.PteVal pte ->
           begin
             match positions with
+            | [(63 | 108)] ->
+                (* AMEC: this bit is irrelevant for EL<2. Returning a zero
+                   value by default. *)
+                Some (Constant.Concrete (ASLScalar.zeros 1))
             | [(54|53|50);]
             | [(127|114|113);] (* 128 bit mode *)
               -> (* XPN/UXPN/GP, all disabled *)
