@@ -1,0 +1,12 @@
+(* Show dependencies *)
+show data,addr
+(* Show of control dependencies is restricted, so as not to clobber diagrams *)
+let ctrlisb = try ctrl;[ISB];po;[M] with 0
+show ctrlisb
+show (ctrl;[M]) \ ctrlisb as ctrl
+
+(* Communication relations *)
+let rf-mem = rf \ rf-reg
+show rf-reg
+show rf-mem as rf
+show co|fr as ca
