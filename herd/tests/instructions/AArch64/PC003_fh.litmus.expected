@@ -1,0 +1,10 @@
+Test PC_fault_loop Required
+States 1
+0:PC=label:"P0:loop";
+Loop Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:PC=label:"P0:loop")
+Observation PC_fault_loop Always 1 0
+Hash=bb5f6ce7a3876166a6720427a5925fd3
+
