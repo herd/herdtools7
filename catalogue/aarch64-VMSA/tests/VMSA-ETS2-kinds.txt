@@ -221,7 +221,7 @@ SpecSpecAF                                     Allowed
 R3-DSBs+W                                      Allowed
 SWPptex+AF0                                    Forbidden
 R3-DSBs+W+32                                   Allowed
-SNExpExpExpNExp+DSB+DSB3                       Forbidden
+SNExpExpExpNExp+DSB+DSB3                       Allowed
 WRC+shoot+DSB-ISB+VMALL                        Forbidden
 NT-13-dmb                                      Forbidden
 PTE-WRC                                        Forbidden
@@ -628,7 +628,7 @@ NT-11-data                                     Forbidden
 2+2WNExpExp+NExpNExp+DMBST+DMBST+SHOW          Forbidden
 NT-11-ctrl+dsb                                 Forbidden
 Artem2+TLBIx-TLBIy+dmb2                        Forbidden
-2+2WNExpExp+NExpNExp+DMBST+DMBST               Allowed
+2+2WNExpExp+NExpNExp+DMBST+DMBST               Forbidden
 2+2WNExpExp+NExpNExp                           Allowed
 Artem3+UCx-TLBIy+dsb.ish-isb+dmb.ld            Forbidden
 2+2WNExpExp+NExpNExp+SHOW                      Forbidden
