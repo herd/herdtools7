@@ -38,6 +38,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         module V = V
         let endian            = endian
         type arch_reg         = reg
+        let pc_reg            = None
         let pp_reg            = pp_reg
         let reg_compare       = reg_compare
         let fromto_of_instr _ = None
