@@ -70,6 +70,14 @@ module Make(A:Arch_herd.S) =
       | OutputAddress.PTE s
       | OutputAddress.PHY s -> StringSet.add s acc
 
+    let is_pc_target_symbol name =
+      let starts_with_prefix prefix s =
+        Misc.string_starts_with ~prefix s
+      in
+      List.exists
+        (fun prefix -> starts_with_prefix prefix name)
+        PcTarget.prefixes
+
     let add_constant_symbols acc c =
       let open Constant in
       match c with
@@ -81,8 +89,9 @@ module Make(A:Arch_herd.S) =
                 match base with
                 | Symbol.Label full ->
                    StringSet.add (Label.Full.pp full) acc
-                | Symbol.Data _ ->
-                    StringSet.add (Symbol.pp base) acc
+                | Symbol.Data name ->
+                    if is_pc_target_symbol name then acc
+                    else StringSet.add (Symbol.pp base) acc
             end
           | Physical (name, _) -> StringSet.add name acc
           | TagAddr (_, name, _) -> StringSet.add name acc

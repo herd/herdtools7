@@ -1,0 +1,12 @@
+AArch64 PC005
+variant=cutoff
+{
+}
+ P0          ;
+ MOV W0,#1    ;
+L_loop:       ;
+    MOV W0,#1    ;
+ B L_loop     ;
+
+locations [0:PC;]
+forall (0:PC=label:"P0:L_loop"/\0:X0=1)

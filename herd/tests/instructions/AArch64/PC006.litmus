@@ -1,0 +1,11 @@
+AArch64 PC006
+variant=handled,cutoff
+{
+}
+  P0          | P0.F           ;
+ SVC #0       | B loop        ;
+              | loop:         ;
+              | B loop        ;
+
+locations [0:PC;]
+forall (0:PC=label:"P0:loop")

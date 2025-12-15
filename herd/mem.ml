@@ -165,6 +165,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
 
+    open PcTarget
+    let pc_table : (Proc.t * V.v) list ref = ref []
+
+    let merge_pc_entry table proc v =
+      (proc,v) :: List.filter (fun (p,_) -> not (Proc.equal p proc)) table
+
+    let set_pc proc v =
+      pc_table := merge_pc_entry !pc_table proc v
+
     let dbg = C.debug.Debug_herd.mem
     let morello = C.variant Variant.Morello
     let mixed = C.variant Variant.Mixed || morello
@@ -321,7 +330,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
     module SM = S.Mixed(C)
 
-    type ('a,'b,'c) fetch_r = Ok of 'a * 'b | No of 'a | Segfault of 'c
+    type ('a,'b,'c) fetch_r = Ok of 'a * 'b | No of 'a * 'c | Segfault of 'c
 
     let segfault =
       Warn.user_error
@@ -475,7 +484,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             let x,seen = see seen addr in
             if x > unroll then begin
                 W.warn "loop unrolling limit reached: %s" (get_label lbl addr);
-                No tgt
+                No (tgt, addr)
               end else
               Ok (tgt,seen)
           else
@@ -517,6 +526,75 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                       s
                 | e -> raise e in
 
+        let pc_value_of_target = function
+          | PCSymb (symb, proc) ->
+              A.V.nameToV (PcTarget.pp symb proc)
+          | Addr (proc, addr) ->
+            begin
+              match Label.norm (labels_of_instr addr) with
+              | Some lbl -> addr2v proc lbl
+              | None -> V.intToV addr
+            end
+          | Value v -> v
+        in
+        let add_pc proc re_exec nexts fh_code branch pc_reg =
+          match branch with
+          | B.Next bds ->
+              let target =
+                match nexts with
+                | (addr_next, _) :: _ -> Addr (proc, addr_next)
+                | [] ->
+                  if re_exec then PCSymb (FaultHandlerEnd, proc)
+                  else PCSymb (CodeEnd, proc)
+              in
+              let pc_val = pc_value_of_target target in
+              set_pc proc pc_val;
+              B.Next ((pc_reg, pc_val) :: bds)
+          | B.Jump (tgt, bds) ->
+              let target =
+                match tgt with
+                | B.Addr a -> Addr (proc, a)
+                | B.Lbl lbl -> Value (addr2v proc lbl) in
+              let pc_val = pc_value_of_target target in
+              set_pc proc pc_val;
+              B.Jump (tgt, (pc_reg, pc_val) :: bds)
+          | B.CondJump (v, tgt) ->
+              B.CondJump (v, tgt)
+          | B.IndirectJump (v, lbls, bds) ->
+              let target =
+                match Label.Full.Set.choose_opt lbls with
+                | Some (proc_lbl, lbl) ->
+                    (try Value (addr2v proc_lbl lbl) with _ ->
+                      (match Label.Map.find_opt lbl prog with
+                        | Some v -> Addr (proc_lbl, v)
+                        | None -> Value v))
+                | None -> Value v
+              in
+              let pc_val = pc_value_of_target target in
+              set_pc proc pc_val;
+              B.IndirectJump (v, lbls, (pc_reg, pc_val) :: bds)
+          | B.Fault (sys, bds) ->
+              let target =
+                match fh_code,re_exec with
+                  | Some ((fh_addr, _) :: _), false ->
+                      Addr (proc, fh_addr)
+                  | Some [], false ->
+                      assert false
+                  | Some _, true ->
+                      PCSymb (FaultInHandler, proc)
+                  | None, _ ->
+                      (match nexts with
+                      | (addr_next, _) :: _ ->
+                          Addr (proc, addr_next)
+                      | [] ->
+                          PCSymb (CodeEnd, proc))
+              in
+              let pc_val = pc_value_of_target target in
+              set_pc proc pc_val;
+              B.Fault (sys, (pc_reg, pc_val)::bds)
+          | _ -> branch
+        in
+
 (* Call instruction semantics proper *)
         let wrap re_exec fetch_proc proc inst addr env m poi =
           profile "build semantics" @@ fun () ->
@@ -551,6 +629,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | No -> szo
             | St -> None
             | Ld sz -> Some sz in
+          let branch =
+            match A.pc_reg with
+            | Some pc_reg ->
+                add_pc proc re_exec nexts fh_code branch pc_reg
+            | None -> branch
+          in
           let env =
             match branch with
             | S.B.Next bds|S.B.Jump (_,bds)|S.B.IndirectJump (_,_,bds)
@@ -564,7 +648,15 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             seen addr nexts branch
 
       and add_code re_exec fetch_proc proc env seen nexts = match nexts with
-      | [] -> EM.unitcodeT true
+      | [] ->
+          if Misc.is_some A.pc_reg then begin
+            let target =
+              if re_exec then PCSymb (FaultHandlerEnd, fetch_proc)
+              else PCSymb (CodeEnd, fetch_proc) in
+            let pc_val = pc_value_of_target target in
+            set_pc fetch_proc pc_val
+          end;
+          EM.unitcodeT true
       | (addr,inst)::nexts ->
           add_next_instr re_exec fetch_proc proc env seen addr inst nexts
 
@@ -573,14 +665,17 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       and add_tgt re_exec check_back proc env seen addr_jmp tgt =
         match fetch_code check_back seen proc addr_jmp tgt with
-        | No (tgt_proc,(addr,inst)::_) ->
+        | No ((tgt_proc, (_, inst) :: _), addr) ->
+            let pc_val = pc_value_of_target (Addr (tgt_proc, addr)) in
+            set_pc tgt_proc pc_val;
             let m ii =
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
                 (EM.cutoffT (tgt2lbl tgt) ii (S.B.Next [])) in
             wrap
               re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
-        | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
+        | No ((_, []), _) ->
+            assert false (* Backward jump cannot be to end of code *)
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
         | Segfault addr ->
           let msg = Printf.sprintf
@@ -1594,6 +1689,15 @@ let match_reg_events es =
               A.state_add k (tr_physical loc) (get_written ew)
           | _,_ -> k)
           rfm test.Test_herd.init_state in
+      let st =
+        match A.pc_reg with
+        | None -> st
+        | Some pc_reg ->
+            List.fold_left
+              (fun acc (proc,v) ->
+                A.state_add acc (A.Location_reg (proc, pc_reg)) v)
+              st !pc_table
+      in
       st,
       if A.FaultAtomSet.is_empty test.Test_herd.ffaults && not !Opts.dumpallfaults then
         A.FaultSet.empty

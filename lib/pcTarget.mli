@@ -4,8 +4,8 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
-(* en Automatique and the authors. All rights reserved.                     *)
+(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
 (* abiding by the rules of distribution of free software. You can use,      *)
@@ -13,47 +13,18 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-module Make (C:Arch_herd.Config) (V:Value.S) = struct
-  include CBase
-  (* Not so simple, should consider expressions... *)
-  let is_amo _ = assert false
 
-  let pp_barrier_short = pp_barrier
-  let reject_mixed = false
-  let mem_access_size _ = None
+type pc_specific_symb =
+  | CodeEnd
+  | FaultHandlerEnd
+  | FaultInHandler
 
-  include NoSemEnv
+type 'v t =
+  | PCSymb of pc_specific_symb * Proc.t
+  | Addr of Proc.t * int
+  | Value of 'v
 
-  module V = V
-
-  include NoLevelNorTLBI
-
-  include ArchExtra_herd.Make(C)
-      (struct
-
-        let arch = arch
-
-        type instr = instruction
-
-        module V = V
-
-        let endian = endian
-
-        type arch_reg = reg
-        let pc_reg = None
-        let pp_reg = pp_reg
-        let reg_compare = reg_compare
-
-        let fromto_of_instr _ = None
-
-        let get_val _ v = v
-
-        module FaultType=FaultType.No
-      end)
-
-    module MemType=MemoryType.No
-
-    module Barrier = AllBarrier.No(struct type a = barrier end)
-
-    module CMO = Cmo.No
-end
+val ignored_pc_specific_symbs : pc_specific_symb list
+val pp_prefix : pc_specific_symb -> string
+val pp : pc_specific_symb -> Proc.t -> string
+val prefixes : string list

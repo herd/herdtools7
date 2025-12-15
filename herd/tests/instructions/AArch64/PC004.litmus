@@ -1,0 +1,13 @@
+AArch64 PC004
+variant=handled
+{
+0:X2=0;
+}
+  P0          | P0.F           ;
+L0:           | MOV W2,#1      ;
+  SVC #0      |                ;
+L1:           |                ;
+  ADD W2,W2,#2|                ;
+
+locations [0:PC;]
+forall (0:PC=FH_END_P0)

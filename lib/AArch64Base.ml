@@ -420,7 +420,7 @@ let parse_sysreg = make_parser sysregs
 let parse_creg = make_parser cregs
 
 let parse_xreg =
-  let plist = ("LR",Ireg R30)::parse_list regs in
+  let plist = ("PC",PC)::("LR",Ireg R30)::parse_list regs in
   parse_some plist
 
 let parse_wreg = make_parser wregs

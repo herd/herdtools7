@@ -1,0 +1,8 @@
+AArch64 PC001
+{
+}
+  P0          ;
+ MOV W0,#0    ;
+ MOV W1,#1    ;
+
+forall (0:PC=END_P0)
