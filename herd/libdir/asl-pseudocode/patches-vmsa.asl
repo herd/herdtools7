@@ -358,39 +358,22 @@ end;
 // discard the executions where the CAS is a load, which is done in
 // PhysMemWrite and DataAbort.
 
-func
-  CreateAccDescAtomicOp
-    (modop:MemAtomicOp, acquire:boolean, release:boolean,
-     tagchecked:boolean, privileged:boolean, Rt: integer, Rs: integer) => AccessDescriptor
+func CreateAccDescAtomicOp(modop : MemAtomicOp, acquire : boolean, release : boolean,
+                           tagchecked : boolean, privileged : boolean, Rt : integer,
+                           Rs : integer) => AccessDescriptor
 begin
-    let Rt2: integer = -1;
-    let Rs2: integer = -1;
-
-    return CreateAccDescAtomicOp(modop, acquire, release, tagchecked, privileged, Rt, Rt2, Rs, Rs2);
+    return _patched_CreateAccDescAtomicOp(modop, acquire, release, tagchecked, privileged,
+                                          Rt, Rs);
 end;
 
-func
-  CreateAccDescAtomicOp
-    (modop:MemAtomicOp, acquire:boolean, release:boolean,
-     tagchecked:boolean, privileged:boolean, Rt: integer, Rt2: integer, Rs: integer, Rs2: integer) => AccessDescriptor
+func CreateAccDescAtomicOp(modop : MemAtomicOp, acquire : boolean, release : boolean,
+                           tagchecked : boolean, privileged : boolean, Rt : integer,
+                           Rt2 : integer, Rs : integer, Rs2 : integer) => AccessDescriptor
 begin
-  var accdesc = NewAccDesc(AccessType_GPR);
-  accdesc.acqsc           = acquire;
-  accdesc.el              = if !privileged then EL0 else PSTATE.EL;
-  accdesc.relsc           = release;
-  accdesc.atomicop        = TRUE;
-  accdesc.modop           = modop;
-  accdesc.read            = TRUE;
+  var accdesc = _patched_CreateAccDescAtomicOp(modop, acquire, release, tagchecked, privileged,
+                                               Rt, Rt2, Rs, Rs2);
 
-  // The next line is the one edited:
-  accdesc.write           = modop != MemAtomicOp_CAS || SomeBoolean();
-
-  accdesc.pan             = TRUE;
-  accdesc.tagchecked      = tagchecked;
-  accdesc.Rs              = Rs;
-  accdesc.Rs2             = Rs2;
-  accdesc.Rt              = Rt;
-  accdesc.Rt2             = Rt2;
+  accdesc.write = modop != MemAtomicOp_CAS || SomeBoolean();
 
   return accdesc;
 end;
@@ -425,25 +408,24 @@ var NeedCheckPermissionFault : boolean = FALSE;
 
 func AArch64_SetAccessFlag(ha : bit, accdesc : AccessDescriptor, fault : FaultRecord) => boolean
 begin
-    if ha == '0' || !AArch64_SettingAccessFlagPermitted(fault) then
-        return FALSE;
-    elsif accdesc.acctype == AccessType_AT then
-        return ImpDefBool("AT updates AF");
-    elsif accdesc.acctype IN {AccessType_DC, AccessType_IC} then
-        return ImpDefBool("Generate access flag fault on IC/DC operations");
+    let overriden_result = _patched_AArch64_SetAccessFlag(ha, accdesc, fault);
+
+    // There are cases where the overriden function says that we need to update
+    // the access flag a bit too often: when there is a permission fault.
+
+    // If we don't need to update the access flag, then nothing to do here
+    if !overriden_result then
+       return overriden_result;
+
+    // There can only be a permission fault if it is a write or a CAS.
+    elsif !accdesc.write && accdesc.modop != MemAtomicOp_CAS then
+       return overriden_result;
+
+    // If the instruction is a load or if it is a CAS, then there can be a permission fault
     else
-        // Only edited lines are the following:
-        NeedCheckPermissionFault = TRUE;
-
-        // Set descriptor AF bit
-        if !accdesc.write && accdesc.modop != MemAtomicOp_CAS then
-          // There can't be any permission fault, so we have to update AF
-          UpdatedAF = TRUE;
-
         // There can be a permission fault, so we generate 2 executions:
-        else
-          UpdatedAF = ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
-        end;
+        NeedCheckPermissionFault = TRUE;
+        UpdatedAF = ConstrainUnpredictableBool(Unpredictable_AFUPDATE);
 
         return UpdatedAF;
     end;
@@ -467,16 +449,6 @@ begin
       CheckProp(UpdatedAF);
     end;
 
-    if hd == '0' then
-        return FALSE;
-    elsif !AArch64_SettingDirtyStatePermitted(fault, fault_perm) then
-        return FALSE;
-    elsif accdesc.acctype IN {AccessType_AT, AccessType_IC, AccessType_DC} then
-        return FALSE;
-    elsif !accdesc.write then
-        return FALSE;
-    else
-        return dbm == '1';
-    end;
+    return _patched_AArch64_SetDirtyState(hd, dbm, accdesc, fault, fault_perm);
 end;
 
