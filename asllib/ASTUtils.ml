@@ -580,15 +580,29 @@ let patch ~src ~patches =
   (* Size considerations:
      - [src] is BIG.
      - [patches] is not that little. *)
-  let to_remove =
-    patches |> List.to_seq |> Seq.map identifier_of_decl |> ISet.of_seq
-  in
+  let to_remove = patches |> List.map identifier_of_decl |> ISet.of_list in
   let filter d =
     match d.desc with
     | D_Pragma _ -> true
     | _ -> not (ISet.mem (identifier_of_decl d) to_remove)
   in
   src |> List.filter filter |> List.rev_append patches
+
+let set_decl_name name d =
+  map_annotated d @@ function
+  | D_Func f -> D_Func { f with name }
+  | D_GlobalStorage f -> D_GlobalStorage { f with name }
+  | D_TypeDecl (_name, e, ty) -> D_TypeDecl (name, e, ty)
+  | D_Pragma _ as d -> d
+
+let patch_with_backup ~src ~patches =
+  let to_remove = patches |> List.map identifier_of_decl |> ISet.of_list in
+  let map d =
+    let name = identifier_of_decl d in
+    if not (ISet.mem name to_remove) then d
+    else set_decl_name ("_patched_" ^ name) d
+  in
+  src |> List.map map |> List.rev_append patches
 
 let list_cross f li1 li2 =
   List.fold_left
