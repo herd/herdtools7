@@ -877,8 +877,8 @@ module Make
        * check perfomed early in standard
        * (ie non-pte2) mode.
        *)
-       
-           
+
+
       let get_instr_label ii =
         match Label.norm ii.A.labels with
         | Some hd -> ii.A.addr2v hd
@@ -1881,6 +1881,34 @@ Arguments:
             end) in
         LDPSW.ldp AArch64.Pa MachSize.Word
 
+      let (let>=) = M.(>>=)
+      let ldap sz r1 r2 ra ii =
+        let width = MachSize.nbytes sz in
+        
+        let>= base = read_reg_ord ra ii in
+        let>= v1 = do_read_mem_ret sz Annot.A aexp Access.VIR base ii in
+        
+        (* Calculate second address *)
+        let>= addr2 = M.op1 (Op.AddK width) base in
+        let>= v2 = do_read_mem_ret sz Annot.A aexp Access.VIR addr2 ii in
+        
+        (* Perform the writes *)
+        (write_reg_dest r1 v1 ii >>| write_reg_dest r2 v2 ii)
+        >>= M.ignore >>= B.next1T
+
+      let stlp sz r1 r2 ra ii =
+        let width = MachSize.nbytes sz in
+        
+        let>= base = read_reg_ord ra ii in
+        let>= v1 = read_reg_ord r1 ii in
+        let>= v2 = read_reg_ord r2 ii in
+        
+        (* Perform the stores *)
+        (do_write_mem sz Annot.L aexp Access.VIR base v1 ii >>|
+        (let>= addr2 = M.op1 (Op.AddK width) base in
+          do_write_mem sz Annot.L aexp Access.VIR addr2 v2 ii))
+        >>= M.ignore >>= B.next1T
+
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
         let open Annot in
@@ -2677,7 +2705,7 @@ Arguments:
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let>= n = last 0 
+            let>= n = last 0
             and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
@@ -4593,6 +4621,10 @@ Arguments:
             ldxp (tr_variant v) t r1 r2 r3 ii
         | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
+        | I_LDAP (v, r1, r2, ra) ->
+            ldap (tr_variant v) r1 r2 ra ii
+        | I_STLP (v, r1, r2, ra) ->
+            stlp (tr_variant v) r1 r2 ra ii
 (*
  * Read/Write system registers.
  * Notice thar NZCV is special:
