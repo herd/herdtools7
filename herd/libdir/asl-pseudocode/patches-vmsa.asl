@@ -356,7 +356,9 @@ end;
 // we can write the CAS as a simple READ, and one where the CAS will succeed,
 // and we can treat the CAS as a write. Once we've read in memory, we need to
 // discard the executions where the CAS is a load, which is done in
-// PhysMemWrite and DataAbort.
+// PhysMemWrite.
+// Because of this change, we have also to update S1CheckPermissions to always
+// consider CAS as performing writes.
 
 func CreateAccDescAtomicOp(modop : MemAtomicOp, acquire : boolean, release : boolean,
                            tagchecked : boolean, privileged : boolean, Rt : integer,
@@ -452,3 +454,27 @@ begin
     return _patched_AArch64_SetDirtyState(hd, dbm, accdesc, fault, fault_perm);
 end;
 
+// AArch64_S1CheckPermissions()
+// ============================
+// Checks whether stage 1 access violates permissions of target memory
+// and returns a fault record
+
+// We override this function to treat CAS as writes for the purpose of
+// permissions, even no memory write will be performed.
+// Source in the Arm ARM (§C3.2.13.3):
+//   For the purpose of permission checking, and for watchpoints, all of the
+//   Compare and Swap instructions are treated as performing both a load and a
+//   store.
+
+func AArch64_S1CheckPermissions(fault_in : FaultRecord, va : bits(64), size : integer,
+                                regime : Regime, walkstate : TTWState, walkparams : S1TTWParams,
+                                accdesc : AccessDescriptor) => FaultRecord
+begin
+    var accdesc2 = accdesc;
+    if accdesc2.modop == MemAtomicOp_CAS then
+       accdesc2.write = TRUE;
+    end ;
+
+    return _patched_AArch64_S1CheckPermissions(fault_in, va, size, regime, walkstate, walkparams,
+                                               accdesc2);
+end;
