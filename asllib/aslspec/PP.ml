@@ -102,7 +102,7 @@ let pp_variants fmt variants = pp_sep_list ~sep:" | " pp_type_term fmt variants
 let pp_output_opt fmt is_output = if is_output then fprintf fmt "--@," else ()
 
 let rec pp_expr fmt =
-  let open Rule in
+  let open Expr in
   function
   | Var name -> pp_print_string fmt name
   | Application { applicator; args } ->
@@ -221,11 +221,26 @@ let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
     (Type.attributes_to_list def)
     eq_str pp_variants_with_attributes variants
 
-let pp_constant_definition fmt ({ Constant.name } as def) =
-  fprintf fmt "%s %s@.%a;" (tok_str CONSTANT) name pp_attribute_key_values
+let pp_constant_definition fmt
+    ({ Constant.name; opt_type; opt_value_and_attributes } as def) =
+  let pp_opt_type fmt opt_type =
+    pp_print_option
+      (fun fmt type_term -> fprintf fmt ": %a" pp_type_term type_term)
+      fmt opt_type
+  in
+  let pp_opt_initial_value fmt opt_value =
+    pp_print_option
+      (fun fmt (value, value_attributes) ->
+        fprintf fmt " = %a %a" pp_expr value pp_attribute_key_values
+          (Attributes.bindings value_attributes))
+      fmt opt_value
+  in
+  fprintf fmt "%s %s%a@.%a%a;" (tok_str CONSTANT) name pp_opt_type opt_type
+    pp_attribute_key_values
     (Constant.attributes_to_list def)
+    pp_opt_initial_value opt_value_and_attributes
 
-let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
+let pp_type_subset_pointer fmt { TypesRender.type_name; variant_names } =
   if Utils.list_is_empty variant_names then fprintf fmt "%s(-)" type_name
   else
     fprintf fmt "%s(%a)" type_name
@@ -235,7 +250,7 @@ let type_subset_pointer fmt { TypesRender.type_name; variant_names } =
 let pp_render_definition fmt ({ TypesRender.name; pointers } as def) =
   fprintf fmt "%s %s%a = %a;" (tok_str RENDER) name pp_attribute_key_values
     (TypesRender.attributes_to_list def)
-    (pp_sep_list ~sep:", " type_subset_pointer)
+    (pp_sep_list ~sep:", " pp_type_subset_pointer)
     pointers
 
 let pp_elem fmt = function

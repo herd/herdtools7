@@ -31,11 +31,11 @@ These are known as \purities{}.
 \RenderType{TPurity}
 
 \begin{description}
-\item[\RenderConstant{SE_Pure}] describes the evaluation of a \pureterm{} construct --- one that can be evaluated during type-checking.
+\item[\SEPure] describes the evaluation of a \pureterm{} construct --- one that can be evaluated during type-checking.
 
-\item[\RenderConstant{SE_Readonly}] describes the evaluation of a \readonlyterm{} construct --- one that can read mutable global storage elements but not modify them.
+\item[\SEReadonly] describes the evaluation of a \readonlyterm{} construct --- one that can read mutable global storage elements but not modify them.
 
-\item[\RenderConstant{SE_Impure}] describes the evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}.
+\item[\SEImpure] describes the evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}.
 \end{description}
 
 Formally, \purities{} are totally ordered via $\purityless$ as follows:

@@ -24,13 +24,14 @@ constant empty_list
     math_macro = \emptylist,
 };
 
-constant True { "true", math_macro = \True };
-constant False { "false", math_macro = \False };
-
 typedef Bool
 {  "Boolean",
     math_macro = \Bool,
-} = constants_set(True, False)
+} =
+  | True
+  { "true", math_macro = \True }
+  | False
+  { "false", math_macro = \False }
 ;
 
 typedef Bit
@@ -41,9 +42,9 @@ typedef N
     math_macro = \N,
 };
 
-constant zero { math_macro = \zero, };
-constant one { math_macro = \one, };
-constant two { math_macro = \two, };
+constant zero : N { math_macro = \zero, };
+constant one : N { math_macro = \one, };
+constant two : N { math_macro = \two, };
 
 typedef N_pos
 {  "positive natural number",
@@ -70,7 +71,7 @@ typedef Strings
    math_macro = \Strings,
 };
 
-constant new_line
+constant new_line : Strings
 {
   math_macro = \vnewline,
 };
@@ -509,7 +510,7 @@ operator EBinop(op: ASTLabels, lhs: expr, rhs: expr) -> E_Binop(binop, expr, exp
 // Syntax-related definitions
 typedef regex { "regular expression" };
 
-constant int_lit_regex
+constant int_lit_regex : regex
 {
   "regular expression for integer literals",
   math_macro = \REintlit,
@@ -533,9 +534,9 @@ operator decimal_to_lit(s: Strings) -> INT_LIT(z: Z)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Types for Symbolic Equivalence Testing
-constant negative_sign { "negative sign", math_macro = \negativesign };
-constant positive_sign { "positive sign", math_macro = \positivesign };
-constant equal_sign { "equal sign", math_macro = \equalsign };
+constant negative_sign : Sign { "negative sign", math_macro = \negativesign };
+constant positive_sign : Sign { "positive sign", math_macro = \positivesign };
+constant equal_sign : Sign { "equal sign", math_macro = \equalsign };
 typedef Sign { "sign" } =
     constants_set(negative_sign, positive_sign, equal_sign)
 ;
@@ -1280,7 +1281,7 @@ typedef local_static_envs
 
 render static_envs_and_components = static_envs(-), global_static_envs(-), local_static_envs(-);
 
-constant empty_tenv {
+constant empty_tenv : static_envs {
     "empty static environment",
     math_macro = \emptytenv,
 };
@@ -1323,13 +1324,10 @@ render type_error_and_codes = type_error(-), type_error_code(-);
 ////////////////////////////////////////////////////////////////////////////////
 // Side Effects Types
 
-constant SE_Pure { "purity descriptor for the evaluation of a \pure{} construct" };
-constant SE_Readonly { "purity descriptor for the evaluation of a \readonly{} construct" };
-constant SE_Impure { "purity descriptor for the evaluation of a construct that is neither \pure{} nor \readonly{}" };
-
-typedef TPurity { "purity descriptor" } =
-    constants_set(SE_Pure, SE_Readonly, SE_Impure)
-    { "\purity" }
+typedef TPurity { "\purity" } =
+    | SE_Pure { "purity descriptor for the evaluation of a \pure{} construct" }
+    | SE_Readonly { "purity descriptor for the evaluation of a \readonly{} construct" }
+    | SE_Impure { "purity descriptor for the evaluation of a construct that is neither \pure{} nor \readonly{}" }
 ;
 
 typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
@@ -1489,7 +1487,7 @@ typedef local_dynamic_envs
 
 render dynamic_envs_and_components = dynamic_envs(-), global_dynamic_envs(-), local_dynamic_envs(-);
 
-constant empty_denv
+constant empty_denv : dynamic_envs
     {
         "empty dynamic environment",
         math_macro = \emptydenv,
@@ -1517,22 +1515,14 @@ typedef effect_type =
   { "write effect", math_macro = \Write }
 ;
 
-constant asldata
-{ "data dependency", math_macro = \asldata };
-
-constant aslctrl
-{ "control dependency", math_macro = \aslctrl };
-
-constant aslpo
-{ "program order dependency", math_macro = \aslpo };
-
 typedef Labels
 {
-    "execution graph labels",
-    math_macro = \Labels,
+  "execution graph labels",
+  math_macro = \Labels,
 } =
-    constants_set(asldata, aslctrl, aslpo)
-    { "set of execution graph labels including data, control, and program order dependencies" }
+  | asldata { "data dependency", math_macro = \asldata }
+  | aslctrl { "control dependency", math_macro = \aslctrl }
+  | aslpo   { "program order dependency", math_macro = \aslpo }
 ;
 
 typedef Nodes
@@ -1559,9 +1549,9 @@ typedef XGraphs
 
 render xgraphs_and_components = XGraphs(-), Nodes(-), Labels(-), effect_type(-);
 
-constant empty_graph { "empty execution graph", math_macro = \emptygraph };
+constant empty_graph : XGraphs { "empty execution graph", math_macro = \emptygraph };
 
-constant return_var_prefix
+constant return_var_prefix : Strings
 {
   math_macro = \returnvarprefix,
 };
@@ -1590,10 +1580,9 @@ ast symdom_or_top { "symbolic integer set" } =
 
 render symbolic_domains = symdom(-), symdom_or_top(-);
 
-constant Over { "overapproximation" };
-constant Under { "underapproximation" };
 typedef approximation_direction { "approximation direction" } =
-    constants_set(Over, Under)
+  | Over { "overapproximation" }
+  | Under { "underapproximation" }
 ;
 
 constant CannotOverapproximate {
@@ -1713,15 +1702,12 @@ typedef dynamic_error_code { "dynamic error code" } =
 
 render dynamic_error_and_codes = TDynError(-), dynamic_error_code(-);
 
-constant Diverging
-{ "diverging execution",  };
-
 typedef TDiverging
 {
     "diverging execution result",
     short_circuit_macro = \DivergingConfig,
 } =
-    constants_set(Diverging)
+    Diverging
     { "diverging execution result" }
 ;
 
@@ -3072,7 +3058,15 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
 
-constant unop_signatures;
+constant unop_signatures =
+  make_set(
+    (NEG, L_Int),
+    (NEG, L_Real),
+    (BNOT, L_Bool),
+    (NOT, L_Bitvector)
+  )
+  { math_layout = [_] }
+;
 
 typing function unop_literals(op: unop, l: literal) ->
          (r: literal) | type_error
