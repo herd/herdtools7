@@ -224,16 +224,16 @@ let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
 let pp_constant_definition fmt
     ({ Constant.name; opt_type; opt_value_and_attributes } as def) =
   let pp_opt_type fmt opt_type =
-    match opt_type with
-    | None -> ()
-    | Some type_term -> fprintf fmt ": %a" pp_type_term type_term
+    pp_print_option
+      (fun fmt type_term -> fprintf fmt ": %a" pp_type_term type_term)
+      fmt opt_type
   in
   let pp_opt_initial_value fmt opt_value =
-    match opt_value with
-    | None -> ()
-    | Some (value, value_attributes) ->
+    pp_print_option
+      (fun fmt (value, value_attributes) ->
         fprintf fmt " = %a %a" pp_expr value pp_attribute_key_values
-          (Attributes.bindings value_attributes)
+          (Attributes.bindings value_attributes))
+      fmt opt_value
   in
   fprintf fmt "%s %s%a@.%a%a;" (tok_str CONSTANT) name pp_opt_type opt_type
     pp_attribute_key_values

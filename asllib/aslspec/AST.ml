@@ -265,18 +265,8 @@ let make_labelled_record label fields =
   LabelledRecord { label_opt = Some label; fields }
 
 module Expr = struct
-  (** The left-hand side of an application expression. *)
-  type applicator =
-    | EmptyApplicator
-        (** This is used for tuples, for which there is no applicator. *)
-    | Relation of string
-    | TupleLabel of string
-    | ExprOperator of string
-    | Fields of string list
-    | Unresolved of expr
-
   (** A term that can be used to form a rule judgment. *)
-  and expr =
+  type expr =
     | Var of string
     | FieldAccess of string list
         (** The first identifier is a variable and the rest are field names. *)
@@ -287,7 +277,11 @@ module Expr = struct
         (** A record construction expression. *)
     | Application of { applicator : applicator; args : expr list }
         (** An application of [applicator] to the list of argument expressions
-            [args]. *)
+            [args]. For example, [annotate_literal(tenv, L_Int(one))], where
+            [annotate_literal] is the applicator and [tenv] and [L_Int(one)] are
+            the arguments. Here, [annotate_literal] is defined as a
+            [typing function annotate_literal(tenv: static_envs, l: literal) ->
+             (t: ty) ]. *)
     | Transition of {
         lhs : expr;
         rhs : expr;
@@ -305,6 +299,28 @@ module Expr = struct
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
             during rule resolution. *)
+
+  (** The left-hand side of an application expression. *)
+  and applicator =
+    | EmptyApplicator
+        (** This is used for tuples like [(True, one)] where there is no
+            applicator. *)
+    | Relation of string
+        (** Example: [annotate_literal] for an application like
+            [annotate_literal(tenv, L_Int(one))] where [annotate_literal] is
+            defined as
+            [typing function annotate_literal(tenv: static_envs, l: literal) ->
+             (t: ty)]. *)
+    | TupleLabel of string
+        (** Example: [S_Seq] for an AST node like [S_Seq(s1, s2)] where
+            [ast stmt = S_Seq(first: stmt, second: stmt)]. *)
+    | ExprOperator of string
+        (** Example: [and] for an application like [and(True, False)] where
+            [and] is defined as an operator. *)
+    | Fields of string list
+        (** Example: [tenv.static_envs_G.declared_types] in an expression
+            [tenv.static_envs_G.declared_types(label)]. *)
+    | Unresolved of expr
 
   (** [make_var id] constructs a variable expression with identifier [id]. *)
   let make_var id = Var id

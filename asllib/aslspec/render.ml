@@ -224,12 +224,11 @@ module Make (S : SPEC_VALUE) = struct
 
   (** [pp_variant_with_hypertarget fmt variant] renders the variant [variant]
       along with its hypertarget. *)
-  let pp_variant_with_hypertarget fmt
-      ({ TypeVariant.term; type_kind } as variant) =
+  let pp_variant_with_hypertarget fmt ({ TypeVariant.term } as variant) =
     let variant_name_opt = Spec.variant_to_label_opt variant in
     let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
-    match (term, type_kind) with
-    | LabelledRecord { fields }, _ ->
+    match term with
+    | LabelledRecord { fields } ->
         (* Records are a special case, since each field has its own hypertarget. *)
         let field_hyperlink_targets =
           List.map
@@ -242,11 +241,6 @@ module Make (S : SPEC_VALUE) = struct
           hyperlink_target_opt
           (PP.pp_sep_list ~sep:"" pp_mathhypertarget)
           field_hyperlink_targets pp_variant variant
-    | Label label, TypeKind_Generic ->
-        (* A label variant represents the set containing only itself. *)
-        let hyperlink_target = hypertarget_for_id label in
-        fprintf fmt "%a \\{ %a \\}" pp_mathhypertarget hyperlink_target
-          pp_id_as_macro label
     | _ ->
         fprintf fmt "%a%a" pp_variant variant
           (pp_print_option pp_mathhypertarget)

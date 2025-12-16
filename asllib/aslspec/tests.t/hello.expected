@@ -20,7 +20,7 @@
 \DefineType{s}{
 \begin{flalign*}
 \s\mathhypertarget{type-s} \triangleq\ & \pow{\t}\\
-\cup\ & \mathhypertarget{type-A} \{ \A \}\\
+\cup\ & \A\mathhypertarget{type-A}\\
 \cup\ & \B\left(\s, \s\right)\mathhypertarget{type-B}\end{flalign*}} % EndDefineType
 
 
