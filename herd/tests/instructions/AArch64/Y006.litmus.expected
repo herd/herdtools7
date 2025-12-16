@@ -1,0 +1,13 @@
+Test Y006 Allowed
+States 3
+1:X3=0; 1:X5=0;
+1:X3=0; 1:X5=1;
+1:X3=1; 1:X5=1;
+No
+Witnesses
+Positive: 0 Negative: 5
+Condition exists (1:X3=1 /\ 1:X5=0)
+Observation Y006 Never 0 5
+Time Y006 0.01
+Hash=0f97e0ec01e6ca8a026510eff0f968d6
+
