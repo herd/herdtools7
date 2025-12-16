@@ -90,6 +90,8 @@ type attribute =
   | MathLayoutAttribute of layout
   | BoolAttribute of bool
 
+type attribute_pairs = (AttributeKey.t * attribute) list
+
 (** A module for associating attributes with attribute keys. *)
 module Attributes = struct
   include Map.Make (AttributeKey)
@@ -262,128 +264,7 @@ let record_field_prose_description { att } =
 let make_labelled_record label fields =
   LabelledRecord { label_opt = Some label; fields }
 
-(** A datatype for a constant definition. *)
-module Constant : sig
-  type t = { name : string; att : Attributes.t }
-
-  val make : string -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-end = struct
-  type t = { name : string; att : Attributes.t }
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  open Attributes
-
-  let make name attributes = { name; att = Attributes.of_list attributes }
-
-  let prose_description self =
-    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
-
-  let math_macro self =
-    Attributes.find_math_macro AttributeKey.Math_Macro self.att
-end
-
-(** A datatype for top-level type terms used in the definition of a type. *)
-module TypeVariant : sig
-  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
-
-  val make : type_kind -> type_term -> (AttributeKey.t * attribute) list -> t
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-
-  val math_layout : t -> layout option
-  (** The layout of the type term when rendered in the context of its containing
-      type. *)
-end = struct
-  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
-
-  let make type_kind term attribute_pairs =
-    { type_kind; term; att = Attributes.of_list attribute_pairs }
-
-  open Attributes
-
-  let attributes_to_list self = bindings self.att
-
-  let prose_description self =
-    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
-
-  let math_macro self =
-    Attributes.find_math_macro AttributeKey.Math_Macro self.att
-
-  let math_layout self =
-    Attributes.find_layout AttributeKey.Math_Layout self.att
-end
-
-(** A datatype for a type definition. *)
-module Type : sig
-  type t = {
-    name : string;
-    type_kind : type_kind;
-    variants : TypeVariant.t list;
-    att : Attributes.t;
-  }
-
-  val make :
-    type_kind ->
-    string ->
-    TypeVariant.t list ->
-    (AttributeKey.t * attribute) list ->
-    t
-
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
-  val prose_description : t -> string
-  val math_macro : t -> string option
-  val short_circuit_macro : t -> string option
-
-  val math_layout : t -> layout option
-  (** The layout used when rendered as a stand-alone type definition. *)
-end = struct
-  type t = {
-    name : string;
-    type_kind : type_kind;
-    variants : TypeVariant.t list;
-    att : Attributes.t;
-  }
-
-  let make type_kind name variants attribute_pairs =
-    (* The [type_kind] of the variants is the [type_kind] given above. *)
-    let variants_with_parent_type_kind =
-      List.map
-        (fun ({ TypeVariant.term } as variant) ->
-          let attribute_pairs = TypeVariant.attributes_to_list variant in
-          TypeVariant.make type_kind term attribute_pairs)
-        variants
-    in
-    {
-      type_kind;
-      name;
-      variants = variants_with_parent_type_kind;
-      att = Attributes.of_list attribute_pairs;
-    }
-
-  open Attributes
-
-  let attributes_to_list self = Attributes.bindings self.att
-
-  let prose_description self =
-    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
-
-  let math_macro self =
-    Attributes.find_math_macro AttributeKey.Math_Macro self.att
-
-  let short_circuit_macro self =
-    Attributes.find_math_macro AttributeKey.Short_Circuit_Macro self.att
-
-  let math_layout self =
-    Attributes.find_layout AttributeKey.Math_Layout self.att
-end
-
-(** A datatype for a set of inference rules for a given relation. *)
-module Rule = struct
+module Expr = struct
   (** The left-hand side of an application expression. *)
   type applicator =
     | EmptyApplicator
@@ -447,6 +328,160 @@ module Rule = struct
 
   let make_record label_opt fields = Record { label_opt; fields }
   let make_list_index list_var index = ListIndex { list_var; index }
+end
+
+(** A datatype for a constant definition. *)
+module Constant : sig
+  type t = {
+    name : string;
+    opt_type : type_term option;
+    opt_value_and_attributes : (Expr.expr * Attributes.t) option;
+    att : Attributes.t;
+  }
+
+  val make :
+    string ->
+    type_term option ->
+    (Expr.expr * attribute_pairs) option ->
+    attribute_pairs ->
+    t
+
+  val attributes_to_list : t -> attribute_pairs
+  val prose_description : t -> string
+  val math_macro : t -> string option
+
+  val value_math_layout : t -> layout option
+  (** The layout for the value, if one exists. *)
+end = struct
+  type t = {
+    name : string;
+    opt_type : type_term option;
+    opt_value_and_attributes : (Expr.expr * Attributes.t) option;
+    att : Attributes.t;
+  }
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  open Attributes
+
+  let make name opt_type opt_value_and_attribute_pairs attributes =
+    let opt_value_and_attributes =
+      match opt_value_and_attribute_pairs with
+      | Some (e, attr_pairs) -> Some (e, Attributes.of_list attr_pairs)
+      | None -> None
+    in
+    {
+      name;
+      opt_type;
+      opt_value_and_attributes;
+      att = Attributes.of_list attributes;
+    }
+
+  let prose_description self =
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
+
+  let math_macro self =
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
+
+  let value_math_layout self =
+    match self.opt_value_and_attributes with
+    | Some (_, attrs) -> Attributes.find_layout AttributeKey.Math_Layout attrs
+    | None -> None
+end
+
+(** A datatype for top-level type terms used in the definition of a type. *)
+module TypeVariant : sig
+  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
+
+  val make : type_kind -> type_term -> attribute_pairs -> t
+  val attributes_to_list : t -> attribute_pairs
+  val prose_description : t -> string
+  val math_macro : t -> string option
+
+  val math_layout : t -> layout option
+  (** The layout of the type term when rendered in the context of its containing
+      type. *)
+end = struct
+  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
+
+  let make type_kind term attribute_pairs =
+    { type_kind; term; att = Attributes.of_list attribute_pairs }
+
+  open Attributes
+
+  let attributes_to_list self = bindings self.att
+
+  let prose_description self =
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
+
+  let math_macro self =
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
+
+  let math_layout self =
+    Attributes.find_layout AttributeKey.Math_Layout self.att
+end
+
+(** A datatype for a type definition. *)
+module Type : sig
+  type t = {
+    name : string;
+    type_kind : type_kind;
+    variants : TypeVariant.t list;
+    att : Attributes.t;
+  }
+
+  val make : type_kind -> string -> TypeVariant.t list -> attribute_pairs -> t
+  val attributes_to_list : t -> attribute_pairs
+  val prose_description : t -> string
+  val math_macro : t -> string option
+  val short_circuit_macro : t -> string option
+
+  val math_layout : t -> layout option
+  (** The layout used when rendered as a stand-alone type definition. *)
+end = struct
+  type t = {
+    name : string;
+    type_kind : type_kind;
+    variants : TypeVariant.t list;
+    att : Attributes.t;
+  }
+
+  let make type_kind name variants attribute_pairs =
+    (* The [type_kind] of the variants is the [type_kind] given above. *)
+    let variants_with_parent_type_kind =
+      List.map
+        (fun ({ TypeVariant.term } as variant) ->
+          let attribute_pairs = TypeVariant.attributes_to_list variant in
+          TypeVariant.make type_kind term attribute_pairs)
+        variants
+    in
+    {
+      type_kind;
+      name;
+      variants = variants_with_parent_type_kind;
+      att = Attributes.of_list attribute_pairs;
+    }
+
+  open Attributes
+
+  let attributes_to_list self = Attributes.bindings self.att
+
+  let prose_description self =
+    Attributes.get_string_or_empty AttributeKey.Prose_Description self.att
+
+  let math_macro self =
+    Attributes.find_math_macro AttributeKey.Math_Macro self.att
+
+  let short_circuit_macro self =
+    Attributes.find_math_macro AttributeKey.Short_Circuit_Macro self.att
+
+  let math_layout self =
+    Attributes.find_layout AttributeKey.Math_Layout self.att
+end
+
+(** A datatype for a set of inference rules for a given relation. *)
+module Rule = struct
+  open Expr
 
   type judgment = { expr : expr; is_output : bool; att : Attributes.t }
   (** A judgment represents either a premise or the the output configuration of
@@ -516,7 +551,7 @@ module Relation : sig
     relation_category option ->
     opt_named_type_term list ->
     type_term list ->
-    (AttributeKey.t * attribute) list ->
+    attribute_pairs ->
     Rule.t option ->
     t
 
@@ -525,10 +560,10 @@ module Relation : sig
     string list ->
     opt_named_type_term list ->
     type_term ->
-    (AttributeKey.t * attribute) list ->
+    attribute_pairs ->
     t
 
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
@@ -623,13 +658,8 @@ module TypesRender : sig
     att : Attributes.t;
   }
 
-  val make :
-    string ->
-    (string * string list) list ->
-    (AttributeKey.t * attribute) list ->
-    t
-
-  val attributes_to_list : t -> (AttributeKey.t * attribute) list
+  val make : string -> (string * string list) list -> attribute_pairs -> t
+  val attributes_to_list : t -> attribute_pairs
 
   val lhs_hypertargets : t -> bool
   (** Whether hypertargets should be generated for the LHS of type definitions

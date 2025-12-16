@@ -33,7 +33,7 @@
 
 \DefineType{B}{
 \begin{flalign*}
-\B\mathhypertarget{type-B} \triangleq\ & \C\mathhypertarget{type-C}\\
+\B\mathhypertarget{type-B} \triangleq\ & \mathhypertarget{type-C} \{ \C \}\\
 \cup\ & \pow{\Int}\\
 \cup\ & \Option{\Int}\\
 \cup\ & \KleeneStar{\Int}\\

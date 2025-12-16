@@ -200,13 +200,10 @@ let type_kind := TYPEDEF; { TypeKind_Generic }
     | AST; { TypeKind_AST }
 
 let type_definition :=
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes;
-    {   check_definition_name type_name;
-        Elem_Type (Type.make type_kind type_name [] type_attributes) }
-    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; EQ; ~=type_variants_with_attributes;
+    | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; ~=type_variants_with_attributes;
     {   check_definition_name type_name;
         Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
-    | type_kind; type_name=IDENTIFIER; type_attributes; type_variants_with_attributes;
+    | type_kind; type_name=IDENTIFIER; type_attributes; list1(type_variant_with_attributes);
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError msg) }
 
@@ -226,9 +223,21 @@ let parameters :=
     | LBRACKET; params=tclist1(IDENTIFIER); RBRACKET; { params }
     | { [] }
 
-let constant_definition := CONSTANT; name=IDENTIFIER; att=type_attributes;
+let constant_definition := CONSTANT; name=IDENTIFIER; ~=opt_type; att=type_attributes; ~=opt_value_and_attributes;
     {   check_definition_name name;
-        Elem_Constant (Constant.make name att) }
+        Elem_Constant (Constant.make name opt_type opt_value_and_attributes att) }
+
+let opt_type :=
+    | { None }
+    | COLON; type_term=type_term; { Some type_term }
+
+let opt_value_and_attributes :=
+    | { None }
+    | EQ; ~=expr; att=constant_value_attributes; { Some (expr, att) }
+
+let constant_value_attributes ==
+    | { [] }
+    | LBRACE; attr=math_layout_attribute; RBRACE; { [attr] }
 
 let relation_property :=
     | RELATION; { Relation.RelationProperty_Relation }
@@ -287,8 +296,9 @@ let prose_application_attribute ==
     PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
 
 let type_variants_with_attributes :=
-    | head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
-    | VDASH; head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
+    | { [] }
+    | EQ; head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
+    | EQ;  VDASH; head=type_term_with_attributes; tail=list(type_variant_with_attributes); { head :: tail }
 let type_variant_with_attributes :=
     | VDASH; term_with_attributes=type_term_with_attributes; { term_with_attributes }
 
@@ -383,14 +393,14 @@ let maybe_output_expr ==
 let judgment_expr :=
     | transition_expr
     | LPAR; ~=transition_expr; RPAR;
-      { Rule.make_tuple [ transition_expr ] }
+      { Expr.make_tuple [ transition_expr ] }
     | index_judgement
     | LPAR; ~=index_judgement; RPAR;
-      { Rule.make_tuple [ index_judgement ] }
+      { Expr.make_tuple [ index_judgement ] }
 
 let transition_expr :=
     | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
-      { Rule.Transition { lhs; rhs; short_circuit } }
+      { Expr.Transition { lhs; rhs; short_circuit } }
 
 let short_circuit :=
     | { None } (* Short-circuiting expressions will be inserted automatically. *)
@@ -401,31 +411,31 @@ let short_circuit :=
 
 let short_circuit_expr :=
     | id=IDENTIFIER;
-      { Rule.make_var id }
+      { Expr.make_var id }
     | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
-      { Rule.make_application (Rule.make_var lhs) (List.map Rule.make_var args) }
+      { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
 
 let index_judgement :=
     | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=transition_expr; RPAR;
-      { Rule.Indexed { index; list; body } }
+      { Expr.Indexed { index; list; body } }
 
 let expr :=
     | id=IDENTIFIER;
-      { Rule.make_var id }
+      { Expr.make_var id }
     | components=plist1(expr);
-      { Rule.make_tuple components }
+      { Expr.make_tuple components }
     | lhs=expr; args=plist0(expr);
-      { Rule.make_application lhs args }
+      { Expr.make_application lhs args }
     | ~=field_path;
-      { Rule.FieldAccess field_path }
+      { Expr.FieldAccess field_path }
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
-      { Rule.make_list_index list_var index }
+      { Expr.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
-      { Rule.make_record label_opt fields }
+      { Expr.make_record label_opt fields }
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
-      { Rule.make_operator_application infix_expr_operator [lhs; rhs] }
+      { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
-      { Rule.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
+      { Expr.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
 
 (** We currently do not need field paths longer than a variable with two fields. *)
 let field_path :=

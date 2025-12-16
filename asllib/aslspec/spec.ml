@@ -403,7 +403,7 @@ let is_applicator_variadic_operator id_to_defining_node applicator =
   (* TODO: add an explicit `variadic` attribute to operators and check the operator signature
                when the attribute is specified. *)
   match applicator with
-  | Rule.ExprOperator rel_name -> (
+  | Expr.ExprOperator rel_name -> (
       let input =
         match StringMap.find rel_name id_to_defining_node with
         | Node_Relation def -> def.Relation.input
@@ -419,7 +419,7 @@ let is_variadic_operator spec relation =
   | Node_Relation { Relation.is_operator } ->
       is_operator
       && is_applicator_variadic_operator spec.id_to_defining_node
-           (Rule.ExprOperator relation.Relation.name)
+           (Expr.ExprOperator relation.Relation.name)
   | _ -> false
 
 (** [update_symbol_table ast] creates a symbol table from [ast]. *)
@@ -427,40 +427,13 @@ let make_symbol_table ast =
   let definition_nodes = list_definition_nodes ast in
   make_id_to_definition_node definition_nodes
 
-(** A module for normalizing rules within relations to make them amenable for
-    further checking and for rendering. There are three transformations:
-    {ul
-     {- Aggregates consecutive [Case] blocks into a single [Case] block. }
-     {- Resolves [Unresolved] in applicators to either [Node_Relation] or
-        [Node_TypeVariant]
-     }
-     {- Transforms the conclusion judgment from an expression to a transition.
-        That is, given
-        {[
-          relation r(a: A) -> (b:B) =
-            p1; ... pk;
-            --
-            c_expr;
-        ]}
-        we transform it to
-        {[
-          relation r(a: A) -> (b:B) =
-            p1; ... pk;
-            --
-            r(a) -> c_expr;
-        ]}
-        The result is the re-written AST along with an updated map from
-        identifiers to definition nodes, updated for the newly created relation
-        nodes.
-     }
-    } *)
-module ResolveRules = struct
-  open Rule
-
+(** A module to resolve expressions appearing in rules and constant values. *)
+module ResolveApplicationExpr = struct
   (** [resolve_application_expr id_to_defining_node expr] resolves application
       expressions appearing in [expr] by using [id_to_defining_node] to lookup
       type variants and relations. *)
   let rec resolve_application_expr id_to_defining_node expr =
+    let open Expr in
     match expr with
     | Var _ | FieldAccess _ | ListIndex _ -> expr
     | Record { label_opt; fields } ->
@@ -523,25 +496,108 @@ module ResolveRules = struct
         in
         NamedExpr (resolved_sub_expr, name)
 
+  let rec resolve_rule_element id_to_defining_node rule_element =
+    let open Rule in
+    let open Expr in
+    match rule_element with
+    | Judgment ({ expr } as judgment) ->
+        let resolved_expr = resolve_application_expr id_to_defining_node expr in
+        Judgment { judgment with expr = resolved_expr }
+    | Cases cases ->
+        let resolved_cases =
+          List.map
+            (fun { name; elements } ->
+              let resolved_elements =
+                List.map (resolve_rule_element id_to_defining_node) elements
+              in
+              { name; elements = resolved_elements })
+            cases
+        in
+        Cases resolved_cases
+
+  let resolve ast id_to_defining_node =
+    let open Rule in
+    let ast =
+      List.map
+        (fun elem ->
+          match elem with
+          | Elem_Type _ | Elem_RenderTypes _ | Elem_RenderRule _ -> elem
+          | Elem_Constant ({ Constant.opt_value_and_attributes } as def) -> (
+              match opt_value_and_attributes with
+              | Some (e, attributes) ->
+                  let resolved_e =
+                    resolve_application_expr id_to_defining_node e
+                  in
+                  Elem_Constant
+                    {
+                      def with
+                      Constant.opt_value_and_attributes =
+                        Some (resolved_e, attributes);
+                    }
+              | _ -> elem)
+          | Elem_Relation ({ rule_opt = Some elements } as def) ->
+              let resolved_def =
+                let resolved_elements =
+                  List.map (resolve_rule_element id_to_defining_node) elements
+                in
+                { def with rule_opt = Some resolved_elements }
+              in
+              Elem_Relation resolved_def
+          | Elem_Relation { rule_opt = None } as elem -> elem)
+        ast
+    in
+    (* Since we generated new relation nodes, we need to re-generate the symbol table. *)
+    (ast, make_symbol_table ast)
+end
+
+(** A module for normalizing rules within relations to make them amenable for
+    further checking and for rendering. There are three transformations:
+    {ul
+     {- Aggregates consecutive [Case] blocks into a single [Case] block. }
+     {- Resolves [Unresolved] in applicators to either [Node_Relation] or
+        [Node_TypeVariant]
+     }
+     {- Transforms the conclusion judgment from an expression to a transition.
+        That is, given
+        {[
+          relation r(a: A) -> (b:B) =
+            p1; ... pk;
+            --
+            c_expr;
+        ]}
+        we transform it to
+        {[
+          relation r(a: A) -> (b:B) =
+            p1; ... pk;
+            --
+            r(a) -> c_expr;
+        ]}
+        The result is the re-written AST along with an updated map from
+        identifiers to definition nodes, updated for the newly created relation
+        nodes.
+     }
+    } *)
+module ResolveRules = struct
+  open Rule
+
   (** [resolve_rule_element id_to_defining_node rule_element] performs
       resolution transformations on [rule_element] using [id_to_defining_node]
       to lookup type variants and relations. *)
   let rec resolve_rule_element id_to_defining_node conclusion_lhs rule_element =
-    let open Rule in
+    let open Expr in
     match rule_element with
     | Judgment ({ expr; is_output } as judgment) ->
-        let resolved_expr = resolve_application_expr id_to_defining_node expr in
         let resolved_expr =
           if is_output then
             Transition
               {
                 lhs = conclusion_lhs;
-                rhs = resolved_expr;
+                rhs = expr;
                 short_circuit = Some [];
                 (* Output transitions never have alternatives.
                    This ensures alternatives are not inserted. *)
               }
-          else resolved_expr
+          else expr
         in
         Judgment { judgment with expr = resolved_expr }
     | Cases cases ->
@@ -562,6 +618,7 @@ module ResolveRules = struct
       conclusion judgment for the relation definition [def]. This function
       assumes [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; input } =
+    let open Expr in
     (* Converts an optionally-named type term into an expression. *)
     let rec arg_of = function
       | Some name, _ -> Var name
@@ -639,8 +696,8 @@ module ResolveRules = struct
       List.map
         (fun elem ->
           match elem with
-          | Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
-          | Elem_RenderRule _ ->
+          | Elem_Type _ | Elem_RenderTypes _ | Elem_RenderRule _
+          | Elem_Constant _ ->
               elem
           | Elem_Relation ({ rule_opt = Some elements } as def) ->
               let resolved_def =
@@ -664,6 +721,7 @@ end
 (** A module for extending expressions in output configurations of
     conclusionjudgments with names derived from type terms. *)
 module ExtendNames = struct
+  open Expr
   open Rule
 
   (** [opt_extend] Wraps [expr] with a name if [opt_name] is [Some], but avoids
@@ -1062,6 +1120,8 @@ module Check = struct
       checks in this module assume that [ResolveRules.resolve] has already been
       applied to the AST. *)
   module CheckRules = struct
+    open Expr
+
     (** [check_well_formed_expanded relation_name expanded_rule] checks that the
         [expanded_rule] is well-formed, that is, it has at least one judgment,
         and that the last judgment, and only the last judgment, is an output
@@ -1657,6 +1717,7 @@ let from_ast ast =
   let () = Check.check_math_layout definition_nodes in
   let () = Check.CheckProseTemplates.check definition_nodes in
   let () = Check.relation_named_arguments_if_exists_rule ast in
+  let ast, _ = ResolveApplicationExpr.resolve ast id_to_defining_node in
   let ast, _ = ResolveRules.resolve ast id_to_defining_node in
   let ast, id_to_defining_node = ExtendNames.extend ast in
   let () = Check.CheckRules.check ast id_to_defining_node in

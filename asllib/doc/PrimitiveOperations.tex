@@ -507,21 +507,9 @@ $\nebits$         & length of $a$ = length of $b$\\
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
 
-\hypertarget{constant-unopsignatures}{}
 The following set of unary operator types and argument types defines the correct argument type
 for a given unary operator:
-
-\[
-\unopsignatures \triangleq
-\left\{
-\begin{array}{lcll}
-  (\NEG   &,& \LInt)        &,\\
-  (\NEG   &,& \LReal)       &,\\
-  (\BNOT  &,& \LBool)       &,\\
-  (\NOT   &,& \LBitvector)  &\\
-\end{array}
-\right\}
-\]
+\RenderConstant{unop_signatures}
 
 \ExampleDef{Unary Operations}
 \listingref{unary-operations} shows applications of unary operations

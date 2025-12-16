@@ -68,19 +68,6 @@ module Make (S : SPEC_VALUE) = struct
     in
     sprintf "%s-%s" category name_id
 
-  (** [pp_constant_definition fmt def] renders the definition of the constant
-      given by [def] with the formatter [fmt]. *)
-  let pp_constant_definition fmt { Constant.name } =
-    fprintf fmt "$%a$" pp_id_as_macro name
-
-  (** [pp_constant_definition_macro fmt def] renders the LaTeX wrapper macro
-      [\DefineConstant{name}{...}] around the rendering of a constant definition
-      [def] with the formatter [fmt].*)
-  let pp_constant_definition_macro fmt ({ Constant.name } as def) =
-    let hyperlink_target = hypertarget_for_id name in
-    fprintf fmt {|\DefineConstant{%s}{%a%a} %% EndDefineConstant|} name
-      pp_texthypertarget hyperlink_target pp_constant_definition def
-
   (** Renders the application of the type operator [op] to [arg] with [fmt].
       [arg] is rendered by [pp_arg fmt arg]. *)
   let pp_type_operator fmt op pp_arg arg =
@@ -102,6 +89,7 @@ module Make (S : SPEC_VALUE) = struct
     | Label name -> (
         match get_short_circuit_macro name with
         | Some short_circuit_macro ->
+            (* We like to render short-circuit expressions above type names who define them. *)
             pp_overtext fmt pp_id_as_macro name pp_print_string
               short_circuit_macro
         | None -> pp_id_as_macro fmt name)
@@ -236,11 +224,12 @@ module Make (S : SPEC_VALUE) = struct
 
   (** [pp_variant_with_hypertarget fmt variant] renders the variant [variant]
       along with its hypertarget. *)
-  let pp_variant_with_hypertarget fmt ({ TypeVariant.term } as variant) =
+  let pp_variant_with_hypertarget fmt
+      ({ TypeVariant.term; type_kind } as variant) =
     let variant_name_opt = Spec.variant_to_label_opt variant in
     let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
-    match term with
-    | LabelledRecord { fields } ->
+    match (term, type_kind) with
+    | LabelledRecord { fields }, _ ->
         (* Records are a special case, since each field has its own hypertarget. *)
         let field_hyperlink_targets =
           List.map
@@ -253,6 +242,11 @@ module Make (S : SPEC_VALUE) = struct
           hyperlink_target_opt
           (PP.pp_sep_list ~sep:"" pp_mathhypertarget)
           field_hyperlink_targets pp_variant variant
+    | Label label, TypeKind_Generic ->
+        (* A label variant represents the set containing only itself. *)
+        let hyperlink_target = hypertarget_for_id label in
+        fprintf fmt "%a \\{ %a \\}" pp_mathhypertarget hyperlink_target
+          pp_id_as_macro label
     | _ ->
         fprintf fmt "%a%a" pp_variant variant
           (pp_print_option pp_mathhypertarget)
@@ -334,57 +328,69 @@ module Make (S : SPEC_VALUE) = struct
     fprintf fmt {|\DefineType{%s}{%a} %% EndDefineType|} def.Type.name
       pp_type_definition def
 
-  (** [pp_pointer ~is_first ~is_last fmt pointer] renders a subset of type
-      definitions [pointer] with the formatter [fmt]. The boolean flags
-      [is_first] and [is_last] indicate whether this is the first or last
-      pointer in a list of pointers being rendered. *)
-  let pp_pointer ~lhs_hypertargets ~is_first ~is_last fmt
-      { TypesRender.type_name; variant_names } =
-    let ({ Type.variants } as def) =
-      match Spec.defining_node_for_id S.spec type_name with
-      | Node_Type def -> def
-      | _ -> assert false
-    in
-    let selected_variants =
-      (* If [variant_names] is empty, we use all the variants from the defining type.
+  (** A module for rendering subsets of type definitions. *)
+  module RenderTypeSubsets : sig
+    val pp_render_types : formatter -> TypesRender.t -> unit
+    (** [pp_render_types fmt render_types] renders the named list of subsets of
+        type definitions [render_types] with the formatter [fmt]. *)
+
+    val pp_render_types_macro : formatter -> TypesRender.t -> unit
+    (** [pp_render_types_macro fmt def] renders the LaTeX wrapper macro
+        [\DefineRenderTypes{name}{...}] around the rendering of a list of
+        subsets of type definitions [def] with the formatter [fmt]. *)
+  end = struct
+    (** [pp_pointer ~is_first ~is_last fmt pointer] renders a subset of type
+        definitions [pointer] with the formatter [fmt]. The boolean flags
+        [is_first] and [is_last] indicate whether this is the first or last
+        pointer in a list of pointers being rendered. *)
+    let pp_pointer ~lhs_hypertargets ~is_first ~is_last fmt
+        ({ TypesRender.type_name; variant_names } as pointer) =
+      let ({ Type.variants } as def) =
+        match Spec.defining_node_for_id S.spec type_name with
+        | Node_Type def -> def
+        | _ -> assert false
+      in
+      let selected_variants =
+        (* If [variant_names] is empty, we use all the variants from the defining type.
        Otherwise, list the labelelled tuples and records whose label are in [variant_names].
     *)
-      if Utils.list_is_empty variant_names then variants
-      else
-        List.map
-          (fun variant_name ->
-            match Spec.defining_node_for_id S.spec variant_name with
-            | Node_TypeVariant def -> def
-            | _ -> assert false)
-          variant_names
-    in
-    pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
-      (def, selected_variants)
+        if Utils.list_is_empty variant_names then variants
+        else
+          List.map
+            (fun variant_name ->
+              match Spec.defining_node_for_id S.spec variant_name with
+              | Node_TypeVariant def -> def
+              | _ ->
+                  let msg =
+                    Format.asprintf "Can't find variant %s in %a" variant_name
+                      PP.pp_type_subset_pointer pointer
+                  in
+                  failwith msg)
+            variant_names
+      in
+      pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
+        (def, selected_variants)
 
-  (** [pp_pointers fmt pointers] renders [pointers] - a list of subsets of type
-      definitions - with the formatter [fmt]. *)
-  let pp_pointers ~lhs_hypertargets fmt pointers =
-    let num_pointers = List.length pointers in
-    List.iteri
-      (fun i pointer ->
-        pp_pointer ~lhs_hypertargets ~is_first:(i = 0)
-          ~is_last:(i = num_pointers - 1)
-          fmt pointer)
-      pointers
+    (** [pp_pointers fmt pointers] renders [pointers] - a list of subsets of
+        type definitions - with the formatter [fmt]. *)
+    let pp_pointers ~lhs_hypertargets fmt pointers =
+      let num_pointers = List.length pointers in
+      List.iteri
+        (fun i pointer ->
+          pp_pointer ~lhs_hypertargets ~is_first:(i = 0)
+            ~is_last:(i = num_pointers - 1)
+            fmt pointer)
+        pointers
 
-  (** [pp_render_types fmt render_types] renders the named list of subsets of
-      type definitions [render_types] with the formatter [fmt]. *)
-  let pp_render_types fmt ({ TypesRender.pointers } as def) =
-    let lhs_hypertargets = TypesRender.lhs_hypertargets def in
-    pp_pointers ~lhs_hypertargets fmt pointers
+    let pp_render_types fmt ({ TypesRender.pointers } as def) =
+      let lhs_hypertargets = TypesRender.lhs_hypertargets def in
+      pp_pointers ~lhs_hypertargets fmt pointers
 
-  (** [pp_render_types_macro fmt def] renders the LaTeX wrapper macro
-      [\DefineRenderTypes{name}{...}] around the rendering of a list of subsets
-      of type definitions [def] with the formatter [fmt]. *)
-  let pp_render_types_macro fmt def =
-    fprintf fmt {|\DefineRenderTypes{%s}{%a
+    let pp_render_types_macro fmt def =
+      fprintf fmt {|\DefineRenderTypes{%s}{%a
 } %% EndDefineRenderTypes|}
-      def.TypesRender.name pp_render_types def
+        def.TypesRender.name pp_render_types def
+  end
 
   (** A module for rendering rules that comprise relation definitions.*)
   module RenderRule = struct
@@ -426,6 +432,7 @@ module Make (S : SPEC_VALUE) = struct
     (** [pp_expr fmt (expr, layout)] renders the expression [expr] with the
         formatter [fmt] and laid out according to [layout]. *)
     let rec pp_expr fmt (expr, layout) =
+      let open Expr in
       match expr with
       | NamedExpr (sub_expr, name) ->
           pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
@@ -656,12 +663,35 @@ module Make (S : SPEC_VALUE) = struct
         pp_render_rule def
   end
 
+  (** [pp_constant_definition fmt def] renders the definition of the constant
+      given by [def] with the formatter [fmt]. *)
+  let pp_constant_definition fmt
+      ({ Constant.name; opt_value_and_attributes } as def) =
+    match opt_value_and_attributes with
+    | None -> fprintf fmt "$%a$" pp_id_as_macro name
+    | Some (value, _) ->
+        let layout =
+          match Constant.value_math_layout def with
+          | Some layout -> layout
+          | None -> Unspecified
+        in
+        fprintf fmt {| \[ %a %a %a \] |} pp_id_as_macro name pp_macro
+          Macros.triangleq_macro_name RenderRule.pp_expr (value, layout)
+
+  (** [pp_constant_definition_macro fmt def] renders the LaTeX wrapper macro
+      [\DefineConstant{name}{...}] around the rendering of a constant definition
+      [def] with the formatter [fmt].*)
+  let pp_constant_definition_macro fmt ({ Constant.name } as def) =
+    let hyperlink_target = hypertarget_for_id name in
+    fprintf fmt {|\DefineConstant{%s}{%a%a} %% EndDefineConstant|} name
+      pp_texthypertarget hyperlink_target pp_constant_definition def
+
   (** [pp_elem fmt elem] renders an element of the specification. *)
   let pp_elem fmt = function
     | Elem_Constant def -> pp_constant_definition fmt def
     | Elem_Type def -> pp_type_definition fmt def
     | Elem_Relation def -> pp_relation_definition fmt def
-    | Elem_RenderTypes def -> pp_render_types fmt def
+    | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types fmt def
     | Elem_RenderRule def -> RenderRule.pp_render_rule fmt def
 
   (** [pp_elem_definition_macro fmt elem] renders a macro definition for an
@@ -670,7 +700,7 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Constant def -> pp_constant_definition_macro fmt def
     | Elem_Type def -> pp_type_definition_macro fmt def
     | Elem_Relation def -> pp_relation_definition_macro fmt def
-    | Elem_RenderTypes def -> pp_render_types_macro fmt def
+    | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types_macro fmt def
     | Elem_RenderRule def -> RenderRule.pp_render_rule_macro fmt def
 
   (** Renders a LaTeX document containing all of the elements in [S.spec]. A
