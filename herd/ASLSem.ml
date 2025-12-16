@@ -830,7 +830,7 @@ module Make (Conf : Config) = struct
         @! build "features.asl"
         @! Lazy.force built_shared_pseudocode
       in
-      let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
+      let ast = patch_with_backup ~patches:(custom_implems @! patches) ~src:shared in
       Asllib.Builder.with_stdlib ast
       |> Asllib.Builder.with_primitives primitives
       |> TypeCheck.type_check_ast

@@ -324,6 +324,10 @@ val patch : src:AST.t -> patches:AST.t -> AST.t
 (** [patch ~src ~patches] replaces in [src] the global identifiers defined by
     [patches]. *)
 
+val patch_with_backup : src:AST.t -> patches:AST.t -> AST.t
+(** Same as [patch] but discarded elements in [src] are kept and renamed with
+    the added prefix [_patched_]. *)
+
 val subst_expr : (identifier * expr) list -> expr -> expr
 (** [subst_expr substs e] replaces the variables used inside [e] by their
     associated expression in [substs], if any.
