@@ -1,0 +1,11 @@
+AArch64 F004
+variant=mte,async
+
+{
+ [tag(x)]=:green;
+ 0:X1=x:red;
+}
+ P0          | P0.F      ;
+ STR W0,[X1] | MOV W2,#1 ;
+
+forall (fault(P0,TagCheck))
