@@ -1,0 +1,7 @@
+ETS2.CoWR0+posptev1p-fripptev1		            Forbidden
+ETS2.CoWR0+tlbi-sync.ishsptev0p-fripptev0		Forbidden
+ETS2.CoWW+tlbi-sync.ishsptedb1p-coipptedb1		Forbidden
+ETS2.MP+dsb.stpptehd+popteap		              Forbidden
+ETS2.MP+poptev1l+po		                      Forbidden
+ETS2.SB+dsb.sy+dmb.syptev1p               	  Forbidden
+ETS2.LB+dsb.ldpptehd+popteap                 Forbidden
