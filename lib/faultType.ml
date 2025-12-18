@@ -32,9 +32,13 @@ module type AArch64Sig = sig
     | Permission
     | Exclusive
 
+  type mte_t =
+    | Sync
+    | Async
+
   type t =
     | MMU of DISide.t * mmu_t
-    | TagCheck
+    | TagCheck of mte_t
     | UndefinedInstruction
     | SupervisorCall
     | PacCheck of PAC.key
@@ -49,6 +53,10 @@ module AArch64 = struct
     | Permission
     | Exclusive
 
+  type mte_t =
+    | Sync
+    | Async
+
   let pp_mmu_t = function
     | Translation -> "Translation"
     | AccessFlag -> "AccessFlag"
@@ -57,7 +65,7 @@ module AArch64 = struct
 
   type t =
     | MMU of DISide.t * mmu_t
-    | TagCheck
+    | TagCheck of mte_t
     | UndefinedInstruction
     | SupervisorCall
     | PacCheck of PAC.key
@@ -93,7 +101,8 @@ module AArch64 = struct
       "Exclusive", [MMU (Data, Exclusive);
                     MMU (Instr, Exclusive)];
 
-      "TagCheck", [TagCheck];
+      "TagCheck", [TagCheck Sync;
+                   TagCheck Async;];
       "PacCheck", [PacCheck PAC.DA;
                    PacCheck PAC.DB;
                    PacCheck PAC.IA;
@@ -107,7 +116,8 @@ module AArch64 = struct
         Printf.sprintf "MMU:%s" (pp_mmu_t m)
     | MMU (d, m) ->
         Printf.sprintf "%s-MMU:%s" (DISide.pp d) (pp_mmu_t m)
-    | TagCheck -> "TagCheck"
+    | TagCheck Sync -> "TagCheck"
+    | TagCheck Async -> "TagCheck:Async"
     | UndefinedInstruction -> "UndefinedInstruction"
     | SupervisorCall -> "SupervisorCall"
     | PacCheck k -> Printf.sprintf "PacCheck:%s" (PAC.pp_upper_key k)
@@ -127,7 +137,8 @@ module AArch64 = struct
       | "I-MMU:AccessFlag"  -> MMU (Instr, AccessFlag)
       | "I-MMU:Permission"  -> MMU (Instr, Permission)
       | "I-MMU:Exclusive"   -> MMU (Instr, Exclusive)
-      | "TagCheck" -> TagCheck
+      | "TagCheck" -> TagCheck Sync
+      | "TagCheck:Async" -> TagCheck Async
       | "PacCheck:DA" -> PacCheck PAC.DA
       | "PacCheck:DB" -> PacCheck PAC.DB
       | "PacCheck:IA" -> PacCheck PAC.IA

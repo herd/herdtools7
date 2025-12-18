@@ -10,4 +10,4 @@ varant=async
              | MOV W2,#1   ;
              |L1:          ;
              | STR W2,[X3] ;
-exists [x]=1 /\ 1:X0=x:red /\ ~fault (P1:L1,x)
+exists [x]=1 /\ 1:X0=x:red /\ ~fault (P1)

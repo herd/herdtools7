@@ -160,16 +160,39 @@ module Make
         | Some _ -> true
         | None -> false
 
+      let tagcheck_fault_type dir =
+        let open FaultType.AArch64 in
+        let kind =
+          match C.mte_precision, dir with
+          | Precision.Asynchronous, _
+          | Precision.Asymmetric, Dir.W -> Async
+          | _ -> Sync
+        in
+        Some (TagCheck kind)
+
       let mk_fault a dir annot ii ft msg =
+        let open FaultType.AArch64 in
         let fh = has_handler ii in
-        let is_sync_exc_entry = match ft with
-          | Some FaultType.AArch64.TagCheck ->
+        let is_sync_exc_entry =
+          match ft with
+          | Some (TagCheck _) ->
             (C.variant Variant.MemTag)
             && ((dir = Dir.R && (C.mte_precision = Precision.Synchronous
                 || C.mte_precision = Precision.Asymmetric))
               || (dir = Dir.W && C.mte_precision = Precision.Synchronous))
           | _ -> true in
-        let loc = Misc.map_opt (fun a -> A.Location_global a) a in
+        let is_async_tagcheck = match ft with
+          | Some (TagCheck Async) -> true
+          | _ -> false
+        in
+        let ii =
+          if is_async_tagcheck then { ii with A.labels = Label.Set.empty }
+          else ii
+        in
+        let loc =
+          if is_async_tagcheck then None
+          else Misc.map_opt (fun a -> A.Location_global a) a
+        in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
@@ -1485,7 +1508,7 @@ module Make
             mphy ma a_virt >>= M.ignore >>= B.next1T
           and mno mpte_t =
             let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
-            let ft = Some FaultType.AArch64.TagCheck in
+            let ft = tagcheck_fault_type dir in
             let mm ma =
               let branch = fun m -> m >>= M.ignore >>= B.next1T in
               ma |> branch in
@@ -1527,7 +1550,7 @@ module Make
         M.delay_kont "5" ma
           (fun a_virt ma  ->
              let mm = mop Access.VIR in
-             let ft = Some FaultType.AArch64.TagCheck in
+             let ft = tagcheck_fault_type dir in
              delayed_check_tags a_virt None ma ii
                (fun ma -> mm ma |> branch)
                (lift_fault_memtag
