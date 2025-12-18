@@ -1881,33 +1881,13 @@ Arguments:
             end) in
         LDPSW.ldp AArch64.Pa MachSize.Word
 
-      let (let>=) = M.(>>=)
-      let ldap sz r1 r2 ra ii =
-        let width = MachSize.nbytes sz in
-        
-        let>= base = read_reg_ord ra ii in
-        let>= v1 = do_read_mem_ret sz Annot.A aexp Access.VIR base ii in
-        
-        (* Calculate second address *)
-        let>= addr2 = M.op1 (Op.AddK width) base in
-        let>= v2 = do_read_mem_ret sz Annot.A aexp Access.VIR addr2 ii in
-        
-        (* Perform the writes *)
-        (write_reg_dest r1 v1 ii >>| write_reg_dest r2 v2 ii)
-        >>= M.ignore >>= B.next1T
-
-      let stlp sz r1 r2 ra ii =
-        let width = MachSize.nbytes sz in
-        
-        let>= base = read_reg_ord ra ii in
-        let>= v1 = read_reg_ord r1 ii in
-        let>= v2 = read_reg_ord r2 ii in
-        
-        (* Perform the stores *)
-        (do_write_mem sz Annot.L aexp Access.VIR base v1 ii >>|
-        (let>= addr2 = M.op1 (Op.AddK width) base in
-          do_write_mem sz Annot.L aexp Access.VIR addr2 v2 ii))
-        >>= M.ignore >>= B.next1T
+      let ldap =
+        let module LDAP_Module = LoadPair(struct
+            let read_mem sz _ expl ac reg addr ii =
+              do_read_mem sz Annot.A expl ac reg addr ii
+          end) in
+        fun sz r1 r2 ra ii ->
+          LDAP_Module.ldp AArch64.Pa sz r1 r2 ra (0, AArch64.Idx) ii
 
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -2091,6 +2071,9 @@ Arguments:
                      check_mixed_write_mem sz an aexp ac a v ii) a v ii)
             end >>!  ())
         sz t rr rd ii
+
+      let stlp sz r1 r2 ra ii =
+        stp AArch64.PaI sz r1 r2 ra (0, AArch64.Idx) ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
