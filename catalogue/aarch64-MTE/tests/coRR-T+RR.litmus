@@ -10,4 +10,4 @@ variant=async
              | LDR W1,[X0] ;
              |L1:          ;
              | LDR W2,[X3] ;
-exists ~fault (P1:L0,x) /\ ~fault(P1:L1,x)
+exists ~fault (P1:L0,x) /\ ~fault(P1)
