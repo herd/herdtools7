@@ -8,4 +8,4 @@ variant=async
  STG X0,[X1] ;
 L0:          ;
  LDR W2,[X3] ;
-exists ~fault (P0:L0,x)
+exists ~fault (P0)

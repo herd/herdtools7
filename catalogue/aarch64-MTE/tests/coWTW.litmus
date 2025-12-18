@@ -9,4 +9,4 @@ variant=async
 L0:          ;
  STR W0,[X3] ;
  STG X2,[X1] ;
-exists [x]=1 /\ ~fault (P0:L0,x)
+exists [x]=1 /\ ~fault (P0)

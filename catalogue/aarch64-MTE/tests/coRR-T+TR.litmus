@@ -9,4 +9,4 @@ variant=async
              | LDG X0,[X1] ;
              |L1:          ;
              | LDR W2,[X3] ;
-exists 1:X0=x:red /\ ~fault (P1:L1,x)
+exists 1:X0=x:red /\ ~fault (P1)
