@@ -1,0 +1,10 @@
+AArch64 F002
+(* test must enter fault handler when mte_precision is default:sync *)
+variant=mte
+{
+    [tag(x)]=:green;
+    0:X1=x:red;
+}
+P0           | P0.F           ;
+ STR W0,[X1] | MOV W2,#1    ;
+forall(0:X2=1)

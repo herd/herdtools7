@@ -1363,21 +1363,23 @@ module Make
 
       let lift_fault_memtag mfault mm dir ii =
         let lbl_v = get_instr_label ii in
-        if has_handler ii then
-          fun ma ->
-            M.bind_ctrldata ma (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-            B.fault [AArch64Base.elr_el1, lbl_v]
-        else
-          let open Precision in
-          match C.mte_precision,dir with
-          | (Synchronous,_)|(Asymmetric,(Dir.R)) ->
-             fun ma ->  ma >>*= (fun _ -> mfault >>| set_elr_el1 lbl_v ii) >>!
-               B.fault [AArch64Base.elr_el1, lbl_v]
-          | (Asynchronous,_)|(Asymmetric,Dir.W) ->
-             fun ma ->
-             let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
-             let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
-             mm ma >>! B.Next []
+        let open Precision in
+          match C.mte_precision, dir with
+          | (Synchronous, _)
+          | (Asymmetric, Dir.R) ->
+            let mexc _ =
+              mfault >>| set_elr_el1 lbl_v ii >>!
+              B.fault [AArch64Base.elr_el1, lbl_v] in
+            if has_handler ii then
+              fun ma -> M.bind_ctrldata ma mexc
+            else
+              fun ma -> ma >>*= mexc
+          | (Asynchronous,_)
+          | (Asymmetric,Dir.W) ->
+            fun ma ->
+              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
+              let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
+              mm ma >>! B.Next []
 
 (* KVM mode *)
 

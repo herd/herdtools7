@@ -1,0 +1,10 @@
+AArch64 F003
+Variant=mte,asym
+{
+ 0:X1=x:red;
+ 1:X1=x:red;
+}
+ P0          | P0.F         |  P1         | P1.F         ;
+ LDR W0,[X1] | MOV W2,#3    | MOV W0,#2   | MOV W2,#3    ;
+             |              | STR W0,[X1] |              ;
+forall(0:X2=3 /\ 1:X2=0)
