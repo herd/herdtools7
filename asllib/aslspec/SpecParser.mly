@@ -63,8 +63,6 @@ let bool_of_string s =
 %token TYPING
 
 %token IFF
-%token UNION
-%token UNION_LIST
 %token LIST
 %token SET
 %token SIZE

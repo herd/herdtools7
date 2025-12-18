@@ -1,4 +1,5 @@
 open AST
+open ASTUtils
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
@@ -160,39 +161,8 @@ module Error = struct
          PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 end
 
-let rec vars_of_type_term term =
-  let listed_vars =
-    match term with
-    | Label _ -> []
-    | TypeOperator { term } -> opt_named_term_to_var_list term
-    | LabelledTuple { components } -> vars_of_opt_named_type_terms components
-    | LabelledRecord { fields } ->
-        Utils.list_concat_map
-          (fun { name_and_type = name, field_term; _ } ->
-            name :: vars_of_type_term field_term)
-          fields
-    | ConstantsSet _ -> []
-    | Function { from_type; to_type } ->
-        opt_named_term_to_var_list from_type
-        @ opt_named_term_to_var_list to_type
-  in
-  List.sort_uniq String.compare listed_vars
-
-(** [opt_named_term_to_var_list (var, t)] returns the list of term-naming
-    variables that occur at any depth inside [t], plus [var] if it is [Some x].
-*)
-and opt_named_term_to_var_list (var, t) =
-  Option.to_list var @ vars_of_type_term t
-
-and vars_of_opt_named_type_terms opt_named_terms =
-  Utils.list_concat_map opt_named_term_to_var_list opt_named_terms
-
-let variant_to_label_opt { TypeVariant.term } =
-  match term with
-  | Label label -> Some label
-  | LabelledTuple { label_opt } | LabelledRecord { label_opt } -> label_opt
-  | _ -> None
-
+(** A wrapper type for the different kinds of elements in a spec that are
+    associated with an identifier. *)
 type definition_node =
   | Node_Type of Type.t
   | Node_Relation of Relation.t
@@ -200,6 +170,8 @@ type definition_node =
   | Node_Constant of Constant.t
   | Node_RecordField of record_field
 
+(** [definition_node_name node] returns the name associated with the definition
+    node [node]. *)
 let definition_node_name = function
   | Node_Type { Type.name }
   | Node_Relation { Relation.name }
@@ -208,6 +180,18 @@ let definition_node_name = function
   | Node_TypeVariant def -> Option.get (variant_to_label_opt def)
   | Node_RecordField { name_and_type = name, _; _ } -> name
 
+(** [pp_definition_node fmt node] pretty-prints the definition node [node]. *)
+let pp_definition_node fmt =
+  let open PP in
+  function
+  | Node_Type def -> pp_type_definition fmt def
+  | Node_Relation def -> pp_relation_definition fmt def
+  | Node_Constant def -> pp_constant_definition fmt def
+  | Node_TypeVariant { TypeVariant.term } -> pp_type_term fmt term
+  | Node_RecordField { name_and_type } -> pp_named_type_term fmt name_and_type
+
+(** [math_macro_opt_for_node node] returns the optional math macro associated
+    with the definition node [node]. *)
 let math_macro_opt_for_node = function
   | Node_Type def -> Type.math_macro def
   | Node_Relation def -> Relation.math_macro def
@@ -215,6 +199,8 @@ let math_macro_opt_for_node = function
   | Node_Constant def -> Constant.math_macro def
   | Node_RecordField def -> record_field_math_macro def
 
+(** [prose_description_for_node node] returns the optional prose description
+    associated with the definition node [node]. *)
 let prose_description_for_node = function
   | Node_Type def -> Type.prose_description def
   | Node_Relation def -> Relation.prose_description def
@@ -293,14 +279,6 @@ module Layout = struct
         for_type_term field_type
 end
 
-let elem_name = function
-  | Elem_Type { Type.name }
-  | Elem_Relation { Relation.name }
-  | Elem_Constant { Constant.name }
-  | Elem_RenderTypes { TypesRender.name }
-  | Elem_RenderRule { RuleRender.name } ->
-      name
-
 (** Lists nodes that define identifiers and can be referenced. *)
 let list_definition_nodes ast =
   List.fold_right
@@ -351,14 +329,41 @@ let make_id_to_definition_node definition_nodes =
     StringMap.empty definition_nodes
 
 type t = {
-  ast : AST.t;  (** The original AST as parsed *)
+  ast : AST.t;  (** The AST, added with builtin definitions, transformed. *)
   id_to_defining_node : definition_node StringMap.t;
       (** Associates identifiers with the AST nodes where they are defined. *)
-  defined_ids : string list;
-      (** The list of identifiers defined in the spec in order of appearance. *)
+  (* The following fields, which correspond to builtin elements, are not currently
+     used. They will be used in a future PR for type inference. *)
+  _bot : Constant.t;
+  _none : Constant.t;
+  _empty_set : Constant.t;
+  _empty_list : Constant.t;
+  _bool : Type.t;
+  _n : Type.t;
+  _z : Type.t;
+  _q : Type.t;
+  _assign : Relation.t;
+  _equal : Relation.t;
 }
 
-let defined_ids self = self.defined_ids
+(** [make_symbol_table ast] creates a symbol table from [ast]. *)
+let make_symbol_table ast =
+  let definition_nodes = list_definition_nodes ast in
+  make_id_to_definition_node definition_nodes
+
+(** [update_spec_ast spec ast] updates the specification [spec] with a new AST
+    [ast], returning a new specification. *)
+let update_spec_ast spec ast =
+  (* With new AST elements, we need to re-generate the symbol table. *)
+  { spec with ast; id_to_defining_node = make_symbol_table ast }
+
+let defined_ids self =
+  StringMap.bindings self.id_to_defining_node |> List.map fst
+
+(** [iter_defined_nodes self f] applies function [f] to each defined node in
+    [self]. *)
+let iter_defined_nodes self f =
+  StringMap.iter (fun _ node -> f node) self.id_to_defining_node
 
 let defining_node_opt_for_id self id =
   StringMap.find_opt id self.id_to_defining_node
@@ -389,12 +394,6 @@ let symbol_table_for_id id_to_defining_node id =
         id_to_defining_node parameters
   | _ -> id_to_defining_node
 
-(** [is_operator elem] tests whether [elem] is an operator. *)
-let is_operator elem =
-  match elem with
-  | Elem_Relation { Relation.is_operator } -> is_operator
-  | _ -> false
-
 (** [is_applicator_variadic_operator id_to_defining_node applicator] checks if
     [applicator] represents a variadic operator. That is, an operator whose only
     argument is a list type. Variadic operators accept any number of actual
@@ -422,11 +421,6 @@ let is_variadic_operator spec relation =
            (Expr.ExprOperator relation.Relation.name)
   | _ -> false
 
-(** [update_symbol_table ast] creates a symbol table from [ast]. *)
-let make_symbol_table ast =
-  let definition_nodes = list_definition_nodes ast in
-  make_id_to_definition_node definition_nodes
-
 (** A module to resolve expressions appearing in rules and constant values. *)
 module ResolveApplicationExpr = struct
   (** [resolve_application_expr id_to_defining_node expr] resolves application
@@ -453,7 +447,7 @@ module ResolveApplicationExpr = struct
         | EmptyApplicator | Relation _ | ExprOperator _ | Fields _ ->
             Application { app with args = resolved_args }
         | TupleLabel _ -> assert false
-        (* Tuple labels appear only post resolution so not expected here. *)
+        (* Tuple labels appear only post-resolution so not expected here. *)
         | Unresolved (Var id) -> (
             match StringMap.find_opt id id_to_defining_node with
             | Some (Node_Relation { Relation.is_operator; name })
@@ -515,7 +509,7 @@ module ResolveApplicationExpr = struct
         in
         Cases resolved_cases
 
-  let resolve ast id_to_defining_node =
+  let resolve ({ ast; id_to_defining_node } as spec) =
     let open Rule in
     let ast =
       List.map
@@ -546,8 +540,7 @@ module ResolveApplicationExpr = struct
           | Elem_Relation { rule_opt = None } as elem -> elem)
         ast
     in
-    (* Since we generated new relation nodes, we need to re-generate the symbol table. *)
-    (ast, make_symbol_table ast)
+    update_spec_ast spec ast
 end
 
 (** A module for normalizing rules within relations to make them amenable for
@@ -690,7 +683,7 @@ module ResolveRules = struct
     in
     aggregate rule_elements
 
-  let resolve ast id_to_defining_node =
+  let resolve ({ ast; id_to_defining_node } as spec) =
     let open Rule in
     let ast =
       List.map
@@ -714,12 +707,11 @@ module ResolveRules = struct
           | Elem_Relation { rule_opt = None } as elem -> elem)
         ast
     in
-    (* Since we generated new relation nodes, we need to re-generate the symbol table. *)
-    (ast, make_symbol_table ast)
+    update_spec_ast spec ast
 end
 
-(** A module for extending expressions in output configurations of
-    conclusionjudgments with names derived from type terms. *)
+(** A module for extending expressions in output configurations of conclusion
+    judgments with names derived from type terms. *)
 module ExtendNames = struct
   open Expr
   open Rule
@@ -804,7 +796,7 @@ module ExtendNames = struct
   (** [extend ast] extends [ast] by adding names to expressions in output
       configurations. It returns the extended AST and an updated symbol table.
   *)
-  let extend ast =
+  let extend ({ ast } as spec) =
     let ast =
       List.map
         (fun elem ->
@@ -825,8 +817,7 @@ module ExtendNames = struct
               Elem_Relation { def with rule_opt = Some extended_elements })
         ast
     in
-    (* Since we generated new relation nodes, we need to re-generate the symbol table. *)
-    (ast, make_symbol_table ast)
+    update_spec_ast spec ast
 end
 
 (** A module for expanding rules with cases into multiple rules without cases.
@@ -848,8 +839,7 @@ module ExpandRules = struct
     Str.split (Str.regexp_string ".") abs_name
 
   (** [concat_expanded_rules prefix suffix] concatenates two expanded rules,
-      [prefix] and [suffix], combining their optional names and categories as
-      needed. *)
+      [prefix] and [suffix], combining their optional names as needed. *)
   let concat_expanded_rules
       { name_opt = prefix_name_opt; judgments = prefix_judgments }
       { name_opt = suffix_name_opt; judgments = suffix_judgments } =
@@ -944,9 +934,9 @@ module Check = struct
         check_layout to_term (List.nth cells 1)
     | _, Unspecified -> ()
 
-  (** [check_math_layout definition_nodes] checks that the math layouts for all
-      [definition_nodes] are structurally consistent with their type terms. *)
-  let check_math_layout definition_nodes =
+  (** [check_math_layout spec] checks that the math layouts for all defining
+      nodes in [spec] are structurally consistent with their type terms. *)
+  let check_math_layout spec =
     let check_math_layout_for_definition_node node =
       let open Layout in
       match node with
@@ -961,7 +951,7 @@ module Check = struct
       | Node_RecordField { name_and_type = _, field_type; _ } ->
           check_layout field_type (math_layout_for_node node)
     in
-    List.iter check_math_layout_for_definition_node definition_nodes
+    iter_defined_nodes spec check_math_layout_for_definition_node
 
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids = function
@@ -988,9 +978,9 @@ module Check = struct
     | Function { from_type = _, from_term; to_type = _, to_term } ->
         referenced_ids from_term @ referenced_ids to_term
 
-  (** [check_no_undefined_ids elements id_to_defining_node] checks that all
-      identifiers referenced in [elements] are keys in [id_to_defining_node]. *)
-  let check_no_undefined_ids elements id_to_defining_node =
+  (** [check_no_undefined_ids spec] checks that all identifiers referenced by
+      [spec.ast] are keys in [spec.id_to_defining_node]. *)
+  let check_no_undefined_ids { ast; id_to_defining_node } =
     let check_no_undefined_ids_in_elem id_to_defining_node elem =
       let referenced_ids_for_list = Utils.list_concat_map referenced_ids in
       let ids_referenced_by_elem =
@@ -1020,7 +1010,7 @@ module Check = struct
             Error.undefined_reference id elem_name)
         ids_referenced_by_elem
     in
-    List.iter (check_no_undefined_ids_in_elem id_to_defining_node) elements
+    List.iter (check_no_undefined_ids_in_elem id_to_defining_node) ast
 
   (** [check_relations_outputs elems id_to_defining_node] checks that, for each
       relation in [elems], the first output type term is arbitrary, and that all
@@ -1028,11 +1018,9 @@ module Check = struct
       Furthermore, it checks that all type names used as alternative output type
       terms reference types with the [short_circuit_macro] attribute defined. If
       not, raises a [SpecError] describing the issue. *)
-  let check_relations_outputs elems id_to_defining_node =
+  let check_relations_outputs { ast; id_to_defining_node } =
     let relations_defs =
-      List.filter_map
-        (function Elem_Relation def -> Some def | _ -> None)
-        elems
+      List.filter_map (function Elem_Relation def -> Some def | _ -> None) ast
     in
     let check_alternative_outputs { Relation.name; output } =
       let alternative_outputs = ListLabels.tl output in
@@ -1059,9 +1047,8 @@ module Check = struct
       check catches such cases and generates an easy to understand explanation.
   *)
   module CheckProseTemplates : sig
-    val check : definition_node list -> unit
-    (** [check definition_nodes] checks all prose templates in
-        [definition_nodes] *)
+    val check : t -> unit
+    (** [check spec] checks all prose templates defined in [spec]. *)
   end = struct
     (** [check_prose_template_for_vars template vars] checks that [template]
         does not contain a [{var}] where [var] is not in [vars]. Otherwise,
@@ -1112,8 +1099,8 @@ module Check = struct
           let () = check_prose_template_for_vars prose_application vars in
           ()
 
-    let check defining_nodes =
-      List.iter check_prose_template_for_definition_node defining_nodes
+    let check spec =
+      iter_defined_nodes spec check_prose_template_for_definition_node
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -1244,7 +1231,7 @@ module Check = struct
         expanded_rules
 
     (** Checks the rules in all relations. *)
-    let check ast id_to_defining_node =
+    let check { ast; id_to_defining_node } =
       let open Rule in
       List.iter
         (fun elem ->
@@ -1275,8 +1262,8 @@ module Check = struct
 
       The type term for [tint] instantiates the type term for
       [NV_Literal(L_Int(v: Z))] rather than defining it, which can be seen since
-      it parenthesized. The check needs to ensure that [NV_Literal(L_Int(v: Z))]
-      is valid.
+      it is parenthesized. The check needs to ensure that
+      [NV_Literal(L_Int(v: Z))] is valid.
 
       This is done by: 1. checking that [NV_Literal(L_Int(v: Z))] is well-formed
       with respect to [NV_Literal(l: literal)], and
@@ -1294,11 +1281,11 @@ module Check = struct
       variants of [literal], which is indeed the case since [L_Int(v: Z)] is a
       type variant of [literal]. *)
   module CheckTypeInstantiations : sig
-    val check : definition_node StringMap.t -> elem list -> unit
-    (** [check id_to_defining_node elems] conservatively checks that all type
-        terms referenced in [elems] that instantiate type terms in the range of
-        [id_to_defining_node] are also subsumed by them. The check assumes that
-        [check_no_undefined_ids] has already been run. *)
+    val check : t -> unit
+    (** [check spec] conservatively checks that all type terms referenced in
+        [spec.ast] that instantiate type terms in the range of
+        [spec.id_to_defining_node] are also subsumed by them. The check assumes
+        that [check_no_undefined_ids] has already been run. *)
   end = struct
     (** [subsumed sub_op super_op] is true if all values in the domain of
         [TypeOperator { op = sub_op; term }] are also in the domain of
@@ -1332,7 +1319,7 @@ module Check = struct
         which is the original subsumption test.
 
         To avoid infinite recursion, the algorithm tracks which types have
-        already been expanded, and do not expand it again when checking
+        already been expanded and does not expand them again when checking
         subsumption for [B]. Thus, [B] is not expanded again, and the
         subsumption test returns [false].
         {[
@@ -1617,12 +1604,12 @@ module Check = struct
 
     let check_well_typed id_to_defining_node term =
       check_well_formed id_to_defining_node term;
-      (* Not for check whether [term] instantiates a type
+      (* Now check whether [term] instantiates a type
         and if so, check that it is subsumed by it.
       *)
       check_well_instantiated id_to_defining_node term
 
-    let check id_to_defining_node elems =
+    let check { ast; id_to_defining_node } =
       List.iter
         (fun elem ->
           try
@@ -1648,7 +1635,7 @@ module Check = struct
           with SpecError e ->
             stack_spec_error e
               (Format.asprintf "While checking: %s" (elem_name elem)))
-        elems
+        ast
   end
 
   (** [relation_named_arguments_if_exists_rule ast] checks that for each
@@ -1681,7 +1668,7 @@ end
     {[
       render rule r
     ]} *)
-let add_default_rule_renders ast =
+let add_default_rule_renders ({ ast } as spec) =
   (* First, gather the relations that have rule renders. *)
   let relations_with_rules =
     List.fold_left
@@ -1705,21 +1692,103 @@ let add_default_rule_renders ast =
         | _ -> None)
       ast
   in
-  ast @ generated_elems
+  { spec with ast = ast @ generated_elems }
+
+(** [get_type id_to_defining_node name] retrieves the [Type.t] associated with
+    [name] in [id_to_defining_node]. If [name] is not associated with a [Type.t]
+    in [id_to_defining_node], a [Failure] is raised. *)
+let get_type id_to_defining_node name =
+  match StringMap.find name id_to_defining_node with
+  | Node_Type def -> def
+  | node ->
+      let msg =
+        Format.asprintf
+          "%s must be a top-level type, but has been overriden with %a" name
+          pp_definition_node node
+      in
+      raise (SpecError msg)
+
+(** [get_constant id_to_defining_node name] retrieves the [Constant.t]
+    associated with [name] in [id_to_defining_node]. If [name] is not associated
+    with a [Constant.t] in [id_to_defining_node], a [Failure] is raised. *)
+let get_constant id_to_defining_node name =
+  match StringMap.find name id_to_defining_node with
+  | Node_Constant def -> def
+  | node ->
+      let msg =
+        Format.asprintf "%s must be a constant, but has been overriden with %a"
+          name pp_definition_node node
+      in
+      raise (SpecError msg)
+
+(** [get_relation id_to_defining_node name] retrieves the [Relation.t]
+    associated with [name] in [id_to_defining_node]. If [name] is not associated
+    with a [Relation.t] in [id_to_defining_node], a [Failure] is raised. *)
+let get_relation id_to_defining_node name =
+  match StringMap.find name id_to_defining_node with
+  | Node_Relation def when def.is_operator -> def
+  | node ->
+      let msg =
+        Format.asprintf "%s must be an operator, but has been overriden with %a"
+          name pp_definition_node node
+      in
+      raise (SpecError msg)
+
+(** [extend_ast_with_builtins ast id_to_defining_node] prepends to [ast] the AST
+    elements from the built-in specification that are not already defined in
+    [ast], as determined by [id_to_defining_node]. *)
+let prepend_ast_with_builitins ast id_to_defining_node =
+  let module StringMap = Map.Make (String) in
+  (* builtins.ml is auto-generated via dune and contains a single
+     string value builtin_spec_str. *)
+  let builtin_ast =
+    Parsing.parse_spec_from_string ~spec:Builtins.builtin_spec_str
+      ~filename:"builtins.ml"
+  in
+  List.fold_right
+    (fun elem acc_elems ->
+      let elem_name = ASTUtils.elem_name elem in
+      if StringMap.mem elem_name id_to_defining_node then acc_elems
+      else elem :: acc_elems)
+    builtin_ast ast
+
+(** [make_spec_with_builtins ast] constructs a specification containing the
+    builtin definitions. *)
+let make_spec_with_builtins ast =
+  let id_to_defining_node = make_symbol_table ast in
+  let ast = prepend_ast_with_builitins ast id_to_defining_node in
+  let id_to_defining_node = make_symbol_table ast in
+  let get_constant = get_constant id_to_defining_node in
+  let get_type = get_type id_to_defining_node in
+  let get_relation = get_relation id_to_defining_node in
+  {
+    ast;
+    id_to_defining_node;
+    (* The following fields are not currently used, but they will be used in a future
+    PR that implements type inference. *)
+    _bot = get_constant "bot";
+    _none = get_constant "None";
+    _empty_set = get_constant "empty_set";
+    _empty_list = get_constant "empty_list";
+    _bool = get_type "Bool";
+    _n = get_type "N";
+    _z = get_type "Z";
+    _q = get_type "Q";
+    _assign = get_relation "assign";
+    _equal = get_relation "equal";
+  }
 
 let from_ast ast =
-  let definition_nodes = list_definition_nodes ast in
-  let defined_ids = List.map definition_node_name definition_nodes in
-  let id_to_defining_node = make_id_to_definition_node definition_nodes in
-  let () = Check.check_no_undefined_ids ast id_to_defining_node in
-  let () = Check.check_relations_outputs ast id_to_defining_node in
-  let () = Check.CheckTypeInstantiations.check id_to_defining_node ast in
-  let () = Check.check_math_layout definition_nodes in
-  let () = Check.CheckProseTemplates.check definition_nodes in
+  let spec = make_spec_with_builtins ast in
+  let () = Check.check_no_undefined_ids spec in
+  let () = Check.check_relations_outputs spec in
+  let () = Check.CheckTypeInstantiations.check spec in
+  let () = Check.check_math_layout spec in
+  let () = Check.CheckProseTemplates.check spec in
   let () = Check.relation_named_arguments_if_exists_rule ast in
-  let ast, _ = ResolveApplicationExpr.resolve ast id_to_defining_node in
-  let ast, _ = ResolveRules.resolve ast id_to_defining_node in
-  let ast, id_to_defining_node = ExtendNames.extend ast in
-  let () = Check.CheckRules.check ast id_to_defining_node in
-  let ast = add_default_rule_renders ast in
-  { ast; id_to_defining_node; defined_ids }
+  let spec = ResolveApplicationExpr.resolve spec in
+  let spec = ResolveRules.resolve spec in
+  let spec = ExtendNames.extend spec in
+  let () = Check.CheckRules.check spec in
+  let spec = add_default_rule_renders spec in
+  spec

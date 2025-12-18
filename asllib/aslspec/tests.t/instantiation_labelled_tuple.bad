@@ -3,5 +3,5 @@ typedef Int;
 typedef A  =
     | X(Int)
     | Y(Int)
-    | Z(X(Int), A(Int)) // Illegal: 'A' is not a constructor.
+    | W(X(Int), A(Int)) // Illegal: 'A' is not a constructor.
 ;

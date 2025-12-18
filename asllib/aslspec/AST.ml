@@ -38,8 +38,8 @@ module AttributeKey = struct
         (** Whether an operator over a list of arguments should be rendered as a
             list of expressions separated by the operator macro. *)
     | Custom
-        (** Whether an operator over a list of arguments should be rendered as a
-            by a custom multi-argument macro. *)
+        (** Whether an operator over a list of arguments should be rendered by a
+            custom multi-argument macro. *)
     | Short_Circuit_Macro
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation

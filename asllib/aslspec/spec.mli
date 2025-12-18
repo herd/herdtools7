@@ -3,19 +3,6 @@
 
 open AST
 
-val vars_of_type_term : type_term -> string list
-(** [vars_of_type_term term] returns the list of term-naming variables that
-    occur at any depth inside [term]. The list is sorted and contains no
-    duplicates. *)
-
-val vars_of_opt_named_type_terms : opt_named_type_term list -> string list
-(** [vars_of_opt_named_type_terms terms] returns the list of term-naming
-    variables that occur at any depth inside [terms]. *)
-
-val variant_to_label_opt : TypeVariant.t -> string option
-(** [variant_to_label_opt variant] returns the label of [variant] if it has one,
-    or [None] otherwise. *)
-
 (** Wraps AST nodes that define identifiers that may appear in type terms and
     expression terms: types, constants, relations, labels, labelled tuples, and
     labelled records. *)
@@ -41,9 +28,6 @@ module Layout : sig
       layout extending to the depth of [term]. *)
 end
 
-val elem_name : elem -> string
-(** [elem_name elem] returns the name of the top-level element [elem]. *)
-
 type t
 (** A processed and validated specification. *)
 
@@ -52,8 +36,7 @@ val from_ast : AST.t -> t
     correctness checks, and raises [SpecError] if any fail. *)
 
 val defined_ids : t -> string list
-(** [defined_ids spec] returns the list of all identifiers defined in [spec] in
-    order of appearance. *)
+(** [defined_ids spec] returns the list of all identifiers defined in [spec]. *)
 
 val elements : t -> elem list
 (** [elements spec] returns the list of all elements in [spec]. *)
@@ -74,10 +57,6 @@ val is_defined_id : t -> string -> bool
 (** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
     [false] otherwise. *)
 
-val is_operator : elem -> bool
-(** [is_operator elem] returns [true] if [elem] corresponds to an operator, and
-    [false] otherwise. *)
-
 val is_variadic_operator : t -> Relation.t -> bool
 (** [is_variadic_operator spec relation] returns [true] if [relation]
     corresponds to a variadic operator in [spec], and [false] otherwise. A
@@ -94,7 +73,7 @@ module ExpandRules : sig
   (** An expanded rule is a rule with no cases. *)
 
   val expand : Rule.t -> expanded_rule list
-  (** [expand  rule] expands [rule] into multiple rules without cases. *)
+  (** [expand rule] expands [rule] into multiple rules without cases. *)
 
   val split_absolute_rule_name : string -> string list
   (** [split_absolute_rule_name abs_name] splits an absolute rule name

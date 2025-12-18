@@ -32,8 +32,7 @@ let ignore_macro = "\\Ignore"
 type font_type = Text | TextTT | TextSF | TextSC | TextIT
 
 (** [pp_one_arg_macro macro_name pp_arg fmt arg] renders a LaTeX macro named
-    [macro_name] with one argument, applied to the argument is [arg], which is
-    formatted using [pp_arg]. *)
+    [macro_name] with one argument [arg], which is formatted using [pp_arg]. *)
 let pp_one_arg_macro macro_name pp_arg fmt arg =
   assert (Str.string_match regexp_only_letters macro_name 0);
   fprintf fmt "\\%s{%a}" macro_name pp_arg arg
@@ -162,11 +161,11 @@ let pp_latex_array alignment fmt pp_fun_rows =
 (** [pp_elements_and_separator ~pp_sep ~alignment ~same_column pp_elem layout
      fmt elements] formats a list of [elements] separated by [pp_sep] according
     to [layout]. Each element is formatted using [pp_elem]. The [alignment]
-    string specifies the alignment of for the elements column and is copied
-    directly to the array environment when the [layout] is [Vertical].
-    [same_column] indicates whether the separators should be rendered in the
-    same column as the elements (true) or in a separate column (false) when
-    [layout] is [Vertical]. *)
+    string specifies the alignment of the elements column and is copied directly
+    to the array environment when the [layout] is [Vertical]. [same_column]
+    indicates whether the separators should be rendered in the same column as
+    the elements (true) or in a separate column (false) when [layout] is
+    [Vertical]. *)
 let pp_elements_and_separator ~pp_sep ~alignment ~same_column pp_elem layout fmt
     elements =
   let layout = horizontal_if_unspecified layout elements in
