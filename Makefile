@@ -271,6 +271,7 @@ test.kvm.asl: asl-pseudocode
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
 		-conf ./herd/tests/instructions/AArch64.kvm/asl-vmsa.cfg \
+		-checkstates \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 KVM (ASL) instructions tests: OK"
 

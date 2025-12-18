@@ -16,7 +16,7 @@ type Bonga of exception{-};
 func f() => integer
 begin
   z = 2;
-  if SomeBoolean() then
+  if ARBITRARY: boolean then
     throw Coucou {-};
   else
     return 1;
@@ -26,16 +26,16 @@ end;
 func g() => integer
 begin
   var a = 0;
-  let b = SomeBoolean();
+  let b = ARBITRARY: boolean;
   try
     a = f();
     if b then throw Coucou {-}; end;
     t = 2;
-    if SomeBoolean() then throw Bonga {-}; end;
+    if ARBITRARY: boolean then throw Bonga {-}; end;
     return a;
   catch
-    when Coucou => if SomeBoolean() then a = 0; throw Coucou {-}; end;
-    when Bonga => if SomeBoolean() then a=0; throw Coucou {-}; end;
+    when Coucou => if ARBITRARY: boolean then a = 0; throw Coucou {-}; end;
+    when Bonga => if ARBITRARY: boolean then a=0; throw Coucou {-}; end;
   end;
   return a;
 end;

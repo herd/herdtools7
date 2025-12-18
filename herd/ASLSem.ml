@@ -571,29 +571,6 @@ module Make (Conf : Config) = struct
       M.assign d1 d2
 
     (*
-     * Split the current execution candidate into two:
-     * one candidate, has variable [v] value to be TRUE,
-     * while the value is FALSE for the other.
-     *)
-    let somebool _ii () =
-      let v = V.fresh_var () in
-      let mbool b =
-        (* The underlying choice operator operates
-         * by adding equations ToInt(v) := 1
-         * and ToInt(v) := 0, which our naive solver
-         * does not resolve as v=TRUE and v=FALSE,
-         * Thereby leaving the equation unsolved.
-         * To correct this, we add
-         * the direct equations on "v":
-         * v := TRUE and v := FALSE in the
-         * positive and negative branches of choice.
-         *)
-        let* () = M.assign v (vbool b) in
-        M.unitT (vbool b) in
-      (* Using "choice" and not returning "v" directly performs the split *)
-      choice (M.unitT v) (mbool true) (mbool false)
-
-    (*
      * Primitives that generate fence events.
      * Notice that ASL fence events take
      * an AArch64 barrier as argument.
@@ -805,7 +782,6 @@ module Make (Conf : Config) = struct
 
       let u_int _ii ~n:_ ~x = x >>= to_int_unsigned
       let s_int _ii ~n:_ ~x = x >>= to_int_signed
-      let processor_id (ii, _poi) () = return (V.intToV ii.A.proc)
       let is_virtual _ii ~addr = addr >>= M.op1 Op.IsVirtual
       let compute_pte_primitive _ii ~addr = addr >>= M.op1 Op.PTELoc
       and get_oa_primitive _ii ~n:_ ~addr = addr >>= M.op1 (Op.ArchOp1 ASLOp.OA)
@@ -826,7 +802,6 @@ module Make (Conf : Config) = struct
       let get_hd_primitive = get_hd
       let read_pte_again_primitive = read_pte_again
       let write_pte_primitive = write_pte
-      let some_boolean = somebool
       let check_prop = check_prop
       let check_eq = check_eq
     end
@@ -843,72 +818,19 @@ module Make (Conf : Config) = struct
     let build_shared_pseudocode () =
       let open AST in
       let open ASTUtils in
-      let is_primitive =
-        let set =
-          List.fold_left
-            (fun [@warning "-42"] acc ({ name; body = _; _ }, _) ->
-               ISet.add name acc)
-            ISet.empty primitives
-        in
-        fun name -> ISet.mem name set
-      in
+      let ( @! ) = List.rev_append in
       let patches =
-        let patches = build "patches.asl" in
-        if is_vmsa then
-          (* Adapt for VMSA:
-           * 1. Use default address translation.
-           * 2. Override some functions (see file patches-vmsa.asl)
-          *)
-          let patches_vmsa = build "patches-vmsa.asl" in
-          List.fold_right
-            (fun d k ->
-               match ASTUtils.identifier_of_decl d  with
-               | "AArch64_TranslateAddress" -> k
-               | _ -> d::k)
-            patches patches_vmsa
-        else patches
+        build "patches.asl" @!
+        build (if is_vmsa then "patches-vmsa.asl" else "patches-std.asl")
       and custom_implems =
-        let physmem = (* Final memory read and write *)
-          let name =
-            if is_vmsa then "physmem-vmsa.asl"
-            else "physmem-std.asl" in
-          build name in
-        let impls = build "implementations.asl" @ physmem in
-        if is_vmsa then
-          let impls_vmsa =  build "implementations-vmsa.asl" in
-          patch ~patches:impls_vmsa ~src:impls
-        else impls
+        build "implementations.asl" @!
+        build (if is_vmsa then "physmem-vmsa.asl" else "physmem-std.asl")
       and shared =
         build "system_registers.asl"
-        @ build "features.asl"
-        @ Lazy.force built_shared_pseudocode
+        @! build "features.asl"
+        @! Lazy.force built_shared_pseudocode
       in
-      let shared =
-        (*
-         * Remove from shared pseudocode the functions declared in stdlib because:
-         * 1. it avoids name clashes at type-checking time;
-         * 2. when debugging, we know what function is called;
-         * 3. stdlib functions usually out-perform their shared-pseudocode
-         *    counterparts when executed in herd.
-         *)
-        let filter d =
-          let open AST in
-          match[@warning "-42"] d.desc with
-          | D_Func { name; body = _; _ } ->
-              let should_remove =
-                Asllib.Builder.is_stdlib_name name || is_primitive name
-              in
-              let () =
-                if false && should_remove then
-                  Printf.eprintf "Subprogram %s removed from shared\n%!" name
-              in
-              not should_remove
-          | _ -> true
-        in
-        List.filter filter shared
-      in
-      let ( @! ) = List.rev_append in
-      let ast = patch ~patches:(custom_implems @! patches) ~src:shared in
+      let ast = patch_with_backup ~patches:(custom_implems @! patches) ~src:shared in
       Asllib.Builder.with_stdlib ast
       |> Asllib.Builder.with_primitives primitives
       |> TypeCheck.type_check_ast
@@ -987,6 +909,7 @@ module Make (Conf : Config) = struct
       let () =
         if false then Format.eprintf "Completed AST: %a.@." Asllib.PP.pp_t ast
       in
+      let env = [ ("_ProcessorID", V.intToV ii.A.proc) ] in
       let env =
         A.state_fold
           (fun loc v env ->
@@ -994,7 +917,7 @@ module Make (Conf : Config) = struct
             | A.Location_reg (_, ASLLocalId (Scope.Global _, name)) ->
                 (name, v) :: env
             | _ -> env)
-          t.Test_herd.init_state []
+          t.Test_herd.init_state env
       in
       let exec () =
         let main_name = TypeCheck.find_main tenv in
