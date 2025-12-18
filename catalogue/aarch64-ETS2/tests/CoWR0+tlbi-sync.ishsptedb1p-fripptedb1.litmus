@@ -1,0 +1,11 @@
+AArch64 CoWR0+tlbi-sync.ishsptedb1p-fripptedb1
+{ int x=1; PTE(x)=(oa:PA(x), db:0);
+0:X0=PTE(x); 0:X1=(oa:PA(x)); 0:X2=x;
+}
+ P0              ;
+ STR X1,[X0]     ;
+ DSB ISH         ;
+ LSR X4,X2,#12   ;
+ TLBI VAAE1IS,X4 ;
+ DSB ISH         ;
+ LDR W3,[X2]     ;

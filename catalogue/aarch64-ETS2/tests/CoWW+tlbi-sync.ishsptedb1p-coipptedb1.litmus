@@ -1,0 +1,17 @@
+AArch64 CoWW+tlbi-sync.ishsptedb1p-coipptedb1
+Variant=vmsa,ets2
+{  
+  [PTE(x)]=(oa:PA(x), db:0);
+  pteval_t 0:X0=(oa:PA(x)); 0:X1=PTE(x);
+  0:X3=x;
+}
+ P0              ;
+ STR X0,[X1]     ;
+ DSB ISH         ;
+ LSR X4,X3,#12   ;
+ TLBI VAAE1IS,X4 ;
+ DSB ISH         ;
+ MOV W2,#2       ;
+L0:              ;
+ STR W2,[X3]     ;
+exists (fault(P0:L0,x,MMU:Permission))
