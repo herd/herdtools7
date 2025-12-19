@@ -27,6 +27,8 @@ module Top
          val verbose : int
          val ins : Interval.t
          val threads : Interval.t
+         val forall : bool
+         val exists : bool
          val arch_ok : Archs.t -> bool
          val name_ok : string -> bool
        end) =
@@ -39,6 +41,12 @@ module Top
 
     module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
 
+      let is_forall t =
+        let open ConstrGen in
+        match t.MiscParser.condition with
+        | ForallStates _ -> true
+        | ExistsState _| NotExistsState _ -> false
+
       let zyva name parsed =
         let prog = parsed.MiscParser.prog in
         Opt.arch_ok A.arch && Opt.name_ok name.Name.name &&
@@ -46,7 +54,8 @@ module Top
         List.for_all
           (fun (_,code) -> Interval.inside Opt.ins (List.length code))
           prog
-
+        && (Opt.forall || not (is_forall parsed))
+        && (Opt.exists || is_forall parsed)
     end
 
     module ZConfig = struct
@@ -89,6 +98,8 @@ let threads = ref Interval.all
 let verbose = ref 0
 let tests = ref []
 let archs = ref []
+let forall = ref true
+let exists = ref true
 
 let names = ref []
 and oknames = ref StringSet.empty
@@ -113,7 +124,11 @@ let () =
      "-ins", Arg.String (set_inter ins),
      sprintf "<inter> instruction count, default %s" (Interval.pp !ins);
      "-threads", Arg.String (set_inter threads),
-     sprintf "<inter> thread count, default %s" (Interval.pp !threads);]
+     sprintf "<inter> thread count, default %s" (Interval.pp !threads);
+     "-forall", Arg.Bool (fun b -> forall := b),
+     sprintf "<bool> accept forall final conditions %b" !forall;
+     "-exists", Arg.Bool (fun b -> exists := b),
+     sprintf "<bool> accept exists and ~exists final conditions %b" !exists;]
     (fun s -> tests := s :: !tests)
     (sprintf "Usage: %s [options]* [test]*" prog)
 
@@ -134,6 +149,8 @@ module X = Top
       let verbose = !verbose
       let ins = !ins
       let threads = !threads
+      let forall = !forall
+      let exists = !exists
       let arch_ok = match !archs with
       | [] -> fun _ -> true
       | archs ->
