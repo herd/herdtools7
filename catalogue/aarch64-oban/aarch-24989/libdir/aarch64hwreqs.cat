@@ -65,8 +65,8 @@ let f-ib =
 
 (* DSB-ordered-before *)
 let DSB-ob =
-[M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+[M | DC.CVAU | IC]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
+ | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
  | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
@@ -125,12 +125,12 @@ let bob =
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
  | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
- | [range([Exp & R & A]; amo; [Exp & W & L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & W & L]; po; [Exp & R & A]
+ | [range([(Exp & R & A)]; amo; [(Exp & W & L) | (FAULT & L)])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & W & L) | (FAULT & L)]; po; [Exp & R & A]
  | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & R & Q]; iico_order; [Exp & R & Q]
- | [Exp & M | Imp & Tag & R]; po; [Exp & W & L]
- | [Exp & W & L]; iico_order; [Exp & W & L]
+ | [(Exp & R & A) | (Exp & R & Q)]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & M | Imp & Tag & R]; po; [(Exp & W & L) | (FAULT & L)]
+ | [Exp & M | Imp & Tag & R]; iico_order; [(Exp & W & L) | (FAULT & L)]
 
 let po-scl-ob =
  [Exp & M]; (po & scl); [DC.CVAU]
