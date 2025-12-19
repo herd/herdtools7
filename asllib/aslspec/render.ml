@@ -2,6 +2,7 @@
     LaTeX document. *)
 
 open AST
+open ASTUtils
 open Format
 open Latex
 open LayoutUtils
@@ -89,7 +90,7 @@ module Make (S : SPEC_VALUE) = struct
     | Label name -> (
         match get_short_circuit_macro name with
         | Some short_circuit_macro ->
-            (* We like to render short-circuit expressions above type names who define them. *)
+            (* We like to render short-circuit expressions above type names that define them. *)
             pp_overtext fmt pp_id_as_macro name pp_print_string
               short_circuit_macro
         | None -> pp_id_as_macro fmt name)
@@ -225,7 +226,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_variant_with_hypertarget fmt variant] renders the variant [variant]
       along with its hypertarget. *)
   let pp_variant_with_hypertarget fmt ({ TypeVariant.term } as variant) =
-    let variant_name_opt = Spec.variant_to_label_opt variant in
+    let variant_name_opt = variant_to_label_opt variant in
     let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
     match term with
     | LabelledRecord { fields } ->
@@ -346,7 +347,7 @@ module Make (S : SPEC_VALUE) = struct
       in
       let selected_variants =
         (* If [variant_names] is empty, we use all the variants from the defining type.
-       Otherwise, list the labelelled tuples and records whose label are in [variant_names].
+       Otherwise, list the labelled tuples and records whose labels are in [variant_names].
     *)
         if Utils.list_is_empty variant_names then variants
         else
@@ -381,8 +382,7 @@ module Make (S : SPEC_VALUE) = struct
       pp_pointers ~lhs_hypertargets fmt pointers
 
     let pp_render_types_macro fmt def =
-      fprintf fmt {|\DefineRenderTypes{%s}{%a
-} %% EndDefineRenderTypes|}
+      fprintf fmt {|\DefineRenderTypes{%s}{%a} %% EndDefineRenderTypes|}
         def.TypesRender.name pp_render_types def
   end
 
@@ -447,7 +447,7 @@ module Make (S : SPEC_VALUE) = struct
                  }) ->
               pp_id_as_macro fmt name
           | Some (Node_Type _)
-          (* type named cannot be used as an expression so this case
+          (* type names cannot be used as an expression so this case
           corresponds to a variable that happens to share a name with a type. *)
           | _ ->
               pp_var fmt name)
@@ -592,11 +592,11 @@ module Make (S : SPEC_VALUE) = struct
             (PP.pp_sep_list ~sep:", " pp_expr)
             terms_with_layouts
 
-    (** [pp_judgmentfmt judgment] renders the judgment [judgment] with the
+    (** [pp_judgment fmt judgment] renders the judgment [judgment] with the
         formatter [fmt]. *)
     let pp_judgment fmt ({ Rule.expr } as judgment) =
       let layout = Rule.judgment_layout judgment in
-      (* The spaces are required to avoid weird LaTex issues arising
+      (* The spaces are required to avoid weird LaTeX issues arising
          when several braces are adjacent. *)
       fprintf fmt " { %a } " pp_expr (expr, layout)
 
@@ -723,7 +723,7 @@ module Make (S : SPEC_VALUE) = struct
 %a
 |} latex_name pp_elem elem
           | Elem_Relation _ ->
-              if Spec.is_operator elem then ()
+              if is_operator elem then ()
               else fprintf fmt {|
 \section*{%s}
 %a
@@ -789,29 +789,41 @@ module Make (S : SPEC_VALUE) = struct
 
 |}
     in
-    let _generate_symbol_macros =
-      List.iter
+    (* We filter the defined IDs to find those that do not have associated math macros
+       to avoid emitting blank lines. *)
+    let ids_needing_math_macros =
+      List.filter
         (fun id ->
-          pp_id_macro fmt id;
-          fprintf fmt "\n")
+          let node = Spec.defining_node_for_id S.spec id in
+          Option.is_none (Spec.math_macro_opt_for_node node))
         (Spec.defined_ids S.spec)
+    in
+    let _generate_symbol_macros =
+      pp_print_list
+        ~pp_sep:(fun fmt () -> fprintf fmt "@.")
+        pp_id_macro fmt ids_needing_math_macros
     in
     let _elements_header =
       fprintf fmt
         {|
+
 %% -------------------
 %% Macros for elements
 %% -------------------
 
 |}
     in
+    (* For now, we don't render operator definitions.
+    In particular, attempting to render parameteric
+    operators will fail since pp_relation does not currently
+    adjust the symbol table. *)
+    let elements_needing_macros =
+      List.filter (fun elem -> not (is_operator elem)) (Spec.elements S.spec)
+    in
     let _element_macros =
-      List.iter
-        (fun elem ->
-          if Spec.is_operator elem then ()
-          else pp_elem_definition_macro fmt elem;
-          fprintf fmt "\n\n")
-        (Spec.elements S.spec)
+      pp_print_list
+        ~pp_sep:(fun fmt () -> fprintf fmt "@.@.")
+        pp_elem_definition_macro fmt elements_needing_macros
     in
     let _footer = fprintf fmt "@." in
     ()

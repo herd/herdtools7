@@ -42,7 +42,7 @@ let string_exists p s =
   in
   check_from_index 0
 
-(** [string_starts_with eq ~prefix lst] checks if [prefix] is a prefix of [lst]
+(** [list_starts_with eq ~prefix lst] checks if [prefix] is a prefix of [lst]
     according to the equality function [eq]. *)
 let rec list_starts_with eq ~prefix lst =
   match (prefix, lst) with

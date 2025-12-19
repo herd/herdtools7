@@ -6,12 +6,32 @@
 % Macros for symbols
 % ------------------
 
+\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
 \newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
 
 % -------------------
 % Macros for elements
 % -------------------
+
+\DefineConstant{bot}{\texthypertarget{constant-bot}$\bot$} % EndDefineConstant
+
+\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+
+\DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
+
+\DefineConstant{empty_list}{\texthypertarget{constant-emptylist}$\emptylist$} % EndDefineConstant
+
+\DefineType{Bool}{
+\begin{flalign*}
+\Bool\mathhypertarget{type-Bool} \triangleq\ & \True\mathhypertarget{type-True}\\
+\cup\ & \False\mathhypertarget{type-False}\end{flalign*}} % EndDefineType
+
+\DefineType{N}{\texthypertarget{type-N}$\N$} % EndDefineType
+
+\DefineType{Z}{\texthypertarget{type-Z}$\Z$} % EndDefineType
+
+\DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 
@@ -27,5 +47,3 @@ The relation
  { \r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{b}}{\texttt{c}} } 
 }
 \end{mathpar}} % EndDefineRule
-
-

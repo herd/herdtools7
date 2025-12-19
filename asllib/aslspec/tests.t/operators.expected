@@ -6,32 +6,30 @@
 % Macros for symbols
 % ------------------
 
-\newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
 \newcommand\Bool[0]{ \hyperlink{type-Bool}{\textsf{Bool}} } % Generated from Bool
-
-
-
-
-
+\newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
+\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\f[0]{ \hyperlink{relation-f}{\textit{f}} } % Generated from f
 
 % -------------------
 % Macros for elements
 % -------------------
 
+\DefineConstant{bot}{\texthypertarget{constant-bot}$\bot$} % EndDefineConstant
+
+\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+
+\DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
+
+\DefineConstant{empty_list}{\texthypertarget{constant-emptylist}$\emptylist$} % EndDefineConstant
+
+\DefineType{Z}{\texthypertarget{type-Z}$\Z$} % EndDefineType
+
+\DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
+
 \DefineType{N}{\texthypertarget{type-N}$\N$} % EndDefineType
 
 \DefineType{Bool}{\texthypertarget{type-Bool}$\Bool$} % EndDefineType
-
-
-
-
-
-
-
-
-
-
 
 \DefineRelation{f}{
 The relation
@@ -46,5 +44,3 @@ The relation
  { \f(\texttt{a}, \texttt{b}, \texttt{c}, \texttt{S}) \typearrow \texttt{d} } 
 }
 \end{mathpar}} % EndDefineRule
-
-

@@ -6,21 +6,41 @@
 % Macros for symbols
 % ------------------
 
-\newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
-\newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
 \newcommand\Int[0]{ \hyperlink{ast-Int}{\textsc{Int}} } % Generated from Int
-\newcommand\String[0]{ \hyperlink{ast-String}{\textsc{String}} } % Generated from String
-\newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
+\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+\newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
 \newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
-\newcommand\typeerror[0]{ \hyperlink{type-typeerror}{\textsf{type\_error}} } % Generated from type_error
+\newcommand\String[0]{ \hyperlink{ast-String}{\textsc{String}} } % Generated from String
 \newcommand\annotateexpr[0]{ \hyperlink{relation-annotateexpr}{\textit{annotate\_expr}} } % Generated from annotate_expr
 \newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
 \newcommand\evalplus[0]{ \hyperlink{relation-evalplus}{\textit{eval\_plus}} } % Generated from eval_plus
+\newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
+\newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
+\newcommand\typeerror[0]{ \hyperlink{type-typeerror}{\textsf{type\_error}} } % Generated from type_error
 
 % -------------------
 % Macros for elements
 % -------------------
+
+\DefineConstant{bot}{\texthypertarget{constant-bot}$\bot$} % EndDefineConstant
+
+\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+
+\DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
+
+\DefineConstant{empty_list}{\texthypertarget{constant-emptylist}$\emptylist$} % EndDefineConstant
+
+\DefineType{Bool}{
+\begin{flalign*}
+\Bool\mathhypertarget{type-Bool} \triangleq\ & \True\mathhypertarget{type-True}\\
+\cup\ & \False\mathhypertarget{type-False}\end{flalign*}} % EndDefineType
+
+\DefineType{N}{\texthypertarget{type-N}$\N$} % EndDefineType
+
+\DefineType{Z}{\texthypertarget{type-Z}$\Z$} % EndDefineType
+
+\DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 
@@ -59,5 +79,3 @@ The relation
 \]
 evaluates the expression $\texttt{input}$ and returns
 $\texttt{output\_val}$} % EndDefineRelation
-
-
