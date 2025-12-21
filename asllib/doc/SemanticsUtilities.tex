@@ -404,9 +404,9 @@ bv = 0xfdf0, bv_i = 0xfdf0
     \item $\vv$ is a native bitvector for the list of bits $\bv$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
     \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
-    \item let $\bits$ be the sequence of bits $\bv[n] ... \bv[1]$;
+    \item let $\vbits$ be the sequence of bits $\bv[n] ... \bv[1]$;
     \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
-    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
+    \item \Proseeqdef{$\newbits$}{the list of bits $\vbits[j]$ for every \Proselistrange{$j$}{$\vbits$}};
     \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
   \end{itemize}
 
@@ -415,8 +415,8 @@ bv = 0xfdf0, bv_i = 0xfdf0
     \item $\vv$ is a native integer for the integer $\vi$;
     \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
     \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
-    \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement form of $\maxpos + 1$ bits};
-    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
+    \item \Proseeqdef{$\vbits$}{$\vi$  given as two's complement form of $\maxpos + 1$ bits};
+    \item \Proseeqdef{$\newbits$}{the list of bits $\vbits[j]$ for every \Proselistrange{$j$}{$\vbits$}};
     \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
   \end{itemize}
 \end{itemize}
@@ -428,11 +428,11 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
-  \bits \eqname \bv[n] ... \bv[0]\\
+  \vbits \eqname \bv[n] ... \bv[0]\\
   \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\\\\
   \commonsuffixline\\\\
   % The following premise is essentially Bitvector.extract_slice
-  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
+  \newbits \eqdef [\ \vj \in \listrange(\positions): \vbits[\vj]\ ]
 }{
   \readfrombitvector(\overname{\nvbitvector(\bv)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
 }
@@ -444,10 +444,10 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
   \commonprefixline\\\\
-  \bits \eqdef \vi\text{ given as two's complement form of }(\maxpos + 1)\text{ bits}\\
+  \vbits \eqdef \vi\text{ given as two's complement form of }(\maxpos + 1)\text{ bits}\\
   \commonsuffixline\\\\
   % The following premise is essentially Bitvector.extract_slice
-  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
+  \newbits \eqdef [\ \vj \in \listrange(\positions): \vbits[\vj]\ ]
 }{
   \readfrombitvector(\overname{\nvint(\vi)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
 }

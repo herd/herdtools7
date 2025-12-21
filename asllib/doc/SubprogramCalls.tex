@@ -101,21 +101,21 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 \AllApply
 \begin{itemize}
   \item applying $\annotateexprlist$ to annotate the expression list $\vcall.\callargs$ in $\tenv$ yields \\
-        $\args$\ProseOrTypeError;
+        $\vargs$\ProseOrTypeError;
   \item applying $\annotateexprlist$ to annotate the expression list $\vcall.\callparams$ in $\tenv$ yields \\
         $\params$\ProseOrTypeError;
-  \item applying $\annotatecallactualstyped$ to $\vcall.\callname$, $\params$, $\args$, and \\
+  \item applying $\annotatecallactualstyped$ to $\vcall.\callname$, $\params$, $\vargs$, and \\
         $\vcall.\callcalltype$ in $\tenv$ yields $(\vcallp, \retty, \vses)$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\\\\
+  \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \vargs \OrTypeError\\\\
   \annotateexprlist(\tenv, \vcall.\callparams) \typearrow \params \OrTypeError\\\\
   {
     \begin{array}{r}
-  \annotatecallactualstyped(\tenv, \vcall.\callname, \params, \args, \vcall.\callcalltype) \typearrow \\
+  \annotatecallactualstyped(\tenv, \vcall.\callname, \params, \vargs, \vcall.\callcalltype) \typearrow \\
    (\vcallp, \retty, \vses) \OrTypeError
     \end{array}
   }
@@ -160,14 +160,14 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \AllApply
 \begin{itemize}
   \item applying $\unziplistthree$ to $\typedargs$ yields the corresponding list of types $\argtypes$,
-        list of expressions $\args$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
+        list of expressions $\vargs$, and a list of \sideeffectdescriptorsetsterm\ $\vsessargs$;
   \item define $\vsesargs$ as the union of $\vsessargs$;
   \item applying $\subprogramforsignature$ to match $\name$, $\argtypes$, and $\calltype$ in $\tenv$
         yields $(\namep, \funcsig, \vsescall)$\ProseOrTypeError;
   \item define $\vses$ as the union of $\vsesargs$ and $\vsescall$;
   \item applying $\insertstdlibparam$ to $\funcsig$, $\params$, and $\argtypes$ yields new parameters $\paramsone$;
   \item checking that the lengths of $\funcsig.\FIELDparameters$ and $\paramsone$ are the same yields $\True$\ProseTerminateAs{\BadCall};
-  \item checking that the lengths of $\funcsig.\FIELDargs$ and $\args$ are the same yields $\True$\ProseTerminateAs{\BadCall};
+  \item checking that the lengths of $\funcsig.\FIELDargs$ and $\vargs$ are the same yields $\True$\ProseTerminateAs{\BadCall};
   \item applying $\checkparamstypesat$ to $\paramsone$
         to check that the actual parameters have correct types with respect to $\funcsig.\FIELDparameters$
         in $\tenv$ yields $\True$\ProseOrTypeError;
@@ -185,7 +185,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
+  \unziplistthree(\typedargs) = (\argtypes, \vargs, \vsessargs)\\
   \vsesargs \eqdef \bigcup \vsessargs \\
   {
     \begin{array}{r}
@@ -197,7 +197,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
   \equallength(\funcsig.\FIELDparameters, \paramsone) \typearrow \paramaritymatch \\\\
   \techeck(\paramaritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
-  \equallength(\funcsig.\FIELDargs, \args) \typearrow \aritymatch\\
+  \equallength(\funcsig.\FIELDargs, \vargs) \typearrow \aritymatch\\
   \techeck(\aritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
   \checkparamstypesat(\tenv, \funcsig.\FIELDparameters, \paramsone) \typearrow \True \OrTypeError\\\\
   \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcsigparams_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
@@ -211,7 +211,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
       \begin{array}{rcl}
         \callname &:& \namep,\\
         \callparams &:& [(\Ignore, \vv_i, \Ignore) \in \paramsone: \vv_i],\\
-        \callargs &:& \args,\\
+        \callargs &:& \vargs,\\
         \callcalltype &:& \funcsig.\funcsubprogramtype
       \end{array}
   \right\}}{\vcall}
@@ -1648,7 +1648,7 @@ while calling \\
 \begin{itemize}
   \item evaluating each expression in $\params$ separately in $\env$ as per\\
         \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvparams, \envone)$\ProseOrAbnormal;
-  \item evaluating each expression in $\args$ separately in $\envone$ as per \\
+  \item evaluating each expression in $\vargs$ separately in $\envone$ as per \\
         \SemanticsRuleRef{EExprListM} is $\ResultExprListM(\vvargs, \envtwo)$\ProseOrAbnormal;
   \item $\envtwo$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment $\denvtwo$;
   \item applying $\incrpendingcalls$ to $\denvtwo.\dynamicenvsG$ and $\name$ yields $\genv$;
@@ -1691,7 +1691,7 @@ while calling \\
 \begin{mathpar}
 \inferrule[normal]{
   \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\\\\
-  \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\\\\
+  \evalexprlistm(\envone, \vargs) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
@@ -1701,13 +1701,13 @@ while calling \\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
 }{
-  \evalcall(\env, \name, \params, \args) \evalarrow \ResultCall(\vmstwo, \newenv)
+  \evalcall(\env, \name, \params, \vargs) \evalarrow \ResultCall(\vmstwo, \newenv)
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\\\\
+  \evalexprlistm(\env, \vargs) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\\\\
   \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
   \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
@@ -1718,7 +1718,7 @@ while calling \\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, \{ \dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
 }{
-  \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
+  \evalcall(\env, \name, \params, \vargs) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
 }
 \end{mathpar}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
@@ -1738,16 +1738,16 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
         component $\genv$ and an empty local component;
   \item finding the function named $\name$ in $\tenv$ (via the $\subprograms$ component of the static global environment of $\tenv$)
         gives the AST $\func$ node with body
-        $\vbody$, parameters $\paramdecls$, arguments $\argdecls$, and optional recursion limit expression $\vrecurselimit$;
+        $\vbody$, parameters $\paramdecls$, arguments $\vargdecls$, and optional recursion limit expression $\vrecurselimit$;
   \item $\envone$ is the environment consisting of the \staticenvironmentterm{} $\tenv$ and the dynamic
         environment consisting of the dynamic component from $\denv$ and an empty local component;
   \item applying $\checkrecurselimit$ to $\name$ and $\vrecurselimit$ in $\envone$ yields \\
         $\vgone$\ProseOrDynErrorDiverging;
-  \item \Proseeqdef{$\argnames$}{the identifiers appearing as the first component of each pair in $\argdecls$};
-  \item assigning the actual arguments with $((\envone, \emptygraph), \argnames, \args)$
+  \item \Proseeqdef{$\argnames$}{the identifiers appearing as the first component of each pair in $\vargdecls$};
+  \item assigning the actual arguments with $((\envone, \emptygraph), \argnames, \vargs)$
         as per \SemanticsRuleRef{AssignArgs} gives $(\envtwo, \vgtwo)$ and ensures that each
-        formal argument in $\argdecls$ is
-        locally bound to the corresponding actual value in $\args$;
+        formal argument in $\vargdecls$ is
+        locally bound to the corresponding actual value in $\vargs$;
   \item \Proseeqdef{$\paramnames$}{the identifiers appearing as the first component of each pair in $\params$};
   \item assigning the actual parameters with $((\envtwo, \emptygraph), \paramnames, \paramdecls)$
         as per \SemanticsRuleRef{AssignArgs} gives $(\envthree, \vgthree)$ and ensures that each
@@ -1769,7 +1769,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
     \tenv.\staticenvsG.\subprograms(\name) \eqname \left\{
       \begin{array}{rcl}
       \funcbody &:& \vbody,\\
-      \FIELDargs &:& \argdecls,\\
+      \FIELDargs &:& \vargdecls,\\
       \FIELDparameters &:& \paramdecls,\\
       \FIELDrecurselimit &:& \vrecurselimit, \\
       &&\ldots
@@ -1778,7 +1778,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   }\\
   \envone \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \emptyfunc\})\\
   \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\\\\
-  \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
+  \argnames \eqdef [(\vx, \Ignore) \in \vargdecls: \vx]\\
   \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
   \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
   \assignargs((\envtwo, \vgtwo), \paramnames, \paramdecls) \evalarrow (\envthree, \vgthree)\\

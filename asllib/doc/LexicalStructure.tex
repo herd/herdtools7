@@ -523,7 +523,7 @@ $s$, which is given via a floating point representation.
 \hypertarget{def-strtolit}{}
 \item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
 \hypertarget{def-bitstolit}{}
-\item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
+\item The function $\vbitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
       given by $s$.
 \hypertarget{def-masktolit}{}
 \item The function $\masktolit(s)$ returns $\Tmasklit(m)$ where $m$ is the bitmask given by $s$.
@@ -589,7 +589,7 @@ $\REintlit$                           & $\actiontoken(\decimaltolitname)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
 $\REreallit$                          & $\actiontoken(\realtolit)$ \\
 $\REstringlit$                        & $\actiontoken(\strtolit)$ \\
-$\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
+$\REbitvectorlit$                     & $\actiontoken(\vbitstolit)$ \\
 $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"==>"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
 \texttt{"]"}, \texttt{"]]"}, \texttt{")"}, \texttt{".."}, \texttt{"="}, \texttt{"\{"}, \texttt{"!="}, \texttt{"-"}                        & $\actiontoken(\tokenid)$  \\

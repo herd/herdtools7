@@ -199,9 +199,9 @@ is $16$.
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item checking that the list of bitfield names in $\bitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
-  \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\vwidth$\ProseOrTypeError;
-  \item annotating each bitfield $\vf$ in $\fields$ with width $\vwidth$ in $\tenv$ yields the corresponding annotated
+  \item checking that the list of bitfield names in $\vbitfields$ does not contain duplicates yields $\True$\ProseOrTypeError;
+  \item symbolically simplifying $\ewidth$ in $\tenv$ via $\staticeval$ yields the literal integer for $\width$\ProseOrTypeError;
+  \item annotating each bitfield $\vf$ in $\fields$ with width $\width$ in $\tenv$ yields the corresponding annotated
   bitfield $\vfp$ and \sideeffectsetterm\ $\vxs_\vf$\ProseOrTypeError;
   \item define $\newfields$ as the list of annotated bitfields;
   \item define $\vses$ as the union of $\vxs_\vf$ for every field $\vf$ in $\fields$.

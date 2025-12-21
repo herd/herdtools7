@@ -170,9 +170,9 @@ See \ExampleRef{Literals}.
 
 \begin{mathpar}
 \inferrule[bits]{
-  n \eqdef \listlen{\bits}
+  n \eqdef \listlen{\vbits}
 }{
-  \annotateliteral(\overname{\Ignore}{\tenv}, \overname{\LBitvector(\bits)}{\vl})\typearrow \TBits(\ELInt{n}, \emptylist)
+  \annotateliteral(\overname{\Ignore}{\tenv}, \overname{\LBitvector(\vbits)}{\vl})\typearrow \TBits(\ELInt{n}, \emptylist)
 }
 \end{mathpar}
 
