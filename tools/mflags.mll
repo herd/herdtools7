@@ -35,7 +35,7 @@ let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
 let name = alpha (alpha|digit)*
 let blank = [' ' '\t']
-let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+')+
+let testname = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']' | ':')+
 
 rule main name_ok tst k = parse
 | "Test" blank+ (testname as name) ('\n'|blank+ [^'\n']* '\n')

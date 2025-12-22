@@ -130,7 +130,7 @@ let name_off = name ['-''+'] (num|hexanum)
 let instr = "instr:" '"' [^'"']* '"'
 let fault_type = alpha+ (':' alpha+)?
 let blank = [' ' '\t']
-let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']')+
+let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']' | ':')+
 let nl = '\n'|"\r\n"
 let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
