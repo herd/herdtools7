@@ -1,0 +1,12 @@
+AArch64 Y004
+(* IRG with all ones, existance *)
+{
+  0:X0=x:black;
+  int64_t 0:X2={:green,:red,:blue,:black,:white,:cyan,:yellow,:magenta};
+}
+
+P0           ;
+IRG X1,X0,X2 ;
+
+exists (0:X1=x:green)
+

@@ -1,0 +1,15 @@
+Test Y003 Required
+States 6
+0:X1=x:black;
+0:X1=x:cyan;
+0:X1=x:green;
+0:X1=x:magenta;
+0:X1=x:white;
+0:X1=x:yellow;
+Ok
+Witnesses
+Positive: 6 Negative: 0
+Condition forall (not (0:X1=x:red) /\ not (0:X1=x:blue))
+Observation Y003 Always 6 0
+Hash=d10e20775214f6166bb6d599aa90b32d
+

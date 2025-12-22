@@ -2010,6 +2010,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r1;r2];
         outputs = [r1];
         reg_env = (add_q [r1]) @ [(r2,voidstar)]}::k
+   | I_IRG (r1,r2,r3) ->
+      let r3,f3 = do_arg1i V64 r3 2 in
+      { empty_ins with
+        memo = sprintf "irg ^o0,^i1,%s" f3;
+        inputs = [r1;r2]@r3;
+        outputs = [r1];
+        reg_env = (add_q ([r1;r2]@r3))}::k
     | I_ALIGND _|I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|
       I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|
       I_SEAL _|I_STCT _|I_UNSEAL _ ->

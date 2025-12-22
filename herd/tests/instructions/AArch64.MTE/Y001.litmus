@@ -1,0 +1,11 @@
+AArch64 Y001
+(* IRG *)
+{
+  0:X0=x:blue;
+}
+
+P0        ;
+IRG X1,X0 ;
+
+exists (0:X1=x:red)
+
