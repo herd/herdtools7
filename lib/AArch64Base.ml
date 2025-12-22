@@ -1761,6 +1761,8 @@ type 'k kinstruction =
   | I_STZG of reg * reg * 'k idx
   | I_STZ2G of reg * reg * 'k idx
   | I_LDG of reg * reg * 'k
+(* IRG <Xd|SP>, <Xn|SP>{, <Xm>} *)
+  | I_IRG of reg * reg * reg
   | I_UDF of 'k
 (* Pointer Authentication Code: Basic instruction only
    See ARM Arm Issue K.a, C3.1.10 for the complete list of instructions
@@ -2530,6 +2532,10 @@ let do_pp_instruction m =
       pp_mem_idx "STZ2G" V64 rt rn idx
   | I_LDG (rt,rn,k) ->
       pp_mem "LDG" V64 rt rn (K k)
+  | I_IRG (rd,rn,ZR) ->
+      sprintf "IRG %s,%s" (pp_xreg rd) (pp_xreg rn)
+  | I_IRG (rd,rn,rm) ->
+      sprintf "IRG %s,%s,%s" (pp_xreg rd) (pp_xreg rn) (pp_xreg rm)
   | I_UDF k ->
       sprintf "UDF %s" (m.pp_k k)
   (* Pointer Authentication Code *)
@@ -2705,6 +2711,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_LDOPBH (_,_,_,r1,r2,r3)
   | I_ADDSUBEXT (_,_,r1,r2,(_,r3),_)
   | I_EXTR (_,r1,r2,r3,_)
+  | I_IRG (r1,r2,r3)
     -> fold_reg r1 (fold_reg r2 (fold_reg r3 c))
   | I_STXP (_,_,r1,r2,r3,r4)
   | I_MOPL (_,r1,r2,r3,r4)
@@ -3101,6 +3108,8 @@ let map_regs f_reg f_symb =
       I_STZ2G (map_reg r1,map_reg r2,k)
   | I_LDG (r1,r2,k) ->
       I_LDG (map_reg r1,map_reg r2, k)
+  | I_IRG (r1,r2,r3_opt) ->
+      I_IRG (map_reg r1,map_reg r2,map_reg r3_opt)
   (* Pointer Authentication code *)
   | I_PAC (key, r1, r2) ->
       I_PAC (key, map_reg r1, map_reg r2)
@@ -3184,7 +3193,7 @@ let get_next =
   | I_TLBI _
   | I_AT _
   | I_MRS _ | I_MSR _
-  | I_STG _|I_ST2G _|I_STZG _|I_STZ2G _|I_LDG _
+  | I_STG _|I_ST2G _|I_STZG _|I_STZ2G _|I_LDG _|I_IRG _
   | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _
   | I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|I_SEAL _|I_STCT _
   | I_UNSEAL _
@@ -3605,6 +3614,7 @@ module PseudoI = struct
         | I_PAC _ | I_AUT _
         | I_XPACI _ | I_XPACD _
         | I_CTERM _
+        | I_IRG _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3796,7 +3806,7 @@ module PseudoI = struct
         | I_INDEX_SI _ | I_INDEX_IS _  | I_INDEX_SS _ | I_INDEX_II _
         | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _
         | I_MOV_SV _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
-        | I_SMSTART _ | I_SMSTOP _ | I_CTERM _
+        | I_SMSTART _ | I_SMSTOP _ | I_CTERM _| I_IRG _
           -> 0
         | I_LD1M (rs, _, _)
         | I_LD2M (rs, _, _)

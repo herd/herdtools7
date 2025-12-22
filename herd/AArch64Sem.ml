@@ -3435,6 +3435,29 @@ Arguments:
       and stz2g = do_stzg Twice
       and st2g = stg Twice
 
+      let irg rd rn rm ii =
+        (read_reg_ord rn ii >>= loc_extract) >>|
+        (read_reg_ord rm ii >>= fun v ->
+          (* We support only 8 colors *)
+          M.op Op.Or v (V.intToV 0xff00)) >>= fun (addr,exclude) ->
+            let set color =
+              let tag = V.Val (Constant.Tag (Misc.tag_of_int (color))) in
+              M.op Op.SetTag addr tag >>= fun v ->
+                write_reg_dest rd v ii
+            in
+            let rec rng color = match color with
+            | 0 ->
+              set 0
+            | _ ->
+              M.op1 (Op.ReadBit color) exclude >>= fun bit ->
+                M.choiceT
+                bit
+                (M.assertT V.zero mzero)
+                (M.altT (set color) (rng (color - 1)))
+            in
+            M.op Op.Eq exclude (V.intToV 0xffff) >>= fun ones ->
+              M.choiceT ones (set 0) (rng 7) >>= M.ignore >>= B.next1T
+
 (*********************)
 (* Instruction fetch *)
 (*********************)
@@ -3728,6 +3751,9 @@ Arguments:
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
             ldg rt rn k ii
+        | I_IRG (rd,rn,rm) ->
+            check_memtag "IRG" ;
+            irg rd rn rm ii
         | I_STXR(var,t,rr,rs,rd) ->
             stxr (tr_variant var) t rr rs rd ii
         | I_STXRBH(bh,t,rr,rs,rd) ->
