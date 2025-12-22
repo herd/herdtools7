@@ -279,4 +279,6 @@ let compute_rmw rmw ~old ~operand =
   match rmw with
   | Exch -> operand
   | Add -> old + operand
+
+let valid_rmw _ = true
 end
