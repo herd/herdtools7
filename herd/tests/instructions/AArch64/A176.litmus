@@ -1,13 +1,13 @@
 AArch64 A176
 (*
-  Test reading integer partially.
+  Test reading the first cell of an integer array.
   The trick allows enforcing alignement
   constraint more stringent than
   using type of smaller size.
 *)
 
 {
-  uint64_t x = 0x0000000100000002;
+  uint32_t x[2] = { 2, 1 };
   0:X2=x;
 }
 

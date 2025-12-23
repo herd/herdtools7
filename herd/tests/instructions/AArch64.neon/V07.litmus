@@ -2,6 +2,8 @@ AArch64 V07
 (* Tests LD3 single structure *)
 {
 uint8_t x[3]={254,255,0};
+uint8_t a; uint8_t b; uint8_t c;
+uint8_t d; uint8_t e;
 0:X0=x; 0:X1=a; 0:X2=b; 0:X3=c; 0:X4=d; 0:X5=e;
 }
  P0                             ;

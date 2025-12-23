@@ -169,19 +169,23 @@ maybev:
 | maybev_notag { $1 }
 | COLON NAME  { Tag $2 }
 
-%inline maybev_or_amper:
+maybev_or_amper_or_label:
 | maybev { $1 }
 | maybev_amper { $1 }
+| just_label { $1 }
 
 maybev_list:
 | maybev_notag COMMA maybev_list { $1::$3 }
 | maybev_notag { [$1] }
 
-maybev_label:
-| maybev { $1 }
+%inline just_label:
 | PROC COLON NAME { mk_lab ($1, $3) }
 | NUM COLON NAME { mk_lab (Misc.string_as_int $1, $3) }
 | l=LABEL { mk_lab l }
+
+maybev_label:
+| maybev { $1 }
+| just_label { $1 }
 
 %inline std_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
@@ -253,9 +257,10 @@ atom_init:
 /* prohibit "v[i] = scalar" form in init allow only "v[i]={scalar_list}" */
 | locindex EQUAL maybev { raise Parsing.Parse_error }
 | typ=NAME STAR loc=left_loc { (loc,(Pointer typ,ParsedConstant.zero))}
-| typ=NAME STAR loc=left_loc EQUAL v=maybev_or_amper { (loc,(Pointer typ,v))}
+| typ=NAME STAR loc=left_loc EQUAL v=maybev_or_amper_or_label
+    { (loc,(Pointer typ,v))}
 | STAR loc=left_loc { (loc,(TyDefPointer,ParsedConstant.zero))}
-| STAR loc=left_loc EQUAL v=maybev_or_amper { (loc,(TyDefPointer,v))}
+| STAR loc=left_loc EQUAL v=maybev_or_amper_or_label { (loc,(TyDefPointer,v))}
 | typ=NAME loc=left_loc EQUAL v=pteval
   { (loc,(Ty typ, MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=pteval

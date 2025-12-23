@@ -5,9 +5,9 @@ Test A176 + indirection, should work
 q
 {
   int y = 1;
-  uint64_t x = 0x0000000100000002;
-  uint64_t *p = &x;
-  uint64_t *q = p;
+  int x[2] = { 2, 1 };
+  int *p = &x;
+  int *q = p;
   0:X2=p;
   1:X2=q;
   1:X0=y;
