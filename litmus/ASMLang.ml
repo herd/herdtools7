@@ -502,6 +502,8 @@ module RegMap = A.RegMap)
               else find_rec (k+1) rem in
         find_rec 0
 
+      let add_tag tag name = sprintf "tagged(%s,%d)" name (Misc.int_of_tag tag)
+
       let check_memory =
         let open Memory in
         match O.memory with
@@ -515,6 +517,8 @@ module RegMap = A.RegMap)
           match sym with
           | Virtual { name=Symbol.Data s; tag=None; cap=0L; offset=0; _ } ->
               check_memory s
+          | Virtual { name=Symbol.Data s; tag=Some t; cap=0L; offset=0; _ } ->
+              add_tag t (check_memory s)
           | Virtual { name=Symbol.Data s; tag=None; cap=0L; offset; _ } ->
               let ty = find_global_type s env in
               if CType.is_array ty then
@@ -634,7 +638,9 @@ module RegMap = A.RegMap)
           List.map
             (fun x ->
               let ty =
-                try RegMap.find x t.Tmpl.ty_env
+                try
+                  let ty = RegMap.find x t.Tmpl.ty_env in
+                  if CType.is_tag_ptr ty then CType.pointer_type ty else ty
                 with Not_found -> assert false in
               let x = Tmpl.dump_out_reg proc x in
               sprintf "%s *%s" (CType.dump ty) x) t.Tmpl.final in

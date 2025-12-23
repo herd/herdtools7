@@ -20,6 +20,7 @@ module type Config = sig
   val barrier : Barrier.t
   val mode : Mode.t
   val precision : Fault.Handling.t
+  val tagcheck : Precision.t
   val variant : Variant_litmus.t -> bool
   val driver : Driver.t
 end
@@ -30,6 +31,7 @@ module Default = struct
   let barrier = Barrier.UserFence
   let mode = Mode.Std
   let precision = Fault.Handling.default
+  let tagcheck = Precision.default
   let variant _ = false
   let driver = Driver.Shell
 end
@@ -52,22 +54,26 @@ module Generic
       let base =  A.base_type
       let pointer = CType.Pointer base
       let code_pointer = Pointer (CType.ins_t)
-      let tag = Base "tag_t"
+      let tag = CType.tag_t
+      let tagged_pointer = Pointer (CType.tag_t)
       let base_array sz = CType.Array ("int", sz)
       let pteval_t = CType.pteval_t
       let parel1_t = CType.parel1_t
       let ins_t = CType.ins_t
 
-      let typeof = function
-        | Constant.Concrete _ -> base
-        | Constant.ConcreteVector vs -> base_array (List.length vs)
-        | Constant.Symbolic _ as symb when Constant.is_label symb -> code_pointer
-        | Constant.Symbolic _ -> pointer
-        | Constant.Tag _ -> tag
-        | Constant.PteVal _ -> pteval_t
-        | Constant.AddrReg _ -> parel1_t
-        | Constant.Instruction _ -> ins_t
-        | Constant.Frozen _ | Constant.ConcreteRecord _ -> assert false
+      let typeof =
+        let open Constant in
+        function
+        | Concrete _ -> base
+        | ConcreteVector vs -> base_array (List.length vs)
+        | Symbolic _ as symb when is_label symb -> code_pointer
+        | Symbolic (Virtual {tag=Some(_); _}) -> tagged_pointer
+        | Symbolic _ -> pointer
+        | Tag _ -> tag
+        | PteVal _ -> pteval_t
+        | AddrReg _ -> parel1_t
+        | Instruction _ -> ins_t
+        | Frozen _ | ConcreteRecord _ -> assert false
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -695,7 +701,7 @@ module A.FaultType = A.FaultType)
           let addrs,ptes =
             G.Set.fold
               (fun s (a,p) -> match s with
-              | G.Addr s -> StringSet.add s a,p
+              | G.Addr s | G.AddrT (s,_) | G.Tag (s,_) -> StringSet.add s a,p
               | G.Pte s -> a,StringSet.add s p
               | G.Phy _ -> assert false)
               addrs (StringSet.empty,StringSet.empty) in
@@ -792,7 +798,9 @@ module A.FaultType = A.FaultType)
             | _ -> env)
           init env in
       G.Map.fold
-        (fun a ty k -> match a with G.Addr a -> (a,ty)::k | G.Pte _| G.Phy _ -> k)
+        (fun a ty k -> match a with
+          | G.Addr a | G.AddrT (a,_) -> (a,ty)::k
+          | G.Pte _| G.Phy _ | G.Tag _ -> k)
         env []
 
     let type_out env p t =

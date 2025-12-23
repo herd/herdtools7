@@ -180,18 +180,7 @@ let pp_bank = function
   | Pair -> "Pair"
   | Instr -> "Instr"
 
-let tag_of_int  = function
-  | 0 -> "green"
-  | 1 -> "red"
-  | 2 -> "blue"
-  | 3 -> "black"
-  | 4 -> "white"
-  | 5 -> "cyan"
-  | 6 -> "yellow"
-  | 7 -> "magenta"
-  | n -> Warn.fatal "Sorry, not pretty tag for number %i" n
-
-let add_tag s t = Printf.sprintf "%s:%s" s (tag_of_int t)
+let add_tag s t = Misc.pp_tagged s t
 
 let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 else 0)
 

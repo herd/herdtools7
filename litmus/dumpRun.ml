@@ -95,7 +95,7 @@ end = struct
 
 (* Makefile utilities *)
 
-  let makefile_vars chan infile arch (pac,self) sources =
+  let makefile_vars chan infile arch flags sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -105,7 +105,7 @@ end = struct
       (fun line -> fprintf chan "%s\n" line)
       Cfg.makevar ;
     let gcc_opts =
-      if self then LexO.tr RU.get_gcc_opts
+      if flags.Flags.self then LexO.tr RU.get_gcc_opts
       else RU.get_gcc_opts in
     begin
       match Cfg.mode with
@@ -136,7 +136,11 @@ end = struct
            else
              "platform_io.o" :: "litmus_io.o" :: utils in
          let utils =
-           if pac then
+           if flags.Flags.memtag then
+             "memtag.o"::utils
+           else utils in
+         let utils =
+           if flags.Flags.pac then
              "auth.o"::utils
            else utils in
          fprintf chan "UTILS=%s\n"
@@ -189,19 +193,37 @@ type infos =
     srcs : string list;
     hashes : Answer.hash_env;
     nthreads : IntSet.t;
-    some_pac : bool;
-    some_self : bool;
   }
 
-let run_tests names out_chan =
+let collect_flags names =
+    let devnull = if Sys.win32 then open_out "nul" else open_out "/dev/null" in
+    Misc.fold_argv_or_stdin
+      (fun name some_flags ->
+         let ans =
+          try CT.from_file StringMap.empty name devnull
+          with
+          | e ->
+              if Cfg.nocatch then raise e ;
+              Interrupted e in
+          match ans with
+          | Completed {flags; _} ->
+              let open Flags in
+              { pac = flags.pac || some_flags.pac;
+                self = flags.self || some_flags.self;
+                memtag = flags.memtag || some_flags.memtag;}
+          | _ -> some_flags)
+      names
+      {Flags.pac=false; Flags.self=false; Flags.memtag=false}
+
+let run_tests names flags out_chan =
 
   let exp = Misc.app_opt open_out Cfg.index
   and onames = Misc.app_opt open_out Cfg.outnames in
 
-  let  { one_arch; docs; srcs; nthreads; some_pac; some_self; hashes=_; } =
+  let  {one_arch; docs; srcs; nthreads;  hashes=_; } =
     Misc.fold_argv_or_stdin
       (fun name ({one_arch; docs; srcs; hashes;
-                  nthreads; some_pac; some_self; } as st) ->
+                  nthreads } as st) ->
          let check_arch archo arch = match archo with
            | None -> Some arch
            | Some a ->
@@ -217,18 +239,18 @@ let run_tests names out_chan =
               Interrupted e in
         match ans with
         | Completed
-            {arch; doc; src; fullhash; nprocs; pac; self; } ->
+            {arch; doc; src; fullhash; nprocs; _} ->
             Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
             Misc.check_opt
               (fun out -> fprintf out "%s\n" doc.Name.name)
               onames ;
+            let open Flags in
             { one_arch = check_arch one_arch arch;
               docs = doc::docs;
               srcs = src::srcs;
               hashes = StringMap.add doc.Name.name fullhash hashes;
               nthreads = IntSet.add nprocs nthreads;
-              some_pac = pac || some_pac;
-              some_self = self || some_self; }
+               }
         | Absent -> st
         | Interrupted e ->
             if Cfg.nocatch then raise e ;
@@ -247,8 +269,7 @@ let run_tests names out_chan =
       names
       { one_arch = None;
         docs = []; srcs = []; hashes = StringMap.empty;
-        nthreads = IntSet.empty;
-        some_pac = false; some_self = false; } in
+        nthreads = IntSet.empty; } in
   Misc.check_opt close_out exp ;
   Misc.check_opt close_out onames ;
   let arch =
@@ -264,13 +285,14 @@ let run_tests names out_chan =
       let sysarch  = Archs.get_sysarch arch Cfg.carch
     end in
     let module Obj = ObjUtil.Make(O)(Tar) in
-    Obj.dump some_pac in
-  arch,docs,srcs,utils,nthreads,(some_pac,some_self)
+    Obj.dump flags in
+  arch,docs,srcs,utils,nthreads
 
 (* Run tests (command line mode) *)
 let dump_command names =
   let out_chan = stdout in
-  let arch,_,_,utils,_,_ = run_tests names out_chan in
+  let flags = collect_flags names in
+  let arch,_,_,utils,_ = run_tests names flags out_chan in
   let module O = struct
       include Cfg
     include (val (get_arch arch) : ArchConf)
@@ -292,30 +314,32 @@ let dump_shell_postfix out_chan =
   output_line out_chan "date" ;
   ()
 
-let dump_shell_kvm_dorun out_chan e =
+let dump_shell_kvm_dorun flags out_chan e =
   fprintf out_chan "TDIR=$(dirname $0)\n" ;
   fprintf out_chan "KVM_RUN=\"${KVM_RUN:-%s}\"\n" e ;
   fprintf out_chan "dorun () {\n" ;
   fprintf out_chan "  EXE=$1\n" ;
   fprintf out_chan "  shift\n" ;
   fprintf out_chan "  OPTS=\"$@\"\n" ;
-  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\"\n"
+  fprintf out_chan "  ${KVM_RUN} ${TDIR}/${EXE} -smp %i -append \"${OPTS}\" %s\n"
     (match Cfg.avail with
      | Some e -> e
      | None ->
-        Warn.user_error "Available threads must be set in kvm mode") ;
+        Warn.user_error "Available threads must be set in kvm mode")
+    (if flags.Flags.memtag then "-machine mte=on" else "") ;
   fprintf out_chan "}\n"
 
-let dump_c_shell_kvm e =
+let dump_c_shell_kvm flags e =
   Misc.output_protect
     (fun out_chan ->
       dump_shell_prefix out_chan ;
-      dump_shell_kvm_dorun out_chan e ;
+      dump_shell_kvm_dorun flags out_chan e ;
       fprintf out_chan "dorun ./run.flat -q ${LITMUSOPTS}\n" ;
       dump_shell_postfix out_chan)
     (Tar.outname (MyName.outname "run" ".sh"))
 
 let dump_shell names =
+  let flags = collect_flags names in
   Misc.output_protect
     (fun out_chan ->
       dump_shell_prefix out_chan ;
@@ -324,7 +348,7 @@ let dump_shell names =
       | Crossrun.Qemu e ->
           fprintf out_chan "QEMU=\"${QEMU:-%s}\"\n" e
       | Crossrun.Kvm e ->
-         dump_shell_kvm_dorun out_chan e
+         dump_shell_kvm_dorun flags out_chan e
       | Crossrun.Adb  ->
           fprintf out_chan "RDIR=%s\n" Cfg.adbdir ;
           fprintf out_chan "adb shell mkdir $RDIR >/dev/null 2>&1\n" ;
@@ -355,7 +379,7 @@ let dump_shell names =
       end ;
       let sleep = Cfg.sleep in
       if sleep >= 0 then fprintf out_chan "SLEEP=%i\n" sleep ;
-      let arch,_,sources,utils,_,flags = run_tests names out_chan in
+      let arch,_,sources,utils,_ = run_tests names flags out_chan in
 
       let module O = struct
         include Cfg
@@ -501,8 +525,9 @@ let dump_c xcode names =
       end ;
       O.o "" ;
       O.o "/* Declarations of tests entry points */" ;
-      let arch,docs,srcs,utils,nts,flags =
-        run_tests names out_chan in
+      let flags = collect_flags names in
+      let arch,docs,srcs,utils,nts =
+        run_tests names flags out_chan in
       let module C = struct
         include Cfg
         include (val (get_arch arch) : ArchConf)
@@ -816,7 +841,7 @@ let from_files =
             let arch,sources,utils,nts,flags = dump_c xcode names in
             begin match Cfg.crossrun with
             | Crossrun.Kvm e ->
-               dump_c_shell_kvm e
+               dump_c_shell_kvm flags e
             | _ ->  ()
             end ;
             dump_c_cont xcode arch flags sources utils nts ;
