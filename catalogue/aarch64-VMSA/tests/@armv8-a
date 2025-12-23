@@ -628,3 +628,6 @@ needTLBI2.litmus
 permchange-M-shoot+DMB.ISH.litmus
 MP+dmb.st+trib-po-isb-po.litmus
 S+dmb.st+trib-po.litmus
+2+2WNExpExp+NExpNExp+po+DMBST.litmus
+LB+NExpExp+pos.litmus
+LB+NExpExp+Faults.litmus
