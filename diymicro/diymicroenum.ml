@@ -1,3 +1,12 @@
+let mk_fname name =
+  (* No ':' in filenames, as ':' is signifcant for make *)
+  let out = Buffer.create 32 in
+  for i = 0 to String.length name - 1 do
+    let c = match name.[i] with ':' -> '+' | c -> c in
+    Buffer.add_char out c
+  done;
+  Buffer.contents out ^ ".litmus"
+
 let make_all_tests edge base_filename output_dir =
   let tests =
     (* TODO Should we write the edges in OCaml directly ? *)
@@ -45,9 +54,9 @@ let make_all_tests edge base_filename output_dir =
              edges
       in
       let out_channel =
-        open_out (Filename.concat output_dir (test_name ^ ".litmus"))
+        open_out (Filename.concat output_dir (mk_fname test_name))
       in
-      "Writing to " ^ test_name ^ ".litmus\n" |> Utils.verbose_print 0;
+      "Writing to " ^ mk_fname ".litmus\n" |> Utils.verbose_print 0;
       Compile.to_channel cycle ?name:(Some test_name) out_channel;
       close_out out_channel;
       test_name)
@@ -68,8 +77,7 @@ let compile_edge_enum iico inputs outputs output_dir =
         (Edge.iico_to_edge iico src dst)
         (base_filename src dst) output_dir)
     (Utils.cartesian2 inputs outputs)
-  |> List.flatten
-  |> List.map (fun name -> name ^ ".litmus")
+  |> List.flatten |> List.map mk_fname
 
 let () =
   let output_dir = ref "." in
