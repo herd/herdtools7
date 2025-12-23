@@ -129,11 +129,11 @@ let do_tag opt set tags tag =
 let parse_tag opt set tags msg =
   opt,
   Arg.String (do_tag opt set tags),
-  sprintf "<%s> %s" (String.concat "|" tags) msg
+  sprintf "<tags> where tags is <%s>. %s" (String.concat "|" tags) msg
 
 let parse_tags opt set tags msg =
   let do_tag = do_tag opt set tags in
   opt,
   Arg.String
     (fun tags -> Misc.split_comma tags |>  List.iter do_tag),
-  sprintf "<%s> (comma separated list) %s" (String.concat "|" tags) msg
+  sprintf "<tags> where tags is <%s> (comma separated list). %s" (String.concat "|" tags) msg
