@@ -157,7 +157,7 @@ module Make (Conf : Config) = struct
     module Mixed = M.Mixed (SZ)
 
     let ( let* ) = M.asl_data
-    let ( and* ) = M.( >>| )
+    let ( and* ) = M.asl_para
     let return = M.unitT
     let ( >>= ) = M.asl_data
 
@@ -948,7 +948,7 @@ module Make (Conf : Config) = struct
         let bind_data = M.asl_data
         let bind_seq = M.asl_seq
         let bind_ctrl = M.asl_ctrl
-        let prod_par = M.( >>| )
+        let prod_par = M.asl_para
         let appl_data m f = m >>= fun v -> return (f v)
         let debugT = M.debugT
         let commit = commit ii_env
