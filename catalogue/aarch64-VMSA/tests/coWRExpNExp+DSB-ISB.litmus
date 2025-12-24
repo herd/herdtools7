@@ -9,6 +9,6 @@ P0;
 STR X2,[X1]   ;
 DSB ISH       ;
 ISB           ;
-L0:LDR X4,[X3];
+L0:LDR W4,[X3];
 exists(fault(P0:L0,x))
 

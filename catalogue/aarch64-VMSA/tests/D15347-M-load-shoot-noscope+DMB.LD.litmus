@@ -15,7 +15,7 @@ P0              | P1;
 STR X1,[X2]     | LDR W7,[X8]   ;
 DSB ISH         | DMB LD        ;
 LSR X9,X9,#12   |L0:            ;
-TLBI VAAE1IS,X9 |  LDR X4,[X3]  ;
+TLBI VAAE1IS,X9 |  LDR W4,[X3]  ;
 DSB ISH         |               ;
 MOV W7,#1       |               ;
 STR W7,[X8]     |               ;

@@ -1,9 +1,9 @@
 AArch64 LDR
-(* LDR+32 is accepted by litmus *)
+(* LDR+32 is equivalent *)
 {
 0:X1=x;
 0:X2=0;
-x=1;
+uint64_t x=1;
 }
 P0         ;
 LDR X2,[X1];

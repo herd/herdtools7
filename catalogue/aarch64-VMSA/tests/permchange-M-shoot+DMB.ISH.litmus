@@ -11,10 +11,10 @@ pte_z=(af:1,db:1);
 1:X8=z;
 }
 P0              | P1;
-STR X1,[X2]         |  LDR W7,[X8]   ;
-DSB ISH                | DMB ISH        ;
+STR X1,[X2]     | LDR W7,[X8]   ;
+DSB ISH         | DMB ISH       ;
 LSR X9,X3,#12   |L0:            ;
-TLBI VAAE1IS,X9 |  STR X4,[X3]  ;
+TLBI VAAE1IS,X9 | STR W4,[X3]  ;
 DSB ISH         |               ;
 MOV W7,#1       |               ;
 STR W7,[X8]     |               ;
