@@ -1,0 +1,13 @@
+Test A033 Allowed
+States 3
+0:X1=1; 1:X1=1;
+0:X1=1; 1:X1=2;
+0:X1=2; 1:X1=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Flag requires-BBM
+Condition exists (0:X1=2 /\ 1:X1=2)
+Observation A033 Never 0 3
+Hash=5be0e632f83f2e6adfc446ae69294701
+
