@@ -1,0 +1,16 @@
+AArch64 Y007
+
+{
+ int x=0;
+ int y[2]={0,0};
+ 0:X0=x; 0:X1=y;
+ 1:X0=y; 1:X2=x;
+}
+ P0              | P1              ;
+ MOV W2,#1       | LDAP W3,W4,[X0] ;
+ STR W2,[X0]     | LDR W5,[X2]     ;
+ MOV W3,#1       |                 ;
+ MOV W4,#99      |                 ;
+ STLP W3,W4,[X1] |                 ;
+
+exists (1:X4=99 /\ 1:X5=0)
