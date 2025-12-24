@@ -3,16 +3,16 @@ AArch64 D15347-M-load-shoot+acq-po+VMALL
 pte_x=(valid:0); (*invalid*)
 0:X2=pte_x;
 0:X4=x;
-0:X1=(oa:phy_y); 
+0:X1=(oa:phy_y);
 1:X3=x;
 y=1;
 pte_z=(af:1,db:1);
-0:X8=z; 
+0:X8=z;
 1:X8=z;
 }
 P0              | P1;
 STR X1,[X2]     | LDAR W7,[X8]  ;
-DSB ISH         | L0:LDR X4,[X3];
+DSB ISH         | L0:LDR W4,[X3];
 TLBI VMALLE1IS  |               ;
 DSB ISH         |               ;
 MOV W7,#1       |               ;

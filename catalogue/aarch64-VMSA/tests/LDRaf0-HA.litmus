@@ -1,10 +1,10 @@
 AArch64 LDRaf0-HA
 TTHM=P0:HA
-(* LDRaf0-HA+32 is equivalent and accepted by litmus *)
+(* LDRaf0-HA+32 is equivalent *)
 {
 0:X1=x;
 0:X2=0;
-x=1;
+uint64_t x=1;
 pte_x=(af:0);
 }
 P0         ;

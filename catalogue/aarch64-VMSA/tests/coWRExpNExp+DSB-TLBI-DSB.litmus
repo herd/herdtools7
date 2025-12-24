@@ -11,6 +11,6 @@ DSB ISH        ;
 LSR X9,X3,#12  ;
 TLBI VAAE1IS,X9;
 DSB ISH        ;
-L0:LDR X4,[X3] ;
+L0:LDR W4,[X3] ;
 exists(fault(P0:L0,x))
 

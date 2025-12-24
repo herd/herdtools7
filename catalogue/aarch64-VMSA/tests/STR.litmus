@@ -1,6 +1,6 @@
 AArch64 STR
-(* Test STR+32 is equivalent and accepted by litmus *)
 {
+uint64_t x;
 0:X1=1;
 0:X2=x;
 }

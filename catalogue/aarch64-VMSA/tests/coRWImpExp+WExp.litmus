@@ -10,6 +10,6 @@ a=1;
 b=2;
 }
 P0          | P1;
-STR X0,[X1] | LDR X2,[X3]; (*could be an STR*)
+STR X0,[X1] | LDR W2,[X3]; (*could be an STR*)
             | STR X0,[X1];
 exists(1:X2=2 /\ pte_x=(oa:phy_b)) 

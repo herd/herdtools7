@@ -10,6 +10,6 @@ L0: LDR X3,[X4];
 DSB ISH        ;
 TLBI VMALLE1IS ;
 DSB ISH        ;
-L1: LDR X6,[X4];
+L1: LDR W6,[X4];
 locations[x;]
 ~exists(~fault(P0:L0,x) /\ ~fault(P0:L1,x))
