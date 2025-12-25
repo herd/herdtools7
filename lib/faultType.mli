@@ -31,8 +31,14 @@ module type AArch64Sig = sig
     | Permission  (* db: 0 *)
     | Exclusive   (* memattr <> sharedWB *)
 
+  type sme_t =
+    | Streaming     (* Illegal instruction in Streaming SVE mode *)
+    | NotStreaming  (* Illegal instruction not in Streaming SVE mode *)
+    | InactiveZA    (* Illegal instruction when ZA is inactive *)
+
   type t =
     | MMU of mmu_t
+    | SME of sme_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
