@@ -4676,18 +4676,7 @@ Arguments:
 (* Test all possible instructions, when appropriate *)
       let mk_mop_fetch exposed_page exposed_label test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
-        (* let this_pagelbl_addr =
-          let addr_part = ii.A.addr mod Pseudo.proc_size in
-          let proc_part = ii.A.addr - addr_part in
-          let page_addr = proc_part + (addr_part / Pseudo.page_size) * Pseudo.page_size in
-          page_addr in *)
-        let relevant_pagelbls = get_instr_ptevals test
-          (* map labels into VAs *)
-        in
-        
-        (* Printf.printf "# Debug output for %d::%s is:" ii.A.addr (A.pp_instruction PPMode.Ascii ii.A.inst);
-        List.iter (fun a -> Printf.printf " %d" a) (List.map (fun (p,lbl) -> Label.Map.find lbl test.program) relevant_pagelbls);
-        Printf.printf "\n"; *)
+        let relevant_pagelbls = get_instr_ptevals test in
        
         let default_cands =
           InstrSet.empty
@@ -4760,25 +4749,17 @@ Arguments:
                   >>*= fun () -> m_fault >>| set_elr_el1 lbl_v ii
                   >>! B.Fault (false,[AArch64Base.elr_el1, lbl_v])
               end in
-        fun ac ma _ -> ( (* value fake here *)
-          if Access.is_physical ac then begin
-            (* Printf.eprintf "### Physical ifetch!\n"; *)
+        fun ac ma _ -> (
+          if Access.is_physical ac then
             M.bind_ctrldata ma (mop ac)
-          end else begin
-            (* Printf.eprintf "### Virtual ifetch!\n"; *)
+          else
             ma >>= mop ac
-          end
         )
 
 (* Test all possible instructions, when appropriate *)
       let check_self test ii =
-        (* assert (ii.A.fetch_proc = ii.A.proc) ; *)
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let exp_pages = get_exposed_codepages test in
-        (* Printf.printf "Exported TTD destinations:";
-        List.iter (fun v -> Printf.printf " %s" (A.V.Cst.pp false v)
-          ) exp_pages;
-        Printf.printf "\n"; *)
         let is_on_exported_page =
           match ii.A.rel_addr with
           | Some (A.V.Val c) -> begin
@@ -4787,7 +4768,6 @@ Arguments:
               (fun ttd_lbl ->
                 let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
                 let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
-                (* Printf.printf "\nComparing %s and %s\n" (A.V.Cst.pp false this_lbl) (A.V.Cst.pp false ttd_lbl); *)
                 match (this_triple,ttd_triple) with
                 | (p1,s1,_),(p2,s2,_) ->
                   (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
@@ -4795,13 +4775,7 @@ Arguments:
             end
           | _ -> false
         in
-        (* let page_remap_cands =
-          let res = get_exposed_codepage_mappings test in
-          match ii.A.rel_addr with
-          | Some (A.V.Val c) ->
-            if List.mem c res then res else c::res
-          | None -> [] in
-        List.iter (fun v -> Printf.printf "%s\n" (A.V.Cst.pp false v)) page_remap_cands; *)
+
         let lbl_exposed addr =
           let labels = test.Test_herd.entry_points addr in
           Label.Set.exists
@@ -4810,13 +4784,10 @@ Arguments:
                 (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
                 (get_exported_labels test))
             labels in
-        (* Printf.printf "Instruction %s at address %d on an %s page and at an %s label\n" (A.pp_instruction PPMode.Ascii ii.A.inst) ii.A.addr (if is_on_exported_page then "exported" else "unexported")
-        (if (lbl_exposed ii.A.addr) then "exported" else "unexported")
-        ; *)
+
         let needs_vmsa_for_ifetch =
           kvm && self && is_on_exported_page in
         let needs_ifetch = (lbl_exposed ii.A.addr) && self in
-        (* if needs_vmsa_for_ifetch then *)
         if needs_ifetch || needs_vmsa_for_ifetch then
           try (
             let mop_fetch = mk_mop_fetch is_on_exported_page lbl_exposed test ii in
