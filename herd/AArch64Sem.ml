@@ -4685,9 +4685,9 @@ Arguments:
           (* map labels into VAs *)
         in
         
-        Printf.printf "# Debug output for %d::%s is:" ii.A.addr (A.pp_instruction PPMode.Ascii ii.A.inst);
+        (* Printf.printf "# Debug output for %d::%s is:" ii.A.addr (A.pp_instruction PPMode.Ascii ii.A.inst);
         List.iter (fun a -> Printf.printf " %d" a) (List.map (fun (p,lbl) -> Label.Map.find lbl test.program) relevant_pagelbls);
-        Printf.printf "\n";
+        Printf.printf "\n"; *)
        
         let default_cands =
           InstrSet.empty
@@ -4704,7 +4704,7 @@ Arguments:
                 let cand_a = base + offset in
                 let cand_i = match IntMap.find cand_a test.Test_herd.code_segment with
                 | (_,(_,i)::_) -> i
-                | _ -> Warn.user_error "Instruction not found by the address %d" cand_a
+                  | _ -> Warn.user_error "Instruction not found by the address %d" cand_a (* this case means that we have found a relevant page, but it does not have an instruction -- it may make sense to use NOP here rather than throw an error *)
                 in
                 cand_i)
              |> InstrSet.of_list
@@ -4774,7 +4774,7 @@ Arguments:
       let check_self test ii =
         (* assert (ii.A.fetch_proc = ii.A.proc) ; *)
         let module InstrSet = AArch64.V.Cst.Instr.Set in
-        let exp_pages = get_exported_code_pages test in
+        let exp_pages = get_exposed_codepages test in
         (* Printf.printf "Exported TTD destinations:";
         List.iter (fun v -> Printf.printf " %s" (A.V.Cst.pp false v)
           ) exp_pages;
@@ -4795,6 +4795,13 @@ Arguments:
             end
           | _ -> false
         in
+        (* let page_remap_cands =
+          let res = get_exposed_codepage_mappings test in
+          match ii.A.rel_addr with
+          | Some (A.V.Val c) ->
+            if List.mem c res then res else c::res
+          | None -> [] in
+        List.iter (fun v -> Printf.printf "%s\n" (A.V.Cst.pp false v)) page_remap_cands; *)
         let lbl_exposed addr =
           let labels = test.Test_herd.entry_points addr in
           Label.Set.exists
@@ -4803,9 +4810,9 @@ Arguments:
                 (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
                 (get_exported_labels test))
             labels in
-        Printf.printf "Instruction %s at address %d on an %s page and at an %s label\n" (A.pp_instruction PPMode.Ascii ii.A.inst) ii.A.addr (if is_on_exported_page then "exported" else "unexported")
+        (* Printf.printf "Instruction %s at address %d on an %s page and at an %s label\n" (A.pp_instruction PPMode.Ascii ii.A.inst) ii.A.addr (if is_on_exported_page then "exported" else "unexported")
         (if (lbl_exposed ii.A.addr) then "exported" else "unexported")
-        ;
+        ; *)
         let needs_vmsa_for_ifetch =
           kvm && self && is_on_exported_page in
         let needs_ifetch = (lbl_exposed ii.A.addr) && self in

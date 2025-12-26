@@ -6,8 +6,8 @@ TTD(P0:Page1)=(oa:PA(P0:Page1),valid:1);
 }
 P0          ;
 Page0:      ;
-ADD X0,X0,#1;
+ADD W0,W0,#1;
 .pagealign  ;
 Page1:      ;
-ADD X0,X0,#2;
+ADD W0,W0,#2;
 forall 0:X0=3

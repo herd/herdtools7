@@ -3,5 +3,5 @@ Variant=vmsa,ifetch
 {}
 P0          ;
 .pagealign  ;
-ADD X0,X0,#1;
+ADD W0,W0,#1;
 forall 0:X0=1

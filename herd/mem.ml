@@ -335,28 +335,6 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let procs = List.map (fun (p,_,_) -> p) starts in
       let labels_of_instr = test.Test_herd.entry_points in
       let exported_labels = S.get_exported_labels test in
-      let is_exported_label lbl =
-        Label.Full.Set.exists
-          (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
-           exported_labels in
-        let is_on_exported_page a_v =
-          let exp_pages = S.get_exported_code_pages test in
-          match a_v with
-          | Some (A.V.Val c) -> begin
-            let this_lbl = c in
-            List.exists
-              (fun ttd_lbl ->
-                let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
-                let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
-                (* Printf.eprintf "\nComparing %s and %s\n" (A.V.Cst.pp false this_lbl) (A.V.Cst.pp false ttd_lbl); *)
-                match (this_triple,ttd_triple) with
-                | (p1,s1,_),(p2,s2,_) ->
-                  (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
-              ) exp_pages
-            end
-          | _ ->
-            false
-      in
 
 (**********************************************************)
 (* In mode `-variant self` test init_state is changed:    *)
@@ -368,9 +346,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* canonical location (label).                            *)
 (**********************************************************)
 
-      (* Given an integer of a herd7-internal representation for an address,
-       * this function returns to a value of a label at the beginning of
-       * the page the address is on with an appropriate offset *)
+      (* Creates a mapping:
+       * - from an integer of a herd7-internal representation for an address,
+       * - to a VA page_label+offset, where page_label is the label at the 
+       *   beginning of page the address is on
+       *)
       let a2ra =
         let page_size = Pseudo.page_size in
         let proc_size = Pseudo.proc_size in
@@ -382,13 +362,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (addr_part / page_size) in
           proc_part + page_within_proc * page_size
         in
-        let a2l =
-          let map_to_list m =
-            Label.Map.fold (fun k v ls -> (k,v)::ls) m []
-          in
-          prog
-          |> map_to_list
-          |> List.fold_left (fun acc (lbl,addr) -> IntMap.add addr lbl acc) IntMap.empty in
+        let a2l = (* mapping from "addresses" to labels *)
+          let invert_map m =
+            Label.Map.fold (fun lbl addr acc -> IntMap.add addr lbl acc) m IntMap.empty in
+          invert_map prog in
         let iaddrs = (* the list of all instruction addresses *)
           let open Test_herd in
           if self && kvm then
@@ -399,19 +376,16 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | None -> code in
               acc @ (List.map (fun (addr,_) -> addr) code))
             [] starts
-          else []
-        in
+          else [] in
         List.fold_left (fun acc x ->
             let a = pagestart_of_addr x in
             match IntMap.find_opt a a2l with
             | Some lbl -> (
                 let off = x - a in
-                if off < 0 then begin
-                  (if dbg then
-                    Printf.printf "[%d -> no representative address (%d)\n" x a
-                  );
+                if off < 0 then
+                  (* x has no representation in the form of page_label+offset *)
                   acc
-                end else begin
+                else begin
                   let proc = proc_of_addr x in
                   let a_virt = V.Val (Constant.mk_sym_virtual_label_with_offset proc lbl (off/4)) in
                   IntMap.add x a_virt acc
@@ -424,6 +398,28 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           ) IntMap.empty iaddrs in
 
       let addr2va addr = IntMap.find_opt addr a2ra in
+
+      let is_exported_label lbl =
+        Label.Full.Set.exists
+          (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
+           exported_labels in
+
+      let is_on_exported_page a_v =
+        let exp_pages = S.get_exposed_codepages test in
+        match a_v with
+        | Some (A.V.Val c) -> begin
+          let this_lbl = c in
+          List.exists
+            (fun ttd_lbl ->
+              let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
+              let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
+              match (this_triple,ttd_triple) with
+              | (p1,s1,_),(p2,s2,_) ->
+                (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
+            ) exp_pages
+          end
+        | _ ->
+          false in
 
       (* lbls2i -- overwritable instructions, with labels          *)
       (* overwritable_labels -- the set of labels of instructions  *)
@@ -510,19 +506,20 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 List.fold_left
                   (fun env (addr,i) ->
                     match addr2va addr with
-                    | Some ttd_addr when (is_on_exported_page (addr2va addr)) ->
-                      let loc = A.Location_global (ttd_addr)
-                      and v = A.V.instructionToV i in
-                      A.state_add env loc v
+                    | Some va when (is_on_exported_page (addr2va addr)) -> begin
+                        let loc = A.Location_global va in
+                        let v = A.V.instructionToV i in
+                        A.state_add env loc v
+                      end
                     | Some _ | None -> env
                   )
                   env_ code)
               init_state starts
           else init_state in
-        match lbls2i with
-        | [] -> test
-        | _::_ ->
-          let init_state =
+        let init_state =
+          match lbls2i with
+          | [] -> init_state
+          | _::_ ->
             (* Add initialisation of overwritable instructions *)
             List.fold_left
               (fun env (lbls,(proc,i)) ->
@@ -534,7 +531,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                     and v = A.V.instructionToV i in
                     A.state_add env loc v)
               init_state lbls2i in
-          { test with init_state; } in
+        { test with init_state; } in
 
 (*****************************************************)
 (* Build events monad, _i.e._ run code in some sense *)
@@ -680,7 +677,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
         | Segfault addr ->
           let msg = Printf.sprintf
-            "Segmentation fault (kidding, address 0x%x does not point to code)"
+            "Segmentation fault (kidding, address 0x%d does not point to code)"
             addr in
           EM.failcodeT (Misc.UserError msg) true
 

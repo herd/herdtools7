@@ -255,8 +255,6 @@ let oa2symbol oa =
      end
 
 let virt_match_phy s1 s2 = match s1,s2 with
-(* | Virtual {name=s1; offset=i1;_},Physical (s2,i2) ->
-    Misc.string_eq s1 s2 && Misc.int_eq i1 i2 *)
 | Virtual {name=n1; offset=i1;_},Physical (s2,i2) ->
     String.equal (Symbol.pp n1) s2 &&
     Misc.int_eq i1 i2
@@ -355,12 +353,12 @@ let collision s1 s2 = match s1,s2 with
   | _, _ ->
       None
 
-  let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr = function
+  let rec mk_pp pp_symbol pp_scalar pp_pteval pp_addrreg pp_instr = function
   | Concrete i -> pp_scalar i
   | ConcreteVector vs ->
       let s =
         String.concat ","
-          (List.map (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr) vs)
+          (List.map (mk_pp pp_symbol pp_scalar pp_pteval pp_addrreg pp_instr) vs)
       in
       sprintf "{%s}" s
   | ConcreteRecord vs ->
@@ -369,13 +367,11 @@ let collision s1 s2 = match s1,s2 with
       StringMap.iter
         (fun name c ->
           Printf.bprintf b "%s:%s," name
-            (mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr c))
+            (mk_pp pp_symbol pp_scalar pp_pteval pp_addrreg pp_instr c))
         vs;
       Buffer.add_char b '}';
       Buffer.contents b
-  | Symbolic (Virtual {name=Symbol.Label(p,lbl);_}) -> pp_label p lbl
   | Symbolic sym -> pp_symbol sym
-  (* | Label (p, lbl) -> pp_label p lbl *)
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p
   | AddrReg sr -> pp_addrreg sr
@@ -383,13 +379,11 @@ let collision s1 s2 = match s1,s2 with
   | Frozen i -> sprintf "S%i" i (* Same as for symbolic values? *)
 
 let pp pp_scalar pp_pteval pp_addrreg pp_instr c =
-  let pp_label = sprintf "label:\"P%i:%s\"" in
-  let pp = mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr c in
+  let pp = mk_pp pp_symbol pp_scalar pp_pteval pp_addrreg pp_instr c in
   if _dbg && String.length pp > 6 then "..." else pp
 
 and pp_old pp_scalar pp_pteval pp_addrreg pp_instr =
-  let pp_label = sprintf "%i:%s" in
-  mk_pp pp_symbol_old pp_scalar pp_label pp_pteval pp_addrreg pp_instr
+  mk_pp pp_symbol_old pp_scalar pp_pteval pp_addrreg pp_instr
 
 let check_pp_init dump = function
   | Symbolic sym -> pp_symbol_init sym
@@ -449,8 +443,8 @@ let do_mk_sym sym = match Misc.tr_pte sym with
     | None -> do_mk_virtual sym
 
 let mk_sym_physical_label_from_virt = function
-  | Symbolic (Virtual {name=Symbol.Label (p,s); offset=0; _ }) ->
-      Symbolic (Physical (sprintf "%i:%s" p s,0))
+  | Symbolic (Virtual {name=Symbol.Label (p,s); offset=o; _ }) ->
+      Symbolic (Physical (sprintf "%i:%s" p s,o))
   | _ -> assert false
 
 let mk_sym_virtual_label p lbl = Symbolic (do_mk_virtual_label_with_offset p lbl 0)
