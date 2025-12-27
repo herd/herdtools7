@@ -1,0 +1,20 @@
+AArch64 MP+swapal-gcsss1+dmb.ld
+variant=shadowstack
+{
+SS(x,1) = ssval_t: {SSCap(x,1)};
+SS(z,1);
+
+0:X0=x;
+0:X2=y;
+0:GCSPR_EL1=&z[1];
+
+1:X2=x;
+1:X4=y;
+}
+
+P0                                            | P1          ;
+MOV W1,#1                                     | LDR X1,[X2] ;
+SWPAL W1,W3,[X2]  (* Memory (Write) Effect *) | DMB LD      ;
+GCSSS1 X0         (* GCSSS1 Effect         *) | LDR W3,[X4] ;
+
+exists 1:X1=SSCap(x,5) /\ 1:X3=0 (* SSCap not supported in herd, yet *)
