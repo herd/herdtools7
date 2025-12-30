@@ -6,7 +6,7 @@
  (optional)
  (enabled_if
   (>= %{ocaml_version} 4.14))
- (libraries herdtools7.asllib qcheck-core zarith re feat fix logs))
+ (libraries asllib qcheck-core zarith re feat fix logs))
 
 (executable
  (public_name carpenter)
