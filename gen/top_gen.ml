@@ -88,8 +88,6 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
     let pp = BellInfo.pp_scopes sc in
     { t with scopes = Some sc; info = ("Scopes",pp)::t.info; }
 
-  let do_add_info key v k = match v with "" -> k | _ -> (key,v)::k
-  let add_info t k i =  { t with info = do_add_info k i t.info; }
   let extract_edges {edges=es; _} = es
 
 (* Utilities *)
@@ -1018,25 +1016,39 @@ let tr_labs m init =
       | _ -> bd)
     init
 
-let do_self =  O.variant Variant_gen.Self
+let basic_info scope prefetch com_edges cycle_description =
+  let variants =
+    List.filter_map
+    ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
+    Variant_gen.all_t in
+  List.filter_map Fun.id
+  ( ( if O.generator = "" then None else Some ("Generator", O.generator) )
+  :: Option.map ( fun st -> ("Scopes", BellInfo.pp_scopes st) ) scope
+  :: ( if variants = [] then None else Some ("Variant", String.concat " " variants) )
+  :: ( if O.variant Variant_gen.Self || prefetch = ""
+        then None else Some ("Prefetch", prefetch) )
+  :: Some ("Com", com_edges)
+  :: Some ("Orig", cycle_description)
+  :: [] )
+
+let merge_info lhs rhs =
+  let mk_map info =
+    List.map ( fun (k,v) -> String.capitalize_ascii k,v ) info
+      |> List.to_seq |> StringMap.of_seq in
+  StringMap.union
+    ( fun v1 v2 -> v1 ^ " " ^ v2 ) (mk_map lhs) (mk_map rhs)
+  |> StringMap.to_seq
+  |> List.of_seq
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
   let com = match com with None -> E.pp_edges es | Some com -> com in
   let (init,prog,final,env,obs),(prf,coms) = compile_cycle check init c in
-  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
   let info =
-    let myinfo =
-      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
-        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
-    let myinfo = match scope with
-    | None -> myinfo
-    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
-    let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo@archinfo in
+    merge_info info ((basic_info scope prf coms com) @ Comp.get_archinfo c) in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; obs=obs}
