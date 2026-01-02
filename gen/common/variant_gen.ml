@@ -52,6 +52,11 @@ let tags =
    "NoVolatile"; "Morello"; "kvm"; "FullKvm"; "NoFault";
    "Neon"; "ConstrainedUnpredictable"; ]
 
+let all_t =
+  [ AsAmo ; ConstsInInit ; Mixed ; FullMixed ; MixedDisjoint ; MixedStrictOverlap ;
+    Self ; MemTag ; NoVolatile ; Morello ; KVM ; FullKVM ; NoFault ;
+    Neon ; SVE ; SME ; ConstrainedUnpredictable ]
+
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
@@ -90,6 +95,18 @@ let pp = function
   | SVE -> "sve"
   | SME -> "sme"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
+
+let pp_herd_variant = function
+  | AsAmo | ConstsInInit | NoVolatile | NoFault -> None
+  | Neon -> Some "neon"
+  | SVE -> Some "sve"
+  | SME -> Some "sme"
+  | Mixed | FullMixed | MixedDisjoint | MixedStrictOverlap -> Some "mixed"
+  | Self -> Some "ifetch"
+  | MemTag -> Some "memtag"
+  | Morello -> Some "morello"
+  | KVM | FullKVM  -> Some "vmsa"
+  | ConstrainedUnpredictable -> Some "ConstrainedUnpredictable"
 
 let is_mixed v = v Mixed || v FullMixed
 let is_kvm v = v KVM || v FullKVM
