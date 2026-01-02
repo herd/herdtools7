@@ -49,10 +49,12 @@ type t =
   | ConstrainedUnpredictable
 
 val tags : string list
+val all_t : t list
 
 val parse : string -> t option
 
 val pp : t -> string
+val pp_herd_variant : t -> string option
 
 val is_mixed : (t -> bool) -> bool
 val is_kvm : (t -> bool) -> bool
