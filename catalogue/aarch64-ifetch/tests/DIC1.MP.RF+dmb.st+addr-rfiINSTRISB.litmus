@@ -1,4 +1,5 @@
 AArch64 DIC1.MP.RF+dmb.st+addr-rfiINSTRISB
+variant=ifetch
 CacheType=IDC DIC
 {
  0:X0=instr:"NOP"; 0:X1=P1:m2;
