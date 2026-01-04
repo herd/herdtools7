@@ -397,4 +397,6 @@ module List : sig
   (** [concat_map f l] gives the same result as [List.concat (List.map f l)].
       For compatibility with OCaml < 4.10 *)
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+
+  val find_map : ('a -> 'b option) -> 'a list -> 'b option
 end

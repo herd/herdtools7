@@ -816,6 +816,8 @@ let group_by_int get_key env =
           m []))
 
 module Option = struct
+  include Option
+
   module Infix = struct
     let (let*) = Option.bind
   end
@@ -844,4 +846,11 @@ module List = struct
   let is_empty l = l = []
 
   let concat_map f l = List.(concat (map f l))
+
+  let rec find_map f = function
+    | [] -> None
+    | x :: xs ->
+      match f x with
+      | Some y -> Some y
+      | None -> find_map f xs
 end
