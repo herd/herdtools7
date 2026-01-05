@@ -173,6 +173,15 @@
 
 
 
+(defthm values-of-update
+  (subsetp-equal (values (update key val x))
+                 (cons val (values x)))
+  :hints(("Goal" :in-theory (enable values update)
+          :expand ((:free (X y) (values (cons x y)))
+                   (:free (x y) (tail (cons x y)))))))
+
+
+
 (defthm keys-of-from-lists
   (equal (keys (from-lists keys vals))
          (set::mergesort keys))

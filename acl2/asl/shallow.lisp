@@ -2477,14 +2477,6 @@
 
 
 
-(define typed_identifierlist-lookup ((name identifier-p)
-                                     (x typed_identifierlist-p))
-  :returns (ty maybe-ty-p)
-  (if (atom x)
-      nil
-    (if (equal (typed_identifier->name (car x)) (identifier-fix name))
-        (typed_identifier->type (car x))
-      (typed_identifierlist-lookup name (cdr x)))))
 
 
 

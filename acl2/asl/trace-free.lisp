@@ -49,10 +49,12 @@
                    :initial nil)
                   call-siglist-p)
   :renames ((expr all-callsigs-expr-aux)
-            (stmt all-callsigs-stmt-aux))
+            ;; (stmt all-callsigs-stmt-aux)
+            )
   :prod-fns ((t_bits (fields :skip)))
   :type-fns ((expr all-callsigs-expr)
-             (stmt all-callsigs-stmt))
+             ;; (stmt all-callsigs-stmt)
+             )
   :fnname-template all-callsigs-<type>)
 
 
@@ -90,6 +92,39 @@
   :types (ty-timeframe-imap)
   :measure (acl2::nat-list-measure (list :count 0)))
 
+;; Hack: Use these all-callsigs functions in two versions for statements: those
+;; which collect all callsigs (including s_calls), and those only including
+;; expression-based callsigs.
+
+;; For expr-callsigs-stmt, clone the existing type-fns from the all-callsigs visitor template
+;; into a new visitor template for expr-callsigs.
+(make-event
+ (b* (((fty::visitorspec tmpl) (cdr (assoc 'all-callsigs (table-alist 'fty::visitor-templates (w state)))))
+      (type-fns (pairlis$ (strip-cars tmpl.type-fns) (pairlis$ (strip-cdrs tmpl.type-fns) nil))))
+   `(fty::defvisitor-template expr-callsigs ((x :object))
+      :returns (calls (:join (append calls1 calls)
+                       :tmp-var calls1
+                       :initial nil)
+                      call-siglist-p)
+      :type-fns ,type-fns
+      :fnname-template expr-callsigs-<type>)))
+
+;; For all-callsigs-stmt, update the all-calsigs visitor template to add type-fn and rename for the stmt type.
+(table fty::visitor-templates
+       'all-callsigs
+       (b* (((fty::visitorspec tmpl)
+             (cdr (assoc 'all-callsigs (table-alist 'fty::visitor-templates world)))))
+         (fty::change-visitorspec
+          tmpl
+          :type-fns (cons '(stmt . all-callsigs-stmt) tmpl.type-fns)
+          :renames (cons '(stmt all-callsigs-stmt-aux) tmpl.renames))))
+
+
+(fty::defvisitors expr-callsigs-stmt
+  :template expr-callsigs
+  :types (stmt)
+  :measure (acl2::nat-list-measure (list :count 0)))
+
 ;; Collect all call signatures present in a statement.
 (fty::defvisitor-multi all-callsigs-stmt
   (define all-callsigs-stmt ((x stmt-p))
@@ -102,6 +137,30 @@
         :otherwise (all-callsigs-stmt-aux x))))
 
   (fty::defvisitors :template all-callsigs
+    :types (stmt)
+    :measure (acl2::nat-list-measure (list :count 0))))
+
+(fty::defvisitor-template stmt-callsigs ((x :object))
+  :returns (calls (:join (append calls1 calls)
+                   :tmp-var calls1
+                   :initial nil)
+                  call-siglist-p)
+  :renames ((stmt stmt-callsigs-stmt-aux))
+  :type-fns ((stmt stmt-callsigs-stmt))
+  :fnname-template stmt-callsigs-<type>)
+
+;; Collect all call signatures present in a statement.
+(fty::defvisitor-multi stmt-callsigs-stmt
+  (define stmt-callsigs-stmt ((x stmt-p))
+    :measure (acl2::nat-list-measure (list (stmt-count x) 1))
+    :returns (calls call-siglist-p)
+    (b* (((stmt x)))
+      (stmt_desc-case x.desc
+        :s_call (cons (call-sig (call->name x.desc.call) x.pos_start)
+                      (stmt-callsigs-stmt-aux x))
+        :otherwise (stmt-callsigs-stmt-aux x))))
+
+  (fty::defvisitors :template stmt-callsigs
     :types (stmt)
     :measure (acl2::nat-list-measure (list :count 0))))
 
@@ -394,6 +453,23 @@
               :sb_asl (all-callsigs-stmt x.body.stmt)
               :otherwise nil))))
 
+;; Collects callsigs of call expressions within a function's body.
+(define expr-callsigs-func ((x func-p))
+  :returns (calls call-siglist-p)
+  (b* (((func x)))
+    (append (all-callsigs-maybe-expr x.recurse_limit)
+            (subprogram_body-case x.body
+              :sb_asl (expr-callsigs-stmt x.body.stmt)
+              :otherwise nil))))
+
+;; Collects callsigs of call statements within a function's body.
+(define stmt-callsigs-func ((x func-p))
+  :returns (calls call-siglist-p)
+  (b* (((func x)))
+    (subprogram_body-case x.body
+      :sb_asl (stmt-callsigs-stmt x.body.stmt)
+      :otherwise nil)))
+
 
 
 
@@ -450,6 +526,65 @@
       nil
     (append (all-callsigs-fnname (car fns) static)
             (all-callsigs-fnnames (cdr fns) static))))
+
+
+
+;; Given a static environment, collects all call signatures in the body of a (named) function.
+(define expr-callsigs-fnname ((fn identifier-p)
+                             (static static_env_global-p))
+  :returns (callsigs call-siglist-p)
+  (mbe :logic (expr-callsigs-func
+               (func-ses->fn (cdr (hons-assoc-equal (identifier-fix fn)
+                                                    (static_env_global->subprograms static)))))
+       :exec (b* ((look (hons-assoc-equal fn (static_env_global->subprograms static))))
+               (and look
+                    (expr-callsigs-func (func-ses->fn (cdr look))))))
+  ///
+  (defret <fn>-when-not-bound
+    (implies (not (hons-assoc-equal (identifier-fix fn)
+                                    (static_env_global->subprograms static)))
+             (not callsigs)))
+
+  (fty::deffixequiv expr-callsigs-fnname))
+
+(define expr-callsigs-fnnames ((fns identifierlist-p)
+                              (static static_env_global-p))
+  :returns (callsigs call-siglist-p)
+  (if (atom fns)
+      nil
+    (append (expr-callsigs-fnname (car fns) static)
+            (expr-callsigs-fnnames (cdr fns) static))))
+
+
+
+;; Given a static environment, collects all call signatures in the body of a (named) function.
+(define stmt-callsigs-fnname ((fn identifier-p)
+                             (static static_env_global-p))
+  :returns (callsigs call-siglist-p)
+  (mbe :logic (stmt-callsigs-func
+               (func-ses->fn (cdr (hons-assoc-equal (identifier-fix fn)
+                                                    (static_env_global->subprograms static)))))
+       :exec (b* ((look (hons-assoc-equal fn (static_env_global->subprograms static))))
+               (and look
+                    (stmt-callsigs-func (func-ses->fn (cdr look))))))
+  ///
+  (defret <fn>-when-not-bound
+    (implies (not (hons-assoc-equal (identifier-fix fn)
+                                    (static_env_global->subprograms static)))
+             (not callsigs)))
+
+  (fty::deffixequiv stmt-callsigs-fnname))
+
+(define stmt-callsigs-fnnames ((fns identifierlist-p)
+                              (static static_env_global-p))
+  :returns (callsigs call-siglist-p)
+  (if (atom fns)
+      nil
+    (append (stmt-callsigs-fnname (car fns) static)
+            (stmt-callsigs-fnnames (cdr fns) static))))
+
+
+
 
 ;; Extract the function names from a list of call signatures.
 (define call-siglist->fns ((x call-siglist-p))
