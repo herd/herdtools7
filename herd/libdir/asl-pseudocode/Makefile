@@ -16,24 +16,24 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-ARCHITECTURE_RELEASE = 2025-09
+ARCHITECTURE_RELEASE = 2025-12
 
 BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink
 
 ISA_A64_DIR := Exploration-Tools-A64-ISA/ISA_A64
-ISA_A64_NAME := ISA_A64_xml_A_profile-$(ARCHITECTURE_RELEASE)_ASL1
+ISA_A64_NAME := ISA_A64_xml_A_profile-$(ARCHITECTURE_RELEASE)
 ISA_A64_OFILE := aarch64
 ISA_A64_TAR_GZ := $(ISA_A64_NAME).tar.gz
 
 SYSREGS_DIR := Exploration-Tools-Arm-Architecture-System-Registers/SysReg
-SYSREGS_NAME := SysReg_xml_A_profile-$(ARCHITECTURE_RELEASE)_ASL0
+SYSREGS_NAME := SysReg_xml_A_profile_FAT-$(ARCHITECTURE_RELEASE)
 SYSREGS_OFILE := system_registers.asl
 SYSREGS_TAR_GZ := $(SYSREGS_NAME).tar.gz
 
 FEATURES_DIR := Exploration-Tools-Arm-Architecture-Features/AARCHMRS
 FEATURES_NAME := Features.json
 FEATURES_OFILE := features.asl
-FEATURES_TAR_GZ := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE)_ASL0.tar.gz
+FEATURES_TAR_GZ := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE).tar.gz
 
 TARGETS_TAR_GZ := $(ISA_A64_TAR_GZ) $(SYSREGS_TAR_GZ) $(FEATURES_TAR_GZ)
 TARGETS_NAME := $(ISA_A64_NAME) $(SYSREGS_NAME) $(FEATURES_NAME)
@@ -82,8 +82,6 @@ shared_pseudocode.asl: $(ISA_A64_NAME)
 	@ echo "Extracting the shared ASL pseudocode from xml files ..."
 	@ touch $@
 	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@ --log-file $@.log $^/shared_pseudocode.xml
-	# The following is inferred from usage in shared_pseudocode.asl
-	@ patch $@ $@.diff
 	@ echo "You can find extraction log at $@.log"
 
 TO_CLEANUP += aarch64-notice.html $(ISA_A64_NAME).log $(ISA_A64_OFILE)
