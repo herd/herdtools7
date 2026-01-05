@@ -24,11 +24,12 @@ Requirements
 - dune (version >= 3.10.0)
 - menhir (version >= 20220210)
 - zarith
+- logs
 
 We strongly recommend to have this base software installed through the opam
 package manager.
 
-    % opam install dune menhir zarith
+    % opam install dune menhir zarith logs
 
 Make sure to run `eval $(opam config env)` to make tools available in your PATH.
 
