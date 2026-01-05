@@ -109,7 +109,10 @@ end;
 
 func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
-  return ARBITRARY: boolean;
+  case which of
+    when Unpredictable_Unsupported_Atomic_HW_Update => return FALSE;
+    otherwise => return ARBITRARY: boolean;
+  end;
 end;
 
 // =============================================================================
