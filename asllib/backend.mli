@@ -90,8 +90,8 @@ module type S = sig
   (** Monadic bind operation, but that creates a control dependency between the
       first argument and the result of the second one. *)
 
-  val prod_par : 'a m -> 'b m -> ('a * 'b) m
-  (** Monadic product operation, two monads are combined "in parallel".*)
+  val prod_po : 'a m -> 'b m -> ('a * 'b) m
+  (** Monadic product operation, two monads are combined in po-order.*)
 
   val appl_data : 'a m -> ('a -> 'b) -> 'b m
   (** Applicative map.

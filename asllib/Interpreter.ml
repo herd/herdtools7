@@ -287,9 +287,9 @@ module Make (B : Backend.S) (C : Config) = struct
   (* To give name to rules *)
   let ( |: ) = C.Instr.use_with
 
-  (* Product parallel *)
-  (* ---------------- *)
-  let ( and* ) = B.prod_par
+  (* Product in po order *)
+  (* ------------------- *)
+  let ( and* ) = B.prod_po
 
   (* Application *)
   (* ----------- *)
@@ -419,11 +419,11 @@ module Make (B : Backend.S) (C : Config) = struct
         fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
 
   let sync_list ms =
-    let folder m vsm =
+    let folder vsm m =
       let* v = m and* vs = vsm in
       return (v :: vs)
     in
-    List.fold_right folder ms (return [])
+    List.fold_left folder (return []) ms >>= fun li -> List.rev li |> return
 
   let fold_par2 fold1 fold2 acc e1 e2 =
     let*^ m1, acc = fold1 acc e1 in
