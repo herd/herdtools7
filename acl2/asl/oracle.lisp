@@ -422,6 +422,28 @@ can be produced by this function if the oracle is set up appropriately (see
 
 
 
+
+(local (defcong acl2::set-equiv equal (array-type-satisfied x ty) 1
+         :hints (("goal" :use ((:instance (:functional-instance
+                                           acl2::element-list-p-set-equiv-congruence
+                                           (acl2::element-list-p (lambda (x) (array-type-satisfied x ty)))
+                                           (acl2::element-list-final-cdr-p (lambda (x) t))
+                                           (acl2::element-p (lambda (x) (ty-satisfied x ty))))
+                                (x x) (y x-equiv)))
+                  :in-theory (enable array-type-satisfied)))))
+
+(local (defthm member-of-key-ord-values
+         (iff (member-equal k (omap::key-ord-values x))
+              (member-equal k (omap::values x)))
+         :hints(("Goal" :in-theory (enable omap::key-ord-values
+                                           omap::values)))))
+
+(local (defthm key-ord-values-under-set-equiv
+         (acl2::set-equiv (omap::key-ord-values x)
+                          (omap::values x))
+         :hints(("Goal" :in-theory (enable acl2::set-unequal-witness-rw)))))
+
+
 (defines typed-val-to-oracle
   (define typed-val-to-oracle ((x ty-p) (val val-p))
     :short "Produce a list of values that, when placed in the @(see orac)'s @('oracle-st')
@@ -735,6 +757,9 @@ field and its mode set appropriately, makes @('(ty-oracle-val x orac)') produce
            :hints(("Goal" :in-theory (e/d (val-fix-when-v_record)
                                           (v_record-of-fields))))))
 
+  (local (defthm array-type-of-key-ord-values
+           (equal (array-type-satisfied (omap::key-ord-values x) ty)
+                  (array-type-satisfied (omap::values x) ty))))
 
   (local
    (std::defret-mutual <fn>-correct-lemma

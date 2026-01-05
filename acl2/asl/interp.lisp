@@ -424,8 +424,7 @@ call)."
   :returns (new-env env-p)
   ;; Takes the local component of the prev-env
   ;; and combines it with the global component of the call-env, but decrements name's stack size.
-  (b* (((env call) call-env)
-       ((global-env g) call-env)
+  (b* (((global-env g) call-env)
        (new-g (change-global-env g
                                  :stack_size
                                  (decrement-stack name g.stack_size))))
