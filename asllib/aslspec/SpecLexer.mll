@@ -84,7 +84,7 @@ rule token = parse
     | "--"           { MINUS_MINUS }
     (* Operator tokens *)
     | ":="           { COLON_EQ }
-    | "=:"           { EQ }
+    | "=:"           { EQ_COLON }
     | '='            { EQ }
     | '+'            { PLUS }
     | '*'            { TIMES }

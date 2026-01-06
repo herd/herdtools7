@@ -34,6 +34,7 @@ let bool_of_string s =
 %token AST
 %token CASE
 %token COLON_EQ
+%token EQ_COLON
 %token CONSTANT
 %token CONSTANTS_SET
 %token CUSTOM
@@ -115,6 +116,7 @@ let bool_of_string s =
 %nonassoc NOT_IN
 %nonassoc IFF
 %nonassoc COLON_EQ
+%nonassoc EQ_COLON
 %nonassoc LE
 %nonassoc LT
 %nonassoc GE
@@ -384,42 +386,14 @@ let judgment :=
     | ~=judgment_expr; ~=judgment_attributes;
       { Rule.make_judgement judgment_expr ~is_output:false judgment_attributes }
 
-let maybe_output_expr ==
-    | { false }
-    | MINUS_MINUS; { true }
-
-let judgment_expr :=
-    | transition_expr
-    | LPAR; ~=transition_expr; RPAR;
-      { Expr.make_tuple [ transition_expr ] }
-    | index_judgement
-    | LPAR; ~=index_judgement; RPAR;
-      { Expr.make_tuple [ index_judgement ] }
-
-let transition_expr :=
-    | lhs=expr; ARROW; rhs=expr; ~=short_circuit;
-      { Expr.Transition { lhs; rhs; short_circuit } }
-
-let short_circuit :=
-    | { None } (* Short-circuiting expressions will be inserted automatically. *)
-    | VDASH; (* Explicitly no alternatives. *)
-      { Some [] }
-    | VDASH; alternatives=clist1(short_circuit_expr);
-      { Some alternatives }
-
-let short_circuit_expr :=
-    | id=IDENTIFIER;
-      { Expr.make_var id }
-    | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
-      { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
-
 let index_judgement :=
-    | INDEX; LPAR; index=IDENTIFIER; COMMA; list=IDENTIFIER; COLON; body=transition_expr; RPAR;
-      { Expr.Indexed { index; list; body } }
+    | INDEX; LPAR; index=IDENTIFIER; COMMA; list_var=IDENTIFIER; COLON; body=transition_expr; RPAR;
+      { Expr.Indexed { index; list_var; body } }
+
+let var_expr := id=IDENTIFIER; { Expr.make_var id }
 
 let expr :=
-    | id=IDENTIFIER;
-      { Expr.make_var id }
+    | var_expr
     | components=plist1(expr);
       { Expr.make_tuple components }
     | lhs=expr; args=plist0(expr);
@@ -435,6 +409,46 @@ let expr :=
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
       { Expr.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
 
+let maybe_output_expr ==
+    | { false }
+    | MINUS_MINUS; { true }
+
+let judgment_expr :=
+    | transition_expr
+    | LPAR; ~=transition_expr; RPAR;
+      { Expr.make_tuple [ transition_expr ] }
+    | index_judgement
+    | LPAR; ~=index_judgement; RPAR;
+      { Expr.make_tuple [ index_judgement ] }
+
+let transition_expr :=
+    | lhs=expr; ARROW; rhs=transition_output_expr; ~=short_circuit;
+      { Expr.Transition { lhs; rhs; short_circuit } }
+
+let transition_output_expr :=
+    | var_expr
+    | components=plist1(transition_output_expr);
+      { Expr.make_tuple components }
+    | label=IDENTIFIER; components=plist1(transition_output_expr);
+      { Expr.make_application (Expr.make_var label) components }
+    | list_var=IDENTIFIER; LBRACKET; index=transition_output_expr; RBRACKET;
+      { Expr.make_list_index list_var index }
+    | lhs=transition_output_expr; ~=infix_expr_operator; rhs=transition_output_expr;
+      { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
+
+let short_circuit :=
+    | { None } (* Short-circuiting expressions will be inserted automatically. *)
+    | VDASH; (* Explicitly no alternatives. *)
+      { Some [] }
+    | VDASH; alternatives=clist1(short_circuit_expr);
+      { Some alternatives }
+
+let short_circuit_expr :=
+    | id=IDENTIFIER;
+      { Expr.make_var id }
+    | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
+      { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
+
 (** We currently do not need field paths longer than a variable with two fields. *)
 let field_path :=
   | id1=IDENTIFIER; DOT; id2=IDENTIFIER; { [ id1; id2 ] }
@@ -442,6 +456,7 @@ let field_path :=
 
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }
+    | EQ_COLON; { "reverse_assign" }
     | EQ; { "equal" }
     | MINUS; { "num_minus" }
     | PLUS;  { "num_plus" }

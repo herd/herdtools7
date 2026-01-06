@@ -8,6 +8,7 @@
 
 \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
+\newcommand\boundvariable[0]{ \hyperlink{type-boundvariable}{\textsf{bound\_variable}} } % Generated from bound_variable
 \newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
 
 % -------------------
@@ -32,6 +33,8 @@
 \DefineType{Z}{\texthypertarget{type-Z}$\Z$} % EndDefineType
 
 \DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
+
+\DefineType{bound_variable}{\texthypertarget{type-boundvariable}$\boundvariable$} % EndDefineType
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 

@@ -44,6 +44,11 @@ operator assign[T](lhs: T, rhs: T) -> Bool
   math_macro = \eqdef,
 };
 
+operator reverse_assign[T](lhs: T, rhs: T) -> Bool
+{
+  math_macro = \eqname,
+};
+
 operator equal[T](a: T, b: T) -> (c: Bool)
 {
   math_macro = \equal,
@@ -138,4 +143,27 @@ operator greater_than[NumType](NumType, NumType) -> Bool
 operator greater_or_equal[NumType](NumType, NumType) -> Bool
 {
   math_macro = \greaterorequal,
+};
+
+// A type dedicated to bound variables.
+typedef bound_variable { "bound variable" };
+
+operator forall[T](bound_var: bound_variable, domain: powerset(T), fun T -> Bool) -> Bool
+{
+  math_macro = \forallop,
+};
+
+operator exists[T](bound_var: bound_variable, domain: powerset(T), fun T -> Bool) -> Bool
+{
+  math_macro = \existsop,
+};
+
+operator list_forall[T](bound_var: bound_variable, domain: list0(T), fun T -> Bool) -> Bool
+{
+  math_macro = \listforall,
+};
+
+operator list_exists[T](bound_var: bound_variable, domain: list0(T), fun T -> Bool) -> Bool
+{
+  math_macro = \listexists,
 };

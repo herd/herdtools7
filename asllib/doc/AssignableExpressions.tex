@@ -1716,19 +1716,19 @@ All of the collection field assignable expressions in
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vle$ is an expression for assigning each of the fields in $\fields$
+  \item $\vle$ is an expression for assigning each of the fields in $\fieldnames$
     of the collection global storage element $\vbase$ with the corresponding
     slices given in $\vslices$ from the bitvector value $\vv$ (the rule
-    \TypingRuleRef{LESetFields} ensures that the length of $\fields$ and
+    \TypingRuleRef{LESetFields} ensures that the length of $\fieldnames$ and
     $\vslices$ is the same);
   \item view $\env$ as an environment where $\tenv$ is the \staticenvironmentterm{}
     and $\denv$ is the dynamic environment;
   \item $\vbase$ is bound in the global dynamic environment ($\denv.\dynamicenvsG.\storage$);
   \item $\record$ is the value of $\vbase$ in the global component of $\env$ ;
   \item applying $\assignbitvectorfields$ to $\vv$, $\record$,
-    $\fields$, and $\vslices$, yields\\ $\recordone$\ProseOrError;
+    $\fieldnames$, and $\vslices$, yields\\ $\recordone$\ProseOrError;
   \item \Proseeqdef{$\vgzero$}{the graph containing a Write Effect for each
-    $\fieldname$ in $\fields$};
+    $\fieldname$ in $\fieldnames$};
   \item $\newenv$ is $\env$ where $\vbase$ is bound to $\recordone$ in the $\storage$ map
     of the global dynamic environment $\denv.\dynamicenvsG$.
   \item $\newg$ is the ordered composition with the $\asldata$ edge of $\vg$
@@ -1738,11 +1738,11 @@ All of the collection field assignable expressions in
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vle = \LESetCollectionFields(\vbase, \fields, \vslices)\\
+  \vle = \LESetCollectionFields(\vbase, \fieldnames, \vslices)\\
   \env \eqname (\tenv, \denv)\\
   \vbase \in \dom(\denv.\dynamicenvsG)\\
   \record \eqdef \denv.\dynamicenvsG[\vbase]\\
-  \assignbitvectorfields(\vv, \record, \fields, \vslices) \evalarrow \recordone \OrDynError\\\\
+  \assignbitvectorfields(\vv, \record, \fieldnames, \vslices) \evalarrow \recordone \OrDynError\\\\
   \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG[\vx \mapsto \recordone], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
