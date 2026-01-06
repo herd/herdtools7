@@ -1,11 +1,11 @@
 Test A008 Required
 States 1
- Fault(P0:Page0,label:"P0:Page0",MMU:AccessFlag);
+ Fault(P0:Page0,label:"P0:Page0",I-MMU:AccessFlag);
 Ok
 Witnesses
 Positive: 1 Negative: 0
 Flag combining-vmsa-and-ifetch-is-not-supported
-Condition forall (fault(P0:Page0,MMU:AccessFlag))
+Condition forall (fault(P0:Page0,I-MMU:AccessFlag))
 Observation A008 Always 1 0
-Hash=7c04c1b58c33689204712ff757a621ff
+Hash=0c8f5aa3cdb65d2dccba1bdd75aa8203
 

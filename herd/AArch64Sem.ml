@@ -942,9 +942,9 @@ module Make
         >>!  B.fault [AArch64Base.elr_el1, lbl_v]
 
       (* Specific fault when accessing PTE from EL0. *)
-      let mk_pte_fault a ma dir an ii =
+      let mk_pte_fault a ma dir an ii domain =
         let open FaultType.AArch64 in
-        let ft = Some (MMU Permission)
+        let ft = Some (MMU (domain, Permission))
         and msg = Some "EL0" in
         emit_fault a ma dir an ft msg ii
 
@@ -966,7 +966,7 @@ module Make
         | X|N -> N
         | NoRet|S|NTA -> N
 
-      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault =
+      let check_ptw proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault domain =
 
         let is_el0  = List.exists (Proc.equal proc) TopConf.procs_user in
 
@@ -986,15 +986,15 @@ module Make
           (is_zero ipte.valid_v) >>=
             (fun c ->
               M.choiceT c
-                (M.unitT (Some (MMU Translation)))
+                (M.unitT (Some (MMU (domain, Translation))))
                 (if ha then
-                   M.unitT (Some (MMU Permission))
+                   M.unitT (Some (MMU (domain, Permission)))
                  else begin
                    (is_zero ipte.af_v) >>=
                      (fun c ->
                        M.choiceT c
-                         (M.unitT (Some (MMU AccessFlag)))
-                         (M.unitT (Some (MMU Permission))))
+                        (M.unitT (Some (MMU (domain, AccessFlag))))
+                         (M.unitT (Some (MMU (domain, Permission)))))
                    end) >>=
                 fun t -> mfault (get_oa a_virt m) a_virt t)
         and mok (pte_v,ipte) a_pte m a =
@@ -1105,7 +1105,7 @@ module Make
           M.choiceT cond mvirt
             (* Non-virtual accesses are disallowed from EL0.
                For instance, user code cannot access the page table. *)
-            (if is_el0 then mk_pte_fault a_virt ma dir an ii
+            (if is_el0 then mk_pte_fault a_virt ma dir an ii domain
              else mdirect)
 
 (* Read memory, return value read *)
@@ -1437,14 +1437,15 @@ module Make
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb mop ma an ii mphy branch =
+      let lift_kvm dir updatedb mop ma an ii mphy branch domain =
         let mfault ma a ft = emit_fault a ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) |> branch)
             mphy
-            mfault in
+            mfault
+            domain in
         M.delay_kont "6" ma (
           if pte2 then maccess
           else
@@ -1491,13 +1492,15 @@ module Make
             ma >>*= fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None >>!
             B.fault [AArch64Base.elr_el1, lbl_v] in
           M.delay_kont "tag_ptw" ma @@ fun a ma ->
+          (* tag checks only apply to data *)
+          let domain = DISide.Data in
           let mdirect =
             let m = mop Access.PTE ma in
             fire_spurious_af dir a m >>= M.ignore >>= B.next1T in
           check_ptw ii.AArch64.proc Dir.R false true a ma an ii
             mdirect
             cond_check_tag
-            mfault in
+            mfault domain in
         fun mpte a_virt -> M.delay_kont "need_check_tag" mpte @@
           fun (_,ipte) mpte -> M.choiceT (ipte.tagged_v)
             (checked_op mpte a_virt) (mphy mpte a_virt)
@@ -1520,7 +1523,8 @@ module Make
       let lift_pac_virt mop ma dir an ii =
         let mok ma = mop Access.VIR ma >>= M.ignore >>= B.next1T in
         let lbl_v = get_instr_label ii.A.proc ii in
-        let ft = Some (FaultType.AArch64.MMU FaultType.AArch64.Translation) in
+        let open FaultType.AArch64 in
+        let ft = Some (MMU (DISide.Data, Translation)) in
         let mfault ma a =
           do_insert_commit_to_fault ma
             (fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None)
@@ -1590,10 +1594,11 @@ Arguments:
 - ii:         Instruction metadata.
 - branch:     Determines control flow after the translated memory access:
               typically next instruction for data accesses, or no change
-              when translating for instruction fetches. 
+              when translating for instruction fetches.
+- domain:     Whether the translation is for data or instruction access.
 *)
       let do_lift_memop rA (* Base address register *)
-            dir updatedb checked mop perms ma mv an ii branch =
+            dir updatedb checked mop perms ma mv an ii branch domain =
         if morello then
           lift_morello mop perms ma mv dir an ii branch
         else
@@ -1613,7 +1618,7 @@ Arguments:
               if checked then lift_memtag_phy dir mop ma an ii mphy
               else mphy
             in
-            let m = lift_kvm dir updatedb mop ma an ii mphy branch in
+            let m = lift_kvm dir updatedb mop ma an ii mphy branch domain in
             (* M.short will add an iico_data only if memtag is enabled *)
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if pac then
@@ -1625,8 +1630,9 @@ Arguments:
 
       let lift_memop rA (* Base address register *)
             dir updatedb checked mop perms ma mv an ii =
+        let domain = DISide.Data in
         do_lift_memop rA dir updatedb checked mop perms ma mv an ii
-          (fun a -> a >>= M.ignore >>= B.next1T)
+          (fun a -> a >>= M.ignore >>= B.next1T) domain
 
       (* Address translation instruction *)
       let do_at op rd ii =
@@ -1650,12 +1656,14 @@ Arguments:
             let ma = get_oa a_virt ma in
             mop Access.PHY ma >>= M.ignore >>= B.next1T in
         let ma = read_reg_ord rd ii in
+        let domain = DISide.Data in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir false false a ma Annot.N ii
             ((let m = mop Access.PTE ma in
               fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
             mphy
-            mfault in
+            mfault
+            domain in
         M.delay_kont "at::check_ptw" ma maccess
 
       let do_ldr rA sz an mop ma ii =
@@ -4684,7 +4692,8 @@ Arguments:
             dir updatedb
             mop
             perms ma mv an ii =
-        do_lift_memop rA dir updatedb false mop perms ma mv an ii Fun.id
+        let domain = DISide.Instr in
+        do_lift_memop rA dir updatedb false mop perms ma mv an ii Fun.id domain
 
 (* Test all possible instructions, when appropriate *)
       let mk_mop_fetch exposed_page exposed_label test ii =

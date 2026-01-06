@@ -11,6 +11,14 @@ enum fault_type_t {
   FaultMMUTranslation,
   FaultMMUAccessFlag,
   FaultMMUPermission,
+  FaultDMMUTranslation,
+  FaultDMMUAccessFlag,
+  FaultDMMUPermission,
+  FaultDMMUExclusive,
+  FaultIMMUTranslation,
+  FaultIMMUAccessFlag,
+  FaultIMMUPermission,
+  FaultIMMUExclusive,
   FaultTagCheck,
   FaultUnsupported,
   FaultUnknown,
@@ -28,6 +36,14 @@ static const char *fault_type_names[] = {
   "MMU:Translation",
   "MMU:AccessFlag",
   "MMU:Permission",
+  "D-MMU:Translation",
+  "D-MMU:AccessFlag",
+  "D-MMU:Permission",
+  "D-MMU:Exclusive",
+  "I-MMU:Translation",
+  "I-MMU:AccessFlag",
+  "I-MMU:Permission",
+  "I-MMU:Exclusive",
   "TagCheck",
   "Unsupported",
 };
@@ -36,24 +52,56 @@ static const char *fault_type_names[] = {
 
 static enum fault_type_t get_fault_type(unsigned long esr)
 {
-  unsigned int ec;
-  unsigned int dfsc;
-  int fault_type;
+  unsigned int ec = esr >> ESR_EL1_EC_SHIFT;
+  unsigned int fsc;
+  unsigned int fault_class;
+  int domain = 0; /* 0 = unknown, 1 = data, 2 = instruction */
 
-  ec = esr >> ESR_EL1_EC_SHIFT;
-  if (ec == ESR_EL1_EC_UNKNOWN) {
+  switch (ec) {
+  case ESR_EL1_EC_UNKNOWN:
     return FaultUndefinedInstruction;
-  } else if (ec == ESR_EL1_EC_SVC64) {
+  case ESR_EL1_EC_SVC64:
     return FaultSupervisorCall;
-  } else if (ec == ESR_EL1_EC_PAC) {
+  case ESR_EL1_EC_PAC:
     return FaultPacCheckIA + (esr & 0x3U);
-  } else {
-    dfsc = esr & 0x3fU;
-    fault_type = (dfsc >> 2) + FaultMMUAddressSize;
-    if (fault_type > FaultTagCheck)
-      return FaultUnsupported;
-    else
-      return fault_type;
+  case ESR_EL1_EC_DABT_EL0:
+  case ESR_EL1_EC_DABT_EL1:
+    domain = 1;
+    break;
+  case ESR_EL1_EC_IABT_EL0:
+  case ESR_EL1_EC_IABT_EL1:
+    domain = 2;
+    break;
+  default:
+    break;
+  }
+
+  fsc = esr & 0x3fU;
+  fault_class = fsc >> 2;
+
+  switch (fault_class) {
+  case 0:
+    return FaultMMUAddressSize;
+  case 1:
+    if (domain == 1)
+      return FaultDMMUTranslation;
+    if (domain == 2)
+      return FaultIMMUTranslation;
+    return FaultMMUTranslation;
+  case 2:
+    if (domain == 1)
+      return FaultDMMUAccessFlag;
+    if (domain == 2)
+      return FaultIMMUAccessFlag;
+    return FaultMMUAccessFlag;
+  case 3:
+    if (domain == 1)
+      return FaultDMMUPermission;
+    if (domain == 2)
+      return FaultIMMUPermission;
+    return FaultMMUPermission;
+  default:
+    return FaultUnsupported;
   }
 }
 
