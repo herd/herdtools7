@@ -62,6 +62,8 @@ let inv-domain = if "vmsa" then inv-domain else 0
 let AF = if "vmsa" then AF else emptyset
 let DB = if "vmsa" then DB else emptyset
 let MMU = if "vmsa" then MMU else emptyset
+let D-MMU = if "vmsa" then D-MMU else emptyset
+let I-MMU = if "vmsa" && "ifetch" then MMU \ D-MMU else emptyset
 let Translation = if "vmsa" then Translation else emptyset
 let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
