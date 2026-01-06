@@ -30,7 +30,7 @@ jobs:
         with:
           ocaml-compiler: 5.1.0
       - run: |
-          opam install dune menhir zarith js_of_ocaml.5.4.0 js_of_ocaml-ppx zarith_stubs_js
+          opam install dune menhir zarith js_of_ocaml.5.4.0 js_of_ocaml-ppx zarith_stubs_js logs
           opam exec -- make Version.ml
           opam exec -- dune build tools/cat2html.exe
           opam exec -- make -C herd-www

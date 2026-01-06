@@ -37,7 +37,7 @@ jobs:
         run: sudo apt update && sudo apt install qemu-system -qq
 
       - name: Install opam dependencies
-        run: opam install dune menhir zarith
+        run: opam install . --deps-only
 
       - name: Build local dependencies
         run: |
