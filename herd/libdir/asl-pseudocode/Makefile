@@ -146,6 +146,7 @@ ALLOW_CONDITIONAL_FIELDS_FOR := $\
 		MPAM1_EL1,$\
 		MPAM2_EL2,$\
 		MPAM3_EL3,$\
+		MPAMHCR_EL2,$\
 		MPAMSM_EL1,$\
 		PAR_EL1,$\
 		PMCNTENSET_EL0,$\
@@ -182,6 +183,7 @@ ALLOW_MOVING_FIELDS_FOR := $\
 ALLOW_INCLUDED_FIELDS_FOR := $\
 		PAR,$\
 		RGSR_EL1,$\
+		TRBDEVID1,$\
 		MPAMIDR_EL1
 
 # The following registers have names that clash with some declarations in
