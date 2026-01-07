@@ -1253,74 +1253,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfield}
 
-
 \subsection{Typing}
-\TypingRuleDef{LESetBadField}
-\ExampleDef{Assigning a Field in an Inappropriate Type}
-In \listingref{typing-lesetbadfield}, the statement \verb|x.RED = 42;| is ill-typed,
-since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtypeterm.
-\ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
-
-See \RequirementRef{TupleImmutability} for an example of assigning to a tuple type.
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is,\\ $\LESetField(\vleone, \vfield)$;
-  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
-  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{tuple}
-    \begin{itemize}
-      \item $\vt$ is a \tupletypeterm;
-      \item the result is an error indicating assigning to immutable types is illegal ($\AssignmentToImmutable$).
-    \end{itemize}
-
-    \item \AllApplyCase{structured}
-    \begin{itemize}
-      \item $\vt$ is neither a \tupletypeterm{}, nor a \structuredtypeterm, nor a \bitvectortypeterm;
-      \item the result is an error indicating that the type of $\vle$ conflicts with the requirements
-            of a field access expression ($\UnexpectedType$).
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[tuple]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \commonprefixline\\\\
-  \astlabel(\tleoneanon) = \TTuple
-}{
-  \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\AssignmentToImmutable}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \commonprefixline\\\\
-  {
-  \astlabel(\tleoneanon) \not\in
-  \left\{\begin{array}{l}
-    \TTuple, \\
-    \TException,\\
-    \TRecord,\\
-    \TCollection, \\
-    \TBits
-  \end{array}\right\}
-  }
-}{
-  \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-\CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{LESetStructuredField}
 \ExampleDef{Typing a Structured Type Field Assignment}
@@ -1405,6 +1338,132 @@ All of the collection field assignable expressions in
 \end{mathpar}
 
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+
+\TypingRuleDef{LESetBadField}
+\ExampleDef{Assigning a Field in an Inappropriate Type}
+In \listingref{typing-lesetbadfield}, the statement \verb|x.RED = 42;| is ill-typed,
+since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtypeterm.
+\ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
+
+See \RequirementRef{TupleImmutability} for an example of assigning to a tuple type.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is,\\ $\LESetField(\vleone, \vfield)$;
+  \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
+  \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a type $\tleoneanon$\ProseOrTypeError;
+  \item \OneApplies
+  \begin{itemize}
+    \item \AllApplyCase{tuple}
+    \begin{itemize}
+      \item $\vt$ is a \tupletypeterm;
+      \item the result is an error indicating assigning to immutable types is illegal ($\AssignmentToImmutable$).
+    \end{itemize}
+
+    \item \AllApplyCase{structured}
+    \begin{itemize}
+      \item $\vt$ is neither a \tupletypeterm{}, nor a \structuredtypeterm, nor a \bitvectortypeterm;
+      \item the result is an error indicating that the type of $\vle$ conflicts with the requirements
+            of a field access expression ($\UnexpectedType$).
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule[tuple]{
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  \astlabel(\tleoneanon) = \TTuple
+}{
+  \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\AssignmentToImmutable}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[structured]{
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
+  \commonprefixline\\\\
+  {
+  \astlabel(\tleoneanon) \not\in
+  \left\{\begin{array}{l}
+    \TTuple, \\
+    \TException,\\
+    \TRecord,\\
+    \TCollection, \\
+    \TBits
+  \end{array}\right\}
+  }
+}{
+  \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\UnexpectedType}
+}
+\end{mathpar}
+\CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
+
+\SemanticsRuleDef{LESetField}
+
+\ExampleDef{Field Assignment}
+In \listingref{semantics-lesetfield}, the assignment
+\verb|my_record.a = 42;| binds \\ \verb|my_record| to \verb|{a: 42, b: 100}|
+in the environment where \verb|my_record| is bound to \\
+\verb|{a: 3, b: 100}|.
+
+\ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\vle$ denotes a field update expression, $\LESetField(\rerecord, \fieldname)$;
+  \item evaluating the \rhsexpression{} corresponding to $\rerecord$
+  in $\env$ is $\ResultExpr(\rmrecord, \envone)$\ProseOrAbnormal;
+  \item $\rmrecord$ is a pair consisting of the native record $\rvrecord$ and
+  the execution graph $\vgone$;
+  \item setting the field $\fieldname$ in the native record $\rvrecord$ to $\vv$
+  is the updated native record $\vvone$;
+  \item $\vmone$ is the pair consisting of the native vector $\vvone$ and the
+  execution graph that is, the parallel composition of $\vg$ and $\vgone$;
+  \item the steps so far computed the updated record, but have not assigned it to
+  the variable holding the record given by $\record$, which is achieved next.
+  Evaluating the left-hand-side expression $\rerecord$ in an environment $\envone$ with $\vmone$
+  is the output configuration $C$.
+\end{itemize}
+
+\FormallyParagraph
+\begin{mathpar}
+\inferrule{
+    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
+    \rmrecord \eqname (\rvrecord, \vgone)\\
+    \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
+    \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
+    \evallexpr(\env1, \rerecord, \vmone) \evalarrow C
+}{
+    \evallexpr(\env, \LESetField(\rerecord, \fieldname), (\vv, \vg)) \evalarrow C
+}
+\end{mathpar}
+\CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+We note that the typechecker guarantees that $\fieldname$ exists in the record given by $\record$
+via \TypingRuleRef{LESetStructuredField}.
+
+\identr{WHRS}
+If the declared type of the \rhsexpression{} of a setter has the structure of a
+bitvector or a type with fields, then if a bitslice or field selection is
+applied to a setter invocation, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behaviour:
+\begin{itemize}
+    \item invoking the getter of the same name as the setter, with the same actual
+    arguments as the setter invocation;
+    \item performing the assignment to the bitslice or field of the result of the;
+    getter invocation; and
+    \item invoking the setter to assign the resulting value.
+\end{itemize}
 
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
 
@@ -1892,62 +1951,3 @@ are well-typed.
 \subsection{Semantics}
 The semantics for assigning to individual bitvector bitfields is covered by \SemanticsRuleRef{LESlice}
 as the type system transforms the \untypedast\ for assigning to an individual bitfield into an $\LESlice$ \typedast.
-
-\SemanticsRuleDef{LESetField}
-
-\ExampleDef{Field Assignment}
-In \listingref{semantics-lesetfield}, the assignment
-\verb|my_record.a = 42;| binds \\ \verb|my_record| to \verb|{a: 42, b: 100}|
-in the environment where \verb|my_record| is bound to \\
-\verb|{a: 3, b: 100}|.
-
-\ASLListing{Assignment to a field}{semantics-lesetfield}{\semanticstests/SemanticsRule.LESetField.asl}
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vle$ denotes a field update expression, $\LESetField(\rerecord, \fieldname)$;
-  \item evaluating the \rhsexpression{} corresponding to $\rerecord$
-  in $\env$ is $\ResultExpr(\rmrecord, \envone)$\ProseOrAbnormal;
-  \item $\rmrecord$ is a pair consisting of the native record $\rvrecord$ and
-  the execution graph $\vgone$;
-  \item setting the field $\fieldname$ in the native record $\rvrecord$ to $\vv$
-  is the updated native record $\vvone$;
-  \item $\vmone$ is the pair consisting of the native vector $\vvone$ and the
-  execution graph that is, the parallel composition of $\vg$ and $\vgone$;
-  \item the steps so far computed the updated record, but have not assigned it to
-  the variable holding the record given by $\record$, which is achieved next.
-  Evaluating the left-hand-side expression $\rerecord$ in an environment $\envone$ with $\vmone$
-  is the output configuration $C$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
-    \rmrecord \eqname (\rvrecord, \vgone)\\
-    \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
-    \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
-    \evallexpr(\env1, \rerecord, \vmone) \evalarrow C
-}{
-    \evallexpr(\env, \LESetField(\rerecord, \fieldname), (\vv, \vg)) \evalarrow C
-}
-\end{mathpar}
-\CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
-
-\subsubsection{Comments}
-We note that the typechecker guarantees that $\fieldname$ exists in the record given by $\record$
-via \TypingRuleRef{LESetStructuredField}.
-
-\identr{WHRS}
-If the declared type of the \rhsexpression\ of a setter has the structure of a
-bitvector or a type with fields, then if a bitslice or field selection is
-applied to a setter invocation, then the assignment to that bitslice is
-implemented using the following Read-Modify-Write (RMW) behaviour:
-\begin{itemize}
-    \item invoking the getter of the same name as the setter, with the same actual
-    arguments as the setter invocation
-    \item performing the assignment to the bitslice or field of the result of the
-    getter invocation
-    \item invoking the setter to assign the resulting value
-\end{itemize}

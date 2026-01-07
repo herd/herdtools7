@@ -9,7 +9,7 @@ reference.
   \item \secref{Inference Rules} defines the concept of \emph{inference rules};
   \item \secref{Transition Judgments} explains how \emph{transition judgments} can be used to represent
         relations and functions;
-  \item \secref{Configurations} introduces \emph{configurations} as a way of representing compound data;
+  \item \secref{Configurations} introduces \emph{\configurationsterm{}} as a way of representing compound data;
   \item \secref{FlavoursOfEqualityInRules} explains the kinds of equality notations that are used to
         convey intention in inference rules;
   \item \secref{ASTNotations} introduces AST-related notations that are used in inference rules;
@@ -624,26 +624,26 @@ for a given transition.
 
 \hypertarget{def-configdomain}{}
 Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
-We refer to such values as \emph{configurations}. To make it easier to distinguish between different configurations,
+We refer to such values as \emph{\configurationsterm}. To make it easier to distinguish between different \configurationsterm{},
 we will sometimes attach labels to tuples using the OCaml-style notation discussed earlier.
-We refer to those labels as \emph{configuration domains}.
-The domain of a configuration $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
+We refer to those labels as \emph{\configurationterm{} domains}.
+The domain of a \configurationterm{} $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
 
-We refer to configurations at the origin of a transition as \emph{input configurations} and to the
-configurations at the destination of a transition as \emph{output configurations}.
+We refer to \configurationsterm{} at the origin of a transition as \emph{input \configurationsterm{}} and to the
+\configurationsterm{} at the destination of a transition as \emph{output \configurationsterm{}}.
 
 For example, the conclusion of the rule \TypingRuleRef{ELit} has \\
-$\annotateexpr(\tenv, \ELiteral(\vv))$ as its input configuration
+$\annotateexpr(\tenv, \ELiteral(\vv))$ as its input \configurationterm{}
 and \\
-$(\vt, \ELiteral(\vv), \emptyset)$ as its output configuration.
+$(\vt, \ELiteral(\vv), \emptyset)$ as its output \configurationterm{}.
 Further, \\
 $\configdomain{\annotateexpr(\tenv, \ELiteral(\vv))} = \annotateexpr$,
-while the output configuration does not have a configuration domain, since it is an unlabelled tuple.
+while the output \configurationterm{} does not have a \configurationterm{} domain, since it is an unlabelled tuple.
 
-Our rules always make use of labelled input configurations. This makes it easier to ensure
+Our rules always make use of labelled input \configurationsterm{}. This makes it easier to ensure
 the mutual exclusion rule principle.
 
-Our rules always define relations whose sets of input configurations and output configurations are disjoint.
+Our rules always define relations whose sets of input \configurationsterm{} and output \configurationsterm{} are disjoint.
 
 \hypertarget{def-freshvariables}{}
 \begin{definition}[Fresh Element]
@@ -774,14 +774,14 @@ Consider the following examples, which is a simplified version of \SemanticsRule
 \end{mathpar}
 
 To parse a rule, start by examining the conclusion and the variables appearing in the rule.
-In this case, the rule describes a transition from an input configuration \\
+In this case, the rule describes a transition from an input \configurationterm{} \\
 $\evalexpr( \env, \EBinop(\op, \veone, \vetwo) )$,
-whose configuration domain is $\evalexpr$, to an output configuration $\ResultExpr((\vv, \vg), \newenv)$
-whose configuration domain is\\$\ResultExpr$.
+whose \configurationterm{} domain is $\evalexpr$, to an output \configurationterm{} $\ResultExpr((\vv, \vg), \newenv)$
+whose \configurationterm{} domain is\\$\ResultExpr$.
 %
-A rule uses the free variables appearing in the input configuration of the conclusion
+A rule uses the free variables appearing in the input \configurationterm{} of the conclusion
 ($\env$, $\op$, $\veone$, and $\vetwo$ in our example),
-with the goal of assigning values to the free variables in the output configuration
+with the goal of assigning values to the free variables in the output \configurationterm{}
 of the conclusion ($\vv$, $\vg$, and $\newenv$, in our example).
 
 Now, scan the premises in order to see where $\env$, $\op$, $\veone$, and $\vetwo$ are used and how
@@ -805,17 +805,17 @@ which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 \section{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
 \emph{\Shortcircuitrulemacros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
 Specifically, they allow us to capture situations where
-transitions have two alternative output configurations.
-If the transition results in the first of the alternative output configurations, the following premises are considered.
-However, if the result is the second, short-circuit output configuration, then the following premises are ignored
-and the conclusion transitions into the short-circuit output configuration.
-These short-circuit output configurations are typically, but not always, due to (type or dynamic) errors.
+transitions have two alternative output \configurationsterm{}.
+If the transition results in the first of the alternative output \configurationsterm{}, the following premises are considered.
+However, if the result is the second, short-circuit output \configurationterm{}, then the following premises are ignored
+and the conclusion transitions into the short-circuit output \configurationterm{}.
+These short-circuit output \configurationsterm{} are typically, but not always, due to (type or dynamic) errors.
 
 \hypertarget{def-terminateas}{}
 In the following, $\XP$ and $\XQ$ stand for, possibly empty, sequences of premises.
 %
 A rule macro includes the special premise form $C \rulearrow C'\; \terminateas\; E$,
-which introduces the output configuration $C'$ and the short-circuiting alternative $E$:
+which introduces the output \configurationterm{} $C'$ and the short-circuiting alternative $E$:
 \begin{mathpar}
   \inferrule{
     \XP\\\\
@@ -848,7 +848,7 @@ Such a rule macro expands to the following pair of rules:
 Intuitively, if $C$ transitions to $C'$ then $\terminateas\; E$ can be ignored
 and the rule is interpreted as usual (Option 1).
 However, if $C$ transitions into $E$ (Option 2) then the premises $\XQ$ are ignored,
-thereby short-circuiting the rule, and the input configuration
+thereby short-circuiting the rule, and the input \configurationterm{}
 in the conclusion transitions into $E$.
 
 We allow more than one premise to include short-circuiting alternatives and also
@@ -914,20 +914,20 @@ This time, not simplified:
 \end{mathpar}
 
 In this rule, $\ThrowingConfig$ and $\DynErrorConfig$ are just shorthand notations for
-actual configurations, which are properly defined in \chapref{Semantics}.
-Intuitively, the alternative configurations $\ThrowingConfig$, $\DynErrorConfig$,
+actual \configurationsterm{}, which are properly defined in \chapref{Semantics}.
+Intuitively, the alternative \configurationsterm{} $\ThrowingConfig$, $\DynErrorConfig$,
 and $\DivergingConfig$
 represent situations where a transition may result in a raised exception,
 a \dynamicerrorterm, and a diverging evaluation, respectively.
 
-One may first read the rule ignoring these alternative configurations, to see how the
-goal of transitioning into the output configuration appearing in the conclusion ---
+One may first read the rule ignoring these alternative \configurationsterm{}, to see how the
+goal of transitioning into the output \configurationterm{} appearing in the conclusion ---
 $\ResultExpr((\vv, \vg), \newenv)$ --- is achieved.
 Then, re-reading the rule would indicate where exceptions, \dynamicerrorsterm,
-and diverging evaluation may result in other output configurations.
+and diverging evaluation may result in other output \configurationsterm{}.
 %
-For example, if the first transition judgment results in a throwing configuration $\ThrowingConfig$
-then the output configuration of the conclusion is also $\ThrowingConfig$.
+For example, if the first transition judgment results in a throwing \configurationterm{} $\ThrowingConfig$
+then the output \configurationterm{} of the conclusion is also $\ThrowingConfig$.
 This corresponds to the following rule in the expanded macro:
 
 \begin{mathpar}
@@ -939,7 +939,7 @@ This corresponds to the following rule in the expanded macro:
 }
 \end{mathpar}
 
-Similarly, if the first transition judgment results in a \DynamicErrorConfigurationTerm, the output configuration of
+Similarly, if the first transition judgment results in a \DynamicErrorConfigurationTerm, the output \configurationterm{} of
 the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the following rule in the expansion:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
@@ -950,8 +950,8 @@ the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the follo
 }
 \end{mathpar}
 
-Finally, if the first transition judgment results in a diverging configuration, the output configuration of
-the conclusion is also a diverging configuration, which corresponds to the following rule in the expansion:
+Finally, if the first transition judgment results in a diverging \configurationterm{}, the output \configurationterm{} of
+the conclusion is also a diverging \configurationterm{}, which corresponds to the following rule in the expansion:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \DivergingConfig
@@ -1008,7 +1008,7 @@ Expanding the last transition judgment, gives us the case:
 }
 \end{mathpar}
 
-All these cases are succinctly encoded in a single rule with the alternative output configurations.
+All these cases are succinctly encoded in a single rule with the alternative output \configurationsterm{}.
 
 \section{Conventionally-used Judgments and Notations\label{sec:ConventionallyUsedJudgments}}
 We now present functions used conventionally in this reference.
@@ -1022,7 +1022,7 @@ The function
 \cup\ \overname{\TBuildError}{\BuildErrorConfig}
 \]
 takes a Boolean value $\vb$ and an error code $\vcode$
-and returns $\True$ when $\vb$ is $\True$ and a build error configuration for $\vcode$, otherwise.
+and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{} for $\vcode$, otherwise.
 \begin{mathpar}
 \inferrule[be\_check\_true]{}{ \becheck(\True, \vcode) \astarrow \True }
 \and
