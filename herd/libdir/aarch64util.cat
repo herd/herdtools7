@@ -59,6 +59,8 @@ let PTE = if "vmsa" then PTE else emptyset
 let PTEV = if "vmsa" then PTEV else emptyset
 let PTEINV = if "vmsa" then PTEINV else emptyset
 let inv-domain = if "vmsa" then inv-domain else 0
+let D-PTE = if "vmsa" then D-PTE else emptyset
+let I-PTE = if "vmsa" && "ifetch" then PTE \ D-PTE else emptyset
 let AF = if "vmsa" then AF else emptyset
 let DB = if "vmsa" then DB else emptyset
 let MMU = if "vmsa" then MMU else emptyset
@@ -96,6 +98,8 @@ let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
+let D-TTD = if "vmsa" then D-PTE else emptyset
+let I-TTD = if "vmsa" then I-PTE else emptyset
 let Tag = T
 
 (* HW TTD Updates permitted only for the AF or DB *)

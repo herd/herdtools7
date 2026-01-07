@@ -166,7 +166,7 @@ module Make (Conf : Config) = struct
     and aexp = AArch64Explicit.Exp
     and areg = Access.REG
     and avir = Access.VIR
-    and apte = Access.PTE
+    and apte = Access.PTE DISide.Data
     let areg_std = (aneutral,aexp,Access.REG)
 
     (**************************************************************************)
@@ -332,7 +332,7 @@ module Make (Conf : Config) = struct
       | "REG" -> REG
       | "VIR" -> VIR
       | "PHY" -> PHY
-      | "PTE" -> PTE
+      | "PTE" -> PTE DISide.Data
       | "TLB" -> TLB
       | "TAG" -> TAG
       | "PHY_PTE" -> PHY_PTE
