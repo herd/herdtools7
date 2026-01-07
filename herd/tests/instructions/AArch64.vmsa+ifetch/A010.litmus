@@ -1,4 +1,4 @@
-AArch64 A008
+AArch64 A010
 Variant=vmsa,ifetch
 {
 TTD(P0:Page0)=(oa:PA(P0:Page0),x:0);
@@ -6,5 +6,4 @@ TTD(P0:Page0)=(oa:PA(P0:Page0),x:0);
 P0          ;
 Page0:      ;
 ADD W0,W0,#1;
-forall Fault(P0:Page0,MMU:Permission)
-(* TODO: change this to "I-MMU:Permission" *)
+forall Fault(P0:Page0,I-MMU:Permission)

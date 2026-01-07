@@ -1,4 +1,4 @@
-AArch64 A007
+AArch64 A011
 Variant=vmsa,ifetch
 {
 TTD(P0:Page0)=(oa:PA(P0:Page0),x:1);
