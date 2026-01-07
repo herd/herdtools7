@@ -729,15 +729,15 @@ module Make
       let extract_oa v = arch_op1 AArch64Op.OA v
       let extract_tagged v = arch_op1 AArch64Op.Tagged v
 
-      let mextract_whole_pte_val an nexp a_pte iiid =
+      let mextract_whole_pte_val an nexp a_pte iiid domain =
         (M.do_read_loc Port.No
            (fun loc v ->
-             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE))
+             Act.Access (Dir.R,loc,v,an,nexp,quad,Access.PTE domain))
            (A.Location_global a_pte) iiid)
 
-      and write_whole_pte_val an explicit a_pte v iiid =
+      and write_whole_pte_val an explicit a_pte v iiid domain =
         M.do_write_loc
-          (mk_write quad an explicit Access.PTE v)
+          (mk_write quad an explicit (Access.PTE domain) v)
           (A.Location_global a_pte) iiid
 
 
@@ -748,13 +748,13 @@ module Make
         | DB -> AArch64Op.SetDB
         | IFetch|Other|AFDB -> assert false
 
-      let do_test_and_set_bit combine cond set a_pte iiid =
+      let do_test_and_set_bit combine cond set a_pte iiid domain =
         let nexp = AArch64Explicit.NExp set in
-        mextract_whole_pte_val Annot.X nexp a_pte iiid >>= fun pte_v ->
+        mextract_whole_pte_val Annot.X nexp a_pte iiid domain >>= fun pte_v ->
         cond pte_v >>*= fun c ->
         combine c
             (arch_op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val Annot.X nexp a_pte v iiid)
+             write_whole_pte_val Annot.X nexp a_pte v iiid domain)
             (M.unitT ())
 
       let test_and_set_bit_succeeds cond =
@@ -764,17 +764,18 @@ module Make
       let bit_is_not_zero op v = arch_op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
 
-      let do_set_bit an a_pte pte_v ii =
+      let do_set_bit an a_pte pte_v ii domain =
         let nexp = AArch64Explicit.NExp an in
         arch_op1 (op_of_set an) pte_v >>= fun v ->
-        write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii)
+        write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii) domain
 
-      let set_af = do_set_bit AArch64Explicit.AF
+      let set_af a_pte pte_v ii domain =
+        do_set_bit AArch64Explicit.AF a_pte pte_v ii domain
 
-      let set_afdb a_pte pte_v ii =
+      let set_afdb a_pte pte_v ii domain =
         let nexp = AArch64Explicit.NExp AArch64Explicit.AFDB in
         arch_op1 (AArch64Op.SetAF) pte_v >>= arch_op1 (AArch64Op.SetDB) >>= fun v ->
-        write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii)
+        write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii) domain
 
       let cond_af v =
         m_op Op.And
@@ -983,6 +984,7 @@ module Make
         let ha = ha || hd in (* As far as we know hd => ha *)
         let mfault (_,ipte) m =
           let open FaultType.AArch64 in
+          let open DISide in
           (is_zero ipte.valid_v) >>=
             (fun c ->
               M.choiceT c
@@ -1020,7 +1022,7 @@ module Make
                 (m >>**==
                    (fun _ ->
                      commit_pred_txt (Some txt) ii >>*=
-                       fun _ -> set a_pte pte_v ii)
+                       fun _ -> set a_pte pte_v ii domain)
                  >>== fun () -> M.unitT (pte_v,ipte))
                no in
             let add_setbits_db ipte m =
@@ -1055,7 +1057,7 @@ module Make
                   (* Ordinary non-explicit access *)
                   an_pte an,AArch64.nexp_annot in
               mextract_whole_pte_val
-                an nexp a_pte (E.IdSome ii) >>== fun pte_v ->
+                an nexp a_pte (E.IdSome ii) domain >>== fun pte_v ->
               (mextract_pte_vals pte_v) >>= fun ipte ->
               M.unitT ((pte_v,ipte),a_pte)
             end
@@ -1426,14 +1428,14 @@ module Make
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
-      let fire_spurious_af dir a m =
+      let fire_spurious_af dir a m domain =
         if
           some_ha &&
             (let v = C.variant Variant.PhantomOnLoad in
              match dir with Dir.W -> not v | Dir.R -> v)
         then
           (m >>|
-             M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
+             M.altT (test_and_set_af_succeeds a E.IdSpurious domain) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r
         else m
 
@@ -1441,8 +1443,8 @@ module Make
         let mfault ma a ft = emit_fault a ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
-            ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) |> branch)
+            ((let m = mop (Access.PTE domain) ma in
+              fire_spurious_af dir a m domain) |> branch)
             mphy
             mfault
             domain in
@@ -1451,7 +1453,7 @@ module Make
           else
              fun a ma ->
              match Act.access_of_location_std (A.Location_global a) with
-             | Access.VIR|Access.PTE when not (A.V.is_instrloc a) ->
+             | Access.VIR|Access.PTE _ when not (A.V.is_instrloc a) ->
                  maccess a ma
              | Access.VIR when (A.V.is_instrloc a) ->
                  maccess a ma
@@ -1495,8 +1497,8 @@ module Make
           (* tag checks only apply to data *)
           let domain = DISide.Data in
           let mdirect =
-            let m = mop Access.PTE ma in
-            fire_spurious_af dir a m >>= M.ignore >>= B.next1T in
+            let m = mop (Access.PTE domain) ma in
+            fire_spurious_af dir a m domain >>= M.ignore >>= B.next1T in
           check_ptw ii.AArch64.proc Dir.R false true a ma an ii
             mdirect
             cond_check_tag
@@ -1593,7 +1595,7 @@ module Make
                 M.op1 Op.IsVirtual a_virt >>= fun c ->
                 M.choiceT c
                   (mop Access.PHY ma)
-                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma)) |> branch
+                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma) domain) |> branch
               else
                 mop Access.PHY ma
                 |> branch in
@@ -1655,8 +1657,8 @@ Arguments:
         let domain = DISide.Data in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir false false a ma Annot.N ii
-            ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
+            ((let m = mop (Access.PTE domain) ma in
+              fire_spurious_af dir a m domain) >>= M.ignore >>= B.next1T)
             mphy
             mfault
             domain in
@@ -4834,7 +4836,8 @@ Arguments:
             else do_build_semantics test ii.A.inst ii
           end
 
-      let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious
+      let spurious_setaf v =
+        test_and_set_af_succeeds v E.IdSpurious DISide.Data
 
     end
 

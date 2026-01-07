@@ -1407,7 +1407,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             match act with
             | Act.Access
                 (dir,A.Location_global loc,_,_,
-                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE))
+                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE DISide.Data))
               when dir_ok dir
               ->
                 Some loc
