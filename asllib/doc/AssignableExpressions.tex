@@ -8,6 +8,10 @@ These refer to storage that needs to be updated.
 \listingref{AssignableExpressions} shows examples of some assignable expressions.
 \ASLListing{Examples of assignable expressions}{AssignableExpressions}{\definitiontests/AssignableExpressions.asl}
 
+Recall that when the \assignableexpression{} is a call to a setter
+followed by a slice or field access, it is desugared via \ASTRuleRef{DesugarSetter}
+to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
+
 \ChapterOutline
 \begin{itemize}
   \item \FormalRelationsRef{Assignable Expressions} introduces the formal relations for
@@ -983,21 +987,10 @@ of \texttt{my\_array} to the value \texttt{53}.
 \CodeSubsection{\EvalLESetArrayBegin}{\EvalLESetArrayEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\identr{WHRS}
-If the declared type of the \rhsexpression\ of a setter has the structure of a
-bitvector or a type with fields, then if a bitslice or field selection is
-applied to a setter invocation, then the assignment to that bitslice is
-implemented using the following Read-Modify-Write (RMW) behaviour:
-\begin{itemize}
-\item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation
-\item performing the assignment to the bitslice or field of the result of the
-getter invocation
-\item invoking the setter to assign the resulting value
-\end{itemize}
-
 We note that the index is guaranteed by the typechecker to be within the array bounds
 via \TypingRuleRef{LESetArray}.
+
+See \SyntacticSugarRef{SetterFieldAssignment}.
 
 \SemanticsRuleDef{LESetEnumArray}
 \ExampleDef{Enumeration-indexed Array Update Assignments}
@@ -1167,19 +1160,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \end{mathpar}
 \CodeSubsection{\EvalLESliceBegin}{\EvalLESliceEnd}{../Interpreter.ml}
 \subsubsection{Comments}
-\identr{WHRS}
-
-If the declared type of the \rhsexpression\ of a setter has the structure of a
-bitvector or a type with fields, then if a bitslice or field selection is
-applied to a setter invocation, then the assignment to that bitslice is
-implemented using the following Read-Modify-Write (RMW) behaviour:
-\begin{itemize}
-\item invoking the getter of the same name as the setter, with the same actual
-arguments as the setter invocation
-\item performing the assignment to the bitslice or field of the result of the
-getter invocation
-\item invoking the setter to assign the resulting value
-\end{itemize}
+See \SyntacticSugarRef{SetterFieldAssignment}.
 
 \SemanticsRuleDef{CheckNonOverlappingSlices}
 \RenderRelation{check_non_overlapping_slices}
@@ -1452,18 +1433,7 @@ in the environment where \verb|my_record| is bound to \\
 We note that the typechecker guarantees that $\fieldname$ exists in the record given by $\record$
 via \TypingRuleRef{LESetStructuredField}.
 
-\identr{WHRS}
-If the declared type of the \rhsexpression{} of a setter has the structure of a
-bitvector or a type with fields, then if a bitslice or field selection is
-applied to a setter invocation, then the assignment to that bitslice is
-implemented using the following Read-Modify-Write (RMW) behaviour:
-\begin{itemize}
-    \item invoking the getter of the same name as the setter, with the same actual
-    arguments as the setter invocation;
-    \item performing the assignment to the bitslice or field of the result of the;
-    getter invocation; and
-    \item invoking the setter to assign the resulting value.
-\end{itemize}
+See \SyntacticSugarRef{SetterFieldAssignment}.
 
 \section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
 
@@ -1471,7 +1441,6 @@ implemented using the following Read-Modify-Write (RMW) behaviour:
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfields}
-
 
 \subsection{Typing}
 \TypingRuleDef{LESetFields}
