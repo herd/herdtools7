@@ -1,0 +1,10 @@
+Test A010 Required
+States 1
+ Fault(P0:Page0,label:"P0:Page0",I-MMU:Permission);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-ifetch-is-not-supported
+Condition forall (fault(P0:Page0,I-MMU:Permission))
+Observation A008 Always 1 0
+Hash=cb0a8561acabcc5a329a5e61f8d9d457

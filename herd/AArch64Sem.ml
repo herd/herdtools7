@@ -717,6 +717,7 @@ module Make
         valid_v : V.v;
         el0_v : V.v;
         tagged_v : V.v;
+        x_v : V.v;
       }
 
       let arch_op1 op = M.op1 (Op.ArchOp1 op)
@@ -726,6 +727,7 @@ module Make
       let extract_dbm v = arch_op1 AArch64Op.DBM v
       let extract_valid v = arch_op1 AArch64Op.Valid v
       let extract_el0 v = arch_op1 AArch64Op.EL0 v
+      let extract_x v = arch_op1 AArch64Op.X v
       let extract_oa v = arch_op1 AArch64Op.OA v
       let extract_tagged v = arch_op1 AArch64Op.Tagged v
 
@@ -791,9 +793,10 @@ module Make
         extract_af pte_v >>|
         extract_db pte_v >>|
         extract_dbm pte_v >>|
-        extract_tagged pte_v) >>=
-        (fun ((((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v),tagged_v) ->
-          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v; tagged_v})
+        extract_tagged pte_v >>|
+        extract_x pte_v) >>=
+        (fun (((((((oa_v,el0_v),valid_v),af_v),db_v),dbm_v),tagged_v),x_v) ->
+          M.unitT {oa_v; af_v; db_v; dbm_v; valid_v; el0_v; tagged_v; x_v})
 
       let get_oa a_virt mpte =
         (M.op1 Op.Offset a_virt >>| mpte)
@@ -976,6 +979,12 @@ module Make
           if not ii.A.in_handler && is_el0 then
                fun pte_v -> m_op Op.Or (is_zero pte_v.el0_v) (m pte_v)
              else m in
+        let execute_check cond =
+          match domain with
+          | DISide.Instr ->
+              fun pte_v ->
+                m_op Op.Or (cond pte_v) (is_zero pte_v.x_v)
+          | _ -> cond in
 
         let open DirtyBit in
         let tthm = dirty.tthm proc
@@ -985,20 +994,26 @@ module Make
         let mfault (_,ipte) m =
           let open FaultType.AArch64 in
           let open DISide in
+          let transl_fault = M.unitT (Some (MMU (domain, Translation))) in
+          let perm_fault = M.unitT (Some (MMU (domain, Permission))) in
+          let af_fault = M.unitT (Some (MMU (domain, AccessFlag))) in
+          let perm =
+            match domain with
+            | Instr ->
+                (is_zero ipte.x_v) >>=
+                  fun x ->
+                    M.choiceT x perm_fault perm_fault
+            | _ -> perm_fault in
+          let af =
+            if ha then perm
+            else
+              (is_zero ipte.af_v) >>=
+                fun af ->
+                  M.choiceT af af_fault perm in
           (is_zero ipte.valid_v) >>=
-            (fun c ->
-              M.choiceT c
-                (M.unitT (Some (MMU (domain, Translation))))
-                (if ha then
-                   M.unitT (Some (MMU (domain, Permission)))
-                 else begin
-                   (is_zero ipte.af_v) >>=
-                     (fun c ->
-                       M.choiceT c
-                        (M.unitT (Some (MMU (domain, AccessFlag))))
-                         (M.unitT (Some (MMU (domain, Permission)))))
-                   end) >>=
-                fun t -> mfault (get_oa a_virt m) a_virt t)
+            fun v ->
+              M.choiceT v transl_fault af >>= fun t ->
+              mfault (get_oa a_virt m) a_virt t
         and mok (pte_v,ipte) a_pte m a =
           let m =
             let msg =
@@ -1081,6 +1096,7 @@ module Make
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (cond_R pte_v) (is_zero pte_v.db_v) in
+              let cond = execute_check cond in
               check_cond cond
             else if (tthm && ha && not hd) then (* HW managment of AF *)
               let cond = match dir with (* Do not check AF *)
@@ -1088,6 +1104,7 @@ module Make
               | Dir.W ->
                   fun pte_v ->
                     m_op Op.Or (is_zero pte_v.valid_v) (is_zero pte_v.db_v) in
+              let cond = execute_check cond in
               check_cond cond
             else (* HW management of AF and DB *)
               let cond = match dir with (* Do not check AF *)
@@ -1099,6 +1116,7 @@ module Make
                       (is_zero pte_v.valid_v)
                       (m_op Op.And
                          (is_zero pte_v.db_v) (is_zero pte_v.dbm_v)) in
+              let cond = execute_check cond in
               check_cond cond)
           end in
         if pte2 then  mvirt
