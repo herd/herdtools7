@@ -35,6 +35,7 @@ type t = {
   db : int;
   dbm : int;
   el0 : int;
+  x : int;
   attrs : Attrs.t;
   }
 

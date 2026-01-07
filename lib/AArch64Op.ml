@@ -22,6 +22,7 @@ type 'op1 unop =
   | DBM (* get DBM from PTE entry *)
   | Valid (* get Valid bit from PTE entry *)
   | EL0 (* get EL0 bit from PTE entry *)
+  | X (* get execute permission bit from PTE entry *)
   | OA (* get OA from PTE entry *)
   | SetOA (* store OA into PAR_EL1 *)
   | SetF (* set F to 1 in PAR_EL1 *)
@@ -71,6 +72,7 @@ module
       | DBM -> "DBM"
       | Valid -> "Valid"
       | EL0 -> "EL0"
+      | X -> "X"
       | OA -> "OA"
       | SetOA -> "SetOA"
       | SetF -> "SetF"
@@ -137,6 +139,7 @@ module
     let getvalid = op_get_pteval (fun p -> p.valid <> 0)
 
     let getel0 = op_get_pteval (fun p -> p.el0 <> 0)
+    let getx = op_get_pteval (fun p -> p.x <> 0)
 
     let gettagged = op_get_pteval (fun p -> Attrs.is_tagged p.attrs)
 
@@ -215,6 +218,7 @@ module
       | DBM -> getdbm
       | Valid -> getvalid
       | EL0 -> getel0
+      | X -> getx
       | OA -> getoa
       | SetOA -> setoa
       | SetF -> setf
