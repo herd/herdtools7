@@ -573,8 +573,6 @@ let conditions_of_test (exec_data : ExecData.t) : Component.condition list =
     | Execution.Reg { proc; reg_pretty } -> condition_of_reg proc reg_pretty
     | Global global -> condition_of_global global)
 
-(* --- Explaining dependency edges --- *)
-
 let make_dep_component ~name
     ~(ev_match : event -> Component.dep_path_event option) ~exec_data
     ~(source : regular_mem_event) ~(target : regular_mem_event) :
