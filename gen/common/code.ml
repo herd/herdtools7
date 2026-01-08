@@ -85,6 +85,11 @@ let pp_ie = function
   | Ext -> "e"
   | UnspecCom -> "*"
 
+let pp_ie_full = function
+  | Int -> "Int"
+  | Ext -> "Ext"
+  | UnspecCom -> "*"
+
 let pp_extr = function
   | Dir d -> pp_dir d
   | Irr -> "*"
