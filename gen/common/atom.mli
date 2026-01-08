@@ -42,6 +42,7 @@ module type RMW = sig
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw -> old:int -> operand:int -> int
   val expand_rmw : rmw -> rmw list
+  val valid_rmw : rmw list -> bool
 end
 
 module type AtomType = sig
