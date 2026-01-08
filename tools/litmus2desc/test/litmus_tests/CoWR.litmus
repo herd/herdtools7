@@ -4,4 +4,4 @@ AArch64 CoWR
  MOV W0,#1   ;
  STR W0,[X1] ;
  LDR W2,[X1] ;
-exists (0:X2=0)
+exists (x=1 /\ 0:X2=0)

@@ -3,4 +3,4 @@
  (public_name litmus2desc)
  (flags
   (:standard -w -42))
- (libraries herdtools containers re unix ocamlgraph))
+ (libraries herdtools unix litmus2desc))

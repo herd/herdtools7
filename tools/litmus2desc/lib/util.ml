@@ -24,3 +24,21 @@ module Iter = struct
     in
     go ()
 end
+
+let verbalize_index (ix : int) : string =
+  match ix with
+  | 0 -> "first"
+  | 1 -> "second"
+  | 2 -> "third"
+  | 3 -> "fourth"
+  | 4 -> "fifth"
+  | ix -> Format.sprintf "%dth" (ix + 1)
+
+let uniq ~(eq : 'a -> 'a -> bool) (l : 'a list) : 'a list =
+  let rec uniq eq acc l =
+    match l with
+    | [] -> List.rev acc
+    | x :: xs when List.exists (eq x) xs -> uniq eq acc xs
+    | x :: xs -> uniq eq (x :: acc) xs
+  in
+  uniq eq [] l
