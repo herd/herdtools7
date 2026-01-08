@@ -124,7 +124,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let e = m.C.C.edge in
           let open C.E in
           match e.edge with
-          | Rf _ | Fr _ | Ws _ | Hat
+          | Rf _ | Fr _ | Ws _ | Coms _ | Hat
           | Back _|Leave _ -> true
           | Rmw rmw -> RMW.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->

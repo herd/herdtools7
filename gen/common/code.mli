@@ -52,6 +52,7 @@ type extr = Dir of dir | Irr | NoDir
 
 (* Associated pretty print & generators *)
 val pp_ie : ie -> string
+val pp_ie_full : ie -> string
 val pp_dir : dir -> string
 val pp_extr : extr -> string
 val pp_sd : sd -> string
