@@ -52,7 +52,8 @@ jobs:
           ocaml-compiler: ${{ matrix.cfg.ocaml-compiler }}
           dune-cache: true
 
-      - run: opam install . --deps-only --with-test
+      - name: Install opam dependencies
+        run: opam install . --deps-only --yes --with-test
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 

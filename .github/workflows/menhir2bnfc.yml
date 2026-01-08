@@ -56,4 +56,7 @@ jobs:
 
       - run: opam exec -- make test-bnfc DUNE_PROFILE=dev
 
-      - run: opam install .
+      - run: |
+          opam exec -- dune build asllib/aslref.opam
+          opam pin asllib
+          opam install aslref .
