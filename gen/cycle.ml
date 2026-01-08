@@ -109,7 +109,7 @@ module type S = sig
  val resolve_edges : edge list -> edge list * node
 
 (* Finish edge cycle, adding complete events, returns initial environment *)
-  val finish : node -> Value.env
+  val finish : node -> node * Value.env
 
 (* Composition of the two more basic steps above *)
   val make : edge list -> edge list * node * Value.env
@@ -1099,33 +1099,38 @@ let set_same_loc st n0 =
 
   (* TODO carry back the pte init value *)
   let set_write_v n =
-    let nss =
+    let start_node,nss =
       try
-        let m =
+        let start_node =
           find_node
             (fun m ->
               m.prev.evt.loc <> m.evt.loc &&
               m.next.evt.loc = m.evt.loc) n in
-        split_by_loc m
+        start_node,split_by_loc start_node
       with
       | Not_found ->
-        (*check if node is preceded by a non com node and is itself a com node*)
-        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
         fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
-        try
-          (* check for R ensures that we start on Fr if possible*)
-          let m = find_node (fun m -> to_com m && m.evt.dir = Some R) n in
-          split_one_loc m
-        with Not_found -> try
-          (* The previous search failed. This search will return the W node from
-             which an Rf edge starts, provided that the previous edge is not a
-             communication or a Rmw edge *)
-          let m = find_node (fun m -> to_com m) n in
-          split_one_loc m
-        with Not_found -> Warn.fatal "cannot set write values"
+        let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge in
+        let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
+        let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in
+        (* In the case of one location, the order on searching start node is:
+          - a read node, NOT preceded by a com/rmw node, is itself a com/rmw node
+          - a node, preceded by a non com/rmw node, is itself a com/rmw node
+          - a read node, NOT preceded by a com node, is itself a com node
+          - a node, preceded by a com node, is itself a com node.
+          This order ensures some consistency on the result litmus tests,
+          especially when a cycle contain rmw edge.
+          However in the situation with two rmw edges, the input cycle order
+          still affects the result litmus, e.g. "Amo.StEor Rfe Amo.StAdd Rfe". *)
+        let start_node = try find_node (fun m -> to_com_rmw m && m.evt.dir = Some R) n
+        with Not_found -> try find_node (fun m -> to_com_rmw m) n
+        with Not_found -> try find_node (fun m -> to_com m && m.evt.dir = Some R) n
+        with Not_found -> try find_node (fun m -> to_com m) n
+        with Not_found -> Warn.fatal "cannot set write values" in
+        start_node,split_one_loc start_node
       | Exit -> Warn.fatal "cannot set write values" in
     let initvals = set_all_write_val nss in
-    nss,initvals
+    start_node,nss,initvals
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1360,7 +1365,7 @@ let finish n =
     debug_cycle stderr n
   end ;
 (* Set write values *)
-  let by_loc,initvals = set_write_v n in
+  let start_node,by_loc,initvals = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
@@ -1368,7 +1373,7 @@ let finish n =
             (fun (loc,k) -> sprintf "%s->%s" loc (Value.pp_v k))
             initvals)) ;
     eprintf "WRITE VALUES\n" ;
-    debug_cycle stderr n
+    debug_cycle stderr start_node
   end ;
 (* Set load values *)
   let vs = set_read_v by_loc initvals in
@@ -1377,15 +1382,15 @@ let finish n =
   (if do_morello then set_dep_v by_loc) ;
   if O.verbose > 1 then begin
     eprintf "READ VALUES\n" ;
-    debug_cycle stderr n ;
+    debug_cycle stderr start_node ;
     eprintf "FINAL VALUES [%s]\n"
       (vs |> List.map
         ( fun (loc,(v,_pte)) -> sprintf "%s -> %s"
           (Code.pp_loc loc) (Value.pp_v v) )
         |> String.concat "," )
   end ;
-  if O.variant Variant_gen.Self then check_fetch n;
-  initvals
+  if O.variant Variant_gen.Self then check_fetch start_node;
+  start_node,initvals
 (* END of finish *)
 
 
@@ -1439,7 +1444,7 @@ let resolve_edges = function
 
 let make es =
   let es,c = resolve_edges es in
-  let initvals = finish c in
+  let c,initvals = finish c in
   es,c,initvals
 
 (*************************)
