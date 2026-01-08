@@ -9,6 +9,7 @@
 \newcommand\Bool[0]{ \hyperlink{type-Bool}{\textsf{Bool}} } % Generated from Bool
 \newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
 \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+\newcommand\boundvariable[0]{ \hyperlink{type-boundvariable}{\textsf{bound\_variable}} } % Generated from bound_variable
 \newcommand\f[0]{ \hyperlink{relation-f}{\textit{f}} } % Generated from f
 
 % -------------------
@@ -26,6 +27,8 @@
 \DefineType{Z}{\texthypertarget{type-Z}$\Z$} % EndDefineType
 
 \DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
+
+\DefineType{bound_variable}{\texthypertarget{type-boundvariable}$\boundvariable$} % EndDefineType
 
 \DefineType{N}{\texthypertarget{type-N}$\N$} % EndDefineType
 

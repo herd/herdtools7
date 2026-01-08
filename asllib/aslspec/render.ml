@@ -476,12 +476,12 @@ module Make (S : SPEC_VALUE) = struct
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
       | FieldAccess path -> pp_field_path fmt path
-      | Indexed { index; list; body } ->
+      | Indexed { index; list_var; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
             fprintf fmt "%a \\in %a(%a)" pp_var index pp_macro
               listrange_macro_name pp_var list_var
           in
-          pp_connect_pair ~alignment:"ll" fmt pp_indexed_lhs (index, list)
+          pp_connect_pair ~alignment:"ll" fmt pp_indexed_lhs (index, list_var)
             colon_macro_name pp_expr body layout
       | Transition { lhs; rhs; short_circuit } ->
           let relation_name =

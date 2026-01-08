@@ -120,8 +120,8 @@ let rec pp_expr fmt =
   | Transition { lhs; rhs; short_circuit } ->
       fprintf fmt "%a -> %a%a" pp_expr lhs pp_expr rhs pp_short_circuit
         short_circuit
-  | Indexed { index; list; body } ->
-      fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list pp_expr body
+  | Indexed { index; list_var; body } ->
+      fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list_var pp_expr body
   | NamedExpr (e, name) -> fprintf fmt "%a /* %s */" pp_expr e name
 
 and pp_application_lhs fmt =

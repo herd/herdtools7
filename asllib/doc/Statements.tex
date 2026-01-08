@@ -596,11 +596,12 @@ since immutable local storage elements require an initializing expression.
         an initializing expression, otherwise they are rejected by an ASL parser);
   \item checking that $\tyopt$ is not $\None$, that is, the declaration has a type annotation, yields $\True$\ProseOrTypeError;
   \item $\tyopt$ is $\some{\vt}$;
-  \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vses)$\ProseOrTypeError;
+  \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vsestp)$\ProseOrTypeError;
   \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
   \item annotating the local declaration item $\ldi$ with the type $\vtp$ and local declaration keyword $\LDIVar$
         yields $\newtenv$\ProseOrTypeError;
-  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \some{\veinit})$.
+  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \some{\veinit})$;
+  \item \Proseeqdef{$\vses$}{$\vsestp$}.
   \end{itemize}
 \end{itemize}
 
@@ -3192,10 +3193,11 @@ the \trystatementsterm{} are all well-typed.
 
     \item \AllApplyCase{otherwise}
     \begin{itemize}
-      \item there is an \texttt{otherwise} statement $\otherwise$;
-      \item annotating the statement $\otherwise$ as a block statement in $\tenv$ yields $\otherwisep$\ProseOrTypeError;
+      \item there is an \texttt{otherwise} statement $\vblock$;
+      \item annotating the statement $\vblock$ as a block statement in $\tenv$ yields $\vblockp$\ProseOrTypeError;
+      \item \Proseeqdef{$\otherwisep$}{$\some{\vblockp}$};
       \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
-            $\otherwisep$\\ ($\STry(\vspp, \catchersp, \some{\otherwisep})$);
+            $\otherwisep$\\ ($\STry(\vspp, \catchersp, \otherwisep)$);
       \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
       \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
     \end{itemize}

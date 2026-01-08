@@ -293,7 +293,7 @@ module Expr = struct
       }
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
-    | Indexed of { index : string; list : string; body : expr }
+    | Indexed of { index : string; list_var : string; body : expr }
     | NamedExpr of expr * string
         (** An (internally-)named expression. Used for giving names to
             sub-expressions appearing in the output configuration of an output
@@ -328,6 +328,9 @@ module Expr = struct
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
   let make_tuple args = Application { applicator = EmptyApplicator; args }
+
+  let make_labelled_tuple label args =
+    Application { applicator = TupleLabel label; args }
 
   (** [make_application lhs exprs] constructs an application expression with
       left-hand side [lhs] and argument expressions [exprs]. During rule

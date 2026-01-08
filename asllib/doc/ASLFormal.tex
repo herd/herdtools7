@@ -343,6 +343,21 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \]
 \end{definition}
 
+\hypertarget{operator-listfst}{}
+\begin{definition}[Extracting the First Components from a List of Pairs]
+The\\ parametric function
+\[
+\listfstname : \KleeneStar{(T_1 \cartimes T_2)} \rightarrow \KleeneStar{T_1}
+\]
+transforms a list of pairs into a lists of elements containing the first components of each pair:
+\[
+  \listfst{\pairs} \triangleq \begin{cases}
+    \emptylist  & \text{if }\pairs = \emptylist\\
+    a_{1..k}    & \text{if } \pairs = ((a_1, b_1) \ldots (a_k,b_k)) \enspace.
+  \end{cases}
+\]
+\end{definition}
+
 \hypertarget{def-unziplist}{}
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
