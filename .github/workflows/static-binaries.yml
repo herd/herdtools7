@@ -31,6 +31,7 @@ jobs:
       - name: Install prerequisites
         run: |
           apk add --quiet gmp-dev pkgconfig
+          opam pin asllib
           opam install . --deps-only
 
       - name: Enable verbose dune output

@@ -1,0 +1,7 @@
+(lang dune 3.10)
+(using menhir 2.0)
+(cram enable)
+
+(name asllib)
+(version 1.0.0-draft)
+

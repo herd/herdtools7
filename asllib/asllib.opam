@@ -1,0 +1,51 @@
+opam-version: "2.0"
+synopsis: "Architecture Specification Language library"
+description: """
+The Architecture Specification Language library provides tools and OCaml
+library to parse, type-check and execute ASL code.
+
+The language reference document is available at:
+https://developer.arm.com/Architectures/Architecture%20Specification%20Language
+"""
+authors: [
+  "Luc Maranget <Luc.Maranget@inria.fr>"
+  "Jade Alglave <j.alglave@ucl.ac.uk>"
+  "Hadrien Renaud <hadrien.renaud.22@ucl.ac.uk"
+]
+maintainer:[
+  "Luc Maranget <Luc.Maranget@inria.fr>"
+  "Jade Alglave <j.alglave@ucl.ac.uk>"
+  "Hadrien Renaud <hadrien.renaud.22@ucl.ac.uk"
+]
+license: "BSD-3-Clause"
+homepage: "https://github.com/herd/herdtools7"
+doc:
+  "https://developer.arm.com/Architectures/Architecture%20Specification%20Language"
+bug-reports: "https://github.com/herd/herdtools7/issues"
+depends: [
+  "ocaml" {>= "4.08.0"}
+  "dune" {>= "3.10" & >= "3.10"}
+  "menhir" {>= "20220210"}
+  "zarith" {>= "1.13"}
+  "conf-which"
+  "odoc" {with-doc}
+]
+depopts: [
+  "qcheck" {with-test}
+  "ocamlformat" {= "0.28.1" & with-dev-setup}
+]
+build: [
+  # ["dune" "subst"] {dev}
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+    "@doc" {with-doc}
+  ]
+]
+dev-repo: "git+https://github.com/herd/herdtools7.git"
