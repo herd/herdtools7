@@ -720,17 +720,23 @@ let explain_test_path ~(libdir : string option) ~describe_regs file_path :
     (* FIXME: temporarily needed, to stabilize test output *)
     List.sort Stdlib.compare executions
   in
-  if List.length executions = 0 then
+  let num_of_execs = List.length executions in
+  if num_of_execs = 0 then
     failwith
       "Could not generate explanation for the litmus test: no executions \
        generated."
   else ();
   let exec_explanations =
-    let num_of_execs = List.length executions in
     executions
     |> List.map (fun src_exec ->
-        describe_execution ~describe_regs ~num_of_execs test src_exec
-        |> List.map (fun s -> Format.sprintf "* %s;" s)
+        let items =
+          describe_execution ~describe_regs ~num_of_execs test src_exec
+        in
+        let items_count = List.length items in
+        items
+        |> List.mapi (fun ix s ->
+            let line_end = if ix = items_count - 1 then "." else ";" in
+            Format.sprintf "* %s%s" s line_end)
         |> String.concat "\n")
     (* As we only use a subset of an execution's data to generate its explanation text, *)
     (* it might be the case that different executions yield the same explanation. *)
