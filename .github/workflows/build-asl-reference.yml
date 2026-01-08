@@ -44,7 +44,9 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Install opam dependencies
-        run: opam install . --deps-only --yes
+        run: |
+          opam pin asllib
+          opam install . --deps-only --yes
 
       - name: Build ASL Reference
         run: opam exec -- make asldoc
