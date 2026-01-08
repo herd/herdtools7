@@ -33,10 +33,26 @@ type S2PIRType of S2PIR_EL2_Type;
 type S1PIRType of S2PIRType;
 type SCRType of SCR_Type;
 
+// Our extractor for the system register types does not yet support those.
+type BRBINF_EL1_Type of bits(64);
+type BRBTGT_EL1_Type of bits(64);
+type BRBSRC_EL1_Type of bits(64);
 
 // =============================================================================
 
-func _SetUpRegisters ()
+// _SetUpRegisters()
+// =================
+
+// This procedure is called before the decode of any intruction, and is used to
+// correctly set up the registers with their runtime values.
+
+// This allows us to leave the register declaration as they are by default,
+// only to set up their values when necessary.
+
+// Argument is_vmsa is a boolean reflecting if stage 1 translation is activated
+// or not.
+
+func _SetUpRegisters (is_vmsa: boolean)
 begin
   // Value found on Rasberry 4B, ArmBian
   // uname -a:
@@ -53,9 +69,19 @@ begin
     // Another value from the same machine
     // '0000000000000000000000000000000000110000110100000001100110000101'
     ;
+
+  _SCTLR_EL1.M = if is_vmsa then '1' else '0';
 end;
 
 // =============================================================================
+
+// SP_EL0 - accessor
+// =================
+
+// The various Stack pointers are not declared in shared-pseudocode.asl.
+// We only need the EL0 stack pointer.
+// Its implementation is simply an indirection to a backing global storage
+// _SP_EL0.
 
 var _SP_EL0: bits(64);
 
@@ -72,6 +98,15 @@ end;
 
 // =============================================================================
 
+// ConstrainUnpredictableBool()
+// ============================
+// This is a variant of the ConstrainUnpredictable function where the result is either
+// Constraint_TRUE or Constraint_FALSE.
+
+// We override this function directly and not the ConstrainUnpredictable to
+// use directly ARBITRARY: boolean and not do some complex manipulations with
+// Constraint_TRUE and Constraint_FALSE.
+
 func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
   return ARBITRARY: boolean;
@@ -79,58 +114,64 @@ end;
 
 // =============================================================================
 
-func IsFeatureImplemented(f : Feature) => boolean
-begin
-  return FALSE;
-end;
-
-// =============================================================================
-
-func HaveAArch32() => boolean
-begin
-  return FALSE;
-end;
-
-// =============================================================================
-
-func HaveAArch64() => boolean
-begin
-  return TRUE;
-end;
-
-// =============================================================================
-
-// HaveEL()
-// ========
-// Return TRUE if Exception level 'el' is supported
-
-func HaveEL(el: bits(2)) => boolean
-begin
-    if el IN {EL1,EL0} then
-        return TRUE;                             // EL1 and EL0 must exist
-    else
-        return FALSE; // boolean IMPLEMENTATION_DEFINED;
-    end;
-end;
-
-// =============================================================================
-
-// ClearExclusiveByAddress()
+// ImpDefBool(), ImpDefInt()
 // =========================
-// Clear the global Exclusives monitors for all PEs EXCEPT processorid if they
-// record any part of the physical address region of size bytes starting at paddress.
-// It is IMPLEMENTATION DEFINED whether the global Exclusives monitor for processorid
-// is also cleared if it records any part of the address region.
 
-func ClearExclusiveByAddress(paddress : FullAddress, processorid : integer, size : integer)
+// Not declared in shared_pseudocode
+
+// We only implement the minimum necessary, i.e. for example this is only used
+// in one case each, the rest is guarded with unreachable.
+
+readonly func ImpDefBool(s: string) => boolean
 begin
-  pass;
+  case s of
+    when "Secure-only implementation" => return FALSE;
+    otherwise => unreachable;
+  end;
+end;
+
+readonly func ImpDefInt(s: string) => integer
+begin
+  case s of
+    when "Maximum Physical Address Size" => return 48;
+    when "Aligned quantity for atomic access" => return 32;
+    otherwise => unreachable;
+  end;
+end;
+
+// =============================================================================
+
+// IsFeatureImplemented()
+// ======================
+
+// Not declared in shared_pseudoocode
+
+// We only implement the mininum required features.
+
+// This implementation is probably a bit errouneous, as some features might be
+// implemented in herd.
+// For example, `FEAT_LSE` is needed to implement `CAS` according to the
+// [Arm ARM](https://developer.arm.com/documentation/ddi0602/2025-09/Base-Instructions/CAS--CASA--CASAL--CASL--Compare-and-swap-word-or-doubleword-in-memory-?lang=en).
+// However, we don't need to say we implement it because it is only tested once
+// in the whole `shared_pseudocode.asl`, in a function we don't use
+// (`TakeGPCException`).
+
+readonly func IsFeatureImplemented(f : Feature) => boolean
+begin
+  case f of
+    when FEAT_AA64EL0 => return TRUE;
+    otherwise => return FALSE;
+  end;
 end;
 
 // =============================================================================
 
 // InstructionSynchronizationBarrier()
 // ===================================
+
+// This function generates a ISB Effect, and is just calling the
+// `primitive_isb` primitive.
+
 func InstructionSynchronizationBarrier()
 begin
   primitive_isb();
@@ -141,6 +182,9 @@ end;
 // DataMemoryBarrier()
 // ===================
 
+// This function generates a DMB Effect, with the correct parameters. In
+// practice it is just a call to the `primitive_dmb` primitive.
+
 func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
 begin
   primitive_dmb(domain, types);
@@ -148,6 +192,9 @@ end;
 
 // DataSynchronizationBarrier()
 // ============================
+
+// This function generates a DSB Effect, with the correct parameters. In
+// practice it is just a call to the `primitive_dsb` primitive.
 
 // nXS is not implemented in herd
 
@@ -161,15 +208,101 @@ end;
 
 // =============================================================================
 
-// Hint_Branch()
-// =============
-// Report the hint passed to BranchTo() and BranchToAddr(), for consideration when processing
-// the next instruction.
+// ThisInstrLength()
+// =================
 
-func Hint_Branch(hint : BranchType)
+// In herd, instructions are always 32-bits long
+
+func ThisInstrLength() => integer
 begin
-  return;
+  return 32;
 end;
+
+// =============================================================================
+
+// ExternalInvasiveDebugEnabled()
+// ==============================
+// The definition of this function is IMPLEMENTATION DEFINED.
+// In the recommended interface, this function returns the state of the DBGEN signal.
+
+// We do not support external debug, and thus can implement this function by
+// always returning FALSE.
+
+func ExternalInvasiveDebugEnabled() => boolean
+begin
+    return FALSE;
+end;
+
+// =============================================================================
+
+// ProcessorID()
+// =============
+// Return the ID of the currently executing PE.
+
+// We override a impdef declaration in shared_pseudocode. The processor id is
+// set directly by herd as an integer, in the variable _ProcesorID. The
+// initialization value of _ProcessorID is edited by herd to have the correct
+// value.
+
+var _ProcessorID: integer = 0;
+
+func ProcessorID() => integer
+begin
+  return _ProcessorID;
+end;
+
+// =============================================================================
+
+// NormalWBISHMemAttr
+// ==================
+
+// This variable is not present in shared_pseudocode, but is used in other
+// parts of the interface, see patches.asl.
+
+// The memory-attributes used by all memory accesses
+
+var NormalWBISHMemAttr: MemoryAttributes =
+  MemoryAttributes {
+    memtype = MemType_Normal,
+    inner = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    outer = MemAttrHints {
+      attrs = MemAttr_WB,
+      hints = MemHint_No, // ??
+      transient = FALSE // Only applies to cacheable memory
+    },
+    shareability = Shareability_ISH,
+    tags = MemTag_Untagged, // ??
+    device = DeviceType_GRE, // Not relevant for Normal
+    notagaccess = TRUE, // Not used in shared_pseudocode
+    xs = '0' // If I understand correctly WalkMemAttrs
+  };
+
+// =============================================================================
+
+// PhysMemRetStatus_NoFault
+// ========================
+
+// This variable is not present in shared_pseudocode, but is used in other
+// parts of the interface, see physmem-std.asl and physmem-vmsa.asl.
+
+// The status return of PhysMemRead and PhysMemWrite.
+
+var PhysMemRetStatus_NoFault =
+  PhysMemRetStatus {
+    statuscode = Fault_None,
+    extflag = '0',
+    merrorstate = ErrorState_CE,  // Irrelevant as statuscode is Fault_None
+    store64bstatus = Zeros{64}
+  };
+
+// =============================================================================
+
+// Code used by our interface with herd, in either `physmem-std.asl` or
+// `physmem-vmsa.asl`
 
 // Type of underlying accesses (same order as lib/access.mli),
 // as recorder un events.
@@ -184,16 +317,21 @@ type EventAccess of enumeration {
      PHY_PTE,
 };
 
-type BRBINF_EL1_Type of bits(64);
-type BRBSRC_EL1_Type of bits(64);
-type BRBTGT_EL1_Type of bits(64);
+// =============================================================================
 
-readonly func ImpDefBool(s: string) => boolean
+// SomeBoolean()
+// =============
+
+// Function concretising a random boolean: it is functionally equivalent to
+// ARBITRARY: boolean, but instead of returning a symbolic value, it will
+// create 2 executions, one where it returns TRUE and one where it returns
+// FALSE.
+
+readonly func SomeBoolean() => boolean
 begin
-  case s of
-    when "Secure-only implementation" => return FALSE;
-    otherwise =>
-      print "Unknown ImpDef: " ++ s;
-      assert FALSE;
+  if ARBITRARY: boolean then
+    return TRUE;
+  else
+    return FALSE;
   end;
 end;

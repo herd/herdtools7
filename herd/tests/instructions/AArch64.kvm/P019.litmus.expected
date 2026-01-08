@@ -1,0 +1,11 @@
+Test P019 Allowed
+States 2
+[x]=0; [PTE(x)]=(oa:PA(x), af:0, db:0, dbm:1); Fault(P0,x,MMU:Permission);
+[x]=0; [PTE(x)]=(oa:PA(x), db:0, dbm:1); Fault(P0,x,MMU:Permission);
+Ok
+Witnesses
+Positive: 3 Negative: 6
+Condition exists ([PTE(x)]=(oa:PA(x), af:0, db:0, dbm:1) /\ fault(P0,x))
+Observation P019 Sometimes 3 6
+Hash=6d1c6297d53622e20370cb5481978c1e
+

@@ -190,6 +190,9 @@ val minus_one_expr : expr
 val expr_of_rational : Q.t -> expr
 (** [expr_of_rational q] is the rational literal for [q]. *)
 
+val expr_of_bool : bool -> expr
+(** [expr_of_bool b] is the boolean literal for [b]. *)
+
 val mul_expr : expr -> expr -> expr
 (** [mul_expr e1 e2] is an expression representing [e1 * e2]. *)
 
@@ -320,6 +323,10 @@ val slice_as_single : slice -> expr
 val patch : src:AST.t -> patches:AST.t -> AST.t
 (** [patch ~src ~patches] replaces in [src] the global identifiers defined by
     [patches]. *)
+
+val patch_with_backup : src:AST.t -> patches:AST.t -> AST.t
+(** Same as [patch] but discarded elements in [src] are kept and renamed with
+    the added prefix [_patched_]. *)
 
 val subst_expr : (identifier * expr) list -> expr -> expr
 (** [subst_expr substs e] replaces the variables used inside [e] by their

@@ -184,9 +184,6 @@ begin return ARBITRARY: bits(1); end;
 readonly func GetHdPrimitive() => bits(1)
 begin return ARBITRARY: bits(1); end;
 
-readonly func ProcessorID() => integer
-begin return 0; end;
-
 // Fault handling
 // --------------
 
@@ -215,12 +212,6 @@ begin return 0; end;
 
 // Symbolic Interpreter control
 // ----------------------------
-
-// SomeBoolean() splits the execution, and returns TRUE in one execution, FALSE
-// in the other.
-
-func SomeBoolean() => boolean
-begin return ARBITRARY: boolean; end;
 
 // CheckProp() add the assumption that prop is TRUE. This will silently discard
 // all executions where the argument is FALSE.

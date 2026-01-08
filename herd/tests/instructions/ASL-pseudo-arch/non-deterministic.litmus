@@ -5,7 +5,7 @@ ASL non-deterministic
 // Non deterministically returns 1 or 2
 func g() => integer
 begin
-  let b = SomeBoolean();
+  let b = ARBITRARY: boolean;
   if b then
     return 1;
   end;
