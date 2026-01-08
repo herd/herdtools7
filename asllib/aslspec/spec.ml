@@ -120,11 +120,13 @@ module Error = struct
           non-output judgments%a"
          relation_name pp_name_opt rule_name_opt
 
-  let missing_output_judgment relation_name =
+  let missing_output_judgment relation_name expanded_rule_name_opt =
     spec_error
-    @@ Format.sprintf
-         "The rule for relation %s must end with an output judgment"
+    @@ Format.asprintf
+         "The rule for relation %s does not end with an output judgment in \
+          case %s"
          relation_name
+         (Option.value ~default:"top-level" expanded_rule_name_opt)
 
   let illegal_lhs_application expr =
     spec_error
@@ -1531,10 +1533,18 @@ module Check = struct
   module TypeInference = struct
     open Expr
 
-    (** [vars_of_identifiers id_to_defining_node identifiers] returns the subset
-        of [identifiers] that represent variables in a sorted duplicate-free
-        list. The map [id_to_defining_node] is used to filter out constants and
-        labels. *)
+    (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
+        quantifying operator (like "forall" or "exists") based on whether its
+        first argument has the type [bound_variable]. *)
+    let is_quantifying_operator spec op_name =
+      let operator = relation_for_id spec op_name in
+      match operator.input with
+      | (_, Label id) :: _ -> String.equal id spec.bound_variable.name
+      | _ -> false
+
+    (** [vars_of_identifiers id_to_defining_node identifiers] returns the
+        sublist of [identifiers] that represent variables. The map
+        [id_to_defining_node] is used to filter out constants and labels. *)
     let vars_of_identifiers id_to_defining_node identifiers =
       (* Filters out identifiers that are definitely not variables,
          since they are either constants or type names. *)
@@ -1552,9 +1562,8 @@ module Check = struct
             false
       in
       identifiers
-      |> List.filter_map (fun id ->
-          if String.equal id ignore_var || is_non_var id then None else Some id)
-      |> List.sort_uniq String.compare
+      |> List.filter (fun id ->
+          not (String.equal id ignore_var || is_non_var id))
 
     type use_def = { used : StringSet.t; defined : StringSet.t }
     (** An environment data type for tracking used and defined variables. *)
@@ -1571,16 +1580,15 @@ module Check = struct
         @raise [SpecError]
           if any variable in [vars] is not defined in [use_def]. *)
     let check_and_add_uses ~context_expr use_def vars =
+      let undefined_vars =
+        StringSet.diff (StringSet.of_list vars) use_def.defined
+      in
       let () =
-        List.iter
-          (fun id ->
-            if not (StringSet.mem id use_def.defined) then
-              Error.undefined_variable_in_rule ~context_expr id)
-          vars
+        if not (StringSet.is_empty undefined_vars) then
+          Error.undefined_variable_in_rule ~context_expr
+            (StringSet.choose undefined_vars)
       in
-      let new_used =
-        StringSet.union use_def.used (vars |> List.to_seq |> StringSet.of_seq)
-      in
+      let new_used = StringSet.union use_def.used (StringSet.of_list vars) in
       { use_def with used = new_used }
 
     (** [check_and_add_defined ~context_expr use_def vars] checks that all
@@ -1589,105 +1597,97 @@ module Check = struct
         @raise [SpecError]
           if any variable in [vars] is already defined in [use_def]. *)
     let check_and_add_defined ~context_expr use_def vars =
+      let var_set = StringSet.of_list vars in
+      let redefined_vars = StringSet.inter var_set use_def.defined in
       let () =
-        List.iter
-          (fun id ->
-            if StringSet.mem id use_def.defined then
-              Error.redefined_variable_in_rule ~context_expr id)
-          vars
+        if not (StringSet.is_empty redefined_vars) then
+          Error.redefined_variable_in_rule ~context_expr
+            (StringSet.choose redefined_vars)
       in
       let new_defined =
-        StringSet.union use_def.defined (vars |> List.to_seq |> StringSet.of_seq)
+        StringSet.union use_def.defined (StringSet.of_list vars)
       in
       { use_def with defined = new_defined }
 
-    (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
-        quantifying operator (like "forall" or "exists") based on whether its
-        first argument has the type [bound_variable]. *)
-    let is_quantifying_operator spec op_name =
-      let operator = relation_for_id spec op_name in
-      match operator.input with
-      | [] -> false
-      | (_, first_arg_type) :: _ -> (
-          match first_arg_type with
-          | Label id -> String.equal id spec.bound_variable.name
-          | _ -> false)
+    (** A type for distinguishing whether we are analyzing an expression for
+        variable uses or variable definitions. *)
+    type use_def_mode = Use | Def
 
-    (** [update_use_def_for_expr ~uses spec use_def expr] updates the use-def
+    (** [update_use_def_for_expr mode spec use_def expr] updates the use-def
         environment [use_def] by analyzing [expr]. If [uses] is [true], it
         considers [expr] as an expression that uses variables. Otherwise, it
         considers [expr] as an expression that defines variables. *)
-    let rec update_use_def_for_expr ~uses spec use_def expr =
-      let check_and_add_uses_for_expr use_def vars =
-        check_and_add_uses ~context_expr:expr use_def vars
-      in
-      let check_and_add_defined_for_expr use_def vars =
-        check_and_add_defined ~context_expr:expr use_def vars
-      in
-      let check_and_add_for_expr =
-        if uses then check_and_add_uses_for_expr
-        else check_and_add_defined_for_expr
+    let rec update_use_def_for_expr mode spec use_def expr =
+      let check_and_add_for_expr mode use_def vars =
+        match mode with
+        | Use -> check_and_add_uses ~context_expr:expr use_def vars
+        | Def -> check_and_add_defined ~context_expr:expr use_def vars
       in
       let open Expr in
       match expr with
       | Var id ->
           vars_of_identifiers spec.id_to_defining_node [ id ]
-          |> check_and_add_for_expr use_def
-      | FieldAccess (id :: _) ->
-          if not uses then
-            failwith
-              "A field access cannot be used as a variable-defining expression";
-          vars_of_identifiers spec.id_to_defining_node [ id ]
-          |> check_and_add_uses_for_expr use_def
-      | FieldAccess _ -> failwith "Unexpected empty field access"
+          |> check_and_add_for_expr mode use_def
+      | FieldAccess (id :: _field_names) -> (
+          match mode with
+          | Use ->
+              let vars_of_id =
+                vars_of_identifiers spec.id_to_defining_node [ id ]
+              in
+              check_and_add_for_expr Use use_def vars_of_id
+          | Def ->
+              failwith
+                "A field access cannot be used as a variable-defining \
+                 expression")
+      | FieldAccess [] -> failwith "Unexpected empty field access"
       | ListIndex { list_var; index } ->
           let use_def =
             vars_of_identifiers spec.id_to_defining_node [ list_var ]
-            |> check_and_add_for_expr use_def
+            |> check_and_add_for_expr mode use_def
           in
-          (* The index expression never defines variables. *)
-          update_use_def_for_expr ~uses:true spec use_def index
+          (* An index expression never defines variables. *)
+          update_use_def_for_expr Use spec use_def index
       | Record { fields } ->
           let initializing_exprs = List.map snd fields in
-          update_use_def_for_expr_list ~uses spec use_def initializing_exprs
+          update_use_def_for_expr_list mode spec use_def initializing_exprs
       | NamedExpr (sub_expr, _) ->
-          update_use_def_for_expr ~uses spec use_def sub_expr
+          update_use_def_for_expr mode spec use_def sub_expr
       | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
         when String.equal op_name spec.assign.name ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def rhs in
-          update_use_def_for_expr ~uses:false spec use_def lhs
+          let use_def = update_use_def_for_expr Use spec use_def rhs in
+          update_use_def_for_expr Def spec use_def lhs
       | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
         when String.equal op_name spec.reverse_assign.name ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
-          update_use_def_for_expr ~uses:false spec use_def rhs
+          let use_def = update_use_def_for_expr Use spec use_def lhs in
+          update_use_def_for_expr Def spec use_def rhs
       | Application
           { applicator = ExprOperator op_name; args = Var bound_var :: args }
         when is_quantifying_operator spec op_name ->
-          update_use_def_with_bound_variable ~uses spec use_def args
+          update_use_def_with_bound_variable mode spec use_def args
             ~context_expr:expr ~bound_var
       | Application { args } ->
-          update_use_def_for_expr_list ~uses spec use_def args
+          update_use_def_for_expr_list mode spec use_def args
       | Transition { lhs; rhs } ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
-          update_use_def_for_expr ~uses:false spec use_def rhs
+          let use_def = update_use_def_for_expr Use spec use_def lhs in
+          update_use_def_for_expr Def spec use_def rhs
       | Indexed { index; list_var; body } ->
-          let use_def = check_and_add_uses_for_expr use_def [ list_var ] in
-          update_use_def_with_bound_variable ~uses spec use_def [ body ]
+          let use_def = check_and_add_for_expr Use use_def [ list_var ] in
+          update_use_def_with_bound_variable mode spec use_def [ body ]
             ~context_expr:expr ~bound_var:index
 
-    and update_use_def_for_expr_list ~uses spec use_def exprs =
+    and update_use_def_for_expr_list mode spec use_def exprs =
       List.fold_left
         (fun curr_use_def arg_expr ->
-          update_use_def_for_expr ~uses spec curr_use_def arg_expr)
+          update_use_def_for_expr mode spec curr_use_def arg_expr)
         use_def exprs
 
     (** updates [use_def] for the list of expressions [exprs] and the variable
         [bound_var], which is only in scope for [exprs]. *)
-    and update_use_def_with_bound_variable ~uses spec use_def exprs
-        ~context_expr ~bound_var =
+    and update_use_def_with_bound_variable mode spec use_def exprs ~context_expr
+        ~bound_var =
       (* To avoid confusing specs, we forbid shadowing variables by bound variables. *)
       let use_def = check_and_add_defined ~context_expr use_def [ bound_var ] in
-      let use_def = update_use_def_for_expr_list ~uses spec use_def exprs in
+      let use_def = update_use_def_for_expr_list mode spec use_def exprs in
       (* The bound variable goes out of scope. *)
       { use_def with defined = StringSet.remove bound_var use_def.defined }
 
@@ -1710,21 +1710,22 @@ module Check = struct
       let output_expr =
         match conclusion.expr with
         | Transition { lhs = Application { applicator = Relation _ }; rhs } ->
-            (* In case the conclusion has been transformed to a transition.*)
+            (* If the conclusion expression has been transformed to a transition,
+            we need to consider only the right-hand side expression as the output,
+            as the variables on the left-hand side are the same variables
+            appearing in the input of the relation and are therefore
+            implicitly defined - see next.*)
             rhs
         | _ -> conclusion.expr
       in
       (* The input variables are implicitly defined at the start of the rule. *)
       let defined_args =
         vars_of_opt_named_type_terms relation.Relation.input
-        |> List.to_seq |> StringSet.of_seq
+        |> StringSet.of_list
       in
       let use_def = { used = StringSet.empty; defined = defined_args } in
       let use_def =
-        List.fold_left
-          (fun curr_use_def expr ->
-            update_use_def_for_expr ~uses:true spec curr_use_def expr)
-          use_def
+        update_use_def_for_expr_list Use spec use_def
           (premises_exprs @ [ output_expr ])
       in
       if false then Format.eprintf "After premises: %a@." pp_use_def use_def
@@ -1755,7 +1756,7 @@ module Check = struct
                   expanded_rule.name_opt
               else ())
             prefix_rules
-      | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
+      | _ -> Error.missing_output_judgment relation_name expanded_rule.name_opt
 
     (** [formals_of_relation id_to_defining_node rel_name] returns the list of
         formal arguments for the relation named [rel_name] using
@@ -1856,7 +1857,7 @@ module Check = struct
       | Var _ -> ()
       | FieldAccess (_ :: fields) ->
           List.iter
-            (fun id -> if is_field id then () else Error.non_field id expr)
+            (fun id -> if not (is_field id) then Error.non_field id expr)
             fields
 
     (** [check_rule_for_relation spec relation elements] checks the elements of
@@ -1884,12 +1885,12 @@ module Check = struct
             with SpecError err | Failure err ->
               stack_spec_error err
                 (Format.asprintf "In rule %s of %s"
-                   (Option.value ~default:"(top-level)" expanded_rule.name_opt)
+                   (Option.value ~default:"(top-level case)"
+                      expanded_rule.name_opt)
                    relation.Relation.name))
           expanded_rules
       in
       ()
-    (* TypeInference.infer_for_relation spec relation |> ignore *)
 
     (** Checks the rules in all relations. *)
     let check ({ ast } as spec) =
@@ -2012,7 +2013,6 @@ let get_relation id_to_defining_node name =
     elements from the built-in specification that are not already defined in
     [ast], as determined by [id_to_defining_node]. *)
 let prepend_ast_with_builtins ast id_to_defining_node =
-  let module StringMap = Map.Make (String) in
   (* builtins.ml is auto-generated via dune and contains a single
      string value builtin_spec_str. *)
   let builtin_ast =

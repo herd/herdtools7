@@ -204,6 +204,11 @@ operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
   custom = true,
 };
 
+operator list_fst[A,B](list0((A, B))) -> list0(A)
+{
+  math_macro = \listfst,
+};
+
 operator list_combine_three[A,B,C](list0(A), list0(B), list0(C)) -> list0((A, B, C))
 {
   math_macro = \listcombinethree,
@@ -2091,8 +2096,8 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     make_anonymous(tenv, ty) -> ty_anon;
     te_check(is_structured(ty_anon), TE_UT) -> True;
     ty_anon =: make_structured(L, field_types);
-    fields =: list_combine(initialized_fields, _);
-    field_types =: list_combine(names, _);
+    initialized_fields := list_fst(fields);
+    names := list_fst(field_types);
     te_check(make_set(names) = make_set(initialized_fields), TE_BF) -> True;
     check_no_duplicates(initialized_fields) -> True;
     INDEX(i, fields: annotate_field_init(tenv, fields[i], field_types) ->
