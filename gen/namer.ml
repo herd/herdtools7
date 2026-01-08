@@ -76,14 +76,14 @@ module Make
        let ambiguous_target = function
          | Po _|Fenced _|Dp _
            -> true
-         |Rf _|Ws _|Fr _
+         |Rf _|Ws _|Fr _ | Coms _
          |Id|Hat|Leave _|Back _
          |Insert _|Store|Node _|Rmw _
            -> false
        and ambiguous_source = function
          | Po _|Fenced _
            -> true
-         |Dp _| Rf _|Ws _|Fr _
+         |Dp _| Rf _|Ws _|Fr _ | Coms _
          |Id|Hat|Leave _|Back _
          |Insert _|Store|Node _|Rmw _
            -> false
