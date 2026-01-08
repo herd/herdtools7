@@ -1143,387 +1143,6 @@ module Check = struct
       iter_defined_nodes spec check_prose_template_for_definition_node
   end
 
-  (** A module for checking variable usage and inferring types for expressions
-      in relation rules. The functions in this module assume that a rule exists
-      and that [Check.relation_named_arguments_if_exists_rule] has been run. *)
-  module TypeInference = struct
-    open Expr
-
-    (** [vars_of_identifiers id_to_defining_node identifiers] returns the subset
-        of [identifiers] that represent variables in a sorted duplicate-free
-        list. The map [id_to_defining_node] is used to filter out constants and
-        labels. *)
-    let vars_of_identifiers id_to_defining_node identifiers =
-      (* Filters out identifiers that are definitely not variables,
-         since they are either constants or type names. *)
-      let is_non_var id =
-        match StringMap.find_opt id id_to_defining_node with
-        | Some (Node_Constant _)
-        | Some (Node_Type _)
-        | Some (Node_TypeVariant _) ->
-            (* Constants and types cannot be used as variables.*)
-            true
-        | Some (Node_RecordField _)
-        | Some (Node_Relation _)
-        (* Field names and relation names can be used as variables. *)
-        | None ->
-            false
-      in
-      identifiers
-      |> List.filter_map (fun id ->
-          if String.equal id ignore_var || is_non_var id then None else Some id)
-      |> List.sort_uniq String.compare
-
-    type use_def = { used : StringSet.t; defined : StringSet.t }
-    (** An environment data type for tracking used and defined variables. *)
-
-    (** Pretty-prints a [use_def] environment for debugging. *)
-    let pp_use_def fmt { used; defined } =
-      Format.fprintf fmt "{ used: [%s]; defined: [%s]}"
-        (String.concat ", " (StringSet.elements used))
-        (String.concat ", " (StringSet.elements defined))
-
-    (** [check_and_add_uses ~context_expr use_def vars] checks that all
-        variables in [vars] are already defined in [use_def] and adds them to
-        the used set.
-        @raise [SpecError]
-          if any variable in [vars] is not defined in [use_def]. *)
-    let check_and_add_uses ~context_expr use_def vars =
-      let () =
-        List.iter
-          (fun id ->
-            if not (StringSet.mem id use_def.defined) then
-              Error.undefined_variable_in_rule ~context_expr id)
-          vars
-      in
-      let new_used =
-        StringSet.union use_def.used (vars |> List.to_seq |> StringSet.of_seq)
-      in
-      { use_def with used = new_used }
-
-    (** [check_and_add_defined ~context_expr use_def vars] checks that all
-        variables in [vars] are not already defined in [use_def] and adds them
-        to the defined set.
-        @raise [SpecError]
-          if any variable in [vars] is already defined in [use_def]. *)
-    let check_and_add_defined ~context_expr use_def vars =
-      let () =
-        List.iter
-          (fun id ->
-            if StringSet.mem id use_def.defined then
-              Error.redefined_variable_in_rule ~context_expr id)
-          vars
-      in
-      let new_defined =
-        StringSet.union use_def.defined (vars |> List.to_seq |> StringSet.of_seq)
-      in
-      { use_def with defined = new_defined }
-
-    (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
-        quantifying operator (like "forall" or "exists") based on whether its
-        first argument has the type [bound_variable]. *)
-    let is_quantifying_operator spec op_name =
-      let operator = relation_for_id spec op_name in
-      match operator.input with
-      | [] -> false
-      | (_, first_arg_type) :: _ -> (
-          match first_arg_type with
-          | Label id -> String.equal id spec.bound_variable.name
-          | _ -> false)
-
-    (** [update_use_def_for_expr ~uses spec use_def expr] updates the use-def
-        environment [use_def] by analyzing [expr]. If [uses] is [true], it
-        considers [expr] as an expression that uses variables. Otherwise, it
-        considers [expr] as an expression that defines variables. *)
-    let rec update_use_def_for_expr ~uses spec use_def expr =
-      let check_and_add_uses_for_expr use_def vars =
-        check_and_add_uses ~context_expr:expr use_def vars
-      in
-      let check_and_add_defined_for_expr use_def vars =
-        check_and_add_defined ~context_expr:expr use_def vars
-      in
-      let check_and_add_for_expr =
-        if uses then check_and_add_uses_for_expr
-        else check_and_add_defined_for_expr
-      in
-      let open Expr in
-      match expr with
-      | Var id ->
-          vars_of_identifiers spec.id_to_defining_node [ id ]
-          |> check_and_add_for_expr use_def
-      | FieldAccess (id :: _) ->
-          if not uses then
-            failwith
-              "A field access cannot be used as a variable-defining expression";
-          vars_of_identifiers spec.id_to_defining_node [ id ]
-          |> check_and_add_uses_for_expr use_def
-      | FieldAccess _ -> failwith "Unexpected empty field access"
-      | ListIndex { list_var; index } ->
-          let use_def =
-            vars_of_identifiers spec.id_to_defining_node [ list_var ]
-            |> check_and_add_for_expr use_def
-          in
-          (* The index expression never defines variables. *)
-          update_use_def_for_expr ~uses:true spec use_def index
-      | Record { fields } ->
-          let initializing_exprs = List.map snd fields in
-          update_use_def_for_expr_list ~uses spec use_def initializing_exprs
-      | NamedExpr (sub_expr, _) ->
-          update_use_def_for_expr ~uses spec use_def sub_expr
-      | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
-        when String.equal op_name spec.assign.name ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def rhs in
-          update_use_def_for_expr ~uses:false spec use_def lhs
-      | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
-        when String.equal op_name spec.reverse_assign.name ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
-          update_use_def_for_expr ~uses:false spec use_def rhs
-      | Application
-          { applicator = ExprOperator op_name; args = Var bound_var :: args }
-        when is_quantifying_operator spec op_name ->
-          update_use_def_with_bound_variable ~uses spec use_def args
-            ~context_expr:expr ~bound_var
-      | Application { args } ->
-          update_use_def_for_expr_list ~uses spec use_def args
-      | Transition { lhs; rhs } ->
-          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
-          update_use_def_for_expr ~uses:false spec use_def rhs
-      | Indexed { index; list_var; body } ->
-          let use_def = check_and_add_uses_for_expr use_def [ list_var ] in
-          update_use_def_with_bound_variable ~uses spec use_def [ body ]
-            ~context_expr:expr ~bound_var:index
-
-    and update_use_def_for_expr_list ~uses spec use_def exprs =
-      List.fold_left
-        (fun curr_use_def arg_expr ->
-          update_use_def_for_expr ~uses spec curr_use_def arg_expr)
-        use_def exprs
-
-    (** updates [use_def] for the list of expressions [exprs] and the variable
-        [bound_var], which is only in scope for [exprs]. *)
-    and update_use_def_with_bound_variable ~uses spec use_def exprs
-        ~context_expr ~bound_var =
-      (* To avoid confusing specs, we forbid shadowing variables by bound variables. *)
-      let use_def = check_and_add_defined ~context_expr use_def [ bound_var ] in
-      let use_def = update_use_def_for_expr_list ~uses spec use_def exprs in
-      (* The bound variable goes out of scope. *)
-      { use_def with defined = StringSet.remove bound_var use_def.defined }
-
-    (** [check_use_def relation spec expanded_rule] checks that all variables
-        used in [expanded_rule] are defined before use and no variables are
-        re-defined. *)
-    let check_use_def relation spec expanded_rule =
-      let open ExpandRules in
-      let () =
-        if false then
-          Format.eprintf "Checking use-def for relation %s case %s@."
-            relation.Relation.name
-            (Option.value ~default:"top level"
-               expanded_rule.ExpandRules.name_opt)
-      in
-      let premises, conclusion =
-        Utils.split_last expanded_rule.ExpandRules.judgments
-      in
-      let premises_exprs = List.map (fun { Rule.expr } -> expr) premises in
-      let output_expr =
-        match conclusion.expr with
-        | Transition { lhs = Application { applicator = Relation _ }; rhs } ->
-            (* In case the conclusion has been transformed to a transition.*)
-            rhs
-        | _ -> conclusion.expr
-      in
-      (* The input variables are implicitly defined at the start of the rule. *)
-      let defined_args =
-        vars_of_opt_named_type_terms relation.Relation.input
-        |> List.to_seq |> StringSet.of_seq
-      in
-      let use_def = { used = StringSet.empty; defined = defined_args } in
-      let use_def =
-        List.fold_left
-          (fun curr_use_def expr ->
-            update_use_def_for_expr ~uses:true spec curr_use_def expr)
-          use_def
-          (premises_exprs @ [ output_expr ])
-      in
-      if false then Format.eprintf "After premises: %a@." pp_use_def use_def
-      else ()
-  end
-
-  (** A module for checking the correctness of the rules in all relations. The
-      checks in this module assume that [ResolveRules.resolve] has already been
-      applied to the AST. *)
-  module CheckRules = struct
-    open Expr
-
-    (** [check_well_formed_expanded relation_name expanded_rule] checks that the
-        [expanded_rule] is well-formed, that is, it has at least one judgment,
-        and that the last judgment, and only the last judgment, is an output
-        judgment. If not, raises a [SpecError] describing the issue.
-        [relation_name] is used when reporting errors. *)
-    let check_well_formed_expanded relation_name expanded_rule =
-      let open ExpandRules in
-      (* Reverse the list to easily access the last judgment. *)
-      match List.rev expanded_rule.judgments with
-      | [] -> Error.empty_rule relation_name
-      | { expr = Transition _; is_output = true } :: prefix_rules ->
-          List.iter
-            (fun { Rule.is_output } ->
-              if is_output then
-                Error.multiple_output_judgments relation_name
-                  expanded_rule.name_opt
-              else ())
-            prefix_rules
-      | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
-
-    (** [formals_of_relation id_to_defining_node rel_name] returns the list of
-        formal arguments for the relation named [rel_name] using
-        [id_to_defining_node] to lookup the relation definition node. *)
-    let formals_of_relation id_to_defining_node rel_name =
-      match StringMap.find rel_name id_to_defining_node with
-      | Node_Relation { Relation.input } -> input
-      | _ -> failwith "Expected relation definition node."
-
-    (** [components_of_labelled_tuple id_to_defining_node label] returns the
-        components of the labelled tuple type variant named [label] using
-        [id_to_defining_node] to lookup the type variant definition node. *)
-    let components_of_labelled_tuple id_to_defining_node label =
-      match StringMap.find label id_to_defining_node with
-      | Node_TypeVariant { TypeVariant.term = LabelledTuple { components } } ->
-          components
-      | node ->
-          let msg =
-            Format.asprintf
-              "Expected labelled tuple type variant for label %s, found %a."
-              label pp_definition_node node
-          in
-          failwith msg
-
-    (** [check_expr_well_formed id_to_defining_node expr] checks that the
-        expression [expr] is well-formed in the context of
-        [id_to_defining_node]. That is, it has the correct structure in terms of
-        number of arguments (or fields) with respect to the symbols it
-        references. If not, raises a [SpecError] describing the issue. *)
-    let rec check_expr_well_formed id_to_defining_node expr =
-      let is_field id =
-        match StringMap.find_opt id id_to_defining_node with
-        | Some (Node_RecordField _) -> true
-        | _ -> false
-      in
-      let check_expr_in_context = check_expr_well_formed id_to_defining_node in
-      let check_exprs_in_context = List.iter check_expr_in_context in
-      let open Rule in
-      match expr with
-      | NamedExpr (sub_expr, _) -> check_expr_in_context sub_expr
-      | Application { applicator; args } -> (
-          let () = check_exprs_in_context args in
-          match applicator with
-          | Relation rel_name | ExprOperator rel_name ->
-              let formal_args =
-                formals_of_relation id_to_defining_node rel_name
-              in
-              if
-                (not
-                   (is_applicator_variadic_operator id_to_defining_node
-                      applicator))
-                (* A variadic operator accepts any number of arguments. *)
-                && List.compare_lengths formal_args args <> 0
-              then
-                Error.invalid_number_of_arguments rel_name expr
-                  (List.length formal_args) (List.length args)
-          | TupleLabel label ->
-              let components =
-                components_of_labelled_tuple id_to_defining_node label
-              in
-              if List.compare_lengths components args <> 0 then
-                Error.invalid_number_of_components label expr
-                  (List.length components) (List.length args)
-          | EmptyApplicator | Fields _ | Unresolved _ -> ())
-      | Record { label_opt; fields } -> (
-          let expr_field_names, expr_field_inits = List.split fields in
-          let () = check_exprs_in_context expr_field_inits in
-          match label_opt with
-          | Some label ->
-              let record_type_fields =
-                match StringMap.find label id_to_defining_node with
-                | Node_TypeVariant
-                    { TypeVariant.term = LabelledRecord { fields } } ->
-                    fields
-                | _ -> Error.illegal_lhs_application expr
-              in
-              let record_type_field_names =
-                List.map
-                  (fun { name_and_type = name, _ } -> name)
-                  record_type_fields
-              in
-              if
-                not
-                  (Utils.list_is_equal String.equal expr_field_names
-                     record_type_field_names)
-              then
-                Error.invalid_record_field_names expr expr_field_names
-                  record_type_field_names
-              else ()
-          | None -> ())
-      | Transition { lhs; rhs; short_circuit } ->
-          check_expr_in_context lhs;
-          check_expr_in_context rhs;
-          Option.iter check_exprs_in_context short_circuit
-      | Indexed { body } -> check_expr_in_context body
-      | ListIndex { index } -> check_expr_in_context index
-      | FieldAccess [] -> failwith "Unexpected empty field access"
-      | Var _ -> ()
-      | FieldAccess (_ :: fields) ->
-          List.iter
-            (fun id -> if is_field id then () else Error.non_field id expr)
-            fields
-
-    (** [check_rule_for_relation spec relation elements] checks the elements of
-        the rule for [relation] in the context of [spec].
-        @raise [SpecError]
-          if any check fails, describing the issue using [relation.name]. *)
-    let check_rule_for_relation ({ id_to_defining_node } as spec) relation
-        elements =
-      let expanded_rules = ExpandRules.expand elements in
-      let () =
-        List.iter
-          (fun expanded_rule ->
-            try
-              let () =
-                check_well_formed_expanded relation.Relation.name expanded_rule
-              in
-              let () =
-                TypeInference.check_use_def relation spec expanded_rule
-              in
-              let open ExpandRules in
-              List.iter
-                (fun { Rule.expr } ->
-                  check_expr_well_formed id_to_defining_node expr)
-                expanded_rule.judgments
-            with SpecError err | Failure err ->
-              stack_spec_error err
-                (Format.asprintf "In rule %s of %s"
-                   (Option.value ~default:"(top-level)" expanded_rule.name_opt)
-                   relation.Relation.name))
-          expanded_rules
-      in
-      ()
-    (* TypeInference.infer_for_relation spec relation |> ignore *)
-
-    (** Checks the rules in all relations. *)
-    let check ({ ast } as spec) =
-      let open Rule in
-      List.iter
-        (fun elem ->
-          match elem with
-          | Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
-          | Elem_RenderRule _
-          | Elem_Relation { rule_opt = None } ->
-              ()
-          | Elem_Relation ({ rule_opt = Some elements } as def) ->
-              check_rule_for_relation spec def elements)
-        ast
-  end
-
   (** A module for conservatively checking that all type terms are well-formed
       and that all type instantiations are valid. That is each type term that
       instantiates another defined type term is subsumed by it.
@@ -1903,6 +1522,387 @@ module Check = struct
           with SpecError e ->
             stack_spec_error e
               (Format.asprintf "While checking: %s" (elem_name elem)))
+        ast
+  end
+
+  (** A module for checking variable usage and inferring types for expressions
+      in relation rules. The functions in this module assume that a rule exists
+      and that [Check.relation_named_arguments_if_exists_rule] has been run. *)
+  module TypeInference = struct
+    open Expr
+
+    (** [vars_of_identifiers id_to_defining_node identifiers] returns the subset
+        of [identifiers] that represent variables in a sorted duplicate-free
+        list. The map [id_to_defining_node] is used to filter out constants and
+        labels. *)
+    let vars_of_identifiers id_to_defining_node identifiers =
+      (* Filters out identifiers that are definitely not variables,
+         since they are either constants or type names. *)
+      let is_non_var id =
+        match StringMap.find_opt id id_to_defining_node with
+        | Some (Node_Constant _)
+        | Some (Node_Type _)
+        | Some (Node_TypeVariant _) ->
+            (* Constants and types cannot be used as variables.*)
+            true
+        | Some (Node_RecordField _)
+        | Some (Node_Relation _)
+        (* Field names and relation names can be used as variables. *)
+        | None ->
+            false
+      in
+      identifiers
+      |> List.filter_map (fun id ->
+          if String.equal id ignore_var || is_non_var id then None else Some id)
+      |> List.sort_uniq String.compare
+
+    type use_def = { used : StringSet.t; defined : StringSet.t }
+    (** An environment data type for tracking used and defined variables. *)
+
+    (** Pretty-prints a [use_def] environment for debugging. *)
+    let pp_use_def fmt { used; defined } =
+      Format.fprintf fmt "{ used: [%s]; defined: [%s]}"
+        (String.concat ", " (StringSet.elements used))
+        (String.concat ", " (StringSet.elements defined))
+
+    (** [check_and_add_uses ~context_expr use_def vars] checks that all
+        variables in [vars] are already defined in [use_def] and adds them to
+        the used set.
+        @raise [SpecError]
+          if any variable in [vars] is not defined in [use_def]. *)
+    let check_and_add_uses ~context_expr use_def vars =
+      let () =
+        List.iter
+          (fun id ->
+            if not (StringSet.mem id use_def.defined) then
+              Error.undefined_variable_in_rule ~context_expr id)
+          vars
+      in
+      let new_used =
+        StringSet.union use_def.used (vars |> List.to_seq |> StringSet.of_seq)
+      in
+      { use_def with used = new_used }
+
+    (** [check_and_add_defined ~context_expr use_def vars] checks that all
+        variables in [vars] are not already defined in [use_def] and adds them
+        to the defined set.
+        @raise [SpecError]
+          if any variable in [vars] is already defined in [use_def]. *)
+    let check_and_add_defined ~context_expr use_def vars =
+      let () =
+        List.iter
+          (fun id ->
+            if StringSet.mem id use_def.defined then
+              Error.redefined_variable_in_rule ~context_expr id)
+          vars
+      in
+      let new_defined =
+        StringSet.union use_def.defined (vars |> List.to_seq |> StringSet.of_seq)
+      in
+      { use_def with defined = new_defined }
+
+    (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
+        quantifying operator (like "forall" or "exists") based on whether its
+        first argument has the type [bound_variable]. *)
+    let is_quantifying_operator spec op_name =
+      let operator = relation_for_id spec op_name in
+      match operator.input with
+      | [] -> false
+      | (_, first_arg_type) :: _ -> (
+          match first_arg_type with
+          | Label id -> String.equal id spec.bound_variable.name
+          | _ -> false)
+
+    (** [update_use_def_for_expr ~uses spec use_def expr] updates the use-def
+        environment [use_def] by analyzing [expr]. If [uses] is [true], it
+        considers [expr] as an expression that uses variables. Otherwise, it
+        considers [expr] as an expression that defines variables. *)
+    let rec update_use_def_for_expr ~uses spec use_def expr =
+      let check_and_add_uses_for_expr use_def vars =
+        check_and_add_uses ~context_expr:expr use_def vars
+      in
+      let check_and_add_defined_for_expr use_def vars =
+        check_and_add_defined ~context_expr:expr use_def vars
+      in
+      let check_and_add_for_expr =
+        if uses then check_and_add_uses_for_expr
+        else check_and_add_defined_for_expr
+      in
+      let open Expr in
+      match expr with
+      | Var id ->
+          vars_of_identifiers spec.id_to_defining_node [ id ]
+          |> check_and_add_for_expr use_def
+      | FieldAccess (id :: _) ->
+          if not uses then
+            failwith
+              "A field access cannot be used as a variable-defining expression";
+          vars_of_identifiers spec.id_to_defining_node [ id ]
+          |> check_and_add_uses_for_expr use_def
+      | FieldAccess _ -> failwith "Unexpected empty field access"
+      | ListIndex { list_var; index } ->
+          let use_def =
+            vars_of_identifiers spec.id_to_defining_node [ list_var ]
+            |> check_and_add_for_expr use_def
+          in
+          (* The index expression never defines variables. *)
+          update_use_def_for_expr ~uses:true spec use_def index
+      | Record { fields } ->
+          let initializing_exprs = List.map snd fields in
+          update_use_def_for_expr_list ~uses spec use_def initializing_exprs
+      | NamedExpr (sub_expr, _) ->
+          update_use_def_for_expr ~uses spec use_def sub_expr
+      | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
+        when String.equal op_name spec.assign.name ->
+          let use_def = update_use_def_for_expr ~uses:true spec use_def rhs in
+          update_use_def_for_expr ~uses:false spec use_def lhs
+      | Application { applicator = ExprOperator op_name; args = [ lhs; rhs ] }
+        when String.equal op_name spec.reverse_assign.name ->
+          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
+          update_use_def_for_expr ~uses:false spec use_def rhs
+      | Application
+          { applicator = ExprOperator op_name; args = Var bound_var :: args }
+        when is_quantifying_operator spec op_name ->
+          update_use_def_with_bound_variable ~uses spec use_def args
+            ~context_expr:expr ~bound_var
+      | Application { args } ->
+          update_use_def_for_expr_list ~uses spec use_def args
+      | Transition { lhs; rhs } ->
+          let use_def = update_use_def_for_expr ~uses:true spec use_def lhs in
+          update_use_def_for_expr ~uses:false spec use_def rhs
+      | Indexed { index; list_var; body } ->
+          let use_def = check_and_add_uses_for_expr use_def [ list_var ] in
+          update_use_def_with_bound_variable ~uses spec use_def [ body ]
+            ~context_expr:expr ~bound_var:index
+
+    and update_use_def_for_expr_list ~uses spec use_def exprs =
+      List.fold_left
+        (fun curr_use_def arg_expr ->
+          update_use_def_for_expr ~uses spec curr_use_def arg_expr)
+        use_def exprs
+
+    (** updates [use_def] for the list of expressions [exprs] and the variable
+        [bound_var], which is only in scope for [exprs]. *)
+    and update_use_def_with_bound_variable ~uses spec use_def exprs
+        ~context_expr ~bound_var =
+      (* To avoid confusing specs, we forbid shadowing variables by bound variables. *)
+      let use_def = check_and_add_defined ~context_expr use_def [ bound_var ] in
+      let use_def = update_use_def_for_expr_list ~uses spec use_def exprs in
+      (* The bound variable goes out of scope. *)
+      { use_def with defined = StringSet.remove bound_var use_def.defined }
+
+    (** [check_use_def relation spec expanded_rule] checks that all variables
+        used in [expanded_rule] are defined before use and no variables are
+        re-defined. *)
+    let check_use_def relation spec expanded_rule =
+      let open ExpandRules in
+      let () =
+        if false then
+          Format.eprintf "Checking use-def for relation %s case %s@."
+            relation.Relation.name
+            (Option.value ~default:"top level"
+               expanded_rule.ExpandRules.name_opt)
+      in
+      let premises, conclusion =
+        Utils.split_last expanded_rule.ExpandRules.judgments
+      in
+      let premises_exprs = List.map (fun { Rule.expr } -> expr) premises in
+      let output_expr =
+        match conclusion.expr with
+        | Transition { lhs = Application { applicator = Relation _ }; rhs } ->
+            (* In case the conclusion has been transformed to a transition.*)
+            rhs
+        | _ -> conclusion.expr
+      in
+      (* The input variables are implicitly defined at the start of the rule. *)
+      let defined_args =
+        vars_of_opt_named_type_terms relation.Relation.input
+        |> List.to_seq |> StringSet.of_seq
+      in
+      let use_def = { used = StringSet.empty; defined = defined_args } in
+      let use_def =
+        List.fold_left
+          (fun curr_use_def expr ->
+            update_use_def_for_expr ~uses:true spec curr_use_def expr)
+          use_def
+          (premises_exprs @ [ output_expr ])
+      in
+      if false then Format.eprintf "After premises: %a@." pp_use_def use_def
+      else ()
+  end
+
+  (** A module for checking the correctness of the rules in all relations. The
+      checks in this module assume that [ResolveRules.resolve] has already been
+      applied to the AST. *)
+  module CheckRules = struct
+    open Expr
+
+    (** [check_well_formed_expanded relation_name expanded_rule] checks that the
+        [expanded_rule] is well-formed, that is, it has at least one judgment,
+        and that the last judgment, and only the last judgment, is an output
+        judgment. If not, raises a [SpecError] describing the issue.
+        [relation_name] is used when reporting errors. *)
+    let check_well_formed_expanded relation_name expanded_rule =
+      let open ExpandRules in
+      (* Reverse the list to easily access the last judgment. *)
+      match List.rev expanded_rule.judgments with
+      | [] -> Error.empty_rule relation_name
+      | { expr = Transition _; is_output = true } :: prefix_rules ->
+          List.iter
+            (fun { Rule.is_output } ->
+              if is_output then
+                Error.multiple_output_judgments relation_name
+                  expanded_rule.name_opt
+              else ())
+            prefix_rules
+      | _ -> Error.missing_output_judgment (Option.get expanded_rule.name_opt)
+
+    (** [formals_of_relation id_to_defining_node rel_name] returns the list of
+        formal arguments for the relation named [rel_name] using
+        [id_to_defining_node] to lookup the relation definition node. *)
+    let formals_of_relation id_to_defining_node rel_name =
+      match StringMap.find rel_name id_to_defining_node with
+      | Node_Relation { Relation.input } -> input
+      | _ -> failwith "Expected relation definition node."
+
+    (** [components_of_labelled_tuple id_to_defining_node label] returns the
+        components of the labelled tuple type variant named [label] using
+        [id_to_defining_node] to lookup the type variant definition node. *)
+    let components_of_labelled_tuple id_to_defining_node label =
+      match StringMap.find label id_to_defining_node with
+      | Node_TypeVariant { TypeVariant.term = LabelledTuple { components } } ->
+          components
+      | node ->
+          let msg =
+            Format.asprintf
+              "Expected labelled tuple type variant for label %s, found %a."
+              label pp_definition_node node
+          in
+          failwith msg
+
+    (** [check_expr_well_formed id_to_defining_node expr] checks that the
+        expression [expr] is well-formed in the context of
+        [id_to_defining_node]. That is, it has the correct structure in terms of
+        number of arguments (or fields) with respect to the symbols it
+        references. If not, raises a [SpecError] describing the issue. *)
+    let rec check_expr_well_formed id_to_defining_node expr =
+      let is_field id =
+        match StringMap.find_opt id id_to_defining_node with
+        | Some (Node_RecordField _) -> true
+        | _ -> false
+      in
+      let check_expr_in_context = check_expr_well_formed id_to_defining_node in
+      let check_exprs_in_context = List.iter check_expr_in_context in
+      let open Rule in
+      match expr with
+      | NamedExpr (sub_expr, _) -> check_expr_in_context sub_expr
+      | Application { applicator; args } -> (
+          let () = check_exprs_in_context args in
+          match applicator with
+          | Relation rel_name | ExprOperator rel_name ->
+              let formal_args =
+                formals_of_relation id_to_defining_node rel_name
+              in
+              if
+                (not
+                   (is_applicator_variadic_operator id_to_defining_node
+                      applicator))
+                (* A variadic operator accepts any number of arguments. *)
+                && List.compare_lengths formal_args args <> 0
+              then
+                Error.invalid_number_of_arguments rel_name expr
+                  (List.length formal_args) (List.length args)
+          | TupleLabel label ->
+              let components =
+                components_of_labelled_tuple id_to_defining_node label
+              in
+              if List.compare_lengths components args <> 0 then
+                Error.invalid_number_of_components label expr
+                  (List.length components) (List.length args)
+          | EmptyApplicator | Fields _ | Unresolved _ -> ())
+      | Record { label_opt; fields } -> (
+          let expr_field_names, expr_field_inits = List.split fields in
+          let () = check_exprs_in_context expr_field_inits in
+          match label_opt with
+          | Some label ->
+              let record_type_fields =
+                match StringMap.find label id_to_defining_node with
+                | Node_TypeVariant
+                    { TypeVariant.term = LabelledRecord { fields } } ->
+                    fields
+                | _ -> Error.illegal_lhs_application expr
+              in
+              let record_type_field_names =
+                List.map
+                  (fun { name_and_type = name, _ } -> name)
+                  record_type_fields
+              in
+              if
+                not
+                  (Utils.list_is_equal String.equal expr_field_names
+                     record_type_field_names)
+              then
+                Error.invalid_record_field_names expr expr_field_names
+                  record_type_field_names
+              else ()
+          | None -> ())
+      | Transition { lhs; rhs; short_circuit } ->
+          check_expr_in_context lhs;
+          check_expr_in_context rhs;
+          Option.iter check_exprs_in_context short_circuit
+      | Indexed { body } -> check_expr_in_context body
+      | ListIndex { index } -> check_expr_in_context index
+      | FieldAccess [] -> failwith "Unexpected empty field access"
+      | Var _ -> ()
+      | FieldAccess (_ :: fields) ->
+          List.iter
+            (fun id -> if is_field id then () else Error.non_field id expr)
+            fields
+
+    (** [check_rule_for_relation spec relation elements] checks the elements of
+        the rule for [relation] in the context of [spec].
+        @raise [SpecError]
+          if any check fails, describing the issue using [relation.name]. *)
+    let check_rule_for_relation ({ id_to_defining_node } as spec) relation
+        elements =
+      let expanded_rules = ExpandRules.expand elements in
+      let () =
+        List.iter
+          (fun expanded_rule ->
+            try
+              let () =
+                check_well_formed_expanded relation.Relation.name expanded_rule
+              in
+              let () =
+                TypeInference.check_use_def relation spec expanded_rule
+              in
+              let open ExpandRules in
+              List.iter
+                (fun { Rule.expr } ->
+                  check_expr_well_formed id_to_defining_node expr)
+                expanded_rule.judgments
+            with SpecError err | Failure err ->
+              stack_spec_error err
+                (Format.asprintf "In rule %s of %s"
+                   (Option.value ~default:"(top-level)" expanded_rule.name_opt)
+                   relation.Relation.name))
+          expanded_rules
+      in
+      ()
+    (* TypeInference.infer_for_relation spec relation |> ignore *)
+
+    (** Checks the rules in all relations. *)
+    let check ({ ast } as spec) =
+      let open Rule in
+      List.iter
+        (fun elem ->
+          match elem with
+          | Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
+          | Elem_RenderRule _
+          | Elem_Relation { rule_opt = None } ->
+              ()
+          | Elem_Relation ({ rule_opt = Some elements } as def) ->
+              check_rule_for_relation spec def elements)
         ast
   end
 
