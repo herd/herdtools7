@@ -1,0 +1,20 @@
+AArch64 MP+tlbi-sync.ishpteoneafp+po
+"TLBI-sync.ISHdWWPteOneAFP Rfe PodRR FrePPteOneAF"
+Generator=diyone.exe (version 7.58+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=TLBI-sync.ISHdWWPteOneAFP Rfe PodRR FrePPteOneAF
+{ int x=1; int y=5;
+0:X0=PTE(x); 0:X1=(oa:PA(x)); 0:X3=y; 0:X4=x;
+1:X3=y; 1:X4=x;
+PTE(x)=(oa:PA(x), af:0);
+}
+ P0              | P1          ;
+ STR X1,[X0]     | LDR W2,[X3] ;
+ LSR X5,X4,#12   | L00:        ;
+ DSB ISH         | LDR W5,[X4] ;
+ TLBI VAAE1IS,X5 |             ;
+ DSB ISH         |             ;
+ MOV W2,#6       |             ;
+ STR W2,[X3]     |             ;
+exists (1:X2=6 /\ Fault(P1:L00,x))

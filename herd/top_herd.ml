@@ -26,6 +26,7 @@ module type CommonConfig = sig
   val shortlegend : bool
   val outcomereads : bool
   val outputdir : PrettyConf.outputdir_mode
+  val output_format : PrettyConf.output_format
   val suffix : string
   val dumpes : bool
   val badexecs : bool
@@ -169,57 +170,109 @@ module Make(O:Config)(M:XXXMem.S) =
           k rfms in
       k
 
-(* Open a dot outfile or not *)
-    let open_dot test =
+    module JsonChan : sig
+      type t
+      val make : out_channel -> t
+      val write : Json.t -> t -> unit
+      val flush : t -> unit
+      val close : t -> unit
+    end = struct
+      type t = out_channel * Json.t list ref
+
+      let make chan = (chan, ref [])
+
+      let write json (_, list) =
+        (* We cannot print a JSON list of graphs incrementally,
+           so we have to wait until the whole list has been constructed.
+           Therefore, at this stage we simply build up a list,
+           which we then finally render to the output channel via [close]. *)
+        list := json :: !list
+
+      let flush (chan, items) =
+        (* Finally write JSON list to channel *)
+        Json.pretty_to_channel chan (`List !items);
+        Stdlib.output_char chan '\n';
+        Stdlib.flush chan;
+        items := []
+
+      let close (chan, _) = close_out chan
+    end
+
+    type ochan = DotChan of out_channel | JsonChan of JsonChan.t
+
+(* Open an output file channel, or not *)
+    let open_ochan test : (ochan * string) option =
       match O.outputdir with
       | PrettyConf.NoOutputdir ->
          begin
            match S.O.PC.view with
-           | Some _ ->
+           | Some _ when O.output_format = PrettyConf.Dot ->
             begin try
               let f,chan = Filename.open_temp_file "herd" ".dot" in
-              Some (chan,f)
+              Some (DotChan chan, f)
             with  Sys_error msg ->
               W.warn "Cannot create temporary file: %s" msg ;
               None
             end
-           | None -> None
+           | _ -> None
          end
-      | PrettyConf.StdoutOutput ->
+      | PrettyConf.StdoutOutput -> (
          let fname = Test_herd.basename test in
-         fprintf stdout "\nDOTBEGIN %s\n" fname;
-         fprintf stdout "DOTCOM %s\n"
-           (let module G = Show.Generator(PC) in
-           G.generator) ;
-         Some (stdout, fname)
+         match O.output_format with
+         | PrettyConf.Dot ->
+           fprintf stdout "\nDOTBEGIN %s\n" fname;
+           fprintf stdout "DOTCOM %s\n"
+           (let module G = Show.Generator(PC) in G.generator);
+           Some (DotChan stdout, fname)
+         | PrettyConf.Json ->
+           fprintf stdout "\nJSONBEGIN %s\n" fname;
+           Some (JsonChan (JsonChan.make stdout), fname))
       | PrettyConf.Outputdir d ->
           let base = Test_herd.basename test in
           let base = base ^ O.suffix in
-          let f = Filename.concat d base ^ ".dot" in
-          try Some (open_out f,f) with
+          let f, mk_chan = (
+            match O.output_format with
+            | PrettyConf.Dot ->
+              let f = Filename.concat d base ^ ".dot" in
+              (f, fun chan -> (DotChan chan, f))
+            | PrettyConf.Json ->
+              let f = Filename.concat d base ^ ".json" in
+              (f, fun chan -> (JsonChan (JsonChan.make chan), f)))
+          in
+          try Some (mk_chan (open_out f)) with
           | Sys_error msg ->
               W.warn "Cannot create %s: %s" f msg ;
               None
 
-    let close_dot = function
+    let close_ochan = function
       | None -> ()
-      | Some (chan,fname) ->
+      | Some (DotChan chan, fname) -> (
          match O.outputdir with
          | PrettyConf.NoOutputdir | PrettyConf.Outputdir _ ->
             if S.O.PC.debug then eprintf "close %s\n" fname ;
             close_out chan
-         | PrettyConf.StdoutOutput ->
-            fprintf stdout "\nDOTEND %s\n" fname
+         | PrettyConf.StdoutOutput -> fprintf stdout "\nDOTEND %s\n" fname)
+      | Some (JsonChan chan, fname) ->
+         JsonChan.flush chan;
+         begin
+           match O.outputdir with
+           | PrettyConf.Outputdir _ ->
+              if S.O.PC.debug then eprintf "close %s\n" fname;
+              JsonChan.close chan
+           | PrettyConf.StdoutOutput -> fprintf stdout "\nJSONEND %s\n" fname
+           | _ -> ()
+         end
 
     let my_remove name =
       try Sys.remove name
       with e ->
         W.warn "remove failed: %s" (Printexc.to_string e)
 
-    let erase_dot = match S.O.PC.debug,O.outputdir with
-    | false,PrettyConf.NoOutputdir -> (* Erase temp file *)
-        (function Some (_,f) -> my_remove f | None -> ())
-    | (_,PrettyConf.Outputdir _)|(_,PrettyConf.StdoutOutput)|(true,PrettyConf.NoOutputdir) -> (function _ -> ())
+    let erase_ochan ochan =
+      match S.O.PC.debug, O.outputdir, ochan with
+      | false, PrettyConf.NoOutputdir, Some (DotChan _, f) ->
+        my_remove f (* Erase temp file *)
+      | _ -> ()
 
     exception Over of count (* internal use, to stop everything *)
 
@@ -275,8 +328,9 @@ module Make(O:Config)(M:XXXMem.S) =
             | ShowNone -> false
             | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
 
+          let module PP = Pretty.Make(S) in
           begin match ochan with
-          | Some (chan,_) when show_exec ->
+          | Some (DotChan chan, _) when show_exec ->
               let legend =
                 let pp_flag = match O.show with
                 | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
@@ -312,9 +366,12 @@ module Make(O:Config)(M:XXXMem.S) =
                       | _ -> sprintf ", %s" pp_model)
                       pp_flag
                 end in
-              let module PP = Pretty.Make(S) in
-              PP.dump_legend chan test legend conc
-                ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
+              let vbpp = Lazy.force vbpp in
+              PP.dump_legend chan test legend conc ~sets:(Lazy.force set_pp) vbpp
+          | Some (JsonChan chan, _) when show_exec ->
+            let vbpp = Lazy.force vbpp in
+            let json_exec = PP.Json.to_json_view conc vbpp in
+            JsonChan.write json_exec chan
           | _ -> ()
           end ;
           let fsc = do_restrict test fsc in
@@ -409,24 +466,28 @@ module Make(O:Config)(M:XXXMem.S) =
         restrict_faults flts in
 
 (* Open *)
-      let ochan = open_dot test in
+      let ochan = open_ochan test in
 (* So small a race condition... *)
-      Handler.push (fun () -> erase_dot ochan) ;
+      Handler.push (fun () -> erase_ochan ochan) ;
 (* Dump event structures ... *)
       if O.dumpes then begin
+        let module PP = Pretty.Make(S) in
         match ochan with
         | None -> ()
         | Some (chan,fname) ->
-            let module PP = Pretty.Make(S) in
             List.iter
-              (fun (_i,_cs,es) -> PP.dump_es chan test es)
+              (fun (_i,_cs,es) ->
+                match chan with
+                | DotChan chan -> PP.dump_es chan test es
+                | JsonChan chan -> JsonChan.write (PP.Json.es_to_json_view es) chan
+                )
               rfms ;
-            close_dot ochan ;
-            if Misc.is_some S.O.PC.view then begin
+            close_ochan ochan ;
+            if Misc.is_some S.O.PC.view && O.output_format = PrettyConf.Dot then begin
               let module SH = Show.Make(S.O.PC) in
               SH.show_file fname
             end ;
-            erase_dot ochan ;
+            erase_ochan ochan ;
             Handler.pop ()
       end else
         (* Thanks to the existence of check_test, XXMem modules
@@ -453,10 +514,10 @@ module Make(O:Config)(M:XXXMem.S) =
         with
         | Over c -> c
         | e ->
-            close_dot ochan  ; (* Close *)
+            close_ochan ochan  ; (* Close *)
             raise e in
 (* Close *)
-      close_dot ochan ;
+      close_ochan ochan ;
       let do_show () =
 (* Show if something to show *)
         begin match ochan with
@@ -467,7 +528,7 @@ module Make(O:Config)(M:XXXMem.S) =
         | Some _|None -> ()
         end ;
 (* Erase *)
-        erase_dot ochan ;
+        erase_ochan ochan ;
         Handler.pop () in
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
