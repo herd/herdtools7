@@ -14,7 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Misc
 open Printf
 
 (* Configuration *)
@@ -168,7 +167,7 @@ module Make(O:Config) (M:Builder.S) =
                       let mk_scope _ = st in
                       Some (kont es D.no_info mk_name mk_scope k0)
                     with
-                    | Fatal msg | UserError msg ->
+                    | Misc.Fatal msg | Misc.UserError msg ->
                         Warn.warn_always "%s on line '%s'" msg line ;
                         Some k0
                   with
@@ -179,7 +178,7 @@ module Make(O:Config) (M:Builder.S) =
               do_rec in
             D.all gen
         | _ -> ignore (dump name es)
-      end with Fatal msg ->
+      end with Misc.Fatal msg ->
         eprintf "%s: Fatal error: %s\n" Config.prog msg ;
         exit 2
 
