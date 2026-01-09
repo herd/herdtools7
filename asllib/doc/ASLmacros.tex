@@ -1,4 +1,5 @@
 \usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
+\usepackage{ifthen} % High-level statements for LaTeX
 \usepackage{amsmath}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
@@ -104,13 +105,14 @@
     morestring=[b][\color{cyan}]",
     morestring=[d][\color{cyan}]',
 }
+\newcommand{\lightyellow}{\color{yellow!10}}
 \lstset{
   language=ASL,
   basicstyle=\ttfamily\scriptsize,
   showspaces=false,
   showstringspaces=false,
   breaklines=true,
-  backgroundcolor=\color{yellow!10}
+  backgroundcolor=\lightyellow
 }
 
 \usepackage{xcolor}
@@ -139,7 +141,6 @@
 \newcommand\TERM[1]{#1} % escape hatch for spellchecking
 
 \fvset{fontsize=\small}
-
 \usepackage[inline]{enumitem}  % For inline lists
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
@@ -285,67 +286,57 @@
 \newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
 
 \newcommand\forallop[4][H]{% DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \forall {#2} \in {#3} : {#4}
-  \else
-    \forall
+  \ifthenelse{\equal{#1}{H}}
+    {\forall {#2} \in {#3} : {#4}}
+    {\forall
     \begin{array}{ll}
     {#2} \in {#3}:\\
     {#4}\\
-    \end{array}
-  \fi
+    \end{array}}
 }
 
 \newcommand\listforall[4][H]{% DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \forall {#2} \in \listrange({#3}) : {#4}
-  \else
-    \forall
+  \ifthenelse{\equal{#1}{H}}
+    {\forall {#2} \in \listrange({#3}) : {#4}}
+    {\forall
     \begin{array}{ll}
     {#2} \in \listrange({#3}):\\
     {#4}\\
-    \end{array}
-  \fi
+    \end{array}}
 }
 
 \newcommand\listexists[4][H]{% DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \exists {#2} \in \listrange({#3}) : {#4}
-  \else
-    \exists
+  \ifthenelse{\equal{#1}{H}}
+    {\exists {#2} \in \listrange({#3}) : {#4}}
+    {\exists
     \begin{array}{ll}
     {#2} \in \listrange({#3}):\\
     {#4}\\
-    \end{array}
-  \fi
+    \end{array}}
 }
 
 \newcommand\listfromindices[4][H]{% DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \left[#2 \in \listrange(#3) : #4\right]
-  \else
-    \left[\begin{array}{ll}
+  \ifthenelse{\equal{#1}{H}}
+    {\left[#2 \in \listrange(#3) : #4\right]}
+    {\left[\begin{array}{ll}
     #2 \in \listrange(#3):\\
     #4\\
-    \end{array}\right]
-  \fi
+    \end{array}\right]}
 }
 
 \newcommand\listmap[4][H]{%
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \left[#2 \in #3 : #4\right]
-  \else
-    \left[
+  \ifthenelse{\equal{#1}{H}}
+    {\left[#2 \in #3 : #4\right]}
+    {\left[
     \begin{array}{ll}
     #2 \in #3:\\
     #4\\
     \end{array}
-    \right]
-  \fi
+    \right]}
 }
 
 % Old macro, still used but soon to be deprecated.
-\newcommand\ifthenelse[3]{
+\newcommand\ifthenelsestmt[3]{
   \left\{\begin{array}{ll}
   \hyperlink{def-choice}{\textbf{if}} & #1\\
   \hyperlink{def-choice}{\textbf{then}} & #2\\
@@ -358,17 +349,15 @@
 % \ifthenelseop[V]{condition}{then-clause}{else-clause}  % Vertical layout
 % \ifthenelseop{condition}{then-clause}{else-clause}     % Default: Vertical layout
 \newcommand\ifthenelseop[4][V]{%
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \hyperlink{def-choice}{\textbf{if }}#2
+  \ifthenelse{\equal{#1}{H}}
+    {\hyperlink{def-choice}{\textbf{if }}#2
     \hyperlink{def-choice}{\textbf{ then }}#3
-    \hyperlink{def-choice}{\textbf{ else }}#4%
-  \else
-    \left\{\begin{array}{ll}
+    \hyperlink{def-choice}{\textbf{ else }}#4}
+    {\left\{\begin{array}{ll}
     \hyperlink{def-choice}{\textbf{if}} & #2\\
     \hyperlink{def-choice}{\textbf{then}} & #3\\
     \hyperlink{def-choice}{\textbf{else}} & #4\\
-    \end{array}\right.%
-  \fi
+    \end{array}\right.}
 }
 \newcommand\condcase[3][H]{% DO NOT LINT
   \textbf{if }{#2}\textbf{ then }{#3}
@@ -378,11 +367,9 @@
 
 \newcommand\ELInt[1]{\hyperlink{def-elint}{\textsf{ELint}}(#1)}
 \newcommand\AbbrevEBinop[4][H]{
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-  \overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
-  \else
-  \overbracket{\begin{array}{c}#3\\#2\\#4\end{array}}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
-  \fi
+  \ifthenelse{\equal{#1}{H}}
+  {\overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
+  {\overbracket{\begin{array}{c}#3\\#2\\#4\end{array}}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
 }
 
 \let\OldLand\land
@@ -399,41 +386,35 @@
 \newcommand\makeset[1]{\left\{{#1}\right\}} % A set of expressions
 \newcommand\cardinality[1]{\hyperlink{operator-cardinality}{|}#1\hyperlink{operator-cardinality}{|}}
 \newcommand\rangeop[3][H]{ % DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \left[{#2} \ldots {#3}\right]
-  \else
-    \left[
+  \ifthenelse{\equal{#1}{H}}
+    {\left[{#2} \ldots {#3}\right]}
+    {\left[
     \begin{array}{l}
     {#2} \ldots\\
     {#3}\\
     \end{array}
-    \right]
-  \fi
+    \right]}
 }
 \newcommand\rangesetop[3][H]{ % DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \left\{ {#2} \ldots {#3} \right\}
-  \else
-    \left\{
+   \ifthenelse{\equal{#1}{H}}
+    {\left\{ {#2} \ldots {#3} \right\}}
+    {\left\{
     \begin{array}{l}
     {#2} \ldots\\
     {#3}\\
     \end{array}
-    \right\}
-  \fi
+    \right\}}
 }
 \newcommand\rangelistop[3][H]{ % DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \left[ {#2} \ldots {#3} \right]
-  \else
-    \left[
+  \ifthenelse{\equal{#1}{H}}
+    {\left[ {#2} \ldots {#3} \right]}
+    {\left[
     \begin{array}{l}
     {#2} \ldots\\
     {#3}\\
     \end{array}
-    \right]
-  \fi
-}\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
+    \right]}}
+\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
 \newcommand\listmax[1]{\max(#1)} % DO NOT LINT
 \newcommand\setmin[1]{\min(#1)} % DO NOT LINT
 \newcommand\setmax[1]{\max(#1)} % DO NOT LINT
@@ -442,15 +423,13 @@
 \newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
 \newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
 \newcommand\assocopt[3][H]{% DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    \hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}({#2}, {#3})
-  \else
-    \hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}
+  \ifthenelse{\equal{#1}{H}}
+    {\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}({#2}, {#3})}
+    {\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}
     \left(\begin{array}{l}
     ({#2},\\
     {#3})\\
-    \end{array}\right)
-  \fi
+    \end{array}\right)}
 }
 \newcommand\assocoptname[0]{\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}} % DO NOT LINT
 
@@ -477,27 +456,23 @@
 \newcommand\listfstname[0]{\hyperlink{operator-listfst}{\textfunc{list\_fst}}}
 \newcommand\listfst[1]{\listfstname(#1)}
 \newcommand\listcombine[3][H]{ % DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    {#2} \mathbin{\hyperlink{operator-listcombine}{\times}} {#3} % DO NOT LINT
-  \else
-    \hyperlink{operator-listcombine}{\textfunc{list\_combine}} % DO NOT LINT
+  \ifthenelse{\equal{#1}{H}}
+    {{#2} \mathbin{\hyperlink{operator-listcombine}{\times}} {#3}} % DO NOT LINT
+    {\hyperlink{operator-listcombine}{\textfunc{list\_combine}} % DO NOT LINT
     \left(\begin{array}{l}
     {#2} \hyperlink{operator-listcombine}{\times}\\ % DO NOT LINT
     {#3}\\
-    \end{array}\right)
-  \fi
+    \end{array}\right)}
 }
 \newcommand\listcombinethree[4][H]{ % DO NOT LINT
-  \ifnum\pdfstrcmp{#1}{H}=0\relax
-    {#2} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#3} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#4} % DO NOT LINT
-  \else
-    \hyperlink{operator-listcombinethree}{\textfunc{list\_combine\_3}} % DO NOT LINT
+  \ifthenelse{\equal{#1}{H}}
+    {{#2} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#3} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#4}} % DO NOT LINT
+    {\hyperlink{operator-listcombinethree}{\textfunc{list\_combine\_3}} % DO NOT LINT
     \left(\begin{array}{l}
     {#2} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
     {#3} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
     {#4}\\
-    \end{array}\right)
-  \fi
+    \end{array}\right)}
 }
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
