@@ -30,11 +30,45 @@ type t =
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
 
-let compare = compare
+let (mode_variants, arch_variants) : t list * t list =
+  let f = function
+  | Self -> Self
+  | FaultHandling p -> FaultHandling p 
+  | S128 -> S128
+  | Mixed -> Mixed
+  | Vmsa -> Vmsa
+  | Telechat -> Telechat
+  | SVE -> SVE
+  | SME -> SME
+  | MemTag -> MemTag
+  | MTEPrecision p -> MTEPrecision p
+  | NoInit -> NoInit
+  | Pac -> Pac
+  | FPac -> FPac
+  | ConstPacField -> ConstPacField
+  in
+  let base_modes =
+    List.map f [NoInit; S128; Self; Mixed; Vmsa; Telechat]
+  and fault_modes =
+    List.filter_map
+      (fun tag ->
+        match Fault.Handling.parse (Misc.lowercase tag) with
+        | Some fh -> Some (f (FaultHandling fh))
+        | None -> None)
+      Fault.Handling.tags
+  and archs =
+    List.map f [SVE; SME; MemTag; Pac; FPac; ConstPacField]
+  and mte_precisions =
+    List.filter_map
+      (fun tag ->
+        match Precision.parse tag with
+        | Some precision -> Some (f (MTEPrecision precision))
+        | None -> None)
+      Precision.tags
+  in
+  (base_modes @ fault_modes, archs @ mte_precisions)
 
-let tags =
-  "noinit"::"s128"::"self"::"mixed"::"vmsa"::"telechat"::"pac"
-  ::"const-pac-field"::"fpac"::"memtag"::Fault.Handling.tags@Precision.tags
+let compare = compare
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
@@ -102,3 +136,19 @@ let set_mte_store_only _ _ = false
 let set_sve_length _ _ = None
 let set_sme_length _ _ = None
 let check_tag tag = [tag]
+
+let mode_tags =
+  List.map pp mode_variants
+
+let arch_tags =
+  List.map pp arch_variants
+
+let tags = 
+  mode_tags @ arch_tags
+
+
+let helper_message =
+  Printf.sprintf
+    "<tags> mode tags={%s}; arch tags={%s}"
+    (String.concat "," mode_tags)
+    (String.concat "," arch_tags)

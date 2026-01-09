@@ -21,7 +21,7 @@ type t =
 
 let default = Synchronous
 
-let tags =  [ "synchronous"; "sync"; "asynchronous"; "async"; "asymmetric"; "asym" ]
+let tags =  [ "sync"; "async"; "asym" ]
 
 let parse = function
   | "synchronous"|"sync" -> Some Synchronous
