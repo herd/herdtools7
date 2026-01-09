@@ -8,6 +8,7 @@
   herd_redirect
   herd_test
   herd_promote
+  herd_assumptions_test
   check_obs)
  (libraries internal_lib)
  (modes native))

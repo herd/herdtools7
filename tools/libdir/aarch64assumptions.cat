@@ -1,0 +1,137 @@
+(*
+ * Copyright (C) 2025-present, Arm Ltd.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *     * Neither the name of ARM nor the names of its contributors may be
+ *       used to endorse or promote products derived from this software
+ *       without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *)
+
+catdep (* This option says that the cat file computes dependencies *)
+
+(* Please keep this include at the top of the file *)
+include "aarch64_wrapped_primitives.cat"
+
+(*
+ * Effect superset-subset relations.
+ * These expressions should ALWAYS be empty, hence they are asserted.
+ *)
+
+assert empty (R | W) \ M as R-or-W-is-M
+assert empty (Instr | PTE | T) \ M as Subsets-of-M
+assert empty NoRet \ R as NoRet-is-R
+assert empty IW \ W as IW-is-W
+assert empty (AF | DB) \ NExp as Subsets-of-NExp
+assert empty (AccessFlag | Permission | Translation) \ MMU as Subsets-of-MMU
+assert empty (BCC | EXC-RET) \ B as Subsets-of-B
+assert empty (EXC-ENTRY | TagCheck) \ FAULT as Subsets-of-FAULT
+assert empty (MMU | SVC | UndefinedInstruction) \ EXC-ENTRY as Subsets-of-EXC-ENTRY
+assert empty (TLBIIS | TLBInXS) \ TLBI as Subsets-of-TLBI
+assert empty DATA \ Rreg as DATA-is-Rreg
+
+assert empty (
+    DMB.ISH |
+    DMB.ISHLD |
+    DMB.ISHST |
+    DSB.ISH |
+    DSB.ISHLD |
+    DSB.ISHST |
+    DMB.SY |
+    DMB.ST |
+    DMB.LD |
+    DSB.SY |
+    DSB.ST |
+    DSB.LD |
+    DMB.OSH |
+    DSB.OSH |
+    DMB.OSHLD |
+    DSB.OSHLD |
+    DMB.OSHST |
+    DSB.OSHST |
+    ISB
+) \ F as Subsets-of-F
+
+(* Pairs of effects that are intersectable.
+* These expressions are not meant to be non-empty all the time. Rather,
+* all of these flags should be raised AT LEAST ONCE. This is checked by
+* the herd_assumptions_test.ml runner.
+*)
+
+flag ~empty A & R as A-and-R
+flag ~empty A & Exp as A-and-Exp
+flag ~empty L & Exp as L-and-Exp
+flag ~empty L & W as L-and-W
+flag ~empty Q & R as Q-and-R
+flag ~empty Q & Exp as Q-and-Exp
+flag ~empty EXC-ENTRY & TagCheck as EXC-ENTRY-and-TagCheck
+flag ~empty Exp & R as Exp-and-R
+flag ~empty Exp & W as Exp-and-W
+flag ~empty Exp & T as Exp-and-T
+flag ~empty Instr & NExp as Instr-and-NExp
+flag ~empty Instr & R as Instr-and-R
+flag ~empty Instr & W as Instr-and-W
+flag ~empty IW & PTE as IW-and-PTE
+flag ~empty IW & T as IW-and-T
+flag ~empty NExp & R as NExp-and-R
+flag ~empty NExp & W as NExp-and-W
+flag ~empty NExp & T as NExp-and-T
+flag ~empty T & R as T-and-R
+flag ~empty T & W as T-and-W
+
+(* PTE effects *)
+flag ~empty PTE & R as PTE-and-R
+flag ~empty PTE & W as PTE-and-W
+flag ~empty PTE & PTEV as PTE-and-PTEV
+flag ~empty PTE & Exp as PTE-and-Exp
+flag ~empty PTE & NExp as PTE-and-NExp
+flag ~empty Exp & PTEV as Exp-and-PTEV
+flag ~empty NExp & PTEV as NExp-and-PTEV
+flag ~empty R & PTEV as R-and-PTEV
+flag ~empty W & PTEV as W-and-PTEV
+
+include "aarch64.cat"
+
+(* 
+ * Keep the relation extremities checking after the aarch64 model has been included,
+ * as some relations are not primitives, but defined using function computation, whose
+ * interpretation is not support in cat2table. Therefore, all such relations should be
+ * documented here alongside primitives. If cat2table encounters a relation that is
+ * not defined through a let bind and is not specified here either, it assumes its
+ * extremities are Universe.
+ *)
+
+assert empty amo \ (R * W) as amo-extremities
+assert empty rmw \ (R * W) as rmw-extremities
+assert empty co \ (W * W) as co-extremities
+assert empty co0 \ (W * W) as co0-extremities
+assert empty rf \ (W * R) as rf-extremities
+assert empty rf-reg \ (Wreg * Rreg) as rf-reg-extremities
+assert empty fr \ (R * W) as fr-extremities
+assert empty sm \ ((M | FAULT) * (M | FAULT)) as sm-extremities
+assert empty TLBI-after \ ((TLBI * (Imp & PTE & R)) | ((Imp & PTE & R) * TLBI)) as TLBI-after-extremities
+assert empty DC-after \ ((DC.CVAU * (Exp & W)) | ((Exp & W) * DC.CVAU)) as DC-after-extremities
+assert empty IC-after \ ((IC * (Imp & Instr & R)) | ((Imp & Instr & R) * IC)) as IC-after-extremities
+assert empty same-low-order-bits \ ((M | DC.CVAU | IC | FAULT) * (M | DC.CVAU | IC | FAULT)) as same-low-order-bits-extremities
+assert empty inv-domain \ ((PTE * TLBI) | (TLBI * PTE)) as inv-domain-extremities
