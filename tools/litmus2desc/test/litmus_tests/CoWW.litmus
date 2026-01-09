@@ -1,0 +1,8 @@
+AArch64 CoWW
+{ 0:X1=x; }
+ P0          ;
+ MOV W0,#2   ;
+ STR W0,[X1] ;
+ MOV W2,#1   ;
+ STR W2,[X1] ;
+exists ([x]=2)

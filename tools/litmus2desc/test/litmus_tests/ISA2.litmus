@@ -1,0 +1,12 @@
+AArch64 ISA2
+{
+0:X1=x; 0:X3=y;
+1:X3=y; 1:X6=z;
+2:X6=z; 2:X1=x;
+}
+P0          | P1          | P2          ;
+MOV W0,#1   | LDR W4,[X3] | LDR W7,[X6] ;
+STR W0,[X1] | MOV W5,#1   | LDR W8,[X1] ;
+MOV W2,#1   | STR W5,[X6] |             ;
+STR W2,[X3] |             |             ;
+exists (1:X4=1 /\ 2:X7=1 /\ 2:X8=0)

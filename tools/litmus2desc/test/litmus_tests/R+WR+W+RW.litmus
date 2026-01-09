@@ -1,0 +1,12 @@
+AArch64 R+WR+W+RW
+{
+0:X1=x;
+1:X1=x; 1:X2=y;
+2:X2=y;
+3:X2=y; 3:X1=x;
+}
+P0          | P1          | P2          | P3          ;
+LDR W3,[X1] | MOV W0,#2   | MOV W0,#1   | LDR W4,[X2] ;
+            | STR W0,[X1] | STR W0,[X2] | MOV W5,#1   ;
+            | LDR W3,[X2] |             | STR W5,[X1] ;
+exists ([x]=2 /\ 0:X3=1 /\ 1:X3=0 /\ 3:X4=1)
