@@ -1825,7 +1825,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
   \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
   {
-  \vcond \eqdef \ifthenelse{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
+  \vcond \eqdef \ifthenelsestmt{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
   }
 }{
   \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
