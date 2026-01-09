@@ -41,23 +41,27 @@ let pp_attribute_key_values fmt attributes =
           fmt attrs)
       attributes
 
-let type_operator_to_token = function
+let type_operator_to_token =
+  let open Term in
+  function
   | Powerset -> POWERSET
   | Powerset_Finite -> POWERSET_FINITE
   | List0 -> LIST0
   | List1 -> LIST1
   | Option -> OPTION
 
-let rec pp_type_term fmt = function
+let rec pp_type_term fmt =
+  let open Term in
+  function
   | Label name -> pp_print_string fmt name
   | TypeOperator { op; term } ->
       fprintf fmt "%s(%a)"
         (type_operator_to_token op |> tok_str)
         pp_opt_named_type_term term
-  | LabelledTuple { label_opt; components } ->
+  | LabelledTuple { label_opt; args } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
-        pp_opt_named_type_terms components
+        pp_opt_named_type_terms args
   | LabelledRecord { label_opt; fields } ->
       let label = Option.value label_opt ~default:"" in
       fprintf fmt "%s[%a]" label pp_record_fields fields
@@ -105,12 +109,20 @@ let rec pp_expr fmt =
   let open Expr in
   function
   | Var name -> pp_print_string fmt name
-  | Application { applicator; args } ->
-      fprintf fmt "%a(%a)" pp_application_lhs applicator (pp_comma_list pp_expr)
-        args
-  | FieldAccess path -> pp_print_string fmt (String.concat "." path)
+  | UnresolvedApplication { lhs; args } ->
+      fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
+  | LabelledTuple { label_opt; args } ->
+      fprintf fmt "%s(%a)"
+        (Option.value label_opt ~default:"")
+        (pp_comma_list pp_expr) args
+  | Relation { name; args } ->
+      fprintf fmt "%s(%a)" name (pp_comma_list pp_expr) args
+  | Map { lhs; args } ->
+      fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
+  | FieldAccess { var; fields } ->
+      pp_print_string fmt (String.concat "." (var :: fields))
   | ListIndex { list_var; index } -> fprintf fmt "%s[%a]" list_var pp_expr index
-  | Record { label_opt; fields } ->
+  | LabelledRecord { label_opt; fields } ->
       fprintf fmt "%a[%a]"
         (pp_print_option pp_print_string)
         label_opt
@@ -123,16 +135,6 @@ let rec pp_expr fmt =
   | Indexed { index; list_var; body } ->
       fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list_var pp_expr body
   | NamedExpr (e, name) -> fprintf fmt "%a /* %s */" pp_expr e name
-
-and pp_application_lhs fmt =
-  let open Rule in
-  function
-  | EmptyApplicator -> ()
-  | Relation name -> pp_print_string fmt name
-  | TupleLabel name -> pp_print_string fmt name
-  | ExprOperator op -> pp_print_string fmt op
-  | Fields path -> pp_print_string fmt (String.concat "." path)
-  | Unresolved expr -> pp_expr fmt expr
 
 and pp_short_circuit fmt short_circuit =
   match short_circuit with
@@ -209,9 +211,9 @@ let pp_relation_definition fmt
     (Relation.attributes_to_list relation)
     pp_rule_opt rule_opt
 
-let type_kind_to_string = function
-  | TypeKind_Generic -> tok_str TYPEDEF
-  | TypeKind_AST -> tok_str AST
+let type_kind_to_string =
+  let open Term in
+  function TypeKind_Generic -> tok_str TYPEDEF | TypeKind_AST -> tok_str AST
 
 let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
   let eq_str = if Utils.list_is_empty variants then "" else " = " in

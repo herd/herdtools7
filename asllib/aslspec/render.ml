@@ -72,6 +72,7 @@ module Make (S : SPEC_VALUE) = struct
   (** Renders the application of the type operator [op] to [arg] with [fmt].
       [arg] is rendered by [pp_arg fmt arg]. *)
   let pp_type_operator fmt op pp_arg arg =
+    let open Term in
     let operator_to_macro_name = function
       | Powerset -> pow_macro_name
       | Powerset_Finite -> powfin_macro_name
@@ -86,6 +87,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_type_term fmt (type_term, layout)] renders [type_term] with [fmt],
       laid out according to [layout]. *)
   let rec pp_type_term fmt (type_term, layout) =
+    let open Term in
     match type_term with
     | Label name -> (
         match get_short_circuit_macro name with
@@ -96,18 +98,18 @@ module Make (S : SPEC_VALUE) = struct
         | None -> pp_id_as_macro fmt name)
     | TypeOperator { op; term = sub_term } ->
         pp_type_operator fmt op pp_opt_named_type_term (sub_term, layout)
-    | LabelledTuple { label_opt; components } ->
+    | LabelledTuple { label_opt; args } ->
         let is_type_reference =
           (* Singleton unlabelled tuples are a special case -
            they are used to reference type terms, rather than defining them. *)
-          Option.is_none label_opt && Utils.is_singleton_list components
+          Option.is_none label_opt && Utils.is_singleton_list args
         in
         if is_type_reference then
-          pp_opt_named_type_term fmt (List.hd components, layout)
+          pp_opt_named_type_term fmt (List.hd args, layout)
         else
           fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
             (pp_parenthesized Parens true pp_opt_named_type_terms)
-            (components, layout)
+            (args, layout)
     | LabelledRecord { label_opt; fields } ->
         let pp_record_fields_as_pairs =
           List.map
@@ -167,7 +169,7 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_math layout fmt { Relation.name; property; input; output } =
     (* Reuse the rendering for type terms. *)
     let input_as_labelled_tuple =
-      LabelledTuple { label_opt = Some name; components = input }
+      Term.LabelledTuple { label_opt = Some name; args = input }
     in
     let property_macro_name =
       match property with
@@ -233,7 +235,7 @@ module Make (S : SPEC_VALUE) = struct
         (* Records are a special case, since each field has its own hypertarget. *)
         let field_hyperlink_targets =
           List.map
-            (fun { name_and_type = field_name, _; _ } ->
+            (fun { Term.name_and_type = field_name, _; _ } ->
               hypertarget_for_id field_name)
             fields
         in
@@ -412,6 +414,7 @@ module Make (S : SPEC_VALUE) = struct
         short-circuit macros for the given [type_term]. Currently only called
         for type terms that are either type names or sets of constants. *)
     let short_circuit_macros_for_type_term type_term =
+      let open Term in
       match type_term with
       | Label id -> (
           match Spec.defining_node_for_id S.spec id with
@@ -451,23 +454,34 @@ module Make (S : SPEC_VALUE) = struct
           corresponds to a variable that happens to share a name with a type. *)
           | _ ->
               pp_var fmt name)
-      | Application { applicator = ExprOperator op; args } ->
-          pp_operator op layout fmt args
-      | Application { applicator; args } ->
+      | Relation { name; is_operator; args } when is_operator ->
+          pp_operator name layout fmt args
+      | Relation _ | LabelledTuple _ | Map _ ->
+          let args =
+            match expr with
+            | Relation { args } | LabelledTuple { args } | Map { args } -> args
+            | _ ->
+                let msg =
+                  Format.asprintf "Unexpected LHS in expression: %a" PP.pp_expr
+                    expr
+                in
+                raise (SpecError msg)
+          in
           let pp_lhs fmt lhs =
             match lhs with
-            | EmptyApplicator ->
-                () (* No left-hand side so nothing to render. *)
-            | Relation name | TupleLabel name -> pp_id_as_macro fmt name
-            | Fields path -> pp_field_path fmt path
-            | ExprOperator _ | Unresolved _ -> assert false
+            | Relation { name } -> pp_id_as_macro fmt name
+            | LabelledTuple { label_opt = None } -> ()
+            | LabelledTuple { label_opt = Some label } ->
+                pp_id_as_macro fmt label
+            | Map { lhs } -> pp_expr fmt (lhs, layout)
+            | _ -> assert false
           in
-          fprintf fmt "%a%a" pp_lhs applicator
+          fprintf fmt "%a%a" pp_lhs expr
             (pp_parenthesized Parens (contains_vertical layout)
                (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr
                   layout))
             args
-      | Record { label_opt; fields } ->
+      | LabelledRecord { label_opt; fields } ->
           fprintf fmt "%a%a"
             (pp_print_option pp_id_as_macro)
             label_opt
@@ -475,7 +489,7 @@ module Make (S : SPEC_VALUE) = struct
             (fields, layout)
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
-      | FieldAccess path -> pp_field_path fmt path
+      | FieldAccess { var; fields } -> pp_field_path fmt (var :: fields)
       | Indexed { index; list_var; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
             fprintf fmt "%a \\in %a(%a)" pp_var index pp_macro
@@ -483,29 +497,19 @@ module Make (S : SPEC_VALUE) = struct
           in
           pp_connect_pair ~alignment:"ll" fmt pp_indexed_lhs (index, list_var)
             colon_macro_name pp_expr body layout
-      | Transition { lhs; rhs; short_circuit } ->
-          let relation_name =
-            match lhs with
-            | Application { applicator = Relation relation_name } ->
-                relation_name
-            | _ ->
-                let msg =
-                  asprintf "Unexpected LHS in transition judgment: %a"
-                    PP.pp_expr expr
-                in
-                raise (SpecError msg)
-          in
-          let { Relation.category } =
-            Spec.relation_for_id S.spec relation_name
-          in
+      | Transition { lhs = Relation { name } as lhs; rhs; short_circuit } ->
+          let { Relation.category } = Spec.relation_for_id S.spec name in
           let arrow_macro_name = arrow_macro_name_for_category_opt category in
           let pp_rhs_with_short_circuit fmt rhs_with_layout =
-            fprintf fmt "%a%a" pp_expr rhs_with_layout
-              (pp_short_circuit relation_name)
+            fprintf fmt "%a%a" pp_expr rhs_with_layout (pp_short_circuit name)
               short_circuit
           in
           pp_connect_pair ~alignment:"r" fmt pp_expr lhs arrow_macro_name
             pp_rhs_with_short_circuit rhs layout
+      | Transition { lhs; rhs } ->
+          pp_connect_pair ~alignment:"r" fmt pp_expr lhs
+            longrightarrow_macro_name pp_expr rhs layout
+      | UnresolvedApplication _ -> assert false
 
     (** [pp_operator op_name layout fmt args] renders an operator named
         [op_name] applied to [args] with [fmt] and laid out according to
@@ -517,7 +521,7 @@ module Make (S : SPEC_VALUE) = struct
       | [] ->
           (* A nullary operator. *)
           fprintf fmt "%a" pp_macro op_macro
-      | [ _ ] when Spec.is_variadic_operator S.spec operator ->
+      | [ _ ] when Spec.is_variadic_operator S.spec op_name ->
           if Relation.is_associative_operator operator then
             (* A variadic operator rendered by separating its arguments
              with the operator macro. *)
@@ -751,6 +755,7 @@ module Make (S : SPEC_VALUE) = struct
   (** [pp_id_macro fmt id] renders the LaTeX macro corresponding to the element
       defined for [id] with the formatter [fmt]. *)
   let pp_id_macro fmt id =
+    let open Term in
     let hyperlink_target = hypertarget_for_id id in
     let node = Spec.defining_node_for_id S.spec id in
     let font_for_type_kind = function

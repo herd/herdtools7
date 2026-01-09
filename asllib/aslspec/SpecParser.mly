@@ -196,8 +196,8 @@ let elem :=
     | render_types
     | render_rule
 
-let type_kind := TYPEDEF; { TypeKind_Generic }
-    | AST; { TypeKind_AST }
+let type_kind := TYPEDEF; { Term.TypeKind_Generic }
+    | AST; { Term.TypeKind_AST }
 
 let type_definition :=
     | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; ~=type_variants_with_attributes;
@@ -312,15 +312,15 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
-    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { make_type_operation op opt_named_type_term }
-    | LPAR; components=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; components} }
-    | label=IDENTIFIER; LPAR; components=tclist1(opt_named_type_term); RPAR;
+    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { Term.make_type_operation op opt_named_type_term }
+    | LPAR; args=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; args} }
+    | label=IDENTIFIER; LPAR; args=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
-        LabelledTuple {label_opt = Some label; components} }
-    | LBRACKET; fields=tclist1(record_field); RBRACKET; { make_record fields }
+        LabelledTuple {label_opt = Some label; args} }
+    | LBRACKET; fields=tclist1(record_field); RBRACKET; { Term.make_record fields }
     | label=IDENTIFIER; LBRACKET; fields=tclist1(record_field); RBRACKET;
     {   check_definition_name label;
-        make_labelled_record label fields }
+        Term.make_labelled_record label fields }
     | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
     | FUN; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = true}}
     | PARTIAL; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = false}}
@@ -340,7 +340,7 @@ let opt_named_type_term ==
     | ~=type_term; { (None, type_term) }
 
 let record_field := ~=named_type_term; ~=type_attributes;
-    { make_record_field named_type_term type_attributes }
+    { Term.make_record_field named_type_term type_attributes }
 
 let math_layout :=
     | IDENTIFIER; { Unspecified }
@@ -394,12 +394,12 @@ let var_expr := id=IDENTIFIER; { Expr.make_var id }
 
 let expr :=
     | var_expr
-    | components=plist1(expr);
-      { Expr.make_tuple components }
+    | args=plist1(expr);
+      { Expr.make_tuple args }
     | lhs=expr; args=plist0(expr);
       { Expr.make_application lhs args }
-    | ~=field_path;
-      { Expr.FieldAccess field_path }
+    | var=IDENTIFIER; DOT; ~=field_path;
+      { Expr.FieldAccess { var; fields = field_path} }
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
       { Expr.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
@@ -427,10 +427,10 @@ let transition_expr :=
 
 let transition_output_expr :=
     | var_expr
-    | components=plist1(transition_output_expr);
-      { Expr.make_tuple components }
-    | label=IDENTIFIER; components=plist1(transition_output_expr);
-      { Expr.make_application (Expr.make_var label) components }
+    | args=plist1(transition_output_expr);
+      { Expr.make_tuple args }
+    | label=IDENTIFIER; args=plist1(transition_output_expr);
+      { Expr.make_application (Expr.make_var label) args }
     | list_var=IDENTIFIER; LBRACKET; index=transition_output_expr; RBRACKET;
       { Expr.make_list_index list_var index }
     | lhs=transition_output_expr; ~=infix_expr_operator; rhs=transition_output_expr;
@@ -449,10 +449,9 @@ let short_circuit_expr :=
     | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
       { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
 
-(** We currently do not need field paths longer than a variable with two fields. *)
 let field_path :=
-  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; { [ id1; id2 ] }
-  | id1=IDENTIFIER; DOT; id2=IDENTIFIER; DOT; id3=IDENTIFIER; { [ id1; id2; id3 ] }
+  | id=IDENTIFIER; { [ id ] }
+  | id1=IDENTIFIER; DOT; fields=field_path; { id1 :: fields }
 
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }

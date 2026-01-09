@@ -174,114 +174,121 @@ module Attributes = struct
     | _ -> default
 end
 
-(** The kind of a type, either generic or AST-specific. *)
-type type_kind = TypeKind_Generic | TypeKind_AST
+module Term = struct
+  (** The kind of a type, either generic or AST-specific. *)
+  type type_kind = TypeKind_Generic | TypeKind_AST
 
-(** A unary operator that transforms one type into another. *)
-type type_operator =
-  | Powerset  (** All subsets (finite and infinite) of the given type. *)
-  | Powerset_Finite  (** All finite subsets of the given type. *)
-  | List0  (** All (empty and non-empty) sequences of the given member type. *)
-  | List1  (** All non-empty sequences of the given member type. *)
-  | Option  (** A set containing at most a single value of the given type. *)
+  (** A unary operator that transforms one type into another. *)
+  type type_operator =
+    | Powerset  (** All subsets (finite and infinite) of the given type. *)
+    | Powerset_Finite  (** All finite subsets of the given type. *)
+    | List0
+        (** All (empty and non-empty) sequences of the given member type. *)
+    | List1  (** All non-empty sequences of the given member type. *)
+    | Option  (** A set containing at most a single value of the given type. *)
 
-(** Terms for constructing types out of other types, with [Label t] being the
-    leaf case.
+  (** Terms for constructing types out of other types, with [Label t] being the
+      leaf case.
 
-    In the context of a type definition, a [Label] variant defines a new label -
-    a type representing just this single label. In other contexts, for example a
-    type variant appearing in the signature of a relation, this can refer to a
-    type defined elsewhere. *)
-type type_term =
-  | Label of string
-      (** Either a set containing the single value named by the given string or
-          a reference to a type with the given name. *)
-  | TypeOperator of { op : type_operator; term : opt_named_type_term }
-      (** A set containing all types formed by applying the type operator [op]
-          to the type given by [term]. *)
-  | LabelledTuple of {
-      label_opt : string option;
-      components : opt_named_type_term list;
-    }
-      (** A set containing all optionally-labelled tuples formed by the given
-          components. An unlabelled tuple containing a single term is a special
-          case - its domain is the domain of that term; this serves to reference
-          types defined elsewhere. *)
-  | LabelledRecord of { label_opt : string option; fields : record_field list }
-      (** A set containing all optionally-labelled records formed by the given
-          fields. *)
-  | ConstantsSet of string list
-      (** A set containing all constants formed by the given names. *)
-  | Function of {
-      from_type : opt_named_type_term;
-      to_type : opt_named_type_term;
-      total : bool;
-    }
-      (** A set containing all functions formed by the given types. If [total]
-          is true, the function is total, otherwise it is partial. *)
+      In the context of a type definition, a [Label] variant defines a new label
+      \- a type representing just this single label. In other contexts, for
+      example a type variant appearing in the signature of a relation, this can
+      refer to a type defined elsewhere. *)
+  type type_term =
+    | Label of string
+        (** Either a set containing the single value named by the given string
+            or a reference to a type with the given name. *)
+    | TypeOperator of { op : type_operator; term : opt_named_type_term }
+        (** A set containing all types formed by applying the type operator [op]
+            to the type given by [term]. *)
+    | LabelledTuple of {
+        label_opt : string option;
+        args : opt_named_type_term list;
+      }
+        (** A set containing all optionally-labelled tuples formed by the given
+            argunent terms. An unlabelled tuple containing a single term is a
+            special case - its domain is the domain of that term; this serves to
+            reference types defined elsewhere. *)
+    | LabelledRecord of {
+        label_opt : string option;
+        fields : record_field list;
+      }
+        (** A set containing all optionally-labelled records formed by the given
+            fields. *)
+    | ConstantsSet of string list
+        (** A set containing all constants formed by the given names. *)
+    | Function of {
+        from_type : opt_named_type_term;
+        to_type : opt_named_type_term;
+        total : bool;
+      }
+        (** A set containing all functions formed by the given types. If [total]
+            is true, the function is total, otherwise it is partial. *)
 
-and named_type_term = string * type_term
-(** A term associated with a variable name. *)
+  and named_type_term = string * type_term
+  (** A term associated with a variable name. *)
 
-and opt_named_type_term = string option * type_term
-(** A term optionally associated with a variable name. *)
+  and opt_named_type_term = string option * type_term
+  (** A term optionally associated with a variable name. *)
 
-and record_field = { name_and_type : named_type_term; att : Attributes.t }
-(** A field of a record type. *)
+  and record_field = { name_and_type : named_type_term; att : Attributes.t }
+  (** A field of a record type. *)
 
-(** [make_type_operation op term] Constructs a type term in which [op] is
-    applied to [term]. *)
-let make_type_operation op term = TypeOperator { op; term }
+  (** [make_type_operation op term] Constructs a type term in which [op] is
+      applied to [term]. *)
+  let make_type_operation op term = TypeOperator { op; term }
 
-(** [make_tuple components] Constructs an unlabelled tuple for the tuple
-    components [components]. *)
-let make_tuple components = LabelledTuple { label_opt = None; components }
+  (** [make_tuple args] Constructs an unlabelled tuple for the tuple args
+      [args]. *)
+  let make_tuple args = LabelledTuple { label_opt = None; args }
 
-(** [make_labelled_tuple label components] Constructs a tuple labelled [label]
-    and tuple components [components]. *)
-let make_labelled_tuple label components =
-  LabelledTuple { label_opt = Some label; components }
+  (** [make_labelled_tuple label args] Constructs a tuple labelled [label] and
+      tuple args [args]. *)
+  let make_labelled_tuple label args =
+    LabelledTuple { label_opt = Some label; args }
 
-let make_record_field named_type_term attributes =
-  let att = Attributes.of_list attributes in
-  { name_and_type = named_type_term; att }
+  let make_record_field named_type_term attributes =
+    let att = Attributes.of_list attributes in
+    { name_and_type = named_type_term; att }
 
-(** [make_record fields] Constructs an unlabelled record with fields [fields].
-*)
-let make_record fields = LabelledRecord { label_opt = None; fields }
+  (** [make_record fields] Constructs an unlabelled record with fields [fields].
+  *)
+  let make_record fields = LabelledRecord { label_opt = None; fields }
 
-let field_type { name_and_type = _, field_type; _ } = field_type
-let field_name { name_and_type = name, _; _ } = name
+  let field_type { name_and_type = _, field_type; _ } = field_type
+  let field_name { name_and_type = name, _; _ } = name
 
-let record_field_math_macro { att } =
-  Attributes.find_math_macro AttributeKey.Math_Macro att
+  let record_field_math_macro { att } =
+    Attributes.find_math_macro AttributeKey.Math_Macro att
 
-let record_field_prose_description { att } =
-  Attributes.get_string_or_empty AttributeKey.Prose_Description att
+  let record_field_prose_description { att } =
+    Attributes.get_string_or_empty AttributeKey.Prose_Description att
 
-(** [make_labelled_record label fields] Constructs a record labelled [label]
-    with fields [fields]. *)
-let make_labelled_record label fields =
-  LabelledRecord { label_opt = Some label; fields }
+  (** [make_labelled_record label fields] Constructs a record labelled [label]
+      with fields [fields]. *)
+  let make_labelled_record label fields =
+    LabelledRecord { label_opt = Some label; fields }
+end
 
 module Expr = struct
   (** A term that can be used to form a rule judgment. *)
   type expr =
     | Var of string
-    | FieldAccess of string list
-        (** The first identifier is a variable and the rest are field names. *)
+    | FieldAccess of { var : string; fields : string list }
     | ListIndex of { list_var : string; index : expr }
         (** An expression indexing into the list variable [list_var] at position
             [index]. *)
-    | Record of { label_opt : string option; fields : (string * expr) list }
-        (** A record construction expression. *)
-    | Application of { applicator : applicator; args : expr list }
-        (** An application of [applicator] to the list of argument expressions
-            [args]. For example, [annotate_literal(tenv, L_Int(one))], where
-            [annotate_literal] is the applicator and [tenv] and [L_Int(one)] are
-            the arguments. Here, [annotate_literal] is defined as a
-            [typing function annotate_literal(tenv: static_envs, l: literal) ->
-             (t: ty) ]. *)
+    | LabelledRecord of {
+        label_opt : string option;
+        fields : (string * expr) list;
+      }  (** A record construction expression. *)
+    | UnresolvedApplication of { lhs : expr; args : expr list }
+        (** An application expression whose left-hand side has not yet been
+            resolved. *)
+    | LabelledTuple of { label_opt : string option; args : expr list }
+    | Relation of { name : string; is_operator : bool; args : expr list }
+    | Map of { lhs : expr; args : expr list }
+        (** A map expression applies a function given by [lhs] to [args]. *)
     | Transition of {
         lhs : expr;
         rhs : expr;
@@ -300,52 +307,31 @@ module Expr = struct
             judgment. Initially, all expressions are unnamed, names are assigned
             during rule resolution. *)
 
-  (** The left-hand side of an application expression. *)
-  and applicator =
-    | EmptyApplicator
-        (** This is used for tuples like [(True, one)] where there is no
-            applicator. *)
-    | Relation of string
-        (** Example: [annotate_literal] for an application like
-            [annotate_literal(tenv, L_Int(one))] where [annotate_literal] is
-            defined as
-            [typing function annotate_literal(tenv: static_envs, l: literal) ->
-             (t: ty)]. *)
-    | TupleLabel of string
-        (** Example: [S_Seq] for an AST node like [S_Seq(s1, s2)] where
-            [ast stmt = S_Seq(first: stmt, second: stmt)]. *)
-    | ExprOperator of string
-        (** Example: [and] for an application like [and(True, False)] where
-            [and] is defined as an operator. *)
-    | Fields of string list
-        (** Example: [tenv.static_envs_G.declared_types] in an expression
-            [tenv.static_envs_G.declared_types(label)]. *)
-    | Unresolved of expr
-
   (** [make_var id] constructs a variable expression with identifier [id]. *)
   let make_var id = Var id
 
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
-  let make_tuple args = Application { applicator = EmptyApplicator; args }
+  let make_tuple args = LabelledTuple { label_opt = None; args }
 
   let make_labelled_tuple label args =
-    Application { applicator = TupleLabel label; args }
+    LabelledTuple { label_opt = Some label; args }
 
-  (** [make_application lhs exprs] constructs an application expression with
-      left-hand side [lhs] and argument expressions [exprs]. During rule
+  let make_opt_labelled_tuple label_opt args = LabelledTuple { label_opt; args }
+
+  (** [make_application lhs args] constructs an application expression with
+      left-hand side [lhs] and argument expressions [args]. During rule
       resolution, [lhs] is expected to resolve to either a relation name or a
       tuple label. *)
-  let make_application lhs exprs =
-    Application { applicator = Unresolved lhs; args = exprs }
+  let make_application lhs args = UnresolvedApplication { lhs; args }
 
   (** [make_operator_application op_name args] constructs an application
       expression representing the application of operator [op_name] to [args].
   *)
-  let make_operator_application op_name args =
-    Application { applicator = ExprOperator op_name; args }
+  let make_operator_application name args =
+    Relation { name; is_operator = true; args }
 
-  let make_record label_opt fields = Record { label_opt; fields }
+  let make_record label_opt fields = LabelledRecord { label_opt; fields }
   let make_list_index list_var index = ListIndex { list_var; index }
 end
 
@@ -353,14 +339,14 @@ end
 module Constant : sig
   type t = {
     name : string;
-    opt_type : type_term option;
+    opt_type : Term.type_term option;
     opt_value_and_attributes : (Expr.expr * Attributes.t) option;
     att : Attributes.t;
   }
 
   val make :
     string ->
-    type_term option ->
+    Term.type_term option ->
     (Expr.expr * attribute_pairs) option ->
     attribute_pairs ->
     t
@@ -374,7 +360,7 @@ module Constant : sig
 end = struct
   type t = {
     name : string;
-    opt_type : type_term option;
+    opt_type : Term.type_term option;
     opt_value_and_attributes : (Expr.expr * Attributes.t) option;
     att : Attributes.t;
   }
@@ -410,9 +396,13 @@ end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
-  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
+  type t = {
+    type_kind : Term.type_kind;
+    term : Term.type_term;
+    att : Attributes.t;
+  }
 
-  val make : type_kind -> type_term -> attribute_pairs -> t
+  val make : Term.type_kind -> Term.type_term -> attribute_pairs -> t
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
@@ -421,7 +411,11 @@ module TypeVariant : sig
   (** The layout of the type term when rendered in the context of its containing
       type. *)
 end = struct
-  type t = { type_kind : type_kind; term : type_term; att : Attributes.t }
+  type t = {
+    type_kind : Term.type_kind;
+    term : Term.type_term;
+    att : Attributes.t;
+  }
 
   let make type_kind term attribute_pairs =
     { type_kind; term; att = Attributes.of_list attribute_pairs }
@@ -444,12 +438,14 @@ end
 module Type : sig
   type t = {
     name : string;
-    type_kind : type_kind;
+    type_kind : Term.type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
   }
 
-  val make : type_kind -> string -> TypeVariant.t list -> attribute_pairs -> t
+  val make :
+    Term.type_kind -> string -> TypeVariant.t list -> attribute_pairs -> t
+
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
@@ -460,7 +456,7 @@ module Type : sig
 end = struct
   type t = {
     name : string;
-    type_kind : type_kind;
+    type_kind : Term.type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
   }
@@ -558,8 +554,8 @@ module Relation : sig
     is_operator : bool;
     property : relation_property;
     category : relation_category option;
-    input : opt_named_type_term list;
-    output : type_term list;
+    input : Term.opt_named_type_term list;
+    output : Term.type_term list;
     att : Attributes.t;
     rule_opt : Rule.t option;
   }
@@ -568,8 +564,8 @@ module Relation : sig
     string ->
     relation_property ->
     relation_category option ->
-    opt_named_type_term list ->
-    type_term list ->
+    Term.opt_named_type_term list ->
+    Term.type_term list ->
     attribute_pairs ->
     Rule.t option ->
     t
@@ -577,8 +573,8 @@ module Relation : sig
   val make_operator :
     string ->
     string list ->
-    opt_named_type_term list ->
-    type_term ->
+    Term.opt_named_type_term list ->
+    Term.type_term ->
     attribute_pairs ->
     t
 
@@ -612,8 +608,8 @@ end = struct
     is_operator : bool;
     property : relation_property;
     category : relation_category option;
-    input : opt_named_type_term list;
-    output : type_term list;
+    input : Term.opt_named_type_term list;
+    output : Term.type_term list;
     att : Attributes.t;
     rule_opt : Rule.t option;
   }
