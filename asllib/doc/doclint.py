@@ -467,6 +467,7 @@ class RuleBlock:
         r"\\ASTRuleDef{.*}",
         r"\\ConventionDef{.*}",
         r"\\RequirementDef{.*}",
+        r"\\SyntacticSugarDef{.*}",
     ]
     rule_end_pattern = re.compile("|".join(end_patterns))
 
@@ -490,7 +491,7 @@ class RuleBlock:
             self.type = RuleBlock.TYPING_RULE
         elif re.search(r"\\SemanticsRuleDef", begin_line):
             self.type = RuleBlock.SEMANTICS_RULE
-        elif re.search(r"\\RequirementDef", begin_line):
+        elif re.search(r"\\RequirementDef|\\SyntacticSugarDef", begin_line):
             self.type = RuleBlock.GUIDE_RULE
         elif re.search(r"\\SyntacticSugarDef", begin_line):
             self.type = RuleBlock.SYNTACTIC_SUGAR_RULE
@@ -727,6 +728,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RequirementDef{.*?}",
         r"\\RequirementRef{.*?}",
         r"\\SyntacticSugarDef{.*?}",
+        r"\\SyntacticSugarRef{.*?}",
         r"\\ConventionDef{.*?}",
         r"\\AllApplyCase{.*?}",
         r"\% CONSOLE_BEGIN.*\% CONSOLE_END",

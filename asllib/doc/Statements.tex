@@ -314,12 +314,20 @@ and \verb|-| is a discarded \assignableexpression{}.
 |\ & \Tdot \parsesep \Tidentifier \parsesep \Nsetteraccess &
 \end{flalign*}
 
-\SyntacticSugarDef{Setter Calls Followed by a Slice or a Field Access}
-A call to a setter, followed by a slice or a field access is \syntacticsugar{}
-for a sequence of statements, which first call the corresponding getter,
-apply the corresponding slice of field, and then call the setter with the new value.
+\SyntacticSugarDef{SetterFieldAssignment}
+\identr{WHRS}
+If a setter is followed by a slice or field access, then the assignment to that bitslice is
+implemented using the following Read-Modify-Write (RMW) behaviour:
+\begin{itemize}
+\item invoking the getter of the same name as the setter, with the same actual
+      arguments as the setter invocation, excluding the right-hand side of the assignment;
+\item performing the assignment to the bitslice or field of the result of the
+      getter invocation; and
+\item invoking the setter to assign the resulting value.
+\end{itemize}
+This is implemented by desugaring via \ASTRuleRef{DesugarSetter}.
+%
 See \ExampleRef{A Setter Call as a Read-Modify-Write}.
-Setter calls are desugared by \ASTRuleRef{DesugarSetter}.
 
 \ASTRuleDef{MakeSetter}
 \NotImportedToASLSpecYet{

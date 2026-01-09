@@ -4619,16 +4619,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     | TDiverging
 {
    prose_description = "evaluates a statement {s} in an environment {env},
-                        resulting in one of four types of configurations (see
-                        more details in
-                        \secref{KindsOfSemanticConfigurations}):
-                        \begin{itemize}
-                        \item continuing configurations with an execution graph {new_g} and modified environment {new_env};
-                        \item returning configurations;
-                        \item throwing configurations;
-                        \item error configurations;
-                        \item diverging configurations.
-                        \end{itemize}",
+                        resulting in one of four types of \semanticsconfigurationsterm{}",
  prose_application = "",
  math_layout = (_, [_,_,_,_,_]),
 } =

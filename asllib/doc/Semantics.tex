@@ -53,10 +53,12 @@ the ASL dynamic semantics rules to assign meaning to both terminating specificat
 and diverging specifications.
 
 \section{Sequential Semantics and Dynamic Semantics\label{sec:Sequential Semantics and Dynamic Semantics}}
+\hypertarget{def-semanticconfiguration}{}
 The ASL dynamic semantics are given by relations between
-\hyperlink{def-configuration}{\emph{semantic configurations}}~\cite{SemanticsWithApplicationsBook}.
-We refer to relations between semantic configurations as \emph{semantic relations}.
-Semantic configurations encapsulate information needed to transition into other semantic configurations, such as:
+\emph{\semanticsconfigurationsterm}~\cite{SemanticsWithApplicationsBook}
+(\configurationsterm{} dedicated for the dynamic semantics).
+We refer to relations between \semanticsconfigurationsterm{} as \emph{semantic relations}.
+\Semanticsconfigurationsterm{} encapsulate information needed to transition into other \semanticsconfigurationsterm{}, such as:
 \begin{itemize}
   \item a \emph{dynamic environment}, which binds variables to values;
   \item the \typedast{} node that needs to be evaluated;
@@ -67,8 +69,8 @@ The semantic relations are constructively defined via \emph{semantic rules}.
 These semantic rules are defined by induction over the typed AST.
 
 \paragraph{Execution:}
-A valid execution of an ASL specification transitions from an \emph{initial semantic configuration},
-which consists of the given specification and the standard library specification, to an output semantic configuration
+A valid execution of an ASL specification transitions from an \emph{initial \semanticsconfigurationterm{}},
+which consists of the given specification and the standard library specification, to an output \semanticsconfigurationterm{}
 consisting of an output value and a concurrent execution graph.
 
 We define two types of semantics --- \emph{sequential semantics} and \emph{concurrent semantics}.
@@ -85,27 +87,27 @@ The sequential semantics correspond to executing an ASL specification in the con
 of execution; notice that ASL does not contain any concurrency constructs.
 %
 Technically, the sequential semantics are defined by omitting the concurrent execution graph components
-from all semantic configurations.
+from all \semanticsconfigurationsterm{}.
 
 \section{Dynamic Semantics Configurations\label{sec:Dynamic Semantics Configurations}}
 This section defines the mathematical types over which our dynamic semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 
-Semantic configurations express intermediate states related by \emph{semantic relations}.
+\Semanticsconfigurationsterm{} express intermediate states related by \emph{semantic relations}.
 %
-More precisely, semantic relations relate two distinct sets of semantic configurations ---
-\emph{input semantic configurations} and \emph{output semantic configurations}.
-Input semantic configurations consist of an environment and an AST node.
-Output semantic configurations consist of an output environment, values,
+More precisely, semantic relations relate two distinct sets of \semanticsconfigurationsterm{} ---
+\emph{input \semanticsconfigurationsterm{}} and \emph{output \semanticsconfigurationsterm{}}.
+Input \semanticsconfigurationsterm{} consist of an environment and an AST node.
+Output \semanticsconfigurationsterm{} consist of an output environment, values,
 and concurrent execution graphs.
 %
-Semantic configurations wrap together elements such as environments and AST nodes
-and associate them with a \emph{configuration domain}. Input semantic configuration domains
-determine the semantic relation they pertain to, while output semantic configuration
+\Semanticsconfigurationsterm{} wrap together elements such as environments and AST nodes
+and associate them with a \emph{configuration domain}. Input \semanticsconfigurationterm{} domains
+determine the semantic relation they pertain to, while output \semanticsconfigurationterm{}
 domains distinguish between conceptually different kinds of outputs, for example
 ones where an exception was raised, ones when a \dynamicerrorterm{} occurred, etc.
 
-The rest of this section defines the components comprising semantic configurations:
+The rest of this section defines the components comprising \semanticsconfigurationsterm{}:
 \begin{itemize}
     \item Native values.
     \item Static Environments, which consist of the information inferred
@@ -272,7 +274,7 @@ in the arguments graphs.
 
 \hypertarget{def-ordered}{}
 \begin{definition}[Ordered Graph Composition]
-Given two execution graphs, \\ $S_1 = (N_1, E_1, O_1)$ and $S_1 = (N_2, E_2, O_2)$ and an ordering label $l$,
+Given two execution graphs, \\ $S_1 = (N_1, E_1, O_1)$ and $S_2 = (N_2, E_2, O_2)$ and an ordering label $l$,
 the ordered composition $\ordered{S_1}{l}{S_2}$ is defined as follows:
 \[
   \ordered{S_1}{l}{S_2} \triangleq (N_1 \cup N_2,\ E_1 \cup E_2 \cup (O_1 \cartimes \{l\} \cartimes N_2),\ O_2) \enspace.
@@ -286,75 +288,75 @@ to the given ordering label.
 The ASL dynamic semantics operate over pairs consisting of \nativevaluesterm{} and \executiongraphsterm,
 which we refer to as \concurrentnativevalues.
 
-\subsection{Kinds of Semantic Configurations\label{sec:KindsOfSemanticConfigurations}}
+\subsection{Kinds of Semantics Configurations\label{sec:KindsOfSemanticsConfigurations}}
 
-Recall that the ASL dynamic semantics define a relation between input semantic configurations and output semantic configurations.
-Input semantic configuration domains are unique to the semantic relation that employs them.
-For that reason, we name semantic relations by the name of the corresponding configuration domain of the input semantic configuration.
-For example, the semantic relation that employs input semantic configurations with the domain $\evalexpr$
+Recall that the ASL dynamic semantics define a relation between input \semanticsconfigurationsterm{} and output \semanticsconfigurationsterm{}.
+Input \semanticsconfigurationterm{} domains are unique to the semantic relation that employs them.
+For that reason, we name semantic relations by the name of the corresponding configuration domain of the input \semanticsconfigurationterm{}.
+For example, the semantic relation that employs input \semanticsconfigurationsterm{} with the domain $\evalexpr$
 is named $\evalexpr$.
 %
-We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input semantic configurations
-should be semantically evaluated, yielding an output semantic configuration.
+We will often use the prefix \texttt{eval} for semantic relations with the intuition being that their input \semanticsconfigurationsterm{}
+should be semantically evaluated, yielding an output \semanticsconfigurationterm{}.
 
 The helper type \RenderType{value_read_from} conveys that the value $\vv$ has been read
 from a storage element with the identifier $\id$.
 
-ASL dynamic semantics mainly utilize the following types of output semantic configurations:
+ASL dynamic semantics mainly utilize the following types of output \semanticsconfigurationsterm{}:
 \begin{description}
   \item[Normal Values.]\hypertarget{def-normal}{}
-  Semantic configurations consisting of different combinations of values,
+  \Semanticsconfigurationsterm{} consisting of different combinations of values,
   execution graphs, and environments. These represent intermediate results
   generated while evaluating various constructs such as
   expressions, side-effect-free expressions, \assignableexpressions,
   local declaration items, slices, and expression lists
-  (which are evaluated in two different ways for the purpose of concurrency):
+  (which are evaluated in two different ways, by $\ResultExprList$ and $\ResultExprListM$, for the purpose of concurrency):
 \RenderType{TNormal}
 
-  \item[Exceptions.] Semantic configurations in \RenderType{TThrowing} represent thrown exceptions.
+  \item[Exceptions.] \Semanticsconfigurationsterm{} in \RenderType{TThrowing} represent thrown exceptions.
 
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The ASL dynamic semantics propagate these \emph{exceptional semantic configurations} to the nearest catch clause that matches
+  The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest catch clause that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
-  \item[Returned Values.] Semantic configurations in \RenderType{TReturning}
+  \item[Returned Values.] \Semanticsconfigurationsterm{} in \RenderType{TReturning}
   represent (tuples of) values being returned by the currently executing subprogram.
-  The ASL dynamic semantics propagate these \emph{early return semantic configurations} to the respective call expression/statement.
+  The ASL dynamic semantics propagate these \emph{early return \semanticsconfigurationsterm{}} to the respective call expression/statement.
 
-  \item[In-flight Subprogram.] Semantic configurations in \RenderType{TContinuing}
+  \item[In-flight Subprogram.] \Semanticsconfigurationsterm{} in \RenderType{TContinuing}
   represent the fact that a subprogram has more statements to execute.
-  The ASL dynamic semantics treat these semantic configurations as a signal to keep evaluating the remainder
+  The ASL dynamic semantics treat these \semanticsconfigurationsterm{} as a signal to keep evaluating the remainder
   of the subprogram currently being evaluated.
 
-  \item[Dynamic Errors.] Semantic configurations in
+  \item[Dynamic Errors.] \Semanticsconfigurationsterm{} in
   \RenderTypes{dynamic_error_and_codes}
   represent \dynamicerrorsterm{} (for example, division by zero).
-  The ASL dynamic semantics are set up such that when these \emph{error semantic configurations} appear,
+  The ASL dynamic semantics are set up such that when these \emph{error \semanticsconfigurationsterm{}} appear,
   the evaluation of the entire specification terminates by outputting them.
 
-  \item[Diverging Configurations.] The semantic configuration $\Diverging$
+  \item[Diverging Configurations.] The \semanticsconfigurationterm{} $\Diverging$
   represents a diverging evaluation.
   The corresponding type is:
   \RenderType{TDiverging}
 
 \end{description}
-Helper relations often have output semantic configurations that are just tuples, without an associated configuration domain.
+Helper relations often have output \semanticsconfigurationsterm{} that are just tuples, without an associated configuration domain.
 
 
 
 We will say that a semantic transition
 \begin{itemize}
-\item \emph{terminates normally} when the output semantic configuration is a member of \\
+\item \emph{terminates normally} when the output \semanticsconfigurationterm{} is a member of \\
       $\TNormal$,
-\item \emph{terminates exceptionally} when the output semantic configuration is a member of $\TThrowing$,
-\item \emph{terminates erroneously} when the output semantic configuration is a member of $\TDynError$,
-\item \emph{diverges} when the output semantic configuration is a member of $\TDiverging$,
+\item \emph{terminates exceptionally} when the output \semanticsconfigurationterm{} is a member of $\TThrowing$,
+\item \emph{terminates erroneously} when the output \semanticsconfigurationterm{} is a member of $\TDynError$,
+\item \emph{diverges} when the output \semanticsconfigurationterm{} is a member of $\TDiverging$,
 \item is \emph{abnormal} when it either terminates exceptionally, terminates erroneously, or diverges.
 \end{itemize}
 
-We introduce the following shorthand notations for semantic configurations where all variables
+We introduce the following shorthand notations for \semanticsconfigurationsterm{} where all variables
 appearing are \hyperlink{def-freshvariables}{fresh}:
 \begin{itemize}
 \hypertarget{def-throwingconfig}{}
@@ -363,17 +365,17 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 \item $\DynErrorConfig \triangleq \DynamicError(\vc)$.
       \hypertarget{def-returningconfig}{}
 \item $\ReturningConfig \triangleq \Returning((\vvs,\newg), \newenv)$
-      is an early return semantic configuration.
+      is an early return \semanticsconfigurationterm{}.
       \hypertarget{def-divergingconfig}{}
 \item $\DivergingConfig \triangleq \Diverging$ is a diverging configuration.
 \end{itemize}
 
-\subsection{Extracting and Substituting Elements of Semantic configurations}
+\subsection{Extracting and Substituting Elements of Semantics Configurations}
 
 \hypertarget{operator-graphof}{}
 \hypertarget{operator-environof}{}
-Given a semantic configuration $C$, we define the graph component of the semantic configuration,
-$\graphof{C}$, and the environment of the semantic configuration, $\environof{C}$, as follows:
+Given a \semanticsconfigurationterm{} $C$, we define the graph component of the \semanticsconfigurationterm{},
+$\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\environof{C}$, as follows:
 \[
 \begin{array}{lcc}
   C & \graphof{C} & \environof{C}\\
@@ -396,7 +398,7 @@ $\graphof{C}$, and the environment of the semantic configuration, $\environof{C}
 \]
 
 \hypertarget{operator-withgraph}{}
-Given a semantic configuration $C$, we define $\withgraph{C}{\vgp}$ to be a semantic configuration
+Given a \semanticsconfigurationterm{} $C$, we define $\withgraph{C}{\vgp}$ to be a \semanticsconfigurationterm{}
 like $C$ where the graph component is substituted with $\vgp$:
 \begin{small}
 \[
@@ -422,12 +424,12 @@ like $C$ where the graph component is substituted with $\vgp$:
 \end{small}
 
 \hypertarget{def-withenviron}{}
-Similarly, we define the $\withenviron{C}{\envp}$ to be a semantic configuration
+Similarly, we define the $\withenviron{C}{\envp}$ to be a \semanticsconfigurationterm{}
 like $C$ where the environment component, if one exists, is substituted with $\envp$:
 \begin{small}
 \[
 \begin{array}{ll}
-  \textbf{Semantic configuration} & \withenviron{C}{\envp}\\
+  \textbf{\Semanticsconfigurationterm{}} & \withenviron{C}{\envp}\\
   \hline
   \ResultExpr((\vv, \vg), \env) & \ResultExpr((\vv, \vg), \envp)\\
   \ResultExprSEF(\vv, \vg) & \text{undefined}\\
@@ -459,24 +461,24 @@ $\evalexpr$, $\evalstmt$, etc.
 We define the ASL dynamic semantics in the style of \emph{natural operational semantics}~\cite{SemanticsWithApplicationsBook}
 (also known as \emph{big-step semantics}).
 Natural operational semantics evaluates the AST inductively.
-That is, it concludes transitions from semantic configurations starting from
-non-leaf AST nodes by concluding transitions from semantic configurations starting from their children nodes.
+That is, it concludes transitions from \semanticsconfigurationsterm{} starting from
+non-leaf AST nodes by concluding transitions from \semanticsconfigurationsterm{} starting from their children nodes.
 
 \subsubsection{No Undefined Behaviours}
-When an input semantic configuration does not satisfy any semantic rule,
-there is no output semantic configuration for it to transition to. We say that
-the semantic configuration is \emph{stuck} and the ASL dynamic semantics are undefined for that
-input semantic configuration.
+When an input \semanticsconfigurationterm{} does not satisfy any semantic rule,
+there is no output \semanticsconfigurationterm{} for it to transition to. We say that
+the \semanticsconfigurationterm{} is \emph{stuck} and the ASL dynamic semantics are undefined for that
+input \semanticsconfigurationterm{}.
 
 The ASL dynamic semantics are defined for well-typed ASL specifications
 and gets stuck only in cases of diverging specifications
 (due to diverging loops, or infinite recursion).
-Otherwise, for every input semantic configuration there is at least one rule that can be used to take a semantic transition.
+Otherwise, for every input \semanticsconfigurationterm{} there is at least one rule that can be used to take a semantic transition.
 
 \hypertarget{eval-example}{}
 \subsubsection{Evaluation Example}
 The following example shows how to utilize the rules for expression literals and binary operator expressions
-to derive a transition from an input semantic configuration with the expression $(1+2)*(4+5)$,
+to derive a transition from an input \semanticsconfigurationterm{} with the expression $(1+2)*(4+5)$,
 given by the AST
 \[
   \EBinop\left(
@@ -491,7 +493,7 @@ given by the AST
     \end{array}
           \right)
 \]
-to an output semantic configuration with the value resulting from the calculation of the expression.
+to an output \semanticsconfigurationterm{} with the value resulting from the calculation of the expression.
 
 We annotate subexpressions to allow referring to them.
 
@@ -583,13 +585,13 @@ These are:
 \end{itemize}
 
 For these constructs, ASL defines an evaluation order.
-When there are multiple feasible choices for the next evaluation transition, ASL is defined to take the syntactically leftmost transition.
+When there are multiple feasible choices for the next evaluation transition, ASL is defined to take the transition
+for the construct appearing syntactically first. That is, ASL uses left-to-right evaluation.
 This applies \underline{only} when there are multiple feasible choices.
 For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side, as the evaluation transition for left-hand sides requires the right-hand side value (\chapref{AssignableExpressions}).
 
 \ConventionDef{EvaluationOrderIndependence}
 To assist reliable translation of ASL to other representations that may not specify an evaluation order, implementations may choose to enforce independence from evaluation order using a conservative static analysis that warns users of possibly conflicting side-effects which may affect behaviour if reordered.
-An initial prototype of such an analysis can be found in \href{https://github.com/herd/herdtools7/blob/\VERSION/asllib/SideEffect.ml}{ASLRef}.
 
 \ExampleDef{Evaluation order}
 \listingref{evaluation-order} shows examples of the constructs above, followed by output to the console from running the specification.
