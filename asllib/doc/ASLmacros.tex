@@ -104,13 +104,14 @@
     morestring=[b][\color{cyan}]",
     morestring=[d][\color{cyan}]',
 }
+\newcommand{\lightyellow}{\color{yellow!10}}
 \lstset{
   language=ASL,
   basicstyle=\ttfamily\scriptsize,
   showspaces=false,
   showstringspaces=false,
   breaklines=true,
-  backgroundcolor=\color{yellow!10}
+  backgroundcolor=\lightyellow
 }
 
 \usepackage{xcolor}
@@ -139,7 +140,6 @@
 \newcommand\TERM[1]{#1} % escape hatch for spellchecking
 
 \fvset{fontsize=\small}
-
 \usepackage[inline]{enumitem}  % For inline lists
 \renewlist{itemize}{itemize}{20}
 \setlist[itemize,1]{label=\textbullet}
@@ -345,7 +345,7 @@
 }
 
 % Old macro, still used but soon to be deprecated.
-\newcommand\ifthenelse[3]{
+\newcommand\ifthenelsestmt[3]{
   \left\{\begin{array}{ll}
   \hyperlink{def-choice}{\textbf{if}} & #1\\
   \hyperlink{def-choice}{\textbf{then}} & #2\\

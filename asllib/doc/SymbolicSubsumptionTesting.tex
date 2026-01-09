@@ -795,7 +795,7 @@ showing how constraints are overapproximated and underapproximated.
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
   \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
   {
-  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
+  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -820,7 +820,7 @@ showing how constraints are overapproximated and underapproximated.
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
   \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
   {
-  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
+  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -982,7 +982,7 @@ showing how an instance of integer sets transformed to constraint lists.
   \intervals \eqdef \{ a..b \;|\; a..b \in \vs \land \forall (c..d) \in \vs.\ a..b \not\subseteq c..d\}\\
   {
   \cs \eqdef \left[a..b \in \intervals:
-  \ifthenelse{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
+  \ifthenelsestmt{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
     \right]
   }
 }{

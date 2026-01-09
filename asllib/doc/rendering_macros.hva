@@ -1,0 +1,16 @@
+%%%ToDo handle optional argument of render commands
+%%%%
+\newcommand{\DefineConstant}[2]{\def\csname RenderConstant@#1\endcsname{#2}}
+\newcommand{\RenderConstant}[2][]{\csname RenderConstant@#2\endcsname}
+%%%%
+\newcommand{\DefineType}[2]{\def\csname RenderType@#1\endcsname{#2}}
+\newcommand{\RenderType}[2][]{\csname RenderType@#2\endcsname}
+%%%%
+\newcommand{\DefineRenderTypes}[2]{\def\csname RenderTypes@#1\endcsname{#2}}
+\newcommand{\RenderTypes}[2][]{\csname RenderTypes@#1\endcsname}
+%%%%
+\newcommand{\DefineRule}[2]{\def\csname RenderRule@#1\endcsname{#2}}
+\newcommand{\RenderRule}[1]{\csname RenderRule@#1\endcsname}
+%%%%
+\newcommand{\DefineRelation}[2]{\def\csname RenderRelation@#1\endcsname{#2}}
+\newcommand{\RenderRelation}[1]{\csname RenderRelation@#1\endcsname}
