@@ -2123,7 +2123,7 @@ can be added, for example, an \unreachablestatementterm.
   \tenv.\staticenvsG.\subprograms(\call.\callname) = (\vf, \Ignore)\\
   {
   \absconfigs \eqdef
-  \ifthenelse{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
+  \ifthenelsestmt{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
   }
 }{
   \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs
