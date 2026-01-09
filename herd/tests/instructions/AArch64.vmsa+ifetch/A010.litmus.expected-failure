@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.vmsa+ifetch/A010.litmus": Illegal AArch64 page table entry property x (User error)
