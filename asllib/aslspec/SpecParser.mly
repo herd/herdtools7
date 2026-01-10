@@ -313,10 +313,10 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 let type_term :=
     | name=IDENTIFIER; { check_definition_name name; Label name }
     | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { Term.make_type_operation op opt_named_type_term }
-    | LPAR; args=tclist1(opt_named_type_term); RPAR; { LabelledTuple {label_opt = None; args} }
+    | LPAR; args=tclist1(opt_named_type_term); RPAR; { Tuple {label_opt = None; args} }
     | label=IDENTIFIER; LPAR; args=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
-        LabelledTuple {label_opt = Some label; args} }
+        Tuple {label_opt = Some label; args} }
     | LBRACKET; fields=tclist1(record_field); RBRACKET; { Term.make_record fields }
     | label=IDENTIFIER; LBRACKET; fields=tclist1(record_field); RBRACKET;
     {   check_definition_name label;

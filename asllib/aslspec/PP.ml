@@ -58,11 +58,11 @@ let rec pp_type_term fmt =
       fprintf fmt "%s(%a)"
         (type_operator_to_token op |> tok_str)
         pp_opt_named_type_term term
-  | LabelledTuple { label_opt; args } ->
+  | Tuple { label_opt; args } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
         pp_opt_named_type_terms args
-  | LabelledRecord { label_opt; fields } ->
+  | Record { label_opt; fields } ->
       let label = Option.value label_opt ~default:"" in
       fprintf fmt "%s[%a]" label pp_record_fields fields
   | ConstantsSet constants ->
@@ -111,7 +111,7 @@ let rec pp_expr fmt =
   | Var name -> pp_print_string fmt name
   | UnresolvedApplication { lhs; args } ->
       fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
-  | LabelledTuple { label_opt; args } ->
+  | Tuple { label_opt; args } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
         (pp_comma_list pp_expr) args
@@ -122,7 +122,7 @@ let rec pp_expr fmt =
   | FieldAccess { var; fields } ->
       pp_print_string fmt (String.concat "." (var :: fields))
   | ListIndex { list_var; index } -> fprintf fmt "%s[%a]" list_var pp_expr index
-  | LabelledRecord { label_opt; fields } ->
+  | Record { label_opt; fields } ->
       fprintf fmt "%a[%a]"
         (pp_print_option pp_print_string)
         label_opt

@@ -14,8 +14,8 @@ let rec vars_of_type_term term =
     match term with
     | Label _ -> []
     | TypeOperator { term } -> opt_named_term_to_var_list term
-    | LabelledTuple { args } -> vars_of_opt_named_type_terms args
-    | LabelledRecord { fields } ->
+    | Tuple { args } -> vars_of_opt_named_type_terms args
+    | Record { fields } ->
         Utils.list_concat_map
           (fun { name_and_type = name, field_term; _ } ->
             name :: vars_of_type_term field_term)
@@ -39,7 +39,7 @@ and vars_of_opt_named_type_terms opt_named_terms =
 let variant_to_label_opt { TypeVariant.term } =
   match term with
   | Label label -> Some label
-  | LabelledTuple { label_opt } | LabelledRecord { label_opt } -> label_opt
+  | Tuple { label_opt } | Record { label_opt } -> label_opt
   | _ -> None
 
 let is_operator elem =

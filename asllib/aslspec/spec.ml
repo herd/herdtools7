@@ -281,11 +281,10 @@ module Layout = struct
     match term with
     | Label _ -> Unspecified
     | TypeOperator { term = _, t } -> for_type_term t
-    | LabelledTuple { args } ->
-        if List.length args > 1 then
-          Horizontal (List.map (fun (_, t) -> for_type_term t) args)
-        else Unspecified
-    | LabelledRecord { fields; _ } ->
+    | Tuple { args = [] | _ :: [] } -> Unspecified
+    | Tuple { args } ->
+        Horizontal (List.map (fun (_, t) -> for_type_term t) args)
+    | Record { fields; _ } ->
         if List.length fields > 1 then
           let layout_per_field =
             List.map
@@ -331,9 +330,9 @@ let list_definition_nodes ast =
             List.fold_right
               (fun ({ TypeVariant.term } as variant) acc_nodes ->
                 match term with
-                | Label _ | LabelledTuple { label_opt = Some _ } ->
+                | Label _ | Tuple { label_opt = Some _ } ->
                     Node_TypeVariant variant :: acc_nodes
-                | LabelledRecord { label_opt; fields } ->
+                | Record { label_opt; fields } ->
                     let field_nodes =
                       List.map (fun field -> Node_RecordField field) fields
                     in
@@ -342,7 +341,7 @@ let list_definition_nodes ast =
                       |> Option.to_list
                     in
                     variant_if_labelled @ field_nodes @ acc_nodes
-                | LabelledTuple { label_opt = None }
+                | Tuple { label_opt = None }
                 | Function _ | ConstantsSet _ | TypeOperator _ ->
                     acc_nodes)
               variants acc_nodes
@@ -454,23 +453,23 @@ module ResolveApplicationExpr = struct
     let open Expr in
     match expr with
     | Var _ | FieldAccess _ -> expr
-    | LabelledTuple { label_opt; args } ->
+    | Tuple { label_opt; args } ->
         let resolved_args = List.map resolve_in_context args in
-        LabelledTuple { label_opt; args = resolved_args }
+        Tuple { label_opt; args = resolved_args }
     | Relation { is_operator = true; name; args } ->
         let resolved_args = List.map resolve_in_context args in
         Relation { is_operator = true; name; args = resolved_args }
     | ListIndex { list_var; index } ->
         let resolved_index = resolve_in_context index in
         ListIndex { list_var; index = resolved_index }
-    | LabelledRecord { label_opt; fields } ->
+    | Record { label_opt; fields } ->
         let resolved_fields =
           List.map
             (fun (field_name, field_expr) ->
               (field_name, resolve_in_context field_expr))
             fields
         in
-        LabelledRecord { label_opt; fields = resolved_fields }
+        Record { label_opt; fields = resolved_fields }
     | UnresolvedApplication { lhs; args } -> (
         let resolved_args = List.map resolve_in_context args in
         match lhs with
@@ -478,12 +477,11 @@ module ResolveApplicationExpr = struct
             match StringMap.find_opt id id_to_defining_node with
             | Some (Node_Relation { Relation.is_operator; name }) ->
                 Relation { is_operator; name; args = resolved_args }
+            | Some (Node_TypeVariant { term = Term.Tuple { label_opt } })
             | Some
-                (Node_TypeVariant { term = Term.LabelledTuple { label_opt } })
-            | Some
-                (Node_Constant
-                   { opt_type = Some (Term.LabelledTuple { label_opt }) }) ->
-                LabelledTuple { label_opt; args = resolved_args }
+                (Node_Constant { opt_type = Some (Term.Tuple { label_opt }) })
+              ->
+                Tuple { label_opt; args = resolved_args }
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
@@ -502,7 +500,7 @@ module ResolveApplicationExpr = struct
             rhs = resolved_rhs;
             short_circuit = resolved_short_circuit;
           }
-    | Indexed ({ body : expr } as indexed_expr) ->
+    | Indexed ({ body : Expr.t } as indexed_expr) ->
         let resolved_body = resolve_in_context body in
         Indexed { indexed_expr with body = resolved_body }
     | NamedExpr (sub_expr, name) ->
@@ -638,17 +636,17 @@ module ResolveRules = struct
     (* Converts an optionally-named type term into an expression. *)
     let rec arg_of = function
       | Some name, _ -> Expr.Var name
-      | None, Term.LabelledTuple { label_opt; args } ->
+      | None, Term.Tuple { label_opt; args } ->
           let args = List.map arg_of args in
           Expr.make_opt_labelled_tuple label_opt args
-      | None, Term.LabelledRecord { label_opt; fields } ->
+      | None, Term.Record { label_opt; fields } ->
           let field_exprs =
             List.map
               (fun { Term.name_and_type = field_name, _; _ } ->
                 (field_name, Expr.Var field_name))
               fields
           in
-          Expr.LabelledRecord { label_opt; fields = field_exprs }
+          Expr.Record { label_opt; fields = field_exprs }
       | None, _ -> Error.missing_relation_argument_name name
     in
     let args = List.map arg_of input in
@@ -754,13 +752,12 @@ module ExtendNames = struct
       for most output configurations. *)
   let rec extend_with_names type_term expr =
     match (type_term, expr) with
-    | Term.LabelledTuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
+    | Term.Tuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
         (* An unlabelled tuple with a single component serves as a named reference
            to any type.*)
         opt_extend expr opt_name
-    | ( Term.LabelledTuple { label_opt = term_label_opt; args = term_components },
-        Expr.LabelledTuple
-          { label_opt = expr_label_opt; args = expr_components } )
+    | ( Term.Tuple { label_opt = term_label_opt; args = term_components },
+        Expr.Tuple { label_opt = expr_label_opt; args = expr_components } )
       when Option.equal String.equal term_label_opt expr_label_opt ->
         let () =
           if List.compare_lengths term_components expr_components <> 0 then
@@ -779,7 +776,7 @@ module ExtendNames = struct
               opt_extend (extend_with_names arg_type arg) opt_name)
             term_components expr_components
         in
-        Expr.LabelledTuple { label_opt = expr_label_opt; args = extended_args }
+        Expr.Tuple { label_opt = expr_label_opt; args = extended_args }
     | _ -> expr
 
   (** [extend_rule_element output_type rule_element] extends output judgments in
@@ -924,14 +921,12 @@ module Check = struct
     | Label _, Unspecified -> ()
     | Label _, _ -> Error.bad_layout term layout ~consistent_layout
     | TypeOperator { term = _, t }, _ -> check_layout t layout
-    | LabelledTuple { args }, Horizontal cells
-    | LabelledTuple { args }, Vertical cells ->
+    | Tuple { args }, Horizontal cells | Tuple { args }, Vertical cells ->
         if List.compare_lengths args cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
         else
           List.iter2 (fun (_, term) cell -> check_layout term cell) args cells
-    | LabelledRecord { fields }, Horizontal cells
-    | LabelledRecord { fields }, Vertical cells ->
+    | Record { fields }, Horizontal cells | Record { fields }, Vertical cells ->
         if List.compare_lengths fields cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
         else
@@ -975,14 +970,14 @@ module Check = struct
     function
     | Label id -> [ id ]
     | TypeOperator { term = _, t } -> referenced_ids t
-    | LabelledTuple { label_opt; args } -> (
+    | Tuple { label_opt; args } -> (
         let component_ids =
           List.map snd args |> Utils.list_concat_map referenced_ids
         in
         match label_opt with
         | None -> component_ids
         | Some label -> label :: component_ids)
-    | LabelledRecord { label_opt; fields } -> (
+    | Record { label_opt; fields } -> (
         let fields_ids =
           List.map
             (fun { name_and_type = _, field_type; _ } -> field_type)
@@ -1210,7 +1205,7 @@ module Check = struct
          of its single type term. *)
       let equiv_singleton_tuple term =
         match term with
-        | LabelledTuple { label_opt = None; args = [ (_, referenced_term) ] } ->
+        | Tuple { label_opt = None; args = [ (_, referenced_term) ] } ->
             referenced_term
         | _ -> term
       in
@@ -1241,17 +1236,15 @@ module Check = struct
           TypeOperator { op = super_op; term = _, super_term } ) ->
           operator_subsumed sub_op super_op
           && subsumed id_to_defining_node expanded_types sub_term super_term
-      | ( LabelledTuple { label_opt = sub_label_opt; args = sub_components },
-          LabelledTuple { label_opt = super_label_opt; args = super_components }
-        ) ->
+      | ( Tuple { label_opt = sub_label_opt; args = sub_components },
+          Tuple { label_opt = super_label_opt; args = super_components } ) ->
           Option.equal String.equal sub_label_opt super_label_opt
           && List.for_all2
                (fun (_, sub_term) (_, super_term) ->
                  subsumed id_to_defining_node expanded_types sub_term super_term)
                sub_components super_components
-      | ( LabelledRecord { label_opt = sub_label_opt; fields = sub_fields },
-          LabelledRecord { label_opt = super_label_opt; fields = super_fields }
-        ) ->
+      | ( Record { label_opt = sub_label_opt; fields = sub_fields },
+          Record { label_opt = super_label_opt; fields = super_fields } ) ->
           Option.equal String.equal sub_label_opt super_label_opt
           && List.for_all2
                (fun { name_and_type = _, sub_term; _ }
@@ -1348,7 +1341,7 @@ module Check = struct
       match term with
       | TypeOperator { term = _, operator_term } ->
           check_well_instantiated id_to_defining_node operator_term
-      | LabelledTuple { label_opt; args } -> (
+      | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
           let () =
             List.iter (check_well_instantiated id_to_defining_node) terms
@@ -1360,13 +1353,12 @@ module Check = struct
               match variant_def with
               | Node_TypeVariant
                   {
-                    TypeVariant.term =
-                      LabelledTuple { args = def_opt_named_components };
+                    TypeVariant.term = Tuple { args = def_opt_named_components };
                   } ->
                   let def_terms = List.map snd def_opt_named_components in
                   check_subsumed_terms_lists id_to_defining_node terms def_terms
               | _ -> assert false))
-      | LabelledRecord { label_opt; fields } -> (
+      | Record { label_opt; fields } -> (
           let terms =
             List.map (fun { name_and_type = _, term; _ } -> term) fields
           in
@@ -1379,9 +1371,7 @@ module Check = struct
               let variant_def = StringMap.find label id_to_defining_node in
               match variant_def with
               | Node_TypeVariant
-                  {
-                    TypeVariant.term = LabelledRecord { fields = def_fields; _ };
-                  } ->
+                  { TypeVariant.term = Record { fields = def_fields; _ } } ->
                   let def_terms = List.map field_type def_fields in
                   check_subsumed_terms_lists id_to_defining_node terms def_terms
               | _ -> assert false))
@@ -1403,7 +1393,7 @@ module Check = struct
       match term with
       | TypeOperator { term = _, operator_term } ->
           check_well_formed id_to_defining_node operator_term
-      | LabelledTuple { label_opt; args } -> (
+      | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
           let () = List.iter (check_well_formed id_to_defining_node) terms in
           match label_opt with
@@ -1412,16 +1402,14 @@ module Check = struct
               let variant_def = StringMap.find label id_to_defining_node in
               match variant_def with
               | Node_TypeVariant
-                  { TypeVariant.term = LabelledTuple { args = def_components } }
-                ->
+                  { TypeVariant.term = Tuple { args = def_components } } ->
                   if List.compare_lengths args def_components <> 0 then
                     Error.tuple_instantiation_length_failure term args label
                       def_components
-                  else ()
               | _ ->
                   Error.tuple_instantiation_failure_not_labelled_tuple term
                     label))
-      | LabelledRecord { label_opt; fields } -> (
+      | Record { label_opt; fields } -> (
           let terms = List.map field_type fields in
           let () = List.iter (check_well_formed id_to_defining_node) terms in
           match label_opt with
@@ -1432,7 +1420,7 @@ module Check = struct
               | Node_TypeVariant
                   {
                     TypeVariant.term =
-                      LabelledRecord { fields = def_fields; _ } as def_term;
+                      Record { fields = def_fields; _ } as def_term;
                   } ->
                   let field_names = List.map field_name fields in
                   let def_field_names = List.map field_name def_fields in
@@ -1620,13 +1608,12 @@ module Check = struct
           in
           (* An index expression never defines variables. *)
           update_use_def_for_expr Use spec use_def index
-      | LabelledRecord { fields } ->
+      | Record { fields } ->
           let initializing_exprs = List.map snd fields in
           update_use_def_for_expr_list mode spec use_def initializing_exprs
       | NamedExpr (sub_expr, _) ->
           update_use_def_for_expr mode spec use_def sub_expr
-      | LabelledTuple { args } ->
-          update_use_def_for_expr_list mode spec use_def args
+      | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
       | Map { lhs; args } ->
           update_use_def_for_expr_list mode spec use_def (lhs :: args)
       | Relation { is_operator = true; name; args = [ lhs; rhs ] }
@@ -1754,7 +1741,7 @@ module Check = struct
         [id_to_defining_node] to lookup the type variant definition node. *)
     let components_of_labelled_tuple id_to_defining_node label =
       match StringMap.find label id_to_defining_node with
-      | Node_TypeVariant { TypeVariant.term = LabelledTuple { args } } -> args
+      | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
       | node ->
           let msg =
             Format.asprintf
@@ -1775,12 +1762,12 @@ module Check = struct
         | _ -> false
       in
       let check_expr_in_context = check_expr_well_formed spec in
-      let check_exprs_in_context = List.iter check_expr_in_context in
+      let check_expr_list_in_context = List.iter check_expr_in_context in
       let open Rule in
       match expr with
       | NamedExpr (sub_expr, _) -> check_expr_in_context sub_expr
       | Relation { name; args } ->
-          let () = check_exprs_in_context args in
+          let () = check_expr_list_in_context args in
           let formal_args = formals_of_relation id_to_defining_node name in
           if
             (not (is_variadic_operator spec name))
@@ -1789,13 +1776,9 @@ module Check = struct
           then
             Error.invalid_number_of_arguments name expr
               ~expected:(List.length formal_args) ~actual:(List.length args)
-      | Map { lhs; args } -> check_exprs_in_context (lhs :: args)
-      | LabelledTuple { label_opt; args } -> (
-          let () =
-            List.iter
-              (fun component_expr -> check_expr_in_context component_expr)
-              args
-          in
+      | Map { lhs; args } -> check_expr_list_in_context (lhs :: args)
+      | Tuple { label_opt; args } -> (
+          let () = check_expr_list_in_context args in
           match label_opt with
           | Some label ->
               let type_components =
@@ -1806,15 +1789,14 @@ module Check = struct
                   ~expected:(List.length type_components)
                   ~actual:(List.length args)
           | None -> ())
-      | LabelledRecord { label_opt; fields } -> (
+      | Record { label_opt; fields } -> (
           let expr_field_names, expr_field_inits = List.split fields in
-          let () = check_exprs_in_context expr_field_inits in
+          let () = check_expr_list_in_context expr_field_inits in
           match label_opt with
           | Some label ->
               let record_type_fields =
                 match StringMap.find label id_to_defining_node with
-                | Node_TypeVariant
-                    { TypeVariant.term = LabelledRecord { fields } } ->
+                | Node_TypeVariant { TypeVariant.term = Record { fields } } ->
                     fields
                 | _ -> Error.illegal_lhs_application expr
               in
@@ -1835,7 +1817,7 @@ module Check = struct
       | Transition { lhs; rhs; short_circuit } ->
           check_expr_in_context lhs;
           check_expr_in_context rhs;
-          Option.iter check_exprs_in_context short_circuit
+          Option.iter check_expr_list_in_context short_circuit
       | Indexed { body } -> check_expr_in_context body
       | ListIndex { index } -> check_expr_in_context index
       | Var _ -> ()
@@ -1901,8 +1883,8 @@ module Check = struct
     let rec is_named_argument =
       let open Term in
       function
-      | Some _, _ | None, LabelledRecord _ -> true
-      | None, LabelledTuple { args } -> List.for_all is_named_argument args
+      | Some _, _ | None, Record _ -> true
+      | None, Tuple { args } -> List.for_all is_named_argument args
       | None, _ -> false
     in
     let check_relation { Relation.name; input; rule_opt } =

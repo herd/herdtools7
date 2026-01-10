@@ -23,7 +23,7 @@ module Layout : sig
   (** [math_layout_for_node node] returns the math layout for [node], or a
       default layout based on its type term if no math layout is defined. *)
 
-  val for_type_term : Term.type_term -> layout
+  val for_type_term : Term.t -> layout
   (** [for_type_term term] returns a full default layout for [term]. That is, a
       layout extending to the depth of [term]. *)
 end

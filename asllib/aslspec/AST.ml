@@ -194,25 +194,19 @@ module Term = struct
       \- a type representing just this single label. In other contexts, for
       example a type variant appearing in the signature of a relation, this can
       refer to a type defined elsewhere. *)
-  type type_term =
+  type t =
     | Label of string
         (** Either a set containing the single value named by the given string
             or a reference to a type with the given name. *)
     | TypeOperator of { op : type_operator; term : opt_named_type_term }
         (** A set containing all types formed by applying the type operator [op]
             to the type given by [term]. *)
-    | LabelledTuple of {
-        label_opt : string option;
-        args : opt_named_type_term list;
-      }
+    | Tuple of { label_opt : string option; args : opt_named_type_term list }
         (** A set containing all optionally-labelled tuples formed by the given
             argunent terms. An unlabelled tuple containing a single term is a
             special case - its domain is the domain of that term; this serves to
             reference types defined elsewhere. *)
-    | LabelledRecord of {
-        label_opt : string option;
-        fields : record_field list;
-      }
+    | Record of { label_opt : string option; fields : record_field list }
         (** A set containing all optionally-labelled records formed by the given
             fields. *)
     | ConstantsSet of string list
@@ -225,10 +219,10 @@ module Term = struct
         (** A set containing all functions formed by the given types. If [total]
             is true, the function is total, otherwise it is partial. *)
 
-  and named_type_term = string * type_term
+  and named_type_term = string * t
   (** A term associated with a variable name. *)
 
-  and opt_named_type_term = string option * type_term
+  and opt_named_type_term = string option * t
   (** A term optionally associated with a variable name. *)
 
   and record_field = { name_and_type : named_type_term; att : Attributes.t }
@@ -240,12 +234,11 @@ module Term = struct
 
   (** [make_tuple args] Constructs an unlabelled tuple for the tuple args
       [args]. *)
-  let make_tuple args = LabelledTuple { label_opt = None; args }
+  let make_tuple args = Tuple { label_opt = None; args }
 
   (** [make_labelled_tuple label args] Constructs a tuple labelled [label] and
       tuple args [args]. *)
-  let make_labelled_tuple label args =
-    LabelledTuple { label_opt = Some label; args }
+  let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
 
   let make_record_field named_type_term attributes =
     let att = Attributes.of_list attributes in
@@ -253,7 +246,7 @@ module Term = struct
 
   (** [make_record fields] Constructs an unlabelled record with fields [fields].
   *)
-  let make_record fields = LabelledRecord { label_opt = None; fields }
+  let make_record fields = Record { label_opt = None; fields }
 
   let field_type { name_and_type = _, field_type; _ } = field_type
   let field_name { name_and_type = name, _; _ } = name
@@ -267,32 +260,30 @@ module Term = struct
   (** [make_labelled_record label fields] Constructs a record labelled [label]
       with fields [fields]. *)
   let make_labelled_record label fields =
-    LabelledRecord { label_opt = Some label; fields }
+    Record { label_opt = Some label; fields }
 end
 
 module Expr = struct
   (** A term that can be used to form a rule judgment. *)
-  type expr =
+  type t =
     | Var of string
     | FieldAccess of { var : string; fields : string list }
-    | ListIndex of { list_var : string; index : expr }
+    | ListIndex of { list_var : string; index : t }
         (** An expression indexing into the list variable [list_var] at position
             [index]. *)
-    | LabelledRecord of {
-        label_opt : string option;
-        fields : (string * expr) list;
-      }  (** A record construction expression. *)
-    | UnresolvedApplication of { lhs : expr; args : expr list }
+    | Record of { label_opt : string option; fields : (string * t) list }
+        (** A record construction expression. *)
+    | UnresolvedApplication of { lhs : t; args : t list }
         (** An application expression whose left-hand side has not yet been
             resolved. *)
-    | LabelledTuple of { label_opt : string option; args : expr list }
-    | Relation of { name : string; is_operator : bool; args : expr list }
-    | Map of { lhs : expr; args : expr list }
+    | Tuple of { label_opt : string option; args : t list }
+    | Relation of { name : string; is_operator : bool; args : t list }
+    | Map of { lhs : t; args : t list }
         (** A map expression applies a function given by [lhs] to [args]. *)
     | Transition of {
-        lhs : expr;
-        rhs : expr;
-        short_circuit : expr list option;
+        lhs : t;
+        rhs : t;
+        short_circuit : t list option;
             (** The optional [short_circuit] contains short-circuiting
                 alternatives. If [short_circuit] is [None], the alternatives are
                 taken from the corresponding relation definition. Otherwise,
@@ -300,8 +291,8 @@ module Expr = struct
       }
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
-    | Indexed of { index : string; list_var : string; body : expr }
-    | NamedExpr of expr * string
+    | Indexed of { index : string; list_var : string; body : t }
+    | NamedExpr of t * string
         (** An (internally-)named expression. Used for giving names to
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
@@ -312,12 +303,10 @@ module Expr = struct
 
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
-  let make_tuple args = LabelledTuple { label_opt = None; args }
+  let make_tuple args = Tuple { label_opt = None; args }
 
-  let make_labelled_tuple label args =
-    LabelledTuple { label_opt = Some label; args }
-
-  let make_opt_labelled_tuple label_opt args = LabelledTuple { label_opt; args }
+  let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
+  let make_opt_labelled_tuple label_opt args = Tuple { label_opt; args }
 
   (** [make_application lhs args] constructs an application expression with
       left-hand side [lhs] and argument expressions [args]. During rule
@@ -331,7 +320,7 @@ module Expr = struct
   let make_operator_application name args =
     Relation { name; is_operator = true; args }
 
-  let make_record label_opt fields = LabelledRecord { label_opt; fields }
+  let make_record label_opt fields = Record { label_opt; fields }
   let make_list_index list_var index = ListIndex { list_var; index }
 end
 
@@ -339,15 +328,15 @@ end
 module Constant : sig
   type t = {
     name : string;
-    opt_type : Term.type_term option;
-    opt_value_and_attributes : (Expr.expr * Attributes.t) option;
+    opt_type : Term.t option;
+    opt_value_and_attributes : (Expr.t * Attributes.t) option;
     att : Attributes.t;
   }
 
   val make :
     string ->
-    Term.type_term option ->
-    (Expr.expr * attribute_pairs) option ->
+    Term.t option ->
+    (Expr.t * attribute_pairs) option ->
     attribute_pairs ->
     t
 
@@ -360,8 +349,8 @@ module Constant : sig
 end = struct
   type t = {
     name : string;
-    opt_type : Term.type_term option;
-    opt_value_and_attributes : (Expr.expr * Attributes.t) option;
+    opt_type : Term.t option;
+    opt_value_and_attributes : (Expr.t * Attributes.t) option;
     att : Attributes.t;
   }
 
@@ -396,13 +385,9 @@ end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
-  type t = {
-    type_kind : Term.type_kind;
-    term : Term.type_term;
-    att : Attributes.t;
-  }
+  type t = { type_kind : Term.type_kind; term : Term.t; att : Attributes.t }
 
-  val make : Term.type_kind -> Term.type_term -> attribute_pairs -> t
+  val make : Term.type_kind -> Term.t -> attribute_pairs -> t
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
@@ -411,11 +396,7 @@ module TypeVariant : sig
   (** The layout of the type term when rendered in the context of its containing
       type. *)
 end = struct
-  type t = {
-    type_kind : Term.type_kind;
-    term : Term.type_term;
-    att : Attributes.t;
-  }
+  type t = { type_kind : Term.type_kind; term : Term.t; att : Attributes.t }
 
   let make type_kind term attribute_pairs =
     { type_kind; term; att = Attributes.of_list attribute_pairs }
@@ -498,7 +479,7 @@ end
 module Rule = struct
   open Expr
 
-  type judgment = { expr : expr; is_output : bool; att : Attributes.t }
+  type judgment = { expr : Expr.t; is_output : bool; att : Attributes.t }
   (** A judgment represents either a premise or the the output configuration of
       the conclusion. If [is_output] is [true], the judgment represents the
       output configuration of the conclusion. *)
@@ -555,7 +536,7 @@ module Relation : sig
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
-    output : Term.type_term list;
+    output : Term.t list;
     att : Attributes.t;
     rule_opt : Rule.t option;
   }
@@ -565,7 +546,7 @@ module Relation : sig
     relation_property ->
     relation_category option ->
     Term.opt_named_type_term list ->
-    Term.type_term list ->
+    Term.t list ->
     attribute_pairs ->
     Rule.t option ->
     t
@@ -574,7 +555,7 @@ module Relation : sig
     string ->
     string list ->
     Term.opt_named_type_term list ->
-    Term.type_term ->
+    Term.t ->
     attribute_pairs ->
     t
 
@@ -609,7 +590,7 @@ end = struct
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
-    output : Term.type_term list;
+    output : Term.t list;
     att : Attributes.t;
     rule_opt : Rule.t option;
   }

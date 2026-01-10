@@ -98,19 +98,15 @@ module Make (S : SPEC_VALUE) = struct
         | None -> pp_id_as_macro fmt name)
     | TypeOperator { op; term = sub_term } ->
         pp_type_operator fmt op pp_opt_named_type_term (sub_term, layout)
-    | LabelledTuple { label_opt; args } ->
-        let is_type_reference =
-          (* Singleton unlabelled tuples are a special case -
+    | Tuple { label_opt = None; args = [ type_term ] } ->
+        (* Singleton unlabelled tuples are a special case -
            they are used to reference type terms, rather than defining them. *)
-          Option.is_none label_opt && Utils.is_singleton_list args
-        in
-        if is_type_reference then
-          pp_opt_named_type_term fmt (List.hd args, layout)
-        else
-          fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
-            (pp_parenthesized Parens true pp_opt_named_type_terms)
-            (args, layout)
-    | LabelledRecord { label_opt; fields } ->
+        pp_opt_named_type_term fmt (type_term, layout)
+    | Tuple { label_opt; args } ->
+        fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
+          (pp_parenthesized Parens true pp_opt_named_type_terms)
+          (args, layout)
+    | Record { label_opt; fields } ->
         let pp_record_fields_as_pairs =
           List.map
             (fun ({ name_and_type = field_name, _; _ } as field) ->
@@ -169,7 +165,7 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_math layout fmt { Relation.name; property; input; output } =
     (* Reuse the rendering for type terms. *)
     let input_as_labelled_tuple =
-      Term.LabelledTuple { label_opt = Some name; args = input }
+      Term.Tuple { label_opt = Some name; args = input }
     in
     let property_macro_name =
       match property with
@@ -231,7 +227,7 @@ module Make (S : SPEC_VALUE) = struct
     let variant_name_opt = variant_to_label_opt variant in
     let hyperlink_target_opt = Option.map hypertarget_for_id variant_name_opt in
     match term with
-    | LabelledRecord { fields } ->
+    | Record { fields } ->
         (* Records are a special case, since each field has its own hypertarget. *)
         let field_hyperlink_targets =
           List.map
@@ -445,8 +441,8 @@ module Make (S : SPEC_VALUE) = struct
                  {
                    term =
                      ( Label _
-                     | LabelledTuple { label_opt = Some _ }
-                     | LabelledRecord { label_opt = Some _ } );
+                     | Tuple { label_opt = Some _ }
+                     | Record { label_opt = Some _ } );
                  }) ->
               pp_id_as_macro fmt name
           | Some (Node_Type _)
@@ -456,23 +452,12 @@ module Make (S : SPEC_VALUE) = struct
               pp_var fmt name)
       | Relation { name; is_operator; args } when is_operator ->
           pp_operator name layout fmt args
-      | Relation _ | LabelledTuple _ | Map _ ->
-          let args =
-            match expr with
-            | Relation { args } | LabelledTuple { args } | Map { args } -> args
-            | _ ->
-                let msg =
-                  Format.asprintf "Unexpected LHS in expression: %a" PP.pp_expr
-                    expr
-                in
-                raise (SpecError msg)
-          in
+      | Relation { args } | Tuple { args } | Map { args } ->
           let pp_lhs fmt lhs =
             match lhs with
             | Relation { name } -> pp_id_as_macro fmt name
-            | LabelledTuple { label_opt = None } -> ()
-            | LabelledTuple { label_opt = Some label } ->
-                pp_id_as_macro fmt label
+            | Tuple { label_opt = None } -> ()
+            | Tuple { label_opt = Some label } -> pp_id_as_macro fmt label
             | Map { lhs } -> pp_expr fmt (lhs, layout)
             | _ -> assert false
           in
@@ -481,7 +466,7 @@ module Make (S : SPEC_VALUE) = struct
                (pp_aligned_elements ~pp_sep:pp_comma ~alignment:"l" pp_expr
                   layout))
             args
-      | LabelledRecord { label_opt; fields } ->
+      | Record { label_opt; fields } ->
           fprintf fmt "%a%a"
             (pp_print_option pp_id_as_macro)
             label_opt
