@@ -1,0 +1,11 @@
+AArch64 WRC
+{
+0:X0=x;
+1:X0=x; 1:X3=y;
+2:X0=x; 2:X3=y;
+}
+P0          | P1          | P2          ;
+MOV W1,#1   | LDR W1,[X0] | LDR W1,[X3] ;
+STR W1,[X0] | MOV W2,#1   | LDR W4,[X0] ;
+            | STR W2,[X3] |             ;
+exists (1:X1=1 /\ 2:X1=1 /\ 2:X4=0)

@@ -14,7 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Misc
 open Printf
 
 (*****************************)
@@ -1172,7 +1171,7 @@ let format_int_string s =
       let dump_cond_chan txt chan = List.iter (fprintf chan "%s\n") txt in
       let dump_cond txt o = match o with
       | None -> ()
-      | Some name -> output_protect (dump_cond_chan txt) name in
+      | Some name -> Misc.output_protect (dump_cond_chan txt) name in
       dump_cond !pos_cond Config.cond_pos ;
       dump_cond !neg_cond Config.cond_neg ;
       ()

@@ -74,6 +74,7 @@ let outcomereads = ref false
 let suffix = ref ""
 let dumpes = ref false
 let outputdir = ref PrettyConf.NoOutputdir
+let output_format = ref PrettyConf.Dot
 let dumplem = ref false
 let dumptex = ref false
 let maxphantom= ref None

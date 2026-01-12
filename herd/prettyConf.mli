@@ -21,6 +21,8 @@ type outputdir_mode =
   | Outputdir of string
   | StdoutOutput
 
+type output_format = Dot | Json
+
 (* What to show *)
 type show =
   | ShowProp  (* According to prop *)

@@ -1,0 +1,5 @@
+(library
+ (name litmus2desc)
+ (flags
+  (:standard -w -40-42))
+ (libraries herdtools unix decoders-yojson))
