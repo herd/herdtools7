@@ -11,5 +11,5 @@ end) : sig
   type instruction = AArch64Base.instruction
 
   val parse_from_file : string -> test
-  val show_instruction : instruction -> string
+  val show_instruction : latex:bool -> instruction -> string
 end

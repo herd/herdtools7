@@ -111,6 +111,10 @@ struct
 
   let parse_from_file = Misc.input_protect (fun ch -> parse ch)
 
-  let show_instruction (ins : AArch64Base.instruction) =
-    AArch64.dump_instruction ins
+  let show_instruction ~latex (ins : AArch64Base.instruction) =
+    if latex then
+      AArch64.do_pp_instruction
+        { AArch64.m_int with pp_k = Format.sprintf "\\#%i" }
+        ins
+    else AArch64.dump_instruction ins
 end
