@@ -725,7 +725,12 @@ let describe_execution ~describe_regs ~num_of_execs (test : LitmusTest.test)
   let deps_descriptions = List.map D.describe_condition conds in
   located_descriptions @ deps_descriptions
 
-type config = { libdir : string option; describe_regs : bool; latex : bool }
+type config = {
+  libdir : string option;
+  herd_path : string option;
+  describe_regs : bool;
+  latex : bool;
+}
 
 let format_line_endings items =
   let items_count = List.length items in
@@ -747,7 +752,10 @@ let format_bullets ~latex items =
 
 let explain_test_path ~(config : config) file_path : string =
   let test = A.parse_from_file file_path in
-  let executions = LitmusTest.run_herd ~libdir:config.libdir file_path in
+  let executions =
+    LitmusTest.run_herd ~libdir:config.libdir ~herd_path:config.herd_path
+      file_path
+  in
   let executions =
     (* FIXME: temporarily needed, to stabilize test output *)
     List.sort Stdlib.compare executions

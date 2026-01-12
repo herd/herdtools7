@@ -5,6 +5,7 @@ let () =
   let usage = "Usage: litmus2desc [options] FILE" in
 
   let libdir = ref None in
+  let herd_path = ref None in
   let describe_regs = ref false in
   let latex = ref false in
   let options =
@@ -12,6 +13,9 @@ let () =
       ( "-set-libdir",
         Arg.String (fun s -> libdir := Some s),
         "<path> set libdir" );
+      ( "--herd-path",
+        Arg.String (fun s -> herd_path := Some s),
+        "<path> set path of herd7 executable" );
       ( "--describe-regs",
         Arg.Unit (fun () -> describe_regs := true),
         "enable descriptions of register events. Default = disabled." );
@@ -41,6 +45,12 @@ let () =
   in
 
   let config =
-    Top.{ libdir = !libdir; describe_regs = !describe_regs; latex = !latex }
+    Top.
+      {
+        libdir = !libdir;
+        herd_path = !herd_path;
+        describe_regs = !describe_regs;
+        latex = !latex;
+      }
   in
   print_endline (Top.explain_test_path ~config file_path)

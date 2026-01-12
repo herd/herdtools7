@@ -19,15 +19,18 @@ let with_cmd_stdout (cmd : string) (f : in_channel -> 'a) : 'a =
   | Unix.WSIGNALED s -> failwith (Format.sprintf "Killed by signal %d\n" s)
   | Unix.WSTOPPED s -> failwith (Format.sprintf "Stopped by signal %d\n" s)
 
-let run_herd ~libdir file_path =
+let run_herd ~libdir ~herd_path file_path =
   let executions =
+    let herd_path =
+      match herd_path with Some path -> path | None -> "herd7"
+    in
     let libdir_opt =
       match libdir with Some s -> [ "-set-libdir"; s ] | None -> []
     in
     let herd_cmd =
       String.concat " "
       @@ [
-           "herd7";
+           herd_path;
            "-show";
            "prop";
            "-showevents";
