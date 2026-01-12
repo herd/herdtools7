@@ -497,15 +497,17 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
   `(b* ((evresult ,(car acl2::forms)))
      (eval_result-case evresult
        :ev_normal (b* ,(and (not (eq (car acl2::args) '&))
-                           `((,(car acl2::args) evresult.res)))
+                            `((,(car acl2::args) evresult.res)))
                     ,acl2::rest-expr)
        :ev_throwing (mv (init-backtrace
-                       (ev_throwing-fix evresult)
-                       pos)
-                      orac trace)
+                         (ev_throwing-fix evresult)
+                         (local-env->storage (env->local env))
+                         pos)
+                        orac trace)
        :otherwise (pass-error-*t
                    (init-backtrace
                     (ev_error-fix evresult)
+                    (local-env->storage (env->local env))
                     pos) orac))))
 
 (defmacro evbody-*t (body)

@@ -22,37 +22,41 @@
 
 (in-package "ASL")
 
-;; TODO: Document and add the stdlib proofs.
-
-(include-book "toplevel")
-(include-book "trace-subset")
-(include-book "stack-preserved")
-(include-book "proofs/stdlib/top")
-(include-book "xdoc/save" :dir :system)
-(include-book "oslib/date" :dir :system)
-(include-book "centaur/fty/top" :dir :system)
-(defttag :manual-info)
-
-(value-triple (acl2::tshell-ensure))
-(defconsts (*herdtools-git-hash* state)
-  (b* (((mv ?ok lines state)
-        (acl2::tshell-call "git rev-parse HEAD")))
-    (mv (subseq (car lines) 0 8) state)))
-
-(defconsts (*acl2-git-hash* state)
-  (b* ((dir (acl2::include-book-dir :system state))
-       ((mv ?ok lines state)
-        (acl2::tshell-call (concatenate 'string
-                                        "cd " dir "; git rev-parse HEAD"))))
-    (mv (subseq (car lines) 0 8) state)))
-
-(defconsts (*manual-date* state) (oslib::date))
+(include-book "trace-interp")
+(local (include-book "centaur/vl/util/default-hints" :dir :system))
 
 
-(defxdoc acl2::top
-  :short "ACL2 ASL interpreter manual"
-  :long "<p>This manual was built on @(`(:raw *manual-date*)`) from Herdtools7 git
-version @(`(:raw *herdtools-git-hash*)`) and ACL2 git version @(`(:raw
-*acl2-git-hash*)`). See @(see asl) for a starting point.</p>")
+(encapsulate nil
+  (local (defthm xor-of-bool-fix
+           (equal (xor (acl2::bool-fix x) y)
+                  (xor x y))))
+  (local (in-theory (acl2::e/d*
+                     ()
+                     (asl-*t-equals-original-rules
+                      maybe-expr-some-of-fields
+                      cons-equal
+                      env-replace-static-with-self
+                      (tau-system)
+                      tracespec-p-when-maybe-tracespec-p
+                      acl2::nfix-when-not-natp
+                      acl2::append-to-nil
+                      acl2::natp-when-gte-0
+                      set::sets-are-true-lists-cheap
+                      default-<-1 default-<-2
+                      (:rules-of-class :type-prescription :here)
+                      (:rules-of-class :definition :here))
+                     ((:t stmt-fix)
+                      (:t expr-fix)
+                      atom lifix
+                      maybe-expr-fix-when-some
+                      maybe-expr-some
+                      maybe-expr-some->val))))
 
-(xdoc::save "./manual" :error t :redef-okp t)
+  (with-output
+    :off (event)
+    :evisc (:gag-mode '(nil 5 8 nil))
+    (fty::deffixequiv-mutual asl-interpreter-mutual-recursion-*t)))
+
+
+
+

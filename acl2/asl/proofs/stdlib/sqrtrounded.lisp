@@ -42,7 +42,7 @@
   :local-vars (((v_real mant) "__stdlib_local_mant")
                ((v_real prec) "__stdlib_local_prec" (v_real prec-spec))
                ((v_real root) "__stdlib_local_root" (v_real root-spec)))
-  :bindings (((mv root-spec prec-spec)
+  :bindings (((mv ?root-spec ?prec-spec)
               (acl2::sqrtrounded-loop mant.val root.val prec.val start (+ 1 end))))
   :index-var n
   :hints ((and stable-under-simplificationp
@@ -66,8 +66,8 @@
   :args (val fracbits)
   :safe-clock (sqrtrounded-safe-clock val.val)
   :hyps (and (< 0 val.val)
-             (< 0 fracbits.val)
-             (<= (sqrtrounded-safe-clock val.val) (expt 2 128)))
+             (< 0 fracbits.val))
+  :measure-hyps (<= (sqrtrounded-safe-clock val.val) (expt 2 128))
   :return-values ((v_real (acl2::sqrtrounded val.val fracbits.val)))
   :enable (acl2::sqrtrounded)
   :prepwork

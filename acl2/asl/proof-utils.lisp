@@ -26,6 +26,44 @@
 (include-book "centaur/meta/variable-free" :dir :system)
 (include-book "tools/easy-simplify" :dir :system)
 
+
+
+
+(define termination-error-p ((x eval_result-p))
+  :returns (errp)
+  (eval_result-case x
+    :ev_error
+    (and (member-equal x.desc
+                       '("DE_LE: Recursion limit ran out"
+                         "DE_LE: Loop limit ran out"
+                         "DE_LE: Recursion limit ran out"
+                         "Clock ran out resolving named type"))
+         t)
+    :otherwise nil)
+  ///
+  (defthm termination-error-p-of-ev_error
+    (implies (syntaxp (quotep desc))
+             (iff (termination-error-p (ev_error desc data backtrace))
+                  (member-equal (acl2::str-fix desc)
+                                '("DE_LE: Recursion limit ran out"
+                                  "DE_LE: Loop limit ran out"
+                                  "DE_LE: Recursion limit ran out"
+                                  "Clock ran out resolving named type")))))
+
+  (defthm termination-error-p-when-not-ev_error
+    (implies (not (equal (eval_result-kind x) :ev_error))
+             (not (termination-error-p x))))
+
+  (defthm termination-error-p-of-init-backtrace
+    (iff (termination-error-p (init-backtrace x storage pos))
+         (termination-error-p x))
+    :hints(("Goal" :in-theory (enable init-backtrace))))
+
+  (defthm termination-error-p-of-change
+    (implies (eval_result-case x :ev_error)
+             (iff (termination-error-p (ev_error (ev_error->desc x) data backtrace))
+                  (termination-error-p x)))))
+
 (define find-nth-form-aux ((n natp)
                            (tag symbolp)
                            x)
@@ -198,7 +236,7 @@
                   (member ctor '(v_int v_bool v_real v_string v_bitvector v_label v_record v_array))
                   (symbolp name))
              (append (acl2::template-subst '((<name>-look (val-imaplist-assoc <str> env.local.storage))
-                                             ((<ctor> <name>) (cdr <name>-look)))
+                                             ((<ctor> <name> :quietp t) (cdr <name>-look)))
                                            :atom-alist `((<ctor> . ,ctor)
                                                          (<name> . ,name)
                                                          (<str> . ,str))
@@ -265,7 +303,7 @@
                                     <user-enables>)
                                    (<defloop-disables>
                                     <user-disables>))))
-     (defthm <name>-correct
+     (defthm <name>-partially-correct
        (b* (((env env))
             ((local-env env.local))
             <local-var-bindings>
@@ -277,7 +315,55 @@
                        )
                   (b* (((mv (ev_normal res) new-orac) <loop-form>))
                     (and (equal new-orac orac)
-                         <concl>))))
+                         (implies (not (termination-error-p res))
+                                  <concl>)))))
+       :hints (;; copied from just-induct-and-expand
+               (if (equal (car id) '(0))
+                   (let* ((expand-hints (acl2::just-expand-cp-parse-hints
+                                         '(<loop-form-expand>) (w state)))
+                          (cproc `(acl2::mark-expands-cp clause '(nil t ,expand-hints))))
+                     `(:computed-hint-replacement
+                       ((and (equal (car id) '(0)) '(:clause-processor acl2::clause-to-term))
+                        (and (equal (car id) '(0)) '(:induct <induction>)))
+                       :clause-processor ,cproc))
+                 (and (equal (car id) '(0 1))
+                      (acl2::expand-marked :last-only t)))
+               <user-hints>))
+
+     (defthm <name>-not-throwing
+       (b* (((env env))
+            ((local-env env.local))
+            <local-var-bindings>
+            <user-bindings>)
+         (implies (and <local-var-hyps>
+                       ;; <measure-hyps>
+                       <invariants>
+                       ;; (no-duplicatesp-equal (acl2::alist-keys (car env.local.storage)))
+                       )
+                  (b* (((mv res &) <loop-form>))
+                    (and (not (equal (eval_result-kind res) :ev_throwing))
+                         (implies (not (equal (eval_result-kind res) :ev_error))
+                                  (equal (eval_result-kind res) :ev_normal))
+                         (implies (not (equal (eval_result-kind res) :ev_normal))
+                                  (equal (eval_result-kind res) :ev_error))))))
+       :hints (("goal" :use ((:instance <name>-partially-correct))
+                :in-theory (disable <name>-partially-correct))))
+                             
+
+
+     (defthm <name>-terminates
+       (b* (((env env))
+            ((local-env env.local))
+            <local-var-bindings>
+            <user-bindings>)
+         (implies (and <local-var-hyps>
+                       ;; <measure-hyps>
+                       <invariants>
+                       <termination-invariants>
+                       ;; (no-duplicatesp-equal (acl2::alist-keys (car env.local.storage)))
+                       )
+                  (b* (((mv res &) <loop-form>))
+                    (not (termination-error-p res)))))
        :hints (;; copied from just-induct-and-expand
                (if (equal (car id) '(0))
                    (let* ((expand-hints (acl2::just-expand-cp-parse-hints
@@ -326,6 +412,7 @@
          prepwork
 
          (invariants 't)
+         (termination-invariants 't)
          bindings
          (static-env '(stdlib-static-env)))
         args)
@@ -424,6 +511,7 @@
                   (<fn> . ,function)
                   (<static-env> . ,static-env)
                   (<invariants> . ,invariants)
+                  (<termination-invariants> . ,termination-invariants)
                   (<concl> . ,normal-concl))
          :splices `((<defloop-enables> . (asl-code-proof-enables))
                     (<defloop-disables> . (asl-code-proof-disables))
@@ -469,7 +557,6 @@
                                     (<induction> . ,induction)
                                     (<loop-form-expand> . ,expand)
                                     . ,template.atoms)))
-
 
        (event
         (acl2::template-subst-top *defloop-template* template)))
@@ -613,7 +700,7 @@ as follows, more or less following the above made-up example:</p>
                'v_int))
        ((unless ctor)
         (er hard? 'def-asl-subprogram "Couldn't understand parameter: ~x0" p1)))
-    (cons `((,ctor ,(car params)))
+    (cons `((,ctor ,(car params) :quietp t))
           (subprogram-param-bindings (cdr params) (cdr fn-params)))))
 
 (define subprogram-arg-bindings ((args symbol-listp)
@@ -637,7 +724,7 @@ as follows, more or less following the above made-up example:</p>
                  (:otherwise nil))))
        ((unless ctor)
         (er hard? 'def-asl-subprogram "Couldn't understand arg: ~x0" p1)))
-    (cons `((,ctor ,(car args)))
+    (cons `((,ctor ,(car args) :quietp t))
           (subprogram-arg-bindings (cdr args) (cdr fn-args)))))
 
 
@@ -781,15 +868,54 @@ as follows, more or less following the above made-up example:</p>
          (implies (and (subprograms-match '<subprograms>
                                           (global-env->static (env->global env))
                                           <static-env>)
-                       <hyps>
-                       <measure-reqs>)
+                       <hyps>)
                   (b* (((mv res new-orac) (eval_subprogram
                                            env <fn>
                                            <params>
                                            <args>))
                        (spec (ev_normal (func_result <retvals> (env->global env)))))
                     (and (equal new-orac orac)
-                         <concl>))))
+                         (implies (not (termination-error-p res))
+                                  <concl>)))))
+       :hints ((:@ (not :no-expand-hint)
+                ("goal" :expand ((:free (params args)
+                                 (eval_subprogram env <fn> params args :clk clk)))))
+               <hints>))
+
+     (defthm <name>-not-throwing
+       (b* (<param-bindings>
+            <arg-bindings>
+            <user-bindings>)
+         (implies (and (subprograms-match '<subprograms>
+                                          (global-env->static (env->global env))
+                                          <static-env>)
+                       <hyps>)
+                  (b* (((mv res ?new-orac) (eval_subprogram
+                                           env <fn>
+                                           <params>
+                                           <args>)))
+                    (and (not (equal (eval_result-kind res) :ev_throwing))
+                         (implies (not (equal (eval_result-kind res) :ev_error))
+                                  (equal (eval_result-kind res) :ev_normal))
+                         (implies (not (equal (eval_result-kind res) :ev_normal))
+                                  (equal (eval_result-kind res) :ev_error))))))
+       :hints (("goal" :use ((:instance <name>))
+                :in-theory (disable <name>))))
+
+     (defthm <name>-terminates
+       (b* (<param-bindings>
+            <arg-bindings>
+            <user-bindings>)
+         (implies (and (subprograms-match '<subprograms>
+                                          (global-env->static (env->global env))
+                                          <static-env>)
+                       <hyps>
+                       <measure-reqs>)
+                  (b* (((mv res ?new-orac) (eval_subprogram
+                                           env <fn>
+                                           <params>
+                                           <args>)))
+                    (not (termination-error-p res)))))
        :hints ((:@ (not :no-expand-hint)
                 ("goal" :expand ((:free (params args)
                                  (eval_subprogram env <fn> params args :clk clk)))))
@@ -869,7 +995,7 @@ as follows, more or less following the above made-up example:</p>
        (binding (car x))
        (rest (val-bindings-rev-subst (cdr x) state)))
     (case-match binding
-      (((ctor var) . &)
+      (((ctor var . &) . &)
        (b* ((ctor-macro (intern-in-package-of-symbol
                          (concatenate 'string "PATBIND-" (symbol-name ctor))
                          ctor))
@@ -905,6 +1031,7 @@ as follows, more or less following the above made-up example:</p>
 
          return-values
          (hyps 't)
+         (measure-hyps 't)
 
          enable
          disable
@@ -963,6 +1090,7 @@ as follows, more or less following the above made-up example:</p>
        ((er (cons hyp-list &)) (subprogram-arg-hyps args f.args hyp-list storage-term state))
        (hyps (sublis-subtrees binding-subst (cleanup-hyps (reverse hyp-list))))
 
+       
        (direct-subprograms (collect-direct-subprograms f.body nil))
        (table-name (if (equal static-env '(stdlib-static-env))
                        'asl-subprogram-table
@@ -979,6 +1107,8 @@ as follows, more or less following the above made-up example:</p>
        (measure-reqs (if (eql clk-val 0)
                          t
                        `(<= ,clk-val (ifix clk))))
+       ((er measure-hyps) (simplify-for-def-asl-subprogram `(b* (,@param-bindings ,@arg-bindings) (and ,measure-reqs ,measure-hyps)) t state))
+       (measure-reqs (sublis-subtrees binding-subst `(and . ,(cleanup-hyps (list measure-hyps)))))
 
        (table-update t)
        (concl (if normal-cond
@@ -1030,6 +1160,7 @@ as follows, more or less following the above made-up example:</p>
                            (<retvals> . (list . ,return-values))
                            (<concl> . ,concl)
                            (<table-name> . ,table-name))
+                  :strs `(("<NAME>" . ,(symbol-name name)))
                   :splices `((<subprogram-enables> . (asl-code-proof-enables))
                              (<subprogram-disables> . (asl-code-proof-disables))
                              (<user-enables> . ,enable)
@@ -1039,6 +1170,7 @@ as follows, more or less following the above made-up example:</p>
                              (<user-bindings> . ,bindings)
                              (<hyps> . ,hyps)
                              (<hints> . ,hints))
+                  :pkg-sym 'asl-pkg
                   :features (append (and no-expand-hint '(:no-expand-hint))
                                     (and table-update '(:table-update))))))
 
@@ -1095,6 +1227,7 @@ as follows, more or less following the above made-up example:</p>
        (subprograms (cons function (collect-transitive-subprograms direct-subprograms table nil)))
        (same-in-both-static-envs (subprograms-match subprograms prim-static-env-val static-env-val))
        (name-prim (intern-in-package-of-symbol (concatenate 'string (symbol-name name) "-PRIM") name))
+       (name-terminates (intern-in-package-of-symbol (concatenate 'string (symbol-name name) "-TERMINATES") name))
        ((er thms1) (def-asl-subprogram-fn name args state))
        ;; If same-in-both-static-envs, then we can use the theorem about the
        ;; non-primitive version to prove the primitive one.
@@ -1102,7 +1235,7 @@ as follows, more or less following the above made-up example:</p>
        (prim-args (if same-in-both-static-envs
                       (list* :no-expand-hint t
                              :hints `(("goal" 
-                                       :in-theory (enable ,name)))
+                                       :in-theory (enable ,name ,name-terminates)))
                              (remove-keys-permissive
                               '(:hints :no-expand-hint :enable :disable) prim-args))
                     prim-args))

@@ -2015,10 +2015,6 @@
 
 (local (in-theory (acl2::disable* asl-*t-equals-original-rules)))
 (local (in-theory (enable ev_error->desc-when-wrong-kind)))
-(local (defthm ev_error->desc-of-init-backtrace
-         (equal (ev_error->desc (init-backtrace err pos))
-                (ev_error->desc err))
-         :hints(("Goal" :in-theory (enable init-backtrace)))))
 
 (local (defthm ev_error->desc-of-v_to_bool
          (not (equal (ev_error->desc (v_to_bool x))

@@ -105,19 +105,25 @@
                 (conjoin-concl concl (cdr form))))))))
 
 (local
- (defun def-stdlib-trace-thm-fn (thmname fn state)
-   (declare (xargs :mode :program :stobjs state))
+ (define stdlib-trace-thm-transform (thmname fn &key (add-hyps 't) (add-concl 't) (state 'state))
+   :verify-guards nil
+   :mode :program
    (b* (((er thm) (my-get-thm thmname state))
         (thm (remove-hints thm))
-        (thm (add-first-hyp `(and (trace-free-fnname-p ,fn)
-                                  (not (find-call-tracespec ,fn pos tracespec))
-                                  (trace-free-ty-timeframe-imap-p
-                                   (static_env_global->declared_types static-env)))
-                            thm))
+        (thm (if add-hyps
+                 (add-first-hyp `(and (trace-free-fnname-p ,fn)
+                                      (not (find-call-tracespec ,fn pos tracespec))
+                                      (trace-free-ty-timeframe-imap-p
+                                       (static_env_global->declared_types static-env)))
+                                thm)
+               thm))
         (thm (subst 'eval_subprogram-*t 'eval_subprogram thm))
         (thm (subst-subtree 'static-env '(GLOBAL-ENV->STATIC (ENV->GLOBAL ENV)) thm))
         (thm (subst-subtree '(MV RES NEW-ORAC TRACE) '(MV RES NEW-ORAC) thm))
-        (thm (conjoin-concl '(equal trace nil) thm))
+        (thm (subst-subtree '(MV RES ?NEW-ORAC ?TRACE) '(MV RES ?NEW-ORAC) thm))
+        (thm (if add-concl
+                 (conjoin-concl '(equal trace nil) thm)
+               thm))
         (thm (subst-subtree '(global-replace-static static-env (env->global env))
                             '(env->global env)
                             thm))
@@ -127,6 +133,20 @@
                thmname)
               thm)))
      (value thm))))
+
+(local
+ (defun def-stdlib-trace-thm-fn (thmname fn state)
+   (declare (xargs :mode :program :stobjs state))
+   (b* (((er thm) (stdlib-trace-thm-transform thmname fn))
+        ((er not-throwing) (stdlib-trace-thm-transform
+                            (intern-in-package-of-symbol (concatenate 'string (symbol-name thmname) "-NOT-THROWING")
+                                                         thmname)
+                            fn :add-concl nil))
+        ((er terminates) (stdlib-trace-thm-transform
+                          (intern-in-package-of-symbol (concatenate 'string (symbol-name thmname) "-TERMINATES")
+                                                       thmname)
+                          fn :add-hyps nil  :add-concl nil)))
+     (value `(progn ,thm ,not-throwing ,terminates)))))
 
 (defmacro def-stdlib-trace-thm (thmname fn)
   `(make-event (def-stdlib-trace-thm-fn ',thmname ',fn state)))
@@ -157,6 +177,29 @@
                            abs ash integer-length logtail logcount truncate min
                            max logmask logbit evenp oddp)))
 
-(def-stdlib-trace-thms asl-subprogram-table)
-(def-stdlib-trace-thms asl-prim-subprogram-table)
+(defthm termination-error-p-of-eval_subprogram-*t
+  (implies (not (termination-error-p (mv-nth 0 (eval_subprogram (env-replace-static static-env env) name vparams vargs))))
+           (not (termination-error-p (mv-nth 0 (eval_subprogram-*t env name vparams vargs)))))
+  :hints(("Goal" :use ((:instance eval_subprogram-*t-equals-original))
+          :in-theory (e/d (termination-error-p)
+                          (eval_subprogram-*t-equals-original)))))
+
+
+
+(encapsulate nil
+  (local (defthm equal-of-hides
+         (equal (equal (ev_error->backtrace (hide x))
+                       (ev_error->backtrace (hide y)))
+                (or (equal x y)
+                    (hide (equal (ev_error->backtrace (hide x))
+                                 (ev_error->backtrace (hide y))))))
+         :hints (("goal" :expand ((:free (x) (hide x)))))))
+  
+  (local (deftheory pre (current-theory :here)))
+
+  (def-stdlib-trace-thms asl-subprogram-table)
+
+  (local (in-theory (theory 'pre)))
+  
+  (def-stdlib-trace-thms asl-prim-subprogram-table))
 

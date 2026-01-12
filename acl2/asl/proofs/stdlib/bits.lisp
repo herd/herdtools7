@@ -200,60 +200,61 @@
                     :expand ((logrepeat 1 w x))))))))
 
 
-(define foo ()
-  :returns (foo eval_result-p)
-  (ev_error "x" nil nil)
-  ///
-  (defret foo-error
-    (equal (eval_result-kind foo) :ev_error))
+;; (local (defthm hack2
+;;          (implies (equal x y)
+;;                   (equal (equal (ev_error->backtrace (hide x))
+;;                                 (ev_error->backtrace (hide y)))
+;;                          t))
+;;          :hints (("goal" :expand ((:free (x) (hide x)))))))
 
-  (in-theory (disable (foo))))
-  
-
-(def-asl-subprogram-stdlib replicate-1-correct
-  :function "Replicate-1"
-  :params (n m)
-  :args (x)
-  :hyps (and (<= 0 n.val)
-             (< 0 m.val)
-             ;; (integerp (/ n.val m.val))
-             )
-  :normal-cond (integerp (/ n.val m.val))
-  :nonnormal-res (b* ((err0 (EV_ERROR "Unsupported binop"
-                                      (LIST :DIV (VAL-FIX N) (VAL-FIX M))
-                                      NIL))
-                      (err1 (INIT-BACKTRACE err0
-                                            ;; FIXME
-                                            '((FNAME . "ASL Standard Library")
-                                              (LNUM . 378)
-                                              (BOL . 9530)
-                                              (CNUM . 9546)))))
-                   (change-ev_error err1 :backtrace (cons (list "Replicate-1"
-                                                               (list (val-fix n) (val-fix m))
-                                                               (list (val-fix x)))
-                                                         (ev_error->backtrace err1))))
+(encapsulate nil
+  ;; hack to get the -prim version to go through
+  (local (set-default-hints
+          '((and stable-under-simplificationp
+                 ;; checks whether this rule exists
+                 (acl2::fnume '(:rewrite replicate-1-correct-terminates) world)
+                 '(:expand ((:free (x) (hide x)))
+                   :in-theory (disable replicate-1-correct))))))
+  (def-asl-subprogram-stdlib replicate-1-correct
+    :function "Replicate-1"
+    :params (n m)
+    :args (x)
+    :hyps (and (<= 0 n.val)
+               (< 0 m.val)
+               ;; (integerp (/ n.val m.val))
+               )
+    :normal-cond (integerp (/ n.val m.val))
+    :nonnormal-res (b* ((err0 (EV_ERROR "Unsupported binop"
+                                        (LIST :DIV (VAL-FIX N) (VAL-FIX M))
+                                        NIL))
+                        (backtrace (ev_error->backtrace
+                                    (hide (mv-nth 0 (eval_subprogram env "Replicate-1" (list n m) (list x)))))))
+                     (change-ev_error err0 :backtrace backtrace))
                                                                
-  :return-values ((v_bitvector n.val
-                               (logrepeat (/ n.val m.val) m.val x.val)))
-  :prepwork
-  ((local (defthm logrepeat-is-logmask
-            (implies (equal (loghead 1 x) 1)
-                     (equal (logrepeat n 1 x) (loghead n -1)))
-            :hints(("Goal" :in-theory (enable bitops::loghead**
-                                              logrepeat
-                                              bitops::logapp**
-                                              bitops::logmask**)))))
+    :return-values ((v_bitvector n.val
+                                 (logrepeat (/ n.val m.val) m.val x.val)))
+    :hints ('(:expand ((:free (res) (hide res))
+                       (eval_subprogram env "Replicate-1" (list n m) (list x)))
+              :in-theory (enable init-backtrace)))
+    :prepwork
+    ((local (defthm logrepeat-is-logmask
+              (implies (equal (loghead 1 x) 1)
+                       (equal (logrepeat n 1 x) (loghead n -1)))
+              :hints(("Goal" :in-theory (enable bitops::loghead**
+                                                logrepeat
+                                                bitops::logapp**
+                                                bitops::logmask**)))))
 
-   (local (defthm logrepeat-is-zero
-            (implies (equal (loghead 1 x) 0)
-                     (equal (logrepeat n 1 x) 0))
-            :hints(("Goal" :in-theory (enable bitops::loghead**
-                                              logrepeat
-                                              bitops::logapp**)))))
+     (local (defthm logrepeat-is-zero
+              (implies (equal (loghead 1 x) 0)
+                       (equal (logrepeat n 1 x) 0))
+              :hints(("Goal" :in-theory (enable bitops::loghead**
+                                                logrepeat
+                                                bitops::logapp**)))))
 
-   (local (defthm logrepeat-0
-            (equal (logrepeat 0 m x) 0)
-            :hints(("Goal" :in-theory (enable logrepeat)))))))
+     (local (defthm logrepeat-0
+              (equal (logrepeat 0 m x) 0)
+              :hints(("Goal" :in-theory (enable logrepeat))))))))
 
 
 (def-asl-subprogram-stdlib replicate-correct

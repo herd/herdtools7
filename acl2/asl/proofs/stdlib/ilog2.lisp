@@ -40,12 +40,13 @@
   :local-vars (((v_real val) "__stdlib_local_val")
                ((v_int high) "__stdlib_local_high" (v_int high-spec))
                ((v_int low)  "__stdlib_local_low"  (v_int low-spec)))
-  :bindings (((mv low-spec high-spec) (acl2::ilog2-search-up val.val low.val high.val)))
+  :bindings (((mv ?low-spec ?high-spec) (acl2::ilog2-search-up val.val low.val high.val)))
   :invariants (and (<= 1 val.val)
-                   (<= 1 high.val)
-                   (< (- (+ 1 (acl2::rational-exponent val.val)) high.val) (nfix clk))
-                   (integerp limit)
-                   (< (- (+ 1 (acl2::rational-exponent val.val)) high.val) limit))
+                   (<= 1 high.val))
+  :termination-invariants
+  (and (< (- (+ 1 (acl2::rational-exponent val.val)) high.val) (nfix clk))
+       (integerp limit)
+       (< (- (+ 1 (acl2::rational-exponent val.val)) high.val) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((ACL2::ILOG2-SEARCH-UP
                            (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
@@ -57,6 +58,7 @@
                                                    (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
 
 
+
 (defloop ilog2-loop-2
   :function "ILog2"
   :looptype :s_while
@@ -64,13 +66,14 @@
   :local-vars (((v_real val) "__stdlib_local_val")
                ((v_int high) "__stdlib_local_high" (v_int high-spec))
                ((v_int low)  "__stdlib_local_low"  (v_int low-spec)))
-  :bindings (((mv low-spec high-spec) (acl2::ilog2-search-down val.val low.val high.val)))
+  :bindings (((mv ?low-spec ?high-spec) (acl2::ilog2-search-down val.val low.val high.val)))
   :invariants (and (< 0 val.val)
                    (< val.val 1)
-                   (<= low.val -1)
-                   (< (- (+ 1 (- (acl2::rational-exponent val.val))) (- low.val)) (nfix clk))
-                   (integerp limit)
-                   (< (- (+ 1 (- (acl2::rational-exponent val.val))) (- low.val)) limit))
+                   (<= low.val -1))
+  :termination-invariants
+  (and (< (- (+ 1 (- (acl2::rational-exponent val.val))) (- low.val)) (nfix clk))
+       (integerp limit)
+       (< (- (+ 1 (- (acl2::rational-exponent val.val))) (- low.val)) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((ACL2::ILOG2-SEARCH-DOWN
                            (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
@@ -79,7 +82,7 @@
                                                               (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))
                            (V_INT->VAL
                             (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_high"
-                                                   (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
+                                                     (LOCAL-ENV->STORAGE (ENV->LOCAL ENV)))))))))))
 
 
 (defloop ilog2-loop-3
@@ -89,12 +92,13 @@
   :local-vars (((v_real val) "__stdlib_local_val")
                ((v_int high) "__stdlib_local_high" (v_int high-spec))
                ((v_int low)  "__stdlib_local_low"  (v_int low-spec)))
-  :bindings (((mv low-spec high-spec) (acl2::ilog2-binary-search val.val low.val high.val)))
+  :bindings (((mv ?low-spec ?high-spec) (acl2::ilog2-binary-search val.val low.val high.val)))
   :invariants (and (not (val-imaplist-assoc "__stdlib_local_mid" env.local.storage))
-                   (< 0 val.val)
-                   (< (- high.val low.val) (nfix clk))
-                   (integerp limit)
-                   (< (- high.val low.val) limit))
+                   (< 0 val.val))
+  :termination-invariants
+  (and (< (- high.val low.val) (nfix clk))
+       (integerp limit)
+       (< (- high.val low.val) limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((acl2::ilog2-binary-search
                            (V_REAL->VAL (CDR (VAL-IMAPLIST-ASSOC "__stdlib_local_val"
@@ -142,13 +146,19 @@
                                               (+ (- low) high))
                                             clk))))))))
 
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(local (acl2::use-trivial-ancestors-check))
+
+
+
+
 (local
  (def-asl-subprogram-stdlib ilog2-correct-lemma
    :function "ILog2"
    :args (val)
    :safe-clock (ilog2-safe-clock val.val)
-   :hyps (and (not (eql 0 val.val))
-              (<= (ilog2-safe-clock val.val) (expt 2 128)))
+   :hyps (not (eql 0 val.val))
+   :measure-hyps (<= (ilog2-safe-clock val.val) (expt 2 128))
    :return-values ((v_int (acl2::ilog2 val.val)))
    :enable (acl2::ilog2)))
 
@@ -165,8 +175,8 @@
   :function "ILog2"
   :args (val)
   :safe-clock (ilog2-safe-clock val.val)
-  :hyps (and (not (eql 0 val.val))
-             (<= (ilog2-safe-clock val.val) (expt 2 128)))
+  :hyps (not (eql 0 val.val))
+  :measure-hyps (<= (ilog2-safe-clock val.val) (expt 2 128))
   :return-values ((v_int (acl2::rational-exponent val.val)))
   :no-expand-hint t
   :enable (rational-exponent-is-ilog2))

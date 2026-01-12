@@ -49,20 +49,20 @@
   :guard (<= 0 x)
   (if (equal x 0)
       (equal sqrt 0)
-    (and (rationalp sqrt)
-         (< 0 sqrt)
-         (let ((exp (rational-exponent sqrt))
-               (mant (rational-significand sqrt)))
-           (and (equal (mod mant (expt 2 (- fracbits))) 0) ;; a) above
-                (or (equal (* sqrt sqrt) x)                ;; b) above
-                    (equal (mod mant (expt 2 (- 1 fracbits)))
-                           (expt 2 (- fracbits))))
-                (let ((sqrt-down (* (expt 2 exp)           ;; c) above
-                                    (- mant (expt 2 (- fracbits)))))
-                      (sqrt-up (* (expt 2 exp)
-                                  (+ mant (expt 2 (- fracbits))))))
-                  (and (< (* sqrt-down sqrt-down) x)
-                       (< x (* sqrt-up sqrt-up))))))))
+      (and (rationalp sqrt)
+           (< 0 sqrt)
+           (let ((exp (rational-exponent sqrt))
+                 (mant (rational-significand sqrt)))
+             (and (equal (mod mant (expt 2 (- fracbits))) 0) ;; a) above
+                  (or (equal (* sqrt sqrt) x)                ;; b) above
+                      (equal (mod mant (expt 2 (- 1 fracbits)))
+                             (expt 2 (- fracbits))))
+                  (let ((sqrt-down (* (expt 2 exp) ;; c) above
+                                      (- mant (expt 2 (- fracbits)))))
+                        (sqrt-up (* (expt 2 exp)
+                                    (+ mant (expt 2 (- fracbits))))))
+                    (and (< (* sqrt-down sqrt-down) x)
+                         (< x (* sqrt-up sqrt-up))))))))
 
   ;; Uniqueness argument:
 
@@ -95,7 +95,7 @@
                        (rationalp x))
                   (equal (mod x y)
                          (* y (mod (/ x y) 1))))
-         :hints(("Goal" :in-theory (enable mod rfix)))))
+         :hints (("Goal" :in-theory (enable mod rfix)))))
 
 (local
  (define incr-mant ((x rationalp)
@@ -116,7 +116,7 @@
                    (integerp incr)
                    (< (- (expt 2 fracbits)) incr))
               (< 0 (incr-mant x fracbits incr)))
-     :hints (("goal" :do-not-induct t)
+     :hints (("Goal" :do-not-induct t)
              (and stable-under-simplificationp
                   '(:nonlinearp t)))
      :rule-classes :linear)
@@ -126,19 +126,19 @@
      (equal (sqrt-rounded-correctness-condition x fracbits sqrt)
             (if (equal x 0)
                 (equal sqrt 0)
-              (and (rationalp sqrt)
-                   (< 0 sqrt)
-                   (let ((mant (rational-significand sqrt)))
-                     (and (equal (mod mant (expt 2 (- fracbits))) 0)
-                          (or (equal (* sqrt sqrt) x)
-                              (equal (mod mant (expt 2 (- 1 fracbits)))
-                                     (expt 2 (- fracbits))))
-                          (let ((sqrt-down (incr-mant sqrt fracbits -1)))
-                            (< (* sqrt-down sqrt-down) x))
-                          (let ((sqrt-up (incr-mant sqrt fracbits 1)))
-                            (< x (* sqrt-up sqrt-up))))))))
-     :hints(("Goal" :in-theory (enable incr-mant
-                                       sqrt-rounded-correctness-condition))))
+                (and (rationalp sqrt)
+                     (< 0 sqrt)
+                     (let ((mant (rational-significand sqrt)))
+                       (and (equal (mod mant (expt 2 (- fracbits))) 0)
+                            (or (equal (* sqrt sqrt) x)
+                                (equal (mod mant (expt 2 (- 1 fracbits)))
+                                       (expt 2 (- fracbits))))
+                            (let ((sqrt-down (incr-mant sqrt fracbits -1)))
+                              (< (* sqrt-down sqrt-down) x))
+                            (let ((sqrt-up (incr-mant sqrt fracbits 1)))
+                              (< x (* sqrt-up sqrt-up))))))))
+     :hints (("Goal" :in-theory (enable incr-mant
+                                        sqrt-rounded-correctness-condition))))
 
 
    (local (defund rational-significand-int (x fracbits)
@@ -150,7 +150,7 @@
                      (equal (rational-significand x)
                             (* (expt 2 (- fracbits))
                                (rational-significand-int x fracbits))))
-            :hints(("Goal" :in-theory (enable rational-significand-int)))))
+            :hints (("Goal" :in-theory (enable rational-significand-int)))))
 
    (local (defthm rational-significand-int-bounds
             (implies (and (integerp (* (rational-significand x)
@@ -159,7 +159,7 @@
                           (< 0 x))
                      (and (<= (expt 2 fracbits) (rational-significand-int x fracbits))
                           (< (rational-significand-int x fracbits) (* 2 (expt 2 fracbits)))))
-            :hints(("Goal" :in-theory (enable rational-significand-int)))
+            :hints (("Goal" :in-theory (enable rational-significand-int)))
             :rule-classes :linear))
 
    (local (defthm increment-significand-not-greater-than-next-exponent
@@ -171,8 +171,8 @@
                      (<= (+ 1 (* (rational-significand x)
                                  (expt 2 fracbits)))
                          (* 2 (expt 2 fracbits))))
-            :hints(("Goal" :in-theory (enable rational-significand-in-terms-of-int)
-                    :do-not-induct t))
+            :hints (("Goal" :in-theory (enable rational-significand-in-terms-of-int)
+                            :do-not-induct t))
             :rule-classes :linear))
 
    (defthm incr-mant-plus1-sized
@@ -183,19 +183,19 @@
                                 (expt 2 fracbits))))
               (integerp (* (rational-significand (incr-mant x fracbits 1))
                            (expt 2 fracbits))))
-     :hints(("Goal" :in-theory (enable rational-sign
-                                       exponents-add-unrestricted)
-             :use ((:instance rational-sign-significand-exponent-unique
-                    (exponent (rational-exponent x))
-                    (sign 1)
-                    (significand (+ (rational-significand x) (expt 2 (- fracbits)))))
-                   (:instance rational-sign-significand-exponent-unique
-                    (exponent (+ 1 (rational-exponent x)))
-                    (sign 1)
-                    (significand (/ (+ (rational-significand x) (expt 2 (- fracbits))) 2))))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))
+     :hints (("Goal" :in-theory (enable rational-sign
+                                        exponents-add-unrestricted)
+                     :use ((:instance rational-sign-significand-exponent-unique
+                                      (exponent (rational-exponent x))
+                                      (sign 1)
+                                      (significand (+ (rational-significand x) (expt 2 (- fracbits)))))
+                           (:instance rational-sign-significand-exponent-unique
+                                      (exponent (+ 1 (rational-exponent x)))
+                                      (sign 1)
+                                      (significand (/ (+ (rational-significand x) (expt 2 (- fracbits))) 2))))
+                     :do-not-induct t)
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))
      :otf-flg t)
 
    (defthm incr-mant-plus1-sized2
@@ -206,9 +206,9 @@
                                 (expt 2 fracbits))))
               (integerp (* (expt 2 fracbits)
                            (rational-significand (incr-mant x fracbits 1)))))
-     :hints (("goal" :use incr-mant-plus1-sized
-              :in-theory (disable incr-mant-plus1-sized
-                                  incr-mant))))
+     :hints (("Goal" :use incr-mant-plus1-sized
+                     :in-theory (disable incr-mant-plus1-sized
+                                         incr-mant))))
 
    (defthm incr-mant-minus1-sized
      (implies (and (rationalp x)
@@ -218,19 +218,19 @@
                                 (expt 2 fracbits))))
               (integerp (* (rational-significand (incr-mant x fracbits -1))
                            (expt 2 fracbits))))
-     :hints(("Goal" :in-theory (enable rational-sign
-                                       exponents-add-unrestricted)
-             :use ((:instance rational-sign-significand-exponent-unique
-                    (exponent (rational-exponent x))
-                    (sign 1)
-                    (significand (- (rational-significand x) (expt 2 (- fracbits)))))
-                   (:instance rational-sign-significand-exponent-unique
-                    (exponent (+ -1 (rational-exponent x)))
-                    (sign 1)
-                    (significand (* 2 (- (rational-significand x) (expt 2 (- fracbits)))))))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))
+     :hints (("Goal" :in-theory (enable rational-sign
+                                        exponents-add-unrestricted)
+                     :use ((:instance rational-sign-significand-exponent-unique
+                                      (exponent (rational-exponent x))
+                                      (sign 1)
+                                      (significand (- (rational-significand x) (expt 2 (- fracbits)))))
+                           (:instance rational-sign-significand-exponent-unique
+                                      (exponent (+ -1 (rational-exponent x)))
+                                      (sign 1)
+                                      (significand (* 2 (- (rational-significand x) (expt 2 (- fracbits)))))))
+                     :do-not-induct t)
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))
      :otf-flg t)
 
    (defthm incr-mant-minus1-sized2
@@ -241,9 +241,9 @@
                                 (expt 2 fracbits))))
               (integerp (* (expt 2 fracbits)
                            (rational-significand (incr-mant x fracbits -1)))))
-     :hints (("goal" :use incr-mant-minus1-sized
-              :in-theory (disable incr-mant-minus1-sized
-                                  incr-mant))))
+     :hints (("Goal" :use incr-mant-minus1-sized
+                     :in-theory (disable incr-mant-minus1-sized
+                                         incr-mant))))
 
    (defthm incr-mant-minus1-same-exponent
      (implies (and (rationalp x)
@@ -254,15 +254,15 @@
                    (not (equal (rational-significand x) 1)))
               (equal (rational-exponent (incr-mant x fracbits -1))
                      (rational-exponent x)))
-     :hints(("Goal" :in-theory (enable rational-sign
-                                       exponents-add-unrestricted)
-             :use ((:instance rational-sign-significand-exponent-unique
-                    (exponent (rational-exponent x))
-                    (sign 1)
-                    (significand (- (rational-significand x) (expt 2 (- fracbits))))))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))
+     :hints (("Goal" :in-theory (enable rational-sign
+                                        exponents-add-unrestricted)
+                     :use ((:instance rational-sign-significand-exponent-unique
+                                      (exponent (rational-exponent x))
+                                      (sign 1)
+                                      (significand (- (rational-significand x) (expt 2 (- fracbits))))))
+                     :do-not-induct t)
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))
      :otf-flg t)
 
    (defthmd incr-mant-minus1-rational-significand
@@ -275,15 +275,15 @@
               (equal (rational-significand (incr-mant x fracbits -1))
                      (- (rational-significand x)
                         (expt 2 (- fracbits)))))
-     :hints(("Goal" :in-theory (enable rational-sign
-                                       exponents-add-unrestricted)
-             :use ((:instance rational-sign-significand-exponent-unique
-                    (exponent (rational-exponent x))
-                    (sign 1)
-                    (significand (- (rational-significand x) (expt 2 (- fracbits))))))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))
+     :hints (("Goal" :in-theory (enable rational-sign
+                                        exponents-add-unrestricted)
+                     :use ((:instance rational-sign-significand-exponent-unique
+                                      (exponent (rational-exponent x))
+                                      (sign 1)
+                                      (significand (- (rational-significand x) (expt 2 (- fracbits))))))
+                     :do-not-induct t)
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))
      :otf-flg t)
 
    (defthm incr-mant-plus1-same-exponent
@@ -296,15 +296,15 @@
                                (- 2 (expt 2 (- fracbits))))))
               (equal (rational-exponent (incr-mant x fracbits 1))
                      (rational-exponent x)))
-     :hints(("Goal" :in-theory (enable rational-sign
-                                       exponents-add-unrestricted)
-             :use ((:instance rational-sign-significand-exponent-unique
-                    (exponent (rational-exponent x))
-                    (sign 1)
-                    (significand (+ (rational-significand x) (expt 2 (- fracbits))))))
-             :do-not-induct t)
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))
+     :hints (("Goal" :in-theory (enable rational-sign
+                                        exponents-add-unrestricted)
+                     :use ((:instance rational-sign-significand-exponent-unique
+                                      (exponent (rational-exponent x))
+                                      (sign 1)
+                                      (significand (+ (rational-significand x) (expt 2 (- fracbits))))))
+                     :do-not-induct t)
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))
      :otf-flg t)
 
    (local
@@ -318,11 +318,11 @@
                                 (1- (* 2 (expt 2 fracbits))))))
                (equal (rational-exponent (incr-mant x fracbits 1))
                       (rational-exponent x)))
-      :hints(("Goal" :use incr-mant-plus1-same-exponent
-              :in-theory (e/d (rational-significand-int)
-                              (incr-mant-plus1-same-exponent
-                               incr-mant))
-              :do-not-induct t))
+      :hints (("Goal" :use incr-mant-plus1-same-exponent
+                      :in-theory (e/d (rational-significand-int)
+                                      (incr-mant-plus1-same-exponent
+                                       incr-mant))
+                      :do-not-induct t))
       :otf-flg t))
 
    ;; (local (defstub y () nil))
@@ -343,8 +343,8 @@
                                  (< (* (expt 2 (rational-exponent y))
                                        (rational-significand y))
                                     z))))
-            :hints(("Goal" :in-theory (enable rational-significand-in-terms-of-rational-exponent
-                                              rational-sign)))))
+            :hints (("Goal" :in-theory (enable rational-significand-in-terms-of-rational-exponent
+                                               rational-sign)))))
    ;; (local (in-theory (disable y)))
 
 
@@ -365,13 +365,13 @@
                    ;; is the next-to-highest significand of the previous exponent
                    (< 1 (rational-significand x)))
               (<= y (incr-mant x fracbits -1)))
-     :hints (("goal" :in-theory (e/d ()
+     :hints (("Goal" :in-theory (e/d ()
                                      (incr-mant
                                       incr-mant-positive))
-              :do-not-induct t)
+                     :do-not-induct t)
              (and stable-under-simplificationp
                   '(:in-theory (e/d ()
-                                    (incr-mant))
+                                (incr-mant))
                     :use ((:instance rational-exponent-monotonic
                            (x (incr-mant x fracbits -1))
                            (y y))
@@ -384,8 +384,8 @@
                     :cases ((< 0 x))))
              (and stable-under-simplificationp
                   '(:in-theory (enable rational-significand-in-terms-of-int
-                                       divide-out-common-factors-<
-                                       incr-mant)))
+                                divide-out-common-factors-<
+                                incr-mant)))
              )
      :otf-flg t)
 
@@ -397,8 +397,8 @@
             (implies (equal (rational-exponent y) (+ 1 (rational-exponent x)))
                      (Equal (expt 2 (rational-exponent y))
                             (* 2 (expt 2 (rational-exponent x)))))
-            :hints (("goal" :use ((:instance exponents-add (r 2) (i 1) (j (rational-exponent x))))
-                     :in-theory (disable exponents-add)))))
+            :hints (("Goal" :use ((:instance exponents-add (r 2) (i 1) (j (rational-exponent x))))
+                            :in-theory (disable exponents-add)))))
 
    (defthm incr-mant-plus1-none-between
      (implies (and (rationalp x)
@@ -414,13 +414,13 @@
                    ;; is the next-to-highest significand of the previous exponent
                    (< 1 (rational-significand x)))
               (<= (incr-mant x fracbits 1) y))
-     :hints (("goal" :in-theory (e/d ()
+     :hints (("Goal" :in-theory (e/d ()
                                      (incr-mant
                                       incr-mant-positive))
-              :do-not-induct t)
+                     :do-not-induct t)
              (and stable-under-simplificationp
                   '(:in-theory (e/d ()
-                                    (incr-mant))
+                                (incr-mant))
                     :use ((:instance rational-exponent-monotonic
                            (x x)
                            (y y))
@@ -435,9 +435,9 @@
                     :cases ((< 0 y))))
              (and stable-under-simplificationp
                   '(:in-theory (enable rational-significand-in-terms-of-int
-                                       divide-out-common-factors-<
-                                       incr-mant
-                                       rewrite-expt-of-rational-exponent-whenplus1)))
+                                divide-out-common-factors-<
+                                incr-mant
+                                rewrite-expt-of-rational-exponent-whenplus1)))
              )
      :otf-flg t)
 
@@ -451,9 +451,9 @@
    (local (defthm mod-1-of-half-positive-exponent
             (implies (posp n)
                      (equal (mod (* 1/2 (expt 2 n)) 1) 0))
-            :hints (("goal" :use ((:instance mod-1-of-nonneg-exponent
-                                   (n (+ -1 n))))
-                     :in-theory (enable exponents-add-unrestricted)))))
+            :hints (("Goal" :use ((:instance mod-1-of-nonneg-exponent
+                                             (n (+ -1 n))))
+                            :in-theory (enable exponents-add-unrestricted)))))
 
    (local (defthm equal-times-2-mod
             (implies (equal (* 2 (mod x 1)) 1)
@@ -471,11 +471,11 @@
               (equal (mod (rational-significand (incr-mant x fracbits -1))
                           (expt 2 (+ 1 (- fracbits))))
                      0))
-     :hints (("goal" :in-theory (e/d (mod-divide-out
+     :hints (("Goal" :in-theory (e/d (mod-divide-out
                                       exponents-add-unrestricted)
                                      (mod-=-0))
-              :use (incr-mant-minus1-rational-significand)
-              :do-not-induct t)
+                     :use (incr-mant-minus1-rational-significand)
+                     :do-not-induct t)
              (and stable-under-simplificationp
                   '(:use ((:instance mod-+
                            (z 1)
@@ -486,7 +486,6 @@
 
 (defsection sqrt-rounded-unique
 
-
   (local (defthm exact-square-root-unique
            (implies (and (rationalp sqrt1)
                          (<= 0 sqrt1)
@@ -495,7 +494,7 @@
                          (not (equal sqrt1 sqrt2)))
                     (not (equal (* sqrt1 sqrt1)
                                 (* sqrt2 sqrt2))))
-           :hints (("goal" :cases ((< sqrt1 sqrt2)))
+           :hints (("Goal" :cases ((< sqrt1 sqrt2)))
                    (and stable-under-simplificationp
                         '(:nonlinearp t)))))
 
@@ -505,13 +504,13 @@
                          (rationalp x))
                     (equal (mod x y)
                            (* y (mod (/ x y) 1))))
-           :hints(("Goal" :in-theory (enable mod rfix)))))
+           :hints (("Goal" :in-theory (enable mod rfix)))))
 
   (local (defthm mod-1-of-nonpos-exp
            (implies (and (integerp e)
                          (<= e 0))
                     (equal (mod 1 (expt 2 e)) 0))
-           :hints(("Goal" :in-theory (enable mod-divide-out)))))
+           :hints (("Goal" :in-theory (enable mod-divide-out)))))
 
   (local (defthm mod-1-of-expt-fracbits-minus-1
            (implies (posp fracbits)
@@ -531,13 +530,13 @@
                    (sqrt-rounded-correctness-condition x fracbits sqrt1)
                    (sqrt-rounded-correctness-condition x fracbits sqrt2))
               (not (< sqrt1 sqrt2)))
-     :hints (("goal" :in-theory (enable sqrt-rounded-correctness-condition-in-terms-of-incr-mant)
-              :do-not-induct t)
+     :hints (("Goal" :in-theory (enable sqrt-rounded-correctness-condition-in-terms-of-incr-mant)
+                     :do-not-induct t)
              (acl2::use-termhint
               (cond ((<= x (* sqrt1 sqrt1))
                      '(:computed-hint-replacement
                        ((and stable-under-simplificationp
-                             '(:nonlinearp t)))
+                         '(:nonlinearp t)))
                        :use ((:instance mark-clause-is-true (x '(<= sqrt1^2 x)))
                              (:instance incr-mant-minus1-none-between
                               (x sqrt2) (y sqrt1)))
@@ -545,7 +544,7 @@
                     ((<= (* sqrt2 sqrt2) x)
                      '(:computed-hint-replacement
                        ((and stable-under-simplificationp
-                             '(:nonlinearp t)))
+                         '(:nonlinearp t)))
                        :use ((:instance mark-clause-is-true (x '(sqrt2^2 <= x)))
                              (:instance incr-mant-plus1-none-between
                               (x sqrt1) (y sqrt2)))
@@ -562,7 +561,7 @@
                                         '(:nonlinearp t)))
                                   :use ((:instance mark-clause-is-true (x '(sqrt1^2 < x < sqrt2^2 sqrt1+delta < sqrt2)))
                                         (:instance incr-mant-minus1-none-between
-                                         (x sqrt2) (y ,(hq sqrt1+delta))))))
+                                                   (x sqrt2) (y ,(hq sqrt1+delta))))))
                                ((< sqrt2 sqrt1+delta)
                                 '(:use ((:instance mark-clause-is-true (x '(sqrt1^2 < x < sqrt2^2 sqrt2 < sqrt1+delta)))
                                         (:instance incr-mant-plus1-none-between
@@ -573,7 +572,7 @@
                                         '(:nonlinearp t)))
                                   :use ((:instance mark-clause-is-true (x '(sqrt1^2 < x < sqrt2^2 sqrt1 < sqrt2-delta)))
                                         (:instance incr-mant-plus1-none-between
-                                         (x sqrt1) (y ,(hq sqrt2-delta))))))
+                                                   (x sqrt1) (y ,(hq sqrt2-delta))))))
                                (t
                                 '(:use ((:instance mark-clause-is-true (x '(sqrt1^2 < x < sqrt2^2))))))))))))
      :rule-classes nil
@@ -582,7 +581,7 @@
   (local (defthm sqrt-rounded-correctness-condition-implies-rational-sqrt
            (implies (sqrt-rounded-correctness-condition x fracbits sqrt)
                     (rationalp sqrt))
-           :hints(("Goal" :in-theory (enable sqrt-rounded-correctness-condition)))
+           :hints (("Goal" :in-theory (enable sqrt-rounded-correctness-condition)))
            :rule-classes :forward-chaining))
 
   (defthm sqrt-rounded-correctness-condition-unique
@@ -592,7 +591,7 @@
                   (sqrt-rounded-correctness-condition x fracbits sqrt1)
                   (sqrt-rounded-correctness-condition x fracbits sqrt2))
              (equal sqrt1 sqrt2))
-    :hints (("goal" :use (sqrt-rounded-correctness-condition-unique-one-direction
+    :hints (("Goal" :use (sqrt-rounded-correctness-condition-unique-one-direction
                           (:instance
                            sqrt-rounded-correctness-condition-unique-one-direction
                            (sqrt1 sqrt2) (sqrt2 sqrt1)))))
@@ -622,17 +621,17 @@
                          :hyp (and (rationalp root) (rationalp prec)))
                (new-prec rationalp :rule-classes :type-prescription
                          :hyp (and (rationalp root) (rationalp prec))))
-  :hints(("Goal" :in-theory (enable nfix)))
+  :hints (("Goal" :in-theory (enable nfix)))
   (if (mbt (and (integerp n) (integerp fracbits))) ;; termination
       (if (<= n (- fracbits 1))
           (let* ((prec (/ prec 2))
                  (root (if (<= (expt (+ root prec) 2) frac)
                            (+ root prec)
-                         root))
+                           root))
                  (n (+ 1 n)))
             (sqrtrounded-loop frac root prec n fracbits))
-        (mv root prec))
-    (mv 1 1))
+          (mv root prec))
+      (mv 1 1))
   ///
 
   (defret <fn>-root-positive
@@ -675,8 +674,8 @@
                   (<= n fracbits)
                   (equal prec (expt 2 (- 1 n))))
              (equal new-prec (expt 2 (- 1 fracbits))))
-    :hints (("goal" :induct t
-             :expand ((:free (x) (expt 2 (+ 1 x)))))))
+    :hints (("Goal" :induct t
+                    :expand ((:free (x) (expt 2 (+ 1 x)))))))
 
 
 
@@ -711,11 +710,11 @@
              (and
               (integerp (* (expt 2 fracbits) new-root))
               (integerp (* 1/2 (expt 2 fracbits) new-root))))
-    :hints (("goal" :use <fn>-root-mod-prec-lemma
-             :in-theory (e/d (exponents-add-unrestricted)
-                             (<fn>-root-mod-prec
-                              <fn>-root-mod-prec-lemma))
-             :do-not-induct t)))
+    :hints (("Goal" :use <fn>-root-mod-prec-lemma
+                    :in-theory (e/d (exponents-add-unrestricted)
+                                    (<fn>-root-mod-prec
+                                     <fn>-root-mod-prec-lemma))
+                    :do-not-induct t)))
 
   (defret <fn>-root-range
     (implies (and (rationalp root)
@@ -735,11 +734,11 @@
          (implies (and (integerp x)
                        (not (integerp (* 1/2 x))))
                   (integerp (+ -1/2 (* 1/2 x))))
-         :hints (("goal" :use ((:instance mod-=-0
-                                (x x) (y 2))
+         :hints (("Goal" :use ((:instance mod-=-0
+                                          (x x) (y 2))
                                (:instance mod-=-0
-                                (x (+ 1 x)) (y 2)))
-                  :in-theory (disable mod-=-0)))))
+                                          (x (+ 1 x)) (y 2)))
+                         :in-theory (disable mod-=-0)))))
 
 
 (local (defthm ilog2-is-rational-exponent
@@ -747,11 +746,11 @@
                        (< 0 x))
                   (equal (ilog2 x)
                          (rational-exponent x)))
-         :hints (("goal" :use ((:instance rational-exponent-unique
-                                (n (ilog2 x)))
+         :hints (("Goal" :use ((:instance rational-exponent-unique
+                                          (n (ilog2 x)))
                                (:instance ilog2-correct (value x)))
-                  :expand ((expt 2 (+ 1 (ilog2 x))))
-                  :in-theory (disable exponents-add)))))
+                         :expand ((expt 2 (+ 1 (ilog2 x))))
+                         :in-theory (disable exponents-add)))))
 
 
 
@@ -765,24 +764,24 @@
          (frac (/ value (expt 2 exp))))
     (if (eql (mod exp 2) 0)
         (mv frac exp)
-      (mv (* 2 frac)
-          (+ exp -1))))
+        (mv (* 2 frac)
+            (+ exp -1))))
   ///
   (defret <fn>-frac-range
     (implies (and (rationalp value)
                   (< 0 value))
              (and (<= 1 frac)
                   (< frac 4)))
-    :hints (("goal" :use ((:instance rational-exponent-correct-positive
-                           (x value)))
-             :in-theory (disable rational-exponent-correct-positive)))
+    :hints (("Goal" :use ((:instance rational-exponent-correct-positive
+                                     (x value)))
+                    :in-theory (disable rational-exponent-correct-positive)))
     :rule-classes :linear)
 
   (defret <fn>-frac-positive
     (implies (and (rationalp value)
                   (< 0 value))
              (< 0 frac))
-    :hints(("Goal" :in-theory (disable <fn>)))
+    :hints (("Goal" :in-theory (disable <fn>)))
     :rule-classes :type-prescription)
 
   (defret <fn>-exp-even
@@ -792,14 +791,14 @@
     (implies (and (rationalp value)
                   (< 0 value))
              (equal (* frac (expt 2 exp)) value))
-    :hints (("goal" :in-theory (enable exponents-add-unrestricted))))
+    :hints (("Goal" :in-theory (enable exponents-add-unrestricted))))
 
   (std::defretd <fn>-correct2
     (implies (and (rationalp value)
                   (< 0 value))
              (equal (expt 2 exp) (/ value frac)))
-    :hints(("Goal" :use <fn>-correct
-            :in-theory (disable <fn> <fn>-correct)))))
+    :hints (("Goal" :use <fn>-correct
+                    :in-theory (disable <fn> <fn>-correct)))))
 
 (local (defthm rational-significand-of-in-range
          (implies (and (rationalp x)
@@ -815,17 +814,17 @@
 
 
 (define sqrtrounded-root ((frac rationalp)
-                           (fracbits posp))
+                          (fracbits posp))
   :guard (and (<= 1 frac)
               (< frac 4))
   :returns (root rationalp :rule-classes :type-prescription)
   (mv-let (root ign)
-    (sqrtrounded-loop frac 1 1 1 fracbits)
+      (sqrtrounded-loop frac 1 1 1 fracbits)
     (declare (ignore ign))
     (let ((prec (expt 2 (- fracbits))))
       (if (< (expt root 2) frac)
           (+ root prec)
-        root)))
+          root)))
   ///
   (defret <fn>-type
     (implies (and (rationalp frac)
@@ -845,9 +844,9 @@
                   (posp fracbits)
                   (< frac 4))
              (< root 2))
-    :hints (("goal" :do-not-induct t
-             :expand ((expt 2 (- fracbits)))
-             :in-theory (disable expt-minus)))
+    :hints (("Goal" :do-not-induct t
+                    :expand ((expt 2 (- fracbits)))
+                    :in-theory (disable expt-minus)))
     :rule-classes :linear)
 
   (local (defthm integerp-+
@@ -859,8 +858,8 @@
     (implies (and (rationalp frac)
                   (posp fracbits))
              (integerp (* (expt 2 fracbits) root)))
-    :hints(("Goal" :in-theory (enable exponents-add-unrestricted)
-            :do-not-induct t)))
+    :hints (("Goal" :in-theory (enable exponents-add-unrestricted)
+                    :do-not-induct t)))
 
   (defret <fn>-rounded-to-odd
     (implies (and (rationalp frac)
@@ -870,10 +869,10 @@
                   (not (equal (* root root) frac)))
              (equal (mod root (expt 2 (+ 1 (- fracbits))))
                     (expt 2 (- fracbits))))
-    :hints (("goal" :use ((:instance sqrtrounded-loop-in-range
-                           (n 1) (prec 1) (root 1)))
-             :in-theory (e/d (exponents-add-unrestricted)
-                             (sqrtrounded-loop-in-range)))))
+    :hints (("Goal" :use ((:instance sqrtrounded-loop-in-range
+                                     (n 1) (prec 1) (root 1)))
+                    :in-theory (e/d (exponents-add-unrestricted)
+                                    (sqrtrounded-loop-in-range)))))
 
   (defret <fn>-is-in-range
     (implies (and (rationalp frac)
@@ -886,11 +885,11 @@
                   (< frac
                      (* (+ root (expt 2 (- fracbits)))
                         (+ root (expt 2 (- fracbits)))))))
-    :hints (("goal" :use ((:instance sqrtrounded-loop-in-range
-                           (n 1) (prec 1) (root 1)))
-             :in-theory (e/d (exponents-add-unrestricted)
-                             (sqrtrounded-loop-in-range
-                              multiply-out-<)))
+    :hints (("Goal" :use ((:instance sqrtrounded-loop-in-range
+                                     (n 1) (prec 1) (root 1)))
+                    :in-theory (e/d (exponents-add-unrestricted)
+                                    (sqrtrounded-loop-in-range
+                                     multiply-out-<)))
             (and stable-under-simplificationp
                  '(:nonlinearp t)))
     :rule-classes nil))
@@ -945,58 +944,73 @@
   ;;     if value == 0.0 then return 0.0; end;
   (if (eql value 0)
       0
-    ;;     // Normalize value to the form 1.nnnn... x 2^exp
-    (let* ((exp (ilog2 value)) ;;     var exp : integer = ILog2(value);
-           (frac (/ value (expt 2 exp)))) ;;     var frac : real = value / (2.0 ^ exp);
-      (mv-let (frac exp)
-        ;;     // Require value = 2.0^exp * frac, where exp is even and 1 <= frac < 4
-        ;;     if exp MOD 2 != 0 then
-        ;;         frac = 2.0 * frac;
-        ;;         exp = exp - 1;
-        ;;     end;
-        (if (eql (mod exp 2) 0)
-            (mv frac exp)
-          (mv (* 2 frac)
-              (- exp 1)))
-        ;;     // Set root to sqrt(frac) truncated to fracbits-1 bits
-        (let ((root 1) ;;     var root = 1.0;
-              (prec 1) ;;     var prec = 1.0;
-              (n 1))
-          ;;     for n = 1 to fracbits - 1 do
-          ;;         prec = prec / 2.0;
-          ;;         if (root + prec) ^ 2 <= frac then
-          ;;             root = root + prec;
-          ;;         end;
-          ;;     end;
-          (mv-let (root prec)
-            (sqrtrounded-loop frac root prec n fracbits)
-            ;;     // prec == 2^(1-fracbits)
-
-            ;;     // Final value of root is odd-rounded to fracbits bits
-            ;;     if root ^ 2 < frac then
-            ;;         root = root + (prec / 2.0);
+      ;;     // Normalize value to the form 1.nnnn... x 2^exp
+      (let* ((exp (ilog2 value)) ;;     var exp : integer = ILog2(value);
+             (frac (/ value (expt 2 exp)))) ;;     var frac : real = value / (2.0 ^ exp);
+        (mv-let (frac exp)
+            ;;     // Require value = 2.0^exp * frac, where exp is even and 1 <= frac < 4
+            ;;     if exp MOD 2 != 0 then
+            ;;         frac = 2.0 * frac;
+            ;;         exp = exp - 1;
             ;;     end;
-            (let ((root (if (< (expt root 2) frac)
-                            (+ root (/ prec 2))
-                          root)))
-              ;;     // Return sqrt(value) odd-rounded to fracbits bits
-              ;;     return (2.0 ^ (exp DIV 2)) * root;
-              (* (expt 2 (/ exp 2)) root)))))))
+            (if (eql (mod exp 2) 0)
+                (mv frac exp)
+                (mv (* 2 frac)
+                    (- exp 1)))
+          ;;     // Set root to sqrt(frac) truncated to fracbits-1 bits
+          (let ((root 1) ;;     var root = 1.0;
+                (prec 1) ;;     var prec = 1.0;
+                (n 1))
+            ;;     for n = 1 to fracbits - 1 do
+            ;;         prec = prec / 2.0;
+            ;;         if (root + prec) ^ 2 <= frac then
+            ;;             root = root + prec;
+            ;;         end;
+            ;;     end;
+            (mv-let (root prec)
+                (sqrtrounded-loop frac root prec n fracbits)
+              ;;     // prec == 2^(1-fracbits)
+
+              ;;     // Final value of root is odd-rounded to fracbits bits
+              ;;     if root ^ 2 < frac then
+              ;;         root = root + (prec / 2.0);
+              ;;     end;
+              (let ((root (if (< (expt root 2) frac)
+                              (+ root (/ prec 2))
+                              root)))
+                ;;     // Return sqrt(value) odd-rounded to fracbits bits
+                ;;     return (2.0 ^ (exp DIV 2)) * root;
+                (* (expt 2 (/ exp 2)) root)))))))
   ///
+
+  (defthm rationalp-sqrtrounded
+    (rationalp (sqrtrounded value fracbits))
+    :rule-classes :type-prescription)
+
+  (defthm nonzero-sqrtrounded
+    (implies (and (not (equal value 0))
+                  (posp fracbits))
+             (not (equal (sqrtrounded value fracbits) 0))))
+
+  (defthm pos-sqrtrounded
+    (implies (and (< 0 value)
+                  (posp fracbits))
+             (< 0 (sqrtrounded value fracbits)))
+    :rule-classes :linear)
 
   (local (defthm sqrtrounded-redef
            (implies (posp fracbits)
                     (equal (sqrtrounded value fracbits)
                            (if (eql value 0)
                                0
-                             (mv-let (frac exp)
-                               (sqrtrounded-normalize value)
+                               (mv-let (frac exp)
+                                   (sqrtrounded-normalize value)
 
-                               (let* ((root (sqrtrounded-root frac fracbits)))
-                                 (* (expt 2 (/ exp 2)) root))))))
-           :hints(("Goal" :in-theory (enable sqrtrounded-normalize
-                                             sqrtrounded-root
-                                             exponents-add-unrestricted)))))
+                                 (let* ((root (sqrtrounded-root frac fracbits)))
+                                   (* (expt 2 (/ exp 2)) root))))))
+           :hints (("Goal" :in-theory (enable sqrtrounded-normalize
+                                              sqrtrounded-root
+                                              exponents-add-unrestricted)))))
 
   (local (in-theory (disable sqrtrounded)))
 
@@ -1010,7 +1024,7 @@
   ;;                           (+ (* x y (expt 2 n))
   ;;                              (* (expt 2 n) z)))
   ;;                          (rational-significand (+ (* x y) z))))
-  ;;          :hints (("goal" :use ((:instance rational-significand-of-expt-2-prod
+  ;;          :hints (("Goal" :use ((:instance rational-significand-of-expt-2-prod
   ;;                                 (x (+ (* x y) z))))
   ;;                   :in-theory (disable rational-significand-of-expt-2-prod)))))
 
@@ -1022,7 +1036,7 @@
   ;;                           (+ (* x (expt 2 n))
   ;;                              (* (expt 2 n) z)))
   ;;                          (rational-significand (+ x z))))
-  ;;          :hints (("goal" :use ((:instance rational-significand-of-expt-2-prod
+  ;;          :hints (("Goal" :use ((:instance rational-significand-of-expt-2-prod
   ;;                                 (x (+ x z))))
   ;;                   :in-theory (disable rational-significand-of-expt-2-prod)))))
 
@@ -1035,7 +1049,7 @@
   ;;                           (+ (* x y (expt 2 n))
   ;;                              (* (expt 2 n) z)))
   ;;                          (+ (ifix n) (rational-exponent (+ (* x y) z)))))
-  ;;          :hints (("goal" :use ((:instance rational-exponent-of-expt-2-prod
+  ;;          :hints (("Goal" :use ((:instance rational-exponent-of-expt-2-prod
   ;;                                 (x (+ (* x y) z))))
   ;;                   :in-theory (disable rational-exponent-of-expt-2-prod)))))
 
@@ -1047,7 +1061,7 @@
   ;;                           (+ (* x (expt 2 n))
   ;;                              (* (expt 2 n) z)))
   ;;                          (+ (ifix n) (rational-exponent (+ x z)))))
-  ;;          :hints (("goal" :use ((:instance rational-exponent-of-expt-2-prod
+  ;;          :hints (("Goal" :use ((:instance rational-exponent-of-expt-2-prod
   ;;                                 (x (+ x z))))
   ;;                   :in-theory (disable rational-exponent-of-expt-2-prod)))))
 
@@ -1058,11 +1072,11 @@
                     (equal (* (expt 2 (* 1/2 n))
                               (expt 2 (* 1/2 n)))
                            (expt 2 n)))
-           :hints (("goal" :use ((:instance exponents-add
-                                  (r 2) (i (* 1/2 n)) (j (* 1/2 n))))
-                    :in-theory (e/d (collect-like-terms)
-                                    (exponents-add))
-                    :do-not-induct t))))
+           :hints (("Goal" :use ((:instance exponents-add
+                                            (r 2) (i (* 1/2 n)) (j (* 1/2 n))))
+                           :in-theory (e/d (collect-like-terms)
+                                           (exponents-add))
+                           :do-not-induct t))))
 
   (local (defthm expt-2-half-squared-2
            (implies (integerp (* 1/2 n))
@@ -1070,8 +1084,8 @@
                               (expt 2 (* 1/2 n))
                               z)
                            (* (expt 2 n) z)))
-           :hints (("goal" :use expt-2-half-squared
-                    :in-theory (disable expt-2-half-squared)))))
+           :hints (("Goal" :use expt-2-half-squared
+                           :in-theory (disable expt-2-half-squared)))))
 
 
   ;; (local (defthm linear-lemma
@@ -1081,7 +1095,7 @@
   ;;                           (* (expt 2 b)
   ;;                              (expt 2 c)
   ;;                              x))))
-  ;;          :hints (("goal" :nonlinearp t))))
+  ;;          :hints (("Goal" :nonlinearp t))))
 
   ;; (local (in-theory (disable (force))))
 
@@ -1091,7 +1105,7 @@
                          (<= 1 x)
                          (<= 1 y))
                     (< 1 (* 2 x y)))
-           :hints (("goal" :nonlinearp t))
+           :hints (("Goal" :nonlinearp t))
            :rule-classes :linear))
 
   (defthm sqrtrounded-correct
@@ -1100,10 +1114,10 @@
                   (posp fracbits))
              (sqrt-rounded-correctness-condition
               value fracbits (sqrtrounded value fracbits)))
-    :hints(("Goal" :in-theory (enable sqrt-rounded-correctness-condition
-                                      sqrtrounded-normalize-correct2))
-           (and stable-under-simplificationp
-                '(:in-theory (enable divide-out-common-factors-<
-                                     collect-like-terms)
-                  :use ((:instance sqrtrounded-root-is-in-range
-                         (frac (mv-nth 0 (sqrtrounded-normalize value))))))))))
+    :hints (("Goal" :in-theory (enable sqrt-rounded-correctness-condition
+                                       sqrtrounded-normalize-correct2))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable divide-out-common-factors-<
+                               collect-like-terms)
+                   :use ((:instance sqrtrounded-root-is-in-range
+                          (frac (mv-nth 0 (sqrtrounded-normalize value))))))))))

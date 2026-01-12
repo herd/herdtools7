@@ -45,14 +45,14 @@
                 (v_int (acl2::floor-pow-2-loop x.val p2.val))))
   :invariants (and (< 0 x.val)
                    (<= 2 p2.val)
-                   (<= p2.val (* 2 x.val))
-                   (< (- (+ 1 (acl2::rational-exponent x.val))
-                         (acl2::rational-exponent p2.val))
-                      (ifix clk))
-                   (integerp limit)
-                   (< (- (+ 1 (acl2::rational-exponent x.val))
-                         (acl2::rational-exponent p2.val))
-                      limit))
+                   (<= p2.val (* 2 x.val)))
+  :termination-invariants (and (< (- (+ 1 (acl2::rational-exponent x.val))
+                                     (acl2::rational-exponent p2.val))
+                                  (ifix clk))
+                               (integerp limit)
+                               (< (- (+ 1 (acl2::rational-exponent x.val))
+                                     (acl2::rational-exponent p2.val))
+                                  limit))
   :hints ((and stable-under-simplificationp
                '(:expand ((:free (x) (acl2::floor-pow-2-loop
                                       x
@@ -99,8 +99,8 @@
   :function "FloorPow2"
   :args (x)
   :safe-clock (+ 1 (acl2::rational-exponent x.val))
-  :hyps (and (< 0 x.val)
-             (<= (+ 1 (acl2::rational-exponent x.val)) (expt 2 128)))
+  :hyps (< 0 x.val)
+  :measure-hyps (<= (+ 1 (acl2::rational-exponent x.val)) (expt 2 128))
   :return-values ((v_int (acl2::floor-pow-2 x.val)))
   :enable (acl2::floor-pow-2))
 
@@ -110,8 +110,8 @@
   :function "CeilPow2"
   :args (x)
   :safe-clock (+ 2 (acl2::rational-exponent (1- x.val)))
-  :hyps (and (< 0 x.val)
-             (<= (+ 2 (acl2::rational-exponent (1- x.val))) (expt 2 128)))
+  :hyps (< 0 x.val)
+  :measure-hyps (<= (+ 2 (acl2::rational-exponent (1- x.val))) (expt 2 128))
   :return-values ((v_int (acl2::ceil-pow-2 x.val)))
   :enable (acl2::ceil-pow-2))
 
@@ -120,7 +120,7 @@
   :function "IsPow2"
   :args (x)
   :safe-clock (+ 3 (acl2::rational-exponent x.val))
-  :hyps (<= (+ 3 (acl2::rational-exponent x.val)) (expt 2 128))
+  :measure-hyps (<= (+ 3 (acl2::rational-exponent x.val)) (expt 2 128))
   :return-values ((v_bool (acl2::is-pow-2 x.val)))
   :enable (acl2::is-pow-2)
   :prepwork

@@ -55,7 +55,26 @@
     (equal (symbol-name sym)
            (identifier-fix x))
     :hints(("Goal" :in-theory (enable identifier-fix
-                                      identifier->val)))))
+                                      identifier->val))))
+
+  (defthmd equal-of-id-to-native
+    (equal (equal k (id-to-native x))
+           (and (keywordp k)
+                (equal (symbol-name k) (identifier->val x))))
+    :hints(("Goal" :in-theory (enable id-to-native keywordp member-symbol-name))))
+
+  
+  ;; (defret equal-of-id-to-native
+  ;;   (implies (and (identifier-p x) (identifier-p y))
+  ;;            (equal (equal (id-to-native x) (id-to-native y))
+  ;;                   (equal x y)))
+  ;;   :hints(("Goal" :in-theory (e/d (identifier-p identifier->val)
+  ;;                                  (symbol-name-intern-in-package-of-symbol))
+  ;;           :use ((:instance symbol-name-intern-in-package-of-symbol
+  ;;                  (s x) (any-symbol :keyword-pkg))
+  ;;                 (:instance symbol-name-intern-in-package-of-symbol
+  ;;                  (s y) (any-symbol :keyword-pkg))))))
+  )
 
 (local (in-theory (disable keywordp)))
 
@@ -78,7 +97,29 @@
    (value '(value-triple :evisc))))
 
 
+(fty::defomap keymap :key-type keyword :val-type acl2::any)
 
+
+
+(local (include-book "std/lists/sets" :dir :system))
+
+(local (defcong acl2::set-equiv acl2::set-equiv (idlist-to-native x) 1
+         :hints (("goal" :use ((:instance (:functional-instance
+                                           acl2::set-equiv-congruence-over-elementlist-projection
+                                           (acl2::elementlist-projection idlist-to-native)
+                                           (acl2::element-xformer id-to-native)
+                                           (acl2::element-p (lambda (x) t))
+                                           (acl2::outelement-p (lambda (x) t)))
+                                (x x) (y x-equiv)))
+                  :in-theory (enable idlist-to-native)))))
+
+(local (defthm mergesort-idlist-to-native-of-mergesort
+         (equal (mergesort (idlist-to-native (mergesort x)))
+                (mergesort (idlist-to-native x)))
+         :hints (("Goal" :in-theory (enable pick-a-point-subset-strategy
+                                            set::double-containment-no-backchain-limit))
+                 (set::pick-a-point-subset-hint
+                  id clause world stable-under-simplificationp))))
 
 
 
@@ -96,12 +137,13 @@
       (:v_array (vallist-to-native x.arr))))
   (define val-imap-to-native ((x val-imap-p))
     :measure (val-imap-count x)
-    :returns (new-x keyword-alist-p)
-    (b* ((x (val-imap-fix x))
-         ((when (atom x)) nil)
-         ((cons key val) (car x)))
-      (cons (cons (id-to-native key) (val-to-native val))
-            (val-imap-to-native (cdr x)))))
+    :returns (new-x keymap-p)
+    :verify-guards nil
+    :hints ('(:expand ((val-imap-count x))))
+    (b* (((when (omap::emptyp (val-imap-fix x))) nil)
+         ((mv key val) (omap::head x)))
+      (omap::update (id-to-native key) (val-to-native val)
+                    (val-imap-to-native (omap::tail x)))))
   (define vallist-to-native ((x vallist-p))
     :measure (vallist-count x)
     :Returns (new-x true-listp :rule-classes :type-prescription)
@@ -110,7 +152,7 @@
       (cons (val-to-native (car x))
             (vallist-to-native (cdr x)))))
   ///
-
+  (verify-guards val-to-native)
   (defret len-of-vallist-to-native
     (equal (len new-x) (len x))
     :hints(("Goal" :induct (len x)
@@ -119,27 +161,19 @@
 
   (std::defret-mutual keys-of-val-imap-to-native
     (defret keys-of-val-imap-to-native
-      (equal (acl2::alist-keys new-x)
-             (idlist-to-native (acl2::alist-keys (val-imap-fix x))))
+      (equal (omap::keys new-x)
+             (mergesort (idlist-to-native (omap::keys (val-imap-fix x)))))
       :hints ('(:in-theory (enable acl2::alist-keys
                                    val-imap-fix)
                 :expand ((val-imap-to-native x)
+                         (omap::keys x)
+                         (:free (x y) (mergesort (cons x y)))
                          (val-imap-fix x)
                          (:free (a b) (idlist-to-native (cons a b))))))
       :fn val-imap-to-native)
     :skip-others t)
 
-  (std::defret-mutual vals-of-val-imap-to-native
-    (defret vals-of-val-imap-to-native
-      (equal (acl2::alist-vals new-x)
-             (vallist-to-native (acl2::alist-vals (val-imap-fix x))))
-      :hints ('(:in-theory (enable acl2::alist-vals
-                                   val-imap-fix)
-                :expand ((val-imap-to-native x)
-                         (val-imap-fix x)
-                         (:free (a b) (vallist-to-native (cons a b))))))
-      :fn val-imap-to-native)
-    :skip-others t)
+  
 
   (fty::deffixequiv-mutual val-to-native)
   
@@ -184,15 +218,116 @@
     (equal (vallist-to-native (cons a b))
            (cons (val-to-native a)
                  (vallist-to-native b)))
-    :hints (("goal" :expand ((vallist-to-native (cons a b)))))))
+    :hints (("goal" :expand ((vallist-to-native (cons a b))))))
+
+  (local (defthmd val-imap-p-in-terms-of-head-tail
+           (equal (Val-imap-p x)
+                  (if (omap::emptyp x)
+                      (equal x nil)
+                    (mv-let (key val) (omap::head x)
+                      (and (identifier-p key)
+                           (val-p val)
+                           (val-imap-p (omap::tail x))))))
+           :hints(("Goal" :in-theory (enable val-imap-p
+                                             omap::emptyp
+                                             omap::head
+                                             omap::tail
+                                             omap::mfix
+                                             omap::mapp)))
+           :rule-classes :definition))
+  
+  (std::defret-mutual assoc-of-<fn>
+    (defret assoc-of-<fn>
+      (equal (omap::assoc key new-x)
+             (and (keywordp key)
+                  (let ((name (symbol-name key)))
+                    (and (omap::assoc name (val-imap-fix x))
+                         (cons key
+                               (val-to-native (cdr (omap::assoc name (val-imap-fix x)))))))))
+      :hints ('(:in-theory (enable acl2::alist-vals
+                                   val-imap-fix
+                                   equal-of-id-to-native
+                                   identifier-p
+                                   identifier->val)
+                :expand ((val-imap-to-native x)
+                         (val-imap-fix x)
+                         (:with val-imap-p-in-terms-of-head-tail
+                          (val-imap-p x))
+                         (omap::assoc (identifier (symbol-name key)) x)
+                         (:free (a b) (vallist-to-native (cons a b))))))
+      :fn val-imap-to-native)
+    :skip-others t)
+
+  
+  (local (defcong acl2::set-equiv acl2::set-equiv (vallist-to-native x) 1
+           :hints (("goal" :use ((:instance (:functional-instance
+                                             acl2::set-equiv-congruence-over-elementlist-projection
+                                             (acl2::elementlist-projection vallist-to-native)
+                                             (acl2::element-xformer val-to-native)
+                                             (acl2::element-p (lambda (x) t))
+                                             (acl2::outelement-p (lambda (x) t)))
+                                  (x x) (y x-equiv)))
+                    :in-theory (enable vallist-to-native)))))
+
+  (local (defthm values-of-update-when-assoc-matches
+           (implies (and (omap::assoc key x)
+                         (equal (cdr (omap::assoc key x)) val))
+                    (equal (omap::values (omap::update key val x))
+                           (set::insert val (omap::values x))))
+           :hints(("Goal" :in-theory (enable omap::values omap::assoc)))))
+  
+  (local (defthm values-of-update-when-assoc-matches-if-any
+           (implies (or (not (omap::assoc key x))
+                        (equal (cdr (omap::assoc key x)) val))
+                    (equal (omap::values (omap::update key val x))
+                           (set::insert val (omap::values x))))
+           :hints (("goal" :use values-of-update-when-assoc-matches
+                    :in-theory (disable values-of-update-when-assoc-matches)))))
+  
+  (std::defret-mutual vals-of-val-imap-to-native
+    (defret vals-of-val-imap-to-native
+      (equal (omap::values new-x)
+             (mergesort (vallist-to-native (omap::values (val-imap-fix x)))))
+      :hints ('(:in-theory (enable acl2::alist-vals
+                                   val-imap-fix)
+                :expand ((val-imap-to-native x)
+                         (val-imap-fix x)
+                         (omap::values x)
+                         (:free (x y) (mergesort (cons x y)))
+                         (:free (a b) (vallist-to-native (cons a b))))))
+      :fn val-imap-to-native)
+    :skip-others t)
+
+  (local (defthm val-imap-p-of-update-split
+           (implies (val-imap-p x)
+                    (equal (val-imap-p (omap::update key val x))
+                           (and (identifier-p key)
+                                (val-p val))))
+           :hints(("Goal" :in-theory (enable 
+
+  (defthm val-imap-to-native-of-update
+    (equal (val-imap-to-native (omap::update key val x))
+           (and (identifier-p key)
+                (val-p val)
+                (omap::update (id-to-native key)
+                              (val-to-native val)
+                              (val-imap-to-native x))))
+    :hints (("goal" :use ((:instance omap::diff-key-when-unequal
+                           (x (val-imap-to-native (omap::update key val x)))
+                           (y (and (identifier-p key)
+                                   (val-p val)
+                                   (omap::update (id-to-native key)
+                                                 (val-to-native val)
+                                                 (val-imap-to-native x))))))
+             :in-theory (enable val-imap-fix)))))
 
 
 
-(local
- (defthm vallist-p-alist-vals-of-val-imap
-   (implies (val-imap-p x)
-            (vallist-p (acl2::alist-vals X)))
-   :hints(("Goal" :in-theory (enable acl2::alist-vals)))))
+;; (local
+;;  (defthm vallist-p-alist-vals-of-val-imap
+;;    (implies (val-imap-p x)
+;;             (vallist-p (acl2::alist-vals X)))
+;;    :hints(("Goal" :in-theory (enable acl2::alist-vals)))))
 
 
 
@@ -201,7 +336,7 @@
   (define weak-ty-satisfied ((x val-p)
                              (ty ty-p))
     :measure (acl2::two-nats-measure (ty-count ty) 0)
-    (b* ((ty (ty->val ty)))
+    (b* ((ty (ty->desc ty)))
       (fty::multicase ((type_desc-case ty)
                        (val-case x))
         ((:t_int :v_int) t)
@@ -216,8 +351,8 @@
          (weak-array-type-satisfied x.arr ty.type))
         ((:t_array :v_record)
          :when (array_index-case ty.index :arraylength_enum)
-         (and (equal (acl2::alist-keys x.rec) (arraylength_enum->elts ty.index))
-              (weak-array-type-satisfied (acl2::alist-vals x.rec) ty.type)))
+         (and (equal (omap::keys x.rec) (mergesort (arraylength_enum->elts ty.index)))
+              (weak-array-type-satisfied (omap::values x.rec) ty.type)))
         ((:t_record :v_record)
          (weak-record-type-satisfied x.rec ty.fields))
         ((:t_exception :v_record)
@@ -246,18 +381,25 @@
   (define weak-record-type-satisfied ((x val-imap-p)
                                       (fields typed_identifierlist-p))
     :measure (acl2::two-nats-measure (typed_identifierlist-count fields) 0)
-    (b* ((x (val-imap-fix x)))
-      (if (atom fields)
-          (atom x)
-        (and (consp x)
-             (consp (car x))
-             (b* (((cons key val) (car x))
-                  ((typed_identifier f1) (car fields)))
-               (and (equal key f1.name)
-                    (weak-ty-satisfied val f1.type)))
-             (weak-record-type-satisfied (cdr x) (cdr fields))))))
+    (b* (((when (atom fields)) t)
+         ((typed_identifier f1) (car fields))
+         (look (omap::assoc f1.name (val-imap-fix x)))
+         ((unless look) nil)
+         (val (cdr look)))
+      (and (weak-ty-satisfied val f1.type)
+           (weak-record-type-satisfied x (cdr fields)))))
   ///
   (fty::deffixequiv-mutual weak-ty-satisfied)
+
+  (defcong acl2::set-equiv equal (weak-array-type-satisfied x ty) 1
+    :hints (("goal" :use ((:instance (:functional-instance
+                                      acl2::element-list-p-set-equiv-congruence
+                                      (acl2::element-list-p (lambda (x) (weak-array-type-satisfied x ty)))
+                                      (acl2::element-p (lambda (x) (weak-ty-satisfied x ty)))
+                                      (acl2::element-list-final-cdr-p (lambda (x) t)))
+                           (x x) (y x-equiv)))
+             :do-not '(preprocess)
+             :in-theory (enable weak-array-type-satisfied))))
 
   (defopener open-weak-ty-satisfied weak-ty-satisfied
     :hyp (syntaxp (or (quotep ty)
@@ -279,7 +421,22 @@
 
 
 
+
 (local (in-theory (acl2::disable* openers)))
+
+
+;; (local (defthm member-of-idlist-to-native
+;;          (iff (member-equal k (idlist-to-native x))
+;;               (and (keywordp k)
+;;                    (member-equal (symbol-name k) (identifierlist-fix x))))
+;;          :hints(("Goal" :in-theory (enable idlist-to-native
+;;                                            identifierlist-fix
+;;                                            equal-of-id-to-native-and-other
+;;                                            identifier->val
+;;                                            identifier-fix)))))
+
+
+         
 
 
 (defines weak-ty-satisfied-native
@@ -287,7 +444,7 @@
   (define weak-ty-satisfied-native (x (ty ty-p))
     :measure (acl2::two-nats-measure (ty-count ty) 0)
     ;; :prepwork ((local (in-theory (enable integerp*))))
-    (b* ((ty (ty->val ty)))
+    (b* ((ty (ty->desc ty)))
       (type_desc-case ty
         (:t_int (integerp x))
         (:t_bits ;;(and (integerp* x)
@@ -303,14 +460,15 @@
                     (and (true-listp x)
                          (weak-array-type-satisfied-native x ty.type))
                     :arraylength_enum
-                    (and (keyword-alist-p x)
-                         (equal (acl2::alist-keys x) (idlist-to-native (arraylength_enum->elts ty.index)))
-                         (weak-array-type-satisfied-native (acl2::alist-vals x) ty.type))))
-        (:t_record (and (keyword-alist-p x)
+                    (and (keymap-p x)
+                         (equal (omap::keys x)
+                                (mergesort (idlist-to-native (arraylength_enum->elts ty.index))))
+                         (weak-array-type-satisfied-native (omap::values x) ty.type))))
+        (:t_record (and (keymap-p x)
                         (weak-record-type-satisfied-native x ty.fields)))
-        (:t_exception (and (keyword-alist-p x)
+        (:t_exception (and (keymap-p x)
                            (weak-record-type-satisfied-native x ty.fields)))
-        (:t_collection (and (keyword-alist-p x)
+        (:t_collection (and (keymap-p x)
                             (weak-record-type-satisfied-native x ty.fields)))
         (otherwise nil))))
 
@@ -330,22 +488,30 @@
       (and (weak-ty-satisfied-native (car x) ty)
            (weak-array-type-satisfied-native (cdr x) ty))))
 
-  (define weak-record-type-satisfied-native ((x keyword-alist-p)
+  (define weak-record-type-satisfied-native ((x keymap-p)
                                         (fields typed_identifierlist-p))
     :measure (acl2::two-nats-measure (typed_identifierlist-count fields) 0)
-    (b* ((x (keyword-alist-fix x)))
-      (if (atom fields)
-          (atom x)
-        (and (consp x)
-             (consp (car x))
-             (b* (((cons key val) (car x))
-                  ((typed_identifier f1) (car fields)))
-               (and (equal key (id-to-native f1.name))
-                    (weak-ty-satisfied-native val f1.type)))
-             (weak-record-type-satisfied-native (cdr x) (cdr fields))))))
+    (b* (((when (atom fields)) t)
+         ((typed_identifier f1) (car fields))
+         (look (omap::assoc (id-to-native f1.name) (keymap-fix x)))
+         ((unless look) nil)
+         (val (cdr look)))
+      (and (weak-ty-satisfied-native val f1.type)
+           (weak-record-type-satisfied-native x (cdr fields)))))
   ///
   (fty::deffixequiv-mutual weak-ty-satisfied-native)
 
+  
+
+  (defcong acl2::set-equiv equal (weak-array-type-satisfied-native x ty) 1
+    :hints (("goal" :use ((:instance (:functional-instance
+                                      acl2::element-list-p-set-equiv-congruence
+                                      (acl2::element-list-p (lambda (x) (weak-array-type-satisfied-native x ty)))
+                                      (acl2::element-p (lambda (x) (weak-ty-satisfied-native x ty)))
+                                      (acl2::element-list-final-cdr-p (lambda (x) t)))
+                           (x x) (y x-equiv)))
+             :in-theory (enable weak-array-type-satisfied-native))))
+  
   (defthm-weak-ty-satisfied-flag
     (defthm weak-ty-satisfied-native-of-val-to-native
       (implies (and (weak-ty-satisfied x ty))
@@ -374,8 +540,7 @@
     (defthm weak-record-type-satisfied-native-of-val-to-native
       (implies (weak-record-type-satisfied x fields)
                (weak-record-type-satisfied-native (val-imap-to-native x) fields))
-      :hints ('(:expand ((val-imap-to-native x)
-                         (:free (x) (weak-record-type-satisfied x fields))
+      :hints ('(:expand ((:free (x) (weak-record-type-satisfied x fields))
                          (:free (x) (weak-record-type-satisfied-native x fields)))))
       :flag weak-record-type-satisfied))
 
@@ -394,13 +559,10 @@
 (defines typed-val-to-native
   (define typed-val-to-native ((x val-p) (ty ty-p))
     :guard (weak-ty-satisfied x ty)
-    :guard-hints (("goal" :expand ((weak-tuple-type-satisfied x types)
-                                   (weak-array-type-satisfied x ty)
-                                   (weak-record-type-satisfied x fields)
-                                   (weak-ty-satisfied x ty))))
+    :verify-guards nil
     :measure (acl2::two-nats-measure (ty-count ty) 0)
     :returns (val)
-    (b* ((ty (ty->val ty)))
+    (b* ((ty (ty->desc ty)))
       (type_desc-case ty
         :t_int (v_int->val x)
         :t_bits (v_bitvector->val x)
@@ -411,8 +573,9 @@
         :t_tuple (tuple-val-to-native (v_array->arr x) ty.types)
         :t_array (array_index-case ty.index
                    :arraylength_expr (typed-vallist-to-native (v_array->arr x) ty.type)
-                   :arraylength_enum (pairlis$ (idlist-to-native ty.index.elts)
-                                               (typed-vallist-to-native (acl2::alist-vals (v_record->rec x)) ty.type)))
+                   :arraylength_enum (b* ((keys (mergesort ty.index.elts)))
+                                       (typed-enumarray-to-native
+                                        keys (v_record->rec x) ty.type)))
         :t_record (typed-val-imap-to-native (v_record->rec x) ty.fields)
         :t_exception (typed-val-imap-to-native (v_record->rec x) ty.fields)
         :t_collection (typed-val-imap-to-native (v_record->rec x) ty.fields)
@@ -438,25 +601,84 @@
   (define typed-val-imap-to-native ((x val-imap-p) (fields typed_identifierlist-p))
     :measure (acl2::two-nats-measure (typed_identifierlist-count fields) 0)
     :guard (weak-record-type-satisfied x fields)
-    :returns (val)
+    :returns (val keymap-p)
     (b* (((when (atom fields)) nil)
          ((typed_identifier f1) (car fields))
-         (val (cdar x)))
-      (cons (cons (id-to-native f1.name) (typed-val-to-native val f1.type))
-            (typed-val-imap-to-native (cdr x) (cdr fields)))))
+         (val (typed-val-to-native (omap::lookup f1.name (val-imap-fix x)) f1.type)))
+      (omap::update (id-to-native f1.name) val
+                    (typed-val-imap-to-native x (cdr fields)))))
+
+  (define typed-enumarray-to-native ((keys identifierlist-p)
+                                     (x val-imap-p)
+                                     (ty ty-p))
+    :measure (acl2::two-nats-measure (ty-count ty) (len keys))
+    :guard (and (subsetp-equal (identifierlist-fix keys) (omap::keys x))
+                (weak-array-type-satisfied (omap::values x) ty))
+    :returns (val keymap-p)
+    (if (atom keys)
+        nil
+      (omap::update (id-to-native (car keys))
+                    (typed-val-to-native (omap::lookup
+                                          (identifier-fix (car keys))
+                                          (val-imap-fix x))
+                                         ty)
+                    (typed-enumarray-to-native (cdr keys) x ty))))
+                                  
       
   ///
+  (local (defthm weak-ty-satisfied-of-lookup-when-weak-array-type-satisfied-of-values
+           (implies (and (weak-array-type-satisfied (omap::values x) ty)
+                         (val-imap-p x)
+                         (member-equal k (omap::keys x)))
+                    (weak-ty-satisfied (cdr (omap::assoc k x)) ty))
+           :hints(("Goal" :in-theory (enable omap::lookup
+                                             (:i omap::values))
+                   :expand ((omap::keys x)
+                            (omap::values x)
+                            (omap::assoc k x)
+                            (:free (a b) (weak-array-type-satisfied (cons a b) ty)))
+                   :induct (omap::values x)))))
+  
+  (local (defthm in-when-setp
+           (implies (setp x)
+                    (iff (in k x)  (member-equal k x)))
+           :hints (("goal" :use ((:instance set::in-mergesort
+                                  (a k) (x x)))
+                    :in-theory (disable set::in-mergesort)))))
+  (verify-guards typed-val-to-native
+    :hints (("goal" :expand ((weak-tuple-type-satisfied x types)
+                             (weak-array-type-satisfied x ty)
+                             (weak-record-type-satisfied x fields)
+                             (weak-ty-satisfied x ty))
+             :in-theory (enable subsetp-equal
+                                omap::lookup
+                                omap::assoc-iff-in-keys))))
 
-  (local (defthm pairlis$-equals-val-imap-to-native
-           (implies (val-imap-p x)
-                    (equal (pairlis$ (idlist-to-native (acl2::alist-keys x))
-                                     (vallist-to-native (acl2::alist-vals x)))
-                           (val-imap-to-native x)))
-           :hints(("Goal" :in-theory (enable acl2::alist-vals
-                                             acl2::alist-keys
-                                             val-imap-to-native
-                                             idlist-to-native
-                                             vallist-to-native)))))
+  ;; (local (defthm pairlis$-equals-val-imap-to-native
+  ;;          (implies (val-imap-p x)
+  ;;                   (equal (pairlis$ (idlist-to-native (acl2::alist-keys x))
+  ;;                                    (vallist-to-native (acl2::alist-vals x)))
+  ;;                          (val-imap-to-native x)))
+  ;;          :hints(("Goal" :in-theory (enable acl2::alist-vals
+  ;;                                            acl2::alist-keys
+  ;;                                            val-imap-to-native
+  ;;                                            idlist-to-native
+  ;;                                            vallist-to-native)))))
+
+  (local (defthm restrict-of-insert
+           (equal (omap::restrict (set::insert k keys) x)
+                  (let ((look (omap::assoc k x)))
+                    (if look
+                        (omap::update k (cdr look) (omap::restrict keys x))
+                      (omap::restrict keys x))))
+           :hints (("goal" :use ((:instance omap::diff-key-when-unequal
+                                  (x (omap::restrict (set::insert k keys) x))
+                                  (y (let ((look (omap::assoc k x)))
+                                       (if look
+                                           (omap::update k (cdr look) (omap::restrict keys x))
+                                         (omap::restrict keys x))))))
+                    :in-theory (e/d (omap::assoc-of-restrict)
+                                    (in-when-setp))))))
   
   (std::defret-mutual <fn>-is-val-to-native
     (defretd <fn>-is-val-to-native
@@ -482,12 +704,18 @@
       :fn typed-vallist-to-native)
     (defretd <fn>-is-val-to-native
       (implies (and (weak-record-type-satisfied x fields)
+                    (subset (mergesort (typed_identifierlist->names fields))
+                            (omap::keys x))
                     (val-imap-p x))
-               (equal val (val-imap-to-native x)))
+               (equal val (val-imap-to-native (omap::restrict
+                                               (mergesort (typed_identifierlist->names fields)) x))))
       :hints ('(:expand ((weak-record-type-satisfied x fields)
-                         (val-imap-to-native x)
-                         <call>)))
-      :fn typed-val-imap-to-native))
+                         (typed_identifierlist->names fields)
+                         (:free (a b) (mergesort (cons a b)))
+                         <call>)
+                :in-theory (enable omap::lookup)))
+      :fn typed-val-imap-to-native)
+    :skip-others t)
 
   (defopener open-typed-val-to-native typed-val-to-native
     :hyp (syntaxp (or (quotep ty)
