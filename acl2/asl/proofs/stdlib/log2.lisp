@@ -65,14 +65,14 @@
   :local-vars (((v_int a)       "__stdlib_local_a")
                ((v_int current) "__stdlib_local_current" (v_int current-spec))
                ((v_int result)  "__stdlib_local_result"  (v_int result-spec)))
-  :bindings ((result-spec (+ -1 (integer-length a.val)))
-             (current-spec (expt 2 (+ 1 result-spec))))
+  :bindings ((?result-spec (+ -1 (integer-length a.val)))
+             (?current-spec (expt 2 (+ 1 result-spec))))
   :invariants (and (<= 0 result.val)
                    (equal current.val (expt 2 (+ 1 result.val)))
-                   (<= current.val (* 2 a.val))
-                   (< (- (integer-length a.val) result.val) (ifix clk))
-                   (integerp limit)
-                   (< (- (integer-length a.val) result.val) limit))
+                   (<= current.val (* 2 a.val)))
+  :termination-invariants (and (< (- (integer-length a.val) result.val) (ifix clk))
+                               (integerp limit)
+                               (< (- (integer-length a.val) result.val) limit))
   :hints ((and stable-under-simplificationp
                '(:use ((:instance acl2::rational-exponent-unique
                         (x (V_INT->VAL
@@ -112,8 +112,8 @@
 (def-asl-subprogram-stdlib floorlog2-correct
   :function "FloorLog2"
   :args (x)
-  :hyps (and (< 0 x.val)
-             (<= (+ 1 (integer-length x.val)) (expt 2 128)))
+  :hyps (< 0 x.val)
+  :measure-hyps (<= (+ 1 (integer-length x.val)) (expt 2 128))
   :safe-clock (+ 1 (integer-length x.val))
   :return-values ((v_int (1- (integer-length x.val)))))
 
@@ -141,17 +141,17 @@
   :local-vars (((v_int a)       "__stdlib_local_a")
                ((v_int current) "__stdlib_local_current" (v_int current-spec))
                ((v_int result)  "__stdlib_local_result"  (v_int result-spec)))
-  :bindings ((result-spec (let ((exp (1- (integer-length a.val))))
+  :bindings ((?result-spec (let ((exp (1- (integer-length a.val))))
                             (if (equal a.val (expt 2 exp))
                                 exp
                               (+ 1 exp))))
-             (current-spec (expt 2 result-spec)))
+             (?current-spec (expt 2 result-spec)))
   :invariants (and (<= 0 result.val)
                    (equal current.val (expt 2 result.val))
-                   (< current.val (* 2 a.val))
-                   (< (- (integer-length a.val) result.val) (ifix clk))
-                   (integerp limit)
-                   (< (- (integer-length a.val) result.val) limit))
+                   (< current.val (* 2 a.val)))
+  :termination-invariants (and (< (- (integer-length a.val) result.val) (ifix clk))
+                               (integerp limit)
+                               (< (- (integer-length a.val) result.val) limit))
   :hints ((and stable-under-simplificationp
                '(:use ((:instance rational-exponent-hack
                         (r (V_INT->VAL
@@ -272,8 +272,8 @@
 (def-asl-subprogram-stdlib ceillog2-correct
   :function "CeilLog2"
   :args (x)
-  :hyps (and (< 0 x.val)
-             (<= (+ 1 (integer-length x.val)) (expt 2 128)))
+  :hyps (< 0 x.val)
+  :measure-hyps (<= (+ 1 (integer-length x.val)) (expt 2 128))
   :safe-clock (+ 1 (integer-length x.val))
   :return-values ((v_int (ceil-log2-spec x.val)))
   :enable (ceil-log2-spec))
