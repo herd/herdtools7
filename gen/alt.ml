@@ -34,6 +34,228 @@ module type AltConfig = sig
   val wildcard : bool
 end
 
+module Filter
+    (C : Builder.S)
+    (O : sig
+      val cumul : C.A.fence list Config.cumul
+      val choice : check
+    end) =
+struct
+  let dbg = false
+
+  open C.E
+
+  let choice_sc po_safe e1 e2 =
+    let seq_sd e1 e2 =
+      match Code.seq_sd e1 e2 with
+      | None -> Warn.user_error "Unexpected UnspecLoc"
+      | Some b -> b
+    in
+    let r =
+      match (e1.edge, e2.edge) with
+      (*
+  Now accept internal with internal composition
+  when the do not match safe, explicit po candidates.
+  A bit rude, maybe...
+
+  Also notice that we are more tolerant for Rfi.
+ *)
+      (* Assuming Dp is safe *)
+      | Rf Int, Dp _ | Dp _, Rf Int -> true
+      | Dp (_, sd, _), Ws Int | Dp (_, sd, _), Fr Int ->
+          not (po_safe sd (dir_src e1) (dir_tgt e2))
+      | Po (sd1, _, _), Dp (_, sd2, _) ->
+          (not (po_safe sd1 (dir_src e1) (dir_tgt e1)))
+          && not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+      | Dp (_, sd1, _), Po (sd2, _, _) ->
+          (not (po_safe sd2 (dir_src e2) (dir_tgt e2)))
+          && not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+      (* Check Po is safe *)
+      | Po (sd1, _, _), Po (sd2, _, _) ->
+          not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+      | Rf Int, Po (sd, _, _) ->
+          po_safe sd (dir_src e2) (dir_tgt e2)
+          && not (po_safe sd (dir_src e1) (dir_tgt e2))
+      | Po (sd, _, _), Rf Int ->
+          po_safe sd (dir_src e1) (dir_tgt e1)
+          && not (po_safe sd (dir_src e1) (dir_tgt e2))
+      (* Allow Rmw *)
+      | Rmw _, _ | _, Rmw _ -> true
+      (* Added *)
+      | _, _ -> (
+          match (get_ie e1, get_ie e2) with
+          | Int, Int -> false
+          | Ext, _ | _, Ext -> true
+          | UnspecCom, _ | _, UnspecCom -> assert false)
+    in
+    if dbg then
+      eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r;
+    r
+
+  let choice_default e1 e2 =
+    let r =
+      match (e1.edge, e2.edge) with
+      (*
+  Now accept some internal with internal composition
+ *)
+      | (Ws Int | Rf Int | Fr Int | Insert _), (Dp (_, _, _) | Po (Diff, _, _))
+      | (Dp (_, _, _) | Po (Diff, _, _)), (Ws Int | Rf Int | Fr Int | Insert _)
+      | Dp (_, Diff, _), Po (Diff, _, _)
+      | Po (Diff, _, _), Dp (_, Diff, _)
+      | Rf Int, Po (Same, _, _)
+      | Po (Same, _, _), Rf Int
+      | Rmw _, _
+      | _, Rmw _ ->
+          true
+      | _, _ -> (
+          (* Reject other internal followed by internal sequences *)
+          match (get_ie e1, get_ie e2) with
+          | Int, Int -> false
+          | Ext, _ | _, Ext -> true
+          | UnspecCom, _ | _, UnspecCom -> assert false)
+    in
+    if dbg then
+      eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r;
+    r
+
+  (* Check altenance of com/po *)
+  let choice_critical e1 e2 =
+    let r =
+      match (e1.edge, e2.edge) with
+      (* Two cases of allowed com composition *)
+      | ( (Ws _ | Leave CWs | Back CWs | Fr _ | Leave CFr | Back CFr),
+          (Rf _ | Leave CRf | Back CRf) ) ->
+          true
+      (* Rmw allowed to compose arbitrarily *)
+      | Rmw _, _ | _, Rmw _ -> true
+      (* Otherwise require alternance *)
+      | _, _ -> C.E.get_ie e1 <> C.E.get_ie e2
+    in
+    (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+    r
+
+  let choice_mixed e1 e2 =
+    let r =
+      match (e1.edge, e2.edge) with
+      (* Two cases of allowed com composition *)
+      | ( (Ws _ | Leave CWs | Back CWs | Fr _ | Leave CFr | Back CFr),
+          (Rf _ | Leave CRf | Back CRf) ) ->
+          true
+      (* Rmw allowed to compose arbitrarily *)
+      | Rmw _, _ | _, Rmw _ -> true
+      (* Otherwise accept composition *)
+      | _, _ -> (
+          let ie1 = C.E.get_ie e1 and ie2 = C.E.get_ie e2 in
+          match (ie1, ie2) with
+          | Int, Int -> begin
+              match (loc_sd e1, loc_sd e2) with
+              | Same, Same | Diff, Same | Same, Diff -> true
+              | Diff, Diff -> false
+              | _ -> assert false
+            end
+          | Ext, Ext -> false
+          | Ext, Int | Int, Ext -> true
+          | UnspecCom, _ | _, UnspecCom -> assert false)
+    in
+    (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
+    r
+
+  let choice_uni e1 e2 =
+    match (e1.edge, e2.edge) with
+    | Ws _, Ws _ | Fr _, Ws _ | Rf _, Fr _ | Rf _, Hat | Hat, Fr _ ->
+        C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
+    | Po _, Po _ -> false
+    | _, _ -> true
+
+  let choice_id _ _ = true
+
+  let choice_free e1 e2 =
+    match (e1.edge, e2.edge) with
+    | Ws _, Ws _ | Fr _, Ws _ | Rf _, Fr _ -> false
+    | _, _ -> true
+
+  let choice_free_alt e1 e2 =
+    match (e1.edge, e2.edge) with
+    | Ws _, Ws _ | Fr _, Ws _ | Rf _, Fr _ ->
+        C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
+    | _, _ -> true
+
+  let choice_ppo e1 e2 =
+    choice_free e1 e2
+    && C.E.compare e1 e2 <> 0
+    &&
+    match e1.edge with
+    | Dp (dp, _, Dir R) when C.A.is_ctrlr dp -> is_ext e2
+    | _ -> true
+
+  let choice_transitive safes xs ys e1 e2 =
+    choice_free_alt e1 e2
+    && begin match (C.E.get_ie e1, C.E.get_ie e2) with
+    | Int, Int ->
+        let cs = C.E.compact_sequence xs ys e1 e2 in
+        if dbg then
+          eprintf "COMPACT %s,%s -> [%s] -> " (C.E.pp_edge e1) (C.E.pp_edge e2)
+            (String.concat ","
+               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs));
+        let r =
+          not (List.exists (fun es -> C.R.Set.mem (C.R.ERS es) safes) cs)
+        in
+        if dbg then eprintf "%b\n" r;
+        r
+    | _, _ -> true
+    end
+
+  let choose c =
+    let iarg f = fun _ _ _ _ -> f in
+    match c with
+    | Sc -> fun _safes po_safe _xs _ys -> choice_sc po_safe
+    | Default -> iarg choice_default
+    | MixedCheck -> iarg choice_mixed
+    | Critical -> iarg choice_critical
+    | Uni -> iarg choice_uni
+    | Thin | Total -> iarg choice_id
+    | Free -> iarg choice_free_alt
+    | Ppo -> iarg choice_ppo
+    | Transitive -> fun safes _po_safe -> choice_transitive safes
+
+  let is_cumul =
+    let open Config in
+    let equal_fence f1 f2 = C.A.compare_fence f1 f2 = 0 in
+    match O.cumul with
+    | Empty -> fun _ -> false
+    | All -> fun _ -> true
+    | Set fs -> fun f -> List.exists (equal_fence f) fs
+
+  let compat_id ao d =
+    match (ao, d) with
+    | None, _ | _, (Irr | NoDir) -> true
+    | Some a, Dir d -> C.A.applies_atom a d
+
+  let pair_ok safes po_safe xs ys e1 e2 =
+    match (e1.edge, e2.edge) with
+    (*
+  First reject some of hb' ; hb'
+ *)
+    | Hat, Hat (* Hat *)
+    (* Ext Ext Only? *)
+    | Ws _, Ws _ (* -> Ws *)
+    | Fr _, Ws _ (* -> Fr*)
+    | Rf _, Fr _
+    (* -> Ws *)
+    (*    Rf _,Fr _ (* -> Ws *) May be interesting, because
+      values are observed by outcome itself,
+      also useful to add Fre after B-cumulativity *)
+      ->
+        C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
+    | Id, Id -> false
+    | Id, _ -> compat_id e1.a2 (dir_src e2)
+    | _, Id -> compat_id e2.a1 (dir_tgt e1)
+    (* Fence cumulativity *)
+    | Rf _, Fenced (f, _, _, _) | Fenced (f, _, _, _), Rf _ ->
+        is_cumul f && choose O.choice safes po_safe xs ys e1 e2
+    | _, _ -> choose O.choice safes po_safe xs ys e1 e2
+end
+
 module Make(C:Builder.S)
     (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
     sig
@@ -45,227 +267,17 @@ module Make(C:Builder.S)
     let mixed = Variant_gen.is_mixed O.variant
     let do_kvm = Variant_gen.is_kvm  O.variant
     module D = DumpAll.Make(O) (C)
+    module FilterImpl = Filter(C)(O)
+    module RelaxSet = C.R.Set
     open C.E
     open C.R
 
     let dbg = false
 
-    module RelaxSet = C.R.Set
-
     let is_int e = match get_ie e with
     | Int -> true
     | Ext -> false
     | UnspecCom -> assert false
-
-    let is_ext e = not (is_int e)
-
-    let equal_fence f1 f2 = C.A.compare_fence f1 f2 = 0
-
-    let is_cumul =
-      let open Config in
-      match O.cumul with
-      | Empty -> (fun _ -> false)
-      | All -> (fun _ -> true)
-      | Set fs ->
-          (fun f -> List.exists (equal_fence f) fs)
-
-    let choice_sc po_safe e1 e2 =
-      let seq_sd e1 e2 =
-        match Code.seq_sd e1 e2 with
-        | None -> Warn.user_error "Unexpected UnspecLoc"
-        | Some b -> b in
-      let r = match e1.edge,e2.edge with
-(*
-  Now accept internal with internal composition
-  when the do not match safe, explicit po candidates.
-  A bit rude, maybe...
-
-  Also notice that we are more tolerant for Rfi.
- *)
-(* Assuming Dp is safe *)
-    | Rf Int,Dp _ | Dp _,Rf Int -> true
-    | Dp (_,sd,_),Ws Int | Dp (_,sd,_),Fr Int ->
-        not (po_safe sd (dir_src e1) (dir_tgt e2))
-    | Po (sd1,_,_), Dp (_,sd2,_) ->
-        not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-    | Dp (_,sd1,_),Po (sd2,_,_) ->
-        not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-(* Check Po is safe *)
-    | Po (sd1,_,_),Po (sd2,_,_) ->
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-    | Rf Int,Po (sd,_,_) ->
-        po_safe sd (dir_src e2) (dir_tgt e2) &&
-        not (po_safe sd (dir_src e1) (dir_tgt e2))
-    | Po (sd,_,_),Rf Int ->
-        po_safe sd (dir_src e1) (dir_tgt e1) &&
-        not (po_safe sd (dir_src e1) (dir_tgt e2))
-(* Allow Rmw *)
-    | (Rmw _,_)|(_,Rmw _) -> true
-(* Added *)
-    | _,_ ->
-        match get_ie e1, get_ie e2 with
-        | Int,Int -> false
-        | Ext,_|_,Ext -> true
-        | UnspecCom,_ | _,UnspecCom -> assert false in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
-      r
-
-    let choice_default e1 e2 =
-      let r = match e1.edge,e2.edge with
-(*
-  Now accept some internal with internal composition
- *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
-      | Dp (_,Diff,_),Po (Diff,_,_)
-      | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
-      | (Rmw _,_)|(_,Rmw _) -> true
-      | _,_ ->
-          (* Reject other internal followed by internal sequences *)
-          match get_ie e1, get_ie e2 with
-          | Int,Int -> false
-          | Ext,_|_,Ext -> true
-          | UnspecCom,_ | _,UnspecCom -> assert false in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
-      r
-
-(* Check altenance of com/po *)
-    let choice_critical e1 e2 =
-      let r =
-        match e1.edge,e2.edge with
-(* Two cases of allowed com composition *)
-        | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
-          (Rf _|Leave CRf|Back CRf) -> true
-(* Rmw allowed to compose arbitrarily *)
-        | (Rmw _,_)|(_,Rmw _) -> true
-(* Otherwise require alternance *)
-        | _,_ ->  C.E.get_ie e1 <> C.E.get_ie e2 in
-(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
-      r
-    let choice_mixed e1 e2 =
-      let r =
-        match e1.edge,e2.edge with
-(* Two cases of allowed com composition *)
-        | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
-          (Rf _|Leave CRf|Back CRf) -> true
-(* Rmw allowed to compose arbitrarily *)
-        | (Rmw _,_)|(_,Rmw _) -> true
-(* Otherwise accept composition *)
-        | _,_ ->
-            let ie1 = C.E.get_ie e1 and ie2 =  C.E.get_ie e2 in
-            match ie1,ie2 with
-            | Int,Int ->
-                begin match loc_sd e1,loc_sd e2 with
-                | (Same,Same) | (Diff,Same) | (Same,Diff)
-                  -> true
-                | Diff,Diff -> false
-                | _ -> assert false
-                end
-            | Ext,Ext -> false
-            | (Ext,Int) | (Int,Ext) -> true
-            | UnspecCom,_ | _,UnspecCom -> assert false in
-(*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
-      r
-    let choice_uni e1 e2 =  match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
-    | (Rf _,Hat)
-    | (Hat,Fr _)
-      -> C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
-    | Po _,Po _ -> false
-    | _,_ -> true
-
-    let choice_id _ _ = true
-
-    let choice_free e1 e2 = match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
-      -> false
-    | _,_ -> true
-
-    let choice_free_alt e1 e2 = match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
-      -> C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
-    | _,_ -> true
-
-    let choice_ppo e1 e2 =
-      choice_free e1 e2 &&
-      C.E.compare e1 e2 <> 0 &&
-      (match e1.edge with
-      | Dp (dp,_,Dir R) when C.A.is_ctrlr dp -> is_ext e2
-      | _ -> true)
-
-    let choice_transitive safes xs ys e1 e2 =
-      choice_free_alt e1 e2 &&
-      begin match  C.E.get_ie e1, C.E.get_ie e2 with
-      | Int,Int ->
-          let cs = C.E.compact_sequence xs ys e1 e2 in
-          if O.verbose > 0 then eprintf "COMPACT %s,%s -> [%s] -> "
-            (C.E.pp_edge e1) (C.E.pp_edge e2)
-            (String.concat ","
-               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
-          let r =
-            not
-              (List.exists
-                 (fun es -> C.R.Set.mem (C.R.ERS es) safes)
-                 cs) in
-          if O.verbose > 0 then eprintf "%b\n" r ;
-          r
-      | _,_ -> true
-      end
-
-
-
-    let iarg f = fun _ _ _ _ -> f
-
-    let choose c = match c with
-    | Sc -> fun _safes po_safe _xs _ys -> choice_sc po_safe
-    | Default -> iarg choice_default
-    | MixedCheck -> iarg choice_mixed
-    | Critical -> iarg choice_critical
-    | Uni -> iarg choice_uni
-    | Thin |Total -> iarg choice_id
-    | Free -> iarg choice_free_alt
-    | Ppo -> iarg choice_ppo
-    | Transitive ->
-        (fun safes _po_safe -> choice_transitive safes)
-
-
-    let compat_id ao d = match ao,d with
-    | (None,_)|(_,(Irr|NoDir)) -> true
-    | Some a,(Dir d) -> C.A.applies_atom a d
-
-    let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with
-(*
-  First reject some of hb' ; hb'
- *)
-    | Hat,Hat   (* Hat *)
-(* Ext Ext Only? *)
-    | Ws _,Ws _ (* -> Ws *)
-    | Fr _,Ws _ (* -> Fr*)
-    | Rf _,Fr _ (* -> Ws *)
-(*    Rf _,Fr _ (* -> Ws *) May be interesting, because
-      values are observed by outcome itself,
-      also useful to add Fre after B-cumulativity *)
-      ->  C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
-    | Id,Id -> false
-    | Id,_ -> compat_id e1.a2 (dir_src e2)
-    | _,Id -> compat_id e2.a1 (dir_tgt e1)
-(* Fence cumulativity *)
-    | Rf _,Fenced (f,_,_,_)
-    | Fenced (f,_,_,_),Rf _ ->
-        is_cumul f && choose O.choice safes po_safe xs ys e1 e2
-    | _,_ -> choose O.choice safes po_safe xs ys e1 e2
 
     let check_mixed =
       if mixed then
@@ -288,7 +300,7 @@ module Make(C:Builder.S)
       let r =
         C.E.can_precede x y
         && check_mixed x y
-        && pair_ok safes po_safe xs ys x y
+        && FilterImpl.pair_ok safes po_safe xs ys x y
         &&
           begin
             if do_kvm then
