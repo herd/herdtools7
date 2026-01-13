@@ -1,13 +1,28 @@
 %%%ToDo handle optional argument of render commands
+\def\@render@remove{remove_hypertargets}%
+\newcommand{\@notgt}[2]{}
+\def\@render@notgt#1{\bgroup\let\hypertarget\@notgt{}#1\egroup}
 %%%%
 \newcommand{\DefineConstant}[2]{\def\csname RenderConstant@#1\endcsname{#2}}
-\newcommand{\RenderConstant}[2][]{\csname RenderConstant@#2\endcsname}
+\newcommand{\RenderConstant}[2][]{%
+\def\@render@opt{#1}%
+\ifx\@render@opt\@render@remove
+\@render@notgt{\csname RenderConstant@#2\endcsname}\else
+\csname RenderConstant@#2\endcsname\fi}
 %%%%
 \newcommand{\DefineType}[2]{\def\csname RenderType@#1\endcsname{#2}}
-\newcommand{\RenderType}[2][]{\csname RenderType@#2\endcsname}
+\newcommand{\RenderType}[2][]{%
+\def\@render@opt{#1}%
+\ifx\@render@opt\@render@remove
+\@render@notgt{\csname RenderType@#2\endcsname}\else
+\csname RenderType@#2\endcsname\fi}
 %%%%
 \newcommand{\DefineRenderTypes}[2]{\def\csname RenderTypes@#1\endcsname{#2}}
-\newcommand{\RenderTypes}[2][]{\csname RenderTypes@#1\endcsname}
+\newcommand{\RenderTypes}[2][]{%
+\def\@render@opt{#1}%
+\ifx\@render@opt\@render@remove
+\@render@notgt{\csname RenderTypes@#2\endcsname}\else
+\csname RenderTypes@#2\endcsname\fi}
 %%%%
 \newcommand{\DefineRule}[2]{\def\csname RenderRule@#1\endcsname{#2}}
 \newcommand{\RenderRule}[1]{\csname RenderRule@#1\endcsname}

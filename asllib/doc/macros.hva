@@ -2,6 +2,7 @@
 \definecolor{ly}{cmyk}{0.0, 0.0, 0.20, 0.0}
 \newcommand{\lightyellow}{\color{ly}}
 \usepackage[utf8]{inputenc}
-\newcommand{\tgt@none}[1]{\aname{#1}{}}
-\let\mathhypertarget\tgt@none
+\newcommand{\tgt@none}[1]{\hypertarget{#1}{}}
+\newcommand{\mathhypertarget}[1]{\tgt@none{#1}}
 \let\texthypertarget\tgt@none
+\newenvironment{flalign*}{\align*}{\endalign*}
