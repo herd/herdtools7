@@ -21,6 +21,7 @@ depends: [
   "zarith" {>= "1.13"}
   "conf-which"
   "logs"
+  "yojson"
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {
