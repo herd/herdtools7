@@ -291,44 +291,30 @@ let () =
     let wildcard = true
   end in
   let module T = Top_gen.Make(Co) in
-  let go = match !Config.arch with
-  | `PPC ->
-      let module M = Make(T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)))(Co) in
-    M.go
-  | `X86 ->
-    let module M = Make(T(X86Compile_gen.Make(C)))(Co) in
-    M.go
-  | `X86_64 ->
-    let module M = Make(T(X86_64Compile_gen.Make(C)))(Co) in
-    M.go
-  | `ARM ->
-      let module M = Make(T(ARMCompile_gen.Make(C)))(Co) in
-      M.go
-  | `AArch64 ->
-      let module M = Make(T(AArch64Compile_gen.Make(C)))(Co) in
-      M.go
-  | `MIPS ->
-      let module M = Make(T(MIPSCompile_gen.Make(C)))(Co) in
-      M.go
-  | `RISCV ->
-      let module M = Make(T(RISCVCompile_gen.Make(C)))(Co) in
-      M.go
+  let builder = match !Config.arch with
+  | `PPC -> (module T(PPCCompile_gen.Make(C)(PPCArch_gen.Config)) : Builder.S)
+  | `X86 -> (module T(X86Compile_gen.Make(C)) : Builder.S)
+  | `X86_64 -> (module T(X86_64Compile_gen.Make(C)) : Builder.S)
+  | `ARM -> (module T(ARMCompile_gen.Make(C)) : Builder.S)
+  | `AArch64 -> (module T(AArch64Compile_gen.Make(C)) : Builder.S)
+  | `MIPS -> (module T(MIPSCompile_gen.Make(C)) : Builder.S)
+  | `RISCV -> (module T(RISCVCompile_gen.Make(C)) : Builder.S)
   | `LISA ->
       let module BellConfig = Config.ToLisa(Config) in
-      let module M = Make(T(BellCompile.Make(C)(BellConfig)))(Co) in
-      M.go
+      (module T(BellCompile.Make(C)(BellConfig)) : Builder.S)
   | `C | `CPP ->
       let module CoC = struct
         include Co
         include C
         let typ = !Config.typ
       end in
-      let module M = Make(CCompile_gen.Make(CoC))(Co) in
-      M.go 
+      (module CCompile_gen.Make(CoC) : Builder.S)
   | `JAVA | `ASL | `BPF -> assert false
   in
+  let module Builder = (val builder : Builder.S) in
+  let module M = Make(Builder)(Co) in
   try
-    go !Config.size reject_list relax_list safe_list ;
+    M.go !Config.size reject_list relax_list safe_list ;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
