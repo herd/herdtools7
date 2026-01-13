@@ -84,19 +84,20 @@ let parse_fences fs = List.fold_right parse_fence fs []
           (fun k es -> ERS es::k) rs ess
 
 
-  let var_atom =
-    if C.A.bellatom then Misc.identity
-    else match O.varatom with
-    | [] -> Misc.identity
-    | ["all"] ->
+  let to_relax_list parsed_list =
+    let relax_list = C.R.expand_relax_macros parsed_list in
+    match C.A.bellatom, O.varatom with
+    | true, _
+    | false, [] -> Fun.id relax_list
+    | false, ["all"] ->
         let module Fold = struct
           type atom = C.E.atom
           let fold = C.E.fold_atomo
         end in
         let module V = VarAtomic.Make(C.E)(Fold) in
         List.fold_left
-          (var_relax V.varatom_one) []
-    | atoms ->
+          (var_relax V.varatom_one) [] relax_list
+    | false, atoms ->
         let atoms = C.E.parse_atoms atoms in
         let module Fold = struct
           type atom = C.E.atom
@@ -104,15 +105,12 @@ let parse_fences fs = List.fold_right parse_fence fs []
         end in
         let module V = VarAtomic.Make(C.E)(Fold) in
         List.fold_left
-          (var_relax V.varatom_one) []
+          (var_relax V.varatom_one) [] relax_list
 
   let gen lr ls rl n =
-    let lr = C.R.expand_relax_macros lr
-    and ls = C.R.expand_relax_macros ls
-    and rl = C.R.expand_relax_macros rl in
-    let lr = var_atom lr
-    and ls = var_atom ls
-    and rl = var_atom rl in
+    let lr = to_relax_list lr
+    and ls = to_relax_list ls
+    and rl = to_relax_list rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -208,7 +206,8 @@ let () =
   end;
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
-  and reject_list = split !Config.rejects in
+  and reject_list = split !Config.rejects
+  and filter_list = split_cands !Config.filter in
 
   let () =
     if !Config.verbose > 0 then begin
@@ -314,7 +313,30 @@ let () =
   let module Builder = (val builder : Builder.S) in
   let module M = Make(Builder)(Co) in
   try
-    M.go !Config.size reject_list relax_list safe_list ;
+    match filter_list with
+    | Some filter_list ->
+        begin
+        match M.to_relax_list filter_list with
+        | [lhs;rhs] ->
+            let lhs_unfold = Builder.R.expand_relaxs Builder.ppo [lhs] in
+            let rhs_unfold = Builder.R.expand_relaxs Builder.ppo [rhs] in
+            List.map ( fun l ->
+              List.map ( fun r ->
+                l,r,M.M.filter_check (Builder.R.edges_of l) (Builder.R.edges_of r)
+              ) rhs_unfold
+            ) lhs_unfold
+            |> List.flatten
+            |> List.iter ( fun (l, r, result) ->
+              eprintf "`%s` followed by `%s` is %s in filter mode `%s`\n"
+                (Builder.R.pp_relax l) (Builder.R.pp_relax r)
+                ( if result then "allowed" else "forbidden" )
+                ( Code.pp_check Co.choice )
+
+            )
+        | _ -> Warn.user_error "Please input exactly two relaxations"
+        end
+    | None -> (* The common path to generate tests *)
+      M.go !Config.size reject_list relax_list safe_list;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
