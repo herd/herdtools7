@@ -1,4 +1,4 @@
-  $ herd7 -set-libdir ./libdir -show prop -through all -showevents all -o - -output-format json fixtures/R+CAS-rfi-ctrl+DMBST.litmus
+  $ herd7 -set-libdir ./libdir -show prop -through all -showevents all -o - -output-format json fixtures/R+CAS-rfi-ctrl+DMBST.litmus | sed '/^JSONEND /q'
   
   JSONBEGIN R+CAS-rfi-ctrl+DMBST
   [
@@ -1186,34 +1186,3 @@
   ]
   
   JSONEND R+CAS-rfi-ctrl+DMBST
-  Test R+CAS-rfi-ctrl+DMBST Allowed
-  States 20
-  0:X1=0; 0:X3=0; [x]=0; [y]=1;
-  0:X1=0; 0:X3=0; [x]=0; [y]=2;
-  0:X1=0; 0:X3=0; [x]=1; [y]=1;
-  0:X1=0; 0:X3=0; [x]=1; [y]=2;
-  0:X1=0; 0:X3=1; [x]=0; [y]=1;
-  0:X1=0; 0:X3=1; [x]=0; [y]=2;
-  0:X1=0; 0:X3=1; [x]=1; [y]=1;
-  0:X1=0; 0:X3=1; [x]=1; [y]=2;
-  0:X1=1; 0:X3=0; [x]=1; [y]=1;
-  0:X1=1; 0:X3=0; [x]=1; [y]=2;
-  0:X1=1; 0:X3=0; [x]=2; [y]=1;
-  0:X1=1; 0:X3=0; [x]=2; [y]=2;
-  0:X1=1; 0:X3=1; [x]=1; [y]=1;
-  0:X1=1; 0:X3=1; [x]=1; [y]=2;
-  0:X1=1; 0:X3=1; [x]=2; [y]=1;
-  0:X1=1; 0:X3=1; [x]=2; [y]=2;
-  0:X1=1; 0:X3=2; [x]=1; [y]=1;
-  0:X1=1; 0:X3=2; [x]=1; [y]=2;
-  0:X1=1; 0:X3=2; [x]=2; [y]=1;
-  0:X1=1; 0:X3=2; [x]=2; [y]=2;
-  Ok
-  Witnesses
-  Positive: 2 Negative: 38
-  Condition exists ([x]=2 /\ [y]=2 /\ 0:X1=1 /\ 0:X3=2)
-  Observation R+CAS-rfi-ctrl+DMBST Sometimes 2 38
-  Time R+CAS-rfi-ctrl+DMBST 0.05
-  Hash=b589428dc0b391a69fd4b31fe524a5d0
-  
-

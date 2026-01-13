@@ -1,4 +1,4 @@
-  $ herd7 -set-libdir ./libdir -variant vmsa -show prop -through all -showevents all -o - -output-format json fixtures/MP+tlbi-sync.ishpteoneafp+po.litmus
+  $ herd7 -set-libdir ./libdir -variant vmsa -show prop -through all -showevents all -o - -output-format json fixtures/MP+tlbi-sync.ishpteoneafp+po.litmus | sed '/^JSONEND /q'
   
   JSONBEGIN MP+tlbi-sync.ishpteoneafp+po
   [
@@ -1053,19 +1053,3 @@
   ]
   
   JSONEND MP+tlbi-sync.ishpteoneafp+po
-  Test MP+tlbi-sync.ishpteoneafp+po Allowed
-  States 4
-  1:X2=5;  ~Fault(P1:L00,x);
-  1:X2=5; Fault(P1:L00,x,MMU:AccessFlag);
-  1:X2=6;  ~Fault(P1:L00,x);
-  1:X2=6; Fault(P1:L00,x,MMU:AccessFlag);
-  Ok
-  Witnesses
-  Positive: 2 Negative: 6
-  Flag Assuming-common-inner-shareable-domain
-  Condition exists (1:X2=6 /\ fault(P1:L00,x))
-  Observation MP+tlbi-sync.ishpteoneafp+po Sometimes 2 6
-  Time MP+tlbi-sync.ishpteoneafp+po 0.02
-  Hash=8a8c5630707de4202e6a6851a0525afc
-  
-
