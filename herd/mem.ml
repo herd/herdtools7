@@ -1062,6 +1062,10 @@ let match_reg_events es =
 
     let is_spec es e = E.EventSet.mem e es.E.speculated
 
+    let check_values store load =
+      not speedcheck ||
+      V.equalityPossible (get_written store) (get_read load)
+
 (* Consider all stores that may feed a load
    - Compatible location.
    - Not after in program order
@@ -1088,6 +1092,7 @@ let match_reg_events es =
                 if
                   compat_locs store load &&
                   check_speculation es store load &&
+                  check_values store load &&
                   ok load store
                 then
                   load,S.Store store::stores
@@ -1109,8 +1114,18 @@ let match_reg_events es =
           m;
         eprintf "%!"
       end ;
-(* Check for loads that cannot feed on some write *)
-      if not do_deps && not asl then begin
+      (* Check for loads that cannot feed on some write.
+
+         In ASL mode, we have not constructed yet the full program, so reads
+         can not have a matching write.
+
+         When speedcheck mode is activated, it is possible to have reads that
+         don't match any write. Indeed, when speedcheck mode is activated, it
+         is possible possible that we know the value that was read at that
+         point, from the final condition of the test. There is then a check
+         when constructing a rfm that the values are compatible.
+      *)
+      if not do_deps && not asl && not speedcheck then begin
         List.iter
           (fun (load,stores) ->
             match stores with
