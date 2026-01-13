@@ -23,7 +23,7 @@ module Make(S : SemExtra.S) = struct
     let by_po =
       E.EventSet.fold
         (fun e k ->
-          match E.progorder_of e with
+          match E.static_poi e with
             | None -> k
             | Some poi ->
                let es_poi = IntMap.safe_find []  poi k in

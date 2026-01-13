@@ -1,0 +1,5 @@
+(cram
+ (deps
+  (source_tree fixtures)
+  (source_tree libdir)
+  %{bin:herd7}))
