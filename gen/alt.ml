@@ -250,6 +250,7 @@ module Make(C:Builder.S)
     (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
     sig
       val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
+      val filter_check: C.E.edge list -> C.E.edge list -> bool
     end
 
     =
@@ -788,4 +789,9 @@ module Make(C:Builder.S)
       with e ->
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e
+
+    let filter_check lhs rhs =
+      let last = Misc.last lhs in
+      let first = List.hd rhs in
+      FilterImpl.pair_ok RelaxSet.empty (fun _ _ _ -> true) lhs rhs last first
   end
