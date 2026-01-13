@@ -1,4 +1,4 @@
-  $ herd7 -show prop -through all -showevents all -o - -output-format json fixtures/R+CAS-rfi-ctrl+DMBST.litmus
+  $ herd7 -set-libdir ./libdir -show prop -through all -showevents all -o - -output-format json fixtures/R+CAS-rfi-ctrl+DMBST.litmus
   
   JSONBEGIN R+CAS-rfi-ctrl+DMBST
   [

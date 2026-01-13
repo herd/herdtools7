@@ -1,4 +1,4 @@
-  $ herd7 -variant vmsa -show prop -through all -showevents all -o - -output-format json fixtures/MP+tlbi-sync.ishpteoneafp+po.litmus
+  $ herd7 -set-libdir ./libdir -variant vmsa -show prop -through all -showevents all -o - -output-format json fixtures/MP+tlbi-sync.ishpteoneafp+po.litmus
   
   JSONBEGIN MP+tlbi-sync.ishpteoneafp+po
   [
