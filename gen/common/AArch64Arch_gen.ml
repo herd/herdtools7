@@ -887,7 +887,10 @@ let fold_cachesync =
   else fun _ k -> k
 
 
-let fold_cmo f k = fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
+let fold_cmo f k =
+  if do_self then
+    fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
+  else k
 
 
 let fold_all_fences f k =
