@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/check-build-www.yml'
+      - 'asllib/aslref.ml'
+      - 'asllib/asllib-www'
   workflow_dispatch:
     inputs:
       pr_number:
