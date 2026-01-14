@@ -21,6 +21,9 @@ type path = string
 type stdout_lines = string list
 type stderr_lines = string list
 
+(** Type for speedcheck argument *)
+type speedcheck = [`True | `False | `Fast]
+
 (** Systematic file names for standard output and standard error , from test file name *)
 val outname : string -> string
 val errname : string -> string
@@ -40,6 +43,8 @@ val herd_args :
   variants : string list ->
   libdir   : path ->
   timeout  : float option ->
+  speedcheck : speedcheck option ->
+  checkfilter : bool option ->
   string list
 
 (** [apply_args herd j args] Format mapply command-line options as a list,
@@ -59,7 +64,9 @@ val herd_command :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> ?j:int -> ?timeout:float -> path list -> string
+  path ->
+  ?j:int -> ?timeout:float -> ?speedcheck:speedcheck -> ?checkfilter:bool ->
+  path list -> string
 
 (** [check_tags line] Checks that a line is a verbose diagnostic. *)
 val check_tags : string -> bool
@@ -77,8 +84,9 @@ val run_herd :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-     path -> ?j:int -> ?timeout:float ->
-     path list -> int * string list * string list
+  path ->
+  ?j:int -> ?timeout:float -> ?speedcheck:speedcheck -> ?checkfilter:bool ->
+  path list -> int * string list * string list
 
 (** [run_herd_args herd args litmus] similar in functionality  to
   * [run_herd] above but different as regards interface:

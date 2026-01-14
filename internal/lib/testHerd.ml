@@ -22,6 +22,7 @@ type path = string
 
 type stdout_lines = string list
 type stderr_lines = string list
+type speedcheck = [`True | `False | `Fast]
 
 let outname l = l ^ ".out"
 and errname l = l ^ ".err"
@@ -153,7 +154,8 @@ let checkerrlog = function
     | ([],[])|(_::_,_::_) -> false
     | ([],_::_)|(_::_,[]) -> true
 
-let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
+let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
+    ~checkfilter =
   let timeout =
     match timeout with
     | None -> []
@@ -162,22 +164,34 @@ let herd_args  ~bell ~cat ~conf ~variants ~libdir ~timeout =
     match bell with
     | None -> []
     | Some bell -> ["-bell"; bell]
-  in
-  let cats =
+  and cats =
     match cat with
     | None -> []
     | Some cat -> ["-cat"; cat; "-I"; Filename.dirname cat]
-  in
-  let confs =
+  and confs =
     match conf with
     | None -> []
     | Some conf -> ["-conf"; conf]
-  in
-  let variants =
+  and variants =
     List.concat (List.map (fun v -> ["-variant"; v]) variants)
+  and speedchecks =
+    match speedcheck with
+    | None -> []
+    | Some `True -> ["-speedcheck"; "true"]
+    | Some `Fast -> ["-speedcheck"; "fast"]
+    | Some `False -> ["-speedcheck"; "false"]
+  and checkfilters =
+    match checkfilter with
+    | None -> []
+    | Some b -> ["-checkfilter"; string_of_bool b]
+  and libdirs = ["-set-libdir"; libdir]
+  and exits = ["-exit"; "true"]
   in
-  let libdirs = ["-set-libdir"; libdir] in
-  List.concat [["-exit"; "true";]; libdirs; timeout; bells; cats; confs; variants;]
+  List.concat
+    [
+      exits; libdirs; timeout; bells; cats; confs; variants; speedchecks;
+      checkfilters
+    ]
 
 let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
@@ -194,12 +208,12 @@ let apply_redirect_args ?(verbose=false) herd j herd_args =
       "herd_redirect.exe" in
   ["-com"; redirect; "-j"; Printf.sprintf "%i" j; "-comargs"; redirect_args;]
 
-let herd_command
-      ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout
+    ?speedcheck ?checkfilter litmuses =
   let args =
-    herd_args
-      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
-      ~timeout:timeout in
+    herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
+      ~checkfilter
+  in
   match j with
   | None ->
      Command.command herd (args @ litmuses)
@@ -251,17 +265,19 @@ let do_run_herd_args verbose herd args ?j litmuses =
 let run_herd_args ?(verbose=false) herd args litmus =
   do_run_herd_args verbose herd args [litmus]
 
-let run_herd ?(verbose=false) ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout litmuses =
+let run_herd ?(verbose=false) ~bell ~cat ~conf ~variants ~libdir herd ?j
+    ?timeout ?speedcheck ?checkfilter litmuses =
   let args =
-    herd_args
-      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
-      ~timeout:timeout in
+    herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
+      ~checkfilter
+  in
   do_run_herd_args verbose herd args ?j litmuses
 
 let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   let args =
-    herd_args
-      ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir ~timeout:None in
+    herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
+      ~timeout:None ~checkfilter:None ~speedcheck:None
+  in
   let litmuses = Base.Iter.of_list litmuses in
   let j = max 2 j in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
