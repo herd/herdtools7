@@ -210,7 +210,7 @@ struct
   let pp = function
     | Handled -> "handled"
     | Fatal -> "fatal"
-    | Skip -> "faulToNext"
+    | Skip -> "faultToNext"
 
   let is_fatal = function
     | Fatal -> true

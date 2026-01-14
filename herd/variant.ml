@@ -119,20 +119,114 @@ type t =
   | ConstPacField
 (* 128 bit mode for asl,vmsa *)
   | D128
-  
-let tags =
-  ["success";"instr";"specialx0";"normw";"acqrelasfence";"backcompat";
-   "fullscdepend";"splittedrmw";"switchdepscwrite";"switchdepscresult";"lrscdiffok";
-   "mixed";"dontcheckmixed";"weakpredicated"; "lkmmv1"; "lkmmv2"; "memtag";"vmsa";"kvm";]@
-    Precision.tags @ Fault.Handling.tags @
-   ["CutOff"; "deps"; "morello"; "instances"; "noptebranch"; "pte2";
-   "pte-squared"; "PhantomOnLoad"; "OptRfRMW"; "ConstrainedUnpredictable";
-    "exp"; "self"; "cos-opt"; "test"; "T[0-9][0-9]"; "asl"; "strict";
-    "warn"; "S128"; "ASLType+Warn";    "ASLType+Silence"; "ASLType+Check";
-    "ASL+AArch64+UDF"; "telechat"; "OldSolver"; "oota";
-    "pac"; "fpac"; "const-pac-field";
-    "d128";
-   ]
+
+(* Identity function to prompt developers to insert variant into list used for help message when adding a new variant *)
+let (mode_variants, arch_variants) : t list * t list =
+  let f = function
+  | Success -> Success
+  | Instr -> Instr
+  | SpecialX0 -> SpecialX0
+  | NoRMW -> NoRMW
+  | AcqRelAsFence -> AcqRelAsFence
+  | BackCompat -> BackCompat
+  | FullScDepend -> FullScDepend
+  | SplittedRMW -> SplittedRMW
+  | SwitchDepScWrite -> SwitchDepScWrite
+  | SwitchDepScResult -> SwitchDepScResult
+  | LrScDiffOk -> LrScDiffOk
+  | Mixed -> Mixed
+  | Unaligned -> Unaligned
+  | DontCheckMixed -> DontCheckMixed
+  | NotWeakPredicated -> NotWeakPredicated
+  | LKMMVersion `lkmmv1 -> LKMMVersion `lkmmv1
+  | LKMMVersion `lkmmv2 -> LKMMVersion `lkmmv2
+  | MemTag -> MemTag
+  | MTEPrecision p -> MTEPrecision p
+  | MTEStoreOnly -> MTEStoreOnly
+  | FaultHandling p -> FaultHandling p
+  | CutOff -> CutOff
+  | Morello -> Morello
+  | Neon -> Neon
+  | SVE -> SVE
+  | SVELength k -> SVELength k
+  | SME -> SME
+  | SMELength k -> SMELength k
+  | Deps -> Deps
+  | Instances -> Instances
+  | VMSA -> VMSA
+  | ETS -> ETS
+  | ETS2 -> ETS2
+  | ETS3 -> ETS3
+  | ExS -> ExS
+  | EIS -> EIS
+  | EOS -> EOS
+  | NoPteBranch -> NoPteBranch
+  | PTE2 -> PTE2
+  | PhantomOnLoad -> PhantomOnLoad
+  | OptRfRMW -> OptRfRMW
+  | ConstrainedUnpredictable -> ConstrainedUnpredictable
+  | Exp -> Exp
+  | Ifetch -> Ifetch
+  | DIC -> DIC
+  | IDC -> IDC
+  | CosOpt -> CosOpt
+  | Test -> Test
+  | T n -> T n
+  | ASL -> ASL
+  | ASL_AArch64 -> ASL_AArch64
+  | ASLVersion `ASLv0 -> ASLVersion `ASLv0
+  | ASLVersion `ASLv1 -> ASLVersion `ASLv1
+  | ASLType `Warn -> ASLType `Warn
+  | ASLType `Silence -> ASLType `Silence
+  | ASLType `TypeCheck -> ASLType `TypeCheck
+  | ASL_AArch64_UDF -> ASL_AArch64_UDF
+  | S128 -> S128
+  | Strict -> Strict
+  | Warn -> Warn
+  | Telechat -> Telechat
+  | NV2 -> NV2
+  | OldSolver -> OldSolver
+  | OOTA -> OOTA
+  | Pac -> Pac
+  | ConstPacField -> ConstPacField
+  | FPac -> FPac
+  | D128 -> D128
+  in
+  let base_modes =
+    List.map f
+      [ Success; Instr; SpecialX0; NoRMW; AcqRelAsFence;
+        BackCompat; FullScDepend; SplittedRMW; SwitchDepScWrite;
+        SwitchDepScResult; LrScDiffOk;
+        NotWeakPredicated;
+        LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
+        CutOff; Morello; Deps; Instances;
+        PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
+        Exp; CosOpt; Test; T 0;
+        ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
+        S128; Strict; Warn;
+        ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
+        Telechat; OldSolver; OOTA ]
+  and precision_variants =
+    List.map (fun precision -> f (MTEPrecision precision)) Precision.all
+  and fault_variants =
+    List.filter_map
+      (fun tag ->
+        match Fault.Handling.parse (Misc.lowercase tag) with
+        | Some handling -> Some (f (FaultHandling handling))
+        | None -> None)
+      Fault.Handling.tags
+  and arch_feat =
+    List.map f
+      [ ETS; ETS2; ETS3;
+        ExS; EIS; EOS;
+        DIC; IDC; NV2;
+        Mixed; Unaligned; DontCheckMixed; Ifetch;
+        VMSA; NoPteBranch; PTE2; D128;
+        Neon; SVE; SVELength 128; SME; SMELength 128;
+        Pac; ConstPacField; FPac;
+        MemTag; MTEStoreOnly; ]
+  in
+  (base_modes, arch_feat @ precision_variants @ fault_variants)
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -244,10 +338,10 @@ let pp = function
   | AcqRelAsFence -> "acqrelasfence"
   | BackCompat ->"backcompat"
   | FullScDepend -> "FullScDepend"
-  | SplittedRMW -> "SplittedRWM"
+  | SplittedRMW -> "SplittedRMW"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | SwitchDepScResult -> "SwitchDepScResult"
-  | LrScDiffOk -> " LrScDiffOk"
+  | LrScDiffOk -> "LrScDiffOk"
   | Mixed -> "mixed"
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
@@ -306,6 +400,133 @@ let pp = function
   | FPac -> "fpac"
   | D128 -> "d128"
 
+  let variant_descriptions = function
+  | Success -> ""
+  | Instr -> ""
+  | SpecialX0 -> ""
+  | NoRMW -> ""
+  | AcqRelAsFence -> ""
+  | BackCompat ->""
+  | FullScDepend -> ""
+  | SplittedRMW -> ""
+  | SwitchDepScWrite -> ""
+  | SwitchDepScResult -> ""
+  | LrScDiffOk -> ""
+  | Mixed -> "Use mixed-sized semantics, where accesses can have different sizes"
+  | Unaligned -> "When using mixed-sized semantics, allow unaligned accesses"
+  | DontCheckMixed -> "Do not check (and reject early) mixed size tests in non-mixed-size mode"
+  | NotWeakPredicated -> ""
+  | LKMMVersion `lkmmv1 -> ""
+  | LKMMVersion `lkmmv2 -> ""
+  | MemTag -> "Enable FEAT_MTE2, Memory Tagging Extension (AArch64 only)"
+  | MTEPrecision p ->
+      let opt = Precision.pp p in
+      let base = Printf.sprintf "Configure tag-check fault reporting to be %s" opt in
+      let alias = Precision.alias p in
+      Printf.sprintf "%s\n  %s: Configure tag-check fault reporting to be %s"
+        base alias opt
+  | MTEStoreOnly -> "Configure whether load instructions are tag unchecked"
+  | FaultHandling f ->
+      let opt = Fault.Handling.pp f in
+          Printf.sprintf
+            "Configure fault handling to be %s"
+            opt
+  | CutOff -> "Check for cutoff in executions (AArch64+ASL only)"
+  | Morello -> ""
+  | Neon -> "Enable Advanced SIMD instructions (AArch64 only)"
+  | SVE -> "Enable FEAT_SVE, Scalable Vector Extension (AArch64 only)"
+  | SVELength _ -> "Configure SVE vector length (AArch64 only)"
+  | SME -> "Enable FEAT_SME, Scalable Matrix Extension (AArch64 only)"
+  | SMELength _ -> "Configure SME vector length (AArch64 only)"
+  | Deps -> ""
+  | Instances -> ""
+  | VMSA -> "Generate implicit effects for the Virtual Memory System Architecture (AArch64 only)"
+  | ETS -> "Enable FEAT_ETS, Enhanced Translation Synchronization (deprecated)"
+  | ETS2 -> "Enable FEAT_ETS2"
+  | ETS3 -> "Enable FEAT_ETS3"
+  | ExS -> "Enable FEAT_ExS, Enhanced Exception Synchronization (AArch64 only)"
+  | EIS -> "If FEAT_ExS is enabled, configure the effect of certain Exception entry events, see SCTLR_ELx.EIS (AArch64 only)"
+  | EOS -> "If FEAT_ExS is enabled, configure the effect of an Exception return, see SCTLR_ELx.EOS (AArch64 only)"
+  | NoPteBranch -> "Disable branching events between PTE reads and accesses"
+  | PTE2 -> "Perform a table walk for each memory access, including page tables"
+  | PhantomOnLoad -> ""
+  | OptRfRMW -> ""
+  | ConstrainedUnpredictable -> ""
+  | Exp -> ""
+  | Ifetch -> "Enable instruction fetch for self-modifying code"
+  | DIC -> "Skip instruction cache invalidation for data to instruction coherence"
+  | IDC -> "Skip data cache clean for instruction to data coherence"
+  | CosOpt -> ""
+  | Test -> ""
+  | T _ -> "T<n> is a flag available for use in the cat file as `variant \"T<n>\"`"
+  | ASL -> "Use semantics of instruction extracted from the published ASL code (AArch64 only)"
+  | ASL_AArch64 -> "Make the shared ASL code available in the environment (ASL only)"
+  | ASLVersion `ASLv0 -> "Use the v0 version of the language (ASL only)"
+  | ASLVersion `ASLv1 -> "Use the v1 version of the language (ASL only)"
+  | S128 -> ""
+  | Strict -> "Fail on non-supported instruction (AArch64+ASL only)"
+  | Warn -> "Warn on non-supported instruction (AArch64+ASL only)"
+  | ASLType `Warn -> "Warn on type-checking error (AArch64+ASL only)"
+  | ASLType `Silence -> "Silence type-checking errors (AArch64+ASL only)"
+  | ASLType `TypeCheck -> "Fail on type-checking error (AArch64+ASL only)"
+  | ASL_AArch64_UDF -> "Allow executing the code for the UDF instruction (AArch64+ASL only)"
+  | Telechat -> ""
+  | NV2 -> "Enable enhanced nested virtualisation, which redirects register accesses that would be trapped to memory accesses instead"
+  | OldSolver -> "Use a fix-point solver instead of topological solver"
+  | OOTA -> "Allow Out Of Thin Air values, i.e. allow unsolved equations at the end of the solver phase"
+  | Pac -> "Enable pointer authentication (AArch64 only)"
+  | ConstPacField -> "When using pointer authentication, enable FEAT_CONSTPACFIELD, PAC algorithm enhancement (AArch64 only)"
+  | FPac -> "When using pointer authentication, enable faulting on an AUT* instruction (AArch64 only)"
+  | D128 -> "Use 128-bit page table descriptors (AArch64+ASL+VMSA only)"
+
+let mode_tags =
+  let starts_with prefix s =
+    let plen = String.length prefix in
+    String.length s >= plen && String.sub s 0 plen = prefix
+  in
+  let normalise_tag = function
+    | "T00" -> "T[0-9][0-9]"
+    | tag when starts_with "sve:" tag -> "sve:128*n"
+    | tag when starts_with "sme:" tag -> "sme:128*m"
+    | s -> s
+  in
+  List.map normalise_tag (List.map pp mode_variants)
+let arch_tags =
+  List.map pp arch_variants
+
+let mode_help_tags =
+  let raw_tags =
+    List.combine mode_tags (List.map variant_descriptions mode_variants)
+  in
+  let with_doc, without_doc =
+    List.partition (fun (_tag, desc) -> String.length desc > 0) raw_tags
+  in
+  let tags_with_docs =
+    List.map (fun (tag, desc) -> Printf.sprintf "%s: %s" tag desc) with_doc
+  in
+  let no_docs =
+    List.map fst without_doc
+    |> String.concat ", "
+    |> ( ^ ) "Variants without documentation: "
+  in
+  tags_with_docs @ [no_docs]
+
+ let arch_help_tags =
+  List.map2 
+    (fun variant  description ->
+      variant ^ ": " ^ description)
+    arch_tags
+    (List.map variant_descriptions arch_variants)
+
+let help_message tags1 tags2 space =
+   Printf.sprintf "\n Use -variant <tags> where:\n Mode of Operation tags:\n  %s 
+    \n Architecture Feature tags:\n  %s \n" 
+  (String.concat space tags1) (String.concat space tags2) 
+let variants_help_page =
+  help_message mode_help_tags arch_help_tags "\n  "
+
+
+let tags = mode_tags @ arch_tags
 let compare = compare
 let equal v1 v2 = compare v1 v2 = 0
 

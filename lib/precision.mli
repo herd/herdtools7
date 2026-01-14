@@ -26,6 +26,8 @@ type t =
       to happen. (MTE) *)
 
 val default : t
+val all : t list
 val tags : string list
 val parse : string -> t option
+val alias : t -> string
 val pp : t -> string
