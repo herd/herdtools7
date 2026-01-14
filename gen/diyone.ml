@@ -17,20 +17,6 @@
 open Misc
 open Printf
 
-(* Configuration *)
-let norm = ref false
-let () = Config.nprocs := 1000
-let () = Config.numeric := true
-
-let opts =
-  Config.common_specs () @
-  ("-num", Arg.Bool (fun b -> Config.numeric := b),
-   sprintf "<bool> use numeric names, default %b" !Config.numeric)::
-  ("-norm",Arg.Set norm," find a normalised name for me")::
-  []
-
-
-
 module type Config = sig
   include Top_gen.Config
   include DumpAll.Config
@@ -193,7 +179,7 @@ let pp_es = ref []
 
 let () =
   Util.parse_cmdline
-    opts
+    (Config.diyone_spec ())
     (fun x -> pp_es := x :: !pp_es)
 
 let pp_es = List.rev !pp_es
@@ -237,7 +223,7 @@ let () =
     let cycleonly = !Config.cycleonly
     let metadata = !Config.metadata
 (* Specific *)
-    let norm = !norm
+    let norm = !Config.norm
     let cpp = cpp
     let scope = !Config.scope
     let docheck = !Config.docheck

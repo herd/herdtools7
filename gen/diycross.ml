@@ -17,24 +17,6 @@
 open Misc
 open Printf
 
-(* Configuration *)
-let use_eieio = ref true
-
-let () = Config.addnum := false
-let () = Config.numeric := false
-let () = Config.nprocs := 1000
-
-let opts =
-  Config.common_specs () @
-  ("-num", Arg.Bool (fun b -> Config.numeric := b),
-   sprintf "<bool> use numeric names, default %b" !Config.numeric)::
-  ("-noeieio", Arg.Clear use_eieio,
-   " ignore eieio fence (backward compatibility)")::
-  Config.varatomspec::[]
-
-
-
-
 module type Config = sig
   include DumpAll.Config
   val varatom : string list
@@ -101,7 +83,7 @@ let pp_es = ref []
 
 let () =
   Util.parse_cmdline
-    opts
+    (Config.diycross_spec ())
     (fun x -> pp_es := x :: !pp_es)
 
 let pp_es = List.rev !pp_es
@@ -170,7 +152,7 @@ let () =
         let module M = Make(C)(T(X86_64Compile_gen.Make(C))) in
         M.zyva
     | `PPC ->
-        let module PPCConf = struct let eieio = !use_eieio end in
+        let module PPCConf = struct let eieio = !Config.use_eieio end in
         let module M = Make(C)(T(PPCCompile_gen.Make(C)(PPCConf))) in
         M.zyva
     | `ARM ->

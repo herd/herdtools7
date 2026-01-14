@@ -189,9 +189,6 @@ let exec_conf s =
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
 
-let speclist =
-  Config.speclist () @ [Config.varatomspec]
-
 let split_cands xs =
   match
     List.concat (List.map LexUtil.split xs)
@@ -200,7 +197,7 @@ let split_cands xs =
   | _::_ as xs -> Some xs
 
 let () =
-  Arg.parse speclist get_arg Config.usage_msg;
+  Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
   begin
   match !Config.conf with
   | None -> ()
