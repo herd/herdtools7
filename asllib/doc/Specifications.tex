@@ -148,7 +148,7 @@ order the declarations such that false \typingerrorsterm{} are avoided.
 \ExampleDef{Typechecking a List of Global Declarations}
 The specification in \listingref{TypeCheckAST} contains numerous global declarations.
 
-\ASLListing{Typechecking a list of global declarations}{TypeCheckAST}{\typingtests/TypingRule.TypecheckAST.asl}
+\ASLListing{Typechecking a list of global declarations}{TypeCheckAST}{\typingtests/TypingRule.TypeCheckAST.asl}
 
 The typechecker first processes subprogram overrides. Since there are none in this specification,
 the list of global subprogram declarations remains the same.
@@ -541,7 +541,7 @@ The definition of \verb|Foo| is overridden by a corresponding \Proseimplementati
 Subprograms marked with \texttt{implementation} are subject to the following restrictions.
 
 \RequirementDef{NonClashingImplementations}
-No two \Proseimplementationsubprograms{} can \\
+No two \Proseimplementationsubprograms{} can \linebreak[3]
 match each other according to \RequirementRef{OverridingMatch}.
 In \ExampleRef{Invalid Overriding}, the \verb|Foo| subprograms marked \texttt{implementation}
 match and are therefore invalid.
