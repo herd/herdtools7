@@ -6,3 +6,11 @@
 \newcommand{\mathhypertarget}[1]{\tgt@none{#1}}
 \let\texthypertarget\tgt@none
 \newenvironment{flalign*}{\align*}{\endalign*}
+\newcommand{\DeclareMathOperator}[2]{\newcommand{#1}{\mathop{\mbox{#2}}}}
+%\newcommand{\xlongrightarrow}[2][]{\longrightarrow^{#2}_{#1}}
+\newcommand{\derivesinline}{\longrightarrow^{\text{\scriptsize{}inline}}}
+\DeclareSymbolHtml{\mytimes}{X2A09}
+\newcommand{\bigtimes}{{\DisplayChoose\Huge\Large\mytimes}}
+\let\old@not\not
+\renewcommand{\not}[1]
+{\def\@arg{#1}\def\@cmp{\inlist}\ifx\@arg\@cmp\old@not\in\else\old@not#1\fi}
