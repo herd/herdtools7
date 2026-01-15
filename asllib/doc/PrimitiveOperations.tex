@@ -1600,7 +1600,7 @@ and as $0$ for an empty bit sequence:
 \begin{mathpar}
 \inferrule[add\_bits]{
   \vvone = \LBitvector(a_{k..0})\\
-  \vvtwo = \LBitvector(b_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\hva\\
   a \eqdef \binarytounsigned(a_{k..0})\\
   b \eqdef \binarytounsigned(b_{k..0})\\
   c \eqdef \inttobits(a + b, k)
@@ -1612,7 +1612,7 @@ and as $0$ for an empty bit sequence:
 \begin{mathpar}
 \inferrule[sub\_bits]{
   \vvone = \LBitvector(a_{k..0})\\
-  \vvtwo = \LBitvector(b_{k..0})\\
+  \vvtwo = \LBitvector(b_{k..0})\hva\\
   a \eqdef \binarytounsigned(a_{k..0})\\
   b \eqdef \binarytounsigned(b_{k..0})\\
   c \eqdef \inttobits(a - b, k)

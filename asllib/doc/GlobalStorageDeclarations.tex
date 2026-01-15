@@ -434,7 +434,7 @@ of an ill-typed global storage declaration due to precision loss.
 \withemptylocal(\genv) \typearrow \tenv\\
 {
   \begin{array}{l}
-    \vmustbepure \eqdef \hfill \\
+    \multicolumn{1}{l}{\vmustbepure \eqdef} \\
     \choice{\keyword \in \{\GDKConstant, \GDKConfig\}}{\True}{\False}
   \end{array}
 }\\
@@ -859,10 +859,11 @@ This section defines the following relations:
 Evaluating the global storage declarations in \listingref{EvalGlobals}
 results in updating the $\storage$ map of the global dynamic environment by binding
 \verb|PI| to $\nvreal(157/50)$,
-\verb|PC| to \\
-$\nvbitvector(\overbrace{0 \ldots 0}^{32})$,
-\verb|MaxIrq| to $\nvint(480)$, and
-\verb|Regs| to
+\verb|PC| to
+\[
+\nvbitvector(\overbrace{0 \ldots 0}^{32})\enspace,
+\]
+\verb|MaxIrq| to $\nvint(480)$, and \verb|Regs| to
 \[
 \NVVector( [\overbrace{\nvbitvector(\overbrace{0 \ldots 0}^{32}) \ldots \nvbitvector(\overbrace{0 \ldots 0}^{32})}^{16}] ) \enspace.
 \]
