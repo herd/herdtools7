@@ -502,14 +502,14 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 \begin{mathpar} % SUPPRESS_TEXTTT_LINTER
 \inferrule{
   \src = \overname{0}{\vs_5}\overname{0}{\vs_4}\overname{0}{\vs_3}\overname{0}{\vs_2}\overname{0}{\vs_1}\overname{0}{\vs_0}\\
-  \dst = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\\
+  \dst = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\hva\\
   \slicestopositions(8, [\overname{(0, 4)}{\texttt{3:0}}, \overname{(6, 2)}{\texttt{7:6}}]) \evalarrow
-  [3, 2, 1, 0, 7, 6]\\
+  [3, 2, 1, 0, 7, 6]\hva\\
   \positions \eqdef [\overname{3}{I_5}, \overname{2}{I_4}, \overname{1}{I_3}, \overname{0}{I_2}, \overname{7}{I_1}, \overname{6}{I_0}]\\
   {\bitfunc = \lambda i \in 7..0.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in 5..0.\ i = I_j\\
     \vd_i & \text{otherwise}
-  \end{array} \right.}\\
+  \end{array} \right.}\hva\\
   \vbits \eqdef \bitfunc(7)\ \bitfunc(6)\ \bitfunc(5)\ \bitfunc(4)\ \bitfunc(3)\ \bitfunc(2)\ \bitfunc(1)\ \bitfunc(0)
 }{
   {

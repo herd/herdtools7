@@ -95,27 +95,22 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
   \buildexpr(\vinitialvalue) \typearrow \astof{\vinitialvalue}
 }{
   {
-      \builddecl\left(\overname{\Ndecl\left(
-      \begin{array}{r}
-      \namednode{\vkeyword}{\Nglobaldeclkeywordnonconfig}, \\
-      \wrappedline\ \Tidentifier(\name), \\
-      \wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
-      \end{array}
-  \right)}{\vparsednode}\right)
-  } \astarrow \\
-  {
-    \overname{\left[
-  \DGlobalStorage\left(\left\{
-    \begin{array}{rcl}
-    \GDkeyword &:& \astof{\vkeyword},\\
-    \GDname &:& \astof{\name},\\
-    \GDty &:& \ttyp,\\
-    \GDinitialvalue &:& \astof{\vinitialvalue}
-  \end{array}
-  \right\}\right)
-  \right]}{\vastnode}
-  }
-}
+\builddecl\left(\overname{\Ndecl\left(
+\begin{array}{r}
+\namednode{\vkeyword}{\Nglobaldeclkeywordnonconfig}, \\
+\wrappedline\ \Tidentifier(\name), \\
+\wrappedline\ \namednode{\tty}{\option{\Nasty}}, \Teq, \namednode{\vinitialvalue}{\Nexpr}, \Tsemicolon
+\end{array}
+\right)}{\vparsednode}\right)} \astarrow \\
+{\overname{\left[\DGlobalStorage\left(\left\{
+\begin{array}{rcl}
+\GDkeyword &:& \astof{\vkeyword},\\
+\GDname &:& \astof{\name},\\
+\GDty &:& \ttyp,\\
+\GDinitialvalue &:& \astof{\vinitialvalue}
+\end{array}
+\right\}\right)
+\right]}{\vastnode}}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -144,16 +139,13 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
     \begin{array}{l}
   i \in \listrange(\vidasts): \\
     \vdecl[i] \eqdef \DGlobalStorage\left(
-      \left\{
-      \begin{array}{rcl}
-        \GDkeyword&:& \GDKVar,\\
-        \GDname&:& \vidasts[i],\\
-        \GDty&:& \some{\astof{\vasty}},\\
-        \GDinitialvalue&:& \None
-      \end{array}
-      \right\}\right)
-    \end{array}
-  } \\
+  \left\{\begin{array}{rcl}
+      \GDkeyword&:& \GDKVar,\\
+      \GDname&:& \vidasts[i],\\
+      \GDty&:& \some{\astof{\vasty}},\\
+      \GDinitialvalue&:& \None
+  \end{array}\right\}\right)
+  \end{array}} \hva\\
   \vastnode \eqdef [i \in \listrange(\vidasts): \vdecl[i]]
 }{
   \builddecl(\overname{\Ndecl(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode}) \astarrow \vastnode
@@ -184,19 +176,18 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
 \begin{mathpar}
 \inferrule[global\_storage\_elided\_parameter]{
   \buildglobaldeclkeyword(\keyword) \astarrow \astof{\keyword}\\
-  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
+  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \hva\\
   \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr
 }{
   {
-      \builddecl\left(\overname{\Ndecl\left(
-      \begin{array}{r}
-      \namednode{\vkeyword}{\Nglobaldeclkeywordnonconfig}, \Tidentifier(\name), \\
-      \wrappedline\ \Tcolon, \punnode{\Nty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
-      \end{array}
-  \right)}{\vparsednode}\right)
+\builddecl\left(\overname{\Ndecl\left(
+ \begin{array}{r}
+  \namednode{\vkeyword}{\Nglobaldeclkeywordnonconfig}, \Tidentifier(\name), \\
+  \wrappedline\ \Tcolon, \punnode{\Nty}, \Teq, \namednode{\vcall}{\Nelidedparamcall}, \Tsemicolon
+ \end{array}\right)}{\vparsednode}\right)
   } \astarrow \\
   {
-    \overname{\left[
+\overname{\left[
   \DGlobalStorage\left(\left\{
     \begin{array}{rcl}
     \GDkeyword &:& \astof{\vkeyword},\\
@@ -220,7 +211,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
     \end{array}
   \right)
   }\\
-  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \\
+  \buildelidedparamcall (\vcall) \astarrow \astversion{\vcall} \hva\\
   \desugarelidedparameter(\astof{\tty}, \astversion{\vcall}) \astarrow \vexpr\\
   {
   \vastnode \eqdef \DGlobalStorage\left(\left\{
@@ -429,9 +420,9 @@ of an ill-typed global storage declaration due to precision loss.
     \GDinitialvalue : \initialvalue,
     \GDty : \tyopt,
     \GDname: \name
-  \}\\
-\checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
-\withemptylocal(\genv) \typearrow \tenv\\
+  \}\hva\\
+\checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
+\withemptylocal(\genv) \typearrow \tenv\hva\\
 {
   \begin{array}{l}
     \multicolumn{1}{l}{\vmustbepure \eqdef} \\
@@ -457,10 +448,10 @@ of an ill-typed global storage declaration due to precision loss.
       \end{array}
       \right) \OrTypeError
   \end{array}
-}\\
-\addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\hva\\\\
+}\hva\\
+\addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\\\\
 \withemptylocal(\genvone) \typearrow \tenvone\hva\\\\
-\typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
+\typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\hva\\
 {
     \updateglobalstorage\left(
       \begin{array}{l}
@@ -709,7 +700,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
-  \staticeval(\tenv, \initialvaluep) \typearrow \vv\\
+  \staticeval(\tenv, \initialvaluep) \typearrow \vv\hva\\
   \addglobalconstant(\tenv.\staticenvsG, \name, \vv) \typearrow G'\\
   \newtenv \eqdef \{\staticenvsG: G', \staticenvsL: \tenv.\staticenvsL\}
 }{
@@ -909,7 +900,7 @@ before having the chance to evaluate \verb|main|.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\some{\ve}, \GDname:\name, \ldots \})\\
-  \envm \eqname (\env, \vgone)\\
+  \envm \eqname (\env, \vgone)\hva\\
   \evalexpr( \env, \ve) \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\hva\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
   \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C

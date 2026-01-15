@@ -186,13 +186,13 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \begin{mathpar}
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
-  \vsesargs \eqdef \bigcup \vsessargs \\
+  \vsesargs \eqdef \bigcup \vsessargs \hva\\
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \name, \argtypes, \calltype) \typearrow \\
       (\nameone, \funcsig, \vsescall) \OrTypeError
     \end{array}
-  }\\
+  }\hva\\
   \vses \eqdef \vsesargs \cup \vsescall\\
   \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\hva\\\\
   \equallength(\funcsig.\FIELDparameters, \paramsone) \typearrow \paramaritymatch \hva\\\\
@@ -420,7 +420,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \hva\and
 \inferrule[parameterized]{
   \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
-  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
+  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\hva\\
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\hva\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
@@ -432,12 +432,12 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \hva\and
 \inferrule[other]{
   \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
-  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
+  \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\hva\\
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\hva\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \tydeclopt \eqname \some{\tydecl}\\
-  \tydecl \neq \TInt(\Parameterized(\vx))\\
+  \tydecl \neq \TInt(\Parameterized(\vx))\hva\\
   \checktypesatisfies(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\hva\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
@@ -510,7 +510,7 @@ requires substituting \verb|8| for \verb|N| in the types
 }
 \hva\and
 \inferrule[t\_int\_wellconstrained]{
-  \vi\in\listrange(\constraints): \substconstraint(\tenv, \constraints[\vi]) \typearrow \newc_\vi\\
+  \vi\in\listrange(\constraints): \substconstraint(\tenv, \constraints[\vi]) \typearrow \newc_\vi\hva\\
   \newconstraints \eqdef [\vi\in\listrange(\constraints): \newc_\vi]\\
   \newty \eqdef \TInt(\WellConstrained(\newconstraints))
 }{
@@ -1459,7 +1459,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
   \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
-  \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \hva\\
   \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
   \astlabel(\vtstruct) \in \{\TBool, \TInt, \TReal, \TString, \TBits\}
 }{
@@ -1495,7 +1495,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
   \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
-  \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
+  \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \hva\\
   \booltrans(n = k) \booltransarrow \True \terminateas \False\\
   i=1..k: \typeclashes(\tenv, \vt_i, \vs_i) \typearrow \vb_i\\
   \vb \eqdef \bigwedge_{\vi=1}^k \vb_i
@@ -1521,7 +1521,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
   \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
-  \tstruct(\tenv, \vs) \typearrow \vsstruct \\
+  \tstruct(\tenv, \vs) \typearrow \vsstruct \hva\\
   \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
   \astlabel(\vtstruct) \in \{\TRecord, \TException, \TCollection\}
 }{
@@ -1775,13 +1775,13 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
       &&\ldots
       \end{array}
       \right\}
-  }\\
+  }\hva\\
   \envone \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \emptyfunc\})\\
   \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\hva\\\\
   \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
-  \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
+  \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\hva\\
   \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
-  \assignargs((\envtwo, \vgtwo), \paramnames, \paramdecls) \evalarrow (\envthree, \vgthree)\\
+  \assignargs((\envtwo, \vgtwo), \paramnames, \paramdecls) \evalarrow (\envthree, \vgthree)\hva\\
   \evalstmt(\envthree, \vbody) \evalarrow \vres \OrAbnormal\\
   \matchfuncres(\vres) \evalarrow C\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\vgthree}}\\

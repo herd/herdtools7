@@ -233,18 +233,18 @@ and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which i
 \begin{mathpar}
 \inferrule{
   \overridesubprograms(\decls) \typearrow \declsp \OrTypeError \hva\\\\
-  \pragmas \eqdef [\ \vd \;|\; \vd \in \declsp\ \land \astlabel(\vd) = \DPragma\ ]\\
+  \pragmas \eqdef [\ \vd \;|\; \vd \in \declsp\ \land \astlabel(\vd) = \DPragma\ ]\hva\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
     \vd & \vd \in \declsp\ \land \astlabel(\vd) \neq \DPragma
   \end{array}\right]
   }\\
-  \builddependencies(\others) \typearrow (\defs, \dependencies)\\
+  \builddependencies(\others) \typearrow (\defs, \dependencies)\hva\\
   \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
-  \SCC(\defs, \reverseddependencies) = \comps\\
+  \SCC(\defs, \reverseddependencies) = \comps\hva\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
-  \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\\
-  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \hva\\\\
+  \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\hva\\
+  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError\hva\\\\
   \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
   \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
@@ -389,7 +389,7 @@ since it contains recursive type declarations.
     \end{array}
   }\hva\\\\
   \newdecls \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
-  \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\\
+  \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\hva\\
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
   \addsubprogramdecls(\tenvtwo, \vsess) \typearrow \tenvthree
 }{
@@ -585,12 +585,12 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 \begin{mathpar}
 \inferrule{
   \vimpdefs \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Impdef] \\
-  \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \\
+  \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \hva\\
   \vnormal \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride \notin \{\Impdef, \Implementation\}] \\
   \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \hva\\\\
   \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \hva\\\\
   \renamesubprograms(\vdiscarded) \typearrow \vrenameddiscarded \\
-  \voverridden \eqdef \vimpdefsp \concat \vimpls \\
+  \voverridden \eqdef \vimpdefsp \concat \vimpls \hva\\
   {
   \declsp \eqdef
   \begin{array}{ll}
@@ -659,8 +659,8 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \begin{mathpar}
   \inferrule{
     \booltrans(\vfuncone.\FIELDname = \vfunctwo.\FIELDname) \booltransarrow \True \terminateas \False \\
-    \booltrans(\vfuncone.\funcqualifierfield = \vfunctwo.\funcqualifierfield) \booltransarrow \True \terminateas \False \\
-    \equallength(\vfuncone.\FIELDargs, \vfunctwo.\FIELDargs) \typearrow \True \terminateas \False \\
+    \booltrans(\vfuncone.\funcqualifierfield = \vfunctwo.\funcqualifierfield) \booltransarrow \True \terminateas \False \hva\\
+    \equallength(\vfuncone.\FIELDargs, \vfunctwo.\FIELDargs) \typearrow \True \terminateas \False \hva\\
     {
     \begin{array}{r}
       i \in \indices(\vfuncone.\FIELDargs),\;
@@ -668,7 +668,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
         \vfunctwo.\FIELDargs[i] \eqname (\idtwo, \ttytwo): \\
         \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbone_{i}
     \end{array}
-    } \\
+    } \hva\\
     \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDargs)} \vbone_{i}) \booltransarrow \True \terminateas \False \\
     {
     \begin{array}{l}
@@ -677,7 +677,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
         \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \\
         \multicolumn{1}{r}{\booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}}
     \end{array}
-    } \\
+    } \hva\\
     \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDparameters)} \vbtwo_{i}) \booltransarrow \True \terminateas \False \\
     \booltrans(\vfuncone.\FIELDreturntype = \vfunctwo.\FIELDreturntype) \booltransarrow \True \terminateas \False
   }{
@@ -720,7 +720,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
 \begin{mathpar}
 \inferrule[non\_empty]{
   i \in \listrange(\vimpdefs): \signaturesmatch(\vh, \vimpdefs[i]) \typearrow \vb_i \\
-  \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
+  \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \hva\\
   \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
   \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \hva\\\\
   \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)\\
