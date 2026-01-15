@@ -1,8 +1,8 @@
-AArch64 A_warn
+AArch64 W001
 {
 }
 
-P0;
+  P0        ;
   MOV X1, #1;
 
 exists (x=3)

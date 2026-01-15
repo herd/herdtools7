@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64/W008.litmus": Post-condition introduces new symbolic location(s): {P0:L1} (User error)

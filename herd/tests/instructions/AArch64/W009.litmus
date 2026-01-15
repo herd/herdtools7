@@ -1,0 +1,7 @@
+AArch64 W009
+{
+}
+ P0        ;
+L0:        ;
+ ADR X0,L0 ;
+forall(0:X0=label:"0:L1")
