@@ -1,0 +1,1 @@
+Warning: File "./herd/tests/instructions/AArch64.vmsa+ifetch/A003.litmus": Segmentation fault (kidding, address 0x196a0 does not point to code) (User error)

@@ -445,8 +445,19 @@ let do_mk_sym sym = match Misc.tr_pte sym with
     | Some s -> Physical (s,0)
     | None -> do_mk_virtual sym
 
+let mk_sym_physical_label_from_virt = function
+  | Symbolic (Virtual {name=Symbol.Label (p,s); offset=o; _ }) ->
+      Symbolic (Physical (sprintf "%i:%s" p s,o))
+  | _ -> assert false
+
 let mk_sym_virtual_label p lbl = Symbolic (do_mk_virtual_label_with_offset p lbl 0)
 let mk_sym_virtual_label_with_offset p lbl o = Symbolic (do_mk_virtual_label_with_offset p lbl o)
+
+let unmk_sym_virtual_label_with_offset = function
+  | Symbolic (Virtual {name=Symbol.Label (p,s); offset=o; _})
+      -> (p,s,o)
+  | _ -> assert false
+
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
@@ -513,12 +524,14 @@ let is_label = function
       false
 
 let as_label = function
-  | Symbolic (Virtual ({name=Symbol.Label (p,lbl); _})) -> Some (p,lbl)
+  | Symbolic (Virtual ({name=Symbol.Label (p,lbl); offset=idx; _})) -> assert (idx==0); Some (p,lbl)
   | Concrete _ | ConcreteVector _ | ConcreteRecord _ | Symbolic _ | Tag _
   | PteVal _ | AddrReg _ | Instruction _ | Frozen _ ->
       None
 
 let is_non_mixed_symbol = function
+  | Physical (s,_) when (s |> Symbol.of_string |> Symbol.is_label)
+    -> true
   | Virtual {offset=idx;_}
   | Physical (_,idx)
   | TagAddr (_,_,idx)
@@ -560,8 +573,8 @@ let as_symbolic_data =function
 
 let of_symbolic_data sym = Symbolic (Virtual sym)
 
-let as_pte v = match v with
-| Symbolic (System ((PTE|PTE2),_)) -> Some v
+let as_pte_arg v = match v with
+| Symbolic (System ((PTE|PTE2),arg)) -> Some arg
 | _ -> None
 
 let is_pt v = match v with
