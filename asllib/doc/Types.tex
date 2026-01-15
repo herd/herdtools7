@@ -722,13 +722,13 @@ The width of a \bitvectortypeterm{} can be either \staticallyevaluableterm{}
 or \emph{constrained}. That is, a \symbolicallyevaluableterm{} \constrainedintegerterm{}.
 
 \ExampleDef{Symbolic and Constrained Bitwidth}
-\listingref{symbolic_bitwidth} shows an example of a bitvector whose width
+\listingref{symbolicbitwidth} shows an example of a bitvector whose width
 is symbolic --- \verb|2 * N| and a bitvector whose width is determined
 by a constrained type \verb|integer{4, 8}|.
-\ASLListing{Constrained bitwidth and symbolic bitwidth}{symbolic_bitwidth}{\definitiontests/symbolic_bitwidth.asl}
+\ASLListing{Constrained bitwidth and symbolic bitwidth}{symbolicbitwidth}{\definitiontests/symbolic_bitwidth.asl}
 
-\listingref{constrained_bitwidth} shows more examples of constrained bitwidths.
-\ASLListing{Constrained bitwidths}{constrained_bitwidth}{\definitiontests/constrained_bitwidth.asl}
+\listingref{constrainedbitwidth} shows more examples of constrained bitwidths.
+\ASLListing{Constrained bitwidths}{constrainedbitwidth}{\definitiontests/constrained_bitwidth.asl}
 
 \ExampleDef{Rotating a Bitvector}
 \listingref{bits-rotate} shows a specification where the width of the bitvector type

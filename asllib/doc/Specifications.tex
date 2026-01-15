@@ -671,11 +671,11 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
     } \\
     \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDargs)} \vbone_{i}) \booltransarrow \True \terminateas \False \\
     {
-    \begin{array}{r}
-      i \in \indices(\vfuncone.\FIELDparameters), \hfill \\
+    \begin{array}{l}
+      i \in \indices(\vfuncone.\FIELDparameters), \\
         \vfuncone.\FIELDparameters[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \hfill \\
-        \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}
+        \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \\
+        \multicolumn{1}{r}{\booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}}
     \end{array}
     } \\
     \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDparameters)} \vbtwo_{i}) \booltransarrow \True \terminateas \False \\
