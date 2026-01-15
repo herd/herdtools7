@@ -216,9 +216,9 @@ That is, no \dynamicerrorterm{} occurs.
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
   \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\\
-  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
+  \envthrow \eqname (\tenv, \denvthrow)\hva\\
+  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\hva\\
+  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{C}{\newg}
@@ -261,14 +261,14 @@ caught MyExceptionType with msg=42
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
   \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\\
+  \envthrow \eqname (\tenv, \denvthrow)\hva\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
-  \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
+  \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\hva\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
   \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \envthree \eqdef \environof{C}\\
   \removelocal(\envthree, \name) \evalarrow \envfour\\
-  D \eqdef \withenviron{C}{\envfour}\\
+  D \eqdef \withenviron{C}{\envfour} \hva\\
   \newg \eqdef \ordered{\sg}{\aslpo}{ \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\graphof{D}} }
 }{
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{D}{\newg}
@@ -307,7 +307,7 @@ Otherwise
 \inferrule{
   \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
   \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\\
+  \envthrow \eqname (\tenv, \denvthrow)\hva\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}

@@ -424,7 +424,7 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \begin{mathpar}
 \inferrule{
   \filteroptionlist(\fieldopts) \aslto \fields\\
-  \checknoduplicates(\fields) \typearrow \True \OrTypeError \\
+  \checknoduplicates(\fields) \typearrow \True \OrTypeError \hva\\
   i \in 1..|\fieldopts|: \desugarlhsfieldopt(\id, \fieldopts[i]) \astarrow \vlexpr_i \\
   \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
 }{
@@ -927,7 +927,7 @@ for examples of well-typed assignable array expressions.
   \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesbase \cup \vsesindex \\
   \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
-  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
+  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\hva\\
   {
   \newle \eqdef \begin{cases}
     \newleint & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
@@ -966,14 +966,14 @@ of \texttt{my\_array} to the value \texttt{53}.
   \item the steps so far computed the updated array, but have not assigned it to the variable
   bound to the array given by $\rearray$, which is achieved next.
   Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
-  is the output configuration $C$.
+  is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvint(\vi)\\
   \rmarray \eqname (\rvarray, \vgtwo)\\
@@ -1014,17 +1014,17 @@ cell of
   \item the steps so far computed the updated array, but have not assigned it to the variable
   bound to the array given by $\rearray$, which is achieved next.
   Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
-  is the output configuration $C$.
+  is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvlabel(\vl)\\
-  \rmarray \eqname (\rvarray, \vgtwo)\\
+  \rmarray \eqname (\rvarray, \vgtwo)\hva\\
   \setfield(\vl, \vv, \rvarray) \evalarrow \vvone\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr(\envtwo, \rearray, \vmone) \evalarrow C
@@ -1078,7 +1078,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vsesone) \OrTypeError\\
   \annotateslices(\tenv, \slices) \typearrow (\slicesannotated, \sesslices) \OrTypeError\hva\\\\
   \sliceswidth(\tenv, \slicesannotated) \typearrow \widthp\\
-  \normalize(\tenv, \widthp) \typearrow \vwidth\\
+  \normalize(\tenv, \widthp) \typearrow \vwidth\hva\\
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
   \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \checkdisjointslices(\tenv, \slicesannotated) \typearrow \True \OrTypeError\hva\\\\
@@ -1139,17 +1139,17 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
   \item the steps so far computed the updated bitvector, but have not assigned it to the
   variable bound to the bitvector given by $\ebv$, which is achieved next.
   Evaluating the left-hand-side expression $\ebv$ with
-  $\newmbv$ in an environment $\envtwo$ is the output configuration $C$.
+  $\newmbv$ in an environment $\envtwo$ is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\ebv)) \evalarrow \ResultExpr(\mbv,\envone) \OrAbnormal\\
-  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\\
+  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\hva\\
   \msliceranges \eqname (\sliceranges, \vgone)\\
   \mbv \eqname (\vbv, \vgtwo)\hva\\\\
-  \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\hva\\\\
+  \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
   \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\hva\\\\
   \vgthree \eqdef \vgone \parallelcomp \vgtwo\\
   \newmbv \eqdef (\vvone, \vgthree)\\
@@ -1220,7 +1220,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \inferrule{
   \evalbinop(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
   \evalbinop(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
-  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
+  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\hva\\
   \evalbinop(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
   \evalbinop(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
   \techeck(\vb, \OverlappingSliceAssignment) \typearrow \True\OrDynError
@@ -1418,7 +1418,7 @@ in the environment where \verb|my_record| is bound to \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
+    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\hva\\
     \rmrecord \eqname (\rvrecord, \vgone)\\
     \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
     \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
@@ -1715,7 +1715,7 @@ $\nvbitvector('11111111 0000000000000000 1')$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \fields = [\fieldname]\concat\fieldsone\\
-  \vslices = [(\vione, \vitwo)]\concat\vslicesone\\
+  \vslices = [(\vione, \vitwo)]\concat\vslicesone\hva\\
   \vslice \eqdef [(\nvint(\vione), \nvint(\vitwo))]\\
   \readfrombitvector(\vbitvector, \vslice) \evalarrow \recordslices \OrDynError\hva\\\\
   \setfield(\fieldname, \recordslices, \record) \evalarrow \recordone\\
@@ -1768,10 +1768,10 @@ All of the collection field assignable expressions in
 \inferrule{
   \vle = \LESetCollectionFields(\vbase, \fieldnames, \vslices)\\
   \env \eqname (\tenv, \denv)\\
-  \vbase \in \dom(\denv.\dynamicenvsG)\\
+  \vbase \in \dom(\denv.\dynamicenvsG)\hva\\
   \record \eqdef \denv.\dynamicenvsG[\vbase]\\
   \assignbitvectorfields(\vv, \record, \fieldnames, \vslices) \evalarrow \recordone \OrDynError\hva\\\\
-  \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
+  \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\hva\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG[\vx \mapsto \recordone], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
 }{
@@ -1905,7 +1905,7 @@ are well-typed.
   \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
-  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\hva\\
   \vtp \eqdef \TBits(\vw , \emptylist)\\
   \checktypesatisfies(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\hva\\\\
   \commonsuffixline\hva\\\\

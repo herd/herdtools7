@@ -688,7 +688,7 @@ shown here:
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
   \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
@@ -778,7 +778,7 @@ Consider the following examples, which is a simplified version of \SemanticsRule
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \hva\\\\
@@ -918,7 +918,7 @@ This time, not simplified:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv\; \terminateas\; \DynErrorConfig\hva\\\\
@@ -1014,7 +1014,7 @@ Expanding the last transition judgment, gives us the case:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig

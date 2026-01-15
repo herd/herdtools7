@@ -828,8 +828,8 @@ to be \constrainedintegersterm.
 \inferrule[with\_bitfields]{
   \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
-  \commonprefixline\\\\
+  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \bitfields \neq \emptylist\\\\
   \techeck(\sesispure(\seswidth), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
   {
@@ -837,7 +837,7 @@ to be \constrainedintegersterm.
     \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
     (\bitfieldsp, \vsesbitfields) \OrTypeError
   \end{array}
-  }\\
+  }\hva\\
   \staticeval(\tenv, \ewidthp) \typearrow \LInt(\vwidth) \OrTypeError\\\\
   \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \seswidth \cup \vsesbitfields
@@ -853,10 +853,10 @@ to be \constrainedintegersterm.
 
 \begin{mathpar}
 \inferrule[no\_bitfields]{
-  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\hva\\\\
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
-  \commonprefixline\\\\
+  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \bitfields = \emptylist
 }{
   {
@@ -1187,8 +1187,8 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
   \tty = \AbbrevTArrayLengthExpr{\ve}{\vt}\\
-  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \getvariableenum(\tenv, \ve) \typearrow \some{ \vs, \vlabels }
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow
@@ -1198,8 +1198,8 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 
 \begin{mathpar}
 \inferrule[expr\_not\_enum]{
-  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None\\
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\hva\\\\
   \vses \eqdef \vsest \cup \vsesindex

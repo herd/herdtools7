@@ -75,21 +75,21 @@ or a \dynamicerrorterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\hva\\\\
+    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\\\\
     \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\hva\\\\
-    \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\hva\\\\
-    \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
+    \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\\\\
+    \renamelocals(\vstdast) \astarrow \vstdastrenamed\hva\\
     {
     \begin{array}{r}
       \vi \in \listrange(\vstdastrenamed): \setbuiltin(\vstdastrenamed[\vi]) \typearrow \\
       \vstdasbuiltin[i] \OrBuildError
     \end{array}
-    }\\
-    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\hva\\\\
+    }\hva\\
+    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\\\\
     \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\hva\\\\
-    \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\hva\\\\
-    \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
-    \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\hva\\\\
+    \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
+    \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\hva\\
+    \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
     \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
 }{
     \checkandinterpret(\vspectext, \vstdtext) \longrightarrow (\nvint(\vret), \vg)
@@ -243,11 +243,11 @@ yielding the subprogram description $\vnewf$.
   \end{array}
   \right\}
   }
-  }\\
+  }\hva\\
   \renamelocalsargs(\args) \astarrow \newargs\\
-  \renamelocalsnamedargs(\params) \astarrow \newparams\\
+  \renamelocalsnamedargs(\params) \astarrow \newparams\hva\\
   \renamelocalsstmt(\vbody) \astarrow \vnewbody\\
-  \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\\
+  \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\hva\\
   {
     \vnewf \eqdef
     {
@@ -363,7 +363,7 @@ yielding the list of parameters $\newparams$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \params \eqname (\name,\tyopt) \cons \vargsone\\
-  \renamelocalsname(\name) \astarrow \namep\\
+  \renamelocalsname(\name) \astarrow \namep\hva\\
   \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
   \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
 }{
@@ -752,9 +752,9 @@ yielding the statement $\news$.
 \begin{mathpar}
 \inferrule[s\_for]{
   \renamelocalsexpr(\estart) \astarrow \estartp\\
-  \renamelocalsexpr(\eend) \astarrow \eendp\\
+  \renamelocalsexpr(\eend) \astarrow \eendp\hva\\
   \renamelocalsstmt(\vbody) \astarrow \vbodyp\\
-  \mapopt{\renamelocalsexpr}(\velimitopt) \astarrow \velimitoptp\\
+  \mapopt{\renamelocalsexpr}(\velimitopt) \astarrow \velimitoptp\hva\\
 }{
   {
   \begin{array}{r}
@@ -821,7 +821,7 @@ yielding the statement $\news$.
 \begin{mathpar}
 \inferrule[s\_try]{
   \renamelocalsstmt(\vsone) \astarrow \vsonep\\
-  \catchersp \eqdef [\vc\in\catchers: \renamelocalscatcher(\vc)]\\
+  \catchersp \eqdef [\vc\in\catchers: \renamelocalscatcher(\vc)]\hva\\
   \mapopt{\renamelocalsstmt}(\otherwiseopt) \astarrow \otherwiseoptp
 }{
   {

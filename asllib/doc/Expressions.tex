@@ -1280,7 +1280,7 @@ resulting bitvector --- and the execution graph $\vgone$;
   \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\hva\\\\
   \mbv \eqname (\vbv,\vgone) \\
   \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
-  \mpositions \eqname (\positions, \vgtwo) \\
+  \mpositions \eqname (\positions, \vgtwo) \hva\\
   \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -1442,11 +1442,11 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvint(\vi)\\
-  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\hva\\\\
+  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
   \evalexpr(\env, \EGetArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1479,11 +1479,11 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \begin{mathpar}
 \inferrule{
   \ve = \EGetEnumArray(\earray, \eindex)\\
-  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\\
+  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\hva\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
-  \vindex \eqname \nvlabel(\vl)\\
+  \vindex \eqname \nvlabel(\vl)\hva\\
   \getfield(\vl, \varray) \evalarrow \vv\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
@@ -2254,7 +2254,7 @@ All of the collection field expressions in
   \env \eqname (\Ignore, \denv)\\
   \vbase \in \dom(\denv.\dynamicenvsG.\storage) \\
   \vv \eqdef \denv.\dynamicenvsG.\storage(\vbase) \\
-  \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \\
+  \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \hva\\
   \vg \eqdef \left\{ \fieldname\in\vfieldnames: \ReadEffect(\vbase + \ttdotstr + \fieldname) \right\} \\
   \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \evalarrow \vv \\
 }{
@@ -3192,7 +3192,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \inferrule{
   \efields \eqname [i=1..k: (\id_i, \ve_i)]\\
   \names \eqdef \id_{1..k} \\
-  \fields \eqdef \ve_{1..k} \\
+  \fields \eqdef \ve_{1..k} \hva\\
   \evalexprlist(\env, \fields) \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
   \vvfields \eqname \vv_{1..k}\\
   \vv \eqdef \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\})

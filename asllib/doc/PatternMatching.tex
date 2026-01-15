@@ -186,13 +186,13 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[t\_bits]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TBits\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
   \bitwidthequal(\tenv, \vtstruct, \vtestruct) \typearrow \vb\\
   \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
@@ -202,15 +202,15 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[t\_enum]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TEnum\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
   \vtstruct \eqname \TEnum(\vlione)\\
-  \vtestruct \eqname \TEnum(\vlitwo)\\
+  \vtestruct \eqname \TEnum(\vlitwo)\hva\\
   \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
@@ -219,9 +219,9 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
   \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\

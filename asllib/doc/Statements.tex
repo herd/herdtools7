@@ -536,7 +536,7 @@ As given by applying the relevant rules to the desugared AST.
     \begin{array}{l}
   \vparsednode =\\ \Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)\\
   \end{array}
-  }\\
+  }\hva\\
   \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}\\
   \vastnode \eqdef \SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \some{\astof{\vexpr}})
 }{
@@ -559,7 +559,7 @@ As given by applying the relevant rules to the desugared AST.
 \begin{mathpar}
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
-  \buildasty(\vt) \astarrow \astversion{\vt} \\
+  \buildasty(\vt) \astarrow \astversion{\vt} \hva\\
   \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \None)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
@@ -999,7 +999,7 @@ The function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedpar
     \wrappedline\ \namednode{\vargs}{\PlistZero{\Nexpr}}
     \end{array}
     \right)
-  }\\
+  }\hva\\
   \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace, \vargs))
   \astarrow \vastnode
 }{
@@ -1619,12 +1619,12 @@ AST:
 \RenderType[remove_hypertargets]{case_alt}
 
 \ASTRuleDef{SCase}
-To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,\\
+To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,\linebreak[2]
 $\SUnreachable$ is used instead:
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
-  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\hva\\
   {
   \desugarcasestmt\left(
   \begin{array}{l}
@@ -1655,7 +1655,7 @@ $\SUnreachable$ is used instead:
 \begin{mathpar}
 \inferrule[otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
-  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\hva\\
   \buildstmtlist(\votherwise) \astarrow \astversion{\votherwise}\\
   {
   \desugarcasestmt\left(
@@ -1763,7 +1763,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \begin{mathpar}
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
-  \vx \in \Identifier \text{ is fresh}\\
+  \vx \in \Identifier \text{ is fresh}\hva\\
   \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
@@ -1823,7 +1823,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \begin{mathpar}
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
-  \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
+  \vepattern \eqdef \EPattern(\vezero, \vpattern)\hva\\
   {
   \vcond \eqdef \ifthenelsestmt{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
   }
@@ -2739,11 +2739,11 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
 \begin{mathpar}
 \inferrule[well\_constrained]{
   \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
-  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\\
-  \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\hva\\\\
+  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\hva\\
+  \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
   \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\hva\\\\
   \icsup \eqdef \WellConstrained([\ConstraintRange(\eonen, \etwon)])\\
-  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\\
+  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\hva\\
   \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
@@ -2930,9 +2930,9 @@ Advancing the loop counter one step towards the end of its range is achieved via
 \begin{mathpar}
 \inferrule{
   \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\hva\\
   \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
-  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
+  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\hva\\
   \env \eqname (\tenv, \denv)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
@@ -2950,7 +2950,7 @@ Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
   \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\hva\\\\
-  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
+  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\hva\\
   {
     \begin{array}{r}
       \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
@@ -2994,8 +2994,8 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   \commonprefixline\hva\\\\
   \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
   \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\hva\\\\
-  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-  \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\hva\\\\
+  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \hva\\
+  \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   {
@@ -3509,7 +3509,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vEs = [\ve] \concat \vesone\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\hva\\
   \evalexprlistm(\envone, \vesone) \evalarrow \ResultExprListM(\vmsone, \newenv) \OrAbnormal
 }{
   \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
@@ -3562,7 +3562,7 @@ empty \executiongraphterm{}.
   \vms = [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
   \wid \in \Identifier\text{ is fresh}\\
-  \writeidentifier(\wid, \vv) \evalarrow \vgone\\
+  \writeidentifier(\wid, \vv) \evalarrow \vgone\hva\\
   \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
   \vvs \eqdef [\vv] \concat \vvsone\\
   \newg \eqdef \ordered{\vg}{\aslpo}{\ordered{\vgone}{\asldata}{\vgtwo}}
@@ -3598,7 +3598,7 @@ empty \executiongraphterm{}.
 \begin{mathpar}
 \inferrule{%
   \vparsednode = \Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)\\
-  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \hva\\
   \vnewline \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
