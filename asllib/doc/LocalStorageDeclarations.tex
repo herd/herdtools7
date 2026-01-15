@@ -313,7 +313,7 @@ to the evaluation of \texttt{3} in $\env$.
   \newtenv_k \eqdef \tenv\\\\
   {
     \begin{array}{r}
-      i=k..1: \hfill \\
+      \multicolumn{1}{l}{i=k..1:} \\
       \quad \checkvarnotinenv(\newtenv_i, \vids_i) \typearrow \True \OrTypeError\\
       \quad \addlocal(\tenv, \vids_i, \vt_i, \ldk) \typearrow \newtenv_{i-1}
     \end{array}

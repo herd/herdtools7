@@ -1,0 +1,3 @@
+\ProvidesPackage{enumitem}
+\newcommand{\renewlist}[3]{}
+\newcommand{\setlist}[2][]{}
