@@ -81,7 +81,7 @@ let show_tests ?j flags =
           ~variants:flags.variants
           ~conf:flags.herd_conf
           ~libdir:flags.libdir
-          ~timeout:None in
+          ~timeout:None ~checkfilter:None ~speedcheck:None in
       let herd_dir = Filename.dirname flags.herd in
       let mapply = Filename.concat herd_dir "mapply7" in
       let args =

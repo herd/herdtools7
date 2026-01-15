@@ -53,4 +53,6 @@ jobs:
       - run: opam exec -- make build DUNE_PROFILE=dev
 
       - run: opam exec -- make test-all DUNE_PROFILE=dev
+        env:
+          ALL_TESTS: true
 
