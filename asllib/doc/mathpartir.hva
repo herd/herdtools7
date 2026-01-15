@@ -1,0 +1,189 @@
+%  Mathpartir --- Math Paragraph for Typesetting Inference Rules
+%
+%  Copyright (C) 2001--2005 Didier Rémy
+%  Hevea version by Luc Maranget
+%
+%  Author         : Didier Remy 
+%  Version        : 1.2
+%  Bug Reports    : to author
+%  Web Site       : http://pauillac.inria.fr/~remy/latex/
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  Mathpartir is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (http://pauillac.inria.fr/~remy/license/GPL).
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File mathpartir.hva (LaTeX macros)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% See the interface of mathpartir.sty
+% However, by default \\ does a vertical break in mathpar and a horizontal cut
+% in mathrule
+% 
+% Preceeding \\ by \hva \\ does a horizontal break in mathpar and a vertical
+% break in mathrule.
+%
+% \hva is ignored in latex more.
+
+\usepackage {keyval}
+\let\latexcr\\
+%%% Styles for mathpar
+\newcommand{\mp@row@style}
+  {border-collapse:separate;border-spacing:2ex;width:100\%;margin:0ex;}
+\newstyle{.mprow}{\mp@row@style}
+\newstyle{.vmprow}{\mp@row@style empty-cells:show; border:solid \@magenta{} 2px}
+\newcommand{\mp@cell@style}{padding:0px;width:auto;}
+\newstyle{.mprcell}{\mp@cell@style}
+\newstyle{.vmprcell}{\mp@cell@style border:dotted \@magenta{} 2px;}
+\setenvclass{mathpar}{mathpar}
+\ifverbd
+\setenvclass{mprow}{vmprow}
+\setenvclass{mprcell}{vmprcell}
+\else
+\setenvclass{mprow}{mprow}
+\setenvclass{mprcell}{mprcell}
+\fi
+%% Open/close table elements
+\def\open@mathpar@table{\@open{table}{\envclass@attr{mprow}}}
+\def\open@mprow{\@open{tr}{style="vertical-align:middle"}}
+\def\close@mprow{\@close{tr}}
+\def\open@mpcell{\@open{td}{\@addstyle{text-align:center}{\envclass@attr[ ]{mprcell}}}\displaymath}
+\def\close@mpcell{\enddisplaymath\@close{td}}
+\def\force@mpcell{\enddisplaymath\@force{td}}
+\def\open@mpfstcell{\open@mpcell}
+\def\close@mplstcell{\force@mpcell}
+\def\mathpar@hspace{\push@styles\close@mpcell\open@mpcell\pop@styles\@skip@blanks}
+\def\mathpar@vspace
+{\push@styles\close@mplstcell\close@mprow\@close{table}%
+\open@mathpar@table\open@mprow\open@mpfstcell\pop@styles\@skip@blanks}%
+\def\mathpar@hva#1{\ifx#1\and\mathpar@vspace\else\mathpar@hspace\fi}%
+%%exported mathpar
+\newenvironment{mathpar}[1][]
+  {\@open{div}{\envclass@attr{mathpar}}
+  \let\and\mathpar@hspace\let\par\mathpar@vspace\let\\\mathpar@vspace\let\hva\mathpar@hva%
+  \open@mathpar@table\open@mprow\open@mpfstcell}
+  {\close@mplstcell\close@mprow\@close{table}\@close{div}}
+%%%% Type Inference Rules (TIR)
+\newsavebox{\mpr@save@arg}%
+\newcommand{\mpr@globle}[1]{}
+\newcommand {\@mpr@name}[1]{\@tir@name{#1}\let\mpr@name\mpr@globle}
+\def \mpr@line@hva #1{\mpr@break@display}
+\def \mpr@break@display
+{\sbox{\mpr@save@arg}{\mpr@line@arg}%
+\endmpr@line\mpr@line{\usebox{\mpr@save@arg}}}
+%%% this may not be robust (if nextchar is special char)
+%%% also may not want this semantics
+\def \@latexcr #1{%
+\def \@test {#1}\ifx \@test \@latexcr@char \latexcr \else
+\qquad #1\fi}
+\newcommand{\mpr@valign}[1]
+{\ifthenelse{\equal{#1}{}}{}{style="vertical-align:#1"}}
+\newcommand{\mpr@line}[1]
+{\@open{tr}{\mpr@valign{#1}}%
+\ifx\mpr@label\mpr@L\@open{td}{}\mpr@name{\@rule@name}~\@force{td}\fi
+\@open{td}{style="whitespace:nowrap;text-align:\ifmpr@center{}center\else{}left\fi"}%
+\bgroup\def\mpr@line@arg{#1}%
+\@open{display}{\mpr@valign{#1}}%
+\def\\{\@latexcr{\qquad}}\def\and{\@latexcr{\qquad}}%
+\let\hva\mpr@line@hva}
+\newcommand{\endmpr@line}
+{\@close{display}\egroup\@force{td}%
+\ifx\mpr@label\mpr@R\@open{td}{}~\mpr@name{\@rule@name}\@force{td}\fi
+\@close{tr}}
+\def \mpr@empty {}
+\newif \ifmpr@center \mpr@centertrue
+\newif \ifmpr@vdots \mpr@vdotsfalse
+\newcounter{mpr@count}
+\newcommand{\mpr@output@vdots}
+{\vdots%
+\setcounter{mpr@count}{\@lengthtonchar{\mpr@vdots}}%
+\whiledo{\value{mpr@count}>1}{\@br\vdots\addtocounter{mpr@count}{-1}}}
+\def\mpr@emptyL{\ifx\mpr@label\mpr@L\@open{td}{}\@force{td}\fi}
+\def\mpr@emptyR{\ifx\mpr@label\mpr@R\@open{td}{}\@force{td}\fi}
+\newcommand{\@mpr@table}{\@open{table}{style="border:0;border-spacing:1px;border-collapse:separate" class="cellpadding0"}}
+\newcommand {\@inferrule}[2]
+   {\bgroup
+    \let \\ \latexcr%
+    \@mpr@table%
+    \ifx\mpr@label\mpr@C
+      \@open{tr}{}\@open{td}{style="text-align:left"}%
+      \mpr@name{\@rule@name}%
+      \@close{td}\@close{tr}%
+    \fi
+    \def \@@arg{#1}\ifx \@@arg \mpr@empty%
+      \mpr@line{}#2\endmpr@line%
+    \else
+      \def \@@arg{#2}\ifx \@@arg \mpr@empty%
+      \mpr@line{}#1\endmpr@line%
+    \else
+      \mpr@line{middle}#1\endmpr@line%
+      \@hhline%
+      \mpr@line{middle}#2\endmpr@line%
+    \fi\fi%
+    \ifmpr@vdots%
+      \@open{tr}{style="vertical-align:middle"}%
+      \mpr@emptyL
+      \@open{td}{style="text-align:center"}\mpr@output@vdots\@force{td}%
+      \mpr@emptyR
+      \@close{tr}%
+    \fi
+    \@force{table}%
+    \egroup%
+}
+\def\mpr@hhline@color{green}
+\def \@hhline
+{\@open{tr}{}%
+\mpr@emptyL
+\@open{td}{style="background-color:\mpr@hhline@color;height:3px"}\@force{td}%
+\mpr@emptyR
+\@force{tr}}
+
+\newcommand {\inferrule*}[3][]{%
+   \bgroup\let\@tir@name\RefTirName%
+   \mpr@vdotsfalse\let\mpr@label\mpr@N\let\mpr@name\@mpr@name%Default
+   \@setkeys {mpr}{#1}%
+   \@inferrule{#2}{#3}%
+   \egroup}
+\newcommand {\inferrule}[3][]{%
+   \def\mpr@arg{#1}\ifx\mpr@arg\mpr@empty
+   \inferrule*{#2}{#3}\else
+   \inferrule*[before={\let\@tir@name\TirName},lab=#1,center]{#2}{#3}\fi}
+
+\def \mprset {\setkeys{mprset}}
+\define@key {mprset}{flushleft}[]{\mpr@centerfalse}
+\define@key {mprset}{center}[]{\mpr@centertrue}
+\define@key {mpr}{flushleft}[]{\mpr@centerfalse}
+\define@key {mpr}{center}[]{\mpr@centertrue}
+\define@key {mpr}{width}{}
+\define@key {mpr}{before}{#1}
+\define@key {mpr}{narrower}{}
+\define@key {mpr}{leftskip}{}
+\define@key {mpr}{rightskip}{}
+\def\mpr@N{N}\def\mpr@C{C}\def\mpr@R{R}\def\mpr@L{L}\let\mpr@label\mpr@N
+\def\mpr@set@name#1{\def \@rule@name {\mpr@name{#1}}}
+\define@key {mpr}{lab}{\let\mpr@label\mpr@C\mpr@set@name{#1}}
+\define@key {mpr}{Lab}{\let\mpr@label\mpr@C\mpr@set@name{#1}}
+\define@key {mpr}{left}{\let\mpr@label\mpr@L\mpr@set@name{#1}}
+\define@key {mpr}{Left}{\let\mpr@label\mpr@L\mpr@set@name{#1}}
+\define@key {mpr}{Right}{\let\mpr@label\mpr@R\mpr@set@name{#1}}
+\define@key {mpr}{right}{\let\mpr@label\mpr@R\mpr@set@name{#1}}
+\define@key {mpr}{vdots}{\mpr@vdotstrue\def\mpr@vdots{#1}}
+\define@key {mpr}{after}{}
+\define@key {mpr}{fraction}{\hva@warn{fraction key ignored (mathpartir)}}
+\define@key {mpr}{myfraction}{\hva@warn{myfraction key ignored (mathpartir)}}
+%%%%Synonyms
+\@ifundefined{infer}{\let\infer\inferrule}{}
+\@ifundefined{infer*}{\let\infer*\inferrule*}{}
+%%%Label formatting
+\newcommand {\tir@name}[1]{\textsc{\scriptsize {#1}}}
+\let\RefTirName\tir@name
+\let\TirName\tir@name
+\endinput
