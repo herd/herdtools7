@@ -654,9 +654,9 @@ obtained by expanding the macro rule for \SemanticsRuleRef{Loop}.CONTINUE:
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
-  \vb = \iswhile\\
+  \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
   \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \Continuing(\vgthree, \newenv)\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
@@ -670,9 +670,9 @@ for the same macro rule:
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
-  \vb = \iswhile\\
+  \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
   \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \DivergingConfig\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{

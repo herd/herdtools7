@@ -346,7 +346,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
     \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \vzoptone \eqname \some{\vvone}\\
-    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
+    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\hva\\
     \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
     \vzopttwo \eqname \some{\vvtwo}\\
     {

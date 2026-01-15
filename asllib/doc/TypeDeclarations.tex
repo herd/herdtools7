@@ -240,10 +240,10 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[enum]{
-  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
   \withemptylocal(\genv) \typearrow \tenv\hva\\\\
-  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\hva\\\\
-  \annotateextrafields(\tenv, \name, \vtone, \vs) \typearrow (\tenvone, \vttwo, \vsp)\\
+  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\\\\
+  \annotateextrafields(\tenv, \name, \vtone, \vs) \typearrow (\tenvone, \vttwo, \vsp)\hva\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
   \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\hva\\\\
@@ -380,7 +380,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
     \end{array}
   }\\
-  \vt \eqname L(\fields)\\
+  \vt \eqname L(\fields)\hva\\
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}

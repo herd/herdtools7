@@ -663,9 +663,9 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[evar\_int]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
-  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\hva\\
   \typeof(\vs) \typearrow \vt\\
-  \makeanonymous(\vt) \typearrow \ttyone\\
+  \makeanonymous(\vt) \typearrow \ttyone\hva\\
   \astlabel(\ttyone) = \TInt\\
   \ttyone \neq \TInt(\WellConstrained([\ConstraintExact(\Ignore)]))
 }{
@@ -676,9 +676,9 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[evar\_non\_int]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
-  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\hva\\
   \typeof(\vs) \typearrow \vt\\
-  \makeanonymous(\vt) \typearrow \ttyone\\
+  \makeanonymous(\vt) \typearrow \ttyone\hva\\
   \astlabel(\ttyone) \neq \TInt
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \CannotBeTransformed
@@ -1274,8 +1274,8 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_array]{
   \veone = \EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}\\
-  \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\\
-  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\hva\\\\
+  \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\hva\\
+  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
   \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
@@ -1670,7 +1670,7 @@ or different nested bitfields.
 \hva\and
 \inferrule[bitfield\_simple]{
   \bfone = \BitFieldSimple(\nameone, \slicesone)\\
-  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
+  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\hva\\
   \booltrans(\nameone = \nametwo) \booltransarrow \vbone\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
@@ -1680,8 +1680,8 @@ or different nested bitfields.
 \hva\and
 \inferrule[bitfield\_nested]{
   \bfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
-  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
-  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\hva\\\\
+  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\hva\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\hva\\\\
   \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
 }{
@@ -2019,9 +2019,9 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 \hva\and
 \inferrule[non\_empty]{
   \monomsandfactors \eqdef \{ (\vm,\vq) \;|\; \vm\in\dom(f) \land f(\vm) = \vq \}\\
-  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\\
+  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\hva\\
   \monoms \eqdef \sort(\monomsandfactorslist, \comparemonomialbindings)\\
-  \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
+  \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\hva\\
   {
   \ve \eqdef \begin{cases}
     \ELiteral(\LInt(0))   & \text{if }\vsone = 0\\
@@ -2084,9 +2084,9 @@ via the lexicographic ordering.
 \inferrule[different\_monomials]{
   \vmone \neq \vmtwo\\
   \ids \eqdef \sort(\dom(f) \cup \dom(g), \compareidentifier)\\
-  \ids \eqname \idsone \concat \idstwo\\
+  \ids \eqname \idsone \concat \idstwo\hva\\
   \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
-  \vv \eqdef \idstwo[1]\\
+  \vv \eqdef \idstwo[1]\hva\\
   {
   \vs \eqdef
     \begin{cases}
