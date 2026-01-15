@@ -4054,9 +4054,7 @@ typing relation override_subprograms(decls: list0(decl)) ->
 {
   "overrides subprograms in a list of declarations
   {decls}, yielding the new list of declarations
-  {decls'}. \ProseOtherwiseTypeError{} See
-  \ExampleRef{Overriding Subprograms} for an example of
-  valid overriding.",
+  {decls'}. \ProseOtherwiseTypeError{}",
   prose_application = "",
 };
 
@@ -4065,9 +4063,7 @@ typing function check_implementations_unique(impls: list0(func)) ->
 {
   "checks that the \Proseimplementationsubprograms{}
   {impls} have unique signatures.
-  \ProseOtherwiseTypeError{} See \ExampleRef{Invalid
-  Overriding} for an example of non-unique
-  \Proseimplementationsubprograms{}.",
+  \ProseOtherwiseTypeError{}",
   prose_application = "",
 };
 
@@ -4076,8 +4072,7 @@ typing function signatures_match(func1: func, func2: func) ->
 {
   "checks whether the signatures of subprograms {func1}
   and {func2} match for overriding purposes.
-  \ProseOtherwiseTypeError{} See \ExampleRef{Overriding
-  Subprograms} for an example of matching signatures.",
+  \ProseOtherwiseTypeError{}",
   prose_application = "",
 };
 
@@ -4088,9 +4083,7 @@ typing function process_overrides(impdefs: list0(func), impls: list0(func)) ->
   the \Proseimplementationsubprograms{} {impls},
   yielding the new \Proseimpdefsubprograms{} {impdefs}
   and the discarded subprograms {discarded}.
-  \ProseOtherwiseTypeError{} See \ExampleRef{Overriding
-  Subprograms} for an example of valid replacement of an
-  \Proseimplementationsubprogram{}.",
+  \ProseOtherwiseTypeError{}",
   prose_application = "",
 };
 
