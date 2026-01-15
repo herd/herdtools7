@@ -1062,16 +1062,21 @@ let match_reg_events es =
 
     let is_spec es e = E.EventSet.mem e es.E.speculated
 
-    let check_values store load =
-      not speedcheck ||
-      V.equalityPossible (get_written store) (get_read load)
+    let check_values cns store load =
+      if not speedcheck then true else
+        let v_written = get_written store and v_read = get_read load in
+        if not (V.equalityPossible v_written v_read) then false else
+          let eq = VC.Assign (v_read, VC.Atom v_written) in
+          match VC.solve (eq :: cns) with
+          | VC.NoSolns -> false
+          | VC.Maybe _ -> true
 
 (* Consider all stores that may feed a load
    - Compatible location.
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores test es _rfm loads stores compat_locs =
+    let map_load_possible_stores test es cns loads stores compat_locs =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
         | OptAce.True ->
@@ -1092,7 +1097,7 @@ let match_reg_events es =
                 if
                   compat_locs store load &&
                   check_speculation es store load &&
-                  check_values store load &&
+                  check_values cns store load &&
                   ok load store
                 then
                   load,S.Store store::stores
@@ -1193,7 +1198,7 @@ let match_reg_events es =
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
-        map_load_possible_stores test es rfm loads stores compat_locs in
+        map_load_possible_stores test es cns loads stores compat_locs in
       let possible =
         List.map
           (fun (er,ws) ->
@@ -1497,17 +1502,17 @@ let match_reg_events es =
       ms
 
 (* Non-mixed pairing for tags, if any *)
-    let pair_tags test es rfm =
+    let pair_tags test es cns =
       let tags = E.EventSet.filter E.is_tag es.E.events in
       let loads = E.EventSet.filter E.is_load tags
       and stores = E.EventSet.filter E.is_store tags in
       let m =
-        map_load_possible_stores test es rfm loads stores compatible_locs_mem in
+        map_load_possible_stores test es cns loads stores compatible_locs_mem in
       m
 
     let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
-        else pair_tags test es rfm in
+        else pair_tags test es cns in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
