@@ -155,7 +155,7 @@
 \newcommand {\inferrule}[3][]{%
    \def\mpr@arg{#1}\ifx\mpr@arg\mpr@empty
    \inferrule*{#2}{#3}\else
-   \inferrule*[before={\let\@tir@name\TirName},lab=#1,center]{#2}{#3}\fi}
+   \inferrule*[before={\let\@tir@name\TirName},lab={#1},center]{#2}{#3}\fi}
 
 \def \mprset {\setkeys{mprset}}
 \define@key {mprset}{flushleft}[]{\mpr@centerfalse}
