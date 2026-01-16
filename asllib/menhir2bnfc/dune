@@ -6,7 +6,7 @@
  (package menhir2bnfc)
  (enabled_if
   (>= %{ocaml_version} 4.14))
- (libraries asllib menhirSdk))
+ (libraries aslref menhirSdk))
 
 (executable
  (public_name menhir2bnfc)
