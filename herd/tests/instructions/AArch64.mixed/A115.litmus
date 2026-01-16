@@ -6,4 +6,4 @@ AArch64 A115
 P0;
   STRH W0, [X2, X3];
 
-forall (x=0 /\ y=0)
+forall (x=0)

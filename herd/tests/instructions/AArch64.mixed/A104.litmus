@@ -8,4 +8,4 @@ Variant=mixed
 P0;
   STRB W0, [X2, X3];
 
-forall (x=256 /\ y=0)
+forall (x=256)

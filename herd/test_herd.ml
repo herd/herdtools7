@@ -66,6 +66,92 @@ module Make(A:Arch_herd.S) =
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
 
+    let add_output_address acc = function
+      | OutputAddress.PTE s
+      | OutputAddress.PHY s -> StringSet.add s acc
+
+    let add_constant_symbols acc c =
+      let open Constant in
+      match c with
+      | Symbolic sym ->
+        begin
+          match sym with
+          | Virtual { name = base; _ } ->
+            begin
+                match base with
+                | Symbol.Label full ->
+                   StringSet.add (Label.Full.pp full) acc
+                | Symbol.Data _ ->
+                    StringSet.add (Symbol.pp base) acc
+            end
+          | Physical (name, _) -> StringSet.add name acc
+          | TagAddr (_, name, _) -> StringSet.add name acc
+          | System (_, name) -> StringSet.add name acc
+        end
+      | PteVal p ->
+          let open ParsedPteVal in
+          (match p.p_oa with
+          | None -> acc
+          | Some oa -> add_output_address acc oa)
+      | AddrReg a ->
+          let open ParsedAddrReg in
+          (match a.p_oa with
+          | None -> acc
+          | Some oa -> add_output_address acc oa)
+      | _ -> acc
+
+    let add_location_symbols loc acc =
+      match loc with
+      | MiscParser.Location_global c -> add_constant_symbols acc c
+      | MiscParser.Location_sreg name -> StringSet.add name acc
+      | MiscParser.Location_reg _ -> acc
+
+    let add_postcondition_symbols constr acc =
+      let add_atom atom acc =
+        let open ConstrGen in
+        match atom with
+        | LV (rloc,v) ->
+            let acc = fold_rloc add_location_symbols rloc acc in
+            add_constant_symbols acc v
+        | LL (loc1,loc2) ->
+            let acc = add_location_symbols loc1 acc in
+            add_location_symbols loc2 acc
+        | FF ((proc,lbl_opt),loc_opt,_) ->
+            let acc =
+              match lbl_opt with
+              | None -> acc
+              | Some lbl ->
+                  let name =
+                    Printf.sprintf "%s:%s" (Proc.pp proc) (Label.pp lbl) in
+                  StringSet.add name acc in
+            (match loc_opt with
+            | None -> acc
+            | Some c -> add_constant_symbols acc c) in
+      ConstrGen.fold_constr add_atom constr acc
+
+    let check_post_condition_symbols_exist test =
+      let { MiscParser.init; condition; prog; _ } = test in
+      let init_symbols =
+        List.fold_left
+          (fun acc (loc,(_,v)) ->
+            let acc = add_location_symbols loc acc in
+            add_constant_symbols acc v)
+          StringSet.empty init in
+      let prog_init_symbols =
+        List.fold_left
+          (fun acc lbl -> StringSet.add (Label.Full.pp lbl) acc)
+           init_symbols (A.all_labels prog) in
+      let postcondition_symbols =
+        add_postcondition_symbols condition StringSet.empty in
+      let unexpected_symbols =
+        StringSet.diff postcondition_symbols prog_init_symbols in
+      if not (StringSet.is_empty unexpected_symbols) then begin
+        let syms = String.concat ", " (StringSet.elements unexpected_symbols) in
+        Warn.user_error
+          "Post-condition introduces new symbolic location(s): {%s}" syms
+      end
+
+
 (* Symb register allocation is external, since litmus needs it *)
     module ArchAlloc = struct
       include A
@@ -141,6 +227,7 @@ module Make(A:Arch_herd.S) =
 (***************)
 
     let build name t =
+      check_post_condition_symbols_exist t ;
       let t = Alloc.allocate_regs t in
       let
           {MiscParser.init = init ;
