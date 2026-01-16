@@ -1,0 +1,13 @@
+AArch64 PC008
+
+variant=handled
+{
+0:X2=0;
+}
+  P0          | P0.F           ;
+L0:           | MOV W2,#1      ;
+  SVC #0      | ERET           ;
+L1:           |                ;
+  ADD W2,W2,#2|                ;
+
+forall (0:PC=END_P0)

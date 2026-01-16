@@ -28,6 +28,7 @@ module type I = sig
   val endian : Endian.t
 
   type arch_reg
+  val pc_reg : arch_reg option
   val pp_reg : arch_reg -> string
   val reg_compare : arch_reg -> arch_reg -> int
   val get_val : arch_reg -> V.v -> V.v
@@ -60,6 +61,7 @@ module type S = sig
   val next_po_index : program_order_index -> program_order_index
 
   include Location.S with type loc_reg := I.arch_reg and type loc_global := v
+  val pc_reg : I.arch_reg option
 
   type reg_state
   val reg_state_empty : reg_state
@@ -278,6 +280,8 @@ module Make(C:Config) (I:I) : S with module I = I
             (Archs.pp I.arch)
 
       module I = I
+
+      let pc_reg = I.pc_reg
 
       type instr = I.instr
       type global_loc = I.V.v

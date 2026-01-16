@@ -51,6 +51,7 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
 
         type arch_reg = reg
 
+        let pc_reg = None
         let endian = endian
         let pp_reg = pp_reg
         let reg_compare = reg_compare

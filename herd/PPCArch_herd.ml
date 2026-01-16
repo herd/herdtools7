@@ -92,6 +92,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
           let endian = endian
 
           type arch_reg = reg
+          let pc_reg = None
           let pp_reg = pp_reg
           let reg_compare = reg_compare
 
