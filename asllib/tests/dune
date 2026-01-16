@@ -34,7 +34,7 @@
  (action
   (setenv
    ASL_PARSER_CMLY
-   %{project_root}/asllib/Parser.cmly
+   %{project_root}/Parser.cmly
    (run %{test} -e))))
 
 (cram

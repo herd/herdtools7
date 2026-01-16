@@ -45,7 +45,7 @@ jobs:
           dune-cache: true
 
       - name: Install herdtools7's dependencies
-        run: opam install . --deps-only --with-test
+        run: opam install . --deps-only --yes --with-test
 
       - name: Install carpenter dependencies
         run: opam install feat qcheck re logs cmdliner
@@ -53,4 +53,9 @@ jobs:
       - run: opam exec -- make build DUNE_PROFILE=dev
 
       - run: opam exec -- make test-all DUNE_PROFILE=dev
+
+      - run: |
+          opam exec -- dune build asllib/aslref.opam
+          opam pin asllib
+          opam install .
 

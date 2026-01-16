@@ -4,7 +4,7 @@
  (package menhir2bnfc)
  (build_if
   (and %{bin-available:menhir2bnfc} %{bin-available:bnfc}))
- (libraries bnfc_parser herdtools7.asllib)
+ (libraries bnfc_parser asllib)
  (deps
   (source_tree %{workspace_root}/asllib/tests))
  (action
@@ -21,4 +21,4 @@
    %{lib-available:feat}
    %{bin-available:menhir2bnfc}
    %{bin-available:bnfc}))
- (libraries bnfc_parser herdtools7.asllib feat))
+ (libraries bnfc_parser asllib feat))
