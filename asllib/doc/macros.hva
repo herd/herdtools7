@@ -14,3 +14,44 @@
 \let\old@not\not
 \renewcommand{\not}[1]
 {\def\@arg{#1}\def\@cmp{\inlist}\ifx\@arg\@cmp\old@not\in\else\old@not#1\fi}
+%%%
+% Hml and PDF differs in one point, while anchors (hypertargets)
+% and references (hyperlinks) can nest,
+% nested "A" elements are not valid html...
+% Hence we do not generate hyperlinks inside local references
+% local anchor or anchors
+\newcommand{\no@hyperlink}[2]{}
+\newcommand{\my@aname}[2]{\bgroup\let\hyperlink\no@hyperlink\aname{#1}{#2}\egroup}
+\newcommand{\my@hypertarget}[2]{\my@aname{#1}{#2}}
+\AtBeginDocument{\let\hypertarget\my@hypertarget}
+\newcommand{\my@ahrefloc}[2]{\bgroup\let\hyperlink\no@hyperlink\ahrefloc{#1}{#2}\egroup}
+\newcommand{\my@hyperlink}[2]{\my@ahrefloc{#1}{#2}}
+\AtBeginDocument{\let\hyperlink\my@hyperlink}
+%%%Complex hyperlinks in display mode may produce table elements inside
+%%% A elements, which is no valid HTML
+\newcommand{\Ignore}
+{\ifdisplay\underline{\hyperlink{def-ignore}{\;\;}}%
+\else\hyperlink{def-ignore}{\underline{\;\;}}\fi}
+\newcommand{\Option}[1]{%
+\ifdisplay\textsf{\hyperlink{def-option}{Option}}\left({#1}\right)
+\else
+\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)\fi}
+\newcommand\eqname{%
+\ifdisplay
+  \stackrel{\mathsmaller{\hyperlink{def-deconstruction}{\mathsf{is}}}}{=}\else
+\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}\fi}
+\newcommand{\inside@out@link}[3]{\ifdisplay#2{\hyperlink{#1}{#3}}\else\hyperlink{#1}{#2{#3}}\fi}
+\newcommand{\CannotOverapproximate}
+ {\inside@out@link{constant-CannotOverapproximate}{\overline}{\textsf{Approx}}}
+\newcommand{\CannotUnderapproximate}
+ {\inside@out@link
+   {constant-CannotUnderapproximate}{\underline}{\textsf{Approx}}}
+%%
+\newcommand{\my@ordered}[1]
+{\ifdisplay\xrightarrow{\hyperlink{def-ordered}}{#1}\else
+\hyperlink{def-ordered}{\xrightarrow{#1}}\fi}
+\newcommand{\ordered}[3]{{#1}\my@ordered{#2}{#3}}
+%%%No def-ordered line, as there is another one inside
+\newcommand{\orderedctrl}{\xrightarrow{\aslctrl}}
+\newcommand{\ordereddata}{\xrightarrow{\asldata}}
+\newcommand{\orderedpo}{\xrightarrow{\aslpo}}
