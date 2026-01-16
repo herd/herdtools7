@@ -21,8 +21,7 @@
    (ocaml (>= 4.08))
    dune
    (menhir (>= 20220210))
-   (zarith (>= 1.13))
-   (odoc :with-doc))
+   (zarith (>= 1.13)))
  (depopts
    (qcheck :with-test)
    (ocamlformat (and (= 0.28.1) :with-dev-setup))
