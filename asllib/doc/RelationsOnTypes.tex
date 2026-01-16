@@ -1587,8 +1587,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exploding]{
-  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
-  \commonprefixline\\\\
+  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
+  \commonprefixline\hva\\\\
   \binopisexploding(\op) \typearrow \True\\
   \explodeintervals(\tenv, \csone) \typearrow (\csonee, \vpone)\\
   \explodeintervals(\tenv, \cstwof) \typearrow (\cstwoe, \vptwo)\\
@@ -1597,8 +1597,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   {
   (\csonearg, \cstwoarg, \vp) \eqdef
   \ifthenelseop[V]{\vexpectedconstraintlength < \maxconstraintsize}{(\csonee, \cstwoe, \vpzero)}{(\csone, \cstwof, \PrecisionLost)}
-  }\\\\
-  \commonsuffixline\\\\
+  }\hva\\\\
+  \commonsuffixline\hva\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
   \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate,\CannotOverapproximate\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
@@ -1609,12 +1609,12 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 
 \begin{mathpar}
 \inferrule[non\_exploding]{
-  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
-  \commonprefixline\\\\
+  \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
+  \commonprefixline\hva\\\\
   \binopisexploding(\op) \typearrow \False\\
   \vp \eqdef \PrecisionFull \\
-  (\csonearg, \cstwoarg) \eqdef (\csone, \cstwof)\\\\
-  \commonsuffixline\\\\
+  (\csonearg, \cstwoarg) \eqdef (\csone, \cstwof)\hva\\\\
+  \commonsuffixline\hva\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
   \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
@@ -1812,9 +1812,9 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[range\_both\_reduce\_to\_z]{
   \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
   \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
-  \vzeroorone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}\\
+  \vzeroorone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}\hva\\
   \vzeroorminusone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\\
-  \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\\
+  \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\hva\\
   \vrangezeroorminusone \eqdef \ConstraintRange(\veone, \vzeroorminusone)\\
   {
   \vcopt \eqdef \begin{cases}
@@ -1833,7 +1833,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[only\_e1\_reduces\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \None\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \None\hva\\
   \vzeroorone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{1}}\\
   \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\\
   {
@@ -1852,7 +1852,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \None\\
   \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
-  \vzeroorminusone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\\
+  \vzeroorminusone \eqdef \choice{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\hva\\
   \vrangezeroorminusone \eqdef \ConstraintRange(\veone, \vzeroorminusone)\\
   {
   \vcopt \eqdef \begin{cases}
@@ -2159,7 +2159,7 @@ Specifically, notice the following:
       \left\lceil\frac{\vzone}{\vztwo}\right\rceil & \text{if }\veoneopt = \some{(\vzone, \vztwo)} \land \vztwo > 0\\
       \None & \text{otherwise}
     \end{cases}
-  }\\
+  }\hva\\
   \getliteraldivopt(\vetwo) \typearrow \vetwoopt\\
   {
     \vztwoopt \eqdef
@@ -2167,12 +2167,12 @@ Specifically, notice the following:
       \left\lfloor\frac{\vzthree}{\vzfour}\right\rfloor & \text{if }\vetwoopt = \some{(\vzthree, \vzfour)} \land \vzfour > 0\\
       \None & \text{otherwise}
     \end{cases}
-  }\\
+  }\hva\\
   \vczfive \eqdef \AbbrevConstraintExact{\ELInt{\vzfive}}\\
   \vczfivesix \eqdef \AbbrevConstraintRange{\ELInt{\vzfive}}{\ELInt{\vzsix}}\\
   \vczfiveetwo \eqdef \AbbrevConstraintRange{\ELInt{\vzfive}}{\vetwo}\\
   \vceonezsix \eqdef \AbbrevConstraintRange{\veone}{\ELInt{\vzsix}}\\
-  \vceoneetwo \eqdef \AbbrevConstraintRange{\veone}{\vetwo}\\
+  \vceoneetwo \eqdef \AbbrevConstraintRange{\veone}{\vetwo}\hva\\
   {
     \vcopt \eqdef
     \begin{cases}
@@ -2323,7 +2323,7 @@ See \ExampleRef{Intervals too Large to Enumerate}.
 \inferrule[range\_reduced]{
   \vc = \ConstraintRange(\va, \vb)\\
   \reducetozopt(\tenv, \va) \typearrow \some{\vza}\\
-  \reducetozopt(\tenv, \vb) \typearrow \some{\vzb}\\
+  \reducetozopt(\tenv, \vb) \typearrow \some{\vzb}\hva\\
   \explodedinterval \eqdef [\vz \in \vza..\vzb: \ConstraintExact(\ELInt{\vz})]\\
   \intervaltoolarge(\vza, \vzb) \typearrow \vbtoolarge\\
   {
@@ -2523,7 +2523,7 @@ is ill-typed.
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[simple\_any]{
   \bitfieldgetname(\vbf) \typearrow \name\\
   \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
@@ -2544,12 +2544,12 @@ is ill-typed.
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
 }
-\and
+\hva\and
 \inferrule[nested\_nested]{
   \bitfieldgetname(\vbf) \typearrow \name\\
   \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldNested(\nametwo, \slicestwo, \bfstwop)\\
-  \vbfone = \BitFieldNested(\nameone, \slicesone, \bfsone)\\
+  \vbfone = \BitFieldNested(\nameone, \slicesone, \bfsone)\hva\\
   \vbone \eqdef \nameone = \nametwo\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
   \bitfieldsincluded(\tenv, \bfsone, \bfstwop) \typearrow \vbthree\\
@@ -2557,7 +2557,7 @@ is ill-typed.
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[nested\_typed]{
   \bitfieldgetname(\vbf) \typearrow \name\\
   \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
@@ -2578,7 +2578,7 @@ is ill-typed.
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[typed\_nested]{
   \bitfieldgetname(\vbf) \typearrow \name\\
   \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
@@ -2587,12 +2587,12 @@ is ill-typed.
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \overname{\False}{\vb}
 }
-\and
+\hva\and
 \inferrule[typed\_typed]{
   \bitfieldgetname(\vbf) \typearrow \name\\
   \findbitfieldopt(\name, \bfstwo) \typearrow \some{ \vbftwo }\\
   \vbftwo = \BitFieldType(\nametwo, \slicestwo, \ttytwo)\\
-  \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\\
+  \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\hva\\
   \vbone \eqdef \nameone = \nametwo\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
   \subtypesatisfies(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
@@ -2692,7 +2692,7 @@ The following are two examples of applying $\towellconstrained$ to various types
 {
   \towellconstrained(\overname{\TInt(\Parameterized(\vv))}{\vt}) \typearrow\\ \TInt(\WellConstrained(\ConstraintExact(\EVar(\vv))))
 }
-\and
+\hva\and
 \inferrule[t\_int\_other]{
   \astlabel(\vi) \neq \Parameterized
 }{
