@@ -203,6 +203,7 @@ let () =
   | None -> ()
   | Some s -> exec_conf s
   end;
+  Config.valid_stdout_flag false ;
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
   and reject_list = split !Config.rejects in
