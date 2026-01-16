@@ -38,8 +38,8 @@
 \hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)\fi}
 \newcommand\eqname{%
 \ifdisplay
-  \stackrel{\mathsmaller{\hyperlink{def-deconstruction}{\mathsf{is}}}}{=}\else
-\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}\fi}
+  \stackrel{\hyperlink{def-deconstruction}{\mathsf{is}}}{=}\else
+\hyperlink{def-deconstruction}{\stackrel{\mathsf{is}}{=}}\fi}
 \newcommand{\inside@out@link}[3]{\ifdisplay#2{\hyperlink{#1}{#3}}\else\hyperlink{#1}{#2{#3}}\fi}
 \newcommand{\CannotOverapproximate}
  {\inside@out@link{constant-CannotOverapproximate}{\overline}{\textsf{Approx}}}
@@ -55,3 +55,6 @@
 \newcommand{\orderedctrl}{\xrightarrow{\aslctrl}}
 \newcommand{\ordereddata}{\xrightarrow{\asldata}}
 \newcommand{\orderedpo}{\xrightarrow{\aslpo}}
+%%% Small fomt size not recommended for HTML
+\newcommand\commonprefixline[0]{\hyperlink{def-commonprefixline}{\color{cyan}{\text{******** common prefix ********}}}}
+\newcommand\commonsuffixline[0]{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{******** common suffix ********}}}}
