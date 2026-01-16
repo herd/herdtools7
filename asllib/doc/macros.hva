@@ -58,3 +58,12 @@
 %%% Small fomt size not recommended for HTML
 \newcommand\commonprefixline[0]{\hyperlink{def-commonprefixline}{\color{cyan}{\text{******** common prefix ********}}}}
 \newcommand\commonsuffixline[0]{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{******** common suffix ********}}}}
+\let\l@section\relax
+\newcommand\anycharacter[1]{$\@span{style="text-decoration:wavy underline;"}#1$}
+%% Not so great rendering of \overbracket ininline mode
+\newcommand{\over@line}{\@span{style="text-decoration:solid overline;"}}
+\newcommand{\textoverbracket}[1]{{\over@line{}#1}}
+\newcommand{\text@top}{\@span{style="vertical-align:1.5em;"}}
+\newcommand{\textovername}[2]{\overline{#1}{\text@top{}#2}}
+\newcommand{\myovername}[2]{\ifdisplay\old@overname{#1}{#2}\else\textovername{#1}{#2}\fi}
+\AtBeginDocument{\let\old@overname\overname\let\overname\myovername}
