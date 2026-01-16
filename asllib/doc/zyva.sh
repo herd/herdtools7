@@ -1,8 +1,22 @@
+#! /bin/sh
+case "$1" in
+    "")
+        FIX=false
+        ;;
+    "fix")
+        FIX=true
+        ;;
+    *)
+        echo "Usage: sh ./zyva [fix]" 1>&2
+        exit 1
+        ;;
+esac
+
 mkdir -p HTML
 make  generated_spec
 hevea -fix0 -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
 bibhva HTML/ASL
-if false
+if $FIX
 then
     hevea -fix -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
 fi
