@@ -84,7 +84,8 @@ let pp_es = ref []
 let () =
   Util.parse_cmdline
     (Config.diycross_spec ())
-    (fun x -> pp_es := x :: !pp_es)
+    (fun x -> pp_es := x :: !pp_es);
+  Config.valid_stdout_flag false
 
 let pp_es = List.rev !pp_es
 

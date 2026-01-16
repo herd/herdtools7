@@ -180,7 +180,8 @@ let pp_es = ref []
 let () =
   Util.parse_cmdline
     (Config.diyone_spec ())
-    (fun x -> pp_es := x :: !pp_es)
+    (fun x -> pp_es := x :: !pp_es) ;
+    Config.valid_stdout_flag true
 
 let pp_es = List.rev !pp_es
 let cpp = match !Config.arch with
