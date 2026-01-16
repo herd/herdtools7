@@ -1089,6 +1089,20 @@ let compute_rmw r ~old ~operand =
     end
     | LrSc | Swp | Cas  -> operand
     | AllAmo -> assert false
+
+(* Rule out `rmw_list` that contains the same type of atomic operation *)
+let valid_rmw rmw_list =
+  (* Treat sign and unsign the same *)
+  let convert_sign_to_unsign = function
+    | A_SMAX -> A_UMAX
+    | A_SMIN -> A_UMIN
+    | op -> op in
+  let atomic_st_list = List.filter_map ( function
+    | StOp op -> Some ( StOp ( convert_sign_to_unsign op ) )
+    | _ -> None ) rmw_list in
+  let module RmwSet =
+    MySet.Make(struct type t = rmw let compare = compare end) in
+  (List.length atomic_st_list) = (RmwSet.cardinal @@ RmwSet.of_list atomic_st_list)
 end
 
 include
