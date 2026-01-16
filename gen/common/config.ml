@@ -54,6 +54,7 @@ let rejects = ref None
 let stdout = ref false
 let cycleonly = ref false
 let metadata = ref true
+let filter = ref []
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -312,6 +313,8 @@ let speclist () =
     "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
+   ("-filter", Arg.String (fun s -> filter := !filter @ [s]),
+   "takes two relaxations as input, show if they will be filtered OUT in diy7.")::
    []
 
 let varatom = ref ([] : string list)
