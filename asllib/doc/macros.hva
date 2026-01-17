@@ -47,11 +47,10 @@
  {\inside@out@link
    {constant-CannotUnderapproximate}{\underline}{\textsf{Approx}}}
 %%
-\newcommand{\my@ordered}[1]
-{\ifdisplay\xrightarrow{\hyperlink{def-ordered}}{#1}\else
-\hyperlink{def-ordered}{\xrightarrow{#1}}\fi}
-\newcommand{\ordered}[3]{{#1}\my@ordered{#2}{#3}}
-%%%No def-ordered line, as there is another one inside
+\newcommand{\my@textxrightarrow}[1]{-(#1)\rightarrow}
+\AtBeginDocument{\let\textxrightarrow\my@textxrightarrow}
+\newcommand{\ordered}[3]{{#1}\xrightarrow{#2}{#3}}
+%%%No def-ordered link, as there is another one inside
 \newcommand{\orderedctrl}{\xrightarrow{\aslctrl}}
 \newcommand{\ordereddata}{\xrightarrow{\asldata}}
 \newcommand{\orderedpo}{\xrightarrow{\aslpo}}
@@ -67,3 +66,5 @@
 \newcommand{\textovername}[2]{\overline{#1}{\text@top{}#2}}
 \newcommand{\myovername}[2]{\ifdisplay\old@overname{#1}{#2}\else\textovername{#1}{#2}\fi}
 \AtBeginDocument{\let\old@overname\overname\let\overname\myovername}
+%%%% No warning (checked visualy)
+\renewcommand{\@@big}[1]{#1}
