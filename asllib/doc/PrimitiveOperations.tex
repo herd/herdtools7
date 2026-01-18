@@ -574,26 +574,26 @@ not_bits: NOT '11 01' = 0x2
 }{
   \unopliterals(\op, \vl) \typearrow \TypeErrorVal{\BadOperands}
 }
-\and
+\hva\and
 \inferrule[negate\_int]{}{
   \unopliterals(\overname{\NEG}{\op}, \overname{\LInt(n)}{\vl}) \typearrow \overname{\LInt(- n)}{\vr}
 }
-\and
+\hva\and
 \inferrule[negate\_real]{}{
   \unopliterals(\overname{\NEG}{\op}, \overname{\LReal(q)}{\vl}) \typearrow \overname{\LReal(- q)}{\vr}
 }
-\and
+\hva\and
 \inferrule[not\_bool]{}{
   \unopliterals(\overname{\BNOT}{\op}, \overname{\LBool(b)}{\vl}) \typearrow \overname{\LBool(\neg b)}{\vr}
 }
-\and
+\hva\and
 \inferrule[not\_bits.empty]{
   \bits \eqname \emptylist\\
   c \eqdef \emptylist
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
-\and
+\hva\and
 \inferrule[not\_bits.non\_empty]{
   \bits \eqname \vb_{k..0}\\
   c \eqdef [i=k..0: (1-\vb_\vi)]
@@ -1297,15 +1297,15 @@ The set of valid signatures for string concatenation operations is defined as fo
 
 \begin{mathpar}
 \inferrule[div\_int]{
-  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\\\\
-  n \eqdef a \div b \\\\
+  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\hva\\\\
+  n \eqdef a \div b \hva\\\\
   \techeck(n \in \Z, \BadOperands) \typearrow \True \OrTypeError
 }{
   \binopliterals(\overname{\DIV}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(n)}{\vr}
 }
-\and
+\hva\and
 \inferrule[fdiv\_int]{
-  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\\\\
+  \techeck(b > 0, \BadOperands) \typearrow \True \OrTypeError\hva\\\\
   n \eqdef \choice{a \geq 0}{\lfloor a \div b \rfloor}{-(\lceil (-a) \div b \rceil)}
 }{
   \binopliterals(\overname{\DIVRM}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(n)}{\vr}
@@ -1330,7 +1330,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 
 \begin{mathpar}
 \inferrule[shl]{
-  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\\\\
+  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\hva\\\\
   \binopliterals(\POW, \LInt(2), \LInt(b)) \typearrow \LInt(e)\\
   \binopliterals(\MUL, \LInt(a), \LInt(e)) \typearrow \vr
 }{
@@ -1340,7 +1340,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 
 \begin{mathpar}
 \inferrule[shr]{
-  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\\\\
+  \techeck(b \geq 0, \BadOperands) \typearrow \True \OrTypeError\hva\\\\
   \binopliterals(\POW, \LInt(2), \LInt(b)) \typearrow \LInt(e)\\
   \binopliterals(\DIVRM, \LInt(a), \LInt(e)) \typearrow \vr
 }{
@@ -1523,7 +1523,7 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\op, \overname{\LBitvector(a)}{\vvone}, \overname{\LBitvector(b)}{\vvtwo}) \typearrow
   \TypeErrorVal{\BadOperands}
 }
-\and
+\hva\and
 \inferrule[bitwise\_empty]{
   \op \in \{\OR, \AND, \XOR, \ADD, \SUB\}\\
   a = \emptylist\\
@@ -1542,7 +1542,7 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\overname{\EQ}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LBitvector(b)}{\vvtwo}) \typearrow
   \overname{\LBool(\True)}{\vr}
 }
-\and
+\hva\and
 \inferrule[eq\_bits\_not\_empty]{
   \vb \eqdef \bigwedge_{i=0}^k a_i = b_i
 }{
