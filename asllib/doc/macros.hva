@@ -58,13 +58,19 @@
 \newcommand\commonprefixline[0]{\hyperlink{def-commonprefixline}{\color{cyan}{\text{******** common prefix ********}}}}
 \newcommand\commonsuffixline[0]{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{******** common suffix ********}}}}
 \let\l@section\relax
-\newcommand\anycharacter[1]{$\@span{style="text-decoration:wavy underline;"}#1$}
+\def\my@wavy{\@span{style="text-decoration:wavy underline;"}}
+\newcommand{\anycharacter}[1]{$\my@wavy{}#1$}
+\newcommand{\my@textunderbracket}[1]{{\my@wavy{#1}}}
+\AtBeginDocument{\let\textunderbracket\my@textunderbracket}
 %% Not so great rendering of \overbracket ininline mode
 \newcommand{\over@line}{\@span{style="text-decoration:solid overline;"}}
-\newcommand{\textoverbracket}[1]{{\over@line{}#1}}
+\newcommand{\my@textoverbracket}[1]{{\over@line{}#1}}
+\AtBeginDocument{\let\textoverbracket\my@textoverbracket}
 \newcommand{\text@top}{\@span{style="vertical-align:1.5em;"}}
 \newcommand{\textovername}[2]{\overline{#1}{\text@top{}#2}}
 \newcommand{\myovername}[2]{\ifdisplay\old@overname{#1}{#2}\else\textovername{#1}{#2}\fi}
 \AtBeginDocument{\let\old@overname\overname\let\overname\myovername}
 %%%% No warning (checked visualy)
 \renewcommand{\@@big}[1]{#1}
+%%%% Apparently \empty is... empty
+\let\empty\relax
