@@ -1,13 +1,13 @@
 #! /bin/sh
 case "$1" in
-    "")
+    "fix0")
         FIX=false
         ;;
-    "fix")
+    ""|"fix")
         FIX=true
         ;;
     *)
-        echo "Usage: sh ./zyva [fix]" 1>&2
+        echo "Usage: sh ./zyva [fix|fix0]" 1>&2
         exit 1
         ;;
 esac
