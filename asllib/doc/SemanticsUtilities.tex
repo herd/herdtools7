@@ -424,13 +424,13 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[bitvector]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \commonprefixline\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \commonprefixline\hva\\\\
   \bits \eqname \bv[n] ... \bv[0]\\
-  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\\\\
-  \commonsuffixline\\\\
+  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\hva\\\\
+  \commonsuffixline\hva\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
 }{
@@ -440,12 +440,12 @@ bv = 0xfdf0, bv_i = 0xfdf0
 
 \begin{mathpar}
 \inferrule[integer]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \commonprefixline\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \commonprefixline\hva\\\\
   \bits \eqdef \vi\text{ given as two's complement form of }(\maxpos + 1)\text{ bits}\\
-  \commonsuffixline\\\\
+  \commonsuffixline\hva\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
 }{
@@ -481,16 +481,16 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \inferrule{
   \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
   \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in n..0.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in m..0.\ i = I_j\\
     \vd_i & \text{otherwise}
-  \end{array} \right.}\\\\
+  \end{array} \right.}\hva\\\\
   \vbits\eqdef [i=n..0: \bitfunc(i)]\\
 }{
   \writetobitvector(\slices, \src, \dst) \evalarrow \overname{\nvbitvector(\vbits)}{\vv}

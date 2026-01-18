@@ -117,8 +117,8 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[returning]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\\\\
-  \commonprefixline \\\\
+  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
+  \commonprefixline \hva\\\\
   \vres = \Returning((\vvs, \newg), \envret) \\
   \envret \eqname (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
@@ -130,8 +130,8 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[continuing]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\\\\
-  \commonprefixline \\\\
+  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
+  \commonprefixline \hva\\\\
   \vres = \Continuing(\newg, \envcont) \\
   \envcont \eqname (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
@@ -143,8 +143,8 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \begin{mathpar}
 \inferrule[throwing]{
   \env \eqname (\tenv,\denv)\\
-  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\\\\
-  \commonprefixline \\\\
+  \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
+  \commonprefixline \hva\\\\
   \vres = \Throwing(\vv,\vt,\newg, \envthrow) \\
   \envthrow \eqname (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))

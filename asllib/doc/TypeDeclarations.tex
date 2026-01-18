@@ -240,14 +240,14 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[enum]{
-  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
-  \withemptylocal(\genv) \typearrow \tenv\\\\
-  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
+  \withemptylocal(\genv) \typearrow \tenv\hva\\\\
+  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\hva\\\\
   \annotateextrafields(\tenv, \name, \vtone, \vs) \typearrow (\tenvone, \vttwo, \vsp)\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
-  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
-  \commonprefixline\\\\
+  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\hva\\\\
+  \commonprefixline\hva\\\\
   \vttwo = \TEnum(\ids)\\
   \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newgenv \OrTypeError
 }{
@@ -257,14 +257,14 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 
 \begin{mathpar}
 \inferrule[not\_enum]{
-  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
-  \withemptylocal(\genv) \typearrow \tenv\\\\
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
+  \withemptylocal(\genv) \typearrow \tenv\hva\\\\
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
-  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\\\\
+  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\hva\\\\
   \sesispure(\vsest) \typearrow \vb\\
   \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
-  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\\\\
-  \commonprefixline\\\\
+  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\hva\\\\
+  \commonprefixline\hva\\\\
   \astlabel(\vttwo) \neq \TEnum
 }{
   \declaretype(\genv, \name, \tty, \vs) \typearrow (\overname{\tenvtwo}{\newgenv}, \vttwo, \vsp)
@@ -346,7 +346,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \inferrule[empty\_fields]{
   \vs = \some{(\vsuper, \extrafields)}\\
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \extrafields = \emptylist \\
   \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
@@ -359,8 +359,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \inferrule[no\_super]{
   \vs = \some{(\vsuper, \extrafields)}\\
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \extrafields \neq \emptylist\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  \extrafields \neq \emptylist\hva\\\\
   \tenv.\staticenvsG.\declaredtypes(\vsuper) = \bot
 }{
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow
@@ -372,8 +372,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \inferrule[structured]{
   \vs = \some{(\vsuper, \extrafields)}\\
   \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \extrafields \neq \emptylist\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  \extrafields \neq \emptylist\hva\\\\
   \tenv.\staticenvsG.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
   {
     \begin{array}{r}
@@ -396,7 +396,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 The following are examples of annotating a type inside an \optionalterm{} with the empty \staticenvironmentterm{}:
 \begin{mathpar}
 \annotatetypeopt(\emptytenv, \None) \typearrow \None
-\and
+\hva\and
 \annotatetypeopt(\emptytenv, \some{\unconstrainedinteger}) \typearrow \some{\unconstrainedinteger}
 \end{mathpar}
 
@@ -422,7 +422,7 @@ The following are examples of annotating a type inside an \optionalterm{} with t
 \inferrule[none]{}{
   \annotatetypeopt(\tenv, \overname{\None}{\tyopt}) \typearrow \overname{\tyopt}{\tyoptp}
 }
-\and
+\hva\and
 \inferrule[some]{
   \annotatetype(\tenv, \vt) \typearrow \vtone \OrTypeError
 }{
@@ -468,7 +468,7 @@ The following are examples of annotating an expression inside an \optionalterm{}
 \inferrule[none]{}{
   \annotateexpropt(\tenv, \overname{\None}{\expropt}) \typearrow (\None, \None)
 }
-\and
+\hva\and
 \inferrule[some]{
   \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep)\OrTypeError
 }{
@@ -599,7 +599,7 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\\\\
+  \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\hva\\\\
   \addglobalconstant(\genvone, \name, \vv) \typearrow \newgenv
 }{
   \declareconst(\genv, \name, \tty, \vv) \typearrow \newgenv

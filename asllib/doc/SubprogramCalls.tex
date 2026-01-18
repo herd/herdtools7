@@ -111,8 +111,8 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\\\\
-  \annotateexprlist(\tenv, \vcall.\callparams) \typearrow \params \OrTypeError\\\\
+  \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\hva\\\\
+  \annotateexprlist(\tenv, \vcall.\callparams) \typearrow \params \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   \annotatecallactualstyped(\tenv, \vcall.\callname, \params, \args, \vcall.\callcalltype) \typearrow \\
@@ -194,14 +194,14 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
     \end{array}
   }\\
   \vses \eqdef \vsesargs \cup \vsescall\\
-  \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\\\\
-  \equallength(\funcsig.\FIELDparameters, \paramsone) \typearrow \paramaritymatch \\\\
-  \techeck(\paramaritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
+  \insertstdlibparam(\funcsig, \params, \argtypes) \typearrow \paramsone\hva\\\\
+  \equallength(\funcsig.\FIELDparameters, \paramsone) \typearrow \paramaritymatch \hva\\\\
+  \techeck(\paramaritymatch, \BadCall) \typearrow \True \OrTypeError\hva\\\\
   \equallength(\funcsig.\FIELDargs, \args) \typearrow \aritymatch\\
-  \techeck(\aritymatch, \BadCall) \typearrow \True \OrTypeError\\\\
-  \checkparamstypesat(\tenv, \funcsig.\FIELDparameters, \paramsone) \typearrow \True \OrTypeError\\\\
+  \techeck(\aritymatch, \BadCall) \typearrow \True \OrTypeError\hva\\\\
+  \checkparamstypesat(\tenv, \funcsig.\FIELDparameters, \paramsone) \typearrow \True \OrTypeError\hva\\\\
   \eqs \eqdef [(\vx_i, \Ignore) \in \funcsig.\funcsigparams_i ,\; (\Ignore, \vv_i, \Ignore) \in \paramsone: (\vx_i, \vv_i) ] \\
-  \checkargstypesat(\tenv, \funcsig.\FIELDargs, \argtypes, \eqs) \typearrow \True \OrTypeError\\\\
+  \checkargstypesat(\tenv, \funcsig.\FIELDargs, \argtypes, \eqs) \typearrow \True \OrTypeError\hva\\\\
   \annotateretty(\tenv, \calltype, \funcsig.\FIELDreturntype, \eqs) \typearrow \rettyopt \OrTypeError
 }{
   {
@@ -279,9 +279,9 @@ parameters elided, and the equivalent calls with all parameters included.
       \argtypes \neq \emptylist &
     \end{array}\right)
   }\\
-  \caninsertstdlibparam = \True\\\\
+  \caninsertstdlibparam = \True\hva\\\\
   \argtypes \eqname [\vt] \concat \Ignore\\
-  \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\hva\\\\
   \paramtype \eqdef \TInt(\WellConstrained([\AbbrevConstraintExact{\vwidth}]))\\
   \paramsone \eqdef \params \concat [(\paramtype, \vwidth, \emptyset)]
 }{
@@ -340,7 +340,7 @@ func Ones{N}() => bits(N)
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \funcsig.\funcbuiltin\\\\
+  \funcsig.\funcbuiltin\hva\\\\
   {
     \declaredparam \eqdef \begin{cases}
       \some{\vn} & \text{if }\funcsig.\FIELDparameters = [(\vn, \Ignore)]\\
@@ -417,28 +417,28 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \inferrule[empty]{}{
   \checkparamstypesat(\tenv, \overname{\emptylist}{\funcsigparams}, \Ignore) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[parameterized]{
   \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
   \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
-  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
-  \commonprefixline\\\\
-  \tydeclopt = \some{\TInt(\Parameterized(\vx))}\\\\
+  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\hva\\\\
+  \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
+  \tydeclopt = \some{\TInt(\Parameterized(\vx))}\hva\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[other]{
   \funcsigparams = [(\vx, \tydeclopt)] \concat \funcsigparamsone\\
   \params = [(\tyactual, \eactual, \vsesactual)] \concat \paramsone\\
-  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\\\\
-  \commonprefixline\\\\
+  \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\hva\\\\
+  \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \tydeclopt \eqname \some{\tydecl}\\
   \tydecl \neq \TInt(\Parameterized(\vx))\\
-  \checktypesatisfies(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\hva\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
 }{
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
@@ -508,7 +508,7 @@ requires substituting \verb|8| for \verb|N| in the types
 }{
   \renametyeqs(\tenv, \eqs, \overname{\TBits(\ve, \fields)}{\tty}) \typearrow \overname{\TBits(\newe, \fields)}{\newty}
 }
-\and
+\hva\and
 \inferrule[t\_int\_wellconstrained]{
   \vi\in\listrange(\constraints): \substconstraint(\tenv, \constraints[\vi]) \typearrow \newc_\vi\\
   \newconstraints \eqdef [\vi\in\listrange(\constraints): \newc_\vi]\\
@@ -517,14 +517,14 @@ requires substituting \verb|8| for \verb|N| in the types
   \renametyeqs(\tenv, \eqs, \overname{\TInt(\WellConstrained(\constraints))}{\tty}) \typearrow
   \newty
 }
-\and
+\hva\and
 \inferrule[t\_int\_parameterized]{
   \substexprnormalize(\eqs, \EVar(\name)) \typearrow \ve\\
   \newty \eqdef \TInt(\WellConstrained(\ConstraintExact(\ve)))
 }{
   \renametyeqs(\tenv, \eqs, \overname{\TInt(\Parameterized(\name))}{\tty}) \typearrow \newty
 }
-\and
+\hva\and
 \inferrule[t\_tuple]{
   \vi\in\listrange(\tys): \renametyeqs(\eqs, \tys[\vi]) \typearrow \newty_\vi\\
   \newtys \eqdef [\vi\in\listrange(\tys): \newty_\vi]
@@ -532,7 +532,7 @@ requires substituting \verb|8| for \verb|N| in the types
   \renametyeqs(\tenv, \eqs, \overname{\TTuple(\tys)}{\tty}) \typearrow
   \overname{\TTuple(\newtys)}{\newty}
 }
-\and
+\hva\and
 \inferrule[other]{
   \astlabel(\tty) \not\in \{\TBits, \TInt, \TTuple\}
 }{
@@ -966,7 +966,7 @@ resulting in the type \verb|integer{0..64}|.
 }{
   \substconstraint(\tenv, \eqs, \vc) \typearrow \overname{\ConstraintExact(\newe)}{\newc}
 }
-\and
+\hva\and
 \inferrule[range]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \substexprnormalize(\tenv, \eqs, \veone) \typearrow \veonep\\
@@ -1024,12 +1024,12 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
   \checkargstypesat(\tenv, \overname{\emptylist}{\funcsigargs}, \overname{\emptylist}{\argtypes}, \eqs)
   \typearrow \True
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
   \funcsigargs = [(\Ignore, \tydecl)] \concat \funcsigargsone\\
   \argtypes = [\tyactual] \concat \argtypesone\\
-  \renametyeqs(\tenv, \eqs, \tydecl) \typearrow \tydeclp\OrTypeError\\\\
-  \checktypesatisfies(\tenv, \tyactual, \tydeclp) \typearrow \True\OrTypeError\\\\
+  \renametyeqs(\tenv, \eqs, \tydecl) \typearrow \tydeclp\OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \tyactual, \tydeclp) \typearrow \True\OrTypeError\hva\\\\
   \checkargstypesat(\tenv, \funcsigargsone, \argtypesone, \eqs) \typearrow \True\OrTypeError
 }{
   \checkargstypesat(\tenv, \funcsigargs, \argtypes, \eqs) \typearrow \True
@@ -1204,7 +1204,7 @@ the \integertypeterm{} rather than the \realtypeterm).
     \begin{array}{r}
       \filtercallcandidates(\tenv, \callerargtypes, \renamingset, \calltype) \typearrow \\ \matchingrenamings \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   \matchingrenamings = [(\namep, \callee)]
 }{
   {
@@ -1262,13 +1262,13 @@ yields an empty list.
 \inferrule[candidates\_exist]
 {
   \funcdef \eqdef \tenv.\staticenvsG.\subprograms(\name) \\
-  \hasargclash(\tenv, \formaltypes, \funcdef.\FIELDargs) \typearrow \vbone \OrTypeError\\\\
-  \calltypematches(\funcdef, \calltype) \typearrow \vbtwo \\\\
+  \hasargclash(\tenv, \formaltypes, \funcdef.\FIELDargs) \typearrow \vbone \OrTypeError\hva\\\\
+  \calltypematches(\funcdef, \calltype) \typearrow \vbtwo \hva\\\\
   {
   \begin{array}{r}
     \filtercallcandidates(\tenv, \formaltypes, \calltype, \candidatesone) \typearrow \\ \matchesone \OrTypeError
   \end{array}
-  }\\\\
+  }\hva\\\\
   \matches \eqdef \choice{\vbone \land \vbtwo}{\;[(\name,\funcdef)] \concat \matchesone}{\;\matchesone}
 }{
   {
@@ -1356,7 +1356,7 @@ the arguments of procedures -- that do not clash and types that do clash
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\\\\
+  \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\hva\\\\
   \argtys \eqdef [(\Ignore, \vt) \in \vargs: \vt]\\
   \vi\in\listrange(\formaltys): \typeclashes(\tenv, \formaltys[\vi], \argtys[\vi]) \typearrow \True \terminateas \False,\TypeErrorConfig
 }{
@@ -1457,7 +1457,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[simple]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \OrTypeError \\
   \astlabel(\vtstruct)=\astlabel(\vsstruct)\\
@@ -1470,7 +1470,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[t\_enum]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \TEnum(\Ignore, \vlis) \\
   \tstruct(\tenv, \vs) \typearrow \TEnum(\Ignore, \vlit)
 }{
@@ -1481,7 +1481,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[t\_array]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \TArray(\Ignore, \vtyt) \\
   \tstruct(\tenv, \vs) \typearrow \TArray(\Ignore, \vtys) \\
   \typeclashes(\tenv, \vtyt, \vtys) \typearrow \vb
@@ -1493,7 +1493,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[t\_tuple]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \TTuple(\vt_{1..k}) \\
   \tstruct(\tenv, \vs) \typearrow \TTuple(\vs_{1..n}) \\
   \booltrans(n = k) \booltransarrow \True \terminateas \False\\
@@ -1507,7 +1507,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[otherwise\_different\_labels]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) \neq \astlabel(\vsstruct)
@@ -1519,7 +1519,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \begin{mathpar}
 \inferrule[otherwise\_structured]{
   \issubtype(\tenv, \vs, \vt) \typearrow \False\\
-  \issubtype(\tenv, \vt, \vs) \typearrow \False\\\\
+  \issubtype(\tenv, \vt, \vs) \typearrow \False\hva\\\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \\
   \tstruct(\tenv, \vs) \typearrow \vsstruct \\
   \astlabel(\vtstruct) = \astlabel(\vsstruct)\\
@@ -1580,7 +1580,7 @@ is annotated as
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \annotateexpr(\tenv, \ve) \typearrow \vtypedexpr \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow \vtypedexpr \OrTypeError\hva\\\\
   \annotateexprlist(\tenv, \exprsone) \typearrow \typedexprsone \OrTypeError
 }{
   \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\vtypedexpr] \concat \typedexprsone}{\typedexprs}
@@ -1690,13 +1690,13 @@ while calling \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
-  \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\\\\
-  \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\\\\
+  \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\hva\\\\
+  \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\hva\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
-  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
-  \commonprefixline\\\\
-  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\end{array}}\\\\
+  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\hva\\\\
+  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\hva\\\\
+  \commonprefixline\hva\\\\
+  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \ResultCall(\vms, (\vglobal, \Ignore)) \OrDynErrorDiverging\end{array}}\hva\\\\
   \vmstwo \eqdef [\vm \in \vms: \readvaluefrom(\vm)]\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
@@ -1707,13 +1707,13 @@ while calling \\
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\\\\
-  \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\\\\
+  \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\hva\\\\
+  \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\hva\\\\
   \envtwo \eqname (\tenv, \denvtwo)\\
-  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\\\\
-  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\\\\
-  \commonprefixline\\\\
-  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\end{array}}\\\\
+  \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\hva\\\\
+  \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\hva\\\\
+  \commonprefixline\hva\\\\
+  {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\end{array}}\hva\\\\
   \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, \{ \dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
@@ -1777,7 +1777,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
       \right\}
   }\\
   \envone \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \emptyfunc\})\\
-  \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\\\\
+  \checkrecurselimit(\envone, \name, \vrecurselimit) \evalarrow \vgone \OrDynErrorDiverging\hva\\\\
   \argnames \eqdef [(\vx, \Ignore) \in \argdecls: \vx]\\
   \assignargs((\envone, \emptygraph), \argnames, \actualargs) \evalarrow (\envtwo, \vgtwo)\\
   \paramnames \eqdef [(\vx, \Ignore) \in \params: \vx]\\
@@ -1850,7 +1850,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[some\_ok]{
-  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\hva\\\\
   \env \eqname (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls < \vlimit
@@ -1861,7 +1861,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \begin{mathpar}
 \inferrule[limit\_exceeded]{
-  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\hva\\\\
   \env \eqname (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls \geq \vlimit
@@ -1984,7 +1984,7 @@ with the same value and a fresh identifier for it.
   {
     \matchfuncres(\Continuing(\vg, \env)) \evalarrow \ResultCall((\emptylist, \vg), \env)
   }
-  \and
+  \hva\and
   \inferrule[returning]{
     \xs \eqname [i=1..k: \vv_i]\\
     i \in \listrange(\xs): \ids[i] = \returnvarprefix \concatstrings \stringofnat{i-1}\\
