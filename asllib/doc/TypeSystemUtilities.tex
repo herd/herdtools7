@@ -125,7 +125,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 }{
   \sort(\vlone, \compare) \typearrow \overname{\vlone}{\vltwo}
 }
-\and
+\hva\and
 \inferrule[two\_or\_more]{
   \listlen{\vlone} = n\\
   f : 1..n \rightarrow 1..n \text{ is a bijection}\\
@@ -179,7 +179,7 @@ which does not exist.
 }{
   \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \overname{\some{\vbf}}{\vr}
 }
-\and
+\hva\and
 \inferrule[tail]{
   \bitfieldgetname(\vbf) \typearrow \namep\\
   \name \neq \namep\\
@@ -187,7 +187,7 @@ which does not exist.
 }{
   \findbitfieldopt(\name, \overname{\vbf \concat \bitfieldsp}{\bitfields}) \typearrow \vr
 }
-\and
+\hva\and
 \inferrule[empty]{}{
   \findbitfieldopt(\name, \overname{\emptylist}{\bitfields}) \typearrow \None
 }
@@ -239,7 +239,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 {
   \typeofarraylength(\overname{\ArrayLengthEnum(\vs, \Ignore)}{\size}) \typearrow \TNamed(\vs)
 }
-\and
+\hva\and
 \inferrule[expr]{}{
   \typeofarraylength(\overname{\ArrayLengthExpr(\Ignore)}{\size}) \typearrow \TInt(\Unconstrained)
 }
@@ -662,7 +662,7 @@ specification.
 \begin{mathpar}
 \inferrule[add]{
   \shouldrememberimmutableexpression(\vsese) \typearrow \True\\
-  \normalize(\tenv, \ve) \typearrow \vep \OrTypeError\\\\
+  \normalize(\tenv, \ve) \typearrow \vep \OrTypeError\hva\\\\
   \addlocalimmutableexpr(\vx, \vep) \typearrow \newtenv
 }{
   \addimmutableexpression(\tenv, \overname{\LDKLet}{\ldk}, \overname{\some{\ve, \vsese}}{\veopt}, \vx) \typearrow \newtenv

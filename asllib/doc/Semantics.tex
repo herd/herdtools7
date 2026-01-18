@@ -513,8 +513,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \hva\\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \hva\\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
 }{
   \evalexpr( \emptyenv, \veonetwo ) \evalarrow
@@ -524,8 +524,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \hva\\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \hva\\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
 }{
   \evalexpr( \emptyenv, \vefourfive ) \evalarrow
@@ -553,10 +553,10 @@ Further, the threading through of environments similarly impose an ordering.
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow

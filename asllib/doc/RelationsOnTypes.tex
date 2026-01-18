@@ -74,7 +74,7 @@ declared in \listingref{subtype}:\\
 \inferrule[reflexive]{}{
   \issubtype(\tenv, \overname{\TNamed(\id)}{\vtone}, \overname{\TNamed(\id)}{\vttwo}) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[transitive]{
   \idone \neq \idtwo\\
   \tenv.\staticenvsG.\subtypes(\idone) = \idthree\\
@@ -82,14 +82,14 @@ declared in \listingref{subtype}:\\
 }{
   \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[no\_supertype]{
   \idone \neq \idtwo\\
   \tenv.\staticenvsG.\subtypes(\idone) = \bot
 }{
   \issubtype(\tenv, \overname{\TNamed(\idone)}{\vtone}, \overname{\TNamed(\idtwo)}{\vttwo}) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[not\_named]{
   (\astlabel(\vtone) \neq \TNamed \lor \astlabel(\vttwo) \neq \TNamed)
 }{
@@ -482,7 +482,7 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
   \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vbthree\\
   \neg((\vbone \lor \vbtwo) \land \vbthree)\\
   \vt = \TBits(\widtht, \emptylist)\\
-  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\\\\
+  \tstruct(\tenv, \vs) \typearrow \TBits(\widths, \Ignore) \OrTypeError\hva\\\\
   \bitwidthequal(\tenv, \widtht, \widths) \typearrow \vb
 }{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \vb
@@ -721,9 +721,9 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \vt = \TNamed(\namesubs)\\
   \vs = \TNamed(\namesubt)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\\\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \namedlca(\tenv, \namesubs, \namesubt) \typearrow \None \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\hva\\\\
   \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
 }{
   \lca(\tenv, \vt, \vs) \typearrow \tty
@@ -746,8 +746,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
   \astlabel(\vt) \neq \astlabel(\vs)\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\hva\\\\
   \typeequal(\tenv, \vanont, \vanons) \typearrow \True\\
   \tty \eqdef \choice{\astlabel(\vt) = \TNamed}{\vt}{\vs}
 }{
@@ -760,8 +760,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   (\astlabel(\vt) = \TNamed \lor \astlabel(\vs) = \TNamed)\\
   \astlabel(\vt) \neq \astlabel(\vs)\\
-  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\\\\
+  \makeanonymous(\tenv, \vs) \typearrow \vanons \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vanont \OrTypeError\hva\\\\
   \typeequal(\tenv, \vanont, \vanons) \typearrow \False\\
   \lca(\tenv, \vanont, \vanons) \typearrow \tty \OrTypeError
 }{
@@ -824,8 +824,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \vt = \TArray(\widtht, \vtyt)\\
   \vs = \TArray(\widths, \vtys)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
-  \arraylengthequal(\tenv, \widtht, \widths) \typearrow \vbequallength \OrTypeError\\\\
-  \techeck(\vbequallength, \NoLCA) \typearrow \True \OrTypeError\\\\
+  \arraylengthequal(\tenv, \widtht, \widths) \typearrow \vbequallength \OrTypeError\hva\\\\
+  \techeck(\vbequallength, \NoLCA) \typearrow \True \OrTypeError\hva\\\\
   \lca(\tenv, \vtyt, \vtys) \typearrow \vtone \OrTypeError
 }{
   \lca(\tenv, \vt, \vs) \typearrow \overname{\TArray(\widtht, \vtone)}{\tty}
@@ -838,7 +838,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \vs = \TTuple(\vlis)\\
   \typeequal(\tenv, \vt, \vs) \typearrow \False\\
   \equallength(\vlit, \vlis) \typearrow \vb\\
-  \techeck(\vb, \NoLCA) \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \NoLCA) \typearrow \True \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   \vi\in\listrange(\vlit): \lca(\tenv, \vlit[\vi], \vlis[\vi]) \typearrow \\
@@ -935,7 +935,7 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 
 \begin{mathpar}
 \inferrule[neg\_error]{
-  \typesatisfies(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\\\\
+  \typesatisfies(\tenv, \vt, \unconstrainedinteger) \typearrow \False \OrTypeError\hva\\\\
   \typesatisfies(\tenv, \vt, \TReal) \typearrow \False \OrTypeError\\
 }{
   \applyunoptype(\tenv, \overname{\NEG}{\op}, \vt) \typearrow \TypeErrorVal{\BadOperands}
@@ -1273,8 +1273,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \begin{mathpar}
 \inferrule[named]{
   \astlabel(\vtone) = \TNamed \lor \astlabel(\vttwo) = \TNamed\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\hva\\\\
   \applybinoptypes(\tenv, \op, \vtoneanon, \vttwoanon) \typearrow \vt \OrTypeError
 }{
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt
@@ -1406,7 +1406,7 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \op \in  \{\MUL, \POW, \ADD, \SUB, \DIVRM, \DIV, \MOD, \SHL, \SHR\}\\
   \vcone = \WellConstrained(\cstwo, \vpone)\\
   \vctwo = \WellConstrained(\csone, \vptwo)\\
-  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow (\cs, \vpthree) \OrTypeError\\\\
+  \annotateconstraintbinop(\tenv, \op, \vcsone, \vcstwo) \typearrow (\cs, \vpthree) \OrTypeError\hva\\\\
   \vp = \precisionjoin(\vpone, \precisionjoin(\vptwo, \vpthree))
 }{
       \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow
@@ -1435,8 +1435,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 
 \begin{mathpar}
 \inferrule[error]{
-  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\\\\
-  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\\\\
+  \makeanonymous(\tenv, \vtone) \typearrow \vtoneanon \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vttwo) \typearrow \vttwoanon \OrTypeError\hva\\\\
   {
   \begin{array}{l}
   (\op, \astlabel(\vtoneanon), \astlabel(\vttwoanon)) \not\in \binopsignatures\\
@@ -1507,7 +1507,7 @@ named lowest common ancestor.
 }{
   \namedlca(\tenv, \vt, \vs) \typearrow \vs
 }
-\and
+\hva\and
 \inferrule[super]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
   \vs \not\in \vtsupers\\
@@ -1516,7 +1516,7 @@ named lowest common ancestor.
 }{
   \namedlca(\tenv, \vt, \vs) \typearrow \tty
 }
-\and
+\hva\and
 \inferrule[none]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
   \vs \not\in \vtsupers\\
@@ -1600,7 +1600,7 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   }\hva\\\\
   \commonsuffixline\hva\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate,\CannotOverapproximate\\\\
+  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate,\CannotOverapproximate\hva\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
 }{
   \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
@@ -1616,7 +1616,7 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   (\csonearg, \cstwoarg) \eqdef (\csone, \cstwof)\hva\\\\
   \commonsuffixline\hva\\\\
   \constraintbinop(\op, \csonearg, \cstwoarg) \typearrow \csvanilla\\
-  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
+  \refineconstraintfordiv(\vapprox, \op, \csvanilla) \typearrow \refinedcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
   \reduceconstraints(\tenv, \refinedcs) \typearrow \annotatedcs
 }{
   \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
@@ -1666,9 +1666,9 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[greater\_or\_equal]{
-  \op \in \{\SHL, \SHR, \POW\}\\\\
+  \op \in \{\SHL, \SHR, \POW\}\hva\\\\
   \refineconstraintbysign(\tenv, \lambda x.\ x \geq 0) \typearrow \vf\\
-  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
+  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
   \techeck(\newcs \neq \emptylist, \BadOperands) \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
@@ -1677,9 +1677,9 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 
 \begin{mathpar}
 \inferrule[greater\_than]{
-  \op \in \{\MOD, \DIV, \DIVRM\}\\\\
+  \op \in \{\MOD, \DIV, \DIVRM\}\hva\\\\
   \refineconstraintbysign(\tenv, \lambda x.\ x > 0) \typearrow \vf\\
-  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
+  \refineconstraints(\vapprox, \cs, \vf) \typearrow \newcs \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
   \techeck(\newcs \neq \emptylist, \BadOperands) \typearrow \True\OrTypeError
 }{
   \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \newcs
@@ -2044,7 +2044,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \begin{mathpar}
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
-  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
+  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
   \vres \eqdef \concatlist{\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
   \vres \neq \emptylist
 }{
@@ -2055,7 +2055,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \begin{mathpar}
 \inferrule[div\_empty]{
   \op = \DIV\\
-  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\\\\
+  \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
   \vres \eqdef \concatlist{\vi\in\listrange(\cs): \choice{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
   \vres = \emptylist\\
 }{
@@ -2137,7 +2137,7 @@ Specifically, notice the following:
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[exact]{
-  \getliteraldivopt(\ve) \typearrow \some{(\vzone, \vztwo)} \terminateas \None\\\\
+  \getliteraldivopt(\ve) \typearrow \some{(\vzone, \vztwo)} \terminateas \None\hva\\\\
   {
     \vcopt \eqdef
     \begin{cases}
@@ -2414,7 +2414,7 @@ not included in \verb|FlaggedPacket|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\\\\
+  \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\hva\\\\
   \vbf \eqdef \bigwedge_{\bf \in \bfsone} \vb_\vbf
 }{
   \bitfieldsincluded(\tenv, \bfsone, \bfstwo) \typearrow \vb
@@ -2595,7 +2595,7 @@ is ill-typed.
   \vbfone = \BitFieldType(\nameone, \slicesone, \ttyone)\hva\\
   \vbone \eqdef \nameone = \nametwo\\
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo\\
-  \subtypesatisfies(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\\\\
+  \subtypesatisfies(\tenv, \ttyone, \ttytwo) \typearrow \vbthree \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo \land \vbthree
 }{
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
@@ -2628,13 +2628,13 @@ See \ExampleRef{The Structure of a Type}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \tstruct(\vt) \typearrow \vtp \OrTypeError\\\\
+  \tstruct(\vt) \typearrow \vtp \OrTypeError\hva\\\\
   \astlabel(\vtp) = \vl
 }
 {
   \checkstructurelabel(\tenv, \vt, \vl) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[error]{
   \tstruct(\vt) \typearrow \vtp\\
   \astlabel(\vtp) \neq \vl
@@ -2698,7 +2698,7 @@ The following are two examples of applying $\towellconstrained$ to various types
 }{
   \towellconstrained(\overname{\TInt(\vi)}{\vt}) \typearrow \vt
 }
-\and
+\hva\and
 \inferrule[other]{
   \astlabel(\vt) \neq \TInt
 }{
@@ -2729,7 +2729,7 @@ $\unconstrainedinteger$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\hva\\\\
   \towellconstrained(\vtone) \typearrow \vtp
 }{
   \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtp
@@ -2765,7 +2765,7 @@ See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
 }{
   \getbitvectorwidth(\tenv, \vt) \typearrow \ve
 }
-\and
+\hva\and
 \inferrule[error]{
   \tstruct(\tenv, \vt) \typearrow \vtp\\
   \astlabel(\vtp) \neq \TBits
@@ -2794,7 +2794,7 @@ which yield $1$, $16$, and $8$, respectively.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\hva\\\\
   \staticeval(\tenv, \ewidth) \typearrow \LInt(\vw) \OrTypeError
 }{
   \getbitvectorconstwidth(\tenv, \vt) \typearrow \vw
@@ -2834,8 +2834,8 @@ The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a si
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\\\\
-  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\\\\
+  \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\hva\\\\
+  \getbitvectorwidth(\tenv, \vttwo) \typearrow \vm \OrTypeError\hva\\\\
   \bitwidthequal(\tenv, \vn, \vm) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError
 }{
@@ -2881,7 +2881,7 @@ precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
   }{
     \precisionjoin(\vpone, \vptwo) \typearrow \PrecisionLost
   }
-  \and
+  \hva\and
   \inferrule[Full]{
     \vpone = \PrecisionFull \\
     \vptwo = \PrecisionFull

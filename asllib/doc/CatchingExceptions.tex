@@ -123,11 +123,11 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \begin{mathpar}
 \inferrule[none]{
   \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
-  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
-  \annotateblock(\tenv, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
-  \newcatcher \eqdef (\overname{\None}{\nameopt}, \ttyp, \newstmt)\\\\
-  \commonsuffixline\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\hva\\\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\hva\\\\
+  \annotateblock(\tenv, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\hva\\\\
+  \newcatcher \eqdef (\overname{\None}{\nameopt}, \ttyp, \newstmt)\hva\\\\
+  \commonsuffixline\hva\\\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
@@ -139,13 +139,13 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \begin{mathpar}
 \inferrule[some]{
   \vc = (\overname{\some{\name}}{\nameopt}, \tty, \vstmt)\\
-  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\\\\
-  \checkvarnotinenv(\tenv, \name) \typearrow \True \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\ttyp, \vsesty) \OrTypeError\hva\\\\
+  \checkstructurelabel(\tenv, \ttyp, \TException) \typearrow \True \OrTypeError\hva\\\\
+  \checkvarnotinenv(\tenv, \name) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\tenv, \name, \ttyp, \LDKLet) \typearrow \tenvp\\
-  \annotateblock(\tenvp, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\\\\
-  \newcatcher \eqdef (\overname{\some{\name}}{\nameopt}, \ttyp, \newstmt)\\\\
-  \commonsuffixline\\\\
+  \annotateblock(\tenvp, \vstmt) \typearrow (\newstmt, \vsesblock) \OrTypeError\hva\\\\
+  \newcatcher \eqdef (\overname{\some{\name}}{\nameopt}, \ttyp, \newstmt)\hva\\\\
+  \commonsuffixline\hva\\\\
   \vses \eqdef \vsesblock \cup \vsesty\\
 }{
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
@@ -218,7 +218,7 @@ That is, no \dynamicerrorterm{} occurs.
   \env \eqname (\tenv, \denv)\\
   \envthrow \eqname (\tenv, \denvthrow)\\
   \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\\
-  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{C}{\newg}
@@ -265,7 +265,7 @@ caught MyExceptionType with msg=42
   \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
-  \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \envthree \eqdef \environof{C}\\
   \removelocal(\envthree, \name) \evalarrow \envfour\\
   D \eqdef \withenviron{C}{\envfour}\\
@@ -309,7 +309,7 @@ Otherwise
   \env \eqname (\tenv, \denv)\\
   \envthrow \eqname (\tenv, \denvthrow)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
-  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
+  \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
   \evalcatchers(\env, \catchers, \some{\vs}, \sm) \evalarrow \withgraph{C}{\vg}

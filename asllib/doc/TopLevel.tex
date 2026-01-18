@@ -75,9 +75,9 @@ or a \dynamicerrorterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\\\\
-    \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\\\\
-    \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\\\\
+    \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\hva\\\\
+    \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\hva\\\\
+    \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\hva\\\\
     \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
     {
     \begin{array}{r}
@@ -85,11 +85,11 @@ or a \dynamicerrorterm{}.
       \vstdasbuiltin[i] \OrBuildError
     \end{array}
     }\\
-    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\\\\
-    \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\\\\
-    \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
+    \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\hva\\\\
+    \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\hva\\\\
+    \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\hva\\\\
     \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
-    \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
+    \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\hva\\\\
     \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
 }{
     \checkandinterpret(\vspectext, \vstdtext) \longrightarrow (\nvint(\vret), \vg)
@@ -1678,7 +1678,7 @@ It produces a build error when $\decl$ is not a function.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\\\\
+  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\hva\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{

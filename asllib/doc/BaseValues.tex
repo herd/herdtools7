@@ -174,7 +174,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \begin{mathpar}
 \inferrule[t\_bits\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \vzopt \neq \None\\\\
+    \vzopt \neq \None\hva\\\\
     \vzopt \eqname \some{\length}\\
     \techeck(\length \geq 0, \NoBaseValue) \typearrow \True\OrTypeError
 }{
@@ -185,7 +185,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \begin{mathpar}
 \inferrule[t\_bits\_non\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \vzopt = \None \\\\
+    \vzopt = \None \hva\\\\
     \veinit \eqdef \ESlice (\ELInt{0}, [\SliceLength(\ELInt{0}, \ve)])
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \veinit
@@ -216,7 +216,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \inferrule[t\_int\_wellconstrained]{
     \cs \eqname \vc_{1..k}\\
     \vzminlist \eqdef \constraintabsmin(\tenv, \vc_1) \concat \ldots \concat \constraintabsmin(\tenv, \vc_k)\\
-    \techeck(\vzminlist \neq \emptyset, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \techeck(\vzminlist \neq \emptyset, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
 }{
     \basevalue(\tenv, \overname{\TInt(\WellConstrained(\cs))}{\vt}) \typearrow \overname{\ELiteral(\LInt(\vzmin))}{\veinit}
@@ -225,7 +225,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_named]{
-    \makeanonymous(\tenv, \TNamed(\id)) \typearrow \vtp \OrTypeError\\\\
+    \makeanonymous(\tenv, \TNamed(\id)) \typearrow \vtp \OrTypeError\hva\\\\
     \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError
 }{
     \basevalue(\tenv, \overname{\TNamed(\id)}{\vt}) \typearrow \veinit
@@ -334,7 +334,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \begin{mathpar}
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
-    \techeck(\vzopt \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \techeck(\vzopt \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \vzopt \eqname \some{\vz}
 }{
     \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
@@ -344,10 +344,10 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \begin{mathpar}
 \inferrule[range]{
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
-    \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \vzoptone \eqname \some{\vvone}\\
-    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\hva\\
-    \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
+    \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \vzopttwo \eqname \some{\vvtwo}\\
     {
     \vzs \eqdef

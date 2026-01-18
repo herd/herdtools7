@@ -427,7 +427,7 @@ correspond to \CaseName{pending\_constrained}.
 \begin{mathpar}
 \inferrule[well\_constrained]{
   \constraints \eqname \vc_{1..k}\\
-  i=1..k: \annotateconstraint(\vc_i) \typearrow (\newc_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotateconstraint(\vc_i) \typearrow (\newc_i, \vxs_i) \OrTypeError\hva\\\\
   \newconstraints \eqdef \newc_{1..k}\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
@@ -499,8 +499,8 @@ expressions of \texttt{let} storage elements.
 
 \begin{mathpar}
 \inferrule[range]{
-  \annotatesymbolicconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\\\\
-  \annotatesymbolicconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\hva\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\hva\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   {
@@ -826,20 +826,20 @@ to be \constrainedintegersterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[with\_bitfields]{
-  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\hva\\\\
+  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\hva\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
-  \bitfields \neq \emptylist\\\\
-  \techeck(\sesispure(\seswidth), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
+  \bitfields \neq \emptylist\hva\\\\
+  \techeck(\sesispure(\seswidth), \SideEffectViolation) \typearrow \True \OrTypeError\hva\\\\
   {
   \begin{array}{r}
     \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
     (\bitfieldsp, \vsesbitfields) \OrTypeError
   \end{array}
-  }\hva\\
-  \staticeval(\tenv, \ewidthp) \typearrow \LInt(\vwidth) \OrTypeError\\\\
-  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
+  }\\
+  \staticeval(\tenv, \ewidthp) \typearrow \LInt(\vwidth) \OrTypeError\hva\\\\
+  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \seswidth \cup \vsesbitfields
 }{
   {
@@ -853,8 +853,8 @@ to be \constrainedintegersterm.
 
 \begin{mathpar}
 \inferrule[no\_bitfields]{
-  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\hva\\\\
+  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\hva\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \bitfields = \emptylist
@@ -949,7 +949,7 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \inferrule{
   k > 1\\
   \tys \eqname \tty_{1..k}\\
-  i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\hva\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
@@ -1076,7 +1076,7 @@ show examples of ill-typed enumeration type declarations.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checknoduplicates(\vli) \typearrow \True \OrTypeError\\\\
+  \checknoduplicates(\vli) \typearrow \True \OrTypeError\hva\\\\
   \vl \in \vli: \checkvarnotingenv(\tenv.\staticenvsG, \vl) \typearrow \True \OrTypeError
 }{
   \annotatetype(\True, \tenv, \overname{\TEnum(\vli)}{\tty}) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
@@ -1201,7 +1201,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
   \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
   \getvariableenum(\tenv, \ve) \typearrow \None\\
-  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\\\\
+  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\hva\\\\
   \vses \eqdef \vsest \cup \vsesindex
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
@@ -1313,7 +1313,7 @@ expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\hva\\\\
   \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
 }{
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
@@ -1342,7 +1342,7 @@ of \verb|i| is the \unconstrainedintegertypeterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \makeanonymous(\tenv, \vt) \typearrow \vtp \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtp \OrTypeError\hva\\\\
   \techeck(\astlabel(\vtp) = \TInt, \UnexpectedType) \typearrow \True \OrTypeError
 }{
   \checkunderlyinginteger(\tenv, \vt) \typearrow \True
@@ -1408,8 +1408,8 @@ is ill-typed, since the field \verb|v| repeats.
 \inferrule{
   L \in \{\TRecord, \TException\}\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
-  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
-  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
+  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
@@ -1487,7 +1487,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
   \end{array}
 }
 }
-\and
+\hva\and
 \inferrule{}{
   \buildtyorcollection(\Ntyorcollection(\Nty)) \astarrow
   \overname{\astof{\Nty}}{\vastnode}
@@ -1525,10 +1525,10 @@ collection types in comments.
 \inferrule{
   \tty = \TCollection(\fields)\\
   \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
-  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\\\\
-  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\\\\
+  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
+  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
-  i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\\\\
+  i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   \annotatetype(\False, \tenv, \tty) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
@@ -1603,7 +1603,7 @@ show examples of ill-typed named types.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \techeck(\tenv.\staticenvsG.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\\\\
+  \techeck(\tenv.\staticenvsG.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\hva\\\\
   \tenv.\staticenvsG.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
   \vses \eqdef \{\ \GlobalEffect(\vpurity), \Immutability(\True) \}
 }{
