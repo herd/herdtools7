@@ -270,7 +270,7 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
 \inferrule{
   \others = [\vs \in \symdoms \;|\; \configdomain{\vs} \neq \Finite]\\
   \vfinitedomains = [\vs \in \symdoms \;|\; \configdomain{\vs} = \Finite]\\
-  \vxs \eqdef \bigcup_{\Finite(\vs) \in \vfinitedomains} \vs\\\\
+  \vxs \eqdef \bigcup_{\Finite(\vs) \in \vfinitedomains} \vs\hva\\\\
   \newsymdoms \eqdef \choice{\vxs \neq \emptyset}{[\Finite(\vxs)] \concat \others}{\others}
 }{
   \symdomnormalize(\symdoms) \typearrow \newsymdoms \newsymdoms
@@ -491,7 +491,7 @@ yield $1$ and $6$, respectively.
 }{
   \symdomeval(\tenv, \ve) \typearrow n
 }
-\and
+\hva\and
 \inferrule[top]{
   \normalize(\tenv, \ve) \typearrow \veone\\
   \staticeval(\tenv, \veone) \typearrow \top
@@ -621,7 +621,7 @@ underapproximated.
 
 \begin{mathpar}
 \inferrule[constrained\_constrained\_non\_equal\_sets]{
-  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\hva\\\\
   \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
   \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
   \vsone \neq \CannotOverapproximate \land \vstwo \neq \CannotOverapproximate\\
@@ -633,7 +633,7 @@ underapproximated.
 
 \begin{mathpar}
 \inferrule[constrained\_constrained\_non\_equal\_top]{
-  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\hva\\\\
   \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
   \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
   \vsone = \CannotOverapproximate \lor \vstwo = \CannotOverapproximate\\
@@ -1115,7 +1115,7 @@ types.
 
 \begin{mathpar}
 \inferrule[unop]{
-  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\hva\\\\
   \vs \eqdef \{ \unopliterals(\op, \LInt(\vz)) \;|\; \vz \in \vsp\}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
@@ -1124,8 +1124,8 @@ types.
 
 \begin{mathpar}
 \inferrule[binop\_precise]{
-  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\hva\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
   \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
   \plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
   \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox \terminateas \CannotOverapproximate
@@ -1136,8 +1136,8 @@ types.
 
 \begin{mathpar}
 \inferrule[binop\_approx]{
-  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\hva\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
   \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
   \plf = \PrecisionLost \land \vapprox = \Over
 }{
@@ -1147,8 +1147,8 @@ types.
 
 \begin{mathpar}
 \inferrule[cond]{
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
+  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \CannotOverapproximate\hva\\\\
   \vs \eqdef \choice{\vapprox = \Over}{\vstwo \cup \vsthree}{\vstwo \cap \vsthree}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs

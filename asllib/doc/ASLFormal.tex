@@ -403,7 +403,7 @@ retains a single copy of each element of the list $l$.
 It relies on the helper function $\uniquep$:
 \[
 \begin{array}{rcl}
-\uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\\\\
+\uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\hva\\\\
 \uniquep(l, \acc) &\triangleq&
   \begin{cases}
     \acc & \text{if }l = \emptylist\\
@@ -484,7 +484,7 @@ The conclusion holds when the \underline{conjunction} of the rule premises holds
 
 We use the following rule notation, where $P_{1..k}$ are the rule premises and $C$ is the conclusion:
 \begin{mathpar}
-\inferrule{P_1 \and \ldots \and P_k}{C}
+\inferrule{P_1 \hva\and \ldots \hva\and P_k}{C}
 \end{mathpar}
 
 For example, the rule \TypingRuleRef{ELit} has one premise:
@@ -685,10 +685,10 @@ This section explains the equality notations used in rules, two of which are use
 shown here:
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
@@ -739,7 +739,7 @@ Aliases allow us to break down complex expressions, but rules can always be rewr
 by inlining their right-hand sides:
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
   \evalexpr(\envone, \choice{\vb}{\veone}{\vetwo}) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv) \OrAbnormal
 }{
@@ -775,12 +775,12 @@ For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed
 \section{How to Parse Inference Rules Efficiently\label{sec:How to Parse Inference Rules Efficiently}}
 Consider the following examples, which is a simplified version of \SemanticsRuleRef{Binop}
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \hva\\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -833,8 +833,8 @@ A rule macro includes the special premise form $C \rulearrow C'\; \terminateas\;
 which introduces the output \configurationterm{} $C'$ and the short-circuiting alternative $E$:
 \begin{mathpar}
   \inferrule{
-    \XP\\\\
-    C \rulearrow C'\; \terminateas\; E\\\\
+    \XP\hva\\\\
+    C \rulearrow C'\; \terminateas\; E\hva\\\\
     \XQ\\
   }
   {
@@ -844,16 +844,16 @@ which introduces the output \configurationterm{} $C'$ and the short-circuiting a
 Such a rule macro expands to the following pair of rules:
 \begin{mathpar}
   \inferrule[(Option 1)]{
-    \XP\\\\
-    C \rulearrow C' \\\\
+    \XP\hva\\\\
+    C \rulearrow C' \hva\\\\
     \XQ\\
   }
   {
     V \rulearrow V'
   }
-  \and
+  \hva\and
   \inferrule[(Option 2:Short-circuited)]{
-    \XP\\\\
+    \XP\hva\\\\
     C \rulearrow E
   }
   {
@@ -871,8 +871,8 @@ a single premise to include several alternatives.
 That is, a rule macro of the following form:
 \begin{mathpar}
   \inferrule{
-    \XP\\\\
-    C \rulearrow C'\; \terminateas\; E_{1...m}\\\\
+    \XP\hva\\\\
+    C \rulearrow C'\; \terminateas\; E_{1...m}\hva\\\\
     \XQ\\
   }
   {
@@ -882,19 +882,19 @@ That is, a rule macro of the following form:
 Stands for the following set of rule macros:
 \begin{mathpar}
   \inferrule{
-    \XP\\\\
-    C \rulearrow C'\; \terminateas\; E_1\\\\
+    \XP\hva\\\\
+    C \rulearrow C'\; \terminateas\; E_1\hva\\\\
     \XQ\\
   }
   {
     V \rulearrow V'
   }
-\and
+\hva\and
 \inferrule{\ldots}{}
-\and
+\hva\and
 \inferrule{
-  \XP\\\\
-  C \rulearrow C'\; \terminateas\; E_m\\\\
+  \XP\hva\\\\
+  C \rulearrow C'\; \terminateas\; E_m\hva\\\\
   \XQ\\
 }
 {
@@ -915,12 +915,12 @@ In English prose, we use
 As an example, consider the rule \SemanticsRuleRef{Binop}.
 This time, not simplified:
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \hva\\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv\; \terminateas\; \DynErrorConfig\\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv\; \terminateas\; \DynErrorConfig\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -946,7 +946,7 @@ then the output \configurationterm{} of the conclusion is also $\ThrowingConfig$
 This corresponds to the following rule in the expanded macro:
 
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
   \evalexpr( \env, \veone) \evalarrow \ThrowingConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -957,7 +957,7 @@ This corresponds to the following rule in the expanded macro:
 Similarly, if the first transition judgment results in a \DynamicErrorConfigurationTerm, the output \configurationterm{} of
 the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the following rule in the expansion:
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
   \evalexpr( \env, \veone) \evalarrow \DynErrorConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -968,7 +968,7 @@ the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the follo
 Finally, if the first transition judgment results in a diverging \configurationterm{}, the output \configurationterm{} of
 the conclusion is also a diverging \configurationterm{}, which corresponds to the following rule in the expansion:
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
   \evalexpr( \env, \veone) \evalarrow \DivergingConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -980,8 +980,8 @@ The following rules correspond to the cases where the first transition results i
 $\ResultExpr(\vmone, \envone)$, but the second transition judgment results in either
 $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \hva\\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \ThrowingConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -990,8 +990,8 @@ $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \hva\\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \DynErrorConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -1000,8 +1000,8 @@ $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \hva\\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \DivergingConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -1011,9 +1011,9 @@ $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 
 Expanding the last transition judgment, gives us the case:
 \begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \\\\
+\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \hva\\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig
@@ -1040,7 +1040,7 @@ takes a Boolean value $\vb$ and an error code $\vcode$
 and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{} for $\vcode$, otherwise.
 \begin{mathpar}
 \inferrule[be\_check\_true]{}{ \becheck(\True, \vcode) \astarrow \True }
-\and
+\hva\and
 \inferrule[be\_check\_false]{}{ \becheck(\False, \vcode) \astarrow \BuildError(\vcode) }
 \end{mathpar}
 
@@ -1048,7 +1048,7 @@ We define a similar function for type errors.
 \RenderRelation{te_check}
 \begin{mathpar}
 \inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
-\and
+\hva\and
 \inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
 \end{mathpar}
 
@@ -1056,7 +1056,7 @@ We define a similar function for dynamic errors.
 \RenderRelation{de_check}
 \begin{mathpar}
 \inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
-\and
+\hva\and
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
 
@@ -1066,7 +1066,7 @@ We define the following rules to allow us to treat Boolean values as transition 
 which in turn allow us to employ \shortcircuitrulemacros{}:
 \begin{mathpar}
 \inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
-\and
+\hva\and
 \inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
 \end{mathpar}
 
@@ -1105,7 +1105,7 @@ and applies it to an optional value:
 }{
   \mapopt{f}(\overname{\some{v}}{\vvopt}) \longrightarrow \overname{\some{v'}}{\vvoptnew}
 }
-\and
+\hva\and
 \inferrule[None]{}{
   \mapopt{f}(\overname{\None}{\vvopt}) \longrightarrow \overname{\None}{\vvoptnew}
 }
