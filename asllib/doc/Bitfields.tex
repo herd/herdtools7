@@ -212,9 +212,9 @@ is $16$.
 \begin{mathpar}
 \inferrule{
   \names \eqdef [\vfield\in\fields: \bitfieldgetname(\vfield)]\\
-  \checknoduplicates(\names) \typearrow \True \OrTypeError\\\\
-  \staticeval(\tenv, \ewidth) \typearrow \LInt(\vwidth) \OrTypeError\\\\
-  \vf\in\fields: \annotatebitfield(\tenv, \vwidth, \vfield) \typearrow (\vfp, \vxs_\vf) \OrTypeError\\\\
+  \checknoduplicates(\names) \typearrow \True \OrTypeError\hva\\\\
+  \staticeval(\tenv, \ewidth) \typearrow \LInt(\vwidth) \OrTypeError\hva\\\\
+  \vf\in\fields: \annotatebitfield(\tenv, \vwidth, \vfield) \typearrow (\vfp, \vxs_\vf) \OrTypeError\hva\\\\
   \newfields \eqdef [\vf\in\fields: \vfp]\\
   \vses \eqdef \bigcup_{\vf\in\fields}{\vxs_\vf}
 }{
@@ -251,11 +251,11 @@ In \listingref{nestedbitfields}, the names of bitfields are:
   \inferrule[simple]{}{
     \bitfieldgetname(\overname{\BitFieldSimple(\name, \Ignore)}{\vbf}) \typearrow \name
   }
-  \and
+  \hva\and
   \inferrule[nested]{}{
     \bitfieldgetname(\overname{\BitFieldNested(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
-  \and
+  \hva\and
   \inferrule[type]{}{
     \bitfieldgetname(\overname{\BitFieldType(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
@@ -288,11 +288,11 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
 \inferrule[simple]{}{
   \bitfieldgetslices(\overname{\BitFieldSimple(\Ignore, \vslices)}{\vbf}) \typearrow \vslices
 }
-\and
+\hva\and
 \inferrule[nested]{}{
   \bitfieldgetslices(\overname{\BitFieldNested(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
 }
-\and
+\hva\and
 \inferrule[type]{}{
   \bitfieldgetslices(\overname{\BitFieldType(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
 }
@@ -320,7 +320,7 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 }{
   \bitfieldgetname(\vbf) \typearrow \emptylist
 }
-\and
+\hva\and
 \inferrule[nested]{}{
   \bitfieldgetname(\overname{\BitFieldNested(\Ignore, \Ignore, \vnested)}{\vbf}) \typearrow \vnested
 }
@@ -375,8 +375,8 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[simple]{
-  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \checkslicesinwidth(\tenv, \vwidth, \slicesone) \typearrow \True \OrTypeError
 }{
   \annotatebitfield(\tenv, \vwidth, \overname{\BitFieldSimple(\name, \vslices)}{\vfield}) \typearrow \\
@@ -386,10 +386,10 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
 \begin{mathpar}
 \inferrule[nested]{
-  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \checkpositionsinwidth(\tenv, \vwidth, \positions) \typearrow \True \OrTypeError\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
+  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\hva\\\\
+  \checkpositionsinwidth(\tenv, \vwidth, \positions) \typearrow \True \OrTypeError\hva\\\\
   \widthp \eqdef \listlen{\positions}\\
   {
   \begin{array}{r}
@@ -405,14 +405,14 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 
 \begin{mathpar}
 \inferrule[type]{
-  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\\\\
-  \commonprefixline\\\\
-  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsesty) \OrTypeError\\\\
-  \checkslicesinwidth(\tenv, \vwidth, \slicesone) \typearrow \True \OrTypeError\\\\
-  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\\\\
-  \checkpositionsinwidth(\tenv, \slicesone, \vwidth, \positions) \typearrow \True \OrTypeError\\\\
+  \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vsesty) \OrTypeError\hva\\\\
+  \checkslicesinwidth(\tenv, \vwidth, \slicesone) \typearrow \True \OrTypeError\hva\\\\
+  \disjointslicestopositions(\tenv, \True, \slicesone) \typearrow \positions \OrTypeError\hva\\\\
+  \checkpositionsinwidth(\tenv, \slicesone, \vwidth, \positions) \typearrow \True \OrTypeError\hva\\\\
   \widthp \eqdef \listlen{\positions}\\
-  \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError\\\\
+  \checkbitsequalwidth(\TBits(\widthp, \emptylist), \vt) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesslices \cup \vsesty
 }{
   \annotatebitfield(\tenv, \vwidth, \overname{\BitFieldType(\name, \vslices, \vt)}{\vfield}) \typearrow \\
@@ -444,7 +444,7 @@ See
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-    \disjointslicestopositions(\tenv, \True, \vslices) \typearrow \positions \OrTypeError\\\\
+    \disjointslicestopositions(\tenv, \True, \vslices) \typearrow \positions \OrTypeError\hva\\\\
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True \OrTypeError
 }{
     \checkslicesinwidth(\tenv, \vwidth, \vslices) \typearrow \True
@@ -533,9 +533,9 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vslices = \vs \concat \vslicesone\\
-  \bitfieldslicetopositions(\tenv, \isstatic, \vs) \typearrow \positionsoneopt \OrTypeError\\\\
+  \bitfieldslicetopositions(\tenv, \isstatic, \vs) \typearrow \positionsoneopt \OrTypeError\hva\\\\
   \positionsone \eqdef \choice{\positionsoneopt = \some{\vsone}}{\vsone}{\emptyset}\\
-  \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\\\\
+  \disjointslicestopositions(\tenv, \isstatic, \vslicesone) \typearrow \positionstwoopt \OrTypeError\hva\\\\
   \positionstwo \eqdef \choice{\positionstwoopt = \some{\vstwo}}{\vstwo}{\emptyset}\\
   \techeck(\positionsone \cap \positionstwo = \emptyset, \BadSlices) \typearrow \True \OrTypeError
 }{
@@ -590,8 +590,8 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \some{\offset} \terminateas\TypeErrorConfig, \None\\\\
-  \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \some{\length} \terminateas\TypeErrorConfig, \None\\\\
+  \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \some{\offset} \terminateas\TypeErrorConfig, \None\hva\\\\
+  \evalsliceexpr(\tenv, \isstatic, \vetwo) \typearrow \some{\length} \terminateas\TypeErrorConfig, \None\hva\\\\
   \techeck(\offset \leq \offset + \length - 1, \BadSlices) \typearrow \True \OrTypeError
 }{
   {

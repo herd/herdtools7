@@ -631,7 +631,7 @@ module Make (S : SPEC_VALUE) = struct
         pp_case_name_opt name_opt
         (pp_print_list
          (* The quadruple backslash means the next premise definitely starts on a new line. *)
-           ~pp_sep:(fun fmt () -> fprintf fmt {|\\\\@.|})
+           ~pp_sep:(fun fmt () -> fprintf fmt {|\hva\\\\@.|})
            pp_premise)
         premises pp_conclusion conclusion
 

@@ -401,9 +401,9 @@ which results in a \builderrorterm.
 
 \begin{mathpar}
   \inferrule{
-    \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
-    \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\\\\
-    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\\\\
+    \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\hva\\\\
+    \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\hva\\\\
+    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\hva\\\\
     \checknotsameprec(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
   }{
     {
@@ -567,9 +567,9 @@ is equal to the width of the \bitvectortypeterm{} of the return type.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\\\\
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\hva\\\\
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\hva\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   \annotateexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
@@ -752,11 +752,11 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \hva\\\\
+  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
   \vmone \eqname (\vvone, \vgone) \\
   \vmtwo \eqname (\vvtwo, \vgtwo) \\
-  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\\\\
+  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr( \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} ) \evalarrow
@@ -809,7 +809,7 @@ of well-typed unary operation expressions.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vtpp, \vepp, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vtpp, \vepp, \vses) \OrTypeError\hva\\\\
   \applyunoptype(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
 }{
   \annotateexpr(\tenv, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
@@ -836,7 +836,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\\\\
+  \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\hva\\\\
   \evalunop(\op, \vvone) \evalarrow \vv
 }
 {
@@ -860,9 +860,9 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \ASTRuleDef{ECond}
 \begin{mathpar}
   \inferrule{
-    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\\\\
-    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError\\\\
-    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr} \OrBuildError\\\\
+    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr} \OrBuildError\hva\\\\
+    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr} \OrBuildError\hva\\\\
+    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr} \OrBuildError\hva\\\\
   }{
     {
       \begin{array}{r}
@@ -903,10 +903,10 @@ an example of typing a conditional expression.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \econd) \typearrow (\tcond, \econd', \vsescond) \OrTypeError\\\\
-  \annotateexpr(\tenv, \etrue) \typearrow (\ttrue, \etrue', \vsestrue) \OrTypeError\\\\
-  \annotateexpr(\tenv, \efalse) \typearrow (\tfalse, \efalse', \vsesfalse) \OrTypeError\\\\
-  \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError\\\\
+  \annotateexpr(\tenv, \econd) \typearrow (\tcond, \econd', \vsescond) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \etrue) \typearrow (\ttrue, \etrue', \vsestrue) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \efalse) \typearrow (\tfalse, \efalse', \vsesfalse) \OrTypeError\hva\\\\
+  \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError\hva\\\\
   \vses \eqdef \vsescond \cup \vsestrue \cup \vsesfalse
 }{
   {
@@ -955,10 +955,10 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
   \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
@@ -1002,7 +1002,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
       \end{array}
     \right\}}{\vastnode} }
 }
-\and
+\hva\and
 \inferrule{
   \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
 }{
@@ -1016,7 +1016,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
       \end{array}
     \right\}}{\vastnode} }
 }
-\and
+\hva\and
 \inferrule{
   \buildplist[\buildexpr](\vargs) \astarrow \vargasts \\
   \buildlist[\buildexpr](\vparams) \astarrow \astversion{\vparams} \\
@@ -1107,8 +1107,8 @@ and the values they evaluate to, as assertions on the values assigned.
     \begin{array}{r}
   \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
   \end{array}
-  }\\\\
-  \commonprefixline\\\\
+  }\hva\\\\
+  \commonprefixline\hva\\\\
   \vms \eqname [(\vv, \vg)]
 }{
   \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1121,8 +1121,8 @@ and the values they evaluate to, as assertions on the values assigned.
     \begin{array}{r}
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
   \end{array}
-  }\\\\
-  \commonprefixline\\\\
+  }\hva\\\\
+  \commonprefixline\hva\\\\
   \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
   \vv \eqdef \NVVector(\vv_{1..k})
@@ -1153,7 +1153,7 @@ The well-typed specification in \listingref{Bitvectorslices2} shows examples of 
 \ASTRuleDef{ESlice}
 \begin{mathpar}
 \inferrule{
-  \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError\\\\
+  \buildexpr(\vexpr) \astarrow \astversion{\vexpr} \OrBuildError\hva\\\\
   \buildslices(\vslices) \astarrow \astversion{\vslices} \OrBuildError
 }{
   \buildexpr(\overname{\Nexpr(\vexpr: \Nexpr, \vslices: \Nslices)}{\vparsednode}) \astarrow
@@ -1212,12 +1212,12 @@ show examples of ill-typed slicing expressions.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp, \vsesone) \OrTypeError\\\\
-  \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp, \vsesone) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\hva\\\\
   \astlabel(\structtep) \in \{\TInt, \TBits\}\\
-  \techeck(\slices \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\\\\
-  \annotateslices(\tenv, \slices) \typearrow (\slicesp, \vsestwo) \OrTypeError\\\\
-  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\\\\
+  \techeck(\slices \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\hva\\\\
+  \annotateslices(\tenv, \slices) \typearrow (\slicesp, \vsestwo) \OrTypeError\hva\\\\
+  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\hva\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   {
@@ -1231,7 +1231,7 @@ show examples of ill-typed slicing expressions.
 
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp) \OrTypeError\hva\\\\
   \tstruct(\tenv, \tep) \typearrow \vtp\\
   \astlabel(\vtp) \not\in \{\TInt, \TBits\}
 }{
@@ -1277,11 +1277,11 @@ resulting bitvector --- and the execution graph $\vgone$;
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\\\\
+  \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\hva\\\\
   \mbv \eqname (\vbv,\vgone) \\
   \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
   \mpositions \eqname (\positions, \vgtwo) \\
-  \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\\\\
+  \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalexpr(\env, \ESlice(\ebv, \slices)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1313,7 +1313,7 @@ The semantics utilizes a rule matching the corresponding type of array ---
 \ASTRuleDef{EGetArray}
 \begin{mathpar}
 \inferrule{
-  \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\\\\
+  \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\hva\\\\
   \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError
 }{
   \buildexpr(\overname{\Nexpr(\namednode{\veone}{\Nexpr}, \Tllbracket, \namednode{\vetwo}{\Nexpr}, \Trrbracket)}{\vparsednode}) \astarrow
@@ -1353,9 +1353,9 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\\\\
-  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\hva\\\\
+  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \tanonbase \eqname \TArray(\size, \telem)\\
   {
     \begin{array}{r}
@@ -1393,9 +1393,9 @@ See \ExampleRef{Array Access Expressions}.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
+  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\hva\\\\
   \typeofarraylength(\size) \typearrow \wantedtindex\\
-  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesindex \cup \vsesbase \\
   \newe \eqdef \ifthenelse{\astlabel(\size) = \ArrayLengthExpr}{\EGetArray(\ebase, \eindexp)}{\EGetEnumArray(\ebase, \eindexp)}
 }{
@@ -1446,7 +1446,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \marray \eqname (\varray, \vgone)\\
   \mindex \eqname (\vindex, \vgtwo)\\
   \vindex \eqname \nvint(\vi)\\
-  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
+  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
   \evalexpr(\env, \EGetArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1553,8 +1553,8 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt{\fields}{\fieldname} \typearrow \some{ \vt}
@@ -1570,8 +1570,8 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = L(\fields)\\
   L \in \{\TRecord, \TException\}\\
   \assocopt{\fields}{\fieldname} \typearrow \None
@@ -1619,8 +1619,8 @@ All of the collection field expressions in
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vetwo = \EVar(\vbase) \\
   \vtetwo = \TCollection(\fields)\\
   \assocopt{\fields}{\fieldname} \typearrow \some{ \vt}
@@ -1706,8 +1706,8 @@ which includes the type annotation \verb|bits(4)|.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldSimple(\Ignore, \slices)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
@@ -1719,16 +1719,16 @@ which includes the type annotation \verb|bits(4)|.
 
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
+  \vtetwo = \TBits(\Ignore, \bitfields)\hva\\\\
   {
     \begin{array}{r}
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp)}
     \end{array}
-  }\\\\
+  }\hva\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\hva\\\\
   \vtefour \eqname \TBits(\vwidth, \Ignore)\\
   \vt \eqdef \TBits(\vwidth, \bitfieldsp)
 }{
@@ -1738,12 +1738,12 @@ which includes the type annotation \verb|bits(4)|.
 
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\hva\\\\
   \checktypesatisfies(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
@@ -1752,8 +1752,8 @@ which includes the type annotation \verb|bits(4)|.
 
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = \TBits(\Ignore, \bitfields)\\
   \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
 }{
@@ -1793,13 +1793,13 @@ for its verbatim string.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \vtetwo = \TTuple(\tys)\\
   \fieldname = \itemprefix \concatstrings \num\\
   \num \in \Lang{\REintlit}\\
   \decimaltolit{\num} = \Tintlit(\vindex)\\
-  \techeck(0 \leq \vindex \leq \listlen{\tys}, \BadTupleIndex) \typearrow \True \OrTypeError\\\\
+  \techeck(0 \leq \vindex \leq \listlen{\tys}, \BadTupleIndex) \typearrow \True \OrTypeError\hva\\\\
   \vt \eqdef \tys[\vindex]\\
   \newe \eqdef \EGetItem(\vetwo, \vindex)
 }{
@@ -1826,8 +1826,8 @@ for its verbatim string.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
   \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
@@ -1882,7 +1882,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \etuple) \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \etuple) \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\hva\\\\
   \getindex(\vvtuple, \vindex) \evalarrow \vv
 }{
   \evalexpr(\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -1979,9 +1979,9 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bits]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
-  \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\hva\\\\
+  \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\hva\\\\
   \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
   \annotateexpr(\tenv, \veslice) \typearrow (\vt, \newe, \vses) \OrTypeError
 }{
@@ -1991,9 +1991,9 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \begin{mathpar}
 \inferrule[record]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
-  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\hva\\\\
+  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\hva\\\\
   \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
 }{
   {
@@ -2007,10 +2007,10 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \begin{mathpar}
 \inferrule[collection]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
   \ebaseannot = \EVar(\vbase)\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\\\\
-  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\hva\\\\
+  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\hva\\\\
   \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError\\
   \vt \eqdef \TBits(\veslicewidth, \emptylist)\\
   \newe \eqdef \EGetCollectionFields(\vbase, \vbasefields)
@@ -2026,8 +2026,8 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 
 \begin{mathpar}
 \inferrule[error]{
-  \annotateexpr(\tenv, \veone) \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\hva\\\\
   \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
 }{
   \annotateexpr(\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
@@ -2216,7 +2216,7 @@ yields the bitvector value \verb|'001010'|.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \erecord) \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \erecord) \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\hva\\\\
   \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname\\
   \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \typearrow \vv
 }{
@@ -2300,7 +2300,7 @@ is a \DynamicErrorConfigurationTerm{}.
 \ASTRuleDef{ATC}
 \begin{mathpar}
 \inferrule[type]{
-  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\hva\\\\
   \buildty(\vt) \astarrow \astversion{\vt} \OrBuildError
 }{
   \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tas, \vt : \Nty)}{\vparsednode}) \astarrow
@@ -2310,7 +2310,7 @@ is a \DynamicErrorConfigurationTerm{}.
 
 \begin{mathpar}
 \inferrule[int\_constraints]{
-  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\hva\\\\
   \buildconstraintkind(\vics) \astarrow \astversion{\vics} \OrBuildError
 }{
   {
@@ -2374,13 +2374,13 @@ as it is applied to unrelated kinds of types.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vt, \vepp, \vsese) \OrTypeError\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\\\\
-  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vt, \vepp, \vsese) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\hva\\\\
+  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\hva\\\\
   \vsesp \eqdef \vsesty \cup \vsese \\
-  \subtypesatisfies(\tenv, \vtstruct, \vtystruct) \typearrow \valwayssucceeds \OrTypeError\\\\
+  \subtypesatisfies(\tenv, \vtstruct, \vtystruct) \typearrow \valwayssucceeds \OrTypeError\hva\\\\
   (\newe, \vses) \eqdef \choice{\valwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
 }{
   \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
@@ -2456,7 +2456,7 @@ as it is applied to unrelated kinds of types.
 
 \begin{mathpar}
 \inferrule[different\_labels\_error]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
   \astlabel(\vtone) \neq \astlabel(\vttwo)
 }{
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
@@ -2465,7 +2465,7 @@ as it is applied to unrelated kinds of types.
 
 \begin{mathpar}
 \inferrule[int\_bits]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \in \{\TInt, \TBits\}
 }{
@@ -2475,10 +2475,10 @@ as it is applied to unrelated kinds of types.
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
   \vtone = \TTuple(\vlone)\\
   \vttwo = \TTuple(\vltwo)\\
-  \techeck(\vlone = \vltwo, \TypeAssertionFailure) \typearrow \True\OrTypeError\\\\
+  \techeck(\vlone = \vltwo, \TypeAssertionFailure) \typearrow \True\OrTypeError\hva\\\\
   \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
 }{
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
@@ -2487,7 +2487,7 @@ as it is applied to unrelated kinds of types.
 
 \begin{mathpar}
 \inferrule[other\_error]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
   \astlabel(\vtone) = \astlabel(\vttwo)\\
   \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
 }{
@@ -2542,14 +2542,14 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
-  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
+  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynErrorDiverging\hva\\\\
   \vb \eqname \nvbool(\True)\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
   \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
-\and
+\hva\and
 \inferrule[error]{
   \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
   \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
@@ -2646,7 +2646,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
   \vv \eqname \nvint(n)\\
-  i=1..k: \isconstraintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k: \isconstraintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
 }{
@@ -2666,7 +2666,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 \begin{mathpar}
 \inferrule[tuple]{
   i=1..k: \getindex(i, \vv) \evalarrow \vu_i\\
-  i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \bigwedge_{i=1}^k \vb_i \\
   \vg \eqdef\ \parallelcomp_{i=1}^k \vg_i
 }{
@@ -2730,8 +2730,8 @@ that expressions appearing in types are all side-effect-free.
 
 \begin{mathpar}
 \inferrule[Constraint\_Range\_Sat]{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \vgone) \OrDynErrorDiverging\\\\
-  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \vgone) \OrDynErrorDiverging\hva\\\\
+  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \vgtwo) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -2769,7 +2769,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \ASTRuleDef{EPattern}
 \begin{mathpar}
 \inferrule{
-  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\\\\
+  \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\hva\\\\
   \buildpatternset(\vps) \astarrow \astversion{\vps} \OrBuildError
 }{
   {
@@ -2824,8 +2824,8 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \begin{mathpar}
 \inferrule{
   \ve = \EPattern(\veone, \vpat)\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\\\\
-  \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow (\vpatp, \vsespat) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\hva\\\\
+  \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow (\vpatp, \vsespat) \OrTypeError\hva\\\\
   \vses \eqdef \vsese \cup \vsespat
 }{
   \annotateexpr(\tenv, \ve) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
@@ -2860,8 +2860,8 @@ succeed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\\\\
-  \evalpattern(\env, \vvone, \vp) \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\hva\\\\
+  \evalpattern(\env, \vvone, \vp) \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
   \evalexpr(\env, \EPattern(\ve, \vp)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -2923,8 +2923,8 @@ Note that there are two important consequences of producing an arbitrary value w
 \begin{mathpar}
 \inferrule{
   \ve = \EArbitrary(\tty)\\
-  \annotatetype(\tenv, \tty) \typearrow (\ttyone, \vsesty) \OrTypeError\\\\
-  \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyone, \vsesty) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\hva\\\\
   {
   \vses \eqdef \vsesty \cup \left\{
   \begin{array}{l}
@@ -3113,14 +3113,14 @@ and an example (in comment) where the same field is initialized twice, which is 
 \begin{mathpar}
 \inferrule{
   \ve = \ERecord(\tty, \vfields)\\
-  \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\\\\
-  \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\\\\
+  \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\hva\\\\
+  \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\hva\\\\
   \ttyanon \eqname L(\fieldtypes)\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
   \names \eqdef \fieldnames(\fieldtypes)\\
-  \techeck(\{\names\} = \{\initializedfields\}, \BadField) \typearrow \True \OrTypeError\\\\
-  \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\\\\
+  \techeck(\{\names\} = \{\initializedfields\}, \BadField) \typearrow \True \OrTypeError\hva\\\\
+  \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   (\name, \vep) \in \vfields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
@@ -3157,8 +3157,8 @@ See \listingref{semantics-egetfield} for an example.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\\\\
-  \techeck(\fieldtype(\fieldtypes, \name) \neq \bot, \BadField) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\hva\\\\
+  \techeck(\fieldtype(\fieldtypes, \name) \neq \bot, \BadField) \typearrow \True \OrTypeError\hva\\\\
   \fieldtype(\fieldtypes, \name) = \tspecp\\
   \checktypesatisfies(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
 }{
@@ -3265,7 +3265,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \begin{mathpar}
 \inferrule[list]{
   |\vli| > 1\\
-  i=1..k: \annotateexpr(\tenv, \vle[i]) \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotateexpr(\tenv, \vle[i]) \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\hva\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
   \annotateexpr(\tenv, \overname{\ETuple(\vli)}{\ve}) \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
@@ -3368,10 +3368,10 @@ which evaluates to
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\\\\
-  \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\\\\
+  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\hva\\\\
+  \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\hva\\\\
   \vlength \eqname \nvint(\nlength)\\
-  \decheck(\nlength \geq 0, \NegativeArrayLength) \evalarrow \True \OrDynError\\\\
+  \decheck(\nlength \geq 0, \NegativeArrayLength) \evalarrow \True \OrDynError\hva\\\\
   \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -3410,7 +3410,7 @@ which evaluates to
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\hva\\\\
   \vv \eqdef \NVRecord(\vl\in\vlabels: [\vl\mapsto \vvalue])
 }{
   {
@@ -3498,8 +3498,8 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vle = [\ve] \concat \vle1\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\\\\
-  \evalexprlist(\envone, \vle1) \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\hva\\\\
+  \evalexprlist(\envone, \vle1) \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo \\
   \vv \eqdef [\vvone] \concat \vvs
 }{

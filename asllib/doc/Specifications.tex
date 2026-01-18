@@ -232,7 +232,7 @@ and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which i
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \overridesubprograms(\decls) \typearrow \declsp \OrTypeError \\\\
+  \overridesubprograms(\decls) \typearrow \declsp \OrTypeError \hva\\\\
   \pragmas \eqdef [\ \vd \;|\; \vd \in \declsp\ \land \astlabel(\vd) = \DPragma\ ]\\
   {
   \others \eqdef \left[ \begin{array}{r|l}
@@ -244,7 +244,7 @@ and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which i
   \SCC(\defs, \reverseddependencies) = \comps\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
   \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\\
-  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
+  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \hva\\\\
   \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
   \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
@@ -309,7 +309,7 @@ except for the component
 \begin{mathpar}
 \inferrule[single]{
   \comp = [\vd]\\
-  \typecheckdecl(\genv, \vd) \typearrow (\vdone, \genvone) \OrTypeError\\\\
+  \typecheckdecl(\genv, \vd) \typearrow (\vdone, \genvone) \OrTypeError\hva\\\\
   \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declsone) \OrTypeError
 }{
   \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
@@ -320,7 +320,7 @@ except for the component
 \begin{mathpar}
 \inferrule[mutually\_recursive]{
   |\comp| > 1\\
-  \typecheckmutuallyrec(\genv, \comp) \typearrow (\declsone, \genvone) \OrTypeError\\\\
+  \typecheckmutuallyrec(\genv, \comp) \typearrow (\declsone, \genvone) \OrTypeError\hva\\\\
   \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declstwo) \OrTypeError
 }{
   \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
@@ -378,16 +378,16 @@ since it contains recursive type declarations.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\\\\
-  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
+  \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\hva\\\\
+  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\hva\\\\
   \envandfsone \eqdef [\DFunc(\vf)\in\decls: ({\tenv_\vf}.\staticenvsL, \vd_\vf, \vses_\vf)]\\
-  \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
+  \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   (\lenvtwo, \vf, \vses_\vf)\in\envandfstwo: \annotatesubprogram((\genvtwo, \lenvtwo), \vf, \vses_\vf) \typearrow \\
       (\vnew_\vf, \vsesp_\vf) \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   \newdecls \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
   \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\\
   \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
@@ -458,12 +458,12 @@ of the subprogram declarations.
   \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow
    (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
   \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
   \tenv \eqname (\genv, \lenv)\\
-  \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
+  \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\hva\\\\
+  \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\hva\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
 }{
   \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
@@ -587,8 +587,8 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \vimpdefs \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Impdef] \\
   \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \\
   \vnormal \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride \notin \{\Impdef, \Implementation\}] \\
-  \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \\\\
-  \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \\\\
+  \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \hva\\\\
+  \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \hva\\\\
   \renamesubprograms(\vdiscarded) \typearrow \vrenameddiscarded \\
   \voverridden \eqdef \vimpdefsp \concat \vimpls \\
   {
@@ -634,7 +634,7 @@ See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplement
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \OrTypeError \\\\
+  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \OrTypeError \hva\\\\
   \checkimplementationsunique(\vt) \typearrow \True \OrTypeError
 }{
   \checkimplementationsunique(\overname{[\vh] \concat \vt}{\vimpls}) \typearrow \True
@@ -722,7 +722,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   i \in \listrange(\vimpdefs): \signaturesmatch(\vh, \vimpdefs[i]) \typearrow \vb_i \\
   \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
   \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
-  \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \\\\
+  \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \hva\\\\
   \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)\\
   \vdiscarded \eqdef \vmatching \concat \vdiscardedp
 }{
@@ -909,11 +909,11 @@ which appear in comments to their right.
 \inferrule[d\_func]{}{
   \defdecl(\overname{\DFunc(\FIELDname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
 }
-\and
+\hva\and
 \inferrule[d\_globalstorage]{}{
   \defdecl(\overname{\DGlobalStorage(\GDname: \id, \ldots)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
 }
-\and
+\hva\and
 \inferrule[d\_typedecl]{}{
   \defdecl(\overname{\DTypeDecl(\id, \Ignore, \Ignore)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
 }
@@ -952,7 +952,7 @@ $\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
 }{
   \defenumlabels(\vd) \typearrow \vlabels
 }
-\and
+\hva\and
 \inferrule[other]{
   \vd \neq \DTypeDecl(\name, \TEnum(\Ignore, \Ignore))
 }{
@@ -1000,7 +1000,7 @@ used by each global declaration via comments above it.
 \inferrule[D\_TypeDecl]{}{
   \usedecl(\overname{\DTypeDecl(\Ignore, \tty, \fields)}{\vd}) \typearrow \overname{\usety(\tty) \cup \usesubtypes(\fields)}{\ids}
 }
-\and
+\hva\and
 \inferrule[D\_GlobalStorage]{
   \ids \eqdef \useexpr(\initialvalue) \cup \usety(\tty)
 }{
@@ -1009,7 +1009,7 @@ used by each global declaration via comments above it.
     \GDty: \tty\ldots\})}{\vd})
   \typearrow \ids
 }
-\and
+\hva\and
 \inferrule[D\_Func]{
   {
     \begin{array}{rcll}
@@ -1127,19 +1127,19 @@ used by them appearing as comments to their right.
 \inferrule[none]{}{
   \usety(\overname{\None}{\vt}) \typearrow \overname{\emptyset}{\ids}
 }
-\and
+\hva\and
 \inferrule[some]{
   \usety(\tty) \typearrow \ids
 }{
   \usety(\overname{\some{\tty}}{\vt}) \typearrow \ids
 }
-\and
+\hva\and
 \inferrule[simple]{
   \astlabel(\vt) \in \{\TEnum, \TBool, \TReal, \TString\}
 }{
   \usety(\vt) \typearrow \overname{\emptyset}{\ids}
 }
-\and
+\hva\and
 \inferrule[t\_named]{}{
   \usety(\overname{\TNamed(\vs)}{\vt}) \typearrow \overname{\{\Other(\vs)\}}{\ids}
 }
@@ -1220,7 +1220,7 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 \inferrule[none]{}{
   \usesubtypes(\overname{\None}{\fields}) \typearrow \overname{\emptyset}{\ids}
 }
-\and
+\hva\and
 \inferrule[some]{
   \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \in \subfields}\usety(\vt)
 }{
@@ -1380,21 +1380,21 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 \inferrule[none]{}{
   \useexpr(\overname{\None}{\ve}) \typearrow \overname{\emptyset}{\ids}
 }
-\and
+\hva\and
 \inferrule[some]{
   \useexpr(\veone) \typearrow \ids
 }{
   \useexpr(\overname{\some{\veone}}{\ve}) \typearrow \ids
 }
-\and
+\hva\and
 \inferrule[e\_literal]{}{
   \useexpr(\overname{\ELiteral(\Ignore)}{\ve}) \typearrow \overname{\emptyset}{\ids}
 }
-\and
+\hva\and
 \inferrule[e\_atc]{}{
   \useexpr(\overname{\EATC(\veone, \tty)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \usety(\tty)}{\ids}
 }
-\and
+\hva\and
 \inferrule[e\_var]{}{
   \useexpr(\overname{\EVar(\vx)}{\ve}) \typearrow \overname{\{\Other(\vx)\}}{\ids}
 }
@@ -1448,7 +1448,7 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 \inferrule[e\_getitem]{}{
   \useexpr(\overname{\EGetItem(\veone, \Ignore)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
 }
-\and
+\hva\and
 \inferrule[e\_getfield]{}{
   \useexpr(\overname{\EGetField(\veone, \Ignore)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
 }
@@ -1565,11 +1565,11 @@ by the assignable expressions on the left-hand-side of assignments in comments a
 \inferrule[le\_var]{}{
   \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\Other(\vx)}{\ids}
 }
-\and
+\hva\and
 \inferrule[le\_destructuring]{}{
   \uselexpr(\overname{\LEDestructuring(\vles)}{\vle}) \typearrow \overname{\bigcup_{\ve\in\vles}\uselexpr(\ve)}{\ids}
 }
-\and
+\hva\and
 \inferrule[le\_discard]{}{
   \uselexpr(\overname{\LEDiscard}{\vle}) \typearrow \overname{\emptyset}{\ids}
 }
@@ -1745,7 +1745,7 @@ and the identifiers they use, appearing in comments to their right.
 \inferrule[single]{}{
   \useslice(\overname{\SliceSingle(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
-\and
+\hva\and
 \inferrule[start\_length\_range]{
   L \in \{\SliceStar, \SliceLength, \SliceRange\}
 }{
@@ -1791,13 +1791,13 @@ appearing as comments to their right.
 \inferrule[simple]{}{
   \usebitfield(\overname{\BitFieldSimple(\Ignore, \slices)}{\vbf}) \typearrow \overname{\bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
 }
-\and
+\hva\and
 \inferrule[nested]{
   \ids \eqdef \bigcup_{\bfone\in\bitfields}\usebitfield(\vs) \cup \bigcup_{\vs\in\slices}\useslice(\vs)
 }{
   \usebitfield(\overname{\BitFieldNested(\Ignore, \slices, \bitfields)}{\vbf}) \typearrow \ids
 }
-\and
+\hva\and
 \inferrule[type]{
   \ids \eqdef \bigcup_{\vs\in\slices}\useslice(\vs) \cup \usety(\tty)
 }{
@@ -1835,7 +1835,7 @@ appearing in comments to their right.
 \inferrule[exact]{}{
   \useconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\useexpr(\ve)}{\ids}
 }
-\and
+\hva\and
 \inferrule[range]{}{
   \useconstraint(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
@@ -1996,7 +1996,7 @@ and the identifiers used by them, appearing in comments to their right.
 \inferrule[s\_seq]{}{
   \usestmt(\overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \overname{\usestmt(\vsone)\cup\usestmt(\vstwo)}{\ids}
 }
-\and
+\hva\and
 \inferrule[assert\_return\_some]{
   \vs = \SAssert(\ve) \lor \vs = \SReturn(\some{\ve})
 }{
@@ -2049,7 +2049,7 @@ and the identifiers used by them, appearing in comments to their right.
   \end{array}\right\}}{\vs}\right) \typearrow \ids
   }
 }
-\and
+\hva\and
 \inferrule[while\_repeat]{
   \vs = \SWhile(\ve, \vlimit, \vs) \lor \vs = \SRepeat(\vs, \ve, \vlimit)
 }{
@@ -2182,14 +2182,14 @@ results in a \dynamicerrorterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normal]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\hva\\\\
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
       (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
-  }\\\\
-  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultCall([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
+  }\hva\\\\
+  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultCall([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
@@ -2198,13 +2198,13 @@ results in a \dynamicerrorterm.
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
+  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\hva\\\\
   {
     \begin{array}{r}
       \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
       (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
     \end{array}
-  }\\\\
+  }\hva\\\\
   \evalsubprogram(\env, \namep, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
 }{
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}

@@ -7,8 +7,18 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec rule.spec --render; diff -w generated_macros.tex rule.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  64,65c64,65
+  <                                               \end{array}} } } } \hva\\\\
+  <  { { \texttt{r\_f} \eqdef { \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg } } } \hva\\\\
+  ---
+  >                                               \end{array}} } } } \\\\
+  >  { { \texttt{r\_f} \eqdef { \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg } } } \\\\
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  44c44
+  < \inferrule{ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \hva\\\\
+  ---
+  > \inferrule{ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \\\\
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
