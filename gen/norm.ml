@@ -22,7 +22,7 @@ let lowercase = ref false
 let bell = ref None
 let variant = ref (fun (_:Variant_gen.t) -> false)
 let typ = ref TypBase.default
-let args = ref []
+let args = ref ""
 
 let opts =
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
@@ -71,12 +71,16 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
 
   let zyva relaxs =
     try
-      let rs =
-        relaxs
-        |> Util.List.concat_map LexUtil.split
-        |> List.map R.parse_relax
-      in
-      let es = Util.List.concat_map R.edges_of rs in
+      let es =
+        Lexing.from_string relaxs
+        |> Parser.main LexUtil.token
+        |> Ast.flatten
+        |> List.map ( fun s -> R.parse_expand_relaxs s )
+        |> ( function
+          | [x] -> x
+          | _ ->
+            Warn.user_error "`norm7` only accepts exactly one input cycle" )
+        |> R.edges_ofs in
       let base,es,_ = Norm.normalise_family (E.resolve_edges es) in
       let name =  N.mk_name base ?scope:None es in
       Printf.printf "%s: %s\n" name (E.pp_edges es)
@@ -89,11 +93,11 @@ end
 let () =
   Util.parse_cmdline
     opts
-    (fun a -> args := a :: !args)
+    (fun a -> args := !args ^ " " ^ a)
 
 
 let () =
-  let args = List.rev !args in
+  let args = !args in
   let module Co = struct
     let lowercase = !lowercase
     let variant = !variant
