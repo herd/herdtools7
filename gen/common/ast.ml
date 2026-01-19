@@ -5,6 +5,15 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
+let rec bind func ast =
+  let bind_func = bind func in
+  match ast with
+  | One s -> func s
+  | Opt opt -> Opt (bind_func opt)
+  | Seq ss -> Seq (List.map bind_func ss)
+  | Choice ss -> Choice (List.map bind_func ss)
+  | Multi ss -> Multi (bind_func ss)
+
 let rec pp pp_prim ast =
   let pp_with_prim = pp pp_prim in
   match ast with
