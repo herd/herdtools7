@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 ############################################################################
-# This file is AI-generated and is not meant to be easily readable.        #
+# This file is mostly AI-generated and is not meant to be easily readable. #
 ############################################################################
 
 from utils import read_file_lines, read_file_str, is_skipped_line
@@ -90,6 +90,7 @@ def check_macro_arity(latex_files: list[str]) -> int:
     )
     macro_def_without_optional = re.compile(r"\\newcommand\\([a-zA-Z]+)\[(\d+)\]")
 
+    # Construct the macros arity map
     for line in lines:
         if is_skipped_line(line):
             continue
@@ -112,6 +113,10 @@ def check_macro_arity(latex_files: list[str]) -> int:
             macro_arities[macro_name] = (total_arity, False)
     if not macro_arities:
         return 0
+
+    # Special cases for macros not defined in ASLmacros.tex
+    macro_arities['hypertarget'] = (2, False)
+    macro_arities['hyperlink'] = (2, False)
 
     num_errors = 0
 
