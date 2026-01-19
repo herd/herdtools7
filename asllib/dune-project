@@ -4,7 +4,7 @@
 
 (generate_opam_files)
 
-(version 1.0~draft.1)
+(version 1.0~draft.2)
 
 (homepage "https://github.com/herd/herdtools7")
 (authors "Arm Ltd - ATG Formal <atg-formal@arm.com>")

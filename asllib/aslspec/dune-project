@@ -5,10 +5,10 @@
 
 (package
  (name aslspec)
- (synopsis "Architecture Specification Language reference implementation")
+ (synopsis "Architecture Specification Language Semantics Specification Tool")
  (depends
    (ocaml (>= 4.08))
    dune
    (menhir (>= 20220210))
-   (conf-python (= 3.9))))
+   (conf-python-3 (= 9.0.0))))
 
