@@ -40,33 +40,12 @@ module Top = struct
 (* Simplified relaxation: just strings... *)
 
   module R = struct
-    open LexUtil
 
-    type relax = LexUtil.t
+    type relax = Ast.t
     let parse r = r
 
-    let pp_relax = function
-      | One r -> r
-      | Seq rs -> "[" ^ String.concat "," rs ^ "]"
+    let pp_relax = Ast.pp
 
-    let rec lex_str r1 r2 = match r1,r2 with
-    | [],[] -> 0
-    | _::_,[] -> 1
-    | [],_::_ -> -1
-    | r1::rs1,r2::rs2 ->
-        let c = String.compare r1 r2 in
-        match c with
-        | 0 -> lex_str rs1 rs2
-        | _ -> c
-
-    let compare r1 r2 = match r1,r2 with
-    | One r1,Seq [r2]
-    | Seq [r1],One r2
-    | One r1,One r2
-    | Seq [r1],Seq [r2] -> String.compare r1 r2
-    | One _,Seq _ -> -1
-    | Seq _,One _ -> 1
-    | Seq r1,Seq r2 -> lex_str r1 r2
 
     module Set =
       MySet.Make

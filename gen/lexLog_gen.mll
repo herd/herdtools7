@@ -15,7 +15,9 @@
 (****************************************************************************)
 
 {
-
+let split s = Lexing.from_string s
+               |> Parser.main LexUtil.token
+               |> Ast.to_list
 }
 
 let digit = [ '0'-'9' ]
@@ -41,10 +43,10 @@ rule main add env = parse
        match v with
        | "Ok" -> true | "No" -> false
        | _ -> assert false in
-     let relaxs = LexUtil.split rem in
+     let relaxs = split rem in
      let safes = match safes with
      | None -> []
-     | Some rem ->  LexUtil.split rem in
+     | Some rem -> split rem in
      let cycle = match cycle with
      | None -> ""
      | Some cy -> cy in
