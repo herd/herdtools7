@@ -11,4 +11,5 @@
   shelf_test
   test_test)
  (libraries internal_lib unix)
+ (package herdtools7)
  (modes native))

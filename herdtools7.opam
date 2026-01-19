@@ -21,6 +21,7 @@ depends: [
   "zarith" {>= "1.13"}
   "conf-which"
   "logs"
+  "conf-python-3" {= "9.0.0" & with-test}
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {
