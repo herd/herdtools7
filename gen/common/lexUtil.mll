@@ -19,45 +19,31 @@
 exception Error of string
 let error msg = raise (Error msg)
 
-type t =
-  | One of string
-  | Seq of string list
-
-let pp = function
-| One s -> Printf.sprintf "One(%s)" s
-| Seq ss ->
-  Printf.sprintf "Seq(%s)" (String.concat "," ss)
+let pp = Ast.pp
 }
+
 let blank = [','' ''\t''\n''\r']
-let not_blank = [^','' ''\t''\n''\r' '[' ']']
+let not_blank = [^',' ' ' '\t' '\n' '\r' '[' ']']
+let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']
 
-rule main = parse
-| eof { [] }
-| '['
-{
- let seq = pseq lexbuf in
- Seq seq::main lexbuf
-}
-| blank+ { main lexbuf }
-| not_blank+ as lxm { One lxm :: main lexbuf }
-| "" { error "main" }
-
-and pseq = parse
-| eof { failwith "] missing" }
-| ']' { [] }
-| blank+ { pseq lexbuf }
-| not_blank+ as lxm { lxm :: pseq lexbuf }
-| "" { error "pseq" }
-
-and just_split = parse
+rule just_split = parse
 | eof { [] }
 | blank+ { just_split lexbuf }
 | not_blank+ as lxm { lxm :: just_split lexbuf }
 | "" { error "just_split" }
 {
 
-
-let split s = main (Lexing.from_string s)
+let split s =
+  (* TODO *)
+  let parsed = Lexing.from_string s |> Parser.main Lexer.token in
+  let open Ast in
+  let result = match parsed with
+  | One _ -> [ parsed ]
+  | Seq seq -> seq
+  | Choice _ -> assert false
+  | Multi _ -> assert false
+  in
+  result
 let just_split s = just_split (Lexing.from_string s)
 
 }
