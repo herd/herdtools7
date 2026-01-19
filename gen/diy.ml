@@ -16,14 +16,13 @@
 
 open Printf
 open Code
-open LexUtil
 
 module type DiyConfig = sig
   include DumpAll.Config
   val choice : Code.check
   val variant : Variant_gen.t -> bool
-  val prefix : LexUtil.t list list
-  val cumul :   LexUtil.t list Config.cumul
+  val prefix : string list
+  val cumul :   Ast.t list Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
@@ -33,18 +32,64 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 
 open C.E
 open C.R
+open Ast
 
 let parse_fence s k =  match s with
   | One f -> C.E.parse_fence f::k
   | Seq [] -> k
   | Seq (fs) ->
       List.fold_right
-        (fun s k -> C.E.parse_fence s::k)
+        (fun s k ->
+          match s with
+          | One s -> C.E.parse_fence s::k
+          | _ -> assert false)
         fs k
+  | Choice _ -> assert false
+  | Multi _ -> assert false
 
-let parse_relaxs = List.map parse_relax
 let parse_fences fs = List.fold_right parse_fence fs []
 
+  let varatom_ess =
+    if C.A.bellatom then Misc.identity
+    else match O.varatom with
+    | [] -> Misc.identity
+    | ["all"] ->
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold = C.E.fold_atomo
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+    | atoms ->
+        let atoms = C.E.parse_atoms atoms in
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold f k = C.E.fold_atomo_list atoms f k
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+
+  (* Parse a string such as "[Po DpAddr] Fre"
+     which is "[Po,DpAddr]|Fre" in canonical form.
+     That is the top level white space become Choice.
+     The result is a list of relaxation that has been unfolded.
+     Each relaxation contains, wrapped in `ERS`,
+     one or several edges in sequence. *)
+  let parse_argument input_argument =
+    String.trim input_argument
+    |> (fun s -> Lexing.from_string s)
+    |> Parser.main LexUtil.token
+    (* Manually convert the top level to Choice *)
+    |> ( function
+      | Seq sq -> Choice sq
+      | ast -> ast
+    )
+    |> Ast.flatten
+    |> List.map (parse_expand_relaxs ~ppo:C.ppo)
+    |> List.flatten
+    |> List.map edges_of
+    |> varatom_ess
+    |> List.map ( fun edges -> ERS edges )
 
   module AltConfig = struct
     include O
@@ -55,9 +100,20 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let min_relax = !Config.min_relax
 
     let prefix =
-      match List.map parse_relaxs O.prefix with
-      | [] -> [[]] (* No prefix <=> one empty prefix *)
-      | pss -> pss
+      List.map ( fun segment ->
+        String.trim segment
+        |> (fun s -> Lexing.from_string s)
+        |> Parser.main LexUtil.token
+      ) O.prefix
+      |> fun e -> Ast.Choice e
+      |> Ast.flatten
+      |> List.map (parse_expand_relaxs ~ppo:C.ppo)
+      |> List.flatten
+      |> List.map (fun l -> [l])
+      |> ( function
+        | [] -> [[]] (* No prefix <=> one empty prefix *)
+        | pss -> pss
+      )
 
     let variant = O.variant
 
@@ -76,43 +132,15 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
   module M =  Alt.Make(C)(AltConfig)
 
-  let var_relax fold rs = function
-    | PPO as r -> r::rs
-    | ERS es ->
-        let ess = fold es in
-        List.fold_left
-          (fun k es -> ERS es::k) rs ess
 
-
-  let var_atom =
-    if C.A.bellatom then Misc.identity
-    else match O.varatom with
-    | [] -> Misc.identity
-    | ["all"] ->
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold = C.E.fold_atomo
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) []
-    | atoms ->
-        let atoms = C.E.parse_atoms atoms in
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold f k = C.E.fold_atomo_list atoms f k
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) []
 
   let gen lr ls rl n =
-    let lr = C.R.expand_relax_macros lr
-    and ls = C.R.expand_relax_macros ls
-    and rl = C.R.expand_relax_macros rl in
-    let lr = var_atom lr
-    and ls = var_atom ls
-    and rl = var_atom rl in
+    let parse_argument_opt argument =
+      Option.map parse_argument argument
+      |> Option.value ~default:[] in
+    let lr = parse_argument_opt lr
+    and ls = parse_argument_opt ls
+    and rl = parse_argument_opt rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -134,36 +162,20 @@ let parse_fences fs = List.fold_right parse_fence fs []
        er (Fr Ext); er (Po (Same,Irr,Irr))] in
     M.gen ~relax:lr ~safe:ls n
 
-  let orl_opt = function
-    | None -> []
-    | Some xs -> xs
-
   let go n (*size*) orl olr ols (*relax and safe lists*) =
-    let orl = orl_opt orl in
     match O.choice with
     | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | _ -> gen olr ols orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | _ -> gen olr ols orl n
         end
 end
-
-
-let split s = match s with
-  | None -> None
-  | Some s ->
-  let splitted = LexUtil.split s in
-  Some splitted
 
 let get_arg s =
   raise (Arg.Bad (Printf.sprintf "%s takes no argument, argument %s is present" Config.prog s))
@@ -190,11 +202,9 @@ let exec_conf s =
   ()
 
 let split_cands xs =
-  match
-    List.concat (List.map LexUtil.split xs)
-  with
-  | [] -> None
-  | _::_ as xs -> Some xs
+  if xs = [] then None
+  else (Some (String.concat " " xs))
+
 
 let () =
   Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
@@ -206,17 +216,9 @@ let () =
   Config.valid_stdout_flag false ;
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
-  and reject_list = split !Config.rejects in
+  and reject_list = !Config.rejects in
 
-  let () =
-    if !Config.verbose > 0 then begin
-      let relaxs =
-        match relax_list with
-        | None -> []
-        | Some xs -> xs in
-      Printf.eprintf "parsed relax=%s\n"
-        (String.concat " " (List.map LexUtil.pp relaxs))
-    end in
+
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
@@ -245,12 +247,14 @@ let () =
 (* Specific *)
     open Config
     let choice = !Config.mode
-    let prefix =  List.rev_map LexUtil.split !Config.prefix
+    let prefix = !Config.prefix
     let variant = !Config.variant
     let cumul = match !Config.cumul with
     | Empty -> Empty
     | All -> All
-    | Set s -> Set (LexUtil.split s)
+    | Set s -> Set ( Lexing.from_string s
+                     |> Parser.main LexUtil.token
+                     |> Ast.to_list )
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
