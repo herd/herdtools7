@@ -28,16 +28,17 @@ The following steps have been tested on Unix.
     {@bash[
       $ brew install opam
     ]}
-+ Install dependencies:
-    {@bash[
-      $ opam install dune menhir zarith
-    ]}
 
 {2 Building}
 
 + Clone herdtools7:
   {@bash[
     $ git clone https://github.com/herd/herdtools7.git
+  ]}
++ Install dependencies:
+  {@bash[
+    $ cd herdtools7
+    $ opam install . --deps-only
   ]}
 + Build and install into a location [$PREFIX]:
   {@bash[
