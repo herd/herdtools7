@@ -26,3 +26,5 @@ asllib/doc/*.fdb_latexmk
 asllib/doc/generated_elements.tex
 asllib/menhir2bnfc/menhir2bnfc.exe
 asllib/menhir2bnfc/grammar.cf
+asllib/aslref.opam
+asllib/aslref.install
