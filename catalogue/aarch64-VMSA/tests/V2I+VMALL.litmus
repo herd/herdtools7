@@ -1,4 +1,5 @@
 AArch64 V2I+VMALL
+Hash=f352de79a84253eab737dc855d8b6455
 {
 0:X2=pte_x;
 0:X4=x;
@@ -6,7 +7,7 @@ AArch64 V2I+VMALL
 }
 P0 ;
 STR X0,[X2]    ;
-L0: LDR X3,[X4];
+L0: LDR W3,[X4];
 DSB ISH        ;
 TLBI VMALLE1IS ;
 DSB ISH        ;

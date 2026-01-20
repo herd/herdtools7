@@ -1,4 +1,5 @@
 AArch64 2+2WNExpExp+NExpNExp+DMBST+DMBST
+Hash=35f1888d961995406854486c9d9563bb
 TTHM=HD
 {
 int z;
@@ -10,10 +11,10 @@ pte_x=(oa:phy_x,db:0,dbm:1);
 pte_y=(oa:phy_y,db:1,dbm:1);
 }
 P0          | P1         ;
-MOV X8,#1   | STR X5,[X4]; 
-STR X8,[X3] | DMB ST     ;
+MOV W8,#1   | STR X5,[X4];
+STR W8,[X3] | DMB ST     ;
             | STR X7,[X6];
 DMB ST      |            ;
-MOV X9,#1   |            ;
-STR X9,[X2] |            ;
+MOV W9,#1   |            ;
+STR W9,[X2] |            ;
 exists(x=1 /\ y=1 /\ pte_x=(oa:phy_z,db:0,dbm:1) /\ pte_y=(oa:phy_y,db:1,dbm:1))
