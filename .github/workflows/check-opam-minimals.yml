@@ -36,8 +36,5 @@ jobs:
         with:
           ocaml-compiler: 4.08.1
       - run: |
-          opam install . --deps-only --with-test
+          opam install . --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
           opam exec -- make build test install DUNE_PROFILE=dev
-        env:
-          OPAMCRITERIA: "-new"
-          OPAMEXTERNALSOLVER: builtin-mcss+glpk
