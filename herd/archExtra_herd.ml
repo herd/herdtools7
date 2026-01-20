@@ -677,7 +677,7 @@ module Make(C:Config) (I:I) : S with module I = I
              Warn.user_error
                "Location %s of type %s is used as an array"
                (pp_location_old loc) (TestType.pp t) in
-        if os < 0 || os >= n_elts then
+        if os < 0 || os > n_elts then
           Warn.user_error
             "Out of bounds access on array %s" (pp_location_old loc) ;
         if os = 0 then loc

@@ -48,17 +48,17 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_ifetch_annot = function
       | NExp IFetch -> true
-      | NExp (AF|DB|AFDB|Other)|Exp -> false
+      | NExp (AF|DB|AFDB|Other|GCS)|Exp -> false
 
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_af = function (* Setting of access flag *)
       | NExp (AF|AFDB)-> true
-      | NExp (DB|IFetch|Other)|Exp -> false
+      | NExp (DB|IFetch|Other|GCS)|Exp -> false
 
     and is_db = function (* Setting of dirty bit flag *)
       | NExp (DB|AFDB) -> true
-      | NExp (AF|IFetch|Other)|Exp -> false
+      | NExp (AF|IFetch|Other|GCS)|Exp -> false
 
     module CMO = struct
       type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
@@ -115,6 +115,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_SMSTART _ | I_SMSTOP _ | I_LD1SPT _ | I_ST1SPT _
     | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
     | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
+    | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
       -> true
 
     let is_cmodx_restricted_value =
@@ -129,11 +130,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
 
     let barrier_sets =
-      do_fold_dmb_dsb false true
+      fold_barrier false true
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
-        ["ISB",is_barrier ISB]
+        []
 
     let cmo_sets =
       DC.fold_op
@@ -317,6 +318,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_RDVL _ | I_ADDVL _ | I_CNT_INC_SVE _ | I_CTERM _
       | I_SMSTART _ | I_SMSTOP _ | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
+      | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
           -> None
 
     let all_regs =
@@ -350,7 +352,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _ | I_AT _
       | I_NOP|I_TBZ _|I_TBNZ _
-      | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_SVC _ | I_UDF _
+      | I_ERET | I_SVC _  | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
       | I_ST1SPT _ | I_CTERM _
         -> [] (* For -variant self only ? *)
@@ -399,11 +401,24 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_RDVL (r,_) | I_ADDVL (r,_,_) | I_CNT_INC_SVE (_,r,_,_)
       | I_LD1SPT (_,r,_,_,_,_,_) | I_MOVA_TV (r,_,_,_,_) | I_MOVA_VT (r,_,_,_,_)
       | I_ADDA (_,r,_,_,_)
+      | I_GCSSTR (r,_)
         -> [r]
       | I_LDAR (_,(XX|AX),r,_) |I_LDARBH (_,(XX|AX),r,_)
         -> [r;ResAddr;]
       | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
         -> [r;ResAddr;]
+      | I_BL _ | I_BLR _  when C.variant Variant.ShadowStack
+        -> [Ireg R30; SysReg GCSPR_EL1]
+      | I_RET _ when C.variant Variant.ShadowStack
+        -> [SysReg GCSPR_EL1]
+      | I_BL _ | I_BLR _
+        -> [Ireg R30]
+      | I_RET _
+        -> []
+      | I_GCSPUSHM _  | I_GCSSS1 _
+        -> [SysReg GCSPR_EL1]
+      | I_GCSPOPM r | I_GCSSS2 r
+        -> [r; SysReg GCSPR_EL1]
       | I_MSR (SYS_NZCV,_)
         ->
           nzcv_regs
@@ -494,6 +509,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LD1SPT _ | I_ST1SPT _
       | I_MOVA_TV _| I_MOVA_VT _ | I_ADDA _
       | I_PAC _ | I_AUT _ | I_XPACI _ | I_XPACD _
+      | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
         -> MachSize.No
 
     let reg_defaults =

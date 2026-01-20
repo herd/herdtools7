@@ -1,0 +1,20 @@
+AArch64 MP+gcspush-gcsb-rel+dmb.ld
+variant=shadowstack
+{
+SS(x,1);
+
+0:X2=y;
+0:GCSPR_EL1=&x[1];
+
+1:X2=y;
+1:X4=x;
+}
+
+P0                                                            | P1          ;
+MOV X0,#4                                                     | LDR W1,[X2] ;
+GCSPUSHM X0  (* GCS (Write) effect                         *) | DMB LD      ;
+GCSB DSYNC   (* GCSB effect                                *) | LDR X3,[X4] ;
+MOV W1,#1                                                     |             ;
+STLR W1,[X2] (* Memory Write effect with Release semantics *) |             ;
+
+exists 1:X1=1 /\ 1:X3=0

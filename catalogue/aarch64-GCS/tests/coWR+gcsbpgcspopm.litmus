@@ -1,0 +1,19 @@
+AArch64 coWR+gcsbpgcspopm
+variant=shadowstack,vmsa
+{
+  uint64_t y=1;
+
+  SS(x,1);
+
+  [PTE(y)]=(oa:PA(x)); (* Alias y to x, otherwise STR would fault *)
+
+  0:GCSPR_EL1=&x[0];
+  0:X0=y;
+}
+P0          ;
+MOV X1,#4   ;
+STR X1,[X0] ; (* Memory (Write) effect  *)
+GCSB DSYNC  ; (* GCSB effect            *)
+GCSPOPM X2  ; (* GCS (Read) effect      *)
+
+forall (0:X2=4)

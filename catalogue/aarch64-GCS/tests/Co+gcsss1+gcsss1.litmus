@@ -1,0 +1,18 @@
+AArch64 Co+gcsss1+gcsss1
+variant=shadowstack
+{
+  SS(x,2);
+  SS(y,2) = ssval_t: {0,SSCap(y,1)};
+
+  0:GCSPR_EL1=&x[1];
+  0:X1=&y[1];
+  0:X2=y;
+}
+
+P0             ;
+GCSSS1 X1      ; (* GCSSS1 Memory effect, GCSPR = y[1], y[1] = SSCap(x[1],5)   *)
+ADD X3,X2,#1   ; (* Synthesize "valid" cap                                     *)
+GCSSTR X3,[X1] ; (* GCS (Write) effect                                         *)
+GCSSS1 X1      ; (* GCSSS1 Memory effect, GCSPR = y[1], y[1] = SSCap(y[1],5) q *)
+
+forall ~fault(P0)

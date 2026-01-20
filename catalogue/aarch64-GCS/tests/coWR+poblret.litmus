@@ -1,0 +1,16 @@
+AArch64 coWR+poblret
+variant=shadowstack
+{
+
+  SS(x,1);
+
+  0:GCSPR_EL1=&x[1];
+}
+P0    ;
+BL L0 ; (* GCS (Write) effect *)
+B L1  ;
+L0:   ;
+RET   ; (* GCS (Read) effect  *)
+L1:   ;
+
+forall ~fault(P0,GCS:PRET)

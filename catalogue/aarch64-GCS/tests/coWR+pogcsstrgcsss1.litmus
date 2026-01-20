@@ -1,0 +1,17 @@
+AArch64 coWR+pogcsstrgcsss1
+variant=shadowstack
+{
+
+  SS(x,1);
+  SS(y,1);
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=y;
+
+}
+P0             ;
+ADD X1,X0,#1   ; (* Syntesize "valid" cap *)
+GCSSTR X1,[X0] ; (* GCS (Write) effect    *)
+GCSSS1 X0      ; (* GCSSS1 Memory effect  *)
+
+forall ~fault(P0,GCS:SS1)

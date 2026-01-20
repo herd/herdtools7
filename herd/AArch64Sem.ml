@@ -44,6 +44,7 @@ module Make
     let pac = C.variant Variant.Pac
     let const_pac_field = C.variant Variant.ConstPacField
     let fpac = C.variant Variant.FPac
+    let gcs = C.variant Variant.ShadowStack
 
     let check_kvm ins =
       if not kvm then
@@ -79,6 +80,12 @@ module Make
       if not sme then
         Warn.user_error
           "SME instruction %s requires -variant sme"
+          (AArch64.dump_instruction inst)
+
+    let check_gcs inst =
+      if not gcs then
+        Warn.user_error
+          "GCS instruction %s requires -variant shadowstack"
           (AArch64.dump_instruction inst)
 
 (* Barrier pretty print *)
@@ -747,7 +754,7 @@ module Make
         function
         | AF -> AArch64Op.SetAF
         | DB -> AArch64Op.SetDB
-        | IFetch|Other|AFDB -> assert false
+        | IFetch|Other|AFDB|GCS -> assert false
 
       let do_test_and_set_bit combine cond set a_pte iiid =
         let nexp = AArch64Explicit.NExp set in
@@ -896,7 +903,7 @@ module Make
           (fun _ ->
              set_elr_el1 lbl_v ii
              >>|
-             mk_fault (Some a) dir an ii ft msg) None ii
+             mk_fault a dir an ii ft msg) None ii
         >>!  B.fault [AArch64Base.elr_el1, lbl_v]
 
       (* Specific fault when accessing PTE from EL0. *)
@@ -904,7 +911,7 @@ module Make
         let open FaultType.AArch64 in
         let ft = Some (MMU Permission)
         and msg = Some "EL0" in
-        emit_fault a ma dir an ft msg ii
+        emit_fault (Some a) ma dir an ft msg ii
 
       let an_xpte =
         let open Annot in
@@ -1152,7 +1159,6 @@ module Make
 (* Page tables and TLBs *)
       let do_inv op a ii = inv_loc op (A.Location_global a) ii
 
-
 (************************)
 (* Conditions and flags *)
 (************************)
@@ -1397,7 +1403,7 @@ module Make
         else m
 
       let lift_kvm dir updatedb mop ma an ii mphy =
-        let mfault ma a ft = emit_fault a ma dir an ft None ii in
+        let mfault ma a ft = emit_fault (Some a) ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             ((let m = mop Access.PTE ma in
@@ -2107,7 +2113,7 @@ Arguments:
           (rmw_to_read rmw)
           ii
 
-      let do_cas_fail do_wb sz an rn ma mv mop ii =
+      let do_cas_fail do_wb sz an rn ma mv mop tagcheck ii =
         let action checked ma =
           let do_action updatedb checked ma =
               (* Dir.W would force check for dbm bit:                  *)
@@ -2131,7 +2137,7 @@ Arguments:
           end
         in
 
-        if memtag && C.mte_store_only then
+        if tagcheck && C.mte_store_only then
           (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
           (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
           (* operation is performed.                                  *)
@@ -2150,18 +2156,18 @@ Arguments:
       let do_cas_fail_with_wb = do_cas_fail true
       let do_cas_fail_no_wb = do_cas_fail false
 
-      let do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii =
+      let do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb tagcheck ii =
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz) ma mv an ii
+          lift_memop rn Dir.W true tagcheck mop_success (to_perms "rw" sz) ma mv an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
-            do_cas_fail_with_wb sz an rn ma mv mop_fail_with_wb ii
+            do_cas_fail_with_wb sz an rn ma mv mop_fail_with_wb tagcheck ii
           )(
             (* CAS does not generate an Explicit Write Effect      *)
-            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb ii
+            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb tagcheck ii
           )
         )
 
@@ -2206,7 +2212,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb memtag ii
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
@@ -2267,7 +2273,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb memtag ii
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
@@ -3571,6 +3577,374 @@ Arguments:
         write_reg_dest r v ii >>= fun v ->
         B.nextSetT r v
 
+(*************************)
+(* Guarded Control Stack *)
+(*************************)
+      module GCSSem = struct
+        let mk_fault action ft ii =
+          emit_fault None action Dir.R Annot.N (Some ft) None ii
+
+        let get_cap mask v =
+          M.op1 Op.Offset v >>= M.op Op.And mask
+
+        let set_cap cap mask v =
+          let invert = V.op1 Op.Inv mask in
+          M.op1 Op.Offset v >>= fun offset ->
+            (* Strip offset *)
+            M.op Op.Sub v offset >>|
+            (* Extract index *)
+            (M.op Op.And offset invert >>|
+              (* Make sure cap fits into mask *)
+              M.op Op.And cap mask >>= fun (index, cap) ->
+                (* Make new offset *)
+                M.op Op.Or index cap) >>= fun (v, offset) ->
+                (* Write it back *)
+                M.op Op.Add v offset
+
+        let reset_cap = set_cap V.zero
+        let make_valid = set_cap V.one (V.intToV 0xfff)
+        let make_inprogress = set_cap (V.intToV 0x5) (V.intToV 0x7)
+
+        let read ac an a ii = do_read_mem_ret quad an AArch64Explicit.(NExp GCS) ac a ii
+        and write ac an a v ii = do_write_mem quad an AArch64Explicit.(NExp GCS) ac a v ii
+      end
+
+
+      let gcsstr r1 r2 ii =
+        let an = Annot.N in
+        let mop ac a v = GCSSem.write ac an a v ii in
+        lift_memop r2 Dir.W true false
+        (fun ac ma mv ->
+          if is_branching && Access.is_physical ac then
+            M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
+          else
+            ma >>| mv >>= fun (a,v) -> mop ac a v
+        )
+        (to_perms "w" quad)
+        (read_reg_addr r2 ii)
+        (read_reg_data r1 ii)
+        an
+        ii
+
+      let gcspushm rs ii =
+        let open AArch64Base in
+        let an = Annot.N
+        and rA = SysReg GCSPR_EL1
+        and off = MachSize.nbytes quad in
+        let m =
+          M.delay_kont "gcspushm"
+          (read_reg_addr rA ii >>= fun addr ->
+            M.add addr (V.intToV (-off)))
+          (fun a_virt ma ->
+            let mop ac a _v =
+                write_reg rA a_virt ii >>|
+                M.data_input_next
+                (read_reg_data rs ii)
+                (fun v -> GCSSem.write ac an a v ii)
+                >>= M.ignore >>= fun () -> B.nextSetT rA a_virt in
+            lift_memop rA Dir.W true false
+            (fun ac ma mv ->
+              if is_branching && Access.is_physical ac then
+                M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
+              else
+                ma >>| mv >>= fun (a,v) -> mop ac a v)
+            (to_perms "w" quad)
+            ma
+            mzero
+            an
+            ii) in
+        (* Value writen to GCSPR depends on previous read *)
+        let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+        and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+        M.short read write m
+
+      let gcspopm rd ii =
+        let open AArch64Base in
+        let an = Annot.N
+        and rA = SysReg GCSPR_EL1
+        and off = MachSize.nbytes quad in
+        let m =
+        M.delay_kont "gcspopm"
+        (read_reg_addr rA ii)
+        (fun a_virt ma ->
+          let mop ac a =
+            let m = GCSSem.read ac an a ii >>= fun v ->
+              let commit = commit_pred_txt (Some "PCAligned") ii in
+              let mok =
+                let(>>*=) = M.bind_control_set_data_input_first in
+                commit >>*= fun () ->
+                  M.add a_virt (V.intToV off) >>= fun new_addr ->
+                    write_reg rd v ii >>|
+                    write_reg rA new_addr ii
+                    >>= M.ignore >>= B.next1T in
+              let mask = V.intToV 0x3 in
+               GCSSem.get_cap mask v >>= fun cap ->
+               M.delay_kont "gcspopm(fault)"
+               (M.op Op.Ne cap V.zero)
+               (fun nonzero action ->
+                 let open FaultType.AArch64 in
+                 let mno = GCSSem.mk_fault action (GCSCheck POPM) ii in
+                 M.choiceT nonzero mno mok)
+            in
+            (* Write to Rd depends on read from Shadow Stack *)
+            M.short (E.is_mem_load) (is_this_reg rd) m in
+          lift_memop rA Dir.R false false
+          (fun ac ma _mv ->
+            if Access.is_physical ac then
+              M.bind_ctrldata ma (mop ac)
+            else
+              ma >>= mop ac)
+          (to_perms "r" quad)
+          ma
+          mzero
+          an
+          ii) in
+        (* Value writen to GCSPR depends on previous read *)
+        let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+        and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+        M.short read write m
+
+      (*
+       * Basically copy of lift_memop which allows mop to drive control flow
+       * (handy for BL{R}/RET insrucions with GCS enabled)
+       *)
+      let lift_shadow_stack dir updatedb mop ma mv an ii =
+        let mop = apply_mv mop mv in
+        if kvm then
+          let mphy ma a_virt =
+            let ma = get_oa a_virt ma in
+              mop Access.PHY ma
+          in
+          (* lift_kvm dir updatedb mop ma an ii mphy in *)
+          let mfault ma a ft = emit_fault (Some a) ma dir an ft None ii in
+          let maccess a ma =
+            check_ptw ii.AArch64.proc dir updatedb false a ma an ii
+            (fire_spurious_af dir a (mop Access.PTE ma))
+            mphy
+            mfault in
+          M.delay_kont "shadow_stack"
+          ma
+          (fun a ma ->
+            match Act.access_of_location_std (A.Location_global a) with
+            | Access.VIR|Access.PTE when not (A.V.is_instrloc a) ->
+              maccess a ma
+            | ac ->
+              mop ac ma)
+        else
+          mop Access.VIR ma
+
+      let blop v_ret write_linkreg branch bop ii =
+        let open AArch64Base in
+        let an = Annot.N
+        and rA = SysReg GCSPR_EL1
+        and off = MachSize.nbytes quad in
+        M.delay_kont "bl(gcs)"
+        (read_reg_addr rA ii >>= fun addr -> M.add addr (V.intToV (-off)))
+        (fun a_virt ma ->
+          let mop ac a v =
+            GCSSem.write ac an a v ii >>|
+            write_reg rA a_virt ii >>|
+            write_linkreg >>= M.ignore in
+          lift_shadow_stack Dir.W true
+          (fun ac ma mv ->
+            let m =
+              if is_branching && Access.is_physical ac then
+                M.bind_ctrldata_data ma mv (fun a v -> bop (mop ac a v) branch)
+              else
+                ma >>| mv >>= fun (a,v) -> bop (mop ac a v) branch
+            in
+            (* Value writen to GCSPR depends on previous read *)
+            let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+            and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+            M.short read write m)
+          ma
+          (M.unitT (v_ret))
+          an
+          ii)
+
+      let retop test i r ii =
+        let open AArch64Base in
+        let an = Annot.N
+        and rA = SysReg GCSPR_EL1
+        and off = MachSize.nbytes quad in
+        M.delay_kont "ret(gcs)"
+        (read_reg_addr rA ii)
+        (fun a_virt ma ->
+          lift_shadow_stack Dir.R false
+          (fun ac ma mv ->
+            let m =
+              mv >>|
+              (let(>>=) = if Access.is_physical ac then M.bind_ctrldata else (>>=) in
+                ma >>= fun addr ->
+                  GCSSem.read ac an addr ii) >>= fun (target,v) ->
+                    let commit =
+                      let cond = Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r) in
+                        commit_pred_txt (Some cond) ii in
+                    let mok =
+                      let(>>*=) = M.bind_control_set_data_input_first in
+                      commit >>*= fun () ->
+                        (M.add a_virt (V.intToV off) >>= fun new_addr ->
+                          write_reg rA new_addr ii) >>|
+                        do_indirect_jump test [] i ii target >>= fun (_, b) -> M.unitT b in
+                    M.delay_kont "ret(fault)"
+                    (M.op Op.Ne v target)
+                    (fun cond action ->
+                      let open FaultType.AArch64 in
+                      let mno = GCSSem.mk_fault action (GCSCheck PRET) ii in
+                      M.choiceT cond mno mok)
+              in
+              (* Value writen to GCSPR depends on previous read *)
+              let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+              and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+              let m = M.short read write m in
+              (* Branch depends on destination register (or LR) *)
+              M.short (is_this_reg r) (E.is_bcc) m)
+          ma
+          (read_reg_ord r ii)
+          an
+          ii)
+
+      let gcsss1 r ii =
+        let open AArch64Base in
+        let an = Annot.X
+        and rA = SysReg GCSPR_EL1 in
+        M.delay_kont "gcsss1"
+        (read_reg_addr r ii)
+        (fun incoming ma ->
+          (* Valid cap entry is expected *)
+          let cmpoperand = read_reg_data r ii >>= GCSSem.make_valid in (* incoming_pointer[63:12]:'000000000001' *)
+          let cond2 = Some "(data==cmpoperand)" in
+          let branch = commit_pred_txt cond2 ii in
+          let update data =
+             GCSSem.make_valid incoming >>= fun v ->
+              let(>>*=) = M.bind_control_set_data_input_first in
+              let mok = 
+                branch >>*=
+                fun () -> write_reg rA incoming ii >>= fun () -> B.nextSetT rA incoming in
+              M.op Op.Eq data v >>= fun cond ->  (* if data == cmpoperand then                             *)
+              M.assertT cond mok >>= M.ignore   (*     SetCurrentGCSPointer(incoming_pointer[63:3]:'000'); *)
+          in
+          let fault data =
+             GCSSem.make_valid incoming >>= fun v ->
+              M.delay_kont "gcsss1(fault)"
+              (M.op Op.Ne data v)             (* if data != cmpoperand then                   *)
+              (fun cond action ->
+                let open FaultType.AArch64 in (*     GCSDataCheckException(GCSInstType_SS1);  *)
+                let mno = GCSSem.mk_fault action (GCSCheck SS1) ii in
+                M.assertT cond mno >>= M.ignore)
+          in
+          let branch a =
+            let cond1 = Some (Printf.sprintf "Valid([%s])" (V.pp_v a)) in
+            commit_pred_txt cond1 ii in
+          let shortcut =
+            let read_reg e =
+              let is_reg = is_this_reg r e
+              and is_load = E.is_reg_load e ii.A.proc in
+              is_reg && is_load
+            in
+            M.short read_reg (E.is_pred_txt cond2) in
+          let mop_fail_no_wb ac ma _ =
+            (* GCSSS1 fails, there is no Explicit Write Effect *)
+            let read_mem a = GCSSem.read ac an a ii in
+            let noact _ _ = M.mk_singleton_es Act.NoAction ii in
+            M.altT (
+              M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand update read_mem noact branch M.neqT |> shortcut
+            )(
+              M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand fault read_mem noact branch M.neqT |> shortcut
+            )
+          in
+          let mop_fail_with_wb ac ma _ =
+            (* GCSSS1 fails, there is an Explicit Write Effect writing back *)
+            (* the value that is already in memory                          *)
+            let read_mem a = GCSSem.read ac Annot.X a ii
+            and write_mem a v = GCSSem.write ac Annot.X a v ii in
+            M.altT(
+                M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand update read_mem write_mem branch M.neqT |> shortcut
+              )(
+                M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand fault read_mem write_mem branch M.neqT |> shortcut
+              )
+          in
+          let mop_success ac ma mv =
+            (* GCSSS1 succeeds, there is an Explicit Write Effect *)
+            (* mv is read new value from reg, not important       *)
+            (* as this code is not executed in morello mode       *)
+            (* In-progress cap entry should be stored if the comparison is successful *)
+            let operand = mv >>= GCSSem.make_inprogress (* outgoing_pointer[63:3]:'101' *)
+            and read_mem a = GCSSem.read ac Annot.X a ii
+            and write_mem a v = GCSSem.write ac Annot.X a v ii in
+           M.altT(
+             M.aarch64_cas_ok (Access.is_physical ac) ma cmpoperand operand update read_mem write_mem branch M.eqT |> shortcut
+            )(
+              M.aarch64_cas_ok (Access.is_physical ac) ma cmpoperand operand fault read_mem write_mem branch M.eqT |> shortcut
+            )
+          in
+          let mv = read_reg_data rA ii in
+          do_cas quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
+
+    let gcsss2 r ii =
+      let open AArch64Base in
+      let an = Annot.N
+      and rA = SysReg GCSPR_EL1
+      and off = MachSize.nbytes quad in
+      let m =
+      M.delay_kont "gcsss2"
+      (read_reg_addr rA ii)
+      (fun a_virt ma ->
+      let mop ac incoming =
+        let m = GCSSem.read ac Annot.A incoming ii >>= fun outgoing ->
+          let mask = V.intToV 0x7 in
+          GCSSem.get_cap mask outgoing >>= fun cap ->
+            let(>>*=) = M.bind_control_set_data_input_first in
+            let commit =
+              let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
+              commit_pred_txt (Some cond) ii in
+            let mok =
+              commit >>*= fun () ->
+                let mop ac a outgoing =
+                  (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)) >>= fun v -> write_reg r v ii) >>|
+                   (M.add a_virt (V.intToV (off)) >>= fun new_addr ->
+                      write_reg rA new_addr ii) >>|
+                      (GCSSem.make_valid outgoing >>= fun outgoing_value -> GCSSem.write ac Annot.L a outgoing_value ii)
+                in
+                lift_memop r Dir.W true false
+                (fun ac ma mv ->
+                  if is_branching && Access.is_physical ac then
+                    M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
+                  else
+                    ma >>| mv >>= fun (a,v) -> mop ac a v)
+                (to_perms "w" quad)
+                (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
+                (M.unitT outgoing)
+                an
+                ii in
+            let inprogress = V.intToV 0x5 in
+            M.delay_kont "gcsss2(fault)"
+            (M.op Op.Ne cap inprogress)
+            (fun notvalid action ->
+              let open FaultType.AArch64 in
+              let mno = GCSSem.mk_fault action (GCSCheck SS2) ii in
+              M.choiceT notvalid mno mok)
+          in
+        (* Register write and write to other stack depend on load from Shadow Stack *)
+        let store e = (E.is_mem_store e) || (is_this_reg r e) in
+        M.short (E.is_mem_load) store m in
+      lift_memop rA Dir.R false false
+      (fun ac ma _mv ->
+        if Access.is_physical ac then
+          M.bind_ctrldata ma (mop ac)
+        else
+          ma >>= mop ac)
+      (to_perms "r" quad)
+      ma
+      mzero
+      an
+      ii) in
+      (* Value writen to GCSPR depends on previous read *)
+      let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+      and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+      M.short read write m
+
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -3609,26 +3983,33 @@ Arguments:
            let v_ret = get_link_addr test ii in
            let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
            let branch () = M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret])) in
-           M.bind_order write_linkreg branch
-
+           let bop a b = M.bind_order a b in
+           if gcs then
+            blop v_ret write_linkreg branch bop ii
+           else
+            bop write_linkreg branch
         | I_BR r as i ->
             read_reg_ord r ii >>= do_indirect_jump test [] i ii
-
         | I_BLR r as i ->
            let v_ret = get_link_addr test ii in
            let read_rn = read_reg_ord r ii in
            let branch = read_rn >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii in
            let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
-           write_linkreg >>| branch >>= fun (_, b) -> M.unitT b
+           let bop a b = a >>| b >>= fun (_, b) -> M.unitT b in
+           if gcs then
+            blop v_ret write_linkreg branch bop ii
+           else
+            bop write_linkreg branch
         | I_RET None when C.variant Variant.Telechat ->
            M.unitT B.Exit
         | I_RET ro as i ->
             let r = match ro with
             | None -> AArch64Base.linkreg
             | Some r -> r in
-            read_reg_ord r ii
-            >>= do_indirect_jump test [] i ii
-
+              if gcs then
+                retop test i r ii
+              else
+                read_reg_ord r ii >>= do_indirect_jump test [] i ii
         | I_ERET ->
            let eret_to_addr v =
               match v2tgt v with
@@ -4496,6 +4877,10 @@ Arguments:
            >>= nextSet rd
         (* Barrier *)
         | I_FENCE b ->
+            begin match b with
+            | AArch64Base.GCSB -> check_gcs inst
+            | _ -> ()
+            end;
             !(create_barrier b ii)
               (* Conditional selection *)
         | I_CSEL (var,r1,r2,r3,c,op) ->
@@ -4633,6 +5018,22 @@ Arguments:
             do_aut key rd rn ii
         | I_XPACI r | I_XPACD r ->
             do_xpac r ii
+(* Guarded Control Stack *)
+        | I_GCSPOPM rd ->
+          check_gcs inst;
+          gcspopm rd ii
+        | I_GCSPUSHM rs ->
+          check_gcs inst;
+          gcspushm rs ii
+        | I_GCSSTR (r1,r2) ->
+          check_gcs inst;
+          gcsstr r1 r2 ii
+        | I_GCSSS1 r ->
+          check_gcs inst;
+          gcsss1 r ii
+        | I_GCSSS2 r ->
+          check_gcs inst;
+          gcsss2 r ii
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_ST2G _|I_STZG _|I_STZ2G _

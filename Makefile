@@ -260,6 +260,18 @@ test.self:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 variant -self instructions tests: OK"
 
+test:: test.gcs
+test-local:: test.gcs
+test.gcs::
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.gcs \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 GCS instructions tests: OK"
+
 test:: test.kvm
 test-local:: test.kvm
 test.kvm:

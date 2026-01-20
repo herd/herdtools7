@@ -1,0 +1,14 @@
+AArch64 G001
+variant=shadowstack
+{
+  SS(x,1);
+  0:GCSPR_EL1=&x[1];
+  0:X0=1; (* bit[1:0] is not 0b00, so we must fault *)
+}
+
+P0               ;
+GCSPUSHM X0      ;
+L0:              ;
+GCSPOPM X1       ;
+
+forall fault(P0:L0,GCS:POPM)

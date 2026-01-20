@@ -31,8 +31,19 @@ module type AArch64Sig = sig
     | Permission  (* db: 0 *)
     | Exclusive   (* memattr <> sharedWB *)
 
+  type gcs_t =
+    | PRET
+    | POPM
+    | PRETAA
+    | PRETAB
+    | SS1
+    | SS2
+    | POPCX
+    | POPX
+
   type t =
     | MMU of mmu_t
+    | GCSCheck of gcs_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall

@@ -123,6 +123,7 @@ type sysreg =
   ELR_EL1 | ESR_EL1 | SYS_NZCV |
   TFSR_ELx | VNCR_EL2
   | PAR_EL1
+  | GCSPR_EL1
 
 let sysregs = [
     CTR_EL0, "CTR_EL0";
@@ -137,6 +138,7 @@ let sysregs = [
     TFSR_ELx, "TFSR_ELx";
     VNCR_EL2, "VNCR_EL2";
     PAR_EL1, "PAR_EL1";
+    GCSPR_EL1, "GCSPR_EL1";
   ]
 
 let sysregs_map = [
@@ -260,6 +262,7 @@ let elr_el1 = SysReg ELR_EL1
 let esr_el1 = SysReg ESR_EL1
 let tfsr = SysReg TFSR_ELx
 let par_el1 = SysReg PAR_EL1
+let gcspr_el1 = SysReg GCSPR_EL1
 
 let cgprs =
 [
@@ -648,6 +651,7 @@ type barrier =
   | DMB of mBReqDomain*mBReqTypes
   | DSB of mBReqDomain*mBReqTypes
   | ISB
+  | GCSB
 
 type syncType =
   | DC_CVAU
@@ -675,6 +679,7 @@ let do_fold_dmb_dsb kvm more f k =
 let fold_barrier kvm more f k =
   let k = do_fold_dmb_dsb kvm more f k in
   let k = f ISB k in
+  let k = f GCSB k in
   k
 
 let pp_option d t = match d,t with
@@ -686,6 +691,7 @@ let do_pp_barrier tag b = match b with
   | DMB (d,t) -> "DMB" ^ tag ^ pp_option d t
   | DSB (d,t) -> "DSB" ^ tag ^ pp_option d t
   | ISB -> "ISB"
+  | GCSB -> "GCSB" ^ tag ^  "DSYNC"
 
 let pp_barrier b = do_pp_barrier " " b
 let pp_barrier_dot b = do_pp_barrier "." b
@@ -1704,6 +1710,17 @@ type 'k kinstruction =
   | I_SEAL of reg * reg * reg
   | I_STCT of reg * reg
   | I_UNSEAL of reg * reg * reg
+(* Guarded Control Stack Extention *)
+  (* GCSPOPM {<Xt>} *)
+  | I_GCSPOPM of reg
+  (* GCSPUSHM <Xt> *)
+  | I_GCSPUSHM of reg
+  (* GCSSTR <Xt>, [<Xn|SP>] *)
+  | I_GCSSTR of reg * reg
+  (* GCSSS1 <Xt> *)
+  | I_GCSSS1 of reg
+  (* GCSSS2 <Xt> *)
+  | I_GCSSS2 of reg
 (* Idem for bytes and half words *)
   | I_LDRBH of bh * reg * reg * 'k MemExt.ext
   | I_LDRS of (variant * bh) * reg * reg * 'k MemExt.ext
@@ -2369,6 +2386,19 @@ let do_pp_instruction m =
       sprintf "STCT %s,[%s]" (pp_xreg r1) (pp_xreg r2)
   | I_UNSEAL (r1,r2,r3) ->
       sprintf "UNSEAL %s,%s,%s" (pp_creg r1) (pp_creg r2) (pp_creg r3)
+(* Guarded Control Stack *)
+  | I_GCSPOPM (ZR) ->
+      "GCSPOPM"
+  | I_GCSPOPM (r) ->
+      sprintf "GCSPOPM %s" (pp_xreg r)
+  | I_GCSPUSHM (r) ->
+      sprintf "GCSPUSHM %s" (pp_xreg r)
+  | I_GCSSTR (r1,r2) ->
+      sprintf "GCSSTR %s,[%s]" (pp_xreg r1) (pp_xreg r2)
+  | I_GCSSS1 (r) ->
+      sprintf "GCSSS1 %s" (pp_xreg r)
+  | I_GCSSS2 (r) ->
+      sprintf "GCSSS2 %s" (pp_xreg r)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       sprintf "%s %s,%s,[%s]" (cas_memo rmw) (pp_vreg v r1) (pp_vreg v r2) (pp_xreg r3)
@@ -2630,6 +2660,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_CNT_INC_SVE (_,r,_,_)
   | I_PTRUE (r,_)
   | I_SMSTART (Some(r)) | I_SMSTOP (Some(r))
+  | I_GCSPOPM (r) | I_GCSPUSHM (r) | I_GCSSS1 (r) | I_GCSSS2 (r)
     -> fold_reg r c
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
@@ -2652,6 +2683,7 @@ let fold_regs (f_regs,f_sregs) =
   | I_STZ2G (r1,r2,_) | I_STG (r1,r2,_) | I_ST2G (r1,r2,_)
   | I_ALIGND (r1,r2,_) | I_ALIGNU (r1,r2,_)
   | I_ADDVL (r1,r2,_) | I_CTERM (_,_,r1,r2)
+  | I_GCSSTR (r1,r2)
     -> fold_reg r1 (fold_reg r2 c)
   | I_MRS (r,sr) | I_MSR (sr,r)
     -> fold_reg (SysReg sr) (fold_reg r c)
@@ -3010,6 +3042,17 @@ let map_regs f_reg f_symb =
       I_STCT(map_reg r1,map_reg r2)
   | I_UNSEAL (r1,r2,r3) ->
       I_UNSEAL(map_reg r1,map_reg r2,map_reg r3)
+(* Guarded Control Stack *)
+  | I_GCSPOPM (r) ->
+      I_GCSPOPM (map_reg r)
+  | I_GCSPUSHM (r) ->
+      I_GCSPUSHM (map_reg r)
+  | I_GCSSTR (r1,r2) ->
+      I_GCSSTR (map_reg r1,map_reg r2)
+  | I_GCSSS1 (r) ->
+      I_GCSSS1 (map_reg r)
+  | I_GCSSS2 (r) ->
+      I_GCSSS2 (map_reg r)
 (* CAS *)
   | I_CAS (v,rmw,r1,r2,r3) ->
       I_CAS (v,rmw,map_reg r1,map_reg r2,map_reg r3)
@@ -3218,6 +3261,7 @@ let get_next =
   | I_MOVA_TV _ | I_MOVA_VT _ | I_ADDA _
   | I_PAC _ | I_AUT _
   | I_XPACI _ | I_XPACD _
+  | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
     -> [Label.Next;]
 
 (* Check instruction validity, beyond parsing *)
@@ -3605,6 +3649,7 @@ module PseudoI = struct
         | I_PAC _ | I_AUT _
         | I_XPACI _ | I_XPACD _
         | I_CTERM _
+        | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
             as keep -> keep
         | I_LDR (v,r1,r2,idx) -> I_LDR (v,r1,r2,ext_tr idx)
         | I_LDRSW (r1,r2,idx) -> I_LDRSW (r1,r2,ext_tr idx)
@@ -3728,6 +3773,7 @@ module PseudoI = struct
         | I_XPACI _
         | I_XPACD _
         | I_AT (_,_)
+        | I_GCSPOPM _  | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
           -> 1
         | I_LDP _|I_LDPSW _|I_STP _|I_LDXP _|I_STXP _
         | I_CAS _ | I_CASBH _
