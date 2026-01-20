@@ -1,4 +1,5 @@
 AArch64 D15347-2+2WExpNExp+DMBST+DSB-ISB
+Hash=d1158296c6622796a79c99549e1964ca
 TTHM=HD
 {
 pte_x=(db:0,dbm:1); 
@@ -14,6 +15,6 @@ P0          | P1;
 STR X1,[X2] | MOV W7,#2     ;
             | STR W7,[X8]   ;
 MOV W7,#1   | MOV X4,#1     ;
-            | L0:STR X4,[X3];
+            | L0:STR W4,[X3];
 STR W7,[X8] |               ;
 exists(z=2 /\ pte_x=(oa:phy_y,db:0,dbm:1,valid:1) /\ x=1)
