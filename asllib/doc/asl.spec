@@ -109,7 +109,7 @@ operator fresh_identifier() -> Identifier
 operator indices[T](l: list0(T)) -> (indices: list0(N))
 {
   "the list of indices for {l}",
-  math_macro = \listrange,
+  math_macro = \indicesop,
 };
 
 operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
