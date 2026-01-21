@@ -12,6 +12,12 @@ let bound_variable = "bound_variable"
 module Error = struct
   let spec_error msg = raise (SpecError msg)
 
+  let bad_layout term layout ~consistent_layout =
+    spec_error
+    @@ Format.asprintf
+         "layout %a is inconsistent with %a. Here's a consistent layout: %a"
+         PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
+
   let undefined_reference id context =
     spec_error @@ Format.asprintf "Undefined reference to '%s' in %s" id context
 
@@ -172,12 +178,6 @@ module Error = struct
     @@ Format.asprintf
          "The variable %s is defined twice, the second time is in %a" id
          PP.pp_expr context_expr
-
-  let bad_layout term layout ~consistent_layout =
-    spec_error
-    @@ Format.asprintf
-         "layout %a is inconsistent with %a. Here's a consistent layout: %a"
-         PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 end
 
 (** A wrapper type for the different kinds of elements in a spec that are
