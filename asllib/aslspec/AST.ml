@@ -533,6 +533,8 @@ module Relation : sig
     parameters : string list;
         (** Type parameters. Currently, only available to operators. *)
     is_operator : bool;
+    is_variadic : bool;
+        (** Whether the operator accepts a variable number of arguments. *)
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
@@ -556,6 +558,7 @@ module Relation : sig
     string list ->
     Term.opt_named_type_term list ->
     Term.t ->
+    bool ->
     attribute_pairs ->
     t
 
@@ -587,6 +590,7 @@ end = struct
     name : string;
     parameters : string list;
     is_operator : bool;
+    is_variadic : bool;
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
@@ -600,6 +604,7 @@ end = struct
       name;
       parameters = [];
       is_operator = false;
+      is_variadic = false;
       property;
       category;
       input;
@@ -608,11 +613,12 @@ end = struct
       rule_opt;
     }
 
-  let make_operator name parameters input output_type attributes =
+  let make_operator name parameters input output_type variadic attributes =
     {
       name;
       parameters;
       is_operator = true;
+      is_variadic = variadic;
       property = RelationProperty_Function;
       category = None;
       input;

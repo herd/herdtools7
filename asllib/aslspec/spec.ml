@@ -435,12 +435,8 @@ let symbol_table_for_id id_to_defining_node id =
     variadic operator. That is, an operator whose only argument is a list type.
     Variadic operators accept any number of actual arguments. *)
 let is_variadic_operator spec id =
-  (* TODO: add an explicit `variadic` attribute to operators and check the operator signature
-               when the attribute is specified. *)
   match StringMap.find id spec.id_to_defining_node with
-  | Node_Relation
-      { is_operator; input = [ (_, TypeOperator { op = List0 | List1 }) ] } ->
-      is_operator
+  | Node_Relation { is_operator = true; is_variadic } -> is_variadic
   | _ -> false
 
 (** A module to resolve expressions appearing in rules and constant values. *)

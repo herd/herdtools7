@@ -65,13 +65,13 @@ operator if_then_else[T](Bool, T, T) -> T
   math_macro = \ifthenelseop,
 };
 
-operator and(list1(Bool)) -> Bool
+variadic operator and(list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \land,
 };
 
-operator or(list1(Bool)) -> Bool
+variadic operator or(list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \lor,
@@ -92,15 +92,14 @@ operator implies(Bool, Bool) -> Bool
   math_macro = \implies,
 };
 
-operator num_plus[NumType](list1(NumType)) -> NumType
+variadic operator num_plus[NumType](list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numplus,
 };
 
-operator num_minus[NumType](list1(NumType)) -> NumType
+operator num_minus[NumType](NumType, NumType) -> NumType
 {
-  associative = true,
   math_macro = \numminus,
 };
 
@@ -110,7 +109,7 @@ operator negate[NumType](NumType) -> NumType
   math_macro = \negate,
 };
 
-operator num_times[NumType](list1(NumType)) -> NumType
+variadic operator num_times[NumType](list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
 };

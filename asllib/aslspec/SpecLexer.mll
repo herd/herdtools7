@@ -66,6 +66,7 @@ rule token = parse
     | "then"                { THEN }
     | "typedef"             { TYPEDEF }
     | "typing"              { TYPING }
+    | "variadic"            { VARIADIC }
 
     (* Punctuation and operators *)
     | '.'            { DOT }
