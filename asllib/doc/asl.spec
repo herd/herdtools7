@@ -172,7 +172,8 @@ operator some[T](T) -> option(T)
   math_macro = \some,
 };
 
-operator make_list[T](list0(T)) -> list0(T)
+// Constructs a list out of a finite number of arguments.
+variadic operator make_list[T](list1(T)) -> list1(T)
 {
   math_macro = \makelist,
 };
@@ -182,7 +183,8 @@ operator list_len[T](list0(T)) -> N
   math_macro = \listlen,
 };
 
-operator concat[T](list1(T)) -> list0(T)
+// Concatenates two lists into a single list.
+operator concat[T](prefix: list0(T), suffix: list0(T)) -> list0(T)
 {
   associative = true,
   math_macro = \concat,
@@ -232,7 +234,7 @@ operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
 };
 
 // Constructs a set out of a fixed list of expressions.
-operator make_set[T](list1(T)) -> powerset(T)
+variadic operator make_set[T](list1(T)) -> powerset(T)
 {
   math_macro = \makeset,
 };
@@ -266,7 +268,7 @@ operator subset[T](A: powerset(T), B: powerset(T)) -> Bool
   math_macro = \subset,
 };
 
-operator union[T](list1(powerset(T))) -> powerset(T)
+variadic operator union[T](list1(powerset(T))) -> powerset(T)
 {
   math_macro = \cup,
   associative = true,
@@ -277,100 +279,10 @@ operator union_list[T](list1(powerset(T))) -> powerset(T)
   math_macro = \UNIONLIST,
 };
 
-operator intersect[T](list1(powerset(T))) -> powerset(T)
+variadic operator intersect[T](list0(powerset(T))) -> powerset(T)
 {
   math_macro = \cap,
   associative = true,
-};
-
-operator not(Bool) -> Bool
-{
-  math_macro = \opnot,
-};
-
-operator and(list1(Bool)) -> Bool
-{
-  associative = true,
-  math_macro = \land,
-};
-
-operator or(list1(Bool)) -> Bool
-{
-  associative = true,
-  math_macro = \lor,
-};
-
-operator list_and(list1(Bool)) -> Bool
-{
-  math_macro = \land,
-};
-
-operator list_or(list1(Bool)) -> Bool
-{
-  math_macro = \lor,
-};
-
-operator iff(Bool, Bool) -> Bool
-{
-  math_macro = \IFF,
-};
-
-operator implies(Bool, Bool) -> Bool
-{
-  math_macro = \implies,
-};
-
-operator num_plus[NumType](list1(NumType)) -> NumType
-{
-  associative = true,
-  math_macro = \numplus,
-};
-
-operator num_minus[NumType](list1(NumType)) -> NumType
-{
-  associative = true,
-  math_macro = \numminus,
-};
-
-// Negation for number types.
-operator negate[NumType](NumType) -> NumType
-{
-  math_macro = \negate,
-};
-
-operator num_times[NumType](list1(NumType)) -> NumType
-{
-  math_macro = \numtimes,
-};
-
-operator num_divide[NumType](NumType, NumType) -> NumType
-{
-  math_macro = \numdivide,
-};
-
-operator num_exponent[NumType](NumType, NumType) -> NumType
-{
-  math_macro = \numexponent,
-};
-
-operator less_than[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \lessthan,
-};
-
-operator less_or_equal[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \lessorequal,
-};
-
-operator greater_than[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \greaterthan,
-};
-
-operator greater_or_equal[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \greaterorequal,
 };
 
 operator round_up(Q) -> N
@@ -403,25 +315,25 @@ operator ReadEffect(x: Identifier) -> (N, read: effect_type, Identifier)
   math_macro = \ReadEffectop,
 };
 
-operator parallel(list1(XGraphs)) -> XGraphs
+variadic operator parallel(list1(XGraphs)) -> XGraphs
 {
   math_macro = \parallelcomp,
   associative = true,
 };
 
-operator ordered_data(list1(XGraphs)) -> XGraphs
+variadic operator ordered_data(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \ordereddata,
 };
 
-operator ordered_ctrl(list1(XGraphs)) -> XGraphs
+variadic operator ordered_ctrl(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \orderedctrl,
 };
 
-operator ordered_po(list1(XGraphs)) -> XGraphs
+variadic operator ordered_po(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \orderedpo,
@@ -4644,8 +4556,8 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     (or(
       ast_label(le) != LE_Destructuring,
       ast_label(re) != E_Call,
-      le =: LE_Destructuring(les) &&
-      list_exists(i, les, not(lexpr_is_var(les[i])))
+      (le =: LE_Destructuring(les)) &&
+      list_exists(lexpr, les, not(lexpr_is_var(lexpr)))
     ))
     { math_layout = ( [_] ) };
     eval_expr(env, re) -> ResultExpr(vm, env1);

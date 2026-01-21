@@ -22,7 +22,7 @@ operator member[T](x: T, s: powerset(T)) -> Bool
   math_macro = \member,
 };
 
-operator num_plus(list1(N)) -> N
+variadic operator num_plus(list1(N)) -> N
 {
   associative = true,
   math_macro = \intplus,

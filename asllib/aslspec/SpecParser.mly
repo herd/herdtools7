@@ -62,6 +62,7 @@ let bool_of_string s =
 %token SHORT_CIRCUIT_MACRO
 %token TYPEDEF
 %token TYPING
+%token VARIADIC
 
 %token IFF
 %token LIST
@@ -102,6 +103,9 @@ let bool_of_string s =
 
 %token IF THEN ELSE
 
+%nonassoc COLON_EQ
+%nonassoc EQ_COLON
+
 %right MINUS
 %right PLUS
 %right TIMES
@@ -115,8 +119,6 @@ let bool_of_string s =
 %nonassoc IN
 %nonassoc NOT_IN
 %nonassoc IFF
-%nonassoc COLON_EQ
-%nonassoc EQ_COLON
 %nonassoc LE
 %nonassoc LT
 %nonassoc GE
@@ -214,10 +216,14 @@ let relation_definition :=
         Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes opt_relation_rule) }
 
 let operator_definition :=
-    OPERATOR; name=IDENTIFIER; ~=parameters; input=plist0(opt_named_type_term); ARROW; output=type_term;
+    ~=is_variadic; OPERATOR; name=IDENTIFIER; ~=parameters; input=plist0(opt_named_type_term); ARROW; output=type_term;
     ~=operator_attributes;
     {   check_definition_name name;
-        Elem_Relation (Relation.make_operator name parameters input output operator_attributes) }
+        Elem_Relation (Relation.make_operator name parameters input output is_variadic operator_attributes) }
+
+let is_variadic :=
+    | VARIADIC; { true }
+    | { false }
 
 let parameters :=
     | LBRACKET; params=tclist1(IDENTIFIER); RBRACKET; { params }
