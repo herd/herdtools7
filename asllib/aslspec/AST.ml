@@ -615,12 +615,12 @@ end = struct
       rule_opt;
     }
 
-  let make_operator name parameters input output_type variadic attributes =
+  let make_operator name parameters input output_type is_variadic attributes =
     {
       name;
       parameters;
       is_operator = true;
-      is_variadic = variadic;
+      is_variadic;
       property = RelationProperty_Function;
       category = None;
       input;
