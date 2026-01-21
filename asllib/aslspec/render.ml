@@ -408,7 +408,10 @@ module Make (S : SPEC_VALUE) = struct
       | Label id -> (
           match Spec.defining_node_for_id S.spec id with
           | Node_Type typedef ->
-              [ Type.short_circuit_macro typedef |> Option.get ]
+              [
+                Type.short_circuit_macro typedef |> Option.get
+                (* get is ensured to succeed by [Spec.check_relations_outputs] *);
+              ]
           | Node_TypeVariant { term = Label id } -> [ get_or_gen_math_macro id ]
           | _ -> assert false)
       | ConstantsSet constant_names ->
