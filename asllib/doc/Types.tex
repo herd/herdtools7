@@ -683,10 +683,10 @@ Converting integers into bitvectors can be done via slicing
 \identi{KGMC}%
 The syntax for \bitvectortypesterm{} has an optional $\Nbitfields$,
 which allows specifying \emph{\bitfieldsterm} ---
-\bitslicesterm{} of bitvectors --- to be treated as named
+\vbitslicesterm{} of bitvectors --- to be treated as named
 fields that can be read or written.
 \chapref{Bitfields} defines \bitfieldsterm{}
-and \chapref{BitvectorSlicing} defines \bitslicesterm{}.
+and \chapref{BitvectorSlicing} defines \vbitslicesterm{}.
 
 \SyntacticSugarDef{Bit}
 The \Tbit{} type is \syntacticsugar{} for \texttt{bits(1)},
@@ -794,7 +794,7 @@ to be \constrainedintegersterm.
 \AllApply
 \begin{itemize}
   \item $\tty$ is the \bitvectortypeterm{} with width given by the expression
-    $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
+    $\ewidth$ and the bitfields given by $\vbitfields$, that is, $\TBits(\ewidth, \vbitfields)$;
   \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
   \item \Prosechecksymbolicallyevaluable{\seswidth};
   \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
@@ -802,9 +802,9 @@ to be \constrainedintegersterm.
   \begin{itemize}
     \item \AllApplyCase{with\_bitfields}
     \begin{itemize}
-      \item $\bitfields$ is not empty;
+      \item $\vbitfields$ is not empty;
       \item checking that $\seswidth$ is \pureterm{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
-      \item annotating the bitfields $\bitfields$ yields\\ $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
+      \item annotating the bitfields $\vbitfields$ yields\\ $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
       \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\LInt(\vwidth)$};
       \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
       \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
@@ -814,7 +814,7 @@ to be \constrainedintegersterm.
 
     \item \AllApplyCase{no\_bitfields}
     \begin{itemize}
-      \item $\bitfields$ is empty;
+      \item $\vbitfields$ is empty;
       \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
             $\ewidthp$ and an empty list of bitfields, that is,
             $\TBits(\ewidthp, \emptylist)$};
@@ -830,11 +830,11 @@ to be \constrainedintegersterm.
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
-  \bitfields \neq \emptylist\\\\
+  \vbitfields \neq \emptylist\\\\
   \techeck(\sesispure(\seswidth), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
   {
   \begin{array}{r}
-    \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
+    \annotatebitfields(\tenv, \ewidthp, \vbitfields) \typearrow \\
     (\bitfieldsp, \vsesbitfields) \OrTypeError
   \end{array}
   }\\
@@ -844,7 +844,7 @@ to be \constrainedintegersterm.
 }{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \vbitfields)}{\tty}) \typearrow \\
   (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \vses)
     \end{array}
   }
@@ -857,11 +857,11 @@ to be \constrainedintegersterm.
   \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
   \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\\\\
   \commonprefixline\\\\
-  \bitfields = \emptylist
+  \vbitfields = \emptylist
 }{
   {
     \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
+  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \vbitfields)}{\tty}) \typearrow \\
   (\overname{\TBits(\ewidthp, \emptylist)}{\newty}, \overname{\seswidth}{\seswidth})
     \end{array}
   }

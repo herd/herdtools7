@@ -1798,19 +1798,19 @@ are well-typed.
   \item $\vle$ denotes the access to the field named $\vfield$ in $\vleone$, that is, \\ $\LESetField(\vleone, \vfield)$;
   \item annotating the \rhsexpression{} corresponding to $\vleone$ in $\tenv$ yields \\ $(\vtleone, \Ignore, \Ignore)$\ProseOrTypeError;
   \item annotating the left-hand-side expression $\vleone$ in $\tenv$ yields $(\vletwo, \vses)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\bitfields$\ProseOrTypeError;
+  \item obtaining the \underlyingtypeterm\ of $\vtleone$ in $\tenv$ yields a bitvector type with bitfields $\vbitfields$\ProseOrTypeError;
   \item \OneApplies
   \begin{itemize}
     \item \AllApplyCase{error\_missing\_field}
     \begin{itemize}
-      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
+      \item applying $\findbitfieldopt$ to $\vbitfields$ and $\vfield$ yields $\None$, meaning the field is not declared
             in $\vtleone$;
       \item the result is a \typingerrorterm{} $\BadField$.
     \end{itemize}
 
     \item \AllApplyCase{field\_simple}
     \begin{itemize}
-      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a bitfield with corresponding slices $\slices$,
+      \item applying $\findbitfieldopt$ to $\vbitfields$ and $\vfield$ yields a bitfield with corresponding slices $\slices$,
             that is, $\BitFieldSimple(\Ignore, \slices)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vt$ is defined as the bitvector type of width $\vw$ and empty list of bitfields, that is, $\TBits(\vw, \emptylist)$;
@@ -1821,7 +1821,7 @@ are well-typed.
 
     \item \AllApplyCase{field\_nested}
     \begin{itemize}
-      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a nested bitfield with corresponding
+      \item applying $\findbitfieldopt$ to $\vbitfields$ and $\vfield$ yields a nested bitfield with corresponding
             slices $\slices$ and list of bitfields $\bitfieldsp$, that is, \\ $\BitFieldNested(\Ignore, \slices, \bitfieldsp)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vt$ is defined as the bitvector type of width $\vw$ and list of bitfields $\bitfieldsp$, that is, $\TBits(\vw, \bitfieldsp)$;
@@ -1832,7 +1832,7 @@ are well-typed.
 
     \item \AllApplyCase{field\_typed}
     \begin{itemize}
-      \item applying $\findbitfieldopt$ to $\bitfields$ and $\vfield$ yields a typed bitfield with corresponding
+      \item applying $\findbitfieldopt$ to $\vbitfields$ and $\vfield$ yields a typed bitfield with corresponding
             slices $\slices$ and a type $\vt$, that is, \\ $\BitFieldType(\Ignore, \vslices, \vt)$;
       \item $\vw$ is the width of $\slices$;
       \item $\vtp$ is defined as the bitvector type of width $\vw$ and an empty list of bitfields, that is, $\TBits(\vw , \emptylist)$;
@@ -1849,9 +1849,9 @@ are well-typed.
 \inferrule[error\_missing\_field]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \None\
+  \findbitfieldopt(\vbitfields, \vfield) \typearrow \None\
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\BadField}
 }
@@ -1861,9 +1861,9 @@ are well-typed.
 \inferrule[field\_simple]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldSimple(\Ignore, \slices) }\\
+  \findbitfieldopt(\vbitfields, \vfield) \typearrow \some{ \BitFieldSimple(\Ignore, \slices) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vt \eqdef \TBits(\vw, \emptylist)\\\\
   \commonsuffixline\\\\
@@ -1879,11 +1879,11 @@ are well-typed.
 \inferrule[field\_nested]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \commonprefixline\\\\
   {
     \begin{array}{r}
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \\
+  \findbitfieldopt(\vbitfields, \vfield) \typearrow \\
   \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp) }
     \end{array}
   }\\
@@ -1902,9 +1902,9 @@ are well-typed.
 \inferrule[field\_typed]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\\\\
   \commonprefixline\\\\
-  \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
+  \findbitfieldopt(\vbitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
   \vtp \eqdef \TBits(\vw , \emptylist)\\
   \checktypesatisfies(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
