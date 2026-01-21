@@ -1,0 +1,6 @@
+LB+cachesync-tagcheck+dsb.ish-isb-1     Forbidden 
+LB+cachesync-tagcheck+dsb.ish-isb-2     Forbidden
+LB+cachesync-ttdcheck+dsb.ish-isb-1     Allowed
+LB+cachesync-ttdcheck+shoot-1           Forbidden
+LB+shoot-tagcheck+dmb.sttp-1            Forbidden
+LB+shoot-tagcheck+dmb.sttp-2            Forbidden
