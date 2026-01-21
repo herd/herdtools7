@@ -385,9 +385,11 @@ end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
-  type t = { type_kind : Term.type_kind; term : Term.t; att : Attributes.t }
+  open Term
 
-  val make : Term.type_kind -> Term.t -> attribute_pairs -> t
+  type t = { type_kind : type_kind; term : Term.t; att : Attributes.t }
+
+  val make : type_kind -> Term.t -> attribute_pairs -> t
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
