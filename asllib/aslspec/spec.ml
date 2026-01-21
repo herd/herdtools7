@@ -209,6 +209,20 @@ let pp_definition_node fmt =
   | Node_TypeVariant { TypeVariant.term } -> pp_type_term fmt term
   | Node_RecordField { name; term } -> pp_named_type_term fmt (name, term)
 
+(** [args_of_tuple id_to_defining_node label] returns the components of the
+    labelled tuple type variant named [label] using [id_to_defining_node] to
+    lookup the type variant definition node. *)
+let args_of_tuple id_to_defining_node label =
+  match StringMap.find label id_to_defining_node with
+  | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
+  | node ->
+      let msg =
+        Format.asprintf
+          "Expected labelled tuple type variant for label %s, found %a." label
+          pp_definition_node node
+      in
+      failwith msg
+
 (** [math_macro_opt_for_node node] returns the optional math macro associated
     with the definition node [node]. *)
 let math_macro_opt_for_node = function
@@ -1721,20 +1735,6 @@ module Check = struct
       | Node_Relation { Relation.input } -> input
       | _ -> failwith "Expected relation definition node."
 
-    (** [components_of_labelled_tuple id_to_defining_node label] returns the
-        components of the labelled tuple type variant named [label] using
-        [id_to_defining_node] to lookup the type variant definition node. *)
-    let components_of_labelled_tuple id_to_defining_node label =
-      match StringMap.find label id_to_defining_node with
-      | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
-      | node ->
-          let msg =
-            Format.asprintf
-              "Expected labelled tuple type variant for label %s, found %a."
-              label pp_definition_node node
-          in
-          failwith msg
-
     (** [check_expr_well_formed id_to_defining_node expr] checks that the
         expression [expr] is well-formed in the context of
         [id_to_defining_node]. That is, it has the correct structure in terms of
@@ -1766,9 +1766,7 @@ module Check = struct
           let () = check_expr_list_in_context args in
           match label_opt with
           | Some label ->
-              let type_components =
-                components_of_labelled_tuple id_to_defining_node label
-              in
+              let type_components = args_of_tuple id_to_defining_node label in
               if List.compare_lengths args type_components <> 0 then
                 Error.invalid_number_of_components label expr
                   ~expected:(List.length type_components)
