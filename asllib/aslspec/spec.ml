@@ -6,6 +6,9 @@ module StringSet = Set.Make (String)
 (* A variable for discarding of values. *)
 let ignore_var = "_"
 
+(* The identifier that should be used to mark bound variables. *)
+let bound_variable = "bound_variable"
+
 module Error = struct
   let spec_error msg = raise (SpecError msg)
 
@@ -380,7 +383,6 @@ type t = {
   _z : Type.t;
   _q : Type.t;
   _equal : Relation.t;
-  bound_variable : Type.t;
 }
 
 (** [make_symbol_table ast] creates a symbol table from [ast]. *)
@@ -1493,11 +1495,11 @@ module Check = struct
 
     (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
         quantifying operator (like "forall" or "exists") based on whether its
-        first argument has the type [bound_variable]. *)
+        first argument is named as [bound_variable]. *)
     let is_quantifying_operator spec op_name =
       let operator = relation_for_id spec op_name in
       match operator.input with
-      | (_, Label id) :: _ -> String.equal id spec.bound_variable.name
+      | (Some arg_name, _) :: _ -> String.equal arg_name bound_variable
       | _ -> false
 
     (** [vars_of_identifiers id_to_defining_node identifiers] returns the
@@ -2014,7 +2016,6 @@ let make_spec_with_builtins ast =
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
     _equal = get_relation "equal";
-    bound_variable = get_type "bound_variable";
   }
 
 let from_ast ast =

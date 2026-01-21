@@ -105,16 +105,17 @@ operator fresh_identifier() -> Identifier
   math_macro = \freshidentifier,
 };
 
-operator list_from_indices[A,B](index: bound_variable, elements: list0(A), operation: partial N -> B) -> list0(B)
+// Converts a list to the sequence of its indices, starting from 0.
+operator indices[T](l: list0(T)) -> (indices: list0(N))
 {
-  "forms a new list by applying {operation} to each index of {elements} via the bound variable {index}",
-  math_macro = \listfromindices,
+  "the list of indices for {l}",
+  math_macro = \listrange,
 };
 
-operator list_map[A,B](elem: bound_variable, elements: list0(A), elem_operation: partial A -> B) -> (new_elements: list0(B))
+operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
 {
-  "forms a new list where for each binding of {elem} to an element of {elements} in order of appearance,
-   {new_elements} has an element obtained by applying {elem_operation} to {elem}",
+  "a list where for each binding of {bound_variable} to an element of {elements} in order of appearance,
+   {new_elements} has the corresponding element {mapped_elem}",
   math_macro = \listmap,
 };
 
@@ -293,6 +294,13 @@ operator round_up(Q) -> N
 operator round_down(Q) -> N
 {
   math_macro = \rounddown,
+};
+
+operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
+{
+  "concatenates {prefix} and the string for {n} to yield {result}",
+  math_macro = \concatstrings,
+  associative = true,
 };
 
 operator concat_strings(prefix: Strings, suffix: Strings) -> (result: Strings)
@@ -2647,7 +2655,7 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfie
   {tenv}.",
   prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
 } =
-  abs_field_sets := list_from_indices(i, bitfields, bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
+  abs_field_sets := list_map(i, indices(bitfields), bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
   { math_layout = (_, [_])};
   abs_bitfields := union_list(abs_field_sets);
   --
@@ -5253,7 +5261,7 @@ semantics relation match_func_res(C: TContinuingOrReturning) ->
 
   case returning {
     C =: Returning(xs, ret_env);
-    ids := list_from_indices(i, xs, concat_strings(return_var_prefix, string_of_nat(i - one)));
+    ids := list_map(i, indices(xs), numbered_identifier(return_var_prefix, (i - one)));
     vs := list_combine(xs, ids);
     --
     ResultCall((vs, empty_graph), ret_env);

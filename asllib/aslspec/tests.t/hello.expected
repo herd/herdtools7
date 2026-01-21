@@ -9,7 +9,6 @@
 \newcommand\A[0]{ \hyperlink{type-A}{\textsf{A}} } % Generated from A
 \newcommand\B[0]{ \hyperlink{type-B}{\textsf{B}} } % Generated from B
 \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
-\newcommand\boundvariable[0]{ \hyperlink{type-boundvariable}{\textsf{bound\_variable}} } % Generated from bound_variable
 \newcommand\s[0]{ \hyperlink{type-s}{\textsf{s}} } % Generated from s
 \newcommand\t[0]{ \hyperlink{type-t}{\textsf{t}} } % Generated from t
 
@@ -36,7 +35,7 @@
 
 \DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
 
-\DefineType{bound_variable}{\texthypertarget{type-boundvariable}$\boundvariable$} % EndDefineType
+\DefineType{ASTLabels}{\texthypertarget{type-ASTLabels}$\ASTLabels$} % EndDefineType
 
 \DefineType{t}{\texthypertarget{type-t}$\t$} % EndDefineType
 
