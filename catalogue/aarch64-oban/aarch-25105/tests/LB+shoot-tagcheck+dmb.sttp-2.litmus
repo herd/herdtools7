@@ -1,0 +1,17 @@
+AArch64 LB+shoot-tagcheck+dmb.sttp-2
+Variant=vmsa,mte
+{
+ [PTE(x)]=(oa:PA(x), db:0);
+ [PTE(y)]=(oa:PA(y), attrs:(TaggedNormal));
+ 0:X1=x; 1:X1=x;
+ 0:X7=(oa:PA(x), db:1); 0:X8=PTE(x);
+ 0:X2=y:red; 1:X2=y:red; 1:X3=y:green;
+}
+ P0              | P1                   ;
+ STR X7,[X8]     | STG X2,[X3]          ;
+ DSB SY          | DMB ST               ;
+ LSR X9,X1,#12   |                      ;
+ TLBI VAAE1IS,X9 | L1:                  ;
+ DSB SY          | STR WZR,[X1]         ;
+ L0: STR WZR,[X2]|                      ;
+exists (Fault(P0:L0) /\ Fault(P1:L1))

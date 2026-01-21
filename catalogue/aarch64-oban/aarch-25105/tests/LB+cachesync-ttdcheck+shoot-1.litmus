@@ -1,0 +1,19 @@
+AArch64 LB+cachesync-ttdcheck+shoot-1
+Variant=ifetch,vmsa
+{
+0:X0=NOP; 0:X1=P1:Lself00;
+0:X9=y; 1:X6=(oa:PA(x),valid:0); 1:X7=PTE(x);
+PTE(x)=(oa:PA(x),valid:1);
+}
+ P0          | P1           ;
+ STR W0,[X1] |  STR X6,[X7] ;
+ DC CVAU,X1  |  DSB ST      ;
+ DSB ISH     |  LSR X9,X1,#12   ;
+ IC IVAU,X1  |  TLBI VAAE1IS,X9 ;
+ DSB ISH     |  DSB ISH     ;
+ L0:         |  ISB         ;
+ STR WZR,[X9]| Lself00:     ;
+             |  B L01       ;
+             |  MOV W2,#1   ;
+             | L01:         ;
+exists (~Fault(P0:L0) /\ 1:X2=0)
