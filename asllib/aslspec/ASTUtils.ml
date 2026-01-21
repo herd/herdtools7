@@ -17,8 +17,7 @@ let rec vars_of_type_term term =
     | Tuple { args } -> vars_of_opt_named_type_terms args
     | Record { fields } ->
         Utils.list_concat_map
-          (fun { name_and_type = name, field_term; _ } ->
-            name :: vars_of_type_term field_term)
+          (fun { name; term } -> name :: vars_of_type_term term)
           fields
     | ConstantsSet _ -> []
     | Function { from_type; to_type } ->

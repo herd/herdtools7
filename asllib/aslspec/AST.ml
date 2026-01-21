@@ -225,7 +225,7 @@ module Term = struct
   and opt_named_type_term = string option * t
   (** A term optionally associated with a variable name. *)
 
-  and record_field = { name_and_type : named_type_term; att : Attributes.t }
+  and record_field = { name : string; term : t; att : Attributes.t }
   (** A field of a record type. *)
 
   (** [make_type_operation op term] Constructs a type term in which [op] is
@@ -240,16 +240,16 @@ module Term = struct
       tuple args [args]. *)
   let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
 
-  let make_record_field named_type_term attributes =
+  let make_record_field (name, term) attributes =
     let att = Attributes.of_list attributes in
-    { name_and_type = named_type_term; att }
+    { name; term; att }
 
   (** [make_record fields] Constructs an unlabelled record with fields [fields].
   *)
   let make_record fields = Record { label_opt = None; fields }
 
-  let field_type { name_and_type = _, field_type; _ } = field_type
-  let field_name { name_and_type = name, _; _ } = name
+  let field_type { term } = term
+  let field_name { name } = name
 
   let record_field_math_macro { att } =
     Attributes.find_math_macro AttributeKey.Math_Macro att
