@@ -65,3 +65,11 @@ let string_replace_all regexp f s =
     | Str.Text txt -> txt
     | Str.Delim match_str -> f match_str)
   |> String.concat ""
+
+(** [list_get_all_option l] returns [Some lst] if all elements of [l] are
+    [Some x], where [lst] is the list of all such [x]. Otherwise, returns
+    [None]. *)
+let list_get_all_option l =
+  let exception None_found in
+  let option_get = function None -> raise None_found | Some x -> x in
+  try List.map option_get l |> Option.some with None_found -> None
