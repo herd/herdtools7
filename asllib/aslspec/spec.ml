@@ -1672,6 +1672,14 @@ module Check = struct
       in
       { use_def with defined = new_defined }
 
+    (** [add_as_list_vars use_def vars] adds all variables in [vars] to the list
+        variable set of [use_def]. *)
+    let add_as_list_vars use_def vars =
+      List.fold_left
+        (fun acc_use_def id ->
+          { acc_use_def with list_vars = StringSet.add id use_def.list_vars })
+        use_def vars
+
     (** A type for distinguishing whether we are analyzing an expression for
         variable uses or variable definitions. *)
     type use_def_mode = Use | Def
@@ -1715,16 +1723,8 @@ module Check = struct
             in
             (* We have to first add the list variable to properly qualify it as a list variable and
                only then add it as used/defined to avoid
-               the possibility of having it possibly flagged as a re-defined variable. *)
-            let use_def =
-              match list_vars with
-              | [ id ] ->
-                  {
-                    use_def with
-                    list_vars = StringSet.add id use_def.list_vars;
-                  }
-              | _ -> use_def
-            in
+               the possibility of having it flagged as a re-defined variable. *)
+            let use_def = add_as_list_vars use_def list_vars in
             let use_def = list_vars |> check_and_add_for_expr mode use_def in
             (* The index sub-expression never defines variables. *)
             update_use_def_for_expr Use spec use_def index
