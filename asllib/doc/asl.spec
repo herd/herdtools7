@@ -236,6 +236,12 @@ operator match_cons[T](head: T, tail: list0(T)) -> list0(T)
   math_macro = \cons,
 };
 
+operator non_empty_list[T](l: list0(T)) -> list1(T)
+{
+  "{l}",
+  math_macro = \identityop,
+};
+
 operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
 {
   math_macro = \listcombine,
@@ -2124,7 +2130,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       INDEX(i, li: annotate_expr(tenv, li[i]) -> (t[i], es[i], xs[i]));
       ses := union_list(xs);
       --
-      (T_Tuple(t), E_Tuple(es), ses);
+      (T_Tuple(t), E_Tuple(non_empty_list(es)), ses);
     }
   }
 ;
