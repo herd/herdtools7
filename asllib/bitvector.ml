@@ -271,12 +271,7 @@ let to_int64_raw (length, data) =
   !result
 
 let to_int64_signed bv = bv |> sign_extend 8 |> to_int64_raw
-
-let to_int64_unsigned (length, data) =
-  let _, data = zero_extend 8 (length, data) in
-  let _, data = remask (63, data) in
-  to_int64_raw (64, data)
-
+let to_int64_unsigned bv = bv |> zero_extend 8 |> to_int64_raw
 let to_z_unsigned (_, data) = Z.of_bits data
 
 let to_z_signed ((sz, _) as bv) =
