@@ -49,7 +49,7 @@ thus resulting in a \typingerrorterm.
 \begin{itemize}
   \item \AllApplyCase{okay}
   \begin{itemize}
-    \item the set containing all identifiers in the list has the same cardinality as the length of the list;
+    \item there do not exist two different positions in the list where the identifier is the same;
     \item the result is $\True$.
   \end{itemize}
 
@@ -63,19 +63,17 @@ thus resulting in a \typingerrorterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[okay]{
-  \cardinality{\{\id_{1..k}\}} = k
+  \forall{i,j \in \listrange(\ids)}{i \neq j \implies \id_i \neq \id_j}
 }{
-  \checknoduplicates(\overname{\id_{1..k}}{\ids}) \typearrow \True
+  \checknoduplicates(\ids) \typearrow \True
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[error]{
-  i,j \in 1..k\\
-  i \neq j\\
-  \id_i = \id_j
+  \neg\forall{i,j \in \listrange(\ids)}{i \neq j \implies \id_i \neq \id_j}
 }{
-  \checknoduplicates(\overname{\id_{1..k}}{\ids}) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
+  \checknoduplicates(\ids) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \end{mathpar}
 

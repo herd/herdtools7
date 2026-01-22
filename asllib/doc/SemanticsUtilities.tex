@@ -180,7 +180,7 @@ exn=TRUE
 In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementterm{}
 generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first iteration:
 \[
-\readidentifier(\vi, \nvint(0)) \evalarrow \ReadEffect(\vi) \enspace.
+\readidentifier(\vi, \nvint(0)) \evalarrow ( \overtext{\{\ReadEffect(\vi)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\ReadEffect(\vi)\}}{\voutputnodes} ) \enspace.
 \]
 
 \ASLListing{A simple for loop}{ReadIdentifier}{\semanticstests/SemanticsRule.ReadIdentifier.asl}
@@ -193,7 +193,7 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 \begin{mathpar}
 \inferrule{}
 {
-  \readidentifier(\name, \vv) \evalarrow \ReadEffect(\name)
+  \readidentifier(\name, \vv) \evalarrow ( \overtext{\{\ReadEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\ReadEffect(\name)\}}{\voutputnodes} )
 }
 \end{mathpar}
 
@@ -205,7 +205,7 @@ In \listingref{ReadIdentifier}, the first iteration of the (only) \forstatementt
 generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first iteration,
 as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nvint(1)$:
 \[
-\writeidentifier(\vi, \nvint(1)) \evalarrow \WriteEffect(\vi) \enspace.
+\writeidentifier(\vi, \nvint(1)) \evalarrow ( \overtext{\{\WriteEffect(\vi)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\WriteEffect(\vi)\}}{\voutputnodes} ) \enspace.
 \]
 
 \ProseParagraph
@@ -216,7 +216,7 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \begin{mathpar}
 \inferrule{}
 {
-  \writeidentifier(\name, \vv) \evalarrow \WriteEffect(\name)
+  \writeidentifier(\name, \vv) \evalarrow ( \overtext{\{\WriteEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\WriteEffect(\name)\}}{\voutputnodes} )
 }
 \end{mathpar}
 

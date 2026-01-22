@@ -64,6 +64,11 @@ module Error = struct
     @@ Format.asprintf "Unable to determine that `%a` is subsumed by `%a`"
          PP.pp_type_term sub PP.pp_type_term super
 
+  let argument_subsumption_failure sub super ~context_expr =
+    spec_error
+    @@ Format.asprintf "Unable to determine that `%a` is subsumed by `%a` in %a"
+         PP.pp_type_term sub PP.pp_type_term super PP.pp_expr context_expr
+
   let non_constant_used_as_constant_set id =
     spec_error
     @@ Format.asprintf
@@ -180,6 +185,136 @@ module Error = struct
     @@ Format.asprintf
          "The variable %s is defined twice, the second time is in %a" id
          PP.pp_expr context_expr
+
+  let undefined_field_in_record ~context_expr base_type field_id =
+    spec_error
+    @@ Format.asprintf
+         "The field '%s' is not defined in the record type %a in %a" field_id
+         PP.pp_type_term base_type PP.pp_expr context_expr
+
+  let invalid_list_index_type index_type ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "The index type %a in %a is not a subtype of the natural numbers type \
+          (N)"
+         PP.pp_type_term index_type PP.pp_expr context_expr
+
+  let invalid_list_base_type base_type ~context_expr =
+    spec_error
+    @@ Format.asprintf "The type %a in %a is not a list type" PP.pp_type_term
+         base_type PP.pp_expr context_expr
+
+  let invalid_number_of_arguments_for_map ~expected ~actual ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "The map application in %a has an invalid number of arguments: \
+          expected %d but found %d"
+         PP.pp_expr context_expr expected actual
+
+  let invalid_argument_type ~arg ~actual_type ~formal_type ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "The argument or field %a has type %a but expected to have a subtype \
+          of %a in %a"
+         PP.pp_expr arg PP.pp_type_term actual_type PP.pp_type_term formal_type
+         PP.pp_expr context_expr
+
+  let invalid_map_lhs_type lhs_type ~context_expr:expr =
+    spec_error
+    @@ Format.asprintf
+         "The map application in %a has an invalid left-hand side type: \
+          expected a function type but found %a"
+         PP.pp_expr expr PP.pp_type_term lhs_type
+
+  let invalid_record_label label ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "The label '%s' does not correspond to a labelled record in %a" label
+         PP.pp_expr context_expr
+
+  let type_instantiation_length_failure formal_type arg_type ~expected_length
+      ~actual_length =
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated with `%a` since they have \
+          different numbers of arguments/fields: expected %d but found %d"
+         PP.pp_type_term formal_type PP.pp_type_term arg_type expected_length
+         actual_length
+
+  let type_operator_instantiation_failure ~relation_name formal_type arg_type =
+    spec_error
+    @@ Format.asprintf
+         "The type term `%a` cannot be instantiated with `%a` for operator \
+          `%s` since they have incompatible type operators"
+         PP.pp_type_term formal_type PP.pp_type_term arg_type relation_name
+
+  let uninstantiated_parameter_in_relation param relation_name ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "The type parameter '%s' of relation '%s' could not be instantiated \
+          in %a"
+         param relation_name PP.pp_expr context_expr
+
+  let parameter_type_unification_failure ~relation_name parameter_name term1
+      term2 =
+    spec_error
+    @@ Format.asprintf
+         "Could not unify types %a and %a for parameter '%s' of relation '%s'"
+         PP.pp_type_term term1 PP.pp_type_term term2 parameter_name
+         relation_name
+
+  let only_single_output_relations_supported name ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "Only single output relations are supported outside of transition \
+          judgment: %s in %a"
+         name PP.pp_expr context_expr
+
+  let only_relation_transitions_supported ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "Only relation applications are supported on the left-hand side of \
+          transitions in %a"
+         PP.pp_expr context_expr
+
+  let no_matching_output_type rhs ~context_expr =
+    spec_error
+    @@ Format.asprintf "No matching output type found for expression %a in %a"
+         PP.pp_expr rhs PP.pp_expr context_expr
+
+  let ambiguous_output_type rhs candidates ~context_expr =
+    spec_error
+    @@ Format.asprintf
+         "Ambiguous output type for expression %a in %a. Possible candidates: \
+          %a"
+         PP.pp_expr rhs PP.pp_expr context_expr
+         (PP.pp_sep_list ~sep:", " PP.pp_type_term)
+         candidates
+
+  let invalid_indexed_body_type body_type ~context_expr =
+    spec_error
+    @@ Format.asprintf "The body type %a in %a is not the Boolean type"
+         PP.pp_type_term body_type PP.pp_expr context_expr
+
+  let cannot_apply_type_to_expr expr target_type =
+    spec_error
+    @@ Format.asprintf "Cannot apply type %a to expression %a" PP.pp_type_term
+         target_type PP.pp_expr expr
+
+  let judgment_not_boolean inferred_judgment_type judgment_expr =
+    spec_error
+    @@ Format.asprintf
+         "The type inferred for the judgment `%a` is %a, which is not Boolean"
+         PP.pp_type_term inferred_judgment_type PP.pp_expr judgment_expr
+
+  let output_type_mismatch output_judgment_type output_types output_expr =
+    spec_error
+    @@ Format.asprintf
+         "The type %a inferred for the output judgment `%a` does not match any \
+          of the output types %a"
+         PP.pp_type_term output_judgment_type PP.pp_expr output_expr
+         (PP.pp_sep_list ~sep:" | " PP.pp_type_term)
+         output_types
 end
 
 (** A wrapper type for the different kinds of elements in a spec that are
@@ -269,6 +404,13 @@ let vars_of_node = function
 let is_constant id_to_defining_node id =
   match StringMap.find_opt id id_to_defining_node with
   | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ }) -> true
+  | _ -> false
+
+(** [is_type_name id_to_defining_node id] is true if and only if [id] is defined
+    as a top-level type. *)
+let is_type_name id_to_defining_node id =
+  match StringMap.find_opt id id_to_defining_node with
+  | Some (Node_Type _) -> true
   | _ -> false
 
 (** [check_is_constant id_to_defining_node id] raises an error if [id] is not
@@ -379,21 +521,43 @@ let make_id_to_definition_node definition_nodes =
         acc_map)
     StringMap.empty definition_nodes
 
+let make_variant_id_to_containing_type ast =
+  let typedefs =
+    List.filter_map (function Elem_Type def -> Some def | _ -> None) ast
+  in
+  List.fold_left
+    (fun acc_map { Type.name; variants } ->
+      List.fold_left
+        (fun acc_map { TypeVariant.term } ->
+          match term with
+          | Term.Label label
+          | Term.Tuple { label_opt = Some label }
+          | Term.Record { label_opt = Some label }
+          (* Only labels, labelled tuples, and labelled records have
+             an id that uniquely identifies them.*)
+            ->
+              StringMap.add label name acc_map
+          | _ -> acc_map)
+        acc_map variants)
+    StringMap.empty typedefs
+
 type t = {
   ast : AST.t;  (** The AST, added with builtin definitions, transformed. *)
   id_to_defining_node : definition_node StringMap.t;
       (** Associates identifiers with the AST nodes where they are defined. *)
+  variant_id_to_containing_type : string StringMap.t;
+      (** Associates variant labels with the name of the type that contains
+          them. *)
   assign : Relation.t;
   reverse_assign : Relation.t;
   bottom_constant : Constant.t;
   none_constant : Constant.t;
   empty_set : Constant.t;
   empty_list : Constant.t;
-  _bool_type : Type.t;
+  bool : Type.t;
   n_type : Type.t;
   z_type : Type.t;
-  _q : Type.t;
-  _equal : Relation.t;
+  some_operator : Relation.t;
 }
 
 type spec_type = t
@@ -873,6 +1037,25 @@ module ExpandRules = struct
   }
   (** An expanded rule is a rule with no [Cases]. *)
 
+  (** [rule_exprs expanded_rule] retrieves from [expanded_rule] the expressions
+      making the premises and the output expression of the conclusion judgment.
+  *)
+  let rule_exprs expanded_rule =
+    let premises, conclusion = Utils.split_last expanded_rule.judgments in
+    let premises_exprs = List.map (fun { Rule.expr } -> expr) premises in
+    let output_expr =
+      match conclusion.expr with
+      | Transition { rhs } ->
+          (* If the conclusion expression has been transformed to a transition,
+            we need to consider only the right-hand side expression as the output,
+            as the variables on the left-hand side are the same variables
+            appearing in the input of the relation and are therefore
+            implicitly defined - see next.*)
+          rhs
+      | _ -> conclusion.expr
+    in
+    (premises_exprs, output_expr)
+
   let split_absolute_rule_name abs_name =
     Str.split (Str.regexp_string ".") abs_name
 
@@ -1180,18 +1363,18 @@ module Check = struct
         [spec.id_to_defining_node] are also subsumed by them. The check assumes
         that [check_no_undefined_ids] has already been run. *)
 
-    val _subsumed : t -> Term.t -> Term.t -> bool
+    val subsumed : t -> Term.t -> Term.t -> bool
     (** [subsumed id_to_defining_node sub super] conservatively tests whether
         all values in the domain of [sub] are also in the domain of [super].
         [id_to_definition_node] is used to look up types by their names. *)
 
-    val _operator_subsumed : Term.type_operator -> Term.type_operator -> bool
-    (** [_operator_subsumed sub_op super_op] is true if any [term], all values
-        in the domain of [TypeOperator { op = sub_op; term }] are also in the
+    val operator_subsumed : Term.type_operator -> Term.type_operator -> bool
+    (** [operator_subsumed sub_op super_op] is true if any [term], all values in
+        the domain of [TypeOperator { op = sub_op; term }] are also in the
         domain of [TypeOperator { op = super_op; term }]. *)
 
-    val _reduce_term : t -> Term.t -> Term.t
-    (** [_reduce_term id_to_defining_node term] reduces [term] by applying two
+    val reduce_term : t -> Term.t -> Term.t
+    (** [reduce_term id_to_defining_node term] reduces [term] by applying two
         simplifications:
 
         - If [term] is an unlabelled singleton tuple (that is, a type
@@ -1221,7 +1404,7 @@ module Check = struct
               (Node_Type
                  { Type.variants = [ { TypeVariant.term = variant_term } ]; _ })
             ->
-              _reduce_term spec variant_term
+              reduce_term spec variant_term
           | _ -> term)
       | _ -> term
 
@@ -1238,16 +1421,16 @@ module Check = struct
     and reduce_type_reference spec term =
       match term with
       | Tuple { label_opt = None; args = [ (_, referenced_term) ] } ->
-          _reduce_term spec referenced_term
+          reduce_term spec referenced_term
       | _ -> term
 
-    and _reduce_term spec term =
+    and reduce_term spec term =
       reduce_type_reference spec term |> reduce_single_variant_type spec
 
     (** [subsumed sub_op super_op] is true if all values in the domain of
         [TypeOperator { op = sub_op; term }] are also in the domain of
         [TypeOperator { op = super_op; term }]. *)
-    let _operator_subsumed sub_op super_op =
+    let operator_subsumed sub_op super_op =
       match (sub_op, super_op) with
       | Powerset, Powerset
       | Powerset_Finite, (Powerset_Finite | Powerset)
@@ -1288,8 +1471,8 @@ module Check = struct
         ]} *)
     let rec subsumed_rec spec expanded_types sub super =
       (* In the example above [( M(B, Num) )] is equivalent to [M(B, Num)]. *)
-      let sub = _reduce_term spec sub in
-      let super = _reduce_term spec super in
+      let sub = reduce_term spec sub in
+      let super = reduce_term spec super in
       let result =
         match (sub, super) with
         | Label sub_id, _ when is_builtin_constant sub_id spec.bottom_constant
@@ -1302,7 +1485,9 @@ module Check = struct
             true
         | Label sub_label, TypeOperator { op = List0 | List1 }
           when is_builtin_constant sub_label spec.empty_list ->
-            (* The empty list is a subset of every list. *)
+            (* The empty list is a subset of every list, since
+               empty_list is universally quantified over all element types.
+            *)
             true
         | Label sub_label, TypeOperator { op = Powerset | Powerset_Finite }
           when is_builtin_constant sub_label spec.empty_set ->
@@ -1313,6 +1498,8 @@ module Check = struct
           when is_builtin_constant sub_label spec.none_constant ->
             (* None is a subset of Option and also every set. *)
             true
+        | Label sub_label, ConstantsSet super_names ->
+            List.exists (String.equal sub_label) super_names
         | _, Label super_label ->
             let sub_is_label_case =
               match sub with
@@ -1332,7 +1519,7 @@ module Check = struct
         (* From here on the test operates via structural induction. *)
         | ( TypeOperator { op = sub_op; term = _, sub_term },
             TypeOperator { op = super_op; term = _, super_term } ) ->
-            _operator_subsumed sub_op super_op
+            operator_subsumed sub_op super_op
             && subsumed_rec spec expanded_types sub_term super_term
         | ( Tuple { label_opt = sub_label_opt; args = sub_components },
             Tuple { label_opt = super_label_opt; args = super_components } ) ->
@@ -1343,6 +1530,8 @@ module Check = struct
                  sub_components super_components
         | ( Record { label_opt = sub_label_opt; fields = sub_fields },
             Record { label_opt = super_label_opt; fields = super_fields } ) ->
+            let sub_fields = ASTUtils.sort_record_fields sub_fields in
+            let super_fields = ASTUtils.sort_record_fields super_fields in
             Option.equal String.equal sub_label_opt super_label_opt
             && List.for_all2
                  (fun { term = sub_term; _ } { term = super_term; _ } ->
@@ -1417,7 +1606,7 @@ module Check = struct
                  variants
         | _ -> false
 
-    let _subsumed id_to_defining_node sub super =
+    let subsumed id_to_defining_node sub super =
       subsumed_rec id_to_defining_node StringSet.empty sub super
 
     (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
@@ -1428,7 +1617,7 @@ module Check = struct
         the corresponding term in [super_terms], a [SpecError] is raised. *)
     let check_subsumed_terms_lists id_to_defining_node sub_terms super_terms =
       let check_subsumed id_to_defining_node sub super =
-        if _subsumed id_to_defining_node sub super then ()
+        if subsumed id_to_defining_node sub super then ()
         else Error.type_subsumption_failure sub super
       in
       List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
@@ -1788,33 +1977,12 @@ module Check = struct
       (* The bound variable goes out of scope. *)
       { use_def with defined = StringSet.remove bound_var use_def.defined }
 
-    (** [rule_exprs expanded_rule] retrieves from [expanded_rule] the
-        expressions making the premises and the output expression of the
-        conclusion judgment. *)
-    let rule_exprs expanded_rule =
-      let open ExpandRules in
-      let premises, conclusion =
-        Utils.split_last expanded_rule.ExpandRules.judgments
-      in
-      let premises_exprs = List.map (fun { Rule.expr } -> expr) premises in
-      let output_expr =
-        match conclusion.expr with
-        | Transition { rhs } ->
-            (* If the conclusion expression has been transformed to a transition,
-            we need to consider only the right-hand side expression as the output,
-            as the variables on the left-hand side are the same variables
-            appearing in the input of the relation and are therefore
-            implicitly defined - see next.*)
-            rhs
-        | _ -> conclusion.expr
-      in
-      premises_exprs @ [ output_expr ]
-
     (** [check_use_def relation spec expanded_rule] checks that all variables
         used in [expanded_rule] are defined before use and no variables are
         re-defined. *)
     let check_use_def relation spec expanded_rule =
-      let rule_exprs = rule_exprs expanded_rule in
+      let premise_exprs, output_expr = ExpandRules.rule_exprs expanded_rule in
+      let rule_exprs = premise_exprs @ [ output_expr ] in
       (* The input variables are implicitly defined at the start of the rule. *)
       let defined_args =
         vars_of_opt_named_type_terms relation.Relation.input
@@ -1839,6 +2007,1196 @@ module Check = struct
         if false then Format.eprintf "After premises: %a@." pp_use_def use_def
       in
       ()
+  end
+
+  (** A module for inferring and checking the types of expression for a given
+      rule. The functions in this module assume that use-def correctness was
+      already checked. *)
+  module TypeInference : sig
+    val check : Relation.t -> spec_type -> ExpandRules.expanded_rule -> unit
+    (** [check relation spec expanded_rule] checks that all expressions in
+        [expanded_rule] are type-correct according to [spec], using [relation]
+        for error messages.
+
+        @raise [SpecError] if a type error is found. *)
+
+    val infer : spec_type -> Expr.t -> Term.t
+    (** [infer spec expr] infers the type of [expr] according to [spec].
+
+        @raise [SpecError] if the type of [expr] cannot be inferred. *)
+  end = struct
+    open Expr
+    open UseDef
+
+    (** [type_term_for_typedef def] returns the type term corresponding to the
+        given type definition. *)
+    let type_term_for_typedef def = Term.Label def.Type.name
+
+    (** [type_of_id spec type_env id] returns the type of [id] using [spec] to
+        lookup the defining node for [id] if needed, and using [type_env] as a
+        fallback. This function assumes that the type of [id] has already been
+        inferred if it is not directly available from its defining node.
+
+        Notice that [id] must not be a record field, since it cannot be as a
+        free variable, and must be used only within a [FieldAccess] expression.
+
+        This function assumes that ExtendConstantsWithTypes.extend has been run.
+    *)
+    let type_of_id ~context_expr spec type_env id =
+      match defining_node_opt_for_id spec id with
+      | Some (Node_TypeVariant { TypeVariant.term }) -> term
+      | Some (Node_Constant { Constant.opt_type = Some type_term }) -> type_term
+      | Some (Node_Constant { Constant.opt_type = None }) ->
+          assert false
+          (* This should not happen if ExtendConstantsWithTypes.extend has been run. *)
+      | Some (Node_Relation _)
+      | Some (Node_RecordField _)
+      | Some (Node_Type _)
+      (* A variable that happens to share a name with a relation, a record field, and a type. *)
+      | None -> (
+          match StringMap.find_opt id type_env with
+          | Some id_type -> id_type
+          | None ->
+              let msg =
+                Format.asprintf "Encountered an untyped variable '%s' in %a." id
+                  PP.pp_expr context_expr
+              in
+              failwith msg)
+
+    (** [type_term_for_field spec id] returns the type term associated with the
+        record field with identifier [id]. *)
+    let type_term_for_field spec id =
+      match defining_node_opt_for_id spec id with
+      | Some (Node_RecordField { term }) -> term
+      | _ -> failwith "Expected a record field definition node."
+
+    type type_env = Term.t StringMap.t
+    (** A type environment mapping variable names to their inferred types. *)
+
+    (** Pretty-prints a type environment for debugging. *)
+    let pp_type_env fmt type_env =
+      let var_to_type = StringMap.bindings type_env in
+      let pp_var_to_type fmt (var, type_term) =
+        Format.fprintf fmt "%s: %a" var PP.pp_type_term type_term
+      in
+      Format.fprintf fmt "{ %a }"
+        (PP.pp_sep_list ~sep:", " pp_var_to_type)
+        var_to_type
+
+    (** [unify_terms] attempts to find the most precise type that subsumes both
+        [term1] and [term2]. A type term [A] is more precise than a type term
+        [B] if [B] subsumes [A] and [A] does not subsume [B]. *)
+    let rec unify_terms spec term1 term2 =
+      let () =
+        if false then
+          Format.eprintf "Unifying terms: %a and %a.@." PP.pp_type_term term1
+            PP.pp_type_term term2
+      in
+      let open Term in
+      let unified_term =
+        if CheckTypeInstantiations.subsumed spec term1 term2 then Some term2
+        else if CheckTypeInstantiations.subsumed spec term2 term1 then
+          Some term1
+        else
+          (* First, attempt to match terms that have (the same) internal structure. *)
+          let structural_unification_result_opt =
+            unify_structural_terms spec term1 term2
+          in
+          let get_variant_label = function
+            | Label id when StringMap.mem id spec.variant_id_to_containing_type
+              ->
+                Some id
+            | Tuple { label_opt = Some id; _ }
+            | Record { label_opt = Some id; _ } ->
+                Some id
+            | _ -> None
+          in
+          match structural_unification_result_opt with
+          | Some unified_term -> Some unified_term
+          | None -> (
+              match (get_variant_label term1, get_variant_label term2) with
+              | Some label1, Some label2 ->
+                  let container1 =
+                    StringMap.find label1 spec.variant_id_to_containing_type
+                  in
+                  let container2 =
+                    StringMap.find label2 spec.variant_id_to_containing_type
+                  in
+                  if String.equal container1 container2 then
+                    Some (Label container1)
+                  else None
+              | _ -> None)
+      in
+      let () =
+        if false then
+          match unified_term with
+          | Some term ->
+              Format.eprintf "Unified term: %a.@." PP.pp_type_term term
+          | None -> Format.eprintf "Failed to unify terms.@."
+      in
+      unified_term
+
+    (** [unify_structural_terms] attempts to unify two type terms that have the
+        same internal structure. If successful, returns the unified term.
+        Otherwise, returns [None]. *)
+    and unify_structural_terms spec term1 term2 =
+      if term1 = term2 then Some term1
+      else
+        let open Term in
+        match (term1, term2) with
+        | Label id1, Label id2 when String.equal id1 id2 ->
+            (* Here, we assume that the labels are not type names. *)
+            Some term1
+        | ( TypeOperator { op = op1; term = _, arg_term1 },
+            TypeOperator { op = op2; term = _, arg_term2 } )
+          when type_operator_equal op1 op2 -> (
+            match unify_terms spec arg_term1 arg_term2 with
+            | Some unified_arg_term ->
+                Some
+                  (TypeOperator { op = op1; term = (None, unified_arg_term) })
+            | None -> None)
+        | ( Tuple { label_opt = label1_opt; args = args1 },
+            Tuple { label_opt = label2_opt; args = args2 } )
+          when Option.equal String.equal label1_opt label2_opt
+               && List.compare_lengths args1 args2 = 0 -> (
+            match unify_term_lists spec args1 args2 with
+            | Some unified_args ->
+                Some
+                  (Tuple
+                     {
+                       label_opt = label1_opt;
+                       args =
+                         List.map2
+                           (fun (name, _) unified_term -> (name, unified_term))
+                           args1 unified_args;
+                     })
+            | None -> None)
+        | ( Record { label_opt = label1_opt; fields = fields1 },
+            Record { label_opt = label2_opt; fields = fields2 } )
+          when Option.equal String.equal label1_opt label2_opt
+               && List.compare_lengths fields1 fields2 = 0 -> (
+            let fields1 = ASTUtils.sort_record_fields fields1 in
+            let fields2 = ASTUtils.sort_record_fields fields2 in
+            let field_terms1 = List.map (fun { term; _ } -> term) fields1 in
+            let field_terms2 = List.map (fun { term; _ } -> term) fields2 in
+            let unified_field_terms =
+              unify_term_lists spec
+                (List.map (fun term -> (None, term)) field_terms1)
+                (List.map (fun term -> (None, term)) field_terms2)
+            in
+            match unified_field_terms with
+            | Some unified_field_terms ->
+                Some
+                  (Record
+                     {
+                       label_opt = label1_opt;
+                       fields =
+                         List.map2
+                           (fun field unified_term ->
+                             { field with term = unified_term })
+                           fields1 unified_field_terms;
+                     })
+            | None -> None)
+        | _ ->
+            (* ConstantsSet and Function terms are not supported. *)
+            None
+
+    and unify_term_lists spec args1 args2 =
+      let unified_args_opt =
+        List.map
+          (fun (term1, term2) -> unify_terms spec term1 term2)
+          (List.combine (List.map snd args1) (List.map snd args2))
+      in
+      if List.for_all Option.is_some unified_args_opt then
+        Some (List.map Option.get unified_args_opt)
+      else None
+
+    module InstantiateOperator : sig
+      val instantiate_operator_types_from_inferred_types :
+        spec_type ->
+        string ->
+        int ->
+        use_def_mode * Term.t list ->
+        context_expr:Expr.t ->
+        Term.t list * Term.t
+    end = struct
+      (** [unify_parameter_type spec ~relation_name parameter_name
+           parameter_type type_env] attempts to unify [parameter_type] with any
+          existing type for [parameter_name] in [type_env]. If unification is
+          successful, returns an updated [type_env] with the unified type.
+          @raise [SpecError]
+            if [parameter_type] cannot be unified with an existing type for
+            [parameter_name]. *)
+      let unify_parameter_type spec ~relation_name parameter_name parameter_type
+          type_env =
+        match StringMap.find_opt parameter_name type_env with
+        | Some existing_type -> (
+            match unify_terms spec parameter_type existing_type with
+            | Some unified_type ->
+                StringMap.add parameter_name unified_type type_env
+            | None ->
+                Error.parameter_type_unification_failure ~relation_name
+                  parameter_name existing_type parameter_type)
+        | None ->
+            (* The only occurrence of this parameter so far. *)
+            StringMap.add parameter_name parameter_type type_env
+
+      (** [infer_parameter_type parameters formal_type arg_type type_env] infers
+          the types of parameters in [parameters] given [formal_type] and the
+          corresponding [arg_type], updating the [type_env] accordingly.
+
+          This is achieved by recursing into [formal_type] and [arg_type] in
+          lockstep, and when a sub-term of [formal_type] is a parameter, mapping
+          it to the corresponding concrete sub-term of [arg_type]. Since the
+          same parameter may appear multiple times in [formal_type], unification
+          is used to find a single term consistent with all concrete terms
+          associated with the parameter. *)
+      let rec infer_parameter_type spec ~relation_name parameters formal_type
+          arg_type type_env =
+        let is_parameter id = List.exists (String.equal id) parameters in
+        let open CheckTypeInstantiations in
+        let formal_type = reduce_term spec formal_type in
+        let arg_type = reduce_term spec arg_type in
+        let open Term in
+        match (formal_type, arg_type) with
+        | Label formal_id, _ ->
+            if is_parameter formal_id then
+              unify_parameter_type spec ~relation_name formal_id arg_type
+                type_env
+            else type_env
+        | Tuple { args = formal_args }, Tuple { args = aactual_args } ->
+            let () =
+              if not (List.compare_lengths formal_args aactual_args = 0) then
+                Error.type_instantiation_length_failure formal_type arg_type
+                  ~expected_length:(List.length formal_args)
+                  ~actual_length:(List.length aactual_args)
+            in
+            List.fold_left2
+              (fun curr_type_env (_, formal_term) (_, arg_term) ->
+                infer_parameter_type spec ~relation_name parameters formal_term
+                  arg_term curr_type_env)
+              type_env formal_args aactual_args
+        | Record { fields = formal_fields }, Record { fields = arg_fields } ->
+            let formal_field_names =
+              List.map field_name formal_fields |> List.sort String.compare
+            in
+            let arg_field_names =
+              List.map field_name arg_fields |> List.sort String.compare
+            in
+            let () =
+              if
+                not
+                  (Utils.list_is_equal String.equal formal_field_names
+                     arg_field_names)
+              then
+                Error.type_instantiation_length_failure formal_type arg_type
+                  ~expected_length:(List.length formal_fields)
+                  ~actual_length:(List.length arg_fields)
+            in
+            type_env
+        | ( Function
+              { from_type = _, formal_from_term; to_type = _, formal_to_term },
+            Function { from_type = _, arg_from_term; to_type = _, arg_to_term }
+          ) ->
+            let type_env =
+              infer_parameter_type spec ~relation_name parameters
+                formal_from_term arg_from_term type_env
+            in
+            infer_parameter_type spec ~relation_name parameters formal_to_term
+              arg_to_term type_env
+        | ( TypeOperator { op = formal_op; term = _, formal_inner_term },
+            TypeOperator { op = arg_op; term = _, arg_inner_term } ) ->
+            let () =
+              if
+                not (CheckTypeInstantiations.operator_subsumed arg_op formal_op)
+              then
+                Error.type_operator_instantiation_failure ~relation_name
+                  formal_type arg_type
+            in
+            infer_parameter_type spec ~relation_name parameters
+              formal_inner_term arg_inner_term type_env
+        | _ -> type_env
+
+      (** [substitute_type_parameters term parameter_env] substitutes type
+          parameters appearing as sub-terms in [term] by their corresponding
+          terms in [parameter_env]. *)
+      let rec substitute_type_parameters term parameter_env =
+        let open Term in
+        match term with
+        | Label id -> (
+            match StringMap.find_opt id parameter_env with
+            | Some substituted_type -> substituted_type
+            | None -> term)
+        | Tuple { label_opt; args } ->
+            let substituted_args =
+              List.map
+                (fun (name, sub_term) ->
+                  (name, substitute_type_parameters sub_term parameter_env))
+                args
+            in
+            Tuple { label_opt; args = substituted_args }
+        | Record { label_opt; fields } ->
+            let substituted_fields =
+              List.map
+                (fun ({ term = field_term } as field) ->
+                  {
+                    field with
+                    term = substitute_type_parameters field_term parameter_env;
+                  })
+                fields
+            in
+            Record { label_opt; fields = substituted_fields }
+        | Function
+            {
+              from_type = from_name, from_term;
+              to_type = to_name, to_term;
+              total;
+            } ->
+            let substituted_from_term =
+              substitute_type_parameters from_term parameter_env
+            in
+            let substituted_to_term =
+              substitute_type_parameters to_term parameter_env
+            in
+            Function
+              {
+                from_type = (from_name, substituted_from_term);
+                to_type = (to_name, substituted_to_term);
+                total;
+              }
+        | TypeOperator { op; term = term_name, inner_term } ->
+            let substituted_inner_term =
+              substitute_type_parameters inner_term parameter_env
+            in
+            TypeOperator { op; term = (term_name, substituted_inner_term) }
+        | ConstantsSet _ -> term
+
+      (** [make_operator_formals_for_actual_num_of_args spec operator_name
+           actual_num_of_args] returns the list of formal argument types for the
+          operator [operator_name] given that it is being invoked with
+          [actual_num_of_args] arguments. If the operator is not variadic, it is
+          just the list of its defined formal argument types. If the operator is
+          variadic, the list contains [actual_num_of_args] copies of its element
+          type. *)
+      let make_operator_formals_for_actual_num_of_args spec operator_name
+          actual_num_of_args =
+        let { Relation.input; is_variadic } =
+          relation_for_id spec operator_name
+        in
+        let () =
+          if
+            (not is_variadic)
+            && List.compare_length_with input actual_num_of_args <> 0
+          then
+            let msg =
+              Format.asprintf "operator %s expects %d arguments but received %d"
+                operator_name (List.length input) actual_num_of_args
+            in
+            failwith msg
+        in
+        (* For a variadic operator we want n copies of its element type,
+         where n is the number of actual arguments. *)
+        if is_variadic_operator spec operator_name then
+          let arg_type =
+            match List.hd input with
+            | _, Term.TypeOperator { op = List0 | List1; term = _, arg_term } ->
+                arg_term
+            | _ -> failwith "Unexpected variadic operator shape"
+          in
+          List.init actual_num_of_args (fun _ -> arg_type)
+        else List.map snd input
+
+      (** [infer_parameter_types spec relation_name parameters formal_terms
+           actual_terms ~context_expr] infers the types of parameters in
+          [parameters] given the [formal_terms] and the corresponding
+          [actual_terms], returning a parameter environment mapping parameter
+          names to their inferred types. The [context_expr] is used for error
+          reporting. *)
+      let infer_parameter_types spec relation_name parameters formal_terms
+          actual_terms ~context_expr =
+        let parameter_env =
+          List.fold_left2
+            (fun curr_env formal_type arg_type ->
+              infer_parameter_type spec ~relation_name parameters formal_type
+                arg_type curr_env)
+            StringMap.empty formal_terms actual_terms
+        in
+        let () =
+          List.iter
+            (fun param ->
+              if not (StringMap.mem param parameter_env) then
+                Error.uninstantiated_parameter_in_relation param relation_name
+                  ~context_expr)
+            parameters
+        in
+        parameter_env
+
+      (** [instantiate_operator_types_from_env parameter_env formal_arg_types
+           formal_output_type] instantiates the types of the arguments,
+          [formal_arg_types], and output type, [formal_output_type], of an
+          operator given a [parameter_env] mapping type parameter names to their
+          inferred types. The result is the list of instantiated argument types
+          and the instantiated output type. *)
+      let instantiate_operator_types_from_env parameter_env formal_arg_types
+          formal_output_type =
+        if StringMap.is_empty parameter_env then
+          (formal_arg_types, formal_output_type)
+        else
+          let instantiated_arg_types =
+            List.map
+              (fun arg_type ->
+                let instantiated_arg_type =
+                  substitute_type_parameters arg_type parameter_env
+                in
+                instantiated_arg_type)
+              formal_arg_types
+          in
+          let instantiated_output_type =
+            substitute_type_parameters formal_output_type parameter_env
+          in
+          (instantiated_arg_types, instantiated_output_type)
+
+      (** [instantiate_operator_types_from_inferred_types spec relation_name
+           num_actual_args (mode, inferred_types) ~context_expr] instantiates
+          the types of the arguments and output of the operator [relation_name]
+          given the number of actual arguments [num_actual_args] and the
+          [inferred_types] for either its arguments or its output depending on
+          [mode]. The [context_expr] is used for error reporting. When mode is
+          [Use], the [inferred_types] correspond to the argument types. When
+          mode is [Def], the [inferred_types] correspond to the output type. By
+          instantiating we mean substituting type parameters in the operator
+          definition with concrete types inferred for a given operator
+          invocation expression. *)
+      let instantiate_operator_types_from_inferred_types spec relation_name
+          num_actual_args (mode, inferred_types) ~context_expr =
+        let formal_arg_types =
+          make_operator_formals_for_actual_num_of_args spec relation_name
+            num_actual_args
+        in
+        let { Relation.parameters; output } =
+          relation_for_id spec relation_name
+        in
+        let () = assert (List.compare_length_with output 1 = 0) in
+        let formal_output_type = List.hd output in
+        let formal_types =
+          match mode with
+          | Use -> formal_arg_types
+          | Def -> [ formal_output_type ]
+        in
+        let parameter_env =
+          infer_parameter_types spec relation_name parameters formal_types
+            inferred_types ~context_expr
+        in
+        instantiate_operator_types_from_env parameter_env formal_arg_types
+          formal_output_type
+    end
+
+    module MatchAssignableExprToTerms : sig
+      val find_match : spec_type -> Expr.t -> Term.t list -> Term.t
+    end = struct
+      (** [list_structured_terms spec terms] returns the list of structured
+          terms that each term in [terms] references. A structured term is any
+          term that is not a type name. A structured term references itself,
+          whereas a type name references the structured terms defined by its
+          variants. *)
+      let list_structured_terms spec terms =
+        let rec list_structured_terms_for_one_term spec term =
+          let open Term in
+          match term with
+          | Label id
+          | Term.Tuple { label_opt = None; args = [ (_, Term.Label id) ] }
+            when is_type_name spec.id_to_defining_node id -> (
+              match defining_node_for_id spec id with
+              | Node_Type { Type.variants; _ } ->
+                  List.map
+                    (fun { TypeVariant.term } ->
+                      list_structured_terms_for_one_term spec term)
+                    variants
+                  |> List.flatten
+              | _ -> [])
+          | Tuple { label_opt = None; args = [ (_, sub_term) ] } -> [ sub_term ]
+          | Label _ ->
+              (* A constant label. *)
+              [ term ]
+          | _ -> [ term ]
+        in
+        List.map (list_structured_terms_for_one_term spec) terms |> List.flatten
+
+      (** [is_structured_assignable_expr expr] checks if [expr] is an assignable
+          expression that has structure that can be used to narrow down the set
+          of candidate type terms. For example, a tuple has structure, while a
+          variable does not. This function assumes that [expr] is an assignable
+          expression, unlike, for example, a field access or a function
+          application. *)
+      let rec is_structured_assignable_expr expr =
+        match expr with
+        | Var _ | ListIndex _
+        (* Although a list index has structure, it does not constrain the
+        set of type terms that can be applied to it when appearing as an
+        assignable expression. *)
+          ->
+            false
+        | Tuple _ | Record _ | Relation _ -> true
+        | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
+        | FieldAccess _ | Map _ | Transition _ | Indexed _
+        | UnresolvedApplication _ ->
+            let msg =
+              Format.asprintf
+                "Unexpected expression when checking for structured assignable \
+                 expression: %a."
+                PP.pp_expr expr
+            in
+            failwith msg
+
+      (** [match_structured_assignable_expr spec expr terms] attempts to find a
+          type term in [terms] that matches [expr]. That is, a term that is a
+          candidate type for [expr]. This function is specialized to expressions
+          that have structure and are assignable (see
+          [is_structured_assignable_expr] for details).
+          @raise [SpecError]
+            if there is no matching term or there are multiple matching terms.
+      *)
+      let match_structured_assignable_expr spec expr terms =
+        assert (not (Utils.list_is_empty terms));
+        assert (is_structured_assignable_expr expr);
+        let expr_matches_term term =
+          match (expr, term) with
+          | ( Expr.Tuple { label_opt = Some expr_label; _ },
+              Term.Tuple { label_opt = Some term_label; _ } )
+            when String.equal expr_label term_label ->
+              true
+          | ( Expr.Tuple { label_opt = None; args = term_args },
+              Term.Tuple { label_opt = None; args = type_args } )
+            when List.compare_lengths term_args type_args = 0 ->
+              true
+          | ( Expr.Record { label_opt = Some expr_label; _ },
+              Term.Record { label_opt = Some term_label; _ } )
+            when String.equal expr_label term_label ->
+              true
+          | Expr.Record { label_opt = None }, Term.Record { label_opt = None }
+            ->
+              true
+          | ( Expr.Relation { is_operator = true; name = rel_name; args = _ },
+              Term.TypeOperator { op = Option } )
+            when is_builtin_relation rel_name spec.some_operator ->
+              true
+          | _ -> false
+        in
+        let structured_terms = list_structured_terms spec terms in
+        let () =
+          if false then
+            Format.eprintf "Structured terms: %a.@."
+              (PP.pp_sep_list ~sep:", " PP.pp_type_term)
+              structured_terms
+        in
+        match List.filter expr_matches_term structured_terms with
+        | [] -> Error.no_matching_output_type expr ~context_expr:expr
+        | [ matching_term ] -> matching_term
+        | candidates ->
+            Error.ambiguous_output_type expr candidates ~context_expr:expr
+
+      let find_match spec expr terms =
+        if is_structured_assignable_expr expr then
+          match_structured_assignable_expr spec expr terms
+        else List.hd terms
+    end
+
+    (** [is_field_accessible spec base_type field_name] checks if an expression
+        [x.field_name] is valid given that [x] has type [base_type]. *)
+    let rec is_field_accessible spec base_type field_name =
+      match base_type with
+      | Term.Record { fields; _ } ->
+          List.exists (fun { Term.name } -> String.equal name field_name) fields
+      | Term.Label id -> (
+          match defining_node_opt_for_id spec id with
+          | Some (Node_Type { Type.variants; _ }) ->
+              List.exists
+                (fun { TypeVariant.term } ->
+                  is_field_accessible spec term field_name)
+                variants
+          | _ -> false)
+      | _ -> false
+
+    (** [infer_type_in_env spec type_env expr] infers the type of [expr] using
+        [spec] and [type_env] the types of variables. The type environment is
+        also updated in cases where sub-expressions of [expr] define variables.
+        The result is a pair consisting of the type inferred for [expr] and the
+        updated type environment. *)
+    let rec infer_type_in_env spec type_env expr : Term.t * type_env =
+      let open Expr in
+      let t, tenv =
+        match expr with
+        | Var id ->
+            let id_type = type_of_id ~context_expr:expr spec type_env id in
+            (id_type, type_env)
+        | FieldAccess { var; fields } ->
+            let base_type = type_of_id ~context_expr:expr spec type_env var in
+            let _ =
+              List.fold_left
+                (fun curr_base_type field_id ->
+                  if is_field_accessible spec curr_base_type field_id then
+                    type_term_for_field spec field_id
+                  else
+                    Error.undefined_field_in_record ~context_expr:expr
+                      curr_base_type field_id)
+                base_type fields
+            in
+            (* The overall type is the type of the last field. *)
+            let _, last_field = Utils.split_last fields in
+            let last_field_type = type_term_for_field spec last_field in
+            (last_field_type, type_env)
+        | ListIndex { list_var; index } -> (
+            (* list_var should be a list-typed variable and index must be the
+               natural number type. The result type is the type of the list elements.
+            *)
+            let list_base_type =
+              type_of_id ~context_expr:expr spec type_env list_var
+            in
+            match list_base_type with
+            | TypeOperator { op = List0 | List1; term = _, elem_type } ->
+                let index_type, type_env =
+                  infer_type_in_env spec type_env index
+                in
+                if
+                  CheckTypeInstantiations.subsumed spec index_type
+                    (type_term_for_typedef spec.n_type)
+                then (elem_type, type_env)
+                else Error.invalid_list_index_type index_type ~context_expr:expr
+            | _ ->
+                Error.invalid_list_base_type list_base_type ~context_expr:expr)
+        | Record { label_opt; fields } ->
+            (* All fields should typecheck, and if the record is labelled, their inferred types
+               must be subsumed by the types declared for them. *)
+            let fields =
+              List.sort
+                (fun (name1, _) (name2, _) -> String.compare name1 name2)
+                fields
+            in
+            let field_names, field_initializers = List.split fields in
+            let field_types, type_env =
+              infer_type_list spec type_env field_initializers
+            in
+            let record_fields = List.combine field_names field_types in
+            let record_fields =
+              List.map
+                (fun (field_name, field_type) ->
+                  Term.make_record_field (field_name, field_type) [])
+                record_fields
+            in
+            let record_type =
+              Term.Record { label_opt; fields = record_fields }
+            in
+            let () =
+              match label_opt with
+              | Some label -> (
+                  let variant_def =
+                    StringMap.find label spec.id_to_defining_node
+                  in
+                  match variant_def with
+                  | Node_TypeVariant
+                      { TypeVariant.term = Record { fields = declared_fields } }
+                    ->
+                      let declared_fields =
+                        ASTUtils.sort_record_fields declared_fields
+                      in
+                      let declared_field_types =
+                        List.map (fun field -> field.Term.term) declared_fields
+                      in
+                      check_arg_types spec field_initializers field_types
+                        declared_field_types ~context_expr:expr
+                  | _ -> Error.invalid_record_label label ~context_expr:expr)
+              | None -> ()
+            in
+            (record_type, type_env)
+        | NamedExpr (sub_expr, _) -> infer_type_in_env spec type_env sub_expr
+        | Tuple { label_opt; args } ->
+            (* All arguments must typecheck, and if the tuple is labelled, their inferred types
+               must be subsumed by the types declared for them. *)
+            let arg_types, type_env = infer_type_list spec type_env args in
+            let _check_arg_types =
+              match label_opt with
+              | Some label ->
+                  let formal_arg_types =
+                    args_of_tuple spec.id_to_defining_node label |> List.map snd
+                  in
+                  check_arg_types spec args arg_types formal_arg_types
+                    ~context_expr:expr
+              | None -> ()
+            in
+            let anonymous_typed_args =
+              List.map (fun t -> (None, t)) arg_types
+            in
+            let tuple_type =
+              Term.Tuple { label_opt; args = anonymous_typed_args }
+            in
+            (tuple_type, type_env)
+        | Relation { is_operator = true; name; args = [ lhs; rhs ] }
+          when is_builtin_relation name spec.assign ->
+            let rhs_type, type_env = infer_type_in_env spec type_env rhs in
+            let type_env = apply_type spec type_env lhs rhs_type in
+            (* Mathematically, assignment expressions are just equalities so the
+             resulting type is Boolean. *)
+            (type_term_for_typedef spec.bool, type_env)
+        | Relation { is_operator = true; name; args = [ lhs; rhs ] }
+          when is_builtin_relation name spec.reverse_assign ->
+            (* Reduce to normal assignment by switching lhs and rhs. *)
+            infer_type_in_env spec type_env
+              (Relation
+                 {
+                   is_operator = true;
+                   name = spec.assign.name;
+                   args = [ rhs; lhs ];
+                 })
+        | Relation { name; args; is_operator = true } ->
+            (* If the operator is quantifying, the type of the bound variable
+               (first argument) cannot be inferred from the expression alone,
+               since it's a newly introduced variable. Therefore, we first
+               infer the type from the domain argument (the second one). *)
+            let opt_bound_var, type_env =
+              update_type_env_for_bound_variable spec name type_env args
+            in
+            let arg_types, type_env = infer_type_list spec type_env args in
+            (* Instantiate the operator's input/output types based on the types inferred
+               for its arguments. *)
+            let instantiated_arg_types, instantiated_output_type =
+              InstantiateOperator.instantiate_operator_types_from_inferred_types
+                spec name (List.length args) (Use, arg_types) ~context_expr:expr
+            in
+            let () =
+              if false then
+                let instantiated_operator =
+                  Relation.make name RelationProperty_Function None
+                    (List.map (fun t -> (None, t)) instantiated_arg_types)
+                    [ instantiated_output_type ]
+                    [] None
+                in
+                Format.eprintf "Instantiated %s with operator %a@." name
+                  PP.pp_relation_definition instantiated_operator
+            in
+            let () =
+              check_arg_types spec args arg_types instantiated_arg_types
+                ~context_expr:expr
+            in
+            (* Remove the bound variable from the type environment as it goes out of scope. *)
+            let type_env =
+              match opt_bound_var with
+              | Some bound_var -> StringMap.remove bound_var type_env
+              | None -> type_env
+            in
+            (instantiated_output_type, type_env)
+        | Relation { name; args; is_operator = false } ->
+            let { Relation.output } = relation_for_id spec name in
+            let () =
+              if List.length output <> 1 then
+                (* We allow relations with multiple outputs to be used in transitions,
+                   but only single output relations outside of transitions.
+                   Otherwise, the type of the expression cannot be deterministically determined. *)
+                Error.only_single_output_relations_supported name
+                  ~context_expr:expr
+            in
+            let arg_types, type_env = infer_type_list spec type_env args in
+            let () =
+              check_arg_types spec args arg_types arg_types ~context_expr:expr
+            in
+            (List.hd output, type_env)
+        | Transition { lhs = Relation { name; args; is_operator = false }; rhs }
+          ->
+            (* A transition r(a)->b is an assertion that (a,b) belong to the relation r.
+             Therefore, its type is Boolean. *)
+            let { Relation.input; output } = relation_for_id spec name in
+            let arg_types, type_env = infer_type_list spec type_env args in
+            let () =
+              List.iter2
+                (fun (_, formal_type) (arg, actual_type) ->
+                  if
+                    not
+                      (CheckTypeInstantiations.subsumed spec actual_type
+                         formal_type)
+                  then
+                    Error.invalid_argument_type ~arg ~actual_type ~formal_type
+                      ~context_expr:expr)
+                input
+                (List.combine args arg_types)
+            in
+            let () =
+              if false then
+                Format.eprintf "Inferring type for transition rhs %a among %a@."
+                  PP.pp_expr rhs
+                  (PP.pp_sep_list ~sep:" | " PP.pp_type_term)
+                  output
+            in
+            let output_term =
+              MatchAssignableExprToTerms.find_match spec rhs output
+            in
+            let type_env = apply_type spec type_env rhs output_term in
+            (type_term_for_typedef spec.bool, type_env)
+        | Transition _ ->
+            Error.only_relation_transitions_supported ~context_expr:expr
+        | Indexed { index; list_var; body } ->
+            (* The index is a bound variable that always has the natural number type. *)
+            let type_env =
+              StringMap.add index (type_term_for_typedef spec.n_type) type_env
+            in
+            let list_var_type =
+              type_of_id ~context_expr:expr spec type_env list_var
+            in
+            let () =
+              match list_var_type with
+              | TypeOperator { op = List0 | List1 } -> ()
+              | _ ->
+                  Error.invalid_list_base_type list_var_type ~context_expr:expr
+            in
+            let body_type, type_env = infer_type_in_env spec type_env body in
+            let () =
+              (* The body is a transition and should thus have Boolean type. *)
+              if
+                not
+                  (CheckTypeInstantiations.subsumed spec body_type
+                     (type_term_for_typedef spec.bool))
+              then Error.invalid_indexed_body_type body_type ~context_expr:expr
+            in
+            (* The bound variable goes out of scope. *)
+            let type_env = StringMap.remove index type_env in
+            (type_term_for_typedef spec.bool, type_env)
+        | Map { lhs; args } -> (
+            (* Check that the single argument type matches the function's input type
+               and return the function's output type. *)
+            let lhs_type, type_env = infer_type_in_env spec type_env lhs in
+            match lhs_type with
+            | Function { from_type = _, from_term; to_type = _, to_term } ->
+                let arg_types, type_env = infer_type_list spec type_env args in
+                let () =
+                  (* Currently, only single argument functions are supported. *)
+                  if List.length arg_types <> 1 then
+                    Error.invalid_number_of_arguments_for_map ~expected:1
+                      ~actual:(List.length arg_types) ~context_expr:expr
+                  else ();
+                  let arg_type = List.hd arg_types in
+                  if
+                    not
+                      (CheckTypeInstantiations.subsumed spec arg_type from_term)
+                  then
+                    Error.invalid_argument_type ~arg:(List.hd args)
+                      ~actual_type:arg_type ~formal_type:from_term
+                      ~context_expr:expr
+                  else ()
+                in
+                (to_term, type_env)
+            | _ -> Error.invalid_map_lhs_type lhs_type ~context_expr:expr)
+        | UnresolvedApplication _ ->
+            let msg =
+              Format.asprintf
+                "Unresolved application found when inferring type for \
+                 expression: %a."
+                PP.pp_expr expr
+            in
+            failwith msg
+      in
+      let () =
+        if false then
+          Format.eprintf "Expression: %a, Inferred type: %a@." PP.pp_expr expr
+            PP.pp_type_term t
+      in
+      (t, tenv)
+
+    (** [infer_type_list spec type_env exprs] infers the types of the list of
+        expressions [exprs] using [spec] and [type_env]. The type environment is
+        also updated in cases where sub-expressions of [exprs] define variables.
+        The result is a pair consisting of the list of types inferred for
+        [exprs] and the updated type environment. *)
+    and infer_type_list spec type_env exprs : Term.t list * type_env =
+      List.fold_left
+        (fun (curr_types, curr_env) expr ->
+          let expr_type, updated_env = infer_type_in_env spec curr_env expr in
+          (curr_types @ [ expr_type ], updated_env))
+        ([], type_env) exprs
+
+    and check_arg_types spec arg_exprs arg_types formal_types ~context_expr =
+      List.iter2
+        (fun (arg, actual_type) formal_type ->
+          if not (CheckTypeInstantiations.subsumed spec actual_type formal_type)
+          then
+            Error.invalid_argument_type ~arg ~actual_type ~formal_type
+              ~context_expr)
+        (List.combine arg_exprs arg_types)
+        formal_types
+
+    (** [update_type_env_for_bound_variable spec relation_name type_env args]
+        updates [type_env] if [relation_name] is a quantifying operator by
+        inferring the type of the variable from the second argument in [args].
+        If [relation_name] is not a quantifying operator, [type_env] is returned
+        and [None] for the optional bound variable name. *)
+    and update_type_env_for_bound_variable spec relation_name type_env args =
+      if is_quantifying_operator spec relation_name then
+        let () =
+          if false then
+            Format.eprintf
+              "Updating type env for bound variable in relation %s(%a)@."
+              relation_name
+              (PP.pp_sep_list ~sep:", " PP.pp_expr)
+              args
+        in
+        let domain_term =
+          match args with
+          | [ _; domain_expr; _ ] -> domain_expr
+          | _ ->
+              failwith "Unexpected number of arguments to quantifying operator"
+        in
+        let domain_term, type_env =
+          infer_type_in_env spec type_env domain_term
+        in
+        let bound_variable_name =
+          match args with
+          | Var id :: _ -> id
+          | _ ->
+              failwith
+                "Expected first argument of quantifying operator to be a \
+                 variable"
+        in
+        match CheckTypeInstantiations.reduce_term spec domain_term with
+        | Term.TypeOperator
+            { op = Powerset | Powerset_Finite; term = _, elem_type }
+        | Term.TypeOperator { op = List0 | List1; term = _, elem_type }
+        | Term.TypeOperator { op = Option; term = _, elem_type } ->
+            let () =
+              if false then
+                Format.eprintf "Quantifying over variable of type %a@."
+                  PP.pp_type_term elem_type
+            in
+            let new_env =
+              StringMap.add bound_variable_name elem_type type_env
+            in
+            (Some bound_variable_name, new_env)
+        | _ ->
+            let msg =
+              Format.asprintf
+                "Unexpected domain type for quantifying operator: %a."
+                PP.pp_type_term domain_term
+            in
+            failwith msg
+      else (None, type_env)
+
+    (** [apply_type spec type_env expr target_type] deconstructs [expr] and
+        [target_type] in lockstep to assign the sub-expressions of [expr] the
+        corresponding sub-types in [target_type], updating [type_env]
+        accordingly. *)
+    and apply_type spec type_env expr target_type : type_env =
+      let () =
+        if false then
+          Format.eprintf "Applying type %a to expr %a@." PP.pp_type_term
+            target_type PP.pp_expr expr
+      in
+      let target_type = CheckTypeInstantiations.reduce_term spec target_type in
+      let expr =
+        match expr with NamedExpr (sub_expr, _) -> sub_expr | _ -> expr
+      in
+      match (expr, target_type) with
+      | Var id, _ when is_ignore_var id -> type_env
+      | Var id, _ -> StringMap.add id target_type type_env
+      | ( Relation { name; args = [ arg ]; is_operator = true },
+          Term.TypeOperator { op; term = _, op_arg_type } )
+        when is_builtin_relation name spec.some_operator
+             && Term.type_operator_equal op Term.Option ->
+          (* Special treatment for the some/Option. *)
+          apply_type spec type_env arg op_arg_type
+      | Expr.Relation { name; args; is_operator = true }, _ ->
+          let instantiated_arg_types, instantiated_output_type =
+            InstantiateOperator.instantiate_operator_types_from_inferred_types
+              spec name (List.length args) (Def, [ target_type ])
+              ~context_expr:expr
+          in
+          let () =
+            if
+              not
+                (CheckTypeInstantiations.subsumed spec instantiated_output_type
+                   target_type)
+            then
+              Error.argument_subsumption_failure instantiated_output_type
+                target_type ~context_expr:expr
+          in
+          let () =
+            (* TODO: use a more dedicated error for this case. *)
+            if not (List.compare_lengths args instantiated_arg_types = 0) then
+              Error.invalid_number_of_arguments name expr
+                ~expected:(List.length instantiated_arg_types)
+                ~actual:(List.length args)
+          in
+          List.fold_left2
+            (fun curr_env formal_type arg ->
+              apply_type spec curr_env arg formal_type)
+            type_env instantiated_arg_types args
+      | Expr.Tuple { args; _ }, Term.Tuple { args = target_args; _ } ->
+          assert (List.compare_lengths args target_args = 0);
+          List.fold_left2
+            (fun curr_env arg (_, target_arg_type) ->
+              apply_type spec curr_env arg target_arg_type)
+            type_env args target_args
+      | ListIndex { list_var; index }, _ ->
+          let index_type, _ = infer_type_in_env spec type_env index in
+          let () =
+            if
+              CheckTypeInstantiations.subsumed spec index_type
+                (type_term_for_typedef spec.n_type)
+            then ()
+            else Error.invalid_list_index_type index_type ~context_expr:expr
+          in
+          let list_var_type =
+            Term.TypeOperator { op = List1; term = (None, target_type) }
+          in
+          StringMap.add list_var list_var_type type_env
+      | ( Expr.Record { fields = expr_fields; _ },
+          Term.Record { fields = target_fields; _ } ) ->
+          let target_field_map =
+            List.fold_left
+              (fun acc { Term.name; term = field_type } ->
+                StringMap.add name field_type acc)
+              StringMap.empty target_fields
+          in
+          List.fold_left
+            (fun curr_env (field_name, init_expr) ->
+              match StringMap.find_opt field_name target_field_map with
+              | Some target_field_type ->
+                  apply_type spec curr_env init_expr target_field_type
+              | None ->
+                  Error.undefined_field_in_record ~context_expr:expr target_type
+                    field_name)
+            type_env expr_fields
+      | Expr.Relation _, _
+      | FieldAccess _, _
+      | UnresolvedApplication _, _
+      | Transition _, _
+      | Indexed _, _
+      | NamedExpr _, _ ->
+          let msg =
+            Format.asprintf "unexpected expression in apply_type: %a."
+              PP.pp_expr expr
+          in
+          failwith msg
+      | (Expr.Tuple _ | Expr.Record _), _ ->
+          let matched_term =
+            MatchAssignableExprToTerms.find_match spec expr [ target_type ]
+          in
+          apply_type spec type_env expr matched_term
+      | Expr.Map _, _ -> Error.cannot_apply_type_to_expr expr target_type
+
+    (** [update_env_for_term type_env (opt_name, term)] updates [type_env] by
+        recursing into [term] and treating each term name as a variable, and
+        binding it to the term it names. *)
+    let rec update_env_for_term type_env (opt_name, term) =
+      let type_env =
+        match opt_name with
+        | Some id -> StringMap.add id term type_env
+        | None -> type_env
+      in
+      match term with
+      | Term.Tuple { args } ->
+          List.fold_left
+            (fun curr_env arg -> update_env_for_term curr_env arg)
+            type_env args
+      | Term.Label _ | Term.TypeOperator _ | Term.Record _ | Term.Function _
+      | Term.ConstantsSet _ ->
+          type_env
+
+    (** [generate_type_env_from_relation_args relation] generates a type
+        environment from the arguments of [relation].
+
+        Example: given the relation signature
+        {[
+          relation annotate_get_array(
+              tenv: static_envs,
+              (size: array_index, t_elem: ty),
+              (e_base: expr, ses_base: powerset(TSideEffect),
+              e_index: expr)) ->
+                (t: ty, new_e: expr, ses: powerset(TSideEffect))
+        ]}
+        the resulting type environment is
+        {[
+          "tenv" -> static_envs,
+          "size" -> array_index,
+          "t_elem" -> ty,
+          "e_base" -> expr,
+          "ses_base" -> powerset(TSideEffect),
+          "e_index" -> expr
+        ]} *)
+    let generate_type_env_from_relation_args relation =
+      List.fold_left
+        (fun curr_env arg -> update_env_for_term curr_env arg)
+        StringMap.empty relation.Relation.input
+
+    let infer spec expr =
+      let empty_env = StringMap.empty in
+      infer_type_in_env spec empty_env expr |> fst
+
+    (** [infer_type_for_judgment spec type_env expr] infers the type of the
+        judgment expression [expr] using [spec] and [type_env]. The type
+        environment is also updated in cases where sub-expressions of [expr]
+        define variables. The result is a pair consisting of the type inferred
+        for [expr] and the updated type environment.
+
+        This function is mainly a wrapper around [infer_type_in_env] that adds
+        error context information. TODO: remove once location information is
+        added to expressions.
+
+        @raise [SpecError] if a type error is found during inference. *)
+    let infer_type_for_judgment spec type_env expr =
+      try
+        let () =
+          if false then
+            Format.eprintf "--- Inferring types for judgment %a ---@."
+              PP.pp_expr expr
+          else ()
+        in
+        let judgment_type, updated_env = infer_type_in_env spec type_env expr in
+        (judgment_type, updated_env)
+      with SpecError err | Failure err ->
+        stack_spec_error err (Format.asprintf "In judgment %a" PP.pp_expr expr)
+
+    let check relation spec expanded_rule =
+      let () =
+        if false then
+          Format.eprintf "@.=== Checking types for relation %s case %s ===@."
+            relation.Relation.name
+            (Option.value ~default:"top level"
+               expanded_rule.ExpandRules.name_opt)
+      in
+      let input_type_env = generate_type_env_from_relation_args relation in
+      let premise_exprs, output_expr = ExpandRules.rule_exprs expanded_rule in
+      let type_env =
+        List.fold_left
+          (fun curr_env expr ->
+            let judgment_type, updated_env =
+              infer_type_for_judgment spec curr_env expr
+            in
+            let _check_judgment_types_are_boolean =
+              if
+                not
+                  (CheckTypeInstantiations.subsumed spec judgment_type
+                     (type_term_for_typedef spec.bool))
+              then Error.judgment_not_boolean judgment_type expr
+            in
+            updated_env)
+          input_type_env premise_exprs
+      in
+      (* Now check that the type of the output expression matches any of the output formal types. *)
+      let output_judgment_type, type_env =
+        infer_type_for_judgment spec type_env output_expr
+      in
+      let { Relation.output } = relation in
+      let output_type_matched =
+        List.exists
+          (fun output_type ->
+            CheckTypeInstantiations.subsumed spec output_judgment_type
+              output_type)
+          output
+      in
+      let () =
+        if not output_type_matched then
+          Error.output_type_mismatch output_judgment_type output output_expr
+        else ()
+      in
+      if false then
+        Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
+      else ()
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -1963,16 +3321,16 @@ module Check = struct
                 check_well_formed_expanded relation.Relation.name expanded_rule
               in
               let () = UseDef.check_use_def relation spec expanded_rule in
+              let () = TypeInference.check relation spec expanded_rule in
               let open ExpandRules in
               List.iter
                 (fun { Rule.expr } -> check_expr_well_formed spec expr)
                 expanded_rule.judgments
             with SpecError err | Failure err ->
               stack_spec_error err
-                (Format.asprintf "In rule %s of %s"
-                   (Option.value ~default:"(top-level case)"
-                      expanded_rule.name_opt)
-                   relation.Relation.name))
+                (Format.asprintf "In rule for relation %s, case %s"
+                   relation.Relation.name
+                   (Option.value ~default:"top-level" expanded_rule.name_opt)))
           expanded_rules
       in
       ()
@@ -2011,6 +3369,37 @@ module Check = struct
       then Error.missing_relation_argument_name name
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
+end
+
+(** A module to ensure that each constant in the specification has an associated
+    type. If a constant does not have a type, it infers it from its
+    initialization expression, if any, or assigns it a type labeled by its name
+    otherwise. *)
+module ExtendConstantsWithTypes = struct
+  let extend_constant spec
+      ({ Constant.name; opt_type; opt_value_and_attributes } as def) =
+    let constant_type =
+      match (opt_type, opt_value_and_attributes) with
+      | Some term, _ -> term (* Already has a type, nothing to do. *)
+      | None, Some (init_expr, _) ->
+          let init_type = Check.TypeInference.infer spec init_expr in
+          init_type
+      | None, None ->
+          (* A constant without a specified type has a type labeled by its name. *)
+          Label name
+    in
+    { def with Constant.opt_type = Some constant_type }
+
+  let extend ({ ast } as spec) =
+    let ast =
+      List.map
+        (fun elem ->
+          match elem with
+          | Elem_Constant def -> Elem_Constant (extend_constant spec def)
+          | _ -> elem)
+        ast
+    in
+    update_spec_ast spec ast
 end
 
 (** [add_default_rule_renders ast] adds default render rules for relations that
@@ -2130,13 +3519,13 @@ let make_spec_with_builtins ast =
     none_constant = get_constant "None";
     empty_set = get_constant "empty_set";
     empty_list = get_constant "empty_list";
-    _bool_type = get_type "Bool";
+    bool = get_type "Bool";
     n_type = get_type "N";
     z_type = get_type "Z";
-    _q = get_type "Q";
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
-    _equal = get_relation "equal";
+    some_operator = get_relation "some";
+    variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
 
 let from_ast ast =
@@ -2148,6 +3537,7 @@ let from_ast ast =
   let () = Check.CheckProseTemplates.check spec in
   let () = Check.relation_named_arguments_if_exists_rule ast in
   let spec = ResolveApplicationExpr.resolve spec in
+  let spec = ExtendConstantsWithTypes.extend spec in
   let spec = ResolveRules.resolve spec in
   let spec = ExtendNames.extend spec in
   let () = Check.CheckRules.check spec in
