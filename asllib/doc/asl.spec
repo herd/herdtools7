@@ -2386,7 +2386,7 @@ typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: lis
   check_no_duplicates(names) -> True;
   static_eval(tenv, e_width) -> L_Int(width);
   (
-    INDEX(i, fields: annotate_bitfield(tenv, width, field) -> (fields'[i], xs[i]))
+    INDEX(i, fields: annotate_bitfield(tenv, width, fields[i]) -> (fields'[i], xs[i]))
   ) { math_layout = ([_])};
   ses := union_list(xs);
   --
