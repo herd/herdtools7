@@ -14,7 +14,6 @@
 \newcommand\String[0]{ \hyperlink{ast-String}{\textsc{String}} } % Generated from String
 \newcommand\annotateexpr[0]{ \hyperlink{relation-annotateexpr}{\textit{annotate\_expr}} } % Generated from annotate_expr
 \newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
-\newcommand\boundvariable[0]{ \hyperlink{type-boundvariable}{\textsf{bound\_variable}} } % Generated from bound_variable
 \newcommand\evalplus[0]{ \hyperlink{relation-evalplus}{\textit{eval\_plus}} } % Generated from eval_plus
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
 \newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
@@ -43,7 +42,7 @@
 
 \DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
 
-\DefineType{bound_variable}{\texthypertarget{type-boundvariable}$\boundvariable$} % EndDefineType
+\DefineType{ASTLabels}{\texthypertarget{type-ASTLabels}$\ASTLabels$} % EndDefineType
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 

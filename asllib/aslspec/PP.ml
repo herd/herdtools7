@@ -91,8 +91,8 @@ and pp_opt_named_type_terms fmt opt_named_terms =
 and pp_record_fields fmt fields =
   pp_sep_list ~sep:", " pp_record_field fmt fields
 
-and pp_record_field fmt { name_and_type; att } =
-  fprintf fmt "%a%a" pp_named_type_term name_and_type pp_attribute_key_values
+and pp_record_field fmt { name; term; att } =
+  fprintf fmt "%a%a" pp_named_type_term (name, term) pp_attribute_key_values
     (Attributes.bindings att)
 
 let pp_type_term_with_attributes fmt ({ TypeVariant.term } as variant) =

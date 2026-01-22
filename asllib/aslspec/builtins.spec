@@ -39,6 +39,16 @@ typedef Q
    math_macro = \Q,
 };
 
+typedef ASTLabels
+{ "AST label",
+   math_macro = \ASTLabels,
+};
+
+operator some[T](T) -> option(T)
+{
+  math_macro = \some,
+};
+
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
@@ -74,6 +84,16 @@ variadic operator and(list1(Bool)) -> Bool
 variadic operator or(list1(Bool)) -> Bool
 {
   associative = true,
+  math_macro = \lor,
+};
+
+operator list_and(list1(Bool)) -> Bool
+{
+  math_macro = \land,
+};
+
+operator list_or(list1(Bool)) -> Bool
+{
   math_macro = \lor,
 };
 
@@ -144,25 +164,24 @@ operator greater_or_equal[NumType](NumType, NumType) -> Bool
   math_macro = \greaterorequal,
 };
 
-// A type dedicated to bound variables.
-typedef bound_variable { "bound variable" };
-
-operator forall[T](bound_var: bound_variable, domain: powerset(T), fun T -> Bool) -> Bool
+// Notice that the operator returns True when domain is empty.
+operator forall[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
+  "true if and only if {condition} holds for all values of {bound_variable} in {domain}",
   math_macro = \forallop,
 };
 
-operator exists[T](bound_var: bound_variable, domain: powerset(T), fun T -> Bool) -> Bool
+operator exists[T](bound_variable: T, domain: powerset(T), Bool) -> Bool
 {
   math_macro = \existsop,
 };
 
-operator list_forall[T](bound_var: bound_variable, domain: list0(T), fun T -> Bool) -> Bool
+operator list_forall[T](bound_variable: T, domain: list0(T), Bool) -> Bool
 {
   math_macro = \listforall,
 };
 
-operator list_exists[T](bound_var: bound_variable, domain: list0(T), fun T -> Bool) -> Bool
+operator list_exists[T](bound_variable: T, domain: list0(T), Bool) -> Bool
 {
   math_macro = \listexists,
 };
