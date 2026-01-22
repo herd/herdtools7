@@ -108,7 +108,7 @@ module Make (S : SPEC_VALUE) = struct
           (args, layout)
     | Record { label_opt; fields } ->
         let pp_record_fields_as_pairs =
-          List.map (fun ({ name } as field) -> (name, field)) fields
+          List.map (fun field -> (field.name, field)) fields
         in
         fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
           (pp_fields pp_field_name pp_record_field_as_pair)

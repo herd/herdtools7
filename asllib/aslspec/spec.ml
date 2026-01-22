@@ -6,7 +6,8 @@ module StringSet = Set.Make (String)
 (* A variable for discarding of values. *)
 let ignore_var = "_"
 
-(* The identifier that should be used to mark bound variables. *)
+(** The identifier that must be used to mark bound variables in the spec
+    definition of the quantifying operator. *)
 let bound_variable = "bound_variable"
 
 module Error = struct
