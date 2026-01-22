@@ -126,20 +126,22 @@ let test_with_ints () =
     ]
 
 let test_with_int64 () =
-  let one (i, s) =
+  let one n (i, s) =
     let s = Printf.sprintf "'%64s'" s in
     let s = String.map (function ' ' -> '0' | c -> c) s in
     let () =
       if _debug then
-        Format.eprintf "Comparing %s to %s (%a to %a)@." (Int64.to_string i) s
-          BV.pp_t (BV.of_int64 i) BV.pp_t (BV.of_string s)
+        Format.eprintf "%d. Comparing %s to %s (%a to %a)@." n
+          (Int64.to_string i) s BV.pp_t (BV.of_int64 i) BV.pp_t (BV.of_string s)
     in
     assert (BV.equal (BV.of_int64 i) (BV.of_string s));
     assert (String.equal (BV.to_string (BV.of_int64 i)) s);
     assert (Int64.equal i (BV.to_int64_unsigned (BV.of_string s)));
-    assert (Int64.equal i (BV.to_int64_unsigned (BV.of_int64 i)))
+    assert (Int64.equal i (BV.to_int64_unsigned (BV.of_int64 i)));
+    assert (Int64.equal i (BV.to_int64_signed (BV.of_string s)));
+    assert (Int64.equal i (BV.to_int64_signed (BV.of_int64 i)))
   in
-  List.iter one
+  List.iteri one
     [
       (0x0L, "");
       (0x0L, "0");
@@ -154,7 +156,18 @@ let test_with_int64 () =
       (0x20502L, "100000010100000010");
       (0xffffffffL, "11111111111111111111111111111111");
       (0xfffffffeL, "11111111111111111111111111111110");
+      (0xfffffffeL, "11111111111111111111111111111110");
       (0x2L, "00000000000000000000000000000010");
+      ( 0xffffffffffffffffL,
+        "1111111111111111111111111111111111111111111111111111111111111111" );
+      ( 0x7fffffffffffffffL,
+        "0111111111111111111111111111111111111111111111111111111111111111" );
+      ( 0xbfffffffffffffffL,
+        "1011111111111111111111111111111111111111111111111111111111111111" );
+      ( 0xfffffffffffffffdL,
+        "1111111111111111111111111111111111111111111111111111111111111101" );
+      ( 0xfffffffffffffffeL,
+        "1111111111111111111111111111111111111111111111111111111111111110" );
     ]
 
 let test_with_z () =
