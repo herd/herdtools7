@@ -45,3 +45,9 @@ let is_operator elem =
   match elem with
   | Elem_Relation { Relation.is_operator } -> is_operator
   | _ -> false
+
+let sort_record_fields fields =
+  List.sort
+    (fun { Term.name = name1 } { Term.name = name2 } ->
+      String.compare name1 name2)
+    fields

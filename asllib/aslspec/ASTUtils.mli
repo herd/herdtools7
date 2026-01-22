@@ -19,3 +19,6 @@ val variant_to_label_opt : TypeVariant.t -> string option
 val is_operator : elem -> bool
 (** [is_operator elem] returns [true] if [elem] corresponds to an operator, and
     [false] otherwise. *)
+
+val sort_record_fields : Term.record_field list -> Term.record_field list
+(** [sort_record_fields fields] returns [fields] sorted by field name. *)
