@@ -540,10 +540,10 @@ module Make
              O.o "}"
           end ;
           O.o ""
-          end else if Cfg.is_kvm then begin
-            O.o "static void set_fault_vector(int role) { }" ;
-            O.o ""
-          end
+        end else if Cfg.is_kvm then begin
+          O.o "static void set_fault_vector(int role) { }" ;
+          O.o ""
+        end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
@@ -685,8 +685,8 @@ module Make
       let data_zero =  SkelUtil.data_symb_id pp_data_zero
 
       let dump_data_indices test =
-        O.f "#define %-25s 0" data_unknown ;
-        O.f "#define %-25s 1" data_zero ;
+        O.f "#define %-25s  0" data_unknown ;
+        O.f "#define %-25s  1" data_zero ;
         (* Define indices for data *)
         List.iteri
           (fun k (a,_) ->
@@ -1919,10 +1919,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
