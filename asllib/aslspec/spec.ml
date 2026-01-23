@@ -3320,12 +3320,14 @@ module Check = struct
               let () =
                 check_well_formed_expanded relation.Relation.name expanded_rule
               in
-              let () = UseDef.check_use_def relation spec expanded_rule in
-              let () = TypeInference.check relation spec expanded_rule in
               let open ExpandRules in
-              List.iter
-                (fun { Rule.expr } -> check_expr_well_formed spec expr)
-                expanded_rule.judgments
+              let () =
+                List.iter
+                  (fun { Rule.expr } -> check_expr_well_formed spec expr)
+                  expanded_rule.judgments
+              in
+              let () = UseDef.check_use_def relation spec expanded_rule in
+              TypeInference.check relation spec expanded_rule
             with SpecError err | Failure err ->
               stack_spec_error err
                 (Format.asprintf "In rule for relation %s, case %s"
