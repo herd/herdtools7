@@ -778,7 +778,7 @@ end
           end
 
         let dump_label_defs lbls =
-          O.f "#define %-25s 0" (instr_symb_id "UNKNOWN") ;
+          O.f "#define %-25s  0" (instr_symb_id "UNKNOWN") ;
           (* Define indices for labels *)
           List.iteri
             (fun i (p,lbl) ->
