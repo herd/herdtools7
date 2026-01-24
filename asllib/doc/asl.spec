@@ -366,6 +366,11 @@ operator round_down(Q) -> N
   math_macro = \rounddown,
 };
 
+operator abs_value(Z) -> N
+{
+  math_macro = \absvalueop,
+};
+
 operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
 {
   "concatenates {prefix} and the string for {n} to yield {result}",
@@ -2807,7 +2812,34 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   constraint represents an empty set. Otherwise, the
   result is $\TypeErrorVal{\NoBaseValue}$.",
   prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    te_check(z_opt != None, TE_NBV) -> True;
+    z_opt =: some(z);
+    --
+    make_singleton_list(z);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    reduce_to_z_opt(tenv, e1) -> z_opt1;
+    te_check(z_opt1 != None, TE_NBV) -> True;
+    z_opt1 =: some(v1);
+    reduce_to_z_opt(tenv, e2) -> z_opt2;
+    te_check(z_opt2 != None, TE_NBV) -> True;
+    z_opt2 =: some(v2);
+    zs := match_cases(
+            match_case(v1 > v2, empty_list),
+            match_case(v1 <= v2 && v2 < zero, make_singleton_list(v2)),
+            match_case(v1 < zero && zero <= v2, make_singleton_list(zero)),
+            match_case(zero <= v1 && v1 <= v2, make_singleton_list(v1))
+          );
+    --
+    zs;
+  }
+;
 
 typing function list_min_abs(l: list0(Z)) ->
          (z: Z)
