@@ -535,11 +535,14 @@ All discarding assignments in \listingref{typing-lediscard} are well-typed.
   \item \Proseeqdef{$\vses$}{the empty set}.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \annotatelexpr(\tenv, \overname{\LEDiscard}{\vle}, \vte) \typearrow (\overname{\LEDiscard}{\newle}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LEDiscard}
 \CodeSubsection{\LEDiscardBegin}{\LEDiscardEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -612,6 +615,7 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \tenv.\staticenvsL.\localstoragetypes(\vx) = (\tty, k)\\
@@ -644,6 +648,8 @@ since \verb|x| is not defined as either a local storage element or as a global s
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LEVar}
 \identr{WDGQ} \identr{GNTS} \identi{MMKF}
 \identi{DGWJ} \identi{KKCC}  \identr{LXQZ}
 \CodeSubsection{\LEVarBegin}{\LEVarEnd}{../Typing.ml}
@@ -738,6 +744,7 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
   \item define $\vses$ as the union of all sets $\vxs_i$, for $i=1..k$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vle = \LEDestructuring(\les)\\
@@ -755,6 +762,8 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
   (\overname{\LEDestructuring(\lesp)}{\newle}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LEDestructuring}
 \CodeSubsection{\LEDestructuringBegin}{\LEDestructuringEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -876,6 +885,7 @@ are well-typed.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\ebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
@@ -893,6 +903,8 @@ are well-typed.
   \annotatelexpr(\tenv, \overname{\LESetArray(\ebase, \eindex)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetArray}
 \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateSetArray}
@@ -917,13 +929,14 @@ for examples of well-typed assignable array expressions.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \sizeelem = (\size, \telem)\\
   \basesesindex = (\ebasep, \vsesbase, \eindex)\\\\
   \checktypesatisfies(\tenv, \rhsty, \telem) \typearrow \True \OrTypeError\\\\
   \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
-  \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
+  \typeofarraylength(\size) \typearrow \wantedtindex\\
   \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
   \vses \eqdef \vsesbase \cup \vsesindex \\
   \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
@@ -943,6 +956,8 @@ for examples of well-typed assignable array expressions.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_set_array}
 
 \subsection{Semantics}
 \SemanticsRuleDef{LESetArray}
@@ -1070,6 +1085,7 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \item define $\vses$ as the union of $\vsesone$ and $\sesslices$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1089,6 +1105,8 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
   \annotatelexpr(\tenv, \overname{\LESlice(\vleone, \slices)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESlice}
 \CodeSubsection{\LESliceBegin}{\LESliceEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckDisjointSlices}
@@ -1104,6 +1122,7 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \disjointslicestopositions(\tenv, \False, \slices) \typearrow \positions \OrTypeError
@@ -1111,6 +1130,8 @@ See \ExampleRef{Typing Assignable Slice Expression}.
   \checkdisjointslices(\tenv, \slices) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_disjoint_slices}
 \CodeSubsection{\CheckDisjointSlicesBegin}{\CheckDisjointSlicesEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -1257,6 +1278,7 @@ are well-typed.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1272,7 +1294,8 @@ are well-typed.
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetStructuredField}
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{LESetCollectionField}
@@ -1303,6 +1326,7 @@ All of the collection field assignable expressions in
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1317,7 +1341,8 @@ All of the collection field assignable expressions in
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetCollectionField}
 \CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{LESetBadField}
@@ -1353,6 +1378,7 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[tuple]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1385,6 +1411,8 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetBadField_error}
 \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}
 
 \SemanticsRuleDef{LESetField}
@@ -1504,6 +1532,7 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bits]{
   \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1575,6 +1604,8 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
   \annotatelexpr(\tenv, \overname{\LESetFields(\lebase, \vlefields)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetFields}
 \CodeSubsection{\LESetFieldsBegin}{\LESetFieldsEnd}{../Typing.ml}
 
 \TypingRuleDef{FoldBitvectorFields}
@@ -1611,6 +1642,7 @@ and $(\overtext{0}{\start}, \overtext{1}{\vwidth})$ for \verb|status|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \foldbitvectorfields(\tenv, \vbasefields, \overname{\emptylist}{\vlefields}) \typearrow (\overname{0}{\vlength}, \overname{\emptylist}{\vslices})
@@ -1633,6 +1665,8 @@ and $(\overtext{0}{\start}, \overtext{1}{\vwidth})$ for \verb|status|.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{fold_bitvector_fields}
 
 \subsection{Semantics}
 \SemanticsRuleDef{LESetFields}
@@ -1845,6 +1879,7 @@ are well-typed.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error\_missing\_field]{
   \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
@@ -1916,7 +1951,8 @@ are well-typed.
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_lexpr_LESetField_BitField}
 \subsection{Semantics}
 The semantics for assigning to individual bitvector bitfields is covered by \SemanticsRuleRef{LESlice}
 as the type system transforms the \untypedast\ for assigning to an individual bitfield into an $\LESlice$ \typedast.

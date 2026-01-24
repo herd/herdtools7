@@ -165,6 +165,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bool]{}{
     \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\LBool(\False))}{\veinit}
@@ -244,7 +245,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     \vt \eqname L(\fields)\\
     (\name, \vtefield) \in \fields: \basevalue(\tenv, \vtefield) \typearrow \ve_\name \OrTypeError
 }{
-    \basevalue(\tenv, \vt) \typearrow \overname{\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
+    \basevalue(\tenv, \vt) \typearrow \overname{\ERecord(\vt, (\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
 }
 \end{mathpar}
 
@@ -269,7 +270,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     {
         \begin{array}{r}
             \basevalue(\tenv, \overname{\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)}{\vt}) \typearrow \\
-            \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}}{\veinit}
+            \overname{\EEnumArray\{\FIELDenum: \venum, \FIELDlabels: \vlabels, \enumarrayvalue: \vvalue\}}{\veinit}
         \end{array}
     }
 }
@@ -287,6 +288,8 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{base_value}
 
 \TypingRuleDef{ConstraintAbsMin}
 \RenderRelation{constraint_abs_min}

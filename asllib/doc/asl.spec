@@ -45,6 +45,7 @@ typedef N
 constant zero : N { math_macro = \zero, };
 constant one : N { math_macro = \one, };
 constant two : N { math_macro = \two, };
+constant rational_zero : Q { math_macro = \zero, };
 
 typedef N_pos
 {  "positive natural number",
@@ -61,11 +62,17 @@ typedef Q
    math_macro = \Q,
 };
 
+typedef ascii
+{
+  "ASCII character",
+  math_macro = \REasciichar,
+};
+
 typedef Identifier
 {
   "identifier",
    math_macro = \Identifier,
-};
+} = list0(ascii);
 
 typedef Strings
 { "string",
@@ -152,12 +159,6 @@ operator make_structured(l: ASTLabels, fields: list0(field)) -> TStructured
   custom = true,
 };
 
-operator destructure(s: TStructured) -> (l: ASTLabels, fields: list0(field))
-{
-  math_macro = \destructure,
-  custom = true,
-};
-
 operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
 {
   math_macro = \opupdate,
@@ -195,7 +196,12 @@ operator make_singleton_list[T](T) -> list1(T)
   math_macro = \makelist,
 };
 
-operator range_list(from: N, to: N) -> list1(N)
+operator match_singleton_list[T](T) -> list0(T)
+{
+  math_macro = \makelist,
+};
+
+operator range_list(from: Z, to: Z) -> list1(Z)
 {
   "the list of values between {from} and {to}, inclusive, if {from} is less than {to},
    and the list of values between {to} and {from}, inclusive, otherwise.",
@@ -231,6 +237,12 @@ operator cons[T](T, list0(T)) -> list1(T)
 // The output type has to be list0, not list1,
 // since we are matching the output to deconstruct it.
 operator match_cons[T](head: T, tail: list0(T)) -> list0(T)
+{
+  "a non-empty list with head {head} and tail {tail}",
+  math_macro = \cons,
+};
+
+operator match_non_empty_cons[T](head: T, tail: list0(T)) -> list1(T)
 {
   "a non-empty list with head {head} and tail {tail}",
   math_macro = \cons,
@@ -647,6 +659,7 @@ ast expr { "expression" } =
       ]
     { "array construction for an array of length given by {length} with all cells initialized with {array_value}" }
     | E_EnumArray[
+        enum: Identifier,
         labels: list1(Identifier),
         enum_array_value: expr { math_macro = \enumarrayvalue }
       ]
@@ -694,10 +707,10 @@ render expr_pattern = expr(E_Pattern);
 render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
-constant zero_bit
+constant zero_bit : Bit
 { "\texttt{0}", math_macro = \zerobit };
 
-constant one_bit
+constant one_bit : Bit
 { "\texttt{1}", math_macro = \onebit };
 
 constant x_bit
@@ -925,8 +938,13 @@ ast lexpr { "\assignableexpression{}" } =
 
     | LE_SetEnumArray(base: lexpr, index: expr)
     { "assignable expression for the enumeration-indexed array {base} at index {index}" }
-    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
-    { "assignable expression for the collection named {collection_name} and field names {field_names}" }
+    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier), slices: list0((N, N)))
+    { "assignable expression for the collection named {collection_name}, field names {field_names}, and inferred slices {slices}", }
+    | typed_LE_SetFields(base: lexpr, field_names: list0(Identifier), slices: list0((N, N)))
+    {
+      "assignable multi-field write expression for {base}, field names {field_names}, and inferred slices {slices}",
+      math_macro = \typedLESetFields,
+    }
 ;
 
 constant label_LE_Destructuring : ASTLabels { math_macro = \LEDestructuring };
@@ -940,7 +958,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields, typed_LE_SetFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -2329,7 +2347,217 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
         {new_le} is the annotated \assignableexpression{},
         and {ses} is the \sideeffectsetterm{} inferred for {le}. \ProseOtherwiseTypeError",
     prose_application = "annotating {le} with {t_e} in {tenv} yields {new_le} and {ses}\ProseOrTypeError",
-};
+} =
+  case LEDiscard {
+    le =: LE_Discard;
+    --
+    (LE_Discard, empty_set);
+  }
+
+  case LEVar {
+    le =: LE_Var(x);
+
+    case local {
+      tenv.static_envs_L.local_storage_types(x) =: (t, k);
+      te_check(k = LDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(LocalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case global {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) =: (t, k);
+      te_check(k = GDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(GlobalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case error_undefined {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) = bot;
+      --
+      TypeError(TE_UI);
+    }
+  }
+
+  case LEDestructuring {
+    le =: LE_Destructuring(les);
+    te_check(ast_label(t_e) = label_T_Tuple, TE_UT) -> True;
+    t_e =: T_Tuple(tys);
+    te_check(list_len(les) = list_len(tys), TE_UT) -> True;
+    (
+      INDEX(i, les: annotate_lexpr(tenv, les[i], tys[i]) -> (les'[i], xs[i]))
+    );
+    ses := union_list(xs);
+    --
+    (LE_Destructuring(les'), ses);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(e_base, e_index);
+    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, _);
+    make_anonymous(tenv, t_base) -> t_anon_base;
+    te_check(ast_label(t_anon_base) = label_T_Array, TE_UT) -> True;
+    t_anon_base =: T_Array(size, t_elem);
+    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base);
+    annotate_set_array(tenv, (size, t_elem), t_e, (e_base', ses_base, e_index)) -> (new_le, ses)
+    { math_layout = [_] };
+    --
+    (new_le, ses);
+  }
+
+  case LESlice {
+    le =: LE_Slice(le1, slices);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+    te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
+    annotate_slices(tenv, slices) -> (slices_annot, ses_slices);
+    slices_width(tenv, slices_annot) -> e_w;
+    normalize(tenv, e_w) -> v_w;
+    t := T_Bits(v_w, empty_list);
+    check_type_satisfies(tenv, t_e, t) -> True;
+    check_disjoint_slices(tenv, slices_annot) -> True;
+    te_check(slices_annot != empty_list, TE_BS) -> True;
+    ses := union(ses1, ses_slices);
+    --
+    (LE_Slice(le2, slices_annot), ses);
+  }
+
+  case LESetField {
+    le =: LE_SetField(le1, field_name);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+
+    case structured {
+      t_le1_anon =: make_structured(L, fields);
+      L in make_set(label_T_Record, label_T_Exception);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t_field);
+      check_type_satisfies(tenv, t_e, t_field) -> True;
+      --
+      (LE_SetField(le2, field_name), ses);
+    }
+
+    case collection {
+      t_le1_anon =: T_Collection(fields);
+      le2 =: LE_Var(collection_var_name);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t);
+      check_type_satisfies(tenv, t_e, t) -> True;
+      get_bitvector_const_width(tenv, t) -> n;
+      --
+      (LE_SetCollectionFields(collection_var_name, make_singleton_list(field_name), make_singleton_list((zero, n))), ses)
+      { math_layout = [_] };
+    }
+
+    case bitfield {
+      t_le1_anon =: T_Bits(_, bitfields);
+      find_bitfield_opt(field_name, bitfields) -> bitfield_opt;
+      case found {
+        case simple {
+          bitfield_opt =: some(BitField_Simple(_, slices));
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, empty_list);
+        }
+
+        case nested {
+          bitfield_opt =: some(BitField_Nested(_, slices, bitfields'))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, bitfields');
+        }
+
+        case typed {
+          bitfield_opt =: some(BitField_Type(_, slices, t_field))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> w;
+          t := T_Bits(w, empty_list);
+          check_type_satisfies(tenv, t, t_field) -> True;
+        }
+        check_type_satisfies(tenv, t_e, t) -> True;
+        annotate_lexpr(tenv, LE_Slice(le1, slices), t_e) -> (new_le, ses2);
+        --
+        (new_le, ses2);
+      }
+
+      case missing {
+        bitfield_opt = None;
+        --
+        TypeError(TE_BF);
+      }
+    }
+
+    case error {
+      ast_label(t_le1_anon) not_in make_set(label_T_Record, label_T_Exception, label_T_Collection, label_T_Bits)
+      { math_layout = (_, [_]) };
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+ case LESetFields {
+   le =: LE_SetFields(le_base, le_fields);
+   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, _);
+   annotate_lexpr(tenv, le_base, t_base) -> (le_base_annot, ses_base);
+   make_anonymous(tenv, t_base) -> t_base_anon;
+
+   case bits {
+     t_base_anon =: T_Bits(_, bitfields);
+     ( INDEX(i, le_fields: find_bitfields_slices(le_fields[i], bitfields) -> slices[i]) )
+     { ([_]) };
+     le_slice := LE_Slice(le_base_annot, list_flatten(slices));
+     annotate_lexpr(tenv, le_slice, t_e) -> (new_le, ses);
+     --
+     (new_le, ses);
+   }
+
+   case record {
+     t_base_anon =: T_Record(base_fields);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     vt_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, vt_lhs) -> True;
+     --
+     (typed_LE_SetFields(le_base_annot, le_fields, slices), ses_base)
+     { math_layout = [_] };
+   }
+
+   case collection {
+     t_base_anon =: T_Collection(base_fields);
+     le_base =: LE_Var(base_name);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     t_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, t_lhs) -> True;
+     --
+     (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
+     { math_layout = [_, [_]] };
+   }
+
+   case error {
+     ast_label(t_base_anon) not_in make_set(label_T_Bits, label_T_Record, label_T_Collection);
+     --
+     TypeError(TE_UT);
+   }
+ }
+;
+
+render rule annotate_lexpr_LEDiscard = annotate_lexpr(LEDiscard);
+render rule annotate_lexpr_LEVar = annotate_lexpr(LEVar);
+render rule annotate_lexpr_LEDestructuring = annotate_lexpr(LEDestructuring);
+render rule annotate_lexpr_LESetArray = annotate_lexpr(LESetArray);
+render rule annotate_lexpr_LESlice = annotate_lexpr(LESlice);
+render rule annotate_lexpr_LESetStructuredField = annotate_lexpr(LESetField.structured);
+render rule annotate_lexpr_LESetCollectionField = annotate_lexpr(LESetField.collection);
+render rule annotate_lexpr_LESetField_BitField = annotate_lexpr(LESetField.bitfield);
+render rule annotate_lexpr_LESetBadField_error = annotate_lexpr(LESetField.error);
+render rule annotate_lexpr_LESetFields = annotate_lexpr(LESetFields);
 
 semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
@@ -2360,26 +2588,48 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist
     math_layout = (_, [_,_,_,_]),
 };
 
-typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
+typing relation annotate_set_array(
+  tenv: static_envs,
+  (size: array_index, t_elem: ty),
+  rhs_ty: ty,
+  (e_base: lexpr, ses_base: powerset(TSideEffect), e_index: expr)
+  ) ->
     (new_le: lexpr, ses: powerset(TSideEffect)) | type_error
 {
-    "annotates an array update in the \staticenvironmentterm{} {tenv}
-    where {size_elem} contains the array index and type of array elements,
-    {rhs_ty} is the type of the \rhsexpression{},
-    and {base_ses_index} contains the annotated expression {e_base} for the array base,
-    the \sideeffectsetterm{} {ses_base} inferred for the base,
-    and the index expression {e_index}.
-    The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
-    prose_application = "annotating array update in {tenv} with {size_elem}, {rhs_ty}, and {base_ses_index} yields {new_le} and {ses}\ProseOrTypeError",
-    math_layout = [[_,_,_,_],_],
-};
+  "annotates an array update in the \staticenvironmentterm{} {tenv}
+  where {size} is kind of array index and {t_elem} is the type of array elements,
+  {rhs_ty} is the type of the \rhsexpression{},
+  the annotated array based expression is {e_base},
+  the \sideeffectsetterm{} {ses_base} inferred for the base,
+  and the index expression {e_index}.
+  The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
+  prose_application = "annotating array update in {tenv} with {size}, {t_elem}, {rhs_ty}, {e_base}m {ses_base}, and {e_index} yields {new_le} and {ses}\ProseOrTypeError",
+  math_layout = [[_,_,_,_],_],
+} =
+  check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
+  annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  type_of_array_length(size) -> wanted_t_index;
+  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  ses := union(ses_base, ses_index);
+  new_le := if_then_else(
+    equal(ast_label(size), label_ArrayLength_Expr),
+    LE_SetArray(e_base, e_index'),
+    LE_SetEnumArray(e_base, e_index')
+  ) { (_, [_]) };
+  --
+  (new_le, ses) { ([_], _) };
+;
 
 typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
          constants_set(True) | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
     prose_application = "checking whether {slices} are disjoint in {tenv} yields $\True$\ProseOrTypeError",
-};
+} =
+  disjoint_slices_to_positions(tenv, False, slices) -> positions;
+  --
+  True;
+;
 
 semantics function check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
          constants_set(True) | TDynError
@@ -2396,12 +2646,31 @@ semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint)
     math_layout = [_, _],
 };
 
-typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
+typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(Identifier)) ->
          (length: N, slices: list0((start: N, width: N)))
 {
-    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of {base_fields} about to be assigned to, and yields the total width across {le_fields} and the ranges corresponding to {le_fields} in terms of pairs where the first component is the start position and the second component is the width of the field.",
+    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of the names of fields
+    in {base_fields} about to be assigned to, and yields the total width across the fields named in {le_fields} and the ranges corresponding to them in terms of pairs where the first component is the start position and the second component is the width of the field.",
     prose_application = "folding bitvector fields {le_fields} from {base_fields} in {tenv} yields length {length} and slices {slices}",
-};
+} =
+  case empty {
+    le_fields = empty_list;
+    --
+    (zero, empty_list);
+  }
+
+  case non_empty {
+    le_fields =: concat(le_fields1, match_singleton_list(field));
+    fold_bitvector_fields(tenv, base_fields, le_fields1) -> (start, slices1);
+    assoc_opt(base_fields, field) =: ty_opt;
+    te_check(ty_opt != None, TE_BF) -> True;
+    ty_opt =: some(t_field);
+    get_bitvector_const_width(tenv, t_field) -> field_width;
+    --
+    (start + field_width, concat(make_singleton_list((start, field_width)), slices1))
+    { [_] };
+  }
+;
 
 semantics function assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields: list0(Identifier), slices: list0((N, N))) ->
          (result: trecord)
@@ -2422,7 +2691,112 @@ typing function base_value(tenv: static_envs, t: ty) ->
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}",
-};
+} =
+  case t_bool {
+    t = T_Bool;
+    --
+    E_Literal(L_Bool(False));
+  }
+
+  case t_bits_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt != None;
+    z_opt =: some(length);
+    te_check(length >= zero, TE_NBV) -> True;
+    --
+    E_Literal(L_Bitvector(list_map(i, range_list(one, length), zero_bit)));
+  }
+
+  case t_bits_non_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt = None;
+    e_init := E_Slice(ELint(zero), make_singleton_list(Slice_Length(ELint(zero), e)));
+    --
+    e_init;
+  }
+
+  case t_enum {
+    t =: T_Enum(match_non_empty_cons(name, _));
+    lookup_constant(tenv, name) -> l;
+    --
+    E_Literal(l);
+  }
+
+  case t_int_unconstrained {
+    t = T_Int(Unconstrained);
+    --
+    E_Literal(L_Int(zero));
+  }
+
+  case t_int_parameterized {
+    t =: T_Int(Parameterized(id));
+    --
+    TypeError(TE_NBV);
+  }
+
+  case t_int_wellconstrained {
+    t =: T_Int(WellConstrained(cs));
+    INDEX(i, cs: constraint_abs_min(tenv, cs[i]) -> z_min_lists[i]);
+    z_min_list := list_flatten(z_min_lists);
+    te_check(z_min_list != empty_list, TE_NBV) -> True;
+    list_min_abs(z_min_list) -> z_min;
+    --
+    E_Literal(L_Int(z_min));
+  }
+
+  case t_named {
+    t =: T_Named(id);
+    make_anonymous(tenv, T_Named(id)) -> t';
+    base_value(tenv, t') -> e_init;
+    --
+    e_init;
+  }
+
+  case t_real {
+    t = T_Real;
+    --
+    E_Literal(L_Real(rational_zero));
+  }
+
+  case structured {
+    is_structured(t) -> True;
+    t =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    ( INDEX(i, field_types: base_value(tenv, field_types[i]) -> field_base_values[i]) ) { ( [_] ) };
+    e := list_combine(field_names, field_base_values);
+    --
+    E_Record(t, e);
+  }
+
+  case t_string {
+    t = T_String;
+    --
+    E_Literal(L_String(empty_list));
+  }
+
+  case t_tuple {
+    t =: T_Tuple(ts);
+    INDEX(i, ts: base_value(tenv, ts[i]) -> es[i]);
+    --
+    E_Tuple(es);
+  }
+
+  case t_array_enum {
+    t =: T_Array(ArrayLength_Enum(enum, labels), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_EnumArray [ enum : enum, labels : labels, enum_array_value : value ];
+  }
+
+  case t_array_expr {
+    t =: T_Array(ArrayLength_Expr(length), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_Array[ length : length, array_value : value ];
+  }
+;
 
 typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
          (zs: list0(Z)) | type_error
