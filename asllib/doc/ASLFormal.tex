@@ -323,10 +323,10 @@ compares the length of two lists:
 
 \hypertarget{def-listprefix}{}
 \begin{definition}[List Prefix]
-The parametric function $\listprefix : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
+The parametric function $\listprefixname : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
 the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 \[
-\listprefix(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
+\listprefixname(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
 \]
 \end{definition}
 
@@ -1046,11 +1046,14 @@ and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{}
 
 We define a similar function for type errors.
 \RenderRelation{te_check}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
 \and
 \inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{te_check}
 
 We define a similar function for dynamic errors.
 \RenderRelation{de_check}

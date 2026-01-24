@@ -2141,6 +2141,7 @@ yields the literal expression for \verb|2|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \assocopt{\tfields}{\name} \typearrow \some{\vt}\\
@@ -2157,6 +2158,8 @@ yields the literal expression for \verb|2|.
   \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{get_bitfield_width}
 
 \TypingRuleDef{WidthPlus}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
@@ -2186,6 +2189,7 @@ $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \widthplus(\tenv, \overname{\emptylist}{\exprs}) \typearrow \overname{\ELInt{0}}{\ewidth}
@@ -2200,6 +2204,8 @@ $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
   \widthplus(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \ewidth
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{width_plus}
 
 \subsection{Semantics}
 \SemanticsRuleDef{EGetfields}
@@ -2457,6 +2463,7 @@ as it is applied to unrelated kinds of types.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[equal]{
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
@@ -2505,6 +2512,8 @@ as it is applied to unrelated kinds of types.
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{check_atc}
 
 \subsection{Semantics}
 \SemanticsRuleDef{ATC}

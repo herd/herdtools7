@@ -841,19 +841,22 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \nameone \eqdef \vf_k\\
   \nametwo \eqdef \vg_n\\
   \vscopeone \eqdef \vf_{1..k-1}\\
   \vscopetwo \eqdef \vg_{1..n-1}\\
-  \vsamescope \eqdef \listprefix(\vscopeone, \vscopetwo) \lor \listprefix(\vscopetwo, \vscopeone)\\
+  \vsamescope \eqdef \listprefixname(\vscopeone, \vscopetwo) \lor \listprefixname(\vscopetwo, \vscopeone)\\
   \vb \eqdef (\nameone = \nametwo\ \land\ \vsamescope) \implies (\vsliceone = \vslicetwo)
 }{
   \absolutebitfieldsalign(\overname{(\vf_{1..k}, \vsliceone)}{\vf}, \overname{(\vg_{1..n}, \vslicetwo)}{\vf})
   \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{absolute_bitfields_align}
 
 \TypingRuleDef{SliceToIndices}
 \RenderRelation{slice_to_indices}

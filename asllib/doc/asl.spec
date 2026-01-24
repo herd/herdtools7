@@ -281,6 +281,13 @@ operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
   custom = true,
 };
 
+operator listprefix[T](l1: list0(T), l2: list0(T)) -> Bool
+{
+  "checks whether {l1} is a prefix of {l2}",
+  math_macro = \listprefix,
+  custom = true,
+};
+
 // Constructs a set out of a fixed list of expressions.
 variadic operator make_set[T](list1(T)) -> powerset(T)
 {
@@ -1749,25 +1756,35 @@ typedef value_read_from { "value-reading effect" } =
 // Generic Functions and Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-typing function te_check(cond: Bool, code: type_error_code) -> constants_set(True) | type_error
+typing function te_check(condition: Bool, code: type_error_code) -> constants_set(True) | type_error
   {
-    "returns $\True$ if {cond} holds and a type error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\TypeError({code})$",
+    "returns $\True$ if {condition} holds and a type error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\TypeError({code})$",
+  } =
+  case te_check_true {
+    condition = True;
+    --
+    True;
+  }
+  case te_check_false {
+    condition = False;
+    --
+    TypeError(code);
   }
 ;
 
-semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+semantics function de_check(condition: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
   {
-    "returns $\True$ if {cond} holds and a dynamic error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\DynamicError({code})$",
+    "returns $\True$ if {condition} holds and a dynamic error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\DynamicError({code})$",
   }
 ;
 
-function bool_transition(cond: Bool) -> (result: Bool)
+function bool_transition(condition: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {cond} holds and $\False$ otherwise.",
-    prose_application = "testing whether {cond} holds returns {result}",
+    "returns $\True$ if {condition} holds and $\False$ otherwise.",
+    prose_application = "testing whether {condition} holds returns {result}",
 };
 
 function rexpr(le: lexpr) -> (re: expr)
@@ -2264,14 +2281,41 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}",
-};
+} =
+  case okay {
+    assoc_opt(tfields, name) =: some(t);
+    get_bitvector_width(tenv, t) -> e_width;
+    --
+    e_width;
+  }
+
+  case error {
+    assoc_opt(tfields, name) = None;
+    --
+    TypeError(TE_BF);
+  }
+;
 
 typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
 {
   "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
   normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
   prose_application = "generating the expression representing the summation of {exprs} in {tenv} yields {e_width}",
-};
+} =
+  case empty {
+    exprs = empty_list;
+    --
+    ELint(zero);
+  }
+
+  case non_empty {
+    exprs =: match_cons(e, exprs1);
+    width_plus(tenv, exprs1) -> e_width1;
+    normalize(tenv, EBinop(ADD, e, e_width1)) -> e_width;
+    --
+    e_width;
+  }
+;
 
 typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
          (constants_set(True)) | type_error
@@ -2281,7 +2325,46 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
   type assertion in the \staticenvironmentterm{} {tenv},
   yielding $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True",
-};
+} =
+  case equal {
+    type_equal(tenv, t1, t2) -> True;
+    --
+    True;
+  }
+
+  case different_labels_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) != ast_label(t2);
+    --
+    TypeError(TE_TAF);
+  }
+
+  case int_bits {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) in make_set(label_T_Int, label_T_Bits);
+    --
+    True;
+  }
+
+  case tuple {
+    type_equal(tenv, t1, t2) -> False;
+    t1 =: T_Tuple(l1);
+    t2 =: T_Tuple(l2);
+    te_check(list_len(l1) = list_len(l2), TE_TAF) -> True;
+    INDEX(i, l1: check_atc(tenv, l1[i], l2[i]) -> True);
+    --
+    True;
+  }
+
+  case other_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    --
+    TypeError(TE_TAF);
+  }
+;
 
 semantics relation eval_expr(env: envs, e: expr) ->
          ResultExpr((v: native_value, g: XGraphs), new_env: envs)
@@ -2830,11 +2913,11 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
     reduce_to_z_opt(tenv, e2) -> z_opt2;
     te_check(z_opt2 != None, TE_NBV) -> True;
     z_opt2 =: some(v2);
-    zs := match_cases(
-            match_case(v1 > v2, empty_list),
-            match_case(v1 <= v2 && v2 < zero, make_singleton_list(v2)),
-            match_case(v1 < zero && zero <= v2, make_singleton_list(zero)),
-            match_case(zero <= v1 && v1 <= v2, make_singleton_list(v1))
+    zs := cond(
+            v1 > v2                 : empty_list,
+            v1 <= v2 && v2 < zero   : make_singleton_list(v2),
+            v1 < zero && zero <= v2 : make_singleton_list(zero),
+            zero <= v1 && v1 <= v2  : make_singleton_list(v1)
           );
     --
     zs;
@@ -2851,7 +2934,27 @@ typing function list_min_abs(l: list0(Z)) ->
   positive and $y$ is negative then $x$ is considered
   closer to $0$.",
   prose_application = "\hyperlink{relation-listminabs}{finding} integer closest to zero in list {l} yields {z}",
-};
+} =
+  case one {
+    l =: match_singleton_list(z);
+    --
+    z;
+  }
+
+  case more_than_one {
+    l =: match_cons(z1, l2);
+    l2 != empty_list;
+    list_min_abs(l2) -> z2;
+    z := cond(
+           abs_value(z1) < abs_value(z2)              : z1,
+           abs_value(z1) > abs_value(z2)              : z2,
+           z1 = z2                                    : z1,
+           abs_value(z1) = abs_value(z2) && z1 != z2  : abs_value(z1)
+          );
+    --
+    z;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Bitfields
@@ -3185,7 +3288,16 @@ typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
   they do, {b} indicates whether their \absoluteslices\
   are equal. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}",
-};
+} =
+  f =: (f_names, slice_one);
+  g =: (g_names, slice_two);
+  f_names =: concat(scope_one, match_singleton_list(name_one));
+  g_names =: concat(scope_two, match_singleton_list(name_two));
+  same_scope := listprefix(scope_one, scope_two) || listprefix(scope_two, scope_one);
+  b := implies((name_one = name_two && same_scope), slice_one = slice_two);
+  --
+  b;
+;
 
 typing function slice_to_indices(tenv: static_envs, s: slice) ->
          (indices: list0(Z))

@@ -348,6 +348,19 @@
     \right]
   \fi
 }
+\newcommand\listprefixname[0]{\hyperlink{def-listprefix}{\textfunc{list\_prefix}}} % DO NOT LINT
+\newcommand\listprefix[3][H]{%
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \listprefixname(#2, #3)
+  \else
+    \listprefixname\left(
+    \begin{array}{ll}
+    #2,\\
+    #3\\
+    \end{array}
+    \right)
+  \fi
+}
 
 % Old macro, still used but soon to be deprecated.
 \newcommand\ifthenelse[3]{
@@ -544,7 +557,6 @@
 \newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
-\newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\stringofnatname[0]{\hyperlink{operator-stringofnat}{\texttt{string\_of\_nat}}}
 \newcommand\stringofnat[1]{\stringofnatname(#1)}
 

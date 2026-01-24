@@ -401,6 +401,7 @@ and the minimal absolute value of $[2, -2]$ is $2$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[one]{}{
     \listminabs(\overname{[\vz]}{\vl}) \typearrow \vz
@@ -423,3 +424,5 @@ and the minimal absolute value of $[2, -2]$ is $2$.
     \listminabs(\overname{[\vzone] \concat \vltwo}{\vl}) \typearrow \vz
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{list_min_abs}
