@@ -447,10 +447,9 @@ module Make (S : SPEC_VALUE) = struct
           | _ ->
               pp_var fmt name)
       | Relation { name; is_operator; args } when is_operator ->
-        (* operator often use custom macros, which may not mix well with arrays,
+          (* operator often use custom macros, which may not mix well with arrays,
            so it's better to put them inside braces. *)
-          fprintf fmt "{ %a }"
-          (pp_operator name layout) args
+          fprintf fmt "{ %a }" (pp_operator name layout) args
       | Relation { args } | Tuple { args } | Map { args } ->
           let pp_lhs fmt lhs =
             match lhs with

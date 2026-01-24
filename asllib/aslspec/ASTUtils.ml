@@ -12,14 +12,13 @@ let rec vars_of_type_term term =
   let open Term in
   let listed_vars =
     match term with
-    | Label _ -> []
+    | Label _ | ConstantsSet _ -> []
     | TypeOperator { term } -> opt_named_term_to_var_list term
     | Tuple { args } -> vars_of_opt_named_type_terms args
     | Record { fields } ->
         Utils.list_concat_map
           (fun { name; term } -> name :: vars_of_type_term term)
           fields
-    | ConstantsSet _ -> []
     | Function { from_type; to_type } ->
         opt_named_term_to_var_list from_type
         @ opt_named_term_to_var_list to_type
