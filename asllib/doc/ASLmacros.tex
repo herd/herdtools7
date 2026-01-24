@@ -284,6 +284,11 @@
 \newcommand\equal[0]{\mathrel{=}}
 \newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
 
+\newcommand\matchcase[3][H]{% DO NOT LINT
+  \textbf{if }{#2}\textbf{ then }{#3}
+}
+\newcommand\matchcases[1]{\left\{{#1}\right.} % A list of cases
+
 \newcommand\forallop[4][H]{% DO NOT LINT
   \ifnum\pdfstrcmp{#1}{H}=0\relax
     \forall {#2} \in {#3} : {#4}
@@ -462,6 +467,7 @@
 
 \newcommand\roundup[1]{\left\lceil {#1} \right\rceil} % DO NOT LINT
 \newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor} % DO NOT LINT
+\newcommand\absvalueop[1]{\left| {#1} \right|} % DO NOT LINT
 
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
 \newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}

@@ -499,6 +499,12 @@ module Make (S : SPEC_VALUE) = struct
         [layout]. *)
     and pp_operator op_name layout fmt args =
       let op_macro = get_or_gen_math_macro op_name in
+      let layout =
+        if Spec.is_match_cases_operator_name S.spec op_name then
+          (* Special case for the match_cases operator, which is always vertical. *)
+          vertical_if_unspecified layout args
+        else horizontal_if_unspecified layout args
+      in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
       | [] ->

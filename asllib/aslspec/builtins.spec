@@ -1,3 +1,19 @@
+operator match_case[T](Bool, T) -> T
+{
+  math_macro = \matchcase,
+  custom = true,
+};
+
+// TODO: add a custom rendering where all conditions
+// and all values are properly aligned.
+// Perhaps this can be achieved by adding a raw attribute to macros, which doesn't wrap them with braces.
+// TODO: add custom syntac for cases.
+variadic operator match_cases[T](list1(T)) -> T
+{
+  math_macro = \matchcases,
+  custom = true,
+};
+
 constant bot { "bottom", math_macro = \bot };
 
 constant None { "the empty \optionalterm{}" };

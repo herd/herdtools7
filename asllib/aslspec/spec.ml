@@ -252,6 +252,7 @@ type t = {
   n_type : Type.t;
   z_type : Type.t;
   some_operator : Relation.t;
+  match_cases_operator : Relation.t;
 }
 
 type spec_type = t
@@ -259,6 +260,9 @@ type spec_type = t
 let is_builtin_type id (t : Type.t) = String.equal id t.name
 let is_builtin_constant id (c : Constant.t) = String.equal id c.name
 let is_builtin_relation id (r : Relation.t) = String.equal id r.name
+
+let is_match_cases_operator_name (spec : t) id =
+  is_builtin_relation id spec.match_cases_operator
 
 (** [make_symbol_table ast] creates a symbol table from [ast]. *)
 let make_symbol_table ast =
@@ -3226,6 +3230,7 @@ let make_spec_with_builtins ast =
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
     some_operator = get_relation "some";
+    match_cases_operator = get_relation "match_cases";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
 
