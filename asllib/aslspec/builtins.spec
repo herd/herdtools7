@@ -1,6 +1,6 @@
-operator match_case[T](Bool, T) -> T
+operator cond_case[T](Bool, T) -> T
 {
-  math_macro = \matchcase,
+  math_macro = \condcase,
   custom = true,
 };
 
@@ -8,9 +8,9 @@ operator match_case[T](Bool, T) -> T
 // and all values are properly aligned.
 // Perhaps this can be achieved by adding a raw attribute to macros, which doesn't wrap them with braces.
 // TODO: add custom syntac for cases.
-variadic operator match_cases[T](list1(T)) -> T
+variadic operator cond_op[T](list1(T)) -> T
 {
-  math_macro = \matchcases,
+  math_macro = \condop,
   custom = true,
 };
 
