@@ -470,6 +470,29 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
+      | RecordUpdate { record_expr; updates } ->
+          let layout =
+            horizontal_if_unspecified layout [ record_expr; record_expr ]
+          in
+          let record_layout, updates_layout =
+            match layout with
+            | Horizontal [ record_layout; updates_layout ]
+            | Vertical [ record_layout; updates_layout ] ->
+                (record_layout, updates_layout)
+            | _ ->
+                failwith
+                  (let msg =
+                     Format.asprintf
+                       "the layout for record update expression %a has an \
+                        invalid layout (%a)"
+                       PP.pp_expr expr PP.pp_layout layout
+                   in
+                   failwith msg)
+          in
+          fprintf fmt "%a%a" pp_expr
+            (record_expr, record_layout)
+            (pp_fields pp_field_name pp_expr)
+            (updates, updates_layout)
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
       | FieldAccess { var; fields } -> pp_field_path fmt (var :: fields)

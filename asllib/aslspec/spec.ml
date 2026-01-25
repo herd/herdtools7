@@ -358,6 +358,16 @@ module ResolveApplicationExpr = struct
             fields
         in
         Record { label_opt; fields = resolved_fields }
+    | RecordUpdate { record_expr; updates } ->
+        let resolved_record_expr = resolve_in_context record_expr in
+        let resolved_updates =
+          List.map
+            (fun (field_name, field_expr) ->
+              (field_name, resolve_in_context field_expr))
+            updates
+        in
+        RecordUpdate
+          { record_expr = resolved_record_expr; updates = resolved_updates }
     | UnresolvedApplication { lhs; args } -> (
         let resolved_args = List.map resolve_in_context args in
         match lhs with
@@ -1621,6 +1631,17 @@ module Check = struct
         | Record { fields } ->
             let initializing_exprs = List.map snd fields in
             update_use_def_for_expr_list mode spec use_def initializing_exprs
+        | RecordUpdate { record_expr; updates } ->
+            let () =
+              match mode with
+              | Def -> Error.record_update_expression_not_assignable expr
+              | Use -> ()
+            in
+            let use_def =
+              update_use_def_for_expr Use spec use_def record_expr
+            in
+            let update_exprs = List.map snd updates in
+            update_use_def_for_expr_list Use spec use_def update_exprs
         | NamedExpr (sub_expr, _) ->
             update_use_def_for_expr mode spec use_def sub_expr
         | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
@@ -2235,7 +2256,7 @@ module Check = struct
         assignable expression. *)
           ->
             false
-        | Tuple _ | Record _ | Relation _ -> true
+        | Tuple _ | Record _ | RecordUpdate _ | Relation _ -> true
         | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
         | FieldAccess _ | Map _ | Transition _ | Indexed _
         | UnresolvedApplication _ ->
@@ -2407,6 +2428,41 @@ module Check = struct
               | None -> ()
             in
             (record_type, type_env)
+        | RecordUpdate { record_expr; updates } -> (
+            (* check that record_expr typechecks and that each field update expression typechecks
+               and matches the record field type *)
+            let record_type, type_env =
+              infer_type_in_env spec type_env record_expr
+            in
+            let open Term in
+            match CheckTypeInstantiations.reduce_term spec record_type with
+            | Record { fields } ->
+                let field_map =
+                  List.map (fun field -> (field.name, field.term)) fields
+                  |> StringMap.of_list
+                in
+                let updated_field_types, type_env =
+                  infer_type_list spec type_env (List.map snd updates)
+                in
+                let formal_field_types =
+                  List.map
+                    (fun (field_name, _) ->
+                      match StringMap.find_opt field_name field_map with
+                      | Some field_type -> field_type
+                      | None ->
+                          Error.undefined_field_in_record ~context_expr:expr
+                            record_type field_name)
+                    updates
+                in
+                let field_exprs = List.map snd updates in
+                let () =
+                  check_arg_types spec field_exprs updated_field_types
+                    formal_field_types ~context_expr:expr
+                in
+                (record_type, type_env)
+            | _ ->
+                Error.invalid_record_update_base_type record_type
+                  ~context_expr:expr)
         | NamedExpr (sub_expr, _) -> infer_type_in_env spec type_env sub_expr
         | Tuple { label_opt; args } ->
             (* All arguments must typecheck, and if the tuple is labelled, their inferred types
@@ -2760,6 +2816,7 @@ module Check = struct
                   Error.undefined_field_in_record ~context_expr:expr target_type
                     field_name)
             type_env expr_fields
+      | Expr.RecordUpdate _, _
       | Expr.Relation _, _
       | FieldAccess _, _
       | UnresolvedApplication _, _
@@ -2992,6 +3049,14 @@ module Check = struct
                   record_type_field_names
               else ()
           | None -> ())
+      | RecordUpdate { record_expr; updates } ->
+          let () = check_expr_in_context record_expr in
+          let update_field_names, update_field_inits = List.split updates in
+          let () = check_expr_list_in_context update_field_inits in
+          List.iter
+            (fun field_name ->
+              if not (is_field field_name) then Error.non_field field_name expr)
+            update_field_names
       | Transition { lhs; rhs; short_circuit } ->
           check_expr_in_context lhs;
           check_expr_in_context rhs;
@@ -3180,7 +3245,7 @@ let get_constant id_to_defining_node name =
 *)
 let get_relation id_to_defining_node name =
   match StringMap.find_opt name id_to_defining_node with
-  | Some Node_Relation def when def.is_operator -> def
+  | Some (Node_Relation def) when def.is_operator -> def
   | Some node ->
       let msg =
         Format.asprintf
