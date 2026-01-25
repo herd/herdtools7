@@ -558,6 +558,7 @@ See \ExampleRef{Declaring Global Storage}.
 The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some\_some\_config]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
@@ -642,6 +643,9 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   }
 }
 \end{mathpar}
+} % END_OF_RULE_BACKUP
+
+\RenderRule{annotate_ty_opt_initial_value}
 
 \TypingRuleDef{UpdateGlobalStorage}
 \RenderRelation{update_global_storage}
@@ -832,6 +836,7 @@ static environment:
         $(\declaredt, \keyword)$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
@@ -840,6 +845,8 @@ static environment:
   \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{add_global_storage}
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

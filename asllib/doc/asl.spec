@@ -159,9 +159,10 @@ operator make_structured(l: ASTLabels, fields: list0(field)) -> TStructured
   custom = true,
 };
 
-operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
+operator map_update[K,V](partial K -> V, K, V) -> (partial K -> V)
 {
-  math_macro = \opupdate,
+  math_macro = \mapupdate,
+  custom = true,
 };
 
 operator equal[T](a: T, b: T) -> (c: Bool)
@@ -3365,7 +3366,30 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotatecatcher}{annotating} catcher {c} in {tenv} with side effects {ses_in} yields catcher {new_catcher} and side effects {ses}",
   math_layout = [_,_],
-};
+} =
+  case none {
+    c =: (None, ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    annotate_block(tenv, stmt) -> (new_stmt, ses_block);
+    new_catcher := (None, ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+  case some {
+    c =: (some(name), ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    check_var_not_in_env(tenv, name) -> True;
+    add_local(tenv, name, ty', LDK_Let) -> tenv';
+    annotate_block(tenv', stmt) -> (new_stmt, ses_block);
+    new_catcher := (some(name), ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+;
 
 semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
   TContinuing | TReturning | TThrowing | TDynError
@@ -3399,7 +3423,13 @@ typing function check_global_pragma(genv: global_static_envs, d: decl) ->
   \globalstaticenvironmentterm{} {genv}, yielding
   $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkglobalpragma}{checking} global pragma declaration {d} in {genv} yields True",
-};
+} =
+  d =: D_Pragma(_, args);
+  with_empty_local(genv) -> tenv;
+  annotate_exprs(tenv, args) -> args';
+  --
+  True;
+;
 
 //////////////////////////////////////////////////
 // Relations for Global Storage Declarations
@@ -3436,7 +3466,61 @@ typing relation annotate_ty_opt_initial_value(
   {declared_t}.",
   prose_application = "\hyperlink{relation-annotatetyoptinitialvalue}{annotating} type {ty_opt'} and initializer {initial_value} in {tenv} yields value {typed_initial_value} and type {declared_t}",
   math_layout = [input[_,_,_,_,_], ([_,_,_],_)],
-};
+} =
+  case some_some_config {
+    gdk = GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_some {
+    gdk != GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    get_structure(tenv, t_e) -> t_e';
+    inherit_integer_constraints(t, t_e') -> t'';
+    annotate_type(False, tenv, t'') -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_none {
+    ty_opt' =: some(t);
+    initial_value =: None;
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    te_check(not(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
+    base_value(tenv, t') -> e';
+    typed_initial_value := (e', t', empty_set);
+    --
+    (typed_initial_value, some(t'), t')
+    { [[_], [_]] };
+  }
+
+  case none_some {
+    ty_opt' =: None;
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    check_no_precision_loss(t_e) -> True;
+    typed_e := (e', t_e, ses_e);
+    te_check(not(must_be_pure) || ses_is_pure(ses_e), TE_SEV) -> True;
+    --
+    (typed_e, None, t_e)
+    { ([_], [_]) };
+  }
+;
 
 typing relation update_global_storage(
     tenv: static_envs,
@@ -3475,7 +3559,13 @@ typing function add_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-addglobalstorage}{adding} global storage {name} with keyword {keyword} and type {declared_t} to {genv} yields {new_genv}",
   math_layout = [_,_],
-};
+} =
+  check_var_not_in_genv(genv, name) -> True;
+  updated_map := map_update(genv.global_storage_types, name, (declared_t, keyword));
+  new_genv := genv(global_storage_types : updated_map);
+  --
+  new_genv;
+;
 
 semantics relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
 {

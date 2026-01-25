@@ -221,7 +221,7 @@ is $16$.
   \annotatebitfields(\tenv, \ewidth, \fields) \typearrow (\newfields, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_bitfields}
 \CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
 
@@ -260,7 +260,7 @@ In \listingref{nestedbitfields}, the names of bitfields are:
     \bitfieldgetname(\overname{\BitFieldType(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfield_get_name}
 
 \TypingRuleDef{BitFieldGetSlices}
@@ -297,7 +297,7 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
   \bitfieldgetslices(\overname{\BitFieldType(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfield_get_slices}
 
 \TypingRuleDef{BitFieldGetNested}
@@ -325,7 +325,7 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
   \bitfieldgetname(\overname{\BitFieldNested(\Ignore, \Ignore, \vnested)}{\vbf}) \typearrow \vnested
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfield_get_nested}
 
 \TypingRuleDef{TBitField}
@@ -419,7 +419,7 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   (\overname{\BitFieldType(\name, \slicesone, \vtp)}{\newfield}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_bitfield}
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
@@ -450,7 +450,7 @@ See
     \checkslicesinwidth(\tenv, \vwidth, \vslices) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{check_slices_in_width}
 \CodeSubsection{\CheckSlicesInWidthBegin}{\CheckSlicesInWidthEnd}{../Typing.ml}
 
@@ -485,7 +485,7 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{check_positions_in_width}
 
 \TypingRuleDef{DisjointSlicesToPositions}
@@ -542,7 +542,7 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
   \disjointslicestopositions(\tenv, \isstatic, \vslices) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{disjoint_slices_to_positions}
 
 \TypingRuleDef{BitfieldSliceToPositions}
@@ -602,7 +602,7 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfield_slice_to_positions}
 
 \TypingRuleDef{EvalSliceExpr}
@@ -651,7 +651,7 @@ it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
   \evalsliceexpr(\tenv, \overname{\False}{\isstatic}, \ve) \typearrow \vzopt
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{eval_slice_expr}
 
 \TypingRuleDef{CheckCommonBitfieldsAlign}
@@ -711,7 +711,7 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
   \checkcommonbitfieldsalign(\tenv, \vbitfields, \vwidth) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{check_common_bitfields_align}
 
 \TypingRuleDef{BitfieldsToAbsolute}
@@ -737,7 +737,7 @@ See \ExampleRef{A bitvector type with nested bitfields}.
   \bitfieldstoabsolute(\tenv, \vbitfields, \vabsoluteparent) \typearrow \vabsbitfields
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfields_to_absolute}
 
 \TypingRuleDef{BitfieldToAbsolute}
@@ -785,7 +785,7 @@ See \ExampleRef{A bitvector type with nested bitfields}.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{bitfield_to_absolute}
 
 \TypingRuleDef{SelectIndicesBySlices}
@@ -855,7 +855,7 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
   \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{absolute_bitfields_align}
 
 \TypingRuleDef{SliceToIndices}
@@ -889,7 +889,7 @@ $[7, 6, 5]$.
   \slicetoindices(\tenv, \overname{\SliceLength(\vi, \vw)}{\vs}) \typearrow \overname{\vend..\vstart}{\indices}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{slice_to_indices}
 
 \SemanticsRulesDef{Bitfields}

@@ -113,7 +113,7 @@ is annotated with the type \verb|integer{3}|.
   \annotateexpr(\tenv, \ve) \typearrow (\vt, \overname{\ve}{\newe}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ELit}
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
@@ -249,7 +249,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   \annotateexpr(\tenv,\overname{\EVar(\vx)}{\ve}) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EVar}
 
 \subsection{Semantics}
@@ -575,7 +575,7 @@ is equal to the width of the \bitvectortypeterm{} of the return type.
   \annotateexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EBinop}
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
@@ -815,7 +815,7 @@ of well-typed unary operation expressions.
   \annotateexpr(\tenv, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EUnop}
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
@@ -917,7 +917,7 @@ an example of typing a conditional expression.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ECond}
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 \identr{XZVT}
@@ -1076,7 +1076,7 @@ and the inferred types of the expressions, as type annotations on the left-hand-
   \annotateexpr(\tenv, \overname{\ECall(\vcall)}{\ve}) \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ECall}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 \identd{CFYP} \identr{BQJG}
@@ -1249,7 +1249,7 @@ show examples of ill-typed slicing expressions.
   \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow \TypeErrorVal{\BadSlices}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ESlice}
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 \subsubsection{Comments}
@@ -1377,7 +1377,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \annotateexpr(\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetArray}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
@@ -1418,7 +1418,7 @@ See \ExampleRef{Array Access Expressions}.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
@@ -1590,7 +1590,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_record_or_exception}
 
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
@@ -1644,7 +1644,7 @@ All of the collection field expressions in
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_collection}
 \CodeSubsection{\EGetCollectionFieldBegin}{\EGetCollectionFieldEnd}{../Typing.ml}
 
@@ -1771,7 +1771,7 @@ which includes the type annotation \verb|bits(4)|.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_bitfield}
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
@@ -1817,7 +1817,7 @@ for its verbatim string.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vsesone}{\vses})
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_tuple_item}
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
@@ -1844,7 +1844,7 @@ for its verbatim string.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_error}
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
@@ -2044,7 +2044,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \annotateexpr(\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetFields}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
@@ -2112,7 +2112,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
     \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
   }
   \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{find_bitfields_slices}
 
 \TypingRuleDef{GetBitfieldWidth}
@@ -2158,7 +2158,7 @@ yields the literal expression for \verb|2|.
   \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{get_bitfield_width}
 
 \TypingRuleDef{WidthPlus}
@@ -2204,7 +2204,7 @@ $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
   \widthplus(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \ewidth
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{width_plus}
 
 \subsection{Semantics}
@@ -2403,7 +2403,7 @@ as it is applied to unrelated kinds of types.
   \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EATC}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 \lrmcomment{
@@ -2512,7 +2512,7 @@ as it is applied to unrelated kinds of types.
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{check_atc}
 
 \subsection{Semantics}
@@ -2851,7 +2851,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   \annotateexpr(\tenv, \ve) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EPattern}
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
@@ -2958,7 +2958,7 @@ Note that there are two important consequences of producing an arbitrary value w
   \annotateexpr(\tenv, \ve) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EArbitrary}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
 
@@ -3154,7 +3154,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ERecord}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 \identr{WBCQ}
@@ -3185,7 +3185,7 @@ See \listingref{semantics-egetfield} for an example.
   \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_field_init}
 
 \subsection{Semantics}
@@ -3291,7 +3291,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \annotateexpr(\tenv, \overname{\ETuple(\vli)}{\ve}) \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ETuple}
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 

@@ -1,0 +1,429 @@
+# Typing Relations/Functions With Implementations
+
+## AssignableExpressions.tex
+annotate_lexpr
+annotate_set_array
+check_disjoint_slices
+fold_bitvector_fields
+
+## BaseValues.tex
+base_value
+constraint_abs_min
+list_min_abs
+
+## Bitfields.tex
+absolute_bitfields_align
+annotate_bitfield
+annotate_bitfields
+bitfield_get_name
+bitfield_get_nested
+bitfield_get_slices
+bitfield_slice_to_positions
+bitfield_to_absolute
+bitfields_to_absolute
+check_common_bitfields_align
+check_positions_in_width
+check_slices_in_width
+disjoint_slices_to_positions
+slice_to_indices
+
+## BlockStatements.tex
+annotate_block
+
+## Expressions.tex
+annotate_expr
+annotate_field_init
+annotate_get_array
+check_atc
+find_bitfields_slices
+get_bitfield_width
+width_plus
+
+## Literals.tex
+annotate_literal
+
+## PrimitiveOperations.tex
+unop_literals
+
+## Slicing.tex
+annotate_slice
+annotate_slices
+annotate_symbolic_constrained_integer
+slice_width
+slices_width
+
+## Statements.tex
+annotate_stmt
+
+## TypeAttributes.tex
+check_constrained_integer
+get_structure
+is_anonymous
+is_builtin_singular
+is_named
+is_singular
+is_structured
+make_anonymous
+
+## TypeSystemUtilities.tex
+lookup_constant
+
+## ASLFormal.tex
+te_check
+
+## CatchingExceptions.tex
+annotate_catcher
+
+## GlobalPragmas.tex
+check_global_pragma
+
+## GlobalStorageDeclarations.tex
+add_global_storage
+
+# Typing Relations/Functions Without Implementations
+
+## GlobalStorageDeclarations.tex
+annotate_ty_opt_initial_value
+declare_global_storage
+update_global_storage
+
+## LocalStorageDeclarations.tex
+annotate_local_decl_item
+check_is_not_collection
+
+## PatternMatching.tex
+annotate_pattern
+
+## PrimitiveOperations.tex
+binary_to_unsigned
+binop_literals
+int_to_bits
+
+## RelationsOnTypes.tex
+annotate_constraint_binop
+apply_binop_types
+apply_unop_type
+binop_filter_rhs
+binop_is_exploding
+bitfields_included
+check_bits_equal_width
+check_structure_label
+check_type_satisfies
+explode_constraint
+explode_intervals
+field_type
+filter_reduce_constraint_div
+get_bitvector_const_width
+get_bitvector_width
+get_literal_div_opt
+get_well_constrained_structure
+interval_too_large
+is_subtype
+lowest_common_ancestor
+mem_bfs
+named_lowest_common_ancestor
+negate_constraint
+precision_join
+reduce_to_z_opt
+refine_constraint_by_sign
+refine_constraint_for_div
+refine_constraints
+subtype_satisfies
+supers
+to_well_constrained
+type_satisfies
+
+## SideEffects.tex
+check_symbolically_evaluable
+is_symbolically_evaluable
+ses_for_subprogram
+ses_gdk
+ses_is_pure
+ses_is_readonly
+ses_ldk
+side_effect_is_pure
+side_effect_is_readonly
+side_effect_is_symbolically_evaluable
+
+## Specifications.tex
+add_subprogram_decls
+annotate_decl_comps
+build_dependencies
+check_implementations_unique
+decl_dependencies
+declare_subprograms
+def_decl
+def_enum_labels
+override_subprograms
+process_overrides
+rename_subprograms
+signatures_match
+type_check_ast
+type_check_mutually_rec
+typecheck_decl
+use_bitfield
+use_catcher
+use_constraint
+use_decl
+use_expr
+use_ldi
+use_lexpr
+use_pattern
+use_slice
+use_stmt
+use_subtypes
+use_ty
+
+## Statements.tex
+annotate_limit_expr
+annotate_local_decl_type_annot
+check_can_be_initialized_with
+check_no_precision_loss
+get_for_constraints
+inherit_integer_constraints
+
+## StaticEvaluation.tex
+static_eval
+
+## SubprogramCalls.tex
+annotate_call
+annotate_call_actuals_typed
+annotate_exprs
+annotate_ret_ty
+call_type_matches
+can_omit_stdlib_param
+check_args_typesat
+check_params_typesat
+filter_call_candidates
+has_arg_clash
+insert_stdlib_param
+rename_ty_eqs
+subprogram_for_signature
+subst_constraint
+subst_expr
+subst_expr_normalize
+type_clashes
+
+## SubprogramDeclarations.tex
+add_new_func
+allowed_abs_configs
+annotate_and_declare_func
+annotate_args
+annotate_func_sig
+annotate_one_arg
+annotate_one_param
+annotate_params
+annotate_return_type
+annotate_subprogram
+approx_stmt
+check_control_flow
+check_param_decls
+check_subprogram_purity
+declare_one_func
+extract_parameters
+func_sig_types
+params_of_constraint
+params_of_expr
+paramsofty
+subprogram_clash
+subprogram_types_clash
+
+## SymbolicEquivalenceTesting.tex
+add_polynomials
+array_length_equal
+bitfield_equal
+bitfields_equal
+bitwidth_equal
+compare_monomial_bindings
+constraint_equal
+constraints_equal
+expr_equal
+expr_equal_case
+expr_equal_norm
+monomial_to_expr
+monomials_to_expr
+mul_monomials
+mul_polynomials
+normalize
+normalize_opt
+polynomial_divide_by_term
+polynomial_to_expr
+reduce_constraint
+reduce_constraints
+slice_equal
+slices_equal
+sym_add_expr
+to_ir
+type_equal
+type_of
+unitary_monomials_to_expr
+
+## SymbolicSubsumptionTesting.tex
+apply_binop_extremities
+approx_bottom_top
+approx_constraint
+approx_constraint_binop
+approx_constraints
+approx_expr
+approx_expr_max
+approx_expr_min
+approx_type
+constraint_binop
+constraint_mod
+constraint_pow
+intset_to_constraints
+make_interval
+possible_extremities_left
+possible_extremities_right
+symdom_eval
+symdom_normalize
+symdom_of_constraint
+symdom_of_type
+symdom_of_width_expr
+symdom_subset
+symdom_subset_unions
+
+## TypeDeclarations.tex
+annotate_expr_opt
+annotate_extra_fields
+annotate_type_opt
+declare_const
+declare_enum_labels
+declare_type
+declared_type
+
+## Types.tex
+annotate_constraint
+annotate_symbolically_evaluable_expr
+annotate_type
+check_underlying_integer
+get_variable_enum
+
+## TypeSystemUtilities.tex
+add_global_constant
+add_global_immutable_expr
+add_immutable_expression
+add_local
+add_local_immutable_expr
+add_subprogram
+add_type
+check_no_duplicates
+check_var_not_in_env
+check_var_not_in_genv
+find_bitfield_opt
+is_global_undefined
+is_local_undefined
+is_undefined
+lookup_immutable_expr
+should_remember_immutable_expression
+type_of_array_length
+with_empty_local
+
+## Bitfields.tex
+select_indices_by_slices
+
+# Semantics Relations/Functions With Implementations
+
+## Bitfields.tex
+eval_slice_expr
+
+## Slicing.tex
+eval_slice
+
+## Statements.tex
+eval_stmt
+
+## SubprogramCalls.tex
+match_func_res
+
+# Semantics Relations/Functions Without Implementations
+
+## ASLFormal.tex
+de_check
+
+## AssignableExpressions.tex
+assign_bitvector_fields
+check_non_overlapping_slices
+check_two_ranges_non_overlapping
+eval_lexpr
+eval_multi_assignment
+
+## BlockStatements.tex
+eval_block
+pop_local_scope
+
+## CatchingExceptions.tex
+eval_catchers
+find_catcher
+
+## Expressions.tex
+eval_expr
+eval_expr_list
+eval_expr_sef
+is_constraint_sat
+is_val_of_type
+
+## GlobalStorageDeclarations.tex
+declare_global
+eval_globals
+
+## LocalStorageDeclarations.tex
+declare_ldi_tuple
+eval_local_decl
+
+## PatternMatching.tex
+eval_pattern
+mask_match
+
+## PrimitiveOperations.tex
+eval_binop
+eval_unop
+
+## SemanticsUtilities.tex
+concat_bitvectors
+declare_local_identifier
+declare_local_identifier_m
+declare_local_identifier_mm
+decr_pending_calls
+get_field
+get_index
+get_pending_calls
+incr_pending_calls
+max_pos_of_slice
+read_from_bitvector
+read_identifier
+remove_local
+set_field
+set_index
+set_pending_calls
+slices_to_positions
+write_identifier
+write_to_bitvector
+
+## Specifications.tex
+build_genv
+eval_spec
+
+## Statements.tex
+eval_expr_list_m
+eval_for
+eval_for_loop
+eval_for_step
+eval_limit
+eval_loop
+lexpr_is_var
+literal_to_string
+output_to_console
+tick_loop_limit
+write_folder
+
+## StaticEvaluation.tex
+static_env_to_env
+
+## SubprogramCalls.tex
+assign_args
+check_recurse_limit
+eval_call
+eval_subprogram
+read_value_from
+

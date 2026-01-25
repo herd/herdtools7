@@ -106,11 +106,21 @@ This document contains 67+ real-world examples of inference rule translations fr
 - **`\or(...) \and(...)` chains** → **ASLSpec `or()` or multiple `case` blocks**
 - **Set operations `\bigcup`, `\cap`, `\emptyset`** → **ASLSpec `union()`, `intersect()`, `empty_set`**
 - **List/sequence operations** → **ASLSpec `list_...` operators and `INDEX()`**
+- **Multiple case matching with `\begin{cases}`** → **ASLSpec `cond(condition : value, ...)`**
+  - Used when LaTeX has a piecewise definition with multiple conditions
+  - Each branch uses colon separator: `condition : value`
+  - First matching condition's value is returned
+  - Example: `cond(x > 0 : a, x = 0 : b, x < 0 : c)`
 - **Note**: Layout annotations like `{ math_layout = [...] }` are optional metadata used only when PDF rendering requires specific visual alignment; omit them in initial translations.
 
 ### Critical Syntax Rules
 - **Conclusion termination**: Each ASLSpec rule conclusion must end with a semicolon. Correct: `(value);` not `(value)` followed by `};` on the next line.
 - **Variable naming convention**: Variables ending in `_p` (meaning "primed") should use apostrophe notation instead. Use `t'` not `t_p`, and `t_spec'` not `t_spec_p`, following mathematical convention for primed variables.
+- **INDEX parentheses**: Outer parentheses around `INDEX` statements are typically redundant and should be omitted. Use `INDEX(i, list: operation);` not `( INDEX(i, list: operation) );`. Parentheses are only needed when the judgment is very long and requires vertical layout using a math layout directive like `{ [_] }` or `{ math_layout = ([_]) }`.
+- **Error constructors**: Use the proper constructor names for error values:
+  - Type errors: `TypeError(code)` not `type_error(code)`
+  - Dynamic errors: `DynamicError(code)` not `de_error(code)` or similar
+  - These match the typedef definitions in asl.spec
 
 ## Examples by Category
 
@@ -1397,6 +1407,94 @@ typing function base_value(tenv: static_envs, t: ty) ->
 
 ---
 
+#### `constraint_abs_min`
+
+**Source:** BaseValues.tex:337-367
+
+This function finds the integer closest to zero that satisfies a constraint. The **range case** demonstrates using `cond` for piecewise definitions from LaTeX `\begin{cases}`.
+
+**LaTeX:**
+
+```latex
+\begin{mathpar}
+\inferrule[exact]{
+    \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
+    \techeck(\vzopt \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \vzopt \eqname \some{\vz}
+}{
+    \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[range]{
+    \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
+    \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \vzoptone \eqname \some{\vvone}\\
+    \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\\
+    \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
+    \vzopttwo \eqname \some{\vvtwo}\\
+    {
+    \vzs \eqdef
+        \begin{cases}
+           \emptylist & \vvone > \vvtwo\\
+           [\vvtwo] & \vvone \leq \vvtwo < 0\\
+           [0] & \vvone < 0 \leq \vvtwo\\
+           [\vvone] & 0 \leq \vvone \leq \vvtwo\\
+        \end{cases}
+    }
+}{
+    \constraintabsmin(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vzs
+}
+\end{mathpar}
+```
+
+**ASLSpec Translation:**
+
+```aslspec
+typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
+         (zs: list0(Z)) | type_error
+{
+  "returns a single element list containing the integer
+  closest to $0$ that satisfies the constraint {c} in
+  {tenv}, if one exists, and an empty list if the
+  constraint represents an empty set. Otherwise, the
+  result is $\TypeErrorVal{\NoBaseValue}$.",
+  prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}",
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    te_check(z_opt != None, TE_NBV) -> True;
+    z_opt =: some(z);
+    --
+    make_singleton_list(z);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    reduce_to_z_opt(tenv, e1) -> z_opt1;
+    te_check(z_opt1 != None, TE_NBV) -> True;
+    z_opt1 =: some(v1);
+    reduce_to_z_opt(tenv, e2) -> z_opt2;
+    te_check(z_opt2 != None, TE_NBV) -> True;
+    z_opt2 =: some(v2);
+    zs := cond(
+            v1 > v2                  : empty_list,
+            v1 <= v2 && v2 < zero    : make_singleton_list(v2),
+            v1 < zero && zero <= v2  : make_singleton_list(zero),
+            zero <= v1 && v1 <= v2   : make_singleton_list(v1)
+          );
+    --
+    zs;
+  }
+;
+```
+
+**Key Pattern:** The LaTeX `\begin{cases}` with multiple conditions translates to `cond` with branches using colon separator `condition : value`. The first matching condition's value is returned.
+
+---
+
 ### Block Statements
 
 #### 1. `annotate_block`
@@ -1454,6 +1552,43 @@ case ELit {
   (t, e, empty_set);
 }
 ```
+---
+
+### Global Storage
+
+#### 1. `add_global_storage`
+
+**Source:** GlobalStorageDeclarations.tex:836
+
+This function demonstrates the use of **map updates** and **record field updates** in ASLSpec:
+- `map_update(map, key, value)` - updates a map with a new key-value binding
+- `record(field : new_value)` - creates a new record with updated field(s)
+
+**LaTeX (Source):**
+
+```latex
+\begin{mathpar}
+\inferrule{
+  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
+  \newgenv \eqdef \genv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)]
+}{
+  \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
+}
+\end{mathpar}
+```
+
+**ASLSpec (Target):**
+
+```aslspec
+check_var_not_in_genv(genv, name) -> True;
+updated_map := map_update(genv.global_storage_types, name, (declared_t, keyword));
+new_genv := genv(global_storage_types : updated_map);
+--
+new_genv;
+```
+
+**Key Pattern:** The LaTeX notation `\genv.\globalstoragetypes[\name \mapsto (\declaredt, \keyword)]` (map update in functional style) translates to a two-step process in ASLSpec: first update the map, then create a new record with the updated field.
+
 ---
 
 #### 2. `annotate_expr_EVar`
@@ -3341,5 +3476,21 @@ new_e :=
    - `te_check(cond, code) -> True;` for error predicates
 
 7. **RenderRule Directives**: Always place `\RenderRule{relation_name}` AFTER the corresponding LaTeX inference rule block (after `\end{mathpar}`), never before
+
+8. **List Deconstruction Patterns**: To extract the last element and prefix from a list:
+   - LaTeX: Uses subscript notation like $\vf_k$ (last element) and $\vf_{1..k-1}$ (all but last)
+   - ASLSpec: Use pattern matching with concat:
+     ```aslspec
+     list_var =: concat(prefix, match_singleton_list(last_element));
+     ```
+   - This pattern allows deconstructing a list into its prefix and final element
+   - Example from `absolute_bitfields_align`:
+     ```aslspec
+     f =: (f_names, slice_one);
+     g =: (g_names, slice_two);
+     f_names =: concat(scope_one, match_singleton_list(name_one));
+     g_names =: concat(scope_two, match_singleton_list(name_two));
+     ```
+   - Corresponds to LaTeX that defines $\nameone \triangleq \vf_k$ and $\vscopeone \triangleq \vf_{1..k-1}$
 
 ````
