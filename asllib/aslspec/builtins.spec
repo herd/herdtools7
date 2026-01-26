@@ -139,6 +139,11 @@ operator num_minus[NumType](NumType, NumType) -> NumType
   math_macro = \numminus,
 };
 
+operator num_negate[NumType](NumType) -> NumType
+{
+  math_macro = \numnegate,
+};
+
 // Negation for number types.
 operator negate[NumType](NumType) -> NumType
 {
@@ -148,6 +153,7 @@ operator negate[NumType](NumType) -> NumType
 variadic operator num_times[NumType](list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
+  associative = true,
 };
 
 operator num_divide[NumType](NumType, NumType) -> NumType
@@ -158,6 +164,7 @@ operator num_divide[NumType](NumType, NumType) -> NumType
 operator num_exponent[NumType](NumType, NumType) -> NumType
 {
   math_macro = \numexponent,
+  custom = true,
 };
 
 operator less_than[NumType](NumType, NumType) -> Bool
