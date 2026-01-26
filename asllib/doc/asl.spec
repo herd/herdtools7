@@ -370,6 +370,11 @@ operator set_max[T](powerset(T)) -> N
   math_macro = \setmax,
 };
 
+operator as_rational(Z) -> Q
+{
+  math_macro = \identityop,
+};
+
 operator round_up(Q) -> N
 {
   math_macro = \roundup,
@@ -397,6 +402,18 @@ operator negate_bit(b: Bit) -> Bit
   "negation of {b}",
   math_macro = \negatebit,
   custom = true,
+};
+
+operator and_bit(a: Bit, b: Bit) -> Bit
+{
+  "bit-level conjunction of {a} and {b}",
+  math_macro = \land,
+};
+
+operator or_bit(a: Bit, b: Bit) -> Bit
+{
+  "bit-level disjunction of {a} and {b}",
+  math_macro = \lor,
 };
 
 ////////////////////////////////////////
@@ -746,7 +763,7 @@ ast pattern { "pattern" } =
     { "less-or-equal pattern" }
     | Pattern_Mask(mask_constant: list0(constants_set(zero_bit, one_bit, x_bit)))
     { "mask pattern" }
-    | Pattern_Not(subexpression: expr)
+    | Pattern_Not(subpattern: pattern)
     { "negation pattern" }
     | Pattern_Range(lower: expr, upper: expr)
     { "range pattern" }
@@ -3844,7 +3861,8 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     check_symbolically_evaluable(ses) -> True;
     make_anonymous(tenv, t) -> t_struct;
     make_anonymous(tenv, t_e) -> t_e_struct;
-    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real));
+    b := ( (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real)) )
+    { (_, ([_])) };
     te_check(b, TE_BO) -> True;
     --
     (Pattern_Leq(e'), ses);
@@ -3856,21 +3874,21 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     check_symbolically_evaluable(ses) -> True;
     make_anonymous(tenv, t) -> t_struct;
     make_anonymous(tenv, t_e) -> t_e_struct;
-    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
-    { (_, [_]) };
+    b := ( (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real)) )
+    { (_, ([_])) };
     te_check(b, TE_BO) -> True;
     --
     (Pattern_Geq(e'), ses);
   }
 
-  //case mask {
-  //  p =: Pattern_Mask(m);
-  //  check_structure_label(tenv, t, label_T_Bits) -> True;
-  //  n := list_len(m);
-  //  check_type_satisfies(tenv, t, T_Bits(n, empty_list)) -> True;
-  //  --
-  //  (Pattern_Mask(m), empty_set);
-  //}
+  case mask {
+    p =: Pattern_Mask(m);
+    check_structure_label(tenv, t, label_T_Bits) -> True;
+    n := ELint(list_len(m));
+    check_type_satisfies(tenv, t, T_Bits(n, empty_list)) -> True;
+    --
+    (Pattern_Mask(m), empty_set);
+  }
 
   case tuple {
     p =: Pattern_Tuple(li);
@@ -3894,12 +3912,12 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     (Pattern_Any(new_li), ses);
   }
 
-  //case neg {
-  //  p =: Pattern_Not(q);
-  //  annotate_pattern(tenv, t, q) -> (new_q, ses);
-  //  --
-  //  (Pattern_Not(new_q), ses);
-  //}
+  case neg {
+    p =: Pattern_Not(q);
+    annotate_pattern(tenv, t, q) -> (new_q, ses);
+    --
+    (Pattern_Not(new_q), ses);
+  }
 ;
 
 render rule annotate_pattern_all = annotate_pattern(all);
@@ -3907,11 +3925,10 @@ render rule annotate_pattern_single = annotate_pattern(single);
 render rule annotate_pattern_range = annotate_pattern(range);
 render rule annotate_pattern_leq = annotate_pattern(leq);
 render rule annotate_pattern_geq = annotate_pattern(geq);
-// render rule annotate_pattern_mask = annotate_pattern(mask);
+render rule annotate_pattern_mask = annotate_pattern(mask);
 render rule annotate_pattern_tuple = annotate_pattern(tuple);
 render rule annotate_pattern_any = annotate_pattern(any);
-// render rule annotate_pattern_neg = annotate_pattern(neg);
-
+render rule annotate_pattern_neg = annotate_pattern(neg);
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -3937,6 +3954,131 @@ constant unop_signatures =
     (NEG,   label_L_Real),
     (BNOT,  label_L_Bool),
     (NOT,   label_L_Bitvector)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_arith_signatures =
+  make_set(
+    (ADD,    label_L_Int,       label_L_Int),
+    (SUB,    label_L_Int,       label_L_Int),
+    (MUL,    label_L_Int,       label_L_Int),
+    (DIV,    label_L_Int,       label_L_Int),
+    (DIVRM,  label_L_Int,       label_L_Int),
+    (MOD,    label_L_Int,       label_L_Int),
+    (POW,    label_L_Int,       label_L_Int),
+    (SHL,    label_L_Int,       label_L_Int),
+    (SHR,    label_L_Int,       label_L_Int),
+    (MUL,    label_L_Int,       label_L_Real),
+    (MUL,    label_L_Real,      label_L_Int),
+    (ADD,    label_L_Real,      label_L_Real),
+    (SUB,    label_L_Real,      label_L_Real),
+    (MUL,    label_L_Real,      label_L_Real),
+    (RDIV,   label_L_Real,      label_L_Real),
+    (POW,    label_L_Real,      label_L_Int),
+    (EQ,     label_L_String,    label_L_String),
+    (NE,     label_L_String,    label_L_String),
+    (EQ,     label_L_Label,     label_L_Label),
+    (NE,     label_L_Label,     label_L_Label)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_rel_signatures =
+  make_set(
+    (EQ,     label_L_Int,       label_L_Int),
+    (NE,     label_L_Int,       label_L_Int),
+    (LE,     label_L_Int,       label_L_Int),
+    (LT,     label_L_Int,       label_L_Int),
+    (GE,     label_L_Int,       label_L_Int),
+    (GT,     label_L_Int,       label_L_Int),
+    (EQ,     label_L_Bool,      label_L_Bool),
+    (NE,     label_L_Bool,      label_L_Bool),
+    (EQ,     label_L_Real,      label_L_Real),
+    (NE,     label_L_Real,      label_L_Real),
+    (LE,     label_L_Real,      label_L_Real),
+    (LT,     label_L_Real,      label_L_Real),
+    (GE,     label_L_Real,      label_L_Real),
+    (GT,     label_L_Real,      label_L_Real),
+    (EQ,     label_L_Bitvector, label_L_Bitvector),
+    (NE,     label_L_Bitvector, label_L_Bitvector)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_bool_signatures =
+  make_set(
+    (BEQ,    label_L_Bool,      label_L_Bool),
+    (BAND,   label_L_Bool,      label_L_Bool),
+    (BOR,    label_L_Bool,      label_L_Bool),
+    (IMPL,   label_L_Bool,      label_L_Bool)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_bits_signatures =
+  make_set(
+    (OR,     label_L_Bitvector, label_L_Bitvector),
+    (AND,    label_L_Bitvector, label_L_Bitvector),
+    (XOR,    label_L_Bitvector, label_L_Bitvector),
+    (SUB,    label_L_Bitvector, label_L_Bitvector),
+    (ADD,    label_L_Bitvector, label_L_Bitvector),
+    (BV_CONCAT, label_L_Bitvector, label_L_Bitvector),
+    (SUB,    label_L_Bitvector, label_L_Int),
+    (ADD,    label_L_Bitvector, label_L_Int)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_str_signatures =
+  make_set(
+    (STR_CONCAT, label_L_Real,   label_L_Real),
+    (STR_CONCAT, label_L_Real,   label_L_String),
+    (STR_CONCAT, label_L_Real,   label_L_Bool),
+    (STR_CONCAT, label_L_Real,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Real,   label_L_Label),
+    (STR_CONCAT, label_L_Real,   label_L_Int),
+    (STR_CONCAT, label_L_String, label_L_Real),
+    (STR_CONCAT, label_L_String, label_L_String),
+    (STR_CONCAT, label_L_String, label_L_Bool),
+    (STR_CONCAT, label_L_String, label_L_Bitvector),
+    (STR_CONCAT, label_L_String, label_L_Label),
+    (STR_CONCAT, label_L_String, label_L_Int),
+    (STR_CONCAT, label_L_Bool,   label_L_Real),
+    (STR_CONCAT, label_L_Bool,   label_L_String),
+    (STR_CONCAT, label_L_Bool,   label_L_Bool),
+    (STR_CONCAT, label_L_Bool,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bool,   label_L_Label),
+    (STR_CONCAT, label_L_Bool,   label_L_Int),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Real),
+    (STR_CONCAT, label_L_Bitvector,   label_L_String),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bool),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Label),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Int),
+    (STR_CONCAT, label_L_Label,   label_L_Real),
+    (STR_CONCAT, label_L_Label,   label_L_String),
+    (STR_CONCAT, label_L_Label,   label_L_Bool),
+    (STR_CONCAT, label_L_Label,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Label,   label_L_Label),
+    (STR_CONCAT, label_L_Label,   label_L_Int),
+    (STR_CONCAT, label_L_Int,    label_L_Real),
+    (STR_CONCAT, label_L_Int,    label_L_String),
+    (STR_CONCAT, label_L_Int,    label_L_Bool),
+    (STR_CONCAT, label_L_Int,    label_L_Bitvector),
+    (STR_CONCAT, label_L_Int,    label_L_Label),
+    (STR_CONCAT, label_L_Int,    label_L_Int)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_signatures =
+  union(
+    binop_arith_signatures,
+    binop_rel_signatures,
+    binop_bool_signatures,
+    binop_bits_signatures,
+    binop_str_signatures
   )
   { math_layout = [_] }
 ;
@@ -3997,19 +4139,450 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
   operator to the given values, or a different kind of
   \typingerrorterm{} is detected.",
   prose_application = "",
-};
+} =
+  case error {
+    (op, ast_label(v1), ast_label(v2)) not_in binop_signatures;
+    --
+    TypeError(TE_BO);
+  }
+
+  // Arithmetic Operators Over Integer Values
+  case arithmetic {
+    v1 =: L_Int(a);
+    v2 =: L_Int(b);
+    case add_int {
+      op = ADD;
+      --
+      L_Int(a + b);
+    }
+
+    case sub_int {
+      op = SUB;
+      --
+      L_Int(a - b);
+    }
+
+    case mul_int {
+      op = MUL;
+      --
+      L_Int(a * b);
+    }
+
+    case div_int {
+      op = DIV;
+      te_check(b > zero, TE_BO) -> True;
+      n := a / b;
+      te_check(n in Z_set, TE_BO) -> True;
+      --
+      L_Int(n);
+    }
+
+    case fdiv_int {
+      op = DIVRM;
+      te_check(b > zero, TE_BO) -> True;
+      n := if a >= zero then round_down(as_rational(a) / as_rational(b)) else num_negate(round_up((num_negate(as_rational(a))) / as_rational(b)));
+      --
+      L_Int(n);
+    }
+
+    case frem_int {
+      op = MOD;
+      binop_literals(DIVRM, L_Int(a), L_Int(b)) -> L_Int(c);
+      --
+      L_Int(a - (c * b));
+    }
+
+    case exp_int {
+      op = POW;
+      te_check(b >= zero, TE_BO) -> True;
+      --
+      L_Int(a ^ b);
+    }
+
+    case shl {
+      op = SHL;
+      te_check(b >= zero, TE_BO) -> True;
+      binop_literals(POW, L_Int(two), L_Int(b)) -> L_Int(e);
+      binop_literals(MUL, L_Int(a), L_Int(e)) -> r;
+      --
+      r;
+    }
+
+    case shr {
+      op = SHR;
+      te_check(b >= zero, TE_BO) -> True;
+      binop_literals(POW, L_Int(two), L_Int(b)) -> L_Int(e);
+      binop_literals(DIVRM, L_Int(a), L_Int(e)) -> r;
+      --
+      r;
+    }
+  }
+
+  // Comparison Operators Over Integer Values
+  case comparison_int {
+    v1 =: L_Int(a);
+    v2 =: L_Int(b);
+    case eq_int {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_int {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+
+    case le_int {
+      op = LE;
+      --
+      L_Bool(a <= b);
+    }
+
+    case lt_int {
+      op = LT;
+      --
+      L_Bool(a < b);
+    }
+
+    case ge_int {
+      op = GE;
+      --
+      L_Bool(a >= b);
+    }
+
+    case gt_int {
+      op = GT;
+      --
+      L_Bool(a > b);
+    }
+  }
+
+  // Boolean Operators Over Boolean Values
+  case boolean {
+    v1 =: L_Bool(a);
+    v2 =: L_Bool(b);
+    case and_bool {
+      op = BAND;
+      --
+      L_Bool(a && b);
+    }
+
+    case or_bool {
+      op = BOR;
+      --
+      L_Bool(a || b);
+    }
+
+    case implies_bool {
+      op = IMPL;
+      --
+      L_Bool(not(a) || b);
+    }
+
+    case eq_bool {
+      op in make_set(EQ, BEQ);
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_bool {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+
+  // Arithmetic Operators Over Real Values
+  case arithmetic_real {
+    case mul_int_real {
+      op = MUL;
+      v1 =: L_Int(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(as_rational(a) * b);
+    }
+
+    case mul_real_int {
+      op = MUL;
+      v1 =: L_Real(a);
+      v2 =: L_Int(b);
+      --
+      L_Real(a * as_rational(b));
+    }
+
+    case add_real {
+      op = ADD;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a + b);
+    }
+
+    case sub_real {
+      op = SUB;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a - b);
+    }
+
+    case mul_real {
+      op = MUL;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a * b);
+    }
+
+    case div_real {
+      op = RDIV;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      te_check(not_equal(b, rational_zero), TE_BO) -> True;
+      --
+      L_Real(a / b);
+    }
+
+    case exp_real {
+      op = POW;
+      v1 =: L_Real(a);
+      v2 =: L_Int(b);
+      te_check(not_equal(a, rational_zero) || b >= zero, TE_BO) -> True;
+      --
+      L_Real(a ^ as_rational(b));
+    }
+  }
+
+  // Comparison Operators Over Real Values
+  case comparison_real {
+    v1 =: L_Real(a);
+    v2 =: L_Real(b);
+    case eq_real {
+      op = EQ;
+      --
+      L_Bool(equal(a, b));
+    }
+
+    case ne_real {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+
+    case le_real {
+      op = LE;
+      --
+      L_Bool(a <= b);
+    }
+
+    case lt_real {
+      op = LT;
+      --
+      L_Bool(a < b);
+    }
+
+    case ge_real {
+      op = GE;
+      --
+      L_Bool(a >= b);
+    }
+
+    case gt_real {
+      op = GT;
+      --
+      L_Bool(a > b);
+    }
+  }
+
+  // Operators Over Bitvectors
+  case bitvector {
+    v1 =: L_Bitvector(a);
+    v2 =: L_Bitvector(b);
+    case bitwise_different_bitwidths {
+      list_len(a) != list_len(b);
+      --
+      TypeError(TE_BO);
+    }
+
+    case bitwise_empty {
+      op in make_set(OR, AND, XOR, ADD, SUB);
+      a = empty_list;
+      b = empty_list;
+      --
+      L_Bitvector(empty_list);
+    }
+
+    case eq_bits {
+      op = EQ;
+      list_len(a) = list_len(b);
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_bits {
+      op = NE;
+      binop_literals(EQ, L_Bitvector(a), L_Bitvector(b)) -> L_Bool(result);
+      --
+      L_Bool(not(result));
+    }
+
+    case or_bits {
+      op = OR;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), or_bit(a[i], b[i]));
+      --
+      L_Bitvector(c);
+    }
+
+    case and_bits {
+      op = AND;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), and_bit(a[i], b[i]));
+      --
+      L_Bitvector(c);
+    }
+
+    case xor_bits {
+      op = XOR;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), if a[i] = b[i] then zero_bit else one_bit);
+      --
+      L_Bitvector(c);
+    }
+
+    case add_bits {
+      op = ADD;
+      list_len(a) = list_len(b);
+      binary_to_unsigned(a) -> a_val;
+      binary_to_unsigned(b) -> b_val;
+      int_to_bits(a_val + b_val, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case sub_bits {
+      op = SUB;
+      list_len(a) = list_len(b);
+      binary_to_unsigned(a) -> a_val;
+      binary_to_unsigned(b) -> b_val;
+      int_to_bits(a_val - b_val, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case concat_bits {
+      op = BV_CONCAT;
+      --
+      L_Bitvector(concat(a, b));
+    }
+  }
+
+  case bits_int {
+    v1 =: L_Bitvector(a);
+    v2 =: L_Int(b);
+    case add_bits_int {
+      op = ADD;
+      binary_to_unsigned(a) -> a_val;
+      int_to_bits(a_val + b, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case sub_bits_int {
+      op = SUB;
+      binary_to_unsigned(a) -> a_val;
+      int_to_bits(a_val - b, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+  }
+
+  // Operators Over String Values
+  case string {
+    v1 =: L_String(a);
+    v2 =: L_String(b);
+    case eq_string {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_string {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+
+  case concat_strings {
+    op = STR_CONCAT;
+    ast_label(v1) != label_L_Bitvector || ast_label(v1) != label_L_Bitvector;
+    literal_to_string(v1) -> s1;
+    literal_to_string(v2) -> s2;
+    --
+    L_String(concat(s1, s2));
+  }
+
+  // Operators Over Label Values
+  case label {
+    v1 =: L_Label(a);
+    v2 =: L_Label(b);
+    case eq_label {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_label {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+;
+
+render rule binop_literals_error = binop_literals(error);
+render rule binop_literals_arithmetic = binop_literals(arithmetic);
+render rule binop_literals_comparison_int = binop_literals(comparison_int);
+render rule binop_literals_boolean = binop_literals(boolean);
+render rule binop_literals_arithmetic_real = binop_literals(arithmetic_real);
+render rule binop_literals_comparison_real = binop_literals(comparison_real);
+render rule binop_literals_bitvector = binop_literals(bitvector);
+render rule binop_literals_bits_int = binop_literals(bits_int);
+render rule binop_literals_string = binop_literals(string);
+render rule binop_literals_concat_strings = binop_literals(concat_strings);
+render rule binop_literals_label = binop_literals(label);
 
 typing function binary_to_unsigned(bits: list0(Bit)) -> (num: N)
 {
   "converts the bit sequence {bits} into the natural number {num} or $0$ if {bits} is empty.",
   prose_application = "converting the bit sequence {bits} into a natural number yields {num}",
-};
+} =
+  case empty {
+    bits = empty_list;
+    --
+    zero;
+  }
+
+  case non_empty {
+    bits =: match_cons(b, lower_bits);
+    binary_to_unsigned(lower_bits) -> tail_value;
+    n := list_len(lower_bits);
+    bit_value := if b = one_bit then two ^ n else zero;
+    --
+    tail_value + bit_value;
+  }
+;
 
 typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
 {
   "converts the integer {val} to its two's complement representation with {width} bits, yielding the result in {bits}.",
   prose_application = "converting the integer {val} to its two's complement representation of {width} bits yields {bits}",
-};
+}
+  // This is a well-defined mathematical opeation. No rule needed.
+;
 
 semantics function eval_unop(op: unop, v: native_value) ->
          (w: native_value) | TDynError
@@ -4120,6 +4693,8 @@ typing function supers(tenv: static_envs, t: ty) ->
   prose_application = "",
 };
 
+constant max_constraint_size : N { math_macro = \maxconstraintsize };
+
 typing relation annotate_constraint_binop(
     approx: constants_set(Over,Under),
     tenv: static_envs,
@@ -4138,7 +4713,42 @@ typing relation annotate_constraint_binop(
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [[_,_,_,_,_],_],
-};
+} =
+  case exploding {
+    binop_filter_rhs(approx, tenv, op, cs2) -> cs2f;
+    binop_is_exploding(op) -> TRUE;
+    explode_intervals(tenv, cs1) -> (cs1e, p1);
+    explode_intervals(tenv, cs2f) -> (cs2e, p2);
+    p0 := precision_join(p1, p2);
+    expected_constraint_length :=
+      if op = MOD
+      then list_len(cs2e)
+      else list_len(cs1e) * list_len(cs2e);
+    (cs1_arg, cs2_arg, p) :=
+      if expected_constraint_length < max_constraint_size
+      then (cs1e, cs2e, p0)
+      else (cs1, cs2f, Precision_Lost)
+    { (_, [_]) };
+    constraint_binop(op, cs1_arg, cs2_arg) -> cs_vanilla;
+    refine_constraint_for_div(approx, op, cs_vanilla) -> refined_cs;
+    reduce_constraints(tenv, refined_cs) -> annotated_cs;
+    --
+    (annotated_cs, p);
+  }
+
+  case non_exploding {
+    binop_filter_rhs(approx, tenv, op, cs2) -> cs2f;
+    binop_is_exploding(op) -> FALSE;
+    p := Precision_Full;
+    cs1_arg := cs1;
+    cs2_arg := cs2f;
+    constraint_binop(op, cs1_arg, cs2_arg) -> cs_vanilla;
+    refine_constraint_for_div(approx, op, cs_vanilla) -> refined_cs;
+    reduce_constraints(tenv, refined_cs) -> annotated_cs;
+    --
+    (annotated_cs, p);
+  }
+;
 
 typing relation binop_filter_rhs(
     approx: constants_set(Over,Under),
@@ -6969,7 +7579,7 @@ typing function approx_type(tenv: static_envs, approx: constants_set(Over,Under)
 };
 
 typing function constraint_binop(op: binop, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
-         (new_cs: constraint_kind)
+         (new_cs: list0(int_constraint))
 {
   "symbolically applies the binary operation {op} to the
   lists of integer constraints {cs1} and {cs2}, yielding

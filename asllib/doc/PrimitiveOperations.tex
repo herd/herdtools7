@@ -773,23 +773,13 @@ String concatenation operates over singular types, first converting them to stri
 \listingref{binary-operations-stringslabels} shows an example of string concatenation applied to literals of \integertypeterm{}, \bitvectortypeterm{}, \realtypeterm{}, \booleantypeterm{}, and \enumerationtypeterm{}.
 The literals are converted to strings, and these strings are concatenated.
 
-\hypertarget{def-binopsignatures}{}
 The following set defines the valid signatures of
 binary operations in terms of the type of the binary operator
 and argument types of its operand literals:
-\[
-\binopsignatures \triangleq
-\begin{array}{ll}
-  \binoparithsignatures &\cup\\
-  \binoprelsignatures   &\cup\\
-  \binopboolsignatures  &\cup\\
-  \binopbitssignatures  &\cup\\
-  \binopstrsignatures   &
-\end{array}
-\]
+\RenderConstant{binop_signatures}
 
 The set of valid signatures for arithmetic operations is defined as follows:
-\hypertarget{def-binoparithsignatures}{}
+\BackupOriginalConstant{
 \[
 \binoparithsignatures \triangleq
 \left\{
@@ -817,9 +807,11 @@ The set of valid signatures for arithmetic operations is defined as follows:
 \end{array}
 \right\}
 \]
+} % END_OF_BACKUP_CONSTANT
+\RenderConstant{binop_arith_signatures}
 
 The set of valid signatures for relational operations is defined as follows:
-\hypertarget{def-binoprelsignatures}{}
+\BackupOriginalConstant{
 \[
 \binoprelsignatures \triangleq
 \left\{
@@ -843,9 +835,11 @@ The set of valid signatures for relational operations is defined as follows:
 \end{array}
 \right\}
 \]
+} % END_OF_BACKUP_CONSTANT
+\RenderConstant{binop_rel_signatures}
 
 The set of valid signatures for (binary) Boolean operations is defined as follows:
-\hypertarget{def-binopboolsignatures}{}
+\BackupOriginalConstant{
 \[
 \binopboolsignatures \triangleq
 \left\{
@@ -857,9 +851,11 @@ The set of valid signatures for (binary) Boolean operations is defined as follow
 \end{array}
 \right\}
 \]
+} % END_OF_BACKUP_CONSTANT
+\RenderConstant{binop_bool_signatures}
 
 The set of valid signatures for bitvector operations is defined as follows:
-\hypertarget{def-binopbitssignatures}{}
+\BackupOriginalConstant{
 \[
 \binopbitssignatures \triangleq
 \left\{
@@ -875,9 +871,11 @@ The set of valid signatures for bitvector operations is defined as follows:
 \end{array}
 \right\}
 \]
+} % END_OF_BACKUP_CONSTANT
+\RenderConstant{binop_bits_signatures}
 
 The set of valid signatures for string concatenation operations is defined as follows:
-\hypertarget{def-binopstrsignatures}{}
+\BackupOriginalConstant{
 \[
 \binopstrsignatures \triangleq
 \left\{
@@ -887,6 +885,8 @@ The set of valid signatures for string concatenation operations is defined as fo
    \end{array}
 \right\}
 \]
+} % END_OF_BACKUP_CONSTANT
+\RenderConstant{binop_str_signatures}
 
 \ProseParagraph
 \OneApplies
@@ -1267,7 +1267,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 \end{itemize}
 
 \FormallyParagraph
-
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error]{
   (\op, \astlabel(\vvone), \astlabel(\vvtwo)) \not\in \binopsignatures
@@ -1275,8 +1275,10 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\op, \vvone, \vvtwo) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
 
 \subsubsection{Arithmetic Operators Over Integer Values \label{sec:AthimeticOverInt}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[add\_int]{}{
   \binopliterals(\overname{\ADD}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(a + b)}{\vr}
@@ -1347,8 +1349,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\SHR}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \vr
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_arithmetic}
 
 \subsubsection{Comparison Operators Over Integer Values \label{sec:ComparisonOverInt}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[eq\_int]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1384,8 +1389,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\GT}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBool(a > b)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_comparison_int}
 
 \subsubsection{Boolean Operators Over Boolean Values \label{sec:BooleanOverBoolean}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[and\_bool]{}{
   \binopliterals(\overname{\BAND}{\op}, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a \land b)}{\vr}
@@ -1417,8 +1425,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\NE}{\op}, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a \neq b)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_boolean}
 
 \subsubsection{Arithmetic Operators Over Real Values \label{sec:AthimeticOverReal}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[mul\_int\_real]{}{
   \binopliterals(\overname{\MUL}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LReal(a\times b)}{\vr}
@@ -1464,8 +1475,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\POW}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LReal(a^b)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_arithmetic_real}
 
 \subsubsection{Comparison Operators Over Real Values \label{sec:ComparisonOverReal}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[eq\_real]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1501,6 +1515,8 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\GT}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LBool(a > b)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_comparison_real}
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
 \RenderRelation{binary_to_unsigned}
@@ -1513,9 +1529,10 @@ and as $0$ for an empty bit sequence:
 \[
   \binarytounsigned(\emptylist) \triangleq 0 \enspace.
 \]
+%\RenderRule{binary_to_unsigned} % The is more verbose than necessary here.
 
 \RenderRelation{int_to_bits}
-
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bitwise\_different\_bitwidths]{
   \listlen{a} \neq \listlen{b}
@@ -1631,7 +1648,10 @@ and as $0$ for an empty bit sequence:
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_bitvector}
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[add\_bits\_int]{
   y \eqdef \binarytounsigned(a)\\
@@ -1649,8 +1669,11 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\overname{\SUB}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_bits_int}
 
 \subsubsection{Operators Over String Values \label{sec:StringOperations}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[eq\_string]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LString(a)}{\vvone}, \overname{\LString(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1677,8 +1700,12 @@ and as $0$ for an empty bit sequence:
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_string}
+\RenderRule{binop_literals_concat_strings}
 
 \subsubsection{Operators Over Label Values \label{sec:LabelOperations}}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[eq\_label]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LLabel(a)}{\vvone}, \overname{\LLabel(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1690,6 +1717,8 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\overname{\NE}{\op}, \overname{\LLabel(a)}{\vvone}, \overname{\LLabel(b)}{\vvtwo}) \typearrow \overname{\LBool(a \neq b)}{\vr}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{binop_literals_label}
 
 \SemanticsRulesDef{Primitive Operations}
 

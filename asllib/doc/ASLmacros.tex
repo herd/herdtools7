@@ -164,7 +164,8 @@
 \setlist[itemize,20]{label=\textendash}
 
 \newcommand\BackupOriginalRule[1]{}
-% Ignored here means, it is not yet considered for auto-generation.
+\newcommand\BackupOriginalConstant[1]{}
+% Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1} % DO NOT LINT
 
 \newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
@@ -1309,12 +1310,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Primitive Operations macros
-\newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textsf{binop\_signatures}}}
-\newcommand\binoparithsignatures[0]{\hyperlink{def-binoparithsignatures}{\textsf{arith\_signatures}}}
-\newcommand\binoprelsignatures[0]{\hyperlink{def-binoprelsignatures}{\textsf{rel\_signatures}}}
-\newcommand\binopboolsignatures[0]{\hyperlink{def-binopboolsignatures}{\textsf{bool\_signatures}}}
-\newcommand\binopstrsignatures[0]{\hyperlink{def-binopstrsignatures}{\textsf{str\_signatures}}}
-\newcommand\binopbitssignatures[0]{\hyperlink{def-binopbitssignatures}{\textsf{bits\_signatures}}}
 
 \newcommand\aslnotbool[0]{\hyperlink{def-notbool}{\text{not\_bool}}}
 \newcommand\andbool[0]{\hyperlink{def-andbool}{\text{and\_bool}}}

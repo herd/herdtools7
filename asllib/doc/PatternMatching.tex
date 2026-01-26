@@ -421,6 +421,7 @@ that is, $\PatternLeq(\ve)$;
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -438,6 +439,8 @@ that is, $\PatternLeq(\ve)$;
   \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_leq}
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -512,6 +515,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item $\newp$ is the pattern that matches anything greater than or equal to $\vep$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -529,6 +533,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
   \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_geq}
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -602,6 +608,7 @@ and bit sequences in parentheses represent, don't-care values.
   \item define $\vses$ as the empty set.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
@@ -611,6 +618,8 @@ and bit sequences in parentheses represent, don't-care values.
   \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow (\overname{\PatternMask(\vm)}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_mask}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 \identi{VMKF}
 
@@ -726,6 +735,7 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternTuple(\vli)\\
@@ -740,6 +750,8 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_tuple}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -932,6 +944,7 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \item $\newp$ is pattern which matches the negation of $\newq$ ($\PatternNot(\newq)$).
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
@@ -939,6 +952,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow (\overname{\PatternNot(\newq)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_neg}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \subsection{Semantics}

@@ -1585,6 +1585,7 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exploding]{
   \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\\\\
@@ -1622,6 +1623,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_constraint_binop}
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{BinopFilterRhs}
