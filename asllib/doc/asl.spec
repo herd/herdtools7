@@ -34,6 +34,12 @@ typedef Bool
   { "false", math_macro = \False }
 ;
 
+typedef CheckResult
+{
+  "check result",
+  math_macro = \CheckResult,
+} = (True);
+
 typedef Bit
 { "bit" };
 
@@ -1757,7 +1763,7 @@ typedef value_read_from { "value-reading effect" } =
 // Generic Functions and Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-typing function te_check(condition: Bool, code: type_error_code) -> constants_set(True) | type_error
+typing function te_check(condition: Bool, code: type_error_code) -> CheckResult | type_error
   {
     "returns $\True$ if {condition} holds and a type error with {code} otherwise.",
     prose_application = "checking whether {condition} holds returns $\True\terminateas\TypeError({code})$",
@@ -1774,7 +1780,7 @@ typing function te_check(condition: Bool, code: type_error_code) -> constants_se
   }
 ;
 
-semantics function de_check(condition: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+semantics function de_check(condition: Bool, code: dynamic_error_code) -> CheckResult | TDynError
   {
     "returns $\True$ if {condition} holds and a dynamic error with {code} otherwise.",
     prose_application = "checking whether {condition} holds returns $\True\terminateas\DynamicError({code})$",
@@ -2319,7 +2325,7 @@ typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: e
 ;
 
 typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         (CheckResult) | type_error
 {
   "checks whether the types {t1} and {t2}, which are
   assumed to not be named types, are compatible for a
@@ -2710,7 +2716,7 @@ typing relation annotate_set_array(
 ;
 
 typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
-         constants_set(True) | type_error
+         CheckResult | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
     prose_application = "checking whether {slices} are disjoint in {tenv} yields $\True$\ProseOrTypeError",
@@ -2721,14 +2727,14 @@ typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) -
 ;
 
 semantics function check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
-         constants_set(True) | TDynError
+         CheckResult | TDynError
 {
     "checks whether the sets of integers represented by the list of ranges {value_ranges} overlap, yielding $\True$. \ProseOtherwiseDynamicErrorOrDiverging",
     prose_application = "checking whether {value_ranges} are non-overlapping yields $\True$\ProseOrDynamicErrorOrDiverging",
 };
 
 semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint), range2: (s2: tint, l2: tint)) ->
-         constants_set(True) | TDynError
+         CheckResult | TDynError
 {
     "checks whether two sets of integers represented by the ranges $({s1},{l1})$ and $({s2},{l2})$ do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
     prose_application = "checking whether $({s1},{l1})$ and $({s2},{l2})$ do not intersect yields $\True$\ProseOrError",
@@ -3094,7 +3100,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 ;
 
 typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the slices in {slices} fit within the
   bitvector width given by {width} in {tenv}, yielding
@@ -3108,7 +3114,7 @@ typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0
 ;
 
 typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the set of positions in {positions} fit
   within the bitvector width given by {width}, yielding
@@ -3208,7 +3214,7 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
 ;
 
 typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks \RequirementRef{BitfieldAlignment} for every
   pair of bitfields in {bitfields}, contained in a
@@ -3417,7 +3423,7 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
 // Relations for Global Pragmas
 
 typing function check_global_pragma(genv: global_static_envs, d: decl) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "typechecks a global pragma declaration {d} in the
   \globalstaticenvironmentterm{} {genv}, yielding
@@ -3444,7 +3450,23 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}",
   math_layout = [_,_],
-};
+} =
+  gsd =: [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt, initial_value: initial_value];
+  check_var_not_in_genv(genv, name) -> True;
+  with_empty_local(genv) -> tenv;
+  must_be_pure := keyword in make_set(GDK_Constant, GDK_Config);
+  annotate_ty_opt_initial_value(tenv, keyword, must_be_pure, ty_opt, initial_value) -> (typed_initial_value, ty_opt', declared_t)
+  { [[_], [_]] };
+  add_global_storage(genv, name, keyword, declared_t) -> genv1;
+  with_empty_local(genv1) -> tenv1;
+  typed_initial_value =: (initial_value', t_init, ses_initial_value);
+  update_global_storage(tenv1, name, keyword, (t_init, initial_value', ses_initial_value)) -> tenv2
+  { [[_], _] };
+  new_gsd := [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt', initial_value: some(initial_value')];
+  new_genv := tenv2.static_envs_G;
+  --
+  (new_genv, new_gsd);
+;
 
 typing relation annotate_ty_opt_initial_value(
     tenv: static_envs,
@@ -3541,7 +3563,46 @@ typing relation update_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-updateglobalstorage}{updating} global storage {name} with keyword {gdk} and value {typed_initial_value} in {tenv} yields {new_tenv}",
   math_layout = (input[_,_,_,_], _),
-};
+} =
+  typed_initial_value =: (initial_value_type, initial_value', ses_initial_value)
+  { (_, [_]) };
+  case update_constant {
+    gdk = GDK_Constant;
+    static_eval(tenv, initial_value') -> v;
+    add_global_constant(tenv.static_envs_G, name, v) -> G';
+    new_tenv := tenv(static_envs_G : G');
+    --
+    new_tenv;
+  }
+
+  case let_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> some(e');
+    add_global_immutable_expr(tenv, name, e') -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case let_non_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> None;
+    --
+    tenv;
+  }
+
+  case config {
+    gdk = GDK_Config;
+    is_singular(tenv, initial_value_type) -> True;
+    --
+    tenv;
+  }
+
+  case var {
+    gdk = GDK_Var;
+    --
+    tenv;
+  }
+;
 
 typing function add_global_storage(
     genv: global_static_envs,
@@ -3601,7 +3662,55 @@ typing relation annotate_local_decl_item(
   prose_application = "annotating the local storage declaration with {ldi} and {ldk} with
   {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt} yields {new_tenv}\OrTypeError",
   math_layout = [[_,_,_,_,_], _],
-};
+} =
+  case var {
+    ldi =: LDI_Var(x);
+    check_var_not_in_env(tenv, x) -> True;
+    check_no_precision_loss(ty) -> True;
+    add_local(tenv, x, ty, ldk) -> tenv2;
+    add_immutable_expression(tenv2, ldk, e_opt, x) -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case tuple {
+    ldi =: LDI_Tuple(ids);
+    make_anonymous(tenv, ty) -> t';
+    te_check(ast_label(t') = label_T_Tuple, TE_UT) -> True;
+    t' =: T_Tuple(tys);
+    te_check(list_len(ids) = list_len(tys), TE_UT) -> True;
+    add_local_vars(tenv, ldk, list_combine(ids, tys)) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
+
+typing function add_local_vars(
+  tenv: static_envs,
+  ldk: local_decl_keyword,
+  typed_ids: list0((Identifier, ty))
+ ) ->
+  (new_tenv: static_envs) | type_error
+{
+  "updates {tenv} by binding the variables in {typed_ids} to their corresponding types,
+   in right-to-left order, yielding {new_tenv}. \ProseOtherwiseTypeError",
+   prose_application = "",
+} =
+  case empty {
+    typed_ids = empty_list;
+    --
+    tenv;
+  }
+
+  case non_empty {
+    typed_ids =: concat(typed_ids_prefix, match_singleton_list((id, t)));
+    check_var_not_in_env(tenv, id) -> True;
+    add_local(tenv, id, t, ldk) -> tenv1;
+    add_local_vars(tenv1, ldk, typed_ids_prefix) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
 
 semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: native_value, g1: XGraphs)) ->
   ResultLDI(new_g: XGraphs, new_env: envs)
@@ -3623,13 +3732,33 @@ semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: lis
 };
 
 typing function check_is_not_collection(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} has the structure of a
   \collectiontypeterm{}, and if so, raises a
   \typingerrorterm{}. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-checkisnotcollection}{verifying} type {t} in {tenv} is not a collection type yields True",
-};
+} =
+  make_anonymous(tenv, t) -> t_struct;
+  case collection {
+    ast_label(t_struct) = label_T_Collection;
+    --
+    TypeError(TE_UT);
+  }
+
+  case not_collection {
+    not(ast_label(t_struct) in make_set(label_T_Collection, label_T_Tuple));
+    --
+    True;
+  }
+
+  case tuple {
+    t_struct =: T_Tuple(tys);
+    INDEX(i, tys: check_is_not_collection(tenv, tys[i]) -> True);
+    --
+    True;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Pattern Matching
@@ -3642,7 +3771,147 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
   is the typed AST node for {p} and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError.",
   prose_application = "",
-};
+} =
+  case all {
+    p = Pattern_All;
+    --
+    (Pattern_All, empty_set);
+  }
+
+  case single {
+    p =: Pattern_Single(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+
+    case simple {
+      ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_String);
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case bits {
+      ast_label(t_struct) = label_T_Bits;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      check_bits_equal_width(tenv, t_struct, t_e_struct) -> b;
+      te_check(b, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case enum_type {
+      ast_label(t_struct) = label_T_Enum;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      t_struct =: T_Enum(li1);
+      t_e_struct =: T_Enum(li2);
+      te_check(li1 = li2, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case error {
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      not(ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_Bits, label_T_Enum));
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+  case range {
+    p =: Pattern_Range(e1, e2);
+    annotate_symbolically_evaluable_expr(tenv, e1) -> (t_e1, e1', ses1);
+    annotate_symbolically_evaluable_expr(tenv, e2) -> (t_e2, e2', ses2);
+    ses := union(ses1, ses2);
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e1) -> t_e1_struct;
+    make_anonymous(tenv, t_e2) -> t_e2_struct;
+    b := and(
+      ast_label(t_struct) = ast_label(t_e1_struct),
+      (ast_label(t_e1_struct) = ast_label(t_e2_struct)),
+      (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
+    )
+    { (_, [_]) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Range(e1', e2'), ses);
+  }
+
+  case leq {
+    p =: Pattern_Leq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real));
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Leq(e'), ses);
+  }
+
+  case geq {
+    p =: Pattern_Geq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
+    { (_, [_]) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Geq(e'), ses);
+  }
+
+  //case mask {
+  //  p =: Pattern_Mask(m);
+  //  check_structure_label(tenv, t, label_T_Bits) -> True;
+  //  n := list_len(m);
+  //  check_type_satisfies(tenv, t, T_Bits(n, empty_list)) -> True;
+  //  --
+  //  (Pattern_Mask(m), empty_set);
+  //}
+
+  case tuple {
+    p =: Pattern_Tuple(li);
+    get_structure(tenv, t) -> t_struct;
+    te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
+    t_struct =: T_Tuple(ts);
+    te_check(list_len(li) = list_len(ts), TE_UT) -> True;
+    INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
+    new_li := li';
+    ses := union_list(xs);
+    --
+    (Pattern_Tuple(new_li), ses);
+  }
+
+  case any {
+    p =: Pattern_Any(li);
+    INDEX(i, li: annotate_pattern(tenv, t, li[i]) -> (new_l[i], xs[i]));
+    new_li := new_l;
+    ses := union_list(xs);
+    --
+    (Pattern_Any(new_li), ses);
+  }
+
+  //case neg {
+  //  p =: Pattern_Not(q);
+  //  annotate_pattern(tenv, t, q) -> (new_q, ses);
+  //  --
+  //  (Pattern_Not(new_q), ses);
+  //}
+;
+
+render rule annotate_pattern_all = annotate_pattern(all);
+render rule annotate_pattern_single = annotate_pattern(single);
+render rule annotate_pattern_range = annotate_pattern(range);
+render rule annotate_pattern_leq = annotate_pattern(leq);
+render rule annotate_pattern_geq = annotate_pattern(geq);
+// render rule annotate_pattern_mask = annotate_pattern(mask);
+render rule annotate_pattern_tuple = annotate_pattern(tuple);
+render rule annotate_pattern_any = annotate_pattern(any);
+// render rule annotate_pattern_neg = annotate_pattern(neg);
+
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -3790,7 +4059,7 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     prose_application = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
 };
 
-typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
+typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} \typesatisfiesterm{} a type {s} in the static environment {tenv}. \ProseOtherwiseTypeError",
   prose_application = "checking whether {t} \typesatisfiesterm{} {s} in {tenv} yields $\True$\ProseOrTypeError",
@@ -4042,7 +4311,7 @@ typing function mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield)
   prose_application = "",
 };
 
-typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> constants_set(True) | type_error
+typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \structureterm{} of a type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
   prose_application = "checking whether the \structureterm{} of {t} has the AST label {l} yields $\True$\ProseOrTypeError",
@@ -4089,7 +4358,7 @@ typing function get_bitvector_const_width(tenv: static_envs, t: ty) ->
 };
 
 typing function check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "tests whether the types {t1} and {t2} are bitvector
   types of the same width. If the answer is positive,
@@ -4327,7 +4596,7 @@ typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> constants_set(True) | type_error
+typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> CheckResult | type_error
 {
   "returns $\True$ if the set of \sideeffectdescriptorsterm{} {ses} is \symbolicallyevaluableterm.
   \ProseOtherwiseTypeError",
@@ -4661,7 +4930,7 @@ typing relation override_subprograms(decls: list0(decl)) ->
 };
 
 typing function check_implementations_unique(impls: list0(func)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the \Proseimplementationsubprograms{}
   {impls} have unique signatures.
@@ -5157,7 +5426,7 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
 };
 
 typing function check_no_precision_loss(t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is the result of a
   precision loss in its constraint computation (see for
@@ -5166,7 +5435,7 @@ typing function check_no_precision_loss(t: ty) ->
 };
 
 typing function check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether an expression of type {s} can be used
   to initialize a storage element of type {t} in the
@@ -5722,7 +5991,7 @@ typing function can_omit_stdlib_param(func_sig: func) ->
 };
 
 typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that annotated parameters {params} are correct
   with respect to the declared parameters
@@ -5780,7 +6049,7 @@ typing function subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr
 };
 
 typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier, ty)), arg_types: list0(ty), eqs: list0((Identifier, expr))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the types {arg_types} \typesatisfyterm\
   the types of the corresponding formal arguments
@@ -6203,7 +6472,7 @@ typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: po
 };
 
 typing function check_control_flow(tenv: static_envs, f: func, body: stmt) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the annotated body statement {body} of the
   function definition {f} obeys the control-flow
@@ -6891,7 +7160,7 @@ typing function make_anonymous(tenv: static_envs, ty: ty) ->
 ;
 
 typing function check_constrained_integer(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is a
   \constrainedintegerterm{} type. If so, the result is
@@ -7052,7 +7321,7 @@ typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr)
   math_layout = [_,_],
 };
 
-typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_set(True) | type_error
+typing function check_underlying_integer(tenv: static_envs, t: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \underlyingtypeterm{} of an \integertypeterm{} in the \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
@@ -7064,7 +7333,7 @@ typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_
 // Relations for Type System Utilities
 
 typing function check_no_duplicates(ids: list0(Identifier)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the possibly-empty list of identifiers {ids}
   contains a duplicate identifier. If it does not, the
@@ -7099,7 +7368,7 @@ typing function with_empty_local(genv: global_static_envs) ->
 };
 
 typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in {tenv}. If
   it is, the result is a \typingerrorterm{}, and
@@ -7108,7 +7377,7 @@ typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
 };
 
 typing function check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in the
   \globalstaticenvironmentterm{} {genv}. If it is, the

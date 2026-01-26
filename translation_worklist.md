@@ -79,17 +79,15 @@ check_global_pragma
 
 ## GlobalStorageDeclarations.tex
 add_global_storage
-
-# Typing Relations/Functions Without Implementations
-
-## GlobalStorageDeclarations.tex
 annotate_ty_opt_initial_value
 declare_global_storage
 update_global_storage
-
-## LocalStorageDeclarations.tex
 annotate_local_decl_item
 check_is_not_collection
+
+# Typing Relations/Functions Without Implementations
+
+## LocalStorageDeclarations.tex
 
 ## PatternMatching.tex
 annotate_pattern

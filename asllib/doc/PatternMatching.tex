@@ -79,6 +79,7 @@ The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
   \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow (\overname{\PatternAll}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+\RenderRule{annotate_pattern_all}
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -170,6 +171,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
@@ -230,6 +232,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_single}
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -308,6 +312,7 @@ In \listingref{semantics-psingle},
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$ ($\PatternRange(\veonep, \vetwop)$).
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternRange(\veone, \vetwo)\\
@@ -328,6 +333,8 @@ In \listingref{semantics-psingle},
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_range}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \subsection{Semantics}

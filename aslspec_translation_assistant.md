@@ -45,13 +45,10 @@ This is the step-by-step workflow to translate inference rules from LaTeX to ASL
    - User may edit if needed; continue when approved
 
 9. **Wrap LaTeX rules**
-   - Once approved, wrap the original LaTeX rules in the `.tex` file with:
-     ```latex
-     \BackupOriginalRule{
-       % Original rules here
-     } % END_OF_BACKUP
-     ```
-   - This preserves the original rules as reference
+   - After the user confirms the PDF is correct, wrap the original LaTeX rules in the `.tex` file
+   - Add `\BackupOriginalRule{` on a new line immediately before the first `\begin{mathpar}`
+   - Add `} % END_OF_BACKUP_RULE` on a new line immediately after the last `\end{mathpar}`
+   - This preserves the original rules as reference while showing the ASLSpec translation in the PDF
 
 10. **Move to next relation**
    - Return to step 1
@@ -64,9 +61,13 @@ This is the step-by-step workflow to translate inference rules from LaTeX to ASL
   - The source LaTeX code itself
   - The function/relation signature in asl.spec
   - In these cases, stop and inform the user so they can fix it manually
+- **When stuck on translation**: If you're having trouble implementing something in ASLSpec, **stop and ask the user** rather than getting overly creative with workarounds. You may suggest:
+  - Missing operators or language features that would make the translation straightforward
+  - Alternative ways of achieving the translation goal
+  - Whether certain LaTeX patterns have established ASLSpec idioms
 - **Uncertain translations**: Always add `// UNCERTAIN: ...` comments if you're not confident about the translation
 - **RenderRule placement**: ALWAYS place `\RenderRule{<name>}` AFTER the LaTeX rules, never before
-- **Backup rules**: Wrap LaTeX rules with `\BackupOriginalRule{...} % END_OF_BACKUP` only AFTER user approval
+- **Backup rules**: Wrap LaTeX rules with `\BackupOriginalRule{...} % END_OF_BACKUP_RULE` only AFTER user confirms the PDF is correct
 - **Comments for review**: Use comments to highlight any translation decisions that might need user verification
 
 ---
