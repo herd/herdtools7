@@ -22,6 +22,7 @@ module type S = sig
   val pp : t -> string (* Pretty print *)
   val parse : MiscParser.fault_type -> t
   val compare : t -> t -> int
+  val matches : t -> t -> bool
 end
 
 module type AArch64Sig = sig
@@ -32,7 +33,7 @@ module type AArch64Sig = sig
     | Exclusive   (* memattr <> sharedWB *)
 
   type t =
-    | MMU of mmu_t
+    | MMU of DISide.t * mmu_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
