@@ -1,58 +1,4 @@
-# ASLSpec Translation Assistant
-
-## Workflow for Translating LaTeX Rules to ASLSpec
-
-This is the step-by-step workflow to translate inference rules from LaTeX to ASLSpec implementation code.
-
-### 10-Step Translation Workflow
-
-1. **Scan asl.spec starting from `typing relation annotate_expr`**
-   - Look for each `typing relation <name>` or `typing function <name>` declaration
-   - Note the line number and relation/function name
-
-2. **Find LaTeX source**
-   - Search for `\RenderRelation{<name>}` in the `.tex` files under `doc/`
-   - Record the file and line number
-
-3. **Locate LaTeX rules**
-   - Scan down from `\RenderRelation{<name>}`
-   - Find consecutive blocks of `\begin{mathpar}...\end{mathpar}` instances
-   - These LaTeX rules define the formal semantics to be translated
-
-4. **Translate LaTeX rules to ASLSpec**
-   - Use the translation patterns and best practices documented below
-   - If uncertain about any part, add `// UNCERTAIN: [description]` comments
-   - Generate the complete ASLSpec implementation
-
-5. **Modify asl.spec**
-   - Locate the relation/function definition in asl.spec
-   - Insert `} =` followed by the translated ASLSpec rule before the closing `;`
-   - Ensure proper indentation and syntax
-
-6. **Run typechecker and fix errors**
-   - Run `dune exec -- aslspec ./asl.spec --render` from `asllib/doc/`
-   - Fix any syntax errors, type mismatches, or undefined functions reported
-   - Iterate until the typechecker runs successfully
-   - This validates the implementation before proceeding
-
-7. **Add RenderRule directive**
-   - In the `.tex` file, add `\RenderRule{<name>}` immediately AFTER the LaTeX rules (after `\end{mathpar}`)
-   - This tells the PDF renderer to include the ASLSpec implementation
-
-8. **Render and inspect**
-   - Stop and ask user to render: `dune exec -- aslspec ./asl.spec --render` from `asllib/doc/`
-   - Wait for user to inspect the PDF output
-   - User may edit if needed; continue when approved
-
-9. **Wrap LaTeX rules**
-   - After the user confirms the PDF is correct, wrap the original LaTeX rules in the `.tex` file
-   - Add `\BackupOriginalRule{` on a new line immediately before the first `\begin{mathpar}`
-   - Add `} % END_OF_BACKUP_RULE` on a new line immediately after the last `\end{mathpar}`
-   - This preserves the original rules as reference while showing the ASLSpec translation in the PDF
-
-10. **Move to next relation**
-   - Return to step 1
-   - Continue with the next `typing relation` or `typing function` in asl.spec
+# ASLSpec Translation Assistant - rules and examples
 
 ### Important Notes
 
@@ -60,15 +6,24 @@ This is the step-by-step workflow to translate inference rules from LaTeX to ASL
 - **When errors occur**: If you have high confidence in your translation but the typechecker reports errors, the bug may be in:
   - The source LaTeX code itself
   - The function/relation signature in asl.spec
-  - In these cases, stop and inform the user so they can fix it manually
-- **When stuck on translation**: If you're having trouble implementing something in ASLSpec, **stop and ask the user** rather than getting overly creative with workarounds. You may suggest:
+  - In these cases, leave a message in comment for the user so they can fix it manually
+- **When stuck on translation**: If you're having trouble implementing something in ASLSpec, don't get overly creative with workarounds. You may suggest (in a comment for the user):
   - Missing operators or language features that would make the translation straightforward
   - Alternative ways of achieving the translation goal
   - Whether certain LaTeX patterns have established ASLSpec idioms
+- **Missing operators**: When you encounter an operation that cannot be expressed with existing ASLSpec operators, **recommend introducing a new operator** rather than attempting complex workarounds. For example:
+  - If you need to check whether one list is a subset of another but lack both `list_subset` and `list_to_set` operators, recommend adding one
+  - If you need to decompose or transform data structures without built-in support, suggest the appropriate operator
+  - Clearly specify the operator signature and semantics you would need (e.g., `list_subset : (list0(α), list0(α)) -> Bool`)
 - **Uncertain translations**: Always add `// UNCERTAIN: ...` comments if you're not confident about the translation
 - **RenderRule placement**: ALWAYS place `\RenderRule{<name>}` AFTER the LaTeX rules, never before
 - **Backup rules**: Wrap LaTeX rules with `\BackupOriginalRule{...} % END_OF_BACKUP_RULE` only AFTER user confirms the PDF is correct
 - **Comments for review**: Use comments to highlight any translation decisions that might need user verification
+- **INDEX vs list_map**: When mapping over a list in premises:
+  - Use `INDEX(i, list: relation(..., list[i]) -> results[i]);` when the mapped relation can short-circuit (has multiple output variants like `Bool | type_error`)
+  - Use `list_map(x, list, function(x))` only for pure functions with a single return type
+  - The `INDEX` macro allows short-circuiting: if any premise fails (e.g., returns `type_error`), the entire relation fails immediately
+  - This is crucial because relations with multiple output variants (including error cases) cannot be expressed with `list_map`
 
 ---
 
@@ -107,17 +62,23 @@ This document contains 67+ real-world examples of inference rule translations fr
 - **`\or(...) \and(...)` chains** → **ASLSpec `or()` or multiple `case` blocks**
 - **Set operations `\bigcup`, `\cap`, `\emptyset`** → **ASLSpec `union()`, `intersect()`, `empty_set`**
 - **List/sequence operations** → **ASLSpec `list_...` operators and `INDEX()`**
-- **Multiple case matching with `\begin{cases}`** → **ASLSpec `cond(condition : value, ...)`**
-  - Used when LaTeX has a piecewise definition with multiple conditions
-  - Each branch uses colon separator: `condition : value`
-  - First matching condition's value is returned
-  - Example: `cond(x > 0 : a, x = 0 : b, x < 0 : c)`
+- **Conditional expressions**:
+  - **Two cases** → **ASLSpec `if condition then value1 else value2`**
+    - Use for simple binary choices (LaTeX `\ifthenelse` or two-branch `\begin{cases}`)
+    - Example: `if x > 0 then a else b`
+  - **Three or more cases** → **ASLSpec `cond(condition : value, ...)`**
+    - Used when LaTeX has a piecewise definition with multiple conditions
+    - Each branch uses colon separator: `condition : value`
+    - First matching condition's value is returned
+    - Example: `cond(x > 0 : a, x = 0 : b, x < 0 : c)`
 - **Note**: Layout annotations like `{ math_layout = [...] }` are optional metadata used only when PDF rendering requires specific visual alignment; omit them in initial translations.
 
 ### Critical Syntax Rules
 - **Conclusion termination**: Each ASLSpec rule conclusion must end with a semicolon. Correct: `(value);` not `(value)` followed by `};` on the next line.
 - **Variable naming convention**: Variables ending in `_p` (meaning "primed") should use apostrophe notation instead. Use `t'` not `t_p`, and `t_spec'` not `t_spec_p`, following mathematical convention for primed variables.
 - **INDEX parentheses**: Outer parentheses around `INDEX` statements are typically redundant and should be omitted. Use `INDEX(i, list: operation);` not `( INDEX(i, list: operation) );`. Parentheses are only needed when the judgment is very long and requires vertical layout using a math layout directive like `{ [_] }` or `{ math_layout = ([_]) }`.
+- **Set membership for OR chains**: When checking if a value equals one of multiple possibilities, use set membership instead of chained OR operators. Use `x in make_set(a, b, c)` instead of `x = a || x = b || x = c`. This is more idiomatic and cleaner.
+  - Example: `ast_label(t) in make_set(label_T_Real, label_T_String, label_T_Bool)` instead of `ast_label(t) = label_T_Real || ast_label(t) = label_T_String || ast_label(t) = label_T_Bool`
 - **Error constructors**: Use the proper constructor names for error values:
   - Type errors: `TypeError(code)` not `type_error(code)`
   - Dynamic errors: `DynamicError(code)` not `de_error(code)` or similar
@@ -127,7 +88,42 @@ This document contains 67+ real-world examples of inference rule translations fr
 
 ### Bitfields
 
-#### 1. `annotate_bitfields`
+#### 1. `bitfields_included`
+
+**Source:** RelationsOnTypes.tex:2427-2434
+
+This example demonstrates the **INDEX pattern for list comprehensions with short-circuiting**.
+
+**LaTeX (Source):**
+
+```latex
+\begin{mathpar}
+\inferrule{
+  \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{\bf \in \bfsone} \vb_\vbf
+}{
+  \bitfieldsincluded(\tenv, \bfsone, \bfstwo) \typearrow \vb
+}
+\end{mathpar}
+```
+
+**ASLSpec (Target):**
+
+```aslspec
+INDEX(i, bfs1: mem_bfs(tenv, bfs2, bfs1[i]) -> bf_memberships[i]);
+--
+list_and(bf_memberships);
+```
+
+**Key Pattern:**
+- LaTeX: $\forall \vbf \in \bfsone: \relation(\vbf) \typearrow \vb_\vbf$ then $\vb \eqdef \bigwedge_{\bf \in \bfsone} \vb_\vbf$
+- ASLSpec: `INDEX(i, list: relation(args, list[i]) -> results[i]);` followed by `list_and(results);`
+- Use `INDEX` instead of `list_map` because `mem_bfs` has type `Bool | type_error` and can short-circuit
+- The `INDEX` macro allows the relation to fail with `type_error` if any premise fails
+
+---
+
+#### 2. `annotate_bitfields`
 
 **Source:** Bitfields.tex:198
 
@@ -1521,6 +1517,60 @@ annotate_stmt(tenv, s) -> (new_stmt, _, ses);
 --
 (new_stmt, ses);
 ```
+
+---
+
+### Relations On Types
+
+#### 1. `get_bitvector_width`
+
+**Source:** RelationsOnTypes.tex:2790-2810
+
+This example demonstrates **error case handling with negation checks**. The key pattern is using inequality (`!=`) as a filtering premise, not wrapping it in `te_check`.
+
+**LaTeX (Source):**
+
+```latex
+\begin{mathpar}
+\inferrule[okay]{
+  \tstruct(\tenv, \vt) \typearrow \TBits(\ve, \Ignore) \OrTypeError
+}{
+  \getbitvectorwidth(\tenv, \vt) \typearrow \ve
+}
+\and
+\inferrule[error]{
+  \tstruct(\tenv, \vt) \typearrow \vtp\\
+  \astlabel(\vtp) \neq \TBits
+}{
+  \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
+}
+\end{mathpar}
+```
+
+**ASLSpec (Target):**
+
+```aslspec
+case okay {
+  get_structure(tenv, t) -> T_Bits(e, _);
+  --
+  e;
+}
+
+case error {
+  get_structure(tenv, t) -> t';
+  ast_label(t') != label_T_Bits;
+  --
+  TypeError(TE_UT);
+}
+```
+
+**Key Patterns:**
+- **LaTeX negation check `\neq`** → **ASLSpec inequality premise `!=`**
+- **LaTeX `\TypeErrorVal{\UnexpectedType}`** → **ASLSpec `TypeError(TE_UT)`** (using proper constructor)
+- **Incorrect pattern**: Don't use `te_check(condition, error_code) -> True;` followed by `bot;`
+- **Correct pattern**: Use inequality as a filtering premise, then return the error constructor directly
+- The `!=` premise filters out cases where the label matches, leaving only error cases
+- Error constructors like `TypeError(...)` are proper ASLSpec values, not sentinel values like `bot`
 
 ---
 

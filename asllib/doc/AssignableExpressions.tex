@@ -559,6 +559,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
   \item $\newenv$ is $\env$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \newg\eqdef\vg\\
@@ -567,6 +568,8 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
   \evallexpr(\env, \LEDiscard, (\vv, \vg)) \evalarrow \ResultLexpr(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LEDiscard}
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
 \hypertarget{def-varlexprterm}{}
@@ -692,6 +695,7 @@ In \listingref{semantics-leglobalvar},
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \env \eqname (\tenv, \denv)\\
@@ -713,6 +717,8 @@ In \listingref{semantics-leglobalvar},
   \evallexpr(\env, \LEVar(\vx), (\vv, \vg)) \evalarrow \ResultLexpr(\newg,\newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LEVar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
 \section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
@@ -787,6 +793,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
   subexpressions, resulting in the output configuration $C$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vlelist \eqname [\vle_{1..n}]\\
@@ -797,6 +804,8 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
   \evallexpr(\env, \LEDestructuring(\vlelist), (\vv, \vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LEDestructuring}
 \CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LEMultiAssign}
@@ -826,6 +835,7 @@ See \ExampleRef{Multi-assignments}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -845,6 +855,9 @@ See \ExampleRef{Multi-assignments}.
   \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \ResultLexpr(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_multi_assignment}
+
 Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
 To see this, notice that
 to form a derivation tree, we must employ the \textsc{non\_empty} case, which ensures both lists
@@ -985,6 +998,7 @@ of \texttt{my\_array} to the value \texttt{53}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
@@ -999,6 +1013,8 @@ of \texttt{my\_array} to the value \texttt{53}.
   \evallexpr(\env, \LESetArray(\rearray, \eindex), (\vv, \vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESetArray}
 \CodeSubsection{\EvalLESetArrayBegin}{\EvalLESetArrayEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -1033,6 +1049,7 @@ cell of
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
@@ -1047,6 +1064,8 @@ cell of
   \evallexpr(\env, \LESetEnumArray(\rearray, \eindex), (\vv, \vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESetEnumArray}
 \CodeSubsection{\EvalLESetEnumArrayBegin}{\EvalLESetEnumArrayEnd}{../Interpreter.ml}
 
 \hypertarget{def-slicelexprterm}{}
@@ -1164,6 +1183,7 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\ebv)) \evalarrow \ResultExpr(\mbv,\envone) \OrAbnormal\\
@@ -1179,6 +1199,8 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
   \evallexpr(\envtwo, \LESlice(\ebv, \slices), (\vv, \vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESlice}
 \CodeSubsection{\EvalLESliceBegin}{\EvalLESliceEnd}{../Interpreter.ml}
 \subsubsection{Comments}
 See \SyntacticSugarRef{SetterFieldAssignment}.
@@ -1206,6 +1228,7 @@ writes \verb|1| to the common position $0$.
   \item the result is $\True$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1219,6 +1242,8 @@ writes \verb|1| to the common position $0$.
   \checknonoverlappingslices(\overname{\vrange_{1,,k}}{\valueranges}) \evalarrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_non_overlapping_slices}
 
 \SemanticsRuleDef{CheckTwoRangesNonOverlapping}
 \RenderRelation{check_two_ranges_non_overlapping}
@@ -1237,6 +1262,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalbinop(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
@@ -1249,6 +1275,8 @@ See \ExampleRef{Checking Slices for Overlaps}.
   \checktworangesnonoverlapping((\vsone, \vlone), (\vstwo, \vltwo)) \evalarrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_two_ranges_non_overlapping}
 
 \hypertarget{def-setfieldlexprterm}{}
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
@@ -1444,6 +1472,7 @@ in the environment where \verb|my_record| is bound to \\
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
@@ -1455,6 +1484,8 @@ in the environment where \verb|my_record| is bound to \\
     \evallexpr(\env, \LESetField(\rerecord, \fieldname), (\vv, \vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESetField}
 \CodeSubsection{\EvalLESetFieldBegin}{\EvalLESetFieldEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -1693,6 +1724,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1708,6 +1740,8 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
   \evallexpr(\env, \overname{\LESetFields(\vlerecord, \fields, \vslices)}{\vle}, (\vv,\vg)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESetFields}
 
 \SemanticsRuleDef{AssignBitvectorFields}
 \RenderRelation{assign_bitvector_fields}
@@ -1739,6 +1773,7 @@ $\nvbitvector('11111111 0000000000000000 1')$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \assignbitvectorfields(\vbitvector, \record, \overname{\emptylist}{\fields}, \overname{\emptylist}{\vslices}) \evalarrow
@@ -1767,7 +1802,8 @@ $\nvbitvector('11111111 0000000000000000 1')$.
   }
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{assign_bitvector_fields}
 \SemanticsRuleDef{LESetCollectionFields}
 
 \ExampleDef{Typing Collection Fields Assignable Expressions}
@@ -1798,6 +1834,7 @@ All of the collection field assignable expressions in
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vle = \LESetCollectionFields(\vbase, \fieldnames, \vslices)\\
@@ -1812,6 +1849,8 @@ All of the collection field assignable expressions in
   \evallexpr(\env, \vle, (\vv,\vg)) \evalarrow \ResultLexpr(\newg,\newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_lexpr_LESetCollectionFields}
 
 \section{Bitfield Assignable Expressions\label{sec:BitfieldAssignableExpressions}}
 \subsection{Abstract Syntax}

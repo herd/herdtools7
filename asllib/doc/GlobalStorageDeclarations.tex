@@ -350,6 +350,7 @@ See \ExampleRef{Declaring Global Storage}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \declareglobalstorage(\genv, \gsd) \typearrow (\newgenv, \gsdp) \OrTypeError
@@ -362,6 +363,8 @@ See \ExampleRef{Declaring Global Storage}.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{typecheck_decl_global_storage}
 
 \TypingRuleDef{DeclareGlobalStorage}
 \RenderRelation{declare_global_storage}
@@ -913,6 +916,7 @@ before having the chance to evaluate \verb|main|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \evalglobals(\overname{\emptylist}{\vdecls}, \envm) \evalarrow \overname{\envm}{C}
@@ -930,6 +934,8 @@ before having the chance to evaluate \verb|main|.
   \evalglobals(\overname{[\vd] \concat \vdecls'}{\vdecls}, \envm) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_globals}
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareGlobal}
@@ -950,6 +956,7 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \env \eqname (\tenv, \denv)\\
@@ -958,3 +965,5 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
   \declareglobal(\name, \vv, \env) \evalarrow \newenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{declare_global}

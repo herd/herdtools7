@@ -1774,6 +1774,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   \unopliterals(\op, l) \typearrow l' \\
@@ -1798,6 +1799,8 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalunop(\op, \vv) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_unop}
 
 \SemanticsRuleDef{BinopValues}
 \RenderRelation{eval_binop}
@@ -1854,6 +1857,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   \binopliterals(\op, l_1, l_2) \typearrow l' \\
@@ -1878,3 +1882,5 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_binop}

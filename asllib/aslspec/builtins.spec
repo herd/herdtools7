@@ -50,6 +50,12 @@ typedef Z
     math_macro = \Z,
 };
 
+operator is_integer(q: Q) -> Bool
+{
+  "{q} is an integer",
+  math_macro = \isintegerop,
+};
+
 typedef Q
 { "rational",
    math_macro = \Q,
@@ -103,14 +109,14 @@ variadic operator or(list1(Bool)) -> Bool
   math_macro = \lor,
 };
 
-operator list_and(list1(Bool)) -> Bool
+operator list_and(list0(Bool)) -> Bool
 {
-  math_macro = \land,
+  math_macro = \listand,
 };
 
-operator list_or(list1(Bool)) -> Bool
+operator list_or(list0(Bool)) -> Bool
 {
-  math_macro = \lor,
+  math_macro = \listor,
 };
 
 operator not(Bool) -> Bool

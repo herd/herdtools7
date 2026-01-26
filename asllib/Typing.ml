@@ -259,6 +259,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
         let new_name = name ^ "-" ^ string_of_int (ISet.cardinal other_names) in
         let clash =
           let formal_types = List.map snd formals in
+          (* SubprogramClash( *)
           (not (ISet.is_empty other_names))
           && ISet.exists
                (fun name' ->
@@ -290,6 +291,7 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
                   formals
             in
             fatal_from ~loc (Error.AlreadyDeclaredIdentifier name)
+          (* SubprogramClash) *)
         in
         let new_env = set_renamings name (ISet.add new_name other_names) env in
         (new_env, new_name) |: TypingRule.AddNewFunc
@@ -754,10 +756,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Int UnConstrained -> T_Int UnConstrained |> here
         | T_Int (WellConstrained (cs, precision)) ->
             let neg e = unop NEG e in
+            (* NegateConstraint( *)
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
                   Constraint_Range (neg bot, neg top)
+            (* NegateConstraint) *)
             in
             well_constrained ~loc ~precision (List.map constraint_minus cs)
         | T_Int (Parameterized _) ->
@@ -1337,7 +1341,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match index with
           | ArrayLength_Expr e -> (
               match get_variable_enum' env e with
-              | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
+              | Some (s, labels) ->
+                (* Enumerations are constants, hence no side effects. *)
+                (ArrayLength_Enum (s, labels), SES.empty)
               | None ->
                   let e', ses =
                     annotate_symbolic_constrained_integer ~loc env e
@@ -3038,6 +3044,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               if false then
                 Format.eprintf "Found rhs side-effects: %a@." SES.pp_print ses_e
             in
+            (* AnnotateLocalDeclTypeAnnot( *)
             let env1, ty_opt', ses_ldi =
               match ty_opt with
               | None ->
@@ -3057,6 +3064,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     annotate_local_decl_item ~loc env t' ldk ~e:typed_e ldi
                   in
                   (env1, Some t', ses_t)
+            (* AnnotateLocalDeclTypeAnnot) *)
             in
             let ses = SES.union ses_e ses_ldi in
             (S_Decl (ldk, ldi, ty_opt', Some e') |> here, env1, ses)
@@ -4308,6 +4316,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       List.fold_left process_one (impdefs, []) impls
 
     let override_subprograms override_mode ast =
+      (* OverrideDeclsSort( *)
       let impdefs, impls, normals =
         List.fold_left
           (fun (impdefs, impls, normals) decl ->
@@ -4320,6 +4329,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (impdefs, f_annotated :: impls, normals)
             | _ -> (impdefs, impls, decl :: normals))
           ([], [], []) ast
+      (* OverrideDeclsSort) *)
       in
       let normals = List.rev normals in
       let+ () = check_implementations_unique impls in

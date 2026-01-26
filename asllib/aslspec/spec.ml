@@ -2783,8 +2783,11 @@ module Check = struct
             (fun curr_env formal_type arg ->
               apply_type spec curr_env arg formal_type)
             type_env instantiated_arg_types args
-      | Expr.Tuple { args; _ }, Term.Tuple { args = target_args; _ } ->
-          assert (List.compare_lengths args target_args = 0);
+      | Expr.Tuple { args }, Term.Tuple { args = target_args } ->
+          let () =
+            if List.compare_lengths args target_args <> 0 then
+              Error.type_mismatch expr target_type
+          in
           List.fold_left2
             (fun curr_env arg (_, target_arg_type) ->
               apply_type spec curr_env arg target_arg_type)
@@ -3025,7 +3028,7 @@ module Check = struct
           | Some label ->
               let type_components = args_of_tuple id_to_defining_node label in
               if List.compare_lengths args type_components <> 0 then
-                Error.invalid_number_of_components label expr
+                Error.invalid_number_of_components expr
                   ~expected:(List.length type_components)
                   ~actual:(List.length args)
           | None -> ())

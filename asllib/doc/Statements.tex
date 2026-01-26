@@ -298,9 +298,12 @@ and \verb|-| is a discarded \assignableexpression{}.
 \ProseEqdef{$\vle$}{$\True$ if and only if $\vle$ is either a variable or a discarded left-hand-side expression.}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{lexpr_is_var}
 
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
 \subsection{Syntax}
@@ -680,6 +683,7 @@ See \ExampleRef{Typing Declaration Statements}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\\\\
@@ -710,6 +714,8 @@ See \ExampleRef{Typing Declaration Statements}.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_local_decl_type_annot}
 
 \TypingRuleDef{InheritIntegerConstraints}
 \RenderRelation{inherit_integer_constraints}
@@ -752,6 +758,7 @@ in the \CaseName{int} below.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[int]{
   \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\\\\
@@ -790,6 +797,8 @@ in the \CaseName{int} below.
   \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{inherit_integer_constraints}
 
 \TypingRuleDef{CheckNoPrecisionLoss}
 \RenderRelation{check_no_precision_loss}
@@ -826,6 +835,7 @@ constant types would result in more than $\maxconstraintsize$ elements, see
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[Well-Constrained]{%
     \techeck(p = \PrecisionFull, \PrecisionLostDefining) \typearrow \True\OrTypeError
@@ -849,7 +859,8 @@ constant types would result in more than $\maxconstraintsize$ elements, see
     \checknoprecisionloss(\vt) \typearrow \True
   }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{check_no_precision_loss}
 \CodeSubsection{\CheckNoPrecisionLossBegin}{\CheckNoPreciisonLossEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckCanBeInitializedWith}
@@ -875,6 +886,7 @@ See \ExampleRef{Type-satisfaction Examples}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \True
@@ -890,6 +902,8 @@ See \ExampleRef{Type-satisfaction Examples}.
   \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_can_be_initialized_with}
 \identr{ZCVD}  \identr{LXQZ}
 
 \subsection{Semantics}
@@ -2123,6 +2137,7 @@ limit expressions.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow (\overname{\None}{\vep}, \overname{\emptyset}{\vses})
@@ -2135,6 +2150,8 @@ limit expressions.
   \annotatelimitexpr(\tenv, \overname{\some{\vlimit}}{\ve}) \typearrow (\overname{\some{\vlimitp}}{\vep}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_limit_expr}
 \CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -2235,6 +2252,7 @@ and the loop condition $\ve$ not holding, which is exactly when we want the
 loop to exit. The opposite holds for a \texttt{repeat} loop.
 The negation of the condition is used to decide whether to continue the loop iteration.
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exit]{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\\\\
@@ -2263,6 +2281,8 @@ The negation of the condition is used to decide whether to continue the loop ite
   \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_loop}
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalLimit}
@@ -2296,6 +2316,7 @@ of the \whilestatementterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \evallimit(\env, \overname{\None}{\velimitopt}) \evalarrow (\overname{\None}{\vvopt}, \overname{\emptygraph}{\vg})
@@ -2309,6 +2330,8 @@ of the \whilestatementterm.
   \evallimit(\env, \overname{\some{\velimit}}{\velimitopt}) \evalarrow (\overname{\some{\vv}}{\vvopt}, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_limit}
 
 \SemanticsRuleDef{TickLoopLimit}
 \RenderRelation{tick_loop_limit}
@@ -2341,6 +2364,7 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \ticklooplimit(\overname{\None}{\vvopt}) \evalarrow \overname{\None}{\vvoptp}
@@ -2360,6 +2384,8 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
   \ticklooplimit(\overname{\some{ 0 }}{\vvopt}) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{tick_loop_limit}
 
 \section{Repeat Statements\label{sec:RepeatStatements}}
 \hypertarget{def-repeatstatementterm}{}
@@ -2719,6 +2745,7 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[not\_integers]{
   \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
@@ -2749,6 +2776,8 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{get_for_constraints}
 
 \subsection{Semantics}
 \SemanticsRuleDef{SFor}
@@ -2856,38 +2885,6 @@ they are evaluated via $\evalexprsef$.
 \SemanticsRuleDef{EvalFor}
 \RenderRelation{eval_for}
 
-
-\RenderRelation{eval_for_step}
-
-\RenderRelation{eval_for_loop}
-
-\ProseParagraph
-\subsubsection{Stepping the Index Variable}
-\AllApply
-\begin{itemize}
-  \item $\opfordir$ is either $\ADD$ when $\dir$ is $\UP$ or $\SUB$ when $\dir$ is $\DOWN$;
-  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
-  \item applying the binary operator $\opfordir$ to $\vstart$ and the native integer for $1$ is $\vstep$;
-  \item the execution graph for writing $\vstep$ into the identifier $\vindexname$ gives $\vgtwo$;
-  \item updating the local component of the dynamic environment of $\env$ by binding \\ $\vindexname$ to $\vstep$
-  gives $\newenv$;
-  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-\end{itemize}
-
-\subsubsection{Running the Loop Body}
-\AllApply
-\begin{itemize}
-    \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
-      yields\\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
-  \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
-        ($\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$) yields\\ $((\vstep, \envtwo), \vgtwo)$;
-  \item evaluating the \texttt{for} loop with $(\vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody)$
-        in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
-  \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
-        edge.
-\end{itemize}
-
-\subsubsection{Overall Evaluation}
 \ExampleDef{Overall Evaluation of For Statements}
 The specification in \listingref{semantics-sfor}
 does not result in any assertion error, and terminates with exit-code $0$.
@@ -2897,6 +2894,7 @@ a continuing configuration $\Continuing(\newg, \newenv)$, or a returning configu
 (in case the body of the loop results in an early return),
 or an abnormal configuration.
 
+\ProseParagraph
 \AllApply
 \begin{itemize}
   \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
@@ -2926,51 +2924,7 @@ or an abnormal configuration.
 \end{itemize}
 
 \FormallyParagraph
-Advancing the loop counter one step towards the end of its range is achieved via the following rule:
-\begin{mathpar}
-\inferrule{
-  \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
-  \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
-  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
-  \env \eqname (\tenv, \denv)\\
-  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  {
-    \begin{array}{r}
-      \evalforstep(\env, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow \\
-      ((\vstep, \newenv), \newg)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-Running the loop body is achieved via the following rule:
-\begin{mathpar}
-\inferrule{
-  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
-  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
-  {
-    \begin{array}{r}
-      \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\vgthree, \newenv) \OrAbnormalReturning
-    \end{array}
-  }\\
-  \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
-}{
-  {
-    \begin{array}{r}
-      \evalforloop(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\newg, \newenv)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-Finally, the rules for evaluating a \texttt{for} loop utilize both $\evalforstep$
-and \\
-$\evalforloop$ (the latter in a mutually recursive manner):
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[return]{
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
@@ -3006,7 +2960,93 @@ $\evalforloop$ (the latter in a mutually recursive manner):
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_for}
 \CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
+
+\SemanticsRuleDef{EvalForLoop}
+\RenderRelation{eval_for_loop}
+
+See \ExampleRef{Overall Evaluation of For Statements}.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+    \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
+      yields\\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+  \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
+        ($\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$) yields\\ $((\vstep, \envtwo), \vgtwo)$;
+  \item evaluating the \texttt{for} loop with $(\vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody)$
+        in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
+  \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
+        edge.
+\end{itemize}
+
+\FormallyParagraph
+\BackupOriginalRule{
+\begin{mathpar}
+\inferrule{
+  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
+  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
+  {
+    \begin{array}{r}
+      \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\vgthree, \newenv) \OrAbnormalReturning
+    \end{array}
+  }\\
+  \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
+}{
+  {
+    \begin{array}{r}
+      \evalforloop(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
+      \Continuing(\newg, \newenv)
+    \end{array}
+  }
+}
+\end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_for_loop}
+
+\SemanticsRuleDef{EvalForStep}
+\RenderRelation{eval_for_step}
+
+See \ExampleRef{Overall Evaluation of For Statements}.
+
+\ProseParagraph
+\AllApply
+\begin{itemize}
+  \item $\opfordir$ is either $\ADD$ when $\dir$ is $\UP$ or $\SUB$ when $\dir$ is $\DOWN$;
+  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
+  \item applying the binary operator $\opfordir$ to $\vstart$ and the native integer for $1$ is $\vstep$;
+  \item the execution graph for writing $\vstep$ into the identifier $\vindexname$ gives $\vgtwo$;
+  \item updating the local component of the dynamic environment of $\env$ by binding \\ $\vindexname$ to $\vstep$
+  gives $\newenv$;
+  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
+\end{itemize}
+
+\FormallyParagraph
+Advancing the loop counter one step towards the end of its range is achieved via the following rule:
+\BackupOriginalRule{
+\begin{mathpar}
+\inferrule{
+  \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
+  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
+  \env \eqname (\tenv, \denv)\\
+  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
+  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
+}{
+  {
+    \begin{array}{r}
+      \evalforstep(\env, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow \\
+      ((\vstep, \newenv), \newg)
+    \end{array}
+  }
+}
+\end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_for_step}
 
 \hypertarget{def-throwstatementterm}{}
 \section{Throw Statements\label{sec:ThrowStatements}}
@@ -3498,6 +3538,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -3505,7 +3546,6 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 }
 \end{mathpar}
 
-\subsubsection{Semantics}
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vEs = [\ve] \concat \vesone\\
@@ -3515,6 +3555,8 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
   \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_list_m}
 
 \SemanticsRuleDef{WriteFolder}
 \RenderRelation{write_folder}
@@ -3551,6 +3593,7 @@ empty \executiongraphterm{}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \writefolder(\overname{\emptylist}{\vms}) \evalarrow (\overname{\emptylist}{\vvs}, \overname{\emptygraph}{\newg})
@@ -3570,6 +3613,8 @@ empty \executiongraphterm{}.
   \writefolder(\vms) \evalarrow (\vvs, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{write_folder}
 
 \hypertarget{def-printstatementterm}{}
 \section{Print Statements\label{sec:PrintStatements}}

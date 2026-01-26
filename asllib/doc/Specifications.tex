@@ -243,7 +243,7 @@ and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which i
   \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
   \SCC(\defs, \reverseddependencies) = \comps\\
   \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
-  \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\\
+  \compdecls \eqdef [ \vc\in\orderedcomps: \listset{\vc} ]\\
   \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
   \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
 }{
@@ -300,6 +300,7 @@ except for the component
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotatedeclcomps(\genv, \overname{\emptylist}{\comps}) \aslto (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newdecls})
@@ -327,6 +328,8 @@ except for the component
   (\newgenv, \overname{\declsone \concat \declstwo}{\newdecls})
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{annotate_decl_comps}
 
 \TypingRuleDef{TypeCheckMutuallyRec}
 \RenderRelation{type_check_mutually_rec}
@@ -453,6 +456,7 @@ of the subprogram declarations.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow
@@ -469,6 +473,8 @@ of the subprogram declarations.
   \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_subprograms}
 
 \TypingRuleDef{AddSubprogramDecls}
 \RenderRelation{add_subprogram_decls}
@@ -499,6 +505,7 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow \overname{\tenv}{\newtenv}
@@ -514,6 +521,8 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
   \newtenv
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{add_subprogram_decls}
 
 \section{Overriding Subprograms\label{sec:Overriding Subprograms}}
 This section defines how to override subprograms in a specification.
@@ -582,6 +591,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vimpdefs \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Impdef] \\
@@ -603,6 +613,60 @@ See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
   \overridesubprograms(\decls) \typearrow \declsp
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{override_subprograms}
+
+\TypingRuleDef{OverrideDeclsSort}
+\RenderRelation{override_decls_sort}
+See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item $\decls$ is the empty list;
+    \item the result is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\decls$ is the list with \head{} $\vd$ and \tail{} $\declsone$;
+    \item applying $\overridedeclssort$ to $\declsone$ yields\\
+           $(\impdefstail, \implstail, \normalstail)$\ProseOrTypeError;
+    \item \OneApplies
+    \begin{itemize}
+
+      \item \AllApplyCase{impdef}
+      \begin{itemize}
+        \item $\vd$ is an \Proseimpdefsubprogram{} with function definition $\vf$;
+        \item \Proseeqdef{$\impdefs$}{the list with \head{} $\vf$ and \tail{} $\impdefstail$};
+        \item \Proseeqdef{$\impls$}{$\implstail$};
+        \item \Proseeqdef{$\normals$}{$\normalstail$};
+      \end{itemize}
+
+      \item \AllApplyCase{implementation}
+      \begin{itemize}
+        \item $\vd$ is an \Proseimplementationsubprogram{} with function definition $\vf$;
+        \item \Proseeqdef{$\impdefs$}{$\impdefstail$};
+        \item \Proseeqdef{$\impls$}{the list with \head{} $\vf$ and \tail{} $\implstail$};
+        \item \Proseeqdef{$\normals$}{$\normalstail$};
+      \end{itemize}
+
+      \item \AllApplyCase{other}
+      \begin{itemize}
+        \item $\vd$ is a \Proseimpdefsubprogram{};
+        \item \Proseeqdef{$\impdefs$}{$\impdefstail$};
+        \item \Proseeqdef{$\impls$}{$\implstail$};
+        \item \Proseeqdef{$\normals$}{the list with \head{} $\vd$ and \tail{} $\normalstail$};
+      \end{itemize}
+
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\RenderRule{override_decls_sort}
 
 \TypingRuleDef{CheckImplementationsUnique}
 \RenderRelation{check_implementations_unique}
@@ -626,6 +690,7 @@ See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplement
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \checkimplementationsunique(\overname{\emptylist}{\vimpls}) \typearrow \True
@@ -640,6 +705,8 @@ See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplement
   \checkimplementationsunique(\overname{[\vh] \concat \vt}{\vimpls}) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{check_implementations_unique}
 
 \TypingRuleDef{SignaturesMatch}
 \RenderRelation{signatures_match}
@@ -656,6 +723,7 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
     \booltrans(\vfuncone.\FIELDname = \vfunctwo.\FIELDname) \booltransarrow \True \terminateas \False \\
@@ -684,6 +752,8 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
     \signaturesmatch(\vfuncone, \vfunctwo) \typearrow \True
   }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{signatures_match}
 
 \TypingRuleDef{ProcessOverrides}
 \RenderRelation{process_overrides}
@@ -711,6 +781,7 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \processoverrides(\vimpdefs, \overname{\emptylist}{\vimpls}) \typearrow (\overname{\vimpdefs}{\vimpdefsp}, \emptylist)
@@ -729,6 +800,8 @@ See \ExampleRef{Overriding Subprograms} for an example of valid replacement of a
   \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow (\vimpdefsp, \vdiscarded)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{process_overrides}
 
 \TypingRuleDef{RenameSubprograms}
 \RenderRelation{rename_subprograms}
@@ -758,6 +831,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \renamesubprograms(\overname{\emptylist}{\vdiscarded}) \typearrow \overname{\emptylist}{\vrenameddiscarded}
@@ -773,6 +847,8 @@ In particular, though the ill-typed subprogram is overridden and will not be use
   \renamesubprograms(\overname{[\vh] \concat \vt}{\vdiscarded}) \typearrow \overname{[\vhp] \concat \vtp}{\vrenameddiscarded}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{rename_subprograms}
 
 \section{Defined-Used Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
@@ -831,6 +907,7 @@ is as follows:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \defs \eqdef \{ \defdecl(\vd) \;|\; \vd \in \decls\} \cup \bigcup_{\vd\in\decls} \defenumlabels(\vd)\\
@@ -839,6 +916,8 @@ is as follows:
   \builddependencies(\decls) \typearrow (\defs, \dependencies)
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{build_dependencies}
 
 \TypingRuleDef{DeclDependencies}
 \RenderRelation{decl_dependencies}
@@ -860,6 +939,7 @@ Define $\dependencies$ as the union of the following two sets of pairs:
 \end{enumerate}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -872,6 +952,8 @@ Define $\dependencies$ as the union of the following two sets of pairs:
   \decldependencies(\vd) \typearrow \dependencies
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderRule{decl_dependencies}
 
 \TypingRuleDef{DefDecl}
 \RenderRelation{def_decl}
@@ -905,6 +987,7 @@ which appear in comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[d\_func]{}{
   \defdecl(\overname{\DFunc(\FIELDname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
@@ -918,6 +1001,8 @@ which appear in comments to their right.
   \defdecl(\overname{\DTypeDecl(\id, \Ignore, \Ignore)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{def_decl}
 
 \TypingRuleDef{DefEnumLabels}
 \RenderRelation{def_enum_labels}
@@ -945,6 +1030,7 @@ $\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[decl\_enum]{
   \vd = \DTypeDecl(\name, \TEnum(\vlabelsone, \Ignore)) \\
@@ -959,6 +1045,8 @@ $\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
   \defenumlabels(\vd) \typearrow \overname{\emptyset}{\vlabels}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{def_enum_labels}
 
 \TypingRuleDef{UseDecl}
 \RenderRelation{use_decl}
@@ -996,6 +1084,7 @@ used by each global declaration via comments above it.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[D\_TypeDecl]{}{
   \usedecl(\overname{\DTypeDecl(\Ignore, \tty, \fields)}{\vd}) \typearrow \overname{\usety(\tty) \cup \usesubtypes(\fields)}{\ids}
@@ -1040,6 +1129,8 @@ used by each global declaration via comments above it.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_decl}
 
 \TypingRuleDef{UseTy}
 We define the following convenience type to allow handling both types and optional types uniformly:
@@ -1123,6 +1214,7 @@ used by them appearing as comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \usety(\overname{\None}{\vt}) \typearrow \overname{\emptyset}{\ids}
@@ -1189,6 +1281,8 @@ used by them appearing as comments to their right.
   \usety(\overname{\TBits(\ve, \bitfields)}{\vt}) \typearrow \overname{\useexpr(\ve) \cup \bigcup_{\vf \in\bitfields}\usebitfield(\vf)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_ty}
 
 \TypingRuleDef{UseSubtypes}
 \RenderRelation{use_subtypes}
@@ -1216,6 +1310,7 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \usesubtypes(\overname{\None}{\fields}) \typearrow \overname{\emptyset}{\ids}
@@ -1227,6 +1322,8 @@ $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
   \usesubtypes(\overname{\some{(\vx, \subfields)}}{\fields}) \typearrow \ids
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_subtypes}
 
 \TypingRuleDef{UseExpr}
 We define the following convenience type to allow handling both expressions and optional expressions uniformly:
@@ -1376,6 +1473,7 @@ by expressions on the right-hand-side of assignments in comments appearing to th
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \useexpr(\overname{\None}{\ve}) \typearrow \overname{\emptyset}{\ids}
@@ -1497,6 +1595,8 @@ by expressions on the right-hand-side of assignments in comments appearing to th
   \useexpr(\overname{\EPattern(\veone, \vp)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \usepattern(\vp)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_expr}
 
 \TypingRuleDef{UseLexpr}
 \RenderRelation{use_lexpr}
@@ -1561,6 +1661,7 @@ by the assignable expressions on the left-hand-side of assignments in comments a
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[le\_var]{}{
   \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\Other(\vx)}{\ids}
@@ -1604,6 +1705,8 @@ by the assignable expressions on the left-hand-side of assignments in comments a
   \uselexpr(\overname{\LESlice(\veone, \slices)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_lexpr}
 
 \TypingRuleDef{UsePattern}
 \RenderRelation{use_pattern}
@@ -1666,6 +1769,7 @@ and the identifiers used by them, appearing in comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[mask\_all]{
   \astlabel(\vp) \in \{\PatternMask, \PatternAll\}
@@ -1715,6 +1819,8 @@ and the identifiers used by them, appearing in comments to their right.
   \usepattern(\overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_pattern}
 
 \TypingRuleDef{UseSlice}
 \RenderRelation{use_slice}
@@ -1741,6 +1847,7 @@ and the identifiers they use, appearing in comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single]{}{
   \useslice(\overname{\SliceSingle(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
@@ -1752,6 +1859,8 @@ and the identifiers they use, appearing in comments to their right.
   \useslice(\overname{L(\veone, \vetwo)}{\vs}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_slice}
 
 \TypingRuleDef{UseBitfield}
 \RenderRelation{use_bitfield}
@@ -1787,6 +1896,7 @@ appearing as comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[simple]{}{
   \usebitfield(\overname{\BitFieldSimple(\Ignore, \slices)}{\vbf}) \typearrow \overname{\bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
@@ -1804,6 +1914,8 @@ appearing as comments to their right.
   \usebitfield(\overname{\BitFieldType(\Ignore, \slices, \tty)}{\vbf}) \typearrow \ids
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_bitfield}
 
 \TypingRuleDef{UseConstraint}
 \RenderRelation{use_constraint}
@@ -1831,6 +1943,7 @@ appearing in comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{}{
   \useconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\useexpr(\ve)}{\ids}
@@ -1840,6 +1953,8 @@ appearing in comments to their right.
   \useconstraint(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_constraint}
 
 \TypingRuleDef{UseLDI}
 \RenderRelation{use_ldi}
@@ -1865,6 +1980,7 @@ and the identifiers used by them, appearing in the comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[ldi\_var]{}{
     \useldi(\overname{\LDIVar(\vx)}{\vl})
@@ -1878,6 +1994,8 @@ and the identifiers used by them, appearing in the comments to their right.
     \{ \Other(\vx) \;|\; \vx \in \vli \}
   }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_ldi}
 
 \TypingRuleDef{UseStmt}
 \RenderRelation{use_stmt}
@@ -1984,6 +2102,7 @@ and the identifiers used by them, appearing in comments to their right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[pass\_return\_none]{
   \vs = \SPass \lor \vs = \SReturn(\None)
@@ -2090,6 +2209,8 @@ and the identifiers used by them, appearing in comments to their right.
   \usestmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\emptyset}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_stmt}
 
 \TypingRuleDef{UseCatcher}
 \RenderRelation{use_catcher}
@@ -2106,11 +2227,14 @@ and the identifiers used by it, appearing in comments to its right.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \usecatcher(\overname{(\Ignore, \tty, \vs)}{\vc}) \typearrow \overname{\usety(\tty) \cup \usestmt(\vs)}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{use_catcher}
 
 \section{Ordering Global Declarations via Defined-Used Dependencies\label{sec:Dependencies}}
 
@@ -2147,7 +2271,6 @@ The semantics of specifications is defined via the relation $\evalspec$, which i
 \SemanticsRuleDef{EvalSpec}
 \RenderRelation{eval_spec}
 
-
 \ExampleRef{Returning a Value from the Entry Point} shows a specification
 whose evaluation results in returning the value $\nvint(0)$.
 
@@ -2180,6 +2303,7 @@ results in a \dynamicerrorterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normal]{
   \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
@@ -2210,6 +2334,8 @@ results in a \dynamicerrorterm.
   \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_spec}
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{BuildGlobalEnv}
@@ -2231,6 +2357,7 @@ See \ExampleRef{Evaluating a List of Global Declarations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \env \eqdef (\tenv, \emptydenv)\\
@@ -2239,4 +2366,6 @@ See \ExampleRef{Evaluating a List of Global Declarations}.
   \buildgenv(\tenv, \typedspec) \evalarrow (\newenv, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{build_genv}
 \CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}

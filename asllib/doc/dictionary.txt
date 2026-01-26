@@ -526,6 +526,7 @@ create
 creates
 creating
 creation
+cross
 current
 currently
 custom
@@ -1505,6 +1506,7 @@ pair
 paired
 pairing
 pairs
+pairwise
 paragraph
 parallel
 parameter
@@ -2190,6 +2192,7 @@ transitioning
 transitions
 transitive
 transitively
+translate
 translated
 translates
 translation
@@ -2315,6 +2318,7 @@ various
 vector
 vectors
 verbatim
+verbose
 verification
 verifiers
 verifying

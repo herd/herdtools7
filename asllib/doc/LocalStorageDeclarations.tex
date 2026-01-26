@@ -277,6 +277,7 @@ to the evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vgone)\\
@@ -286,6 +287,8 @@ to the evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDIVar(\vx), \vm) \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
 \section{Typing of Tuple Declarations\label{sec:Typing of Tuple Declarations}}
@@ -383,6 +386,7 @@ evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vg)\\
@@ -394,6 +398,8 @@ evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_local_decl_LDI_Tuple}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareLDITuple}
@@ -423,6 +429,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -442,3 +449,5 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
   \declareldituple(\env, \vids, \liv) \evalarrow \ResultLDI(\vg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{declare_ldi_tuple}

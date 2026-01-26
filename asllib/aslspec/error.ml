@@ -140,12 +140,17 @@ let invalid_number_of_arguments rel_name expr ~expected ~actual =
         number of arguments: expected %d but found %d"
        rel_name PP.pp_expr expr expected actual
 
-let invalid_number_of_components label expr ~expected ~actual =
+let invalid_number_of_components expr ~expected ~actual =
   spec_error
   @@ Format.asprintf
-       "The application of tuple label '%s' in expression %a has an invalid \
-        number of args: expected %d but found %d"
-       label PP.pp_expr expr expected actual
+       "The tuple expression %a has an invalid number of args: expected %d but \
+        found %d"
+       PP.pp_expr expr expected actual
+
+let type_mismatch expr term =
+  spec_error
+  @@ Format.asprintf "The expression %a cannot be typed as %a" PP.pp_expr expr
+       PP.pp_type_term term
 
 let invalid_record_field_names expr expr_field_names record_type_field_names =
   spec_error

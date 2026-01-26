@@ -25,12 +25,11 @@ We use $\triangleq$ to define mathematical concepts.
 
 We define the following sets:
 \begin{itemize}
-\item \RenderType{N} is the set of natural numbers, including $0$.
+\item $\N$ is the set of natural numbers, including $0$.
 
 \item \RenderType{N_pos} is the set of positive natural numbers (that is, excluding $0$).
 
-\item \RenderType{Z}
-is the set of integers.
+\item $\Z$ is the set of integers.
 
 \item \RenderType{Q}
 is the set of rational numbers.
@@ -45,12 +44,12 @@ and logical negation $\neg$, given next.
 For a set of Boolean values $A$:
 \[
   \begin{array}{rcl}
-  \land A &\triangleq&
+  \listand A &\triangleq&
   \begin{cases}
     \True & \text{if all values in A are }\True\\
     \False & \text{otherwise}
   \end{cases}\\
-  \lor A &\triangleq&
+  \listor A &\triangleq&
   \begin{cases}
     \False & \text{if all values in A are }\False\\
     \True & \text{otherwise}
@@ -158,6 +157,22 @@ We use the symbol \RenderConstant{bot} to denote an undefined, or missing, value
 
 Notice that the domain of a partial function need not be finite, which is what the following definition covers.
 
+\texthypertarget{relation-map_apply_opt}
+\begin{definition}[Safe Function Application]
+The parametric function
+\[
+  \mapapplyoptop{\overname{A \partialto B}{\vf}}{\overname{A}{\va}} \aslto \Option{\overname{B}{\vb}}
+\]
+safely applies a partial function $\vf$ to an argument $\va$:
+\[
+  \mapapplyoptop{\vf}{\va} \triangleq
+  \begin{cases}
+    \some{\vb} & \text{if }\va \in \dom(\vf) \text{ and } \vf(\va) = \vb\\
+    \None       & \text{if }\vf(\va) = \bot
+  \end{cases}
+\]
+\end{definition}
+
 \hypertarget{def-finfunction}{}
 \begin{definition}[Finite-domain Function]
 The notation $\rightarrowfin$ stands for a function whose domain is finite.
@@ -180,7 +195,11 @@ The function with an empty domain is denoted as $\emptyfunc$.
   \]
 
   The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
-  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$ (alternatively, \\
+  \texthypertarget{def-bindingstomap}
+  $\bindingstomap{[i=1..k: a_i\mapsto b_i]}$),
+  \texthypertarget{relation-bindings}
+  and $\bindings{f}$ returns the list of input-output pairs of $f$ in an arbitrary order.
 \end{definition}
 
 \begin{definition}[Function Restriction]
@@ -264,14 +283,26 @@ Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ 
 
 \hypertarget{def-listset}{}
 \begin{definition}[Listing a Set]
-The parametric relation $\listset : \pow{T} \cartimes \KleeneStar{T}$
+The parametric relation $\listset{\pow{T}} \cartimes \KleeneStar{T}$
 lists the elements of a set in an arbitrary order:
 
 \[
-\listset(X) \triangleq \begin{cases}
+\listset{X} \triangleq \begin{cases}
   \emptylist & \text{if }X = \emptyset\\
   x_{1..k}\text{ such that }|X| = k\text{ and }\forall x\in X.\ \exists 1 \leq i \leq k.\ x = x_i & \text{otherwise } \enspace.
 \end{cases}
+\]
+\end{definition}
+
+\hypertarget{relation-bindings}{}
+\begin{definition}[Listing the Bindings of a Function]
+The parametric relation
+\[
+\bindings{\overtext{A \partialto B}{\vf}} \cartimes (\KleeneStar{A \times B})
+\]
+lists the pairs of input-output values for a given partial function f:
+\[
+\bindings{f} = [ (a,b) \;|\; a \in \dom(f) \wedge f(a) = b] \enspace.
 \]
 \end{definition}
 
@@ -390,26 +421,27 @@ transforms a list of triples into the corresponding triple of lists:
 \hypertarget{operator-listcombinethree}{} % DO NOT LINT
 As a shorthand, we use the notation $\listcombinethree{a}{b}{c} = d$ for $\unziplistthree(d) = (a, b, c)$.
 
-\hypertarget{def-uniquelist}{}
-\hypertarget{def-uniquep}{}
-\begin{definition}[Finding unique elements of a list]
+\begin{definition}[Lists Cross-product]
+\texthypertarget{relation-listcross}
 The parametric function
 \[
-\uniquelist : \overname{\KleeneStar{T}}{l} \rightarrow \KleeneStar{T}
+\listcrossop : \KleeneStar{T_1} \cartimes \KleeneStar{T_2} \aslto \KleeneStar{(T_1 \cartimes T_2)}
 \]
-retains a single copy of each element of the list $l$.
-It relies on the helper function $\uniquep$:
+computes the cross-product of two lists:
 \[
-\begin{array}{rcl}
-\uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\\\\
-\uniquep(l, \acc) &\triangleq&
-  \begin{cases}
-    \acc & \text{if }l = \emptylist\\
-    \uniquep(t, \acc)& \text{if }l = h \cons{} t \text{ and } h \inlist \acc\\
-    \uniquep(t, \acc \concat [h]) & \text{if }l = h \cons{} t \text{ and } h \not\inlist \acc\\
-  \end{cases}
-\end{array}
+  \vsone{} \listcrossop{} \vstwo \triangleq [(a,b) \;|\; a \in \vsone, b \in \vstwo] \enspace.
 \]
+\end{definition}
+
+\begin{definition}[Finding unique elements of a list]
+% TODO: Move this to the Type System Utilities chapter
+\RenderRelation{unique_list}
+\RenderRule{unique_list}
+
+It relies on the following helper function.
+\RenderRelation{unique_list_acc}
+which is defined as followg:
+\RenderRule{unique_list_acc}
 \end{definition}
 
 \begin{definition}[Finding a Value in a List of Pairs]
@@ -433,6 +465,21 @@ takes the union of a list of sets:
   \unionlist(S_{1..k}) \triangleq \bigcup_{i=1}^{k} S_i \enspace.
 \]
 \end{definition}
+
+\begin{definition}[Taking the intersection of a list of sets]
+The parametric function
+\hypertarget{def-intersectionlist}{}
+\[
+\intersectionlist : \KleeneStar{\pow{T}} \rightarrow \pow{T}
+\]
+takes the intersection of a list of sets:
+\[
+  \intersectionlistop{S_{1..k}} \triangleq \bigcap_{i=1}^{k} S_i \enspace.
+\]
+\end{definition}
+
+\texthypertarget{def-disjointunion}
+We write $\disjointunion$ to denote a union of pairwise disjoint sets.
 
 \subsection{Strings}
 \hypertarget{operator-stringconcat}{}
@@ -1057,11 +1104,14 @@ We define a similar function for type errors.
 
 We define a similar function for dynamic errors.
 \RenderRelation{de_check}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
 \and
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{de_check}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}

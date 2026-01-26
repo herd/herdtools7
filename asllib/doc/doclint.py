@@ -783,6 +783,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderType\[.*?\]{.*?}",
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
+        r"\\RenderRule{.*?}",
         r"\\TERM{.*?}",
     ]
     extract_patterns = [

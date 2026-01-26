@@ -23,5 +23,9 @@ begin
     // Legal as the same enumeration is used.
     x3 = y3;
 
+    var x4 = 4 IN {1, 2, 3, 4, 5};
+    var y4 = 4 IN {5, 2, 3, 4, 1};
+    x4 = y4;
+
     return 0;
 end;
