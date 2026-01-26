@@ -1522,6 +1522,13 @@ module Check = struct
     }
     (** An environment data type for tracking used and defined variables. *)
 
+    let empty_use_def =
+      {
+        used = StringSet.empty;
+        defined = StringSet.empty;
+        list_vars = StringSet.empty;
+      }
+
     (** Pretty-prints a [use_def] environment for debugging. *)
     let pp_use_def fmt { used; defined; list_vars } =
       Format.fprintf fmt "{ used: [%s]; defined: [%s]; list_vars: [%s]}"
@@ -3149,6 +3156,10 @@ module ExtendConstantsWithTypes = struct
       | Some term, _ -> term (* Already has a type, nothing to do. *)
       | None, Some (init_expr, _) -> (
           try
+            let _ =
+              Check.UseDef.(
+                update_use_def_for_expr Use spec empty_use_def init_expr)
+            in
             let init_type = Check.TypeInference.infer spec init_expr in
             init_type
           with SpecError err ->
@@ -3170,14 +3181,15 @@ module ExtendConstantsWithTypes = struct
         (fun (curr_ast, spec) elem ->
           match elem with
           | Elem_Constant def ->
-            let new_def = extend_constant spec def in
-            (* We need to update id_to_defining_node since the type may be needed for later constants. *)
-            let id_to_defining_node =
-              StringMap.add def.Constant.name (Node_Constant new_def) spec.id_to_defining_node
-            in
-            let new_elem = Elem_Constant new_def in
-            let spec = {spec with id_to_defining_node} in
-            (new_elem :: curr_ast, spec)
+              let new_def = extend_constant spec def in
+              (* We need to update id_to_defining_node since the type may be needed for later constants. *)
+              let id_to_defining_node =
+                StringMap.add def.Constant.name (Node_Constant new_def)
+                  spec.id_to_defining_node
+              in
+              let new_elem = Elem_Constant new_def in
+              let spec = { spec with id_to_defining_node } in
+              (new_elem :: curr_ast, spec)
           | _ -> (elem :: curr_ast, spec))
         ([], spec) ast
     in

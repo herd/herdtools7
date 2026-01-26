@@ -1,14 +1,29 @@
 # Basic tests
   $ aslspec hello.spec --render; diff -w generated_macros.tex hello.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  36,37d35
+  < \DefineConstant{Z_set}{\texthypertarget{constant-Zset}$\Z$} % EndDefineConstant
+  < 
   $ aslspec typedefs.spec --render; diff -w generated_macros.tex typedefs.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  46,47d45
+  < \DefineConstant{Z_set}{\texthypertarget{constant-Zset}$\Z$} % EndDefineConstant
+  < 
   $ aslspec relations.spec --render; diff -w generated_macros.tex relations.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  43,44d42
+  < \DefineConstant{Z_set}{\texthypertarget{constant-Zset}$\Z$} % EndDefineConstant
+  < 
   $ aslspec rule.spec --render; diff -w generated_macros.tex rule.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  34,35d33
+  < \DefineConstant{Z_set}{\texthypertarget{constant-Zset}$\Z$} % EndDefineConstant
+  < 
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  28,29d27
+  < \DefineConstant{Z_set}{\texthypertarget{constant-Zset}$\Z$} % EndDefineConstant
+  < 
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
