@@ -279,10 +279,15 @@
 \newcommand\makestructured[3][H]{ % DO NOT LINT
     {#2}\left({#3}\right)
 }
-\newcommand\updateop[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
+\newcommand\mapupdate[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
 
 \newcommand\equal[0]{\mathrel{=}}
 \newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
+
+\newcommand\condcase[3][H]{% DO NOT LINT
+  \textbf{if }{#2}\textbf{ then }{#3}
+}
+\newcommand\condop[1]{\left\{{#1}\right.} % A list of cases
 
 \newcommand\forallop[4][H]{% DO NOT LINT
   \ifnum\pdfstrcmp{#1}{H}=0\relax
@@ -341,6 +346,19 @@
     #4\\
     \end{array}
     \right]
+  \fi
+}
+\newcommand\listprefixname[0]{\hyperlink{def-listprefix}{\textfunc{list\_prefix}}} % DO NOT LINT
+\newcommand\listprefix[3][H]{%
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \listprefixname(#2, #3)
+  \else
+    \listprefixname\left(
+    \begin{array}{ll}
+    #2,\\
+    #3\\
+    \end{array}
+    \right)
   \fi
 }
 
@@ -462,6 +480,7 @@
 
 \newcommand\roundup[1]{\left\lceil {#1} \right\rceil} % DO NOT LINT
 \newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor} % DO NOT LINT
+\newcommand\absvalueop[1]{\left| {#1} \right|} % DO NOT LINT
 
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
 \newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}
@@ -538,7 +557,6 @@
 \newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
 \newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
 \newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
-\newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
 \newcommand\stringofnatname[0]{\hyperlink{operator-stringofnat}{\texttt{string\_of\_nat}}}
 \newcommand\stringofnat[1]{\stringofnatname(#1)}
 
@@ -844,6 +862,7 @@
 \newcommand\typedSThrow[0]{\hyperlink{ast-typedSThrow}{\SThrow}}
 \newcommand\typedSliceLength[0]{\hyperlink{ast-typedSliceLength}{\SliceLength}}
 \newcommand\typedWellConstrained[0]{\hyperlink{ast-typedWellConstrained}{\WellConstrained}}
+\newcommand\typedLESetFields[0]{\hyperlink{ast-typedLESetFields}{\textsc{LE\_Set\_Fields}}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\precisionlossindicatorterm[0]{\hyperlink{ast-precisionlossindicator}{precision loss indicator}}
@@ -1069,6 +1088,7 @@
 \newcommand\Forbody[0]{\textsf{body}}
 \newcommand\Forlimit[0]{\textsf{limit}}
 \newcommand\EArrayLength[0]{\textsf{length}}
+\newcommand\EArrayEnum[0]{\textsf{enum}}
 \newcommand\EArrayLabels[0]{\textsf{labels}}
 \newcommand\EArrayValue[0]{\textsf{value}}
 \newcommand\callname[0]{\hyperlink{recordfield-callname}{\textsf{name}}}
@@ -1085,6 +1105,7 @@
 
 \newcommand\True[0]{\hyperlink{type-True}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{type-False}{\texttt{FALSE}}}
+\newcommand\CheckResult[0]{\{\True\}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

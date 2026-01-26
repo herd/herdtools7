@@ -120,6 +120,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
@@ -133,8 +134,6 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
-\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
-\identr{SDJK}
 
 \begin{mathpar}
 \inferrule[some]{
@@ -151,7 +150,9 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_catcher}
+\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
 \identr{SDJK} \identr{WVXS} \identi{FCGK}
 

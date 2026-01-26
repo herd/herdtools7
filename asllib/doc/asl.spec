@@ -34,6 +34,12 @@ typedef Bool
   { "false", math_macro = \False }
 ;
 
+typedef CheckResult
+{
+  "check result",
+  math_macro = \CheckResult,
+} = (True);
+
 typedef Bit
 { "bit" };
 
@@ -45,6 +51,7 @@ typedef N
 constant zero : N { math_macro = \zero, };
 constant one : N { math_macro = \one, };
 constant two : N { math_macro = \two, };
+constant rational_zero : Q { math_macro = \zero, };
 
 typedef N_pos
 {  "positive natural number",
@@ -61,11 +68,17 @@ typedef Q
    math_macro = \Q,
 };
 
+typedef ascii
+{
+  "ASCII character",
+  math_macro = \REasciichar,
+};
+
 typedef Identifier
 {
   "identifier",
    math_macro = \Identifier,
-};
+} = list0(ascii);
 
 typedef Strings
 { "string",
@@ -152,15 +165,10 @@ operator make_structured(l: ASTLabels, fields: list0(field)) -> TStructured
   custom = true,
 };
 
-operator destructure(s: TStructured) -> (l: ASTLabels, fields: list0(field))
+operator map_update[K,V](partial K -> V, K, V) -> (partial K -> V)
 {
-  math_macro = \destructure,
+  math_macro = \mapupdate,
   custom = true,
-};
-
-operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
-{
-  math_macro = \opupdate,
 };
 
 operator equal[T](a: T, b: T) -> (c: Bool)
@@ -195,7 +203,12 @@ operator make_singleton_list[T](T) -> list1(T)
   math_macro = \makelist,
 };
 
-operator range_list(from: N, to: N) -> list1(N)
+operator match_singleton_list[T](T) -> list0(T)
+{
+  math_macro = \makelist,
+};
+
+operator range_list(from: Z, to: Z) -> list1(Z)
 {
   "the list of values between {from} and {to}, inclusive, if {from} is less than {to},
    and the list of values between {to} and {from}, inclusive, otherwise.",
@@ -236,6 +249,12 @@ operator match_cons[T](head: T, tail: list0(T)) -> list0(T)
   math_macro = \cons,
 };
 
+operator match_non_empty_cons[T](head: T, tail: list0(T)) -> list1(T)
+{
+  "a non-empty list with head {head} and tail {tail}",
+  math_macro = \cons,
+};
+
 operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
 {
   math_macro = \listcombine,
@@ -266,6 +285,13 @@ operator list_max[T](list0(T)) -> N
 operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
 {
   math_macro = \assocopt,
+  custom = true,
+};
+
+operator listprefix[T](l1: list0(T), l2: list0(T)) -> Bool
+{
+  "checks whether {l1} is a prefix of {l2}",
+  math_macro = \listprefix,
   custom = true,
 };
 
@@ -352,6 +378,11 @@ operator round_up(Q) -> N
 operator round_down(Q) -> N
 {
   math_macro = \rounddown,
+};
+
+operator abs_value(Z) -> N
+{
+  math_macro = \absvalueop,
 };
 
 operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
@@ -647,6 +678,7 @@ ast expr { "expression" } =
       ]
     { "array construction for an array of length given by {length} with all cells initialized with {array_value}" }
     | E_EnumArray[
+        enum: Identifier,
         labels: list1(Identifier),
         enum_array_value: expr { math_macro = \enumarrayvalue }
       ]
@@ -694,10 +726,10 @@ render expr_pattern = expr(E_Pattern);
 render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
-constant zero_bit
+constant zero_bit : Bit
 { "\texttt{0}", math_macro = \zerobit };
 
-constant one_bit
+constant one_bit : Bit
 { "\texttt{1}", math_macro = \onebit };
 
 constant x_bit
@@ -925,8 +957,13 @@ ast lexpr { "\assignableexpression{}" } =
 
     | LE_SetEnumArray(base: lexpr, index: expr)
     { "assignable expression for the enumeration-indexed array {base} at index {index}" }
-    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
-    { "assignable expression for the collection named {collection_name} and field names {field_names}" }
+    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier), slices: list0((N, N)))
+    { "assignable expression for the collection named {collection_name}, field names {field_names}, and inferred slices {slices}", }
+    | typed_LE_SetFields(base: lexpr, field_names: list0(Identifier), slices: list0((N, N)))
+    {
+      "assignable multi-field write expression for {base}, field names {field_names}, and inferred slices {slices}",
+      math_macro = \typedLESetFields,
+    }
 ;
 
 constant label_LE_Destructuring : ASTLabels { math_macro = \LEDestructuring };
@@ -940,7 +977,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields, typed_LE_SetFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -1726,25 +1763,35 @@ typedef value_read_from { "value-reading effect" } =
 // Generic Functions and Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-typing function te_check(cond: Bool, code: type_error_code) -> constants_set(True) | type_error
+typing function te_check(condition: Bool, code: type_error_code) -> CheckResult | type_error
   {
-    "returns $\True$ if {cond} holds and a type error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\TypeError({code})$",
+    "returns $\True$ if {condition} holds and a type error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\TypeError({code})$",
+  } =
+  case te_check_true {
+    condition = True;
+    --
+    True;
+  }
+  case te_check_false {
+    condition = False;
+    --
+    TypeError(code);
   }
 ;
 
-semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+semantics function de_check(condition: Bool, code: dynamic_error_code) -> CheckResult | TDynError
   {
-    "returns $\True$ if {cond} holds and a dynamic error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\DynamicError({code})$",
+    "returns $\True$ if {condition} holds and a dynamic error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\DynamicError({code})$",
   }
 ;
 
-function bool_transition(cond: Bool) -> (result: Bool)
+function bool_transition(condition: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {cond} holds and $\False$ otherwise.",
-    prose_application = "testing whether {cond} holds returns {result}",
+    "returns $\True$ if {condition} holds and $\False$ otherwise.",
+    prose_application = "testing whether {condition} holds returns {result}",
 };
 
 function rexpr(le: lexpr) -> (re: expr)
@@ -2241,24 +2288,90 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}",
-};
+} =
+  case okay {
+    assoc_opt(tfields, name) =: some(t);
+    get_bitvector_width(tenv, t) -> e_width;
+    --
+    e_width;
+  }
+
+  case error {
+    assoc_opt(tfields, name) = None;
+    --
+    TypeError(TE_BF);
+  }
+;
 
 typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
 {
   "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
   normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
   prose_application = "generating the expression representing the summation of {exprs} in {tenv} yields {e_width}",
-};
+} =
+  case empty {
+    exprs = empty_list;
+    --
+    ELint(zero);
+  }
+
+  case non_empty {
+    exprs =: match_cons(e, exprs1);
+    width_plus(tenv, exprs1) -> e_width1;
+    normalize(tenv, EBinop(ADD, e, e_width1)) -> e_width;
+    --
+    e_width;
+  }
+;
 
 typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         (CheckResult) | type_error
 {
   "checks whether the types {t1} and {t2}, which are
   assumed to not be named types, are compatible for a
   type assertion in the \staticenvironmentterm{} {tenv},
   yielding $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True",
-};
+} =
+  case equal {
+    type_equal(tenv, t1, t2) -> True;
+    --
+    True;
+  }
+
+  case different_labels_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) != ast_label(t2);
+    --
+    TypeError(TE_TAF);
+  }
+
+  case int_bits {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) in make_set(label_T_Int, label_T_Bits);
+    --
+    True;
+  }
+
+  case tuple {
+    type_equal(tenv, t1, t2) -> False;
+    t1 =: T_Tuple(l1);
+    t2 =: T_Tuple(l2);
+    te_check(list_len(l1) = list_len(l2), TE_TAF) -> True;
+    INDEX(i, l1: check_atc(tenv, l1[i], l2[i]) -> True);
+    --
+    True;
+  }
+
+  case other_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    --
+    TypeError(TE_TAF);
+  }
+;
 
 semantics relation eval_expr(env: envs, e: expr) ->
          ResultExpr((v: native_value, g: XGraphs), new_env: envs)
@@ -2329,7 +2442,217 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
         {new_le} is the annotated \assignableexpression{},
         and {ses} is the \sideeffectsetterm{} inferred for {le}. \ProseOtherwiseTypeError",
     prose_application = "annotating {le} with {t_e} in {tenv} yields {new_le} and {ses}\ProseOrTypeError",
-};
+} =
+  case LEDiscard {
+    le =: LE_Discard;
+    --
+    (LE_Discard, empty_set);
+  }
+
+  case LEVar {
+    le =: LE_Var(x);
+
+    case local {
+      tenv.static_envs_L.local_storage_types(x) =: (t, k);
+      te_check(k = LDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(LocalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case global {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) =: (t, k);
+      te_check(k = GDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(GlobalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case error_undefined {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) = bot;
+      --
+      TypeError(TE_UI);
+    }
+  }
+
+  case LEDestructuring {
+    le =: LE_Destructuring(les);
+    te_check(ast_label(t_e) = label_T_Tuple, TE_UT) -> True;
+    t_e =: T_Tuple(tys);
+    te_check(list_len(les) = list_len(tys), TE_UT) -> True;
+    (
+      INDEX(i, les: annotate_lexpr(tenv, les[i], tys[i]) -> (les'[i], xs[i]))
+    );
+    ses := union_list(xs);
+    --
+    (LE_Destructuring(les'), ses);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(e_base, e_index);
+    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, _);
+    make_anonymous(tenv, t_base) -> t_anon_base;
+    te_check(ast_label(t_anon_base) = label_T_Array, TE_UT) -> True;
+    t_anon_base =: T_Array(size, t_elem);
+    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base);
+    annotate_set_array(tenv, (size, t_elem), t_e, (e_base', ses_base, e_index)) -> (new_le, ses)
+    { math_layout = [_] };
+    --
+    (new_le, ses);
+  }
+
+  case LESlice {
+    le =: LE_Slice(le1, slices);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+    te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
+    annotate_slices(tenv, slices) -> (slices_annot, ses_slices);
+    slices_width(tenv, slices_annot) -> e_w;
+    normalize(tenv, e_w) -> v_w;
+    t := T_Bits(v_w, empty_list);
+    check_type_satisfies(tenv, t_e, t) -> True;
+    check_disjoint_slices(tenv, slices_annot) -> True;
+    te_check(slices_annot != empty_list, TE_BS) -> True;
+    ses := union(ses1, ses_slices);
+    --
+    (LE_Slice(le2, slices_annot), ses);
+  }
+
+  case LESetField {
+    le =: LE_SetField(le1, field_name);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+
+    case structured {
+      t_le1_anon =: make_structured(L, fields);
+      L in make_set(label_T_Record, label_T_Exception);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t_field);
+      check_type_satisfies(tenv, t_e, t_field) -> True;
+      --
+      (LE_SetField(le2, field_name), ses);
+    }
+
+    case collection {
+      t_le1_anon =: T_Collection(fields);
+      le2 =: LE_Var(collection_var_name);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t);
+      check_type_satisfies(tenv, t_e, t) -> True;
+      get_bitvector_const_width(tenv, t) -> n;
+      --
+      (LE_SetCollectionFields(collection_var_name, make_singleton_list(field_name), make_singleton_list((zero, n))), ses)
+      { math_layout = [_] };
+    }
+
+    case bitfield {
+      t_le1_anon =: T_Bits(_, bitfields);
+      find_bitfield_opt(field_name, bitfields) -> bitfield_opt;
+      case found {
+        case simple {
+          bitfield_opt =: some(BitField_Simple(_, slices));
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, empty_list);
+        }
+
+        case nested {
+          bitfield_opt =: some(BitField_Nested(_, slices, bitfields'))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, bitfields');
+        }
+
+        case typed {
+          bitfield_opt =: some(BitField_Type(_, slices, t_field))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> w;
+          t := T_Bits(w, empty_list);
+          check_type_satisfies(tenv, t, t_field) -> True;
+        }
+        check_type_satisfies(tenv, t_e, t) -> True;
+        annotate_lexpr(tenv, LE_Slice(le1, slices), t_e) -> (new_le, ses2);
+        --
+        (new_le, ses2);
+      }
+
+      case missing {
+        bitfield_opt = None;
+        --
+        TypeError(TE_BF);
+      }
+    }
+
+    case error {
+      ast_label(t_le1_anon) not_in make_set(label_T_Record, label_T_Exception, label_T_Collection, label_T_Bits)
+      { math_layout = (_, [_]) };
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+ case LESetFields {
+   le =: LE_SetFields(le_base, le_fields);
+   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, _);
+   annotate_lexpr(tenv, le_base, t_base) -> (le_base_annot, ses_base);
+   make_anonymous(tenv, t_base) -> t_base_anon;
+
+   case bits {
+     t_base_anon =: T_Bits(_, bitfields);
+     ( INDEX(i, le_fields: find_bitfields_slices(le_fields[i], bitfields) -> slices[i]) )
+     { ([_]) };
+     le_slice := LE_Slice(le_base_annot, list_flatten(slices));
+     annotate_lexpr(tenv, le_slice, t_e) -> (new_le, ses);
+     --
+     (new_le, ses);
+   }
+
+   case record {
+     t_base_anon =: T_Record(base_fields);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     vt_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, vt_lhs) -> True;
+     --
+     (typed_LE_SetFields(le_base_annot, le_fields, slices), ses_base)
+     { math_layout = [_] };
+   }
+
+   case collection {
+     t_base_anon =: T_Collection(base_fields);
+     le_base =: LE_Var(base_name);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     t_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, t_lhs) -> True;
+     --
+     (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
+     { math_layout = [_, [_]] };
+   }
+
+   case error {
+     ast_label(t_base_anon) not_in make_set(label_T_Bits, label_T_Record, label_T_Collection);
+     --
+     TypeError(TE_UT);
+   }
+ }
+;
+
+render rule annotate_lexpr_LEDiscard = annotate_lexpr(LEDiscard);
+render rule annotate_lexpr_LEVar = annotate_lexpr(LEVar);
+render rule annotate_lexpr_LEDestructuring = annotate_lexpr(LEDestructuring);
+render rule annotate_lexpr_LESetArray = annotate_lexpr(LESetArray);
+render rule annotate_lexpr_LESlice = annotate_lexpr(LESlice);
+render rule annotate_lexpr_LESetStructuredField = annotate_lexpr(LESetField.structured);
+render rule annotate_lexpr_LESetCollectionField = annotate_lexpr(LESetField.collection);
+render rule annotate_lexpr_LESetField_BitField = annotate_lexpr(LESetField.bitfield);
+render rule annotate_lexpr_LESetBadField_error = annotate_lexpr(LESetField.error);
+render rule annotate_lexpr_LESetFields = annotate_lexpr(LESetFields);
 
 semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
@@ -2360,48 +2683,89 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist
     math_layout = (_, [_,_,_,_]),
 };
 
-typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
+typing relation annotate_set_array(
+  tenv: static_envs,
+  (size: array_index, t_elem: ty),
+  rhs_ty: ty,
+  (e_base: lexpr, ses_base: powerset(TSideEffect), e_index: expr)
+  ) ->
     (new_le: lexpr, ses: powerset(TSideEffect)) | type_error
 {
-    "annotates an array update in the \staticenvironmentterm{} {tenv}
-    where {size_elem} contains the array index and type of array elements,
-    {rhs_ty} is the type of the \rhsexpression{},
-    and {base_ses_index} contains the annotated expression {e_base} for the array base,
-    the \sideeffectsetterm{} {ses_base} inferred for the base,
-    and the index expression {e_index}.
-    The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
-    prose_application = "annotating array update in {tenv} with {size_elem}, {rhs_ty}, and {base_ses_index} yields {new_le} and {ses}\ProseOrTypeError",
-    math_layout = [[_,_,_,_],_],
-};
+  "annotates an array update in the \staticenvironmentterm{} {tenv}
+  where {size} is kind of array index and {t_elem} is the type of array elements,
+  {rhs_ty} is the type of the \rhsexpression{},
+  the annotated array based expression is {e_base},
+  the \sideeffectsetterm{} {ses_base} inferred for the base,
+  and the index expression {e_index}.
+  The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
+  prose_application = "annotating array update in {tenv} with {size}, {t_elem}, {rhs_ty}, {e_base}m {ses_base}, and {e_index} yields {new_le} and {ses}\ProseOrTypeError",
+  math_layout = [[_,_,_,_],_],
+} =
+  check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
+  annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  type_of_array_length(size) -> wanted_t_index;
+  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  ses := union(ses_base, ses_index);
+  new_le := if_then_else(
+    equal(ast_label(size), label_ArrayLength_Expr),
+    LE_SetArray(e_base, e_index'),
+    LE_SetEnumArray(e_base, e_index')
+  ) { (_, [_]) };
+  --
+  (new_le, ses) { ([_], _) };
+;
 
 typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
-         constants_set(True) | type_error
+         CheckResult | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
     prose_application = "checking whether {slices} are disjoint in {tenv} yields $\True$\ProseOrTypeError",
-};
+} =
+  disjoint_slices_to_positions(tenv, False, slices) -> positions;
+  --
+  True;
+;
 
 semantics function check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
-         constants_set(True) | TDynError
+         CheckResult | TDynError
 {
     "checks whether the sets of integers represented by the list of ranges {value_ranges} overlap, yielding $\True$. \ProseOtherwiseDynamicErrorOrDiverging",
     prose_application = "checking whether {value_ranges} are non-overlapping yields $\True$\ProseOrDynamicErrorOrDiverging",
 };
 
 semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint), range2: (s2: tint, l2: tint)) ->
-         constants_set(True) | TDynError
+         CheckResult | TDynError
 {
     "checks whether two sets of integers represented by the ranges $({s1},{l1})$ and $({s2},{l2})$ do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
     prose_application = "checking whether $({s1},{l1})$ and $({s2},{l2})$ do not intersect yields $\True$\ProseOrError",
     math_layout = [_, _],
 };
 
-typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
+typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(Identifier)) ->
          (length: N, slices: list0((start: N, width: N)))
 {
-    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of {base_fields} about to be assigned to, and yields the total width across {le_fields} and the ranges corresponding to {le_fields} in terms of pairs where the first component is the start position and the second component is the width of the field.",
+    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of the names of fields
+    in {base_fields} about to be assigned to, and yields the total width across the fields named in {le_fields} and the ranges corresponding to them in terms of pairs where the first component is the start position and the second component is the width of the field.",
     prose_application = "folding bitvector fields {le_fields} from {base_fields} in {tenv} yields length {length} and slices {slices}",
-};
+} =
+  case empty {
+    le_fields = empty_list;
+    --
+    (zero, empty_list);
+  }
+
+  case non_empty {
+    le_fields =: concat(le_fields1, match_singleton_list(field));
+    fold_bitvector_fields(tenv, base_fields, le_fields1) -> (start, slices1);
+    assoc_opt(base_fields, field) =: ty_opt;
+    te_check(ty_opt != None, TE_BF) -> True;
+    ty_opt =: some(t_field);
+    get_bitvector_const_width(tenv, t_field) -> field_width;
+    --
+    (start + field_width, concat(make_singleton_list((start, field_width)), slices1))
+    { [_] };
+  }
+;
 
 semantics function assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields: list0(Identifier), slices: list0((N, N))) ->
          (result: trecord)
@@ -2422,7 +2786,112 @@ typing function base_value(tenv: static_envs, t: ty) ->
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}",
-};
+} =
+  case t_bool {
+    t = T_Bool;
+    --
+    E_Literal(L_Bool(False));
+  }
+
+  case t_bits_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt != None;
+    z_opt =: some(length);
+    te_check(length >= zero, TE_NBV) -> True;
+    --
+    E_Literal(L_Bitvector(list_map(i, range_list(one, length), zero_bit)));
+  }
+
+  case t_bits_non_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt = None;
+    e_init := E_Slice(ELint(zero), make_singleton_list(Slice_Length(ELint(zero), e)));
+    --
+    e_init;
+  }
+
+  case t_enum {
+    t =: T_Enum(match_non_empty_cons(name, _));
+    lookup_constant(tenv, name) -> l;
+    --
+    E_Literal(l);
+  }
+
+  case t_int_unconstrained {
+    t = T_Int(Unconstrained);
+    --
+    E_Literal(L_Int(zero));
+  }
+
+  case t_int_parameterized {
+    t =: T_Int(Parameterized(id));
+    --
+    TypeError(TE_NBV);
+  }
+
+  case t_int_wellconstrained {
+    t =: T_Int(WellConstrained(cs));
+    INDEX(i, cs: constraint_abs_min(tenv, cs[i]) -> z_min_lists[i]);
+    z_min_list := list_flatten(z_min_lists);
+    te_check(z_min_list != empty_list, TE_NBV) -> True;
+    list_min_abs(z_min_list) -> z_min;
+    --
+    E_Literal(L_Int(z_min));
+  }
+
+  case t_named {
+    t =: T_Named(id);
+    make_anonymous(tenv, T_Named(id)) -> t';
+    base_value(tenv, t') -> e_init;
+    --
+    e_init;
+  }
+
+  case t_real {
+    t = T_Real;
+    --
+    E_Literal(L_Real(rational_zero));
+  }
+
+  case structured {
+    is_structured(t) -> True;
+    t =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    ( INDEX(i, field_types: base_value(tenv, field_types[i]) -> field_base_values[i]) ) { ( [_] ) };
+    e := list_combine(field_names, field_base_values);
+    --
+    E_Record(t, e);
+  }
+
+  case t_string {
+    t = T_String;
+    --
+    E_Literal(L_String(empty_list));
+  }
+
+  case t_tuple {
+    t =: T_Tuple(ts);
+    INDEX(i, ts: base_value(tenv, ts[i]) -> es[i]);
+    --
+    E_Tuple(es);
+  }
+
+  case t_array_enum {
+    t =: T_Array(ArrayLength_Enum(enum, labels), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_EnumArray [ enum : enum, labels : labels, enum_array_value : value ];
+  }
+
+  case t_array_expr {
+    t =: T_Array(ArrayLength_Expr(length), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_Array[ length : length, array_value : value ];
+  }
+;
 
 typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
          (zs: list0(Z)) | type_error
@@ -2433,7 +2902,34 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   constraint represents an empty set. Otherwise, the
   result is $\TypeErrorVal{\NoBaseValue}$.",
   prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    te_check(z_opt != None, TE_NBV) -> True;
+    z_opt =: some(z);
+    --
+    make_singleton_list(z);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    reduce_to_z_opt(tenv, e1) -> z_opt1;
+    te_check(z_opt1 != None, TE_NBV) -> True;
+    z_opt1 =: some(v1);
+    reduce_to_z_opt(tenv, e2) -> z_opt2;
+    te_check(z_opt2 != None, TE_NBV) -> True;
+    z_opt2 =: some(v2);
+    zs := cond(
+            v1 > v2                 : empty_list,
+            v1 <= v2 && v2 < zero   : make_singleton_list(v2),
+            v1 < zero && zero <= v2 : make_singleton_list(zero),
+            zero <= v1 && v1 <= v2  : make_singleton_list(v1)
+          );
+    --
+    zs;
+  }
+;
 
 typing function list_min_abs(l: list0(Z)) ->
          (z: Z)
@@ -2445,7 +2941,27 @@ typing function list_min_abs(l: list0(Z)) ->
   positive and $y$ is negative then $x$ is considered
   closer to $0$.",
   prose_application = "\hyperlink{relation-listminabs}{finding} integer closest to zero in list {l} yields {z}",
-};
+} =
+  case one {
+    l =: match_singleton_list(z);
+    --
+    z;
+  }
+
+  case more_than_one {
+    l =: match_cons(z1, l2);
+    l2 != empty_list;
+    list_min_abs(l2) -> z2;
+    z := cond(
+           abs_value(z1) < abs_value(z2)              : z1,
+           abs_value(z1) > abs_value(z2)              : z2,
+           z1 = z2                                    : z1,
+           abs_value(z1) = abs_value(z2) && z1 != z2  : abs_value(z1)
+          );
+    --
+    z;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Bitfields
@@ -2584,7 +3100,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 ;
 
 typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the slices in {slices} fit within the
   bitvector width given by {width} in {tenv}, yielding
@@ -2598,7 +3114,7 @@ typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0
 ;
 
 typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the set of positions in {positions} fit
   within the bitvector width given by {width}, yielding
@@ -2698,7 +3214,7 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
 ;
 
 typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks \RequirementRef{BitfieldAlignment} for every
   pair of bitfields in {bitfields}, contained in a
@@ -2779,7 +3295,16 @@ typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
   they do, {b} indicates whether their \absoluteslices\
   are equal. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}",
-};
+} =
+  f =: (f_names, slice_one);
+  g =: (g_names, slice_two);
+  f_names =: concat(scope_one, match_singleton_list(name_one));
+  g_names =: concat(scope_two, match_singleton_list(name_two));
+  same_scope := listprefix(scope_one, scope_two) || listprefix(scope_two, scope_one);
+  b := implies((name_one = name_two && same_scope), slice_one = slice_two);
+  --
+  b;
+;
 
 typing function slice_to_indices(tenv: static_envs, s: slice) ->
          (indices: list0(Z))
@@ -2847,7 +3372,30 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotatecatcher}{annotating} catcher {c} in {tenv} with side effects {ses_in} yields catcher {new_catcher} and side effects {ses}",
   math_layout = [_,_],
-};
+} =
+  case none {
+    c =: (None, ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    annotate_block(tenv, stmt) -> (new_stmt, ses_block);
+    new_catcher := (None, ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+  case some {
+    c =: (some(name), ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    check_var_not_in_env(tenv, name) -> True;
+    add_local(tenv, name, ty', LDK_Let) -> tenv';
+    annotate_block(tenv', stmt) -> (new_stmt, ses_block);
+    new_catcher := (some(name), ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+;
 
 semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
   TContinuing | TReturning | TThrowing | TDynError
@@ -2875,13 +3423,19 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
 // Relations for Global Pragmas
 
 typing function check_global_pragma(genv: global_static_envs, d: decl) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "typechecks a global pragma declaration {d} in the
   \globalstaticenvironmentterm{} {genv}, yielding
   $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkglobalpragma}{checking} global pragma declaration {d} in {genv} yields True",
-};
+} =
+  d =: D_Pragma(_, args);
+  with_empty_local(genv) -> tenv;
+  annotate_exprs(tenv, args) -> args';
+  --
+  True;
+;
 
 //////////////////////////////////////////////////
 // Relations for Global Storage Declarations
@@ -2896,7 +3450,23 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}",
   math_layout = [_,_],
-};
+} =
+  gsd =: [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt, initial_value: initial_value];
+  check_var_not_in_genv(genv, name) -> True;
+  with_empty_local(genv) -> tenv;
+  must_be_pure := keyword in make_set(GDK_Constant, GDK_Config);
+  annotate_ty_opt_initial_value(tenv, keyword, must_be_pure, ty_opt, initial_value) -> (typed_initial_value, ty_opt', declared_t)
+  { [[_], [_]] };
+  add_global_storage(genv, name, keyword, declared_t) -> genv1;
+  with_empty_local(genv1) -> tenv1;
+  typed_initial_value =: (initial_value', t_init, ses_initial_value);
+  update_global_storage(tenv1, name, keyword, (t_init, initial_value', ses_initial_value)) -> tenv2
+  { [[_], _] };
+  new_gsd := [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt', initial_value: some(initial_value')];
+  new_genv := tenv2.static_envs_G;
+  --
+  (new_genv, new_gsd);
+;
 
 typing relation annotate_ty_opt_initial_value(
     tenv: static_envs,
@@ -2918,7 +3488,61 @@ typing relation annotate_ty_opt_initial_value(
   {declared_t}.",
   prose_application = "\hyperlink{relation-annotatetyoptinitialvalue}{annotating} type {ty_opt'} and initializer {initial_value} in {tenv} yields value {typed_initial_value} and type {declared_t}",
   math_layout = [input[_,_,_,_,_], ([_,_,_],_)],
-};
+} =
+  case some_some_config {
+    gdk = GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_some {
+    gdk != GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    get_structure(tenv, t_e) -> t_e';
+    inherit_integer_constraints(t, t_e') -> t'';
+    annotate_type(False, tenv, t'') -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_none {
+    ty_opt' =: some(t);
+    initial_value =: None;
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    te_check(not(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
+    base_value(tenv, t') -> e';
+    typed_initial_value := (e', t', empty_set);
+    --
+    (typed_initial_value, some(t'), t')
+    { [[_], [_]] };
+  }
+
+  case none_some {
+    ty_opt' =: None;
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    check_no_precision_loss(t_e) -> True;
+    typed_e := (e', t_e, ses_e);
+    te_check(not(must_be_pure) || ses_is_pure(ses_e), TE_SEV) -> True;
+    --
+    (typed_e, None, t_e)
+    { ([_], [_]) };
+  }
+;
 
 typing relation update_global_storage(
     tenv: static_envs,
@@ -2939,7 +3563,46 @@ typing relation update_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-updateglobalstorage}{updating} global storage {name} with keyword {gdk} and value {typed_initial_value} in {tenv} yields {new_tenv}",
   math_layout = (input[_,_,_,_], _),
-};
+} =
+  typed_initial_value =: (initial_value_type, initial_value', ses_initial_value)
+  { (_, [_]) };
+  case update_constant {
+    gdk = GDK_Constant;
+    static_eval(tenv, initial_value') -> v;
+    add_global_constant(tenv.static_envs_G, name, v) -> G';
+    new_tenv := tenv(static_envs_G : G');
+    --
+    new_tenv;
+  }
+
+  case let_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> some(e');
+    add_global_immutable_expr(tenv, name, e') -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case let_non_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> None;
+    --
+    tenv;
+  }
+
+  case config {
+    gdk = GDK_Config;
+    is_singular(tenv, initial_value_type) -> True;
+    --
+    tenv;
+  }
+
+  case var {
+    gdk = GDK_Var;
+    --
+    tenv;
+  }
+;
 
 typing function add_global_storage(
     genv: global_static_envs,
@@ -2957,7 +3620,13 @@ typing function add_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-addglobalstorage}{adding} global storage {name} with keyword {keyword} and type {declared_t} to {genv} yields {new_genv}",
   math_layout = [_,_],
-};
+} =
+  check_var_not_in_genv(genv, name) -> True;
+  updated_map := map_update(genv.global_storage_types, name, (declared_t, keyword));
+  new_genv := genv(global_storage_types : updated_map);
+  --
+  new_genv;
+;
 
 semantics relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
 {
@@ -2993,7 +3662,55 @@ typing relation annotate_local_decl_item(
   prose_application = "annotating the local storage declaration with {ldi} and {ldk} with
   {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt} yields {new_tenv}\OrTypeError",
   math_layout = [[_,_,_,_,_], _],
-};
+} =
+  case var {
+    ldi =: LDI_Var(x);
+    check_var_not_in_env(tenv, x) -> True;
+    check_no_precision_loss(ty) -> True;
+    add_local(tenv, x, ty, ldk) -> tenv2;
+    add_immutable_expression(tenv2, ldk, e_opt, x) -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case tuple {
+    ldi =: LDI_Tuple(ids);
+    make_anonymous(tenv, ty) -> t';
+    te_check(ast_label(t') = label_T_Tuple, TE_UT) -> True;
+    t' =: T_Tuple(tys);
+    te_check(list_len(ids) = list_len(tys), TE_UT) -> True;
+    add_local_vars(tenv, ldk, list_combine(ids, tys)) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
+
+typing function add_local_vars(
+  tenv: static_envs,
+  ldk: local_decl_keyword,
+  typed_ids: list0((Identifier, ty))
+ ) ->
+  (new_tenv: static_envs) | type_error
+{
+  "updates {tenv} by binding the variables in {typed_ids} to their corresponding types,
+   in right-to-left order, yielding {new_tenv}. \ProseOtherwiseTypeError",
+   prose_application = "",
+} =
+  case empty {
+    typed_ids = empty_list;
+    --
+    tenv;
+  }
+
+  case non_empty {
+    typed_ids =: concat(typed_ids_prefix, match_singleton_list((id, t)));
+    check_var_not_in_env(tenv, id) -> True;
+    add_local(tenv, id, t, ldk) -> tenv1;
+    add_local_vars(tenv1, ldk, typed_ids_prefix) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
 
 semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: native_value, g1: XGraphs)) ->
   ResultLDI(new_g: XGraphs, new_env: envs)
@@ -3015,13 +3732,33 @@ semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: lis
 };
 
 typing function check_is_not_collection(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} has the structure of a
   \collectiontypeterm{}, and if so, raises a
   \typingerrorterm{}. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-checkisnotcollection}{verifying} type {t} in {tenv} is not a collection type yields True",
-};
+} =
+  make_anonymous(tenv, t) -> t_struct;
+  case collection {
+    ast_label(t_struct) = label_T_Collection;
+    --
+    TypeError(TE_UT);
+  }
+
+  case not_collection {
+    not(ast_label(t_struct) in make_set(label_T_Collection, label_T_Tuple));
+    --
+    True;
+  }
+
+  case tuple {
+    t_struct =: T_Tuple(tys);
+    INDEX(i, tys: check_is_not_collection(tenv, tys[i]) -> True);
+    --
+    True;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Pattern Matching
@@ -3034,7 +3771,147 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
   is the typed AST node for {p} and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError.",
   prose_application = "",
-};
+} =
+  case all {
+    p = Pattern_All;
+    --
+    (Pattern_All, empty_set);
+  }
+
+  case single {
+    p =: Pattern_Single(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+
+    case simple {
+      ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_String);
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case bits {
+      ast_label(t_struct) = label_T_Bits;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      check_bits_equal_width(tenv, t_struct, t_e_struct) -> b;
+      te_check(b, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case enum_type {
+      ast_label(t_struct) = label_T_Enum;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      t_struct =: T_Enum(li1);
+      t_e_struct =: T_Enum(li2);
+      te_check(li1 = li2, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case error {
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      not(ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_Bits, label_T_Enum));
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+  case range {
+    p =: Pattern_Range(e1, e2);
+    annotate_symbolically_evaluable_expr(tenv, e1) -> (t_e1, e1', ses1);
+    annotate_symbolically_evaluable_expr(tenv, e2) -> (t_e2, e2', ses2);
+    ses := union(ses1, ses2);
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e1) -> t_e1_struct;
+    make_anonymous(tenv, t_e2) -> t_e2_struct;
+    b := and(
+      ast_label(t_struct) = ast_label(t_e1_struct),
+      (ast_label(t_e1_struct) = ast_label(t_e2_struct)),
+      (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
+    )
+    { (_, [_]) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Range(e1', e2'), ses);
+  }
+
+  case leq {
+    p =: Pattern_Leq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real));
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Leq(e'), ses);
+  }
+
+  case geq {
+    p =: Pattern_Geq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
+    { (_, [_]) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Geq(e'), ses);
+  }
+
+  //case mask {
+  //  p =: Pattern_Mask(m);
+  //  check_structure_label(tenv, t, label_T_Bits) -> True;
+  //  n := list_len(m);
+  //  check_type_satisfies(tenv, t, T_Bits(n, empty_list)) -> True;
+  //  --
+  //  (Pattern_Mask(m), empty_set);
+  //}
+
+  case tuple {
+    p =: Pattern_Tuple(li);
+    get_structure(tenv, t) -> t_struct;
+    te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
+    t_struct =: T_Tuple(ts);
+    te_check(list_len(li) = list_len(ts), TE_UT) -> True;
+    INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
+    new_li := li';
+    ses := union_list(xs);
+    --
+    (Pattern_Tuple(new_li), ses);
+  }
+
+  case any {
+    p =: Pattern_Any(li);
+    INDEX(i, li: annotate_pattern(tenv, t, li[i]) -> (new_l[i], xs[i]));
+    new_li := new_l;
+    ses := union_list(xs);
+    --
+    (Pattern_Any(new_li), ses);
+  }
+
+  //case neg {
+  //  p =: Pattern_Not(q);
+  //  annotate_pattern(tenv, t, q) -> (new_q, ses);
+  //  --
+  //  (Pattern_Not(new_q), ses);
+  //}
+;
+
+render rule annotate_pattern_all = annotate_pattern(all);
+render rule annotate_pattern_single = annotate_pattern(single);
+render rule annotate_pattern_range = annotate_pattern(range);
+render rule annotate_pattern_leq = annotate_pattern(leq);
+render rule annotate_pattern_geq = annotate_pattern(geq);
+// render rule annotate_pattern_mask = annotate_pattern(mask);
+render rule annotate_pattern_tuple = annotate_pattern(tuple);
+render rule annotate_pattern_any = annotate_pattern(any);
+// render rule annotate_pattern_neg = annotate_pattern(neg);
+
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -3182,7 +4059,7 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     prose_application = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
 };
 
-typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
+typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} \typesatisfiesterm{} a type {s} in the static environment {tenv}. \ProseOtherwiseTypeError",
   prose_application = "checking whether {t} \typesatisfiesterm{} {s} in {tenv} yields $\True$\ProseOrTypeError",
@@ -3434,7 +4311,7 @@ typing function mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield)
   prose_application = "",
 };
 
-typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> constants_set(True) | type_error
+typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \structureterm{} of a type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
   prose_application = "checking whether the \structureterm{} of {t} has the AST label {l} yields $\True$\ProseOrTypeError",
@@ -3481,7 +4358,7 @@ typing function get_bitvector_const_width(tenv: static_envs, t: ty) ->
 };
 
 typing function check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "tests whether the types {t1} and {t2} are bitvector
   types of the same width. If the answer is positive,
@@ -3719,7 +4596,7 @@ typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
   prose_application = "",
 };
 
-typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> constants_set(True) | type_error
+typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> CheckResult | type_error
 {
   "returns $\True$ if the set of \sideeffectdescriptorsterm{} {ses} is \symbolicallyevaluableterm.
   \ProseOtherwiseTypeError",
@@ -4053,7 +4930,7 @@ typing relation override_subprograms(decls: list0(decl)) ->
 };
 
 typing function check_implementations_unique(impls: list0(func)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the \Proseimplementationsubprograms{}
   {impls} have unique signatures.
@@ -4549,7 +5426,7 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
 };
 
 typing function check_no_precision_loss(t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is the result of a
   precision loss in its constraint computation (see for
@@ -4558,7 +5435,7 @@ typing function check_no_precision_loss(t: ty) ->
 };
 
 typing function check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether an expression of type {s} can be used
   to initialize a storage element of type {t} in the
@@ -5114,7 +5991,7 @@ typing function can_omit_stdlib_param(func_sig: func) ->
 };
 
 typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that annotated parameters {params} are correct
   with respect to the declared parameters
@@ -5172,7 +6049,7 @@ typing function subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr
 };
 
 typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier, ty)), arg_types: list0(ty), eqs: list0((Identifier, expr))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the types {arg_types} \typesatisfyterm\
   the types of the corresponding formal arguments
@@ -5595,7 +6472,7 @@ typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: po
 };
 
 typing function check_control_flow(tenv: static_envs, f: func, body: stmt) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the annotated body statement {body} of the
   function definition {f} obeys the control-flow
@@ -6283,7 +7160,7 @@ typing function make_anonymous(tenv: static_envs, ty: ty) ->
 ;
 
 typing function check_constrained_integer(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is a
   \constrainedintegerterm{} type. If so, the result is
@@ -6444,7 +7321,7 @@ typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr)
   math_layout = [_,_],
 };
 
-typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_set(True) | type_error
+typing function check_underlying_integer(tenv: static_envs, t: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \underlyingtypeterm{} of an \integertypeterm{} in the \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
@@ -6456,7 +7333,7 @@ typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_
 // Relations for Type System Utilities
 
 typing function check_no_duplicates(ids: list0(Identifier)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the possibly-empty list of identifiers {ids}
   contains a duplicate identifier. If it does not, the
@@ -6491,7 +7368,7 @@ typing function with_empty_local(genv: global_static_envs) ->
 };
 
 typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in {tenv}. If
   it is, the result is a \typingerrorterm{}, and
@@ -6500,7 +7377,7 @@ typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
 };
 
 typing function check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in the
   \globalstaticenvironmentterm{} {genv}. If it is, the

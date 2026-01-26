@@ -282,6 +282,9 @@ module Expr = struct
             [index]. *)
     | Record of { label_opt : string option; fields : (string * t) list }
         (** A record construction expression. *)
+    | RecordUpdate of { record_expr : t; updates : (string * t) list }
+        (** A record update expression that updates the fields given in
+            [updates] of the record given by [record_expr]. *)
     | UnresolvedApplication of { lhs : t; args : t list }
         (** An application expression whose left-hand side has not yet been
             resolved. *)
@@ -330,6 +333,10 @@ module Expr = struct
     Relation { name; is_operator = true; args }
 
   let make_record label_opt fields = Record { label_opt; fields }
+
+  let make_record_update record_expr updates =
+    RecordUpdate { record_expr; updates }
+
   let make_list_index list_var index = ListIndex { list_var; index }
 end
 

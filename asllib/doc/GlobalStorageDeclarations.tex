@@ -422,6 +422,7 @@ of an ill-typed global storage declaration due to precision loss.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \gsd \eqname \{
@@ -487,6 +488,9 @@ of an ill-typed global storage declaration due to precision loss.
   \declareglobalstorage(\genv, \gsd) \typearrow (\overname{\tenvtwo.\staticenvsG}{\newgenv}, \newgsd)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{declare_global_storage}
+
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 \identr{YSPM} \identr{FWQM}
 
@@ -558,6 +562,7 @@ See \ExampleRef{Declaring Global Storage}.
 The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some\_some\_config]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
@@ -642,6 +647,9 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   }
 }
 \end{mathpar}
+} % END_OF_RULE_BACKUP
+
+\RenderRule{annotate_ty_opt_initial_value}
 
 \TypingRuleDef{UpdateGlobalStorage}
 \RenderRelation{update_global_storage}
@@ -706,6 +714,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
@@ -801,6 +810,8 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{update_global_storage}
 
 \TypingRuleDef{AddGlobalStorage}
 \RenderRelation{add_global_storage}
@@ -832,6 +843,7 @@ static environment:
         $(\declaredt, \keyword)$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
@@ -840,6 +852,8 @@ static environment:
   \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{add_global_storage}
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
