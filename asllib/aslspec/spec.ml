@@ -1442,8 +1442,7 @@ module Check = struct
       | Label label -> (
           let variant_def = StringMap.find label id_to_defining_node in
           match variant_def with
-          | Node_Type _
-          | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
+          | Node_Type _ | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
           | _ -> Error.instantiation_failure_not_a_type term label)
 
     let check_well_typed spec term =
