@@ -1440,12 +1440,10 @@ module Check = struct
       | ConstantsSet labels ->
           List.iter (check_is_constant id_to_defining_node) labels
       | Label label -> (
-          (* Label definitions have been filtered out so this is either a
-              reference to a type, which is well-formed, or reference to a label,
-              which should only appear in a [constants_set]. *)
           let variant_def = StringMap.find label id_to_defining_node in
           match variant_def with
-          | Node_Type _ -> ()
+          | Node_Type _
+          | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
           | _ -> Error.instantiation_failure_not_a_type term label)
 
     let check_well_typed spec term =
