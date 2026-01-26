@@ -7,5 +7,5 @@ Positive: 1 Negative: 0
 Flag combining-vmsa-and-ifetch-is-not-supported
 Condition forall (fault(P0:Page0,I-MMU:Translation))
 Observation A006 Always 1 0
-Hash=e8bde7e3620aef33ad527b86e16a3165
+Hash=cc91e34143390ee14eeb05a9c0da6e90
 
