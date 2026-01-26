@@ -311,3 +311,6 @@ let invalid_record_update_base_type base_type ~context_expr =
   spec_error
   @@ Format.asprintf "The base type %a in %a is not a record type"
        PP.pp_type_term base_type PP.pp_expr context_expr
+
+let missing_type_for_constant id =
+  spec_error @@ Format.asprintf "Missing type for constant '%s'" id

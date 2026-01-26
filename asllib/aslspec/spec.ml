@@ -1766,8 +1766,7 @@ module Check = struct
       | Some (Node_TypeVariant { TypeVariant.term }) -> term
       | Some (Node_Constant { Constant.opt_type = Some type_term }) -> type_term
       | Some (Node_Constant { Constant.opt_type = None }) ->
-          assert false
-          (* This should not happen if ExtendConstantsWithTypes.extend has been run. *)
+          Error.missing_type_for_constant id
       | Some (Node_Relation _)
       | Some (Node_RecordField _)
       | Some (Node_Type _)
@@ -3148,9 +3147,17 @@ module ExtendConstantsWithTypes = struct
     let constant_type =
       match (opt_type, opt_value_and_attributes) with
       | Some term, _ -> term (* Already has a type, nothing to do. *)
-      | None, Some (init_expr, _) ->
-          let init_type = Check.TypeInference.infer spec init_expr in
-          init_type
+      | None, Some (init_expr, _) -> (
+          try
+            let init_type = Check.TypeInference.infer spec init_expr in
+            init_type
+          with SpecError err ->
+            stack_spec_error err
+              (Format.asprintf
+                 "When inferring type for constant %s from its initialization \
+                  expression %a. Hint: you can explicitly specify the type of \
+                  the constant or reorder the constants."
+                 name PP.pp_expr init_expr))
       | None, None ->
           (* A constant without a specified type has a type labeled by its name. *)
           Label name
@@ -3158,15 +3165,23 @@ module ExtendConstantsWithTypes = struct
     { def with Constant.opt_type = Some constant_type }
 
   let extend ({ ast } as spec) =
-    let ast =
-      List.map
-        (fun elem ->
+    let ast, _ =
+      List.fold_left
+        (fun (curr_ast, spec) elem ->
           match elem with
-          | Elem_Constant def -> Elem_Constant (extend_constant spec def)
-          | _ -> elem)
-        ast
+          | Elem_Constant def ->
+            let new_def = extend_constant spec def in
+            (* We need to update id_to_defining_node since the type may be needed for later constants. *)
+            let id_to_defining_node =
+              StringMap.add def.Constant.name (Node_Constant new_def) spec.id_to_defining_node
+            in
+            let new_elem = Elem_Constant new_def in
+            let spec = {spec with id_to_defining_node} in
+            (new_elem :: curr_ast, spec)
+          | _ -> (elem :: curr_ast, spec))
+        ([], spec) ast
     in
-    update_spec_ast spec ast
+    update_spec_ast spec (List.rev ast)
 end
 
 (** [add_default_rule_renders ast] adds default render rules for relations that
