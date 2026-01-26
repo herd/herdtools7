@@ -1329,7 +1329,7 @@ let match_reg_events es =
         with
         | Some (V.Var _) -> true
         | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
-        | Some (V.Val (Symbolic (Physical (s,_)))) when (s |> Symbol.of_string |> Symbol.is_label) -> true (* FIXME: this benefits from a proper exposition of a label as a physical address *)
+        | Some (V.Val (Symbolic (Physical (s,_)))) when (s |> Symbol.of_string |> Symbol.is_label) -> true
         | Some _|None -> false
       in
       let is_to_instr_ttd e =

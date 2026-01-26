@@ -1600,8 +1600,25 @@ module Make
         | None -> false
         | Some rB -> AArch64.reg_compare rA rB=0
 
+(*
+Arguments:
+- rA:         Base address register.
+- dir:        Access direction (Dir.R for reads, Dir.W for writes).
+- updatedb:   If true, update the Dirty Bit in table descriptors.
+- checked:    If true, perform memory tagging checks.
+- mop:        Function defining the memory operation.
+- perms:      Required permissions for Morello.
+- ma:         Virtual address to be accessed, represented as the value within the monad.
+- mv:         Value to be stored (for write operations), represented as the value in the monad.
+- an:         Annotation for the event structure.
+- ii:         Instruction metadata.
+- branch:     Determines control flow after the translated memory access:
+              typically next instruction for data accesses, or no change
+              when translating for instruction fetches. 
+- domain:     Whether the translation is for data or instruction access.
+*)
       let do_lift_memop rA (* Base address register *)
-            dir updatedb checked mop perms ma mv an ii (branch : 'a M.t -> branch M.t) domain =
+            dir updatedb checked mop perms ma mv an ii branch domain =
         if morello then
           lift_morello mop perms ma mv dir an ii branch
         else
@@ -1631,19 +1648,6 @@ module Make
           else
             mop Access.VIR ma |> branch
 
-(*
-Arguments:
-- rA:         Base address register.
-- dir:        Access direction (Dir.R for reads, Dir.W for writes).
-- updatedb:   If true, update the Dirty Bit in table descriptors.
-- checked:    If true, perform memory tagging checks.
-- mop:        Function defining the memory operation.
-- perms:      Required permissions for Morello.
-- ma:         Virtual address to be accessed, represented as the value within the monad.
-- mv:         Value to be stored (for write operations), represented as the value in the monad.
-- an:         Annotation for the event structure.
-- ii:         Instruction metadata.
-*)
       let lift_memop rA (* Base address register *)
             dir updatedb checked mop perms ma mv an ii =
         let domain = DISide.Data in
@@ -4731,7 +4735,10 @@ Arguments:
                 let cand_a = base + offset in
                 let cand_i = match IntMap.find cand_a test.Test_herd.code_segment with
                 | (_,(_,i)::_) -> i
-                  | _ -> Warn.user_error "Instruction not found by the address %d" cand_a (* this case means that we have found a relevant page, but it does not have an instruction -- it may make sense to use NOP here rather than throw an error *)
+                  (* this case means that we have found a relevant page, but it
+                  does not have an instruction -- currently throws an error, but
+                  a convention to assume NOP could be envisioned *)
+                  | _ -> Warn.user_error "Instruction not found by the address %d" cand_a
                 in
                 cand_i)
              |> InstrSet.of_list
@@ -4772,7 +4779,7 @@ Arguments:
               (fun inst k ->
                 M.op Op.Eq actual_val (V.instructionToV inst) >>==
                 fun cond -> M.choiceT cond
-                    (commit_pred ii >>*=
+                    (commit_pred_txt (Some "decode") ii >>*=
                       fun () -> do_build_semantics test inst ii)
                     k)
               cands
@@ -4781,9 +4788,9 @@ Arguments:
                 let (>>!) = M.(>>!) in
                 let m_fault = mk_fault None Dir.R Annot.N ii
                     (Some FaultType.AArch64.UndefinedInstruction)
-                    (Some "Invalid") in
+                    None in
                 let lbl_v = get_instr_label ii.A.proc ii in
-                commit_pred ii
+                commit_pred_txt (Some "decode") ii
                   >>*= fun () -> m_fault >>| set_elr_el1 lbl_v ii
                   >>! B.Fault (false,[AArch64Base.elr_el1, lbl_v])
               end in
@@ -4823,9 +4830,10 @@ Arguments:
                 (get_exported_labels test))
             labels in
 
-        let needs_vmsa_for_ifetch =
+        let needs_vmsa_for_ifetch = (* checks if the logic for VA remapping needed *)
           kvm && self && is_on_exported_page in
-        let needs_ifetch = (lbl_exposed ii.A.addr) && self in
+        let needs_ifetch = (* checks if the logic for instruction overwrite needed *)
+          (lbl_exposed ii.A.addr) && self in
         if needs_ifetch || needs_vmsa_for_ifetch then
           try (
             let mop_fetch = mk_mop_fetch is_on_exported_page lbl_exposed test ii in

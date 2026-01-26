@@ -114,7 +114,9 @@ struct
     let offset = new_addr - old_addr in
     let immbranch_v = Option.get (A.mk_imm_branch offset) in
     let immbranch_sz = A.size_of_ins immbranch_v in
-    assert (offset mod 4 = 0); (* FIXME: this check will fail when page alignment is implemented on architectures where instructions are not all 32-bit-sized *)
+    (* NOTE: the following check will fail once page alignment is implemented on
+    architectures where instructions are not all 32-bit-sized *)
+    assert (offset mod 4 = 0);
     if offset == 0 then
       []
     else if offset == immbranch_sz then
