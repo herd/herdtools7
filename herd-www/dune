@@ -11,7 +11,8 @@
  (preprocess
   (per_module
    ((pps js_of_ocaml-ppx)
-    jerd)
+    jerd
+    webInput)
    ((action
      (system "awk -f herd-www/notwww.awk %{input-file}"))
     AArch64ParseTest
