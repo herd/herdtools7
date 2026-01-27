@@ -23,5 +23,8 @@ val set_cat_str : string -> string
 val set_cfg_str : string -> string
 val set_litmus_str : string -> string
 
+(* Get the full pseudo file-system path for a cat environment *)
+val get_env_webpath : string -> string
+
 (* Initialise pseudo file-system *)
 val register_autoloader : unit -> unit
