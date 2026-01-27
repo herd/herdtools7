@@ -62,11 +62,11 @@ let f-ib =
 (* DSB-ordered-before *)
 let DSB-ob =
 [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & D-TTD & M] else 0)
  | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & D-TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
+ | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & D-TTD & M] else 0)
 
 (* IFB-ordered-before *)
 let EXC-ENTRY-IFB = if not "ExS" || "EIS" then EXC-ENTRY else EXC-ENTRY \ SVC
@@ -112,16 +112,16 @@ let aob =
 
 (* Barrier-ordered-before *)
 let bob =
- [Exp & M | Imp & Tag & R]; po; [dmb.full]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ [Exp & M | Imp & Tag & R]; po; [dmb.full]; po; [Exp & M | Imp & Tag & R | D-MMU & FAULT]
  | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
  | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
- | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
- | [range([(Exp & R & A)]; amo; [(Exp & W & L) | (FAULT & L)])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | D-MMU & FAULT]
+ | [Exp & W]; po; [dmb.st]; po; [Exp & W | D-MMU & FAULT]
+ | [range([(Exp & R & A)]; amo; [(Exp & W & L) | (FAULT & L)])]; po; [Exp & M | Imp & Tag & R | D-MMU & FAULT]
  | [(Exp & W & L) | (FAULT & L)]; po; [Exp & R & A]
- | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [(Exp & R & A) | (Exp & R & Q)]; iico_order; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | D-MMU & FAULT]
+ | [(Exp & R & A) | (Exp & R & Q)]; iico_order; [Exp & M | Imp & Tag & R | D-MMU & FAULT]
  | [Exp & M | Imp & Tag & R]; po; [(Exp & W & L) | (FAULT & L)]
  | [Exp & M | Imp & Tag & R]; iico_order; [(Exp & W & L) | (FAULT & L)]
 
@@ -135,10 +135,10 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 (* ETS-ordered-before *)
 let ets-ob =
  (if "ETS2" then
-     [Exp & M]; po; [TLBUncacheable & FAULT]; imm-ib^-1; [Imp & TTD & R]
+     [Exp & M]; po; [TLBUncacheable & D-MMU & FAULT]; imm-ib^-1; [Imp & D-TTD & R]
  else 0)
  | (if "ETS3" then
-     [Exp & M]; po; [MMU & FAULT]; imm-ib^-1; [Imp & TTD & R]
+     [Exp & M]; po; [D-MMU & FAULT]; imm-ib^-1; [Imp & D-TTD & R]
  else 0)
  | (if "ETS3" then
      [Exp & M]; po; [TagCheck & EXC-ENTRY]; imm-ib^-1; [Imp & Tag & R]
