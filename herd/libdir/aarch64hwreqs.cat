@@ -59,14 +59,20 @@ let tc-ib = [Imp & Tag & R]; imm-ib; [Exp & W | TagCheck & FAULT]
 let f-ib =
   [Imp & Instr & R]; imm-ib
 
-(* DSB-ordered-before *)
+ (* DSB-ordered-before *)
 let DSB-ob =
-[M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & D-TTD & M] else 0)
+ [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
+ | (if "ETS2" || "ETS3" || "ETS4" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & D-TTD & M] else 0)
+ | (if "ETS4" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [I-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & I-TTD & R] else 0)
+ | (if "ETS4" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [UndefinedInstruction & EXC-ENTRY]; imm-ib^-1; [Imp & Instr & R] else 0)
  | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & D-TTD & M] else 0)
+ | (if "ETS2" || "ETS3" || "ETS4" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & D-TTD & M] else 0)
+ | (if "ETS4" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [I-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & I-TTD & R] else 0)
+ | (if "ETS4" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [UndefinedInstruction & EXC-ENTRY]; imm-ib^-1; [Imp & Instr & R] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & D-TTD & M] else 0)
+ | (if "ETS2" || "ETS3" || "ETS4" then [Exp & W]; po; [dsb.st]; po; [Imp & D-TTD & M] else 0)
+ | (if "ETS4" then [Exp & W]; po; [dsb.st]; po; [I-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & I-TTD & R] else 0)
+ | (if "ETS4" then [Exp & W]; po; [dsb.st]; po; [UndefinedInstruction & EXC-ENTRY]; imm-ib^-1; [Imp & Instr & R] else 0)
 
 (* IFB-ordered-before *)
 let EXC-ENTRY-IFB = if not "ExS" || "EIS" then EXC-ENTRY else EXC-ENTRY \ SVC
@@ -135,13 +141,19 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 (* ETS-ordered-before *)
 let ets-ob =
  (if "ETS2" then
-     [Exp & M]; po; [TLBUncacheable & D-MMU & FAULT]; imm-ib^-1; [Imp & D-TTD & R]
+     [Exp & M]; po; [TLBUncacheable & D-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & D-TTD & R]
  else 0)
  | (if "ETS3" then
-     [Exp & M]; po; [D-MMU & FAULT]; imm-ib^-1; [Imp & D-TTD & R]
+     [Exp & M]; po; [D-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & D-TTD & R]
  else 0)
  | (if "ETS3" then
      [Exp & M]; po; [TagCheck & EXC-ENTRY]; imm-ib^-1; [Imp & Tag & R]
+ else 0)
+ | (if "ETS4" then
+     [Exp & M]; po; [I-MMU & EXC-ENTRY]; imm-ib^-1; [Imp & I-TTD & R]
+ else 0)
+ | (if "ETS4" then
+     [Exp & M]; po; [UndefinedInstruction & EXC-ENTRY]; imm-ib^-1; [Imp & Instr & R]
  else 0)
 
 (* Locally-ordered-before *)
