@@ -49,19 +49,15 @@
  *)
 include "aarch64deps.cat"
 
-(* Tag-Check-before *)
+(* Tag-Check-intrinsically-before *)
 (* Note: in asynchronous fault handling mode, instruction semantics for
          checked memory accesses does not feature the iico_ctrl edge to Exp & M
  *)
-let tc-before =
- [Imp & Tag & R]; iico_data; [B]; iico_ctrl; [Exp & M | TagCheck & FAULT]
-
-(* Tag-Check-intrinsically-before *)
-let tc-ib = tc-before; [~(Exp & R)]
+let tc-ib = [Imp & Tag & R]; imm-ib; [Exp & W | TagCheck & FAULT]
 
 (* Fetch-intrinsically-before *)
 let f-ib =
-  [Imp & Instr & R]; iico_data; [B]; (iico_ctrl | iico_ctrl; iico_data)
+  [Imp & Instr & R]; imm-ib
 
 (* DSB-ordered-before *)
 let DSB-ob =
@@ -78,16 +74,14 @@ let EXC-RET-IFB = if not "ExS" || "EOS" then EXC-RET else {}
 let IFB = ISB | EXC-ENTRY-IFB | EXC-RET-IFB
 
 let IFB-ob =
- [Exp & R]; ctrl; [IFB]; po
+ DSB-ob; [IFB]; po
+ | [Exp & R]; ctrl; [IFB]; po
  | [Exp & R]; pick-ctrl-dep; [IFB]; po
  | [Exp & R]; addr; [Exp & M]; po; [IFB]; po
  | [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
- | [Exp & R]; pick-addr-dep; (tc-ib | tr-ib); [IFB]; po
- | DSB-ob; [IFB]; po
- | [Imp & TTD & R]; tr-ib; [IFB]; po
- | [Imp & Tag & R]; tc-ib; [IFB]; po
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [IFB]; po
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [IFB]; po
+ | [Exp & R]; pick-addr-dep; [Imp & TTD & R | Imp & Tag & R]; imm-ib; [IFB]; po
+ | [Imp & TTD & R | Imp & Tag & R]; imm-ib; [IFB]; po
+ | [Imp & TTD & R | Imp & Tag & R]; imm-ib; [Exp & M]; po; [IFB]; po
 
 (* Dependency-ordered-before *)
 let dob =
@@ -97,8 +91,7 @@ let dob =
  | addr; [Exp & M]; po; [Exp & W | HU]
  | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
  | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | HU]
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | HU]
+ | [Imp & TTD & R | Imp & Tag & R]; imm-ib; [Exp & M]; po; [Exp & W | HU]
 
 (* Fetch-ordered-before *)
 let f-ob =
@@ -142,13 +135,13 @@ let TLBUncacheable = MMU & (Translation | AccessFlag)
 (* ETS-ordered-before *)
 let ets-ob =
  (if "ETS2" then
-     [Exp & M]; po; [TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R]
+     [Exp & M]; po; [TLBUncacheable & FAULT]; imm-ib^-1; [Imp & TTD & R]
  else 0)
  | (if "ETS3" then
-     [Exp & M]; po; [MMU & FAULT]; tr-ib^-1; [Imp & TTD & R]
+     [Exp & M]; po; [MMU & FAULT]; imm-ib^-1; [Imp & TTD & R]
  else 0)
  | (if "ETS3" then
-     [Exp & M]; po; [TagCheck & EXC-ENTRY]; tc-ib^-1; [Imp & Tag & R]
+     [Exp & M]; po; [TagCheck & EXC-ENTRY]; imm-ib^-1; [Imp & Tag & R]
  else 0)
 
 (* Locally-ordered-before *)
