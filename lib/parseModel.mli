@@ -16,6 +16,8 @@
 
 (** Parse a .cat file at the given path *)
 
+val use_memoization : bool -> unit
+
 module type Config = sig
   include LexUtils.Config
   val libfind : string -> string
