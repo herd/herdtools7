@@ -22,7 +22,7 @@ open OptNames
 
 let dbg = false
 
-(* Add webpath in front of include list, all pseudo-files will be there *)
+(* Add webpath in front of include list, axll pseudo-files will be there *)
 
 let _ = includes := WebInput.webpath :: !includes
 
@@ -64,18 +64,30 @@ let set_defaults ()  =
   show := default.show
 
 (* Configure parser/models/etc. *)
-let run_herd bell cat litmus cfg =
+let run_herd bell cat litmus cfg cat_label =
 
   let bell = Js.to_string bell
   and cat = Js.to_string cat
   and litmus = Js.to_string litmus
-  and cfg = Js.to_string cfg in
+  and cfg = Js.to_string cfg
+  and cat_label = Js.to_string cat_label in
+
+  let cat_env_opt = match String.split_on_char '/' cat_label with
+  | [env; _] -> Some env
+  | _ -> None in
 
   if dbg then begin
-    eprintf "** bell **\n%s" bell ;
-    eprintf "** cat  **\n%s" cat ;
-    eprintf "** cfg  **\n%s" cfg ;
-    eprintf "** lit  **\n%s" litmus ;
+    eprintf "** bell      **\n%s\n" bell ;
+    eprintf "** cat       **\n%s\n" cat ;
+    eprintf "** cfg       **\n%s\n" cfg ;
+    eprintf "** lit       **\n%s\n" litmus ;
+    eprintf "** cat_label **\n%s\n" cat_label ;
+    begin match cat_env_opt with
+    | Some env ->
+      eprintf "** cat_env   **\n%s\n" env
+    | None ->
+      eprintf "** cat_env   **\n<none>\n"
+    end;
     ()
   end ;
 
@@ -111,11 +123,15 @@ let run_herd bell cat litmus cfg =
   end ;
   let args = ref [Filename.concat WebInput.webpath litmus_fname] in
 
+  let includes = Option.fold ~some:(fun env ->
+    WebInput.get_env_webpath env :: !includes
+  ) ~none:!includes cat_env_opt in
+
   (* Read generic model, if any *)
  let module ML =
     MyLib.Make
       (struct
-        let includes = !includes
+        let includes = includes
         let env = None
         let libdir = Version.libdir
         let debug = false
@@ -131,6 +147,7 @@ let run_herd bell cat litmus cfg =
   let model,model_opts = match !model with
     | Some (Model.File fname) ->
        let module P = ParseModel.Make(ParserConfig) in
+       ParseModel.use_memoization false;
        begin try
            let fname,((b,_,_) as ast) = P.find_parse fname in
            Some (Model.Generic (fname,ast)),b

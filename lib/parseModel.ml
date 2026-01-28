@@ -17,6 +17,9 @@
 (* memoize *)
 
 let t = Hashtbl.create 17
+let memo = ref true
+
+let use_memoization v = memo := v
 
 module type Config = sig
   include LexUtils.Config
@@ -73,13 +76,19 @@ module Make(O:Config) = struct
     (opts,txt,set_text pp code)
 
   let find_parse fname =
-    try Hashtbl.find t fname
-    with Not_found ->
-      let key = fname in
+    let do_find_parse fname =
       let fname = O.libfind fname in
       let r = Misc.input_protect (do_parse fname) fname in
-      Hashtbl.add t key (fname,r) ;
       fname,r
+    in
+    if !memo then
+      try Hashtbl.find t fname
+      with Not_found ->
+        let key = fname in
+        let fname, r = do_find_parse fname in
+        Hashtbl.add t key (fname,r) ;
+        fname,r
+    else do_find_parse fname
 
   let parse fname = let _,r = find_parse fname in r
 
