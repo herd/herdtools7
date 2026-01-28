@@ -861,6 +861,51 @@ let set_same_loc st n0 =
   do_rec n0 ;
   st
 
+(* For each continuous elements to location `x` in the input,
+  group those elements, accumulating through `ns`. *)
+let rec group_rec x ns = function
+  | [] -> [x,List.rev ns]
+  | (y,n)::rem ->
+      if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
+      else (x,List.rev ns)::group_rec  y [n] rem
+
+  let group = function
+    | [] -> []
+    | (x,n)::rem -> group_rec x [n] rem
+
+  let by_loc xvs =
+    let r = group xvs in
+    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
+    let r =
+      List.map
+        (fun (x,ns) -> match ns with
+        |  [] -> assert false
+        | _::_ -> (x,ns))
+        r in
+    group r
+
+let check_cycle c =
+  (* Collect all the rmw edges, organise by location
+     and then check if all the rmw edges per locations are valid *)
+  let rmw_boolean = fold ( fun n lst ->
+    match n.edge.E.edge with
+    | E.Rmw rmw ->
+      (* Encode the mixed size access into location, so reuse `by_loc` function.
+         This allows atomic operations on different bytes of a location. *)
+      let access_suffix = match E.get_access_atom n.edge.E.a1 with
+      | Some (sz, offset) -> (sprintf "%s%d" (MachSize.pp_short sz) offset)
+      | None -> "" in
+      let loc = match n.evt.loc with
+      | Data s -> Data (s ^ access_suffix)
+      | _ -> assert false in
+      (loc,rmw)::lst
+    | _ -> lst
+  ) c []
+  |> by_loc
+  |> List.for_all (fun e -> E.valid_rmw @@ List.flatten @@ snd e) in
+  if not rmw_boolean then
+    Warn.fatal "There are two rmw of the same type on the same location. A cycle will not form due to commutative."
+
 
 
 (* Set the values of write events *)
@@ -1360,6 +1405,10 @@ let finish n =
     | Same -> set_same_loc st n
     | UnspecLoc -> assert false in
 
+  (* Check if the cycle is valid, function may fail hence
+     terminate the program *)
+  check_cycle n;
+
   if O.verbose > 1 then begin
     eprintf "LOCATIONS\n" ;
     debug_cycle stderr n
@@ -1554,30 +1603,6 @@ let merge_changes n nss =
 (****************************)
 (* Compute coherence orders *)
 (****************************)
-
-(* For each continuous elements to location `x` in the input,
-  group those elements, accumulating through `ns`. *)
-let rec group_rec x ns = function
-  | [] -> [x,List.rev ns]
-  | (y,n)::rem ->
-      if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
-      else (x,List.rev ns)::group_rec  y [n] rem
-
-  let group = function
-    | [] -> []
-    | (x,n)::rem -> group_rec x [n] rem
-
-  let by_loc xvs =
-    let r = group xvs in
-    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
-    let r =
-      List.map
-        (fun (x,ns) -> match ns with
-        |  [] -> assert false
-        | _::_ -> (x,ns))
-        r in
-    group r
-
 
 
 (* find changing location *)
