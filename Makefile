@@ -33,6 +33,9 @@ ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
 all: build
 
+CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
+HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
+
 .PHONY: Version.ml
 Version.ml:
 	sh ./version-gen.sh $(PREFIX)
