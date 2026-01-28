@@ -1,0 +1,17 @@
+Test Y001 Allowed
+States 8
+0:X1=x:black;
+0:X1=x:blue;
+0:X1=x:cyan;
+0:X1=x:green;
+0:X1=x:magenta;
+0:X1=x:red;
+0:X1=x:white;
+0:X1=x:yellow;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (0:X1=x:red)
+Observation Y001 Sometimes 1 7
+Hash=402d4f4e0920b3a71945905eac0bb6cb
+
