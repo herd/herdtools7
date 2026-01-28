@@ -24,10 +24,11 @@ end
 
 module Make (O:Config) (C:ArchRun.S) :
     sig
-      val run : C.C.event list list -> C.A.location C.C.EventMap.t
-        -> (C.A.location * C.C.Value.v) list list
-
-      val dump_cond :  (C.A.location * C.C.Value.v) list list -> string
+      type cond =
+      | Atom of C.A.location * C.C.Value.v
+      | Or of cond list
+      | And of cond list
+      val run : C.C.event list list -> C.A.location C.C.EventMap.t -> cond
     end
     =
   struct
@@ -232,17 +233,6 @@ module Make (O:Config) (C:ArchRun.S) :
 *)
       StateSet.add fs k
 
-    let run evts m =
-      let str = make_str evts in
-      let kont = kont m in
-      let process_co = process_co kont in
-      let process_rfm = process_rfm process_co in
-      let sts = gen_rfm process_rfm str StateSet.empty in
-(*      eprintf "Candidates: %i\n" (StateSet.cardinal sts) ; *)
-      List.map
-        State.bindings
-        (StateSet.elements sts)
-
 (* Dump condition *)
     type cond =
       | Atom of A.location * C.Value.v
@@ -329,6 +319,15 @@ module Make (O:Config) (C:ArchRun.S) :
 
     let cond_of_finals fs = compile_cond fs
 
+    let run evts m =
+      let str = make_str evts in
+      let process_rfm = kont m |> process_co |> process_rfm in
+      let sts = gen_rfm process_rfm str StateSet.empty in
+(*      eprintf "Candidates: %i\n" (StateSet.cardinal sts) ; *)
+      List.map State.bindings (StateSet.elements sts)
+        |> cond_of_finals
+
+(*
     let rec do_dumps op fs = match fs with
     | [] -> assert false
     | [f] -> do_dump f
@@ -344,6 +343,7 @@ module Make (O:Config) (C:ArchRun.S) :
       | Atom (loc,v) -> sprintf "%s=%s" (A.pp_location loc) (C.Value.pp_v v)
 
     let dump_cond fs = do_dump (cond_of_finals fs)
+*)
 
 
   end
