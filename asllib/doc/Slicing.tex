@@ -190,15 +190,15 @@ are all well-typed.
 \begin{mathpar}
 \inferrule[length]{
   \vs = \SliceLength(\eoffset, \elength)\\
-  \annotateexpr(\tenv, \eoffset) \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
+  \annotateexpr(\tenv, \eoffset) \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow \\ (\elengthp, \vseslength) \OrTypeError
   \end{array}
-  }\\\\
-  \techeck(\sesisreadonly(\vsesoffset), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \techeck(\sesisreadonly(\vseslength), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
+  }\hva\\\\
+  \techeck(\sesisreadonly(\vsesoffset), \SideEffectViolation) \typearrow \True \OrTypeError\hva\\\\
+  \techeck(\sesisreadonly(\vseslength), \SideEffectViolation) \typearrow \True \OrTypeError\hva\\\\
+  \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesoffset \cup \vseslength
 }{
   {
@@ -314,15 +314,15 @@ the width of the slice \texttt{x[:3]} is $3$.
 \inferrule[single]{}{
   \slicewidth(\overname{\SliceSingle(\Ignore)}{\vslice}) \typearrow \overname{\ELInt{1}}{\vwidth}
 }
-\and
+\hva\and
 \inferrule[scaled]{}{
   \slicewidth(\overname{\SliceStar(\Ignore, \ve)}{\vslice}) \typearrow \overname{\ve}{\vwidth}
 }
-\and
+\hva\and
 \inferrule[length]{}{
   \slicewidth(\overname{\SliceLength(\Ignore, \ve)}{\vslices}) \typearrow \overname{\ve}{\vwidth}
 }
-\and
+\hva\and
 \inferrule[range]{}{
   \slicewidth(\overname{\SliceRange(\veone, \vetwo)}{\vslices}) \typearrow
   \overname{\AbbrevEBinop{\ADD}{\ELInt{1}}{(\AbbrevEBinop{\SUB}{\veone}{\vetwo})}}{\vwidth}
@@ -357,8 +357,8 @@ the parameter \verb|N|.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
+  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\hva\\\\
+  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\hva\\\\
   \normalize(\tenv, \vep) \typearrow \vepp
 }{
   \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
@@ -456,9 +456,9 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \begin{mathpar}
 \inferrule[range]{
   \vs = \SliceRange(\etop, \estart)\\
-  \evalexpr(\env, \etop) \evalarrow \ResultExpr(\mtop, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \etop) \evalarrow \ResultExpr(\mtop, \envone) \OrAbnormal\hva\\\\
   \mtop \eqname (\vvsubtop, \vgone)\\
-  \evalexpr(\envone, \estart) \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\\\\
+  \evalexpr(\envone, \estart) \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\hva\\\\
   \mstart \eqname (\vstart, \vgtwo)\\
   \evalbinop(\SUB, \vvsubtop, \vstart) \evalarrow \vdiff\\
   \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
@@ -559,7 +559,7 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
+  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\hva\\\\
   \slicesp \eqdef [i\in\listrange(\vslices): \vs_i]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vslices)} \vxs_i
 }{
@@ -618,8 +618,8 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\\\\
-  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
+  \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\hva\\\\
+  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\hva\\\\
   \ranges \eqdef [\range] \concat \rangesone\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{

@@ -424,13 +424,13 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[bitvector]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \commonprefixline\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \commonprefixline\hva\\\\
   \bits \eqname \bv[n] ... \bv[0]\\
-  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\\\\
-  \commonsuffixline\\\\
+  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\hva\\\\
+  \commonsuffixline\hva\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
 }{
@@ -440,12 +440,12 @@ bv = 0xfdf0, bv_i = 0xfdf0
 
 \begin{mathpar}
 \inferrule[integer]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \commonprefixline\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \commonprefixline\hva\\\\
   \bits \eqdef \vi\text{ given as two's complement form of }(\maxpos + 1)\text{ bits}\\
-  \commonsuffixline\\\\
+  \commonsuffixline\hva\\\\
   % The following premise is essentially Bitvector.extract_slice
   \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
 }{
@@ -481,16 +481,16 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \inferrule{
   \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
   \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\\\\
-  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\\\\
-  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\\\\
+  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
+  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
+  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
+  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
+  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
   \positions \eqname I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in n..0.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in m..0.\ i = I_j\\
     \vd_i & \text{otherwise}
-  \end{array} \right.}\\\\
+  \end{array} \right.}\hva\\\\
   \vbits\eqdef [i=n..0: \bitfunc(i)]\\
 }{
   \writetobitvector(\slices, \src, \dst) \evalarrow \overname{\nvbitvector(\vbits)}{\vv}
@@ -502,14 +502,14 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 \begin{mathpar} % SUPPRESS_TEXTTT_LINTER
 \inferrule{
   \src = \overname{0}{\vs_5}\overname{0}{\vs_4}\overname{0}{\vs_3}\overname{0}{\vs_2}\overname{0}{\vs_1}\overname{0}{\vs_0}\\
-  \dst = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\\
+  \dst = \overname{1}{\vd_7}\overname{1}{\vd_6}\overname{1}{\vd_5}\overname{1}{\vd_4}\overname{1}{\vd_3}\overname{1}{\vd_2}\overname{1}{\vd_1}\overname{1}{\vd_0}\hva\\
   \slicestopositions(8, [\overname{(0, 4)}{\texttt{3:0}}, \overname{(6, 2)}{\texttt{7:6}}]) \evalarrow
-  [3, 2, 1, 0, 7, 6]\\
+  [3, 2, 1, 0, 7, 6]\hva\\
   \positions \eqdef [\overname{3}{I_5}, \overname{2}{I_4}, \overname{1}{I_3}, \overname{0}{I_2}, \overname{7}{I_1}, \overname{6}{I_0}]\\
   {\bitfunc = \lambda i \in 7..0.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in 5..0.\ i = I_j\\
     \vd_i & \text{otherwise}
-  \end{array} \right.}\\
+  \end{array} \right.}\hva\\
   \vbits \eqdef \bitfunc(7)\ \bitfunc(6)\ \bitfunc(5)\ \bitfunc(4)\ \bitfunc(3)\ \bitfunc(2)\ \bitfunc(1)\ \bitfunc(0)
 }{
   {

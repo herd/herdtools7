@@ -424,7 +424,7 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \begin{mathpar}
 \inferrule{
   \filteroptionlist(\fieldopts) \aslto \fields\\
-  \checknoduplicates(\fields) \typearrow \True \OrTypeError \\
+  \checknoduplicates(\fields) \typearrow \True \OrTypeError \hva\\
   i \in 1..|\fieldopts|: \desugarlhsfieldopt(\id, \fieldopts[i]) \astarrow \vlexpr_i \\
   \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
 }{
@@ -615,8 +615,8 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \begin{mathpar}
 \inferrule[local]{
   \tenv.\staticenvsL.\localstoragetypes(\vx) = (\tty, k)\\
-  \techeck(k = \LDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
+  \techeck(k = \LDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \{\LocalEffect(\SEImpure), \Immutability(\False)\}
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -627,8 +627,8 @@ since \verb|x| is not defined as either a local storage element or as a global s
 \begin{mathpar}
 \inferrule[global]{
   \tenv.\staticenvsL.\globalstoragetypes(\vx) = (\tty, k)\\
-  \techeck(k = \GDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\\\\
+  \techeck(k = \GDKVar, \AssignmentToImmutable) \typearrow \True \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \vte, \tty) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \{\GlobalEffect(\SEImpure), \Immutability(\False)\}
 }{
   \annotatelexpr(\tenv, \overname{\LEVar(\vx)}{\vle}, \vte) \typearrow
@@ -742,12 +742,12 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
 \inferrule{
   \vle = \LEDestructuring(\les)\\
   \les \eqname [\ve_{1..k}]\\
-  \techeck(\astlabel(\vte) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \techeck(\astlabel(\vte) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \vte \eqname \TTuple(\tys)\\
   \equallength(\les, \tys) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \tys \eqname [\vt_{1..k}]\\
-  i=1..k: \annotatelexpr(\tenv, \ve_i,\vt_i) \typearrow (\vep_i, \vxs_i) \OrTypeError\\\\
+  i=1..k: \annotatelexpr(\tenv, \ve_i,\vt_i) \typearrow (\vep_i, \vxs_i) \OrTypeError\hva\\\\
   \lesp \eqname [i=1..k: \vep_i]\\
   \vses \eqdef \bigcup_{i=1..k}  \vxs_i
 }{
@@ -829,8 +829,8 @@ See \ExampleRef{Multi-assignments}.
 \inferrule[non\_empty]{
   \vlelist = [\vle] \concat \vlelistone\\
   \vmlist = [\vm] \concat \vmlistone\\
-  \evallexpr(\env, \vle, \vm) \evalarrow \ResultLexpr(\vgone, \envone) \OrAbnormal\\\\
-  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \ResultLexpr(\vgtwo, \newenv) \OrAbnormal\\\\
+  \evallexpr(\env, \vle, \vm) \evalarrow \ResultLexpr(\vgone, \envone) \OrAbnormal\hva\\\\
+  \evalmultiassignment(\envone, \vlelistone, \vmlistone) \evalarrow \ResultLexpr(\vgtwo, \newenv) \OrAbnormal\hva\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
 }{
   \evalmultiassignment(\env, \vlelist, \vmlist) \evalarrow \ResultLexpr(\newg, \newenv)
@@ -878,11 +878,11 @@ are well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \torexpr(\ebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\\\\
-  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \torexpr(\ebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\hva\\\\
+  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \tanonbase \eqname \TArray(\size, \telem)\\
-  \annotatelexpr(\tenv, \ebase, \tbase) \typearrow (\ebasep, \vsesbase) \OrTypeError\\\\
+  \annotatelexpr(\tenv, \ebase, \tbase) \typearrow (\ebasep, \vsesbase) \OrTypeError\hva\\\\
   {
   \begin{array}{r}
     \annotatesetarray(\tenv, (\size, \telem), \vte, (\ebasep, \vsesbase, \eindex)) \typearrow \\
@@ -920,14 +920,14 @@ for examples of well-typed assignable array expressions.
 \begin{mathpar}
 \inferrule{
   \sizeelem = (\size, \telem)\\
-  \basesesindex = (\ebasep, \vsesbase, \eindex)\\\\
-  \checktypesatisfies(\tenv, \rhsty, \telem) \typearrow \True \OrTypeError\\\\
-  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\\\\
+  \basesesindex = (\ebasep, \vsesbase, \eindex)\hva\\\\
+  \checktypesatisfies(\tenv, \rhsty, \telem) \typearrow \True \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\hva\\\\
   \typeofarraylength(\tenv, \size) \typearrow \wantedtindex\\
-  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesbase \cup \vsesindex \\
   \newleint \eqdef \LESetArray(\ebasep, \eindexp)\\
-  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\\
+  \newleenum \eqdef \LESetEnumArray(\ebasep, \eindexp)\hva\\
   {
   \newle \eqdef \begin{cases}
     \newleint & \text{if }\astlabel(\size) = \ArrayLengthExpr\\
@@ -966,18 +966,18 @@ of \texttt{my\_array} to the value \texttt{53}.
   \item the steps so far computed the updated array, but have not assigned it to the variable
   bound to the array given by $\rearray$, which is achieved next.
   Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
-  is the output configuration $C$.
+  is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvint(\vi)\\
   \rmarray \eqname (\rvarray, \vgtwo)\\
-  \setindex(\vi, \vv, \rvarray) \evalarrow \vvone \OrDynError\\\\
+  \setindex(\vi, \vv, \rvarray) \evalarrow \vvone \OrDynError\hva\\\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr(\envtwo, \rearray, \vmone) \evalarrow C
 }{
@@ -1014,17 +1014,17 @@ cell of
   \item the steps so far computed the updated array, but have not assigned it to the variable
   bound to the array given by $\rearray$, which is achieved next.
   Evaluating the left-hand-side expression $\rearray$ in an environment $\envtwo$ with $\vmone$
-  is the output configuration $C$.
+  is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\\
+  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
   \mindex \eqname (\vindex, \vgone)\\
   \vindex \eqname \nvlabel(\vl)\\
-  \rmarray \eqname (\rvarray, \vgtwo)\\
+  \rmarray \eqname (\rvarray, \vgtwo)\hva\\
   \setfield(\vl, \vv, \rvarray) \evalarrow \vvone\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr(\envtwo, \rearray, \vmone) \evalarrow C
@@ -1072,17 +1072,17 @@ The specification is ill-typed, even though both slices assign \verb|0| to the b
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \techeck(\astlabel(\tleoneanon) = \TBits, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\hva\\\\
+  \techeck(\astlabel(\tleoneanon) = \TBits, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vsesone) \OrTypeError\\
-  \annotateslices(\tenv, \slices) \typearrow (\slicesannotated, \sesslices) \OrTypeError\\\\
+  \annotateslices(\tenv, \slices) \typearrow (\slicesannotated, \sesslices) \OrTypeError\hva\\\\
   \sliceswidth(\tenv, \slicesannotated) \typearrow \widthp\\
-  \normalize(\tenv, \widthp) \typearrow \vwidth\\
+  \normalize(\tenv, \widthp) \typearrow \vwidth\hva\\
   \vt \eqdef \TBits(\vwidth, \emptylist)\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
-  \checkdisjointslices(\tenv, \slicesannotated) \typearrow \True \OrTypeError\\\\
-  \techeck(\slicesannotated \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
+  \checkdisjointslices(\tenv, \slicesannotated) \typearrow \True \OrTypeError\hva\\\\
+  \techeck(\slicesannotated \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\hva\\\\
   \newle \eqdef \LESlice(\vletwo, \slicesannotated)\\
   \vses \eqdef \vsesone \cup \sesslices \\
 }{
@@ -1139,18 +1139,18 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
   \item the steps so far computed the updated bitvector, but have not assigned it to the
   variable bound to the bitvector given by $\ebv$, which is achieved next.
   Evaluating the left-hand-side expression $\ebv$ with
-  $\newmbv$ in an environment $\envtwo$ is the output configuration $C$.
+  $\newmbv$ in an environment $\envtwo$ is the output configuration~$C$.
 \end{itemize}
 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \torexpr(\ebv)) \evalarrow \ResultExpr(\mbv,\envone) \OrAbnormal\\
-  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\\
+  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\hva\\
   \msliceranges \eqname (\sliceranges, \vgone)\\
-  \mbv \eqname (\vbv, \vgtwo)\\\\
+  \mbv \eqname (\vbv, \vgtwo)\hva\\\\
   \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
-  \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\\\\
+  \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\hva\\\\
   \vgthree \eqdef \vgone \parallelcomp \vgtwo\\
   \newmbv \eqdef (\vvone, \vgthree)\\
   \evallexpr(\envtwo, \ebv, \newmbv) \evalarrow C
@@ -1220,7 +1220,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \inferrule{
   \evalbinop(\ADD, \vsone, \vlone) \evalarrow \vsonelone\\
   \evalbinop(\LE, \vsonelone, \vstwo) \evalarrow \vsonelonestwo\\
-  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\\
+  \evalbinop(\ADD, \vstwo, \vltwo) \evalarrow \vstwoltwo\hva\\
   \evalbinop(\LE, \vstwoltwo, \vsone) \evalarrow \vstwoltwosone\\
   \evalbinop(\BOR, \vsonelonestwo, \vstwoltwosone) \evalarrow \nvbool(\vb)\\
   \techeck(\vb, \OverlappingSliceAssignment) \typearrow \True\OrDynError
@@ -1259,14 +1259,14 @@ are well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow L(\fields) \OrTypeError\hva\\\\
   L \in \{\TException, \TRecord\}\\
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
-  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
   \tyopt \eqname \some{\vt}\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \newle \eqdef \LESetField(\vletwo, \vfield)
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
@@ -1305,13 +1305,13 @@ All of the collection field assignable expressions in
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\hva\\\\
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
-  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
   \tyopt \eqname \some{\vt}\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \newle \eqdef \LESetCollectionFields(\vbase, [\vfield])
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow (\newle, \vses)
@@ -1355,10 +1355,10 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[tuple]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \astlabel(\tleoneanon) = \TTuple
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\AssignmentToImmutable}
@@ -1367,10 +1367,10 @@ See \RequirementRef{TupleImmutability} for an example of assigning to a tuple ty
 
 \begin{mathpar}
 \inferrule[structured]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtleone) \typearrow \tleoneanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   {
   \astlabel(\tleoneanon) \not\in
   \left\{\begin{array}{l}
@@ -1418,7 +1418,7 @@ in the environment where \verb|my_record| is bound to \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\\
+    \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\hva\\
     \rmrecord \eqname (\rvrecord, \vgone)\\
     \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
     \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
@@ -1506,12 +1506,12 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[bits]{
-  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \tbaseanon = \TBits(\Ignore, \vbitfields)\\
-  \name\in\vlefields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\\\\
+  \name\in\vlefields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\hva\\\\
   \vleslice \eqdef \LESlice(\lebaseannot, [\name\in\vlefields: \vslices_\name])\\
   \annotatelexpr(\tenv, \vleslice, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
@@ -1521,12 +1521,12 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \begin{mathpar}
   \inferrule[record]{
-  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \tbaseanon = \TRecord(\vbasefields)\\
-  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\hva\\\\
   \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
   \checktypesatisfies(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
 }{
@@ -1541,13 +1541,13 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \begin{mathpar}
   \inferrule[collection]{
-  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \tbaseanon = \TCollection(\vbasefields)\\
   \lebase = \LEVar(\vbase) \\
-  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\\\\
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefields) \typearrow (\vlength, \vslices) \OrTypeError\hva\\\\
   \vtlhs \eqdef \TBits(\ELInt{\vlength}, \emptylist)\\
   \checktypesatisfies(\tenv, \vte, \vtlhs) \typearrow \True \OrTypeError
 }{
@@ -1562,10 +1562,10 @@ All multi-field assignment expressions in \listingref{lesetfields} are well-type
 
 \begin{mathpar}
   \inferrule[error]{
-  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\lebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \lebase, \tbase) \typearrow (\lebaseannot, \vsesbase) \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \tbase) \typearrow \tbaseanon \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   {
   \techeck\left(\astlabel(\tbaseanon) \not\in
   \left\{\begin{array}{l}\TBits,\\ \TRecord,\\ \TCollection\end{array}\right\},
@@ -1619,11 +1619,11 @@ and $(\overtext{0}{\start}, \overtext{1}{\vwidth})$ for \verb|status|.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\\\\
+  \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\hva\\\\
   \assocopt{\vbasefields}{\vfield} \typearrow \tyopt\\
-  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\\\\
+  \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
   \tyoptp \eqname \some{\vtfield}\\
-  \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\\\\
+  \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\hva\\\\
 }{
   {
   \begin{array}{r}
@@ -1666,8 +1666,8 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
   \evalexpr(\env, \torexpr(\vlerecord), \vrmrecordnew) \evalarrow \\
   ((\vrecord, \vgone), \envone) \OrAbnormal
     \end{array}
-  }\\\\
-  \assignbitvectorfields(\vv, \vrecord, \fields, \vslices) \evalarrow \vvtwo \OrDynError\\\\
+  }\hva\\\\
+  \assignbitvectorfields(\vv, \vrecord, \fields, \vslices) \evalarrow \vvtwo \OrDynError\hva\\\\
   \vmtwo \eqdef (\vvtwo, \vg \parallelcomp \vgone) \\
   \evallexpr(\envone, \vlerecord, \vmtwo) \evalarrow C
 }{
@@ -1715,9 +1715,9 @@ $\nvbitvector('11111111 0000000000000000 1')$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \fields = [\fieldname]\concat\fieldsone\\
-  \vslices = [(\vione, \vitwo)]\concat\vslicesone\\
+  \vslices = [(\vione, \vitwo)]\concat\vslicesone\hva\\
   \vslice \eqdef [(\nvint(\vione), \nvint(\vitwo))]\\
-  \readfrombitvector(\vbitvector, \vslice) \evalarrow \recordslices \OrDynError\\\\
+  \readfrombitvector(\vbitvector, \vslice) \evalarrow \recordslices \OrDynError\hva\\\\
   \setfield(\fieldname, \recordslices, \record) \evalarrow \recordone\\
   \assignbitvectorfields(\vbitvector, \recordone, \fieldsone, \vslicesone) \evalarrow \vres \OrDynError
 }{
@@ -1768,10 +1768,10 @@ All of the collection field assignable expressions in
 \inferrule{
   \vle = \LESetCollectionFields(\vbase, \fieldnames, \vslices)\\
   \env \eqname (\tenv, \denv)\\
-  \vbase \in \dom(\denv.\dynamicenvsG)\\
+  \vbase \in \dom(\denv.\dynamicenvsG)\hva\\
   \record \eqdef \denv.\dynamicenvsG[\vbase]\\
-  \assignbitvectorfields(\vv, \record, \fieldnames, \vslices) \evalarrow \recordone \OrDynError\\\\
-  \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\\
+  \assignbitvectorfields(\vv, \record, \fieldnames, \vslices) \evalarrow \recordone \OrDynError\hva\\\\
+  \vgzero \eqdef \{\fieldname \in \fieldnames: \WriteEffect(\vbase + \ttdotstr + \fieldname)\}\hva\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG[\vx \mapsto \recordone], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\vgzero} \\
 }{
@@ -1847,10 +1847,10 @@ are well-typed.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[error\_missing\_field]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \findbitfieldopt(\bitfields, \vfield) \typearrow \None\
 }{
   \annotatelexpr(\tenv, \overname{\LESetField(\vleone, \vfield)}{\vle}, \vte) \typearrow \TypeErrorVal{\BadField}
@@ -1859,15 +1859,15 @@ are well-typed.
 
 \begin{mathpar}
 \inferrule[field\_simple]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldSimple(\Ignore, \slices) }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
-  \vt \eqdef \TBits(\vw, \emptylist)\\\\
-  \commonsuffixline\\\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \vt \eqdef \TBits(\vw, \emptylist)\hva\\\\
+  \commonsuffixline\hva\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
@@ -1877,10 +1877,10 @@ are well-typed.
 
 \begin{mathpar}
 \inferrule[field\_nested]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   {
     \begin{array}{r}
   \findbitfieldopt(\bitfields, \vfield) \typearrow \\
@@ -1888,9 +1888,9 @@ are well-typed.
     \end{array}
   }\\
   \sliceswidth(\tenv, \vslices) \typearrow \vw\\
-  \vt \eqdef \TBits(\vw, \bitfieldsp)\\\\
-  \commonsuffixline\\\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \vt \eqdef \TBits(\vw, \bitfieldsp)\hva\\\\
+  \commonsuffixline\hva\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
@@ -1900,16 +1900,16 @@ are well-typed.
 
 \begin{mathpar}
 \inferrule[field\_typed]{
-  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\\\\
-  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \torexpr(\vleone)) \typearrow (\vtleone, \Ignore, \Ignore) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vleone, \vtleone) \typearrow (\vletwo, \vses) \OrTypeError\hva\\\\
+  \tstruct(\tenv, \vtleone) \typearrow \TBits(\Ignore, \bitfields) \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \findbitfieldopt(\bitfields, \vfield) \typearrow \some{ \BitFieldType(\Ignore, \vslices, \vt) }\\
-  \sliceswidth(\tenv, \vslices) \typearrow \vw\\
+  \sliceswidth(\tenv, \vslices) \typearrow \vw\hva\\
   \vtp \eqdef \TBits(\vw , \emptylist)\\
-  \checktypesatisfies(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\\\\
-  \commonsuffixline\\\\
-  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\\\\
+  \checktypesatisfies(\tenv, \vtp, \vt) \typearrow \True \OrTypeError\hva\\\\
+  \commonsuffixline\hva\\\\
+  \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \vletwo \eqdef \LESlice(\vleone, \slices)\\
   \annotatelexpr(\tenv, \vletwo, \vte) \typearrow (\newle, \vses) \OrTypeError
 }{
