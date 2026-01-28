@@ -58,7 +58,6 @@
 \newcommand\commonprefixline[0]{\hyperlink{def-commonprefixline}{\color{cyan}{\text{******** common prefix ********}}}}
 \newcommand\commonsuffixline[0]{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{******** common suffix ********}}}}
 \let\l@section\relax
-\newcommand\anycharacter[1]{$\@span{style="text-decoration:wavy underline;"}#1$}
 %% Not so great rendering of \overbracket in inline mode
 \def\my@wavy{\@span{style="text-decoration:wavy underline;"}}
 \newcommand{\anycharacter}[1]{$\my@wavy{}#1$}
@@ -77,10 +76,6 @@
 %%%% Apparently \empty is... empty
 \let\empty\relax
 %%%% Console output.
-% Temporary hack to use CSS.
-% Works because all optional args to \begin{Verbatim} are identical
-\newenvironment
-    {my@console}[1][]
-    {\def\endVerbatim{\@endVerbatim\@close{div}}\@open{div}{style="border:solid 1px;padding-left:1em;margin-top:1em;"}\@Verbatim}{}
-\AtBeginDocument{\let\Verbatim\my@console}
-
+%Disable font size change in Verbatim environment
+\newcommand{\nokey}[1]{}
+\AtBeginDocument{\let\verb@fontsize@key\nokey}
