@@ -517,8 +517,7 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
           $\positionsoneopt$\ProseOrTypeError;
     \item define $\positionsone$ as $\vsone$ if $\positionsoneopt$ is $\some{\vsone}$ and the empty set, otherwise;
     \item applying $\disjointslicestopositions$ to $\tenv$, $\isstatic$, and $\vslicesone$,\\ yields the optional set of positions
-          $\positionstwoopt$\ProseOrTypeError;
-    \item define $\positionstwo$ as $\vsone$ if $\positionstwoopt$ is $\some{\vstwo}$ and the empty set, otherwise;
+          $\positionstwo$\ProseOrTypeError;
     \item checking that $\positionsone$ is disjoint from $\positionstwo$ yields $\True$\ProseTerminateAs{\BadSlices}
     \item $\positions$ is the union of $\positionsone$ and $\positionstwo$.
   \end{itemize}
@@ -661,7 +660,7 @@ it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
 We represent \absolutebitfields\ by the type
 \RenderType{TAbsField}
 where the component $\name$ is a list of identifiers corresponding to the \absolutename,
-and the component $\vslice$ corresponds to an \absoluteslice\ by listing the indices
+and the component $\vslice$ corresponds to an \absoluteslice{} by listing the indices
 into the containing bitvector type.\footnote{An implementation of the type system may compactly represent the list of indices
 via a list of intervals, each represented by its limits.}
 
@@ -677,28 +676,18 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
 \ASLListing{An example where two bitfields of the same name (\texttt{common}) exist in the same scope but have different absolute slices}{CommonBitfieldsAlignError}{\typingtests/TypingRule.CheckCommonBitfieldsAlign.Error.asl}
 
 \ProseParagraph
-\OneApplies
+\AllApply
 \begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vbitfields$ is the empty list;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vbitfields$ is not the empty list;
-    \item define $\vlastindex$ as $\vwidth - 1$;
-    \item define $\vtopabsolute$ as an \absolutebitfield\ with the empty list
-          for a name and the interval $\vlastindex..0$ (that is, the entire range
-          of indices for the containing bitvector type),
-          as an artificial top-level \absolutebitfield\ for the entire bitvector type;
-    \item \Prosebitfieldstoabsolute{$\tenv$}{$\vbitfields$}{$\vtopabsolute$}{$\vfs$};
-    \item checking that \absolutebitfields\ $\vfone$ and $\vftwo$ align via
-          $\absolutebitfieldsalign$ in $\tenv$, for every $\vfone$ and $\vftwo$ in $\vfs$,
-          yields $\True$\ProseTerminateAs{\BadSlices};
-    \item the result is $\True$.
-  \end{itemize}
+  \item define $\vlastindex$ as $\vwidth - 1$;
+  \item define $\vtopabsolute$ as an \absolutebitfield{} with the empty list
+        for a name and the interval $\vlastindex..0$ (that is, the entire range
+        of indices for the containing bitvector type),
+        as an artificial top-level \absolutebitfield\ for the entire bitvector type;
+  \item \Prosebitfieldstoabsolute{$\tenv$}{$\vbitfields$}{$\vtopabsolute$}{$\vfs$};
+  \item checking that \absolutebitfields{} $\vfone$ and $\vftwo$ align via
+        $\absolutebitfieldsalign$ in $\tenv$, for every $\vfone$ and $\vftwo$ in $\vfs$,
+        yields $\True$\ProseTerminateAs{\BadSlices};
+  \item the result is $\True$.
 \end{itemize}
 
 \FormallyParagraph

@@ -102,19 +102,12 @@ let bool_of_string s =
 %token NEQ
 
 %token IF THEN ELSE
-
-%nonassoc COLON_EQ
-%nonassoc EQ_COLON
-
-%right MINUS
-%right PLUS
-%right TIMES
-%right DIVIDE
-%right EXPONENT
 %right AND
 %right OR
 %right ELSE
 
+%nonassoc COLON_EQ
+%nonassoc EQ_COLON
 %nonassoc EQ
 %nonassoc IN
 %nonassoc NOT_IN
@@ -124,6 +117,13 @@ let bool_of_string s =
 %nonassoc GE
 %nonassoc GT
 %nonassoc NEQ
+
+%right MINUS
+%right PLUS
+%right TIMES
+%right DIVIDE
+%right EXPONENT
+
 %left LPAR
 
 %%

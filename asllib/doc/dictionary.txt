@@ -314,6 +314,7 @@ character
 characters
 check
 checked
+checker
 checking
 checks
 child

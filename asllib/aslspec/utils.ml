@@ -1,4 +1,9 @@
 (** Utility functions for functions that are not available in 4.08. *)
+
+(***************************************
+ List-related utilities.
+***************************************)
+
 let list_is_empty = function [] -> true | _ -> false
 
 let list_is_equal eq l1 l2 =
@@ -31,6 +36,34 @@ let list_tail = function
 let list_match_two_elements lst =
   match lst with [ x1; x2 ] -> (x1, x2) | _ -> assert false
 
+(** [list_starts_with eq ~prefix lst] checks if [prefix] is a prefix of [lst]
+    according to the equality function [eq]. *)
+let rec list_starts_with eq ~prefix lst =
+  match (prefix, lst) with
+  | [], _ -> true
+  | _, [] -> false
+  | p :: pt, l :: lt -> eq p l && list_starts_with eq ~prefix:pt lt
+
+(** [list_get_all_option l] returns [Some lst] if all elements of [l] are
+    [Some x], where [lst] is the list of all such [x]. Otherwise, returns
+    [None]. *)
+let list_get_all_option l =
+  let exception None_found in
+  let option_get = function None -> raise None_found | Some x -> x in
+  try List.map option_get l |> Option.some with None_found -> None
+
+let rec list_iter3 f lst1 lst2 lst3 =
+  match (lst1, lst2, lst3) with
+  | [], [], [] -> ()
+  | x1 :: t1, x2 :: t2, x3 :: t3 ->
+      f x1 x2 x3;
+      list_iter3 f t1 t2 t3
+  | _ -> invalid_arg "list_iter3: lists have different lengths"
+
+(***************************************
+ String-related utilities.
+***************************************)
+
 (** [string_exists p s] checks if at least one character of [s] satisfies the
     predicate [p]. *)
 let string_exists p s =
@@ -41,14 +74,6 @@ let string_exists p s =
     else check_from_index (i + 1)
   in
   check_from_index 0
-
-(** [list_starts_with eq ~prefix lst] checks if [prefix] is a prefix of [lst]
-    according to the equality function [eq]. *)
-let rec list_starts_with eq ~prefix lst =
-  match (prefix, lst) with
-  | [], _ -> true
-  | _, [] -> false
-  | p :: pt, l :: lt -> eq p l && list_starts_with eq ~prefix:pt lt
 
 (** [string_starts_with ~prefix s] checks if string [s] starts with [prefix]. *)
 let string_starts_with ~prefix s =

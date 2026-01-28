@@ -95,12 +95,38 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     """
     # Labels to exclude from the check
     excluded_labels: set[str] = {
+        "type-Strings",
         "constant-one",
         "constant-zero",
         "constant-two",
         "constant-intlitregex",
         "type-INTLIT",
         "constant-returnvarprefix",
+        "constant-labelTBool",
+        "constant-labelTString",
+        "constant-labelTReal",
+        "constant-labelLLabel",
+        "constant-labelLEDestructuring",
+        "constant-labelTRecord",
+        "constant-labelLString",
+        "constant-labelPendingConstrained",
+        "constant-labelTInt",
+        "constant-labelTArray",
+        "constant-labelTBits",
+        "constant-labelTTuple",
+        "constant-labelParameterized",
+        "constant-labelLInt",
+        "constant-labelLBitvector",
+        "constant-labelWellConstrained",
+        "constant-labelUnconstrained",
+        "constant-labelTEnum",
+        "constant-labelECall",
+        "constant-labelTCollection",
+        "constant-labelLReal",
+        "constant-labelArrayLengthExpr",
+        "constant-labelLBool",
+        "constant-labelTNamed",
+        "constant-labelTException",
     }
 
     hyperlink_labels: set[str] = set()
