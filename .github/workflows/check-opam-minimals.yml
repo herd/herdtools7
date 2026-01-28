@@ -1,7 +1,19 @@
 name: Test build with mininal versions
 
 on:
+  # On a pull request that edits one of the following:
+  pull_request:
+    path:
+      # This workflow file
+      - '.github/workflow/check-opam-minimals.yml'
+      # Definition of herdtools project
+      - 'herdtools.opam'
+      # Definition of aslref.opam
+      - 'asllib/dune-project'
+
+  # On demand
   workflow_dispatch:
+
   # Schedule every Tuesday, early in the morning
   schedule:
       - cron: '0 2 * * 2'
@@ -13,12 +25,6 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        ocaml-compiler:
-          - "4.08.1"
-
     runs-on: ubuntu-latest
 
     steps:

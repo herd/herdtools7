@@ -1,0 +1,9 @@
+AArch64 W005
+{
+ [PTE(y)]=(oa:PA(y),af:0);
+ pteval_t 0:X0=(oa:PA(x),af:0); 0:X1=PTE(y);
+}
+ P0           ;
+ STR X0,[X1]  ;
+
+exists [PTE(z)]=(oa:PA(x), af:0)

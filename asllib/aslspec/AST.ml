@@ -225,7 +225,7 @@ module Term = struct
   and opt_named_type_term = string option * t
   (** A term optionally associated with a variable name. *)
 
-  and record_field = { name_and_type : named_type_term; att : Attributes.t }
+  and record_field = { name : string; term : t; att : Attributes.t }
   (** A field of a record type. *)
 
   (** [make_type_operation op term] Constructs a type term in which [op] is
@@ -240,16 +240,16 @@ module Term = struct
       tuple args [args]. *)
   let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
 
-  let make_record_field named_type_term attributes =
+  let make_record_field (name, term) attributes =
     let att = Attributes.of_list attributes in
-    { name_and_type = named_type_term; att }
+    { name; term; att }
 
   (** [make_record fields] Constructs an unlabelled record with fields [fields].
   *)
   let make_record fields = Record { label_opt = None; fields }
 
-  let field_type { name_and_type = _, field_type; _ } = field_type
-  let field_name { name_and_type = name, _; _ } = name
+  let field_type { term } = term
+  let field_name { name } = name
 
   let record_field_math_macro { att } =
     Attributes.find_math_macro AttributeKey.Math_Macro att
@@ -385,9 +385,11 @@ end
 
 (** A datatype for top-level type terms used in the definition of a type. *)
 module TypeVariant : sig
-  type t = { type_kind : Term.type_kind; term : Term.t; att : Attributes.t }
+  open Term
 
-  val make : Term.type_kind -> Term.t -> attribute_pairs -> t
+  type t = { type_kind : type_kind; term : Term.t; att : Attributes.t }
+
+  val make : type_kind -> Term.t -> attribute_pairs -> t
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
@@ -533,6 +535,8 @@ module Relation : sig
     parameters : string list;
         (** Type parameters. Currently, only available to operators. *)
     is_operator : bool;
+    is_variadic : bool;
+        (** Whether the operator accepts a variable number of arguments. *)
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
@@ -556,6 +560,7 @@ module Relation : sig
     string list ->
     Term.opt_named_type_term list ->
     Term.t ->
+    bool ->
     attribute_pairs ->
     t
 
@@ -587,6 +592,7 @@ end = struct
     name : string;
     parameters : string list;
     is_operator : bool;
+    is_variadic : bool;
     property : relation_property;
     category : relation_category option;
     input : Term.opt_named_type_term list;
@@ -600,6 +606,7 @@ end = struct
       name;
       parameters = [];
       is_operator = false;
+      is_variadic = false;
       property;
       category;
       input;
@@ -608,11 +615,12 @@ end = struct
       rule_opt;
     }
 
-  let make_operator name parameters input output_type attributes =
+  let make_operator name parameters input output_type is_variadic attributes =
     {
       name;
       parameters;
       is_operator = true;
+      is_variadic;
       property = RelationProperty_Function;
       category = None;
       input;

@@ -1,4 +1,5 @@
 AArch64 V2I
+Hash=0c4e0632a2731303f6523c09549988b3
 {
 0:X2=pte_x;
 0:X4=x;
@@ -6,7 +7,7 @@ AArch64 V2I
 }
 P0 ;
 STR X0,[X2]    ;
-L0: LDR X3,[X4];
+L0: LDR W3,[X4];
 DSB ISH        ;
 LSR X9,X4,#12  ;
 TLBI VAAE1IS,X9;

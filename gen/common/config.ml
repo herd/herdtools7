@@ -54,6 +54,10 @@ let rejects = ref None
 let stdout = ref false
 let cycleonly = ref false
 let metadata = ref true
+let numeric = ref true
+let varatom = ref ([] : string list)
+let use_eieio = ref true
+let norm = ref false
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -196,7 +200,7 @@ let common_specs () =
     (sprintf "specify variant")::
    ("-hexa", Arg.Unit (fun () -> hexa := true),"hexadecimal output")::
    ("-o", Arg.String (fun s -> tarfile := Some s),
-    "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory)")::
+    "<name.tar> output litmus tests in archive <name.tar> (default, output in curent directory). Note `-stdout true` overrides this flag.")::
    ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
   ("-list",
@@ -250,8 +254,6 @@ let common_specs () =
   ("-addnum", Arg.Bool (fun n -> addnum := n),
    sprintf "<bool> complete test name with number when identical (default %b)"
      !addnum)::
-   ("-name",Arg.String (fun s -> name := Some s),
-     "<s> specify base name of tests")::
    ("-sufname",Arg.String (fun s -> sufname := Some s),
      "<s> specify test name suffix")::
   ("-lowercase", Arg.Bool (fun b -> lowercase := b),
@@ -260,18 +262,56 @@ let common_specs () =
      sprintf "<i> size of integer added to base name that yield test names (default %i)" !fmt)::
    ("-no", Arg.String (fun s -> no := Some s),
      "<fname> do not generate tests for these cycles")::
-  ("-stdout", Arg.Bool (fun b ->  stdout := b),
-    "output to stdout. If Cycleonly is true, then this is implied to be true. (default false)")::
   ("-cycleonly", Arg.Bool (fun b ->  cycleonly := b),
     "output only cycle, i.e. no litmus body (default false)")::
-  []
-
-let numeric = ref true
-
-let speclist () =
-  common_specs () @
   ("-num", Arg.Bool (fun b -> numeric := b),
    sprintf "<bool> use numeric names (default %b)" !numeric)::
+  []
+
+let name_spec is_diyone =
+  if is_diyone then
+   ("-name",Arg.String (fun s -> name := Some s),
+     "<s> specify the name of the test. Outputs to file by default, unless `-stdout` is set. Note: `-norm` overrides this flag.")
+  else
+   ("-name",Arg.String (fun s -> name := Some s),
+     "<s> specify base name of tests.")
+
+let stdout_spec is_diyone =
+  if is_diyone then
+    ("-stdout", Arg.Set stdout,
+     "when `-name` or `-norm` is set, control whether output is written to stdout, error otherwise.")
+  else
+    ("-stdout", Arg.Set stdout,
+     "output to stdout. It overrides `-o`. If `-cycleonly` is true, then this is implied to be true.")
+
+let varatomspec =
+  ("-varatom", Arg.String (fun s -> varatom := !varatom @ [s]),
+   "<atom specs> specify atom variations")
+
+let diyone_spec () =
+  nprocs := 1000 ;
+  numeric := true ;
+  common_specs () @
+  name_spec true
+  :: stdout_spec true
+  :: ("-norm",Arg.Set norm, "find a normalised name for the test. Outputs to file by default, unless `-stdout` is set.")
+  :: []
+
+let diycross_spec () =
+  addnum := false ;
+  numeric := false ;
+  nprocs := 1000 ;
+  common_specs () @
+  name_spec false
+  :: stdout_spec false
+  :: ("-noeieio", Arg.Clear use_eieio,
+   " ignore eieio fence (backward compatibility)")
+  :: varatomspec
+  :: []
+
+let diy_spec () =
+  common_specs () @
+   name_spec false ::
    ("-mode", Arg.String (fun s -> mode := parse_mode s),
     sprintf
       "<%s> running mode (default %s). Modes thin and uni are experimental."
@@ -312,13 +352,17 @@ let speclist () =
     "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
+   stdout_spec false ::
+   varatomspec ::
    []
 
-let varatom = ref ([] : string list)
-
-let varatomspec =
-  ("-varatom", Arg.String (fun s -> varatom := !varatom @ [s]),
-   "<atom specs> specify atom variations")
+let valid_stdout_flag is_diyone =
+  if !stdout &&
+  (* it should only be used with `-norm` or `-name`, and no `-o` in `diyone7` *)
+    ( ( is_diyone && ( (!name = None && not !norm) || !tarfile <> None ) )
+  (* it should not be used with `-o` and `-cycleonly` in `diy7` and `diycross7`*)
+      || ( !cycleonly || !tarfile <> None ) )
+  then Warn.user_error "-stdout will be ignored."
 
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version.version)

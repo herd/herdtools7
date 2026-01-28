@@ -105,16 +105,17 @@ operator fresh_identifier() -> Identifier
   math_macro = \freshidentifier,
 };
 
-operator list_from_indices[A,B](index: bound_variable, elements: list0(A), operation: partial N -> B) -> list0(B)
+// Converts a list to the sequence of its indices, starting from 0.
+operator indices[T](l: list0(T)) -> (indices: list0(N))
 {
-  "forms a new list by applying {operation} to each index of {elements} via the bound variable {index}",
-  math_macro = \listfromindices,
+  "the list of indices for {l}",
+  math_macro = \indicesop,
 };
 
-operator list_map[A,B](elem: bound_variable, elements: list0(A), elem_operation: partial A -> B) -> (new_elements: list0(B))
+operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
 {
-  "forms a new list where for each binding of {elem} to an element of {elements} in order of appearance,
-   {new_elements} has an element obtained by applying {elem_operation} to {elem}",
+  "a list where for each binding of {bound_variable} to an element of {elements} in order of appearance,
+   {new_elements} has the corresponding element {mapped_elem}",
   math_macro = \listmap,
 };
 
@@ -172,7 +173,8 @@ operator some[T](T) -> option(T)
   math_macro = \some,
 };
 
-operator make_list[T](list0(T)) -> list0(T)
+// Constructs a list out of a finite number of arguments.
+variadic operator make_list[T](list1(T)) -> list1(T)
 {
   math_macro = \makelist,
 };
@@ -182,7 +184,8 @@ operator list_len[T](list0(T)) -> N
   math_macro = \listlen,
 };
 
-operator concat[T](list1(T)) -> list0(T)
+// Concatenates two lists into a single list.
+operator concat[T](prefix: list0(T), suffix: list0(T)) -> list0(T)
 {
   associative = true,
   math_macro = \concat,
@@ -232,7 +235,7 @@ operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
 };
 
 // Constructs a set out of a fixed list of expressions.
-operator make_set[T](list1(T)) -> powerset(T)
+variadic operator make_set[T](list1(T)) -> powerset(T)
 {
   math_macro = \makeset,
 };
@@ -266,7 +269,7 @@ operator subset[T](A: powerset(T), B: powerset(T)) -> Bool
   math_macro = \subset,
 };
 
-operator union[T](list1(powerset(T))) -> powerset(T)
+variadic operator union[T](list1(powerset(T))) -> powerset(T)
 {
   math_macro = \cup,
   associative = true,
@@ -277,100 +280,10 @@ operator union_list[T](list1(powerset(T))) -> powerset(T)
   math_macro = \UNIONLIST,
 };
 
-operator intersect[T](list1(powerset(T))) -> powerset(T)
+variadic operator intersect[T](list0(powerset(T))) -> powerset(T)
 {
   math_macro = \cap,
   associative = true,
-};
-
-operator not(Bool) -> Bool
-{
-  math_macro = \opnot,
-};
-
-operator and(list1(Bool)) -> Bool
-{
-  associative = true,
-  math_macro = \land,
-};
-
-operator or(list1(Bool)) -> Bool
-{
-  associative = true,
-  math_macro = \lor,
-};
-
-operator list_and(list1(Bool)) -> Bool
-{
-  math_macro = \land,
-};
-
-operator list_or(list1(Bool)) -> Bool
-{
-  math_macro = \lor,
-};
-
-operator iff(Bool, Bool) -> Bool
-{
-  math_macro = \IFF,
-};
-
-operator implies(Bool, Bool) -> Bool
-{
-  math_macro = \implies,
-};
-
-operator num_plus[NumType](list1(NumType)) -> NumType
-{
-  associative = true,
-  math_macro = \numplus,
-};
-
-operator num_minus[NumType](list1(NumType)) -> NumType
-{
-  associative = true,
-  math_macro = \numminus,
-};
-
-// Negation for number types.
-operator negate[NumType](NumType) -> NumType
-{
-  math_macro = \negate,
-};
-
-operator num_times[NumType](list1(NumType)) -> NumType
-{
-  math_macro = \numtimes,
-};
-
-operator num_divide[NumType](NumType, NumType) -> NumType
-{
-  math_macro = \numdivide,
-};
-
-operator num_exponent[NumType](NumType, NumType) -> NumType
-{
-  math_macro = \numexponent,
-};
-
-operator less_than[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \lessthan,
-};
-
-operator less_or_equal[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \lessorequal,
-};
-
-operator greater_than[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \greaterthan,
-};
-
-operator greater_or_equal[NumType](NumType, NumType) -> Bool
-{
-  math_macro = \greaterorequal,
 };
 
 operator round_up(Q) -> N
@@ -381,6 +294,13 @@ operator round_up(Q) -> N
 operator round_down(Q) -> N
 {
   math_macro = \rounddown,
+};
+
+operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
+{
+  "concatenates {prefix} and the string for {n} to yield {result}",
+  math_macro = \concatstrings,
+  associative = true,
 };
 
 operator concat_strings(prefix: Strings, suffix: Strings) -> (result: Strings)
@@ -403,25 +323,25 @@ operator ReadEffect(x: Identifier) -> (N, read: effect_type, Identifier)
   math_macro = \ReadEffectop,
 };
 
-operator parallel(list1(XGraphs)) -> XGraphs
+variadic operator parallel(list1(XGraphs)) -> XGraphs
 {
   math_macro = \parallelcomp,
   associative = true,
 };
 
-operator ordered_data(list1(XGraphs)) -> XGraphs
+variadic operator ordered_data(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \ordereddata,
 };
 
-operator ordered_ctrl(list1(XGraphs)) -> XGraphs
+variadic operator ordered_ctrl(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \orderedctrl,
 };
 
-operator ordered_po(list1(XGraphs)) -> XGraphs
+variadic operator ordered_po(list1(XGraphs)) -> XGraphs
 {
   associative = true,
   math_macro = \orderedpo,
@@ -2466,7 +2386,7 @@ typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: lis
   check_no_duplicates(names) -> True;
   static_eval(tenv, e_width) -> L_Int(width);
   (
-    INDEX(i, fields: annotate_bitfield(tenv, width, field) -> (fields'[i], xs[i]))
+    INDEX(i, fields: annotate_bitfield(tenv, width, fields[i]) -> (fields'[i], xs[i]))
   ) { math_layout = ([_])};
   ses := union_list(xs);
   --
@@ -2735,7 +2655,7 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list1(bitfie
   {tenv}.",
   prose_application = "\hyperlink{relation-bitfieldstoabsolute}{converting} bitfields {bitfields} with parent {absolute_parent} in {tenv} yields absolute bitfields {abs_bitfields}",
 } =
-  abs_field_sets := list_from_indices(i, bitfields, bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
+  abs_field_sets := list_map(i, indices(bitfields), bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
   { math_layout = (_, [_])};
   abs_bitfields := union_list(abs_field_sets);
   --
@@ -4644,8 +4564,8 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     (or(
       ast_label(le) != LE_Destructuring,
       ast_label(re) != E_Call,
-      le =: LE_Destructuring(les) &&
-      list_exists(i, les, not(lexpr_is_var(les[i])))
+      (le =: LE_Destructuring(les)) &&
+      list_exists(lexpr, les, not(lexpr_is_var(lexpr)))
     ))
     { math_layout = ( [_] ) };
     eval_expr(env, re) -> ResultExpr(vm, env1);
@@ -5341,7 +5261,7 @@ semantics relation match_func_res(C: TContinuingOrReturning) ->
 
   case returning {
     C =: Returning(xs, ret_env);
-    ids := list_from_indices(i, xs, concat_strings(return_var_prefix, string_of_nat(i - one)));
+    ids := list_map(i, indices(xs), numbered_identifier(return_var_prefix, (i - one)));
     vs := list_combine(xs, ids);
     --
     ResultCall((vs, empty_graph), ret_env);

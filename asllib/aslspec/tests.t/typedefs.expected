@@ -18,7 +18,6 @@
 \newcommand\Two[0]{ \hyperlink{constant-Two}{\textsf{Two}} } % Generated from Two
 \newcommand\FIELDanonf[0]{ \hyperlink{recordfield-anonf}{\textsf{anon\_f}} } % Generated from anon_f
 \newcommand\FIELDanong[0]{ \hyperlink{recordfield-anong}{\textsf{anon\_g}} } % Generated from anon_g
-\newcommand\boundvariable[0]{ \hyperlink{type-boundvariable}{\textsf{bound\_variable}} } % Generated from bound_variable
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
 \newcommand\FIELDf[0]{ \hyperlink{recordfield-f}{\textsf{f}} } % Generated from f
 \newcommand\FIELDg[0]{ \hyperlink{recordfield-g}{\textsf{g}} } % Generated from g
@@ -46,7 +45,7 @@
 
 \DefineType{Q}{\texthypertarget{type-Q}$\Q$} % EndDefineType
 
-\DefineType{bound_variable}{\texthypertarget{type-boundvariable}$\boundvariable$} % EndDefineType
+\DefineType{ASTLabels}{\texthypertarget{type-ASTLabels}$\ASTLabels$} % EndDefineType
 
 \DefineType{Int}{\texthypertarget{type-Int}$\Int$} % EndDefineType
 

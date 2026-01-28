@@ -1338,49 +1338,179 @@ def check_relation_references(latex_files: list[str]) -> int:
 def check_duplicate_asllisting_references(latex_files: list[str]) -> int:
     r"""
     Checks that no two \ASLListing commands have the same label or the same file.
+    Handles multi-line macro instances by scanning whole files (DOTALL).
     Returns the total number of errors found across all files.
     """
     num_errors = 0
 
-    # Pattern to match \ASLListing{name}{label}{file}
-    asllisting_pattern = re.compile(r"\\ASLListing\{([^}]*)\}\{([^}]*)\}\{([^}]*)\}")
+    # Pattern to match \ASLListing{name}{label}{file} across lines
+    asllisting_pattern = re.compile(
+        r"\\ASLListing\{([^}]*)\}\s*\{([^}]*)\}\s*\{([^}]*)\}", re.DOTALL
+    )
 
     # Track seen labels and files
     seen_labels: dict[str, tuple[str, int]] = {}  # label -> (filename, line_number)
-    seen_files: dict[str, tuple[str, int]] = {}  # file -> (filename, line_number)
+    seen_files: dict[str, tuple[str, int]] = {}  # normalized file -> (filename, line_number)
 
     for filename in latex_files:
-        lines = read_file_lines(filename)
-        for line_number, line in enumerate(lines, start=1):
-            if is_skipped_line(line):
+        # Read entire file and remove comments, keeping line breaks to report positions
+        file_str = read_file_str(filename)
+        cleaned_lines: list[str] = []
+        for raw_line in file_str.splitlines():
+            if is_skipped_line(raw_line):
+                cleaned_lines.append("")  # Preserve line count
                 continue
+            comment_pos = raw_line.find("%")
+            cleaned_lines.append(raw_line[:comment_pos] if comment_pos != -1 else raw_line)
+        cleaned_file_str = "\n".join(cleaned_lines)
 
-            for match in asllisting_pattern.finditer(line):
-                name = match.group(1)
-                label = match.group(2)
-                file_path = match.group(3)
+        for match in asllisting_pattern.finditer(cleaned_file_str):
+            # Compute 1-based line number of the macro occurrence
+            line_number = cleaned_file_str[: match.start()].count("\n") + 1
 
-                # Check for duplicate labels
-                if label in seen_labels:
-                    prev_filename, prev_line = seen_labels[label]
-                    print(
-                        f"ERROR: Duplicate \\ASLListing label '{label}' found in {filename}:{line_number} "
-                        f"(previously in {prev_filename}:{prev_line})"
-                    )
-                    num_errors += 1
-                else:
-                    seen_labels[label] = (filename, line_number)
+            name = match.group(1)
+            label = match.group(2)
+            file_arg_raw = match.group(3)
+            # Normalize whitespace in file argument to compare duplicates robustly
+            file_arg = re.sub(r"\s+", "", file_arg_raw).strip()
 
-                # Check for duplicate files
-                if file_path in seen_files:
-                    prev_filename, prev_line = seen_files[file_path]
-                    print(
-                        f"ERROR: Duplicate \\ASLListing file '{file_path}' found in {filename}:{line_number} "
-                        f"(previously in {prev_filename}:{prev_line})"
-                    )
-                    num_errors += 1
-                else:
-                    seen_files[file_path] = (filename, line_number)
+            # Check for duplicate labels
+            if label in seen_labels:
+                prev_filename, prev_line = seen_labels[label]
+                print(
+                    f"ERROR: Duplicate \\ASLListing label '{label}' found in {filename}:{line_number} "
+                    f"(previously in {prev_filename}:{prev_line})"
+                )
+                num_errors += 1
+            else:
+                seen_labels[label] = (filename, line_number)
+
+            # Check for duplicate files (normalized)
+            if file_arg in seen_files:
+                prev_filename, prev_line = seen_files[file_arg]
+                print(
+                    f"ERROR: Duplicate \\ASLListing file '{file_arg}' found in {filename}:{line_number} "
+                    f"(previously in {prev_filename}:{prev_line})"
+                )
+                num_errors += 1
+            else:
+                seen_files[file_arg] = (filename, line_number)
+
+    return num_errors
+
+
+def check_asllisting_paths_exist_in_file(filename: str) -> int:
+    r"""
+    Per-file check: validates that every \ASLListing{name}{label}{\<prefix>/<file>}
+    in `filename` resolves to an existing file under the directory mapped by <prefix>.
+
+    Recognized prefixes and their directories (relative to asllib/doc):
+      - \definitiontests => ../tests/ASLDefinition.t
+      - \syntaxtests     => ../tests/ASLSyntaxReference.t
+      - \typingtests     => ../tests/ASLTypingReference.t
+      - \semanticstests  => ../tests/ASLSemanticsReference.t
+
+    Returns the number of errors found in `filename`.
+    """
+    num_errors = 0
+
+    # Pattern to match \ASLListing{name}{label}{path} across lines
+    asllisting_pattern = re.compile(
+        r"\\ASLListing\{([^}]*)\}\s*\{([^}]*)\}\s*\{([^}]*)\}", re.DOTALL
+    )
+
+    # Extract prefix and file from third argument: "\\prefix/file"
+    path_macro_pattern = re.compile(r"^\\([a-zA-Z]+)/(.*)$")
+
+    prefix_to_dir: dict[str, str] = {
+        "definitiontests": "../tests/ASLDefinition.t",
+        "syntaxtests": "../tests/ASLSyntaxReference.t",
+        "typingtests": "../tests/ASLTypingReference.t",
+        "semanticstests": "../tests/ASLSemanticsReference.t",
+    }
+
+    # Read entire file and remove comments, keeping line breaks to report positions
+    file_str = read_file_str(filename)
+    cleaned_lines: list[str] = []
+    for raw_line in file_str.splitlines():
+        if is_skipped_line(raw_line):
+            # Preserve line count with an empty line
+            cleaned_lines.append("")
+            continue
+        comment_pos = raw_line.find("%")
+        if comment_pos != -1:
+            cleaned_lines.append(raw_line[:comment_pos])
+        else:
+            cleaned_lines.append(raw_line)
+    cleaned_file_str = "\n".join(cleaned_lines)
+
+    for match in asllisting_pattern.finditer(cleaned_file_str):
+        # Compute 1-based line number for the \ASLListing occurrence
+        line_number = cleaned_file_str[: match.start()].count("\n") + 1
+
+        file_arg_raw = match.group(3)
+        # Normalize whitespace inside the argument to handle line breaks
+        file_arg = re.sub(r"\s+", "", file_arg_raw).strip()
+
+        pm = path_macro_pattern.match(file_arg)
+        if not pm:
+            # Not a macro-based path; skip quietly
+            continue
+
+        prefix = pm.group(1)
+        suffix = pm.group(2)
+
+        if prefix not in prefix_to_dir:
+            print(
+                f"ERROR: Unknown ASLListing path macro '\\{prefix}' in {filename}:{line_number}"
+            )
+            num_errors += 1
+            continue
+
+        base_dir = prefix_to_dir[prefix]
+        resolved_path = os.path.normpath(os.path.join(base_dir, suffix))
+
+        if not os.path.isfile(resolved_path):
+            print(
+                f"ERROR: \\ASLListing path '{file_arg}' resolves to missing file '{resolved_path}' in {filename}:{line_number}",
+                file=sys.stderr,
+            )
+            num_errors += 1
+            continue
+
+        # Verify case-sensitive match of the path components against filesystem
+        parts = [p for p in suffix.split("/") if p]
+        actual_parts: list[str] = []
+        current_dir = base_dir
+        case_mismatch = False
+        for part in parts:
+            try:
+                entries = os.listdir(current_dir)
+            except Exception:
+                entries = []
+
+            # Find an entry that matches ignoring case
+            match_candidates = [e for e in entries if e.lower() == part.lower()]
+            if not match_candidates:
+                # Already handled as missing above; treat as mismatch just in case
+                case_mismatch = True
+                actual_parts.append(part)
+                break
+
+            actual_entry = match_candidates[0]
+            actual_parts.append(actual_entry)
+            if actual_entry != part:
+                case_mismatch = True
+            current_dir = os.path.join(current_dir, actual_entry)
+
+        if case_mismatch:
+            actual_path = os.path.normpath(os.path.join(base_dir, *actual_parts))
+            print(
+                f"ERROR: Case mismatch in \\ASLListing path '{file_arg}' in {filename}:{line_number}. "
+                f"On disk: '{actual_path}'",
+                file=sys.stderr,
+            )
+            num_errors += 1
 
     return num_errors
 
@@ -1486,6 +1616,7 @@ def main():
     num_errors += check_per_file(
         content_latex_sources,
         [
+            check_asllisting_paths_exist_in_file,
             check_repeated_words,
             check_repeated_lines,
             check_repeated_line_sequences,

@@ -3,16 +3,19 @@
  (modes native)
  (enabled_if %{lib-available:qcheck})
  (libraries asllib qcheck)
+ (package aslref)
  (modules toposort ConstraintBinops))
 
 (library
  (name testhelpers)
+ (package aslref)
  (libraries asllib zarith)
  (modules helpers))
 
 (tests
  (names static bitvector types)
  (modes native)
+ (package aslref)
  (deps
   (:standard ../libdir/stdlib.asl))
  (libraries asllib zarith testhelpers)
@@ -31,10 +34,11 @@
  (modes native)
  (libraries asllib menhirSdk testhelpers)
  (modules Lexer)
+ (package aslref)
  (action
   (setenv
    ASL_PARSER_CMLY
-   %{project_root}/asllib/Parser.cmly
+   %{project_root}/Parser.cmly
    (run %{test} -e))))
 
 (cram

@@ -5,9 +5,20 @@ module StringSet = Set.Make (String)
 
 (* A variable for discarding of values. *)
 let ignore_var = "_"
+let is_ignore_var id = String.equal id ignore_var
+
+(** The identifier that must be used to mark bound variables in the spec
+    definition of the quantifying operator. *)
+let bound_variable = "bound_variable"
 
 module Error = struct
   let spec_error msg = raise (SpecError msg)
+
+  let bad_layout term layout ~consistent_layout =
+    spec_error
+    @@ Format.asprintf
+         "layout %a is inconsistent with %a. Here's a consistent layout: %a"
+         PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 
   let undefined_reference id context =
     spec_error @@ Format.asprintf "Undefined reference to '%s' in %s" id context
@@ -169,12 +180,6 @@ module Error = struct
     @@ Format.asprintf
          "The variable %s is defined twice, the second time is in %a" id
          PP.pp_expr context_expr
-
-  let bad_layout term layout ~consistent_layout =
-    spec_error
-    @@ Format.asprintf
-         "layout %a is inconsistent with %a. Here's a consistent layout: %a"
-         PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 end
 
 (** A wrapper type for the different kinds of elements in a spec that are
@@ -191,10 +196,10 @@ type definition_node =
 let definition_node_name = function
   | Node_Type { Type.name }
   | Node_Relation { Relation.name }
-  | Node_Constant { Constant.name } ->
+  | Node_Constant { Constant.name }
+  | Node_RecordField { name } ->
       name
   | Node_TypeVariant def -> Option.get (variant_to_label_opt def)
-  | Node_RecordField { name_and_type = name, _; _ } -> name
 
 (** [pp_definition_node fmt node] pretty-prints the definition node [node]. *)
 let pp_definition_node fmt =
@@ -204,7 +209,21 @@ let pp_definition_node fmt =
   | Node_Relation def -> pp_relation_definition fmt def
   | Node_Constant def -> pp_constant_definition fmt def
   | Node_TypeVariant { TypeVariant.term } -> pp_type_term fmt term
-  | Node_RecordField { name_and_type } -> pp_named_type_term fmt name_and_type
+  | Node_RecordField { name; term } -> pp_named_type_term fmt (name, term)
+
+(** [args_of_tuple id_to_defining_node label] returns the components of the
+    labelled tuple type variant named [label] using [id_to_defining_node] to
+    lookup the type variant definition node. *)
+let args_of_tuple id_to_defining_node label =
+  match StringMap.find label id_to_defining_node with
+  | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
+  | node ->
+      let msg =
+        Format.asprintf
+          "Expected labelled tuple type variant for label %s, found %a." label
+          pp_definition_node node
+      in
+      failwith msg
 
 (** [math_macro_opt_for_node node] returns the optional math macro associated
     with the definition node [node]. *)
@@ -236,8 +255,7 @@ let vars_of_node = function
   | Node_Relation { Relation.input; output; _ } ->
       vars_of_opt_named_type_terms input
       @ Utils.list_concat_map vars_of_type_term output
-  | Node_RecordField { name_and_type = field_name, field_type; _ } ->
-      field_name :: vars_of_type_term field_type
+  | Node_RecordField { name; term } -> name :: vars_of_type_term term
 
 (** [is_constant id_to_defining_node id] is true if and only if [id] is either
     defined as a constant directly or as a type variant with a label.
@@ -287,10 +305,7 @@ module Layout = struct
     | Record { fields; _ } ->
         if List.length fields > 1 then
           let layout_per_field =
-            List.map
-              (fun { name_and_type = _, field_type; _ } ->
-                for_type_term field_type)
-              fields
+            List.map (fun { Term.term } -> for_type_term term) fields
           in
           Vertical layout_per_field
         else Unspecified
@@ -312,8 +327,7 @@ module Layout = struct
         match TypeVariant.math_layout def with
         | Some layout -> layout
         | None -> for_type_term term)
-    | Node_RecordField { name_and_type = _, field_type; _ } ->
-        for_type_term field_type
+    | Node_RecordField { Term.term } -> for_type_term term
 end
 
 (** Lists nodes that define identifiers and can be referenced. *)
@@ -371,17 +385,22 @@ type t = {
       (** Associates identifiers with the AST nodes where they are defined. *)
   assign : Relation.t;
   reverse_assign : Relation.t;
-  _bot : Constant.t;
-  _none : Constant.t;
-  _empty_set : Constant.t;
-  _empty_list : Constant.t;
-  _bool : Type.t;
-  _n : Type.t;
-  _z : Type.t;
+  bottom_constant : Constant.t;
+  none_constant : Constant.t;
+  empty_set : Constant.t;
+  empty_list : Constant.t;
+  _bool_type : Type.t;
+  n_type : Type.t;
+  z_type : Type.t;
   _q : Type.t;
   _equal : Relation.t;
-  bound_variable : Type.t;
 }
+
+type spec_type = t
+
+let is_builtin_type id (t : Type.t) = String.equal id t.name
+let is_builtin_constant id (c : Constant.t) = String.equal id c.name
+let is_builtin_relation id (r : Relation.t) = String.equal id r.name
 
 (** [make_symbol_table ast] creates a symbol table from [ast]. *)
 let make_symbol_table ast =
@@ -410,6 +429,8 @@ let defining_node_for_id self id =
   | Some def -> def
   | None -> Error.undefined_element id
 
+(** [relation_for_id self id] returns the relation definition node for the given
+    identifier [id], which is assumed to correspond to a relation definition. *)
 let relation_for_id self id =
   match defining_node_for_id self id with
   | Node_Relation def -> def
@@ -435,12 +456,17 @@ let symbol_table_for_id id_to_defining_node id =
     variadic operator. That is, an operator whose only argument is a list type.
     Variadic operators accept any number of actual arguments. *)
 let is_variadic_operator spec id =
-  (* TODO: add an explicit `variadic` attribute to operators and check the operator signature
-               when the attribute is specified. *)
   match StringMap.find id spec.id_to_defining_node with
-  | Node_Relation
-      { is_operator; input = [ (_, TypeOperator { op = List0 | List1 }) ] } ->
-      is_operator
+  | Node_Relation { is_operator = true; is_variadic } -> is_variadic
+  | _ -> false
+
+(** [is_quantifying_operator spec op_name] tests whether [op_name] is a
+    quantifying operator (like "forall" or "exists") based on whether its first
+    argument is named as [bound_variable]. *)
+let is_quantifying_operator spec op_name =
+  let operator = relation_for_id spec op_name in
+  match operator.input with
+  | (Some arg_name, _) :: _ -> String.equal arg_name bound_variable
   | _ -> false
 
 (** A module to resolve expressions appearing in rules and constant values. *)
@@ -641,10 +667,7 @@ module ResolveRules = struct
           Expr.make_opt_labelled_tuple label_opt args
       | None, Term.Record { label_opt; fields } ->
           let field_exprs =
-            List.map
-              (fun { Term.name_and_type = field_name, _; _ } ->
-                (field_name, Expr.Var field_name))
-              fields
+            List.map (fun { Term.name } -> (name, Expr.Var name)) fields
           in
           Expr.Record { label_opt; fields = field_exprs }
       | None, _ -> Error.missing_relation_argument_name name
@@ -820,6 +843,7 @@ module ExtendNames = struct
             | Elem_Relation { rule_opt = None } ) as elem ->
               elem
           | Elem_Relation ({ rule_opt = Some elements; output } as def) ->
+              (* The parser ensures that [output] is non-empty. *)
               let first_output_type = List.hd output in
               (* TODO: we currently use the first type variant in the list of
                output types for the relation to assign names.
@@ -931,7 +955,7 @@ module Check = struct
           Error.bad_layout term layout ~consistent_layout
         else
           List.iter2
-            (fun { name_and_type = _, term; _ } cell -> check_layout term cell)
+            (fun { Term.term } cell -> check_layout term cell)
             fields cells
     | ConstantsSet names, (Horizontal cells | Vertical cells) ->
         if List.compare_lengths names cells <> 0 then
@@ -959,8 +983,8 @@ module Check = struct
           check_layout term (math_layout_for_node node)
       | Node_Relation def ->
           check_layout (relation_to_tuple def) (math_layout_for_node node)
-      | Node_RecordField { name_and_type = _, field_type; _ } ->
-          check_layout field_type (math_layout_for_node node)
+      | Node_RecordField { term } ->
+          check_layout term (math_layout_for_node node)
     in
     iter_defined_nodes spec check_math_layout_for_definition_node
 
@@ -979,9 +1003,7 @@ module Check = struct
         | Some label -> label :: component_ids)
     | Record { label_opt; fields } -> (
         let fields_ids =
-          List.map
-            (fun { name_and_type = _, field_type; _ } -> field_type)
-            fields
+          List.map (fun { Term.term } -> term) fields
           |> Utils.list_concat_map referenced_ids
         in
         match label_opt with
@@ -1157,13 +1179,75 @@ module Check = struct
         [spec.ast] that instantiate type terms in the range of
         [spec.id_to_defining_node] are also subsumed by them. The check assumes
         that [check_no_undefined_ids] has already been run. *)
+
+    val _subsumed : t -> Term.t -> Term.t -> bool
+    (** [subsumed id_to_defining_node sub super] conservatively tests whether
+        all values in the domain of [sub] are also in the domain of [super].
+        [id_to_definition_node] is used to look up types by their names. *)
+
+    val _operator_subsumed : Term.type_operator -> Term.type_operator -> bool
+    (** [_operator_subsumed sub_op super_op] is true if any [term], all values
+        in the domain of [TypeOperator { op = sub_op; term }] are also in the
+        domain of [TypeOperator { op = super_op; term }]. *)
+
+    val _reduce_term : t -> Term.t -> Term.t
+    (** [_reduce_term id_to_defining_node term] reduces [term] by applying two
+        simplifications:
+
+        - If [term] is an unlabelled singleton tuple (that is, a type
+          reference), it is replaced by its single component term. This
+          simplifies handling tuple types.
+
+        - If [term] is a label referencing a type with a single variant, it is
+          reduced to that variant's term. *)
   end = struct
     open Term
+
+    (** If a type defines a single variant, reduce references to that type to
+        the variant's term.
+
+        For example, given:
+        {[
+          typedef type_error = TypeError (error_code : type_error_code)
+        ]}
+        then [type_error] is reduced to
+        [TypeError(error_code: type_error_code)]. *)
+    let rec reduce_single_variant_type spec term =
+      let open Term in
+      match term with
+      | Label id -> (
+          match defining_node_opt_for_id spec id with
+          | Some
+              (Node_Type
+                 { Type.variants = [ { TypeVariant.term = variant_term } ]; _ })
+            ->
+              _reduce_term spec variant_term
+          | _ -> term)
+      | _ -> term
+
+    (** [reduce_type_reference spec term] reduces [term] if it is an unlabelled
+        singleton tuple, which represents a type reference.
+
+        For example, given:
+        {[
+          typedef tbool = NV_Literal(L_Bool(v: Boolean type));
+        ]}
+        then the type term for [tbool] is the unlabelled singleton tuple
+        [( NV_Literal(L_Bool(v: Boolean type)) )], which is reduced to
+        [NV_Literal(L_Bool(v: Boolean type))]. *)
+    and reduce_type_reference spec term =
+      match term with
+      | Tuple { label_opt = None; args = [ (_, referenced_term) ] } ->
+          _reduce_term spec referenced_term
+      | _ -> term
+
+    and _reduce_term spec term =
+      reduce_type_reference spec term |> reduce_single_variant_type spec
 
     (** [subsumed sub_op super_op] is true if all values in the domain of
         [TypeOperator { op = sub_op; term }] are also in the domain of
         [TypeOperator { op = super_op; term }]. *)
-    let operator_subsumed sub_op super_op =
+    let _operator_subsumed sub_op super_op =
       match (sub_op, super_op) with
       | Powerset, Powerset
       | Powerset_Finite, (Powerset_Finite | Powerset)
@@ -1183,6 +1267,8 @@ module Check = struct
         ensure termination on recursive types, this expansion is done at most
         once by tracking the set of expanded labels in [expanded_types].
 
+        This function assumes that [check_well_formed] has already been run.
+
         In the example, [M(B, Num)] is not subsumed by [M(A, Num)]. The
         algorithm checks whether [B] is subsumed by [A], which requires checking
         whether [B] is subsumed by [L] and whether [B] is subsumed by
@@ -1200,82 +1286,101 @@ module Check = struct
           typedef A = L | M(A, Num);
           typedef B = ( M(B, Num) );
         ]} *)
-    let rec subsumed id_to_defining_node expanded_types sub super =
-      (* The domain of an unlabelled singleton tuple is the domain
-         of its single type term. *)
-      let equiv_singleton_tuple term =
-        match term with
-        | Tuple { label_opt = None; args = [ (_, referenced_term) ] } ->
-            referenced_term
-        | _ -> term
-      in
+    let rec subsumed_rec spec expanded_types sub super =
       (* In the example above [( M(B, Num) )] is equivalent to [M(B, Num)]. *)
-      let sub = equiv_singleton_tuple sub in
-      let super = equiv_singleton_tuple super in
-      match (sub, super) with
-      | _, Label super_label ->
-          let sub_is_label_case =
-            match sub with
-            | Label sub_label ->
-                String.equal sub_label super_label
-                ||
-                (* The case where [sub_label] is a type name,
+      let sub = _reduce_term spec sub in
+      let super = _reduce_term spec super in
+      let result =
+        match (sub, super) with
+        | Label sub_id, _ when is_builtin_constant sub_id spec.bottom_constant
+          ->
+            (* The bottom constant is a subset of every type. *)
+            true
+        | Label sub_id, Label super_id
+          when is_builtin_type sub_id spec.n_type
+               && is_builtin_type super_id spec.z_type ->
+            true
+        | Label sub_label, TypeOperator { op = List0 | List1 }
+          when is_builtin_constant sub_label spec.empty_list ->
+            (* The empty list is a subset of every list. *)
+            true
+        | Label sub_label, TypeOperator { op = Powerset | Powerset_Finite }
+          when is_builtin_constant sub_label spec.empty_set ->
+            (* The empty set is a subset of every set. *)
+            true
+        | ( Label sub_label,
+            TypeOperator { op = Option | Powerset | Powerset_Finite } )
+          when is_builtin_constant sub_label spec.none_constant ->
+            (* None is a subset of Option and also every set. *)
+            true
+        | _, Label super_label ->
+            let sub_is_label_case =
+              match sub with
+              | Label sub_label ->
+                  String.equal sub_label super_label
+                  ||
+                  (* The case where [sub_label] is a type name,
                   like [B] of [M(B, Num)] in the example. *)
-                subsumed_typename_term_type id_to_defining_node expanded_types
-                  sub_label super
-            | _ -> false
-          in
-          sub_is_label_case
-          (* The case where [super_label] is a type name,
+                  subsumed_typename_super spec expanded_types sub_label super
+              | _ -> false
+            in
+            sub_is_label_case
+            (* The case where [super_label] is a type name,
               like [A] of [M(A, Num)] in the example.
           *)
-          || subsumed_term_type_typename id_to_defining_node expanded_types sub
-               super_label
-      (* From here on the test operates via structural induction. *)
-      | ( TypeOperator { op = sub_op; term = _, sub_term },
-          TypeOperator { op = super_op; term = _, super_term } ) ->
-          operator_subsumed sub_op super_op
-          && subsumed id_to_defining_node expanded_types sub_term super_term
-      | ( Tuple { label_opt = sub_label_opt; args = sub_components },
-          Tuple { label_opt = super_label_opt; args = super_components } ) ->
-          Option.equal String.equal sub_label_opt super_label_opt
-          && List.for_all2
-               (fun (_, sub_term) (_, super_term) ->
-                 subsumed id_to_defining_node expanded_types sub_term super_term)
-               sub_components super_components
-      | ( Record { label_opt = sub_label_opt; fields = sub_fields },
-          Record { label_opt = super_label_opt; fields = super_fields } ) ->
-          Option.equal String.equal sub_label_opt super_label_opt
-          && List.for_all2
-               (fun { name_and_type = _, sub_term; _ }
-                    { name_and_type = _, super_term; _ } ->
-                 subsumed id_to_defining_node expanded_types sub_term super_term)
-               sub_fields super_fields
-      | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
-          Function
-            { from_type = _, super_from_term; to_type = _, super_to_term } ) ->
-          (* Functions can be partial or total, which require different subsumption tests.
+            || subsumed_sub_typename spec expanded_types sub super_label
+        (* From here on the test operates via structural induction. *)
+        | ( TypeOperator { op = sub_op; term = _, sub_term },
+            TypeOperator { op = super_op; term = _, super_term } ) ->
+            _operator_subsumed sub_op super_op
+            && subsumed_rec spec expanded_types sub_term super_term
+        | ( Tuple { label_opt = sub_label_opt; args = sub_components },
+            Tuple { label_opt = super_label_opt; args = super_components } ) ->
+            Option.equal String.equal sub_label_opt super_label_opt
+            && List.for_all2
+                 (fun (_, sub_term) (_, super_term) ->
+                   subsumed_rec spec expanded_types sub_term super_term)
+                 sub_components super_components
+        | ( Record { label_opt = sub_label_opt; fields = sub_fields },
+            Record { label_opt = super_label_opt; fields = super_fields } ) ->
+            Option.equal String.equal sub_label_opt super_label_opt
+            && List.for_all2
+                 (fun { term = sub_term; _ } { term = super_term; _ } ->
+                   subsumed_rec spec expanded_types sub_term super_term)
+                 sub_fields super_fields
+        | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
+            Function
+              { from_type = _, super_from_term; to_type = _, super_to_term } )
+          ->
+            (* Functions can be partial or total, which require different subsumption tests.
              To make this simple, we require equivalence of the from-terms and to-terms,
              which is sufficient for our needs.
           *)
-          let equivalence_test term term' =
-            subsumed id_to_defining_node expanded_types term term'
-            && subsumed id_to_defining_node expanded_types term' term
-          in
-          equivalence_test sub_from_term super_from_term
-          && equivalence_test sub_to_term super_to_term
-      | ConstantsSet sub_names, ConstantsSet super_names ->
-          List.for_all (fun name -> List.mem name super_names) sub_names
-      | _ ->
-          (* false is safely conservative. *)
-          false
+            let equivalence_test term term' =
+              subsumed_rec spec expanded_types term term'
+              && subsumed_rec spec expanded_types term' term
+            in
+            equivalence_test sub_from_term super_from_term
+            && equivalence_test sub_to_term super_to_term
+        | ConstantsSet sub_names, ConstantsSet super_names ->
+            List.for_all (fun name -> List.mem name super_names) sub_names
+        | _ ->
+            (* false is safely conservative. *)
+            false
+      in
+      let () =
+        if false then
+          Format.eprintf "Subsumed check: %a <= %a = %b@." PP.pp_type_term sub
+            PP.pp_type_term super result
+      in
+      result
 
-    (** [subsumed_term_type_typename id_to_defining_node sub_term typename]
-        checks if [sub_term] is subsumed by any of the type variants defined by
-        [typename] in [id_to_defining_node]. If [typename] is not a type with
-        type variants, returns false. *)
-    and subsumed_term_type_typename id_to_defining_node expanded_types sub_term
-        typename =
+    (** [subsumed_sub_typename id_to_defining_node sub_term typename] checks if
+        [sub_term] is subsumed by any of the type variants defined by [typename]
+        in [id_to_defining_node]. If [typename] is not a type with type
+        variants, returns false. *)
+    and subsumed_sub_typename ({ id_to_defining_node } as spec : spec_type)
+        expanded_types sub_term typename =
       if StringSet.mem typename expanded_types then false
       else
         (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
@@ -1290,17 +1395,15 @@ module Check = struct
             (not (Utils.list_is_empty variants))
             && List.exists
                  (fun { TypeVariant.term = super_term } ->
-                   subsumed id_to_defining_node expanded_types sub_term
-                     super_term)
+                   subsumed_rec spec expanded_types sub_term super_term)
                  variants
         | _ -> false
 
-    (** [subsumed_typename_term_type id_to_defining_node typename super_term]
-        checks if all type variants defined by [typename] are subsumed by
-        [super_term]. If [typename] is not a type with type variants, returns
-        false. *)
-    and subsumed_typename_term_type id_to_defining_node expanded_types typename
-        super_term =
+    (** [subsumed_typename_super id_to_defining_node typename super_term] checks
+        if all type variants defined by [typename] are subsumed by [super_term].
+        If [typename] is not a type with type variants, returns false. *)
+    and subsumed_typename_super ({ id_to_defining_node } as spec) expanded_types
+        typename super_term =
       if StringSet.mem typename expanded_types then false
       else
         (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
@@ -1310,10 +1413,12 @@ module Check = struct
             (not (Utils.list_is_empty variants))
             && List.for_all
                  (fun { TypeVariant.term = sub_term } ->
-                   subsumed id_to_defining_node expanded_types sub_term
-                     super_term)
+                   subsumed_rec spec expanded_types sub_term super_term)
                  variants
         | _ -> false
+
+    let _subsumed id_to_defining_node sub super =
+      subsumed_rec id_to_defining_node StringSet.empty sub super
 
     (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
          super_terms] checks that each term in [sub_terms] is subsumed by the
@@ -1323,7 +1428,7 @@ module Check = struct
         the corresponding term in [super_terms], a [SpecError] is raised. *)
     let check_subsumed_terms_lists id_to_defining_node sub_terms super_terms =
       let check_subsumed id_to_defining_node sub super =
-        if subsumed id_to_defining_node StringSet.empty sub super then ()
+        if _subsumed id_to_defining_node sub super then ()
         else Error.type_subsumption_failure sub super
       in
       List.iter2 (check_subsumed id_to_defining_node) sub_terms super_terms
@@ -1337,47 +1442,41 @@ module Check = struct
         The check operates by structural induction on [term], except when a
         label term references another type in which case the type variants of
         the referenced type are considered. *)
-    let rec check_well_instantiated id_to_defining_node term =
+    let rec check_well_instantiated spec term =
       match term with
       | TypeOperator { term = _, operator_term } ->
-          check_well_instantiated id_to_defining_node operator_term
+          check_well_instantiated spec operator_term
       | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
-          let () =
-            List.iter (check_well_instantiated id_to_defining_node) terms
-          in
+          let () = List.iter (check_well_instantiated spec) terms in
           match label_opt with
           | None -> ()
           | Some label -> (
-              let variant_def = StringMap.find label id_to_defining_node in
+              let variant_def = StringMap.find label spec.id_to_defining_node in
               match variant_def with
               | Node_TypeVariant
                   {
                     TypeVariant.term = Tuple { args = def_opt_named_components };
                   } ->
                   let def_terms = List.map snd def_opt_named_components in
-                  check_subsumed_terms_lists id_to_defining_node terms def_terms
+                  check_subsumed_terms_lists spec terms def_terms
               | _ -> assert false))
       | Record { label_opt; fields } -> (
-          let terms =
-            List.map (fun { name_and_type = _, term; _ } -> term) fields
-          in
-          let () =
-            List.iter (check_well_instantiated id_to_defining_node) terms
-          in
+          let terms = List.map (fun { term } -> term) fields in
+          let () = List.iter (check_well_instantiated spec) terms in
           match label_opt with
           | None -> ()
           | Some label -> (
-              let variant_def = StringMap.find label id_to_defining_node in
+              let variant_def = StringMap.find label spec.id_to_defining_node in
               match variant_def with
               | Node_TypeVariant
                   { TypeVariant.term = Record { fields = def_fields; _ } } ->
                   let def_terms = List.map field_type def_fields in
-                  check_subsumed_terms_lists id_to_defining_node terms def_terms
+                  check_subsumed_terms_lists spec terms def_terms
               | _ -> assert false))
       | Function { from_type = _, from_term; to_type = _, to_term } ->
-          check_well_instantiated id_to_defining_node from_term;
-          check_well_instantiated id_to_defining_node to_term
+          check_well_instantiated spec from_term;
+          check_well_instantiated spec to_term
       | ConstantsSet _ | Label _ -> ()
 
     (** [check_well_formed id_to_defining_node term] checks that [term] is
@@ -1449,14 +1548,14 @@ module Check = struct
           | Node_Type _ -> ()
           | _ -> Error.instantiation_failure_not_a_type term label)
 
-    let check_well_typed id_to_defining_node term =
-      check_well_formed id_to_defining_node term;
+    let check_well_typed spec term =
+      check_well_formed spec.id_to_defining_node term;
       (* Now check whether [term] instantiates a type
         and if so, check that it is subsumed by it.
       *)
-      check_well_instantiated id_to_defining_node term
+      check_well_instantiated spec term
 
-    let check { ast; id_to_defining_node } =
+    let check ({ ast; id_to_defining_node } as spec) =
       List.iter
         (fun elem ->
           try
@@ -1465,23 +1564,25 @@ module Check = struct
             | Elem_Constant { opt_type = None } ->
                 ()
             | Elem_Constant { opt_type = Some type_term } ->
-                check_well_typed id_to_defining_node type_term
+                check_well_typed spec type_term
             | Elem_Relation { name; input; output } ->
                 (* The check must be made in a symbol table that contains the relation parameters. *)
-                let id_to_defining_node =
-                  symbol_table_for_id id_to_defining_node name
+                let spec =
+                  {
+                    spec with
+                    id_to_defining_node =
+                      symbol_table_for_id id_to_defining_node name;
+                  }
                 in
-                List.iter
-                  (fun (_, term) -> check_well_typed id_to_defining_node term)
-                  input;
-                List.iter (check_well_typed id_to_defining_node) output
+                List.iter (fun (_, term) -> check_well_typed spec term) input;
+                List.iter (check_well_typed spec) output
             | Elem_Type { Type.variants; _ } ->
                 List.iter
                   (fun { TypeVariant.term } ->
                     match term with
                     | Label _ ->
                         () (* A constant label definition is well-formed. *)
-                    | _ -> check_well_typed id_to_defining_node term)
+                    | _ -> check_well_typed spec term)
                   variants
           with SpecError e ->
             stack_spec_error e
@@ -1489,52 +1590,47 @@ module Check = struct
         ast
   end
 
-  (** A module for checking variable usage and inferring types for expressions
-      in relation rules. The functions in this module assume that a rule exists
-      and that [Check.relation_named_arguments_if_exists_rule] has been run. *)
-  module TypeInference = struct
+  (** A module for checking variable usage in rulea. The functions in this
+      module assume that a rule exists and that
+      [Check.relation_named_arguments_if_exists_rule] has been run. *)
+  module UseDef = struct
     open Expr
-
-    (** [is_quantifying_operator spec op_name] tests whether [op_name] is a
-        quantifying operator (like "forall" or "exists") based on whether its
-        first argument has the type [bound_variable]. *)
-    let is_quantifying_operator spec op_name =
-      let operator = relation_for_id spec op_name in
-      match operator.input with
-      | (_, Label id) :: _ -> String.equal id spec.bound_variable.name
-      | _ -> false
 
     (** [vars_of_identifiers id_to_defining_node identifiers] returns the
         sublist of [identifiers] that represent variables. The map
         [id_to_defining_node] is used to filter out constants and labels. *)
     let vars_of_identifiers id_to_defining_node identifiers =
-      (* Filters out identifiers that are definitely not variables,
-         since they are either constants or type names. *)
+      (* Filters out identifiers that are definitely not variables. *)
       let is_non_var id =
         match StringMap.find_opt id id_to_defining_node with
-        | Some (Node_Constant _)
-        | Some (Node_Type _)
-        | Some (Node_TypeVariant _) ->
-            (* Constants and types cannot be used as variables.*)
+        | Some (Node_Constant _) | Some (Node_TypeVariant _) ->
+            (* Constants and variant labels are not variables. *)
             true
+        | Some (Node_Type _)
         | Some (Node_RecordField _)
         | Some (Node_Relation _)
-        (* Field names and relation names can be used as variables. *)
+        (* Type names, field names, and relation names can be used as variables. *)
         | None ->
             false
       in
       identifiers
-      |> List.filter (fun id ->
-          not (String.equal id ignore_var || is_non_var id))
+      |> List.filter (fun id -> not (is_ignore_var id || is_non_var id))
 
-    type use_def = { used : StringSet.t; defined : StringSet.t }
+    type use_def = {
+      used : StringSet.t;
+      defined : StringSet.t;
+      list_vars : StringSet.t;
+          (** lists can be updated at various indices so we need to keep track
+              of them to avoid false positives. *)
+    }
     (** An environment data type for tracking used and defined variables. *)
 
     (** Pretty-prints a [use_def] environment for debugging. *)
-    let pp_use_def fmt { used; defined } =
-      Format.fprintf fmt "{ used: [%s]; defined: [%s]}"
+    let pp_use_def fmt { used; defined; list_vars } =
+      Format.fprintf fmt "{ used: [%s]; defined: [%s]; list_vars: [%s]}"
         (String.concat ", " (StringSet.elements used))
         (String.concat ", " (StringSet.elements defined))
+        (String.concat ", " (StringSet.elements list_vars))
 
     (** [check_and_add_uses ~context_expr use_def vars] checks that all
         variables in [vars] are already defined in [use_def] and adds them to
@@ -1560,7 +1656,12 @@ module Check = struct
           if any variable in [vars] is already defined in [use_def]. *)
     let check_and_add_defined ~context_expr use_def vars =
       let var_set = StringSet.of_list vars in
-      let redefined_vars = StringSet.inter var_set use_def.defined in
+      let redefined_vars =
+        StringSet.diff
+          (StringSet.inter var_set use_def.defined)
+          (* Ignore list variables. *)
+          use_def.list_vars
+      in
       let () =
         if not (StringSet.is_empty redefined_vars) then
           Error.redefined_variable_in_rule ~context_expr
@@ -1570,6 +1671,14 @@ module Check = struct
         StringSet.union use_def.defined (StringSet.of_list vars)
       in
       { use_def with defined = new_defined }
+
+    (** [add_as_list_vars use_def vars] adds all variables in [vars] to the list
+        variable set of [use_def]. *)
+    let add_as_list_vars use_def vars =
+      List.fold_left
+        (fun acc_use_def id ->
+          { acc_use_def with list_vars = StringSet.add id use_def.list_vars })
+        use_def vars
 
     (** A type for distinguishing whether we are analyzing an expression for
         variable uses or variable definitions. *)
@@ -1586,64 +1695,82 @@ module Check = struct
         | Def -> check_and_add_defined ~context_expr:expr use_def vars
       in
       let open Expr in
-      match expr with
-      | Var id ->
-          vars_of_identifiers spec.id_to_defining_node [ id ]
-          |> check_and_add_for_expr mode use_def
-      | FieldAccess { var } -> (
-          match mode with
-          | Use ->
-              let vars_of_id =
-                vars_of_identifiers spec.id_to_defining_node [ var ]
-              in
-              check_and_add_for_expr Use use_def vars_of_id
-          | Def ->
-              failwith
-                "A field access cannot be used as a variable-defining \
-                 expression")
-      | ListIndex { list_var; index } ->
-          let use_def =
-            vars_of_identifiers spec.id_to_defining_node [ list_var ]
+      let () =
+        if false then
+          Format.eprintf "Updating use-def for expr: %a with mode: %s@."
+            PP.pp_expr expr
+            (match mode with Use -> "Use" | Def -> "Def")
+      in
+      let use_def =
+        match expr with
+        | Var id ->
+            vars_of_identifiers spec.id_to_defining_node [ id ]
             |> check_and_add_for_expr mode use_def
-          in
-          (* An index expression never defines variables. *)
-          update_use_def_for_expr Use spec use_def index
-      | Record { fields } ->
-          let initializing_exprs = List.map snd fields in
-          update_use_def_for_expr_list mode spec use_def initializing_exprs
-      | NamedExpr (sub_expr, _) ->
-          update_use_def_for_expr mode spec use_def sub_expr
-      | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
-      | Map { lhs; args } ->
-          update_use_def_for_expr_list mode spec use_def (lhs :: args)
-      | Relation { is_operator = true; name; args = [ lhs; rhs ] }
-        when String.equal name spec.assign.name ->
-          let use_def = update_use_def_for_expr Use spec use_def rhs in
-          update_use_def_for_expr Def spec use_def lhs
-      | Relation { is_operator = true; name; args = [ lhs; rhs ] }
-        when String.equal name spec.reverse_assign.name ->
-          let use_def = update_use_def_for_expr Use spec use_def lhs in
-          update_use_def_for_expr Def spec use_def rhs
-      | Relation { is_operator = true; name; args = Var bound_var :: tail_args }
-        when is_quantifying_operator spec name ->
-          update_use_def_with_bound_variable mode spec use_def tail_args
-            ~context_expr:expr ~bound_var
-      | Relation { args } -> update_use_def_for_expr_list mode spec use_def args
-      | Transition { lhs; rhs } ->
-          let use_def = update_use_def_for_expr Use spec use_def lhs in
-          update_use_def_for_expr Def spec use_def rhs
-      | Indexed { index; list_var; body } ->
-          let use_def = check_and_add_for_expr Use use_def [ list_var ] in
-          update_use_def_with_bound_variable mode spec use_def [ body ]
-            ~context_expr:expr ~bound_var:index
-      | UnresolvedApplication _ ->
-          let msg =
-            Format.asprintf
-              "Unresolved application found when checking use-def in \
-               expression: %a."
-              PP.pp_expr expr
-          in
-          failwith msg
+        | FieldAccess { var } -> (
+            match mode with
+            | Use ->
+                let vars_of_id =
+                  vars_of_identifiers spec.id_to_defining_node [ var ]
+                in
+                check_and_add_for_expr Use use_def vars_of_id
+            | Def ->
+                failwith
+                  "A field access is not expected to be used as a \
+                   variable-defining expression")
+        | ListIndex { list_var; index } ->
+            let list_vars =
+              vars_of_identifiers spec.id_to_defining_node [ list_var ]
+            in
+            (* We have to first add the list variable to properly qualify it as a list variable and
+               only then add it as used/defined to avoid
+               the possibility of having it flagged as a re-defined variable. *)
+            let use_def = add_as_list_vars use_def list_vars in
+            let use_def = list_vars |> check_and_add_for_expr mode use_def in
+            (* The index sub-expression never defines variables. *)
+            update_use_def_for_expr Use spec use_def index
+        | Record { fields } ->
+            let initializing_exprs = List.map snd fields in
+            update_use_def_for_expr_list mode spec use_def initializing_exprs
+        | NamedExpr (sub_expr, _) ->
+            update_use_def_for_expr mode spec use_def sub_expr
+        | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
+        | Map { lhs; args } ->
+            update_use_def_for_expr_list mode spec use_def (lhs :: args)
+        | Relation { is_operator = true; name; args = [ lhs; rhs ] }
+          when is_builtin_relation name spec.assign ->
+            let use_def = update_use_def_for_expr Use spec use_def rhs in
+            update_use_def_for_expr Def spec use_def lhs
+        | Relation { is_operator = true; name; args = [ lhs; rhs ] }
+          when is_builtin_relation name spec.reverse_assign ->
+            let use_def = update_use_def_for_expr Use spec use_def lhs in
+            update_use_def_for_expr Def spec use_def rhs
+        | Relation
+            { is_operator = true; name; args = Var bound_var :: tail_args }
+          when is_quantifying_operator spec name ->
+            update_use_def_with_bound_variable mode spec use_def tail_args
+              ~context_expr:expr ~bound_var
+        | Relation { args } ->
+            update_use_def_for_expr_list mode spec use_def args
+        | Transition { lhs; rhs } ->
+            let use_def = update_use_def_for_expr Use spec use_def lhs in
+            update_use_def_for_expr Def spec use_def rhs
+        | Indexed { index; list_var; body } ->
+            let use_def = check_and_add_for_expr Use use_def [ list_var ] in
+            update_use_def_with_bound_variable mode spec use_def [ body ]
+              ~context_expr:expr ~bound_var:index
+        | UnresolvedApplication _ ->
+            let msg =
+              Format.asprintf
+                "Unresolved application found when checking use-def in \
+                 expression: %a."
+                PP.pp_expr expr
+            in
+            failwith msg
+      in
+      let () =
+        if false then Format.eprintf "Updated use-def: %a@." pp_use_def use_def
+      in
+      use_def
 
     and update_use_def_for_expr_list mode spec use_def exprs =
       List.fold_left
@@ -1661,18 +1788,11 @@ module Check = struct
       (* The bound variable goes out of scope. *)
       { use_def with defined = StringSet.remove bound_var use_def.defined }
 
-    (** [check_use_def relation spec expanded_rule] checks that all variables
-        used in [expanded_rule] are defined before use and no variables are
-        re-defined. *)
-    let check_use_def relation spec expanded_rule =
+    (** [rule_exprs expanded_rule] retrieves from [expanded_rule] the
+        expressions making the premises and the output expression of the
+        conclusion judgment. *)
+    let rule_exprs expanded_rule =
       let open ExpandRules in
-      let () =
-        if false then
-          Format.eprintf "Checking use-def for relation %s case %s@."
-            relation.Relation.name
-            (Option.value ~default:"top level"
-               expanded_rule.ExpandRules.name_opt)
-      in
       let premises, conclusion =
         Utils.split_last expanded_rule.ExpandRules.judgments
       in
@@ -1688,18 +1808,37 @@ module Check = struct
             rhs
         | _ -> conclusion.expr
       in
+      premises_exprs @ [ output_expr ]
+
+    (** [check_use_def relation spec expanded_rule] checks that all variables
+        used in [expanded_rule] are defined before use and no variables are
+        re-defined. *)
+    let check_use_def relation spec expanded_rule =
+      let rule_exprs = rule_exprs expanded_rule in
       (* The input variables are implicitly defined at the start of the rule. *)
       let defined_args =
         vars_of_opt_named_type_terms relation.Relation.input
         |> StringSet.of_list
       in
-      let use_def = { used = StringSet.empty; defined = defined_args } in
       let use_def =
-        update_use_def_for_expr_list Use spec use_def
-          (premises_exprs @ [ output_expr ])
+        {
+          used = StringSet.empty;
+          defined = defined_args;
+          list_vars = StringSet.empty;
+        }
       in
-      if false then Format.eprintf "After premises: %a@." pp_use_def use_def
-      else ()
+      let () =
+        if false then
+          Format.eprintf "@.--- Checking use-def for relation %s case %s ---@."
+            relation.Relation.name
+            (Option.value ~default:"top level"
+               expanded_rule.ExpandRules.name_opt)
+      in
+      let use_def = update_use_def_for_expr_list Use spec use_def rule_exprs in
+      let () =
+        if false then Format.eprintf "After premises: %a@." pp_use_def use_def
+      in
+      ()
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -1736,20 +1875,6 @@ module Check = struct
       | Node_Relation { Relation.input } -> input
       | _ -> failwith "Expected relation definition node."
 
-    (** [components_of_labelled_tuple id_to_defining_node label] returns the
-        components of the labelled tuple type variant named [label] using
-        [id_to_defining_node] to lookup the type variant definition node. *)
-    let components_of_labelled_tuple id_to_defining_node label =
-      match StringMap.find label id_to_defining_node with
-      | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
-      | node ->
-          let msg =
-            Format.asprintf
-              "Expected labelled tuple type variant for label %s, found %a."
-              label pp_definition_node node
-          in
-          failwith msg
-
     (** [check_expr_well_formed id_to_defining_node expr] checks that the
         expression [expr] is well-formed in the context of
         [id_to_defining_node]. That is, it has the correct structure in terms of
@@ -1781,9 +1906,7 @@ module Check = struct
           let () = check_expr_list_in_context args in
           match label_opt with
           | Some label ->
-              let type_components =
-                components_of_labelled_tuple id_to_defining_node label
-              in
+              let type_components = args_of_tuple id_to_defining_node label in
               if List.compare_lengths args type_components <> 0 then
                 Error.invalid_number_of_components label expr
                   ~expected:(List.length type_components)
@@ -1801,9 +1924,7 @@ module Check = struct
                 | _ -> Error.illegal_lhs_application expr
               in
               let record_type_field_names =
-                List.map
-                  (fun { Term.name_and_type = name, _ } -> name)
-                  record_type_fields
+                List.map (fun { Term.name } -> name) record_type_fields
               in
               if
                 not
@@ -1841,9 +1962,7 @@ module Check = struct
               let () =
                 check_well_formed_expanded relation.Relation.name expanded_rule
               in
-              let () =
-                TypeInference.check_use_def relation spec expanded_rule
-              in
+              let () = UseDef.check_use_def relation spec expanded_rule in
               let open ExpandRules in
               List.iter
                 (fun { Rule.expr } -> check_expr_well_formed spec expr)
@@ -2007,18 +2126,17 @@ let make_spec_with_builtins ast =
     id_to_defining_node;
     (* The following fields are not currently used, but they will be used in a future
     PR that implements type inference. *)
-    _bot = get_constant "bot";
-    _none = get_constant "None";
-    _empty_set = get_constant "empty_set";
-    _empty_list = get_constant "empty_list";
-    _bool = get_type "Bool";
-    _n = get_type "N";
-    _z = get_type "Z";
+    bottom_constant = get_constant "bot";
+    none_constant = get_constant "None";
+    empty_set = get_constant "empty_set";
+    empty_list = get_constant "empty_list";
+    _bool_type = get_type "Bool";
+    n_type = get_type "N";
+    z_type = get_type "Z";
     _q = get_type "Q";
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
     _equal = get_relation "equal";
-    bound_variable = get_type "bound_variable";
   }
 
 let from_ast ast =

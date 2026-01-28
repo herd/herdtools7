@@ -4,6 +4,7 @@
 (executable
  (name jaslref)
  (modes js)
+ (optional)
  (libraries asllib zarith_stubs_js)
  (flags
   (:standard -w -40-42-44-48))

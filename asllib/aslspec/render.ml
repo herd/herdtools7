@@ -108,10 +108,7 @@ module Make (S : SPEC_VALUE) = struct
           (args, layout)
     | Record { label_opt; fields } ->
         let pp_record_fields_as_pairs =
-          List.map
-            (fun ({ name_and_type = field_name, _; _ } as field) ->
-              (field_name, field))
-            fields
+          List.map (fun field -> (field.name, field)) fields
         in
         fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
           (pp_fields pp_field_name pp_record_field_as_pair)
@@ -143,9 +140,8 @@ module Make (S : SPEC_VALUE) = struct
     pp_aligned_elements ~pp_sep:pp_comma ~alignment:"c" pp_opt_named_type_term
       layout fmt opt_type_terms
 
-  and pp_record_field_as_pair fmt ({ name_and_type = _, field_type; _ }, layout)
-      =
-    pp_type_term fmt (field_type, layout)
+  and pp_record_field_as_pair fmt ({ term }, layout) =
+    pp_type_term fmt (term, layout)
 
   (** [pp_output_types fmt (terms, layout)] renders the relation output [terms]
       in with the given [layout]. *)
@@ -230,10 +226,7 @@ module Make (S : SPEC_VALUE) = struct
     | Record { fields } ->
         (* Records are a special case, since each field has its own hypertarget. *)
         let field_hyperlink_targets =
-          List.map
-            (fun { Term.name_and_type = field_name, _; _ } ->
-              hypertarget_for_id field_name)
-            fields
+          List.map (fun { Term.name } -> hypertarget_for_id name) fields
         in
         fprintf fmt "%a%a%a"
           (pp_print_option pp_mathhypertarget)
@@ -415,7 +408,10 @@ module Make (S : SPEC_VALUE) = struct
       | Label id -> (
           match Spec.defining_node_for_id S.spec id with
           | Node_Type typedef ->
-              [ Type.short_circuit_macro typedef |> Option.get ]
+              [
+                Type.short_circuit_macro typedef |> Option.get
+                (* get is ensured to succeed by [Spec.check_relations_outputs] *);
+              ]
           | Node_TypeVariant { term = Label id } -> [ get_or_gen_math_macro id ]
           | _ -> assert false)
       | ConstantsSet constant_names ->

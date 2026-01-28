@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (deps
   (source_tree libdir)
   %{bin:mcat2config7}))

@@ -1,0 +1,41 @@
+(lang dune 3.10)
+(using menhir 2.0)
+(cram enable)
+
+(generate_opam_files)
+
+(version 1.0~draft.2)
+
+(homepage "https://github.com/herd/herdtools7")
+(authors "Arm Ltd - ATG Formal <atg-formal@arm.com>")
+(maintainers "Arm Ltd - ATG Formal <atg-formal@arm.com>")
+(documentation "https://developer.arm.com/Architectures/Architecture%20Specification%20Language")
+(license BSD-3-Clause)
+(bug_reports "https://github.com/herd/herdtools7/issues")
+(source (github herd/herdtools7))
+
+(package
+ (name aslref)
+ (synopsis "Architecture Specification Language reference implementation")
+ (depends
+   (ocaml (>= 4.08))
+   dune
+   (menhir (>= 20220210))
+   (zarith (>= 1.13)))
+ (depopts
+   (qcheck :with-test)
+   (ocamlformat (and (= 0.28.1) :with-dev-setup))
+   zarith_stubs_js
+   js_of_ocaml-ppx)
+ (description "
+Arm's reference implementation and documentation for the Architecture
+Specification Language (ASL).
+
+Provides parsing, type-checking, and interpretation of ASL, and other related
+tooling.
+
+For more details, and for a downloadable version of the ASL language reference
+document, please see
+https://developer.arm.com/Architectures/Architecture%20Specification%20Language
+"))
+
