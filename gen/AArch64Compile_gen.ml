@@ -1781,21 +1781,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Instruction (I_STXP _) -> true
       | _ -> false
 
-    (* The fault label is carried by the read event `er`; in `store-only`,
-       attach it to the following exclusive store instead. *)
-    let add_label_to_exclusive_load_and_store er cs =
+    (* The fault labels are carried by the read event `er` and write event `ew`;
+       attach them to the exclusive load and store respectively. *)
+    let add_label_to_exclusive_load_and_store er ew cs =
       let add_label e instr =
         match e.C.check_fault with
         | Some (label_name, _) -> Label(label_name, instr)
         | None -> instr in
       let rec do_rec = function
-        | [] -> Warn.fatal "No exclusive instruction to label for fault"
+        | [] -> []
         | (Label(_) as label)::rem -> label :: do_rec rem
         | instr::rem ->
-            if (not do_store_only && is_ldxr instr)
-               || (do_store_only && is_stxr instr) then
-              (add_label er instr) :: rem
-            else instr :: do_rec rem
+            let instr =
+              if is_ldxr instr then add_label er instr
+              else if is_stxr instr then add_label ew instr
+              else instr in
+            instr :: do_rec rem
       in
       do_rec cs
 
@@ -2078,7 +2079,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
       let cdata,st = emit_data rW st in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
-      let cs = add_label_to_exclusive_load_and_store er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch22 emit_data emit_addr st p init er ew =
@@ -2090,7 +2091,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW2,st = next_reg st in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
-      let cs = add_label_to_exclusive_load_and_store er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch21 emit_data emit_addr st p init er ew =
@@ -2102,7 +2103,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
-      let cs = add_label_to_exclusive_load_and_store er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch12 emit_data emit_addr st p init er ew =
@@ -2115,7 +2116,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
-      let cs = add_label_to_exclusive_load_and_store er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch emit_data emit_addr st p init er ew =
