@@ -405,8 +405,33 @@
     \right]
   \fi
 }
-\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
+\newcommand\rangesetop[3][H]{ % DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \left\{ {#2} \ldots {#3} \right\}
+  \else
+    \left\{
+    \begin{array}{l}
+    {#2} \ldots\\
+    {#3}\\
+    \end{array}
+    \right\}
+  \fi
+}
+\newcommand\rangelistop[3][H]{ % DO NOT LINT
+  \ifnum\pdfstrcmp{#1}{H}=0\relax
+    \left[ {#2} \ldots {#3} \right]
+  \else
+    \left[
+    \begin{array}{l}
+    {#2} \ldots\\
+    {#3}\\
+    \end{array}
+    \right]
+  \fi
+}\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
 \newcommand\listmax[1]{\max(#1)} % DO NOT LINT
+\newcommand\setmin[1]{\min(#1)} % DO NOT LINT
+\newcommand\setmax[1]{\max(#1)} % DO NOT LINT
 \newcommand\member[0]{\mathrel{\in}} % DO NOT LINT
 \newcommand\notmember[0]{\mathrel{\not\in}} % DO NOT LINT
 \newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
@@ -424,6 +449,7 @@
 }
 \newcommand\assocoptname[0]{\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}} % DO NOT LINT
 
+\newcommand\identityop[1]{#1} % DO NOT LINT
 \newcommand\numplus[0]{\mathbin{+}} % DO NOT LINT
 \newcommand\numminus[0]{\mathbin{-}} % DO NOT LINT
 \newcommand\negate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
@@ -476,7 +502,7 @@
 \newcommand\orderedpo[0]{\hyperlink{def-ordered}{\xrightarrow{\aslpo}}} % DO NOT LINT
 \newcommand\graphof[1]{\hyperlink{operator-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
 \newcommand\environof[1]{\hyperlink{operator-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
-\newcommand\WriteEffectop[1]{\WriteEffect\langle{#1}\rangle}
+\newcommand\WriteEffectop[1]{\WriteEffect\langle{#1}\rangle} % DO NOT LINT
 \newcommand\ReadEffectop[1]{\ReadEffect\langle{#1}\rangle} % DO NOT LINT
 
 \newcommand\withgraph[3][H]{ {#2}(\hyperlink{operator-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
@@ -1021,9 +1047,9 @@
 \newcommand\casealtstmt[0]{\hyperlink{recordfield-casealtstmt}{\textsf{stmt}}}
 \newcommand\globaldeclname[0]{\hyperlink{recordfield-globaldeclname}{\textsf{name}}}
 \newcommand\globaldeclty[0]{\hyperlink{recordfield-globaldeclty}{\textsf{ty}}}
-\newcommand\globalstaticenvsexprequiv[0]{\hyperlink{recordfield-globalstaticenvsexprequiv}{\textsf{expr\_equiv}}}
-\newcommand\localstaticenvsexprequiv[0]{\hyperlink{recordfield-localstaticenvsexprequiv}{\textsf{expr\_equiv}}}
-\newcommand\localstaticenvsreturntype[0]{\hyperlink{recordfield-localstaticenvsreturntype}{\textsf{return\_type}}}
+\newcommand\globalstaticenvsexprequiv[0]{\hyperlink{recordfield-globalexprequiv}{\textsf{expr\_equiv}}}
+\newcommand\localstaticenvsexprequiv[0]{\hyperlink{recordfield-localexprequiv}{\textsf{expr\_equiv}}}
+\newcommand\localstaticenvsreturntype[0]{\hyperlink{recordfield-localreturntype}{\textsf{return\_type}}}
 \newcommand\funcbody[0]{\hyperlink{recordfield-funcbody}{\textsf{body}}}
 \newcommand\funcsubprogramtype[0]{\hyperlink{recordfield-funcsubprogramtype}{\textsf{subprogram\_type}}}
 \newcommand\funcbuiltin[0]{\textsf{builtin}}
@@ -1285,6 +1311,7 @@
 \newcommand\nebits[0]{\hyperlink{def-nebits}{\text{ne\_bits}}}
 \newcommand\concatbits[0]{\hyperlink{def-concatbits}{\text{concat\_bits}}}
 
+\newcommand\negatebit[1]{{\onebit} - {#1}}
 \newcommand\negateint[0]{\hyperlink{def-negateint}{\text{negate\_int}}}
 \newcommand\addint[0]{\hyperlink{def-addint}{\text{add\_int}}}
 \newcommand\subint[0]{\hyperlink{def-subint}{\text{sub\_int}}}

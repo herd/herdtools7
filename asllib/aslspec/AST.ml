@@ -187,6 +187,15 @@ module Term = struct
     | List1  (** All non-empty sequences of the given member type. *)
     | Option  (** A set containing at most a single value of the given type. *)
 
+  let type_operator_equal op1 op2 =
+    match (op1, op2) with
+    | Powerset, Powerset -> true
+    | Powerset_Finite, Powerset_Finite -> true
+    | List0, List0 -> true
+    | List1, List1 -> true
+    | Option, Option -> true
+    | _ -> false
+
   (** Terms for constructing types out of other types, with [Label t] being the
       leaf case.
 
