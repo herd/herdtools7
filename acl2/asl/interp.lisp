@@ -1430,7 +1430,14 @@ it is an error or throwing, then we return that error/thowing result and the
 
 (acl2::def-b*-binder evbind
   :parents (asl-interpreter-functions)
-  :short "Just an alias for binding @('(mv arg orac)')."
+  :short "Just an alias for binding @('(mv arg orac)'). Used for recursive calls of interpreter functions."
+  :body
+  `(b* (((mv ,(car acl2::args) orac) . ,acl2::forms))
+     ,acl2::rest-expr))
+
+(acl2::def-b*-binder evbind-nonrec
+  :parents (asl-interpreter-functions)
+  :short "Just an alias for binding @('(mv arg orac)'). Used for anything other than recursive calls of interpreter functions."
   :body
   `(b* (((mv ,(car acl2::args) orac) . ,acl2::forms))
      ,acl2::rest-expr))
@@ -2016,9 +2023,9 @@ local scope from the environment."
        :measure (nats-measure clk 0 (+ (exprlist-count params)
                                        (exprlist-count args)) 0)
        :returns (mv (res exprlist_eval_result-p) new-orac)
-       (b* (((evoo (exprlist_result vargs)) (eval_expr_list env args))
-            ((evoo (exprlist_result vparams)) (eval_expr_list vargs.env params))
-            (env vparams.env)
+       (b* (((evoo (exprlist_result vparams)) (eval_expr_list env params))
+            ((evoo (exprlist_result vargs)) (eval_expr_list vparams.env args))
+            (env vargs.env)
             ;; note: we check our fixed recursion limit here because this is where
             ;; the measure will decrease provided that they haven't been exceeded
             (sub-env (env-push-stack name env))
@@ -2376,7 +2383,7 @@ otherwise block from a try statement apply and calls the appropriate block."
              (b* (((evbind blkres) (eval_block env c.stmt)))
                (evo-return (rethrow_implicit throw blkres backtrace))))
             (env2 (declare_local_identifier env c.name throw.val))
-            ((evbind blkres)
+            ((evbind-nonrec blkres)
              (b* (((evs blkenv) (eval_block env2 c.stmt))
                   (env3 (remove_local_identifier blkenv c.name)))
                (evo_normal (continuing env3)))))

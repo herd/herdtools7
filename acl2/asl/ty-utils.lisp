@@ -1024,9 +1024,6 @@
                                                  (v_array->arr x)
                                                  ty.type))
                     :arraylength_enum
-                    ;; FIXME This doesn't preserve the association of keys to
-                    ;; values unless exactly the right keys are present.
-                    ;; Rather, it preserves the order of the keys.
                     (v_record (let ((keys (set::mergesort ty.index.elts)))
                                 (enumarray-type-fix-val
                                  keys (v_record->rec x) ty.type)))))

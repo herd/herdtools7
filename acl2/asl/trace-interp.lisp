@@ -207,7 +207,7 @@ stmt-tracespec) or @(see call-tracespec) objects.</p>"
   (fty::defoption maybe-tracespec tracespec
     :parents (tracespec)
     :measure (acl2::two-nats-measure (acl2-count x) 2))
-     
+
   (defprod stmt-tracespec
     :parents (tracespec)
     :short "Specification for a condition under which a statement execution should be
@@ -234,7 +234,7 @@ the given line number.")
      (cnum
       acl2::maybe-natp
       "If NIL, no requirement; otherwise, the code position of the statement must have
-the given column number (note: not character number as in a @(see posn).")
+the given column number (note: not character number as in a @(see posn)).")
      (initial-vars
       identifierlist-p
       "If tracing, collect the given variable values at the beginning of execution")
@@ -250,6 +250,17 @@ tracespecs remain in force, but if this tracespec is provided, then its
 transient tracespecs replace the ones currently in force and its permanent
 tracespecs are added to the current permanent tracespecs for the duration of
 this statement's execution.")
+     (empty-tracespec
+      booleanp
+      "Empty the tracespec while inside this statement. This discards all current
+transient and permanent tracespecs, leaving only the interior-tracespec
+given (if any).")
+     (no-trace
+      booleanp
+      "No trace is recorded when this tracespec matches, but any side
+effects (interior-tracespec, empty-tracespec, abort) still occur. Any subtraces
+will be passed upward rather than being collected in the trace produced by this
+tracespec.")
      (abort
       trace-abort-p
       "If set, then if a matching statement is encountered, execution ends producing
@@ -303,6 +314,17 @@ subroutine call (as always, whether a tracespec has matched on that subroutine
 call or not), but the ones provided here are (if any), and the permanent
 tracespecs provided here are added to the ones currently in force for the
 duration of this subroutine call.")
+     (empty-tracespec
+      booleanp
+      "Empty the tracespec while inside this statement. This discards all current
+transient and permanent tracespecs, leaving only the interior-tracespec
+given (if any).")
+     (no-trace
+      booleanp
+      "No trace is recorded when this tracespec matches, but any side
+effects (interior-tracespec, empty-tracespec, abort) still occur. Any subtraces
+will be passed upward rather than being collected in the trace produced by this
+tracespec.")
      (abort
       trace-abort-p
       "If set, then if a matching subroutine call is encountered, execution ends
@@ -328,9 +350,12 @@ precedence over an @(':after') abort."))
                 (call-tracespeclist-p y))
            (call-tracespeclist-p (append x y))))
 
+(fty::defoption maybe-call-tracespec call-tracespec)
+(fty::defoption maybe-stmt-tracespec stmt-tracespec)
+
 (define check-stmt-tracespec ((stmt stmt-p)
                               (x stmt-tracespec-p))
-  :returns (spec (iff (stmt-tracespec-p spec) spec))
+  :returns (spec maybe-stmt-tracespec-p)
   (b* (((stmt stmt))
        ((stmt-tracespec x)))
     (and (or (not x.stmttype)
@@ -343,7 +368,7 @@ precedence over an @(':after') abort."))
 
 (define stmt-tracespeclist-find ((stmt stmt-p)
                                  (x stmt-tracespeclist-p))
-  :returns (spec (iff (stmt-tracespec-p spec) spec))
+  :returns (spec maybe-stmt-tracespec-p)
   (if (atom x)
       nil
     (or (check-stmt-tracespec stmt (car x))
@@ -352,7 +377,7 @@ precedence over an @(':after') abort."))
 
 (define find-stmt-tracespec ((stmt stmt-p)
                              (x tracespec-p))
-  :returns (spec (iff (stmt-tracespec-p spec) spec))
+  :returns (spec maybe-stmt-tracespec-p)
   (b* (((tracespec x)))
     (or (stmt-tracespeclist-find stmt x.stmt-specs-transient)
         (stmt-tracespeclist-find stmt x.stmt-specs-permanent))))
@@ -360,7 +385,7 @@ precedence over an @(':after') abort."))
 (define check-call-tracespec ((fn identifier-p)
                               (pos posn-p)
                               (x call-tracespec-p))
-  :returns (spec (iff (call-tracespec-p spec) spec))
+  :returns (spec maybe-call-tracespec-p)
   (b* (((call-tracespec x)))
     (and (or (not x.fn)
              (equal (identifier-fix fn) x.fn))
@@ -374,7 +399,7 @@ precedence over an @(':after') abort."))
 (define call-tracespeclist-find ((fn identifier-p)
                                  (pos posn-p)
                                  (x call-tracespeclist-p))
-  :returns (spec (iff (call-tracespec-p spec) spec))
+  :returns (spec maybe-call-tracespec-p)
   (if (atom x)
       nil
     (or (check-call-tracespec fn pos (car x))
@@ -383,7 +408,7 @@ precedence over an @(':after') abort."))
 (define find-call-tracespec ((fn identifier-p)
                              (pos posn-p)
                              (x tracespec-p))
-  :returns (spec (iff (call-tracespec-p spec) spec))
+  :returns (spec maybe-call-tracespec-p)
   (b* (((tracespec x)))
     (or (call-tracespeclist-find fn pos x.call-specs-transient)
         (call-tracespeclist-find fn pos x.call-specs-permanent))))
@@ -410,7 +435,6 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
                                    x.stmt-specs-permanent)
      :call-specs-permanent (append new-ts.call-specs-permanent
                                    x.call-specs-permanent))))
-    
 
 
 (define env-find-vars ((vars identifierlist-p)
@@ -459,6 +483,12 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
      (evo-return-*t res)))
 
 (acl2::def-b*-binder evbind-*t
+  :body
+  `(b* (((mv ,(car acl2::args) orac trace-tmp) . ,acl2::forms)
+        (trace (append trace-tmp trace)))
+     ,acl2::rest-expr))
+
+(acl2::def-b*-binder evbind-nonrec-*t
   :body
   `(b* (((mv ,(car acl2::args) orac trace-tmp) . ,acl2::forms)
         (trace (append trace-tmp trace)))
@@ -519,10 +549,168 @@ interior tracespec @('new-ts') from some matching call or statement tracespec."
 (defconsts *eval-trace-substitution*
   (pair-suffixed (append *asl-interp-fns*
                          '(evo_normal pass-error evo_error evo_throwing evo-return
-                                      evbind evoo evo evob evs evtailcall
+                                      evbind evbind-nonrec evoo evo evob evs evtailcall
                                       asl-interpreter-mutual-recursion))
                  '-*t))
   
+
+(define maybe-call-tracespec->interior-tracespec ((x maybe-call-tracespec-p))
+  :returns (ts maybe-tracespec-p)
+  (and x
+       (call-tracespec->interior-tracespec x)))
+
+(define maybe-stmt-tracespec->interior-tracespec ((x maybe-stmt-tracespec-p))
+  :returns (ts maybe-tracespec-p)
+  (and x
+       (stmt-tracespec->interior-tracespec x)))
+
+(define maybe-call-tracespec->empty-tracespec ((x maybe-call-tracespec-p))
+  (and x
+       (call-tracespec->empty-tracespec x)))
+
+(define maybe-stmt-tracespec->empty-tracespec ((x maybe-stmt-tracespec-p))
+  (and x
+       (stmt-tracespec->empty-tracespec x)))
+
+
+
+(define call-interior-tracespec ((entry maybe-call-tracespec-p)
+                                 (x tracespec-p))
+  :returns (interior tracespec-p)
+  (combine-tracespecs t
+                      (maybe-call-tracespec->interior-tracespec entry)
+                      (if (maybe-call-tracespec->empty-tracespec entry)
+                          (make-tracespec)
+                        x)))
+
+(define stmt-interior-tracespec ((entry maybe-stmt-tracespec-p)
+                                 (x tracespec-p))
+  :returns (interior tracespec-p)
+  (combine-tracespecs nil
+                      (maybe-stmt-tracespec->interior-tracespec entry)
+                      (if (maybe-stmt-tracespec->empty-tracespec entry)
+                          (make-tracespec)
+                        x)))
+
+(define maybe-call-tracespec->abort ((x maybe-call-tracespec-p))
+  :returns (abort trace-abort-p)
+  (and x
+       (call-tracespec->abort x))
+  ///
+  (defret <fn>-forward
+    (implies abort x)
+    :rule-classes :forward-chaining))
+
+
+(define call-trace-abort-before-output ((entry call-tracespec-p)
+                                        (name identifier-p)
+                                        (vparams vallist-p)
+                                        (vargs vallist-p)
+                                        (pos posn-p))
+  :returns (new-trace asl-tracelist-p)
+  (b* (((call-tracespec entry)))
+    (and (not entry.no-trace)
+         (list (make-calltrace
+                :name entry.name
+                :fn name
+                :params (and entry.paramsp vparams)
+                :args (and entry.argsp vargs)
+                :result (ev_error "Trace abort" nil nil)
+                :pos pos)))))
+
+(local (defthm asl-tracelist-fix-of-rev
+         (equal (asl-tracelist-fix (acl2::rev x))
+                (acl2::rev (asl-tracelist-fix x)))
+         :hints(("Goal" :in-theory (enable acl2::rev)))))
+
+(define call-trace-output ((entry maybe-call-tracespec-p)
+                           (name identifier-p)
+                           (vparams vallist-p)
+                           (vargs vallist-p)
+                           (pos posn-p)
+                           (res func_eval_result-p)
+                           (trace asl-tracelist-p))
+  :returns (new-trace asl-tracelist-p)
+  (if entry
+      (b* (((call-tracespec entry)))
+        (if entry.no-trace
+            (asl-tracelist-fix trace)
+          (list (make-calltrace
+                 :name entry.name
+                 :fn name
+                 :params (and entry.paramsp vparams)
+                 :args (and entry.argsp vargs)
+                 :subtraces (acl2::rev trace)
+                 :result (if entry.resultp
+                             (eval_result-case res
+                               :ev_normal (ev_normal (func_result->vals res.res))
+                               :otherwise res)
+                           (ev_error "Not tracing result" nil nil))
+                 :pos pos))))
+    (asl-tracelist-fix trace)))
+
+(define call-abort-after ((entry maybe-call-tracespec-p)
+                          (res eval_result-p))
+  (and (not (eval_result-case res :ev_error))
+       (eq (maybe-call-tracespec->abort entry) :after)))
+
+
+
+(define maybe-stmt-tracespec->abort ((x maybe-stmt-tracespec-p))
+  :returns (abort trace-abort-p)
+  (and x
+       (stmt-tracespec->abort x))
+  ///
+  (defret <fn>-forward
+    (implies abort x)
+    :rule-classes :forward-chaining))
+
+
+(define stmt-trace-abort-before-output ((entry stmt-tracespec-p)
+                                        (env env-p)
+                                        (s stmt-p))
+  :returns (new-trace asl-tracelist-p)
+  (b* (((stmt-tracespec entry)))
+    (and (not entry.no-trace)
+         (list (make-stmttrace
+                :name entry.name
+                :stmt s
+                :initial-vars (env-find-vars entry.initial-vars env)
+                :result (ev_error "Trace abort" nil nil))))))
+
+(define stmt-trace-output ((entry maybe-stmt-tracespec-p)
+                           (env env-p)
+                           (s stmt-p)
+                           (res stmt_eval_result-p)
+                           (trace asl-tracelist-p))
+  :returns (new-trace asl-tracelist-p)
+  (if entry
+      (b* (((stmt-tracespec entry)))
+        (if entry.no-trace
+            (asl-tracelist-fix trace)
+          (list (make-stmttrace
+                 :name entry.name
+                 :stmt s
+                 :initial-vars (env-find-vars entry.initial-vars env)
+                 :subtraces (acl2::rev trace)
+                 :result (eval_result-case res
+                           :ev_normal (ev_normal (control_flow_state-kind res.res))
+                           :otherwise res)
+                 :final-vars
+                 (and entry.final-vars
+                      (b* ((env (eval_result-case res
+                                  :ev_normal (control_flow_state-case res.res
+                                               :returning (make-env :global res.res.env :local (empty-local-env))
+                                               :continuing res.res.env)
+                                  :ev_throwing res.env
+                                  :otherwise nil)))
+                        (and env (env-find-vars entry.final-vars env))))))))
+    (asl-tracelist-fix trace)))
+
+(define stmt-abort-after ((entry maybe-stmt-tracespec-p)
+                          (res eval_result-p))
+  (and (not (eval_result-case res :ev_error))
+       (eq (maybe-stmt-tracespec->abort entry) :after)))
 
 (local
  (defconst *eval_subprogram-*t-def*
@@ -543,38 +731,15 @@ asl-interpreter-mutual-recursion-*t) for overview."
       :returns (mv (res func_eval_result-p) new-orac
                    (trace asl-tracelist-p))
       (b* ((ts-entry (find-call-tracespec name pos tracespec))
-           ((when (and ts-entry (eq (call-tracespec->abort ts-entry) :before)))
-            (b* (((call-tracespec ts-entry))
-                 (trace (list (make-calltrace
-                               :name ts-entry.name
-                               :fn name
-                               :params (and ts-entry.paramsp vparams)
-                               :args (and ts-entry.argsp vargs)
-                               :result (ev_error "Trace abort" nil nil)
-                               :pos pos))))
+           ((when (eq (maybe-call-tracespec->abort ts-entry) :before))
+            (b* ((trace (call-trace-abort-before-output ts-entry name vparams vargs pos)))
               (pass-error-*t
                (ev_error "Trace abort" ts-entry (list (posn-fix pos))))))
-           (tracespec (combine-tracespecs t
-                                          (and ts-entry (call-tracespec->interior-tracespec ts-entry))
-                                          tracespec))
+           (tracespec (call-interior-tracespec ts-entry tracespec))
            ((mv res orac trace) (eval_subprogram-*t1 env name vparams vargs))
-           ((unless ts-entry)
-            (mv res orac trace))
-           ((call-tracespec ts-entry))
-           (trace (list (make-calltrace
-                         :name ts-entry.name
-                         :fn name
-                         :params (and ts-entry.paramsp vparams)
-                         :args (and ts-entry.argsp vargs)
-                         :subtraces (acl2::rev trace)
-                         :result (if ts-entry.resultp
-                                     (eval_result-case res
-                                       :ev_normal (ev_normal (func_result->vals res.res))
-                                       :otherwise res)
-                                   (ev_error "Not tracing result" nil nil))
-                         :pos pos)))
-           ((when (and (not (eval_result-case res :ev_error))
-                       (eq ts-entry.abort :after)))
+           (trace (call-trace-output
+                   ts-entry name vparams vargs pos res trace))
+           ((when (call-abort-after ts-entry res))
             (pass-error-*t
              (ev_error "Trace abort" ts-entry (list (posn-fix pos))))))
         (mv res orac trace)))))
@@ -596,41 +761,14 @@ asl-interpreter-mutual-recursion-*t) for overview."
       :returns (mv (res stmt_eval_result-p) new-orac
                    (trace asl-tracelist-p))
       (b* ((ts-entry (find-stmt-tracespec s tracespec))
-           ((when (and ts-entry (eq (stmt-tracespec->abort ts-entry) :before)))
-            (b* (((stmt-tracespec ts-entry))
-                 (trace (list (make-stmttrace
-                               :name ts-entry.name
-                               :stmt s
-                               :initial-vars (env-find-vars ts-entry.initial-vars env)
-                               :result (ev_error "Trace abort" nil nil)))))
+           ((when (eq (maybe-stmt-tracespec->abort ts-entry) :before))
+            (b* ((trace (stmt-trace-abort-before-output ts-entry env s)))
               (pass-error-*t
                (ev_error "Trace abort" ts-entry (list (stmt->pos_start s))))))
-           (tracespec (combine-tracespecs nil
-                                          (and ts-entry (stmt-tracespec->interior-tracespec ts-entry))
-                                          tracespec))
+           (tracespec (stmt-interior-tracespec ts-entry tracespec))
            ((mv res orac trace) (eval_stmt-*t1 env s))
-           ((unless ts-entry) (mv res orac trace))
-           ((stmt-tracespec ts-entry))
-           (trace (list (make-stmttrace
-                         :name ts-entry.name
-                         :stmt s
-                         :initial-vars (env-find-vars ts-entry.initial-vars env)
-                         :subtraces trace
-                         :result (eval_result-case res
-                                   :ev_normal (ev_normal (control_flow_state-kind res.res))
-                                   :otherwise res)
-                         :final-vars
-                         (b* ((env (eval_result-case res
-                                     :ev_normal (control_flow_state-case res.res
-                                                  :returning (make-env :global res.res.env :local (empty-local-env))
-                                                  :continuing res.res.env)
-                                     :ev_throwing res.env
-                                     :otherwise nil)))
-                           (and ts-entry.final-vars ;; optimization
-                                env
-                                (env-find-vars ts-entry.final-vars env))))))
-           ((when (and (not (eval_result-case res :ev_error))
-                       (eq ts-entry.abort :after)))
+           (trace (stmt-trace-output ts-entry env s res trace))
+           ((when (stmt-abort-after ts-entry res))
             (pass-error-*t
              (ev_error "Trace abort" ts-entry (list (stmt->pos_start s))))))
         (mv res orac trace)))))
@@ -676,77 +814,78 @@ asl-interpreter-mutual-recursion-*t) for overview."
   
 
 
-(defun return-equiv-thm-and-corollaries (name name-mod nonkey-formals no-expand-name)
-  (let ((thmname (intern-in-package-of-symbol
-                  (concatenate 'string "<FN>" "-EQUALS-ORIGINAL")
-                  'asl-pkg))
-        (name-mod-fn (intern-in-package-of-symbol
-                      (concatenate 'string (symbol-name name-mod) "-FN")
-                      'asl-pkg))
-        (key-formals '(CLK ORAC STATIC-ENV TRACESPEC)))
-    (mv `(defret ,thmname
-           (b* (((mv res-mod orac-mod &) (,name-mod . ,nonkey-formals))
-                ((mv res orac) ;; (let ((env (env-replace-static static-env env)))
-                 (,name . ,nonkey-formals)))
-             (implies (not (and (eval_result-case res-mod :ev_error)
-                                (equal (ev_error->desc res-mod) "Trace abort")))
-                      (and (equal res-mod res)
-                           (equal orac-mod orac))))
-           :hints ((let ((expand (acl2::just-expand-cp-parse-hints
-                                  '((:free (,@nonkey-formals clk orac) (,name-mod . ,nonkey-formals))
-                                    ,@(and (not no-expand-name)
-                                           `((:free (,@nonkey-formals clk orac) (,name . ,nonkey-formals)))))
-                                  world)))
-                     `(:computed-hint-replacement
-                       ((acl2::expand-marked))
-                       :clause-processor (acl2::mark-expands-cp
-                                          clause
-                                          '(t ;; last-only
-                                            t ;; lambdas
-                                            ,expand))
-                       :do-not-induct t)))
-           ;; :rule-classes nil
-           :fn ,name-mod)
-        `((defret ,(intern-in-package-of-symbol
-                    (concatenate 'string "<FN>" "-EQUALS-ORIGINAL-KIND")
-                    'asl-pkg)
+(local
+ (defun return-equiv-thm-and-corollaries (name name-mod nonkey-formals no-expand-name)
+   (let ((thmname (intern-in-package-of-symbol
+                   (concatenate 'string "<FN>" "-EQUALS-ORIGINAL")
+                   'asl-pkg))
+         (name-mod-fn (intern-in-package-of-symbol
+                       (concatenate 'string (symbol-name name-mod) "-FN")
+                       'asl-pkg))
+         (key-formals '(CLK ORAC STATIC-ENV TRACESPEC)))
+     (mv `(defret ,thmname
             (b* (((mv res-mod orac-mod &) (,name-mod . ,nonkey-formals))
                  ((mv res orac) ;; (let ((env (env-replace-static static-env env)))
                   (,name . ,nonkey-formals)))
-              (implies (and (syntaxp (or (acl2::rewriting-negative-literal-fn
-                                          `(equal (eval_result-kind$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil)))))) ,kind) mfc state)
-                                         (acl2::rewriting-negative-literal-fn
-                                          `(equal ,kind (eval_result-kind$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil))))))) mfc state)))
-                            (not (equal kind :ev_error)))
-                       (iff (equal (eval_result-kind res-mod) kind)
-                            (and (equal (eval_result-kind res) kind)
-                                 (equal res-mod res)
-                                 (equal orac-mod orac)
-                                 (equal (eval_result-kind (hide res-mod)) kind)))))
-            :hints (("goal" :use ,thmname
-                     :in-theory (disable ,thmname)
-                     :expand ((:free (x) (hide x)))))
+              (implies (not (and (eval_result-case res-mod :ev_error)
+                                 (equal (ev_error->desc res-mod) "Trace abort")))
+                       (and (equal res-mod res)
+                            (equal orac-mod orac))))
+            :hints ((let ((expand (acl2::just-expand-cp-parse-hints
+                                   '((:free (,@nonkey-formals clk orac) (,name-mod . ,nonkey-formals))
+                                     ,@(and (not no-expand-name)
+                                            `((:free (,@nonkey-formals clk orac) (,name . ,nonkey-formals)))))
+                                   world)))
+                      `(:computed-hint-replacement
+                        ((acl2::expand-marked))
+                        :clause-processor (acl2::mark-expands-cp
+                                           clause
+                                           '(t ;; last-only
+                                             t ;; lambdas
+                                             ,expand))
+                        :do-not-induct t)))
             ;; :rule-classes nil
             :fn ,name-mod)
+         `((defret ,(intern-in-package-of-symbol
+                     (concatenate 'string "<FN>" "-EQUALS-ORIGINAL-KIND")
+                     'asl-pkg)
+             (b* (((mv res-mod orac-mod &) (,name-mod . ,nonkey-formals))
+                  ((mv res orac) ;; (let ((env (env-replace-static static-env env)))
+                   (,name . ,nonkey-formals)))
+               (implies (and (syntaxp (or (acl2::rewriting-negative-literal-fn
+                                           `(equal (eval_result-kind$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil)))))) ,kind) mfc state)
+                                          (acl2::rewriting-negative-literal-fn
+                                           `(equal ,kind (eval_result-kind$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil))))))) mfc state)))
+                             (not (equal kind :ev_error)))
+                        (iff (equal (eval_result-kind res-mod) kind)
+                             (and (equal (eval_result-kind res) kind)
+                                  (equal res-mod res)
+                                  (equal orac-mod orac)
+                                  (equal (eval_result-kind (hide res-mod)) kind)))))
+             :hints (("goal" :use ,thmname
+                      :in-theory (disable ,thmname)
+                      :expand ((:free (x) (hide x)))))
+             ;; :rule-classes nil
+             :fn ,name-mod)
 
-          (defret ,(intern-in-package-of-symbol
-                    (concatenate 'string "<FN>" "-EQUALS-ORIGINAL-DESC")
-                    'asl-pkg)
-            (b* (((mv res-mod orac-mod &) (,name-mod . ,nonkey-formals))
-                 ((mv res orac) ;; (let ((env (env-replace-static static-env env)))
-                  (,name . ,nonkey-formals)))
-              (implies (and (syntaxp (or (acl2::rewriting-positive-literal-fn
-                                          `(equal (ev_error->desc$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil)))))) '"Trace abort") mfc state)
-                                         (acl2::rewriting-positive-literal-fn
-                                          `(equal '"Trace abort" (ev_error->desc$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil))))))) mfc state))))
-                       (iff (equal (ev_error->desc res-mod) "Trace abort")
-                            (not (and (equal res-mod res)
-                                      (equal orac-mod orac)
-                                      (not (equal (ev_error->desc (hide res-mod)) "Trace abort")))))))
-            :hints (("goal" :use ,thmname
-                     :in-theory (disable ,thmname)
-                     :expand ((:free (x) (hide x)))))
-            :fn ,name-mod)))))
+           (defret ,(intern-in-package-of-symbol
+                     (concatenate 'string "<FN>" "-EQUALS-ORIGINAL-DESC")
+                     'asl-pkg)
+             (b* (((mv res-mod orac-mod &) (,name-mod . ,nonkey-formals))
+                  ((mv res orac) ;; (let ((env (env-replace-static static-env env)))
+                   (,name . ,nonkey-formals)))
+               (implies (and (syntaxp (or (acl2::rewriting-positive-literal-fn
+                                           `(equal (ev_error->desc$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil)))))) '"Trace abort") mfc state)
+                                          (acl2::rewriting-positive-literal-fn
+                                           `(equal '"Trace abort" (ev_error->desc$inline (mv-nth '0 (,',name-mod-fn . ,,(xxxjoin 'cons (append nonkey-formals key-formals '('nil))))))) mfc state))))
+                        (iff (equal (ev_error->desc res-mod) "Trace abort")
+                             (not (and (equal res-mod res)
+                                       (equal orac-mod orac)
+                                       (not (equal (ev_error->desc (hide res-mod)) "Trace abort")))))))
+             :hints (("goal" :use ,thmname
+                      :in-theory (disable ,thmname)
+                      :expand ((:free (x) (hide x)))))
+             :fn ,name-mod))))))
 
 
 (local
@@ -880,63 +1019,80 @@ versions @(see eval_subprogram-*t1) and @(see eval_stmt-*t1).</p>")))
          (and (equal (if t x y) x)
               (equal (if nil x y) y))))
 
-;; ---------------------------------------------------------------------------
-;; Definition of the Tracing ASL Interpreter (suffixed with *t)
-(with-output
-  :off (event)
-  (make-event
-   (b* ((form *asl-interpreter-mutual-recursion-command*)
-        ;; Strip out the events after the /// (theorem about resolved-p-of-resolve-ty)
-        (form (strip-post-/// form))
-        ;; Strip out xdoc
-        (form (strip-xdoc form))
-        ;; Add xdoc topic for mutual recursion
-        (form (add-mutrec-xdoc *asl-*t-xdoc* form))
-        ;; Add xdoc topic for each function
-        (form (add-define-xdoc
-               "Tracing version of @(see <NAME>); see @(see asl-interpreter-mutual-recursion-*t) for overview."
-               form))
-        ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
-        ;; since it's going to be wrapped in a call that deals with collecting the trace data.
-        (form (find-def-and-rename 'eval_subprogram '*t form))
-        (form (find-def-and-rename 'eval_stmt '*t form))
-        ;; Substitute function names with their -*t suffixed forms.
-        (form (sublis *eval-trace-substitution* form))
-        ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
-        (form (replace-static-envs form))
-        ;; Add guard saying static-env equals the one in env.
-        (form (add-define-guard '(equal (global-env->static (env->global env)) static-env) form))
-        ;; Wrap each define body in a call of evbody-*t.
-        (form (wrap-define-bodies 'evbody-*t form))
-        (form (wrap-define-bodies 'bind-env-with-static form))
-        ;; Add (trace asl-tracelist-p) to all the :returns forms.
-        (form (add-trace-to-returns form))
-        ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
-        ;; (form (replace-static-envs form))
-        ;; Add the tracespec formal to each define form.
-        (form (add-define-formals '(((static-env static_env_global-p) 'static-env)
-                                    ((tracespec tracespec-p) 'tracespec)) form))
-        ;; Add the definition of eval_subprogram-*t which wraps around eval_subprogram-*t1.
-        (form (add-define-to-defines *eval_subprogram-*t-def* form))
-        (form (add-define-to-defines *eval_stmt-*t-def* form))
-        ;; Disable the functions, prove the non-trace return values equal to the originals, and verify guards.
-        (form (insert-after-///
-               (list
-                '(make-event
-                  `(in-theory (disable . ,(fgetprop 'eval_expr-*t-fn 'acl2::recursivep nil (w state)))))
-                (equals-original-thm '*t (w state))
-                ;; '(verify-guards eval_expr-*t-fn)
-                )
-               form)))
-     `(progn (defconst *asl-interpreter-mutual-recursion-*t-form* ',form)
-             ,form))))
+(encapsulate nil
+  (local (in-theory (disable (:t eval_result-kind)
+                             (:t append)
+                             (:t pass-error)
+                             (:t val-kind)
+                             (:t acl2::true-listp-append)
+                             (:t eval_expr)
+                             (:t expr_result->env)
+                             (:t expr_result->val)
+                             (:t ev_error)
+                             (:t pass-error-*t)
+                             (:t ev_normal)
+                             default-car
+                             default-cdr
+                             static_env_global-fix-when-static_env_global-p
+                             global-replace-static-with-self
+                             env-replace-static-with-self)))
+
+  ;; ---------------------------------------------------------------------------
+  ;; Definition of the Tracing ASL Interpreter (suffixed with *t)
+  (with-output
+    :off (event)
+    (make-event
+     (b* ((form *asl-interpreter-mutual-recursion-command*)
+          ;; Strip out the events after the /// (theorem about resolved-p-of-resolve-ty)
+          (form (strip-post-/// form))
+          ;; Strip out xdoc
+          (form (strip-xdoc form))
+          ;; Add xdoc topic for mutual recursion
+          (form (add-mutrec-xdoc *asl-*t-xdoc* form))
+          ;; Add xdoc topic for each function
+          (form (add-define-xdoc
+                 "Tracing version of @(see <NAME>); see @(see asl-interpreter-mutual-recursion-*t) for overview."
+                 form))
+          ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
+          ;; since it's going to be wrapped in a call that deals with collecting the trace data.
+          (form (find-def-and-rename 'eval_subprogram '*t form))
+          (form (find-def-and-rename 'eval_stmt '*t form))
+          ;; Substitute function names with their -*t suffixed forms.
+          (form (sublis *eval-trace-substitution* form))
+          ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
+          (form (replace-static-envs form))
+          ;; Add guard saying static-env equals the one in env.
+          (form (add-define-guard '(equal (global-env->static (env->global env)) static-env) form))
+          ;; Wrap each define body in a call of evbody-*t.
+          (form (wrap-define-bodies 'evbody-*t form))
+          (form (wrap-define-bodies 'bind-env-with-static form))
+          ;; Add (trace asl-tracelist-p) to all the :returns forms.
+          (form (add-trace-to-returns form))
+          ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
+          ;; (form (replace-static-envs form))
+          ;; Add the tracespec formal to each define form.
+          (form (add-define-formals '(((static-env static_env_global-p) 'static-env)
+                                      ((tracespec tracespec-p) 'tracespec)) form))
+          ;; Add the definition of eval_subprogram-*t which wraps around eval_subprogram-*t1.
+          (form (add-define-to-defines *eval_subprogram-*t-def* form))
+          (form (add-define-to-defines *eval_stmt-*t-def* form))
+          ;; Disable the functions, prove the non-trace return values equal to the originals, and verify guards.
+          (form (insert-after-///
+                 (list
+                  '(make-event
+                    `(in-theory (disable . ,(fgetprop 'eval_expr-*t-fn 'acl2::recursivep nil (w state)))))
+                  (equals-original-thm '*t (w state))
+                  ;; '(verify-guards eval_expr-*t-fn)
+                  )
+                 form)))
+       `(progn (defconst *asl-interpreter-mutual-recursion-*t-form* ',form)
+               ,form)))))
 ;; ---------------------------------------------------------------------------
 
 ;; (local (acl2::use-trivial-ancestors-check))
 
 (encapsulate nil
   (local (in-theory (disable xor not)))
-
   (with-output
     :off (event)
     (verify-guards eval_expr-*t-fn
