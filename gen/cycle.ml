@@ -607,7 +607,7 @@ module CoSt = struct
     | _,R when do_store_only ->
         None,st
     | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),st
+        Some ((Label.next_label "L"), false),st
     | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
