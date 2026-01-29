@@ -605,8 +605,8 @@ module CoSt = struct
     | _,R when do_store_only ->
         None,st
     | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),unset_check_fault st
-    | _,_ -> None,st
+      Some ((Label.next_label "L"), false),st
+    | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
     match Value.implicitly_set_pteval dir st.machine_feature st.pte_value with
@@ -1215,8 +1215,17 @@ let do_set_read_v init =
             if do_morello then None, st
             (* because `rmw` is treated as both read and write,
                we should assign label to this read event.
-               Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W
+               Here we assume write is stronger than read, except for LxSx,
+               whose load and store are checked separately. Allocate both
+               labels here so their order follows the instruction order. *)
+            else if n.evt.rmw then
+              match n.edge.E.edge with
+              | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
+                  let check_fault,st = CoSt.fault_update st R in
+                  let write_check_fault,st = CoSt.fault_update st W in
+                  n.next.evt <- {n.next.evt with check_fault=write_check_fault};
+                  check_fault,st
+              | _ -> CoSt.fault_update st W
             else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
