@@ -581,14 +581,18 @@ module CoSt = struct
     | _,_ when do_no_fault -> None,unset_check_fault st
     | NoDir,_ -> None,st
     | Irr,(R|W) | Dir W,W | Dir R,R when do_kvm ->
-        label_pte_fault dir pte_val,unset_check_fault st
+        begin match label_pte_fault dir pte_val with
+        | (Some (_, true) as fault) -> fault,unset_check_fault st
+        | (Some (_, false) as fault) -> fault,st
+        | None -> None,unset_check_fault st
+        end
     | Dir R,W | Dir W,R when do_kvm ->
         None,st
     | _,R when do_store_only ->
         None,st
     | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),unset_check_fault st
-    | _,_ -> None,st
+        Some ((Label.next_label "L"), false),st
+    | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
     match Value.implicitly_set_pteval dir st.machine_feature st.pte_value with
