@@ -2,7 +2,7 @@ AArch64 Y006
 (* Tag exclusion by register *)
 {
   0:X0=x:red;
-  int64_t 0:X2=(:magenta);
+  int64_t 0:X2={:magenta};
 }
 
 P0           ;

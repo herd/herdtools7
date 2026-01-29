@@ -1,7 +1,7 @@
 AArch64 MP+dmb.st+irg.v2
 {
   [tag(x)]=:green;
-  0:X1=x:green; 0:X2=(:red); 0:X3=y;
+  0:X1=x:green; 0:X2={:red}; 0:X3=y;
   1:X1=x; 1:X3=y;
 }
 P0          | P1           ;

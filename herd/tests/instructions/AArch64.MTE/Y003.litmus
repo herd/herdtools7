@@ -2,7 +2,7 @@ AArch64 Y003
 (* IRG with exclusion *)
 {
   0:X0=x:blue;
-  int64_t 0:X2=(:red,:blue);
+  int64_t 0:X2={:red,:blue};
 }
 
 P0            ;

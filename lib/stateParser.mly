@@ -185,7 +185,7 @@ maybev_amper:
 maybev:
 | maybev_notag { $1 }
 | maybev_tag { $1 }
-| LPAR t=maybev_tag_list RPAR { mk_tag_mask t }
+| LCURLY t=maybev_tag_list RCURLY { mk_tag_mask t }
 
 maybev_or_amper_or_label:
 | maybev { $1 }
