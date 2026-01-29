@@ -607,8 +607,8 @@ module CoSt = struct
     | _,R when do_store_only ->
         None,st
     | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),unset_check_fault st
-    | _,_ -> None,st
+        Some ((Label.next_label "L"), false),st
+    | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
     match Value.implicitly_set_pteval dir st.machine_feature st.pte_value with
