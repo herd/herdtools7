@@ -136,7 +136,7 @@ type C of B;
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\hva\\\\
   \isbuiltinsingular(\vtone) \typearrow \vb
 }{
   \issingular(\tenv, \tty) \typearrow \vb
@@ -230,7 +230,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
-  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\\\\
+  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\hva\\\\
   \tstruct(\tenv, \vtone)\typearrow\vt \OrTypeError
 }{
   \tstruct(\tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow \vt
@@ -264,7 +264,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 \begin{mathpar}
 \inferrule[structured]{
-  L \in \{\TRecord, \TException, \TCollection\}\\\\
+  L \in \{\TRecord, \TException, \TCollection\}\hva\\\\
   (\id,\vt) \in \fields : \tstruct(\tenv, \vt) \typearrow \vt_\id \OrTypeError
 }{
   \tstruct(\tenv, \overname{L(\fields)}{\tty}) \typearrow
@@ -316,12 +316,12 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \begin{mathpar}
 \inferrule[named]{
   \tty \eqname \TNamed(\vx) \\
-  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError \\\\
+  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError \hva\\\\
   \makeanonymous(\tenv, \vtone) \typearrow \vt
 }{
   \makeanonymous(\tenv, \tty) \typearrow \vt
 }
-\and
+\hva\and
 \inferrule[non-named]{
   \astlabel(\tty) \neq \TNamed
 }{
@@ -379,18 +379,18 @@ is a \constrainedintegerterm{} type.
 {
   \checkconstrainedinteger(\tenv, \overname{\TInt(\WellConstrained(\Ignore))}{\tty}) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[parameterized]{}
 {
   \checkconstrainedinteger(\tenv, \overname{\TInt(\Parameterized(\Ignore))}{\tty}) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[unconstrained]{
   \astlabel(\vc) = \Unconstrained \;\lor\; \astlabel(\vc) = \PendingConstrained
 }{
   \checkconstrainedinteger(\tenv, \overname{\TInt(\vc)}{\tty}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
-\and
+\hva\and
 \inferrule[conflicting\_type]{
   \astlabel(\vt) \neq \TInt
 }{

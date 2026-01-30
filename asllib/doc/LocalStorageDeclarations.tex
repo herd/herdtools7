@@ -183,8 +183,8 @@ with the type inferred type \texttt{integer{3}}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\hva\\\\
+  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
@@ -230,7 +230,7 @@ In \listingref{checkisnotcollection}, the statement
 \FormallyParagraph
 \begin{mathpar}
   \inferrule[Collection]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
     \astlabel(\vtstruct) = \TCollection \\
   }{%
     \checkisnotcollection(\tenv, \vt) \typearrow
@@ -239,7 +239,7 @@ In \listingref{checkisnotcollection}, the statement
 \end{mathpar}
 \begin{mathpar}
   \inferrule[Not-Collection]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
     \astlabel(\vtstruct) \notin \left\{ \TCollection, \TTuple \right\} \\
   }{%
     \checkisnotcollection(\tenv, \vt) \typearrow \True
@@ -247,7 +247,7 @@ In \listingref{checkisnotcollection}, the statement
 \end{mathpar}
 \begin{mathpar}
   \inferrule[Tuple]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
+    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
     \astlabel(\vtstruct) = \TTuple (\tys) \\
     \tty \in \tys: \checkisnotcollection(\tenv, \tty) \typearrow \True
     \OrTypeError
@@ -306,18 +306,18 @@ to the evaluation of \texttt{3} in $\env$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
-  \techeck(\astlabel(\vtp) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \vtp \eqname \TTuple([\vt_{1..n}])\\\\
-  \techeck(k = n, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \newtenv_k \eqdef \tenv\\\\
+  \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\hva\\\\
+  \techeck(\astlabel(\vtp) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  \vtp \eqname \TTuple([\vt_{1..n}])\hva\\\\
+  \techeck(k = n, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  \newtenv_k \eqdef \tenv\hva\\\\
   {
     \begin{array}{r}
-      i=k..1: \hfill \\
+      \multicolumn{1}{l}{i=k..1:} \\
       \quad \checkvarnotinenv(\newtenv_i, \vids_i) \typearrow \True \OrTypeError\\
       \quad \addlocal(\tenv, \vids_i, \vt_i, \ldk) \typearrow \newtenv_{i-1}
     \end{array}
-  }\\\\
+  }\hva\\\\
   \newtenv \eqdef \newtenv_0
 }{
   {
@@ -403,7 +403,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \inferrule[non\_empty]{
   \vids = [\id] \concat \vids'\\
   \liv = [\vm] \concat \liv'\\
-  \vm \eqname (\vv, \vgone)\\\\
+  \vm \eqname (\vv, \vgone)\hva\\\\
   \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
   \declareldituple(\envone, \vids', \liv') \evalarrow \ResultLDI(\vgthree, \newenv)\\
   \vg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\

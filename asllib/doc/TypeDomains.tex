@@ -245,11 +245,11 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[t\_bool]{}{ \dynamicdomain(\env, \overname{\TBool}{\vt}) = \overname{\tbool}{\vd} }
-\and
+\hva\and
 \inferrule[t\_string]{}{ \dynamicdomain(\env, \overname{\TString}{\vt}) = \overname{\tstring}{\vd} }
-\and
+\hva\and
 \inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
-\and
+\hva\and
 \inferrule[t\_enumeration]{}{
   \dynamicdomain(\env, \overname{\TEnum(\vl_{1..k})}{\vt}) = \overname{\{ \vi = 1..k: \nvlabel(\vl_\vi) \}}{\vd}
 }
@@ -273,7 +273,7 @@ by overloading $\dynamicdomain$:
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_exact\_abnormal]{
   \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
@@ -289,14 +289,14 @@ by overloading $\dynamicdomain$:
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_range\_abnormal1]{
   \evalexprsef(\env, \veone) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_range\_abnormal2]{
   \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
   \evalexprsef(\env, \vetwo) \evalarrow C\\
@@ -324,20 +324,20 @@ in the \emph{local dynamic environment} of $\denv$.
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_negative\_width\_error]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_empty]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_non\_empty]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k > 0

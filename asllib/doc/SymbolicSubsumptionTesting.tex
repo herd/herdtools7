@@ -221,9 +221,9 @@ In this example, this is true as the following hold:
 \begin{mathpar}
 \inferrule{
   \sdone = \Subdomains(\symdomsone)\\
-  \sdtwo = \Subdomains(\symdomstwo)\\
+  \sdtwo = \Subdomains(\symdomstwo)\hva\\
   \symdomnormalize(\symdomsone) \typearrow \symdomsonenorm\\
-  \symdomnormalize(\symdomstwo) \typearrow \symdomstwonorm\\
+  \symdomnormalize(\symdomstwo) \typearrow \symdomstwonorm\hva\\
   {
   \begin{array}{rcl}
   \vb &\eqdef& \forall \vsone\in\symdomsonenorm.\ \exists \vstwo\in\symdomstwonorm.\\
@@ -269,7 +269,7 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
 \begin{mathpar}
 \inferrule{
   \others = [\vs \in \symdoms \;|\; \configdomain{\vs} \neq \Finite]\\
-  \vfinitedomains = [\vs \in \symdoms \;|\; \configdomain{\vs} = \Finite]\\
+  \vfinitedomains = [\vs \in \symdoms \;|\; \configdomain{\vs} = \Finite]\hva\\
   \vxs \eqdef \bigcup_{\Finite(\vs) \in \vfinitedomains} \vs\\\\
   \newsymdoms \eqdef \choice{\vxs \neq \emptyset}{[\Finite(\vxs)] \concat \others}{\others}
 }{
@@ -443,7 +443,7 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
 \begin{mathpar}
 \inferrule[range]{
   \symdomeval(\tenv, \veone) \typearrow \vvone\\
-  \symdomeval(\tenv, \vetwo) \typearrow \vvtwo\\
+  \symdomeval(\tenv, \vetwo) \typearrow \vvtwo\hva\\
   \vd \eqdef \choice{\vvone = \Top \lor \vvtwo = \Top}{\ConstrainedDom(\vc)}{\Finite(\{ n \;|\; \vvone \leq n \leq \vvtwo\})}
 }{
   \symdomofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vd
@@ -491,7 +491,7 @@ yield $1$ and $6$, respectively.
 }{
   \symdomeval(\tenv, \ve) \typearrow n
 }
-\and
+\hva\and
 \inferrule[top]{
   \normalize(\tenv, \ve) \typearrow \veone\\
   \staticeval(\tenv, \veone) \typearrow \top
@@ -621,9 +621,9 @@ underapproximated.
 
 \begin{mathpar}
 \inferrule[constrained\_constrained\_non\_equal\_sets]{
-  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\hva\\\\
   \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
-  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
+  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\hva\\
   \vsone \neq \CannotOverapproximate \land \vstwo \neq \CannotOverapproximate\\
 }{
   \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
@@ -633,9 +633,9 @@ underapproximated.
 
 \begin{mathpar}
 \inferrule[constrained\_constrained\_non\_equal\_top]{
-  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\\\\
+  \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False\hva\\\\
   \approxconstraint(\tenv, \Over, \vcone) \typearrow \vsone\\
-  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\\
+  \approxconstraint(\tenv, \Under, \vctwo) \typearrow \vstwo\hva\\
   \vsone = \CannotOverapproximate \lor \vstwo = \CannotOverapproximate\\
 }{
   \symdomsubset(\tenv, \overname{\ConstrainedDom(\vcone)}{\cdone}, \overname{\ConstrainedDom(\vctwo)}{\cdtwo}) \typearrow
@@ -791,11 +791,11 @@ showing how constraints are overapproximated and underapproximated.
 \begin{mathpar}
 \inferrule[range\_over1]{
   \approxexprmin(\tenv, \veone) \typearrow \vzone\\
-  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
+  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\hva\\
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
-  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
+  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \hva\\
   {
-  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
+  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -805,7 +805,7 @@ showing how constraints are overapproximated and underapproximated.
 \begin{mathpar}
 \inferrule[range\_over2]{
   \approxexprmin(\tenv, \veone) \typearrow \vzone\\
-  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\\
+  \approxexprmax(\tenv, \vetwo) \typearrow \vztwo\hva\\
   \vzone = \CannotOverapproximate \lor \vztwo = \CannotOverapproximate\\
   \approxbottomtop(\Over) \typearrow \vsbottomtop\
 }{
@@ -816,11 +816,11 @@ showing how constraints are overapproximated and underapproximated.
 \begin{mathpar}
 \inferrule[range\_under1]{
   \approxexprmax(\tenv, \veone) \typearrow \vzone\\
-  \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\\
+  \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\hva\\
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
-  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \\
+  \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \hva\\
   {
-  \vs \eqdef \ifthenelse{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
+  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -830,7 +830,7 @@ showing how constraints are overapproximated and underapproximated.
 \begin{mathpar}
 \inferrule[range\_under2]{
   \approxexprmax(\tenv, \veone) \typearrow \vzone\\
-  \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\\
+  \approxexprmin(\tenv, \vetwo) \typearrow \vztwo\hva\\
   \vzone = \CannotOverapproximate \lor \vztwo = \CannotOverapproximate\\
   \approxbottomtop(\Under) \typearrow \vsbottomtop\
 }{
@@ -982,7 +982,7 @@ showing how an instance of integer sets transformed to constraint lists.
   \intervals \eqdef \{ a..b \;|\; a..b \in \vs \land \forall (c..d) \in \vs.\ a..b \not\subseteq c..d\}\\
   {
   \cs \eqdef \left[a..b \in \intervals:
-  \ifthenelse{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
+  \ifthenelsestmt{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
     \right]
   }
 }{
@@ -1115,7 +1115,7 @@ types.
 
 \begin{mathpar}
 \inferrule[unop]{
-  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vep) \typearrow \vsp \terminateas \CannotOverapproximate\hva\\\\
   \vs \eqdef \{ \unopliterals(\op, \LInt(\vz)) \;|\; \vz \in \vsp\}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow \vs
@@ -1125,9 +1125,9 @@ types.
 \begin{mathpar}
 \inferrule[binop\_precise]{
   \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
   \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
-  \plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\\
+  \plf = \PrecisionFull \lor (\plf = \PrecisionLost \land \vapprox = \Under)\hva\\
   \approxconstraints(\tenv, \vapprox, \vsp) \typearrow \vsapprox \terminateas \CannotOverapproximate
 }{
   \approxexpr(\tenv, \vapprox, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \overname{\vsapprox}{\vs}
@@ -1136,8 +1136,8 @@ types.
 
 \begin{mathpar}
 \inferrule[binop\_approx]{
-  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \veone) \typearrow \vsone \terminateas \CannotOverapproximate\hva\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
   \approxconstraintbinop(\tenv, \vapprox, \op, \vsone, \vstwo) \typearrow (\vsp, \plf)\\
   \plf = \PrecisionLost \land \vapprox = \Over
 }{
@@ -1147,8 +1147,8 @@ types.
 
 \begin{mathpar}
 \inferrule[cond]{
-  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\\\\
-  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \CannotOverapproximate\\\\
+  \approxexpr(\tenv, \vapprox, \vetwo) \typearrow \vstwo \terminateas \CannotOverapproximate\hva\\\\
+  \approxexpr(\tenv, \vapprox, \vethree) \typearrow \vsthree \terminateas \CannotOverapproximate\hva\\\\
   \vs \eqdef \choice{\vapprox = \Over}{\vstwo \cup \vsthree}{\vstwo \cap \vsthree}
 }{
   \approxexpr(\tenv, \vapprox, \overname{\ECond(\Ignore, \vetwo, \vethree)}{\ve}) \typearrow \vs
@@ -1355,7 +1355,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
       \vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \\
       \applybinopextremities(\csone[\vi], \cstwo[\vj]) \typearrow \vc_{\vi,\vj}
     \end{array}
-  }\\
+  }\hva\\
   \newcs \eqdef [\vi\in\listrange(\csone): \vj\in\listrange(\cstwo): \vc_{\vi,\vj}]
 }{
   \constraintbinop(\op, \csone, \cstwo) \typearrow \newcs
@@ -1461,7 +1461,7 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 \begin{mathpar}
 \inferrule[range\_exact]{
   \vcone = \ConstraintRange(\va, \vb)\\
-  \vctwo = \ConstraintExact(\vc)\\
+  \vctwo = \ConstraintExact(\vc)\hva\\
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairs\\
   \newcs \eqdef [(\vap, \vbp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vc}}{\AbbrevEBinop{\op}{\vbp}{\vc}}]
 }{
@@ -1473,7 +1473,7 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 \begin{mathpar}
 \inferrule[exact\_range]{
   \vcone = \ConstraintExact(\va)\\
-  \vctwo = \ConstraintRange(\vc, \vd)\\
+  \vctwo = \ConstraintRange(\vc, \vd)\hva\\
   \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairs\\
   \newcs \eqdef [(\vcp, \vdp) \in \extpairs: \AbbrevConstraintRange{\AbbrevEBinop{\op}{\va}{\vcp}}{\AbbrevEBinop{\op}{\va}{\vdp}}]
 }{
@@ -1485,9 +1485,9 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 \begin{mathpar}
 \inferrule[range\_range]{
   \vcone = \ConstraintRange(\va, \vb)\\
-  \vctwo = \ConstraintRange(\vc, \vd)\\
+  \vctwo = \ConstraintRange(\vc, \vd)\hva\\
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \extpairsab\\
-  \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairscd\\
+  \possibleextremitiesright(\op, \vc, \vd) \typearrow \extpairscd\hva\\
   \newcs \eqdef [(\vap, \vbp) \in \extpairsab, (\vcp, \vdp) \in \extpairscd:
   \AbbrevConstraintRange{\AbbrevEBinop{\op}{\vap}{\vcp}}{\AbbrevEBinop{\op}{\vbp}{\vdp}}]
 }{
