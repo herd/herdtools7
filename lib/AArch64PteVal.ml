@@ -187,6 +187,7 @@ type t = {
   db : int;
   dbm : int;
   el0 : int;
+  x : int;
   attrs: Attrs.t;
   }
 
@@ -199,6 +200,7 @@ let eq_props p1 p2 =
   Misc.int_eq p1.dbm p2.dbm &&
   Misc.int_eq p1.valid p2.valid &&
   Misc.int_eq p1.el0 p2.el0 &&
+  Misc.int_eq p1.x p2.x &&
   Attrs.eq p1.attrs p2.attrs
 
 (* Let us abstract... *)
@@ -217,7 +219,7 @@ let get_attrs {attrs;_ } = Attrs.as_list attrs
 
 let prot_default =
   { oa=OutputAddress.PHY "";
-    valid=1; af=1; db=1; dbm=0; el0=1; attrs=Attrs.default; }
+    valid=1; af=1; db=1; dbm=0; el0=1; x=1; attrs=Attrs.default; }
 
 let default s = { prot_default with  oa=OutputAddress.PHY s; }
 
@@ -240,6 +242,7 @@ and pp_af hexa ok = pp_int_field hexa ok "af" (fun p -> p.af)
 and pp_db hexa ok = pp_int_field hexa ok "db" (fun p -> p.db)
 and pp_dbm hexa ok = pp_int_field hexa ok "dbm" (fun p -> p.dbm)
 and pp_el0 hexa ok = pp_int_field hexa ok "el0" (fun p -> p.el0)
+and pp_x hexa ok = pp_int_field hexa ok "x" (fun p -> p.x)
 and pp_attrs compat ok = pp_field ok
     (fun a -> sprintf (if compat then "%s" else "attrs:(%s)") (Attrs.pp a)) Attrs.eq (fun p -> p.attrs)
 
@@ -254,6 +257,7 @@ let is_default_attrs t = Attrs.is_default t.attrs
    (2) Fields from el0 (included) are printed if non-default. *)
 
 let pp_fields hexa showall p k =
+  let k = pp_x hexa false p k in
   let k = pp_el0 hexa false p k in
   let k = pp_valid hexa showall p k in
   let k = pp_dbm hexa showall p k in
@@ -291,6 +295,7 @@ let add_field k v p =
   | "dbm" -> { p with dbm = my_int_of_string k v }
   | "valid" -> { p with valid = my_int_of_string k v }
   | "el0" -> { p with el0 = my_int_of_string k v }
+  | "x" -> { p with x = my_int_of_string k v }
   | _ ->
       Warn.user_error "Illegal AArch64 page table entry property %s" k
 
@@ -326,6 +331,8 @@ let compare =
     lex_compare (fun p1 p2 -> OutputAddress.compare p1.oa p2.oa) cmp in
   let cmp =
     lex_compare (fun p1 p2 -> Attrs.compare p1.attrs p2.attrs) cmp in
+  let cmp =
+    lex_compare (fun p1 p2 -> Misc.int_compare p1.x p2.x) cmp in
   cmp
 
 let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && eq_props p1 p2
@@ -333,10 +340,10 @@ let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && eq_props p1 p2
 (* For litmus *)
 
 (* Those lists must of course match one with the other *)
-let fields = ["af";"db";"dbm";"valid";"el0";]
+let fields = ["af";"db";"dbm";"valid";"el0";"x";]
 and default_fields =
   let p = prot_default in
-  let ds = [p.af; p.db; p.dbm; p.valid;p.el0;] in
+  let ds = [p.af; p.db; p.dbm; p.valid; p.el0; p.x;] in
   List.map (Printf.sprintf "%i") ds
 
 let norm =
@@ -361,9 +368,9 @@ let norm =
 
 let dump_pack pp_oa p =
   sprintf
-    "pack_pack(%s,%d,%d,%d,%d,%d)"
+    "pack_pack(%s,%d,%d,%d,%d,%d,%d)"
     (pp_oa (OutputAddress.pp_old p.oa))
-    p.af p.db p.dbm p.valid p.el0
+    p.af p.db p.dbm p.valid p.el0 p.x
 
 let as_physical p = OutputAddress.as_physical p.oa
 
@@ -376,7 +383,8 @@ let as_flags p =
         (add p.valid "msk_valid"
            (add p.af "msk_af"
               (add p.dbm "msk_dbm"
-                 (add p.db "msk_db" [])))) in
+                 (add p.db "msk_db"
+                    (add p.x "msk_x" []))))) in
     let msk = String.concat "|" msk in
     Some msk
 
@@ -392,12 +400,14 @@ let mask_el0 = Int64.shift_left 1L 6
 let mask_db = Int64.shift_left 1L 7
 let mask_af = Int64.shift_left 1L 10
 let mask_dbm = Int64.shift_left 1L 51
+let mask_x = Int64.shift_left 1L 54
 let mask_all_neg =
   Int64.lognot
-    (Int64.logor mask_el0
-       (Int64.logor
-          (Int64.logor mask_valid  mask_db)
-          (Int64.logor  mask_af  mask_dbm)))
+    (Int64.logor mask_x
+       (Int64.logor mask_el0
+          (Int64.logor
+              (Int64.logor mask_valid  mask_db)
+              (Int64.logor  mask_af  mask_dbm))))
 
 let is_zero v = Int64.equal 0L v
 let is_set v m = not (is_zero (Int64.logand v m))
@@ -410,6 +420,7 @@ let orop p m =
     let p = if is_set m mask_db then { p with db=0; } else p in
     let p = if is_set m mask_af then { p with af=1; } else p in
     let p = if is_set m mask_dbm then { p with dbm=1; } else p in
+    let p = if is_set m mask_x then { p with x=1; } else p in
     Some p
 
 and andnot2 p m =
@@ -420,6 +431,7 @@ and andnot2 p m =
     let p = if is_set m mask_db then { p with db=1; } else p in
     let p = if is_set m mask_af then { p with af=0; } else p in
     let p = if is_set m mask_dbm then { p with dbm=0; } else p in
+    let p = if is_set m mask_x then { p with x=0; } else p in
     Some p
 
 and andop p m =
@@ -439,4 +451,7 @@ and andop p m =
   let r =
     if is_set m mask_dbm && p.dbm=1
     then Int64.logor r mask_dbm else r  in
+  let r =
+    if is_set m mask_x && p.x=1
+    then Int64.logor r mask_x else r  in
   Some r
