@@ -32,6 +32,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       written by the node. This is useful only
       for simulating execution in `-cond unicond` mode *)
 
+    type v = I of C.C.Value.v | S of string
+    val dump_val : v -> string
+
     type vset
     type fenv = (C.A.location * vset) list
     type eventmap = C.A.location C.C.EventMap.t
@@ -40,12 +43,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     val add_final_v :
         Code.proc -> C.A.arch_reg -> IntSet.t -> fenv -> fenv
     val add_final_pte :
-        Code.proc -> C.A.arch_reg -> C.A.Value.pte -> fenv -> fenv
+        Code.proc -> C.A.arch_reg -> C.C.Value.pte -> fenv -> fenv
     val add_final_loc :
         Code.proc -> C.A.arch_reg -> string -> fenv -> fenv
     val cons_int :   C.A.location -> int -> fenv -> fenv
     val cons_vec : C.A.location -> int array -> fenv -> fenv
-    val cons_pteval :   C.A.location -> C.A.Value.pte -> fenv -> fenv
+    val cons_pteval :   C.A.location -> C.C.Value.pte -> fenv -> fenv
     val cons_int_set :  (C.A.location * IntSet.t) -> fenv -> fenv
     val add_int_sets : fenv -> (C.A.location * IntSet.t) list -> fenv
 
@@ -67,17 +70,20 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       Code.proc -> C.A.arch_reg option -> C.C.node ->
       eventmap * fenv -> eventmap * fenv
 
-    include Fault.S with type loc_global := C.A.location and type fault_type := FaultType.No.t
+    include Fault.S with type loc_global := v and type fault_type := FaultType.No.t
 
-    type faults = FaultSet.t
+    type faults = FaultAtomSet.t
 
-    type final
+    type prop = (C.A.location, v, FaultType.No.t) ConstrGen.prop
+    type final = prop ConstrGen.constr
+    val pp_prop_atom : (C.A.location, v, FaultType.No.t) ConstrGen.atom -> string
 
-    val check : fenv -> faults * faults -> final
-    val observe : fenv -> faults * faults -> final
+    type locations = (C.A.location, v, FaultType.No.t) LocationsItem.t
+
+    val check : is_pos:bool -> fenv -> faults * faults -> final
+    val exist_true : final
+    val observe : fenv -> faults * faults -> locations list
     val run : C.C.event list list -> C.A.location C.C.EventMap.t -> faults * faults -> final
-
-    val dump_final : out_channel -> final -> unit
 
 (* Complement init environemt *)
     val extract_ptes : fenv -> C.A.location list
@@ -85,12 +91,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   end = functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
-    let do_kvm = Variant_gen.is_kvm O.variant
-
-    (* TODO change the type? *)
-    type v = I of C.C.Value.v | S of string | P of C.A.Value.pte
-    let pte_def = P (C.A.Value.default_pte "*")
-    let () = ignore pte_def
+    type v = I of C.C.Value.v | S of string
 
     let looks_like_array = function
       | S s -> String.length s > 0 && s.[0] = '{'
@@ -101,17 +102,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       MySet.Make
         (struct
           type t = v
-
-          let compare v1 v2 = match v1,v2 with
-          | I i1,I i2 -> compare i1 i2
-          | S s1,S s2 -> String.compare s1 s2
-          | P p1,P p2 -> C.A.Value.pte_compare p1 p2
-          | ((P _|S _),I _)
-          | (P _,S _)
-            -> -1
-          | (I _,(S _|P _))
-          | (S _,P _)
-            -> +1
+          let compare = compare
         end)
     type vset = VSet.t
     type fenv = (C.A.location * vset) list
@@ -147,7 +138,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let add_final_v p r v finals = (C.A.of_reg p r,intset2vset v)::finals
 
-    let add_final_pte p r v finals = (C.A.of_reg p r,VSet.singleton (P v))::finals
+    let add_final_pte p r pte finals = (C.A.of_reg p r,VSet.singleton (I(C.C.Value.from_pte pte)))::finals
 
     let add_final_loc p r v finals =
       let loc = C.A.of_reg p r in
@@ -159,7 +150,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let vec = Code.add_vector O.hexa (Array.to_list t) in
       (loc,VSet.singleton (S vec))::fs
 
-    let cons_pteval loc p fs = (loc,VSet.singleton (P p))::fs
+    let cons_pteval loc p fs = (loc,VSet.singleton (I(C.C.Value.from_pte p)))::fs
 
     let cons_int_set (l,is) fs = (l,intset2vset is)::fs
 
@@ -186,6 +177,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             | Code.Ord
             | Code.Pair
             | Code.Instr
+            | Code.Pte
               ->
                 Some (I evt.C.C.v)
             | Code.VecReg _->
@@ -199,8 +191,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
                 Some (S vec)
             | Code.Tag ->
                 Some (S (Code.add_tag (Code.as_data evt.C.C.loc) (C.C.Value.to_int evt.C.C.v)))
-            | Code.Pte ->
-                Some (P (C.C.Value.to_pte evt.C.C.v))
             end
         | Some Code.W ->
            (* Because written value is assigned incrementally,
@@ -239,10 +229,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else finals
     | None -> finals
 
+    open Printf
+    let dump_val = function
+      | I i -> C.C.Value.pp_v ~hexa:O.hexa i
+      | S s -> s
+
     module FaultArg = struct
-      type arch_global = C.A.location
-      let pp_global = C.A.pp_location
-      let global_compare = C.A.location_compare
+      type arch_global = v
+      let pp_global = dump_val
+      let global_compare = compare
 
       let same_id_fault _ _ = assert false
 
@@ -254,105 +249,96 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     include Fault.Make(FaultArg)
 
-    (* Represent faults, i.e.,
-       a /\ b /\ c,
-       or the negation of faults, i.e.
-       ~a /\ ~b /\ ~c *)
-    type faults = FaultSet.t
-
-    type cond_final =
-      | Exists of fenv
-      | Forall of (C.A.location * C.C.Value.v) list list
-      | Locations of C.A.location list
-
-    (* The two FaultSet.t carry
-       positive and negetive checks respectively *)
-    type final = cond_final * faults * faults
-
-    module Run = Run_gen.Make(O)(C)
-
-    let check f (pos_flts,neg_flts) = Exists f,pos_flts,neg_flts
-    let observe f (pos_flts,neg_flts) = Locations (List.map fst f),pos_flts,neg_flts
-    let run evts m (pos_flts,neg_flts) = Forall (Run.run evts m),pos_flts,neg_flts
-
-(* Dumping *)
-    open Printf
-
-
-    let dump_val = function
-      | I i ->
-          let i = C.C.Value.to_int i in
-          if O.hexa then sprintf "0x%x" i
-          else sprintf "%i" i
-      | S s -> s
-      | P p -> C.A.Value.pp_pte p
+    type faults = FaultAtomSet.t
 
     let dump_tag = function
       | I i -> C.C.Value.to_int i
       | _ -> Warn.fatal "Tags can only be of type integer"
 
-    let dump_atom r v = match Misc.tr_atag (C.A.pp_location r) with
-        | Some s -> sprintf "[tag(%s)]=%s" s (Code.add_tag "" (dump_tag v))
+    let pp_prop_atom atom =
+      let open ConstrGen in
+      match atom with
+      | LV (Loc loc, value)
+      | LV (Deref (loc,_), value) ->
+        let pp_loc =
+          if looks_like_array value then C.A.pp_location
+          else C.A.pp_location_brk in
+        begin match Misc.tr_atag (C.A.pp_location loc) with
+        | Some s -> sprintf "[tag(%s)]=%s" s (Code.add_tag "" (dump_tag value))
         | None ->
-           let pp_loc =
-             if looks_like_array v then C.A.pp_location
-             else C.A.pp_location_brk in
-           sprintf "%s=%s" (pp_loc r) (dump_val v)
+          sprintf "%s=%s" (pp_loc loc) (dump_val value)
+        end
+      | LL (loc, value_loc) -> sprintf "%s=%s" (C.A.pp_location_brk loc) (C.A.pp_location_brk value_loc)
+      | FF fault -> pp_fatom fault
 
-    let dump_state_list fs =
-      List.map ( fun (r,vs) ->
-        match VSet.as_singleton vs with
-        | Some v -> dump_atom r v
-        | None ->
-          let pp = VSet.pp_str " \\/ " (fun v -> dump_atom r v) vs in
-          sprintf "(%s)" pp
-      ) fs
+    open ConstrGen
 
-    let dump_flts pos_flts neg_flts =
-      (* print ~a /\ ~b /\ ~c *)
-      ( FaultSet.map_list pp_fault neg_flts |> List.map ((^) "~") ) @
-      (* print  a /\ b /\ c *)
-      ( FaultSet.map_list pp_fault pos_flts )
+    type prop = (C.A.location, v, FaultType.No.t) ConstrGen.prop
+    type final = prop ConstrGen.constr
 
-    let dump_locations chan locs =
-      fprintf chan "locations [%s]\n" (String.concat " " locs)
+    type locations = (C.A.location, v, FaultType.No.t) LocationsItem.t
 
-    let dump_final chan (f,pos_flts,neg_flts) =
-      let flts = dump_flts pos_flts neg_flts in
-      match f with
-      | Exists fs ->
-          let exist_list = (dump_state_list fs) @ flts in
-          begin match exist_list with
-            | [] -> Warn.fatal "There is no `exist` condition check."
-            | _ ->
-              let exist_string = String.concat " /\\ " exist_list in
-              let if_neg = if !Config.neg then "~" else "" in
-              fprintf chan "%sexists (%s)\n" if_neg exist_string
-          end
-      | Forall ffs ->
-          fprintf chan "forall %s%s\n" (Run.dump_cond ffs)
-            (match flts with
-            | [] -> ""
-            | pp -> " /\\ " ^ (String.concat " /\\ " pp))
-      | Locations locs ->
-          dump_locations chan
-            (List.map
-               (fun loc -> sprintf "%s;" (C.A.pp_location loc))
-               locs) ;
-          begin match flts with
-          | [] -> ()
-          | pp -> if not do_kvm then fprintf chan "forall %s\n"
-                (String.concat " /\\ " pp)
-          end
+    module Run = Run_gen.Make(O)(C)
+
+    let fault_atom_to_prop is_pos flt =
+      let atom = Atom (FF flt) in
+      if is_pos then atom else Not (atom)
+
+    let fault_atoms_to_prop pos_flts neg_flts =
+      let pos = FaultAtomSet.elements pos_flts
+      |> List.map (fault_atom_to_prop true) in
+      let neg = FaultAtomSet.elements neg_flts
+      |> List.map (fault_atom_to_prop false) in
+      And(pos @ neg)
+
+    let fenv_to_prop f =
+      List.map ( fun (loc, value_set) ->
+        VSet.elements value_set
+          |> List.map ( fun value -> Atom(LV(Loc loc, value)))
+          |> fun prop -> Or( prop )
+      ) f
+      |> fun prop -> And( prop )
+
+    let check ~is_pos f (pos_flts,neg_flts) =
+      let value_prop = fenv_to_prop f in
+      let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
+      let prop = match value_prop, fault_prop with
+      | (Atom _ as l), (Atom _ as r) -> And [l; r;]
+      | (Atom _ as l), And r -> And (l :: r)
+      | And l, (Atom _ as r) -> And (l @ [r])
+      | And l, And r -> And (l @ r)
+      | _,_ -> Warn.fatal "error in connect fault and value propositions" in
+      if is_pos then ExistsState ( prop ) else NotExistsState ( prop )
+
+    let exist_true = ExistsState (And [])
+
+    let observe f (pos_flts,neg_flts) =
+      let value_location = List.map ( fun (loc, _) -> LocationsItem.Loc ((Loc loc),TestType.TyDef)) f in
+      let fault_location = FaultAtomSet.union pos_flts neg_flts
+        |> FaultAtomSet.elements
+        |> List.map ( fun fault -> LocationsItem.Fault fault ) in
+      value_location @ fault_location
+
+    let rec run_cond_to_constr_gen_cond = function
+      | Run.Atom (loc,v) -> Atom ( LV (Loc loc, I v))
+      | Run.Or (cond) -> Or (List.map run_cond_to_constr_gen_cond cond)
+      | Run.And (cond) -> And (List.map run_cond_to_constr_gen_cond cond)
+
+    let run evts m (pos_flts,neg_flts) =
+      let value_prop = Run.run evts m
+      |> run_cond_to_constr_gen_cond in
+      let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
+      ForallStates (Or [fault_prop; value_prop])
 
 (* Extract ptes *)
     let extract_ptes =
-      List.fold_left
-        (fun k (loc,vset) ->
-          if
-            VSet.exists (function | P _ -> true | (I _|S _) -> false)
-              vset then
-            loc::k
-          else k)
-        []
+      List.filter_map
+        (fun (loc,vset) ->
+          if VSet.exists (function
+            | I value ->
+              begin match value with C.C.Value.PteValue _ -> true | _ -> false end
+            | _ -> false
+          ) vset
+          then Some loc
+          else None)
   end
