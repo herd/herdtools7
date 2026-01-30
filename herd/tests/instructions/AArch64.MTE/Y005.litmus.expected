@@ -1,0 +1,10 @@
+Test Y005 Required
+States 1
+0:X1=x:green;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=x:green)
+Observation Y005 Always 1 0
+Hash=17feed3f0120faed3a5af6d24ea5e3d2
+
