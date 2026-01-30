@@ -60,9 +60,11 @@ module type S = sig
 
   type solution
 
-  type answer =
+  type 'a answer_gen =
     | NoSolns
-    | Maybe of solution *  cnstrnts
+    | Maybe of 'a
+
+  type answer = (solution * cnstrnts) answer_gen
 
   val pp_answer : answer -> string
 
@@ -70,6 +72,10 @@ module type S = sig
   val get_failed :  cnstrnts -> cnstrnt option
 
   val solve : cnstrnt list -> answer
+
+  type solver_state
+  val make_solver_state : cnstrnt list -> solver_state
+  val hint_solve_one : solver_state -> atom -> atom -> unit answer_gen
 end
 
 module type Config = sig
@@ -161,10 +167,11 @@ and type state = A.state =
 
     type solution = V.solution
 
-    type answer =
+    type 'a answer_gen =
       | NoSolns
-      | Maybe of solution * cnstrnts
+      | Maybe of 'a
 
+    type answer = (solution * cnstrnts) answer_gen
 
     let pp_answer =
 
@@ -554,7 +561,7 @@ let get_failed cns =
           match c with
           | Assign (V.Var csym,_) -> env_add csym c m
           | Assign (V.Val _,_)|Warn _|Failed _ -> m)
-       VarEnv.empty cs
+        VarEnv.empty cs
       |> VarEnv.map EqSet.of_list
 
     module EqRel = InnerRel.Make(OrderedEq)
@@ -567,6 +574,8 @@ let get_failed cns =
         ()
         ns r
 
+    (** [eq2g cs] constructs the map from an equation to the equations that use
+        a variable used by [c], from the equations in [cs]. *)
     let eq2g cs: EqRel.t =
       (* [get_succs m c] returns the set of successors in [m] of all the
          variables used by [c]. *)
@@ -689,4 +698,27 @@ let get_failed cns =
         solve_std cs
       else
         solve_topo cs
+
+    type solver_state = EqRel.t * cnstrnt list
+
+    let make_solver_state csn: solver_state =
+      let _, csn = normalize_vars csn in
+      let ccm = eq2g csn in
+      (ccm, csn)
+
+    let hint_solve_one ((ccm, old_csn) : solver_state) v1 v2 =
+      if C.old_solver then
+        solve_std (Assign (v1, Atom v2) :: old_csn) |> function
+        | NoSolns -> NoSolns
+        | Maybe _ -> Maybe ()
+      else
+        match (v1, v2) with
+        | V.Val c1, V.Val c2 -> if V.Cst.eq c1 c2 then Maybe () else NoSolns
+        | V.Var _, V.Var _ -> Maybe ()
+        | V.Var csym, V.Val cst | V.Val cst, V.Var csym -> (
+            let sol = V.Solution.singleton csym cst in
+            try
+              let _sol, _cs = EqRel.scc_kont topo_step (sol, []) old_csn ccm in
+              Maybe ()
+            with Contradiction -> NoSolns)
   end
