@@ -42,8 +42,8 @@ let asl_po = as_transitive (partial_po)
 (*********************)
 
 let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = inter_transitive3(AArch64, asl_data, AArch64 | ADDR)
-let asl_ctrl_deps = inter_transitive3(B, (asl_data | asl_iico_ctrl), AArch64)
+let asl_deps = [AArch64]; asl_data+; [AArch64 | ADDR]
+let asl_ctrl_deps = [B]; (asl_data | asl_iico_ctrl)+; [AArch64]
 
 (**********************************)
 (* Intra-instruction dependencies *)
