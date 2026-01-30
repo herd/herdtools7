@@ -1195,21 +1195,6 @@ module Make
     let oa_changes = check_two (fun w p -> not (U.same_oa w p))
     and at_least_one_writable = check_two U.writable2
 
-    (*
-     * The relation po is to interpreted as a transitive relation,
-     * this primitive is much more efficient when po+ is huge.
-     *)
-    let inter_transitive arg = match arg with
-      |  V.Tuple [V.Rel po; V.Rel loc; ] ->
-          let module ME = E.EventRel.M in
-          let m = ME.to_map  po in
-          let r =
-            E.EventRel.filter
-              (fun  p -> ME.exists_path p m)
-              loc in
-          V.Rel r
-      | _ -> arg_mismatch ()
-
     let as_transitive =
       function
       | V.Rel r -> V.TransRel r
@@ -1239,8 +1224,7 @@ module Make
          "domain",domain;
          "range",range;
          "fail",fail;
-         "inter_transitive", inter_transitive;
-          "as_transitive", as_transitive;
+         "as_transitive", as_transitive;
        ]
 
 
@@ -1436,6 +1420,33 @@ module Make
                       error env.EV.silent loc
                         "cannot perform union on type '%s'" (pp_typ ty)
             with Exit -> Unv end
+
+        | Op (_,
+              Seq,
+              [ Op1(l1, ToId, e1); Op1(l2, Plus, e2); Op1 (l3, ToId, e3) ])
+          ->
+          let s1 =
+            match eval_ord env e1 with
+            | V.Set s -> s
+            | v ->
+              error env.EV.silent l1 "Typing error: expected a set, got: %s."
+                (pp_type_val v)
+          and r =
+            match eval true env e2 with
+            | V.Rel r | V.TransRel r -> r
+            | v ->
+              error env.EV.silent l2 "Typing error: expected a rel, got: %s."
+                (pp_type_val v)
+          and s2 =
+            match eval_ord env e3 with
+            | V.Set s -> s
+            | v ->
+              error env.EV.silent l3 "Typing error: expected a set, got: %s."
+                (pp_type_val v)
+          in
+          let r = E.EventRel.transitive_closure_filtered s1 s2 r in
+          V.Rel r
+
         | Op (loc,Seq,es) ->
             begin try
               let vs = List.map  (eval_rels env) es in
