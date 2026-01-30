@@ -7,7 +7,7 @@ States 4
 Loop Ok
 Witnesses
 Positive: 3 Negative: 9
-Flag Assuming-common-inner-shareable-domain
+Flag Shareability-argument-for-DMB-is-deprecated
 Condition exists (0:R2=0 /\ 1:R0=0)
 Observation A018 Sometimes 3 9
 Hash=3d5fb7cad4c9bc287ca8875afd5d42ec
