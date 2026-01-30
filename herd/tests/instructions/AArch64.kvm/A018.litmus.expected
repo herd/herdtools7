@@ -4,7 +4,7 @@ States 1
 Loop Ok
 Witnesses
 Positive: 1 Negative: 0
-Flag Assuming-common-inner-shareable-domain
+Flag Maintnenace-scope-for-DSB-ST-is-deprecated
 Condition forall (0:X0=1)
 Observation A018 Always 1 0
 Hash=218f088f0c448c84eeeb7c12fcb86c43
