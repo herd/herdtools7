@@ -967,17 +967,6 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \end{mathpar}
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
-\subsubsection{Comments}
-\identr{YCDB}
-
-A conditional expression evaluates to its \texttt{then} expression if the
-condition expression evaluates to $\True$. If the condition expression
-evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
-sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
-the conditional expression evaluates to the corresponding \texttt{elsif}
-expression. If no \texttt{elsif} expression evaluates to $\True$ the
-conditional expression evaluates to the \texttt{else} expression.
-
 \hypertarget{def-callexpressionterm}{}
 \section{Call Expressions\label{sec:CallExpressions}}
 \ASLListing{Call expressions}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
