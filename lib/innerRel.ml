@@ -72,6 +72,7 @@ module type S =  sig
 (* Does not detect cycles either *)
   val transitive_to_map : t -> Elts.t M.ME.t
   val transitive_closure : t -> t
+  val transitive_closure_filtered : Elts.t -> Elts.t -> t -> t
 
 (* Direct cycles *)
   val is_reflexive : t -> bool
@@ -552,6 +553,12 @@ and module Elts = MySet.Make(O) =
     let transitive_to_map r = M.to_map r |> M.tr
 
     let transitive_closure r = transitive_to_map r |> M.of_map
+
+    let transitive_closure_filtered s1 s2 r =
+      transitive_to_map r
+      |> M.ME.filter (fun e1 _ -> Elts.mem e1 s1)
+      |> M.ME.map (fun s2' -> Elts.inter s2' s2)
+      |> M.of_map
 
 (* Acyclicity check *)
 

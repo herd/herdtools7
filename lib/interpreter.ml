@@ -1216,6 +1216,16 @@ module Make
       | V.TransRel _ as v -> v
       | _ -> arg_mismatch ()
 
+    let inter_transitive3 =
+      function
+      | V.Tuple [ V.Set s1; V.Rel rel; V.Set s2 ] ->
+          let module ME = E.EventRel.M in
+          let r =
+            E.EventRel.transitive_closure_filtered s1 s2 rel
+          in
+          V.Rel r
+      | _ -> arg_mismatch ()
+
     let add_primitives ks m =
       add_prims m
         [
@@ -1240,7 +1250,8 @@ module Make
          "range",range;
          "fail",fail;
          "inter_transitive", inter_transitive;
-          "as_transitive", as_transitive;
+         "inter_transitive3", inter_transitive3;
+         "as_transitive", as_transitive;
        ]
 
 
