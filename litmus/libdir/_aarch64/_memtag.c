@@ -28,6 +28,12 @@
 #define ID_AA64PFR1_EL1_MTE_ASYNC      0b0011
 #define ID_AA64PFR1_EL1_MTE_ASYMM      ID_AA64PFR1_EL1_MTE_ASYNC
 
+#define GCR_EL1_EXCLUDE_SHIFT          0
+#define GCR_EL1_RNDR_SHIFT             16
+
+#define RGSR_EL1_TAG_SHIFT             0
+#define RGSR_EL1_SEED_SHIFT            8
+
 static uint64_t get_sctlr_el1(void)
 {
   uint64_t r;
@@ -40,6 +46,15 @@ static void set_sctlr_el1(uint64_t v)
   asm volatile("msr sctlr_el1,%x0\n" ::"r"(v));
 }
 
+static void set_rgsr_el1(uint64_t v)
+{
+  asm volatile("msr rgsr_el1,%x0\n" ::"r"(v));
+}
+
+static void set_gcr_el1(uint64_t v)
+{
+  asm volatile("msr gcr_el1,%x0\n" ::"r"(v));
+}
 
 static uint64_t get_mte(void)
 {
@@ -73,11 +88,22 @@ void mte_init(tag_check_key tag_check)
     uint64_t tcf = (uint64_t)tag_check;
     uint64_t sctlr = get_sctlr_el1();
     uint64_t tcr = get_tcr_el1();
+    uint64_t rgsr = 0;
+    uint64_t gcr = 0;
 
     sctlr |= SCTLR_EL1_ATA | SCTLR_EL1_ATA0;
     sctlr |= (tcf << SCTLR_EL1_TCF_SHIFT) | (tcf << SCTLR_EL1_TCF0_SHIFT);
 
     set_sctlr_el1(sctlr);
+
+    gcr |= 1UL << GCR_EL1_RNDR_SHIFT;
+    gcr |= 0xff00UL << GCR_EL1_EXCLUDE_SHIFT;
+
+    set_gcr_el1(gcr);
+
+    rgsr |= 1UL << RGSR_EL1_TAG_SHIFT; // :red
+    rgsr |= 42UL << RGSR_EL1_SEED_SHIFT;
+    set_rgsr_el1(rgsr);
 
     tcr |= TCR_TBI0;
     set_tcr_el1(tcr); // also issues isb and flushes tlb
