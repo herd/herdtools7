@@ -186,6 +186,15 @@ module Make(O:Config)(Tar:Tar.S) =
         | Mode.PreSi|Mode.Std -> O.platform in
       do_cpy fnames (Filename.concat platform name) name ext
 
+(* Copy from platform subdirectory to shared library *)
+    let cpy_shared_platform fnames name ext =
+      let name = sprintf "platform_%s" name in
+      let platform =
+        match O.mode with
+        | Mode.Kvm -> "_kvm" ^ O.platform
+        | Mode.PreSi|Mode.Std -> O.platform in
+      do_cpy fnames (Filename.concat platform name) (shared_lib ^ name) ext
+
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
     | AIX -> "_aix_affinity"
