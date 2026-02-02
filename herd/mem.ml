@@ -742,123 +742,106 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* Step 1. make rfmap for registers and reservations *)
 
 
-let get_loc e = match E.location_of e with
-| Some loc -> loc
-| None -> assert false
+    let get_loc e =
+      match E.location_of e with Some loc -> loc | None -> assert false
 
-and get_read e = match E.read_of e  with
-| Some v -> v
-| None -> assert false
+    and get_read e =
+      match E.read_of e with Some v -> v | None -> assert false
 
-and get_written e = match E.written_of e with
-| Some v -> v
-| None -> assert false
+    and get_written e =
+      match E.written_of e with Some v -> v | None -> assert false
 
+    let map_loc_find loc m = try U.LocEnv.find loc m with Not_found -> []
 
-
-
-(* Add (local) final edges in rfm, ie for all (register) location, find the last (po+iico) store to it *)
-
-let add_finals es =
-    U.LocEnv.fold
-      (fun loc stores k ->
-        let stores =
-          List.filter
-            (fun x -> not (E.EventSet.mem x (es.E.speculated))) stores in
-      match stores with
-      | [] -> k
-      | ew::stores ->
-          let last =
-            List.fold_right
-              (fun ew0 ew ->
-                if U.is_before_strict es ew0 ew then ew
-                else begin
-                  (* If writes to a given register by a given thread
-                     are not totally ordered, it gets weird to define
-                     the last or 'final'register write *)
-                  if not (U.is_before_strict es ew ew0) then
-                    Warn.fatal
-                      "Ambiguous po for register %s" (A.pp_location loc) ;
-                  ew0
-                end)
-              stores ew in
-          S.RFMap.add (S.Final loc) (S.Store last) k)
+    let get_rf_value test read = function
+      | S.Store e -> get_written e
+      | S.Init ->
+        A.look_address_in_state test.Test_herd.init_state (get_loc read)
 
 (*******************************)
 (* Compute rfmap for registers *)
 (*******************************)
 
-let map_loc_find loc m =
-  try U.LocEnv.find loc m
-  with Not_found -> []
+    let check_regs_is_before_strict = false
 
-let match_reg_events es =
-  let loc_loads = U.collect_reg_loads es
-  and loc_stores = U.collect_reg_stores es
-  (* Share computation of the iico relation *)
-  and is_before_strict =  U.is_before_strict es in
+    (** Builds and fold the rfmap for registers.
+        For every rf pair found, add_eq is called with the current csn0. *)
+    let match_reg_events test add_eq es csn0 =
+      (* We fold over the event structure once, following po.
+         For each written location, we store the last write that happens there
+         in reg_state. *)
+      (* add_one_read is the folder when we found a register load *)
+      let add_one_read e (reg_state, rfm, csn) =
+        let rf =
+          match U.LocEnv.find_opt (get_loc e) reg_state with
+          | None -> S.Init
+          | Some e' ->
+            let () =
+              if check_regs_is_before_strict then
+                assert (U.is_before_strict es e' e)
+            in
+            S.Store e'
+        and wt = S.Load e in
+        let rfm = S.RFMap.add wt rf rfm in
+        let csn = add_eq (test, es, rfm) wt rf csn in
+        (reg_state, rfm, csn)
+      (* add_one_store is the folder when we found a register write *)
+      and add_one_store e (reg_state, rfm, csn) =
+        let () =
+          if check_regs_is_before_strict then
+            match U.LocEnv.find_opt (get_loc e) reg_state with
+            | None -> ()
+            | Some e' -> assert (U.is_before_strict es e' e)
+        in
+        let reg_state = U.LocEnv.add (get_loc e) e reg_state in
+        (reg_state, rfm, csn)
+      in
+      (* Initial state *)
+      let reg_state0 = U.LocEnv.empty in
+      let rfm0 = S.RFMap.empty in
+      (* Main loop on events. *)
+      let (reg_state, rfm, csn) =
+        E.EventSet.fold
+          (fun e acc ->
+             if E.is_reg_any e then
+               if E.is_reg_store_any e then add_one_store e acc
+               else
+                 let () = assert (E.is_reg_load_any e) in
+                 add_one_read e acc
+             else acc)
+          es.E.events (reg_state0, rfm0, csn0)
+      in
+      (* We add the finals by iterating over the final register state. *)
+      let (rfm, csn) =
+        U.LocEnv.fold
+          (fun loc e (rfm, csn) ->
+             let wt = S.Final loc and rf = S.Store e in
+             let rfm = S.RFMap.add wt rf rfm in
+             let csn = add_eq (test, es, rfm) wt rf csn in
+             (rfm, csn))
+          reg_state (rfm, csn)
+      in
+      (rfm, csn)
 
-(* For all loads find the right store, the one "just before" the load *)
-  let rfm =
-    U.LocEnv.fold
-      (fun loc loads k ->
-        let stores = map_loc_find loc loc_stores in
-        List.fold_right
-          (fun er k ->
-            let rf =
-              List.fold_left
-                (fun rf ew ->
-                  if is_before_strict ew er then
-                    match rf with
-                    | S.Init -> S.Store ew
-                    | S.Store ew0 ->
-                        if U.is_before_strict es ew0 ew then
-                          S.Store ew
-                        else begin
-                          (* store order is total *)
-                            if not (is_before_strict ew ew0) then begin
-                              Printf.eprintf "Not ordered stores %a and %a\n"
-                                E.debug_event ew0
-                                E.debug_event ew ;
-                              assert false
-                            end ;
-                          rf
-                        end
-                  else rf)
-                S.Init stores in
-            S.RFMap.add (S.Load er) rf k)
-          loads k)
-      loc_loads S.RFMap.empty in
-(* Complete with stores to final state *)
-  add_finals es loc_stores rfm
+    (* Add a constraint for two values *)
 
-
-
-    let get_rf_value test read rf = match rf with
-    | S.Init ->
-        let loc = get_loc read in
-        let look_address =
-          A.look_address_in_state test.Test_herd.init_state in
-        begin
-          try look_address loc with A.LocUndetermined -> assert false
-        end
-    | S.Store e -> get_written e
-
-(* Add a constraint for two values *)
-
-(* Optimization: adding constraint v1 := v2 should always work *)
+    (* Optimization: adding constraint v1 := v2 should always work *)
 
     exception Contradiction
 
+    let assign v1 v2 eqs = VC.Assign (v1, VC.Atom v2) :: eqs
+
+    (* Add an equation based on a read/from equality between two values. *)
     let add_eq v1 v2 eqs =
-      if V.is_var_determined v1 then
-        if V.is_var_determined v2 then
-          if V.equal v1 v2 then eqs
-          else raise Contradiction
-        else (* Here, v1 and v2 necessarily differ *)
-          VC.Assign (v2, VC.Atom v1)::eqs
-      else if V.equal v1 v2 then eqs
-      else VC.Assign (v1, VC.Atom v2)::eqs
+      match v1, v2 with
+      | V.Var _, V.Val _ -> assign v1 v2 eqs
+      | V.Val _, V.Var _ -> assign v2 v1 eqs
+      | V.Var c1, V.Var c2 ->
+        if V.equal_csym c1 c2 then eqs else assign v1 v2 eqs
+      | V.Val c1, V.Val c2 ->
+        if V.Cst.eq c1 c2 then eqs else raise Contradiction
+
+    (* Debugging information *)
 
     let pp_nosol lvl test es rfm =
       let module PP = Pretty.Make(S) in
@@ -868,40 +851,36 @@ let match_reg_events es =
 
     let debug_solver = C.debug.Debug_herd.solver > 0
 
-    let do_solve_regs test es csn =
+    (* Add the equations given by one read-from register pairing *)
+    let add_eq_for_rf_reg (test, es, rfm) wt rf csn =
+      match wt with
+      | S.Final _ -> csn
+      | S.Load load ->
+        let v_loaded = get_read load
+        and v_stored = get_rf_value test load rf in
+        try add_eq v_loaded v_stored csn
+        (* The following shouldn't happen, unless mistake in the semantics. *)
+        with Contradiction ->
+          let loc = Misc.as_some (E.location_of load) in
+          let () =
+            Printf.eprintf "Contradiction on reg %s: loaded %s vs. stored %s\n"
+              (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored)
+          in
+          let module PP = Pretty.Make(S) in
+          let () = PP.show_es_rfm test es rfm in
+          assert false
 
-      let rfm = match_reg_events es in
-      let csn =
-        S.RFMap.fold
-          (fun wt rf csn -> match wt with
-          | S.Final _ -> csn
-          | S.Load load ->
-              let v_loaded = get_read load in
-              let v_stored = get_rf_value test load rf in
-              try add_eq v_loaded v_stored csn
-              with Contradiction ->
-                let loc = Misc.as_some (E.location_of load) in
-                Printf.eprintf
-                  "Contradiction on reg %s: loaded %s vs. stored %s\n"
-                  (A.pp_location loc)
-                  (A.V.pp_v v_loaded)
-                  (A.V.pp_v v_stored) ;
-                let module PP = Pretty.Make(S) in
-                PP.show_es_rfm test es rfm ;
-                assert false)
-          rfm csn in
-      if  debug_solver then
-        prerr_endline "++ Solve  registers" ;
+    let do_solve_regs test es csn =
+      let (rfm, csn) = match_reg_events test add_eq_for_rf_reg es csn in
+      let () = if debug_solver then prerr_endline "++ Solve  registers" in
       match VC.solve csn with
       | VC.NoSolns ->
-         if debug_solver then
-           pp_nosol "register" test es rfm ;
-         None
+        let () = if debug_solver then pp_nosol "register" test es rfm in
+        None
       | VC.Maybe (sol,csn) ->
-          Some
-            (E.simplify_vars_in_event_structure sol es,
-             S.simplify_vars_in_rfmap sol rfm,
-             csn)
+        let es = E.simplify_vars_in_event_structure sol es
+        and rfm = S.simplify_vars_in_rfmap sol rfm in
+        Some (es, rfm, csn)
 
     let solve_regs test es csn =
       match do_solve_regs test es csn with
@@ -914,7 +893,7 @@ let match_reg_events es =
             PP.show_es_rfm test es rfm
           end ;
           r
-      | None ->  None
+      | None -> None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
