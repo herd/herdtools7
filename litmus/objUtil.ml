@@ -236,8 +236,8 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames =
         if O.stdio then fnames
         else
-          let fnames = cpy_platform fnames "io" ".c" in
-          let fnames = cpy_platform fnames "io" ".h" in
+          let fnames = cpy_shared_platform fnames "io" ".c" in
+          let fnames = cpy_shared_platform fnames "io" ".h" in
           let fnames = cpy_shared fnames "litmus_io" ".c" in
           let fnames = cpy_shared fnames "litmus_io" ".h" in
           fnames in
