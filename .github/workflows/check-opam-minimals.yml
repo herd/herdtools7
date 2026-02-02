@@ -5,9 +5,9 @@ on:
   pull_request:
     paths:
       # This workflow file
-      - '.github/workflow/check-opam-minimals.yml'
+      - '.github/workflows/check-opam-minimals.yml'
       # Definition of herdtools project
-      - 'herdtools.opam'
+      - 'herdtools7.opam'
       # Definition of aslref.opam
       - 'asllib/dune-project'
 
