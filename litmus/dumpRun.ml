@@ -126,25 +126,34 @@ end = struct
       fprintf chan "\n"
     end ;
     begin
+      fprintf chan "SHARED_LIB = $(SRCDIR)/shared_lib\n" ;
+      fprintf chan "GCCOPTS += -I $(SHARED_LIB)\n\n"
+    end ;
+    begin
       match Cfg.mode with
       | Mode.Std|Mode.PreSi -> ()
       | Mode.Kvm ->
          let utils =
-           ["litmus_rand.o"; "utils.o"; "kvm_timeofday.o";] in
+           ["litmus_rand.c"; "utils.c"; "kvm_timeofday.c";] in
          let utils =
            if Cfg.stdio then utils
            else
-             "platform_io.o" :: "litmus_io.o" :: utils in
+             "platform_io.c" :: "litmus_io.c" :: utils in
          let utils =
            if flags.Flags.memtag then
-             "memtag.o"::utils
+             "memtag.c"::utils
            else utils in
          let utils =
            if flags.Flags.pac then
-             "auth.o"::utils
+             "auth.c"::utils
            else utils in
-         fprintf chan "UTILS=%s\n"
-           (String.concat " " utils)
+         let shared_utils =
+           List.map (fun util -> "$(SHARED_LIB)/" ^ util) utils in
+         fprintf chan "UTILS_SRC = %s\n\n"
+           (String.concat " " shared_utils)
+    end ;
+    begin
+      fprintf chan "UTILS_OBJ = $(UTILS_SRC:.c=.o)\n\n"
     end ;
     ()
 

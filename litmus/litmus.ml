@@ -380,11 +380,6 @@ let () =
       let asmcommentaslabel = !asmcommentaslabel
     end in
     let module T = Top_litmus.Top (Config) (Tar) in
-    let () =
-      match sources with
-      | [] -> raise (Misc.UserError "At least one litmus file must be provided")
-      | _ :: _ -> ()
-    in
     T.from_files sources ;
     if not (Option.is_out ()) then MySys.rmdir outname ;
     exit 0
