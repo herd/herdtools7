@@ -26,7 +26,5 @@ cleansource:
 	$(OBJCOPY) -O binary $^ $@
 	@chmod a-x $@
 
-.PRECIOUS: $(UTILS_OBJ)
-
 $(SHARED_SRC_DIR)/%.o: $(SHARED_SRC_DIR)/%.c
 	$(CC) $(GCCOPTS) -c -o $@ $<

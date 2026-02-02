@@ -139,18 +139,18 @@ end = struct
       | Mode.Std|Mode.PreSi -> ()
       | Mode.Kvm ->
          let utils =
-           ["litmus_rand.o"; "utils.o"; "kvm_timeofday.o";] in
+           ["litmus_rand.c"; "utils.c"; "kvm_timeofday.c";] in
          let utils =
            if Cfg.stdio then utils
            else
-             "platform_io.o" :: "litmus_io.o" :: utils in
+             "platform_io.c" :: "litmus_io.c" :: utils in
          let utils =
            if flags.Flags.memtag then
-             "memtag.o"::utils
+             "memtag.c"::utils
            else utils in
          let utils =
            if flags.Flags.pac then
-             "auth.o"::utils
+             "auth.c"::utils
            else utils in
          fprintf chan "UTILS = %s\n\n"
            (String.concat " " utils)
