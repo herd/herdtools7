@@ -1461,10 +1461,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
       let tr_execution ii eqs_test (conc, cs, set_pp, vbpp) =
         profile "translate execution" @@ fun () ->
-        let get_cat_show get x =
-          match StringMap.find_opt x set_pp with
-          | Some e -> get e
-          | None -> get ESet.empty in
+        let get_cat_show x =
+          StringMap.find_opt x set_pp |> Option.value ~default:ESet.empty in
         let () = if _dbg then Printf.eprintf "Translating event structure:\n" in
         let () =
           if _dbg then (
@@ -1475,36 +1473,30 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   (ASLE.Act.pp_action e.ASLE.action))
               conc.ASLS.str.ASLE.events)
         in
-        let events = get_cat_show ESet.to_seq "AArch64" in
+        let events = get_cat_show "AArch64" in
         let get_port =
-          let addr_set =
-            get_cat_show Misc.identity "AArch64_ADDR"
-          and data_set =
-            get_cat_show Misc.identity "AArch64_DATA" in
-        fun e ->
-          if ASLE.EventSet.mem e addr_set then Port.Addr
-          else if ASLE.EventSet.mem e data_set then Port.Data
-          else Port.No in
+          let addr_set = get_cat_show "AArch64_ADDR"
+          and data_set = get_cat_show  "AArch64_DATA" in
+          fun e ->
+            if ASLE.EventSet.mem e addr_set then Port.Addr
+            else if ASLE.EventSet.mem e data_set then Port.Data
+            else Port.No in
         let is_bcc =
-          let bcc = get_cat_show Misc.identity "AArch64_BCC" in
+          let bcc = get_cat_show "AArch64_BCC" in
           fun e -> ASLE.EventSet.mem e bcc in
         let () = if _dbg then Printf.eprintf "\t- events: " in
-        let event_list = List.of_seq events in
         let check_spurious = check_spurious ii in
-        let spurious_locs,event_to_monad_map =
-          let seq =
-            Seq.filter_map (event_to_monad ii check_spurious is_bcc get_port) events in
-          let locs =
-            Seq.filter_map (fun (_,(loc,_))  -> loc) seq
-            |> List.of_seq
-          and map =
-            Seq.map (fun (e,(_,m)) -> (e,m)) seq
-            |> EMap.of_seq in
-          locs,map
-        in
-        let events_m =
-          let folder _e1 m1 acc = m1 ||| acc in
-          EMap.fold folder event_to_monad_map (return ())
+        let spurious_locs, event_to_monad_map, events_m =
+          ESet.fold
+            (fun e (locs, map, monad) ->
+               match event_to_monad ii check_spurious is_bcc get_port e with
+               | None -> (locs, map, monad)
+               | Some (e, (l_opt, m)) ->
+                 let locs = match l_opt with None -> locs | Some l -> l :: locs
+                 and map = EMap.add e m map
+                 and monad = monad ||| m in
+                 (locs, map, monad))
+            events ([], EMap.empty, return ())
         in
         let () = if _dbg then Printf.eprintf "\n" in
         let translate_maybe_rel comb name =
@@ -1520,7 +1512,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         let iico_ctrl = translate_maybe_rel M.( >>*= ) aarch64_iico_ctrl in
         let iico_order = translate_maybe_rel M.bind_order aarch64_iico_order in
         let branch =
-          let one_event bds event =
+          let one_event event bds =
             match event.ASLE.action with
             | ASLS.Act.Access
               (Dir.W, ASLS.A.Location_reg (_, ASLBase.ArchReg reg), v, _, _)
@@ -1539,8 +1531,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                     (ASLS.A.pp_location loc) (ASLS.A.V.pp_v v) ;
                 bds
             | _ -> bds in
-          let bds = List.fold_left one_event [] event_list in
-          let finals = get_cat_show  Misc.identity "AArch64_Finals" in
+          let bds = ESet.fold one_event events [] in
+          let finals = get_cat_show "AArch64_Finals" in
           let pc =
             let n_pc = (* Count writes to PC *)
               List.fold_left
@@ -1575,7 +1567,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | Some v -> B.Jump (B.Addr v,bds)
           | None ->
               (* All ASL Faults are faults, no SVC interruption for now *)
-              let is_fault =  List.exists ASLE.is_fault event_list in
+              let is_fault = ESet.exists ASLE.is_fault events in
               if is_fault then B.fault bds else B.Next bds
         in
         let () =
