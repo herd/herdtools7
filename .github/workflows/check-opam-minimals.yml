@@ -3,11 +3,11 @@ name: Test build with mininal versions
 on:
   # On a pull request that edits one of the following:
   pull_request:
-    path:
+    paths:
       # This workflow file
-      - '.github/workflow/check-opam-minimals.yml'
+      - '.github/workflows/check-opam-minimals.yml'
       # Definition of herdtools project
-      - 'herdtools.opam'
+      - 'herdtools7.opam'
       # Definition of aslref.opam
       - 'asllib/dune-project'
 
