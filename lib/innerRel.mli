@@ -116,7 +116,7 @@ module type S =  sig
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
 (* Strongly connected components, processed in inverse dependency order. *)
-  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
+  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> elt0 list -> t -> 'a
 
 (* Is the parent relation of a hierarchy *)
   val is_hierarchy : Elts.t -> t -> bool
