@@ -540,10 +540,10 @@ module Make
              O.o "}"
           end ;
           O.o ""
-        end else if Cfg.is_kvm then begin
-          O.o "static void set_fault_vector(int role) { }" ;
-          O.o ""
-        end
+          end else if Cfg.is_kvm then begin
+            O.o "static void set_fault_vector(int role) { }" ;
+            O.o ""
+          end
 
 (* User mode *)
       let dump_user_stacks procs_user = match procs_user with
