@@ -606,6 +606,12 @@ type mask = {
   initial_string : string;
 }
 
+let mask_equal m1 m2 =
+  Int.equal m1.length m2.length
+  && String.equal m1.set m2.set
+  && String.equal m2.unset m2.unset
+  && String.equal m2.specified m2.specified
+
 let mask_length mask = mask.length
 
 let preprocess_mask_string s =
