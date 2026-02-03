@@ -119,7 +119,7 @@ module type S =  sig
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
 (* Strongly connected compoments, processed in inverse dependency order. *)
-  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
+  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> elt0 list -> M.map -> 'a
 
 
 (* Is the parent relation of a hierarchy *)
@@ -350,6 +350,11 @@ and module Elts = MySet.Make(O) =
             visit : int NodeMap.t;
             stack : elt0 list; }
 
+        let init_state =
+          { id = 0;
+            visit = NodeMap.empty;
+            stack = [] }
+
         let rec pop_until n ns =
           match ns with
           | [] -> assert false
@@ -398,18 +403,15 @@ and module Elts = MySet.Make(O) =
           let (res,_) =
             ME.fold
               (fun n _ r -> let _,r = dfs n r in r)
-              m
-              (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
+              m (res, init_state) in
           res
 (* Graph is given as set of notes + relation *)
-        let scan_nodes_rel kont kont_scc res nodes edges =
-          let m = to_map edges in
+        let scan_nodes_rel kont kont_scc res nodes m =
           let dfs = dfs kont kont_scc m in
           let (res,_) =
-            Elts.fold
-              (fun n r -> let _,r = dfs n r in r)
-              nodes
-              (res,{id=0; visit=NodeMap.empty; stack=[];} ) in
+            List.fold_left (fun r n -> let _, r = dfs n r in r)
+              (res, init_state) nodes
+          in
           res
       end
 
