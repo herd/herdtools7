@@ -224,15 +224,14 @@ and type state = A.state =
       | Terop (_,v1,v2,v3) ->
          fold_var f v1 t |> fold_var f v2  |> fold_var f v3
 
-    let add_vars_expr = fold_vars_expr Part.add
-    and add_var = fold_var Part.add
+    let fold_vars_eq f e t =
+      match e with
+      | Assign (v, e) -> fold_var f v t |> fold_vars_expr f e
+      | Failed _ | Warn _ -> t
 
-    let add_vars_cn t cn = match cn with
-    | Assign (v,e) ->
-        add_var v t |> add_vars_expr e
-    | Failed _ | Warn _ -> t
-
-    let add_vars_cns cns = List.fold_left add_vars_cn (Part.create ()) cns
+    let add_vars_cn part cn = fold_vars_eq Part.add cn part
+    let add_vars_from part cns = List.fold_left add_vars_cn part cns
+    let add_vars_cns cns = add_vars_from (Part.create ()) cns
 
 (* Perform union-find *)
 
@@ -397,13 +396,11 @@ and type state = A.state =
     | Failed _ | Warn _ -> empty
 
 (* merge of solutions, with consistency check *)
-    let add_sol x cst sol =
-      try
-        let cst' = V.Solution.find x sol in
-        if V.Cst.eq cst cst' then sol
-        else raise Contradiction
-      with
-      | Not_found -> V.Solution.add x cst sol
+    let add_sol x cst =
+      V.Solution.update x @@ function
+      | None -> Some cst
+      | Some cst' ->
+        if V.Cst.eq cst cst' then Some cst' else raise Contradiction
 
     let merge sol1 sol2 = V.Solution.fold add_sol sol1 sol2
 
@@ -541,6 +538,9 @@ let get_failed cns =
 
     module VarEnv = A.V.Solution
 
+    let env_find m csym acc =
+      try VarEnv.find csym m :: acc with Not_found -> acc
+
     let env_add csym c =
       VarEnv.update csym @@
         function
@@ -568,18 +568,12 @@ let get_failed cns =
         ns r
 
     let eq2g cs: EqRel.t =
-      let get_succs m e =
-        fold_vars_expr
-          (fun csym acc -> try VarEnv.find csym m :: acc with Not_found -> acc)
-          e []
-        |> EqSet.unions
-      in
+      (* [get_succs m c] returns the set of successors in [m] of all the
+         variables used by [c]. *)
+      let get_succs m c = fold_vars_eq (env_find m) c [] |> EqSet.unions in
+      (* [m] maps a symbolic variable to the equations that use it. *)
       let m = var2eq cs in
-      List.fold_left
-        (fun map c ->
-           match c with
-           | Assign (_, e) -> EqRel.add_set c (get_succs m e) map
-           | Warn _ | Failed _ -> map)
+      List.fold_left (fun map c -> EqRel.add_set c (get_succs m c) map)
         EqRel.empty cs
 
     (** [solve_one c sol eqs], where c is an equation, [sol] is a solution (map
@@ -604,8 +598,7 @@ let get_failed cns =
                if debug > 1 then
                  Printf.eprintf "%s\n%!" (pp_eq (Assign (v,e))) in
              match v,e with
-             | V.Var x,Atom (V.Val atom) ->
-                add_sol x atom sol, eqs
+             | V.Var x,Atom (V.Val atom) -> add_sol x atom sol, eqs
              | V.Val c1,Atom (V.Val c2) ->
                 if V.Cst.eq c1 c2 then sol, eqs
                 else raise Contradiction
@@ -681,20 +674,6 @@ let get_failed cns =
         try
           (* Solve in one scan *)
           let sol,cs = solve_topo_step cs in
-          (* Additional substitution step on lhs only.
-             Namely, there can be several constraints whose lhs
-             are the same variable, one of which has been solved *)
-          let cs =
-            List.filter_map
-              (function
-                | Assign (V.Var csym, Atom (V.Val c2)) as c -> (
-                    match V.Solution.find_opt csym sol with
-                    | None -> Some c
-                    | Some c1 ->
-                      if V.Cst.eq c1 c2 then None else raise Contradiction)
-                | c -> Some c)
-              cs
-          in
           (* Add solutions of the form x := y *)
           let sol = add_vars_solns m sol in
           Maybe (sol,cs)
