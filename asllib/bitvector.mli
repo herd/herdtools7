@@ -203,6 +203,9 @@ type mask
 val mask_length : mask -> int
 (** Returns the length of bitvectors matched by this mask. *)
 
+val mask_equal : mask -> mask -> bool
+(** Structural equality for masks. *)
+
 val mask_of_string : string -> mask
 (** Build a mask which uses `x` or parentheses as "don't-care" from its ASL
     representation. First preprocesses the parentheses to `x`s. *)
