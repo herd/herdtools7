@@ -259,7 +259,7 @@ module Make (O:Config) (E:Edge.S) :
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
-      ( match e.check_fault with | Some (_,b) -> sprintf "%b" b | None -> "none" )
+      ( match e.check_fault with | Some (n,b) -> sprintf "%s:%b" n b | None -> "none" )
       ( match e.check_value with | Some b -> sprintf "%b" b | None -> "none" )
 
   let debug_edge = E.pp_edge
@@ -1341,6 +1341,7 @@ let do_set_read_v init =
 (* zyva... *)
 
 let finish n =
+  Label.reset ();
   let st = (0,0),Env.empty in
 (* Set locations *)
   let sd,n =
