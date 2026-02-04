@@ -1,0 +1,14 @@
+AArch64 MP+popptev1l+zr-dmb.ld
+Variant=vmsa
+{ 
+  [PTE(y)]=(valid:0);
+  0:X2=PTE(y); 0:X3=(oa:PA(y), valid:1);
+  0:X1=x; 
+  1:X1=x; 1:X0=y; 
+}
+ P0           | P1           ;
+ MOV W0,#1    |L00:          ;
+ STR W0,[X1]  | LDR WZR,[X0] ;
+ STLR X3,[X2] | DMB LD       ;
+              | LDR W0,[X1]  ;
+exists(~fault(P1:L00,y) /\ 1:X0=0) 
