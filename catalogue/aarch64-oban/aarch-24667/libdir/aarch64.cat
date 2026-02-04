@@ -67,21 +67,21 @@ let Exp-haz-ob =
 
 (* TTD-read-ordered-before *)
 let TTD-read-ordered-before =
-  TLBI-after; [TLBI]; DSB-ob
-  | TLBI-after; [TLBI]; IFB-ob
+  TLBI-after; [TLBI]; po; [dsb.full]; po; [~(Imp & M)]
+  | TLBI-after; [TLBI]; po; [dsb.full]; po; [IFB]; po; [Imp & M]
+  | (if "ETS2" || "ETS3" then TLBI-after; [TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
 
 (* TLBI-ordered-before *)
 let TLBI-ob =
      TTD-read-ordered-before
    | tr-ib^-1; TTD-read-ordered-before & ext
-   | ([Imp & TTD & R]; tr-ib; same-low-order-bits & po; tr-ib^-1; [Imp & TTD & R]) & same-translation-context; TTD-read-ordered-before & ext
+   | po-va-loc; TTD-read-ordered-before & ext
 
 (** IC-ordered-before **)
 
 (* Instr-read-ordered-before *)
 let Instr-read-ordered-before =
-  IC-after; [IC]; DSB-ob
-  | IC-after; [IC]; IFB-ob
+  IC-after; [IC]; po; [dsb.full]; po; [~(Imp & M)]
   | (if "DIC" then ca else 0)
 
 (* IC-ordered-before *)
