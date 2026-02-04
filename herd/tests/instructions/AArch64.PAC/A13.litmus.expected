@@ -1,6 +1,6 @@
 Test A13 Required
 States 1
- Fault(P0,x,MMU:Translation);
+ Fault(P0,x,D-MMU:Translation);
 Ok
 Witnesses
 Positive: 1 Negative: 0

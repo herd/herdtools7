@@ -56,7 +56,7 @@ let lmws =
 
 (* Local MMU Fault successor *)
 let lfs =
- [Exp & M]; (po & same-loc); [MMU & FAULT]
+ [Exp & M]; (po & same-loc); [D-MMU & FAULT]
 
 (* Local memory read successor *)
 let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]

@@ -1,0 +1,10 @@
+Test A001 Required
+States 1
+
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation A001 Always 1 0
+Hash=41da164b07178abab6ac0df60e9270b1
+
