@@ -20,5 +20,7 @@ cleansource:
 	$(OBJCOPY) -O  elf32-i386 $^ $@
 	@chmod a-x $@
 
+.PRECIOUS: $(UTILS_OBJ)
+
 $(SHARED_SRC_DIR)/%.o: $(SHARED_SRC_DIR)/%.c
 	$(CC) $(GCCOPTS) -c -o $@ $<
