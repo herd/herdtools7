@@ -43,7 +43,6 @@ rule token = parse
     | "in"                  { IN }
     | "INDEX"               { INDEX }
     | "else"                { ELSE }
-    | "latex"               { LATEX }
     | "lhs_hypertargets"    { LHS_HYPERTARGETS }
     | "list0"               { LIST0 }
     | "list1"               { LIST1 }

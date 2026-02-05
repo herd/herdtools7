@@ -42,7 +42,6 @@ let bool_of_string s =
 %token FUN
 %token FUNCTION
 %token INDEX
-%token LATEX
 %token LIST0
 %token LIST1
 %token MATH_MACRO
@@ -66,10 +65,6 @@ let bool_of_string s =
 %token VARIADIC
 
 %token IFF
-%token LIST
-%token SET
-%token SIZE
-%token SOME
 
 (* Punctuation and operator tokens *)
 %token ARROW
