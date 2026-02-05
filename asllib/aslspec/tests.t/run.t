@@ -57,5 +57,5 @@
   While checking: B
   [1]
   $ aslspec relation_unnamed_arguments.bad
-  Specification Error: All arguments in the relation 'unnamed_arg_has_rule' must have names, since it specifies a rule.
+  Specification Error: The term Num in relation 'unnamed_arg_has_rule' is either not named or names provides names in at different sub-term levels.
   [1]

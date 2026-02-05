@@ -100,12 +100,12 @@ let empty_rule relation_name =
   spec_error
   @@ Format.asprintf "The rule for relation '%s' is empty." relation_name
 
-let missing_relation_argument_name relation_name =
+let relation_argument_incorrect_naming relation_name term =
   spec_error
   @@ Format.asprintf
-       "All arguments in the relation '%s' must have names, since it specifies \
-        a rule."
-       relation_name
+       "The term %a in relation '%s' is either not named or names provides \
+        names in at different sub-term levels."
+       PP.pp_opt_named_type_term term relation_name
 
 let multiple_output_judgments relation_name rule_name_opt =
   let pp_name_opt fmt = function

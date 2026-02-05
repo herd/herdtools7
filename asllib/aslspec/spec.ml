@@ -522,21 +522,24 @@ module ResolveRules = struct
       conclusion judgment for the relation definition [def]. This function
       assumes [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; is_operator; input } =
-    (* Converts an optionally-named type term into an expression. *)
-    let rec arg_of = function
+    (* Converts an optionally-named type term into a relation argument expression. *)
+    let rec arg_of opt_named_term =
+      match opt_named_term with
       | Some name, _ -> Expr.Var name
       | None, Term.Tuple { label_opt; args } ->
           let args = List.map arg_of args in
           Expr.make_opt_labelled_tuple label_opt args
-      | None, Term.Record { label_opt; fields } ->
-          let field_exprs =
-            List.map (fun { Term.name } -> (name, Expr.Var name)) fields
+      | ( None,
+          ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
+          | Term.ConstantsSet _ ) ) ->
+          let msg =
+            Format.asprintf "Unexpected un-named argument term: %a"
+              PP.pp_type_term (snd opt_named_term)
           in
-          Expr.Record { label_opt; fields = field_exprs }
-      | None, _ -> Error.missing_relation_argument_name name
+          failwith msg
     in
-    let args = List.map arg_of input in
-    Expr.Relation { name; is_operator; args }
+    let named_args = List.map arg_of input in
+    Expr.Relation { name; is_operator; args = named_args }
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -3068,16 +3071,20 @@ module Check = struct
       or records. *)
   let relation_named_arguments_if_exists_rule ast =
     let open Rule in
-    let rec is_named_argument =
+    let rec is_correctly_named_argument =
       let open Term in
       function
-      | Some _, _ | None, Record _ -> true
-      | None, Tuple { args } -> List.for_all is_named_argument args
+      | Some _, sub_term -> not (is_correctly_named_argument (None, sub_term))
+      | None, Tuple { args } -> List.for_all is_correctly_named_argument args
       | None, _ -> false
     in
     let check_relation { Relation.name; input; rule_opt } =
-      if Option.is_some rule_opt && not (List.for_all is_named_argument input)
-      then Error.missing_relation_argument_name name
+      if Option.is_some rule_opt then
+        List.iter
+          (fun arg ->
+            if not (is_correctly_named_argument arg) then
+              Error.relation_argument_incorrect_naming name arg)
+          input
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
 end
