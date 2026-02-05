@@ -370,6 +370,11 @@
     \end{array}\right.%
   \fi
 }
+\newcommand\condcase[3][H]{% DO NOT LINT
+  \textbf{if }{#2}\textbf{ then }{#3}
+}
+% A list of cases
+\newcommand\condop[1]{\left\{{#1}\right.} % DO NOT LINT
 
 \newcommand\ELInt[1]{\hyperlink{def-elint}{\textsf{ELint}}(#1)}
 \newcommand\AbbrevEBinop[4][H]{

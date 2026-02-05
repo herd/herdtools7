@@ -34,6 +34,7 @@ rule token = parse
     | "associative"         { ASSOCIATIVE }
     | "ast"                 { AST }
     | "case"                { CASE }
+    | "cond"                { COND }
     | "constant"            { CONSTANT }
     | "constants_set"       { CONSTANTS_SET }
     | "custom"              { CUSTOM }

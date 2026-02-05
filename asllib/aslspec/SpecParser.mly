@@ -35,6 +35,7 @@ let bool_of_string s =
 %token CASE
 %token COLON_EQ
 %token EQ_COLON
+%token COND
 %token CONSTANT
 %token CONSTANTS_SET
 %token CUSTOM
@@ -414,6 +415,13 @@ let expr :=
       { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
       { Expr.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
+    | cond_expr
+
+let cond_expr :=
+    | COND; LPAR; cases=tclist1(cond_case); RPAR;
+      { Expr.make_operator_application "cond_op" cases }
+let cond_case :=
+    | condition=expr; COLON; result=expr; { Expr.make_operator_application "cond_case" [condition; result] }
 
 let maybe_output_expr ==
     | { false }

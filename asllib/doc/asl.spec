@@ -1732,25 +1732,25 @@ typedef value_read_from { "value-reading effect" } =
 // Generic Functions and Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-typing function te_check(cond: Bool, code: type_error_code) -> constants_set(True) | type_error
+typing function te_check(cond_expr: Bool, code: type_error_code) -> constants_set(True) | type_error
   {
-    "returns $\True$ if {cond} holds and a type error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\TypeError({code})$",
+    "returns $\True$ if {cond_expr} holds and a type error with {code} otherwise.",
+    prose_application = "checking whether {cond_expr} holds returns $\True\terminateas\TypeError({code})$",
   }
 ;
 
-semantics function de_check(cond: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+semantics function de_check(cond_expr: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
   {
-    "returns $\True$ if {cond} holds and a dynamic error with {code} otherwise.",
-    prose_application = "checking whether {cond} holds returns $\True\terminateas\DynamicError({code})$",
+    "returns $\True$ if {cond_expr} holds and a dynamic error with {code} otherwise.",
+    prose_application = "checking whether {cond_expr} holds returns $\True\terminateas\DynamicError({code})$",
   }
 ;
 
-function bool_transition(cond: Bool) -> (result: Bool)
+function bool_transition(cond_expr: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {cond} holds and $\False$ otherwise.",
-    prose_application = "testing whether {cond} holds returns {result}",
+    "returns $\True$ if {cond_expr} holds and $\False$ otherwise.",
+    prose_application = "testing whether {cond_expr} holds returns {result}",
 };
 
 function rexpr(le: lexpr) -> (re: expr)

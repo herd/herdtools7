@@ -63,6 +63,10 @@ val is_variadic_operator : t -> string -> bool
     an operator that can take a variable number of arguments and handle them as
     though they were given in a list. *)
 
+val is_cond_operator_name : t -> string -> bool
+(** [is_cond_operator_name spec id] returns [true] if [id] corresponds to the
+    match_cases operator in [spec], and [false] otherwise. *)
+
 (** A module for expanding rules with cases into multiple rules without cases.
 *)
 module ExpandRules : sig

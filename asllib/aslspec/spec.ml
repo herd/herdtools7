@@ -252,6 +252,7 @@ type t = {
   n_type : Type.t;
   z_type : Type.t;
   some_operator : Relation.t;
+  cond_operator : Relation.t;
 }
 
 type spec_type = t
@@ -259,6 +260,9 @@ type spec_type = t
 let is_builtin_type id (t : Type.t) = String.equal id t.name
 let is_builtin_constant id (c : Constant.t) = String.equal id c.name
 let is_builtin_relation id (r : Relation.t) = String.equal id r.name
+
+let is_cond_operator_name (spec : t) id =
+  is_builtin_relation id spec.cond_operator
 
 (** [make_symbol_table ast] creates a symbol table from [ast]. *)
 let make_symbol_table ast =
@@ -3192,14 +3196,17 @@ let get_constant id_to_defining_node name =
       If [name] is not associated with a [Relation.t] in [id_to_defining_node].
 *)
 let get_relation id_to_defining_node name =
-  match StringMap.find name id_to_defining_node with
-  | Node_Relation def when def.is_operator -> def
-  | node ->
+  match StringMap.find_opt name id_to_defining_node with
+  | Some (Node_Relation def) when def.is_operator -> def
+  | Some node ->
       let msg =
         Format.asprintf
           "%s must be an operator, but has been overridden with %a" name
           pp_definition_node node
       in
+      raise (SpecError msg)
+  | None ->
+      let msg = Format.asprintf "Relation/operator %s is undefined." name in
       raise (SpecError msg)
 
 (** [extend_ast_with_builtins ast id_to_defining_node] prepends to [ast] the AST
@@ -3243,6 +3250,7 @@ let make_spec_with_builtins ast =
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
     some_operator = get_relation "some";
+    cond_operator = get_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
 

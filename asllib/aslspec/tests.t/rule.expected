@@ -45,7 +45,11 @@ The relation
 } % EndDefineRelation
 
 \DefineRule{r}{\begin{mathpar}
-\inferrule{}{
- { \r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{b}}{\texttt{c}} } 
+\inferrule{ { { \texttt{res} \eqdef { \condop{\begin{array}{l}
+                                              { \condcase[H]{{ \texttt{a} \equal \texttt{b} }}{\texttt{a}} }, \\
+                                              { \condcase[H]{{ \texttt{a} \greaterthan \texttt{b} }}{{ \texttt{a}\numplus\texttt{b} }} }, \\
+                                              { \condcase[H]{{ \texttt{a} \lessthan \texttt{b} }}{\texttt{b}} }
+                                              \end{array}} } } } }{
+ { \r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{res}}{\texttt{c}} } 
 }
 \end{mathpar}} % EndDefineRule
