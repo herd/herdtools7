@@ -411,6 +411,8 @@ let expr :=
       { Expr.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
       { Expr.make_record label_opt fields }
+    | base=expr; LPAR; fields=tclist1(field_and_value); RPAR;
+      { Expr.make_record_update base fields }
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
       { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;

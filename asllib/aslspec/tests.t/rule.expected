@@ -8,7 +8,10 @@
 
 \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
+\newcommand\FIELDf[0]{ \hyperlink{recordfield-f}{\textsf{f}} } % Generated from f
+\newcommand\FIELDg[0]{ \hyperlink{recordfield-g}{\textsf{g}} } % Generated from g
 \newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
+\newcommand\rec[0]{ \hyperlink{type-rec}{\textsf{rec}} } % Generated from rec
 
 % -------------------
 % Macros for elements
@@ -37,10 +40,19 @@
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 
+\DefineType{rec}{
+\begin{flalign*}
+\rec\mathhypertarget{type-rec} \triangleq\ & \mathhypertarget{recordfield-f}\mathhypertarget{recordfield-g}\left\{
+\begin{array}{lcl}
+\FIELDf & : & \Num\\
+\FIELDg & : & \Num
+\end{array}\right\}
+\end{flalign*}} % EndDefineType
+
 \DefineRelation{r}{
 The relation
 \[
-\mathhypertarget{relation-r}\r\left(\overtext{\Num}{\texttt{a}}, \overtext{\Num}{\texttt{b}}\right) \bigtimes \overtext{\Num}{\texttt{c}}
+\mathhypertarget{relation-r}\r\left(\overtext{\Num}{\texttt{a}}, \overtext{\Num}{\texttt{b}}, \overtext{\rec}{\texttt{r}}\right) \bigtimes \left(\overtext{\Num}{\texttt{c}}, \overtext{\rec}{\texttt{r'}}\right)
 \]
 } % EndDefineRelation
 
@@ -49,7 +61,10 @@ The relation
                                               { \condcase[H]{{ \texttt{a} \equal \texttt{b} }}{\texttt{a}} }, \\
                                               { \condcase[H]{{ \texttt{a} \greaterthan \texttt{b} }}{{ \texttt{a}\numplus\texttt{b} }} }, \\
                                               { \condcase[H]{{ \texttt{a} \lessthan \texttt{b} }}{\texttt{b}} }
-                                              \end{array}} } } } }{
- { \r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{res}}{\texttt{c}} } 
+                                              \end{array}} } } } \\\\
+ { { \texttt{r'} \eqdef \texttt{r}\left\{\begin{array}{lcl}
+                                         \FIELDf & : & \texttt{res}
+                                         \end{array}\right\} } } }{
+ { \r(\texttt{a}, \texttt{b}, \texttt{r}) \typearrow (\overtext{\texttt{res}}{\texttt{c}}, \texttt{r'}) } 
 }
 \end{mathpar}} % EndDefineRule

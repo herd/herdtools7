@@ -299,3 +299,15 @@ let output_type_mismatch output_judgment_type output_types output_expr =
        PP.pp_type_term output_judgment_type PP.pp_expr output_expr
        (PP.pp_sep_list ~sep:" | " PP.pp_type_term)
        output_types
+
+let record_update_expression_not_assignable expr =
+  spec_error
+  @@ Format.asprintf
+       "The record update expression `%a` cannot be used as an assignable \
+        expression"
+       PP.pp_expr expr
+
+let invalid_record_update_base_type base_type ~context_expr =
+  spec_error
+  @@ Format.asprintf "The base type %a in %a is not a record type"
+       PP.pp_type_term base_type PP.pp_expr context_expr
