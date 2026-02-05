@@ -363,6 +363,21 @@ let lift_proc_info i evts =
         else k)
       es.E.events LocEnv.empty
 
+  let collect_by_loc2 es p1 p2 =
+    E.EventSet.fold
+      (fun e k ->
+        let b1 = p1 e and b2 = p2 e in
+        if b1 || b2 then
+          LocEnv.update (get_loc e)
+            (fun opt ->
+              let k1, k2 = match opt with Some t -> t | None -> ([], []) in
+              let k1 = if b1 then e :: k1 else k1
+              and k2 = if b2 then e :: k2 else k2 in
+              Some (k1, k2))
+            k
+        else k)
+      es.E.events LocEnv.empty
+
   let not_speculated es e = not (E.EventSet.mem e es.E.speculated)
   let collect_reg_loads es = collect_by_loc es E.is_reg_load_any
   and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
@@ -376,15 +391,14 @@ let lift_proc_info i evts =
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
   and collect_stores_non_spec es = collect_by_loc es (fun e -> E.is_store e && not_speculated es e)
   and collect_atomics es = collect_by_loc es E.is_atomic
+  and collect_reg_loads_stores es = collect_by_loc2 es E.is_reg_load_any E.is_reg_store_any
 
   let partition_events es =
     let env =
       E.EventSet.fold
         (fun e k -> match E.location_of e with
-        | Some loc ->
-            LocEnv.accumulate loc e k
+        | Some loc -> LocEnv.accumulate loc e k
         | None -> k) es LocEnv.empty in
-
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
 (********************************************)

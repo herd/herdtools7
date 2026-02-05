@@ -797,56 +797,49 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
-let match_reg_events es =
-  let loc_loads = U.collect_reg_loads es
-  and loc_stores = U.collect_reg_stores es
+(** [find_matching_store is_before_strict load stores] finds the last store
+    before load, S.Init if there is none. *)
+let find_matching_store is_before_strict load stores =
   (* Share computation of the iico relation *)
-  and is_before_strict =  U.is_before_strict es in
+  List.fold_left
+    (fun rf store ->
+      if not (is_before_strict store load) then rf
+      else
+        match rf with
+        | S.Init -> S.Store store
+        | S.Store store' ->
+            if is_before_strict store store' then S.Store store'
+            else if is_before_strict store' store then S.Store store
+            else
+              let () =
+                Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event
+                  ew0 E.debug_event ew
+              in
+              assert false)
+    S.Init stores
 
-(* For all loads find the right store, the one "just before" the load *)
+let match_reg_events es =
+  let loc_loads_stores = U.collect_reg_loads_stores es in
+  let is_before_strict = U.is_before_strict es in
+  (* For all loads find the right store, the one "just before" the load *)
   let rfm =
     U.LocEnv.fold
-      (fun loc loads k ->
-        let stores = map_loc_find loc loc_stores in
-        List.fold_right
-          (fun er k ->
-            let rf =
-              List.fold_left
-                (fun rf ew ->
-                  if is_before_strict ew er then
-                    match rf with
-                    | S.Init -> S.Store ew
-                    | S.Store ew0 ->
-                        if is_before_strict ew0 ew then S.Store ew
-                        else begin
-                          (* store order is total *)
-                            if not (is_before_strict ew ew0) then begin
-                              Printf.eprintf "Not ordered stores %a and %a\n"
-                                E.debug_event ew0
-                                E.debug_event ew ;
-                              assert false
-                            end ;
-                          rf
-                        end
-                  else rf)
-                S.Init stores in
-            S.RFMap.add (S.Load er) rf k)
-          loads k)
-      loc_loads S.RFMap.empty in
-(* Complete with stores to final state *)
+      (fun loc (loads, stores) k ->
+        List.fold_left (fun k load ->
+            let rf = find_matching_store is_before_strict load stores in
+            S.RFMap.add (S.Load er) rf k))
+      k loads loc_loads_stores S.RFMap.empty
+  in
+  (* Complete with stores to final state *)
   add_finals es loc_stores rfm
 
-
-
-    let get_rf_value test read rf = match rf with
-    | S.Init ->
-        let loc = get_loc read in
-        let look_address =
-          A.look_address_in_state test.Test_herd.init_state in
-        begin
-          try look_address loc with A.LocUndetermined -> assert false
-        end
-    | S.Store e -> get_written e
+let get_rf_value test read =
+  let look_address = A.look_address_in_state test.Test_herd.init_state in
+  function
+  | S.Store e -> get_written e
+  | S.Init -> (
+      let loc = get_loc read in
+      try look_address loc with A.LocUndetermined -> assert false)
 
 (* Add a constraint for two values *)
 
