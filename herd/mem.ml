@@ -762,33 +762,6 @@ and get_written e = match E.written_of e with
 
 
 
-(* Add (local) final edges in rfm, ie for all (register) location, find the last (po+iico) store to it *)
-
-let add_finals es =
-    U.LocEnv.fold
-      (fun loc stores k ->
-        let stores =
-          List.filter
-            (fun x -> not (E.EventSet.mem x (es.E.speculated))) stores in
-      match stores with
-      | [] -> k
-      | ew::stores ->
-          let last =
-            List.fold_right
-              (fun ew0 ew ->
-                if U.is_before_strict es ew0 ew then ew
-                else begin
-                  (* If writes to a given register by a given thread
-                     are not totally ordered, it gets weird to define
-                     the last or 'final'register write *)
-                  if not (U.is_before_strict es ew ew0) then
-                    Warn.fatal
-                      "Ambiguous po for register %s" (A.pp_location loc) ;
-                  ew0
-                end)
-              stores ew in
-          S.RFMap.add (S.Final loc) (S.Store last) k)
-
 (*******************************)
 (* Compute rfmap for registers *)
 (*******************************)
@@ -797,41 +770,57 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
+let find_last_pred_opt (max : 'a -> 'a -> 'a) (pred : 'a -> bool) :
+    'a list -> 'a option =
+  let rec find acc = function
+    | [] -> Some acc
+    | h :: t -> if not (pred h) then find acc t else find (max acc h) t
+  in
+  let rec loop_to_first = function
+    | [] -> None
+    | h :: t -> if pred h then find h t else loop_to_first t
+  in
+  fun li -> loop_to_first li
+
 (** [find_matching_store is_before_strict load stores] finds the last store
     before load, S.Init if there is none. *)
-let find_matching_store is_before_strict load stores =
+let find_matching_store max is_before_strict load stores =
   (* Share computation of the iico relation *)
-  List.fold_left
-    (fun rf store ->
-      if not (is_before_strict store load) then rf
-      else
-        match rf with
-        | S.Init -> S.Store store
-        | S.Store store' ->
-            if is_before_strict store store' then S.Store store'
-            else if is_before_strict store' store then S.Store store
-            else
-              let () =
-                Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event
-                  ew0 E.debug_event ew
-              in
-              assert false)
-    S.Init stores
+  let pred e = is_before_strict e load in
+  find_last_pred_opt max pred stores |> function
+  | None -> S.Init
+  | Some store -> S.Store store
+
+let find_last_store max stores : S.event option =
+  find_last_pred_opt max (Fun.const true) stores
 
 let match_reg_events es =
   let loc_loads_stores = U.collect_reg_loads_stores es in
   let is_before_strict = U.is_before_strict es in
-  (* For all loads find the right store, the one "just before" the load *)
-  let rfm =
-    U.LocEnv.fold
-      (fun loc (loads, stores) k ->
-        List.fold_left (fun k load ->
-            let rf = find_matching_store is_before_strict load stores in
-            S.RFMap.add (S.Load er) rf k))
-      k loads loc_loads_stores S.RFMap.empty
+  let max e1 e2 =
+    if is_before_strict e1 e2 then e2
+    else if is_before_strict e2 e1 then e1
+    else
+      let () =
+        Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
+          E.debug_event e2
+      in
+      assert false
   in
-  (* Complete with stores to final state *)
-  add_finals es loc_stores rfm
+  (* For all loads find the right store, the one "just before" the load *)
+  U.LocEnv.fold
+    (fun loc (loads, stores) k ->
+      let k =
+        match find_last_store max stores with
+        | None -> k
+        | Some store -> S.RFMap.add (S.Final loc) (S.Store store) k
+      in
+      List.fold_left
+        (fun k load ->
+          let rf = find_matching_store max is_before_strict load stores in
+          S.RFMap.add (S.Load load) rf k)
+        k loads)
+    loc_loads_stores S.RFMap.empty
 
 let get_rf_value test read =
   let look_address = A.look_address_in_state test.Test_herd.init_state in
