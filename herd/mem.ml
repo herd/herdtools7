@@ -770,36 +770,12 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
-let find_last_pred_opt (max : 'a -> 'a -> 'a) (pred : 'a -> bool) :
-    'a list -> 'a option =
-  let rec find acc = function
-    | [] -> Some acc
-    | h :: t -> if not (pred h) then find acc t else find (max acc h) t
-  in
-  let rec loop_to_first = function
-    | [] -> None
-    | h :: t -> if pred h then find h t else loop_to_first t
-  in
-  fun li -> loop_to_first li
-
-(** [find_matching_store is_before_strict load stores] finds the last store
-    before load, S.Init if there is none. *)
-let find_matching_store max is_before_strict load stores =
-  (* Share computation of the iico relation *)
-  let pred e = is_before_strict e load in
-  find_last_pred_opt max pred stores |> function
-  | None -> S.Init
-  | Some store -> S.Store store
-
-let find_last_store max stores : S.event option =
-  find_last_pred_opt max (Fun.const true) stores
-
 let match_reg_events es =
   let loc_loads_stores = U.collect_reg_loads_stores es in
   let is_before_strict = U.is_before_strict es in
-  let max e1 e2 =
-    if is_before_strict e1 e2 then e2
-    else if is_before_strict e2 e1 then e1
+  let compare e1 e2 =
+    if is_before_strict e1 e2 then -1
+    else if is_before_strict e2 e1 then 1
     else
       let () =
         Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
@@ -807,17 +783,30 @@ let match_reg_events es =
       in
       assert false
   in
+  let module StoreSet = Set.Make(struct
+    type t = E.event
+
+    let compare = compare
+  end) in
   (* For all loads find the right store, the one "just before" the load *)
   U.LocEnv.fold
     (fun loc (loads, stores) k ->
-      let k =
-        match find_last_store max stores with
-        | None -> k
+      (* We order them with respect to is_before_strict *)
+      let stores = StoreSet.of_list stores in
+      (* Add the final value *)
+      let k = 
+        match StoreSet.max_elt_opt stores with
         | Some store -> S.RFMap.add (S.Final loc) (S.Store store) k
+        | None -> k
       in
       List.fold_left
         (fun k load ->
-          let rf = find_matching_store max is_before_strict load stores in
+          let f e = is_before_strict e load in
+          let rf =
+            match StoreSet.find_last_opt f stores with
+            | Some store -> S.Store store
+            | None -> S.Init
+          in
           S.RFMap.add (S.Load load) rf k)
         k loads)
     loc_loads_stores S.RFMap.empty
