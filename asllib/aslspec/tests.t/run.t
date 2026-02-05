@@ -59,3 +59,4 @@
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: The term Num in relation 'unnamed_arg_has_rule' is either not named or names provides names in at different sub-term levels.
   [1]
+  $ aslspec constants.spec
