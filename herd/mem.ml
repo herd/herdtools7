@@ -817,8 +817,7 @@ let match_reg_events es =
                     match rf with
                     | S.Init -> S.Store ew
                     | S.Store ew0 ->
-                        if U.is_before_strict es ew0 ew then
-                          S.Store ew
+                        if is_before_strict ew0 ew then S.Store ew
                         else begin
                           (* store order is total *)
                             if not (is_before_strict ew ew0) then begin
