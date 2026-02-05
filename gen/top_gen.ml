@@ -850,7 +850,7 @@ let max_set = IntSet.max_elt
           match O.cond with
           | Unicond | Cycle -> []
           | Observe -> F.location_list f flts in
-        let i = if do_kvm then A.complete_init O.hexa initvals i else i in
+        let i = A.complete_init O.hexa initvals i in
         (i,c,fc flts,env,obs),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
