@@ -770,7 +770,7 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
-let match_reg_events es =
+let match_reg_events add_eq es csn =
   let loc_loads_stores = U.collect_reg_loads_stores es in
   let is_before_strict = U.is_before_strict es in
   let compare e1 e2 =
@@ -783,22 +783,24 @@ let match_reg_events es =
       in
       assert false
   in
-  let module StoreSet = Set.Make(struct
+  let module StoreSet = Set.Make (struct
     type t = E.event
 
     let compare = compare
   end) in
+  let add wt rf (rfm, csn) = (S.RFMap.add wt rf rfm, add_eq rfm wt rf csn) in
   (* For all loads find the right store, the one "just before" the load *)
   U.LocEnv.fold
     (fun loc (loads, stores) k ->
       (* We order them with respect to is_before_strict *)
       let stores = StoreSet.of_list stores in
       (* Add the final value *)
-      let k = 
+      let k =
         match StoreSet.max_elt_opt stores with
-        | Some store -> S.RFMap.add (S.Final loc) (S.Store store) k
-        | None -> k
+        | Some store -> add (S.Final loc) (S.Store store) k
+        | None -> k (* If there is no store to this value *)
       in
+      (* Add the corresponding store for each load *)
       List.fold_left
         (fun k load ->
           let f e = is_before_strict e load in
@@ -807,9 +809,9 @@ let match_reg_events es =
             | Some store -> S.Store store
             | None -> S.Init
           in
-          S.RFMap.add (S.Load load) rf k)
+          add (S.Load load) rf k)
         k loads)
-    loc_loads_stores S.RFMap.empty
+    loc_loads_stores (S.RFMap.empty, csn)
 
 let get_rf_value test read =
   let look_address = A.look_address_in_state test.Test_herd.init_state in
@@ -859,39 +861,43 @@ let get_rf_value test read =
       in
       fun loc -> A.LocMap.find_opt loc map
 
+    (* Add the equations given by one read-from register pairing *)
+    let add_eq_for_rf_reg test wanted_final_values es rfm wt rf csn =
+      match wt with
+      | S.Final loc -> (
+          if not speedcheck then csn
+          else
+            match (wanted_final_values loc, rf) with
+            | Some v_wanted, S.Store store ->
+                let v_stored = get_written store in
+                (* Here we can't use add_eq because it is possible that there
+                   is a contradiction, and in that case we want the solver to
+                   find it. *)
+                VC.Assign (v_stored, VC.Atom v_wanted) :: csn
+            | _ -> csn)
+      | S.Load load ->
+        let v_loaded = get_read load
+        and v_stored = get_rf_value test load rf in
+        try add_eq v_loaded v_stored csn
+        (* The following shouldn't happen, unless mistake in the semantics. *)
+        with Contradiction ->
+          let loc = Misc.as_some (E.location_of load) in
+          let () =
+            Printf.eprintf "Contradiction on reg %s: loaded %s vs. stored %s\n"
+              (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored)
+          in
+          let module PP = Pretty.Make(S) in
+          let () = PP.show_es_rfm test es rfm in
+          assert false
+
     let do_solve_regs test es csn =
       let wanted_final_values =
         if speedcheck then wanted_final_value test else Fun.const None
       in
-      let rfm = match_reg_events es in
-      let add_equations wt rf csn =
-        match wt with
-        | S.Final loc -> (
-            if not speedcheck then csn
-            else
-              match (wanted_final_values loc, rf) with
-              | Some v_wanted, S.Store store ->
-                  let v_stored = get_written store in
-                  (* Here we can't use add_eq because it is possible that there
-                     is a contradiction, and in that case we want the solver to
-                     find it. *)
-                  VC.Assign (v_stored, VC.Atom v_wanted) :: csn
-              | _ -> csn)
-        | S.Load load -> (
-            let v_loaded = get_read load in
-            let v_stored = get_rf_value test load rf in
-            try add_eq v_loaded v_stored csn
-            with Contradiction ->
-              let loc = Misc.as_some (E.location_of load) in
-              Printf.eprintf
-                "Contradiction on reg %s: loaded %s vs. stored %s\n"
-                (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored);
-              let module PP = Pretty.Make (S) in
-              PP.show_es_rfm test es rfm;
-              assert false)
+      let rfm, csn =
+        match_reg_events (add_eq_for_rf_reg test wanted_final_values es) es csn
       in
-      let csn = S.RFMap.fold add_equations rfm csn in
-      if debug_solver then prerr_endline "++ Solve  registers";
+      if  debug_solver then prerr_endline "++ Solve  registers" ;
       match VC.solve csn with
       | VC.NoSolns ->
           if debug_solver then pp_nosol "register" test es rfm;
