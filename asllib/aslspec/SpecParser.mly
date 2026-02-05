@@ -85,6 +85,9 @@ let bool_of_string s =
 %token MINUS
 %token MINUS_MINUS
 
+%nonassoc COLON_EQ
+%nonassoc EQ_COLON
+
 %token PLUS
 %token TIMES
 %token DIVIDE
@@ -102,8 +105,6 @@ let bool_of_string s =
 %right OR
 %right ELSE
 
-%nonassoc COLON_EQ
-%nonassoc EQ_COLON
 %nonassoc EQ
 %nonassoc IN
 %nonassoc NOT_IN

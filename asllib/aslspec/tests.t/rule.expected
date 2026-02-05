@@ -62,6 +62,7 @@ The relation
                                               { \condcase[H]{{ \texttt{a} \greaterthan \texttt{b} }}{{ \texttt{a}\numplus\texttt{b} }} }, \\
                                               { \condcase[H]{{ \texttt{a} \lessthan \texttt{b} }}{\texttt{b}} }
                                               \end{array}} } } } \\\\
+ { { \texttt{r\_f} \eqdef { \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg } } } \\\\
  { { \texttt{r'} \eqdef \texttt{r}\left\{\begin{array}{lcl}
                                          \FIELDf & : & \texttt{res}
                                          \end{array}\right\} } } }{
