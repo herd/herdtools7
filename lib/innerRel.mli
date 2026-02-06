@@ -74,6 +74,7 @@ module type S =  sig
   (* Transitive closure, the fist function returns Map form *)
   val transitive_to_map : t -> Elts.t M.ME.t
   val transitive_closure : t -> t
+  val transitive_closure_filtered : Elts.t -> Elts.t -> t -> t
 
 (* Direct cycles *)
   val is_reflexive : t -> bool
