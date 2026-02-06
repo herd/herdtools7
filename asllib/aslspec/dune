@@ -23,12 +23,12 @@
 
 (rule
  (target TokenStrings.ml)
- (deps SpecLexer.mll extract_tokens.py)
+ (deps SpecLexer.mll extract_tokens.ml)
  (package aslspec)
  (action
   (with-stdout-to
    %{target}
-   (run python3 extract_tokens.py SpecLexer.mll))))
+   (run ocaml -I +str str.cma extract_tokens.ml SpecLexer.mll))))
 
 (rule
  (deps builtins.spec)
