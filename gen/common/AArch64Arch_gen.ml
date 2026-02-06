@@ -406,6 +406,13 @@ module Value = struct
         when affect_pte_field DB pte -> Dir W
       | _ -> NoDir
 
+    let need_check_value_on_pte atom =
+      let open WPTE in
+      match atom with
+      | Some(Pte (Set(pte_atom_set)|SetRel(pte_atom_set)),None) ->
+          WPTESet.mem OA pte_atom_set
+      |_ -> false
+
     let implicitly_set_pteval dir machine_feature p =
       let open WPTE in
       let open AArch64PteVal in
