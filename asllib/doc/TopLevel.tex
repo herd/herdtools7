@@ -76,19 +76,19 @@ or a \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule{
     \aslscan(\spectoken, \vstdtext) \scanarrow \vstdtokens \OrLexicalError\\\\
-    \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\\\\
+    \aslparse(\vstdtokens) \parsearrow \vstdparse \OrParseError\hva\\\\
     \buildast(\vstdparse) \astarrow \vstdast \OrBuildError\\\\
-    \renamelocals(\vstdast) \astarrow \vstdastrenamed\\
+    \renamelocals(\vstdast) \astarrow \vstdastrenamed\hva\\
     {
     \begin{array}{r}
       \vi \in \listrange(\vstdastrenamed): \setbuiltin(\vstdastrenamed[\vi]) \typearrow \\
       \vstdasbuiltin[i] \OrBuildError
     \end{array}
-    }\\
+    }\hva\\
     \aslscan(\spectoken, \vspectext) \scanarrow \vspectokens \OrLexicalError\\\\
-    \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\\\\
+    \aslparse(\vspectokens) \parsearrow \vspecparse \OrParseError\hva\\\\
     \buildast(\vspecparse) \astarrow \vspecast \OrBuildError\\\\
-    \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\\
+    \vuntypedast \eqdef \vstdasbuiltin \concat \vspecast\hva\\
     \typecheckast(\emptytenv.\staticenvsG, \vuntypedast) \typearrow (\vtypedast, \tenv) \OrTypeError\\\\
     \evalspec(\tenv, \vtypedast) \evalarrow (\nvint(\vret), \vg) \OrDynErrorDiverging
 }{
@@ -243,11 +243,11 @@ yielding the subprogram description $\vnewf$.
   \end{array}
   \right\}
   }
-  }\\
+  }\hva\\
   \renamelocalsargs(\args) \astarrow \newargs\\
-  \renamelocalsnamedargs(\params) \astarrow \newparams\\
+  \renamelocalsnamedargs(\params) \astarrow \newparams\hva\\
   \renamelocalsstmt(\vbody) \astarrow \vnewbody\\
-  \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\\
+  \mapopt{\renamelocalsty}(\rettyopt) \astarrow \newrettyopt\hva\\
   {
     \vnewf \eqdef
     {
@@ -363,7 +363,7 @@ yielding the list of parameters $\newparams$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \params \eqname (\name,\tyopt) \cons \vargsone\\
-  \renamelocalsname(\name) \astarrow \namep\\
+  \renamelocalsname(\name) \astarrow \namep\hva\\
   \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
   \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
 }{
@@ -752,9 +752,9 @@ yielding the statement $\news$.
 \begin{mathpar}
 \inferrule[s\_for]{
   \renamelocalsexpr(\estart) \astarrow \estartp\\
-  \renamelocalsexpr(\eend) \astarrow \eendp\\
+  \renamelocalsexpr(\eend) \astarrow \eendp\hva\\
   \renamelocalsstmt(\vbody) \astarrow \vbodyp\\
-  \mapopt{\renamelocalsexpr}(\velimitopt) \astarrow \velimitoptp\\
+  \mapopt{\renamelocalsexpr}(\velimitopt) \astarrow \velimitoptp\hva\\
 }{
   {
   \begin{array}{r}
@@ -821,7 +821,7 @@ yielding the statement $\news$.
 \begin{mathpar}
 \inferrule[s\_try]{
   \renamelocalsstmt(\vsone) \astarrow \vsonep\\
-  \catchersp \eqdef [\vc\in\catchers: \renamelocalscatcher(\vc)]\\
+  \catchersp \eqdef [\vc\in\catchers: \renamelocalscatcher(\vc)]\hva\\
   \mapopt{\renamelocalsstmt}(\otherwiseopt) \astarrow \otherwiseoptp
 }{
   {
@@ -1678,7 +1678,7 @@ It produces a build error when $\decl$ is not a function.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\\\\
+  \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\hva\\\\
   \vdecl \eqname \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{

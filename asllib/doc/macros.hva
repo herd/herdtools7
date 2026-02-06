@@ -1,0 +1,85 @@
+\usepackage{color}
+\definecolor{ly}{cmyk}{0.0, 0.0, 0.20, 0.0}
+\newcommand{\lightyellow}{\color{ly}}
+\usepackage[utf8]{inputenc}
+\newcommand{\tgt@none}[1]{\hypertarget{#1}{}}
+\newcommand{\mathhypertarget}[1]{\tgt@none{#1}}
+\let\texthypertarget\tgt@none
+\newenvironment{flalign*}{\align*}{\endalign*}
+\newcommand{\DeclareMathOperator}[2]{\newcommand{#1}{\mathop{\mbox{#2}}}}
+%\newcommand{\xlongrightarrow}[2][]{\longrightarrow^{#2}_{#1}}
+\newcommand{\derivesinline}{\longrightarrow^{\text{\scriptsize{}inline}}}
+\DeclareSymbolHtml{\mytimes}{X2A09}
+\newcommand{\bigtimes}{{\DisplayChoose\Huge\Large\mytimes}}
+\let\old@not\not
+\renewcommand{\not}[1]
+{\def\@arg{#1}\def\@cmp{\inlist}\ifx\@arg\@cmp\old@not\in\else\old@not#1\fi}
+%%%
+% Hml and PDF differs in one point, while anchors (hypertargets)
+% and references (hyperlinks) can nest,
+% nested "A" elements are not valid html...
+% Hence we do not generate hyperlinks inside local references
+% local anchor or anchors
+\newcommand{\no@hyperlink}[2]{}
+\newcommand{\my@aname}[2]{\bgroup\let\hyperlink\no@hyperlink\aname{#1}{#2}\egroup}
+\newcommand{\my@hypertarget}[2]{\my@aname{#1}{#2}}
+\AtBeginDocument{\let\hypertarget\my@hypertarget}
+\newcommand{\my@ahrefloc}[2]{\bgroup\let\hyperlink\no@hyperlink\ahrefloc{#1}{#2}\egroup}
+\newcommand{\my@hyperlink}[2]{\my@ahrefloc{#1}{#2}}
+\AtBeginDocument{\let\hyperlink\my@hyperlink}
+%%%Complex hyperlinks in display mode may produce table elements inside
+%%% A elements, which is no valid HTML
+\newcommand{\Ignore}
+{\ifdisplay\underline{\hyperlink{def-ignore}{\;\;}}%
+\else\hyperlink{def-ignore}{\underline{\;\;}}\fi}
+\newcommand{\Option}[1]{%
+\ifdisplay\textsf{\hyperlink{def-option}{Option}}\left({#1}\right)
+\else
+\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)\fi}
+\newcommand\eqname{%
+\ifdisplay
+  \stackrel{\hyperlink{def-deconstruction}{\mathsf{is}}}{=}\else
+\hyperlink{def-deconstruction}{\stackrel{\mathsf{is}}{=}}\fi}
+\newcommand{\inside@out@link}[3]{\ifdisplay#2{\hyperlink{#1}{#3}}\else\hyperlink{#1}{#2{#3}}\fi}
+\newcommand{\CannotOverapproximate}
+ {\inside@out@link{constant-CannotOverapproximate}{\overline}{\textsf{Approx}}}
+\newcommand{\CannotUnderapproximate}
+ {\inside@out@link
+   {constant-CannotUnderapproximate}{\underline}{\textsf{Approx}}}
+%%
+\newcommand{\my@textxrightarrow}[1]{-(#1)\rightarrow}
+\AtBeginDocument{\let\textxrightarrow\my@textxrightarrow}
+\newcommand{\ordered}[3]{{#1}\xrightarrow{#2}{#3}}
+%%%No def-ordered link, as there is another one inside
+\newcommand{\orderedctrl}{\xrightarrow{\aslctrl}}
+\newcommand{\ordereddata}{\xrightarrow{\asldata}}
+\newcommand{\orderedpo}{\xrightarrow{\aslpo}}
+%%% Small font size not recommended for HTML
+\newcommand\commonprefixline[0]{\hyperlink{def-commonprefixline}{\color{cyan}{\text{******** common prefix ********}}}}
+\newcommand\commonsuffixline[0]{\hyperlink{def-commonsuffixline}{\color{cyan}{\text{******** common suffix ********}}}}
+\let\l@section\relax
+%% Not so great rendering of \overbracket in inline mode
+\def\my@wavy{\@span{style="text-decoration:wavy underline;"}}
+\newcommand{\anycharacter}[1]{$\my@wavy{}#1$}
+\newcommand{\my@textunderbracket}[1]{{\my@wavy{#1}}}
+\AtBeginDocument{\let\textunderbracket\my@textunderbracket}
+%% Not so great rendering of \overbracket ininline mode
+\newcommand{\over@line}{\@span{style="text-decoration:solid overline;"}}
+\newcommand{\my@textoverbracket}[1]{{\over@line{}#1}}
+\AtBeginDocument{\let\textoverbracket\my@textoverbracket}
+\newcommand{\text@top}{\@span{style="vertical-align:1.5em;"}}
+\newcommand{\textovername}[2]{\overline{#1}{\text@top{}#2}}
+\newcommand{\myovername}[2]{\ifdisplay\old@overname{#1}{#2}\else\textovername{#1}{#2}\fi}
+\AtBeginDocument{\let\old@overname\overname\let\overname\myovername}
+%%%% No warning (checked visualy)
+\renewcommand{\@@big}[1]{#1}
+%%%% Apparently \empty is... empty
+\let\empty\relax
+%%%% Console output.
+%Disable font size change in Verbatim environment
+\newcommand{\nokey}[1]{}
+\AtBeginDocument{\let\verb@fontsize@key\nokey}
+%Change vertical alignment of premise and conclusion in inference rules
+\AtBeginDocument
+    {\renewcommand{\mpr@vert@premise}{middle}%
+     \renewcommand{\mpr@vert@conclusion}{middle}}

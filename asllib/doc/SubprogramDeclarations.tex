@@ -126,55 +126,52 @@ In particular, rather than directly building the abstract syntax for accessors, 
   \right)}{\vparsednode}\right)
 \astarrow \\
 {
-    \overname{
-  \left[\DFunc\left(\left\{
-    \begin{array}{rcl}
-            \FIELDname &:& \name,\\
-            \FIELDparameters &:& \astof{\vparamsopt},\\
-            \FIELDargs &:& \astof{\vfuncargs},\\
-            \funcbody &:& \astof{\vfuncbody},\\
-            \FIELDreturntype &:& \some{ \astof{\vreturntype} },\\
-            \funcsubprogramtype &:& \STFunction,\\
-            \FIELDrecurselimit   &:& \astof{\vrecurselimit}\\
-            \funcbuiltin &:& \False\\
-            \funcqualifierfield &:& \astversion{\vp}\\
-            \funcoverride &:& \astof{\voverride}
-    \end{array}
-  \right\}\right)\right]}{\vastnode}
-  }
-}
+\overname{
+ \left[\DFunc\left(\left\{
+  \begin{array}{rcl}
+  \FIELDname &:& \name,\\
+  \FIELDparameters &:& \astof{\vparamsopt},\\
+  \FIELDargs &:& \astof{\vfuncargs},\\
+  \funcbody &:& \astof{\vfuncbody},\\
+  \FIELDreturntype &:& \some{ \astof{\vreturntype} },\\
+  \funcsubprogramtype &:& \STFunction,\\
+  \FIELDrecurselimit   &:& \astof{\vrecurselimit}\\
+  \funcbuiltin &:& \False\\
+  \funcqualifierfield &:& \astversion{\vp}\\
+  \funcoverride &:& \astof{\voverride}
+ \end{array}
+ \right\}\right)\right]}{\vastnode}
+}}
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[procedure\_decl]{}{
-  \builddecl\left(
-    \overname{\Ndecl\left(
-      \begin{array}{l}
-      \punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
-      \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
-      \end{array}
-      \right)}{\vparsednode}
-    \right)
-  \astarrow \\
-  {
-    \overname{
-  \left[\DFunc\left(\left\{
-    \begin{array}{rcl}
-            \FIELDname &:& \name,\\
-            \FIELDparameters &:& \astof{\vparamsopt},\\
-            \FIELDargs &:& \astof{\vfuncargs},\\
-            \funcbody &:& \astof{\vfuncbody},\\
-            \FIELDreturntype &:& \None,\\
-            \funcsubprogramtype &:& \STProcedure,\\
-            \FIELDrecurselimit   &:& \astof{\vrecurselimit}\\
-            \funcbuiltin &:& \False\\
-            \funcqualifierfield &:& \astof{\vqualifier}\\
-            \funcoverride &:& \astof{\voverride}
-    \end{array}
-  \right\}\right)\right]
-    }{\vastnode}
-  }
-}
+ \builddecl\left(
+  \overname{\Ndecl\left(
+   \begin{array}{l}
+   \punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
+   \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
+   \end{array}
+   \right)}{\vparsednode}
+  \right)
+\astarrow\\
+{
+\overname{
+ \left[\DFunc\left(\left\{
+ \begin{array}{rcl}
+   \FIELDname &:& \name,\\
+   \FIELDparameters &:& \astof{\vparamsopt},\\
+   \FIELDargs &:& \astof{\vfuncargs},\\
+   \funcbody &:& \astof{\vfuncbody},\\
+   \FIELDreturntype &:& \None,\\
+   \funcsubprogramtype &:& \STProcedure,\\
+   \FIELDrecurselimit &:& \astof{\vrecurselimit}\\
+   \funcbuiltin &:& \False\\
+   \funcqualifierfield &:& \astof{\vqualifier}\\
+   \funcoverride &:& \astof{\voverride}
+ \end{array}
+ \right\}\right)\right]
+}{\vastnode}}}
 \end{mathpar}
 
 \begin{mathpar}
@@ -404,8 +401,8 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 
 \begin{mathpar}
 \inferrule{
-  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \\\\
-  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \\\\
+  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \hva\\\\
+  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \hva\\\\
   {
   \vaccessorpair \eqdef
   \left\{
@@ -431,8 +428,8 @@ transforms a parse node $\vparsednode$ into an $\accessorpair$.
 
 \begin{mathpar}
 \inferrule{
-  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \\\\
-  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \\\\
+  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \hva\\\\
+  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \hva\\\\
   {
   \vaccessorpair \eqdef
   \left\{
@@ -479,7 +476,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
-  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \\\\
+  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \hva\\\\
   {
   \vgetter \eqdef
       \DFunc\left\{
@@ -496,8 +493,8 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcoverride &:& \voverride
       \end{array}
       \right\}
-  } \\\\
-  \vsetterargs \eqdef [(\vsetterarg, \tty)] \concat \vargs \\\\
+  } \hva\\\\
+  \vsetterargs \eqdef [(\vsetterarg, \tty)] \concat \vargs \hva\\\\
   {
   \vsetter \eqdef
       \DFunc\left\{
@@ -677,8 +674,8 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\\\\
-  \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\\\\
+  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\hva\\\\
+  \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\hva\\\\
   \addsubprogram(\tenvone, \newf.\FIELDname, \newf, \vsesf) \typearrow \newtenv
 }{
   \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
@@ -707,7 +704,7 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigfone, \vsesfone) \OrTypeError\\\\
+  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigfone, \vsesfone) \OrTypeError\hva\\\\
   \declareonefunc(\tenvone, \funcsigfone, \vsesfone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
 }{
   \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \overname{\vsesfone}{\vses})
@@ -764,14 +761,14 @@ is not a constrained expression.
     \annotatelimitexpr(\tenvone, \funcsig.\FIELDrecurselimit) \typearrow \\
     (\vrecurselimit, \vsesrecurselimit) \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   {
     \begin{array}{r}
     \annotateparams(\tenv, \funcsig.\FIELDparameters, (\tenv, \emptylist)) \typearrow \\
     (\tenvwithparams, \vseswithparams, \params) \OrTypeError
     \end{array}
   }\\
-  \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \\
+  \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \hva\\
   {
     \begin{array}{r}
     \annotateargs\left(
@@ -793,26 +790,25 @@ is not a constrained expression.
       \right) \typearrow \\
     (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
-  \checksubprogrampurity(\funcsig.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \\
+  \checksubprogrampurity(\funcsig.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \hva\\
   \sesforsubprogram(\funcsig.\funcqualifierfield) \typearrow \vses\\
-  {
-    \newfuncsig \eqdef
-    \left\{
-    \begin{array}{rcl}
-      \FIELDname            &:& \funcsig.\FIELDname,\\
-      \FIELDparameters      &:& \vparameters,\\
-      \FIELDargs            &:& \vargs,\\
-      \funcbody            &:& \funcsig.\funcbody,\\
-      \FIELDreturntype      &:& \vreturntype,\\
-      \funcsubprogramtype  &:& \funcsig.\funcsubprogramtype,\\
-      \FIELDrecurselimit    &:& \vrecurselimit\\
-      \funcbuiltin         &:& \funcsig.\funcbuiltin
-    \end{array}
-    \right\}
-  }
-}{
+{
+\newfuncsig \eqdef
+\left\{
+\begin{array}{rcl}
+ \FIELDname            &:& \funcsig.\FIELDname,\\
+ \FIELDparameters      &:& \vparameters,\\
+ \FIELDargs            &:& \vargs,\\
+ \funcbody            &:& \funcsig.\funcbody,\\
+ \FIELDreturntype      &:& \vreturntype,\\
+ \funcsubprogramtype  &:& \funcsig.\funcsubprogramtype,\\
+ \FIELDrecurselimit    &:& \vrecurselimit\\
+ \funcbuiltin         &:& \funcsig.\funcbuiltin
+\end{array}
+\right\}
+}}{
   \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \vses)
 }
 \end{mathpar}
@@ -853,11 +849,11 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
   \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
   (\overname{\newtenv}{\tenvwithparams}, \overname{\acc}{\paramsone})
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
-  \params = [(\vx,\tyopt)] \concat \paramsp\\\\
-  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \\\\
-  \accp \eqdef \acc \concat [(\vx, \tty)] \\\\
+  \params = [(\vx,\tyopt)] \concat \paramsp\hva\\\\
+  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \hva\\\\
+  \accp \eqdef \acc \concat [(\vx, \tty)] \hva\\\\
   {\begin{array}{r}\annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow \\(\tenvwithparams, \paramsone) \OrTypeError\end{array}}
 }{
   \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
@@ -907,21 +903,21 @@ since \verb|A| is also declared as a global storage element.
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \some{ \unconstrainedinteger}) \\
-  \tty \eqdef \TInt(\Parameterized(\vx))\\\\
-  \commonsuffixline\\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
+  \tty \eqdef \TInt(\Parameterized(\vx))\hva\\\\
+  \commonsuffixline\hva\\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
+  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
   \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
 }
-\and
+\hva\and
 \inferrule[type\_annotated]{
   \ttyp \neq \unconstrainedinteger\\
-  \annotatetype(\False, \tenv, \ttyp) \typearrow \tty \OrTypeError\\\\
-  \commonsuffixline\\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\\\\
+  \annotatetype(\False, \tenv, \ttyp) \typearrow \tty \OrTypeError\hva\\\\
+  \commonsuffixline\hva\\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
+  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
 }{
   \annotateoneparam(\tenv, \newtenv, (\vx, \some{\ttyp})) \typearrow (\newtenvp, \tty)
@@ -957,8 +953,8 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\\\\
-  \declaredparameters \eqdef [(\vp, \Ignore) \in \funcsig.\FIELDparameters: \vp]\\
+  \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\hva\\\\
+  \declaredparameters \eqdef [(\vp, \Ignore) \in \funcsig.\FIELDparameters: \vp]\hva\\
   \techeck(\inferredparameters = \declaredparameters, \BadSubprogramDeclaration) \typearrow \True \OrTypeError
 }{
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
@@ -1030,7 +1026,7 @@ are unsupported inside\\ \bitvectortypesterm{} of arguments.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \funcsigtypes(\funcsig) \typearrow \vt_{1..k}\\
-  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi \OrTypeError\\\\
+  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi \OrTypeError\hva\\\\
   \allparameters \eqdef \vparams_1 \concat \ldots \concat \vparams_k\\
   \uniqueparameters \eqdef \uniquelist(\allparameters)
 }{
@@ -1065,7 +1061,7 @@ in comments above their declarations.
       [\ttyp] & \text{if }\funcsig.\FIELDreturntype = \some{\ttyp}\\
       \emptylist & \text{if }\funcsig.\FIELDreturntype = \None
     \end{cases}
-  } \\\\
+  } \hva\\\\
   \argtypes \eqdef [(\Ignore, \ttyp)\in\funcsig.\FIELDargs: \ttyp]
 }{
   \funcsigtypes(\funcsig) \typearrow \overname{\vreturntype \concat \argtypes}{\tys}
@@ -1148,7 +1144,7 @@ in \listingref{ParametersOfTy} are as follows:
 
 \begin{mathpar}
 \inferrule[ttuple]{
-  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \OrTypeError\\\\
+  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \OrTypeError\hva\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
   \paramsofty(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow \ids
@@ -1157,7 +1153,7 @@ in \listingref{ParametersOfTy} are as follows:
 
 \begin{mathpar}
 \inferrule[tint\_constrained\_precise]{
-  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\\\\
+  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\hva\\\\
   \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
 }{
   \paramsofty(\tenv, \overname{\TInt(\WellConstrained(\cs, \True))}{\tty}) \typearrow \ids
@@ -1281,7 +1277,7 @@ for the expression \verb|A| appearing in the return type.
 
 \begin{mathpar}
 \inferrule[ebinop]{
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\hva\\\\
   \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
 }{
   \paramsofexpr(\tenv, \overname{\EBinop(\Ignore, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
@@ -1290,7 +1286,7 @@ for the expression \verb|A| appearing in the return type.
 
 \begin{mathpar}
 \inferrule[etuple]{
-  \techeck(\es = 1, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
+  \techeck(\es = 1, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\hva\\\\
   \es \eqname [\ve]\\
   \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
@@ -1300,8 +1296,8 @@ for the expression \verb|A| appearing in the return type.
 
 \begin{mathpar}
 \inferrule[econd]{
-  \paramsofexpr(\tenv, \ve) \typearrow \idsp \OrTypeError\\\\
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\\\\
+  \paramsofexpr(\tenv, \ve) \typearrow \idsp \OrTypeError\hva\\\\
+  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\hva\\\\
   \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
 }{
   \paramsofexpr(\tenv, \overname{\ECond(\ve, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsp \concat \idsone \concat \idstwo}{\ids}
@@ -1397,12 +1393,12 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
   \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc), \vsesin) \typearrow
   (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs}, \overname{\vsesin}{\vses})
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
-  \vargs = [(\vx,\tty)] \concat \vargsp\\\\
-  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \\\\
-  \accp \eqdef \acc \concat [(\vx, \ttyp)] \\\\
-  {\begin{array}{r}\annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \newses) \OrTypeError\end{array}}\\\\
+  \vargs = [(\vx,\tty)] \concat \vargsp\hva\\\\
+  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \hva\\\\
+  \accp \eqdef \acc \concat [(\vx, \ttyp)] \hva\\\\
+  {\begin{array}{r}\annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \newses) \OrTypeError\end{array}}\hva\\\\
   \vses \eqdef \vsesty \cup\ \newses
 }{
   {\begin{array}{r}\annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
@@ -1437,8 +1433,8 @@ as \collectiontypesterm.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vses) \OrTypeError \\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\\\\
+  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vses) \OrTypeError \hva\\\\
+  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
 }{
   \annotateonearg(\tenv, \newtenv, (\vx, \tty))
@@ -1498,7 +1494,7 @@ as return types.
 \begin{mathpar}
 \inferrule[has\_return\_type]{
   \annotatetype(\tenvwithparams, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \newreturntype \eqdef \some{\ttyp}\\
+  \newreturntype \eqdef \some{\ttyp}\hva\\
   {
   \newtenv \eqdef \left\{
   \begin{array}{rl}
@@ -1628,11 +1624,11 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
                     & \funcoverride        &:& \voverride \\
                 \} &&&
       \end{array}
-    }\\
+    }\hva\\
   {\begin{array}{r}\addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow \\(\tenvone, \namep) \OrTypeError\end{array}}
-  \\\\
-  \techeck(\tenvone.\staticenvsG.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \\\\
-  \newfuncsig \eqdef \funcsig[\FIELDname \mapsto \namep] \\\\
+  \hva\\\\
+  \techeck(\tenvone.\staticenvsG.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \hva\\\\
+  \newfuncsig \eqdef \funcsig[\FIELDname \mapsto \namep] \hva\\\\
   \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
 }{
   \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
@@ -1679,7 +1675,7 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
 \begin{mathpar}
 \inferrule{
   \tenv.\staticenvsG.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
-  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\\
+  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\hva\\
   \vbtwo \eqdef \otherfuncsig.\funcqualifierfield \neq \vqualifier \\
   \hasargclash(\formaltypes, \otherfuncsig.\FIELDargs) \typearrow \vbthree
 }{
@@ -1801,7 +1797,7 @@ are ill-typed due to subprogram declaration clashes.
 \inferrule[name\_exists]{
   \tenv.\staticenvsG.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \concatstrings\ \discardvarstr\ \concatstrings\ \stringofnat{k}\\
+  \newname \eqdef \name\ \concatstrings\ \discardvarstr\ \concatstrings\ \stringofnat{k}\hva\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
   \namep \in \othernames:
@@ -1815,9 +1811,9 @@ are ill-typed due to subprogram declaration clashes.
     \end{array}
     \right) \typearrow
   \vb_{\namep} \OrTypeError
-  }\\\\
-  \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\\\\
-  \newgenv \eqdef \tenv.\staticenvsG.\overloadedsubprograms[\name\mapsto \othernames \cup\ \{\newname\}]\\
+  }\hva\\\\
+  \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\hva\\\\
+  \newgenv \eqdef \tenv.\staticenvsG.\overloadedsubprograms[\name \mapsto \othernames \cup\ \{\newname\}]\\
   \newtenv \eqdef \{\staticenvsG: \newgenv,  \staticenvsL: \tenv.\staticenvsL\}
 }{
   {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \newname)\end{array}}
@@ -1853,9 +1849,9 @@ and an example of a well-typed function --- \verb|flip_bits|.
 \begin{mathpar}
 \inferrule{
   \annotateblock(\tenv, \vf.\funcbody) \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
-  \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\\\\
+  \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\hva\\\\
   \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \\
+  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \hva\\
   \checksubprogrampurity(\vf.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \\
   \sesforsubprogram(\vf.\funcqualifierfield) \typearrow \vses
 }{
@@ -2123,7 +2119,7 @@ can be added, for example, an \unreachablestatementterm.
   \tenv.\staticenvsG.\subprograms(\call.\callname) = (\vf, \Ignore)\\
   {
   \absconfigs \eqdef
-  \ifthenelse{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
+  \ifthenelsestmt{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
   }
 }{
   \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs
@@ -2145,7 +2141,7 @@ can be added, for example, an \unreachablestatementterm.
 \begin{mathpar}
 \inferrule[s\_seq]{
   \approxstmt(\tenv, \vsone) \typearrow \configsone\\
-  \approxstmt(\tenv, \vstwo) \typearrow \configstwo\\
+  \approxstmt(\tenv, \vstwo) \typearrow \configstwo\hva\\
   \vc\in\configsone: \vs_\vc \eqdef \choice{\vc = \AbsContinuing}{\configstwo}{\{\vc\}}\\
   \absconfigs \eqdef \bigcup_{\vc\in\configsone} \vs_\vc
 }{
@@ -2189,14 +2185,14 @@ can be added, for example, an \unreachablestatementterm.
 \begin{mathpar}
 \inferrule[s\_try]{
   \approxstmt(\vbody, \vsone) \typearrow \bodyconfigs\\
-  {
-    \otherwiseconfigs \eqdef \left\{
-    \begin{array}{ll}
-    \textbf{if}   & \votherwise=\some{\otherwises}\textbf{ then}\\
-                  & \approxstmt(\tenv, \otherwises)\\
-    \textbf{else} & \emptyset
-    \end{array}\right.
-  }\\
+{
+ \otherwiseconfigs \eqdef \left\{
+ \begin{array}{ll}
+ \textbf{if}   & \votherwise=\some{\otherwises}\textbf{ then}\\
+               & \approxstmt(\tenv, \otherwises)\\
+ \textbf{else} & \emptyset
+ \end{array}\right.
+}\hva\\
   (\Ignore,\Ignore,\vc)\in\catchers: \approxstmt(\tenv, \vc) \typearrow \catchconfigs_\vc\\
   {
   \absconfigs \eqdef \left\{

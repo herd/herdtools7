@@ -163,8 +163,8 @@ is well-typed.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\\\\
-  \annotatelexpr(\tenv, \vle, \vtre) \typearrow (\vleone, \vsesle) \OrTypeError\\\\
+  \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\hva\\\\
+  \annotatelexpr(\tenv, \vle, \vtre) \typearrow (\vleone, \vsesle) \OrTypeError\hva\\\\
   \vses \eqdef \vsesre \cup \vsesle
 }{
   \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow
@@ -230,7 +230,7 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
   \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
   \ResultCall(\vms, \envone) \OrAbnormal
     \end{array}
-  }\\\\
+  }\hva\\\\
   \evalmultiassignment(\envone, \vles, \vms) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
 }{
   \evalstmt(\env, \vs)
@@ -373,7 +373,7 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \begin{mathpar}
 \inferrule[empty]{
   \vlhsaccess.\lhsaccessaccess = \emptylist \\
-  \vlhsaccess.\lhsaccessslices = \emptylist \\\\
+  \vlhsaccess.\lhsaccessslices = \emptylist \hva\\\\
   \makesetter(\vcall, \rhs) \aslto \vcallp
 }{
   \desugarsetter(\vcall, \vlhsaccess, \rhs)
@@ -385,8 +385,8 @@ builds a statement $\news$ from an assignment of expression $\rhs$ to a setter i
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vlhsaccess.\lhsaccessaccess \neq \emptylist \lor
-  \vlhsaccess.\lhsaccessslices \neq \emptylist \\\\
-  \vx \in \Identifier \text{ is fresh} \\\\
+  \vlhsaccess.\lhsaccessslices \neq \emptylist \hva\\\\
+  \vx \in \Identifier \text{ is fresh} \hva\\\\
   \desugarlhsaccess(\vx, \vlhsaccess) \astarrow \lhs \\
   \vmodify \eqdef \SAssign(\lhs, \rhs) \\
   \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
@@ -413,7 +413,7 @@ builds a statement $\news$ from an assignment of $\rhs$ to a setter invocation $
 
 \begin{mathpar}
 \inferrule{
-  \vx \in \Identifier \text{ is fresh} \\\\
+  \vx \in \Identifier \text{ is fresh} \hva\\\\
   \lhs \eqdef \LESetFields(\LEVar(\vx), \vfields) \\
   \vmodify \eqdef \SAssign(\lhs, \rhs) \\
   \readmodifywrite(\vcall, \vx, \vmodify) \astarrow \vcallp
@@ -448,8 +448,8 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 
 \begin{mathpar}
 \inferrule{
-  \setcalltype(\vcall, \STGetter) \aslto \vgetter \\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \\\\
+  \setcalltype(\vcall, \STGetter) \aslto \vgetter \hva\\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \hva\\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter\\
   \news \eqdef \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }{
@@ -460,7 +460,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \ASTRuleDef{SetterAssign}
 \begin{mathpar}
 \inferrule[no\_slices]{
-  \buildaccess(\vsetteraccess) \astarrow \vaccess \\\\
+  \buildaccess(\vsetteraccess) \astarrow \vaccess \hva\\\\
   {
   \vlhsaccess \eqdef
     \left\{
@@ -480,7 +480,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 
 \begin{mathpar}
 \inferrule[slices]{
-  \buildaccess(\vsetteraccess) \astarrow \vaccess \\\\
+  \buildaccess(\vsetteraccess) \astarrow \vaccess \hva\\\\
   {
   \vlhsaccess \eqdef
     \left\{
@@ -536,7 +536,7 @@ As given by applying the relevant rules to the desugared AST.
     \begin{array}{l}
   \vparsednode =\\ \Nstmt(\Nlocaldeclkeyword, \Ndeclitem, \namednode{\vt}{\option{\Nasty}}, \Teq, \punnode{\Nexpr}, \Tsemicolon)\\
   \end{array}
-  }\\
+  }\hva\\
   \buildoption[\buildasty](\vt) \astarrow \astversion{\vt}\\
   \vastnode \eqdef \SDecl(\astof{\vlocaldeclkeyword}, \astof{\vdeclitem}, \astversion{\vt}, \some{\astof{\vexpr}})
 }{
@@ -559,7 +559,7 @@ As given by applying the relevant rules to the desugared AST.
 \begin{mathpar}
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
-  \buildasty(\vt) \astarrow \astversion{\vt} \\
+  \buildasty(\vt) \astarrow \astversion{\vt} \hva\\
   \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \None)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
@@ -617,7 +617,7 @@ since immutable local storage elements require an initializing expression.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\hva\\\\
   {
   \begin{array}{r}
   \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow \\
@@ -637,8 +637,8 @@ since immutable local storage elements require an initializing expression.
   \vs = \SDecl(\LDKVar, \ldi, \tyopt, \None)\\
   \techeck(\tyopt \neq \None, \TypeErrorVal{\BadDeclaration}) \typearrow \True \OrTypeError \\
   \tyopt \eqname \some{\vt} \\
-  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\\\\
-  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\\\\
+  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\hva\\\\
+  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\hva\\\\
   \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
   \news \eqdef \SDecl(\LDKVar, \ldi, \some{\vtp}, \some{\veinit})
 }{
@@ -682,7 +682,7 @@ See \ExampleRef{Typing Declaration Statements}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[none]{
-  \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\hva\\\\
   \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
 }{
   {
@@ -698,8 +698,8 @@ See \ExampleRef{Typing Declaration Statements}.
 \inferrule[some]{
   \tstruct(\tenv, \vte) \typearrow \vtep \OrTypeError \\
   \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
-  \annotatetype(\tenv, \vtp) \typearrow (\vtpp, \vses) \OrTypeError\\\\
-  \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\\\\
+  \annotatetype(\tenv, \vtp) \typearrow (\vtpp, \vses) \OrTypeError\hva\\\\
+  \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\hva\\\\
   \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \some{ \vep }, \ldip) \typearrow \newtenv \OrTypeError
 }{
   {
@@ -754,7 +754,7 @@ in the \CaseName{int} below.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[int]{
-  \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\\\\
+  \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\hva\\\\
   \techeck(\iswellconstrainedinteger(\rhs), \UnexpectedType) \typearrow \True\OrTypeError
 }{
   \inheritintegerconstraints(\overname{\TInt(\PendingConstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
@@ -764,8 +764,8 @@ in the \CaseName{int} below.
 \begin{mathpar}
 \inferrule[tuple]{
   \lhs = \TTuple(\vlhstys) \\
-  \rhs = \TTuple(\vrhstys) \\\\
-  \techeck(\equallength(\vlhstys, \vrhstys), \UnexpectedType) \typearrow \True \OrTypeError \\\\
+  \rhs = \TTuple(\vrhstys) \hva\\\\
+  \techeck(\equallength(\vlhstys, \vrhstys), \UnexpectedType) \typearrow \True \OrTypeError \hva\\\\
   {
   \begin{array}{r}
   \vi \in \listrange(\lhs): \inheritintegerconstraints(\vlhstys_\vi, \vrhstys_\vi) \typearrow \\
@@ -999,7 +999,7 @@ The function $\buildelidedparamcall$ builds a $\call$ from a parsed $\Nelidedpar
     \wrappedline\ \namednode{\vargs}{\PlistZero{\Nexpr}}
     \end{array}
     \right)
-  }\\
+  }\hva\\
   \buildcall(\Ncall(\Tidentifier(\id), \Tlbrace, \vparams, \Trbrace, \vargs))
   \astarrow \vastnode
 }{
@@ -1116,7 +1116,7 @@ builds a statement $\news$ from a possibly-empty list of statements $\vstmts$.
 }{
   \stmtfromlist(\overname{\emptylist}{\vstmts}) \astarrow \overname{\SPass}{\news}
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
   \stmtfromlist(\vstmtsone) \astarrow \vsone\\
   \sequencestmts(\vs, \vsone) \astarrow \news
@@ -1141,13 +1141,13 @@ instances of $\SPass$.
 \inferrule[s1\_spass]{}{
   \sequencestmts(\overname{\SPass}{\vsone}, \vstwo) \astarrow \overname{\vstwo}{\news}
 }
-\and
+\hva\and
 \inferrule[s2\_spass]{
   \vsone \neq \SPass
 }{
   \sequencestmts(\vsone, \overname{\SPass}{\vstwo}) \astarrow \overname{\vsone}{\news}
 }
-\and
+\hva\and
 \inferrule[no\_spass]{
   \vsone \neq \SPass\\
   \vstwo \neq \SPass
@@ -1179,8 +1179,8 @@ and also recorded to be equivalent to $\LInt(3)$ (in the $\exprequiv$ map).
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\\\\
-  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv, \vsestwo) \OrTypeError\\\\
+  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\hva\\\\
+  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv, \vsestwo) \OrTypeError\hva\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv, \vses)
@@ -1215,8 +1215,8 @@ evaluates \texttt{let y = x + 1}.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalstmt(\env, \vsone) \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\\\\
-  \evalstmt(\envone, \vstwo) \evalarrow C \OrAbnormal\\\\
+  \evalstmt(\env, \vsone) \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\hva\\\\
+  \evalstmt(\envone, \vstwo) \evalarrow C \OrAbnormal\hva\\\\
   \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\newg}
 }{
@@ -1438,10 +1438,10 @@ an \atcexpressionterm{}.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock(\tenv, \vsone) \typearrow (\vsonep, \vsesone) \OrTypeError\\\\
-  \annotateblock(\tenv, \vstwo) \typearrow (\vstwop, \vsestwo) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\hva\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vsonep, \vsesone) \OrTypeError\hva\\\\
+  \annotateblock(\tenv, \vstwo) \typearrow (\vstwop, \vsestwo) \OrTypeError\hva\\\\
   \vses \eqdef \vsescond \cup \vsesone \cup \vsestwo
 }{
   \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
@@ -1489,10 +1489,10 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\hva\\\\
   \vv \eqname \nvbool(\vb)\\
   \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
-  \evalblock(\envone, \vsp) \evalarrow C \OrAbnormal\\\\
+  \evalblock(\envone, \vsp) \evalarrow C \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vg}
 }{
@@ -1619,12 +1619,12 @@ AST:
 \RenderType[remove_hypertargets]{case_alt}
 
 \ASTRuleDef{SCase}
-To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,\\
+To satisfy \RequirementRef{CaseNoOtherwiseError}, when no \otherwisecaseterm\ exists,\linebreak[2]
 $\SUnreachable$ is used instead:
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
-  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\hva\\
   {
   \desugarcasestmt\left(
   \begin{array}{l}
@@ -1655,7 +1655,7 @@ $\SUnreachable$ is used instead:
 \begin{mathpar}
 \inferrule[otherwise]{
   \buildlist[\buildcasealt](\vcasealtlist) \astarrow \vcasealtlistast\\
-  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\\
+  \buildexpr(\vediscriminant) \astarrow \astversion{\vediscriminant}\hva\\
   \buildstmtlist(\votherwise) \astarrow \astversion{\votherwise}\\
   {
   \desugarcasestmt\left(
@@ -1763,7 +1763,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \begin{mathpar}
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
-  \vx \in \Identifier \text{ is fresh}\\
+  \vx \in \Identifier \text{ is fresh}\hva\\
   \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
@@ -1823,9 +1823,9 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \begin{mathpar}
 \inferrule{
   \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
-  \vepattern \eqdef \EPattern(\vezero, \vpattern)\\
+  \vepattern \eqdef \EPattern(\vezero, \vpattern)\hva\\
   {
-  \vcond \eqdef \ifthenelse{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
+  \vcond \eqdef \ifthenelsestmt{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
   }
 }{
   \casetocond(\vezero, \vcase, \vtail) \astarrow \overname{\SCond(\vcond, \vstmt, \vtail)}{\news}
@@ -1905,9 +1905,9 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\\\\
-  \techeck(\sesisreadonly(\vsese) \typearrow \True, \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\hva\\\\
+  \techeck(\sesisreadonly(\vsese) \typearrow \True, \SideEffectViolation) \typearrow \True \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsese
   }{
   \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
@@ -1956,7 +1956,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\hva\\\\
   \vv \eqname \nvbool(\True)
 }{
   \evalstmt(\env, \SAssert(\ve)) \evalarrow \Continuing(\newg, \newenv)
@@ -2075,10 +2075,10 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 \begin{mathpar}
 \inferrule{
   \vs = \SWhile(\veone, \vlimitone, \vsone)\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
-  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\hva\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\hva\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\hva\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   \annotatestmt(\tenv, \vs) \typearrow
@@ -2174,8 +2174,8 @@ the output configuration $C$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\\\\
-  \evalloop(\env, \True, \vlimitopt, \ve, \vbody) \evalarrow C \OrDynErrorDiverging\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\hva\\\\
+  \evalloop(\env, \True, \vlimitopt, \ve, \vbody) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \vgtwo \eqdef \ordered{\vgone}{\asldata}{\graphof{C}}\\
   D \eqdef \withgraph{C}{\vgtwo}
 }{
@@ -2237,7 +2237,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \begin{mathpar}
 \inferrule[exit]{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\hva\\\\
   \condm \eqname (\nvbool(\vb), \newg)\\
   \vb \neq \iswhile
 }{
@@ -2247,11 +2247,11 @@ The negation of the condition is used to decide whether to continue the loop ite
 
 \begin{mathpar}
 \inferrule[continue]{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\hva\\\\
   \condm \eqname (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
-  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\\\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\\\\
+  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\hva\\\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\hva\\\\
   {
     \begin{array}{r}
       \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \\
@@ -2417,10 +2417,10 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\\\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\\\\
-  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\\\\
+  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\hva\\\\
+  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\hva\\\\
+  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\hva\\\\
   \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
 }{
   {
@@ -2484,9 +2484,9 @@ either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\\\\
-  \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\\\\
-  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\hva\\\\
+  \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\hva\\\\
+  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\hva\\\\
   \evalloop(\envone, \False, \vlimitopttwo, \ve, \vbody) \evalarrow C\\
   \vgthree \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\graphof{C}}}\\
   D \eqdef \withgraph{C}{\vgthree}
@@ -2634,24 +2634,24 @@ show examples of ill-typed \texttt{for} loops.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\\\\
-  \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\\\\
-  \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\\\\
-  \techeck(\sesisreadonly(\vsesstart), \SideEffectViolation) \typearrow \True\OrTypeError\\\\
-  \techeck(\sesisreadonly(\vsesend), \SideEffectViolation) \typearrow \True\OrTypeError\\\\
+  \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\hva\\\\
+  \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\hva\\\\
+  \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\hva\\\\
+  \techeck(\sesisreadonly(\vsesstart), \SideEffectViolation) \typearrow \True\OrTypeError\hva\\\\
+  \techeck(\sesisreadonly(\vsesend), \SideEffectViolation) \typearrow \True\OrTypeError\hva\\\\
   \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
-  \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\hva\\\\
   {
     \begin{array}{r}
   \getforconstraints(\tenv, \vstartstruct, \vendstruct, \vstartep, \vendep, \dir) \typearrow \\
     \cs \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   \tty \eqdef \TInt(\cs)\\
-  \checkvarnotinenv(\tenv, \vindexname) \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \vindexname) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
-  \annotateblock(\tenvp, \vbody) \typearrow (\vbodyp, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenvp, \vbody) \typearrow (\vbodyp, \vsesblock) \OrTypeError\hva\\\\
   \vses \eqdef \vsesblock \cup \vsescond
 }{
   {
@@ -2739,11 +2739,11 @@ and the constraints for the loop index variable \verb|i| in \verb|main| are \ver
 \begin{mathpar}
 \inferrule[well\_constrained]{
   \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
-  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\\
+  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\hva\\
   \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
-  \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\\\\
+  \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\hva\\\\
   \icsup \eqdef \WellConstrained([\ConstraintRange(\eonen, \etwon)])\\
-  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\\
+  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\hva\\
   \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
 }{
   \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
@@ -2818,9 +2818,9 @@ they are evaluated via $\evalexprsef$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\\\\
-  \evalexprsef(\env, \vende) \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\\\\
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\hva\\\\
+  \evalexprsef(\env, \vende) \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\hva\\\\
+  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\hva\\\\
   \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
   {
     \begin{array}{r}
@@ -2930,9 +2930,9 @@ Advancing the loop counter one step towards the end of its range is achieved via
 \begin{mathpar}
 \inferrule{
   \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\hva\\
   \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
-  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
+  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\hva\\
   \env \eqname (\tenv, \denv)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
@@ -2949,8 +2949,8 @@ Advancing the loop counter one step towards the end of its range is achieved via
 Running the loop body is achieved via the following rule:
 \begin{mathpar}
 \inferrule{
-  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\\\\
-  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\\
+  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\hva\\\\
+  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\hva\\
   {
     \begin{array}{r}
       \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
@@ -2974,8 +2974,8 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \begin{mathpar}
 \inferrule[return]{
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
-  \commonprefixline\\\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\hva\\\\
+  \commonprefixline\hva\\\\
   \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)
 }{
   {
@@ -2990,11 +2990,11 @@ $\evalforloop$ (the latter in a mutually recursive manner):
 \begin{mathpar}
 \inferrule[continue]{
   \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
-  \commonprefixline\\\\
+  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\hva\\\\
+  \commonprefixline\hva\\\\
   \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
-  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
-  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
+  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\hva\\\\
+  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \hva\\
   \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
   \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
@@ -3049,8 +3049,8 @@ shows examples of well-typed \throwstatementsterm.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\\\\
-  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\hva\\\\
+  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\hva\\\\
   \vte \eqname \TNamed(\exnname)\\
   \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
 }{
@@ -3087,7 +3087,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
   \name\in\Identifier \text{ is fresh}\\
   \vgtwo \eqdef \WriteEffect(\name)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
@@ -3219,15 +3219,15 @@ the \trystatementsterm{} are all well-typed.
 \begin{mathpar}
 \inferrule[no\_otherwise]{
   \vs = \STry(\vsp, \catchers, \None)\\
-  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\\\\
-  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
-  \commonprefixline\\\\
+  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\hva\\\\
+  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\hva\\\\
+  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\hva\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\hva\\\\
+  \commonprefixline\hva\\\\
   \news \eqdef \STry(\vspp, \catchersp, \None)\\
   \vsesotherwise \eqdef \emptyset\\
-  \vsesthree \eqdef \vsestwo\\\\
-  \commonsuffixline\\\\
+  \vsesthree \eqdef \vsestwo\hva\\\\
+  \commonsuffixline\hva\\\\
   \vses \eqdef \vsesthree \cup \vsescatchers \cup \vsesotherwise
 }{
   \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
@@ -3237,16 +3237,16 @@ the \trystatementsterm{} are all well-typed.
 \begin{mathpar}
 \inferrule[otherwise]{
   \vs = \STry(\vsp, \catchers, \some{\otherwise})\\
-  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\\\\
-  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\\\\
-  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\\\\
-  \commonprefixline\\\\
-  \annotateblock(\tenv, \otherwise) \typearrow (\otherwisep, \vsesblock) \OrTypeError\\\\
+  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\hva\\\\
+  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\hva\\\\
+  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\hva\\\\
+  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\hva\\\\
+  \commonprefixline\hva\\\\
+  \annotateblock(\tenv, \otherwise) \typearrow (\otherwisep, \vsesblock) \OrTypeError\hva\\\\
   \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
   \vsesotherwise \eqdef \vsesblock\\
-  \vsesthree \eqdef \vsestwo \\\\
-  \commonsuffixline\\\\
+  \vsesthree \eqdef \vsestwo \hva\\\\
+  \commonsuffixline\hva\\\\
   \vses \eqdef \vsescatchers \cup \vsesotherwise
 }{
   \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
@@ -3277,7 +3277,7 @@ does not result in any Assertion error, and the specification terminates with th
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \evalblock(\env, \vsone) \evalarrow \sm \OrDynErrorDiverging\\\\
+  \evalblock(\env, \vsone) \evalarrow \sm \OrDynErrorDiverging\hva\\\\
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow C
 }{
   \evalstmt(\env, \STry(\vsone, \catchers, \otherwiseopt)) \evalarrow C
@@ -3379,7 +3379,7 @@ since \verb|proc| is not a function but a procedure.
 \inferrule[some]{
   \vs = \SReturn(\some{ \ve })\\
   \tenv.\staticenvsL.\returntype = \some{ \vt }\\
-  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\hva\\\\
   \checktypesatisfies(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
 }{
   \annotatestmt(\tenv, \vs) \typearrow
@@ -3449,7 +3449,7 @@ In \listingref{semantics-sreturntuple},
 
 \begin{mathpar}
 \inferrule[one]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\\\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
   \wid \in \Identifier\text{ is fresh}\\
   \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
@@ -3509,7 +3509,7 @@ are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vEs = [\ve] \concat \vesone\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\\
+  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\hva\\
   \evalexprlistm(\envone, \vesone) \evalarrow \ResultExprListM(\vmsone, \newenv) \OrAbnormal
 }{
   \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
@@ -3562,7 +3562,7 @@ empty \executiongraphterm{}.
   \vms = [\vm] \concat \vmsone\\
   \vm \eqdef (\vv, \vg)\\
   \wid \in \Identifier\text{ is fresh}\\
-  \writeidentifier(\wid, \vv) \evalarrow \vgone\\
+  \writeidentifier(\wid, \vv) \evalarrow \vgone\hva\\
   \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
   \vvs \eqdef [\vv] \concat \vvsone\\
   \newg \eqdef \ordered{\vg}{\aslpo}{\ordered{\vgone}{\asldata}{\vgtwo}}
@@ -3598,7 +3598,7 @@ empty \executiongraphterm{}.
 \begin{mathpar}
 \inferrule{%
   \vparsednode = \Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)\\
-  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
+  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \hva\\
   \vnewline \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
@@ -3628,8 +3628,8 @@ empty \executiongraphterm{}.
 \begin{mathpar}
   \inferrule{%
     \vs = \SPrint(\vargs, \vnewline)\\
-    \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \\\\
-    \vi\in\listrange(\vargs): \techeck(\issingular(\vt_i), \UnexpectedType) \typearrow \True \OrTypeError \\\\
+    \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \hva\\\\
+    \vi\in\listrange(\vargs): \techeck(\issingular(\vt_i), \UnexpectedType) \typearrow \True \OrTypeError \hva\\\\
     \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
   }{%
     \annotatestmt (\tenv, \vs) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
@@ -3707,7 +3707,7 @@ We define the newline character $\vnewline \triangleq \ascii{10}$.
 
 \begin{mathpar}
 \inferrule[println]{
-  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \envone) \OrAbnormal\\\\
+  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \envone) \OrAbnormal\hva\\\\
   \outputtoconsole(\envone, \nvstring(\vnewline)) \evalarrow \newenv
 }{
   \evalstmt(\env, \SPrint(\elist, \True)) \evalarrow \Continuing(\vg, \newenv)
@@ -3910,7 +3910,7 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  i\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\\\\
+  i\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\hva\\\\
   \vses \eqdef \bigcup_{i\in\listrange(\vargs)} \vxs_i
 }{
   \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)

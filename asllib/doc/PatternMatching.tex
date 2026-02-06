@@ -172,11 +172,11 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
   \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError
 }{
@@ -187,12 +187,12 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \begin{mathpar}
 \inferrule[t\_bits]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TBits\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
   \bitwidthequal(\tenv, \vtstruct, \vtestruct) \typearrow \vb\\
   \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
 }{
@@ -203,14 +203,14 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \begin{mathpar}
 \inferrule[t\_enum]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TEnum\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
+  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
   \vtstruct \eqname \TEnum(\vlione)\\
-  \vtestruct \eqname \TEnum(\vlitwo)\\
+  \vtestruct \eqname \TEnum(\vlitwo)\hva\\
   \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
@@ -220,10 +220,10 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \begin{mathpar}
 \inferrule[error]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
+  \commonprefixline\hva\\\\
   \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
   \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
 }{
@@ -252,7 +252,7 @@ In \listingref{semantics-psingle},
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
   \evalbinop(\EQ, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern(\env, \vv, \overname{\PatternSingle(\ve)}{\vp}) \evalarrow \ResultPattern(\vb, \newg)
@@ -311,12 +311,12 @@ In \listingref{semantics-psingle},
 \begin{mathpar}
 \inferrule{
   \vp = \PatternRange(\veone, \vetwo)\\
-  \annotatesymbolicallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotatesymbolicallyevaluableexpr(\tenv, \vetwo) \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
+  \annotatesymbolicallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\hva\\\\
+  \annotatesymbolicallyevaluableexpr(\tenv, \vetwo) \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\hva\\\\
   \vses \eqdef \vsesone \cup \vsestwo\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\hva\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
@@ -359,9 +359,9 @@ range given by \texttt{3..42}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\hva\\\\
   \evalbinop(\GE, \vv, \vvone) \evalarrow \vbone\\
-  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\hva\\\\
   \evalbinop(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
   \evalbinop(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
@@ -416,10 +416,10 @@ that is, $\PatternLeq(\ve)$;
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vtestruct)\ \land\\
@@ -455,7 +455,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
   \evalbinop(\LE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern(\env, \vv, \PatternLeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
@@ -507,10 +507,10 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
+  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
+  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\hva\\\\
   {
     \begin{array}{rl}
       \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vtestruct)\ \land\\
@@ -546,7 +546,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
   \evalbinop(\GE, \vv, \vvone) \evalarrow \vb
 }{
   \evalpattern(\env, \vv, \PatternGeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
@@ -597,7 +597,7 @@ and bit sequences in parentheses represent, don't-care values.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
+  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\hva\\\\
   \vn \eqdef \listlen{\vm}\\
   \checktypesatisfies(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
 }{
@@ -722,11 +722,11 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \begin{mathpar}
 \inferrule{
   \vp = \PatternTuple(\vli)\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
+  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
+  \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \vtstruct \eqname \TTuple(\vts)\\
-  \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
+  \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
+  i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\hva\\\\
   \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
   \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
 }{
@@ -762,7 +762,7 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \begin{mathpar}
 \inferrule{
   i=1..k: \getindex(i, \vv) \evalarrow \vvs[i]\OrDynError\\
-  i=1..k: \evalpattern(\env, \vvs[i], \vps[i]) \evalarrow \ResultPattern(\nvbool(\vbs[i]), \vg[i]) \OrDynErrorDiverging\\\\
+  i=1..k: \evalpattern(\env, \vvs[i], \vps[i]) \evalarrow \ResultPattern(\nvbool(\vbs[i]), \vg[i]) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \nvbool(\bigwedge_{i=1..k} \vbs[i])\\
   \vg \eqdef \vg[1] \parallelcomp \ldots \parallelcomp \vg[k]
 }{
@@ -859,7 +859,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\\\\
+  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\hva\\\\
   \newli \eqdef [\vl\in\vli: \newl_\vl]\\
   \vses \eqdef \bigcup_{\vl\in\vli} \vxs_\vl
 }{
@@ -891,7 +891,7 @@ any pattern in \verb|{3, 4}|.
 \begin{mathpar}
 \inferrule{
   \vps \eqname \vp_{1..k}\\
-  i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\\\\
+  i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
   \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
 }{
@@ -953,7 +953,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
+  \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\hva\\\\
   \evalunop(\BNOT, \vbone) \evalarrow \vb
 }{
   \evalpattern(\env, \vv, \PatternNot(\vpone)) \evalarrow \ResultPattern(\vb, \newg)

@@ -177,9 +177,9 @@ The overloaded function
 adds a list of polynomials:
 \begin{mathpar}
 \inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \emptyfunc }
-\and
+\hva\and
 \inferrule[one]{}{ \addpolynomials([ \vp ]) \typearrow \vp }
-\and
+\hva\and
 \inferrule[two\_or\_more]{
   \addpolynomials(\vp_{2..k}) \typearrow \vpp\\
   \addpolynomials(\vp_1, \vpp) \typearrow \vp
@@ -300,13 +300,13 @@ and their corresponding normalized expressions.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normalizable]{
-  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
+  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
   \vpone \neq \CannotBeTransformed\\
   \polynomialtoexpr(\vpone) \typearrow \newe
 }{
   \normalize(\tenv, \ve) \typearrow \newe
 }
-\and
+\hva\and
 \inferrule[not\_normalizable]{
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }{
@@ -650,8 +650,8 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[evar\_exact\_constraint]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
   \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
-  \typeof(\vs) \typearrow \vt \OrTypeError\\\\
-  \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\\\\
+  \typeof(\vs) \typearrow \vt \OrTypeError\hva\\\\
+  \makeanonymous(\vt) \typearrow \ttyone \OrTypeError\hva\\\\
   \astlabel(\ttyone) = \TInt\\
   \ttyone = \TInt(\WellConstrained([\ConstraintExact(\ve)]))\\
   \toir(\tenv, \ve) \typearrow \vp \terminateas \CannotBeTransformed
@@ -663,9 +663,9 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[evar\_int]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
-  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\hva\\
   \typeof(\vs) \typearrow \vt\\
-  \makeanonymous(\vt) \typearrow \ttyone\\
+  \makeanonymous(\vt) \typearrow \ttyone\hva\\
   \astlabel(\ttyone) = \TInt\\
   \ttyone \neq \TInt(\WellConstrained([\ConstraintExact(\Ignore)]))
 }{
@@ -676,9 +676,9 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[evar\_non\_int]{
   \lookupconstant(\tenv, \vs) \typearrow \bot\\
-  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\\
+  \lookupimmutableexpr(\tenv, \vs) \typearrow \bot\hva\\
   \typeof(\vs) \typearrow \vt\\
-  \makeanonymous(\vt) \typearrow \ttyone\\
+  \makeanonymous(\vt) \typearrow \ttyone\hva\\
   \astlabel(\ttyone) \neq \TInt
 }{
   \toir(\tenv, \overname{\EVar(\vs)}{\ve}) \typearrow \CannotBeTransformed
@@ -687,8 +687,8 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_plus]{
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
-  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\hva\\\\
   \vp \eqdef \addpolynomials(\irone, \irtwo)
 }{
   \toir(\tenv, \overname{\EBinop(\ADD, \veone, \vetwo)}{\ve}) \typearrow \vp
@@ -698,7 +698,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[ebinop\_minus]{
   \vep \eqdef \EBinop(\ADD, \veone, \EUnop(\NEG, \vetwo))\\
-  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\hva\\\\
 }{
   \toir(\tenv, \overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}) \typearrow \vp
 }
@@ -706,7 +706,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_mul\_div\_left]{
-  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vethree), \vetwo)) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vethree), \vetwo)) \typearrow \vp \OrTypeError, \CannotBeTransformed\hva\\\\
 }{
   \toir(\tenv, \overname{\EBinop(\MUL, \EBinop(\DIV, \veone, \vetwo), \vethree)}{\ve}) \typearrow \vp
 }
@@ -715,7 +715,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \begin{mathpar}
 \inferrule[ebinop\_mul\_div\_right]{
   \veone \neq \EBinop(\DIV, \Ignore, \Ignore)\\
-  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vetwo), \vethree)) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \EBinop(\DIV, \EBinop(\MUL, \veone, \vetwo), \vethree)) \typearrow \vp \OrTypeError, \CannotBeTransformed\hva\\\\
 }{
   \toir(\tenv, \overname{\EBinop(\MUL, \veone, \EBinop(\DIV, \vetwo, \vethree))}{\ve}) \typearrow \vp
 }
@@ -725,8 +725,8 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[ebinop\_mul]{
   \veone \neq \EBinop(\DIV, \Ignore, \Ignore)\\
   \vetwo \neq \EBinop(\DIV, \Ignore, \Ignore)\\
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
-  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\hva\\\\
   \vp \eqdef \mulpolynomials(\irone, \irtwo)
 }{
   \toir(\tenv, \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}) \typearrow \vp
@@ -735,7 +735,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_div\_int\_denominator]{
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
   \vftwo \eqdef \frac{1}{\vitwo}\\
   \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
   \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
@@ -746,8 +746,8 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_div\_monomial\_denominator]{
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
-  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\hva\\\\
   \irtwo = [\vmono \mapsto \vfactor]\\
   \polynomialdividebyterm(\irone, \vfactor, \vmono) \typearrow \vp \terminateas \CannotBeTransformed
 }{
@@ -757,8 +757,8 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[ebinop\_div\_non\_monomial\_denominator]{
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
-  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
+  \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError, \CannotBeTransformed\hva\\\\
   \irtwo \neq [\vmono \mapsto \vfactor]
 }{
   \toir(\tenv, \overname{\EBinop(\DIV, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
@@ -779,9 +779,9 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 }{
   \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\LInt(\vitwo)))}{\ve}) \typearrow \CannotBeTransformed
 }
-\and
+\hva\and
   \inferrule[ebinop\_shl\_okay]{
-    \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\\\\
+    \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
     \vitwo \geq 0\\
     \vftwo \eqdef 2^{\vitwo}\\
     \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
@@ -798,7 +798,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 }{
   \toir(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow \CannotBeTransformed
 }
-\and
+\hva\and
 \inferrule[ebinop\_other\_literals\_non\_int\_result]{
   \op \not\in \{\ADD, \SUB, \MUL, \DIV, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \vl\\
@@ -806,7 +806,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 }{
   \toir(\tenv, \overname{\EBinop(\op, \ELiteral(\vlone), \ELiteral(\vltwo))}{\ve}) \typearrow \CannotBeTransformed
 }
-\and
+\hva\and
 \inferrule[ebinop\_other\_literals\_int\_result]{
   \op \not\in \{\ADD, \SUB, \MUL, \DIV, \SHL\}\\
   \binopliterals(\op, \vlone, \vltwo) \typearrow \LInt(k)\\
@@ -818,7 +818,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[eunop\_neg]{
-  \toir(\tenv, \EBinop(\MUL, \ELiteral(\LInt(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \EBinop(\MUL, \ELiteral(\LInt(-1)),\veone )) \typearrow \vp \OrTypeError, \CannotBeTransformed\hva\\\\
 }{
   \toir(\tenv, \overname{\EUnop(\NEG, \veone)}{\ve}) \typearrow \vp
 }
@@ -834,7 +834,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 
 \begin{mathpar}
 \inferrule[atc]{
-  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\\\\
+  \toir(\tenv, \vep) \typearrow \vp \OrTypeError, \CannotBeTransformed\hva\\\\
 }{
   \toir(\tenv, \overname{\EATC(\vep, \Ignore)}{\ve}) \typearrow \vp
 }
@@ -880,7 +880,7 @@ comprising the array lengths are equivalent, as detailed in comments.
 }{
   \exprequal(\tenv, \veone, \vetwo) \typearrow \True
 }
-\and
+\hva\and
 \inferrule[norm\_false]{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \False\\
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
@@ -921,18 +921,18 @@ See \ExampleRef{Expression Equivalence}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[all\_supported]{
-  \toir(\tenv, \veone) \typearrow \irone \OrTypeError\\\\
+  \toir(\tenv, \veone) \typearrow \irone \OrTypeError\hva\\\\
   \toir(\tenv, \vetwo) \typearrow \irtwo \OrTypeError
 }{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\irone = \irtwo}{\vb}
 }
-\and
+\hva\and
 \inferrule[unsupported1]{
   \toir(\tenv, \veone) \typearrow \CannotBeTransformed
 }{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
-\and
+\hva\and
 \inferrule[unsupported2]{
   \toir(\tenv, \veone) \typearrow \irone\\
   \toir(\tenv, \vetwo) \typearrow \CannotBeTransformed
@@ -1138,8 +1138,8 @@ See \ExampleRef{Expression Equivalence}.
 \inferrule[e\_binop]{
   \veone = \EBinop(\opone, \veoneone, \veonetwo)\\
   \vetwo = \EBinop(\optwo, \vetwoone, \vetwotwo)\\
-  \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \exprequal(\veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef (\opone = \optwo) \land \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1150,10 +1150,10 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_call]{
   \veone = \ECall(\nameone, \vargsone, \Ignore)\\
-  \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\\\\
-  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
-  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
-  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\hva\\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\hva\\\\
+  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\hva\\\\
+  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1163,10 +1163,10 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_cond]{
   \veone = \ECond(\veoneone, \veonetwo, \veonethree)\\
-  \vetwo = \ECond(\vetwoone, \vetwotwo, \vetwothree)\\\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
-  \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree \OrTypeError\\\\
+  \vetwo = \ECond(\vetwoone, \vetwotwo, \vetwothree)\hva\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\hva\\\\
+  \exprequal(\tenv, \veonethree, \vetwothree) \typearrow \vbthree \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo \land \vbthree
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1176,9 +1176,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_slice]{
   \veone = \ESlice(\veoneone, \slicesone)\\
-  \vetwo = \ESlice(\vetwoone, \slicestwo)\\\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vetwo = \ESlice(\vetwoone, \slicestwo)\hva\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1188,9 +1188,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_getarray]{
   \veone = \EGetArray(\veoneone, \veonetwo)\\
-  \vetwo = \EGetArray(\vetwoone, \vetwotwo)\\\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \vetwo = \EGetArray(\vetwoone, \vetwotwo)\hva\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1200,9 +1200,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_getfield]{
   \veone = \EGetField(\veoneone, \vfieldone)\\
-  \vetwo = \EGetField(\vetwoone, \vfieldtwo)\\\\
+  \vetwo = \EGetField(\vetwoone, \vfieldtwo)\hva\\\\
   \vbone \eqdef \vfieldone = \vfieldtwo\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1212,9 +1212,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_getfields]{
   \veone = \EGetFields(\veoneone, \vfieldsone)\\
-  \vetwo = \EGetFields(\vetwoone, \vfieldstwo)\\\\
+  \vetwo = \EGetFields(\vetwoone, \vfieldstwo)\hva\\\\
   \vbone \eqdef \vfieldsone = \vfieldstwo\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1224,9 +1224,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_getitem]{
   \veone = \EGetItem(\veoneone, \vione)\\
-  \vetwo = \EGetItem(\vetwoone, \vitwo)\\\\
+  \vetwo = \EGetItem(\vetwoone, \vitwo)\hva\\\\
   \vbone \eqdef \vione = \vitwo\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1236,7 +1236,7 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
   \inferrule[e\_literal]{
   \veone = \ELiteral(\vvone)\\
-  \vetwo = \ELiteral(\vvtwo)\\\\
+  \vetwo = \ELiteral(\vvtwo)\hva\\\\
   \vb \eqdef \vvone = \vvtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1263,8 +1263,8 @@ See \ExampleRef{Expression Equivalence}.
 \inferrule[e\_tuple]{
   \veone = \ETuple(\vlone)\\
   \vetwo = \ETuple(\vltwo)\\
-  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
-  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\hva\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1274,9 +1274,9 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_array]{
   \veone = \EArray\{\EArrayLength: \vlone, \EArrayValue: \vvone\}\\
-  \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\\
+  \vetwo = \EArray\{\EArrayLength: \vltwo, \EArrayValue: \vvtwo\}\hva\\
   \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \vvone, \vvtwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1286,8 +1286,8 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_unop]{
   \veone = \EUnop(\opone, \veoneone)\\
-  \vetwo = \EUnop(\optwo, \vetwoone)\\\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
+  \vetwo = \EUnop(\optwo, \vetwoone)\hva\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
   \vb \eqdef (\opone = \optwo) \land \vbone
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1306,8 +1306,8 @@ See \ExampleRef{Expression Equivalence}.
 \inferrule[e\_atc]{
   \veone = \EATC(\veoneone, \vtone)\\
   \vetwo = \EATC(\vetwoone, \vttwo)\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1317,7 +1317,7 @@ See \ExampleRef{Expression Equivalence}.
 \begin{mathpar}
 \inferrule[e\_var]{
   \veone = \EVar(\nameone)\\
-  \vetwo = \EVar(\nametwo)\\\\
+  \vetwo = \EVar(\nametwo)\hva\\\\
   \vb \eqdef \nameone = \nametwo
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
@@ -1442,7 +1442,7 @@ of \verb|Foo|.
 }{
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \True
 }
-\and
+\hva\and
 \end{mathpar}
 
 \begin{mathpar}
@@ -1463,7 +1463,7 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[tint\_wellconstrained]{
   \vtone = \TInt(\WellConstrained(\vcone))\\
-  \vttwo = \TInt(\WellConstrained(\vctwo))\\\\
+  \vttwo = \TInt(\WellConstrained(\vctwo))\hva\\\\
   \constraintsequal(\tenv, \vcone, \vctwo) \typearrow \vb \OrTypeError
 }{
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \vb
@@ -1472,8 +1472,8 @@ of \verb|Foo|.
 
 \begin{mathpar}
 \inferrule[tbits]{
-  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone \OrTypeError\\\\
-  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo \OrTypeError\\\\
+  \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vbone \OrTypeError\hva\\\\
+  \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \typeequal(\tenv, \overname{\TBits(\vwone, \bfone)}{\vtone}, \overname{\TBits(\vwtwo, \bftwo)}{\vttwo}) \typearrow \vb
@@ -1482,8 +1482,8 @@ of \verb|Foo|.
 
 \begin{mathpar}
 \inferrule[tarray]{
-  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\\\\
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \vlone, \vltwo) \typearrow \vbone \OrTypeError\hva\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \typeequal(\tenv, \overname{\TArray(\vlone, \vtone)}{\vtone}, \overname{\TArray(\vltwo, \vttwo)}{\vttwo}) \typearrow \vb
@@ -1509,12 +1509,12 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[tstructured]{
   L \in \{\TRecord, \TException\}\\
-  \booltrans(\fieldnames(\vfieldsone) = \fieldnames(\vfieldstwo)) \booltransarrow \True \terminateas \False\\\\
+  \booltrans(\fieldnames(\vfieldsone) = \fieldnames(\vfieldstwo)) \booltransarrow \True \terminateas \False\hva\\\\
   {
     \begin{array}{l}
   \vf \in \fieldnames(\vfieldsone): \\ \typeequal(\tenv, \fieldtype(\vfieldsone, \vf), \fieldtype(\vfieldstwo, \vf)) \typearrow \vb_\vf \OrTypeError
     \end{array}
-  }\\\\
+  }\hva\\\\
   \vb \eqdef \bigwedge_{\vf \in \fieldnames(\vfieldsone)} \vb_\vf
 }{
   \typeequal(\tenv, \overname{L(\vfieldsone)}{\vtone}, \overname{L(\vfieldstwo)}{\vttwo}) \typearrow \vb
@@ -1524,7 +1524,7 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[ttuple]{
   \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
-  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
   \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
 }{
   \typeequal(\tenv, \overname{\TTuple(\vtsone)}{\vtone}, \overname{\TTuple(\vtstwo)}{\vttwo}) \typearrow \vb
@@ -1591,10 +1591,10 @@ of \verb|Foo| are not equivalent.
 }{
   \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[same\_lengths]{
   \equallength(\bfone, \bftwo) \typearrow \True\\
-  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\\\\
+  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\hva\\\\
   \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
 }{
   \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
@@ -1667,33 +1667,33 @@ or different nested bitfields.
 }{
   \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[bitfield\_simple]{
   \bfone = \BitFieldSimple(\nameone, \slicesone)\\
-  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\\
+  \bftwo = \BitFieldSimple(\nametwo, \slicestwo)\hva\\
   \booltrans(\nameone = \nametwo) \booltransarrow \vbone\\
-  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[bitfield\_nested]{
   \bfone = \BitFieldNested(\nameone, \slicesone, \bfoneone)\\
-  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\\
+  \bftwo = \BitFieldNested(\nametwo, \slicestwo, \bftwoone)\hva\\
   \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
-  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \terminateas \TypeErrorConfig,\hva\\\\
   \bitfieldsequal(\tenv, \bfoneone, \bftwoone) \typearrow \vbtwo
 }{
   \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[bitfield\_typed]{
   \bfone = \BitFieldType(\nameone, \slicesone, \vtone)\\
   \bftwo = \BitFieldType(\nametwo, \slicestwo, \vttwo)\\
-  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False \\\\
-  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\\\\
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False \hva\\\\
+  \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vbone \OrTypeError\hva\\\\
+  \typeequal(\tenv, \vtone, \vttwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
@@ -1730,7 +1730,7 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 \begin{mathpar}
 \inferrule{
   \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
-  i\in\listrange(\csone): \constraintequal(\tenv, \csone[i], \cstwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  i\in\listrange(\csone): \constraintequal(\tenv, \csone[i], \cstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
   \vb \eqdef \bigwedge_{i\in\listrange(\csone)} \vb_i
 }{
   \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
@@ -1779,7 +1779,7 @@ corresponding constraint on the left-hand-side of that assignment.
 }{
   \constraintequal(\tenv, \vcone, \vctwo) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[constraint\_exact]{
   \vcone = \ConstraintExact(\veone)\\
   \vctwo = \ConstraintExact(\vetwo)\\
@@ -1787,12 +1787,12 @@ corresponding constraint on the left-hand-side of that assignment.
 }{
   \constraintequal(\tenv, \vcone, \vctwo) \typearrow \vb
 }
-\and
+\hva\and
 \inferrule[constraint\_range]{
   \bfone = \ConstraintRange(\veoneone, \veonetwo)\\
   \bftwo = \ConstraintRange(\vetwoone, \vetwotwo)\\
-  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \vetwoone) \typearrow \vbone \OrTypeError\hva\\\\
+  \exprequal(\tenv, \veonetwo, \vetwotwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
@@ -1831,10 +1831,10 @@ corresponding constraint on the left-hand-side of that assignment.
 }{
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \False
 }
-\and
+\hva\and
 \inferrule[same\_lengths]{
   \equallength(\slicesone, \slicestwo) \typearrow \True\\
-  i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[i], \slicestwo[i]) \typearrow \vb_i \OrTypeError\\\\
+  i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[i], \slicestwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
   \vb \eqdef \bigwedge_{i\in\listrange(\slicesone)} \vb_i
 }{
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
@@ -1897,8 +1897,8 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 \inferrule[two\_exprs]{
   \vLone, \vLtwo \in \{\SliceLength, \SliceRange, \SliceStar\}\\
   \vLone = \vLtwo\\
-  \exprequal(\tenv, \veoneone, \veonetwo) \typearrow \vbone \OrTypeError\\\\
-  \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\\\\
+  \exprequal(\tenv, \veoneone, \veonetwo) \typearrow \vbone \OrTypeError\hva\\\\
+  \exprequal(\tenv, \vetwoone, \vetwotwo) \typearrow \vbtwo \OrTypeError\hva\\\\
   \vb \eqdef \vbone \land \vbtwo
 }{
   \slicesequal(\tenv, \overname{\vLone(\veoneone, \vetwoone)}{\sliceone}, \overname{\vLtwo(\veonetwo, \vetwotwo)}{\slicetwo}) \typearrow \vb
@@ -2016,12 +2016,12 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 {
   \polynomialtoexpr(\overname{\emptyfunc}{\vp}) \typearrow \overname{\ELiteral(\LInt(0))}{\ve}
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
   \monomsandfactors \eqdef \{ (\vm,\vq) \;|\; \vm\in\dom(f) \land f(\vm) = \vq \}\\
-  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\\
+  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\hva\\
   \monoms \eqdef \sort(\monomsandfactorslist, \comparemonomialbindings)\\
-  \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\\
+  \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\hva\\
   {
   \ve \eqdef \begin{cases}
     \ELiteral(\LInt(0))   & \text{if }\vsone = 0\\
@@ -2080,13 +2080,13 @@ via the lexicographic ordering.
 }{
   \comparemonomialbindings((\vmone, \vqone), (\vmtwo, \vqtwo)) \typearrow \vs
 }
-\and
+\hva\and
 \inferrule[different\_monomials]{
   \vmone \neq \vmtwo\\
   \ids \eqdef \sort(\dom(f) \cup \dom(g), \compareidentifier)\\
-  \ids \eqname \idsone \concat \idstwo\\
+  \ids \eqname \idsone \concat \idstwo\hva\\
   \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
-  \vv \eqdef \idstwo[1]\\
+  \vv \eqdef \idstwo[1]\hva\\
   {
   \vs \eqdef
     \begin{cases}
@@ -2134,7 +2134,7 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 {
   \monomialstoexpr(\overname{\emptylist}{\monoms}) \typearrow (\overname{\ELiteral(\LInt(0))}{\ve}, \overname{0}{\vs})
 }
-\and
+\hva\and
 \inferrule[non\_empty]{
   \unitarymonomialstoexpr(\vm) \typearrow \veonep\\
   \monomialtoexpr(\veonep, q) \typearrow (\veone,\vsone)\\
@@ -2211,7 +2211,7 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 }{
   \monomialtoexpr(\ve, q) \typearrow (\overname{\ELiteral(\LInt(0))}{\newe}, \overname{0}{\vs})
 }
-\and
+\hva\and
 \inferrule[q\_natural]{
   q > 0\\
   q \in \N\\
@@ -2219,17 +2219,17 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 }{
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
 }
-\and
+\hva\and
 \inferrule[q\_positive\_fraction]{
   q > 0\\
-  q \not\in \N\\\\
-  q \eqname \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\\\\
+  q \not\in \N\hva\\\\
+  q \eqname \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\hva\\\\
   \symmulexpr(\ELiteral(\LInt(d)), \ve) \typearrow \vetwo\\
   \newe \eqdef \EBinop(\DIV, \vetwo, \ELiteral(\LInt(n)))
 }{
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{1}{\vs})
 }
-\and
+\hva\and
 \inferrule[q\_negative]{
   q < 0\\
   \monomialtoexpr(\ve, -q) \typearrow (\newe, 1)
@@ -2307,14 +2307,14 @@ The following are some examples of inputs and outputs for symbolic addition:
 }{
   \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\ve, \vs)
 }
-\and
+\hva\and
 \inferrule[same\_sign]{
   \vsone \neq 0 \land \vstwo \neq 0\\
   \vsone = \vstwo
 }{
   \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\overname{\EBinop(\ADD, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
 }
-\and
+\hva\and
 \inferrule[different\_signs]{
   \vsone \neq 0 \land \vstwo \neq 0\\
   \vsone \neq \vstwo
@@ -2522,14 +2522,14 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 }{
   \typeof(\tenv, \vs) \typearrow \tty
 }
-\and
+\hva\and
 \inferrule[global]{
   \tenv.\staticenvsL.\localstoragetypes(\vs) = \bot\\
   \tenv.\staticenvsG.\globalstoragetypes(\vs) = \tty
 }{
   \typeof(\tenv, \vs) \typearrow \tty
 }
-\and
+\hva\and
 \inferrule[error]{
   \tenv.\staticenvsL.\localstoragetypes(\vs) = \bot\\
   \tenv.\staticenvsG.\globalstoragetypes(\vs) = \bot
@@ -2565,13 +2565,13 @@ See \ExampleRef{Normalize}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[normalizable]{
-  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\\\\
+  \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
   \vpone \neq \CannotBeTransformed\\
   \normalize(\tenv, \ve) \typearrow \newe
 }{
   \normalize(\tenv, \ve) \typearrow \overname{\some{\newe}}{\neweopt}
 }
-\and
+\hva\and
 \inferrule[not\_normalizable]{
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }{
