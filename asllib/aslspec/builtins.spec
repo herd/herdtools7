@@ -75,6 +75,21 @@ operator if_then_else[T](Bool, T, T) -> T
   math_macro = \ifthenelseop,
 };
 
+// TODO: add a custom rendering where all conditions
+// and all values are properly aligned.
+// Perhaps this can be achieved by adding a "raw" attribute to macros, which doesn't wrap them with braces.
+// TODO: add custom syntax for cases.
+variadic operator cond_op[T](list1(T)) -> T
+{
+  math_macro = \condop,
+  custom = true,
+};
+operator cond_case[T](Bool, T) -> T
+{
+  math_macro = \condcase,
+  custom = true,
+};
+
 variadic operator and(list1(Bool)) -> Bool
 {
   associative = true,

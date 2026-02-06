@@ -129,6 +129,11 @@ let rec pp_expr fmt =
         (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
              fprintf fmt "%s : %a" field pp_expr expr))
         fields
+  | RecordUpdate { record_expr; updates } ->
+      fprintf fmt "%a[%a]" pp_expr record_expr
+        (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
+             fprintf fmt "%s : %a" field pp_expr expr))
+        updates
   | Transition { lhs; rhs; short_circuit } ->
       fprintf fmt "%a -> %a%a" pp_expr lhs pp_expr rhs pp_short_circuit
         short_circuit

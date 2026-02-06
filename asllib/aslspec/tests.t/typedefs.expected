@@ -15,6 +15,7 @@
 \newcommand\One[0]{ \hyperlink{constant-One}{\textsf{One}} } % Generated from One
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
 \newcommand\Rec[0]{ \hyperlink{type-Rec}{\textsf{Rec}} } % Generated from Rec
+\newcommand\RefVariants[0]{ \hyperlink{type-RefVariants}{\textsf{RefVariants}} } % Generated from RefVariants
 \newcommand\Two[0]{ \hyperlink{constant-Two}{\textsf{Two}} } % Generated from Two
 \newcommand\FIELDanonf[0]{ \hyperlink{recordfield-anonf}{\textsf{anon\_f}} } % Generated from anon_f
 \newcommand\FIELDanong[0]{ \hyperlink{recordfield-anong}{\textsf{anon\_g}} } % Generated from anon_g
@@ -79,3 +80,8 @@
 \begin{flalign*}
 \expr\mathhypertarget{ast-expr} \derives\ & \Number\left(\overtext{\Int}{\texttt{v}}\right)\mathhypertarget{ast-Number}\\
 \PIPE\ & \Plus\left(\overtext{\expr}{\texttt{lhs}}, \overtext{\expr}{\texttt{rhs}}\right)\mathhypertarget{ast-Plus}\end{flalign*}} % EndDefineType
+
+\DefineType{RefVariants}{
+\begin{flalign*}
+\RefVariants\mathhypertarget{type-RefVariants} \triangleq\ & \Number\left(\Int\right)
+\end{flalign*}} % EndDefineType

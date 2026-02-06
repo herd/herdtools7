@@ -447,7 +447,9 @@ module Make (S : SPEC_VALUE) = struct
           | _ ->
               pp_var fmt name)
       | Relation { name; is_operator; args } when is_operator ->
-          pp_operator name layout fmt args
+          (* operators often use custom macros, which might not mix well with arrays,
+             so it's better to put them inside braces. *)
+          fprintf fmt "{ %a }" (pp_operator name layout) args
       | Relation { args } | Tuple { args } | Map { args } ->
           let pp_lhs fmt lhs =
             match lhs with
@@ -468,6 +470,29 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
+      | RecordUpdate { record_expr; updates } ->
+          let layout =
+            horizontal_if_unspecified layout [ record_expr; record_expr ]
+          in
+          let record_layout, updates_layout =
+            match layout with
+            | Horizontal [ record_layout; updates_layout ]
+            | Vertical [ record_layout; updates_layout ] ->
+                (record_layout, updates_layout)
+            | _ ->
+                failwith
+                  (let msg =
+                     Format.asprintf
+                       "the layout for record update expression %a has an \
+                        invalid layout (%a)"
+                       PP.pp_expr expr PP.pp_layout layout
+                   in
+                   failwith msg)
+          in
+          fprintf fmt "%a%a" pp_expr
+            (record_expr, record_layout)
+            (pp_fields pp_field_name pp_expr)
+            (updates, updates_layout)
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
       | FieldAccess { var; fields } -> pp_field_path fmt (var :: fields)
@@ -497,6 +522,12 @@ module Make (S : SPEC_VALUE) = struct
         [layout]. *)
     and pp_operator op_name layout fmt args =
       let op_macro = get_or_gen_math_macro op_name in
+      let layout =
+        if Spec.is_cond_operator_name S.spec op_name then
+          (* Special case for the match_cases operator, which is always vertical. *)
+          vertical_if_unspecified layout args
+        else horizontal_if_unspecified layout args
+      in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
       | [] ->

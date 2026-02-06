@@ -252,6 +252,7 @@ type t = {
   n_type : Type.t;
   z_type : Type.t;
   some_operator : Relation.t;
+  cond_operator : Relation.t;
 }
 
 type spec_type = t
@@ -259,6 +260,9 @@ type spec_type = t
 let is_builtin_type id (t : Type.t) = String.equal id t.name
 let is_builtin_constant id (c : Constant.t) = String.equal id c.name
 let is_builtin_relation id (r : Relation.t) = String.equal id r.name
+
+let is_cond_operator_name (spec : t) id =
+  is_builtin_relation id spec.cond_operator
 
 (** [make_symbol_table ast] creates a symbol table from [ast]. *)
 let make_symbol_table ast =
@@ -359,6 +363,16 @@ module ResolveApplicationExpr = struct
             fields
         in
         Record { label_opt; fields = resolved_fields }
+    | RecordUpdate { record_expr; updates } ->
+        let resolved_record_expr = resolve_in_context record_expr in
+        let resolved_updates =
+          List.map
+            (fun (field_name, field_expr) ->
+              (field_name, resolve_in_context field_expr))
+            updates
+        in
+        RecordUpdate
+          { record_expr = resolved_record_expr; updates = resolved_updates }
     | UnresolvedApplication { lhs; args } -> (
         let resolved_args = List.map resolve_in_context args in
         match lhs with
@@ -522,21 +536,24 @@ module ResolveRules = struct
       conclusion judgment for the relation definition [def]. This function
       assumes [relation_named_arguments_if_exists_rule] has been called. *)
   let lhs_of_conclusion { Relation.name; is_operator; input } =
-    (* Converts an optionally-named type term into an expression. *)
-    let rec arg_of = function
+    (* Converts an optionally-named type term into a relation argument expression. *)
+    let rec arg_of opt_named_term =
+      match opt_named_term with
       | Some name, _ -> Expr.Var name
       | None, Term.Tuple { label_opt; args } ->
           let args = List.map arg_of args in
           Expr.make_opt_labelled_tuple label_opt args
-      | None, Term.Record { label_opt; fields } ->
-          let field_exprs =
-            List.map (fun { Term.name } -> (name, Expr.Var name)) fields
+      | ( None,
+          ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
+          | Term.ConstantsSet _ ) ) ->
+          let msg =
+            Format.asprintf "Unexpected un-named argument term: %a"
+              PP.pp_type_term (snd opt_named_term)
           in
-          Expr.Record { label_opt; fields = field_exprs }
-      | None, _ -> Error.missing_relation_argument_name name
+          failwith msg
     in
-    let args = List.map arg_of input in
-    Expr.Relation { name; is_operator; args }
+    let named_args = List.map arg_of input in
+    Expr.Relation { name; is_operator; args = named_args }
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -1430,12 +1447,9 @@ module Check = struct
       | ConstantsSet labels ->
           List.iter (check_is_constant id_to_defining_node) labels
       | Label label -> (
-          (* Label definitions have been filtered out so this is either a
-              reference to a type, which is well-formed, or reference to a label,
-              which should only appear in a [constants_set]. *)
           let variant_def = StringMap.find label id_to_defining_node in
           match variant_def with
-          | Node_Type _ -> ()
+          | Node_Type _ | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
           | _ -> Error.instantiation_failure_not_a_type term label)
 
     let check_well_typed spec term =
@@ -1514,6 +1528,13 @@ module Check = struct
               of them to avoid false positives. *)
     }
     (** An environment data type for tracking used and defined variables. *)
+
+    let empty_use_def =
+      {
+        used = StringSet.empty;
+        defined = StringSet.empty;
+        list_vars = StringSet.empty;
+      }
 
     (** Pretty-prints a [use_def] environment for debugging. *)
     let pp_use_def fmt { used; defined; list_vars } =
@@ -1621,6 +1642,17 @@ module Check = struct
         | Record { fields } ->
             let initializing_exprs = List.map snd fields in
             update_use_def_for_expr_list mode spec use_def initializing_exprs
+        | RecordUpdate { record_expr; updates } ->
+            let () =
+              match mode with
+              | Def -> Error.record_update_expression_not_assignable expr
+              | Use -> ()
+            in
+            let use_def =
+              update_use_def_for_expr Use spec use_def record_expr
+            in
+            let update_exprs = List.map snd updates in
+            update_use_def_for_expr_list Use spec use_def update_exprs
         | NamedExpr (sub_expr, _) ->
             update_use_def_for_expr mode spec use_def sub_expr
         | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
@@ -1748,8 +1780,7 @@ module Check = struct
       | Some (Node_TypeVariant { TypeVariant.term }) -> term
       | Some (Node_Constant { Constant.opt_type = Some type_term }) -> type_term
       | Some (Node_Constant { Constant.opt_type = None }) ->
-          assert false
-          (* This should not happen if ExtendConstantsWithTypes.extend has been run. *)
+          Error.missing_type_for_constant id
       | Some (Node_Relation _)
       | Some (Node_RecordField _)
       | Some (Node_Type _)
@@ -2247,7 +2278,7 @@ module Check = struct
         assignable expression. *)
           ->
             false
-        | Tuple _ | Record _ | Relation _ -> true
+        | Tuple _ | Record _ | RecordUpdate _ | Relation _ -> true
         | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
         | FieldAccess _ | Map _ | Transition _ | Indexed _
         | UnresolvedApplication _ ->
@@ -2407,6 +2438,41 @@ module Check = struct
                 ~context_expr:expr
             in
             (inferred_type, type_env)
+        | RecordUpdate { record_expr; updates } -> (
+            (* check that record_expr typechecks and that each field update expression typechecks
+               and matches the record field type *)
+            let record_type, type_env =
+              infer_type_in_env spec type_env record_expr
+            in
+            let open Term in
+            match CheckTypeInstantiations.reduce_term spec record_type with
+            | Record { fields } ->
+                let field_map =
+                  List.map (fun field -> (field.name, field.term)) fields
+                  |> List.to_seq |> StringMap.of_seq
+                in
+                let updated_field_types, type_env =
+                  infer_type_list spec type_env (List.map snd updates)
+                in
+                let formal_field_types =
+                  List.map
+                    (fun (field_name, _) ->
+                      match StringMap.find_opt field_name field_map with
+                      | Some field_type -> field_type
+                      | None ->
+                          Error.undefined_field_in_record ~context_expr:expr
+                            record_type field_name)
+                    updates
+                in
+                let field_exprs = List.map snd updates in
+                let () =
+                  check_arg_types spec field_exprs updated_field_types
+                    formal_field_types ~context_expr:expr
+                in
+                (record_type, type_env)
+            | _ ->
+                Error.invalid_record_update_base_type record_type
+                  ~context_expr:expr)
         | NamedExpr (sub_expr, _) -> infer_type_in_env spec type_env sub_expr
         | Tuple { label_opt; args } ->
             (* All arguments must typecheck, and if the tuple is labelled,
@@ -2770,6 +2836,7 @@ module Check = struct
                   Error.undefined_field_in_record ~context_expr:expr target_type
                     field_name)
             type_env expr_fields
+      | Expr.RecordUpdate _, _
       | Expr.Relation _, _
       | FieldAccess _, _
       | UnresolvedApplication _, _
@@ -3002,6 +3069,14 @@ module Check = struct
                   record_type_field_names
               else ()
           | None -> ())
+      | RecordUpdate { record_expr; updates } ->
+          let () = check_expr_in_context record_expr in
+          let update_field_names, update_field_inits = List.split updates in
+          let () = check_expr_list_in_context update_field_inits in
+          List.iter
+            (fun field_name ->
+              if not (is_field field_name) then Error.non_field field_name expr)
+            update_field_names
       | Transition { lhs; rhs; short_circuit } ->
           check_expr_in_context lhs;
           check_expr_in_context rhs;
@@ -3068,16 +3143,20 @@ module Check = struct
       or records. *)
   let relation_named_arguments_if_exists_rule ast =
     let open Rule in
-    let rec is_named_argument =
+    let rec is_correctly_named_argument =
       let open Term in
       function
-      | Some _, _ | None, Record _ -> true
-      | None, Tuple { args } -> List.for_all is_named_argument args
+      | Some _, sub_term -> not (is_correctly_named_argument (None, sub_term))
+      | None, Tuple { args } -> List.for_all is_correctly_named_argument args
       | None, _ -> false
     in
     let check_relation { Relation.name; input; rule_opt } =
-      if Option.is_some rule_opt && not (List.for_all is_named_argument input)
-      then Error.missing_relation_argument_name name
+      if Option.is_some rule_opt then
+        List.iter
+          (fun arg ->
+            if not (is_correctly_named_argument arg) then
+              Error.relation_argument_incorrect_naming name arg)
+          input
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
 end
@@ -3092,9 +3171,21 @@ module ExtendConstantsWithTypes = struct
     let constant_type =
       match (opt_type, opt_value_and_attributes) with
       | Some term, _ -> term (* Already has a type, nothing to do. *)
-      | None, Some (init_expr, _) ->
-          let init_type = Check.TypeInference.infer spec init_expr in
-          init_type
+      | None, Some (init_expr, _) -> (
+          try
+            let _check_init_expr =
+              Check.UseDef.(
+                update_use_def_for_expr Use spec empty_use_def init_expr)
+            in
+            let init_type = Check.TypeInference.infer spec init_expr in
+            init_type
+          with SpecError err ->
+            stack_spec_error err
+              (Format.asprintf
+                 "When inferring type for constant %s from its initialization \
+                  expression %a. Hint: you can explicitly specify the type of \
+                  the constant or reorder the constants."
+                 name PP.pp_expr init_expr))
       | None, None ->
           (* A constant without a specified type has a type labeled by its name. *)
           Label name
@@ -3102,15 +3193,24 @@ module ExtendConstantsWithTypes = struct
     { def with Constant.opt_type = Some constant_type }
 
   let extend ({ ast } as spec) =
-    let ast =
-      List.map
-        (fun elem ->
+    let ast, _ =
+      List.fold_left
+        (fun (curr_ast, spec) elem ->
           match elem with
-          | Elem_Constant def -> Elem_Constant (extend_constant spec def)
-          | _ -> elem)
-        ast
+          | Elem_Constant def ->
+              let new_def = extend_constant spec def in
+              (* We need to update id_to_defining_node since the type may be needed for later constants. *)
+              let id_to_defining_node =
+                StringMap.add def.Constant.name (Node_Constant new_def)
+                  spec.id_to_defining_node
+              in
+              let new_elem = Elem_Constant new_def in
+              let spec = { spec with id_to_defining_node } in
+              (new_elem :: curr_ast, spec)
+          | _ -> (elem :: curr_ast, spec))
+        ([], spec) ast
     in
-    update_spec_ast spec ast
+    update_spec_ast spec (List.rev ast)
 end
 
 (** [add_default_rule_renders ast] adds default render rules for relations that
@@ -3185,14 +3285,17 @@ let get_constant id_to_defining_node name =
       If [name] is not associated with a [Relation.t] in [id_to_defining_node].
 *)
 let get_relation id_to_defining_node name =
-  match StringMap.find name id_to_defining_node with
-  | Node_Relation def when def.is_operator -> def
-  | node ->
+  match StringMap.find_opt name id_to_defining_node with
+  | Some (Node_Relation def) when def.is_operator -> def
+  | Some node ->
       let msg =
         Format.asprintf
           "%s must be an operator, but has been overridden with %a" name
           pp_definition_node node
       in
+      raise (SpecError msg)
+  | None ->
+      let msg = Format.asprintf "Relation/operator %s is undefined." name in
       raise (SpecError msg)
 
 (** [extend_ast_with_builtins ast id_to_defining_node] prepends to [ast] the AST
@@ -3236,6 +3339,7 @@ let make_spec_with_builtins ast =
     assign = get_relation "assign";
     reverse_assign = get_relation "reverse_assign";
     some_operator = get_relation "some";
+    cond_operator = get_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
 
