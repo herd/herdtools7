@@ -10,19 +10,35 @@
 // Generic Types
 ////////////////////////////////////////////////////////////////////////////////
 
-constant empty_set
+////////////////////////////////////////
+// Map-related definitions
+
+constant empty_func
 {
-    "the empty set",
-    math_macro = \emptyset,
+    "empty function",
+    math_macro = \emptyfunc,
+};
+
+operator bindings[A,B](f: partial A -> B) -> list0((A, B))
+{
+  "input-output bindings of {f}",
+  math_macro = \bindings,
+};
+
+operator bindings_to_map[A,B](bindings: list0((A,B))) -> (partial A -> B)
+{
+  "function consisting of a binding per pair of {bindings}",
+  math_macro = \bindingstomap,
+};
+
+operator restrict_map[A,B](f: partial A -> B, dom: powerset(A)) -> (partial A -> B)
+{
+  "the restriction of {f} to {dom}",
+  math_macro = \restrictmapop,
+  custom = true,
 };
 
 constant None { "the empty \optionalterm{}" };
-
-constant empty_list
-{
-    "the empty list",
-    math_macro = \emptylist,
-};
 
 typedef Bool
 {  "Boolean",
@@ -34,17 +50,24 @@ typedef Bool
   { "false", math_macro = \False }
 ;
 
+typedef CheckResult
+{
+  "check result",
+  math_macro = \CheckResult,
+} = (True);
+
 typedef Bit
 { "bit" };
 
 typedef N
 {  "natural number",
     math_macro = \N,
-};
+} = (N_pos);
 
 constant zero : N { math_macro = \zero, };
 constant one : N { math_macro = \one, };
 constant two : N { math_macro = \two, };
+constant rational_zero : Q { math_macro = \zero, };
 
 typedef N_pos
 {  "positive natural number",
@@ -54,18 +77,26 @@ typedef N_pos
 typedef Z
 { "integer",
     math_macro = \Z,
-};
+} = (N);
 
 typedef Q
 { "rational",
    math_macro = \Q,
+} =
+  | Q_nonzero { "non-zero rational", math_macro = \Qnonzero }
+;
+
+typedef ascii
+{
+  "ASCII character",
+  math_macro = \REasciichar,
 };
 
 typedef Identifier
 {
   "identifier",
    math_macro = \Identifier,
-};
+} = list0(ascii);
 
 typedef Strings
 { "string",
@@ -80,6 +111,11 @@ typedef Strings
 constant new_line : Strings
 {
   math_macro = \vnewline,
+};
+
+constant main : Identifier
+{
+  math_macro = \vmain,
 };
 
 typedef ASTLabels
@@ -123,13 +159,6 @@ operator indices[T](l: list0(T)) -> (indices: list0(N))
   math_macro = \indicesop,
 };
 
-operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
-{
-  "a list where for each binding of {bound_variable} to an element of {elements} in order of appearance,
-   {new_elements} has the corresponding element {mapped_elem}",
-  math_macro = \listmap,
-};
-
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
@@ -152,15 +181,40 @@ operator make_structured(l: ASTLabels, fields: list0(field)) -> TStructured
   custom = true,
 };
 
-operator destructure(s: TStructured) -> (l: ASTLabels, fields: list0(field))
+operator map_update[K,V](partial K -> V, K, V) -> (partial K -> V)
 {
-  math_macro = \destructure,
+  math_macro = \mapupdate,
   custom = true,
 };
 
-operator update[K,V](partial K -> V, K, V) -> (partial K -> V)
+operator dom[K,V](partial K -> V) -> powerset(K)
 {
-  math_macro = \opupdate,
+  math_macro = \domop,
+};
+
+operator map_apply_opt[K,V](partial K -> V, K) -> option(V)
+{
+  custom = true,
+  math_macro = \mapapplyoptop,
+};
+
+operator map_apply[K,V](partial K -> V, K) -> V
+{
+  custom = true,
+  math_macro = \mapapplyop,
+};
+
+operator sort[T](unsorted: list0(T), comparator: fun T -> Sign) -> list0(T)
+{
+  "the list {unsorted} sorted according to {comparator}",
+  math_macro = \sortop,
+  custom = true,
+};
+
+operator sign(q: Q) -> Sign
+{
+  custom = true,
+  math_macro = \signop,
 };
 
 operator equal[T](a: T, b: T) -> (c: Bool)
@@ -184,6 +238,28 @@ operator some[T](T) -> option(T)
   math_macro = \some,
 };
 
+////////////////////////////////////////
+// Set-related definitions
+
+constant empty_list
+{
+    "the empty list",
+    math_macro = \emptylist,
+};
+
+operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
+{
+  "a list where for each binding of {bound_variable} to an element of {elements} in order of appearance,
+   {new_elements} has the corresponding element {mapped_elem}",
+  math_macro = \listmap,
+};
+
+operator list_filter[T](bound_variable: T, elements: list0(T), condition: Bool) -> (new_elements: list0(T))
+{
+  "the sublist of {elements} for which {condition} holds",
+  math_macro = \listfilter,
+};
+
 // Constructs a list out of a finite number of arguments.
 variadic operator make_list[T](list1(T)) -> list1(T)
 {
@@ -195,7 +271,12 @@ operator make_singleton_list[T](T) -> list1(T)
   math_macro = \makelist,
 };
 
-operator range_list(from: N, to: N) -> list1(N)
+operator match_singleton_list[T](T) -> list0(T)
+{
+  math_macro = \makelist,
+};
+
+operator range_list(from: Z, to: Z) -> list1(Z)
 {
   "the list of values between {from} and {to}, inclusive, if {from} is less than {to},
    and the list of values between {to} and {from}, inclusive, otherwise.",
@@ -208,8 +289,8 @@ operator list_len[T](list0(T)) -> N
   math_macro = \listlen,
 };
 
-// Concatenates two lists into a single list.
-operator concat[T](prefix: list0(T), suffix: list0(T)) -> list0(T)
+// Concatenates a fixed number of lists into a single list.
+variadic operator concat[T](lists: list0(list0(T))) -> list0(T)
 {
   associative = true,
   math_macro = \concat,
@@ -221,6 +302,12 @@ operator list_flatten[T](ll: list0(list0(T))) -> list0(T)
 {
   "flattening of the list of lists {ll}",
   math_macro = \concatlist,
+};
+
+operator list_set[T](s: powerset(T)) -> list0(T)
+{
+  "listing the elements of set {s}",
+  math_macro = \listset,
 };
 
 operator cons[T](T, list0(T)) -> list1(T)
@@ -236,16 +323,21 @@ operator match_cons[T](head: T, tail: list0(T)) -> list0(T)
   math_macro = \cons,
 };
 
-operator non_empty_list[T](l: list0(T)) -> list1(T)
+operator match_non_empty_cons[T](head: T, tail: list0(T)) -> list1(T)
 {
-  "{l}",
-  math_macro = \identityop,
+  "a non-empty list with head {head} and tail {tail}",
+  math_macro = \cons,
 };
 
 operator list_combine[A,B](list0(A), list0(B)) -> list0((A, B))
 {
   math_macro = \listcombine,
   custom = true,
+};
+
+operator list_cross[A,B](list0(A), list0(B)) -> list0((A, B))
+{
+  math_macro = \listcrossop,
 };
 
 operator list_fst[A,B](list0((A, B))) -> list0(A)
@@ -259,11 +351,6 @@ operator list_combine_three[A,B,C](list0(A), list0(B), list0(C)) -> list0((A, B,
   custom = true,
 };
 
-operator list_min[T](list0(T)) -> N
-{
-  math_macro = \listmin,
-};
-
 operator list_max[T](list0(T)) -> N
 {
   math_macro = \listmax,
@@ -275,10 +362,35 @@ operator assoc_opt[T](list0((Identifier, T)), Identifier) -> option(T)
   custom = true,
 };
 
+operator listprefix[T](l1: list0(T), l2: list0(T)) -> Bool
+{
+  "checks whether {l1} is a prefix of {l2}",
+  math_macro = \listprefix,
+  custom = true,
+};
+
+// A type conversion in case we know that the input
+// list must be non-empty.
+operator match_non_empty_list[T](list0(T)) -> list1(T)
+{
+  math_macro = \identityop,
+};
+
 // Constructs a set out of a fixed list of expressions.
-variadic operator make_set[T](list1(T)) -> powerset(T)
+variadic operator make_set[T](list1(T)) -> powerset_finite(T)
 {
   math_macro = \makeset,
+};
+
+variadic operator match_set[T](list1(T)) -> powerset(T)
+{
+  math_macro = \makeset,
+};
+
+operator list_to_set[T](s: list0(T)) -> powerset_finite(T)
+{
+  "list {s} viewed as a set",
+  math_macro = \listassetop,
 };
 
 operator range(from: Z, to: Z) -> list1(Z)
@@ -287,6 +399,28 @@ operator range(from: Z, to: Z) -> list1(Z)
    and the set of values between {to} and {from}, inclusive, otherwise.",
   math_macro = \rangeop,
   custom = true,
+};
+
+////////////////////////////////////////
+// Set-related definitions
+
+constant empty_set
+{
+    "empty set",
+    math_macro = \emptyset,
+};
+
+operator set_as_finite[T](s: powerset(T)) -> powerset_finite(T)
+{
+  "{s}",
+  math_macro = \identityop,
+};
+
+operator set_from_list[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: powerset(B))
+{
+  "a set where for each binding of {bound_variable} to an element of {elements},
+   {new_elements} has the corresponding element {mapped_elem}",
+  math_macro = \setfromlist,
 };
 
 operator range_set(low: Z, high: Z) -> powerset_finite(Z)
@@ -312,14 +446,21 @@ operator not_member[T](x: T, s: powerset(T)) -> Bool
   math_macro = \notmember,
 };
 
-operator subset[T](A: powerset(T), B: powerset(T)) -> Bool
+operator subseteq[T](A: powerset(T), B: powerset(T)) -> Bool
 {
-  math_macro = \subset,
+  math_macro = \subseteq,
 };
 
-variadic operator union[T](list1(powerset(T))) -> powerset(T)
+variadic operator union[T](sets: list1(powerset(T))) -> powerset(T)
 {
+  "the union of {sets}",
   math_macro = \cup,
+  associative = true,
+};
+
+variadic operator disjoint_union[T](list1(powerset(T))) -> powerset(T)
+{
+  math_macro = \disjointunion,
   associative = true,
 };
 
@@ -331,10 +472,21 @@ variadic operator union_finite[T](list1(powerset_finite(T))) -> powerset_finite(
 
 operator union_list[T](list0(powerset(T))) -> powerset(T)
 {
-  math_macro = \UNIONLIST,
+  math_macro = \unionlistop,
+};
+
+operator union_list_finite[T](list0(powerset(T))) -> powerset_finite(T)
+{
+  math_macro = \unionlistop,
 };
 
 variadic operator intersect[T](list0(powerset(T))) -> powerset(T)
+{
+  math_macro = \cap,
+  associative = true,
+};
+
+variadic operator intersect_finite[T](list0(powerset_finite(T))) -> powerset_finite(T)
 {
   math_macro = \cap,
   associative = true,
@@ -350,6 +502,11 @@ operator set_max[T](powerset(T)) -> N
   math_macro = \setmax,
 };
 
+operator as_rational(Z) -> Q
+{
+  math_macro = \identityop,
+};
+
 operator round_up(Q) -> N
 {
   math_macro = \roundup,
@@ -358,6 +515,30 @@ operator round_up(Q) -> N
 operator round_down(Q) -> N
 {
   math_macro = \rounddown,
+};
+
+operator fraction(a: Z, b: Z) -> Q
+{
+  "the fraction for {a}/{b}",
+  math_macro = \fractionop,
+  custom = true,
+};
+
+operator n_to_n_pos(n: N) -> N_pos
+{
+  "casts {n} to a positive natural number",
+  math_macro = \identityop,
+};
+
+operator z_to_n(z: Z) -> N
+{
+  "{z}",
+  math_macro = \identityop
+};
+
+operator abs_value(Z) -> N
+{
+  math_macro = \absvalueop,
 };
 
 operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
@@ -374,6 +555,18 @@ operator negate_bit(b: Bit) -> Bit
   custom = true,
 };
 
+operator and_bit(a: Bit, b: Bit) -> Bit
+{
+  "bit-level conjunction of {a} and {b}",
+  math_macro = \land,
+};
+
+operator or_bit(a: Bit, b: Bit) -> Bit
+{
+  "bit-level disjunction of {a} and {b}",
+  math_macro = \lor,
+};
+
 ////////////////////////////////////////
 // Execution graph operators
 
@@ -382,10 +575,21 @@ operator ReadEffect(x: Identifier) -> (N, read: effect_type, Identifier)
   math_macro = \ReadEffectop,
 };
 
+operator WriteEffect(x: Identifier) -> (N, write: effect_type, Identifier)
+{
+  math_macro = \WriteEffectop,
+};
+
 variadic operator parallel(list1(XGraphs)) -> XGraphs
 {
   math_macro = \parallelcomp,
   associative = true,
+};
+
+operator parallel_graphs(gs: list0(XGraphs)) -> (g: XGraphs)
+{
+  "the parallel composition of all graphs in the list {gs}",
+  math_macro = \parallelgraphs,
 };
 
 variadic operator ordered_data(list1(XGraphs)) -> XGraphs
@@ -458,6 +662,11 @@ operator nvint(z: Z) -> NV_Literal(L_Int(Z))
   math_macro = \nvintop,
 };
 
+operator nvbitvector(bits: list0(Bit)) -> NV_Literal(L_Bitvector(list0(Bit)))
+{
+  math_macro = \nvbitvectorop,
+};
+
 operator nvstring(s: Strings) -> NV_Literal(L_String(Strings))
 {
   math_macro = \nvstringop,
@@ -466,14 +675,38 @@ operator nvstring(s: Strings) -> NV_Literal(L_String(Strings))
 ////////////////////////////////////////
 // AST abbreviations
 
+constant unconstrained_integer : ty
+{
+  "unconstrained integer",
+  math_macro = \unconstrainedinteger
+};
+
 operator ELint(Z) -> expr
 {
   math_macro = \ELInt,
 };
 
-operator EBinop(op: binop, lhs: expr, rhs: expr) -> expr
+operator AbbrevEBinop(op: binop, lhs: expr, rhs: expr) -> expr
 {
   math_macro = \AbbrevEBinop,
+};
+
+operator AbbrevECond(e_cond: expr, e_true: expr, e_false: expr) -> expr
+{
+  math_macro = \AbbrevECond,
+};
+
+operator AbbrevConstraintRange(e1: expr, e2: expr) -> int_constraint
+{
+  "range constraint for {e1} and {e2}",
+  math_macro = \AbbrevConstraintRangeOp,
+  custom = true,
+};
+
+operator AbbrevConstraintExact(e: expr) -> int_constraint
+{
+  "exact constraint for {e}",
+  math_macro = \AbbrevConstraintExactOp,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -492,16 +725,6 @@ operator Lang(r : regex) -> (l: powerset(Strings))
   math_macro = \Lang,
 };
 
-typedef int_literal_tokens =
-  INT_LIT(Z) { math_macro = \Tintlit }
-;
-
-operator decimal_to_lit(s: Strings) -> INT_LIT(z: Z)
-{
-  "returns an integer literal where {z} is the integer corresponding to {s} in decimal representation",
-  math_macro = \decimaltolit,
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 // Types for Symbolic Equivalence Testing
 constant negative_sign : Sign { "negative sign", math_macro = \negativesign };
@@ -510,9 +733,9 @@ constant equal_sign : Sign { "equal sign", math_macro = \equalsign };
 typedef Sign { "sign" } =
     constants_set(negative_sign, positive_sign, equal_sign)
 ;
-typedef Q_nonzero { "non-zero rational", math_macro = \Qnonzero };
+
 typedef unitary_monomial { "unitary monomial" } = partial Identifier -> N_pos;
-typedef polynomial { "polynomial" } = partial unitary_monomial -> Q_nonzero;
+typedef polynomial { "polynomial" } = partial unitary_monomial -> Q;
 typedef monomial { "monomial" } = (exponents: unitary_monomial, factor:Q);
 render symbolic_expressions = polynomial(-), unitary_monomial(-),  monomial(-);
 constant CannotBeTransformed { "cannot be transformed", math_macro = \CannotBeTransformed };
@@ -653,6 +876,7 @@ ast expr { "expression" } =
       ]
     { "array construction for an array of length given by {length} with all cells initialized with {array_value}" }
     | E_EnumArray[
+        enum: Identifier,
         labels: list1(Identifier),
         enum_array_value: expr { math_macro = \enumarrayvalue }
       ]
@@ -700,10 +924,10 @@ render expr_pattern = expr(E_Pattern);
 render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
-constant zero_bit
+constant zero_bit : Bit
 { "\texttt{0}", math_macro = \zerobit };
 
-constant one_bit
+constant one_bit : Bit
 { "\texttt{1}", math_macro = \onebit };
 
 constant x_bit
@@ -720,7 +944,7 @@ ast pattern { "pattern" } =
     { "less-or-equal pattern" }
     | Pattern_Mask(mask_constant: list0(constants_set(zero_bit, one_bit, x_bit)))
     { "mask pattern" }
-    | Pattern_Not(subexpression: expr)
+    | Pattern_Not(subpattern: pattern)
     { "negation pattern" }
     | Pattern_Range(lower: expr, upper: expr)
     { "range pattern" }
@@ -876,6 +1100,10 @@ ast bitfield { "bitfield" } =
     { "bitfield named {name} with slices {slices} and type {type}" }
 ;
 
+constant label_BitField_Simple : ASTLabels { math_macro = \BitFieldSimple };
+constant label_BitField_Nested : ASTLabels { math_macro = \BitFieldNested };
+constant label_BitField_Type : ASTLabels { math_macro = \BitFieldType };
+
 ast array_index { "array index" } =
 //////////////////////////////////////////////////
 // Untyped AST
@@ -890,8 +1118,16 @@ ast array_index { "array index" } =
     { "index for the enumeration {enumeration_name} with labels {enumeration_labels}" }
 ;
 
+constant label_E_Arbitrary : ASTLabels { math_macro = \ELiteral };
 constant label_ArrayLength_Expr : ASTLabels { math_macro = \ArrayLengthExpr };
 constant label_E_Call : ASTLabels { math_macro = \ECall };
+constant label_E_Literal : ASTLabels { math_macro = \ELiteral };
+constant label_E_Var : ASTLabels { math_macro = \EVar };
+constant label_E_ATC : ASTLabels { math_macro = \EATC };
+constant label_E_Binop : ASTLabels { math_macro = \EBinop };
+constant label_E_Unop : ASTLabels { math_macro = \EUnop };
+constant label_E_Cond : ASTLabels { math_macro = \ECond };
+constant label_E_Tuple : ASTLabels { math_macro = \ETuple };
 
 render untyped_array_index = array_index(ArrayLength_Expr);
 render typed_array_index = array_index(ArrayLength_Enum);
@@ -931,11 +1167,18 @@ ast lexpr { "\assignableexpression{}" } =
 
     | LE_SetEnumArray(base: lexpr, index: expr)
     { "assignable expression for the enumeration-indexed array {base} at index {index}" }
-    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
-    { "assignable expression for the collection named {collection_name} and field names {field_names}" }
+    | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier), slices: list0((Z, Z)))
+    { "assignable expression for the collection named {collection_name}, field names {field_names}, and inferred slices {slices}", }
+    | typed_LE_SetFields(base: lexpr, field_names: list0(Identifier), slices: list0((Z, Z)))
+    {
+      "assignable multi-field write expression for {base}, field names {field_names}, and inferred slices {slices}",
+      math_macro = \typedLESetFields,
+    }
 ;
 
 constant label_LE_Destructuring : ASTLabels { math_macro = \LEDestructuring };
+constant label_LE_Var : ASTLabels { math_macro = \LEVar };
+constant label_LE_Discard : ASTLabels { math_macro = \LEDiscard };
 
 render untyped_lexpr = lexpr(
     LE_Discard,
@@ -946,7 +1189,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields, typed_LE_SetFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -1110,6 +1353,11 @@ render stmt_print = stmt(S_Print);
 render stmt_pragma = stmt(S_Pragma);
 render stmt_unreachable = stmt(S_Unreachable);
 
+constant label_S_Decl : ASTLabels { math_macro = \SDecl };
+constant label_S_Assign : ASTLabels { math_macro = \SAssign };
+constant laebl_S_Assert : ASTLabels { math_macro = \SAssert };
+constant label_S_Print : ASTLabels { math_macro = \SPrint };
+
 ast case_alt { "case alternative" } =
     [ case_alt_pattern: pattern { math_macro = \casealtpattern },
       where: option(expr),
@@ -1220,6 +1468,8 @@ ast decl { "global declaration" } =
         arguments {arguments}" }
 ;
 
+constant label_D_Func : ASTLabels { math_macro = \DFunc };
+
 render decl_global_storage = decl(D_GlobalStorage), global_decl(-), global_decl_keyword(-);
 render decl_func = decl(D_Func), func(-) ,subprogram_type(-), func_qualifier(-), override_info(-), typed_identifier(-);
 render decl_type = decl(D_TypeDecl), field(-);
@@ -1263,7 +1513,7 @@ typedef global_static_envs
         subtypes: partial (sub_type: Identifier) ->
          (super_type: Identifier),
         subprogram: partial Identifier -> (func, side_effects: powerset(TSideEffect)),
-        overloaded_subprogram: partial Identifier -> powerset(Strings)
+        overloaded_subprograms: partial Identifier -> powerset(Strings)
     ]
 ;
 
@@ -1296,6 +1546,12 @@ typedef type_error
         "\typingerrorterm{} with error code {error_code}",
     }
 ;
+
+operator TypeErrorConfig() -> TypeError(type_error_code)
+{
+  "a \typingerrorterm{} configuration",
+  math_macro = \TypeErrorConfig,
+};
 
 typedef type_error_code { "type error code" } =
   | TE_UI   { "Undefined identifier Typing" }
@@ -1330,6 +1586,12 @@ typedef TPurity { "\purity" } =
     | SE_Impure { "purity descriptor for the evaluation of a construct that is neither \pure{} nor \readonly{}" }
 ;
 
+operator ge_pure(a: TPurity, b: TPurity) -> Bool
+{
+  "{a} is greater or equal to {b} in the purity order",
+  math_macro = \puritygeq
+};
+
 typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
     | LocalEffect(purity: TPurity)
     { "local \sideeffectdescriptorterm{} with \purity{} {purity}" }
@@ -1342,6 +1604,12 @@ typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
 ////////////////////////////////////////////////////////////////////////////////
 // Dynamic Semantics Types
 ////////////////////////////////////////////////////////////////////////////////
+
+function dynamic_domain(env: envs, t: ty) -> (d: powerset(native_value))
+{
+  "assigns a set of \nativevaluesterm{} {d} to the annotated type {t} in the environment {env}.",
+  prose_application = "",
+};
 
 typedef native_value
     {
@@ -1556,9 +1824,9 @@ constant return_var_prefix : Strings
   math_macro = \returnvarprefix,
 };
 
-operator string_of_nat(n: N) -> Strings
+constant dot_str : Strings
 {
-  math_macro = \stringofnat,
+  math_macro = \dotstr,
 };
 
 ast symdom { "\symbolicdomain{}" } =
@@ -1585,28 +1853,19 @@ typedef approximation_direction { "approximation direction" } =
   | Under { "underapproximation" }
 ;
 
-constant CannotOverapproximate {
-    "cannot overapproximate",
-    math_macro = \CannotOverapproximate
-};
-
-constant CannotUnderapproximate {
-    "cannot underapproximate",
-    math_macro = \CannotUnderapproximate
-};
-
-typedef ty_or_opt { "type or optional type" } =
-    | (t:ty)
-    { "the type {t}" }
-    | option(t:ty)
-    { "the optional type {t}" }
-;
-
-typedef expr_or_opt { "expression or optional expression" } =
-    | (e:expr)
-    { "the expression {e}" }
-    | option(e:expr)
-    { "the optional expression {e}" }
+typedef ApproximationFailure
+{
+  "approximation failure indicator",
+  short_circuit_macro = \TypeErrorConfig
+} =
+  | CannotOverapproximate {
+      "cannot overapproximate",
+      math_macro = \CannotOverapproximate
+    }
+  | CannotUnderapproximate {
+      "cannot underapproximate",
+      math_macro = \CannotUnderapproximate
+    }
 ;
 
 typedef abstract_configuration
@@ -1645,9 +1904,16 @@ typedef TNormal
     { "expression list result with value-graph pairs {value_graph_pairs} and {environment}" }
     | ResultPattern(boolean_value: tbool, graph: XGraphs)
     { "pattern result with {boolean_value} and {graph}" }
-    | ResultCall((value_graph_pairs: (list0(value_read_from), XGraphs)), environment: envs)
-    { "call result with value-graph pairs {value_graph_pairs} and {environment}" }
+    | ResultCall((values: list0(value_read_from), gdenv: global_dynamic_envs), g: XGraphs)
+    { "call result with value-read effects {values}, a global dynamic environment {gdenv}, and a an \executiongraphterm{} {g}" }
 ;
+
+// Cases a native value into a Boolean native value.
+operator native_value_as_tbool(v: native_value) -> tbool
+{
+  "{v}",
+  math_macro = \identityop,
+};
 
 typedef TThrowing
 {
@@ -1732,25 +1998,45 @@ typedef value_read_from { "value-reading effect" } =
 // Generic Functions and Relations
 ////////////////////////////////////////////////////////////////////////////////
 
-typing function te_check(cond_expr: Bool, code: type_error_code) -> constants_set(True) | type_error
+typing function te_check(condition: Bool, code: type_error_code) -> CheckResult | type_error
   {
-    "returns $\True$ if {cond_expr} holds and a type error with {code} otherwise.",
-    prose_application = "checking whether {cond_expr} holds returns $\True\terminateas\TypeError({code})$",
+    "returns $\True$ if {condition} holds and a type error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\TypeError({code})$",
+  } =
+  case te_check_true {
+    condition = True;
+    --
+    True;
+  }
+  case te_check_false {
+    condition = False;
+    --
+    TypeError(code);
   }
 ;
 
-semantics function de_check(cond_expr: Bool, code: dynamic_error_code) -> constants_set(True) | TDynError
+semantics function de_check(condition: Bool, code: dynamic_error_code) -> CheckResult | TDynError
   {
-    "returns $\True$ if {cond_expr} holds and a dynamic error with {code} otherwise.",
-    prose_application = "checking whether {cond_expr} holds returns $\True\terminateas\DynamicError({code})$",
+    "returns $\True$ if {condition} holds and a dynamic error with {code} otherwise.",
+    prose_application = "checking whether {condition} holds returns $\True\terminateas\DynamicError({code})$",
+  } =
+  case de_check_true {
+    condition = True;
+    --
+    True;
+  }
+  case de_check_false {
+    condition = False;
+    --
+    DynamicError(code);
   }
 ;
 
-function bool_transition(cond_expr: Bool) -> (result: Bool)
+function bool_transition(condition: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {cond_expr} holds and $\False$ otherwise.",
-    prose_application = "testing whether {cond_expr} holds returns {result}",
+    "returns $\True$ if {condition} holds and $\False$ otherwise.",
+    prose_application = "testing whether {condition} holds returns {result}",
 };
 
 function rexpr(le: lexpr) -> (re: expr)
@@ -2130,7 +2416,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       INDEX(i, li: annotate_expr(tenv, li[i]) -> (t[i], es[i], xs[i]));
       ses := union_list(xs);
       --
-      (T_Tuple(t), E_Tuple(non_empty_list(es)), ses);
+      (T_Tuple(t), E_Tuple(match_non_empty_list(es)), ses);
     }
   }
 ;
@@ -2247,28 +2533,96 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-getbitfieldwidth}{computing} the width of bitfield {name} in fields {tfields} yields expression {e_width}",
-};
+} =
+  case okay {
+    assoc_opt(tfields, name) =: some(t);
+    get_bitvector_width(tenv, t) -> e_width;
+    --
+    e_width;
+  }
+
+  case error {
+    assoc_opt(tfields, name) = None;
+    --
+    TypeError(TE_BF);
+  }
+;
 
 typing function width_plus(tenv: static_envs, exprs: list0(expr)) -> (e_width: expr) | type_error
 {
   "generates the expression {e_width}, which represents the summation of all expressions in the list {exprs},
   normalized in the \staticenvironmentterm{} {tenv}. \ProseOtherwiseTypeError",
   prose_application = "generating the expression representing the summation of {exprs} in {tenv} yields {e_width}",
-};
+} =
+  case empty {
+    exprs = empty_list;
+    --
+    ELint(zero);
+  }
+
+  case non_empty {
+    exprs =: match_cons(e, exprs1);
+    width_plus(tenv, exprs1) -> e_width1;
+    normalize(tenv, AbbrevEBinop(ADD, e, e_width1)) -> e_width;
+    --
+    e_width;
+  }
+;
 
 typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         (CheckResult) | type_error
 {
   "checks whether the types {t1} and {t2}, which are
   assumed to not be named types, are compatible for a
   type assertion in the \staticenvironmentterm{} {tenv},
   yielding $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkatc}{checking} type compatibility between {t1} and {t2} in {tenv} yields True",
-};
+} =
+  case equal {
+    type_equal(tenv, t1, t2) -> True;
+    --
+    True;
+  }
+
+  case different_labels_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) != ast_label(t2);
+    --
+    TypeError(TE_TAF);
+  }
+
+  case int_bits {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) in make_set(label_T_Int, label_T_Bits);
+    --
+    True;
+  }
+
+  case tuple {
+    type_equal(tenv, t1, t2) -> False;
+    t1 =: T_Tuple(l1);
+    t2 =: T_Tuple(l2);
+    te_check(list_len(l1) = list_len(l2), TE_TAF) -> True;
+    INDEX(i, l1: check_atc(tenv, l1[i], l2[i]) -> True);
+    --
+    True;
+  }
+
+  case other_error {
+    type_equal(tenv, t1, t2) -> False;
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    --
+    TypeError(TE_TAF);
+  }
+;
 
 semantics relation eval_expr(env: envs, e: expr) ->
-         ResultExpr((v: native_value, g: XGraphs), new_env: envs)
-                                        | TThrowing | TDynError | TDiverging
+  | ResultExpr((v: native_value, g: XGraphs), new_env: envs)
+  | TThrowing
+  | TDynError
+  | TDiverging
 {
     "evaluates the expression {e} in an environment {env} and terminates normally with
     a \nativevalueterm{} {v}, an \executiongraphterm{} {g}, and a modified environment
@@ -2276,7 +2630,286 @@ semantics relation eval_expr(env: envs, e: expr) ->
     prose_application = "\hyperlink{relation-eval_expr}{evaluating} {e} in {env} yields
     {v}, {g}, and {new_env}",
     math_layout = (_, [_,_,_,_]),
-};
+} =
+  case ELit {
+    e =: E_Literal(l);
+    --
+    ResultExpr((NV_Literal(l), empty_graph), env);
+  }
+
+  case EVar {
+    e =: E_Var(name);
+    env =: (_, denv);
+    case local {
+      map_apply_opt(denv.dynamic_envs_L, name) =: some(v);
+    }
+
+    case global {
+      map_apply_opt(denv.dynamic_envs_G.storage, name) =: some(v);
+    }
+    read_identifier(name, v) -> g;
+    --
+    ResultExpr((v, g), env);
+  }
+
+  case BinopAnd {
+    e =: AbbrevEBinop(BAND, e1, e2);
+    e' := AbbrevECond(e1, e2, E_Literal(L_Bool(False)));
+    eval_expr(env, e') -> ResultExpr((v, g), new_env);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case BinopOr {
+    e =: AbbrevEBinop(BOR, e1, e2);
+    e' := AbbrevECond(e1, E_Literal(L_Bool(True)), e2);
+    eval_expr(env, e') -> ResultExpr((v, g), new_env);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case BinopImpl {
+    e =: AbbrevEBinop(IMPL, e1, e2);
+    e' := AbbrevECond(e1, e2, E_Literal(L_Bool(True)));
+    eval_expr(env, e') -> ResultExpr((v, g), new_env);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case Binop {
+    e =: E_Binop(op, e1, e2);
+    op not_in make_set(BAND, BOR, IMPL);
+    eval_expr(env, e1) -> ResultExpr((v1, g1), env1);
+    eval_expr(env1, e2) -> ResultExpr((v2, g2), new_env);
+    eval_binop(op, v1, v2) -> v;
+    g := parallel(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case Unop {
+    e =: E_Unop(op, e1);
+    eval_expr(env, e1) -> ResultExpr((v1, g), new_env);
+    eval_unop(op, v1) -> v;
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case ECond {
+    e =: E_Cond(e_cond, e1, e2);
+    eval_expr(env, e_cond) -> ResultExpr((v_cond, g1), env1);
+    v_cond =: nvbool(b);
+    e_next := if_then_else(b, e1, e2);
+    eval_expr(env1, e_next) -> ResultExpr((v, g2), new_env);
+    g := ordered_ctrl(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case ECall {
+    e =: E_Call(call);
+    eval_call(env, call.call_name, call.params, call.call_args) -> (vms, new_env);
+    case single {
+      vms =: match_singleton_list((v, g));
+    }
+
+    case multi {
+      list_len(vms) > one;
+      vms =: list_combine(values, graphs);
+      g := parallel_graphs(graphs);
+      v := NV_Vector(values);
+    }
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case ESlice {
+    e =: E_Slice(e_bv, slices);
+    eval_expr(env, e_bv) -> ResultExpr((v_bv, g1), env1);
+    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g2), new_env);
+    read_from_bitvector(v_bv, slice_ranges) -> v;
+    g := parallel(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetArray {
+    e =: E_GetArray(e_array, e_index);
+    eval_expr(env, e_array) -> ResultExpr((v_array, g1), env1);
+    eval_expr(env1, e_index) -> ResultExpr((v_index, g2), new_env);
+    v_index =: nvint(i_index);
+    get_index(i_index, v_array) -> v;
+    g := parallel(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetEnumArray {
+    e =: E_GetEnumArray(e_array, e_index);
+    eval_expr(env, e_array) -> ResultExpr((v_array, g1), env1);
+    eval_expr(env1, e_index) -> ResultExpr((v_index, g2), new_env);
+    v_index =: NV_Literal(L_Label(label));
+    get_field(label, v_array) -> v;
+    g := parallel(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetTupleItem {
+    e =: E_GetItem(e_tuple, index);
+    eval_expr(env, e_tuple) -> ResultExpr((v_tuple, g), new_env);
+    get_index(index, v_tuple) -> v;
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case ERecord {
+    e =: E_Record(_, field_inits);
+    field_inits =: list_combine(field_names, field_exprs);
+    eval_expr_list(env, field_exprs) -> ResultExprList((field_values, g), new_env)
+    { [_] };
+    field_map := bindings_to_map(list_combine(field_names, field_values));
+    v := NV_Record(field_map);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetField {
+    e =: E_GetField(e_record, field_name);
+    eval_expr(env, e_record) -> ResultExpr((v_record, g), new_env);
+    get_field(field_name, v_record) -> v;
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetFields {
+    e =: E_GetFields(e_record, field_names);
+    eval_expr(env, e_record) -> ResultExpr((v_record, g), new_env);
+    ( INDEX(i, field_names: get_field(field_names[i], v_record) -> NV_Literal(L_Bitvector(field_bits[i]))) )
+    { ([_,[_]]) };
+    field_bitvectors := list_map(bits, field_bits, nvbitvector(bits));
+    concat_bitvectors(field_bitvectors) -> v;
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case ETuple {
+    e =: E_Tuple(es);
+    eval_expr_list(env, es) -> ResultExprList((vs, g), new_env);
+    v := NV_Vector(vs);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EArray {
+    e =: E_Array[length: e_length, array_value: e_value];
+    eval_expr(env, e_value) -> ResultExpr((value, g1), new_env);
+    eval_expr_sef(env, e_length) -> ResultExprSEF(v_length, g2);
+    v_length =: nvint(n_length);
+    de_check(n_length >= zero, DE_NAL) -> True;
+    values := if_then_else(
+      n_length = zero,
+      empty_list,
+      list_map(i, range_list(one, n_length), value)
+    );
+    v := NV_Vector(values);
+    g := parallel(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EEnumArray {
+    e =: E_EnumArray[ enum: _, labels: labels, enum_array_value: e_value ];
+    eval_expr(env, e_value) -> ResultExpr((value, g), new_env);
+    label_value_pairs := list_map(l, labels, (l, value));
+    field_map := bindings_to_map(label_value_pairs);
+    v := NV_Record(field_map);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EArbitrary {
+    e =: E_Arbitrary(ty);
+    dynamic_domain(env, ty) -> d;
+    case okay {
+      d =: disjoint_union(match_set(v),  d');
+      --
+      ResultExpr((v, empty_graph), env);
+    }
+    case error {
+      d = empty_set;
+      --
+      DynamicError(DE_AET);
+    }
+  }
+
+  case EPattern {
+    e =: E_Pattern(e1, p);
+    eval_expr(env, e1) -> ResultExpr((v1, g1), new_env);
+    eval_pattern(env, v1, p) -> ResultPattern(v, g2);
+    g := ordered_data(g1, g2);
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EGetCollectionFields {
+    e =: E_GetCollectionFields(base, field_names);
+    env =: (_, denv);
+    map_apply_opt(denv.dynamic_envs_G.storage, base) =: some(record);
+    record =: NV_Record(field_map);
+    ( INDEX(i, field_names: get_field(field_names[i], record) -> NV_Literal(L_Bitvector(bits[i]))) )
+    { ([_, [_]]) };
+    vs := list_map(b, bits, nvbitvector(b));
+    concat_bitvectors(vs) -> v;
+    field_ids := list_map(f, field_names, concat(base, dot_str, f));
+    INDEX(i, field_ids: read_identifier(field_ids[i], vs[i]) -> gs[i]);
+    g := parallel_graphs(gs);
+    new_env := env;
+    --
+    ResultExpr((v, g), new_env);
+  }
+
+  case EATC {
+    e =: E_ATC(e1, t);
+    eval_expr(env, e1) -> ResultExpr((v, g1), new_env);
+    is_val_of_type(env, v, t) -> (b, g2);
+    case okay {
+      b = True;
+      g := ordered_data(g1, g2);
+      --
+      ResultExpr((v, g), new_env);
+    }
+    case error {
+      b = False;
+      --
+      DynamicError(DE_TAF);
+    }
+  }
+;
+
+render rule eval_expr_ELit = eval_expr(ELit);
+render rule eval_expr_EVar = eval_expr(EVar);
+render rule eval_expr_BinopAnd = eval_expr(BinopAnd);
+render rule eval_expr_BinopOr = eval_expr(BinopOr);
+render rule eval_expr_BinopImpl = eval_expr(BinopImpl);
+render rule eval_expr_Binop = eval_expr(Binop);
+render rule eval_expr_Unop = eval_expr(Unop);
+render rule eval_expr_EATC = eval_expr(EATC);
+render rule eval_expr_ECond = eval_expr(ECond);
+render rule eval_expr_ECall = eval_expr(ECall);
+render rule eval_expr_ESlice = eval_expr(ESlice);
+render rule eval_expr_EGetArray = eval_expr(EGetArray);
+render rule eval_expr_EGetEnumArray = eval_expr(EGetEnumArray);
+render rule eval_expr_EGetTupleItem = eval_expr(EGetTupleItem);
+render rule eval_expr_ERecord = eval_expr(ERecord);
+render rule eval_expr_EGetField = eval_expr(EGetField);
+render rule eval_expr_EGetFields = eval_expr(EGetFields);
+render rule eval_expr_ETuple = eval_expr(ETuple);
+render rule eval_expr_EArray = eval_expr(EArray);
+render rule eval_expr_EEnumArray = eval_expr(EEnumArray);
+render rule eval_expr_EArbitrary = eval_expr(EArbitrary);
+render rule eval_expr_EPattern = eval_expr(EPattern);
+render rule eval_expr_EGetCollectionFields = eval_expr(EGetCollectionFields);
 
 semantics relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_value, g: XGraphs) | TDynError | TDiverging
 {
@@ -2284,7 +2917,11 @@ semantics relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_
                         side-effect-free expressions by omitting throwing
                         configurations as possible output configurations.",
  prose_application = "",
-};
+} =
+  eval_expr(env, e) -> ResultExpr((v, g), _) | DynErrorConfig(), DivergingConfig();
+  --
+  ResultExprSEF(v, g);
+;
 
 semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
          (b: Bool, g: XGraphs) | TDynError | TDiverging
@@ -2294,7 +2931,46 @@ semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
   resulting in a Boolean value {b} and execution graph
   {g}. \ProseOtherwiseDynamicErrorOrDiverging",
   prose_application = "\hyperlink{relation-isvaloftype}{testing} if value {v} matches type {t} in {env} yields result {b} and graph {g}",
-};
+} =
+  case type_equal {
+    ast_label(t) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    --
+    (True, empty_graph);
+  }
+
+  case int_unconstrained {
+    t =: unconstrained_integer;
+    --
+    (True, empty_graph);
+  }
+
+  case int_wellconstrained {
+    t =: T_Int(typed_WellConstrained(cs, _));
+    v =: nvint(n);
+    list_combine(cs_sat, cs_graphs) := list_map(c, cs, is_constraint_sat(env, c, n));
+    any_sat := list_or(cs_sat);
+    g := parallel_graphs(cs_graphs);
+    --
+    (any_sat, g);
+  }
+
+  case bits {
+    t =: T_Bits(e, _);
+    v =: nvbitvector(bits);
+    eval_expr_sef(env, e) -> ResultExprSEF(v_len, g);
+    v_len =: nvint(n);
+    --
+    (n_to_n_pos(n) = list_len(bits), g);
+  }
+
+  case tuple {
+    t =: T_Tuple(tys);
+    v =: NV_Vector(values);
+    INDEX(i, tys: is_val_of_type(env, values[i], tys[i]) -> (bs[i], gs[i]));
+    --
+    (list_and(bs), parallel_graphs(gs));
+  }
+;
 
 semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
          (b: Bool, g: XGraphs)
@@ -2306,7 +2982,23 @@ semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
   execution graph {g} resulting from evaluating the
   expressions appearing in {c}.",
   prose_application = "\hyperlink{relation-isconstraintsat}{verifying} integer {n} satisfies constraint {c} in {env} yields {b} and graph {g}",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(m), g);
+    --
+    (m = n, g);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    eval_expr_sef(env, e1) -> ResultExprSEF(nvint(a), g1);
+    eval_expr_sef(env, e2) -> ResultExprSEF(nvint(b), g2);
+    g := parallel(g1, g2);
+    --
+    (and(a <= n && n <= b), g);
+  }
+;
 
 semantics relation eval_expr_list(env: envs, le: list0(expr)) ->
          ResultExprList((v: list0(native_value), g: XGraphs), new_env: envs) | TThrowing | TDynError | TDiverging
@@ -2319,7 +3011,23 @@ semantics relation eval_expr_list(env: envs, le: list0(expr)) ->
   environment {new_env}. \ProseOtherwiseAbnormal",
   prose_application = "\hyperlink{relation-evalexprlist}{evaluating} expressions {le} in {env} yields values {v}, graph {g}, and environment {new_env}",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    le = empty_list;
+    --
+    ResultExprList((empty_list, empty_graph), env);
+  }
+
+  case non_empty {
+    le =: match_cons(e, le1);
+    eval_expr(env, e) -> ResultExpr((v1, g1), env1);
+    eval_expr_list(env1, le) -> ResultExprList((vs, g2), new_env);
+    v := match_cons(v1, vs);
+    g := parallel(g1, g2);
+    --
+    ResultExprList((v, g), new_env);
+  }
+;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assignable Expressions Relations
@@ -2335,22 +3043,369 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
         {new_le} is the annotated \assignableexpression{},
         and {ses} is the \sideeffectsetterm{} inferred for {le}. \ProseOtherwiseTypeError",
     prose_application = "annotating {le} with {t_e} in {tenv} yields {new_le} and {ses}\ProseOrTypeError",
-};
+} =
+  case LEDiscard {
+    le =: LE_Discard;
+    --
+    (LE_Discard, empty_set);
+  }
 
-semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
+  case LEVar {
+    le =: LE_Var(x);
+
+    case local {
+      tenv.static_envs_L.local_storage_types(x) =: (t, k);
+      te_check(k = LDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(LocalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case global {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) =: (t, k);
+      te_check(k = GDK_Var, TE_AIM) -> True;
+      check_type_satisfies(tenv, t_e, t) -> True;
+      ses := make_set(GlobalEffect(SE_Impure), Immutability(False));
+      --
+      (LE_Var(x), ses);
+    }
+
+    case error_undefined {
+      tenv.static_envs_L.local_storage_types(x) = bot;
+      tenv.static_envs_G.global_storage_types(x) = bot;
+      --
+      TypeError(TE_UI);
+    }
+  }
+
+  case LEDestructuring {
+    le =: LE_Destructuring(les);
+    te_check(ast_label(t_e) = label_T_Tuple, TE_UT) -> True;
+    t_e =: T_Tuple(tys);
+    te_check(list_len(les) = list_len(tys), TE_UT) -> True;
+    (
+      INDEX(i, les: annotate_lexpr(tenv, les[i], tys[i]) -> (les'[i], xs[i]))
+    );
+    ses := union_list(xs);
+    --
+    (LE_Destructuring(les'), ses);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(e_base, e_index);
+    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, _);
+    make_anonymous(tenv, t_base) -> t_anon_base;
+    te_check(ast_label(t_anon_base) = label_T_Array, TE_UT) -> True;
+    t_anon_base =: T_Array(size, t_elem);
+    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base);
+    annotate_set_array(tenv, (size, t_elem), t_e, (e_base', ses_base, e_index)) -> (new_le, ses)
+    { math_layout = [_] };
+    --
+    (new_le, ses);
+  }
+
+  case LESlice {
+    le =: LE_Slice(le1, slices);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+    te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
+    annotate_slices(tenv, slices) -> (slices_annot, ses_slices);
+    slices_width(tenv, slices_annot) -> e_w;
+    normalize(tenv, e_w) -> v_w;
+    t := T_Bits(v_w, empty_list);
+    check_type_satisfies(tenv, t_e, t) -> True;
+    check_disjoint_slices(tenv, slices_annot) -> True;
+    te_check(slices_annot != empty_list, TE_BS) -> True;
+    ses := union(ses1, ses_slices);
+    --
+    (LE_Slice(le2, slices_annot), ses);
+  }
+
+  case LESetField {
+    le =: LE_SetField(le1, field_name);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_lexpr(tenv, le1, t_le1) -> (le2, ses);
+    make_anonymous(tenv, t_le1) -> t_le1_anon;
+
+    case structured {
+      t_le1_anon =: make_structured(L, fields);
+      L in make_set(label_T_Record, label_T_Exception);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t_field);
+      check_type_satisfies(tenv, t_e, t_field) -> True;
+      --
+      (LE_SetField(le2, field_name), ses);
+    }
+
+    case collection {
+      t_le1_anon =: T_Collection(fields);
+      le2 =: LE_Var(collection_var_name);
+      assoc_opt(fields, field_name) =: t_opt;
+      te_check(t_opt != None, TE_BF) -> True;
+      t_opt =: some(t);
+      check_type_satisfies(tenv, t_e, t) -> True;
+      get_bitvector_const_width(tenv, t) -> n;
+      --
+      (LE_SetCollectionFields(collection_var_name, make_singleton_list(field_name), make_singleton_list((zero, n))), ses)
+      { math_layout = [_] };
+    }
+
+    case bitfield {
+      t_le1_anon =: T_Bits(_, bitfields);
+      find_bitfield_opt(field_name, bitfields) -> bitfield_opt;
+      case found {
+        case simple {
+          bitfield_opt =: some(BitField_Simple(_, slices));
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, empty_list);
+        }
+
+        case nested {
+          bitfield_opt =: some(BitField_Nested(_, slices, bitfields'))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> vw;
+          t := T_Bits(vw, bitfields');
+        }
+
+        case typed {
+          bitfield_opt =: some(BitField_Type(_, slices, t_field))
+          { math_layout = [_] };
+          slices_width(tenv, slices) -> w;
+          t := T_Bits(w, empty_list);
+          check_type_satisfies(tenv, t, t_field) -> True;
+        }
+        check_type_satisfies(tenv, t_e, t) -> True;
+        annotate_lexpr(tenv, LE_Slice(le1, slices), t_e) -> (new_le, ses2);
+        --
+        (new_le, ses2);
+      }
+
+      case missing {
+        bitfield_opt = None;
+        --
+        TypeError(TE_BF);
+      }
+    }
+
+    case error {
+      ast_label(t_le1_anon) not_in make_set(label_T_Record, label_T_Exception, label_T_Collection, label_T_Bits)
+      { math_layout = (_, [_]) };
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+ case LESetFields {
+   le =: LE_SetFields(le_base, le_fields);
+   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, _);
+   annotate_lexpr(tenv, le_base, t_base) -> (le_base_annot, ses_base);
+   make_anonymous(tenv, t_base) -> t_base_anon;
+
+   case bits {
+     t_base_anon =: T_Bits(_, bitfields);
+     ( INDEX(i, le_fields: find_bitfields_slices(le_fields[i], bitfields) -> slices[i]) )
+     { ([_]) };
+     le_slice := LE_Slice(le_base_annot, list_flatten(slices));
+     annotate_lexpr(tenv, le_slice, t_e) -> (new_le, ses);
+     --
+     (new_le, ses);
+   }
+
+   case record {
+     t_base_anon =: T_Record(base_fields);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     vt_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, vt_lhs) -> True;
+     --
+     (typed_LE_SetFields(le_base_annot, le_fields, slices), ses_base)
+     { math_layout = [_] };
+   }
+
+   case collection {
+     t_base_anon =: T_Collection(base_fields);
+     le_base =: LE_Var(base_name);
+     fold_bitvector_fields(tenv, base_fields, le_fields) -> (length, slices);
+     t_lhs := T_Bits(ELint(length), empty_list);
+     check_type_satisfies(tenv, t_e, t_lhs) -> True;
+     --
+     (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
+     { math_layout = [_, [_]] };
+   }
+
+   case error {
+     ast_label(t_base_anon) not_in make_set(label_T_Bits, label_T_Record, label_T_Collection);
+     --
+     TypeError(TE_UT);
+   }
+ }
+;
+
+render rule annotate_lexpr_LEDiscard = annotate_lexpr(LEDiscard);
+render rule annotate_lexpr_LEVar = annotate_lexpr(LEVar);
+render rule annotate_lexpr_LEDestructuring = annotate_lexpr(LEDestructuring);
+render rule annotate_lexpr_LESetArray = annotate_lexpr(LESetArray);
+render rule annotate_lexpr_LESlice = annotate_lexpr(LESlice);
+render rule annotate_lexpr_LESetStructuredField = annotate_lexpr(LESetField.structured);
+render rule annotate_lexpr_LESetCollectionField = annotate_lexpr(LESetField.collection);
+render rule annotate_lexpr_LESetField_BitField = annotate_lexpr(LESetField.bitfield);
+render rule annotate_lexpr_LESetBadField_error = annotate_lexpr(LESetField.error);
+render rule annotate_lexpr_LESetFields = annotate_lexpr(LESetFields);
+
+// TODO: change aslspec to allow the signature in comment.
+//semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
+semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
         | TDiverging
 {
-    "evaluates the assignment of the value {v}
-        with \executiongraphterm{} {g}
+    "evaluates the assignment of the value-graph pair {m}
         to the \assignableexpression{} {le} in the environment {env},
         resulting in the configuration $\ResultLexpr({new_g}, {new_env})$. \ProseOtherwiseAbnormal",
-    prose_application = "evaluating the assignment of {v} with {g} to {le} in {env}
+    prose_application = "evaluating the assignment of {m} to {le} in {env}
         yields $\ResultLexpr({new_g}, {new_env})$\ProseOrAbnormal",
     math_layout = (_, [_,_,_,_]),
-};
+} =
+  case LEDiscard {
+    le = LE_Discard;
+    m =: (v, g);
+    --
+    ResultLexpr(g, env);
+  }
+
+  case LEVar {
+    le =: LE_Var(name);
+    env =: (tenv, denv);
+    m =: (v, g);
+    case local {
+      map_apply_opt(denv.dynamic_envs_L, name) =: some(_);
+      updated_local := map_update(denv.dynamic_envs_L, name, v);
+      new_denv := denv(dynamic_envs_L: updated_local);
+    }
+
+    case global {
+      map_apply_opt(denv.dynamic_envs_G.storage, name) =: some(_);
+      updated_storage := map_update(denv.dynamic_envs_G.storage, name, v);
+      new_gdenv := denv.dynamic_envs_G(storage: updated_storage);
+      new_denv := denv(dynamic_envs_G: new_gdenv);
+    }
+    new_env := (tenv, new_denv);
+    write_identifier(name, v) -> g1;
+    new_g := ordered_data(g, g1);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LEDestructuring {
+    le =: LE_Destructuring(le_list);
+    m =: (v, g);
+    INDEX(i, le_list: get_index(i, v) -> r_vals[i]);
+    vmlist := list_map(r_val, r_vals, (r_val, g));
+    eval_multi_assignment(env, le_list, vmlist) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(re_array, e_index);
+    m =: (v, g);
+    eval_expr(env, rexpr(re_array)) -> ResultExpr(rm_array, env1);
+    eval_expr(env1, e_index) -> ResultExpr(m_index, env2);
+    m_index =: (index, g1);
+    index =: nvint(n_to_n_pos(i));
+    rm_array =: (rv_array, g2);
+    set_index(i, v, rv_array) -> v1;
+    m1 := (v1, ordered_data(g, parallel(g1, g2)));
+    eval_lexpr(env2, re_array, m1) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESlice {
+    le =: LE_Slice(e_bv, slices);
+    m =: (v, g);
+    eval_expr(env, rexpr(e_bv)) -> ResultExpr(m_bv, env1);
+    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g1), env2);
+    m_bv =: (v_bv, g2);
+    check_non_overlapping_slices(slice_ranges) -> True;
+    write_to_bitvector(slice_ranges, v, v_bv) -> v1;
+    g3 := ordered_data(g, parallel(g1, g2));
+    eval_lexpr(env2, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESetEnumArray {
+    le =: LE_SetEnumArray(re_array, e_index);
+    m =: (v, g);
+    eval_expr(env, rexpr(re_array)) -> ResultExpr(rm_array, env1);
+    eval_expr(env1, e_index) -> ResultExpr(m_index, env2);
+    m_index =: (index, g1);
+    index =: NV_Literal(L_Label(l));
+    rm_array =: (rv_array, g2);
+    set_field(l, v, rv_array) -> v1;
+    m1 := (v1, ordered_data(g, parallel(g1, g2)));
+    eval_lexpr(env2, re_array, m1) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESetField {
+    le =: LE_SetField(re_record, field_name);
+    m =: (v, g);
+    eval_expr(env, rexpr(re_record)) -> ResultExpr(rm_record, env1);
+    rm_record =: (rv_record, g1);
+    set_field(field_name, v, rv_record) -> v1;
+    m1 := (v1, ordered_data(g, g1));
+    eval_lexpr(env1, re_record, m1) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESetFields {
+    le =: typed_LE_SetFields(le_record, fields, slices);
+    m =: (v, g);
+    eval_expr(env, rexpr(le_record)) -> ResultExpr(rm_record, env1);
+    rm_record =: (v_record, g1);
+    assign_bitvector_fields(v, v_record, fields, slices) -> v2;
+    m2 := (v2, ordered_data(g, g1));
+    eval_lexpr(env1, le_record, m2) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case LESetCollectionFields {
+    le =: LE_SetCollectionFields(base, field_names, slices);
+    m =: (v, g);
+    env =: (tenv, denv);
+    map_apply_opt(denv.dynamic_envs_G.storage, base) =: some(record);
+    assign_bitvector_fields(v, record, field_names, slices) -> record1;
+    field_ids := list_map(f, field_names, concat(base, dot_str, f));
+    INDEX(i, field_ids: write_identifier(field_ids[i], v) -> gs[i]);
+    g_zero := parallel_graphs(gs);
+    updated_storage := map_update(denv.dynamic_envs_G.storage, base, record1);
+    new_gdenv := denv.dynamic_envs_G(storage: updated_storage);
+    new_denv := denv(dynamic_envs_G: new_gdenv);
+    new_env := (tenv, new_denv);
+    new_g := ordered_data(g, g_zero);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+;
+
+render rule eval_lexpr_LEDiscard = eval_lexpr(LEDiscard);
+render rule eval_lexpr_LEVar = eval_lexpr(LEVar);
+render rule eval_lexpr_LEDestructuring = eval_lexpr(LEDestructuring);
+render rule eval_lexpr_LESetArray = eval_lexpr(LESetArray);
+render rule eval_lexpr_LESetEnumArray = eval_lexpr(LESetEnumArray);
+render rule eval_lexpr_LESlice = eval_lexpr(LESlice);
+render rule eval_lexpr_LESetField = eval_lexpr(LESetField);
+render rule eval_lexpr_LESetFields = eval_lexpr(LESetFields);
+render rule eval_lexpr_LESetCollectionFields = eval_lexpr(LESetCollectionFields);
 
 semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist: list0((native_value, XGraphs))) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
@@ -2364,58 +3419,169 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist
     prose_application = "evaluating multi-assignment of {vmlist} to {lelist} in {env} yields $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
     math_macro = \evalmultiassignment,
     math_layout = (_, [_,_,_,_]),
-};
+} =
+  case empty {
+    lelist = empty_list;
+    vmlist = empty_list;
+    new_g := empty_graph;
+    new_env := env;
+    --
+    ResultLexpr(new_g, new_env);
+  }
 
-typing relation annotate_set_array(tenv: static_envs, size_elem: (array_index, ty), rhs_ty: ty, base_ses_index: (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
+  case non_empty {
+    lelist =: match_cons(le, lelist1);
+    vmlist =: match_cons(vm, vmlist1);
+    eval_lexpr(env, le, vm) -> ResultLexpr(g1, env1);
+    eval_multi_assignment(env1, lelist1, vmlist1) -> ResultLexpr(g2, new_env);
+    new_g := ordered_po(g1, g2);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+;
+
+typing relation annotate_set_array(
+  tenv: static_envs,
+  (size: array_index, t_elem: ty),
+  rhs_ty: ty,
+  (e_base: lexpr, ses_base: powerset(TSideEffect), e_index: expr)
+  ) ->
     (new_le: lexpr, ses: powerset(TSideEffect)) | type_error
 {
-    "annotates an array update in the \staticenvironmentterm{} {tenv}
-    where {size_elem} contains the array index and type of array elements,
-    {rhs_ty} is the type of the \rhsexpression{},
-    and {base_ses_index} contains the annotated expression {e_base} for the array base,
-    the \sideeffectsetterm{} {ses_base} inferred for the base,
-    and the index expression {e_index}.
-    The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
-    prose_application = "annotating array update in {tenv} with {size_elem}, {rhs_ty}, and {base_ses_index} yields {new_le} and {ses}\ProseOrTypeError",
-    math_layout = [[_,_,_,_],_],
-};
+  "annotates an array update in the \staticenvironmentterm{} {tenv}
+  where {size} is kind of array index and {t_elem} is the type of array elements,
+  {rhs_ty} is the type of the \rhsexpression{},
+  the annotated array based expression is {e_base},
+  the \sideeffectsetterm{} {ses_base} inferred for the base,
+  and the index expression {e_index}.
+  The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
+  prose_application = "annotating array update in {tenv} with {size}, {t_elem}, {rhs_ty}, {e_base}m {ses_base}, and {e_index} yields {new_le} and {ses}\ProseOrTypeError",
+  math_layout = [[_,_,_,_],_],
+} =
+  check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
+  annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  type_of_array_length(size) -> wanted_t_index;
+  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  ses := union(ses_base, ses_index);
+  new_le := if_then_else(
+    equal(ast_label(size), label_ArrayLength_Expr),
+    LE_SetArray(e_base, e_index'),
+    LE_SetEnumArray(e_base, e_index')
+  ) { (_, [_]) };
+  --
+  (new_le, ses) { ([_], _) };
+;
 
 typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) ->
-         constants_set(True) | type_error
+         CheckResult | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
     prose_application = "checking whether {slices} are disjoint in {tenv} yields $\True$\ProseOrTypeError",
-};
+} =
+  disjoint_slices_to_positions(tenv, False, slices) -> positions;
+  --
+  True;
+;
 
-semantics function check_non_overlapping_slices(value_ranges: list0((tint, tint))) ->
-         constants_set(True) | TDynError
+semantics function check_non_overlapping_slices(value_ranges: list0((native_value, native_value))) ->
+         CheckResult | TDynError
 {
     "checks whether the sets of integers represented by the list of ranges {value_ranges} overlap, yielding $\True$. \ProseOtherwiseDynamicErrorOrDiverging",
     prose_application = "checking whether {value_ranges} are non-overlapping yields $\True$\ProseOrDynamicErrorOrDiverging",
-};
+} =
+  case empty {
+    value_ranges = empty_list;
+    --
+    True;
+  }
 
-semantics function check_two_ranges_non_overlapping(range1: (s1: tint, l1: tint), range2: (s2: tint, l2: tint)) ->
-         constants_set(True) | TDynError
+  case non_empty {
+    value_ranges =: match_cons(head_range, tail_ranges);
+    ( INDEX(i, tail_ranges: check_two_ranges_non_overlapping(head_range, tail_ranges[i]) -> True) )
+    { ([_, [_]]) };
+    check_non_overlapping_slices(tail_ranges) -> True;
+    --
+    True;
+  }
+;
+
+semantics function check_two_ranges_non_overlapping(
+  range1: (native_value, native_value),
+  range2: (native_value, native_value)) ->
+         CheckResult | TDynError
 {
-    "checks whether two sets of integers represented by the ranges $({s1},{l1})$ and $({s2},{l2})$ do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
-    prose_application = "checking whether $({s1},{l1})$ and $({s2},{l2})$ do not intersect yields $\True$\ProseOrError",
+    "checks whether two sets of integers represented by the ranges {range1} and {range2} do not intersect, yielding $\True$. \ProseOtherwiseDynamicError",
+    prose_application = "checking whether {range1} and {range2} do not intersect yields $\True$\ProseOrError",
     math_layout = [_, _],
-};
+} =
+  range1 =: (s1, l1);
+  range2 =: (s2, l2);
+  eval_binop(ADD, s1, l1) -> s1_l1;
+  eval_binop(LE, s1_l1, s2) -> s1_l1_le_s2;
+  eval_binop(ADD, s2, l2) -> s2_l2;
+  eval_binop(LE, s2_l2, s1) -> s2_l2_le_s1;
+  eval_binop(BOR, s1_l1_le_s2, s2_l2_le_s1) -> v_b;
+  v_b =: nvbool(b);
+  de_check(b, DE_OSA) -> True;
+  --
+  True;
+;
 
-typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(bitfield)) ->
-         (length: N, slices: list0((start: N, width: N)))
+typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(field), le_fields: list0(Identifier)) ->
+         (length: Z, slices: list0((start: Z, width: Z)))
 {
-    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of {base_fields} about to be assigned to, and yields the total width across {le_fields} and the ranges corresponding to {le_fields} in terms of pairs where the first component is the start position and the second component is the width of the field.",
+    "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of the names of fields
+    in {base_fields} about to be assigned to, and yields the total width across the fields named in {le_fields} and the ranges corresponding to them in terms of pairs where the first component is the start position and the second component is the width of the field.",
     prose_application = "folding bitvector fields {le_fields} from {base_fields} in {tenv} yields length {length} and slices {slices}",
-};
+} =
+  case empty {
+    le_fields = empty_list;
+    --
+    (zero, empty_list);
+  }
 
-semantics function assign_bitvector_fields(bitvector: tbitvector, record: trecord, fields: list0(Identifier), slices: list0((N, N))) ->
-         (result: trecord)
+  case non_empty {
+    le_fields =: concat(le_fields1, match_singleton_list(field));
+    fold_bitvector_fields(tenv, base_fields, le_fields1) -> (start, slices1);
+    assoc_opt(base_fields, field) =: ty_opt;
+    te_check(ty_opt != None, TE_BF) -> True;
+    ty_opt =: some(t_field);
+    get_bitvector_const_width(tenv, t_field) -> field_width;
+    --
+    (start + field_width, concat(make_singleton_list((start, field_width)), slices1))
+    { [_] };
+  }
+;
+
+semantics function assign_bitvector_fields(
+  bitvector: native_value,
+  record: native_value,
+  fields: list0(Identifier),
+  slices: list0((Z, Z))) ->
+    (result: native_value) | TDynError
 {
     "updates the list of fields {fields} of {record} with the slices given by {slices} from \\
     {bitvector}, yielding the \nativevalueterm{} {result}",
     prose_application = "assigning {bitvector} slices {slices} to fields {fields} of {record} yields {result}",
-};
+} =
+  case empty {
+    fields = empty_list;
+    slices = empty_list;
+    --
+    record;
+  }
+
+  case non_empty {
+    fields =: match_cons(field_name, fields1);
+    slices =: match_cons((i1, i2), slices1);
+    slice := make_singleton_list((nvint(i1), nvint(i2)));
+    read_from_bitvector(bitvector, slice) -> record_slices;
+    set_field(field_name, record_slices, record) -> record1;
+    assign_bitvector_fields(bitvector, record1, fields1, slices1) -> result;
+    --
+    result;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Base Values
@@ -2428,7 +3594,112 @@ typing function base_value(tenv: static_envs, t: ty) ->
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-basevalue}{computing} initial value for type {t} in {tenv} yields expression {e_init}",
-};
+} =
+  case t_bool {
+    t = T_Bool;
+    --
+    E_Literal(L_Bool(False));
+  }
+
+  case t_bits_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt != None;
+    z_opt =: some(length);
+    te_check(length >= zero, TE_NBV) -> True;
+    --
+    E_Literal(L_Bitvector(list_map(i, range_list(one, length), zero_bit)));
+  }
+
+  case t_bits_non_static {
+    t =: T_Bits(e, _);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    z_opt = None;
+    e_init := E_Slice(ELint(zero), make_singleton_list(Slice_Length(ELint(zero), e)));
+    --
+    e_init;
+  }
+
+  case t_enum {
+    t =: T_Enum(match_non_empty_cons(name, _));
+    lookup_constant(tenv, name) -> some(l);
+    --
+    E_Literal(l);
+  }
+
+  case t_int_unconstrained {
+    t = unconstrained_integer;
+    --
+    E_Literal(L_Int(zero));
+  }
+
+  case t_int_parameterized {
+    t =: T_Int(Parameterized(id));
+    --
+    TypeError(TE_NBV);
+  }
+
+  case t_int_wellconstrained {
+    t =: T_Int(WellConstrained(cs));
+    INDEX(i, cs: constraint_abs_min(tenv, cs[i]) -> z_min_lists[i]);
+    z_min_list := list_flatten(z_min_lists);
+    te_check(z_min_list != empty_list, TE_NBV) -> True;
+    list_min_abs(z_min_list) -> z_min;
+    --
+    E_Literal(L_Int(z_min));
+  }
+
+  case t_named {
+    t =: T_Named(id);
+    make_anonymous(tenv, T_Named(id)) -> t';
+    base_value(tenv, t') -> e_init;
+    --
+    e_init;
+  }
+
+  case t_real {
+    t = T_Real;
+    --
+    E_Literal(L_Real(rational_zero));
+  }
+
+  case structured {
+    is_structured(t) -> True;
+    t =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    ( INDEX(i, field_types: base_value(tenv, field_types[i]) -> field_base_values[i]) ) { ( [_] ) };
+    e := list_combine(field_names, field_base_values);
+    --
+    E_Record(t, e);
+  }
+
+  case t_string {
+    t = T_String;
+    --
+    E_Literal(L_String(empty_list));
+  }
+
+  case t_tuple {
+    t =: T_Tuple(ts);
+    INDEX(i, ts: base_value(tenv, ts[i]) -> es[i]);
+    --
+    E_Tuple(match_non_empty_list(es));
+  }
+
+  case t_array_enum {
+    t =: T_Array(ArrayLength_Enum(enum, labels), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_EnumArray [ enum : enum, labels : labels, enum_array_value : value ];
+  }
+
+  case t_array_expr {
+    t =: T_Array(ArrayLength_Expr(length), ty);
+    base_value(tenv, ty) -> value;
+    --
+    E_Array[ length : length, array_value : value ];
+  }
+;
 
 typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
          (zs: list0(Z)) | type_error
@@ -2439,7 +3710,34 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   constraint represents an empty set. Otherwise, the
   result is $\TypeErrorVal{\NoBaseValue}$.",
   prose_application = "\hyperlink{relation-constraintabsmin}{finding} minimal absolute value satisfying constraint {c} in {tenv} yields {zs}",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    reduce_to_z_opt(tenv, e) -> z_opt;
+    te_check(z_opt != None, TE_NBV) -> True;
+    z_opt =: some(z);
+    --
+    make_singleton_list(z);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    reduce_to_z_opt(tenv, e1) -> z_opt1;
+    te_check(z_opt1 != None, TE_NBV) -> True;
+    z_opt1 =: some(v1);
+    reduce_to_z_opt(tenv, e2) -> z_opt2;
+    te_check(z_opt2 != None, TE_NBV) -> True;
+    z_opt2 =: some(v2);
+    zs := cond(
+            v1 > v2                 : empty_list,
+            v1 <= v2 && v2 < zero   : make_singleton_list(v2),
+            v1 < zero && zero <= v2 : make_singleton_list(zero),
+            zero <= v1 && v1 <= v2  : make_singleton_list(v1)
+          );
+    --
+    zs;
+  }
+;
 
 typing function list_min_abs(l: list0(Z)) ->
          (z: Z)
@@ -2451,7 +3749,27 @@ typing function list_min_abs(l: list0(Z)) ->
   positive and $y$ is negative then $x$ is considered
   closer to $0$.",
   prose_application = "\hyperlink{relation-listminabs}{finding} integer closest to zero in list {l} yields {z}",
-};
+} =
+  case one {
+    l =: match_singleton_list(z);
+    --
+    z;
+  }
+
+  case more_than_one {
+    l =: match_cons(z1, l2);
+    l2 != empty_list;
+    list_min_abs(l2) -> z2;
+    z := cond(
+           abs_value(z1) < abs_value(z2)              : z1,
+           abs_value(z1) > abs_value(z2)              : z2,
+           z1 = z2                                    : z1,
+           abs_value(z1) = abs_value(z2) && z1 != z2  : abs_value(z1)
+          );
+    --
+    z;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Bitfields
@@ -2590,7 +3908,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 ;
 
 typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0(slice)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the slices in {slices} fit within the
   bitvector width given by {width} in {tenv}, yielding
@@ -2604,7 +3922,7 @@ typing function check_slices_in_width(tenv: static_envs, width: Z, slices: list0
 ;
 
 typing function check_positions_in_width(width: Z, positions: powerset(Z)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the set of positions in {positions} fit
   within the bitvector width given by {width}, yielding
@@ -2704,7 +4022,7 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
 ;
 
 typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0(bitfield), width: N) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks \RequirementRef{BitfieldAlignment} for every
   pair of bitfields in {bitfields}, contained in a
@@ -2734,9 +4052,8 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list0(bitfie
 } =
   abs_field_sets := list_map(i, indices(bitfields), bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
   { math_layout = (_, [_])};
-  abs_bitfields := union_list(abs_field_sets);
   --
-  abs_bitfields;
+  union_list(abs_field_sets);
 ;
 
 typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->
@@ -2775,7 +4092,21 @@ typing function select_indices_by_slices(indices: list0(Z), slice_indices: list0
   sub-list of {indices} indicated by the indices in
   {slice_indices}.",
   prose_application = "\hyperlink{relation-selectindicesbyslices}{selecting} indices from {indices} using slice indices {slice_indices} yields absolute slice {absolute_slice}",
-};
+} =
+  case empty {
+    slice_indices = empty_list;
+    --
+    empty_list;
+  }
+
+  case cons {
+    slice_indices =: match_cons(idx, rest);
+    v := indices[idx];
+    select_indices_by_slices(indices, rest) -> rest_vals;
+    --
+    concat(make_singleton_list(v), rest_vals);
+  }
+;
 
 typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
          (b: Bool)
@@ -2785,7 +4116,16 @@ typing function absolute_bitfields_align(f: TAbsField, g: TAbsField) ->
   they do, {b} indicates whether their \absoluteslices\
   are equal. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-absolutebitfieldsalign}{checking} alignment between absolute bitfields {f} and {g} yields {b}",
-};
+} =
+  f =: (f_names, slice_one);
+  g =: (g_names, slice_two);
+  f_names =: concat(scope_one, match_singleton_list(name_one));
+  g_names =: concat(scope_two, match_singleton_list(name_two));
+  same_scope := listprefix(scope_one, scope_two) || listprefix(scope_two, scope_one);
+  b := implies((name_one = name_two && same_scope), slice_one = slice_two);
+  --
+  b;
+;
 
 typing function slice_to_indices(tenv: static_envs, s: slice) ->
          (indices: list0(Z))
@@ -2830,14 +4170,49 @@ semantics relation eval_block(env: envs, stm: stmt) -> Continuing(new_g: XGraphs
                         \ProseOtherwiseAbnormal",
  prose_application = "",
   math_layout = [_,_],
- };
+ } =
+  case returning {
+    env =: (tenv, denv);
+    eval_stmt(env, stm) -> Returning((vs, new_g), env_ret) | DynErrorConfig(), DivergingConfig();
+    env_ret =: (tenv1, denv1);
+    pop_local_scope(denv, denv1) -> new_denv;
+    new_env := (tenv, new_denv);
+    --
+    Returning((vs, new_g), new_env);
+  }
+
+  case continuing {
+    env =: (tenv, denv);
+    eval_stmt(env, stm) -> Continuing(new_g, env_cont) | DynErrorConfig(), DivergingConfig();
+    env_cont =: (tenv1, denv1);
+    pop_local_scope(denv, denv1) -> new_denv;
+    new_env := (tenv, new_denv);
+    --
+    Continuing(new_g, new_env);
+  }
+
+  case throwing {
+    env =: (tenv, denv);
+    eval_stmt(env, stm) -> Throwing(v, t, new_g, env_throw) | DynErrorConfig(), DivergingConfig();
+    env_throw =: (tenv1, denv1);
+    pop_local_scope(denv, denv1) -> new_denv;
+    new_env := (tenv, new_denv);
+    --
+    Throwing(v, t, new_g, new_env);
+  }
+;
 
 semantics function pop_local_scope(outer_denv: dynamic_envs, inner_denv: dynamic_envs) -> (new_denv: dynamic_envs)
 {
   "discards from {inner_denv} the bindings to local storage elements that are not in\\ {outer_denv}, yielding {new_denv}.",
   prose_application = "dropping from {inner_denv} the bindings to local storage elements that are not in {outer_denv}
   yields {new_denv}",
-};
+} =
+  outer_ids := dom(outer_denv.dynamic_envs_L);
+  --
+  inner_denv(dynamic_envs_L: restrict_map(inner_denv.dynamic_envs_L, outer_ids))
+  { [_] };
+;
 
 //////////////////////////////////////////////////
 // Relations for Catching Exceptions
@@ -2853,7 +4228,30 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-annotatecatcher}{annotating} catcher {c} in {tenv} with side effects {ses_in} yields catcher {new_catcher} and side effects {ses}",
   math_layout = [_,_],
-};
+} =
+  case none {
+    c =: (None, ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    annotate_block(tenv, stmt) -> (new_stmt, ses_block);
+    new_catcher := (None, ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+  case some {
+    c =: (some(name), ty, stmt);
+    annotate_type(False, tenv, ty) -> (ty', ses_ty);
+    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    check_var_not_in_env(tenv, name) -> True;
+    add_local(tenv, name, ty', LDK_Let) -> tenv';
+    annotate_block(tenv', stmt) -> (new_stmt, ses_block);
+    new_catcher := (some(name), ty', new_stmt);
+    ses := union(ses_block, ses_ty);
+    --
+    (ses_in, (new_catcher, ses));
+  }
+;
 
 semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_opt: option(stmt), s_m: TOutConfig) ->
   TContinuing | TReturning | TThrowing | TDynError
@@ -2867,7 +4265,76 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
                         configuration, or an abnormal configuration.",
  prose_application = "",
   math_layout = [_,_],
- };
+ } =
+  case catch {
+    s_m =: Throwing(v, v_ty, sg, env_throw);
+    env =: (tenv, denv);
+    env_throw =: (tenv1, denv_throw);
+    find_catcher(tenv, v_ty, catchers) -> some((None, _, s));
+    eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
+    new_g := ordered_po(sg, graph_of(C));
+    --
+    with_graph(C, new_g);
+  }
+
+  case catch_named {
+    s_m =: Throwing(v, v_ty, sg, env_throw);
+    env =: (tenv, denv);
+    env_throw =: (tenv1, denv_throw);
+    find_catcher(tenv, v_ty, catchers) -> some((some(name), _, s));
+    read_value_from(v) -> (v1, g1);
+    declare_local_identifier_m(env_throw, name, (v1, g1)) -> (env2, g2);
+    eval_block(env2, s) -> C | DynErrorConfig(), DivergingConfig();
+    env3 := environ_of(C);
+    remove_local(env3, name) -> env4;
+    D := with_environ(C, env4);
+    new_g := ordered_po(sg, ordered_po(ordered_po(g1, g2), graph_of(D)));
+    --
+    with_graph(D, new_g);
+  }
+
+  case catch_otherwise {
+    s_m =: Throwing(v, v_ty, s_g, env_throw);
+    otherwise_opt =: some(s);
+    env =: (tenv, denv);
+    env_throw =: (_, denv_throw);
+    find_catcher(tenv, v_ty, catchers) -> None;
+    eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
+    new_g := ordered_po(s_g, graph_of(C));
+    --
+    with_graph(C, new_g);
+  }
+
+  case catch_none {
+    s_m =: Throwing(v, v_ty, sg, env_throw);
+    otherwise_opt = None;
+    env =: (tenv, denv);
+    find_catcher(tenv, v_ty, catchers) -> None;
+    --
+    Throwing(v, v_ty, sg, env_throw)
+    { [_] };
+  }
+
+  case catch_no_throw {
+    case continuing {
+      s_m =: Continuing(g, env1);
+      --
+      Continuing(g, env1);
+    }
+
+    case returning {
+      s_m =: Returning(vs_g, env1);
+      --
+      Returning(vs_g, env1);
+    }
+  }
+;
+
+render rule eval_catchers_catch = eval_catchers(catch);
+render rule eval_catchers_catch_named = eval_catchers(catch_named);
+render rule eval_catchers_catch_otherwise = eval_catchers(catch_otherwise);
+render rule eval_catchers_catch_none = eval_catchers(catch_none);
+render rule eval_catchers_no_throw = eval_catchers(catch_no_throw);
 
 semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(catcher)) ->
   (catcher_opt: option(catcher))
@@ -2875,19 +4342,48 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   "returns the first catcher clause in {catchers} that matches the type {v_ty} in {catcher_opt}, if one exists.
   Otherwise, it returns $\None$",
   prose_application = "finding the first catcher clause in {catchers} that matches the type {v_ty} in the context of {tenv} yields {catcher_opt}",
-};
+} =
+  case empty {
+    catchers = empty_list;
+    --
+    None;
+  }
+
+  case match {
+    catchers =: match_cons(c, catchers1);
+    c =: (name_opt, e_ty, s);
+    is_subtype(tenv, v_ty, e_ty) -> True;
+    --
+    some(c);
+  }
+
+  case no_match {
+    catchers =: match_cons(c, catchers1);
+    c =: (name_opt, e_ty, s);
+    is_subtype(tenv, v_ty, e_ty) -> False;
+    find_catcher(tenv, v_ty, catchers1) -> d;
+    --
+    d;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Global Pragmas
 
 typing function check_global_pragma(genv: global_static_envs, d: decl) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "typechecks a global pragma declaration {d} in the
   \globalstaticenvironmentterm{} {genv}, yielding
   $\True$. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-checkglobalpragma}{checking} global pragma declaration {d} in {genv} yields True",
-};
+} =
+  d =: D_Pragma(_, args);
+  with_empty_local(genv) -> tenv;
+  annotate_exprs(tenv, args) -> args';
+  --
+  True;
+;
 
 //////////////////////////////////////////////////
 // Relations for Global Storage Declarations
@@ -2902,7 +4398,23 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-declareglobalstorage}{declaring} global storage {gsd} in {genv} yields environment {new_genv} and declaration {new_gsd}",
   math_layout = [_,_],
-};
+} =
+  gsd =: [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt, initial_value: initial_value];
+  check_var_not_in_genv(genv, name) -> True;
+  with_empty_local(genv) -> tenv;
+  must_be_pure := keyword in make_set(GDK_Constant, GDK_Config);
+  annotate_ty_opt_initial_value(tenv, keyword, must_be_pure, ty_opt, initial_value) -> (typed_initial_value, ty_opt', declared_t)
+  { [[_], [_]] };
+  add_global_storage(genv, name, keyword, declared_t) -> genv1;
+  with_empty_local(genv1) -> tenv1;
+  typed_initial_value =: (initial_value', t_init, ses_initial_value);
+  update_global_storage(tenv1, name, keyword, (t_init, initial_value', ses_initial_value)) -> tenv2
+  { [[_], _] };
+  new_gsd := [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt', initial_value: some(initial_value')];
+  new_genv := tenv2.static_envs_G;
+  --
+  (new_genv, new_gsd);
+;
 
 typing relation annotate_ty_opt_initial_value(
     tenv: static_envs,
@@ -2924,7 +4436,61 @@ typing relation annotate_ty_opt_initial_value(
   {declared_t}.",
   prose_application = "\hyperlink{relation-annotatetyoptinitialvalue}{annotating} type {ty_opt'} and initializer {initial_value} in {tenv} yields value {typed_initial_value} and type {declared_t}",
   math_layout = [input[_,_,_,_,_], ([_,_,_],_)],
-};
+} =
+  case some_some_config {
+    gdk = GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_some {
+    gdk != GDK_Config;
+    ty_opt' =: some(t);
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    get_structure(tenv, t_e) -> t_e';
+    inherit_integer_constraints(t, t_e') -> t'';
+    annotate_type(False, tenv, t'') -> (t', ses_t);
+    typed_e := (e', t_e, ses_e);
+    check_type_satisfies(tenv, t_e, t') -> True;
+    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    --
+    (typed_e, some(t'), t')
+    { ([_], [_]) };
+  }
+
+  case some_none {
+    ty_opt' =: some(t);
+    initial_value =: None;
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    te_check(not(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
+    base_value(tenv, t') -> e';
+    typed_initial_value := (e', t', empty_set);
+    --
+    (typed_initial_value, some(t'), t')
+    { [[_], [_]] };
+  }
+
+  case none_some {
+    ty_opt' =: None;
+    initial_value =: some(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses_e);
+    check_no_precision_loss(t_e) -> True;
+    typed_e := (e', t_e, ses_e);
+    te_check(not(must_be_pure) || ses_is_pure(ses_e), TE_SEV) -> True;
+    --
+    (typed_e, None, t_e)
+    { ([_], [_]) };
+  }
+;
 
 typing relation update_global_storage(
     tenv: static_envs,
@@ -2945,7 +4511,45 @@ typing relation update_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-updateglobalstorage}{updating} global storage {name} with keyword {gdk} and value {typed_initial_value} in {tenv} yields {new_tenv}",
   math_layout = (input[_,_,_,_], _),
-};
+} =
+  typed_initial_value =: (initial_value_type, initial_value', ses_initial_value)
+  { (_, [_]) };
+  case update_constant {
+    gdk = GDK_Constant;
+    static_eval(tenv, initial_value') -> v;
+    add_global_constant(tenv.static_envs_G, name, v) -> G';
+    --
+    tenv(static_envs_G : G');
+  }
+
+  case let_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> some(e');
+    add_global_immutable_expr(tenv, name, e') -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case let_non_normalizable {
+    gdk = GDK_Let;
+    normalize_opt(tenv, initial_value') -> None;
+    --
+    tenv;
+  }
+
+  case config {
+    gdk = GDK_Config;
+    is_singular(tenv, initial_value_type) -> True;
+    --
+    tenv;
+  }
+
+  case var {
+    gdk = GDK_Var;
+    --
+    tenv;
+  }
+;
 
 typing function add_global_storage(
     genv: global_static_envs,
@@ -2963,15 +4567,44 @@ typing function add_global_storage(
   \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-addglobalstorage}{adding} global storage {name} with keyword {keyword} and type {declared_t} to {genv} yields {new_genv}",
   math_layout = [_,_],
-};
+} =
+  check_var_not_in_genv(genv, name) -> True;
+  updated_map := map_update(genv.global_storage_types, name, (declared_t, keyword));
+  --
+  genv(global_storage_types : updated_map);
+;
 
-semantics relation eval_globals(decls: list0(decl), envm: (env: envs, g1: XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
+semantics relation eval_globals(decls: list0(decl), envm: (envs, XGraphs)) -> (C: (envs, XGraphs)) | TThrowing | TDynError | TDiverging
 {
    prose_description = "updates the input environment and execution graph by
                         initializing the global storage declarations.
                         \ProseOtherwiseAbnormal",
  prose_application = "",
-};
+} =
+  case empty {
+    decls = empty_list;
+    --
+    envm;
+  }
+
+  case non_empty {
+    decls =: match_cons(d, decls');
+    d =: D_GlobalStorage(gd);
+    gd =: [
+      keyword: _,
+      global_decl_name: name,
+      global_decl_ty: _,
+      initial_value: some(e)
+    ];
+    envm =: (env, g1);
+    eval_expr(env, e) -> ResultExpr((v, g2), env2);
+    declare_global(name, v, env2) -> env3;
+    g := ordered_po(g1, g2);
+    eval_globals(decls', (env3, g)) -> (new_env, new_g);
+    --
+    (new_env, new_g);
+  }
+;
 
 semantics function declare_global(name: Identifier, v: native_value, env: envs) -> (new_env: envs)
 {
@@ -2979,7 +4612,14 @@ semantics function declare_global(name: Identifier, v: native_value, env: envs) 
                         {v} in the $\storage$ map of the global dynamic
                         environment $\denv.\dynamicenvsG$.",
  prose_application = "",
-};
+} =
+  env =: (tenv, denv);
+  updated_storage := map_update(denv.dynamic_envs_G.storage, name, v);
+  new_gdenv := denv.dynamic_envs_G(storage: updated_storage);
+  new_denv := denv(dynamic_envs_G: new_gdenv);
+  --
+  (tenv, new_denv);
+;
 
 //////////////////////////////////////////////////
 // Relations for Local Storage Declarations
@@ -2999,16 +4639,86 @@ typing relation annotate_local_decl_item(
   prose_application = "annotating the local storage declaration with {ldi} and {ldk} with
   {ty} and optional initializing expression and \sideeffectsetterm{} {e_opt} yields {new_tenv}\OrTypeError",
   math_layout = [[_,_,_,_,_], _],
-};
+} =
+  case var {
+    ldi =: LDI_Var(x);
+    check_var_not_in_env(tenv, x) -> True;
+    check_no_precision_loss(ty) -> True;
+    add_local(tenv, x, ty, ldk) -> tenv2;
+    add_immutable_expression(tenv2, ldk, e_opt, x) -> new_tenv;
+    --
+    new_tenv;
+  }
 
-semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (v: native_value, g1: XGraphs)) ->
+  case tuple {
+    ldi =: LDI_Tuple(ids);
+    make_anonymous(tenv, ty) -> t';
+    te_check(ast_label(t') = label_T_Tuple, TE_UT) -> True;
+    t' =: T_Tuple(tys);
+    te_check(list_len(ids) = list_len(tys), TE_UT) -> True;
+    add_local_vars(tenv, ldk, list_combine(ids, tys)) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
+
+typing function add_local_vars(
+  tenv: static_envs,
+  ldk: local_decl_keyword,
+  typed_ids: list0((Identifier, ty))
+ ) ->
+  (new_tenv: static_envs) | type_error
+{
+  "updates {tenv} by binding the variables in {typed_ids} to their corresponding types,
+   in right-to-left order, yielding {new_tenv}. \ProseOtherwiseTypeError",
+   prose_application = "",
+} =
+  case empty {
+    typed_ids = empty_list;
+    --
+    tenv;
+  }
+
+  case non_empty {
+    typed_ids =: concat(typed_ids_prefix, match_singleton_list((id, t)));
+    check_var_not_in_env(tenv, id) -> True;
+    add_local(tenv, id, t, ldk) -> tenv1;
+    add_local_vars(tenv1, ldk, typed_ids_prefix) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
+
+semantics relation eval_local_decl(env: envs, ldi: local_decl_item, m: (native_value, XGraphs)) ->
   ResultLDI(new_g: XGraphs, new_env: envs)
 {
   "evaluates a \localdeclarationitem{} {ldi} in an environment {env} with an initialization value {m},
   yielding the \executiongraphterm{} {new_g} and new environment {new_env}.",
   prose_application = "evaluating the \localdeclarationitem{} {ldi} in {env} with the initializing
   value {m} yields {new_g} and {new_env}.",
-};
+} =
+  case LDI_Var {
+    ldi =: LDI_Var(name);
+    (v, g1) := m;
+    declare_local_identifier(env, name, v) -> (new_env, g2);
+    new_g := ordered_data(g1, g2);
+    --
+    ResultLDI(new_g, new_env);
+  }
+
+  case LDI_Tuple {
+    ldi =: LDI_Tuple(ids);
+    (v, g) := m;
+    INDEX(i, ids: get_index(i, v) -> values[i]);
+    liv := list_map(i, indices(ids), (values[i], g));
+    declare_ldi_tuple(env, ids, liv) -> ResultLDI(new_g, new_env);
+    --
+    ResultLDI(new_g, new_env);
+  }
+;
+
+render rule eval_local_decl_LDI_Var = eval_local_decl(LDI_Var);
+render rule eval_local_decl_LDI_Tuple = eval_local_decl(LDI_Tuple);
 
 semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: list0((native_value, XGraphs))) ->
   ResultLDI(g: XGraphs, new_env: envs)
@@ -3018,16 +4728,53 @@ semantics relation declare_ldi_tuple(env: envs, ids: list0(Identifier), liv: lis
   The result is the updated environment {new_env} and resulting \executiongraphterm{} {g}.",
   prose_application = "declaring the local storage elements whose identifiers are given by {ids} and initializers are
   given by {liv} yields the updated environment {new_env} and \executiongraphterm{} {g}.",
-};
+} =
+  case empty {
+    ids = empty_list;
+    liv = empty_list;
+    --
+    ResultLDI(empty_graph, env);
+  }
+
+  case non_empty {
+    ids =: match_cons(id, ids');
+    liv =: match_cons((v, g1), liv');
+    declare_local_identifier(env, id, v) -> (env1, g2);
+    declare_ldi_tuple(env1, ids', liv') -> ResultLDI(g3, new_env);
+    g := parallel(ordered_data(g1, g2), g3);
+    --
+    ResultLDI(g, new_env);
+  }
+;
 
 typing function check_is_not_collection(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} has the structure of a
   \collectiontypeterm{}, and if so, raises a
   \typingerrorterm{}. Otherwise, the result is $\True$.",
   prose_application = "\hyperlink{relation-checkisnotcollection}{verifying} type {t} in {tenv} is not a collection type yields True",
-};
+} =
+  make_anonymous(tenv, t) -> t_struct;
+  case collection {
+    ast_label(t_struct) = label_T_Collection;
+    --
+    TypeError(TE_UT);
+  }
+
+  case not_collection {
+    ast_label(t_struct) not_in make_set(label_T_Collection, label_T_Tuple);
+    --
+    True;
+  }
+
+  case tuple {
+    t_struct =: T_Tuple(tys);
+    INDEX(i, tys: check_is_not_collection(tenv, tys[i]) -> True);
+    --
+    True;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Pattern Matching
@@ -3040,7 +4787,147 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
   is the typed AST node for {p} and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError.",
   prose_application = "",
-};
+} =
+  case all {
+    p = Pattern_All;
+    --
+    (Pattern_All, empty_set);
+  }
+
+  case single {
+    p =: Pattern_Single(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+
+    case simple {
+      ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_String);
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case bits {
+      ast_label(t_struct) = label_T_Bits;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      check_bits_equal_width(tenv, t_struct, t_e_struct) -> b;
+      te_check(b, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case enum_type {
+      ast_label(t_struct) = label_T_Enum;
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      t_struct =: T_Enum(li1);
+      t_e_struct =: T_Enum(li2);
+      te_check(li1 = li2, TE_BO) -> True;
+      --
+      (Pattern_Single(e'), ses);
+    }
+
+    case error {
+      te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
+      ast_label(t_struct) not_in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_Bits, label_T_Enum);
+      --
+      TypeError(TE_UT);
+    }
+  }
+
+  case range {
+    p =: Pattern_Range(e1, e2);
+    annotate_symbolically_evaluable_expr(tenv, e1) -> (t_e1, e1', ses1);
+    annotate_symbolically_evaluable_expr(tenv, e2) -> (t_e2, e2', ses2);
+    ses := union(ses1, ses2);
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e1) -> t_e1_struct;
+    make_anonymous(tenv, t_e2) -> t_e2_struct;
+    b := and(
+      ast_label(t_struct) = ast_label(t_e1_struct),
+      (ast_label(t_e1_struct) = ast_label(t_e2_struct)),
+      (ast_label(t_struct) in make_set(label_T_Int, label_T_Real))
+    )
+    { (_, [_]) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Range(e1', e2'), ses);
+  }
+
+  case leq {
+    p =: Pattern_Leq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := ( (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real)) )
+    { (_, ([_])) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Leq(e'), ses);
+  }
+
+  case geq {
+    p =: Pattern_Geq(e);
+    annotate_expr(tenv, e) -> (t_e, e', ses);
+    check_symbolically_evaluable(ses) -> True;
+    make_anonymous(tenv, t) -> t_struct;
+    make_anonymous(tenv, t_e) -> t_e_struct;
+    b := ( (ast_label(t_struct) = ast_label(t_e_struct)) && (ast_label(t_struct) in make_set(label_T_Int, label_T_Real)) )
+    { (_, ([_])) };
+    te_check(b, TE_BO) -> True;
+    --
+    (Pattern_Geq(e'), ses);
+  }
+
+  case mask {
+    p =: Pattern_Mask(m);
+    check_structure_label(tenv, t, label_T_Bits) -> True;
+    n := ELint(list_len(m));
+    check_type_satisfies(tenv, t, T_Bits(n, empty_list)) -> True;
+    --
+    (Pattern_Mask(m), empty_set);
+  }
+
+  case tuple {
+    p =: Pattern_Tuple(li);
+    get_structure(tenv, t) -> t_struct;
+    te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
+    t_struct =: T_Tuple(ts);
+    te_check(list_len(li) = list_len(ts), TE_UT) -> True;
+    INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
+    new_li := li';
+    ses := union_list(xs);
+    --
+    (Pattern_Tuple(new_li), ses);
+  }
+
+  case any {
+    p =: Pattern_Any(li);
+    INDEX(i, li: annotate_pattern(tenv, t, li[i]) -> (new_l[i], xs[i]));
+    new_li := new_l;
+    ses := union_list(xs);
+    --
+    (Pattern_Any(new_li), ses);
+  }
+
+  case neg {
+    p =: Pattern_Not(q);
+    annotate_pattern(tenv, t, q) -> (new_q, ses);
+    --
+    (Pattern_Not(new_q), ses);
+  }
+;
+
+render rule annotate_pattern_all = annotate_pattern(all);
+render rule annotate_pattern_single = annotate_pattern(single);
+render rule annotate_pattern_range = annotate_pattern(range);
+render rule annotate_pattern_leq = annotate_pattern(leq);
+render rule annotate_pattern_geq = annotate_pattern(geq);
+render rule annotate_pattern_mask = annotate_pattern(mask);
+render rule annotate_pattern_tuple = annotate_pattern(tuple);
+render rule annotate_pattern_any = annotate_pattern(any);
+render rule annotate_pattern_neg = annotate_pattern(neg);
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -3049,13 +4936,114 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
                         $\ResultPattern(\vb, \newg)$ or an abnormal
                         configuration.",
  prose_application = "",
-};
+} =
+  case PAll {
+    p = Pattern_All;
+    --
+    ResultPattern(nvbool(True), empty_graph);
+  }
+
+  case PSingle {
+    p =: Pattern_Single(e);
+    eval_expr_sef(env, e) -> ResultExprSEF(v1', g');
+    eval_binop(EQ, v, v1') -> b;
+    --
+    ResultPattern(native_value_as_tbool(b), g');
+  }
+
+  case PRange {
+    p =: Pattern_Range(e1, e2);
+    eval_expr_sef(env, e1) -> ResultExprSEF(v1, g1);
+    eval_binop(GE, v, v1) -> b1;
+    eval_expr_sef(env, e2) -> ResultExprSEF(v2, g2);
+    eval_binop(LE, v, v2) -> b2;
+    eval_binop(BAND, b1, b2) -> b;
+    g := parallel(g1, g2);
+    --
+    ResultPattern(native_value_as_tbool(b), g);
+  }
+
+  case PLeq {
+    p =: Pattern_Leq(e);
+    eval_expr_sef(env, e) -> ResultExprSEF(v1, new_g);
+    eval_binop(LE, v, v1) -> b;
+    --
+    ResultPattern(native_value_as_tbool(b), new_g);
+  }
+
+  case PGeq {
+    p =: Pattern_Geq(e);
+    eval_expr_sef(env, e) -> ResultExprSEF(v1, new_g);
+    eval_binop(GE, v, v1) -> b;
+    --
+    ResultPattern(native_value_as_tbool(b), new_g);
+  }
+
+  case PMask {
+    case empty {
+      p =: Pattern_Mask(empty_list);
+      v =: nvbitvector(empty_list);
+      --
+      ResultPattern(nvbool(True), empty_graph);
+    }
+
+    case non_empty {
+      p =: Pattern_Mask(mask);
+      v =: nvbitvector(bits);
+      b := list_and(list_map(i, indices(mask), mask_match(mask[i], bits[i])));
+      --
+      ResultPattern(nvbool(b), empty_graph);
+    }
+  }
+
+  case PTuple {
+    p =: Pattern_Tuple(ps);
+    INDEX(i, ps: get_index(i, v) -> values[i]);
+    INDEX(i, ps: eval_pattern(env, values[i], ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i]))
+    { [_] };
+    b := list_and(bs);
+    g := parallel_graphs(gs);
+    --
+    ResultPattern(nvbool(b), g);
+  }
+
+  case PAny {
+    p =: Pattern_Any(ps);
+    INDEX(i, ps: eval_pattern(env, v, ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i]))
+    { [_] };
+    b := list_or(bs);
+    g := parallel_graphs(gs);
+    --
+    ResultPattern(nvbool(b), g);
+  }
+
+  case PNot {
+    p =: Pattern_Not(p1);
+    eval_pattern(env, v, p1) -> ResultPattern(b', new_g);
+    eval_unop(BNOT, b') -> b;
+    --
+    ResultPattern(native_value_as_tbool(b), new_g);
+  }
+;
+
+render rule eval_pattern_PAll = eval_pattern(PAll);
+render rule eval_pattern_PSingle = eval_pattern(PSingle);
+render rule eval_pattern_PRange = eval_pattern(PRange);
+render rule eval_pattern_PLeq = eval_pattern(PLeq);
+render rule eval_pattern_PGeq = eval_pattern(PGeq);
+render rule eval_pattern_PMask = eval_pattern(PMask);
+render rule eval_pattern_PTuple = eval_pattern(PTuple);
+render rule eval_pattern_PAny = eval_pattern(PAny);
+render rule eval_pattern_PNot = eval_pattern(PNot);
 
 semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bit) -> (res: Bool)
 {
   "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}.",
   prose_application = "testing whether the bit {b} matches the mask value {mv} yields {res}",
-};
+} =
+  --
+  bot; // This rule is defined by a LaTeX table.
+;
 
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
@@ -3066,6 +5054,131 @@ constant unop_signatures =
     (NEG,   label_L_Real),
     (BNOT,  label_L_Bool),
     (NOT,   label_L_Bitvector)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_arith_signatures =
+  make_set(
+    (ADD,    label_L_Int,       label_L_Int),
+    (SUB,    label_L_Int,       label_L_Int),
+    (MUL,    label_L_Int,       label_L_Int),
+    (DIV,    label_L_Int,       label_L_Int),
+    (DIVRM,  label_L_Int,       label_L_Int),
+    (MOD,    label_L_Int,       label_L_Int),
+    (POW,    label_L_Int,       label_L_Int),
+    (SHL,    label_L_Int,       label_L_Int),
+    (SHR,    label_L_Int,       label_L_Int),
+    (MUL,    label_L_Int,       label_L_Real),
+    (MUL,    label_L_Real,      label_L_Int),
+    (ADD,    label_L_Real,      label_L_Real),
+    (SUB,    label_L_Real,      label_L_Real),
+    (MUL,    label_L_Real,      label_L_Real),
+    (RDIV,   label_L_Real,      label_L_Real),
+    (POW,    label_L_Real,      label_L_Int),
+    (EQ,     label_L_String,    label_L_String),
+    (NE,     label_L_String,    label_L_String),
+    (EQ,     label_L_Label,     label_L_Label),
+    (NE,     label_L_Label,     label_L_Label)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_rel_signatures =
+  make_set(
+    (EQ,     label_L_Int,       label_L_Int),
+    (NE,     label_L_Int,       label_L_Int),
+    (LE,     label_L_Int,       label_L_Int),
+    (LT,     label_L_Int,       label_L_Int),
+    (GE,     label_L_Int,       label_L_Int),
+    (GT,     label_L_Int,       label_L_Int),
+    (EQ,     label_L_Bool,      label_L_Bool),
+    (NE,     label_L_Bool,      label_L_Bool),
+    (EQ,     label_L_Real,      label_L_Real),
+    (NE,     label_L_Real,      label_L_Real),
+    (LE,     label_L_Real,      label_L_Real),
+    (LT,     label_L_Real,      label_L_Real),
+    (GE,     label_L_Real,      label_L_Real),
+    (GT,     label_L_Real,      label_L_Real),
+    (EQ,     label_L_Bitvector, label_L_Bitvector),
+    (NE,     label_L_Bitvector, label_L_Bitvector)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_bool_signatures =
+  make_set(
+    (BEQ,    label_L_Bool,      label_L_Bool),
+    (BAND,   label_L_Bool,      label_L_Bool),
+    (BOR,    label_L_Bool,      label_L_Bool),
+    (IMPL,   label_L_Bool,      label_L_Bool)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_bits_signatures =
+  make_set(
+    (OR,     label_L_Bitvector, label_L_Bitvector),
+    (AND,    label_L_Bitvector, label_L_Bitvector),
+    (XOR,    label_L_Bitvector, label_L_Bitvector),
+    (SUB,    label_L_Bitvector, label_L_Bitvector),
+    (ADD,    label_L_Bitvector, label_L_Bitvector),
+    (BV_CONCAT, label_L_Bitvector, label_L_Bitvector),
+    (SUB,    label_L_Bitvector, label_L_Int),
+    (ADD,    label_L_Bitvector, label_L_Int)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_str_signatures =
+  make_set(
+    (STR_CONCAT, label_L_Real,   label_L_Real),
+    (STR_CONCAT, label_L_Real,   label_L_String),
+    (STR_CONCAT, label_L_Real,   label_L_Bool),
+    (STR_CONCAT, label_L_Real,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Real,   label_L_Label),
+    (STR_CONCAT, label_L_Real,   label_L_Int),
+    (STR_CONCAT, label_L_String, label_L_Real),
+    (STR_CONCAT, label_L_String, label_L_String),
+    (STR_CONCAT, label_L_String, label_L_Bool),
+    (STR_CONCAT, label_L_String, label_L_Bitvector),
+    (STR_CONCAT, label_L_String, label_L_Label),
+    (STR_CONCAT, label_L_String, label_L_Int),
+    (STR_CONCAT, label_L_Bool,   label_L_Real),
+    (STR_CONCAT, label_L_Bool,   label_L_String),
+    (STR_CONCAT, label_L_Bool,   label_L_Bool),
+    (STR_CONCAT, label_L_Bool,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bool,   label_L_Label),
+    (STR_CONCAT, label_L_Bool,   label_L_Int),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Real),
+    (STR_CONCAT, label_L_Bitvector,   label_L_String),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bool),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Label),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Int),
+    (STR_CONCAT, label_L_Label,   label_L_Real),
+    (STR_CONCAT, label_L_Label,   label_L_String),
+    (STR_CONCAT, label_L_Label,   label_L_Bool),
+    (STR_CONCAT, label_L_Label,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Label,   label_L_Label),
+    (STR_CONCAT, label_L_Label,   label_L_Int),
+    (STR_CONCAT, label_L_Int,    label_L_Real),
+    (STR_CONCAT, label_L_Int,    label_L_String),
+    (STR_CONCAT, label_L_Int,    label_L_Bool),
+    (STR_CONCAT, label_L_Int,    label_L_Bitvector),
+    (STR_CONCAT, label_L_Int,    label_L_Label),
+    (STR_CONCAT, label_L_Int,    label_L_Int)
+  )
+  { math_layout = [_] }
+;
+
+constant binop_signatures =
+  union(
+    binop_arith_signatures,
+    binop_rel_signatures,
+    binop_bool_signatures,
+    binop_bits_signatures,
+    binop_str_signatures
   )
   { math_layout = [_] }
 ;
@@ -3126,19 +5239,451 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
   operator to the given values, or a different kind of
   \typingerrorterm{} is detected.",
   prose_application = "",
-};
+} =
+  case error {
+    (op, ast_label(v1), ast_label(v2)) not_in binop_signatures;
+    --
+    TypeError(TE_BO);
+  }
+
+  // Arithmetic Operators Over Integer Values
+  case arithmetic {
+    v1 =: L_Int(a);
+    v2 =: L_Int(b);
+    case add_int {
+      op = ADD;
+      --
+      L_Int(a + b);
+    }
+
+    case sub_int {
+      op = SUB;
+      --
+      L_Int(a - b);
+    }
+
+    case mul_int {
+      op = MUL;
+      --
+      L_Int(a * b);
+    }
+
+    case div_int {
+      op = DIV;
+      te_check(b > zero, TE_BO) -> True;
+      n := fraction(a, b);
+      te_check(is_integer(n), TE_BO) -> True;
+      --
+      L_Int(a / b);
+    }
+
+    case fdiv_int {
+      op = DIVRM;
+      te_check(b > zero, TE_BO) -> True;
+      n := if a >= zero then round_down(as_rational(a) / as_rational(b)) else num_negate(round_up((num_negate(as_rational(a))) / as_rational(b)));
+      --
+      L_Int(n);
+    }
+
+    case frem_int {
+      op = MOD;
+      binop_literals(DIVRM, L_Int(a), L_Int(b)) -> L_Int(c);
+      --
+      L_Int(a - (c * b));
+    }
+
+    case exp_int {
+      op = POW;
+      te_check(b >= zero, TE_BO) -> True;
+      --
+      L_Int(a ^ b);
+    }
+
+    case shl {
+      op = SHL;
+      te_check(b >= zero, TE_BO) -> True;
+      binop_literals(POW, L_Int(two), L_Int(b)) -> L_Int(e);
+      binop_literals(MUL, L_Int(a), L_Int(e)) -> r;
+      --
+      r;
+    }
+
+    case shr {
+      op = SHR;
+      te_check(b >= zero, TE_BO) -> True;
+      binop_literals(POW, L_Int(two), L_Int(b)) -> L_Int(e);
+      binop_literals(DIVRM, L_Int(a), L_Int(e)) -> r;
+      --
+      r;
+    }
+  }
+
+  // Comparison Operators Over Integer Values
+  case comparison_int {
+    v1 =: L_Int(a);
+    v2 =: L_Int(b);
+    case eq_int {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_int {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+
+    case le_int {
+      op = LE;
+      --
+      L_Bool(a <= b);
+    }
+
+    case lt_int {
+      op = LT;
+      --
+      L_Bool(a < b);
+    }
+
+    case ge_int {
+      op = GE;
+      --
+      L_Bool(a >= b);
+    }
+
+    case gt_int {
+      op = GT;
+      --
+      L_Bool(a > b);
+    }
+  }
+
+  // Boolean Operators Over Boolean Values
+  case boolean {
+    v1 =: L_Bool(a);
+    v2 =: L_Bool(b);
+    case and_bool {
+      op = BAND;
+      --
+      L_Bool(a && b);
+    }
+
+    case or_bool {
+      op = BOR;
+      --
+      L_Bool(a || b);
+    }
+
+    case implies_bool {
+      op = IMPL;
+      --
+      L_Bool(not(a) || b);
+    }
+
+    case eq_bool {
+      op in make_set(EQ, BEQ);
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_bool {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+
+  // Arithmetic Operators Over Real Values
+  case arithmetic_real {
+    case mul_int_real {
+      op = MUL;
+      v1 =: L_Int(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(as_rational(a) * b);
+    }
+
+    case mul_real_int {
+      op = MUL;
+      v1 =: L_Real(a);
+      v2 =: L_Int(b);
+      --
+      L_Real(a * as_rational(b));
+    }
+
+    case add_real {
+      op = ADD;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a + b);
+    }
+
+    case sub_real {
+      op = SUB;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a - b);
+    }
+
+    case mul_real {
+      op = MUL;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      --
+      L_Real(a * b);
+    }
+
+    case div_real {
+      op = RDIV;
+      v1 =: L_Real(a);
+      v2 =: L_Real(b);
+      te_check(not_equal(b, rational_zero), TE_BO) -> True;
+      --
+      L_Real(a / b);
+    }
+
+    case exp_real {
+      op = POW;
+      v1 =: L_Real(a);
+      v2 =: L_Int(b);
+      te_check(not_equal(a, rational_zero) || b >= zero, TE_BO) -> True;
+      --
+      L_Real(a ^ as_rational(b));
+    }
+  }
+
+  // Comparison Operators Over Real Values
+  case comparison_real {
+    v1 =: L_Real(a);
+    v2 =: L_Real(b);
+    case eq_real {
+      op = EQ;
+      --
+      L_Bool(equal(a, b));
+    }
+
+    case ne_real {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+
+    case le_real {
+      op = LE;
+      --
+      L_Bool(a <= b);
+    }
+
+    case lt_real {
+      op = LT;
+      --
+      L_Bool(a < b);
+    }
+
+    case ge_real {
+      op = GE;
+      --
+      L_Bool(a >= b);
+    }
+
+    case gt_real {
+      op = GT;
+      --
+      L_Bool(a > b);
+    }
+  }
+
+  // Operators Over Bitvectors
+  case bitvector {
+    v1 =: L_Bitvector(a);
+    v2 =: L_Bitvector(b);
+    case bitwise_different_bitwidths {
+      list_len(a) != list_len(b);
+      --
+      TypeError(TE_BO);
+    }
+
+    case bitwise_empty {
+      op in make_set(OR, AND, XOR, ADD, SUB);
+      a = empty_list;
+      b = empty_list;
+      --
+      L_Bitvector(empty_list);
+    }
+
+    case eq_bits {
+      op = EQ;
+      list_len(a) = list_len(b);
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_bits {
+      op = NE;
+      binop_literals(EQ, L_Bitvector(a), L_Bitvector(b)) -> L_Bool(result);
+      --
+      L_Bool(not(result));
+    }
+
+    case or_bits {
+      op = OR;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), or_bit(a[i], b[i]));
+      --
+      L_Bitvector(c);
+    }
+
+    case and_bits {
+      op = AND;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), and_bit(a[i], b[i]));
+      --
+      L_Bitvector(c);
+    }
+
+    case xor_bits {
+      op = XOR;
+      list_len(a) = list_len(b);
+      c := list_map(i, indices(a), if a[i] = b[i] then zero_bit else one_bit);
+      --
+      L_Bitvector(c);
+    }
+
+    case add_bits {
+      op = ADD;
+      list_len(a) = list_len(b);
+      binary_to_unsigned(a) -> a_val;
+      binary_to_unsigned(b) -> b_val;
+      int_to_bits(a_val + b_val, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case sub_bits {
+      op = SUB;
+      list_len(a) = list_len(b);
+      binary_to_unsigned(a) -> a_val;
+      binary_to_unsigned(b) -> b_val;
+      int_to_bits(a_val - b_val, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case concat_bits {
+      op = BV_CONCAT;
+      --
+      L_Bitvector(concat(a, b));
+    }
+  }
+
+  case bits_int {
+    v1 =: L_Bitvector(a);
+    v2 =: L_Int(b);
+    case add_bits_int {
+      op = ADD;
+      binary_to_unsigned(a) -> a_val;
+      int_to_bits(a_val + b, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+
+    case sub_bits_int {
+      op = SUB;
+      binary_to_unsigned(a) -> a_val;
+      int_to_bits(a_val - b, list_len(a)) -> c;
+      --
+      L_Bitvector(c);
+    }
+  }
+
+  // Operators Over String Values
+  case string {
+    v1 =: L_String(a);
+    v2 =: L_String(b);
+    case eq_string {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_string {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+
+  case concat_strings {
+    op = STR_CONCAT;
+    ast_label(v1) != label_L_Bitvector || ast_label(v1) != label_L_Bitvector;
+    literal_to_string(v1) -> s1;
+    literal_to_string(v2) -> s2;
+    --
+    L_String(concat(s1, s2));
+  }
+
+  // Operators Over Label Values
+  case label {
+    v1 =: L_Label(a);
+    v2 =: L_Label(b);
+    case eq_label {
+      op = EQ;
+      --
+      L_Bool(a = b);
+    }
+
+    case ne_label {
+      op = NE;
+      --
+      L_Bool(not_equal(a, b));
+    }
+  }
+;
+
+render rule binop_literals_error = binop_literals(error);
+render rule binop_literals_arithmetic = binop_literals(arithmetic);
+render rule binop_literals_comparison_int = binop_literals(comparison_int);
+render rule binop_literals_boolean = binop_literals(boolean);
+render rule binop_literals_arithmetic_real = binop_literals(arithmetic_real);
+render rule binop_literals_comparison_real = binop_literals(comparison_real);
+render rule binop_literals_bitvector = binop_literals(bitvector);
+render rule binop_literals_bits_int = binop_literals(bits_int);
+render rule binop_literals_string = binop_literals(string);
+render rule binop_literals_concat_strings = binop_literals(concat_strings);
+render rule binop_literals_label = binop_literals(label);
 
 typing function binary_to_unsigned(bits: list0(Bit)) -> (num: N)
 {
   "converts the bit sequence {bits} into the natural number {num} or $0$ if {bits} is empty.",
   prose_application = "converting the bit sequence {bits} into a natural number yields {num}",
-};
+} =
+  case empty {
+    bits = empty_list;
+    --
+    zero;
+  }
+
+  case non_empty {
+    bits =: match_cons(b, lower_bits);
+    binary_to_unsigned(lower_bits) -> tail_value;
+    n := list_len(lower_bits);
+    bit_value := if b = one_bit then two ^ n else zero;
+    --
+    tail_value + bit_value;
+  }
+;
 
 typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
 {
   "converts the integer {val} to its two's complement representation with {width} bits, yielding the result in {bits}.",
   prose_application = "converting the integer {val} to its two's complement representation of {width} bits yields {bits}",
-};
+} =
+  --
+  bot; // This is a well-defined mathematical opeation. No rule needed.
+;
 
 semantics function eval_unop(op: unop, v: native_value) ->
          (w: native_value) | TDynError
@@ -3147,7 +5692,27 @@ semantics function eval_unop(op: unop, v: native_value) ->
   \nativevalueterm{} {v} and returns the
   \nativevalueterm{} {w} or an error.",
   prose_application = "",
-};
+} =
+  case ok {
+    v =: NV_Literal(l);
+    unop_literals(op, l) -> lit | ;
+    --
+    NV_Literal(lit);
+  }
+
+  case static_error {
+    v =: NV_Literal(l);
+    unop_literals(op, l) -> TypeError(_) | ;
+    --
+    DynamicError(DE_BO);
+  }
+
+  case non_literal {
+    not(v =: NV_Vector(_));
+    --
+    DynamicError(DE_BO);
+  }
+;
 
 semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
          (w: native_value) | TDynError
@@ -3156,7 +5721,30 @@ semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
   \nativevaluesterm{}  {v1} and {v2} and returns
   the \nativevalueterm{}  {w} or an error.",
   prose_application = "",
-};
+} =
+  case ok {
+    v1 =: NV_Literal(l1);
+    v2 =: NV_Literal(l2);
+    binop_literals(op, l1, l2) -> lit | ;
+    --
+    NV_Literal(lit);
+  }
+
+  case static_error {
+    v1 =: NV_Literal(l1);
+    v2 =: NV_Literal(l2);
+    binop_literals(op, l1, l2) -> TypeError(_) | ;
+    --
+    DynamicError(DE_BO);
+  }
+
+  // I'm not sure this case is possible, even during static evaluation.
+  case non_literal {
+    not(v1 =: NV_Literal(_)) || not(v2 =: NV_Literal(_));
+    --
+    DynamicError(DE_BO);
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Relations On Types
@@ -3166,34 +5754,254 @@ typing function is_subtype(tenv: static_envs, t1: ty, t2: ty) -> (b: Bool)
     "defines whether the type {t1} \subtypesterm{} the type {t2} in the \staticenvironmentterm{} {tenv},
     yielding the result in {b}.",
     prose_application = "testing whether {t1} \subtypesterm{} {t2} in {tenv} yields {b}",
-};
+} =
+  case reflexive {
+    t1 =: T_Named(id1);
+    t2 =: T_Named(id2);
+    id1 = id2;
+    --
+    True;
+  }
+
+  case transitive {
+    t1 =: T_Named(id1);
+    t2 =: T_Named(id2);
+    id1 != id2;
+    tenv.static_envs_G.subtypes(id1) =: id3;
+    is_subtype(tenv, T_Named(id3), t2) -> b;
+    --
+    b;
+  }
+
+  case no_supertype {
+    t1 =: T_Named(id1);
+    t2 =: T_Named(id2);
+    id1 != id2;
+    tenv.static_envs_G.subtypes(id1) = bot;
+    --
+    False;
+  }
+
+  case not_named {
+    (ast_label(t1) != label_T_Named) || (ast_label(t2) != label_T_Named);
+    --
+    False;
+  }
+;
 
 typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
     "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},
     yielding the result in {b}. \ProseOtherwiseTypeError",
     prose_application = "testing whether {t} \subtypesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
-};
+} =
+  case different_labels {
+    make_anonymous(tenv, t) -> t2;
+    make_anonymous(tenv, s) -> s2;
+    ast_label(t2) != ast_label(s2);
+    --
+    False;
+  }
 
+  case simple {
+    make_anonymous(tenv, t) -> t2;
+    make_anonymous(tenv, s) -> s2;
+    ast_label(t2) in make_set(label_T_Real, label_T_String, label_T_Bool);
+    --
+    ast_label(s2) = ast_label(t2);
+  }
+
+  case t_int {
+    make_anonymous(tenv, t) -> t2;
+    make_anonymous(tenv, s) -> s2;
+    ast_label(t2) = label_T_Int;
+    ast_label(s2) = label_T_Int;
+    symdom_of_type(tenv, s) -> d_s;
+    symdom_of_type(tenv, t) -> d_t;
+    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    --
+    b;
+  }
+
+  case t_enum {
+    make_anonymous(tenv, t) -> T_Enum(li_t);
+    make_anonymous(tenv, s) -> T_Enum(li_s);
+    --
+    li_t = li_s;
+  }
+
+  case t_bits {
+    make_anonymous(tenv, s) -> T_Bits(w_s, bfs_s);
+    make_anonymous(tenv, t) -> T_Bits(w_t, bfs_t);
+    bitfields_included(tenv, bfs_s, bfs_t) -> True;
+    symdom_of_width_expr(w_s) -> d_s;
+    symdom_of_width_expr(w_t) -> d_t;
+    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    --
+    b;
+  }
+
+  case t_array_expr {
+    make_anonymous(tenv, s) -> T_Array(length_s, ty_s);
+    make_anonymous(tenv, t) -> T_Array(length_t, ty_t);
+    type_equal(tenv, ty_s, ty_t) -> True | False;
+    bool_transition(ast_label(length_s) = ast_label(length_t)) -> True | False;
+    length_s =: ArrayLength_Expr(length_expr_s);
+    length_t =: ArrayLength_Expr(length_expr_t);
+    expr_equal(tenv, length_expr_s, length_expr_t) -> b;
+    --
+    b;
+  }
+
+  case t_array_enum {
+    make_anonymous(tenv, s) -> T_Array(length_s, ty_s);
+    make_anonymous(tenv, t) -> T_Array(length_t, ty_t);
+    type_equal(tenv, ty_s, ty_t) -> True;
+    bool_transition(ast_label(length_s) = ast_label(length_t)) -> True | False;
+    length_s =: ArrayLength_Enum(name_s, _);
+    length_t =: ArrayLength_Enum(name_t, _);
+    --
+    name_s = name_t;
+  }
+
+  case t_tuple {
+    make_anonymous(tenv, s) -> T_Tuple(li_s);
+    make_anonymous(tenv, t) -> T_Tuple(li_t);
+    bool_transition(list_len(li_s) = list_len(li_t)) -> True | False;
+    ( INDEX(i, li_s: type_satisfies(tenv, li_t[i], li_s[i]) -> component_type_satisfies[i]) )
+    { ([_, [_]]) };
+    --
+    list_and(component_type_satisfies);
+  }
+
+  case structured {
+    make_anonymous(tenv, s) -> s_anon;
+    make_anonymous(tenv, t) -> t_anon;
+    s_anon =: make_structured(L_s, fields_s);
+    t_anon =: make_structured(L_t, fields_t);
+    L_s = L_t;
+    L_s in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+    fields_s =: list_combine(names_s, field_types_s);
+    fields_t =: list_combine(names_t, _);
+    bool_transition(subseteq(list_to_set(names_s), list_to_set(names_t))) -> True | False;
+    INDEX(i, names_s: field_type(fields_t, names_s[i]) -> some(field_types_t[i]))
+    { [_] };
+    ( INDEX(i, field_types_s: type_equal(tenv, field_types_s[i], field_types_t[i]) -> field_tys_equal[i]) )
+    { ([_, [_]]) };
+    --
+    list_and(field_tys_equal);
+  }
+;
+
+// The rule for this function isn't used. Instead a direct latex definition is used.
 typing function field_type(fields: list0((name: Identifier, type: ty)), id: Identifier) -> (ty_opt: option(ty))
 {
   "returns the type associated with {id} in {fields}, if there exists a unique one, and $\None$, otherwise.",
   prose_application = "finding the unique type associated with {id} in {fields} yields {ty_opt}",
-};
+} =
+  case empty {
+    fields = empty_list;
+    --
+    None;
+  }
+
+  case found_unique {
+    fields =: match_cons((field_id, t), rest);
+    field_id = id;
+    field_type(rest, id) -> None;
+    --
+    some(t);
+  }
+
+  case found_duplicate {
+    fields =: match_cons((field_id, _), rest);
+    field_id = id;
+    field_type(rest, id) -> some(_);
+    --
+    None;
+  }
+
+  case not_found {
+    fields =: match_cons((field_id, _), rest);
+    field_id != id;
+    field_type(rest, id) -> result;
+    --
+    result;
+  }
+;
 
 typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
     "determines whether a type {t} \emph{\typesatisfiesterm} a type {s} in the static environment {tenv},
     yielding the result {b}. \ProseOtherwiseTypeError",
     prose_application = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields {b}\ProseOrTypeError",
-};
+} =
+  case subtypes {
+    is_subtype(tenv, t, s) -> True;
+    --
+    True;
+  }
 
-typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> constants_set(True) | type_error
+  case anonymous {
+    is_subtype(tenv, t, s) -> False;
+    is_anonymous(t) -> b1;
+    is_anonymous(s) -> b2;
+    b1 || b2;
+    subtype_satisfies(tenv, t, s) -> True;
+    --
+    True;
+  }
+
+  case maybe_bitvectors {
+    is_subtype(tenv, t, s) -> False;
+    is_anonymous(t) -> b1;
+    is_anonymous(s) -> b2;
+    subtype_satisfies(tenv, t, s) -> b3;
+    not((b1 || b2) && b3);
+    case t_bits {
+      t =: T_Bits(width_t, empty_list);
+      get_structure(tenv, s) -> T_Bits(width_s, _);
+      bitwidth_equal(tenv, width_t, width_s) -> b;
+      --
+      b;
+    }
+
+    case otherwise1 {
+      get_structure(tenv, s) -> s_struct;
+      ast_label(t) != label_T_Bits || ast_label(s_struct) != label_T_Bits;
+      --
+      False;
+    }
+
+    case otherwise2 {
+      get_structure(tenv, s) -> s_struct;
+      ast_label(t) = label_T_Bits && ast_label(s_struct) = label_T_Bits;
+      t =: T_Bits(width_t, bitfields);
+      bitfields != empty_list;
+      --
+      False;
+    }
+  }
+;
+
+typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} \typesatisfiesterm{} a type {s} in the static environment {tenv}. \ProseOtherwiseTypeError",
   prose_application = "checking whether {t} \typesatisfiesterm{} {s} in {tenv} yields $\True$\ProseOrTypeError",
   math_macro = \checktypesatisfies,
-};
+} =
+  case okay {
+    type_satisfies(tenv, t, s) -> True;
+    --
+    True;
+  }
+
+  case error {
+    type_satisfies(tenv, t, s) -> False;
+    --
+    TypeError(TE_TSF);
+  }
+;
 
 typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: ty) | type_error
 {
@@ -3201,7 +6009,130 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   If a \Proselca{} does not exist or a \typingerrorterm{} is detected, the result is a \typingerrorterm{}.",
   prose_application = "the \Proselca{} of {t} and {s} in {tenv} is {ty}\ProseOrTypeError",
   math_macro = \lca,
-};
+} =
+  case type_equal {
+    type_equal(tenv, t, s) -> True;
+    --
+    s;
+  }
+
+  case named_subtype1 {
+    t =: T_Named(name_s);
+    s =: T_Named(name_t);
+    type_equal(tenv, t, s) -> False;
+    named_lowest_common_ancestor(tenv, name_s, name_t) -> None;
+    make_anonymous(tenv, s) -> s_anon;
+    make_anonymous(tenv, t) -> t_anon;
+    lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
+    --
+    ty;
+  }
+
+  case named_subtype2 {
+    t =: T_Named(name_s);
+    s =: T_Named(name_t);
+    type_equal(tenv, t, s) -> False;
+    named_lowest_common_ancestor(tenv, name_s, name_t) -> some(name);
+    --
+    T_Named(name);
+  }
+
+  case one_named1 {
+    type_equal(tenv, t, s) -> False;
+    (ast_label(t) = label_T_Named) || (ast_label(s) = label_T_Named);
+    ast_label(t) != ast_label(s);
+    make_anonymous(tenv, s) -> s_anon;
+    make_anonymous(tenv, t) -> t_anon;
+    type_equal(tenv, t_anon, s_anon) -> True;
+    ty := if (ast_label(t) = label_T_Named) then t else s;
+    --
+    ty;
+  }
+
+  case one_named2 {
+    type_equal(tenv, t, s) -> False;
+    (ast_label(t) = label_T_Named) || (ast_label(s) = label_T_Named);
+    ast_label(t) != ast_label(s);
+    make_anonymous(tenv, s) -> s_anon;
+    make_anonymous(tenv, t) -> t_anon;
+    type_equal(tenv, t_anon, s_anon) -> False;
+    lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
+    --
+    ty;
+  }
+
+  case t_int_unconstrained {
+    type_equal(tenv, t, s) -> False;
+    ast_label(t) = label_T_Int && ast_label(s) = label_T_Int;
+    t = unconstrained_integer || s = unconstrained_integer;
+    --
+    unconstrained_integer;
+  }
+
+  case t_int_parameterized {
+    type_equal(tenv, t, s) -> False;
+    ast_label(t) = label_T_Int && ast_label(s) = label_T_Int;
+    not(t = unconstrained_integer);
+    not(s = unconstrained_integer);
+    is_parameterized_integer(t) || is_parameterized_integer(s);
+    to_well_constrained(t) -> t1;
+    to_well_constrained(s) -> s1;
+    lowest_common_ancestor(tenv, t1, s1) -> ty;
+    --
+    ty;
+  }
+
+  case t_int_wellconstrained {
+    type_equal(tenv, t, s) -> False;
+    t =: T_Int(typed_WellConstrained(cs_t, p1));
+    s =: T_Int(typed_WellConstrained(cs_s, p2));
+    p := precision_join(p1, p2);
+    ty := T_Int(typed_WellConstrained(match_non_empty_list(concat(cs_t, cs_s)), p));
+    --
+    ty;
+  }
+
+  case t_bits {
+    t =: T_Bits(e_t, _);
+    s =: T_Bits(e_s, _);
+    type_equal(tenv, t, s) -> False;
+    expr_equal(tenv, e_t, e_s) -> b_equal;
+    te_check(b_equal, TE_LCA) -> True;
+    --
+    T_Bits(e_t, empty_list);
+  }
+
+  case t_array {
+    t =: T_Array(width_t, ty_t);
+    s =: T_Array(width_s, ty_s);
+    type_equal(tenv, t, s) -> False;
+    array_length_equal(tenv, width_t, width_s) -> b_equal_length;
+    te_check(b_equal_length, TE_LCA) -> True;
+    lowest_common_ancestor(tenv, ty_t, ty_s) -> ty1;
+    --
+    T_Array(width_t, ty1);
+  }
+
+  case t_tuple {
+    t =: T_Tuple(li_t);
+    s =: T_Tuple(li_s);
+    type_equal(tenv, t, s) -> False;
+    b := list_len(li_t) = list_len(li_s);
+    te_check(b, TE_LCA) -> True;
+    INDEX(i, li_t: lowest_common_ancestor(tenv, li_t[i], li_s[i]) -> li[i]);
+    --
+    T_Tuple(li);
+  }
+
+  case error {
+    type_equal(tenv, t, s) -> False;
+    (ast_label(t) != ast_label(s)) ||
+    (ast_label(t) in make_set(label_T_Enum, label_T_Record, label_T_Exception, label_T_Collection))
+    { (lhs, ((_, [_])) ) };
+    --
+    TypeError(TE_LCA);
+  }
+;
 
 typing relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
          (s: ty) | type_error
@@ -3211,7 +6142,52 @@ typing relation apply_unop_type(tenv: static_envs, op: unop, t: ty) ->
   Similarly, we determine the negation of integer
   constraints. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case bnot_t_bool {
+    op = BNOT;
+    check_type_satisfies(tenv, t, T_Bool) -> True;
+    --
+    T_Bool;
+  }
+
+  case neg_error {
+    op = NEG;
+    type_satisfies(tenv, t, unconstrained_integer) -> False;
+    type_satisfies(tenv, t, T_Real) -> False;
+    --
+    TypeError(TE_BO);
+  }
+
+  case neg_t_real {
+    op = NEG;
+    type_satisfies(tenv, t, T_Real) -> True;
+    --
+    T_Real;
+  }
+
+  case neg_t_int_unconstrained {
+    op = NEG;
+    get_well_constrained_structure(tenv, t) -> unconstrained_integer;
+    --
+    unconstrained_integer;
+  }
+
+  case neg_t_int_well_constrained {
+    op = NEG;
+    get_well_constrained_structure(tenv, t) -> T_Int(typed_WellConstrained(cs, p))
+    { [_] };
+    neg_cs := list_map(c, cs, negate_constraint(c));
+    --
+    T_Int(typed_WellConstrained(match_non_empty_list(neg_cs), p));
+  }
+
+  case not_t_bits {
+    op = NOT;
+    check_structure_label(tenv, t, label_T_Bits) -> True;
+    --
+    t;
+  }
+;
 
 typing function negate_constraint(c: int_constraint) ->
          (new_c: int_constraint)
@@ -3220,7 +6196,19 @@ typing function negate_constraint(c: int_constraint) ->
   constraint {new_c}, which corresponds to the negation
   of all the values that {c} represents.",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    --
+    Constraint_Exact(E_Unop(NEG, e));
+  }
+
+  case range {
+    c =: Constraint_Range(v_start, v_end);
+    --
+    Constraint_Range(E_Unop(NEG, v_end), E_Unop(NEG, v_start));
+  }
+;
 
 typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) ->
          (t: ty) | type_error
@@ -3230,32 +6218,221 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case named {
+    (ast_label(t1) = label_T_Named) || (ast_label(t2) = label_T_Named);
+    make_anonymous(tenv, t1) -> t1_anon;
+    make_anonymous(tenv, t2) -> t2_anon;
+    apply_binop_types(tenv, op, t1_anon, t2_anon) -> t;
+    --
+    t;
+  }
 
-typing function named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) ->
-         (ty: ty) | type_error
+  case boolean {
+    op in make_set(BAND, BOR, IMPL, EQ);
+    t1 = T_Bool;
+    t2 = T_Bool;
+    --
+    T_Bool;
+  }
+
+  case bits_arith {
+    op in make_set(AND, OR, XOR, ADD, SUB);
+    t1 =: T_Bits(w1, _);
+    t2 =: T_Bits(w2, _);
+    check_bits_equal_width(tenv, t1, t2) -> True;
+    --
+    T_Bits(w1, empty_list);
+  }
+
+  case bits_int {
+    op in make_set(ADD, SUB);
+    t1 =: T_Bits(w, _);
+    t2 =: T_Int(_);
+    --
+    T_Bits(w, empty_list);
+  }
+
+  case bits_concat {
+    t1 =: T_Bits(w1, _);
+    t2 =: T_Bits(w2, _);
+    op = BV_CONCAT;
+    w := E_Binop(ADD, w1, w2);
+    normalize(tenv, w) -> w';
+    --
+    T_Bits(w', empty_list);
+  }
+
+  case string_concat {
+    op = STR_CONCAT;
+    (ast_label(t1) != label_T_Bits) || (ast_label(t2) != label_T_Bits);
+    is_singular(tenv, t1) -> t1_singular;
+    is_singular(tenv, t2) -> t2_singular;
+    te_check(t1_singular, TE_UT) -> True;
+    te_check(t2_singular, TE_UT) -> True;
+    --
+    T_String;
+  }
+
+  case rel {
+    (op, ast_label(t1), ast_label(t2)) in
+    make_set(
+      (LE, label_T_Int, label_T_Int),
+      (GE, label_T_Int, label_T_Int),
+      (GT, label_T_Int, label_T_Int),
+      (LT, label_T_Int, label_T_Int),
+      (LE, label_T_Real, label_T_Real),
+      (GE, label_T_Real, label_T_Real),
+      (GT, label_T_Real, label_T_Real),
+      (LT, label_T_Real, label_T_Real),
+      (EQ, label_T_Int, label_T_Int),
+      (NE, label_T_Int, label_T_Int),
+      (EQ, label_T_Bool, label_T_Bool),
+      (NE, label_T_Bool, label_T_Bool),
+      (EQ, label_T_Real, label_T_Real),
+      (NE, label_T_Real, label_T_Real),
+      (EQ, label_T_String, label_T_String),
+      (NE, label_T_String, label_T_String)
+    ) { (_, [_]) };
+    --
+    T_Bool;
+  }
+
+  case eq_neq_bits {
+    op in make_set(EQ, NE);
+    t1 =: T_Bits(w1, _);
+    t2 =: T_Bits(w2, _);
+    check_bits_equal_width(tenv, t1, t2) -> True;
+    --
+    T_Bool;
+  }
+
+  case eq_neq_enum {
+    op in make_set(EQ, NE);
+    t1 =: T_Enum(li1);
+    t2 =: T_Enum(li2);
+    te_check(li1 = li2, TE_BO) -> True;
+    --
+    T_Bool;
+  }
+
+  case arith_t_int_unconstrained {
+    t1 =: T_Int(c1);
+    t2 =: T_Int(c2);
+    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    (c1 = Unconstrained) || (c2 = Unconstrained);
+    --
+    unconstrained_integer;
+  }
+
+  case arith_t_int_parameterized {
+    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    t1 =: T_Int(c1);
+    t2 =: T_Int(c2);
+    (ast_label(c1) = label_Parameterized) || (ast_label(c2) = label_Parameterized);
+    (ast_label(c1) != label_Unconstrained) && (ast_label(c2) != label_Unconstrained);
+    to_well_constrained(t1) -> t1_wellconstrained;
+    to_well_constrained(t2) -> t2_wellconstrained;
+    apply_binop_types(tenv, op, t1_wellconstrained, t2_wellconstrained) -> t;
+    --
+    t;
+  }
+
+  case arith_t_int_wellconstrained {
+    t1 =: T_Int(c1);
+    t2 =: T_Int(c2);
+    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    c1 =: typed_WellConstrained(cs1, p1);
+    c2 =: typed_WellConstrained(cs2, p2);
+    // This is somewhat hard to model, as this call is impleemnted by a functor
+    // that fails rather than return CannotOverapproximate/CannotUnderapproximate.
+    annotate_constraint_binop(Over, tenv, op, cs1, cs2) -> (cs, p3);
+    p := precision_join(p1, precision_join(p2, p3));
+    --
+    T_Int(typed_WellConstrained(match_non_empty_list(cs), p));
+  }
+
+  case arith_real {
+    (op, ast_label(t1), ast_label(t2)) in
+    make_set(
+      (ADD, label_T_Real, label_T_Real),
+      (SUB, label_T_Real, label_T_Real),
+      (MUL, label_T_Real, label_T_Real),
+      (POW, label_T_Real, label_T_Int),
+      (RDIV, label_T_Real, label_T_Real)
+    ) { (_, [_]) };
+    --
+    T_Real;
+  }
+
+  case error {
+    make_anonymous(tenv, t1) -> t1_anon;
+    make_anonymous(tenv, t2) -> t2_anon;
+    (op, ast_label(t1), ast_label(t2)) not_in binop_signatures;
+    --
+    TypeError(TE_BO);
+  }
+;
+
+// REVIEW: signature changed for translation; please confirm expected argument/return types.
+// Previous: typing relation named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (name_opt: option(Identifier)) | type_error
+typing function named_lowest_common_ancestor(tenv: static_envs, t: Identifier, s: Identifier) ->
+         (name_opt: option(Identifier)) | type_error
 {
   "returns the lowest common named super type
-   of types {t} and {s} in {tenv} in {ty}.",
+   of types {t} and {s} in {tenv} in {name_opt}.",
   prose_application = "",
-};
+} =
+  case found {
+    supers(tenv, t) -> t_supers;
+    s in t_supers;
+    --
+    some(s);
+  }
 
-typing function supers(tenv: static_envs, t: ty) ->
-         (powerset(ty))
+  case super {
+    supers(tenv, t) -> t_supers;
+    s not_in t_supers;
+    tenv.static_envs_G.subtypes(s) =: s';
+    named_lowest_common_ancestor(tenv, t, s') -> name_opt;
+    --
+    name_opt;
+  }
+
+  case none {
+    supers(tenv, t) -> t_supers;
+    s not_in t_supers;
+    tenv.static_envs_G.subtypes(s) = bot;
+    --
+    None;
+  }
+;
+
+typing function supers(tenv: static_envs, t: Identifier) ->
+         (powerset(Identifier))
 {
   "returns the set of \emph{named supertypes} of a type
   {t} in the $\subtypes$ function of a
   \globalstaticenvironmentterm{} {tenv}.",
   prose_application = "",
-};
+} =
+    --
+    bot; // Using direct definition in LaTeX.
+;
 
+constant max_constraint_size : N { math_macro = \maxconstraintsize };
+constant max_exploded_interal_size : N { math_macro = \maxexplodedintervalsize };
+
+// In the implementation, this function is inside the StaticApprox functor,
+// and we model the approximation direction via the extra `approx` argument.
 typing relation annotate_constraint_binop(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     op: binop,
     cs1: list0(int_constraint),
     cs2: list0(int_constraint)) ->
-         (annotated_cs: list0(int_constraint), p: precision_loss_indicator) | type_error
+         | (annotated_cs: list0(int_constraint), p: precision_loss_indicator)
+         | type_error
 {
   "annotates the application of the binary operation {op}
   to the lists of integer constraints {cs1} and {cs2},
@@ -3267,14 +6444,49 @@ typing relation annotate_constraint_binop(
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [[_,_,_,_,_],_],
-};
+} =
+  case exploding {
+    binop_filter_rhs(approx, tenv, op, cs2) -> cs2f;
+    binop_is_exploding(op) -> TRUE;
+    explode_intervals(tenv, cs1) -> (cs1e, p1);
+    explode_intervals(tenv, cs2f) -> (cs2e, p2);
+    p0 := precision_join(p1, p2);
+    expected_constraint_length :=
+      if op = MOD
+      then list_len(cs2e)
+      else list_len(cs1e) * list_len(cs2e);
+    (cs1_arg, cs2_arg, p) :=
+      if expected_constraint_length < max_constraint_size
+      then (cs1e, cs2e, p0)
+      else (cs1, cs2f, Precision_Lost)
+    { (_, [_]) };
+    constraint_binop(op, cs1_arg, cs2_arg) -> cs_vanilla;
+    refine_constraint_for_div(approx, op, cs_vanilla) -> refined_cs;
+    reduce_constraints(tenv, refined_cs) -> annotated_cs;
+    --
+    (annotated_cs, p);
+  }
+
+  case non_exploding {
+    binop_filter_rhs(approx, tenv, op, cs2) -> cs2f;
+    binop_is_exploding(op) -> FALSE;
+    p := Precision_Full;
+    cs1_arg := cs1;
+    cs2_arg := cs2f;
+    constraint_binop(op, cs1_arg, cs2_arg) -> cs_vanilla;
+    refine_constraint_for_div(approx, op, cs_vanilla) -> refined_cs;
+    reduce_constraints(tenv, refined_cs) -> annotated_cs;
+    --
+    (annotated_cs, p);
+  }
+;
 
 typing relation binop_filter_rhs(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     op: binop,
     cs: list0(int_constraint)) ->
-         (new_cs: list1(int_constraint)) | constants_set(CannotUnderapproximate,CannotOverapproximate)
+         (new_cs: list1(int_constraint)) | ApproximationFailure
 {
   "filters the list of constraints {cs} by removing
   values that will definitely result in a dynamic error
@@ -3315,14 +6527,20 @@ typing function reduce_to_z_opt(tenv: static_envs, e: expr) ->
   to yield a \typingerrorterm{} when applying
   $\normalize$ to it.",
   prose_application = "",
-};
+} =
+  normalize(tenv, e) -> e_normalized;
+  z_opt := if e_normalized =: ELint(z) then some(z) else None
+  { (_, [_]) };
+  --
+  z_opt;
+;
 
 typing relation refine_constraints(
     approx: constants_set(Over,Under),
     tenv: static_envs,
     f: fun int_constraint -> option(int_constraint),
     cs: list0(int_constraint)) ->
-         (new_cs: list0(int_constraint)) | constants_set(CannotUnderapproximate,CannotOverapproximate)
+         (new_cs: list0(int_constraint)) | ApproximationFailure
 {
   "refines a list of constraints {cs} by applying the
   refinement function {f} to each constraint and
@@ -3362,7 +6580,44 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
   conservatively test whether {c} would always fail
   dynamically.",
   prose_application = "",
-};
+} =
+  case exact_literal {
+    c =: Constraint_Exact(e);
+    get_literal_div_opt(e) -> some((z1, z2));
+    --
+    if z2 > zero && not(is_integer(fraction(z1, z2))) then None else some(c);
+  }
+
+  case exact_not_literal {
+    c =: Constraint_Exact(e);
+    get_literal_div_opt(e) -> None;
+    --
+    None;
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    get_literal_div_opt(e1) -> e1_opt;
+    get_literal_div_opt(e2) -> e2_opt;
+    z1_opt := if (e1_opt =: some((z1, z2))) && z2 > zero then some(round_up(fraction(z1, z2))) else None
+    { (_, [_]) };
+    z2_opt := if (e2_opt =: some((z3, z4))) && z4 > zero then some(round_down(fraction(z3, z4))) else None
+    { (_, [_]) };
+    // Build result constraint based on z1_opt and z2_opt
+    c_opt :=
+    cond(
+      (z1_opt =: some(z5a)) && (z2_opt =: some(z6a)) && z5a = z6a: some(AbbrevConstraintExact(ELint(z5a))),
+      (z1_opt =: some(z5b)) && (z2_opt =: some(z6b)) && z5b < z6b : some(AbbrevConstraintRange(ELint(z5b), ELint(z6b))),
+      (z1_opt =: some(z5c)) && (z2_opt =: some(z6c)) && z5c > z6c : None,
+      (z1_opt =: some(z5d)) && (z2_opt =: None) : some(AbbrevConstraintRange(ELint(z5d), e2)),
+      (z1_opt =: None) && (z2_opt =: some(z6e)) : some(AbbrevConstraintRange(e1, ELint(z6e))),
+      (z1_opt =: None) && (z2_opt =: None) : some(AbbrevConstraintRange(e1, e2))
+    )
+    { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]], c4[_, [_]], c4[_, [_]],_]) };
+    --
+    c_opt;
+  }
+;
 
 typing function get_literal_div_opt(e: expr) ->
          (range_opt: option((Z, Z)))
@@ -3374,7 +6629,12 @@ typing function get_literal_div_opt(e: expr) ->
   of integers appearing in the operand expressions.
   Otherwise, the result is $\None$.",
   prose_application = "",
-};
+} =
+  range_opt := if e =: AbbrevEBinop(DIV, ELint(z1), ELint(z2)) then some((z1, z2)) else None
+  { (_, [_]) };
+  --
+  range_opt;
+;
 
 typing function explode_intervals(tenv: static_envs, cs: list0(int_constraint)) ->
          (new_cs: list0(int_constraint), p: precision_loss_indicator)
@@ -3385,7 +6645,23 @@ typing function explode_intervals(tenv: static_envs, cs: list0(int_constraint)) 
     \precisionlossindicatorterm{} {p}.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    cs = empty_list;
+    --
+    (empty_list, Precision_Full);
+  }
+
+  case non_empty {
+    cs =: match_cons(c, cs1);
+    explode_constraint(tenv, c) -> (c', p1);
+    explode_intervals(tenv, cs1) -> (cs1', p2);
+    p := precision_join(p1, p2);
+    new_cs := concat(c', cs1');
+    --
+    (new_cs, p);
+  }
+;
 
 // Transliteration note: the implementation uses folding where explode_constraint
 // is a folder. To simplify this function, we remove the input precision lost flag
@@ -3401,7 +6677,41 @@ typing function explode_constraint(tenv: static_envs, c: int_constraint) ->
   are {vcs} and {new_prec}, respectively.",
   prose_application = "exploding the constraint {c} in {tenv} yields {vcs} and {new_prec}",
   math_layout = [_,_],
-};
+} =
+  case exact {
+    c =: Constraint_Exact(_);
+    --
+    (make_singleton_list(c), Precision_Full);
+  }
+
+  case range_reduced_too_large {
+    c =: Constraint_Range(a, b);
+    reduce_to_z_opt(tenv, a) -> some(z_a);
+    reduce_to_z_opt(tenv, b) -> some(z_b);
+    interval_too_large(z_a, z_b) -> True;
+    --
+    (make_singleton_list(c), Precision_Lost);
+  }
+
+  case range_reduced_not_too_large {
+    c =: Constraint_Range(a, b);
+    reduce_to_z_opt(tenv, a) -> some(z_a);
+    reduce_to_z_opt(tenv, b) -> some(z_b);
+    interval_too_large(z_a, z_b) -> False;
+    exploded_interval := list_map(z, range_list(z_a, z_b), Constraint_Exact(ELint(z)));
+    --
+    (exploded_interval, Precision_Full);
+  }
+
+  case range_not_reduced {
+    c =: Constraint_Range(a, b);
+    reduce_to_z_opt(tenv, a) -> z_a_opt;
+    reduce_to_z_opt(tenv, b) -> z_b_opt;
+    or(z_a_opt = None, z_b_opt = None);
+    --
+    (make_singleton_list(c), Precision_Full);
+  }
+;
 
 typing function interval_too_large(z1: Z, z2: Z) ->
          (b: Bool)
@@ -3411,7 +6721,10 @@ typing function interval_too_large(z1: Z, z2: Z) ->
   $\maxexplodedintervalsize$ integers, yielding the
   result in {b}.",
   prose_application = "",
-};
+} =
+  --
+  z2 - z1 > max_exploded_interal_size;
+;
 
 typing function binop_is_exploding(op: binop) ->
          (b: Bool)
@@ -3422,7 +6735,10 @@ typing function binop_is_exploding(op: binop) ->
   that {op} is one of $\MUL$, $\SHL$, $\POW$, $\ADD$,
   $\DIV$, $\SUB$, $\MOD$, $\SHR$, and $\DIVRM$.",
   prose_application = "",
-};
+} =
+  --
+  op in make_set(MUL, SHL, POW, DIV, DIVRM, MOD, SHR);
+;
 
 typing function bitfields_included(tenv: static_envs, bfs1: list0(bitfield), bfs2: list0(bitfield)) -> (b: Bool) | type_error
 {
@@ -3430,22 +6746,118 @@ typing function bitfields_included(tenv: static_envs, bfs1: list0(bitfield), bfs
     in the static environment {tenv},
     yielding the result in {b}. \ProseOtherwiseTypeError",
     prose_application = "testing whether {bfs1} is included in {bfs2} in {tenv} yields {b}\ProseOrTypeError",
-};
+} =
+  INDEX(i, bfs1: mem_bfs(tenv, bfs2, bfs1[i]) -> bf_memberships[i]);
+  --
+  list_and(bf_memberships);
+;
 
-typing function mem_bfs(tenv: static_envs, bfs2: list1(bitfield), bf1: bitfield) ->
+typing function mem_bfs(tenv: static_envs, bfs2: list0(bitfield), bf1: bitfield) ->
          (b: Bool)
 {
   "checks whether the bitfield {bf1} exists in {bfs2} in
   the context of {tenv}, returning the result in {b}.",
   prose_application = "",
-};
+} =
+  case none {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> None;
+    --
+    False;
+  }
 
-typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> constants_set(True) | type_error
+  case simple_any {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    ast_label(bf2) = label_BitField_Simple;
+    bitfield_equal(tenv, bf1, bf2) -> b;
+    --
+    b;
+  }
+
+  case nested_simple {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Nested(name2, slices2, bfs2');
+    bf1 =: BitField_Simple(_, _);
+    bitfield_equal(tenv, bf1, bf2) -> b;
+    --
+    False;
+  }
+
+  case nested_nested {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Nested(name2, slices2, bfs2');
+    bf1 =: BitField_Nested(name1, slices1, bfs1);
+    b1 := name1 = name2;
+    slices_equal(tenv, slices1, slices2) -> b2;
+    bitfields_included(tenv, bfs1, bfs2') -> b3;
+    --
+    b1 && b2 && b3;
+  }
+
+  case nested_typed {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Nested(name2, slices2, bfs2');
+    ast_label(bf1) = label_BitField_Type;
+    --
+    False;
+  }
+
+  case typed_simple {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Type(name2, slices2, t_ty2);
+    bf1 =: BitField_Simple(_, _);
+    bitfield_equal(tenv, bf1, bf2) -> b;
+    --
+    b;
+  }
+
+  case typed_nested {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Type(name2, slices2, t_ty2);
+    ast_label(bf1) = label_BitField_Nested;
+    --
+    False;
+  }
+
+  case typed_typed {
+    bitfield_get_name(bf1) -> name;
+    find_bitfield_opt(name, bfs2) -> some(bf2);
+    bf2 =: BitField_Type(name2, slices2, t_ty2);
+    bf1 =: BitField_Type(name1, slices1, t_ty1);
+    b1 := name1 = name2;
+    slices_equal(tenv, slices1, slices2) -> b2;
+    subtype_satisfies(tenv, t_ty1, t_ty2) -> b3;
+    --
+    b1 && b2 && b3;
+  }
+;
+
+typing function check_structure_label(tenv: static_envs, t: ty, l: ASTLabels) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \structureterm{} of a type corresponding to the AST label {l}. \ProseOtherwiseTypeError",
   prose_application = "checking whether the \structureterm{} of {t} has the AST label {l} yields $\True$\ProseOrTypeError",
   math_macro = \checkstructurelabel,
-};
+} =
+  case okay {
+    get_well_constrained_structure(tenv, t) -> t';
+    ast_label(t') = l;
+    --
+    True;
+  }
+
+  case error {
+    get_well_constrained_structure(tenv, t) -> t';
+    ast_label(t') != l;
+    --
+    TypeError(TE_UT);
+  }
+;
 
 typing function to_well_constrained(t: ty) ->
          (t': ty)
@@ -3455,7 +6867,26 @@ typing function to_well_constrained(t: ty) ->
   \wellconstrainedintegertypesterm{}, and leaves all
   other types as are.",
   prose_application = "",
-};
+} =
+  case t_int_parameterized {
+    t =: T_Int(Parameterized(v));
+    --
+    T_Int(WellConstrained(make_singleton_list(AbbrevConstraintExact(E_Var(v)))));
+  }
+
+  case t_int_other {
+    t =: T_Int(i);
+    i != Parameterized;
+    --
+    t;
+  }
+
+  case other {
+    ast_label(t) != label_T_Int;
+    --
+    t;
+  }
+;
 
 typing function get_well_constrained_structure(tenv: static_envs, t: ty) ->
          (t': ty) | type_error
@@ -3464,7 +6895,12 @@ typing function get_well_constrained_structure(tenv: static_envs, t: ty) ->
   {t} in the \staticenvironmentterm{} {tenv} --- {t'},
   which is defined as follows. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  get_structure(tenv, t) -> t1;
+  to_well_constrained(t1) -> t';
+  --
+  t';
+;
 
 typing function get_bitvector_width(tenv: static_envs, t: ty) ->
          (e: expr) | type_error
@@ -3474,26 +6910,51 @@ typing function get_bitvector_width(tenv: static_envs, t: ty) ->
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case okay {
+    get_structure(tenv, t) -> T_Bits(e, _);
+    --
+    e;
+  }
+
+  case error {
+    get_structure(tenv, t) -> t';
+    ast_label(t') != label_T_Bits;
+    --
+    TypeError(TE_UT);
+  }
+;
 
 typing function get_bitvector_const_width(tenv: static_envs, t: ty) ->
-         (w: N) | type_error
+         (w: Z) | type_error
 {
   "returns the natural number {w}, which represents the
   width of the bitvector type {t} in the
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  get_bitvector_width(tenv, t) -> e_width;
+  static_eval(tenv, e_width) -> L_Int(w);
+  --
+  w;
+;
 
 typing function check_bits_equal_width(tenv: static_envs, t1: ty, t2: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "tests whether the types {t1} and {t2} are bitvector
   types of the same width. If the answer is positive,
   the result is $\True$. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  get_bitvector_width(tenv, t1) -> n;
+  get_bitvector_width(tenv, t2) -> m;
+  bitwidth_equal(tenv, n, m) -> b;
+  te_check(b, TE_UT) -> True;
+  --
+  True;
+;
 
 typing function precision_join(p1: precision_loss_indicator, p2: precision_loss_indicator) ->
          (p: precision_loss_indicator)
@@ -3502,7 +6963,19 @@ typing function precision_join(p1: precision_loss_indicator, p2: precision_loss_
   denoting whether {p1} or {p2} denote a precision loss.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case loss {
+    p1 = Precision_Lost || p2 = Precision_Lost;
+    --
+    Precision_Lost;
+  }
+
+  case full {
+    p1 = Precision_Full && p2 = Precision_Full;
+    --
+    Precision_Full;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Semantics Utilities
@@ -3514,16 +6987,24 @@ semantics function get_pending_calls(denv: dynamic_envs, name: Identifier) ->
   $\denv.\pendingcalls$ or $0$ if no value is associated
   with it.",
   prose_application = "\hyperlink{relation-getpendingcalls}{retrieving} pending calls count for {name} in {denv} yields {s}",
-};
+} =
+  s := if map_apply_opt(denv.dynamic_envs_G.pending_calls, name) =: some(s') then s' else zero;
+  --
+  s;
+;
 
 semantics function set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
-         (new_genv: dynamic_envs)
+         (new_genv: global_dynamic_envs)
 {
   "updates the value bound to {name} in $\genv.\storage$
   to {v}, yielding the new global dynamic environment
   {new_genv}.",
   prose_application = "",
-};
+} =
+  updated_pending := map_update(genv.pending_calls, name, v);
+  --
+  genv(pending_calls: updated_pending);
+;
 
 semantics function incr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
          (new_genv: global_dynamic_envs)
@@ -3532,7 +7013,13 @@ semantics function incr_pending_calls(genv: global_dynamic_envs, name: Identifie
   $ {genv}.\pendingcalls $, yielding the updated global
   dynamic environment {new_genv}.",
   prose_application = "incrementing the number of pending calls for {name} in {genv} yields {new_genv}",
-};
+} =
+  denv := [dynamic_envs_G: genv, dynamic_envs_L: empty_denv.dynamic_envs_L];
+  get_pending_calls(denv, name) -> prev;
+  set_pending_calls(genv, name, prev + one) -> new_genv;
+  --
+  new_genv;
+;
 
 semantics function decr_pending_calls(genv: global_dynamic_envs, name: Identifier) ->
          (new_genv: global_dynamic_envs)
@@ -3543,7 +7030,13 @@ semantics function decr_pending_calls(genv: global_dynamic_envs, name: Identifie
   $\getpendingcalls((\genv, \emptyfunc), \name)$ yields
   a positive value.",
   prose_application = "",
-};
+} =
+  denv := [dynamic_envs_G: genv, dynamic_envs_L: empty_denv.dynamic_envs_L];
+  get_pending_calls(denv, name) -> prev;
+  set_pending_calls(genv, name, prev - one) -> new_genv;
+  --
+  new_genv;
+;
 
 semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
 {
@@ -3551,7 +7044,13 @@ semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
                         local storage of the environment {env}, yielding the
                         environment {new_env}.",
  prose_application = ""
- };
+} =
+  env =: (tenv, denv);
+  updated_local := map_update(denv.dynamic_envs_L, name, bot);
+  new_denv := denv(dynamic_envs_L: updated_local);
+  --
+  (tenv, new_denv);
+;
 
 semantics relation read_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
@@ -3559,7 +7058,13 @@ semantics relation read_identifier(name: Identifier, v: native_value) -> (XGraph
                         reading of the value {v} into a storage element given
                         by the identifier {name}.",
   prose_application = ""
- };
+} =
+  nodes := make_set(ReadEffect(name));
+  edges := empty_set;
+  outputs := make_set(ReadEffect(name));
+  --
+  (nodes, edges, outputs);
+;
 
 semantics relation write_identifier(name: Identifier, v: native_value) -> (XGraphs)
 {
@@ -3567,7 +7072,13 @@ semantics relation write_identifier(name: Identifier, v: native_value) -> (XGrap
                         writing of the value {v} into the storage element
                         given by an identifier {name}.",
   prose_application = ""
- };
+} =
+  nodes := make_set(WriteEffect(name));
+  edges := empty_set;
+  outputs := make_set(WriteEffect(name));
+  --
+  (nodes, edges, outputs);
+;
 
 semantics function concat_bitvectors(vs: list0(tbitvector)) ->
          (new_vs: tbitvector)
@@ -3576,10 +7087,25 @@ semantics function concat_bitvectors(vs: list0(tbitvector)) ->
   \nativevaluesterm{} {vs} into a single bitvector
   {new_vs}.",
   prose_application = "",
-};
+} =
+  case empty {
+    vs = empty_list;
+    --
+    nvbitvector(empty_list);
+  }
 
-semantics function slices_to_positions(slices: list1((s: tint, l: tint))) ->
-         (positions: list0(N)) | TDynError
+  case non_empty {
+    vs =: match_cons(v, vs');
+    v =: nvbitvector(bits);
+    concat_bitvectors(vs') =: nvbitvector(bits');
+    new_bits := concat(bits, bits');
+    --
+    nvbitvector(new_bits);
+  }
+;
+
+semantics function slices_to_positions(slices: list0((native_value, native_value))) ->
+         (positions: list0(Z)) | TDynError
 {
   "returns the list of positions (indices) specified by
   a list of slices expressed as pairs. Each pair specifies the start
@@ -3587,63 +7113,193 @@ semantics function slices_to_positions(slices: list1((s: tint, l: tint))) ->
   If all slices consist of only
   non-negative integers. \ProseOtherwiseDynamicError",
   prose_application = "",
-};
+} =
+  case empty {
+    slices = empty_list;
+    --
+    empty_list;
+  }
 
-semantics function max_pos_of_slice(s: tint, l: tint) ->
-         (max_pos: tint)
+  case non_empty {
+    slices =: match_cons(slice, slices1);
+    slice =: (s_v, l_v);
+    s_v =: NV_Literal(L_Int(s));
+    l_v =: NV_Literal(L_Int(l));
+    de_check(s >= zero && l >= zero, DE_BI) -> True;
+    positions1 := range_list(s, s + l - one);
+    slices_to_positions(slices1) -> positions2;
+    --
+    concat(positions1, positions2);
+  }
+;
+
+semantics function max_pos_of_slice((s: native_value, l: native_value)) ->
+         (max_pos: native_value)
 {
   "returns the maximum position specified by the slice
   starting at {s} of length {l}, assuming that all slices consist only of
   non-negative integers.",
   prose_application = "",
-};
+} =
+  s =: nvint(sv);
+  l =: nvint(lv);
+  case zero_width {
+    lv = zero;
+    --
+    s;
+  }
 
-semantics function read_from_bitvector(v: native_value, slices: list0((tint, tint))) ->
+  case non_zero_width {
+    lv != zero;
+    --
+    NV_Literal(L_Int(sv + lv - one));
+  }
+;
+
+semantics function read_from_bitvector(v: native_value, slices: list0((native_value, native_value))) ->
          (new_v: tbitvector) | TDynError
 {
   "reads from a bitvector {v}, or an integer seen as a
   bitvector, the indices specified by the list of slices
   {slices}, thereby concatenating their values, yielding the new bitvector {new_v}.",
   prose_application = "",
-};
+} =
+  case bitvector_empty {
+    v =: nvbitvector(_);
+    slices = empty_list;
+    --
+    nvbitvector(empty_list);
+  }
 
-semantics function write_to_bitvector(slices: list0((tint, tint)), src: tbitvector, dst: tbitvector) ->
-         (v: tbitvector) | TDynError
+  case bitvector_non_empty {
+    v =: nvbitvector(bv);
+    slices_to_positions(slices) -> positions;
+    positions != empty_list;
+    max_of_slices := list_map(s, slices, max_pos_of_slice(s));
+    max_pos := list_max(max_of_slices);
+    n := list_len(bv) - one;
+    de_check(max_pos <= n, DE_BI) -> True;
+    new_bits := list_map(j, positions, bv[n_to_n_pos(j)]);
+    --
+    nvbitvector(new_bits);
+  }
+
+  case integer_empty {
+    slices = empty_list;
+    --
+    nvbitvector(empty_list);
+  }
+
+  case integer {
+    v =: nvint(i);
+    slices_to_positions(slices) -> positions;
+    positions != empty_list;
+    max_of_slices := list_map(s, slices, max_pos_of_slice(s));
+    max_pos := list_max(max_of_slices);
+    int_to_bits(i, max_pos + one) -> bits;
+    new_bits := list_map(j, positions, bits[abs_value(j)]);
+    --
+    nvbitvector(new_bits);
+  }
+;
+
+semantics function write_to_bitvector(slices: list0((native_value, native_value)), src: native_value, dst: native_value) ->
+         (v: native_value) | TDynError
 {
   "overwrites the bits of {dst} at the positions given by
   {slices} with the bits of {src}.",
   prose_application = "\hyperlink{relation-writetobitvector}{writing} bits from {src} to {dst} at positions {slices} yields bitvector {v}",
-};
+} =
+  src =: nvbitvector(src_bits);
+  dst =: nvbitvector(dst_bits);
+  slices_to_positions(slices) -> positions;
+  de_check(list_len(positions) = list_len(src_bits), DE_BI) -> True;
+  case empty_positions {
+    positions = empty_list;
+    --
+    dst;
+  }
 
-semantics function get_index(i: N, vec: tvector) -> (r: tvector) | TDynError
+  case non_empty_positions {
+    positions != empty_list;
+    max_of_slices := list_map(s, slices, max_pos_of_slice(s));
+    max_pos := list_max(max_of_slices);
+    de_check(max_pos < list_len(dst_bits), DE_BI) -> True;
+    pos_map := bindings_to_map(list_combine(positions, src_bits));
+    new_bits :=
+      list_map(j, indices(dst_bits),
+        if map_apply_opt(pos_map, j) =: some(b) then b else dst_bits[j])
+    { (_, (_, _, [_])) };
+    --
+    nvbitvector(new_bits);
+  }
+;
+
+semantics function get_index(i: N, vec: native_value) -> (r: native_value) | TDynError
 {
    prose_description = "reads the value {r} from the vector of values {vec}
                         at the index {i}. \ProseOtherwiseDynamicError",
  prose_application = ""
- };
+} =
+  vec =: NV_Vector(values);
+  case ok {
+    zero <= i && i < list_len(values);
+    --
+    values[i];
+  }
 
-semantics function set_index(i: N, v: native_value, vec: tvector) -> (res: tvector) | TDynError
+  case error {
+    i < zero || i >= list_len(values);
+    --
+    DynamicError(DE_BI);
+  }
+;
+
+semantics function set_index(i: N, v: native_value, vec: native_value) -> (res: tvector) | TDynError
 {
    prose_description = "overwrites the value at the given index {i} in a
                         vector of values {vec} with the new value {v}.
                         \ProseOtherwiseDynamicError",
  prose_application = "",
-};
+} =
+  vec =: NV_Vector(values);
+  case ok {
+    zero <= i && i < list_len(values);
+    updated := list_map(j, indices(values), if j = i then v else values[j]);
+    --
+    NV_Vector(updated);
+  }
 
-semantics function get_field(name: Identifier, record: trecord) -> (v: native_value)
+  case error {
+    i < zero || i >= list_len(values);
+    --
+    DynamicError(DE_BI);
+  }
+;
+
+semantics function get_field(name: Identifier, record: native_value) -> (v: native_value)
 {
-   prose_description = "retrieves the value {v} corresponding to the field name
+  prose_description = "retrieves the value {v} corresponding to the field name
                         {name} from the record value {record}.",
- prose_application = ""
- };
+  prose_application = ""
+} =
+  record =: NV_Record(field_map);
+  --
+  map_apply(field_map, name);
+;
 
-semantics function set_field(name: Identifier, v: native_value, record: trecord) -> (trecord)
+semantics function set_field(name: Identifier, v: native_value, record: native_value) -> (trecord)
 {
    prose_description = "overwrites the value corresponding to the field name
                         {name} in the record value {record} with the value
                         {v}.",
  prose_application = "",
-};
+} =
+  record =: NV_Record(field_map);
+  field_map' := map_update(field_map, name, v);
+  --
+  NV_Record(field_map');
+;
 
 semantics relation declare_local_identifier(env: envs, name: Identifier, v: native_value) -> (new_env: envs, g: XGraphs)
 {
@@ -3652,9 +7308,17 @@ semantics relation declare_local_identifier(env: envs, name: Identifier, v: nati
                         environment {new_env} with the execution graph
                         consisting of a Write Effect to {name}.",
  prose_application = "",
-};
+} =
+  write_identifier(name, v) -> g;
+  env =: (tenv, denv);
+  updated_local := map_update(denv.dynamic_envs_L, name, v);
+  new_denv := denv(dynamic_envs_L: updated_local);
+  new_env := (tenv, new_denv);
+  --
+  (new_env, g);
+;
 
-semantics relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
+semantics relation declare_local_identifier_m(env: envs, x: Identifier, m: (native_value, XGraphs)) ->
          (new_env: envs, new_g: XGraphs)
 {
   "declares the local identifier {x} in the environment
@@ -3662,9 +7326,15 @@ semantics relation declare_local_identifier_m(env: envs, x: Identifier, m: (v: n
   \vg)$, yielding a pair consisting of the environment
   {new_env} and \executiongraphterm{} {new_g}.",
   prose_application = "\hyperlink{relation-declarelocalidentifierm}{declaring} local identifier {x} in {env} with value-graph pair {m} yields environment {new_env} and graph {new_g}",
-};
+} =
+  m =: (v, g);
+  declare_local_identifier(env, x, v) -> (new_env, g1);
+  new_g := ordered_data(g, g1);
+  --
+  (new_env, new_g);
+;
 
-semantics relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: native_value, g: XGraphs)) ->
+semantics relation declare_local_identifier_mm(env: envs, x: Identifier, m: (native_value, XGraphs)) ->
          (new_env: envs, new_g: XGraphs)
 {
   "declares the local identifier {x} in the environment
@@ -3672,7 +7342,13 @@ semantics relation declare_local_identifier_mm(env: envs, x: Identifier, m: (v: 
   \vg)$, yielding a pair consisting of an environment
   {new_env} and an \executiongraphterm{} {new_g}.",
   prose_application = "",
-};
+} =
+  m =: (v, g);
+  declare_local_identifier_m(env, x, m) -> (new_env, g1);
+  new_g := ordered_po(g, g1);
+  --
+  (new_env, new_g);
+;
 
 //////////////////////////////////////////////////
 // Relations for Side Effects
@@ -3682,21 +7358,61 @@ typing function side_effect_is_pure(s: TSideEffect) -> (b: Bool)
   "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\pureterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \pureterm{} yields {b}",
-};
+} =
+  b := s in make_set(LocalEffect(SE_Pure), GlobalEffect(SE_Pure), Immutability(True));
+  --
+  b;
+;
 
 typing function side_effect_is_readonly(s: TSideEffect) -> (b: Bool)
 {
   "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\readonlyterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \readonlyterm{} yields {b}",
-};
+} =
+  case local_effect {
+    s =: LocalEffect(p);
+    --
+    ge_pure(p, SE_Readonly);
+  }
+
+  case global_effect {
+    s =: GlobalEffect(p);
+    --
+    ge_pure(p, SE_Readonly);
+  }
+
+  case immutability {
+    s =: Immutability(_);
+    --
+    True;
+  }
+;
 
 typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Bool)
 {
   "returns $\True$ if the \sideeffectdescriptorterm{} {s} is \emph{\symbolicallyevaluableterm},
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \symbolicallyevaluableterm{} yields {b}",
-};
+} =
+  case local_effect {
+    s =: LocalEffect(p);
+    --
+    ge_pure(p, SE_Readonly);
+  }
+
+  case global_effect {
+    s =: GlobalEffect(p);
+    --
+    ge_pure(p, SE_Readonly);
+  }
+
+  case immutability {
+    s =: Immutability(b);
+    --
+    b;
+  }
+;
 
 typing function ses_ldk(ldk: local_decl_keyword) ->
          (s: powerset(TSideEffect))
@@ -3705,7 +7421,11 @@ typing function ses_ldk(ldk: local_decl_keyword) ->
   a read of a storage element declared with a local
   declaration keyword {ldk}.",
   prose_application = "",
-};
+} =
+  b := (ldk = LDK_Let);
+  --
+  make_set(LocalEffect(SE_Readonly), Immutability(b));
+;
 
 typing function ses_gdk(gdk: global_decl_keyword) ->
          (s: powerset(TSideEffect))
@@ -3714,7 +7434,12 @@ typing function ses_gdk(gdk: global_decl_keyword) ->
   a read of a storage element declared with a global
   declaration keyword {gdk}.",
   prose_application = "",
-};
+} =
+  purity := if (gdk = GDK_Constant) then SE_Pure else SE_Readonly;
+  b := (gdk != GDK_Var);
+  --
+  make_set(GlobalEffect(purity), Immutability(b));
+;
 
 typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
          (b: Bool)
@@ -3723,14 +7448,23 @@ typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
   {ses} are all \symbolicallyevaluableterm, yielding the
   result in {b}.",
   prose_application = "",
-};
+} =
+  b := forall(s, ses, side_effect_is_symbolically_evaluable(s));
+  --
+  b;
+;
 
-typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> constants_set(True) | type_error
+typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> CheckResult | type_error
 {
   "returns $\True$ if the set of \sideeffectdescriptorsterm{} {ses} is \symbolicallyevaluableterm.
   \ProseOtherwiseTypeError",
   prose_application = "checking whether {ses} is \symbolicallyevaluableterm{} yields $\True$\OrTypeError",
-};
+} =
+  is_symbolically_evaluable(ses) -> b;
+  te_check(b, TE_SEV) -> True;
+  --
+  True;
+;
 
 typing function ses_is_readonly(ses: powerset(TSideEffect)) ->
          (b: Bool)
@@ -3738,7 +7472,11 @@ typing function ses_is_readonly(ses: powerset(TSideEffect)) ->
   "tests whether all side effects in the set {ses} are
   \readonlyterm{}, yielding the result in {b}.",
   prose_application = "",
-};
+} =
+  b := forall(s, ses, side_effect_is_readonly(s));
+  --
+  b;
+;
 
 typing function ses_is_pure(ses: powerset(TSideEffect)) ->
          (b: Bool)
@@ -3746,7 +7484,12 @@ typing function ses_is_pure(ses: powerset(TSideEffect)) ->
   "tests whether all side effects in the set {ses} are
   \pureterm{}, yielding the result in {b}.",
   prose_application = "",
-};
+} =
+  b := forall(s, ses, side_effect_is_pure(s));
+  --
+  b;
+;
+
 
 typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
          (s: powerset(TSideEffect))
@@ -3754,7 +7497,28 @@ typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
   "produces a \sideeffectsetterm{} given a subprogram
   qualifier {qualifier}.",
   prose_application = "",
-};
+} =
+  case none_or_noreturn {
+    qualifier = None || qualifier = some(Noreturn);
+    s := make_set(GlobalEffect(SE_Impure), Immutability(False));
+    --
+    s;
+  }
+
+  case some_readonly {
+    qualifier = some(Readonly);
+    s := make_set(GlobalEffect(SE_Readonly), Immutability(False));
+    --
+    s;
+  }
+
+  case some_pure {
+    qualifier = some(Pure);
+    s := make_set(GlobalEffect(SE_Pure), Immutability(True));
+    --
+    s;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Slicing
@@ -3773,8 +7537,8 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice, ses: 
 
   case range {
     s =: Slice_Range(j, i);
-    length' := EBinop(SUB, j, i);
-    length  := EBinop(ADD, length', ELint(one));
+    length' := AbbrevEBinop(SUB, j, i);
+    length  := AbbrevEBinop(ADD, length', ELint(one));
     annotate_slice(tenv, Slice_Length(i, length)) -> (s', ses);
   }
 
@@ -3791,7 +7555,7 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice, ses: 
 
   case scaled {
     s =: Slice_Star(factor, length);
-    offset := EBinop(MUL, factor, length);
+    offset := AbbrevEBinop(MUL, factor, length);
     annotate_slice(tenv, Slice_Length(offset, length)) -> (s', ses);
   }
   --
@@ -3816,7 +7580,7 @@ typing relation slices_width(tenv: static_envs, slices: list0(slice)) ->
     slices =: match_cons(s, slices1);
     slice_width(s) -> e1;
     slices_width(tenv, slices1) -> e2;
-    normalize(tenv, EBinop(ADD, e1, e2)) -> width;
+    normalize(tenv, AbbrevEBinop(ADD, e1, e2)) -> width;
     --
     width;
   }
@@ -3850,7 +7614,7 @@ typing function slice_width(slice: slice) ->
   case range {
     slice =: Slice_Range(e1, e2);
     --
-    EBinop(ADD, ELint(one), EBinop(SUB, e1, e2));
+    AbbrevEBinop(ADD, ELint(one), AbbrevEBinop(SUB, e1, e2));
   }
 ;
 
@@ -3978,7 +7742,34 @@ typing relation typecheck_decl(genv: global_static_envs, d: decl) ->
   \globalstaticenvironmentterm{} {new_genv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case global_storage {
+    d =: D_GlobalStorage(gsd);
+    declare_global_storage(genv, gsd) -> (new_genv, gsd');
+    --
+    (D_GlobalStorage(gsd'), new_genv);
+  }
+
+  case type_decl {
+    d =: D_TypeDecl(x, ty, s);
+    declare_type(genv, x, ty, s) -> (new_genv, ty', s');
+    --
+    (D_TypeDecl(x, ty', s'), new_genv);
+  }
+
+  case func {
+    d =: D_Func(f);
+    annotate_and_declare_func(genv, f) -> (tenv1, f1, ses_func_sig);
+    annotate_subprogram(tenv1, f1, ses_func_sig) -> (new_f, ses_f);
+    add_subprogram(tenv1, new_f.name, new_f, ses_f) -> new_tenv;
+    --
+    (D_Func(new_f), new_tenv.static_envs_G);
+  }
+;
+
+render rule typecheck_decl_global_storage = typecheck_decl(global_storage);
+render rule typecheck_decl_type_decl = typecheck_decl(type_decl);
+render rule typecheck_decl_func = typecheck_decl(func);
 
 typing relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
          (new_decls: list0(decl), new_tenv: static_envs) | type_error
@@ -4001,7 +7792,32 @@ typing relation annotate_decl_comps(genv: global_static_envs, comps: list0((list
   \globalstaticenvironmentterm{} {new_genv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case empty {
+    comps = empty_list;
+    --
+    (genv, empty_list);
+  }
+
+  case single {
+    comps =: match_cons(comp, comps1);
+    comp =: match_singleton_list(d);
+    typecheck_decl(genv, d) -> (d1, genv1);
+    annotate_decl_comps(genv1, comps1) -> (new_genv, decls1);
+    new_decls := concat(make_singleton_list(d1), decls1);
+    --
+    (new_genv, new_decls);
+  }
+
+  case mutually_recursive {
+    comps =: match_cons(comp, comps1);
+    list_len(comp) > one;
+    type_check_mutually_rec(genv, comp) -> (decls1, genv1);
+    annotate_decl_comps(genv1, comps1) -> (new_genv, decls2);
+    --
+    (new_genv, concat(decls1, decls2));
+  }
+;
 
 typing relation type_check_mutually_rec(genv: global_static_envs, decls: list0(decl)) ->
          (new_decls: list0(decl), new_genv: global_static_envs) | type_error
@@ -4016,12 +7832,10 @@ typing relation type_check_mutually_rec(genv: global_static_envs, decls: list0(d
 
 typing function declare_subprograms(
     genv: global_static_envs,
-    env_and_fs: list0((local_static_envs, func))) ->
+    env_and_fs: list0((local_static_envs, func, powerset(TSideEffect)))) ->
          (new_genv: global_static_envs,
-         new_env_and_fs: list0((local_static_envs,
-         func,
-         powerset(TSideEffect)))) |
-         type_error
+         new_env_and_fs: list0((local_static_envs, func, powerset(TSideEffect))))
+         | type_error
 {
   "processes a list of pairs, each consisting of a
   \localstaticenvironmentterm{} and a subprogram
@@ -4036,7 +7850,23 @@ typing function declare_subprograms(
   node, and \sideeffectdescriptorsetsterm.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    env_and_fs = empty_list;
+    --
+    (genv, empty_list);
+  }
+
+  case non_empty {
+    env_and_fs =: match_cons((lenv, f, ses_f), env_and_fs1);
+    tenv := [static_envs_G: genv, static_envs_L: lenv];
+    declare_one_func(tenv, f, ses_f) -> (tenv1, f1);
+    declare_subprograms(tenv1.static_envs_G, env_and_fs1) -> (new_genv, env_and_fs2);
+    new_env_and_fs := cons((lenv, f1, ses_f), env_and_fs2);
+    --
+    (new_genv, new_env_and_fs);
+  }
+;
 
 typing function add_subprogram_decls(tenv: static_envs, funcs: list0((func, powerset(TSideEffect)))) ->
          (new_tenv: static_envs)
@@ -4045,7 +7875,21 @@ typing function add_subprogram_decls(tenv: static_envs, funcs: list0((func, powe
   node in {funcs} to the $\subprograms$ map of
   $\tenv.\staticenvsG$, yielding {new_tenv}.",
   prose_application = "",
-};
+} =
+  case empty {
+    funcs = empty_list;
+    --
+    tenv;
+  }
+
+  case non_empty {
+    funcs =: match_cons((f, ses_f), funcs1);
+    add_subprogram(tenv, f.name, f, ses_f) -> tenv1;
+    add_subprogram_decls(tenv1, funcs1) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
 
 typing relation override_subprograms(decls: list0(decl)) ->
          (decls': list0(decl)) | type_error
@@ -4054,16 +7898,77 @@ typing relation override_subprograms(decls: list0(decl)) ->
   {decls}, yielding the new list of declarations
   {decls'}. \ProseOtherwiseTypeError{}",
   prose_application = "",
-};
+} =
+  override_decls_sort(decls) -> (impdefs, impls, normals);
+  check_implementations_unique(impls) -> True;
+  process_overrides(impdefs, impls) -> (impdefs', discarded);
+  rename_subprograms(discarded) -> renamed_discarded;
+  overridden := concat(impdefs', impls);
+  decls_overridden := list_map(f, overridden, D_Func(f));
+  decls_renamed := list_map(f, renamed_discarded, D_Func(f));
+  --
+  concat(decls_overridden, decls_renamed, normals);
+;
+
+typing function override_decls_sort(
+  decls: list0(decl)) ->
+  (impdefs: list0(func), impls: list0(func), normals: list0(decl))
+{
+  "the splitting of {decls} into the sublist of \texttt{impdef} function definitions,
+  the sublist of \texttt{implementation} function definitions, and the sublist
+  of other declrations",
+} =
+  case empty {
+    decls = empty_list;
+    --
+    (empty_list, empty_list, empty_list);
+  }
+
+  case non_empty {
+    decls =: match_cons(d, decls_tail);
+    override_decls_sort(decls_tail) -> (impdefs_tail, impls_tail, normals_tail);
+    case impdef {
+      (d =: D_Func(f)) && f.override = some(Impdef);
+      --
+      (cons(f, impdefs_tail), impls_tail, normals_tail);
+    }
+
+    case impl {
+      (d =: D_Func(f)) && f.override = some(Implementation);
+      --
+      (impdefs_tail, cons(f, impls_tail), normals_tail);
+    }
+
+    case impl {
+      not(d =: D_Func(_)) || (d =: D_Func(f)) && f.override = None;
+      --
+      (impdefs_tail, impls_tail, cons(d, normals_tail));
+    }
+  }
+;
 
 typing function check_implementations_unique(impls: list0(func)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the \Proseimplementationsubprograms{}
   {impls} have unique signatures.
   \ProseOtherwiseTypeError{}",
   prose_application = "",
-};
+} =
+  case empty {
+    impls = empty_list;
+    --
+    True;
+  }
+
+  case non_empty {
+    impls =: match_cons(h, t);
+    INDEX(i, t: signatures_match(h, t[i]) -> False);
+    check_implementations_unique(t) -> True;
+    --
+    True;
+  }
+;
 
 typing function signatures_match(func1: func, func2: func) ->
          (Bool)
@@ -4072,7 +7977,20 @@ typing function signatures_match(func1: func, func2: func) ->
   and {func2} match for overriding purposes.
   \ProseOtherwiseTypeError{}",
   prose_application = "",
-};
+} =
+  match := and(
+    func1.name = func2.name,
+    func1.qualifier = func2.qualifier,
+    list_len(func1.args) = list_len(func2.args),
+    func1.args = func2.args,
+    list_len(func1.parameters) = list_len(func2.parameters),
+    func1.parameters = func2.parameters,
+    func1.return_type = func2.return_type
+  )
+  { (_, [_]) };
+  --
+  True;
+;
 
 typing function process_overrides(impdefs: list0(func), impls: list0(func)) ->
          (impdefs': list0(func), discarded: list0(func)) | type_error
@@ -4083,7 +8001,34 @@ typing function process_overrides(impdefs: list0(func), impls: list0(func)) ->
   and the discarded subprograms {discarded}.
   \ProseOtherwiseTypeError{}",
   prose_application = "",
-};
+} =
+  case empty {
+    impls = empty_list;
+    --
+    (impdefs, empty_list);
+  }
+
+  case non_empty {
+    impls =: match_cons(impl, imples_tail);
+    INDEX(i, impdefs: signatures_match(impl, impdefs[i]) -> matches[i]);
+    matching_lists :=
+      list_map(i, indices(impdefs),
+        if matches[i] then make_singleton_list(impdefs[i]) else empty_list
+      ) { (_, (_, _, [_])) };
+    nonmatching_lists :=
+      list_map(i, indices(impdefs),
+        if matches[i] then empty_list else make_singleton_list(impdefs[i])
+      ) { (_, (_, _, [_])) };
+    // TODO: improve the above with lister_filter_map
+    matching := list_flatten(matching_lists);
+    nonmatching := list_flatten(nonmatching_lists);
+    te_check(list_len(matching) = one, TE_OE) -> True;
+    process_overrides(nonmatching, imples_tail) -> (impdefs', discarded_p);
+    discarded := concat(matching, discarded_p);
+    --
+    (impdefs', discarded);
+  }
+;
 
 typing relation rename_subprograms(discarded: list0(func)) ->
          (renamed_discarded: list0(func))
@@ -4091,7 +8036,22 @@ typing relation rename_subprograms(discarded: list0(func)) ->
   "renames the subprograms {discarded} to give them fresh
   names.",
   prose_application = "",
-};
+} =
+  case empty {
+    discarded = empty_list;
+    --
+    empty_list;
+  }
+
+  case non_empty {
+    discarded =: match_cons(h, t);
+    rename_subprograms(t) -> t';
+    name := fresh_identifier();
+    h' := h(name: name);
+    --
+    concat(make_singleton_list(h'), t');
+  }
+;
 
 typing function build_dependencies(decls: list0(decl)) ->
          (defs: list0(def_use_name), depends: list0((def_use_name, def_use_name)))
@@ -4105,7 +8065,16 @@ typing function build_dependencies(decls: list0(decl)) ->
   graph as the \emph{\dependencygraphterm} (of {decls}).",
   prose_application = "",
   math_layout = [_,_]
-};
+} =
+  defs_list := list_map(d, decls, def_decl(d));
+  enum_lists := list_map(d, decls, list_set(def_enum_labels(d)));
+  enum_labels := list_flatten(enum_lists);
+  defs := concat(defs_list, enum_labels);
+  dep_lists := list_map(d, decls, decl_dependencies(d));
+  depends := list_flatten(dep_lists);
+  --
+  (defs, depends);
+;
 
 typing function decl_dependencies(d: decl) ->
          (depends: list0((def_use_name, def_use_name)))
@@ -4113,7 +8082,15 @@ typing function decl_dependencies(d: decl) ->
   "returns the set of dependent pairs of identifiers
   {depends} induced by the declaration {d}.",
   prose_application = "",
-};
+} =
+  id1 := def_decl(d);
+  labels := list_set(def_enum_labels(d));
+  used := list_set(use_decl(d));
+  label_deps := list_map(id2, labels, (id1, id2));
+  use_deps := list_map(id2, used, (id1, id2));
+  --
+  concat(label_deps, use_deps);
+;
 
 typing function def_decl(d: decl) ->
          (name: def_use_name)
@@ -4121,7 +8098,25 @@ typing function def_decl(d: decl) ->
   "returns the identifier {name} being defined by the
   declaration {d}.",
   prose_application = "",
-};
+} =
+  case d_func {
+    d =: D_Func(f);
+    --
+    Subprogram(f.name);
+  }
+
+  case d_globalstorage {
+    d =: D_GlobalStorage(gs);
+    --
+    Other(gs.global_decl_name);
+  }
+
+  case d_typedecl {
+    d =: D_TypeDecl(id, _, _);
+    --
+    Other(id);
+  }
+;
 
 typing function def_enum_labels(d: decl) ->
          (labels: powerset(def_use_name))
@@ -4130,7 +8125,20 @@ typing function def_enum_labels(d: decl) ->
   enumeration labels it defines in {labels}, if it
   defines any.",
   prose_application = "",
-};
+} =
+  case decl_enum {
+    d =: D_TypeDecl(_, T_Enum(labels1), _);
+    labels := set_from_list(l, labels1, Other(l));
+    --
+    labels;
+  }
+
+  case other {
+    not(d =: D_TypeDecl(_, T_Enum(_), _));
+    --
+    empty_set;
+  }
+;
 
 typing function use_decl(d: decl) ->
          (ids: powerset(def_use_name))
@@ -4138,15 +8146,109 @@ typing function use_decl(d: decl) ->
   "returns the set of identifiers {ids} which the
   declaration {d} depends on.",
   prose_application = "",
-};
+} =
+  case decl_typedecl {
+    d =: D_TypeDecl(_, ty, fields);
+    ids := union(use_ty(ty), use_subtypes(fields));
+    --
+    ids;
+  }
 
-typing function use_ty(t: ty_or_opt) ->
-         (ids: powerset(def_use_name))
+  case decl_globalstorage {
+    d =: D_GlobalStorage(gs);
+    init_ids := if gs.initial_value =: some(e) then use_expr(e) else empty_set;
+    ty_ids := if gs.global_decl_ty =: some(ty) then use_ty(ty) else empty_set;
+    --
+    union(init_ids, ty_ids);
+  }
+
+  case decl_func {
+    d =: D_Func(f);
+    f.args =: list_combine(arg_names, arg_types);
+    arg_ids := list_map(arg_ty, arg_types, use_ty(arg_ty));
+    f.parameters =: list_combine(param_names, param_types);
+    param_ids := list_map(param_ty_opt, param_types, if param_ty_opt =: some(param_ty) then use_ty(param_ty) else empty_set);
+    ids_args := union_list(arg_ids);
+    ids_params := union_list(param_ids);
+    ret_ids := if f.return_type =: some(ty) then use_ty(ty) else empty_set;
+    body_ids := use_stmt(f.func_body);
+    limit_ids := if f.recurse_limit =: some(e) then use_expr(e) else empty_set;
+    ids := union(ids_args, ids_params, ret_ids, body_ids, limit_ids);
+    --
+    ids;
+  }
+;
+
+typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
 {
-  "returns the set of identifiers {ids} which the type or
-  \optionalterm{} type {t} depends on.",
+  "returns the set of identifiers {ids} which the type
+  {t} depends on.",
   prose_application = "",
-};
+} =
+  case simple {
+    ast_label(t) in make_set(label_T_Enum, label_T_Bool, label_T_Real, label_T_String);
+    --
+    empty_set;
+  }
+
+  case t_named {
+    t =: T_Named(s);
+    --
+    make_set(Other(s));
+  }
+
+  case int_no_constraints {
+    t =: T_Int(c);
+    ast_label(c) in make_set(label_Unconstrained, label_Parameterized, label_PendingConstrained);
+    --
+    empty_set;
+  }
+
+  case int_well_constrained {
+    t =: T_Int(WellConstrained(cs));
+    cs_ids := list_map(c, cs, use_constraint(c));
+    --
+    union_list(cs_ids);
+  }
+
+  case t_tuple {
+    t =: T_Tuple(li);
+    ids_sets := list_map(ty1, li, use_ty(ty1));
+    --
+    union_list(ids_sets);
+  }
+
+  case structured {
+    ast_label(t) in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+    t =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    field_ids := list_map(field_ty, field_types, use_ty(field_ty));
+    --
+    union_list(field_ids);
+  }
+
+  case array_expr {
+    t =: T_Array(ArrayLength_Expr(e), ty);
+    ids := union(use_expr(e), use_ty(ty));
+    --
+    ids;
+  }
+
+  case array_enum {
+    t =: T_Array(ArrayLength_Enum(enum, _), ty);
+    ids := union(make_set(Other(enum)), use_ty(ty));
+    --
+    ids;
+  }
+
+  case t_bits {
+    t =: T_Bits(e, bitfields);
+    field_ids := list_map(bf, bitfields, use_bitfield(bf));
+    ids := union(use_expr(e), union_list(field_ids));
+    --
+    ids;
+  }
+;
 
 typing function use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) ->
          (ids: powerset(def_use_name))
@@ -4155,16 +8257,159 @@ typing function use_subtypes(fields: option((x: Identifier, subfields: list0(fie
   \optionalterm{} pair consisting of identifier {x} (the type
   being subtyped) and fields {subfields} depends on.",
   prose_application = "",
-};
+} =
+  case none {
+    fields =: None;
+    --
+    empty_set;
+  }
 
-typing function use_expr(e: expr_or_opt) ->
-         (ids: powerset(def_use_name))
+  case some {
+    fields =: some((x1, subfields1));
+    subfields1 =: list_combine(sub_names, sub_types);
+    sub_ids := list_map(sub_ty, sub_types, use_ty(sub_ty));
+    ids := union(make_set(Other(x1)), union_list(sub_ids));
+    --
+    ids;
+  }
+;
+
+typing function use_expr(e: expr) -> (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
-  expression or \optionalterm{} expression {e} depends on.",
+  expression {e} depends on.",
   prose_application = "",
   math_macro = \useexpr
-};
+} =
+  case e_literal {
+    e =: E_Literal(_);
+    --
+    empty_set;
+  }
+
+  case e_atc {
+    e =: E_ATC(e1, ty);
+    --
+    union(use_expr(e1), use_ty(ty));
+  }
+
+  case e_var {
+    e =: E_Var(x);
+    --
+    make_set(Other(x));
+  }
+
+  case e_getarray {
+    e =: E_GetArray(e1, e2);
+    --
+    union(use_expr(e1), use_expr(e2));
+  }
+
+  case e_getenumarray {
+    e =: E_GetEnumArray(e1, e2);
+    --
+    union(use_expr(e1), use_expr(e2));
+  }
+
+  case e_binop {
+    e =: E_Binop(_, e1, e2);
+    --
+    union(use_expr(e1), use_expr(e2));
+  }
+
+  case e_unop {
+    e =: E_Unop(_, e1);
+    --
+    use_expr(e1);
+  }
+
+  case e_call {
+    e =: E_Call(call);
+    param_ids := list_map(p, call.params, use_expr(p));
+    arg_ids := list_map(a, call.call_args, use_expr(a));
+    ids := union(make_set(Subprogram(call.call_name)), union_list(param_ids), union_list(arg_ids));
+    --
+    ids;
+  }
+
+  case e_slice {
+    e =: E_Slice(e1, slices);
+    slice_ids := list_map(s, slices, use_slice(s));
+    --
+    union(use_expr(e1), union_list(slice_ids));
+  }
+
+  case e_cond {
+    e =: E_Cond(e1, e2, e3);
+    --
+    union(use_expr(e1), use_expr(e2), use_expr(e3));
+  }
+
+  case e_getitem {
+    e =: E_GetItem(e1, _);
+    --
+    use_expr(e1);
+  }
+
+  case e_getfield {
+    e =: E_GetField(e1, _);
+    --
+    use_expr(e1);
+  }
+
+  case e_getfields {
+    e =: E_GetFields(e1, _);
+    --
+    use_expr(e1);
+  }
+
+  case e_record {
+    e =: E_Record(ty, fields);
+    fields =: list_combine(field_names, field_exprs);
+    field_ids := list_map(field_expr, field_exprs, use_expr(field_expr));
+    --
+    union(use_ty(ty), union_list(field_ids));
+  }
+
+  case e_tuple {
+    e =: E_Tuple(es);
+    ids_sets := list_map(e1, es, use_expr(e1));
+    --
+    union_list(ids_sets);
+  }
+
+case e_array {
+  e =: E_Array[length: e1, array_value: e2];
+  --
+  union(use_expr(e1), use_expr(e2));
+}
+
+  case e_enumarray {
+    e =: E_EnumArray[enum: enum_id, labels: labels, enum_array_value: v];
+    label_ids := list_map(l, labels, make_set(Other(l)));
+    ids := union(make_set(Other(enum_id)), union_list(label_ids), use_expr(v));
+    --
+    ids;
+  }
+
+  case e_arbitrary {
+    e =: E_Arbitrary(ty);
+    --
+    use_ty(ty);
+  }
+
+  case e_pattern {
+    e =: E_Pattern(e1, pat);
+    --
+    union(use_expr(e1), use_pattern(pat));
+  }
+
+  case e_getcollectionfields {
+    e =: E_GetCollectionFields(collection_name, _);
+    --
+    make_set(Other(collection_name));
+  }
+;
 
 typing function use_lexpr(le: lexpr) ->
          (ids: powerset(def_use_name))
@@ -4173,7 +8418,60 @@ typing function use_lexpr(le: lexpr) ->
   left-hand-side expression {le} depends on.",
   prose_application = "",
   math_macro = \uselexpr
-};
+} =
+  case le_var {
+    le =: LE_Var(x);
+    --
+    make_set(Other(x));
+  }
+
+  case le_destructuring {
+    le =: LE_Destructuring(les);
+    ids_sets := list_map(le1, les, use_lexpr(le1));
+    --
+    union_list(ids_sets);
+  }
+
+  case le_discard {
+    le =: LE_Discard;
+    --
+    empty_set;
+  }
+
+  case le_setarray {
+    le =: LE_SetArray(le1, e1);
+    ids := union(use_lexpr(le1), use_expr(e1));
+    --
+    ids;
+  }
+
+  case le_setenumarray {
+    le =: LE_SetEnumArray(le1, e1);
+    ids := union(use_lexpr(le1), use_expr(e1));
+    --
+    ids;
+  }
+
+  case le_setfield {
+    le =: LE_SetField(le1, _);
+    --
+    use_lexpr(le1);
+  }
+
+  case le_setfields {
+    le =: LE_SetFields(le1, _);
+    --
+    use_lexpr(le1);
+  }
+
+  case le_slice {
+    le =: LE_Slice(le1, slices);
+    slice_ids := list_map(s, slices, use_slice(s));
+    ids := union(use_lexpr(le1), union_list(slice_ids));
+    --
+    ids;
+  }
+;
 
 typing function use_pattern(p: pattern) ->
          (ids: powerset(def_use_name))
@@ -4181,7 +8479,64 @@ typing function use_pattern(p: pattern) ->
   "returns the set of identifiers {ids} which the
   pattern {p} depends on.",
   prose_application = "",
-};
+} =
+  case mask_all {
+    (p =: Pattern_Mask(_)) || (p =: Pattern_All);
+    --
+    empty_set;
+  }
+
+  case mask {
+    p =: Pattern_Mask(_);
+    --
+    empty_set;
+  }
+
+  case tuple {
+    p =: Pattern_Tuple(patterns);
+    ids_sets := list_map(p1, patterns, use_pattern(p1));
+    --
+    union_list(ids_sets);
+  }
+
+  case any {
+    p =: Pattern_Any(patterns);
+    ids_sets := list_map(p1, patterns, use_pattern(p1));
+    --
+    union_list(ids_sets);
+  }
+
+  case single {
+    p =: Pattern_Single(e);
+    --
+    use_expr(e);
+  }
+
+  case geq {
+    p =: Pattern_Geq(e);
+    --
+    use_expr(e);
+  }
+
+  case leq {
+    p =: Pattern_Leq(e);
+    --
+    use_expr(e);
+  }
+
+  case not {
+    p =: Pattern_Not(p1);
+    --
+    use_pattern(p1);
+  }
+
+  case range {
+    p =: Pattern_Range(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+;
 
 typing function use_slice(s: slice) ->
          (ids: powerset(def_use_name))
@@ -4189,15 +8544,70 @@ typing function use_slice(s: slice) ->
   "returns the set of identifiers {ids} which the slice
   {s} depends on.",
   prose_application = "",
-};
+} =
+  case single {
+    s =: Slice_Single(e);
+    --
+    use_expr(e);
+  }
 
-typing function use_bitfield(bf: decl) ->
-         (ids: powerset(def_use_name))
+  case star {
+    s =: Slice_Star(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+
+  case length {
+    s =: Slice_Length(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+
+  case range {
+    s =: Slice_Range(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+
+  case typed_length {
+    s =: typed_Slice_Length(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+;
+
+typing function use_bitfield(bf: bitfield) -> (ids: powerset(def_use_name))
 {
   "returns the set of identifiers {ids} which the
   bitfield {bf} depends on.",
   prose_application = "",
-};
+} =
+  case simple {
+    bf =: BitField_Simple(_, slices);
+    INDEX(i, slices: use_slice(slices[i]) -> ids_slices[i]);
+    --
+    union_list(ids_slices);
+  }
+
+  case nested {
+    bf =: BitField_Nested(_, slices, bitfields);
+    ids_slices := list_map(slice, slices, use_slice(slice));
+    ids_bitfields := list_map(bitfield, bitfields, use_bitfield(bitfield));
+    --
+    union(union_list(ids_slices), union_list(ids_bitfields));
+  }
+
+  case type {
+    bf =: BitField_Type(_, slices, ty);
+    ids_slices := list_map(slice, slices, use_slice(slice));
+    --
+    union(union_list(ids_slices), use_ty(ty));
+  }
+;
 
 typing function use_constraint(c: int_constraint) ->
          (ids: powerset(def_use_name))
@@ -4205,7 +8615,20 @@ typing function use_constraint(c: int_constraint) ->
   "returns the set of identifiers {ids} which the integer
   constraint {c} depends on.",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    --
+    use_expr(e);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    ids := union(use_expr(e1), use_expr(e2));
+    --
+    ids;
+  }
+;
 
 typing function use_ldi(l: local_decl_item) ->
          (ids: powerset(def_use_name))
@@ -4213,7 +8636,19 @@ typing function use_ldi(l: local_decl_item) ->
   "returns the set of identifiers {ids} which the
   \localdeclarationitem{} {l} depends on.",
   prose_application = "",
-};
+} =
+  case ldi_var {
+    l =: LDI_Var(x);
+    --
+    make_set(Other(x));
+  }
+
+  case ldi_tuple {
+    l =: LDI_Tuple(li);
+    --
+    set_from_list(x, li, Other(x));
+  }
+;
 
 typing function use_stmt(s: stmt) ->
          (ids: powerset(def_use_name))
@@ -4222,7 +8657,116 @@ typing function use_stmt(s: stmt) ->
   statement {s} depends on.",
   prose_application = "",
   math_macro = \usestmt
-};
+} =
+  case pass_return_none {
+    s = S_Pass || s = S_Return(None);
+    --
+    empty_set;
+  }
+
+  case s_seq {
+    s =: S_Seq(s1, s2);
+    ids := union(use_stmt(s1), use_stmt(s2));
+    --
+    ids;
+  }
+
+  case s_assert {
+    s =: S_Assert(e);
+    --
+    use_expr(e);
+  }
+
+  case s_return_some {
+    s =: S_Return(some(e));
+    --
+    use_expr(e);
+  }
+
+  case s_assign {
+    s =: S_Assign(le, e);
+    ids := union(use_lexpr(le), use_expr(e));
+    --
+    ids;
+  }
+
+  case s_call {
+    s =: S_Call(call);
+    param_ids := list_map(p, call.params, use_expr(p));
+    arg_ids := list_map(a, call.call_args, use_expr(a));
+    --
+    union(make_set(Subprogram(call.call_name)), union(union_list(param_ids), union_list(arg_ids)));
+  }
+
+  case s_cond {
+    s =: S_Cond(e, s1, s2);
+    --
+    union(use_expr(e), union(use_stmt(s1), use_stmt(s2)));
+  }
+
+  case s_for {
+    s =: S_For[index_name: index_name, start_e: start_e, dir: _, end_e: end_e, body: body, limit: limit];
+    limit_ids := if limit =: some(e) then use_expr(e) else empty_set;
+    --
+    (union(
+      limit_ids,
+      make_set(Other(index_name)),
+      use_expr(start_e),
+      use_expr(end_e),
+      use_stmt(body)
+    ))
+    { (_, ([_])) };
+  }
+
+  case s_while {
+    s =: S_While(e, limit, s1);
+    limit_ids := if limit =: some(e1) then use_expr(e1) else empty_set;
+    --
+    union(limit_ids, use_expr(e), use_stmt(s1));
+  }
+
+  case s_repeat {
+    s =: S_Repeat(s1, e, limit);
+    limit_ids := if limit =: some(e1) then use_expr(e1) else empty_set;
+    --
+    union(limit_ids, use_expr(e), use_stmt(s1));
+  }
+
+  case s_decl {
+    s =: S_Decl(_, ldi, ty, e);
+    ty_ids := if ty =: some(t) then use_ty(t) else empty_set;
+    expr_ids := if e =: some(e1) then use_expr(e1) else empty_set;
+    --
+    union(use_ldi(ldi), union(ty_ids, expr_ids));
+  }
+
+  case s_throw {
+    s =: S_Throw(e);
+    --
+    use_expr(e);
+  }
+
+  case s_try {
+    s =: S_Try(s1, catchers, s2_opt);
+    catcher_ids := list_map(c, catchers, use_catcher(c));
+    s2_ids := if (s2_opt =: some(s2)) then use_stmt(s2) else empty_set;
+    --
+    union(use_stmt(s1), union_list(catcher_ids), s2_ids);
+  }
+
+  case s_print {
+    s =: S_Print(args, _);
+    arg_ids := list_map(a, args, use_expr(a));
+    --
+    union_list(arg_ids);
+  }
+
+  case s_unreachable {
+    s =: S_Unreachable;
+    --
+    empty_set;
+  }
+;
 
 typing function use_catcher(c: catcher) ->
          (ids: powerset(def_use_name))
@@ -4230,16 +8774,41 @@ typing function use_catcher(c: catcher) ->
   "returns the set of identifiers {ids} which the try
   statement catcher {c} depends on.",
   prose_application = "",
-};
+} =
+  c =: (_, ty, s);
+  ids := union(use_ty(ty), use_stmt(s));
+  --
+  ids;
+;
 
-semantics relation eval_spec(tenv: static_envs, spec: spec) -> (v: tint, g: XGraphs) | TDynError
+semantics relation eval_spec(tenv: static_envs, spec: spec) ->
+         (v: native_value, g: XGraphs) | TDynError | TDiverging
 {
    prose_description = "evaluates the specification {spec} with the
                         \staticenvironmentterm{} {tenv}, yielding the native
                         integer value {v} and execution graph {g}. Otherwise,
                         the result is a \dynamicerrorterm{}.",
  prose_application = "",
-};
+} =
+  build_genv(tenv, spec) -> (env, g1);
+  subprogram_for_signature(tenv, main, empty_list, ST_Function) -> (name', func_sig, _)
+  { [_] };
+  de_check( func_sig.return_type =: some(unconstrained_integer), DE_NEP) -> True
+  { [_] };
+  case normal {
+    eval_subprogram(env, name', empty_list, empty_list) -> ResultCall((v_res, _), g2) | DynErrorConfig(), DivergingConfig();
+    v_res =: match_singleton_list((v, _));
+    g := ordered_po(g1, g2);
+    --
+    (v, g);
+  }
+
+  case throwing {
+    eval_subprogram(env, name', empty_list, empty_list) -> Throwing(_, _, _, _)| DynErrorConfig(), DivergingConfig();
+    --
+    DynamicError(DE_UE);
+  }
+;
 
 semantics relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: envs, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -4251,7 +8820,12 @@ semantics relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: 
                         updating the environment accordingly.
                         \ProseOtherwiseDynamicErrorOrDiverging",
  prose_application = "",
-};
+} =
+  env := (tenv, empty_denv);
+  eval_globals(typed_spec, (env, empty_graph)) -> (new_env, new_g) | DynErrorConfig(), DivergingConfig();
+  --
+  (new_env, new_g);
+;
 
 //////////////////////////////////////////////////
 // Relations for Statements
@@ -4286,7 +8860,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     case Some {
       s =: S_Decl(ldk, ldi, ty_opt, some(e));
       annotate_expr(tenv, e) -> (t_e, e', ses_e);
-      annotate_local_decl_type_annot(tenv, ty_opt, t_e, ldk, e', ldi) -> (tenv1, ty_opt', ses_ldi)
+      annotate_local_decl_type_annot(tenv, ty_opt, t_e, ldk, (e', ses_e), ldi) -> (tenv1, ty_opt', ses_ldi)
       { math_layout = [_,_] };
       ses := union(ses_e, ses_ldi);
       new_s := S_Decl(ldk, ldi, ty_opt', some(e'));
@@ -4472,7 +9046,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     s =: S_Print(args, newline);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
     INDEX(i, args : is_singular(tenv, tys[i]) -> are_singular_arg_types[i]);
-    te_check(list_forall(is_arg_singular, are_singular_arg_types, is_arg_singular), TE_UT) -> True;
+    te_check(list_and(are_singular_arg_types), TE_UT) -> True;
     ses := union(make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), union_list(sess));
     --
     (S_Print(args', newline), tenv, ses);
@@ -4515,21 +9089,42 @@ typing relation annotate_local_decl_type_annot(
     ty_opt: option(ty),
     t_e: ty,
     ldk: local_decl_keyword,
-    e': expr,
+    typed_e: (expr, powerset(TSideEffect)),
     ldi: local_decl_item) ->
          (new_tenv: static_envs, ty_opt': option(ty), ses: powerset(TSideEffect)) | type_error
 {
   "annotates the type annotation {ty_opt} in the
   \staticenvironmentterm{} {tenv} within the context of
   a local declaration with keyword {ldk}, item {ldi},
-  and initializing expression {e'} with type {t_e}. It
-  yields the modified \staticenvironmentterm{}
+  an initializing expression with its associated side effects {typed_e}, and type {t_e}.
+  It yields the modified \staticenvironmentterm{}
   {new_tenv}, the annotated type annotation {ty_opt'},
   and the inferred \sideeffectsetterm{} {ses}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [input[_,_,_,_,_,_], _],
-};
+} =
+  case none {
+    ty_opt =: None;
+    check_no_precision_loss(t_e) -> True;
+    annotate_local_decl_item(tenv, t_e, ldk, some(typed_e), ldi) -> new_tenv;
+    --
+    (new_tenv, None, empty_set)
+    { [_] };
+  }
+
+  case some {
+    ty_opt =: some(t);
+    get_structure(tenv, t_e) -> t_e';
+    inherit_integer_constraints(t, t_e') -> t';
+    annotate_type(False, tenv, t') -> (t'', ses_t);
+    check_can_be_initialized_with(tenv, t'', t_e) -> True;
+    annotate_local_decl_item(tenv, t'', ldk, some(typed_e), ldi) -> new_tenv;
+    --
+    (new_tenv, some(t''), ses_t)
+    { [_] };
+  }
+;
 
 typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
          (lhs': ty) | type_error
@@ -4545,26 +9140,86 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
   is an \unconstrainedintegertypeterm{}), the result is
   a \typingerrorterm{}.",
   prose_application = "",
-};
+} =
+  case int {
+    lhs =: T_Int(PendingConstrained);
+    check_no_precision_loss(rhs) -> True;
+    te_check( is_well_constrained_integer(rhs), TE_UT ) -> True;
+    --
+    rhs;
+  }
+
+  case tuple {
+    lhs =: T_Tuple(lhs_tys);
+    rhs =: T_Tuple(rhs_tys);
+    te_check(list_len(lhs_tys) = list_len(rhs_tys), TE_UT) -> True;
+    ( INDEX(i, lhs_tys: inherit_integer_constraints(lhs_tys[i], rhs_tys[i]) -> lhs_tys'[i]) )
+    { ([_]) };
+    --
+    T_Tuple(lhs_tys');
+  }
+
+  case other {
+    or(
+      (lhs != T_Int(PendingConstrained)),
+      (ast_label(lhs) != label_T_Tuple),
+      (ast_label(rhs) != label_T_Tuple)
+    ) { [_] };
+    --
+    lhs;
+  }
+;
 
 typing function check_no_precision_loss(t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is the result of a
   precision loss in its constraint computation (see for
   example \TypingRuleRef{ApplyBinopTypes}).",
   prose_application = "",
-};
+} =
+  case well_constrained_typed {
+    t =: T_Int(typed_WellConstrained(_, p));
+    te_check(p = Precision_Full, TE_PLD) -> True;
+    --
+    True;
+  }
+
+  case integer {
+    t =: T_Int(c);
+    ast_label(c) != label_WellConstrained;
+    --
+    True;
+  }
+
+  case other {
+    ast_label(t) != label_T_Int;
+    --
+    True;
+  }
+;
 
 typing function check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether an expression of type {s} can be used
   to initialize a storage element of type {t} in the
   \staticenvironmentterm{} {tenv}. If the answer if
   $\False$, the result is a \typingerrorterm.",
   prose_application = "",
-};
+} =
+  case okay {
+    type_satisfies(tenv, t, s) -> True;
+    --
+    True;
+  }
+
+  case error {
+    type_satisfies(tenv, t, s) -> False;
+    --
+    TypeError(TE_TSF);
+  }
+;
 
 typing relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
          (option(e': expr), ses: powerset(TSideEffect)) | type_error
@@ -4575,14 +9230,27 @@ typing relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case none {
+    e =: None;
+    --
+    (None, empty_set);
+  }
+
+  case some {
+    e =: some(limit);
+    annotate_symbolic_constrained_integer(tenv, limit) -> (limit', ses);
+    --
+    (some(limit'), ses);
+  }
+;
 
 typing relation get_for_constraints(
     tenv: static_envs,
-    struct1: ty,
-    struct2: ty,
-    e1': expr,
-    e2': expr,
+    start_struct: ty,
+    end_struct: ty,
+    start_e': expr,
+    end_e': expr,
     dir: for_direction) ->
          (vis: constraint_kind) | type_error
 {
@@ -4590,18 +9258,49 @@ typing relation get_for_constraints(
   index variable from the following:
   \begin{itemize}
   \item the \wellconstrainedversionterm{} of the type of
-  the start expression {struct1}
+  the start expression {start_struct}
   \item the \wellconstrainedversionterm{} of the type of the end
-  expression {struct2}
-  \item the annotated start expression {e1'}
-  \item the annotated end expression {e2'}
+  expression {end_struct}
+  \item the annotated start expression {start_e'}
+  \item the annotated end expression {end_e'}
   \item the loop direction {dir}
   \end{itemize} The result is the integer constraint {vis}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \getforconstraints,
   math_layout = [_,_],
-};
+} =
+  case not_integers {
+    ast_label(start_struct) != label_T_Int || ast_label(end_struct) != label_T_Int;
+    --
+    TypeError(TE_UT)
+    { [_] };
+  }
+
+  case unconstrained {
+    start_struct =: T_Int(c1);
+    end_struct =: T_Int(c2);
+    c1 = Unconstrained || c2 = Unconstrained;
+    --
+    Unconstrained
+    { [_] };
+  }
+
+  case well_constrained {
+    ast_label(start_struct) = label_T_Int;
+    ast_label(end_struct) = label_T_Int;
+    start_struct != unconstrained_integer;
+    end_struct != unconstrained_integer;
+    normalize(tenv, start_e') -> start_n;
+    normalize(tenv, end_e') -> end_n;
+    (e_bot, e_top) := if dir = UP then (start_n, end_n) else (end_n, start_n)
+    { (_, [_]) };
+    vis := WellConstrained(make_singleton_list(Constraint_Range(e_bot, e_top)));
+    --
+    vis
+    { [_] };
+  }
+;
 
 semantics relation eval_stmt(env: envs, s: stmt) ->
     | Continuing(new_g: XGraphs, new_env: envs)
@@ -4912,19 +9611,28 @@ semantics function output_to_console(env: envs, v: native_value) -> (new_env: en
 {
   "communicates {v} to a console, where one exists, possibly updating the environment {env}, yielding {new_env}.",
   prose_application = "communicating {v} to the console in the context of {env} yields {new_env}",
-};
+} =
+  --
+  bot; // This rule is expressed directly in LaTeX as it needs to re-define environments.
+;
 
 semantics function literal_to_string(l: literal) -> (s: Strings)
 {
   "converts a literal {l} to a printable string {s}",
   prose_application = "converting {l} to a printable string yields {s}",
-};
+} =
+  --
+  bot; // This function is defined by a table in LaTeX.
+;
 
 semantics function lexpr_is_var(le: lexpr) -> (res: Bool)
  {
     "tests whether {le} is an assignable variable expression or a discarded \assignableexpression{}, yielding the result in {res}",
     prose_application = "testsing whether {le} is an assignable variable expression or a discarded \assignableexpression{} yields {res}",
- };
+ } =
+  --
+  ast_label(le) in make_set(label_LE_Var, label_LE_Discard);
+;
 
 semantics relation eval_for(
   env: envs,
@@ -4944,15 +9652,38 @@ semantics relation eval_for(
                         $\evalforstep$ and $\evalforloop$.",
  prose_application = "",
   math_layout = [_,_],
- };
+} =
+  comp := if dir = UP then LT else GT;
+  v_start =: NV_Literal(L_Int(sv));
+  read_identifier(index_name, v_start) -> g1;
+  eval_binop(comp, v_end, v_start) -> v_cmp;
+  case return {
+    v_cmp =: nvbool(True);
+    --
+    Continuing(g1, env)
+    { [_] };
+  }
+
+  case continue {
+    v_cmp =: nvbool(False);
+    tick_loop_limit(limit_opt) -> limit_opt1;
+    eval_for_loop(env, index_name, limit_opt1, v_start, dir, v_end, body) ->
+      Continuing(g2, new_env)
+    { [_] };
+    new_g := ordered_ctrl(g1, g2);
+    --
+    Continuing(new_g, new_env)
+    { [_] };
+  }
+;
 
 semantics relation eval_for_step(
     env: envs,
     index_name: Identifier,
-    limit_opt: option(tint),
-    v_start: tint,
-    dir: constants_set(UP,DOWN)) ->
-         ((v_step: tint, new_env: envs), new_g: XGraphs) |
+    limit_opt: option(N),
+    v_start: native_value,
+    dir: for_direction) ->
+         ((v_step: native_value, new_env: envs), new_g: XGraphs) |
          TReturning |
          TThrowing |
          TDynError |
@@ -4964,15 +9695,28 @@ semantics relation eval_for_step(
   graph. \ProseOtherwiseReturningOrAbnormal",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  op := if dir = UP then ADD else SUB;
+  read_identifier(index_name, v_start) -> g1;
+  eval_binop(op, v_start, nvint(one)) -> v_step;
+  write_identifier(index_name, v_step) -> g2;
+  env =: (tenv, denv);
+  updated_local := map_update(denv.dynamic_envs_L, index_name, v_step);
+  new_denv := denv(dynamic_envs_L: updated_local);
+  new_env := (tenv, new_denv);
+  new_g := ordered_data(g1, g2);
+  --
+  ((v_step, new_env), new_g)
+  { [_] };
+;
 
 semantics relation eval_for_loop(
     env: envs,
     index_name: Identifier,
-    limit_opt: option(tint),
-    v_start: tint,
-    dir: constants_set(UP,DOWN),
-    v_end: tint,
+    limit_opt: option(N),
+    v_start: native_value,
+    dir: for_direction,
+    v_end: native_value,
     body: stmt) ->
          Continuing(new_g: XGraphs, new_env: envs) | TReturning | TThrowing | TDynError | TDiverging
 {
@@ -4981,19 +9725,52 @@ semantics relation eval_for_loop(
   iterations.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  eval_block(env, body) -> Continuing(g1, env1);
+  eval_for_step(env1, index_name, limit_opt, v_start, dir) -> ((v_step, env2), g2)
+  { [_] };
+  eval_for(env2, index_name, limit_opt, v_step, dir, v_end, body) ->
+    Continuing(g3, new_env)
+  { [_] };
+  new_g := ordered_po(ordered_po(g1, g2), g3);
+  --
+  Continuing(new_g, new_env)
+  { [_] };
+;
 
 semantics relation eval_loop(env: envs, is_while: Bool, limit_opt: option(N), e_cond: expr, body: stmt) ->
   | Continuing(new_g: XGraphs, new_env: envs)
   | TReturning
   | TThrowing
   | TDynError
+  | TDiverging
 {
    prose_description = "to evaluate both \texttt{while} statements and
                         \texttt{repeat} statements.",
  prose_application = "",
   math_layout = [_,_],
- };
+} =
+  case exit {
+    eval_expr(env, e_cond) -> ResultExpr((v_cond, g_cond), new_env);
+    v_cond =: nvbool(b);
+    b != is_while;
+    --
+    Continuing(g_cond, new_env);
+  }
+
+  case continue {
+    eval_expr(env, e_cond) -> ResultExpr((v_cond, g1), env1);
+    v_cond =: nvbool(b);
+    b = is_while;
+    tick_loop_limit(limit_opt) -> limit_opt';
+    eval_block(env1, body) -> Continuing(g2, env2);
+    eval_loop(env2, is_while, limit_opt', e_cond, body) -> Continuing(g3, new_env)
+    { [_] };
+    new_g := ordered_po(ordered_ctrl(g1, g2), g3);
+    --
+    Continuing(new_g, new_env);
+  }
+;
 
 semantics relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: option(N), g: XGraphs) | TDynError | TDiverging
 {
@@ -5002,7 +9779,22 @@ semantics relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: o
                         value {v_opt} and execution graph {g}.
                         \ProseOtherwiseDynamicErrorOrDiverging",
  prose_application = ""
- };
+} =
+  case none {
+    e_limit_opt = None;
+    v_opt := None;
+    g := empty_graph;
+    --
+    (v_opt, g);
+  }
+
+  case some {
+    e_limit_opt =: some(e_limit);
+    eval_expr_sef(env, e_limit) -> ResultExprSEF(nvint(n), g);
+    --
+    (some(n), g);
+  }
+;
 
 semantics relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TDynError
 {
@@ -5010,10 +9802,32 @@ semantics relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TD
                         optional integer value {v_opt}. If the value is $0$,
                         the result is a \DynamicErrorConfigurationTerm{}.",
  prose_application = ""
- };
+} =
+  case none {
+    v_opt = None;
+    --
+    None;
+  }
+
+  case some_ok {
+    v_opt =: some(v);
+    v > zero;
+    --
+    some(v - one);
+  }
+
+  case some_error {
+    v_opt =: some(zero);
+    --
+    DynamicError(DE_LE);
+  }
+;
 
 semantics relation eval_expr_list_m(env: envs, es: list0(expr)) ->
-         ResultExprListM(vms: list0((native_value, XGraphs)), new_env: envs) | TThrowing | TDynError | TDiverging
+  | ResultExprListM(vms: list0((native_value, XGraphs)), new_env: envs)
+  | TThrowing
+  | TDynError
+  | TDiverging
 {
   "evaluates a list of expressions {es} in left-to-right
   in the initial environment {env} and returns the list
@@ -5023,7 +9837,21 @@ semantics relation eval_expr_list_m(env: envs, es: list0(expr)) ->
   configuration is returned.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    es = empty_list;
+    --
+    ResultExprListM(empty_list, env);
+  }
+
+  case non_empty {
+    es =: match_cons(e, es1);
+    eval_expr(env, e) -> ResultExpr(m, env1);
+    eval_expr_list_m(env1, es1) -> ResultExprListM(vms1, new_env);
+    --
+    ResultExprListM(cons(m, vms1), new_env);
+  }
+;
 
 semantics relation write_folder(vms: list0((native_value, XGraphs))) ->
          (vs: list0(native_value), new_g: XGraphs)
@@ -5032,7 +9860,25 @@ semantics relation write_folder(vms: list0((native_value, XGraphs))) ->
   an execution graph by composing the graphs in {vms}
   with Write Effects for the respective values.",
   prose_application = "",
-};
+} =
+  case empty {
+    vms = empty_list;
+    --
+    (empty_list, empty_graph);
+  }
+
+  case non_empty {
+    vms =: match_cons(vm, vms1);
+    vm =: (v, g);
+    id := fresh_identifier();
+    write_identifier(id, v) -> g1;
+    write_folder(vms1) -> (vs1, g2);
+    vs := match_cons(v, vs1);
+    new_g := ordered_po(g, ordered_data(g1, g2));
+    --
+    (vs, new_g);
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Static Evaluation
@@ -5044,7 +9890,40 @@ typing function static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_e
   If the evaluation terminates by a thrown exception of a value that is not a literal
   (for example, a record value), the result is a \typingerrorterm{}.",
   prose_application = "statically evaluating {e} in {tenv} yields {v}\ProseOrTypeError",
-};
+} =
+  case normal_literal {
+    static_env_to_env(tenv) -> env;
+    eval_expr(env, e) -> ResultExpr((NV_Literal(v), _), _) | ; // No short-circuiting expressions
+    --
+    v;
+  }
+
+  case normal_non_literal {
+    static_env_to_env(tenv) -> env;
+    eval_expr(env, e) -> ResultExpr((x, _), _) | ; // No short-circuiting expressions
+    not(x =: NV_Literal(_));
+    --
+    TypeError(TE_SEF);
+  }
+
+  case abnormal_throwing {
+    static_env_to_env(tenv) -> env;
+    eval_expr(env, e) -> Throwing(_, _, _, _) | ;
+    --
+    TypeError(TE_SEF);
+  }
+
+  case abnormal_dynamic_error {
+    static_env_to_env(tenv) -> env;
+    eval_expr(env, e) -> DynamicError(_) | ;
+    --
+    TypeError(TE_SEF);
+  }
+
+  // TODO: handling the diverging case requires either adding a Diverging
+  // configuration as a short-circuit to most typechecking relations
+  // or avoiding divergence in static evaluation.
+;
 
 semantics function static_env_to_env(tenv: static_envs) ->
          (env: envs)
@@ -5054,6 +9933,7 @@ semantics function static_env_to_env(tenv: static_envs) ->
   {env}.",
   prose_application = "",
 };
+
 
 //////////////////////////////////////////////////
 // Relations for Subprogram Calls
@@ -5075,7 +9955,18 @@ typing relation annotate_call(tenv: static_envs, call: call) ->
     \end{itemize}
     \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  annotate_exprs(tenv, call.call_args) -> typed_args;
+  annotate_exprs(tenv, call.params) -> typed_params;
+  annotate_call_actuals_typed(tenv, call.call_name, typed_params, typed_args, call.call_type) ->
+    (call', ret_ty_opt, ses_call)
+  { ([_], [_]) };
+  typed_args =: list_combine_three(arg_tys, arg_exprs, arg_ses);
+  ses_args := union_list(arg_ses);
+  ses := union(ses_args, ses_call);
+  --
+  (call', ret_ty_opt, ses);
+;
 
 typing relation annotate_call_actuals_typed(
   tenv: static_envs,
@@ -5083,7 +9974,7 @@ typing relation annotate_call_actuals_typed(
   params: list0((ty, expr, powerset(TSideEffect))),
   typed_args: list0((ty, expr, powerset(TSideEffect))),
   call_type: subprogram_type) ->
-  (call: call, ret_ty_opt: option(ty)) | type_error
+  (call: call, ret_ty_opt: option(ty), ses: powerset(TSideEffect)) | type_error
 {
   "is similar to $\annotatecall$, except that it accepts
   the annotated versions of the parameter and argument
@@ -5093,15 +9984,70 @@ typing relation annotate_call_actuals_typed(
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [input[_,_,_,_,_], _],
-};
+} =
+  typed_args =: list_combine_three(arg_types, args, sess_args);
+  ses_args := union_list(sess_args);
+  subprogram_for_signature(tenv, name, arg_types, call_type) -> (name', func_sig, ses_call)
+  { [_] };
+  ses := union(ses_args, ses_call);
+  insert_stdlib_param(tenv, func_sig, params, arg_types) -> params1;
+  te_check(list_len(func_sig.parameters) = list_len(params1), TE_BC) -> True;
+  te_check(list_len(func_sig.args) = list_len(args), TE_BC) -> True;
+  check_params_typesat(tenv, func_sig.parameters, params1) -> True;
+  func_sig.parameters =: list_combine(param_names, _);
+  params1 =: list_combine_three(_, param_exprs, _);
+  eqs := list_combine(param_names, param_exprs);
+  check_args_typesat(tenv, func_sig.args, arg_types, eqs) -> True;
+  annotate_ret_ty(tenv, call_type, func_sig.return_type, eqs) -> ret_ty_opt;
+  call := [
+    call_name: name',
+    params: param_exprs,
+    call_args: args,
+    call_type: func_sig.func_subprogram_type
+  ];
+  --
+  (call, ret_ty_opt, ses)
+  { [_] };
+;
 
-typing function insert_stdlib_param(func_sig: func, params: list0((ty, expr)), arg_types: list0(ty)) ->
+typing function insert_stdlib_param(
+  tenv: static_envs,
+  func_sig: func,
+  params: list0((ty, expr, powerset(TSideEffect))),
+  arg_types: list0(ty)) ->
          (params1: list0((ty, expr, powerset(TSideEffect))))
 {
   "inserts the (optionally) omitted input parameter of a
   standard library function call.",
   prose_application = "",
-};
+  math_layout = ([_,_,(_,_,_),_],[_])
+} =
+  case can_insert {
+    can_insert_stdlib_param := ( and(
+        can_omit_stdlib_param(func_sig),
+        list_len(params) < list_len(func_sig.parameters),
+        arg_types != empty_list
+    ) ) { (_, ([_])) };
+    can_insert_stdlib_param = True;
+    arg_types =: match_cons(t, _);
+    get_bitvector_width(tenv, t) -> width;
+    param_type := T_Int(WellConstrained(make_singleton_list(AbbrevConstraintExact(width))));
+    params1 := concat(params, make_singleton_list((param_type, width, empty_set)));
+    --
+    params1;
+  }
+
+  case cannot_insert {
+    can_insert_stdlib_param := ( and(
+        can_omit_stdlib_param(func_sig),
+        list_len(params) < list_len(func_sig.parameters),
+        arg_types != empty_list
+    ) ) { (_, ([_])) };
+    can_insert_stdlib_param = False;
+    --
+    params;
+  }
+;
 
 typing function can_omit_stdlib_param(func_sig: func) ->
          (b: Bool)
@@ -5110,10 +10056,40 @@ typing function can_omit_stdlib_param(func_sig: func) ->
   defined by {func_sig} can be omitted (and thus
   automatically inserted), yielding the result in {b}.",
   prose_application = "",
-};
+} =
+  case builtin_one_param {
+    func_sig.builtin;
+    func_sig.parameters =: match_singleton_list((n_param, _));
+    func_sig.args =: match_cons((_, T_Bits(E_Var(n_arg), _)), _);
+    bool_transition(n_param = n_arg) -> True;
+    --
+    True;
+  }
+
+  case builtin_two_params {
+    func_sig.builtin;
+    func_sig.parameters =: match_cons(_, match_cons((n_param, _), empty_list));
+    func_sig.args =: match_cons((_, T_Bits(E_Var(n_arg), _)), _);
+    bool_transition(n_param = n_arg) -> True;
+    --
+    True;
+  }
+
+  case builtin_other {
+    func_sig.builtin;
+    --
+    False;
+  }
+
+  case not_builtin {
+    not(func_sig.builtin);
+    --
+    False;
+  }
+;
 
 typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that annotated parameters {params} are correct
   with respect to the declared parameters
@@ -5122,7 +10098,38 @@ typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((
   same length.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    func_sig_params = empty_list;
+    --
+    True;
+  }
+
+  case parameterized {
+    func_sig_params =: match_cons((name, ty_decl_opt), func_sig_params1);
+    params =: match_cons((ty_actual, _, ses_actual), params1);
+    check_symbolically_evaluable(ses_actual) -> True;
+    check_constrained_integer(tenv, ty_actual) -> True;
+    ty_decl_opt =: some(T_Int(Parameterized(name')));
+    name = name';
+    check_params_typesat(tenv, func_sig_params1, params1) -> True;
+    --
+    True;
+  }
+
+  case other {
+    func_sig_params =: match_cons((name', ty_decl_opt), func_sig_params1);
+    params =: match_cons((ty_actual, _, ses_actual), params1);
+    check_symbolically_evaluable(ses_actual) -> True;
+    check_constrained_integer(tenv, ty_actual) -> True;
+    ty_decl_opt =: some(ty_decl);
+    ty_decl != T_Int(Parameterized(name'));
+    check_type_satisfies(tenv, ty_actual, ty_decl) -> True;
+    check_params_typesat(tenv, func_sig_params1, params1) -> True;
+    --
+    True;
+  }
+;
 
 typing relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)), ty: ty) ->
          (new_ty: ty) | type_error
@@ -5133,7 +10140,43 @@ typing relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)),
   in {eqs}, yielding the type {new_ty}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case t_bits {
+    ty =: T_Bits(e, fields);
+    subst_expr_normalize(tenv, eqs, e) -> new_e;
+    --
+    T_Bits(new_e, fields);
+  }
+
+  case t_int_wellconstrained {
+    ty =: T_Int(WellConstrained(constraints));
+    ( INDEX(i, constraints: subst_constraint(tenv, eqs, constraints[i]) -> new_constraints[i]) )
+    { ([_]) };
+    new_constraints1 := match_non_empty_list(new_constraints);
+    --
+    T_Int(WellConstrained(new_constraints1));
+  }
+
+  case t_int_parameterized {
+    ty =: T_Int(Parameterized(name));
+    subst_expr_normalize(tenv, eqs, E_Var(name)) -> e;
+    --
+    T_Int(WellConstrained(make_singleton_list(AbbrevConstraintExact(e))));
+  }
+
+  case t_tuple {
+    ty =: T_Tuple(tys);
+    INDEX(i, tys: rename_ty_eqs(tenv, eqs, tys[i]) -> new_tys[i]);
+    --
+    T_Tuple(new_tys);
+  }
+
+  case other {
+    ast_label(ty) not_in make_set(label_T_Bits, label_T_Int, label_T_Tuple);
+    --
+    ty;
+  }
+;
 
 typing function subst_expr_normalize(tenv: static_envs, eqs: list0((Identifier, expr)), e: expr) ->
          (new_e: expr)
@@ -5145,7 +10188,12 @@ typing function subst_expr_normalize(tenv: static_envs, eqs: list0((Identifier, 
   the result, yielding the expression {new_e}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  subst_expr(tenv, eqs, e) -> e1;
+  normalize(tenv, e1) -> new_e;
+  --
+  new_e;
+;
 
 typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)), e: expr) ->
          (new_e: expr)
@@ -5156,7 +10204,153 @@ typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)),
   in {substs}, yielding the expression {new_e}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case e_var_in_substs {
+    e =: E_Var(s);
+    assoc_opt(substs, s) =: some(new_e);
+    --
+    new_e;
+  }
+
+  case e_var_not_in_substs {
+    e =: E_Var(s);
+    assoc_opt(substs, s) = None;
+    --
+    e;
+  }
+
+  case e_unop {
+    e =: E_Unop(op, e1);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_Unop(op, e1');
+  }
+
+  case e_binop {
+    e =: E_Binop(op, e1, e2);
+    subst_expr(tenv, substs, e1) -> e1';
+    subst_expr(tenv, substs, e2) -> e2';
+    --
+    E_Binop(op, e1', e2');
+  }
+
+  case e_cond {
+    e =: E_Cond(e1, e2, e3);
+    subst_expr(tenv, substs, e1) -> e1';
+    subst_expr(tenv, substs, e2) -> e2';
+    subst_expr(tenv, substs, e3) -> e3';
+    --
+    E_Cond(e1', e2', e3');
+  }
+
+  case e_call {
+    e =: E_Call(call);
+    args := call.call_args;
+    INDEX(i, args: subst_expr(tenv, substs, args[i]) -> args'[i]);
+    params := call.params;
+    INDEX(i, params: subst_expr(tenv, substs, params[i]) -> params'[i]);
+    call' := call(call_args: args', params: params');
+    --
+    E_Call(call');
+  }
+
+  case e_getarray {
+    e =: E_GetArray(e1, e2);
+    subst_expr(tenv, substs, e1) -> e1';
+    subst_expr(tenv, substs, e2) -> e2';
+    --
+    E_GetArray(e1', e2');
+  }
+
+  case e_getenumarray {
+    e =: E_GetEnumArray(e1, e2);
+    subst_expr(tenv, substs, e1) -> e1';
+    subst_expr(tenv, substs, e2) -> e2';
+    --
+    E_GetEnumArray(e1', e2');
+  }
+
+  case e_getfield {
+    e =: E_GetField(e1, field);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_GetField(e1', field);
+  }
+
+  case e_getfields {
+    e =: E_GetFields(e1, fields);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_GetFields(e1', fields);
+  }
+
+  case e_getitem {
+    e =: E_GetItem(e1, i);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_GetItem(e1', i);
+  }
+
+  case e_pattern {
+    e =: E_Pattern(e1, pat);
+    subst_expr(tenv, substs, e1) -> e1';
+    // TODO: shouldn't we also transform pat?
+    --
+    E_Pattern(e1', pat);
+  }
+
+  case e_record {
+    e =: E_Record(ty, fields);
+    fields =: list_combine(field_names, field_exprs);
+    ( INDEX(i, field_exprs: subst_expr(tenv, substs, field_exprs[i]) -> field_exprs'[i]) )
+    { ([_]) } ;
+    fields' := list_combine(field_names, field_exprs');
+    --
+    E_Record(ty, fields');
+  }
+
+  case e_slice {
+    e =: E_Slice(e1, slices);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_Slice(e1', slices);
+  }
+
+  case e_tuple {
+    e =: E_Tuple(es);
+    INDEX(i, es: subst_expr(tenv, substs, es[i]) -> es'[i]);
+    --
+    E_Tuple(match_non_empty_list(es'));
+  }
+
+  case e_array {
+    e =: E_Array[length: length, array_value: value];
+    subst_expr(tenv, substs, length) -> length';
+    subst_expr(tenv, substs, value) -> value';
+    --
+    E_Array[length: length', array_value: value'];
+  }
+
+  case e_enumarray {
+    e =: E_EnumArray[enum: enum_id, labels: labels, enum_array_value: value];
+    subst_expr(tenv, substs, value) -> value';
+    --
+    E_EnumArray[enum: enum_id, labels: labels, enum_array_value: value'];
+  }
+
+  case e_atc {
+    e =: E_ATC(e1, t);
+    subst_expr(tenv, substs, e1) -> e1';
+    --
+    E_ATC(e1', t);
+  }
+
+  case e_literal_arbitrary {
+    ast_label(e) in make_set (label_E_Literal, label_E_Arbitrary);
+    --
+    e;
+  }
+;
 
 typing function subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr)), c: int_constraint) ->
          (new_c: int_constraint)
@@ -5168,10 +10362,25 @@ typing function subst_constraint(tenv: static_envs, eqs: list0((Identifier, expr
   the result, yielding the integer constraint {new_c}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    subst_expr_normalize(tenv, eqs, e) -> new_e;
+    --
+    Constraint_Exact(new_e);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    subst_expr_normalize(tenv, eqs, e1) -> e1';
+    subst_expr_normalize(tenv, eqs, e2) -> e2';
+    --
+    Constraint_Range(e1', e2');
+  }
+;
 
 typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Identifier, ty)), arg_types: list0(ty), eqs: list0((Identifier, expr))) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks that the types {arg_types} \typesatisfyterm\
   the types of the corresponding formal arguments
@@ -5179,7 +10388,24 @@ typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Iden
   their corresponding arguments as per {eqs} and results
   in a \typingerrorterm{} otherwise.",
   prose_application = "",
-};
+} =
+  case empty {
+    func_sig_args = empty_list;
+    arg_types = empty_list;
+    --
+    True;
+  }
+
+  case non_empty {
+    func_sig_args =: match_cons((_, ty_decl), func_sig_args1);
+    arg_types =: match_cons(ty_actual, arg_types1);
+    rename_ty_eqs(tenv, eqs, ty_decl) -> ty_decl1;
+    check_type_satisfies(tenv, ty_actual, ty_decl1) -> True;
+    check_args_typesat(tenv, func_sig_args1, arg_types1, eqs) -> True;
+    --
+    True;
+  }
+;
 
 typing relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, func_sig_ret_ty_opt: option(ty), eqs: list0((Identifier, expr))) ->
          (ret_ty_opt: option(ty)) | type_error
@@ -5191,7 +10417,30 @@ typing relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, f
   {ret_ty_opt}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case function_or_getter {
+    call_type in make_set(ST_Function, ST_Getter);
+    func_sig_ret_ty_opt =: some(ty);
+    rename_ty_eqs(tenv, eqs, ty) -> ty1;
+    --
+    some(ty1);
+  }
+
+  case procedure_or_setter {
+    call_type in make_set(ST_Procedure, ST_Setter);
+    func_sig_ret_ty_opt = None;
+    --
+    None;
+  }
+
+  case ret_type_mismatch {
+    not((call_type in make_set(ST_Procedure, ST_Setter)) <=> (func_sig_ret_ty_opt = None))
+    { [_] };
+    --
+    TypeError(TE_BC)
+    { [_] };
+  }
+;
 
 typing function subprogram_for_signature(tenv: static_envs, name: Strings, caller_arg_types: list0(ty), call_type: subprogram_type) ->
          (name': Strings, callee: func, ses: powerset(TSideEffect)) | type_error
@@ -5199,26 +10448,41 @@ typing function subprogram_for_signature(tenv: static_envs, name: Strings, calle
   "looks up the \staticenvironmentterm{} {tenv} for a
   subprogram associated with {name}, the list of
   argument types {caller_arg_types}, and a subprogram
-  type matching {call_type}, and determines which one of
-  the following cases holds:
-  \begin{enumerate}
-  \item there is no declared subprogram that matches {name}, {caller_arg_types}, \\ and {call_type};
-  \item there is exactly one subprogram that matches {name}, {caller_arg_types}, \\ and {call_type};
-  \end{enumerate}
-  If more than one subprogram that matches {name} and
-  {caller_arg_types}, this is detected by the rule
-  \TypingRuleRef{DeclareSubprograms}, which invokes the
-  rule \\ \TypingRuleRef{DeclareOneFunc}, which invokes
-  the rule \TypingRuleRef{AddNewFunc}, which results in
-  a \typingerrorterm{}.",
+  type matching {call_type}.",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case undefined {
+    tenv.static_envs_G.overloaded_subprograms(name) = bot;
+    --
+    TypeError(TE_UI)
+    { [_] };
+  }
+
+  case no_candidates {
+    tenv.static_envs_G.overloaded_subprograms(name) =: candidates;
+    filter_call_candidates(tenv, caller_arg_types, call_type, candidates) -> matches;
+    matches = empty_list;
+    --
+    TypeError(TE_BC)
+    { [_] };
+  }
+
+  case one_candidate {
+    tenv.static_envs_G.overloaded_subprograms(name) =: candidates;
+    filter_call_candidates(tenv, caller_arg_types, call_type, candidates) -> matches;
+    matches =: match_singleton_list((name', callee));
+    tenv.static_envs_G.subprogram(name') =: (_, ses);
+    --
+    (name', callee, ses)
+    { [_] };
+  }
+;
 
 typing function filter_call_candidates(tenv: static_envs, formal_types: list0(ty), call_type: subprogram_type, candidates: powerset(Strings)) ->
          (matches: list0((Strings, func)))
 {
-  "iterates over the list of unique subprogram names in
+  "iterates over the set of subprogram names in
   {candidates} and checks whether their lists of
   arguments clash with the types in {formal_types} and
   their subprogram types match {call_type} in {tenv}.
@@ -5227,17 +10491,48 @@ typing function filter_call_candidates(tenv: static_envs, formal_types: list0(ty
   arguments clash and subprogram types match in
   {candidates}. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case no_candidates {
+    candidates = empty_set;
+    --
+    empty_list;
+  }
 
-typing function call_type_matches(func_def: func, call_type: subprogram_type) ->
+  case candidates_exist {
+    candidates =: disjoint_union(match_set(name), remaining_candidates);
+    tenv.static_envs_G.subprogram(name) =: (func_def, _);
+    has_arg_clash(tenv, formal_types, func_def.args) -> b1;
+    call_type_matches(func_def, call_type) -> b2;
+    filter_call_candidates(tenv, formal_types, call_type, remaining_candidates) -> matches1
+    { ([_], _) };
+    matches := if_then_else(b1 && b2, concat(make_singleton_list((name, func_def)), matches1), matches1);
+    --
+    matches;
+  }
+;
+
+typing function call_type_matches(func: func, call_type: subprogram_type) ->
          (b: Bool)
 {
-  "checks whether a function definition {func_def} is
+  "checks whether a function definition {func} is
   compatible with the subprogram type expected by a
   function call, {call_type}, yielding the result in
   {b}.",
   prose_application = "",
-};
+} =
+  case getter_func {
+    func.func_subprogram_type = ST_Getter;
+    call_type = ST_Function;
+    --
+    True;
+  }
+
+  case equal {
+    (func.func_subprogram_type != ST_Getter) || (call_type != ST_Function);
+    --
+    func.func_subprogram_type = call_type;
+  }
+;
 
 typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((Identifier, ty))) ->
          (b: Bool) | type_error
@@ -5247,7 +10542,13 @@ typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((
   {args} in {tenv}, yielding the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  bool_transition(list_len(f_tys) = list_len(args)) -> True | False;
+  args =: list_combine(arg_names, arg_tys);
+  INDEX(i, f_tys: type_clashes(tenv, f_tys[i], arg_tys[i]) -> clashes[i]);
+  --
+  list_or(clashes);
+;
 
 typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
          (b: Bool) | type_error
@@ -5256,7 +10557,63 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
   with a type {s} in environment {tenv}, returning the
   result {b}. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case subtype {
+    is_subtype(tenv, s, t) || is_subtype(tenv, t, s);
+    --
+    True;
+  }
+
+  case no_subtype {
+    is_subtype(tenv, s, t) -> False;
+    is_subtype(tenv, t, s) -> False;
+    get_structure(tenv, t) -> t_struct;
+    get_structure(tenv, s) -> s_struct;
+    case simple {
+      ast_label(t_struct) = ast_label(s_struct);
+      ast_label(t_struct) in make_set(label_T_Bool, label_T_Int, label_T_Real, label_T_String, label_T_Bits);
+      --
+      True;
+    }
+
+    case t_enum {
+      t_struct =: T_Enum(labels_t);
+      s_struct =: T_Enum(labels_s);
+      --
+      labels_t = labels_s;
+    }
+
+    case t_array {
+      t_struct =: T_Array(_, ty_t);
+      s_struct =: T_Array(_, ty_s);
+      type_clashes(tenv, ty_t, ty_s) -> b;
+      --
+      b;
+    }
+
+    case t_tuple {
+      t_struct =: T_Tuple(ts_t);
+      s_struct =: T_Tuple(ts_s);
+      bool_transition(list_len(ts_t) = list_len(ts_s)) -> True | False;
+      INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
+      --
+      list_and(clashes);
+    }
+
+    case otherwise_different_labels {
+      ast_label(t_struct) != ast_label(s_struct);
+      --
+      False;
+    }
+
+    case otherwise_structured {
+      ast_label(t_struct) = ast_label(s_struct);
+      ast_label(t_struct) in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+      --
+      False;
+    }
+  }
+;
 
 typing relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
          (typed_exprs: list0((ty, expr, powerset(TSideEffect)))) | type_error
@@ -5266,7 +10623,21 @@ typing relation annotate_exprs(tenv: static_envs, exprs: list0(expr)) ->
   each consisting of a type, an annotated expression,
   and a \sideeffectsetterm. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case empty {
+    exprs = empty_list;
+    --
+    empty_list;
+  }
+
+  case non_empty {
+    exprs =: match_cons(e, exprs1);
+    annotate_expr(tenv, e) -> typed_expr;
+    annotate_exprs(tenv, exprs1) -> typed_exprs1;
+    --
+    cons(typed_expr, typed_exprs1);
+  }
+;
 
 semantics relation eval_call(env: envs, name: Identifier, params: list0(expr), args: list0(expr)) ->
     ( list0((native_value, XGraphs)), new_env: envs)
@@ -5280,14 +10651,44 @@ semantics relation eval_call(env: envs, name: Identifier, params: list0(expr), a
                         and a new environment. \ProseOtherwiseAbnormal",
  prose_application = "",
   math_layout = [_,_],
-};
+} =
+  eval_expr_list_m(env, params) -> ResultExprListM(vparams, env1)
+  { [_] };
+  eval_expr_list_m(env1, args) -> ResultExprListM(vargs, env2);
+  env2 =: (tenv, denv2);
+  incr_pending_calls(denv2.dynamic_envs_G, name) -> genv;
+  env2' := (tenv, [dynamic_envs_G: genv, dynamic_envs_L: empty_denv.dynamic_envs_L]);
+  case normal {
+    eval_subprogram(env2', name, vparams, vargs) -> ResultCall((values_read, global), g)
+    { [_] };
+    ( INDEX(i, values_read: read_value_from(values_read[i]) -> ms2[i]) )
+    { ([_]) };
+    decr_pending_calls(global, name) -> genv2;
+    new_denv := denv2(dynamic_envs_G: genv2);
+    new_env := (tenv, new_denv);
+    --
+    (ms2, new_env);
+  }
+
+  case throwing {
+    eval_subprogram(env2', name, vparams, vargs) -> Throwing(v, t, g, env_throw)
+    { [_] };
+    env_throw =: (tenv_sub, denv_throw);
+    vglobal := denv_throw.dynamic_envs_G;
+    decr_pending_calls(vglobal, name) -> genv2;
+    new_denv := denv2(dynamic_envs_G: genv2);
+    new_env := (tenv, new_denv);
+    --
+    Throwing(v, t, g, new_env);
+  }
+;
 
 semantics relation eval_subprogram(
   env: envs,
   name: Identifier,
   params: list0((native_value, XGraphs)),
   actual_args: list0((native_value, XGraphs))) ->
-  | ResultCall((list0(value_read_from), XGraphs), new_env: envs)
+  | ResultCall((list0(value_read_from), new_genv: global_dynamic_envs), XGraphs)
   | TThrowing | TDynError | TDiverging
 {
    prose_description = "evaluates the subprogram named {name} in the
@@ -5298,13 +10699,44 @@ semantics relation eval_subprogram(
                         configuration. In the case of a
                         \Prosenormalconfiguration{}, it consists of a list of
                         pairs with a value and an identifier, and a new
-                        environment {new_env}. The values represent values
+                        environment {new_genv}. The values represent values
                         returned by the subprogram call and the identifiers
                         are used in generating execution graph constraints
                         for the returned values.",
  prose_application = "",
   math_layout = [_,_],
-};
+} =
+  env =: (tenv, denv);
+  tenv.static_envs_G.subprogram(name) =: (func_sig, _);
+  func_sig =:
+    [
+      args: args,
+      parameters: parameters,
+      func_body: func_body,
+      recurse_limit: recurse_limit
+    ];
+  env1 := (tenv, denv(dynamic_envs_L: empty_denv.dynamic_envs_L));
+  check_recurse_limit(env1, name, recurse_limit) -> g1;
+  args =: list_combine(arg_names, arg_types);
+  assign_args((env1, empty_graph), arg_names, actual_args) -> (env2, g2);
+  parameters =: list_combine(param_names, param_types);
+  assign_args((env2, g2), param_names, params) -> (env3, g3);
+  case returning {
+    eval_stmt(env3, func_body) -> Returning((vs, body_g), body_env);
+    match_func_res(Returning((vs, body_g), body_env)) -> ResultCall((res_vs, new_genv), res_g)
+    { [_] };
+    new_g := ordered_data(g1, ordered_po(g2, g3));
+  }
+  case continuing {
+    eval_stmt(env3, func_body) -> Continuing(body_g, body_env);
+    match_func_res(Continuing(body_g, body_env)) -> ResultCall((res_vs, new_genv), res_g)
+    { [_] };
+    new_g := ordered_data(g1, ordered_po(g2, g3));
+  }
+  --
+  ResultCall((res_vs, new_genv), new_g)
+  { [_] };
+;
 
 semantics relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier), actuals: list0((native_value, XGraphs))) -> (new_env: envs, new_g: XGraphs)
 {
@@ -5313,10 +10745,26 @@ semantics relation assign_args((env: envs, g1: XGraphs), ids: list0(Identifier),
                         given by {actuals} to the identifiers given by {ids},
                         yielding the updated pair ({new_env}, {new_g}).",
  prose_application = "",
-};
+} =
+  case empty {
+    ids = empty_list;
+    actuals = empty_list;
+    --
+    (env, g1);
+  }
+
+  case non_empty {
+    ids =: match_cons(x, ids1);
+    actuals =: match_cons(vm, actuals1);
+    declare_local_identifier_mm(env, x, vm) -> (env1, g2);
+    assign_args((env1, ordered_po(g1, g2)), ids1, actuals1) -> (new_env, new_g);
+    --
+    (new_env, new_g);
+  }
+;
 
 semantics relation match_func_res(C: TContinuingOrReturning) ->
-    ResultCall(vms2: (list0(value_read_from), XGraphs), new_env: envs)
+    ResultCall(vms2: (list0(value_read_from), new_gdenv: global_dynamic_envs), XGraphs)
 {
    prose_description = "converts continuing configurations and returning
                         configurations into corresponding normal
@@ -5327,21 +10775,25 @@ semantics relation match_func_res(C: TContinuingOrReturning) ->
 } =
   case continuing {
     C =: Continuing(g, env);
+    env =: (tenv, denv);
     --
-    ResultCall((empty_list, g), env);
+    ResultCall((empty_list, denv.dynamic_envs_G), g);
   }
 
   case returning {
     C =: Returning((xs, _), ret_env);
+    ret_env =: (tenv, ret_denv);
     ids := list_map(i, indices(xs), numbered_identifier(return_var_prefix, (i - one)));
     vs := list_combine(xs, ids);
     --
-    ResultCall((vs, empty_graph), ret_env);
+    ResultCall((vs, ret_denv.dynamic_envs_G), empty_graph);
   }
 ;
 
+// REVIEW: signature changed to allow divergence.
+// Previous: semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) -> (g: XGraphs) | TDynError
 semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt: option(expr)) ->
-         (g: XGraphs) | TDynError
+         (g: XGraphs) | TDynError | TDiverging
 {
   "checks whether the value in the optional expression
   {e_limit_opt} has reached the limit associated with
@@ -5351,15 +10803,44 @@ semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt:
   \DynamicErrorConfigurationTerm{} indicating that the
   recursion limit has been reached.",
   prose_application = "",
-};
+} =
+  case none {
+    eval_limit(env, e_limit_opt) -> (None, _);
+    --
+    empty_graph;
+  }
 
-semantics relation read_value_from(value_read_from) -> (native_value, XGraphs)
+  case some_ok {
+    eval_limit(env, e_limit_opt) -> (some(limit), g);
+    env =: (tenv, denv);
+    get_pending_calls(denv, name) -> pending;
+    pending < limit;
+    --
+    g;
+  }
+
+  case limit_exceeded {
+    eval_limit(env, e_limit_opt) -> (some(limit), g);
+    env =: (tenv, denv);
+    get_pending_calls(denv, name) -> pending;
+    pending >= limit;
+    --
+    DynamicError(DE_LE);
+  }
+;
+
+semantics relation read_value_from(vrf: value_read_from) -> (native_value, XGraphs)
 {
   "generates an execution graph for reading the given
   value to a variable given by the identifier, and pairs
   it with the given value.",
   prose_application = "",
-};
+} =
+  vrf =: (v, id);
+  read_identifier(id, v) -> g;
+  --
+  (v, g);
+;
 
 //////////////////////////////////////////////////
 // Relations for Subprogram Declarations
@@ -5374,10 +10855,15 @@ typing relation annotate_and_declare_func(genv: global_static_envs, func_sig: fu
     \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_func_sig(genv, func_sig) -> (tenv1, func_sig1, ses1);
+  declare_one_func(tenv1, func_sig1, ses1) -> (new_tenv, new_func_sig);
+  --
+  (new_tenv, new_func_sig, ses1);
+;
 
 typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
-         (new_tenv: static_envs, new_func_sig: func, ses: TSideEffect) | type_error
+         (new_tenv: static_envs, new_func_sig: func, ses: powerset(TSideEffect)) | type_error
 {
   "annotates the signature of a function definition
   {func_sig} in the \globalstaticenvironmentterm{}
@@ -5387,36 +10873,117 @@ typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  with_empty_local(genv) -> tenv;
+  annotate_limit_expr(tenv, func_sig.recurse_limit) -> (rec_limit, ses_limit);
+  annotate_params(tenv, func_sig.parameters, (tenv, empty_list)) ->
+    (tenv_with_params, ses_with_params_raw, params)
+  { [_] };
+  ses_with_params := union(ses_limit, ses_with_params_raw);
+  check_param_decls(tenv, func_sig) -> True;
+  annotate_args(
+    tenv_with_params,
+    func_sig.args,
+    (tenv_with_params, empty_list, ses_with_params)
+  ) -> (tenv_with_args, args, ses_with_args)
+  { [[_], _] };
+  annotate_return_type(
+    tenv_with_args,
+    tenv_with_params,
+    func_sig.return_type,
+    ses_with_args
+  ) -> (new_tenv, return_type, ses_with_return)
+  { [[_], _]};
+  ses_list := list_set(ses_with_return);
+  ses_list_no_locals := list_filter(se, ses_list, not(se =: LocalEffect(_)));
+  ses' := list_to_set(ses_list_no_locals);
+  check_subprogram_purity(func_sig.qualifier, ses') -> True;
+  ses_for_subprogram(func_sig.qualifier) -> ses;
+  new_func_sig := func_sig(
+    parameters: params,
+    args: args,
+    return_type: return_type,
+    recurse_limit: rec_limit
+  );
+  --
+  (new_tenv, new_func_sig, ses);
+;
 
-typing relation annotate_params(tenv: static_envs, params: list0((Identifier, option(ty))), (new_tenv: static_envs, acc: list0((Identifier, ty)))) ->
-         (tenv_with_params: static_envs, params1: Identifier, ty) | type_error
+typing relation annotate_params(
+  tenv: static_envs,
+  params: list0((Identifier, option(ty))),
+  (new_tenv: static_envs, acc: list0((Identifier, option(ty))))) ->
+         (tenv_with_params: static_envs,
+         ses: powerset(TSideEffect),
+         params1: list0((Identifier, option(ty)))) | type_error
 {
   "annotates each parameter in {params} with respect to
   {tenv}, and declares it in environment {new_tenv}. It
-  returns the updated environment {tenv_with_params} and
+  returns the updated environment {tenv_with_params},
+  the inferred \sideeffectsetterm{}, and
   the annotated parameters {params1}, together with any
   annotated parameters already in the accumulator {acc}.
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    params = empty_list;
+    --
+    (new_tenv, empty_set, acc);
+  }
+
+  case non_empty {
+    params =: match_cons((x, ty_opt), params');
+    annotate_one_param(tenv, new_tenv, (x, ty_opt)) -> (new_tenv', ty, ses1)
+    { [_] };
+    acc' := concat(acc, match_singleton_list((x, some(ty))));
+    annotate_params(tenv, params', (new_tenv', acc')) -> (tenv_with_params, ses2, params2)
+    { [_] };
+    ses := union(ses1, ses2);
+    --
+    (tenv_with_params, ses, params2)
+    { [_] };
+  }
+;
 
 typing relation annotate_one_param(
     tenv: static_envs,
     new_tenv: static_envs,
     (x: Identifier, ty_opt: option(ty))) ->
-    (new_tenv': static_envs, ty: ty) | type_error
+    (new_tenv': static_envs, ty: ty, ses: powerset(TSideEffect)) | type_error
 {
    prose_description = "annotates the parameter given by {x} and the
                         \optionalterm{} type {ty_opt} with respect to {tenv} and
                         then declares the parameter {x} in environment
-                        {new_tenv}. The updated environment {new_tenv'} and
-                        annotated parameter type {ty} are returned.
+                        {new_tenv}. The updated environment {new_tenv'},
+                        annotated parameter type {ty}, and its \sideeffectsetterm{} are returned.
                         \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case type_parameterized {
+    ty_opt = None || (ty_opt =: some(unconstrained_integer));
+    ty' := T_Int(Parameterized(x));
+    annotate_type(False, tenv, ty') -> (ty, ses_ty);
+    check_var_not_in_env(new_tenv, x) -> True;
+    check_constrained_integer(new_tenv, ty) -> True;
+    add_local(new_tenv, x, ty, LDK_Let) -> new_tenv';
+    --
+    (new_tenv', ty, ses_ty);
+  }
+
+  case type_annotated {
+    ty_opt =: some(ty');
+    ty' != unconstrained_integer;
+    annotate_type(False, tenv, ty') -> (ty, ses_ty);
+    check_var_not_in_env(new_tenv, x) -> True;
+    check_constrained_integer(new_tenv, ty) -> True;
+    add_local(new_tenv, x, ty, LDK_Let) -> new_tenv';
+    --
+    (new_tenv', ty, ses_ty);
+  }
+;
 
 typing relation check_param_decls(tenv: static_envs, func_sig: func) ->
          (b: Bool) | type_error
@@ -5424,7 +10991,13 @@ typing relation check_param_decls(tenv: static_envs, func_sig: func) ->
   "checks the validity of the parameters declared in
   {func_sig}.",
   prose_application = "",
-};
+} =
+  extract_parameters(tenv, func_sig) -> inferred_parameters;
+  func_sig.parameters =: list_combine(declared_parameters, param_types);
+  te_check(inferred_parameters = declared_parameters, TE_BSPD) -> True;
+  --
+  True;
+;
 
 typing function extract_parameters(tenv: static_envs, func_sig: func) ->
          (unique_parameters: list0(Identifier)) | type_error
@@ -5434,7 +11007,57 @@ typing function extract_parameters(tenv: static_envs, func_sig: func) ->
     in the \staticenvironmentterm{} {tenv}.
     \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  func_sig_types(func_sig) -> tys;
+  case empty {
+    tys = empty_list;
+    --
+    empty_list;
+  }
+
+  case non_empty {
+    tys != empty_list;
+    INDEX(i, tys: paramsofty(tenv, tys[i]) -> params_lists[i]);
+    all_parameters := list_flatten(params_lists);
+    --
+    unique_list(all_parameters);
+  }
+;
+
+typing function unique_list(ids: list0(Identifier)) ->
+         (unique_ids: list0(Identifier))
+{
+  "removes duplicate identifiers from {ids}, preserving
+  their first occurrence order.",
+  prose_application = "",
+} =
+  unique_list_acc(ids, empty_set) -> unique_ids;
+  --
+  unique_ids;
+;
+
+typing function unique_list_acc(ids: list0(Identifier), seen: powerset(Identifier)) ->
+         (unique_ids: list0(Identifier))
+{
+  "removes duplicate identifiers from {ids}, using
+  {seen} to track previously encountered identifiers.",
+  prose_application = "",
+} =
+  case empty {
+    ids = empty_list;
+    --
+    empty_list;
+  }
+
+  case non_empty {
+    ids =: match_cons(id, ids1);
+    already_seen := member(id, seen);
+    unique_list_acc(ids1, if_then_else(already_seen, seen, union(seen, make_set(id)))) -> rest;
+    unique_ids := if_then_else(already_seen, rest, concat(match_singleton_list(id), rest));
+    --
+    unique_ids;
+  }
+;
 
 typing function func_sig_types(func_sig: func) ->
          (tys: list0(ty))
@@ -5444,7 +11067,16 @@ typing function func_sig_types(func_sig: func) ->
   first (if any), followed by argument types
   left-to-right.",
   prose_application = "",
-};
+} =
+  return_type_lst :=
+    if func_sig.return_type =: some(ret_ty)
+    then make_list(ret_ty)
+    else empty_list
+    { (_, [_]) };
+  func_sig.args =: list_combine(arg_names, arg_types);
+  --
+  concat(return_type_lst, arg_types);
+;
 
 typing function paramsofty(tenv: static_envs, ty: ty) ->
          (ids: list0(Identifier)) | type_error
@@ -5454,7 +11086,44 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
   signature. \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \paramsofty
-};
+} =
+  case t_bits {
+    ty =: T_Bits(e, _);
+    params_of_expr(tenv, e) -> ids;
+    --
+    ids;
+  }
+
+  case t_tuple {
+    ty =: T_Tuple(tys);
+    INDEX(i, tys: paramsofty(tenv, tys[i]) -> ids_lists[i]);
+    --
+    list_flatten(ids_lists);
+  }
+
+  case t_int_wellconstrained {
+    ty =: T_Int(WellConstrained(cs));
+    INDEX(i, cs: params_of_constraint(tenv, cs[i]) -> ids_lists[i]);
+    --
+    list_flatten(ids_lists);
+  }
+
+  case other {
+    or(
+      ast_label(ty) in make_set(label_T_Real, label_T_String, label_T_Bool, label_T_Array, label_T_Named),
+      is_unconstrained_integer(ty),
+      is_parameterized_integer(ty)
+    ) { [_] };
+    --
+    empty_list;
+  }
+
+  case error {
+    ast_label(ty) = label_T_Enum || is_structured(ty);
+    --
+    TypeError(TE_BSPD);
+  }
+;
 
 typing function params_of_expr(tenv: static_envs, e: expr) ->
          (ids: list0(Identifier)) | type_error
@@ -5466,7 +11135,52 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
   signature. \ProseOtherwiseTypeError",
   prose_application = "",
   math_macro = \paramsofexpr
-};
+} =
+  case e_var {
+    e =: E_Var(x);
+    ids := if_then_else(is_undefined(tenv, x), match_singleton_list(x), empty_list);
+    --
+    ids;
+  }
+
+  case e_unop {
+    e =: E_Unop(_, e1);
+    params_of_expr(tenv, e1) -> ids;
+    --
+    ids;
+  }
+
+  case e_binop {
+    e =: E_Binop(_, e1, e2);
+    params_of_expr(tenv, e1) -> ids1;
+    params_of_expr(tenv, e2) -> ids2;
+    --
+    concat(ids1, ids2);
+  }
+
+  case e_tuple {
+    e =: E_Tuple(es);
+    es =: make_singleton_list(e1);
+    params_of_expr(tenv, e1) -> ids;
+    --
+    ids;
+  }
+
+  case e_cond {
+    e =: E_Cond(e0, e1, e2);
+    params_of_expr(tenv, e0) -> ids0;
+    params_of_expr(tenv, e1) -> ids1;
+    params_of_expr(tenv, e2) -> ids2;
+    --
+    concat(ids0, concat(ids1, ids2));
+  }
+
+  case other {
+    ast_label(e) not_in make_set(label_E_Var, label_E_Unop, label_E_Binop, label_E_Tuple);
+    --
+    TypeError(TE_BSPD);
+  }
+;
 
 typing function params_of_constraint(tenv: static_envs, c: int_constraint) ->
          (ids: list0(Identifier))
@@ -5477,7 +11191,22 @@ typing function params_of_constraint(tenv: static_envs, c: int_constraint) ->
   signature.",
   prose_application = "",
   math_macro = \paramsofconstraint
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    params_of_expr(tenv, e) -> ids;
+    --
+    ids;
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    params_of_expr(tenv, e1) -> ids1;
+    params_of_expr(tenv, e2) -> ids2;
+    --
+    concat(ids1, ids2);
+  }
+;
 
 typing relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), (new_tenv: static_envs, acc: list0((Identifier, ty)), ses_in: powerset(TSideEffect))) ->
          (tenv_with_args: static_envs, new_args: list0((Identifier, ty)), ses: powerset(TSideEffect)) | type_error
@@ -5491,7 +11220,26 @@ typing relation annotate_args(tenv: static_envs, args: list0((Identifier, ty)), 
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case empty {
+    args = empty_list;
+    --
+    (new_tenv, acc, ses_in)
+    { [_] };
+  }
+
+  case non_empty {
+    args =: match_cons((x, ty), args1);
+    annotate_one_arg(tenv, new_tenv, (x, ty)) -> (new_tenv1, ty', ses_ty);
+    acc' := concat(acc, match_singleton_list((x, ty')));
+    annotate_args(tenv, args1, (new_tenv1, acc', ses_in)) -> (tenv_with_args, new_args, ses1)
+    { [_] };
+    ses := union(ses_ty, ses1);
+    --
+    (tenv_with_args, new_args, ses)
+    { [_] };
+  }
+;
 
 typing relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: Identifier, ty: ty)) ->
          (new_tenv': static_envs, ty': ty, ses: powerset(TSideEffect)) | type_error
@@ -5504,10 +11252,22 @@ typing relation annotate_one_arg(tenv: static_envs, new_tenv: static_envs, (x: I
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_type(False, tenv, ty) -> (ty', ses);
+  check_var_not_in_env(new_tenv, x) -> True;
+  add_local(new_tenv, x, ty', LDK_Let) -> new_tenv';
+  --
+  (new_tenv', ty', ses);
+;
 
-typing relation annotate_return_type(tenv_with_params: static_envs, tenv_with_args: static_envs, return_type: option(ty), ses_in: powerset(TSideEffect)) ->
-         (new_tenv: static_envs, new_return_type: ty, ses: powerset(TSideEffect)) | type_error
+typing relation annotate_return_type(
+  tenv_with_params: static_envs,
+  tenv_with_args: static_envs,
+  return_type: option(ty),
+  ses_in: powerset(TSideEffect)) ->
+         (new_tenv: static_envs,
+         new_return_type: option(ty),
+         ses: powerset(TSideEffect)) | type_error
 {
   "annotates the \optionalterm{} return type {return_type} in
   the context of the \staticenvironmentterm{}
@@ -5520,7 +11280,26 @@ typing relation annotate_return_type(tenv_with_params: static_envs, tenv_with_ar
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case no_return_type {
+    return_type = None;
+    --
+    (tenv_with_args, None, ses_in)
+    { ([_], [_]) };
+  }
+
+  case has_return_type {
+    return_type =: some(ty);
+    annotate_type(False, tenv_with_params, ty) -> (ty', ses_ty);
+    new_return_type := some(ty');
+    new_lenv := tenv_with_args.static_envs_L(local_return_type: new_return_type);
+    new_tenv := tenv_with_args(static_envs_L: new_lenv);
+    ses := union(ses_in, ses_ty);
+    --
+    (new_tenv, new_return_type, ses)
+    { ([_], [_]) };
+  }
+;
 
 typing function check_subprogram_purity(qualifier: option(func_qualifier), ses: powerset(TSideEffect)) ->
          (b: Bool) | type_error
@@ -5530,7 +11309,27 @@ typing function check_subprogram_purity(qualifier: option(func_qualifier), ses: 
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case none_or_noreturn {
+    qualifier = None || qualifier = some(Noreturn);
+    --
+    True;
+  }
+
+  case some_pure {
+    qualifier = some(Pure);
+    te_check(ses_is_pure(ses), TE_SEV) -> True;
+    --
+    True;
+  }
+
+  case some_readonly {
+    qualifier = some(Readonly);
+    te_check(ses_is_readonly(ses), TE_SEV) -> True;
+    --
+    True;
+  }
+;
 
 typing relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig: powerset(TSideEffect)) ->
          (new_tenv: static_envs, new_func_sig: func) | type_error
@@ -5543,10 +11342,25 @@ typing relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig
     {new_tenv}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  func_sig =: [name: name, qualifier: qualifier, args: args, func_subprogram_type: subprogram_type];
+  add_new_func(tenv, name, qualifier, args, subprogram_type) -> (tenv1, name')
+  { [_] };
+  te_check(tenv1.static_envs_G.subprogram(name') = bot, TE_IAD) -> True;
+  new_func_sig := func_sig(name: name');
+  add_subprogram(tenv1, name', new_func_sig, ses_func_sig) -> new_tenv;
+  --
+  (new_tenv, new_func_sig)
+  { [_] };
+;
 
-typing function subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: subprogram_type, qualifier: func_qualifier, formal_types: list0(ty)) ->
-         (b: Bool) | type_error
+typing function subprogram_clash(
+  tenv: static_envs,
+  name: Strings,
+  subpgm_type: subprogram_type,
+  qualifier: option(func_qualifier),
+  formal_types: list0(ty)) ->
+    (b: Bool) | type_error
 {
   "checks whether the unique subprogram associated with
   {name} clashes with another subprogram that has
@@ -5555,7 +11369,17 @@ typing function subprogram_clash(tenv: static_envs, name: Strings, subpgm_type: 
   Boolean value in {b}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  tenv.static_envs_G.subprogram(name) =: (other_func_sig, _);
+  subprogram_types_clash(other_func_sig.func_subprogram_type, subpgm_type) -> subpgm_types_clash
+  { [_] };
+  qualifiers_differ := other_func_sig.qualifier != qualifier;
+  has_arg_clash(tenv, formal_types, other_func_sig.args) -> arg_types_clash
+  { [_] };
+  --
+  subpgm_types_clash && (qualifiers_differ || arg_types_clash)
+  { [_] };
+;
 
 typing function subprogram_types_clash(s1: subprogram_type, s2: subprogram_type) ->
          (b: Bool)
@@ -5563,9 +11387,18 @@ typing function subprogram_types_clash(s1: subprogram_type, s2: subprogram_type)
   "defines whether the subprogram types {s1} and {s2}
   clash, yielding the result in {b}.",
   prose_application = "",
-};
+} =
+  b := not((s1 = ST_Getter && s2 = ST_Setter) || (s1 = ST_Setter && s2 = ST_Getter));
+  --
+  b;
+;
 
-typing relation add_new_func(tenv: static_envs, name: Identifier, qualifier: option(func_qualifier), formals: list0(typed_identifier), subpgm_type: subprogram_type) ->
+typing relation add_new_func(
+  tenv: static_envs,
+  name: Identifier,
+  qualifier: option(func_qualifier),
+  formals: list0(typed_identifier),
+  subpgm_type: subprogram_type) ->
          (new_tenv: static_envs, new_name: Strings) | type_error
 {
   "ensures that the subprogram given by the identifier
@@ -5580,9 +11413,46 @@ typing relation add_new_func(tenv: static_envs, name: Identifier, qualifier: opt
   {new_name}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = ([_,_,_,_,_],_),
-};
+} =
+  case first_name {
+    tenv.static_envs_G.overloaded_subprograms(name) = bot;
+    updated_map := map_update(tenv.static_envs_G.overloaded_subprograms, name, make_set(name));
+    new_genv := tenv.static_envs_G(overloaded_subprograms : updated_map);
+    new_tenv := tenv(static_envs_G : new_genv);
+    --
+    (new_tenv, name)
+    { [_] };
+  }
 
-typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: powerset(TSideEffect)) ->
+  case name_exists {
+    tenv.static_envs_G.overloaded_subprograms(name) =: other_names;
+    k := cardinality(other_names);
+    new_name := numbered_identifier(name, k);
+    formals =: list_combine(formal_names, formal_types);
+    othernames_list := list_set(other_names);
+    ( INDEX(i, othernames_list:
+      subprogram_clash(tenv, othernames_list[i], subpgm_type, qualifier, formal_types) -> bs[i]
+    ) )
+    { ([_, ([_],_)]) };
+    te_check(list_and(bs), TE_BSPD) -> True;
+    ( updated_map := map_update(
+      tenv.static_envs_G.overloaded_subprograms,
+      name,
+      union(other_names, make_set(new_name))
+    ) )
+    { ([_]) };
+    new_genv := tenv.static_envs_G(overloaded_subprograms : updated_map);
+    new_tenv := tenv(static_envs_G : new_genv);
+    --
+    (new_tenv, new_name)
+    { [_] };
+  }
+;
+
+typing relation annotate_subprogram(
+  tenv: static_envs,
+  f: func,
+  ses_func_sig: powerset(TSideEffect)) ->
          (f': func, ses: powerset(TSideEffect)) | type_error
 {
   "annotates a subprogram {f} in an environment {tenv}
@@ -5591,36 +11461,195 @@ typing relation annotate_subprogram(tenv: static_envs, f: func, ses_func_sig: po
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_block(tenv, f.func_body) -> (new_body, ses_body);
+  check_control_flow(tenv, f, new_body) -> True;
+  f' := f(func_body: new_body);
+  ses_body_list := list_set(ses_body);
+  ses_body_list_no_locals := list_filter(se, ses_body_list, not(se =: LocalEffect(_)));
+  ses_body_no_locals := list_to_set(ses_body_list_no_locals);
+  ses' := union(ses_func_sig, ses_body_no_locals);
+  check_subprogram_purity(f.qualifier, ses') -> True;
+  ses_for_subprogram(f.qualifier) -> ses;
+  --
+  (f', ses);
+;
 
 typing function check_control_flow(tenv: static_envs, f: func, body: stmt) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the annotated body statement {body} of the
   function definition {f} obeys the control-flow
   requirements in the \staticenvironmentterm{} {tenv}.",
   prose_application = "",
-};
+} =
+  approx_stmt(tenv, body) -> abs_configs;
+  te_check(subseteq(abs_configs, allowed_abs_configs(f)), TE_BSPD) -> True;
+  --
+  True;
+;
 
 typing function allowed_abs_configs(f: func) ->
-         (abs_configs: powerset(constants_set(Abs_Continuing,Abs_Returning,Abs_Abnormal)))
+         (abs_configs: powerset(abstract_configuration))
 {
   "determines the set of \Proseabstractconfigurations{}
   allowed for the function definition {f}, yielding the
   result in {abs_configs}.",
   prose_application = "",
-  math_layout = [_,_],
-};
+} =
+  case noreturn {
+    f.qualifier = some(Noreturn);
+    --
+    make_set(Abs_Abnormal);
+  }
+
+  case returning_proc {
+    f.qualifier != some(Noreturn);
+    f.return_type = None;
+    --
+    make_set(Abs_Continuing, Abs_Returning, Abs_Abnormal);
+  }
+
+  case func {
+    f.qualifier != some(Noreturn);
+    f.return_type != None;
+    --
+    make_set(Abs_Returning, Abs_Abnormal);
+  }
+;
 
 typing function approx_stmt(tenv: static_envs, s: stmt) ->
-         (abs_configs: constants_set(Abs_Continuing,Abs_Returning,Abs_Abnormal))
+         (abs_configs: powerset(abstract_configuration))
 {
   "returns in {abs_configs} a superset of the set of
   \Proseabstractconfigurations{} (defined next), that an
   evaluation of {s} in any environment consisting of the
   \staticenvironmentterm{} {tenv} yields.",
   prose_application = "",
-};
+} =
+  case s_pass {
+    s = S_Pass;
+    --
+    make_set(Abs_Continuing);
+  }
+
+  case simple {
+    ast_label(s) in make_set(
+      label_S_Decl,
+      label_S_Assign,
+      laebl_S_Assert,
+      label_S_Print);
+    --
+    make_set(Abs_Continuing, Abs_Abnormal);
+  }
+
+  case s_unreachable {
+    s = S_Unreachable;
+    --
+    make_set(Abs_Abnormal);
+  }
+
+  case s_call {
+    s =: S_Call(call);
+    tenv.static_envs_G.subprogram(call.call_name) =: (f, _);
+    abs_configs := if_then_else(
+      f.qualifier = some(Noreturn),
+      make_set(Abs_Abnormal),
+      make_set(Abs_Continuing, Abs_Abnormal)
+    ) { (_, [_]) };
+    --
+    abs_configs;
+  }
+
+  case s_return {
+    s =: S_Return(_);
+    --
+    make_set(Abs_Returning, Abs_Abnormal);
+  }
+
+  case s_throw {
+    s =: S_Throw(_);
+    --
+    make_set(Abs_Abnormal);
+  }
+
+  case s_seq {
+    s =: S_Seq(s1, s2);
+    approx_stmt(tenv, s1) -> configs1;
+    approx_stmt(tenv, s2) -> configs2;
+    configs1_list := list_set(configs1);
+    config_sets :=
+      list_map(c, configs1_list,
+        if_then_else(c = Abs_Continuing, configs2, make_set(c))
+      )
+    { (_, (_, _, [_])) };
+    --
+    union_list(config_sets);
+  }
+
+  case s_repeat {
+    s =: S_Repeat(body, _, _);
+    approx_stmt(tenv, body) -> bodyconfigs;
+    abs_configs := union(bodyconfigs, make_set(Abs_Abnormal));
+    --
+    abs_configs;
+  }
+
+  case s_for {
+    s =: S_For[
+      index_name: _,
+      start_e: _,
+      dir: _,
+      end_e: _,
+      body: body,
+      limit: _
+    ];
+    approx_stmt(tenv, body) -> bodyconfigs;
+    abs_configs := union(bodyconfigs, make_set(Abs_Abnormal, Abs_Continuing));
+    --
+    abs_configs;
+  }
+
+  // TODO: merge with previous case when aslspec allows redefining body.
+  case s_while {
+    s =: S_While(_, _, body);
+    approx_stmt(tenv, body) -> bodyconfigs;
+    abs_configs := union(bodyconfigs, make_set(Abs_Abnormal, Abs_Continuing));
+    --
+    abs_configs;
+  }
+
+  case s_cond {
+    s =: S_Cond(_, s1, s2);
+    approx_stmt(tenv, s1) -> configs1;
+    approx_stmt(tenv, s2) -> configs2;
+    // BUGFIX: LaTeX uses vsone/vstwo in the union; use configs1/configs2 from approx_stmt.
+    abs_configs := union(make_set(Abs_Abnormal), configs1, configs2);
+    --
+    abs_configs;
+  }
+
+  case s_try_none {
+    s =: S_Try(body, catchers, None);
+    approx_stmt(tenv, body) -> bodyconfigs;
+    catchers =: list_combine_three(catch_pats, catch_tys, catch_stmts);
+    INDEX(i, catch_stmts: approx_stmt(tenv, catch_stmts[i]) -> catch_configs[i]);
+    abs_configs := union(bodyconfigs, union_list(catch_configs));
+    --
+    abs_configs;
+  }
+
+  case s_try_some {
+    s =: S_Try(body, catchers, some(otherwise_stmt));
+    approx_stmt(tenv, body) -> bodyconfigs;
+    approx_stmt(tenv, otherwise_stmt) -> otherwise_configs;
+    catchers =: list_combine_three(catch_pats, catch_tys, catch_stmts);
+    INDEX(i, catch_stmts: approx_stmt(tenv, catch_stmts[i]) -> catch_configs[i]);
+    abs_configs := union(bodyconfigs, otherwise_configs, union_list(catch_configs));
+    --
+    abs_configs;
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Symbolic Equivalence Testing
@@ -5633,7 +11662,20 @@ typing function normalize(tenv: static_envs, e: expr) ->
   \staticenvironmentterm{} {tenv}, yielding an
   expression {new_e}. \ProseOtherwiseTypeError",
   prose_application = "\hyperlink{relation-normalize}{simplifying} expression {e} in {tenv} yields {new_e}",
-};
+} =
+
+  case normalizable {
+    to_ir(tenv, e) -> some(p);
+    --
+    polynomial_to_expr(p);
+  }
+
+  case not_normalizable {
+    to_ir(tenv, e) -> None;
+    --
+    e;
+  }
+;
 
 typing function reduce_constraint(tenv: static_envs, c: int_constraint) ->
          (new_c: int_constraint)
@@ -5641,7 +11683,22 @@ typing function reduce_constraint(tenv: static_envs, c: int_constraint) ->
   "\symbolicallysimplifiesterm{} an integer constraint
   {c}, yielding the integer constraint {new_c}.",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    normalize(tenv, e) -> e';
+    --
+    Constraint_Exact(e');
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    normalize(tenv, e1) -> e1';
+    normalize(tenv, e2) -> e2';
+    --
+    Constraint_Range(e1', e2');
+  }
+;
 
 typing function reduce_constraints(tenv: static_envs, cs: list0(int_constraint)) ->
          (new_cs: list0(int_constraint))
@@ -5650,19 +11707,268 @@ typing function reduce_constraints(tenv: static_envs, cs: list0(int_constraint))
   constraints {cs}, yielding a list of integer
   constraints {new_cs}.",
   prose_application = "",
-};
+} =
+  INDEX(i, cs: reduce_constraint(tenv, cs[i]) -> new_cs[i]);
+  --
+  new_cs;
+;
 
 typing function to_ir(tenv: static_envs, e: expr) ->
-         (p: polynomial) | constants_set(CannotBeTransformed) | type_error
+         (p_opt: option(polynomial)) | type_error
 {
   "transforms a subset of ASL expressions into
   \symbolicexpressionsterm{}. If an ASL expression
   cannot be represented by a symbolic expression
   (because, for example, it contains operations that are
   not available in \symbolicexpressionsterm{}), the
-  special value $\CannotBeTransformed$ is returned.",
-  prose_application = "\hyperlink{relation-toir}{converting} expression {e} in {tenv} to symbolic form yields polynomial {p}",
+  result is $\None$.",
+  prose_application = "",
+} =
+  case literal_int {
+    e =: E_Literal(L_Int(i));
+    polynomial_of_int(i) -> p;
+    --
+    some(p);
+  }
+
+  case literal_other {
+    e =: E_Literal(v);
+    ast_label(v) != label_L_Int;
+    --
+    None;
+  }
+
+  case evar_constant_int {
+    e =: E_Var(s);
+    lookup_constant(tenv, s) -> some(L_Int(i));
+    polynomial_of_int(i) -> p;
+    --
+    some(p);
+  }
+
+  case evar_immutable_expr {
+    e =: E_Var(s);
+    lookup_constant(tenv, s) -> None;
+    lookup_immutable_expr(tenv, s) -> some(e');
+    to_ir(tenv, e') -> some(p) | None;
+    --
+    some(p);
+  }
+
+  case evar_exact_constraint {
+    e =: E_Var(s);
+    lookup_constant(tenv, s) -> None;
+    lookup_immutable_expr(tenv, s) -> None;
+    type_of(tenv, s) -> t;
+    make_anonymous(tenv, t) -> t1;
+    case int {
+      case exact {
+        ast_label(t1) = label_T_Int;
+        t1 =: T_Int(WellConstrained(make_singleton_list(Constraint_Exact(e1))));
+        to_ir(tenv, e1) -> p_opt;
+        --
+        p_opt;
+      }
+      case not_exact {
+        ast_label(t1) = label_T_Int;
+        not(t1 =: T_Int(WellConstrained(make_singleton_list(Constraint_Exact(_)))));
+        polynomial_of_var(s) -> p;
+        --
+        some(p);
+      }
+      case evar_non_int {
+        ast_label(t1) != label_T_Int;
+        --
+        None;
+      }
+    }
+  }
+
+  case ebinop_plus {
+    e =: E_Binop(ADD, e1, e2);
+    to_ir(tenv, e1) -> some(p1) | None;
+    to_ir(tenv, e2) -> some(p2) | None;
+    add_polynomials(p1, p2) -> p;
+    --
+    some(p);
+  }
+
+  case ebinop_minus {
+    e =: AbbrevEBinop(SUB, e1, e2);
+    e' := AbbrevEBinop(ADD, e1, E_Unop(NEG, e2));
+    to_ir(tenv, e') -> p_opt;
+    --
+    p_opt;
+  }
+
+  case ebinop_mul_div_left {
+    e =: AbbrevEBinop(MUL, AbbrevEBinop(DIV, e1, e2), e3);
+    to_ir(tenv, AbbrevEBinop(DIV, AbbrevEBinop(MUL, e1, e3), e2)) -> p_opt;
+    --
+    p_opt;
+  }
+
+  case ebinop_mul_div_right {
+    e =: E_Binop(MUL, e1, E_Binop(DIV, e2, e3));
+    not(is_div_binop(e1));
+    to_ir(tenv, AbbrevEBinop(DIV, AbbrevEBinop(MUL, e1, e2), e3)) -> p_opt;
+    --
+    p_opt;
+  }
+
+  case ebinop_mul {
+    e =: E_Binop(MUL, e1, e2);
+    is_div_binop(e1) -> False;
+    is_div_binop(e2) -> False;
+    to_ir(tenv, e1) -> some(p1) | None;
+    to_ir(tenv, e2) -> some(p2) | None;
+    mul_polynomials(p1, p2) -> p;
+    --
+    some(p);
+  }
+
+  case ebinop_div_int_denominator {
+    e =: E_Binop(DIV, e1, E_Literal(L_Int(i2)));
+    to_ir(tenv, e1) -> some(p1) | None;
+    f2 := fraction(one, i2);
+    scale_polynomial(p1, f2) -> p;
+    --
+    some(p);
+  }
+
+  case ebinop_div_monomial_denominator {
+    e =: E_Binop(DIV, e1, e2);
+    to_ir(tenv, e1) -> some(p1) | None;
+    to_ir(tenv, e2) -> some(p2) | None;
+    bindings(p2) =: match_singleton_list((m, factor));
+    polynomial_divide_by_term(p1, m, factor) -> p_opt;
+    --
+    p_opt;
+  }
+
+  case ebinop_div_non_monomial_denominator {
+    e =: E_Binop(DIV, e1, e2);
+    to_ir(tenv, e1) -> _;
+    to_ir(tenv, e2) -> some(p2) | None;
+    not(bindings(p2) =: match_singleton_list(_));
+    --
+    None;
+  }
+
+  case ebinop_shl_non_lint_exponent {
+    e =: E_Binop(SHL, _, e2);
+    not(e2 =: ELint(_));
+    --
+    None;
+  }
+
+  case ebinop_shl_neg_shift {
+    e =: E_Binop(SHL, _, E_Literal(L_Int(i2)));
+    i2 < zero;
+    --
+    None;
+  }
+
+  case ebinop_shl_okay {
+    e =: E_Binop(SHL, e1, E_Literal(L_Int(i2)));
+    to_ir(tenv, e1) -> some(p1) | None;
+    i2 >= zero;
+    f2 := as_rational(num_exponent(two, i2));
+    scale_polynomial(p1, f2) -> p;
+    --
+    some(p);
+  }
+
+  case ebinop_other_non_literals {
+    e =: E_Binop(op, e1, e2);
+    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    not(e1 =: E_Literal(_)) || not(e2 =: E_Literal(_));
+    --
+    None;
+  }
+
+  case ebinop_other_literals_non_int_result {
+    e =: E_Binop(op, E_Literal(v1), E_Literal(v2));
+    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    binop_literals(op, v1, v2) -> v;
+    ast_label(v) != label_L_Int;
+    --
+    None;
+  }
+
+  case ebinop_other_literals_int_result {
+    e =: E_Binop(op, E_Literal(v1), E_Literal(v2));
+    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    binop_literals(op, v1, v2) -> L_Int(k);
+    polynomial_of_int(k) -> p;
+    --
+    some(p);
+  }
+
+  case eunop_neg {
+    e =: E_Unop(NEG, e1);
+    to_ir(tenv, AbbrevEBinop(MUL, ELint(num_negate(one)), e1)) -> p_opt;
+    --
+    p_opt;
+  }
+
+  case eunop_other {
+    e =: E_Unop(op, _);
+    op != NEG;
+    --
+    None;
+  }
+
+  case atc {
+    e =: E_ATC(e', _);
+    to_ir(tenv, e') -> p_opt;
+    --
+    p_opt;
+  }
+
+  case other {
+    ast_label(e) not_in make_set(label_E_Literal, label_E_Var, label_E_Binop, label_E_Unop, label_E_ATC);
+    --
+    None;
+  }
+;
+
+typing function polynomial_of_int(z: Z) -> (p: polynomial)
+{
+  "the polynomial for the integer {z}.",
+  prose_application = "",
 };
+
+typing function polynomial_of_var(s: Identifier) -> (p: polynomial)
+{
+  "builds a polynomial for the variable {s}.",
+  prose_application = "",
+} =
+  m := map_update(bot, s, n_to_n_pos(one));
+  --
+  map_update(bot, m, as_rational(one));
+;
+
+typing function scale_polynomial(p1: polynomial, f: Q) -> (p: polynomial)
+{
+  "scales the coefficients of {p1} by {f}, which is assumed to be non-zero.",
+  prose_application = "",
+} =
+  bindings(p1) =: list_combine(ms, fs);
+  fs_scaled := list_map(f1, fs, f1 * f);
+  scaled_bindings := list_map(i, indices(ms), (ms[i], fs_scaled[i]));
+  --
+  bindings_to_map(scaled_bindings);
+;
+
+typing function is_div_binop(e: expr) -> (b: Bool)
+{
+  "tests whether {e} is a division binop expression.",
+  prose_application = "",
+} =
+  --
+  (e =: E_Binop(DIV, _, _));
+;
 
 typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
@@ -5672,7 +11978,20 @@ typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
   {tenv}. The result is given in {b} or a
   \typingerrorterm{}, if one is detected.",
   prose_application = "",
-};
+} =
+  case norm_true {
+    expr_equal_norm(tenv, e1, e2) -> True;
+    --
+    True;
+  }
+
+  case norm_false {
+    expr_equal_norm(tenv, e1, e2) -> False;
+    expr_equal_case(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+;
 
 typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
@@ -5686,7 +12005,24 @@ typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
   given in {b} or a \typingerrorterm{}, if one is
   detected.",
   prose_application = "",
-};
+} =
+  to_ir(tenv, e1) -> ir1_opt;
+  to_ir(tenv, e2) -> ir2_opt;
+  case all_supported {
+    and(
+      ir1_opt =: some(ir1),
+      ir1_opt =: some(ir2)
+    );
+    --
+    ir1 = ir2;
+  }
+
+  case some_unsupported {
+    ir1_opt = None || ir2_opt = None;
+    --
+    False;
+  }
+;
 
 typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
          (b: Bool) | type_error
@@ -5696,7 +12032,259 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   expressions. The result is given in {b} or a
   \typingerrorterm{}, if one is detected.",
   prose_application = "",
-};
+} =
+  case different_labels {
+    ast_label(e1) != ast_label(e2);
+    --
+    False;
+  }
+
+  case e_binop {
+    e1 =: E_Binop(op1, e1_1, e1_2);
+    e2 =: E_Binop(op2, e2_1, e2_2);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    expr_equal(tenv, e1_2, e2_2) -> b2;
+    --
+    (op1 = op2) && b1 && b2;
+  }
+
+  case e_call {
+    e1 =: E_Call(call1);
+    e2 =: E_Call(call2);
+    bool_transition(call1.call_name = call2.call_name) -> True | False;
+    call_args1 := call1.call_args;
+    call_args2 := call2.call_args;
+    bool_transition(list_len(call_args1) = list_len(call_args2)) -> True | False;
+    ( INDEX(i, call_args1: expr_equal(tenv, call_args1[i], call_args2[i]) -> args_equal[i]) )
+    { ([_]) };
+    call_params1 := call1.params;
+    call_params2 := call2.params;
+    bool_transition(list_len(call_params1) = list_len(call_params2)) -> True | False;
+    ( INDEX(i, call_params1: expr_equal(tenv, call_params1[i], call_params2[i]) -> params_equal[i]) )
+    { ([_]) };
+    --
+    list_and(args_equal) && list_and(params_equal);
+  }
+
+  case e_cond {
+    e1 =: E_Cond(e1_1, e1_2, e1_3);
+    e2 =: E_Cond(e2_1, e2_2, e2_3);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    expr_equal(tenv, e1_2, e2_2) -> b2;
+    expr_equal(tenv, e1_3, e2_3) -> b3;
+    --
+    b1 && b2 && b3;
+  }
+
+  case e_slice {
+    e1 =: E_Slice(e1_1, slices1);
+    e2 =: E_Slice(e2_1, slices2);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    slices_equal(tenv, slices1, slices2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_getarray {
+    e1 =: E_GetArray(e1_1, e1_2);
+    e2 =: E_GetArray(e2_1, e2_2);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    expr_equal(tenv, e1_2, e2_2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_getfield {
+    e1 =: E_GetField(e1_1, f1);
+    e2 =: E_GetField(e2_1, f2);
+    b1 := f1 = f2;
+    expr_equal(tenv, e1_1, e2_1) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_getfields {
+    e1 =: E_GetFields(e1_1, fs1);
+    e2 =: E_GetFields(e2_1, fs2);
+    b1 := fs1 = fs2;
+    expr_equal(tenv, e1_1, e2_1) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_getitem {
+    e1 =: E_GetItem(e1_1, i1);
+    e2 =: E_GetItem(e2_1, i2);
+    b1 := i1 = i2;
+    expr_equal(tenv, e1_1, e2_1) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_literal {
+    e1 =: E_Literal(v1);
+    e2 =: E_Literal(v2);
+    --
+    v1 = v2;
+  }
+
+  case e_tuple {
+    e1 =: E_Tuple(es1);
+    e2 =: E_Tuple(es2);
+    bool_transition(list_len(es1) = list_len(es2)) -> True | False;
+    INDEX(i, es1: expr_equal(tenv, es1[i], es2[i]) -> component_equal[i]);
+    --
+    list_and(component_equal);
+  }
+
+  case e_array {
+    e1 =: E_Array[length: length1, array_value: value1];
+    e2 =: E_Array[length: length2, array_value: value2];
+    expr_equal(tenv, length1, length2) -> b1;
+    expr_equal(tenv, value1, value2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_unop {
+    e1 =: E_Unop(op1, e1_1);
+    e2 =: E_Unop(op2, e2_1);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    --
+    (op1 = op2) && b1;
+  }
+
+  case e_arbitrary {
+    e1 =: E_Arbitrary(_);
+    e2 =: E_Arbitrary(_);
+    --
+    False;
+  }
+
+  case e_atc {
+    e1 =: E_ATC(e1_1, t1);
+    e2 =: E_ATC(e2_1, t2);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    type_equal(tenv, t1, t2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_var {
+    e1 =: E_Var(name1);
+    e2 =: E_Var(name2);
+    --
+    name1 = name2;
+  }
+
+  case e_pattern {
+    e1 =: E_Pattern(e1', p1);
+    e2 =: E_Pattern(e2', p2);
+    expr_equal(tenv, e1', e2') -> b1;
+    pattern_equal(tenv, p1, p2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case e_record {
+    e1 =: E_Record(s1, fields1);
+    e2 =: E_Record(s2, fields2);
+    type_equal(tenv, s1, s2) -> True | False;
+    fields1 =: list_combine(field_names1, field_types1);
+    fields2 =: list_combine(field_names2, field_types2);
+    ( INDEX(i, fields1: expr_equal(tenv, field_types1[i], field_types2[i]) -> True | False, TypeErrorConfig()) )
+    { ([_]) };
+    --
+    True;
+  }
+;
+
+typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
+  (b: Bool) | type_error
+{
+  "tests whether {p1} is equivalent to {p2} in {tenv} and yields the result in {b}.
+  \ProseOtherwiseTypeError",
+  prose_application = "",
+} =
+  case all {
+    p1 = Pattern_All;
+    p2 = Pattern_All;
+    --
+    True;
+  }
+
+  case any_len {
+    p1 =: Pattern_Any(ps1);
+    p2 =: Pattern_Any(ps2);
+    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
+    --
+    list_and(bs);
+  }
+
+  case tuple_len {
+    p1 =: Pattern_Tuple(ps1);
+    p2 =: Pattern_Tuple(ps2);
+    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
+    --
+    list_and(bs);
+  }
+
+  case geq {
+    p1 =: Pattern_Geq(e1);
+    p2 =: Pattern_Geq(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+
+  case leq {
+    p1 =: Pattern_Leq(e1);
+    p2 =: Pattern_Leq(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+
+  case single {
+    p1 =: Pattern_Single(e1);
+    p2 =: Pattern_Single(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+
+  case mask{
+    p1 =: Pattern_Mask(m1);
+    p2 =: Pattern_Mask(m2);
+    --
+    m1 = m2;
+  }
+
+  case not {
+    p1 =: Pattern_Not(p1');
+    p2 =: Pattern_Not(p2');
+    pattern_equal(tenv, p1', p2') -> b;
+    --
+    b;
+  }
+
+  case range {
+    p1 =: Pattern_Range(e11, e12);
+    p2 =: Pattern_Range(e21, e22);
+    expr_equal(tenv, e11, e21) -> b1;
+    expr_equal(tenv, e12, e22) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case other {
+    ast_label(p1) != ast_label(p2);
+    --
+    False;
+  }
+;
 
 typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
          (b: Bool) | type_error
@@ -5706,7 +12294,98 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
   {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case different_labels {
+    ast_label(t1) != ast_label(t2);
+    --
+    False;
+  }
+
+  case tbool_treal_tstring {
+    ast_label(t1) = ast_label(t2);
+    ast_label(t1) in make_set(label_T_Bool, label_T_Real, label_T_String);
+    --
+    True;
+  }
+
+  case tint_unconstrained {
+    t1 = unconstrained_integer;
+    t2 = unconstrained_integer;
+    --
+    True;
+  }
+
+  case tint_parameterized {
+    t1 =: T_Int(Parameterized(i1));
+    t2 =: T_Int(Parameterized(i2));
+    --
+    i1 = i2;
+  }
+
+  case tint_wellconstrained {
+    t1 =: T_Int(WellConstrained(cs1));
+    t2 =: T_Int(WellConstrained(cs2));
+    constraints_equal(tenv, cs1, cs2) -> b;
+    --
+    b;
+  }
+
+  case tbits {
+    t1 =: T_Bits(w1, bf1);
+    t2 =: T_Bits(w2, bf2);
+    bitwidth_equal(tenv, w1, w2) -> b1;
+    bitfields_equal(tenv, bf1, bf2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case tarray {
+    t1 =: T_Array(l1, ty1);
+    t2 =: T_Array(l2, ty2);
+    array_length_equal(tenv, l1, l2) -> b1;
+    type_equal(tenv, ty1, ty2) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case tnamed {
+    t1 =: T_Named(n1);
+    t2 =: T_Named(n2);
+    --
+    n1 = n2;
+  }
+
+  case tenum {
+    t1 =: T_Enum(li1);
+    t2 =: T_Enum(li2);
+    --
+    li1 = li2;
+  }
+
+  case tstructured {
+    t1 =: make_structured(L1, fields1);
+    t2 =: make_structured(L2, fields2);
+    L1 = L2;
+    ast_label(L1) in make_set(label_T_Record, label_T_Exception);
+    names1 := list_fst(fields1);
+    names2 := list_fst(fields2);
+    bool_transition(list_to_set(names1) = list_to_set(names2)) -> True | False;
+    INDEX(i, names1: field_type(fields1, names1[i]) -> some(ts1[i]));
+    INDEX(i, names1: field_type(fields2, names1[i]) -> some(ts2[i]));
+    INDEX(i, ts1: type_equal(tenv, ts1[i], ts2[i]) -> types_equal[i]);
+    --
+    list_and(types_equal);
+  }
+
+  case ttuple {
+    t1 =: T_Tuple(ts1);
+    t2 =: T_Tuple(ts2);
+    bool_transition(list_len(ts1) = list_len(ts2)) -> True | False;
+    INDEX(i, ts1: type_equal(tenv, ts1[i], ts2[i]) -> types_equal[i]);
+    --
+    list_and(types_equal);
+  }
+;
 
 typing function bitwidth_equal(tenv: static_envs, w1: expr, w2: expr) ->
          (b: Bool) | type_error
@@ -5716,7 +12395,11 @@ typing function bitwidth_equal(tenv: static_envs, w1: expr, w2: expr) ->
   environment {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  expr_equal(tenv, w1, w2) -> b;
+  --
+  b;
+;
 
 typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: list0(bitfield)) ->
          (b: Bool) | type_error
@@ -5726,7 +12409,12 @@ typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: li
   environment {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  bool_transition(list_len(bf1) = list_len(bf2)) -> True | False;
+  INDEX(i, bf1: bitfield_equal(tenv, bf1[i], bf2[i]) -> bf_equal[i]);
+  --
+  list_and(bf_equal);
+;
 
 typing function bitfield_equal(tenv: static_envs, bf1: bitfield, bf2: bitfield) ->
          (b: Bool) | type_error
@@ -5736,7 +12424,42 @@ typing function bitfield_equal(tenv: static_envs, bf1: bitfield, bf2: bitfield) 
   and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case different_labels {
+    ast_label(bf1) != ast_label(bf2);
+    --
+    False;
+  }
+
+  case bitfield_simple {
+    bf1 =: BitField_Simple(name1, slices1);
+    bf2 =: BitField_Simple(name2, slices2);
+    bool_transition(name1 = name2) -> True | False;
+    slices_equal(tenv, slices1, slices2) -> b;
+    --
+    b;
+  }
+
+  case bitfield_nested {
+    bf1 =: BitField_Nested(name1, slices1, bfs1);
+    bf2 =: BitField_Nested(name2, slices2, bfs2);
+    bool_transition(name1 = name2) -> True | False;
+    slices_equal(tenv, slices1, slices2) -> slices_equal1;
+    bitfields_equal(tenv, bfs1, bfs2) -> nested_equal;
+    --
+    slices_equal1 && nested_equal;
+  }
+
+  case bitfield_typed_name_match {
+    bf1 =: BitField_Type(name1, slices1, ty1);
+    bf2 =: BitField_Type(name2, slices2, ty2);
+    bool_transition(name1 = name2) -> True | False;
+    slices_equal(tenv, slices1, slices2) -> slices_equal;
+    type_equal(tenv, ty1, ty2) -> types_equal;
+    --
+    slices_equal && types_equal;
+  }
+;
 
 typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
          (b: Bool) | type_error
@@ -5746,7 +12469,12 @@ typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint),
   environment {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  bool_transition(list_len(cs1) = list_len(cs2)) -> True | False;
+  INDEX(i, cs1: constraint_equal(tenv, cs1[i], cs2[i]) -> cs_equal[i]);
+  --
+  list_and(cs_equal);
+;
 
 typing function constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_constraint) ->
          (b: Bool) | type_error
@@ -5756,7 +12484,30 @@ typing function constraint_equal(tenv: static_envs, c1: int_constraint, c2: int_
   {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case different_labels {
+    ast_label(c1) != ast_label(c2);
+    --
+    False;
+  }
+
+  case constraint_exact {
+    c1 =: Constraint_Exact(e1);
+    c2 =: Constraint_Exact(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+
+  case constraint_range {
+    c1 =: Constraint_Range(e1_1, e1_2);
+    c2 =: Constraint_Range(e2_1, e2_2);
+    expr_equal(tenv, e1_1, e2_1) -> b1;
+    expr_equal(tenv, e1_2, e2_2) -> b2;
+    --
+    b1 && b2;
+  }
+;
 
 typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: list0(slice)) ->
          (b: Bool) | type_error
@@ -5766,7 +12517,13 @@ typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: 
   {slices2} in environment {tenv} and yields the result
   in {b}.  \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  bool_transition(list_len(slices1) = list_len(slices2)) -> True | False;
+  ( INDEX(i, slices1: slice_equal(tenv, slices1[i], slices2[i]) -> equal_at_index[i]) )
+  { ([_]) };
+  --
+  list_and(equal_at_index);
+;
 
 typing function slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
          (b: Bool) | type_error
@@ -5775,16 +12532,78 @@ typing function slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
   equivalent to the slice {slice2} in environment {tenv}
   and yields the result in {b}. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case single_expr {
+    slice1 =: Slice_Single(e1);
+    slice2 =: Slice_Single(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
 
-typing function array_length_equal(l1: array_index, l2: array_index) ->
+  case range_exprs {
+    slice1 =: Slice_Range(e1, e2);
+    slice2 =: Slice_Range(e3, e4);
+    expr_equal(tenv, e1, e3) -> b1;
+    expr_equal(tenv, e2, e4) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case length_exprs {
+    slice1 =: Slice_Length(e1, e2);
+    slice2 =: Slice_Length(e3, e4);
+    expr_equal(tenv, e1, e3) -> b1;
+    expr_equal(tenv, e2, e4) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case star_exprs {
+    slice1 =: Slice_Star(e1, e2);
+    slice2 =: Slice_Star(e3, e4);
+    expr_equal(tenv, e1, e3) -> b1;
+    expr_equal(tenv, e2, e4) -> b2;
+    --
+    b1 && b2;
+  }
+
+  case different_labels {
+    ast_label(slice1) != ast_label(slice2);
+    --
+    False;
+  }
+;
+
+typing function array_length_equal(tenv: static_envs, l1: array_index, l2: array_index) ->
          (b: Bool) | type_error
 {
   "tests whether the array lengths {l1} and {l2} are
   equivalent and yields the result in {b}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case different_labels {
+    ast_label(l1) != ast_label(l2);
+    --
+    False;
+  }
+
+  case expr_expr {
+    l1 =: ArrayLength_Expr(e1);
+    l2 =: ArrayLength_Expr(e2);
+    expr_equal(tenv, e1, e2) -> b;
+    --
+    b;
+  }
+
+  case enum_enum {
+    l1 =: ArrayLength_Enum(enum1, _);
+    l2 =: ArrayLength_Enum(enum2, _);
+    --
+    enum1 = enum2;
+  }
+;
 
 typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m: unitary_monomial)
 {
@@ -5792,7 +12611,10 @@ typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m:
   yielding the unitary monomial {m}.",
   prose_application = "multiplying the unitary monomial {m1} with unitary monomial {m2}
                       yields the unitary monomial {m}",
-};
+} =
+  --
+  bot; // This function is expressed directly in LaTeX.
+;
 
 typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
@@ -5800,22 +12622,37 @@ typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomia
   yielding the polynomial {p}",
   prose_application = "adding the polynomial {p1} with polynomial {p2}
                       yields the polynomial {p}",
-};
+} =
+  --
+  bot; // We express this function directly in lates, without inference rules.
+;
 
 typing function mul_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
   "multiplies the polynomial {p1} with the polynomial {p2}, yielding the polynomial {p}.",
   prose_application = "multiplying the polynomial {p1} with polynomial {p2}
                       yields the polynomial {p}"
-};
+} =
+  --
+  bot; // We express this function directly in lates, without inference rules.
+;
 
-typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f: Q) -> (p: polynomial) | constants_set(CannotBeTransformed)
+typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f: Q) ->
+  (p_opt: option(polynomial))
 {
-  "returns the result of dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f},
-  yielding the polynomial {p}. Otherwise, the result is $\CannotBeTransformed$.",
-  prose_application = "dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f},
-    yields {p}",
+  "returns the result of dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f}.
+  If the division can be performed, the result is a polynomial, and otherwise it is $\None$..",
+  prose_application = "",
   math_layout = ([_,_,_], _),
+} =
+  --
+  bot; // This function is expressed directly in LaTeX.
+;
+
+// TODO: define this operator in terms of sort and then remove it.
+operator sort_monomial_bindings(monoms: list0((unitary_monomial, Q))) -> list0((unitary_monomial, Q))
+{
+  math_macro = \sortmonomialbindings,
 };
 
 typing function polynomial_to_expr(p: polynomial) ->
@@ -5823,12 +12660,39 @@ typing function polynomial_to_expr(p: polynomial) ->
 {
   "transforms a polynomial {p} into the corresponding expression {e}.",
   prose_application = "\hyperlink{relation-polynomialtoexpr}{converting} polynomial {p} to an expression yields {e}",
+} =
+  case empty {
+    bindings(p) = empty_list;
+    --
+    ELint(zero);
+  }
+
+  case non_empty {
+    ms := list_set(dom(p));
+    monoms_and_factors := bindings(p);
+    monoms := sort_monomial_bindings(monoms_and_factors);
+    monomials_to_expr(monoms) -> (e1, s1);
+    e := if_then_else(
+      s1 = equal_sign,
+      ELint(zero),
+      if_then_else(s1 = positive_sign, e1, E_Unop(NEG, e1)))
+    { (_, [_]) };
+    --
+    e;
+  }
+;
+
+constant compare_identifier : fun Identifier -> Sign
+{
+  "identifier comparison",
 };
 
-typing function compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, q2: Q)) ->
+typing function compare_monomial_bindings(
+  (m1: unitary_monomial, q1: Q),
+  (m2: unitary_monomial, q2: Q)) ->
          (s: Sign)
 {
-  "compares two monomial bindings given by $(\vmone,
+  "compares two uniary monomial bindings given by $(\vmone,
   \vqone)$ and $(\vmtwo, \vqtwo)$ and yields in {s} $-1$
   to mean that the first monomial binding should be
   ordered before the second, $0$ to mean that any
@@ -5836,9 +12700,30 @@ typing function compare_monomial_bindings((m1: monomial, q1: Q), (m2: monomial, 
   $1$ to mean that the second monomial binding should be
   ordered before the first.",
   prose_application = "",
-};
+  math_layout = ([_,_],_)
+} =
+  case equal_monomials {
+    m1 = m2;
+    --
+    sign(q2 - q1);
+  }
 
-typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
+  case different_monomials {
+    m1 != m2;
+    ids := sort(list_set(union(dom(m1), dom(m2))), compare_identifier);
+    differences := list_filter(id, ids, map_apply(m1, id) = map_apply(m2, id));
+    differences =: match_cons(k, _);
+    s := cond(
+      map_apply(m1, k) = bot && map_apply(m1, k) != bot : positive_sign,
+      map_apply(m1, k) != bot && map_apply(m1, k) = bot : negative_sign,
+      and((map_apply(m1, k) =: n1) && (n1 != bot) && (map_apply(m1, k) =: n2) && (n2 != bot)) : if n1 > n2 then positive_sign else negative_sign,
+    ) { (_, [_,_,([_], [_])]) };
+    --
+    s;
+  }
+;
+
+typing function monomials_to_expr(monoms: list0((unitary_monomial, Q))) ->
          (e: expr, s: Sign)
 {
   "transforms a list consisting of pairs of unitary
@@ -5849,7 +12734,23 @@ typing function monomials_to_expr(monoms: list0((m: unitary_monomial, q: Q))) ->
   resulting sum.",
   prose_application = "\hyperlink{relation-monomialstoexpr}{converting} monomial list {monoms} to expression form
                         yields absolute value {e} and sign {s}",
-};
+} =
+  case empty {
+    monoms = empty_list;
+    --
+    (ELint(zero), equal_sign);
+  }
+
+  case non_empty {
+    monoms =: match_cons((m, q), monoms1);
+    unitary_monomials_to_expr(bindings(m)) -> e1';
+    monomial_to_expr(e1', q) -> (e1, s1);
+    monomials_to_expr(monoms1) -> (e2, s2);
+    sym_add_expr(e1, s1, e2, s2) -> (e, s);
+    --
+    (e, s);
+  }
+;
 
 typing function monomial_to_expr(e: expr, q: Q) ->
          (new_e: expr, s: Sign)
@@ -5859,7 +12760,56 @@ typing function monomial_to_expr(e: expr, q: Q) ->
   value of {e} multiplied by $q$, and the sign of $q$ as
   {s}.",
   prose_application = "",
-};
+} =
+  case q_zero {
+    q = rational_zero;
+    --
+    (ELint(zero), equal_sign);
+  }
+
+  case q_natural {
+    q > rational_zero && is_integer(q);
+    q_nat := round_down(q);
+    sym_mul_expr(ELint(q_nat), e) -> new_e;
+    --
+    (new_e, positive_sign);
+  }
+
+  case q_positive_fraction {
+    q > rational_zero && not(is_integer(q));
+    and(q =: fraction(d, n), not(is_integer(fraction(d, n))));
+    sym_mul_expr(ELint(d), e) -> e2;
+    new_e := E_Binop(DIV, e2, ELint(n));
+    --
+    (new_e, positive_sign);
+  }
+
+  case q_negative {
+    q < rational_zero;
+    monomial_to_expr(e, num_negate(q)) -> (new_e, _);
+    --
+    (new_e, negative_sign);
+  }
+;
+
+typing function sym_mul_expr(e1: expr, e2: expr) -> (e: expr)
+{
+  "symbolically multiplies expressions {e1} and {e2},
+  simplifying away the literal 1 operand when present.",
+  prose_application = "\hyperlink{def-symmulexpr}{symbolically multiplying} expressions {e1} and {e2} yields {e}",
+} =
+  case one_operand {
+    e1 = ELint(one) || e2 = ELint(one);
+    --
+    if e1 = ELint(one) then e1 else e1;
+  }
+
+  case no_one_operand {
+    not(e1 = ELint(one) || e2 = ELint(one));
+    --
+    E_Binop(MUL, e1, e2);
+  }
+;
 
 typing function sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
          (e: expr, s: Sign)
@@ -5869,7 +12819,26 @@ typing function sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
   {e} and sign {s}.",
   prose_application = "\hyperlink{relation-symaddexpr}{symbolically summing} expressions {e1} with sign {s1}
                         and {e2} with sign {s2} yields expression {e} with sign {s}",
-};
+} =
+  case zero {
+    (s1 = equal_sign || s2 = equal_sign);
+    (e, s) := if (s1 = equal_sign) then (e2, s2) else (e1, s1);
+    --
+    (e, s);
+  }
+
+  case same_sign {
+    and(s1 != equal_sign, s2 != equal_sign, s1 = s2);
+    --
+    (E_Binop(ADD, e1, e2), s1);
+  }
+
+  case different_signs {
+    and(s1 != equal_sign, s2 != equal_sign, s1 != s2);
+    --
+    (E_Binop(SUB, e1, e2), s1);
+  }
+;
 
 typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
          (e: expr)
@@ -5879,7 +12848,51 @@ typing function unitary_monomials_to_expr(monoms: list0((Identifier, N))) ->
   represent a multiplication of the single-variable
   unitary monomials.",
   prose_application = "",
-};
+} =
+  case empty {
+    monoms = empty_list;
+    --
+    ELint(one);
+  }
+
+  case exp_zero {
+    monoms =: match_cons((v, n), monoms1);
+    n = zero;
+    unitary_monomials_to_expr(monoms1) -> e;
+    --
+    e;
+  }
+
+  case exp_one {
+    monoms =: match_cons((v, n), monoms1);
+    n = one;
+    e1 := E_Var(v);
+    unitary_monomials_to_expr(monoms1) -> e2;
+    sym_mul_expr(e1, e2) -> e;
+    --
+    e;
+  }
+
+  case exp_two {
+    monoms =: match_cons((v, n), monoms1);
+    n = two;
+    e1 := AbbrevEBinop(MUL, E_Var(v), E_Var(v));
+    unitary_monomials_to_expr(monoms1) -> e2;
+    sym_mul_expr(e1, e2) -> e;
+    --
+    e;
+  }
+
+  case exp_gt_two {
+    monoms =: match_cons((v, n), monoms1);
+    n > two;
+    e1 := AbbrevEBinop(POW, E_Var(v), ELint(n));
+    unitary_monomials_to_expr(monoms1) -> e2;
+    sym_mul_expr(e1, e2) -> e;
+    --
+    e;
+  }
+;
 
 typing function type_of(tenv: static_envs, s: Identifier) ->
          (ty: ty) | type_error
@@ -5889,7 +12902,27 @@ typing function type_of(tenv: static_envs, s: Identifier) ->
   \typingerrorterm{} if {s} is not associated with any
   type.",
   prose_application = "",
-};
+} =
+  case local {
+    tenv.static_envs_L.local_storage_types(s) =: (ty, _);
+    --
+    ty;
+  }
+
+  case global {
+    tenv.static_envs_L.local_storage_types(s) = bot;
+    tenv.static_envs_G.global_storage_types(s) =: (ty, _);
+    --
+    ty;
+  }
+
+  case error {
+    tenv.static_envs_L.local_storage_types(s) = bot;
+    tenv.static_envs_G.global_storage_types(s) = bot;
+    --
+    TypeError(TE_UI);
+  }
+;
 
 typing function normalize_opt(tenv: static_envs, e: expr) ->
          (new_e_opt: option(expr)) | type_error
@@ -5898,7 +12931,13 @@ typing function normalize_opt(tenv: static_envs, e: expr) ->
   $\None$ when {e} is not an expression that can be
   symbolically simplified. \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  to_ir(tenv, e) -> some(p) | None, TypeErrorConfig();
+  // to_ir(tenv, e) -> CannotBeTransformed;
+  normalize(tenv, e) -> new_e;
+  --
+  some(new_e);
+;
 
 //////////////////////////////////////////////////
 // Relations for Symbolic Subsumption Testing
@@ -5912,7 +12951,31 @@ typing function symdom_subset_unions(tenv: static_envs, sd1: symdom_or_top, sd2:
   \staticenvironmentterm{} {tenv}, yielding the result
   in {b}.",
   prose_application = "\hyperlink{relation-symdomsubsetunions}{testing} whether {sd1} is subsumed by {sd2} in {tenv} yields {b}",
-};
+} =
+  case right_top {
+    sd2 = Top;
+    --
+    True;
+  }
+
+  case left_top_right_not_top {
+    sd1 = Top;
+    sd2 != Top;
+    --
+    False;
+  }
+
+  case subdomains {
+    sd1 =: Subdomains(symdoms1);
+    sd2 =: Subdomains(symdoms2);
+    symdom_normalize(symdoms1) -> symdoms1n;
+    symdom_normalize(symdoms2) -> symdoms2n;
+    b := list_forall(s1, symdoms1n, list_exists(s2, symdoms2n, symdom_subset(tenv, s1, s2)))
+    { (_, [_]) };
+    --
+    b;
+  }
+;
 
 typing function symdom_normalize(symdoms: list1(symdom)) ->
          (new_symdoms: list1(symdom))
@@ -5926,7 +12989,19 @@ typing function symdom_normalize(symdoms: list1(symdom)) ->
   the sets of integers in the merged symbolic finite set
   integer domains.",
   prose_application = "\hyperlink{relation-symdomnormalize}{normalizing} {symdoms} by merging finite sets yields {new_symdoms}",
-};
+} =
+  finite_sets := list_map(sd, symdoms, if sd =: Finite(s) then s else empty_set);
+  finite_set := set_as_finite(union_list(finite_sets));
+  others := list_filter(sd, symdoms, not(sd =: Finite(_)));
+  has_finite := list_exists(fs, finite_sets, fs != empty_set);
+  new_list := if_then_else(
+    has_finite,
+    concat(match_singleton_list(Finite(finite_set)), others),
+    others);
+  new_symdoms := match_non_empty_list(new_list);
+  --
+  new_symdoms;
+;
 
 typing function symdom_of_type(tenv: static_envs, t: ty) ->
          (d: symdom_or_top)
@@ -5936,7 +13011,35 @@ typing function symdom_of_type(tenv: static_envs, t: ty) ->
   input type has an \underlyingtypeterm{} which is an
   integer.",
   prose_application = "",
-};
+} =
+  case int_unconstrained {
+    t = unconstrained_integer;
+    --
+    Top;
+  }
+
+  case int_parameterized {
+    t =: T_Int(Parameterized(id));
+    d := Subdomains(make_singleton_list(ConstrainedDom(Constraint_Exact(E_Var(id)))));
+    --
+    d;
+  }
+
+  case int_well_constrained {
+    t =: T_Int(WellConstrained(cs));
+    INDEX(i, cs: symdom_of_constraint(tenv, cs[i]) -> ds[i]);
+    --
+    Subdomains(match_non_empty_list(ds));
+  }
+
+  case t_named {
+    t =: T_Named(_);
+    make_anonymous(tenv, t) -> t1;
+    symdom_of_type(tenv, t1) -> d;
+    --
+    d;
+  }
+;
 
 typing function symdom_of_width_expr(e: expr) ->
          (d: symdom_or_top)
@@ -5946,7 +13049,11 @@ typing function symdom_of_width_expr(e: expr) ->
   expression conveying the width of a
   \bitvectortypeterm.",
   prose_application = "",
-};
+} =
+  d := Subdomains(make_singleton_list(ConstrainedDom(Constraint_Exact(e))));
+  --
+  d;
+;
 
 typing function symdom_of_constraint(tenv: static_envs, c: int_constraint) ->
          (d: symdom)
@@ -5957,7 +13064,44 @@ typing function symdom_of_constraint(tenv: static_envs, c: int_constraint) ->
   when the expressions involved in the integer
   constraints cannot be simplified to integers.",
   prose_application = "",
-};
+} =
+  case exact_top {
+    c =: Constraint_Exact(e);
+    symdom_eval(tenv, e) -> Top | ;
+    --
+    ConstrainedDom(c);
+  }
+
+  case exact_int {
+    c =: Constraint_Exact(e);
+    symdom_eval(tenv, e) -> v;
+    --
+    Finite(make_set(v));
+  }
+
+  case range_top_left {
+    c =: Constraint_Range(e1, e2);
+    symdom_eval(tenv, e1) -> Top;
+    --
+    ConstrainedDom(c);
+  }
+
+  case range_top_right {
+    c =: Constraint_Range(e1, e2);
+    symdom_eval(tenv, e1) -> v1;
+    symdom_eval(tenv, e2) -> Top;
+    --
+    ConstrainedDom(c);
+  }
+
+  case range_ints {
+    c =: Constraint_Range(e1, e2);
+    symdom_eval(tenv, e1) -> v1;
+    symdom_eval(tenv, e2) -> v2;
+    --
+    Finite(range_set(v1, v2));
+  }
+;
 
 typing function symdom_eval(tenv: static_envs, e: expr) ->
          (n: Z) | constants_set(Top)
@@ -5967,7 +13111,22 @@ typing function symdom_eval(tenv: static_envs, e: expr) ->
   the resulting integer or $\Top$ if the result of the
   simplification is not an integer.",
   prose_application = "",
-};
+} =
+  case integer {
+    normalize(tenv, e) -> e1;
+    static_eval(tenv, e1) -> L_Int(n);
+    --
+    n;
+  }
+
+  case top {
+    normalize(tenv, e) -> e1;
+    static_eval(tenv, e1) -> v;
+    ast_label(v) != label_L_Int;
+    --
+    Top;
+  }
+;
 
 typing function symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
          (b: Bool)
@@ -5979,73 +13138,223 @@ typing function symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
   \staticenvironmentterm{} {tenv}, yielding the result
   in {b}.",
   prose_application = "",
-};
+} =
+  case finite_finite {
+    cd1 =: Finite(s1);
+    cd2 =: Finite(s2);
+    --
+    subseteq(s1, s2);
+  }
 
-typing function approx_constraints(tenv: static_envs, approx: constants_set(Over,Under), cs: list1(int_constraint)) ->
-         (s: powerset_finite(Z)) | constants_set(CannotOverapproximate)
+  case constrained_constrained_equal {
+    cd1 =: ConstrainedDom(c1);
+    cd2 =: ConstrainedDom(c2);
+    constraint_equal(tenv, c1, c2) -> True;
+    --
+    True;
+  }
+
+  case constrained_constrained_non_equal {
+    cd1 =: ConstrainedDom(c1);
+    cd2 =: ConstrainedDom(c2);
+    constraint_equal(tenv, c1, c2) -> False;
+    approx_constraint(tenv, Over, c1) -> s1_opt;
+    approx_constraint(tenv, Under, c2) -> s2_opt;
+    b := if and(s1_opt =: some(s1), s2_opt =: some(s2)) then subseteq(s1, s2) else False;
+    --
+    b;
+  }
+
+  case finite_constrained {
+    cd1 =: Finite(s1);
+    cd2 =: ConstrainedDom(c2);
+    approx_constraints(tenv, Under, make_singleton_list(c2)) -> some(s2);
+    --
+    subseteq(s1, s2);
+  }
+
+  case constrained_finite_set {
+    cd1 =: ConstrainedDom(c1);
+    cd2 =: Finite(s2);
+    approx_constraints(tenv, Over, make_singleton_list(c1)) -> some(s1);
+    --
+    subseteq(s1, s2);
+  }
+
+  case constrained_finite_top {
+    cd1 =: ConstrainedDom(c1);
+    cd2 =: Finite(_);
+    approx_constraints(tenv, Over, make_singleton_list(c1)) -> None;
+    --
+    False;
+  }
+;
+
+typing function approx_constraints(tenv: static_envs, approx: constants_set(Over,Under), cs: list0(int_constraint)) ->
+         (s: option(powerset_finite(Z)))
 {
   "conservatively approximates the non-empty list of
-  constraints {cs} by a set of integers {s}. The
+  constraints {cs} by a set of integers. The
   approximation is over all environments consisting of
   the \staticenvironmentterm{} {tenv}. The approximation
   is either overapproximation or underapproximation,
   based on the \approximationdirectionterm{} {approx}.",
-  prose_application = "\hyperlink{relation-approxconstraints}{approximating} constraints {cs} in {tenv}
-                        with direction {approx} yields integer set {s}",
-};
+  prose_application = "",
+} =
+  case empty {
+    cs = empty_list;
+    --
+    some(empty_set);
+  }
+
+  case non_empty_fail {
+    cs != empty_list;
+    s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
+    list_exists(s_opt, s_opts, s_opt = None);
+    --
+    None;
+  }
+
+  case over {
+    approx = Over;
+    cs != empty_list;
+    s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
+    list_forall(s_opt, s_opts, s_opt != None);
+    s_sets := list_map(i, indices(s_opts), if s_opts[i] =: some(s1) then s1 else empty_set);
+    --
+    some(union_list_finite(s_sets));
+  }
+
+  case under {
+    approx = Under;
+    cs != empty_list;
+    s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
+    list_forall(s_opt, s_opts, s_opt != None);
+    s_sets := list_map(i, indices(s_opts), if s_opts[i] =: some(s1) then s1 else empty_set);
+    --
+    some(union_list_finite(s_sets));
+  }
+;
 
 typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,Under), c: int_constraint) ->
-         (s: powerset(Z)) | constants_set(CannotOverapproximate)
+         (s: option(powerset(Z)))
 {
   "conservatively approximates the constraint {c} by a
-  set of integers {s}. The approximation is over all
+  set of integer. The approximation is over all
   environments that consist of the
   \staticenvironmentterm{} {tenv}. The approximation is
   either overapproximation or underapproximation, based
-  on the \approximationdirectionterm{} {approx}. If {c}
-  cannot be overapproximated, the result is
-  $\CannotOverapproximate$.",
+  on the \approximationdirectionterm{} {approx}.
+  If {c} can be approximated, the result is the approximating set in an optional.
+  Otherwise, the result is $\None$.",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    approx_expr(tenv, approx, e) -> s_opt;
+    --
+    s_opt;
+  }
+
+  case range_over_interval {
+    approx = Over;
+    c =: Constraint_Range(e1, e2);
+    approx_expr_min(tenv, e1) -> some(z1) | None;
+    approx_expr_max(tenv, e2) -> some(z2) | None;
+    make_interval(Over, z1, z2) -> s_interval_opt;
+    --
+    s_interval_opt;
+  }
+
+  case range_under_interval {
+    approx = Under;
+    c =: Constraint_Range(e1, e2);
+    approx_expr_max(tenv, e1) -> some(z1);
+    approx_expr_min(tenv, e2) -> some(z2);
+    make_interval(Under, z1, z2) -> s_interval_opt;
+    s := if (s_interval_opt =: some(s_interval)) then some(s_interval) else None;
+    --
+    s;
+  }
+
+  case range_under_interval_fail {
+    approx = Under;
+    c =: Constraint_Range(e1, e2);
+    approx_expr_max(tenv, e1) -> z1_opt;
+    approx_expr_min(tenv, e2) -> z2_opt;
+    z1_opt = None || z2_opt = None;
+    --
+    None;
+  }
+;
 
 typing function make_interval(approx: constants_set(Over,Under), z1: Z, z2: Z) ->
-         (s: powerset_finite(Z)) | constants_set(empty_set,CannotOverapproximate)
+         (s_opt: option(powerset(Z)))
 {
   "returns the interval between the integers {z1} and
   {z2}, or an approximation based on {approx}.",
   prose_application = "",
-};
+} =
+  case interval {
+    z1 <= z2;
+    --
+    some(range_set(z1, z2));
+  }
+
+  case approx {
+    z1 > z2;
+    approx_bottom_top(approx) -> s_opt;
+    --
+    s_opt;
+  }
+;
 
 typing function approx_expr_min(tenv: static_envs, e: expr) ->
-         (z: Z) | constants_set(CannotOverapproximate)
+         (z_opt: option(Z))
 {
   "approximates the minimal integer represented by the
   expression {e} in any environment consisting of the
-  \staticenvironmentterm{} {tenv}. The result, yielded
-  in {z} is either an integer or
-  $\CannotOverapproximate$.",
+  \staticenvironmentterm{} {tenv}.
+  The result, is an integer of $\None$ if approximation fails.",
   prose_application = "",
-};
+} =
+  approx_expr(tenv, Over, e) -> some(s) | None;
+  --
+  some(set_min(s));
+;
 
 typing function approx_expr_max(tenv: static_envs, e: expr) ->
-         (z: Z) | constants_set(CannotOverapproximate)
+         (z_opt: option(Z))
 {
   "approximates the maximal integer represented by the
   expression {e} in any environment consisting of the
-  \staticenvironmentterm{} {tenv}. The result, yielded
-  in {z} is either an integer or
-  $\CannotOverapproximate$.",
+  \staticenvironmentterm{} {tenv}.
+  The result, is an integer of $\None$ if approximation fails.",
   prose_application = "",
-};
+} =
+  approx_expr(tenv, Over, e) -> some(s) | None;
+  --
+  some(set_max(s));
+;
 
 typing function approx_bottom_top(approx: constants_set(Under,Over)) ->
-         (s: powerset(Z)) | constants_set(CannotOverapproximate)
+         (s_opt: option(powerset_finite(Z)))
 {
-  "returns in {s} either the empty set or the set of all
-  integers, depending on the
-  \approximationdirectionterm{} {approx}.",
+  "returns either the empty set in an optional, if {approx} is $\Under$,
+  and $\None$ otherwise.",
   prose_application = "",
-};
+} =
+  case under {
+    --
+    some(empty_set);
+  }
+
+  case over {
+    approx = Over;
+    --
+    None;
+  }
+;
 
 typing function intset_to_constraints(s: powerset_finite(Z)) ->
          (cs: list0(int_constraint))
@@ -6053,52 +13362,224 @@ typing function intset_to_constraints(s: powerset_finite(Z)) ->
   "converts a finite set of integers {s} into an
   equivalent list of constraints.",
   prose_application = "",
-};
+} =
+  s =: union_list_finite(ranges);
+  list_forall(s1, ranges, list_forall(s2, ranges, implies(subseteq(s1, s2), s1 = s2)));
+  cs := list_map(range, ranges,
+    if (range =: match_set(v))
+    then AbbrevConstraintExact(ELint(v))
+    else AbbrevConstraintRange(ELint(set_min(range)), ELint(set_max(range))))
+  { (_, (_, _, [_]))};
+  --
+  cs;
+;
 
 typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under), e: expr) ->
-         (s: powerset(Z)) | constants_set(CannotOverapproximate)
+         (s_opt: option(powerset_finite(Z)))
 {
   "conservatively approximates the expression {e} by a
-  set of integers {s} in the \staticenvironmentterm{}
+  set of integers in the \staticenvironmentterm{}
   {tenv}. The approximation is either overapproximation
   or underapproximation, based on the
   \approximationdirectionterm{} {approx}.",
   prose_application = "",
-};
+} =
+  case literal_int {
+    e =: E_Literal(L_Int(z));
+    --
+    some(make_set(z));
+  }
 
-typing function approx_constraint_binop(tenv: static_envs, approx: constants_set(Over,Under), op: binop, s1: list1(int_constraint), s2: list1(int_constraint)) ->
-         (s: list1(int_constraint), plf: precision_loss_indicator)
+  case literal_non_int {
+    e =: E_Literal(l);
+    ast_label(l) != label_L_Int;
+    approx_bottom_top(approx) -> s_opt;
+    --
+    s_opt;
+  }
+
+  case var_over {
+    approx = Over;
+    e =: E_Var(x);
+    // the following application of type_of is guaranteed not to result in a
+    // type error, since symdom_subset is only applied to annotated types.
+    type_of(tenv, x) -> t | ;
+    approx_type(tenv, Over, t) -> s_opt;
+    --
+    s_opt;
+  }
+
+  case var_under {
+    approx = Under;
+    e =: E_Var(x);
+    --
+    some(empty_set);
+  }
+
+  case unop {
+    e =: E_Unop(op, e1);
+    approx_expr(tenv, approx, e1) -> some(s1) | None;
+    zs := list_set(s1);
+    INDEX(i, zs: unop_literals(op, L_Int(zs[i])) -> L_Int(zs'[i]));
+    --
+    some(list_to_set(zs'));
+  }
+
+  case binop_precise {
+    e =: E_Binop(op, e1, e2);
+    approx_expr(tenv, approx, e1) -> some(s1) | None;
+    approx_expr(tenv, approx, e2) -> some(s2) | None;
+    cs1 := intset_to_constraints(s1);
+    cs2 := intset_to_constraints(s2);
+    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs, plf)) | None
+    { [_] };
+    plf = Precision_Full || (plf = Precision_Lost && approx = Under);
+    approx_constraints(tenv, approx, cs) -> s_approx;
+    --
+    s_approx;
+  }
+
+  case binop_approx {
+    e =: E_Binop(op, e1, e2);
+    approx_expr(tenv, approx, e1) -> some(s1);
+    approx_expr(tenv, approx, e2) -> some(s2);
+    s1 =: s1_set;
+    s2 =: s2_set;
+    cs1 := intset_to_constraints(s1_set);
+    cs2 := intset_to_constraints(s2_set);
+    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs_unused, plf)) | None
+    { [_] };
+    plf = Precision_Lost && approx = Over;
+    --
+    None;
+  }
+
+  case e_cond {
+    e =: E_Cond(test, e2, e3);
+    approx_expr(tenv, approx, e2) -> some(s2) | None;
+    approx_expr(tenv, approx, e3) -> some(s3) | None;
+    s := if approx = Over then union_finite(s2, s3) else intersect_finite(s2, s3);
+    --
+    some(s);
+  }
+
+  case other {
+    ast_label(e) not_in make_set(label_E_Literal, label_E_Var, label_E_Unop, label_E_Binop, label_E_Cond);
+    approx_bottom_top(approx) -> s_opt;
+    --
+    s_opt;
+  }
+;
+
+typing function approx_constraint_binop(tenv: static_envs, approx: constants_set(Over,Under), op: binop, s1: list0(int_constraint), s2: list0(int_constraint)) ->
+         option((s: list0(int_constraint), plf: precision_loss_indicator))
 {
   "approximates the application of the binary operator
   {op} to lists of constraints {s1} and {s2} with the
   \approximationdirectionterm{} {approx} in the context
   of the static environment {tenv}, resulting in the
-  list of constraints {s} and \precisionlossindicatorterm{}
-  {plf}.",
+  list of constraints and \precisionlossindicatorterm{},
+  or $\None$ if the result could not be overapproximated.",
   prose_application = "",
   math_layout = [[_,_,_,_,_],_],
-};
+} =
+  case over {
+    approx = Over;
+    annotate_constraint_binop(Over, tenv, op, s1, s2) -> (s, plf);
+    --
+    some((s, plf));
+  }
+
+  case over_fail {
+    approx = Over;
+    annotate_constraint_binop(Over, tenv, op, s1, s2) -> CannotOverapproximate;
+    --
+    None;
+  }
+
+  case under_precise {
+    approx = Under;
+    annotate_constraint_binop(Under, tenv, op, s1, s2) -> (s, plf);
+    --
+    some((s, plf));
+  }
+
+  case under_approx {
+    approx = Under;
+    annotate_constraint_binop(Under, tenv, op, s1, s2) -> CannotUnderapproximate;
+    --
+    some((empty_list, Precision_Lost));
+  }
+;
 
 typing function approx_type(tenv: static_envs, approx: constants_set(Over,Under), t: ty) ->
-         (s: powerset(Z)) | constants_set(CannotOverapproximate)
+         (s: option(powerset_finite(Z)))
 {
   "conservatively approximates the type {t} by a set of
-  integers {s} in the \staticenvironmentterm{} {tenv}.
+  integers in the \staticenvironmentterm{} {tenv}.
   The approximation is either overapproximation or
   underapproximation, based on the
   \approximationdirectionterm{} {approx}.",
   prose_application = "",
-};
+} =
+  case named {
+    is_named(t) -> True;
+    make_anonymous(tenv, t) -> t1;
+    approx_type(tenv, approx, t1) -> s;
+    --
+    s;
+  }
+
+  case int_wellconstrained {
+    t =: T_Int(WellConstrained(cs));
+    approx_constraints(tenv, approx, cs) -> s_opt;
+    --
+    s_opt;
+  }
+
+  case other {
+    not(is_named(t)) && not(is_well_constrained_integer(t));
+    approx_bottom_top(approx) -> s_opt;
+    --
+    s_opt;
+  }
+;
 
 typing function constraint_binop(op: binop, cs1: list0(int_constraint), cs2: list0(int_constraint)) ->
-         (new_cs: constraint_kind)
+         (new_cs: list0(int_constraint))
 {
   "symbolically applies the binary operation {op} to the
   lists of integer constraints {cs1} and {cs2}, yielding
   the integer constraints {new_cs}.",
   prose_application = "\hyperlink{relation-constraintbinop}{applying} operator {op}
                         to constraints {cs1} and {cs2} yields constraints {new_cs}",
-};
+} =
+  case extremities {
+    op in make_set(DIV, DIVRM, MUL, ADD, SUB, SHR, SHL);
+    cs := list_cross(cs1, cs2);
+    cs =: list_combine(cs_fst, cs_snd);
+    extremities := list_map(i, indices(cs), apply_binop_extremities(op, cs_fst[i], cs_snd[i]))
+    { [_] };
+    --
+    list_flatten(extremities);
+  }
+
+  case mod {
+    op = MOD;
+    new_cs := list_map(c, cs2, constraint_mod(c));
+    --
+    new_cs;
+  }
+
+  case pow {
+    op = POW;
+    cs := list_cross(cs1, cs2);
+    cs =: list_combine(cs_fst, cs_snd);
+    pow_cs := list_map(i, indices(cs), constraint_pow(cs_fst[i], cs_snd[i])) { [_] };
+    --
+    list_flatten(pow_cs);
+  }
+;
 
 typing function apply_binop_extremities(op: binop, c1: int_constraint, c2: int_constraint) ->
          (new_cs: list0(int_constraint))
@@ -6119,7 +13600,19 @@ typing function possible_extremities_left(op: binop, a: expr, b: expr) ->
   cases where applying {op} to {a} and {b} would lead to
   a \dynamicerrorterm{}.",
   prose_application = "",
-};
+} =
+  case mul {
+    op = MUL;
+    --
+    make_list((a, a), (a, b), (b, a), (b, b));
+  }
+
+  case other {
+    op in make_set(DIV, DIVRM, SHR, SHL, ADD, SUB);
+    --
+    make_singleton_list((a, b));
+  }
+;
 
 typing function possible_extremities_right(op: binop, c: expr, d: expr) ->
          (extpairs: list0((expr, expr)))
@@ -6130,7 +13623,37 @@ typing function possible_extremities_right(op: binop, c: expr, d: expr) ->
   cases where applying {op} to {c} and {d} would lead to
   a \dynamicerrorterm{}.",
   prose_application = "",
-};
+} =
+  case plus {
+    op = ADD;
+    --
+    make_singleton_list((c, d));
+  }
+
+  case minus {
+    op = SUB;
+    --
+    make_singleton_list((d, c));
+  }
+
+  case mul {
+    op = MUL;
+    --
+    make_list((c, c), (c, d), (d, c), (d, d));
+  }
+
+  case shl_shr {
+    op in make_set(SHL, SHR);
+    --
+    make_list((d, ELint(zero)), (ELint(zero), d));
+  }
+
+  case div_divrm {
+    op in make_set(DIV, DIVRM);
+    --
+    make_list((d, ELint(one)), (ELint(one), d));
+  }
+;
 
 typing function constraint_mod(c: int_constraint) ->
          (new_c: int_constraint)
@@ -6139,7 +13662,19 @@ typing function constraint_mod(c: int_constraint) ->
   expression in {c} that is maximal. This is needed to
   apply the modulus operation to a pair of constraints.",
   prose_application = "",
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    --
+    Constraint_Range(ELint(zero), AbbrevEBinop(SUB, e, ELint(one)));
+  }
+
+  case range {
+    c =: Constraint_Range(_, e);
+    --
+    Constraint_Range(ELint(zero), AbbrevEBinop(SUB, e, ELint(one)));
+  }
+;
 
 typing function constraint_pow(c1: int_constraint, c2: int_constraint) ->
          (new_cs: list1(int_constraint))
@@ -6149,10 +13684,79 @@ typing function constraint_pow(c1: int_constraint, c2: int_constraint) ->
   operation to the constraints {c1} and {c2}.",
   prose_application = "\hyperlink{relation-constraintpow}{symbolically applying} the $\POW$
                         operation to {c1} and {c2} yields constraint list {new_cs}",
-};
+} =
+  case exact_exact {
+    c1 =: Constraint_Exact(a);
+    c2 =: Constraint_Exact(c);
+    --
+    make_singleton_list(AbbrevConstraintExact(AbbrevEBinop(POW, a, c)));
+  }
+
+  case range_exact {
+    c1 =: Constraint_Range(a, b);
+    c2 =: Constraint_Exact(c);
+    mac := AbbrevEBinop(POW, E_Unop(NEG, a), c);
+    --
+    make_list(
+      AbbrevConstraintRange(ELint(zero), AbbrevEBinop(POW, b, c)),
+      AbbrevConstraintRange(E_Unop(NEG, mac), mac))
+    { [_] };
+  }
+
+  case exact_range {
+    c1 =: Constraint_Exact(a);
+    c2 =: Constraint_Range(c, d);
+    mad := AbbrevEBinop(POW, E_Unop(NEG, a), d);
+    --
+    make_list(
+      AbbrevConstraintRange(ELint(zero), AbbrevEBinop(POW, a, d)),
+      AbbrevConstraintRange(E_Unop(NEG, mad), mad),
+      AbbrevConstraintExact(ELint(one)))
+      { [_]} ;
+  }
+
+  case range_range {
+    c1 =: Constraint_Range(a, b);
+    c2 =: Constraint_Range(c, d);
+    mad := AbbrevEBinop(POW, E_Unop(NEG, a), d);
+    --
+    make_list(
+      AbbrevConstraintRange(ELint(zero), AbbrevEBinop(POW, b, d)),
+      AbbrevConstraintRange(E_Unop(NEG, mad), mad),
+      AbbrevConstraintExact(ELint(one)))
+    { [_] };
+  }
+;
 
 //////////////////////////////////////////////////
 // Relations for Type Attributes
+
+typing function is_unconstrained_integer(t: ty) -> Bool
+{
+  "Tests whether {t} is the unconstrained integer type.",
+  prose_application = "",
+} =
+  --
+  t =: T_Int(Unconstrained);
+;
+
+typing function is_parameterized_integer(t: ty) -> Bool
+{
+  "Tests whether {t} is a parameterized integer type.",
+  prose_application = "",
+} =
+  --
+  t =: T_Int(Parameterized(_));
+;
+
+typing function is_well_constrained_integer(t: ty) -> Bool
+{
+  "Tests whether {t} is a well-constrained integer type.",
+  prose_application = "",
+} =
+  --
+  t =: T_Int(WellConstrained(_));
+;
 
 typing function is_builtin_singular(ty: ty) -> (b: Bool)
 {
@@ -6282,7 +13886,7 @@ typing function make_anonymous(tenv: static_envs, ty: ty) ->
 ;
 
 typing function check_constrained_integer(tenv: static_envs, t: ty) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the type {t} is a
   \constrainedintegerterm{} type. If so, the result is
@@ -6296,7 +13900,7 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
   }
 
   case parameterized {
-    t =: T_Int(Parameterized(_));
+    is_parameterized_integer(t);
     --
     True;
   }
@@ -6318,8 +13922,14 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
 //////////////////////////////////////////////////
 // Relations for Type Declarations
 
-typing relation declare_type(genv: global_static_envs, name: Identifier, ty: ty, s: option((Identifier, list0(field)))) ->
-         (new_genv: global_static_envs, t2: ty, s': option((Identifier, list0(field)))) | type_error
+typing relation declare_type(
+  genv: global_static_envs,
+  name: Identifier,
+  ty: ty,
+  s: option((Identifier, list0(field)))) ->
+         (new_genv: global_static_envs,
+         t2: ty,
+         s': option((Identifier, list0(field)))) | type_error
 {
   "declares a type named {name} with type {ty} and
   \optionalterm{} additional fields over another type {s} in
@@ -6330,10 +13940,30 @@ typing relation declare_type(genv: global_static_envs, name: Identifier, ty: ty,
   \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  check_var_not_in_genv(genv, name) -> True;
+  with_empty_local(genv) -> tenv;
+  annotate_type(True, tenv, ty) -> (t1, ses_t);
+  annotate_extra_fields(tenv, name, t1, s) -> (tenv1, t2, s');
+  ses_is_pure(ses_t) -> b;
+  purity := if_then_else(b, SE_Pure, SE_Readonly);
+  add_type(tenv1, name, t2, purity) -> tenv2;
+  case enum {
+    t2 =: T_Enum(ids);
+    declare_enum_labels(tenv2, name, ids) -> tenv3;
+    --
+    (tenv3.static_envs_G, t2, s');
+  }
+
+  case not_enum {
+    ast_label(t2) != label_T_Enum;
+    --
+    (tenv2.static_envs_G, t2, s');
+  }
+;
 
 typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
-         (new_tenv: static_envs, new_ty: ty, s': list0(field)) | type_error
+         (new_tenv: static_envs, new_ty: ty, s': option((Identifier, list0(field)))) | type_error
 {
   "annotates the type {ty} with the \optionalterm{} extra
   fields {s} in {tenv}, yielding the modified
@@ -6341,26 +13971,54 @@ typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: t
   extra fields {s'}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case none {
+    s = None;
+    --
+    (tenv, ty, None);
+  }
 
-typing relation annotate_type_opt(tenv: static_envs, ty_opt: option(t: ty)) ->
-         (ty_opt': option(ty)) | type_error
-{
-  "annotates the type {t} inside an \optionalterm{} {ty_opt},
-  if there is one, and leaves it as is if {ty_opt} is
-  $\None$. \ProseOtherwiseTypeError",
-  prose_application = "",
-};
+  case empty_fields {
+    s =: some((super_name, extra_fields'));
+    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
+    te_check(b, TE_UT) -> True;
+    extra_fields' = empty_list;
+    updated_subtypes := map_update(tenv.static_envs_G.subtypes, name, super_name);
+    new_genv := tenv.static_envs_G(subtypes: updated_subtypes);
+    new_tenv := tenv(static_envs_G: new_genv);
+    --
+    (new_tenv, ty, some((super_name, empty_list)))
+    { [_] };
+  }
 
-typing relation annotate_expr_opt(tenv: static_envs, expr_opt: option(expr)) ->
-         (res: (option(expr), option(ty))) | type_error
-{
-  "annotates the \optionalterm{} expression {expr_opt} in
-  {tenv} and returns a pair of \optionalterm{} expressions
-  for the type and annotated expression in {res}.
-  \ProseOtherwiseTypeError",
-  prose_application = "",
-};
+  case no_super {
+    s =: some((super_name, extra_fields'));
+    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
+    te_check(b, TE_UT) -> True;
+    extra_fields' != empty_list;
+    tenv.static_envs_G.declared_types(super_name) = bot;
+    --
+    TypeError(TE_UI);
+  }
+
+  case structured {
+    s =: some((super_name, extra_fields'));
+    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
+    te_check(b, TE_UT) -> True;
+    extra_fields' != empty_list;
+    tenv.static_envs_G.declared_types(super_name) =: (t_super, _);
+    te_check(ast_label(t_super) in make_set(label_T_Record, label_T_Exception), TE_UT) -> True
+    { (((_, [_]), _), _) };
+    t_super =: make_structured(L, fields);
+    new_ty := make_structured(L, concat(fields, extra_fields'));
+    updated_subtypes := map_update(tenv.static_envs_G.subtypes, name, super_name);
+    new_genv := tenv.static_envs_G(subtypes: updated_subtypes);
+    new_tenv := tenv(static_envs_G: new_genv);
+    --
+    (new_tenv, new_ty, some((super_name, empty_list)))
+    { [_] };
+  }
+;
 
 typing relation declared_type(tenv: static_envs, id: Identifier) ->
          (t: ty) | type_error
@@ -6370,7 +14028,19 @@ typing relation declared_type(tenv: static_envs, id: Identifier) ->
   identifier is not associated with a declared type, the
   result is a \typingerrorterm.",
   prose_application = "",
-};
+} =
+  case exists {
+    tenv.static_envs_G.declared_types(id) =: (t, _);
+    --
+    t;
+  }
+
+  case type_not_declared {
+    tenv.static_envs_G.declared_types(id) = bot;
+    --
+    TypeError(TE_UI);
+  }
+;
 
 typing function declare_enum_labels(tenv: static_envs, name: Identifier, ids: list1(Identifier)) ->
          (new_tenv: static_envs) | type_error
@@ -6380,7 +14050,22 @@ typing function declare_enum_labels(tenv: static_envs, name: Identifier, ids: li
   yielding the modified environment {new_tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case empty {
+    ids = empty_list;
+    --
+    tenv;
+  }
+
+  case non_empty {
+    ids =: match_non_empty_cons(id, ids1);
+    declare_const(tenv.static_envs_G, id, T_Named(name), L_Label(id)) -> genv1;
+    tenv1 := tenv(static_envs_G: genv1);
+    declare_enum_labels(tenv1, name, match_non_empty_list(ids1)) -> new_tenv;
+    --
+    new_tenv;
+  }
+;
 
 typing function declare_const(genv: global_static_envs, name: Identifier, ty: ty, v: literal) ->
          (new_genv: global_static_envs) | type_error
@@ -6391,10 +14076,16 @@ typing function declare_const(genv: global_static_envs, name: Identifier, ty: ty
   modified environment {new_genv}.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  add_global_storage(genv, name, GDK_Constant, ty) -> genv1;
+  add_global_constant(genv1, name, v) -> new_genv;
+  --
+  new_genv;
+;
 
 //////////////////////////////////////////////////
 // Relations for Types
+//////////////////////////////////////////////////
 
 typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
          (new_ty: ty, ses: powerset(TSideEffect)) | type_error
@@ -6407,7 +14098,174 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   \enumerationtypeterm{} or a \structuredtypeterm.
   \ProseOtherwiseTypeError",
   prose_application = "",
-};
+} =
+  case t_string {
+    ty =: T_String;
+    --
+    (ty, empty_set);
+  }
+
+  case t_real {
+    ty =: T_Real;
+    --
+    (ty, empty_set);
+  }
+
+  case t_bool {
+    ty =: T_Bool;
+    --
+    (ty, empty_set);
+  }
+
+  case t_named {
+    ty =: T_Named(x);
+    te_check(tenv.static_envs_G.declared_types(x) != bot, TE_UI) -> True;
+    tenv.static_envs_G.declared_types(x) =: (_, purity);
+    ses := make_set(GlobalEffect(purity), Immutability(True));
+    --
+    (ty, ses);
+  }
+
+  case t_int {
+    case pending_constrained {
+      ty =: T_Int(PendingConstrained);
+      --
+      TypeError(TE_UT); // UNCERTAIN: pending constrained types are rejected here.
+    }
+
+    case well_constrained {
+      ty =: T_Int(WellConstrained(constraints));
+      ( INDEX(i, constraints: annotate_constraint(tenv, constraints[i]) -> (constraints1[i], sess[i])) )
+      { ([_]) };
+      ses := union_list(sess);
+      --
+      (T_Int(typed_WellConstrained(match_non_empty_list(constraints1), Precision_Full)), ses)
+      { [_] };
+    }
+
+    case parameterized {
+      is_parameterized_integer(ty);
+      ses := make_set(LocalEffect(SE_Pure), Immutability(True));
+      --
+      (ty, ses);
+    }
+
+    case unconstrained {
+      ty =: unconstrained_integer;
+      --
+      (ty, empty_set);
+    }
+  }
+
+  case t_bits {
+    ty =: T_Bits(e_width, bitfields);
+    annotate_expr(tenv, e_width) -> (t_width, e_width', ses_width);
+    check_symbolically_evaluable(ses_width) -> True;
+    check_constrained_integer(tenv, t_width) -> True;
+    case with_bitfields {
+      bitfields != empty_list;
+      te_check(ses_is_pure(ses_width), TE_SEV) -> True;
+      annotate_bitfields(tenv, e_width', bitfields) -> (bitfields1, ses_bitfields)
+      { [_] };
+      static_eval(tenv, e_width') -> L_Int(width);
+      check_common_bitfields_align(tenv, bitfields1, z_to_n(width)) -> True;
+      ses := union(ses_width, ses_bitfields);
+      --
+      (T_Bits(e_width', bitfields1), ses);
+    }
+
+    case no_bitfields {
+      bitfields = empty_list;
+      --
+      (T_Bits(e_width', empty_list), ses_width);
+    }
+  }
+
+  case t_tuple {
+    ty =: T_Tuple(tys);
+    INDEX(i, tys: annotate_type(decl, tenv, tys[i]) -> (tys'[i], sess[i]));
+    ses := union_list(sess);
+    --
+    (T_Tuple(tys'), ses);
+  }
+
+  case t_enum_decl {
+    ty =: T_Enum(li);
+    check_no_duplicates(li) -> True;
+    INDEX(i, li: check_var_not_in_genv(tenv.static_envs_G, li[i]) -> True);
+    --
+    (T_Enum(li), empty_set);
+  }
+
+  case t_array {
+    ty =: T_Array(ArrayLength_Expr(e), t);
+    annotate_type(decl, tenv, t) -> (t', ses_t);
+    case expr_is_enum {
+      get_variable_enum(tenv, e) -> some((s, labels));
+      --
+      (T_Array(ArrayLength_Enum(s, labels), t'), ses_t)
+      { [_] };
+    }
+
+    case expr_not_enum {
+      get_variable_enum(tenv, e) -> None;
+      annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
+      ses := union(ses_t, ses_index);
+      --
+      (T_Array(ArrayLength_Expr(e'), t'), ses)
+      { [_] };
+    }
+  }
+
+  case t_record_exception {
+    ty =: make_structured(L, fields);
+    L in make_set(label_T_Record, label_T_Exception);
+    decl = True;
+    fields =: list_combine(field_names, field_types);
+    check_no_duplicates(field_names) -> True;
+    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
+    { ([_]) };
+    ses := union_list(sess);
+    fields' := list_combine(field_names, tys);
+    --
+    (make_structured(L, fields'), ses);
+  }
+
+  case t_collection {
+    ty =: T_Collection(fields);
+    decl = False;
+    fields =: list_combine(field_names, field_types);
+    check_no_duplicates(field_names) -> True;
+    check_no_duplicates(field_names) -> True;
+    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
+    { ([_]) };
+    ses := union_list(sess);
+    INDEX(i, tys: check_structure_label(tenv, tys[i], label_T_Bits) -> True);
+    fields' := list_map(i, indices(fields), (field_names[i], tys[i]));
+    --
+    (T_Collection(fields'), ses);
+  }
+
+  case t_non_decl {
+    decl = False;
+    ast_label(ty) in make_set(label_T_Enum, label_T_Record, label_T_Exception);
+    --
+    TypeError(TE_UT);
+  }
+;
+
+render rule annotate_type_t_int = annotate_type(t_int);
+render rule annotate_type_t_real = annotate_type(t_real);
+render rule annotate_type_t_string = annotate_type(t_string);
+render rule annotate_type_t_bool = annotate_type(t_bool);
+render rule annotate_type_t_bits = annotate_type(t_bits);
+render rule annotate_type_t_tuple = annotate_type(t_tuple);
+render rule annotate_type_t_enum_decl = annotate_type(t_enum_decl);
+render rule annotate_type_t_array = annotate_type(t_array);
+render rule annotate_type_t_record_exception = annotate_type(t_record_exception);
+render rule annotate_type_t_collection = annotate_type(t_collection);
+render rule annotate_type_t_named = annotate_type(t_named);
+render rule annotate_type_t_non_decl = annotate_type(t_non_decl);
 
 typing relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
          (new_c: int_constraint, ses: powerset(TSideEffect)) | type_error
@@ -6418,7 +14276,23 @@ typing relation annotate_constraint(tenv: static_envs, c: int_constraint) ->
   {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case exact {
+    c =: Constraint_Exact(e);
+    annotate_symbolic_constrained_integer(tenv, e) -> (e', ses);
+    --
+    (Constraint_Exact(e'), ses);
+  }
+
+  case range {
+    c =: Constraint_Range(e1, e2);
+    annotate_symbolic_constrained_integer(tenv, e1) -> (e1', ses1);
+    annotate_symbolic_constrained_integer(tenv, e2) -> (e2', ses2);
+    ses := union(ses1, ses2);
+    --
+    (Constraint_Range(e1', e2'), ses);
+  }
+;
 
 typing function get_variable_enum(tenv: static_envs, e: expr) ->
          (option((x: Identifier, labels: list1(Identifier))))
@@ -6429,7 +14303,38 @@ typing function get_variable_enum(tenv: static_envs, e: expr) ->
   {labels}, declared for the \enumerationtypeterm{}.
   Otherwise, the result is $\None$.",
   prose_application = "",
-};
+} =
+  case not_evar {
+    ast_label(e) != label_E_Var;
+    --
+    None;
+  }
+
+  case undeclared {
+    e =: E_Var(x);
+    tenv.static_envs_G.declared_types(x) = bot;
+    --
+    None;
+  }
+
+  case declared_enum {
+    e =: E_Var(x);
+    tenv.static_envs_G.declared_types(x) =: (t, _);
+    make_anonymous(tenv, t) -> t1;
+    t1 =: T_Enum(labels);
+    --
+    some((x, labels));
+  }
+
+  case declared_not_enum {
+    e =: E_Var(x);
+    tenv.static_envs_G.declared_types(x) =: (t, _);
+    make_anonymous(tenv, t) -> t1;
+    ast_label(t1) != label_T_Enum;
+    --
+    None;
+  }
+;
 
 typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr) ->
          (t: ty, e': expr, ses: powerset(TSideEffect)) | type_error
@@ -6441,28 +14346,52 @@ typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr)
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  annotate_expr(tenv, e) -> (t, e', ses);
+  check_symbolically_evaluable(ses) -> True;
+  --
+  (t, e', ses);
+;
 
-typing function check_underlying_integer(tenv: static_envs, t: ty) -> constants_set(True) | type_error
+typing function check_underlying_integer(tenv: static_envs, t: ty) -> CheckResult | type_error
 {
   "returns $\True$ if {t} has the \underlyingtypeterm{} of an \integertypeterm{} in the \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
   prose_application = "checking whether {t} has the \underlyingtypeterm{} of an \integertypeterm{} in {tenv} yields
   $\True$\ProseOrTypeError",
-};
+} =
+  make_anonymous(tenv, t) -> t';
+  te_check(ast_label(t') = label_T_Int, TE_UT) -> True;
+  --
+  True;
+;
 
 //////////////////////////////////////////////////
 // Relations for Type System Utilities
 
 typing function check_no_duplicates(ids: list0(Identifier)) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether the possibly-empty list of identifiers {ids}
   contains a duplicate identifier. If it does not, the
   result is $\True$ and otherwise the result is a
   \typingerrorterm{}.",
   prose_application = "",
-};
+} =
+  case okay {
+    unique_list(ids) -> ids1;
+    list_len(ids1) = list_len(ids);
+    --
+    True;
+  }
+
+  case error {
+    unique_list(ids) -> ids1;
+    list_len(ids1) != list_len(ids);
+    --
+    TypeError(TE_IAD);
+  }
+;
 
 typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) ->
          (r: option(bitfield))
@@ -6471,14 +14400,49 @@ typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) 
   in the list of bitfields {bitfields}, if there is one.
   Otherwise, the result is $\None$.",
   prose_application = "",
-};
+} =
+  case match {
+    bitfields =: match_cons(first_bf, _);
+    bitfield_get_name(first_bf) -> first_name;
+    name = first_name;
+    --
+    some(first_bf);
+  }
+
+  case tail {
+    bitfields =: match_cons(first_bf, bitfields');
+    bitfield_get_name(first_bf) -> first_name;
+    name != first_name;
+    find_bitfield_opt(name, bitfields') -> r;
+    --
+    r;
+  }
+
+  case empty {
+    bitfields = empty_list;
+    --
+    None;
+  }
+;
 
 typing function type_of_array_length(size: array_index) ->
          (t: ty)
 {
   "returns the type for the array length {size} in {t}.",
   prose_application = "",
-};
+} =
+  case enum {
+    size =: ArrayLength_Enum(name, _);
+    --
+    T_Named(name);
+  }
+
+  case expr {
+    size =: ArrayLength_Expr(_);
+    --
+    unconstrained_integer;
+  }
+;
 
 typing function with_empty_local(genv: global_static_envs) ->
          (tenv: static_envs)
@@ -6487,26 +14451,37 @@ typing function with_empty_local(genv: global_static_envs) ->
   \globalstaticenvironmentterm{} {genv} and the empty
   \localstaticenvironmentterm.",
   prose_application = "",
-};
+} =
+  --
+  [static_envs_G: genv, static_envs_L: empty_tenv.static_envs_L];
+;
 
 typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in {tenv}. If
   it is, the result is a \typingerrorterm{}, and
   otherwise the result is $\True$.",
   prose_application = "",
-};
+} =
+  te_check(is_undefined(tenv, id), TE_IAD) -> True;
+  --
+  True;
+;
 
 typing function check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
-         (constants_set(True)) | type_error
+         CheckResult | type_error
 {
   "checks whether {id} is already declared in the
   \globalstaticenvironmentterm{} {genv}. If it is, the
   result is a \typingerrorterm{}, and otherwise the
   result is $\True$.",
   prose_application = "",
-};
+} =
+  te_check(is_global_undefined(genv, id), TE_IAD) -> True;
+  --
+  True;
+;
 
 typing function add_local(tenv: static_envs, id: Identifier, ty: ty, ldk: local_decl_keyword) ->
          (new_tenv: static_envs)
@@ -6516,7 +14491,12 @@ typing function add_local(tenv: static_envs, id: Identifier, ty: ty, ldk: local_
   the local environment of {tenv}, resulting in the
   \staticenvironmentterm{} {new_tenv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(tenv.static_envs_L.local_storage_types, id, (ty, ldk));
+  new_lenv := tenv.static_envs_L(local_storage_types: updated_map);
+  --
+  tenv(static_envs_L: new_lenv);
+;
 
 typing function is_undefined(tenv: static_envs, x: Identifier) ->
          (b: Bool)
@@ -6525,7 +14505,11 @@ typing function is_undefined(tenv: static_envs, x: Identifier) ->
   storage element in the \staticenvironmentterm{}
   {tenv}.",
   prose_application = "",
-};
+} =
+  --
+  (is_global_undefined(tenv.static_envs_G, x) && is_local_undefined(tenv.static_envs_L, x))
+  { [_] };
+;
 
 typing function is_global_undefined(genv: global_static_envs, x: Identifier) ->
          (b: Bool)
@@ -6536,7 +14520,11 @@ typing function is_global_undefined(genv: global_static_envs, x: Identifier) ->
   \RequirementRef{GlobalNamespace}), yielding the result
   in {b}.",
   prose_application = "",
-};
+} =
+  b := (genv.global_storage_types(x) = bot) && (genv.declared_types(x) = bot);
+  --
+  b;
+;
 
 typing function is_local_undefined(lenv: local_static_envs, x: Identifier) ->
          (b: Bool)
@@ -6545,18 +14533,31 @@ typing function is_local_undefined(lenv: local_static_envs, x: Identifier) ->
   element in the static local environment {lenv},
   yielding the result in {b}.",
   prose_application = "",
-};
-
-typing function lookup_constant(tenv: static_envs, s: Identifier) ->
-         (v: literal) | constants_set(bot)
-{
-  "looks up the environment {tenv} for a constant {v}
-  associated with an identifier {s}. The result is
-  $\bot$ if {s} is not associated with any constant.",
-  prose_application = "",
 } =
   --
-  tenv.static_envs_G.constant_values(s);
+  lenv.local_storage_types(x) = bot;
+;
+
+typing function lookup_constant(tenv: static_envs, s: Identifier) ->
+         (v_opt: option(literal))
+{
+  "looks up the environment {tenv} for a constant
+  associated with an identifier {s}. The result is
+  $\None$ if {s} is not associated with any constant.",
+  prose_application = "",
+} =
+  tenv.static_envs_G.constant_values(s) =: c;
+  case exists {
+    c != bot;
+    --
+    some(c);
+  }
+
+  case does_not_exist {
+    c = bot;
+    --
+    None;
+  }
 ;
 
 typing function add_global_constant(genv: global_static_envs, name: Identifier, v: literal) ->
@@ -6566,16 +14567,39 @@ typing function add_global_constant(genv: global_static_envs, name: Identifier, 
   \globalstaticenvironmentterm{} {genv}, yielding the
   updated \globalstaticenvironmentterm{} {new_genv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(genv.constant_values, name, v);
+  --
+  genv(constant_values: updated_map);
+;
 
 typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
-         (e: expr) | constants_set(bot)
+         (e: option(expr))
 {
   "looks up the \staticenvironmentterm{} {tenv} for an
   immutable expression associated with the identifier
   {x}, returning $\bot$ if there is none.",
   prose_application = "",
-};
+} =
+  case local {
+    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) =: some(e);
+    --
+    some(e);
+  }
+
+  case global {
+    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) =: some(e);
+    --
+    some(e);
+  }
+
+  case none {
+    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) = None;
+    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) = None;
+    --
+    None;
+  }
+;
 
 typing function add_global_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
          (new_tenv: static_envs)
@@ -6586,7 +14610,12 @@ typing function add_global_immutable_expr(tenv: static_envs, x: Identifier, e: e
   \staticenvironmentterm{} {tenv}, resulting in the
   updated environment {new_tenv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(tenv.static_envs_G.global_expr_equiv, x, e);
+  new_genv := tenv.static_envs_G(global_expr_equiv: updated_map);
+  --
+  tenv(static_envs_G: new_genv);
+;
 
 typing function add_local_immutable_expr(tenv: static_envs, x: Identifier, e: expr) ->
          (new_tenv: static_envs)
@@ -6597,7 +14626,12 @@ typing function add_local_immutable_expr(tenv: static_envs, x: Identifier, e: ex
   \staticenvironmentterm{} {tenv}, resulting in the
   updated environment {new_tenv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(tenv.static_envs_L.local_expr_equiv, x, e);
+  new_lenv := tenv.static_envs_L(local_expr_equiv: updated_map);
+  --
+  tenv(static_envs_L: new_lenv);
+;
 
 typing function should_remember_immutable_expression(ses: powerset(TSideEffect)) ->
          (b: Bool)
@@ -6610,7 +14644,10 @@ typing function should_remember_immutable_expression(ses: powerset(TSideEffect))
   to reason about type satisfaction, yielding the result
   in {b}.",
   prose_application = "",
-};
+} =
+  --
+  is_symbolically_evaluable(ses);
+;
 
 typing function add_immutable_expression(
     tenv: static_envs,
@@ -6634,7 +14671,47 @@ typing function add_immutable_expression(
   prose_application = "",
   math_macro = \addimmutableexpression,
   math_layout = [[_,_,_,_],_],
-};
+} =
+  case remember {
+    ldk = LDK_Let;
+    e_opt =: some((e1, ses_e1));
+    should_remember_immutable_expression(ses_e1) -> True;
+    normalize_opt(tenv, e1) -> some(e');
+    add_local_immutable_expr(tenv, x, e') -> new_tenv;
+    --
+    new_tenv;
+  }
+
+  case skip_not_let {
+    ldk != LDK_Let;
+    --
+    tenv;
+  }
+
+  case skip_none {
+    ldk = LDK_Let;
+    e_opt = None;
+    --
+    tenv;
+  }
+
+  case normalize_failed {
+    ldk = LDK_Let;
+    e_opt =: some((e1, ses_e1));
+    should_remember_immutable_expression(ses_e1) -> True;
+    normalize_opt(tenv, e1) -> None;
+    --
+    tenv;
+  }
+
+  case skip_not_symbolic {
+    ldk = LDK_Let;
+    e_opt =: some((expr1, ses_e1));
+    should_remember_immutable_expression(ses_e1) -> False;
+    --
+    tenv;
+  }
+;
 
 typing function add_subprogram(tenv: static_envs, name: Strings, func_def: func, s: powerset(TSideEffect)) ->
          (new_tenv: static_envs)
@@ -6645,7 +14722,12 @@ typing function add_subprogram(tenv: static_envs, name: Strings, func_def: func,
   \sideeffectdescriptorsterm{} {s} in {tenv}, resulting
   in a new \staticenvironmentterm{} {new_tenv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(tenv.static_envs_G.subprogram, name, (func_def, s));
+  new_genv := tenv.static_envs_G(subprogram: updated_map);
+  --
+  tenv(static_envs_G: new_genv);
+;
 
 typing function add_type(tenv: static_envs, name: Identifier, ty: ty, f: TPurity) ->
          (new_tenv: static_envs)
@@ -6655,4 +14737,9 @@ typing function add_type(tenv: static_envs, name: Identifier, ty: ty, f: TPurity
   {tenv}, yielding the modified \staticenvironmentterm{}
   {new_tenv}.",
   prose_application = "",
-};
+} =
+  updated_map := map_update(tenv.static_envs_G.declared_types, name, (ty, f));
+  new_genv := tenv.static_envs_G(declared_types: updated_map);
+  --
+  tenv(static_envs_G: new_genv);
+;

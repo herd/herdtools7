@@ -61,6 +61,7 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
@@ -89,6 +90,8 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{static_eval}
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
 
 \TypingRuleDef{StaticEnvToEnv}
@@ -126,3 +129,5 @@ is transformed into the dynamic environment $\env$, defined as follows:
   \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, \{\dynamicenvsG: \vglobal, \dynamicenvsL: \vlocal\})}{\env}
 }
 \end{mathpar}
+% TODO: re-translate once empty_func has been introduced.
+% \RenderRule{static_env_to_env}

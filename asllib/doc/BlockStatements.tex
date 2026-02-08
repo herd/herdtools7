@@ -114,6 +114,7 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[returning]{
   \env \eqname (\tenv,\denv)\\
@@ -152,6 +153,8 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
   \evalblock(\env, \stm) \evalarrow \Throwing(\vv,\vt,\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_block}
 \CodeSubsection{\EvalBlockBegin}{\EvalBlockEnd}{../Interpreter.ml}
 
 That is, evaluating a block discards the bindings for variables declared inside $\stm$.
@@ -165,6 +168,7 @@ See \ExampleRef{Block Statements}.
 \ProseEqdef{$\newdenv$}{$\vinnerenv$ without the bindings to local storage elements that are not in $\vouterenv$}.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   {
@@ -179,3 +183,5 @@ See \ExampleRef{Block Statements}.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{pop_local_scope}

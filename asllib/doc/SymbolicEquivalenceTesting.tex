@@ -71,7 +71,6 @@ definitions above.
 \section{Symbolic Expressions\label{sec:symbolicexpressions}}
 \hypertarget{def-symbolicexpressionterm}{}
 Our symbolic reduction and equivalence testing rules employ \emph{\symbolicexpressionsterm}, defined below:
-\hypertarget{type-Qnonzero}{}
 \RenderTypes{symbolic_expressions}
 
 These \symbolicexpressionsterm{} provide a canonical representation for multivariate polynomials
@@ -147,9 +146,15 @@ For example,
     -1\cdot x^3 \cdot y \cdot z^2 + \frac{3}{4} \cdot \vx^2\cdot \vy \enspace.
 \]
 
+\RenderRelation{polynomial_of_int} returns the polynomial representation of an integer literal:
+\[
+\polynomialofint(\vi) \typearrow \overname{\{\emptyfunc \mapsto \vi\}}{\vp} \enspace.
+\]
+
+\RenderRelation{polynomial_of_var} returns the polynomial representation of a variable:
+\RenderRule{polynomial_of_var}
+
 \RenderRelation{add_polynomials}
-
-
 \begin{mathpar}
 \inferrule{
   {
@@ -205,7 +210,7 @@ then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y 
     \end{array}
     \right\}
   }\\
-  \orderedps \eqdef \listset(\vps)\\
+  \orderedps \eqdef \listset{\vps}\\
   \addpolynomials(i=1..k: \orderedps) \typearrow \vp\\
 }{
   \mulpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \vp
@@ -298,6 +303,7 @@ and their corresponding normalized expressions.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
@@ -313,6 +319,8 @@ and their corresponding normalized expressions.
   \normalize(\tenv, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{normalize}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
 \TypingRuleDef{ReduceConstraint}
@@ -343,6 +351,7 @@ and their simplified counterparts.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \normalize(\tenv, \ve) \typearrow \vep
@@ -360,6 +369,8 @@ and their simplified counterparts.
   \reduceconstraint(\tenv, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{reduce_constraint}
 \CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ReduceConstraints}
@@ -376,6 +387,7 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
@@ -384,6 +396,8 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
   \reduceconstraints(\tenv, \cs) \typearrow \newcs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{reduce_constraints}
 \CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ToIR}
@@ -612,6 +626,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[literal\_int]{}
 {
@@ -847,6 +862,16 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+We make use of the helper relations:
+\RenderRelation{is_div_binop}
+It defined as follows:
+\RenderRule{is_div_binop}
+\RenderRelation{scale_polynomial}
+It is defined as follows:
+\RenderRule{scale_polynomial}
+
+\RenderRule{to_ir}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
 \TypingRuleDef{ExprEqual}
@@ -874,6 +899,7 @@ comprising the array lengths are equivalent, as detailed in comments.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[norm\_true]{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
@@ -888,6 +914,8 @@ comprising the array lengths are equivalent, as detailed in comments.
   \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{expr_equal}
 
 \TypingRuleDef{ExprEqualNorm}
 \RenderRelation{expr_equal_norm}
@@ -919,6 +947,7 @@ See \ExampleRef{Expression Equivalence}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[all\_supported]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError\hva\\\\
@@ -940,6 +969,8 @@ See \ExampleRef{Expression Equivalence}.
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{expr_equal_norm}
 
 \TypingRuleDef{ExprEqualCase}
 \RenderRelation{expr_equal_case}
@@ -975,9 +1006,9 @@ See \ExampleRef{Expression Equivalence}.
     \item checking whether $\nameone$ is equal to $\nametwo$ either yields $\True$ or $\False$, which short-circuits the entire rule;
     \item checking whether the lists of arguments $\vargsone$ and $\vargstwo$ have the same length yields
           $\True$ or $\False$, which short-circuits the entire rule;
-    \item for each index $i$ in the list of indices for $\vargsone$, testing whether $\vargsone[i]$ and $\vargstwo[i]$
-          are \equivalentexprsterm{} in $\tenv$ yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vargsone$.
+    \item for each index $i$ in the list of indices for $\vargsone$, testing whether $\vargsone[\vi]$ and $\vargstwo[\vi]$
+          are \equivalentexprsterm{} in $\tenv$ yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for each index $i$ in the list of indices for $\vargsone$.
   \end{itemize}
 
   \item \AllApplyCase{e\_cond}
@@ -1074,9 +1105,9 @@ See \ExampleRef{Expression Equivalence}.
           that is, $\ETuple(\vltwo)$;
     \item checking whether the lengths of $\vlone$ and $\vltwo$ are equal yields either $\True$ or $\False$, which short-circuits
           the entire rule;
-    \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[i]$ is equivalent to $\vltwo[i]$
-          in $\tenv$ yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
+    \item for each index $i$ in the list of indices for $\vlone$, testing whether $\vlone[\vi]$ is equivalent to $\vltwo[\vi]$
+          in $\tenv$ yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for each index $i$ in the list of indices for $\vlone$.
   \end{itemize}
 
   \item \AllApplyCase{e\_array}
@@ -1126,6 +1157,9 @@ See \ExampleRef{Expression Equivalence}.
 \end{itemize}
 
 \FormallyParagraph
+Recall that a conjunction over an empty set equals $\True$.
+
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\veone) \neq \astlabel(\vetwo)
@@ -1146,15 +1180,14 @@ See \ExampleRef{Expression Equivalence}.
 }
 \end{mathpar}
 
-(Recall that a conjunction over an empty set equals $\True$.)
 \begin{mathpar}
 \inferrule[e\_call]{
   \veone = \ECall(\nameone, \vargsone, \Ignore)\\
-  \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\hva\\\\
-  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\hva\\\\
-  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\hva\\\\
-  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[i], \vargstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
-  \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vb_i
+  \vetwo = \ECall(\nametwo, \vargstwo, \Ignore)\\\\
+  \booltrans(\nameone = \nametwo) \booltransarrow \True \terminateas \False\\\\
+  \equallength(\vargsone, \vargstwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vargsone): \exprequal(\tenv, \vargsone[\vi], \vargstwo[\vi]) \typearrow \vbs[\vi] \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vargsone)} \vbs[\vi]
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
@@ -1263,9 +1296,9 @@ See \ExampleRef{Expression Equivalence}.
 \inferrule[e\_tuple]{
   \veone = \ETuple(\vlone)\\
   \vetwo = \ETuple(\vltwo)\\
-  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\hva\\\\
-  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[i], \vltwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
-  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vb_i
+  \equallength(\vlone, \vltwo) \typearrow \True \terminateas \False\\\\
+  i \in \listrange(\vlone): \exprequal(\tenv, \vlone[\vi], \vltwo[\vi]) \typearrow \vbs[\vi] \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vlone)} \vbs[\vi]
 }{
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
@@ -1323,6 +1356,8 @@ See \ExampleRef{Expression Equivalence}.
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{expr_equal_case}
 
 \TypingRuleDef{TypeEqual}
 \RenderRelation{type_equal}
@@ -1420,13 +1455,14 @@ of \verb|Foo|.
     \item $\vttwo$ is a \tupletypeterm{} with list of types $\vtstwo$, that is $\TTuple(\vtstwo)$;
     \item checking whether the list of types $\vtsone$ has the same length as the list of types $\vtstwo$ yields $\True$
           or $\False$, which short-circuits the entire rule;
-    \item for each index $i$ in the list $\vtsone$, testing whether $\vtsone[i]$ is equivalent to $\vtstwo[i]$ in $\tenv$
-          yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for each index $i$ in the list $\vtsone$.
+    \item for each index $i$ in the list $\vtsone$, testing whether $\vtsone[\vi]$ is equivalent to $\vtstwo[\vi]$ in $\tenv$
+          yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for each index $i$ in the list $\vtsone$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vtone) \neq \astlabel(\vttwo)
@@ -1524,12 +1560,82 @@ of \verb|Foo|.
 \begin{mathpar}
 \inferrule[ttuple]{
   \equallength(\vtsone, \vtstwo) \typearrow \True \terminateas \False\\
-  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[i], \vtstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
-  \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vb_i
+  i \in \listrange(\vtsone): \typeequal(\tenv, \vtsone[\vi], \vtstwo[\vi]) \typearrow \vbs[\vi] \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i \in \listrange(\vtsone)} \vbs[\vi]
 }{
   \typeequal(\tenv, \overname{\TTuple(\vtsone)}{\vtone}, \overname{\TTuple(\vtstwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{type_equal}
+
+\TypingRuleDef{PatternEqual}
+\RenderRelation{pattern_equal}
+
+See \ExampleRef{Expression Equivalence}.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{all}
+  \begin{itemize}
+    \item $\vpone$ and $\vptwo$ are both $\PatternAll$;
+    \item $\vb$ is $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{any}
+  \begin{itemize}
+    \item $\vpone$ is $\PatternAny(\vpsone)$ and $\vptwo$ is $\PatternAny(\vpstwo)$;
+    \item checking whether $\vpsone$ and $\vpstwo$ have equal length yields $\True$ or $\False$, which short-circuits the entire rule;
+    \item for each index $i$ in $\vpsone$, testing whether $\vpsone[\vi]$ is equivalent to $\vpstwo[\vi]$ in $\tenv$
+          yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for each index $i$ in $\vpsone$.
+  \end{itemize}
+
+  \item \AllApplyCase{tuple}
+  \begin{itemize}
+    \item $\vpone$ is $\PatternTuple(\vpsone)$ and $\vptwo$ is $\PatternTuple(\vpstwo)$;
+    \item checking whether $\vpsone$ and $\vpstwo$ have equal length yields $\True$ or $\False$, which short-circuits the entire rule;
+    \item for each index $i$ in $\vpsone$, testing whether $\vpsone[\vi]$ is equivalent to $\vpstwo[\vi]$ in $\tenv$
+          yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for each index $i$ in $\vpsone$.
+  \end{itemize}
+
+  \item \AllApplyCase{geq\_leq\_single}
+  \begin{itemize}
+    \item $\vpone$ and $\vptwo$ are both $\PatternGeq(\veone)$ and $\PatternGeq(\vetwo)$, or both $\PatternLeq(\veone)$ and $\PatternLeq(\vetwo)$, or both $\PatternSingle(\veone)$ and $\PatternSingle(\vetwo)$;
+    \item testing whether $\veone$ is equivalent to $\vetwo$ in $\tenv$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item \AllApplyCase{mask}
+  \begin{itemize}
+    \item $\vpone$ is $\PatternMask(\vmone)$ and $\vptwo$ is $\PatternMask(\vmtwo)$;
+    \item $\vb$ is $\True$ if and only if $\vmone$ is equal to $\vmtwo$.
+  \end{itemize}
+
+  \item \AllApplyCase{not}
+  \begin{itemize}
+    \item $\vpone$ is $\PatternNot(\vpone')$ and $\vptwo$ is $\PatternNot(\vptwo')$;
+    \item testing whether $\vpone'$ is equivalent to $\vptwo'$ in $\tenv$ yields $\vb$\ProseOrTypeError.
+  \end{itemize}
+
+  \item \AllApplyCase{range}
+  \begin{itemize}
+    \item $\vpone$ is $\PatternRange(\veoneone, \veonetwo)$ and $\vptwo$ is $\PatternRange(\vetwoone, \vetwotwo)$;
+    \item testing whether $\veoneone$ is equivalent to $\vetwoone$ in $\tenv$ yields $\vbone$\ProseOrTypeError;
+    \item testing whether $\veonetwo$ is equivalent to $\vetwotwo$ in $\tenv$ yields $\vbtwo$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if both $\vbone$ and $\vbtwo$ are $\True$.
+  \end{itemize}
+
+  \item \AllApplyCase{other}
+  \begin{itemize}
+    \item $\vpone$ and $\vptwo$ have different forms;
+    \item $\vb$ is $\False$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\RenderRule{pattern_equal}
 
 \TypingRuleDef{BitwidthEqual}
 \RenderRelation{bitwidth_equal}
@@ -1543,6 +1649,7 @@ of the respective local declaration statements.
 Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb \OrTypeError
@@ -1550,6 +1657,8 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
   \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{bitwidth_equal}
 
 \TypingRuleDef{BitFieldsEqual}
 \RenderRelation{bitfields_equal}
@@ -1578,13 +1687,14 @@ of \verb|Foo| are not equivalent.
   \item \AllApplyCase{same\_lengths}
   \begin{itemize}
     \item the number of bitfields in $\bfone$ is the same as the number of bitfields in $\bftwo$;
-    \item testing whether the bitfield $\bfone[i]$ is equivalent to $\bftwo[i]$ in $\tenv$ for every index
-          of $\bfone$ yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if $\vb_i$ is $\True$ for every index of $\bfone$.
+    \item testing whether the bitfield $\bfone[\vi]$ is equivalent to $\bftwo[\vi]$ in $\tenv$ for every index
+          of $\bfone$ yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if $\vbs[\vi]$ is $\True$ for every index of $\bfone$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\bfone, \bftwo) \typearrow \False
@@ -1594,12 +1704,14 @@ of \verb|Foo| are not equivalent.
 \hva\and
 \inferrule[same\_lengths]{
   \equallength(\bfone, \bftwo) \typearrow \True\\
-  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[i], \bftwo[i]) \typearrow \vb_i\hva\\\\
-  \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vb_i
+  i\in\listrange(\bfone): \bitfieldequal(\tenv, \bfone[\vi], \bftwo[\vi]) \typearrow \vbs[\vi]\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\bfone)} \vbs[\vi]
 }{
   \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{bitfields_equal}
 
 \TypingRuleDef{BitFieldEqual}
 \RenderRelation{bitfield_equal}
@@ -1661,6 +1773,7 @@ or different nested bitfields.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\bfone) \neq \astlabel(\bftwo)
@@ -1699,6 +1812,8 @@ or different nested bitfields.
   \bitfieldequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
 \end{mathpar}
+} % BACKUP_ORIGINAL_RULE
+\RenderRule{bitfield_equal}
 
 \TypingRuleDef{ConstraintsEqual}
 \RenderRelation{constraints_equal}
@@ -1721,21 +1836,24 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 \begin{itemize}
   \item checking whether the number of constraints in $\csone$ is the same as the number of constraints in $\cstwo$
         yields $\True$\ProseTerminateAs{\False};
-  \item testing whether $\csone[i]$ and $\cstwo[i]$ are \equivalentconstraintsterm{} in $\tenv$
-        yields $\vb_i$ for each index in the index in the indices for $\csone$ ($i\in\listrange(\csone)$)\ProseOrTypeError;
-  \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\csone$.
+  \item testing whether $\csone[\vi]$ and $\cstwo[\vi]$ are \equivalentconstraintsterm{} in $\tenv$
+        yields $\vbs[\vi]$ for each index in the index in the indices for $\csone$ ($i\in\listrange(\csone)$)\ProseOrTypeError;
+  \item $\vb$ is $\True$ if and only if all $\vbs[\vi]$ are $\True$ for each index in the indices for $\csone$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
-  i\in\listrange(\csone): \constraintequal(\tenv, \csone[i], \cstwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
-  \vb \eqdef \bigwedge_{i\in\listrange(\csone)} \vb_i
+  i\in\listrange(\csone): \constraintequal(\tenv, \csone[\vi], \cstwo[\vi]) \typearrow \vbs[\vi] \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\csone)} \vbs[\vi]
 }{
   \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{constraints_equal}
 
 \TypingRuleDef{ConstraintEqual}
 \RenderRelation{constraint_equal}
@@ -1773,6 +1891,7 @@ corresponding constraint on the left-hand-side of that assignment.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vcone) \neq \astlabel(\vctwo)
@@ -1798,6 +1917,8 @@ corresponding constraint on the left-hand-side of that assignment.
   \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{constraint_equal}
 
 \TypingRuleDef{SlicesEqual}
 \RenderRelation{slices_equal}
@@ -1818,13 +1939,14 @@ corresponding constraint on the left-hand-side of that assignment.
   \item \AllApplyCase{same\_lengths}
   \begin{itemize}
     \item checking whether the number of slices in $\slicesone$ is equal to the number of slices in $\slicestwo$ yields $\True$;
-    \item determining whether the expression $\slicesone[i]$ is equivalent to $\slicestwo[i]$ in $\tenv$
-          for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone)$), yields $\vb_i$\ProseOrTypeError;
-    \item $\vb$ is $\True$ if and only if all $\vb_i$ are $\True$ for each index in the indices for $\slicesone$.
+    \item determining whether the expression $\slicesone[\vi]$ is equivalent to $\slicestwo[\vi]$ in $\tenv$
+          for each index in the indices for $\slicesone$ ($i \in \listrange(\slicesone)$), yields $\vbs[\vi]$\ProseOrTypeError;
+    \item $\vb$ is $\True$ if and only if all $\vbs[\vi]$ are $\True$ for each index in the indices for $\slicesone$.
   \end{itemize}
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\slicesone, \slicestwo) \typearrow \False
@@ -1834,12 +1956,14 @@ corresponding constraint on the left-hand-side of that assignment.
 \hva\and
 \inferrule[same\_lengths]{
   \equallength(\slicesone, \slicestwo) \typearrow \True\\
-  i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[i], \slicestwo[i]) \typearrow \vb_i \OrTypeError\hva\\\\
-  \vb \eqdef \bigwedge_{i\in\listrange(\slicesone)} \vb_i
+  i\in\listrange(\slicesone): \sliceequal(\tenv, \slicesone[\vi], \slicestwo[\vi]) \typearrow \vbs[\vi] \OrTypeError\\\\
+  \vb \eqdef \bigwedge_{i\in\listrange(\slicesone)} \vbs[\vi]
 }{
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{slices_equal}
 
 \TypingRuleDef{SliceEqual}
 \RenderRelation{slice_equal}
@@ -1885,6 +2009,7 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single\_expr]{
   \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
@@ -1912,6 +2037,8 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
   \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{slice_equal}
 
 \TypingRuleDef{ArrayLengthEqual}
 \RenderRelation{array_length_equal}
@@ -1951,6 +2078,7 @@ even though they both contain three elements each.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vlone) \neq \astlabel(\vltwo)
@@ -1978,6 +2106,8 @@ even though they both contain three elements each.
   \arraylengthequal(\vlone, \vltwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{array_length_equal}
 
 \TypingRuleDef{PolynomialToExpr}
 \RenderRelation{polynomial_to_expr}
@@ -2011,6 +2141,11 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 \end{itemize}
 
 \FormallyParagraph
+\texthypertarget{relation-sortmonomialbindings}
+The function $\sortmonomialbindings{f}$ sorts the list of monomial-to-factor bindings in $f$
+using the relation $\comparemonomialbindings$.
+
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2019,7 +2154,7 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 \hva\and
 \inferrule[non\_empty]{
   \monomsandfactors \eqdef \{ (\vm,\vq) \;|\; \vm\in\dom(f) \land f(\vm) = \vq \}\\
-  \monomsandfactorslist \eqdef \listset(\monomsandfactors)\hva\\
+  \monomsandfactorslist \eqdef \listset{\monomsandfactors}\\
   \monoms \eqdef \sort(\monomsandfactorslist, \comparemonomialbindings)\\
   \monomialstoexpr(\monoms) \typearrow (\veone, \vsone)\hva\\
   {
@@ -2033,6 +2168,8 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
   \polynomialtoexpr(\overname{f}{\vp}) \typearrow \ve
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{polynomial_to_expr}
 
 \TypingRuleDef{CompareMonomialBindings}
 \RenderRelation{compare_monomial_bindings}
@@ -2069,10 +2206,10 @@ first identifier for which the two monomials differ.
 \end{itemize}
 
 \FormallyParagraph
-\hypertarget{def-compareidentifier}{}
-The function $\compareidentifier$ compares two identifiers, which are lists of ASCII characters,
+The function \RenderConstant{compare_identifier} compares two identifiers, which are lists of ASCII characters,
 via the lexicographic ordering.
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[equal\_monomials]{
   \vmone = \vmtwo\\
@@ -2099,6 +2236,8 @@ via the lexicographic ordering.
   \comparemonomialbindings((\vmone, \vqone), (\vmtwo, \vqtwo)) \typearrow \vs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{compare_monomial_bindings}
 
 \TypingRuleDef{MonomialsToExpr}
 \RenderRelation{monomials_to_expr}
@@ -2129,6 +2268,7 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2144,6 +2284,8 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
   \monomialstoexpr(\overname{[(\vm,q)] \concat \monomsone}{\monoms}) \typearrow (\ve, \vs)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{monomials_to_expr}
 
 \TypingRuleDef{MonomialToExpr}
 \RenderRelation{monomial_to_expr}
@@ -2205,6 +2347,7 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[q\_zero]{
   q = 0\\
@@ -2237,6 +2380,8 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{-1}{\vs})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{monomial_to_expr}
 
 \TypingRuleDef{SymAddExpr}
 \RenderRelation{sym_add_expr}
@@ -2300,6 +2445,7 @@ The following are some examples of inputs and outputs for symbolic addition:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[zero]{
   (\vsone = 0 \lor \vstwo = 0)\\
@@ -2322,6 +2468,8 @@ The following are some examples of inputs and outputs for symbolic addition:
   \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{sym_add_expr}
 
 \TypingRuleDef{UnitaryMonomialsToExpr}
 \RenderRelation{unitary_monomials_to_expr}
@@ -2376,6 +2524,7 @@ and the corresponding expressions, in comments.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2421,15 +2570,11 @@ and the corresponding expressions, in comments.
   \unitarymonomialstoexpr(\overname{[(\vv, n)] \concat \monomsone}{\monoms}) \typearrow \ve
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{unitary_monomials_to_expr}
 
 \TypingRuleDef{SymMulExpr}
-\hypertarget{def-symmulexpr}{}
-The function
-$
-\symmulexpr(\overname{\expr}{\veone} \aslsep \overname{\expr}{\vetwo}) \typearrow \overname{\expr}{\ve}
-$
-produces an expression representing the multiplication of expressions $\veone$ and $\vetwo$,
-simplifying away the case where one of the operands is the literal one.
+\RenderRelation{sym_mul_expr}
 
 \ExampleDef{Symbolic Multiplication}
 The following table shows examples of symbolically multiplying the expression $\veone$ by the expression $\vetwo$,
@@ -2461,6 +2606,7 @@ yielding the result in $\ve$:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[one\_operand]{
   (\veone = \ELiteral(\LInt(1)) \lor \vetwo = \ELiteral(\LInt(1)))\\
@@ -2477,6 +2623,8 @@ yielding the result in $\ve$:
   \symmulexpr(\veone, \vetwo) \typearrow \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{sym_mul_expr}
 
 \TypingRuleDef{TypeOf}
 \RenderRelation{type_of}
@@ -2516,6 +2664,7 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \tenv.\staticenvsL.\localstoragetypes(\vs) = \tty
@@ -2537,6 +2686,8 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
   \typeof(\tenv, \vs) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{type_of}
 \CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}
 
 \TypingRuleDef{NormalizeOpt}
@@ -2563,6 +2714,7 @@ See \ExampleRef{Normalize}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
@@ -2578,3 +2730,5 @@ See \ExampleRef{Normalize}.
   \normalize(\tenv, \ve) \typearrow \overname{\None}{\neweopt}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{normalize_opt}
