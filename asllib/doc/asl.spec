@@ -5043,7 +5043,10 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 {
   "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}.",
   prose_application = "testing whether the bit {b} matches the mask value {mv} yields {res}",
-};
+} =
+  --
+  bot; // This rule is defined by a LaTeX table.
+;
 
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
