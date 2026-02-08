@@ -476,7 +476,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
-  \vqualifier \eqdef \choice{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \hva\\\\
+  \vqualifier \eqdef \ifthenelseop[H]{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \hva\\\\
   {
   \vgetter \eqdef
       \DFunc\left\{
@@ -672,6 +672,7 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\hva\\\\
@@ -682,6 +683,8 @@ See \ExampleRef{Annotating Subprogram Signatures} and
   \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{\newtenv.\staticenvsG}{\newgenv})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{typecheck_decl_func}
 
 \TypingRuleDef{AnnotateAndDeclareFunc}
 \RenderRelation{annotate_and_declare_func}
@@ -702,6 +705,7 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigfone, \vsesfone) \OrTypeError\hva\\\\
@@ -710,6 +714,8 @@ See \ExampleRef{Annotating Subprogram Signatures} and
   \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \overname{\vsesfone}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_and_declare_func}
 \CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateFuncSig}
@@ -753,6 +759,7 @@ is not a constrained expression.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv\\
@@ -812,6 +819,8 @@ is not a constrained expression.
   \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_func_sig}
 \CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateParams}
@@ -844,6 +853,7 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
@@ -859,6 +869,8 @@ Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
   \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_params}
 
 \TypingRuleDef{AnnotateOneParam}
 \RenderRelation{annotate_one_param}
@@ -900,6 +912,7 @@ since \verb|A| is also declared as a global storage element.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[type\_parameterized]{
   (\tyopt = \None \lor \tyopt = \some{ \unconstrainedinteger}) \\
@@ -923,6 +936,8 @@ since \verb|A| is also declared as a global storage element.
   \annotateoneparam(\tenv, \newtenv, (\vx, \some{\ttyp})) \typearrow (\newtenvp, \tty)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_one_param}
 
 \TypingRuleDef{CheckParamDecls}
 \RenderRelation{check_param_decls}
@@ -951,6 +966,7 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\hva\\\\
@@ -960,6 +976,8 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
   \checkparamdecls(\tenv, \funcsig) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_param_decls}
 
 \TypingRuleDef{ExtractParameters}
 \RenderRelation{extract_parameters}
@@ -1015,6 +1033,7 @@ are unsupported inside\\ \bitvectortypesterm{} of arguments.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{
   \funcsigtypes(\funcsig) \typearrow \emptylist
@@ -1033,6 +1052,8 @@ are unsupported inside\\ \bitvectortypesterm{} of arguments.
   \extractparameters(\tenv, \funcsig) \typearrow \uniqueparameters
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{extract_parameters}
 
 \TypingRuleDef{FuncSigTypes}
 \RenderRelation{func_sig_types}
@@ -1053,6 +1074,7 @@ in comments above their declarations.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1067,6 +1089,8 @@ in comments above their declarations.
   \funcsigtypes(\funcsig) \typearrow \overname{\vreturntype \concat \argtypes}{\tys}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{func_sig_types}
 
 \TypingRuleDef{ParametersOfTy}
 \RenderRelation{paramsofty}
@@ -1134,6 +1158,7 @@ in \listingref{ParametersOfTy} are as follows:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[tbits]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -1182,6 +1207,8 @@ in \listingref{ParametersOfTy} are as follows:
   \paramsofty(\tenv, \tty) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{paramsofty}
 
 \TypingRuleDef{ParametersOfExpr}
 \RenderRelation{params_of_expr}
@@ -1258,10 +1285,11 @@ for the expression \verb|A| appearing in the return type.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[eval]{
   \isundefined(\tenv, \vx) \typearrow \vb\\
-  \ids \eqdef \choice{\vb}{[\vx]}{\emptylist}
+  \ids \eqdef \ifthenelseop[H]{\vb}{[\vx]}{\emptylist}
 }{
   \paramsofexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \ids
 }
@@ -1311,6 +1339,8 @@ for the expression \verb|A| appearing in the return type.
   \paramsofexpr(\tenv, \ve) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{params_of_expr}
 
 \TypingRuleDef{ParametersOfConstraint}
 \RenderRelation{params_of_constraint}
@@ -1340,6 +1370,7 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \paramsofexpr(\tenv, \ve) \typearrow \ids
@@ -1356,6 +1387,8 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
   \paramsofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{params_of_constraint}
 
 \TypingRuleDef{AnnotateArgs}
 \RenderRelation{annotate_args}
@@ -1388,6 +1421,7 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc), \vsesin) \typearrow
@@ -1404,6 +1438,8 @@ In \listingref{AnnotateFuncSig}, the annotated arguments are
   {\begin{array}{r}\annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_args}
 
 \TypingRuleDef{AnnotateOneArg}
 \RenderRelation{annotate_one_arg}
@@ -1431,6 +1467,7 @@ as \collectiontypesterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vses) \OrTypeError \hva\\\\
@@ -1441,6 +1478,8 @@ as \collectiontypesterm.
   \typearrow (\newtenvp, \ttyp, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_one_arg}
 
 \TypingRuleDef{AnnotateReturnType}
 \RenderRelation{annotate_return_type}
@@ -1479,6 +1518,7 @@ as return types.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[no\_return\_type]{}
 {
@@ -1513,6 +1553,8 @@ as return types.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_return_type}
 
 \TypingRuleDef{CheckSubprogramPurity}
 \RenderRelation{check_subprogram_purity}
@@ -1551,6 +1593,7 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none\_or\_noreturn]{
   \vqualifier = \None \lor \vqualifier = \some{\Noreturn}
@@ -1574,6 +1617,8 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
   \checksubprogrampurity(\overname{\some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_subprogram_purity}
 
 \TypingRuleDef{DeclareOneFunc}
 \RenderRelation{declare_one_func}
@@ -1608,6 +1653,7 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1634,6 +1680,8 @@ See \ExampleRef{Updating the Static Environment for a Subprogram}.
   \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_one_func}
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
 \identi{HJRD} \identd{BTBR} \identi{FSFQ} \identi{PFGQ} \identr{PGFC}
 
@@ -1672,6 +1720,7 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \tenv.\staticenvsG.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
@@ -1682,6 +1731,8 @@ In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \v
   {\begin{array}{r}\subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \\ \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}\end{array}}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{subprogram_clash}
 \identd{BTBR} \identi{FSFQ} \identi{PFGQ}
 
 \TypingRuleDef{SubprogramTypesClash}
@@ -1784,6 +1835,7 @@ are ill-typed due to subprogram declaration clashes.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[first\_name]{
   \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot\\
@@ -1819,6 +1871,8 @@ are ill-typed due to subprogram declaration clashes.
   {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \newname)\end{array}}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{add_new_func}
 \identr{PGFC}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
@@ -1846,6 +1900,7 @@ and an example of a well-typed function --- \verb|flip_bits|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateblock(\tenv, \vf.\funcbody) \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
@@ -1858,7 +1913,8 @@ and an example of a well-typed function --- \verb|flip_bits|.
   \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_subprogram}
 \identi{GHGK} \identr{HWTV} \identr{SCHV} \identr{VDPC}
 \identr{TJKQ} \identi{LFJZ} \identi{BZVB} \identi{RQQB}
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
@@ -1896,6 +1952,7 @@ qualifier, yet it returns via a \passstatementterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \approxstmt(\tenv, \vbody) \typearrow \absconfigs\\
@@ -1904,6 +1961,8 @@ qualifier, yet it returns via a \passstatementterm.
   \checkcontrolflow(\tenv, \vf, \vbody) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_control_flow}
 
 \TypingRuleDef{AllowedAbsConfigs}
 \RenderRelation{allowed_abs_configs}
@@ -1951,6 +2010,7 @@ by \verb|noreturn|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[noreturn]{
   \vf.\funcqualifierfield = \some{\Noreturn}
@@ -1974,6 +2034,8 @@ by \verb|noreturn|.
   \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{allowed_abs_configs}
 
 \TypingRuleDef{ApproxStmt}
 \RenderRelation{approx_stmt}
@@ -2094,6 +2156,7 @@ can be added, for example, an \unreachablestatementterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[s\_pass]{}{
   \approxstmt(\tenv, \overname{\SPass}{\vs}) \typearrow \overname{\{\AbsContinuing\}}{\absconfigs}
@@ -2119,7 +2182,7 @@ can be added, for example, an \unreachablestatementterm.
   \tenv.\staticenvsG.\subprograms(\call.\callname) = (\vf, \Ignore)\\
   {
   \absconfigs \eqdef
-  \ifthenelsestmt{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
+  \ifthenelseop[V]{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
   }
 }{
   \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs
@@ -2206,3 +2269,5 @@ can be added, for example, an \unreachablestatementterm.
   \approxstmt(\tenv, \overname{\STry(\vbody, \catchers, \votherwise)}{\vs}) \typearrow \absconfigs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_stmt}

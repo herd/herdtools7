@@ -113,7 +113,7 @@ is annotated with the type \verb|integer{3}|.
   \annotateexpr(\tenv, \ve) \typearrow (\vt, \overname{\ve}{\newe}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ELit}
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
@@ -131,11 +131,14 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 \item $\newenv$ is $\env$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \evalexpr(\env, \overname{\ELiteral(\vl)}{\ve}) \evalarrow \ResultExpr((\overname{\NVLiteral(\vl)}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_ELit}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
 \hypertarget{def-variableexpressionterm}{}
@@ -249,7 +252,7 @@ The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
   \annotateexpr(\tenv,\overname{\EVar(\vx)}{\ve}) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EVar}
 
 \subsection{Semantics}
@@ -289,6 +292,7 @@ applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \env \eqname (\Ignore, \denv)\\
@@ -306,6 +310,8 @@ applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
   \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsG.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_EVar}
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -575,7 +581,7 @@ is equal to the width of the \bitvectortypeterm{} of the return type.
   \annotateexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EBinop}
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
@@ -596,6 +602,7 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \falsep \eqdef \ELiteral(\LBool(\False))\\
@@ -604,6 +611,8 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 \evalexpr(\env, \EBinop(\BAND, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_BinopAnd}
 \CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -644,6 +653,7 @@ In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} 
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \truep \eqdef \ELiteral(\LBool(\True))\\
@@ -652,6 +662,8 @@ In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} 
 \evalexpr(\env, \EBinop(\BOR, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_BinopOr}
 \CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
 
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
@@ -692,6 +704,7 @@ the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, acco
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \truep \eqdef \ELiteral(\LBool(\True))\\
@@ -700,6 +713,8 @@ the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, acco
 \evalexpr(\env, \EBinop(\IMPL, \veone, \vetwo)) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_BinopImpl}
 \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
 it evaluates to \True, is $\vetwo$ evaluated.
@@ -750,6 +765,7 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \hva\\\\
@@ -763,6 +779,8 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_Binop}
 \CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
 The rule above applies to many binary operators, including $\EQ$ (which is used for \texttt{<=>}
@@ -815,7 +833,7 @@ of well-typed unary operation expressions.
   \annotateexpr(\tenv, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EUnop}
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
@@ -834,6 +852,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \item applying the unary operator $\op$ to $\vvone$ is $\vv$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\hva\\\\
@@ -844,6 +863,8 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_Unop}
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
 \hypertarget{def-conditionexpressionterm}{}
@@ -917,7 +938,7 @@ an example of typing a conditional expression.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ECond}
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 \identr{XZVT}
@@ -953,6 +974,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
@@ -965,7 +987,20 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
   \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_ECond}
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
+
+\subsubsection{Comments}
+\identr{YCDB}
+
+A conditional expression evaluates to its \texttt{then} expression if the
+condition expression evaluates to $\True$. If the condition expression
+evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
+sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
+the conditional expression evaluates to the corresponding \texttt{elsif}
+expression. If no \texttt{elsif} expression evaluates to $\True$ the
+conditional expression evaluates to the \texttt{else} expression.
 
 \hypertarget{def-callexpressionterm}{}
 \section{Call Expressions\label{sec:CallExpressions}}
@@ -1065,7 +1100,7 @@ and the inferred types of the expressions, as type annotations on the left-hand-
   \annotateexpr(\tenv, \overname{\ECall(\vcall)}{\ve}) \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ECall}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 \identd{CFYP} \identr{BQJG}
@@ -1101,6 +1136,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single\_returned\_value]{
   {
@@ -1130,6 +1166,8 @@ and the values they evaluate to, as assertions on the values assigned.
   \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_ECall}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
 \hypertarget{def-slicingexpressionsterm}{}
@@ -1238,7 +1276,7 @@ show examples of ill-typed slicing expressions.
   \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow \TypeErrorVal{\BadSlices}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ESlice}
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 \subsubsection{Comments}
@@ -1275,6 +1313,7 @@ resulting bitvector --- and the execution graph $\vgone$;
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\hva\\\\
@@ -1287,6 +1326,8 @@ resulting bitvector --- and the execution graph $\vgone$;
   \evalexpr(\env, \ESlice(\ebv, \slices)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_ESlice}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
 \hypertarget{def-arrayaccessexpressionsterm}{}
@@ -1366,7 +1407,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \annotateexpr(\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}) \typearrow (\vt, \newe, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetArray}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
@@ -1407,7 +1448,7 @@ See \ExampleRef{Array Access Expressions}.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
@@ -1439,6 +1480,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
@@ -1452,6 +1494,8 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
   \evalexpr(\env, \EGetArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_EGetArray}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EGetEnumArray}
@@ -1476,6 +1520,7 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \ve = \EGetEnumArray(\earray, \eindex)\\
@@ -1490,6 +1535,8 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_EGetEnumArray}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldexpressionterm}{}
@@ -1501,7 +1548,6 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_getfield}
-
 
 \ASTRuleDef{EGetField}
 \begin{mathpar}
@@ -1579,7 +1625,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_record_or_exception}
 
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
@@ -1633,7 +1679,7 @@ All of the collection field expressions in
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_collection}
 \CodeSubsection{\EGetCollectionFieldBegin}{\EGetCollectionFieldEnd}{../Typing.ml}
 
@@ -1760,7 +1806,7 @@ which includes the type annotation \verb|bits(4)|.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_bitfield}
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
@@ -1806,7 +1852,7 @@ for its verbatim string.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vsesone}{\vses})
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_tuple_item}
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
@@ -1833,7 +1879,7 @@ for its verbatim string.
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetField_error}
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
@@ -1852,6 +1898,7 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \item $\vv$ is the value mapped by $\fieldname$ in the native record $\vrecord$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \erecord) \evalarrow \ResultExpr((\vrecord, \vg), \newenv)  \OrAbnormal\\
@@ -1860,6 +1907,8 @@ the expression \verb|my_record.a| evaluates to the value \texttt{3}.
   \evalexpr(\env, \EGetField(\erecord, \fieldname)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_EGetField}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EGetItem}
@@ -1880,6 +1929,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
         the native value $\vv$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \etuple) \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\hva\\\\
@@ -1888,6 +1938,8 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \evalexpr(\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_expr_EGetTupleItem}
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldsexpressionterm}{}
@@ -2033,7 +2085,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
   \annotateexpr(\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EGetFields}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
@@ -2101,7 +2153,7 @@ yields a \typingerrorterm, since it is a nested bitfield.
     \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
   }
   \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{find_bitfields_slices}
 
 \TypingRuleDef{GetBitfieldWidth}
@@ -2130,6 +2182,7 @@ yields the literal expression for \verb|2|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \assocopt{\tfields}{\name} \typearrow \some{\vt}\\
@@ -2146,6 +2199,8 @@ yields the literal expression for \verb|2|.
   \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{\BadField}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{get_bitfield_width}
 
 \TypingRuleDef{WidthPlus}
 % NOTE: the implementation handles just two expressions, here we fold over a list.
@@ -2175,6 +2230,7 @@ $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \widthplus(\tenv, \overname{\emptylist}{\exprs}) \typearrow \overname{\ELInt{0}}{\ewidth}
@@ -2189,6 +2245,8 @@ $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
   \widthplus(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \ewidth
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{width_plus}
 
 \subsection{Semantics}
 \SemanticsRuleDef{EGetfields}
@@ -2214,6 +2272,7 @@ yields the bitvector value \verb|'001010'|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \erecord) \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\hva\\\\
@@ -2224,6 +2283,8 @@ yields the bitvector value \verb|'001010'|.
   ((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EGetFields}
 \CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
 
 \SemanticsRuleDef{EGetCollectionFields}
@@ -2249,6 +2310,7 @@ All of the collection field expressions in
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \env \eqname (\Ignore, \denv)\\
@@ -2262,7 +2324,8 @@ All of the collection field expressions in
   ((\vv, \vg), \newenv)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EGetCollectionFields}
 \CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../interpreter.ml}
 
 \hypertarget{def-atceexpressionterm}{}
@@ -2386,7 +2449,7 @@ as it is applied to unrelated kinds of types.
   \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EATC}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 \lrmcomment{
@@ -2446,6 +2509,7 @@ as it is applied to unrelated kinds of types.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[equal]{
   \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
@@ -2494,6 +2558,8 @@ as it is applied to unrelated kinds of types.
   \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_atc}
 
 \subsection{Semantics}
 \SemanticsRuleDef{ATC}
@@ -2540,6 +2606,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
       \end{itemize}
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
@@ -2558,6 +2625,8 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
   \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EATC}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{IsValOfType}
@@ -2629,6 +2698,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[type\_equal]{
   \astlabel(\vt) \not\in \{\TInt, \TBits, \TTuple \}
@@ -2673,6 +2743,8 @@ of the type \verb|integer{4, 5, 6}| fails.
   \isvaloftype(\env, \vv, \overname{\TTuple(i=1..k: \vt_i)}{\vt}) \evalarrow (\vb, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_val_of_type}
 \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -2720,6 +2792,7 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 The use of $\evalexprsef$ is justified by checks in $\annotatetype$, verifying
 that expressions appearing in types are all side-effect-free.
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[Constraint\_Exact\_Sat]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
@@ -2738,6 +2811,8 @@ that expressions appearing in types are all side-effect-free.
   \isconstraintsat(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{is_constraint_sat}
 
 \hypertarget{def-patternexpressionterm}{}
 \section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
@@ -2831,7 +2906,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   \annotateexpr(\tenv, \ve) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EPattern}
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
@@ -2858,6 +2933,7 @@ succeed.
   \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\hva\\\\
@@ -2867,6 +2943,8 @@ succeed.
   \evalexpr(\env, \EPattern(\ve, \vp)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EPattern}
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
 \hypertarget{def-arbitraryexpressionterm}{}
@@ -2938,7 +3016,7 @@ Note that there are two important consequences of producing an arbitrary value w
   \annotateexpr(\tenv, \ve) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_EArbitrary}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
 
@@ -2988,6 +3066,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \dynamicdomain(\env, \vt) \neq \emptyset\\
@@ -3004,6 +3083,8 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
   \evalexpr(\env, \overname{\EArbitrary (\vt)}{\ve}) \evalarrow \DynamicErrorVal{\ArbitraryEmptyType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EArbitrary}
 \CodeSubsection{\EvalEArbitraryBegin}{\EvalEArbitraryEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -3134,7 +3215,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ERecord}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 \identr{WBCQ}
@@ -3165,7 +3246,7 @@ See \listingref{semantics-egetfield} for an example.
   \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_field_init}
 
 \subsection{Semantics}
@@ -3188,6 +3269,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \efields \eqname [i=1..k: (\id_i, \ve_i)]\\
@@ -3200,6 +3282,8 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \evalexpr(\env, \ERecord(\Ignore, \efields)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_ERecord}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
 \section{Tuple Expressions\label{sec:TupleExpressions}}
@@ -3271,7 +3355,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
   \annotateexpr(\tenv, \overname{\ETuple(\vli)}{\ve}) \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{annotate_expr_ETuple}
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 
@@ -3292,6 +3376,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
@@ -3300,6 +3385,8 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
   \evalexpr(\env, \ETuple(\elist)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_ETuple}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
 \section{Parenthesized Expressions\label{sec:ParenthesizedExpressions}}
@@ -3366,6 +3453,7 @@ which evaluates to
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\hva\\\\
@@ -3383,6 +3471,8 @@ which evaluates to
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
 
 \SemanticsRuleDef{EEnumArray}
@@ -3408,6 +3498,7 @@ which evaluates to
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\hva\\\\
@@ -3421,7 +3512,8 @@ which evaluates to
   }
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_EEnumArray}
 \CodeSubsection{\EvalEEnumArrayBegin}{\EvalEEnumArrayEnd}{../Typing.ml}
 
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
@@ -3444,6 +3536,7 @@ Evaluating $\ve$ in $\env$ yields the configuration $\ResultExpr((\vv,\vg), \env
 which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv,\vg), \env) \OrDynErrorDiverging
@@ -3451,6 +3544,8 @@ which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vv, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_sef}
 Notice that the output configuration does not contain an environment,
 since side-effect-free expressions do not modify the environment.
 
@@ -3487,6 +3582,7 @@ the list of values $[\nvint(3), \nvint(42)]$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -3506,3 +3602,5 @@ the list of values $[\nvint(3), \nvint(42)]$.
   \evalexprlist(\env, \vle) \evalarrow \ResultExprList((\vv, \vg), \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_expr_list}

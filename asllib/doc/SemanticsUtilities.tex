@@ -42,6 +42,7 @@ define $\vs$ as $0$ if no value is associated with $\name$ in $\denv.\pendingcal
 $\name$ in $\denv.\pendingcalls$ otherwise.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vs \eqdef \choice{\name \in \dom(\denv.\pendingcalls)}{\denv.\pendingcalls(\name)}{0}
@@ -49,6 +50,8 @@ $\name$ in $\denv.\pendingcalls$ otherwise.
   \getpendingcalls(\denv, \name) \evalarrow \vs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{get_pending_calls}
 
 \SemanticsRuleDef{SetPendingCalls}
 \RenderRelation{set_pending_calls}
@@ -65,11 +68,14 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pendingcalls$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \setpendingcalls(\genv, \name, \vv) \evalarrow \overname{\genv.\pendingcalls[\name\mapsto\vv]}{\newgenv}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{set_pending_calls}
 
 \SemanticsRuleDef{IncrPendingCalls}
 \RenderRelation{incr_pending_calls}
@@ -90,6 +96,7 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
@@ -98,6 +105,8 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
   \incrpendingcalls(\genv, \name) \evalarrow \newgenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{incr_pending_calls}
 
 \SemanticsRuleDef{DecrPendingCalls}
 \RenderRelation{decr_pending_calls}
@@ -118,6 +127,7 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
@@ -126,6 +136,8 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
   \decrpendingcalls(\genv, \name) \evalarrow \newgenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{decr_pending_calls}
 
 \SemanticsRuleDef{RemoveLocal}
 \RenderRelation{remove_local}
@@ -163,6 +175,7 @@ exn=TRUE
 
 \FormallyParagraph
 (Recall that $[\name\mapsto\bot]$ means that $\name$ is not in the domain of the resulting function.)
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
     \env \eqname (\tenv, \denv)\\
@@ -172,6 +185,8 @@ exn=TRUE
     \removelocal(\env, \name) \evalarrow \newenv
   }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{remove_local}
 
 \SemanticsRuleDef{ReadIdentifier}
 \RenderRelation{read_identifier}
@@ -190,12 +205,15 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 \ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \readidentifier(\name, \vv) \evalarrow ( \overtext{\{\ReadEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\ReadEffect(\name)\}}{\voutputnodes} )
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{read_identifier}
 
 \SemanticsRuleDef{WriteIdentifier}
 \RenderRelation{write_identifier}
@@ -213,12 +231,15 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \writeidentifier(\name, \vv) \evalarrow ( \overtext{\{\WriteEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\WriteEffect(\name)\}}{\voutputnodes} )
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{write_identifier}
 
 \SemanticsRuleDef{ConcatBitvectors}
 \RenderRelation{concat_bitvectors}
@@ -251,6 +272,7 @@ the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypet
 Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -268,6 +290,8 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
   \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{concat_bitvectors}
 
 \SemanticsRuleDef{SlicesToPositions}
 \RenderRelation{slices_to_positions}
@@ -307,6 +331,7 @@ is illegal for a slice.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \slicestopositions(\overname{\emptylist}{\slices}) \evalarrow \overname{\emptylist}{\positions}
@@ -323,6 +348,8 @@ is illegal for a slice.
   \overname{\positionsone \concat \positionstwo}{\positions}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{slices_to_positions}
 
 \SemanticsRuleDef{MaxPosOfSlice}
 \RenderRelation{max_pos_of_slice}
@@ -348,6 +375,7 @@ The slice \verb|42+:0| has maximum position 42.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[zero\_width]{
   \vl = 0
@@ -363,6 +391,8 @@ The slice \verb|42+:0| has maximum position 42.
   \maxposofslice(\vs, \vl) \evalarrow \vs + \vl - 1
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{max_pos_of_slice}
 
 \SemanticsRuleDef{ReadFromBitvector}
 \RenderRelation{read_from_bitvector}
@@ -422,6 +452,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bitvector]{
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
@@ -452,6 +483,8 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \readfrombitvector(\overname{\nvint(\vi)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{read_from_bitvector}
 
 \SemanticsRuleDef{WriteToBitvector}
 \RenderRelation{write_to_bitvector}
@@ -477,6 +510,7 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
@@ -496,6 +530,8 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
   \writetobitvector(\slices, \src, \dst) \evalarrow \overname{\nvbitvector(\vbits)}{\vv}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{write_to_bitvector}
 
 \ExampleDef{Writing to a Bitvector}
 In reference to \listingref{semantics-leslice}, we have the following application of the current rule:
@@ -565,6 +601,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   0 \leq \vi < \listlen{\vvec}\\
@@ -580,6 +617,8 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
   \getindex(\vi, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{get_index}
 
 \SemanticsRuleDef{SetIndex}
 \RenderRelation{set_index}
@@ -613,6 +652,7 @@ involves the following premise:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   0 \leq \vi < \listlen{\vvec}\\
@@ -632,6 +672,8 @@ involves the following premise:
   \setindex(\vi, \vv, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{set_index}
 
 \SemanticsRuleDef{GetField}
 \RenderRelation{get_field}
@@ -650,6 +692,7 @@ In \listingref{GetField}, there are the following examples of reading a record f
 \ProseEqdef{$\vv$}{the value of field $\name$ in record $\record$}.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \record \eqname \NVRecord(\fieldmap)
@@ -657,6 +700,8 @@ In \listingref{GetField}, there are the following examples of reading a record f
   \getfield(\name, \record) \evalarrow \fieldmap(\name)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{get_field}
 The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{SetField}
@@ -697,6 +742,8 @@ In \listingref{GetField}, there are the following examples of writing to a recor
 \ProseEqdef{$\fieldmapp$}{the record value with the field map of $\record$ updated to bind $\name$ to $\vv$}.
 
 \FormallyParagraph
+The typechecker ensures that the field $\name$ exists in $\record$.
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \record \eqname \NVRecord(\fieldmap)\\
@@ -705,7 +752,8 @@ In \listingref{GetField}, there are the following examples of writing to a recor
   \setfield(\name, \vv, \record) \evalarrow \NVRecord(\fieldmapp)
 }
 \end{mathpar}
-The typechecker ensures that the field $\name$ exists in $\record$.
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{set_field}
 
 \SemanticsRuleDef{DeclareLocalIdentifier}
 \RenderRelation{declare_local_identifier}
@@ -726,6 +774,7 @@ as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vg \eqdef \WriteEffect(\name)\\
@@ -735,6 +784,8 @@ as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
   \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_local_identifier}
 
 \SemanticsRuleDef{DeclareLocalIdentifierM}
 \RenderRelation{declare_local_identifier_m}
@@ -751,6 +802,7 @@ See \ExampleRef{Evaluating Local Declarations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
     \vm \eqname (\vv, \vg)\\
@@ -761,6 +813,8 @@ See \ExampleRef{Evaluating Local Declarations}.
     \declarelocalidentifierm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
   }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_local_identifier_m}
 
 \SemanticsRuleDef{DeclareLocalIdentifierMM}
 \RenderRelation{declare_local_identifier_mm}
@@ -777,6 +831,7 @@ See \ExampleRef{Evaluating Local Declarations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
@@ -785,3 +840,5 @@ See \ExampleRef{Evaluating Local Declarations}.
   \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_local_identifier_mm}

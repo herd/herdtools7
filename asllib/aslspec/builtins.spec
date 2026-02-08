@@ -1,3 +1,19 @@
+operator cond_case[T](Bool, T) -> T
+{
+  math_macro = \condcase,
+  custom = true,
+};
+
+// TODO: add a custom rendering where all conditions
+// and all values are properly aligned.
+// Perhaps this can be achieved by adding a raw attribute to macros, which doesn't wrap them with braces.
+// TODO: add custom syntac for cases.
+variadic operator cond_op[T](list1(T)) -> T
+{
+  math_macro = \condop,
+  custom = true,
+};
+
 constant bot { "bottom", math_macro = \bot };
 
 constant None { "the empty \optionalterm{}" };
@@ -32,6 +48,12 @@ typedef N
 typedef Z
 { "integer",
     math_macro = \Z,
+};
+
+operator is_integer(q: Q) -> Bool
+{
+  "{q} is an integer",
+  math_macro = \isintegerop,
 };
 
 typedef Q
@@ -75,21 +97,6 @@ operator if_then_else[T](Bool, T, T) -> T
   math_macro = \ifthenelseop,
 };
 
-// TODO: add a custom rendering where all conditions
-// and all values are properly aligned.
-// Perhaps this can be achieved by adding a "raw" attribute to macros, which doesn't wrap them with braces.
-// TODO: add custom syntax for cases.
-variadic operator cond_op[T](list1(T)) -> T
-{
-  math_macro = \condop,
-  custom = true,
-};
-operator cond_case[T](Bool, T) -> T
-{
-  math_macro = \condcase,
-  custom = true,
-};
-
 variadic operator and(list1(Bool)) -> Bool
 {
   associative = true,
@@ -102,14 +109,14 @@ variadic operator or(list1(Bool)) -> Bool
   math_macro = \lor,
 };
 
-operator list_and(list1(Bool)) -> Bool
+operator list_and(list0(Bool)) -> Bool
 {
-  math_macro = \land,
+  math_macro = \listand,
 };
 
-operator list_or(list1(Bool)) -> Bool
+operator list_or(list0(Bool)) -> Bool
 {
-  math_macro = \lor,
+  math_macro = \listor,
 };
 
 operator not(Bool) -> Bool
@@ -138,6 +145,11 @@ operator num_minus[NumType](NumType, NumType) -> NumType
   math_macro = \numminus,
 };
 
+operator num_negate[NumType](NumType) -> NumType
+{
+  math_macro = \numnegate,
+};
+
 // Negation for number types.
 operator negate[NumType](NumType) -> NumType
 {
@@ -147,6 +159,7 @@ operator negate[NumType](NumType) -> NumType
 variadic operator num_times[NumType](list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
+  associative = true,
 };
 
 operator num_divide[NumType](NumType, NumType) -> NumType
@@ -157,6 +170,7 @@ operator num_divide[NumType](NumType, NumType) -> NumType
 operator num_exponent[NumType](NumType, NumType) -> NumType
 {
   math_macro = \numexponent,
+  custom = true,
 };
 
 operator less_than[NumType](NumType, NumType) -> Bool

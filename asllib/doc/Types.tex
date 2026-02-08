@@ -316,41 +316,18 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
-\hypertarget{def-isunconstrainedinteger}{}
-\hypertarget{def-isparameterizedinteger}{}
-\hypertarget{def-iswellconstrainedinteger}{}
 We use the following helper predicates to classify integer types:
-\[
-\isunconstrainedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
-\]
-\begin{mathpar}
-\inferrule{}{
-  \isunconstrainedinteger(\vt) \typearrow \overname{\vt = \TInt(c) \land \astlabel(c)=\Unconstrained}{\vb}
-}
-\end{mathpar}
+\RenderRelation{is_unconstrained_integer}
+It is defined by the following rule:
+\RenderRule{is_unconstrained_integer}
 
-\[
-\isparameterizedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
-\]
-\begin{mathpar}
-\inferrule{}{
-  \isparameterizedinteger(\vt) \typearrow \overname{\vt = \TInt(c) \land \astlabel(c)=\Parameterized}{\vb}
-}
-\end{mathpar}
+\RenderRelation{is_parameterized_integer}
+It is defined by the following rule:
+\RenderRule{is_parameterized_integer}
 
-\[
-\iswellconstrainedinteger(\overname{\ty}{\vt}) \aslto \overname{\Bool}{\vb}
-\]
-\begin{mathpar}
-\inferrule{}{
-{
-  \iswellconstrainedinteger(\vt) \typearrow \overname{
-    \begin{array}{cl}\vt = \TInt(c) & \land\\
-      \astlabel(c)=\WellConstrained &
-    \end{array}}{\vb}
-}
-}
-\end{mathpar}
+\RenderRelation{is_well_constrained_integer}
+It is defined by the following rule:
+\RenderRule{is_well_constrained_integer}
 \identd{ZTPP} \identr{WJYH} \identr{HJPN} \identr{CZTX} \identr{TPHR}
 
 \hypertarget{def-unconstrainedinteger}{}
@@ -413,6 +390,7 @@ correspond to \CaseName{pending\_constrained}.
   \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[pending\_constrained]{}{
   {
@@ -456,6 +434,8 @@ correspond to \CaseName{pending\_constrained}.
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_int}
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateConstraint}
@@ -488,6 +468,7 @@ expressions of \texttt{let} storage elements.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \vc = \ConstraintExact(\ve)\\
@@ -511,6 +492,8 @@ expressions of \texttt{let} storage elements.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_constraint}
 
 \section{The Real Type\label{sec:RealType}}
 \hypertarget{realtypeterm}{}
@@ -560,12 +543,15 @@ See \ExampleRef{Well-typed Real Types} for examples of well-typed \realtypeterm{
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}) \typearrow (\overname{\TReal}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_real}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
 \section{The String Type\label{sec:StringType}}
@@ -612,12 +598,15 @@ See \ExampleRef{Well-typed String Types} for examples of well-typed \stringtypes
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}) \typearrow (\overname{\TString}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_string}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
 \section{The Boolean Type\label{sec:BooleanType}}
@@ -658,12 +647,15 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}) \typearrow (\overname{\TBool}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_bool}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
 \section{Bitvector Types\label{sec:BitvectorTypes}}
@@ -824,6 +816,7 @@ to be \constrainedintegersterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[with\_bitfields]{
   \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
@@ -867,6 +860,8 @@ to be \constrainedintegersterm.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_bits}
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
 \section{Tuple Types\label{sec:TupleTypes}}
@@ -945,6 +940,7 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   k > 1\\
@@ -955,6 +951,8 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_tuple}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
 \section{Parenthesized Types\label{sec:ParenthesizedTypes}}
@@ -1074,6 +1072,7 @@ show examples of ill-typed enumeration type declarations.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checknoduplicates(\vli) \typearrow \True \OrTypeError\hva\\\\
@@ -1082,6 +1081,8 @@ show examples of ill-typed enumeration type declarations.
   \annotatetype(\True, \tenv, \overname{\TEnum(\vli)}{\tty}) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_enum_decl}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
 \section{Array Types\label{sec:ArrayTypes}}
@@ -1184,6 +1185,7 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[expr\_is\_enum]{
   \tty = \AbbrevTArrayLengthExpr{\ve}{\vt}\\
@@ -1208,6 +1210,8 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
   (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_array}
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
 \TypingRuleDef{GetVariableEnum}
@@ -1252,6 +1256,7 @@ enumeration labels from variable expressions.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[not\_evar]{
   \astlabel(\ve) \neq \EVar
@@ -1286,6 +1291,8 @@ enumeration labels from variable expressions.
   \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{get_variable_enum}
 
 \identi{PKXK} \identd{YYDW}%
 \RequirementDef{SymbolicallyEvaluable}
@@ -1311,6 +1318,7 @@ expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\hva\\\\
@@ -1319,6 +1327,8 @@ expressions and classifies them as either \symbolicallyevaluableterm{} or not.
   \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
 }
 \end{mathpar}
+} % BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_symbolically_evaluable_expr}
 \CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckUnderlyingInteger}
@@ -1340,6 +1350,7 @@ of \verb|i| is the \unconstrainedintegertypeterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \vt) \typearrow \vtp \OrTypeError\hva\\\\
@@ -1348,6 +1359,8 @@ of \verb|i| is the \unconstrainedintegertypeterm.
   \checkunderlyinginteger(\tenv, \vt) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_underlying_integer}
 \CodeSubsection{\CheckUnderlyingIntegerBegin}{\CheckUnderlyingIntegerEnd}{../Typing.ml}
 
 \section{Record Types\label{sec:RecordTypes}}
@@ -1404,6 +1417,7 @@ is ill-typed, since the field \verb|v| repeats.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   L \in \{\TRecord, \TException\}\\
@@ -1416,6 +1430,8 @@ is ill-typed, since the field \verb|v| repeats.
   \annotatetype(\True, \tenv, \overname{L(\fields)}{\tty}) \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_record_exception}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
 \section{Exception Types\label{sec:ExceptionTypes}}
@@ -1521,6 +1537,7 @@ collection types in comments.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \tty = \TCollection(\fields)\\
@@ -1534,6 +1551,8 @@ collection types in comments.
   \annotatetype(\False, \tenv, \tty) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_collection}
 
 \section{Named Types\label{sec:NamedTypes}}
 A named type declaration allows declaring a new type associated with the given name.
@@ -1601,6 +1620,7 @@ show examples of ill-typed named types.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \techeck(\tenv.\staticenvsG.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\hva\\\\
@@ -1610,6 +1630,8 @@ show examples of ill-typed named types.
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_named}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
 \section{Declared Types\label{sec:DeclaredTypes}}
@@ -1652,6 +1674,7 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}
@@ -1659,6 +1682,8 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
   \annotatetype(\False, \tenv, \tty) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_type_t_non_decl}
 \CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
 
 \input{TypeDomains.tex}

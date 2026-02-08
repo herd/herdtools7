@@ -202,6 +202,7 @@ In this example, this is true as the following hold:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[right\_top]{}{
   \symdomsubsetunions(\tenv, \sdone, \overname{\Top}{\sdtwo}) \typearrow
@@ -234,6 +235,8 @@ In this example, this is true as the following hold:
   \symdomsubsetunions(\tenv, \sdone, \sdtwo) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_subset_unions}
 
 \TypingRuleDef{SymdomNormalize}
 \RenderRelation{symdom_normalize}
@@ -266,6 +269,7 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \others = [\vs \in \symdoms \;|\; \configdomain{\vs} \neq \Finite]\\
@@ -276,6 +280,8 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
   \symdomnormalize(\symdoms) \typearrow \newsymdoms \newsymdoms
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_normalize}
 
 \TypingRuleDef{SymdomOfType}
 \RenderRelation{symdom_of_type}
@@ -329,6 +335,7 @@ is
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[int\_unconstrained]{}{ \symdomoftype(\tenv, \overname{\unconstrainedinteger}{\vt}) \typearrow
  \overname{\Top}{\vd} }
@@ -363,6 +370,8 @@ is
   \symdomoftype(\tenv, \vt) \typearrow \vd
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_of_type}
 
 \TypingRuleDef{SymdomOfWidthExpr}
 \RenderRelation{symdom_of_width_expr}
@@ -380,11 +389,14 @@ is:
 for the exact constraint for the expression $\ve$}.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   {\begin{array}{r}\symdomofwidthexpr(\ve) \typearrow \\ \overname{\Subdomains([\ \ConstrainedDom(\ConstraintExact(\ve))\ ])}{\vd}\end{array}}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_of_width_expr}
 
 \TypingRuleDef{SymdomOfConstraint}
 \RenderRelation{symdom_of_constraint}
@@ -431,6 +443,7 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \symdomeval(\tenv, \ve) \typearrow \vv\\
@@ -449,6 +462,8 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
   \symdomofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vd
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_of_constraint}
 
 \TypingRuleDef{SymdomEval}
 \RenderRelation{symdom_eval}
@@ -484,6 +499,7 @@ yield $1$ and $6$, respectively.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[integer]{
   \normalize(\tenv, \ve) \typearrow \veone\\
@@ -499,6 +515,8 @@ yield $1$ and $6$, respectively.
   \symdomeval(\tenv, \ve) \typearrow \Top
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_eval}
 
 \TypingRuleDef{SymdomSubset}
 \RenderRelation{symdom_subset}
@@ -530,9 +548,10 @@ In the following rules, we use the symbol $\Over$ to stand for \emph{overapproxi
 the symbol $\Under$ to stand for \emph{underapproximation},
 both defined by the following type: \RenderType{approximation_direction}
 We refer such a symbol as an \approximationdirectionterm.
-We also use the symbol \RenderConstant{CannotOverapproximate} to mean that a construct
+We use \RenderType{ApproximationFailure} to denote failure to approximate a set of integers.
+Specifically, $\CannotOverapproximate$ means that a construct
 (like an expression or a constraint) cannot be precisely overapproximated,
-and \RenderConstant{CannotUnderapproximate} to mean that a construct cannot be precisely
+and $\CannotUnderapproximate$ means that a construct cannot be precisely
 underapproximated.
 
 \ProseParagraph
@@ -603,6 +622,7 @@ underapproximated.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[finite\_finite]{}{
   \symdomsubset(\tenv, \overname{\Finite(\vsone)}{\cdone}, \overname{\Finite(\vstwo)}{\cdtwo}) \typearrow
@@ -671,6 +691,8 @@ underapproximated.
   \overname{\False}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{symdom_subset}
 
 \TypingRuleDef{ApproxConstraints}
 \RenderRelation{approx_constraints}
@@ -699,6 +721,7 @@ showing how constraint lists are overapproximated.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[over]{
   \vc \in \cs: \approxconstraint(\tenv, \Over, \vc) \typearrow \vs_\vc \terminateas \CannotOverapproximate
@@ -716,6 +739,8 @@ showing how constraint lists are overapproximated.
   \overname{\bigcap_{\vc \in \cs} \vs_\vc}{\vs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_constraints}
 \CodeSubsection{\ApproxConstraintsBinopBegin}{\ApproxConstraintsBinopEnd}{../Typing.ml}
 
 \TypingRuleDef{ApproxConstraint}
@@ -777,6 +802,7 @@ showing how constraints are overapproximated and underapproximated.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \approxexpr(\tenv, \vapprox, \ve) \typearrow \vs \terminateas \CannotOverapproximate
@@ -795,7 +821,7 @@ showing how constraints are overapproximated and underapproximated.
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
   \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \hva\\
   {
-  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
+  \vs \eqdef \ifthenelseop[V]{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Over)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Over}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -820,7 +846,7 @@ showing how constraints are overapproximated and underapproximated.
   \vzone \neq \CannotOverapproximate \land \vztwo \neq \CannotOverapproximate\\
   \makeinterval(\Over, \vzone, \vztwo) \typearrow \vsinterval \hva\\
   {
-  \vs \eqdef \ifthenelsestmt{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
+  \vs \eqdef \ifthenelseop[V]{\vsinterval \neq \CannotOverapproximate}{\vsinterval}{\approxbottomtop(\Under)}
   }
 }{
   \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vs
@@ -837,6 +863,8 @@ showing how constraints are overapproximated and underapproximated.
   \approxconstraint(\tenv, \overname{\Under}{\vapprox}, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\vsbottomtop}{\vs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_constraint}
 
 \TypingRuleDef{MakeInterval}
 \RenderRelation{make_interval}
@@ -869,6 +897,7 @@ The following are examples of over- and under-approximating intervals:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[interval]{
   \vzone \leq \vztwo
@@ -884,6 +913,8 @@ The following are examples of over- and under-approximating intervals:
   \makeinterval(\vapprox, \vzone, \vztwo) \typearrow  \overname{\approxbottomtop(\vapprox)}{\vs}
 }
 \end{mathpar}
+} % END_OF_ORIGINAL_RULE_BACKUP
+\RenderRule{make_interval}
 
 \TypingRuleDef{ApproxExprMin}
 \RenderRelation{approx_expr_min}
@@ -904,6 +935,7 @@ yields $12$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \approxexpr(\tenv, \Over, \ve) \typearrow \vs \terminateas{\CannotOverapproximate}
@@ -911,6 +943,8 @@ yields $12$.
   \approxexprmin(\tenv, \ve) \typearrow \overname{\min(\vs)}{\vz}
 }
 \end{mathpar}
+} % END_OF_ORIGINAL_RULE_BACKUP
+\RenderRule{approx_expr_min}
 
 \TypingRuleDef{ApproxExprMax}
 \RenderRelation{approx_expr_max}
@@ -931,6 +965,7 @@ yields $10$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \approxexpr(\tenv, \Over, \ve) \typearrow \vs \terminateas{\CannotOverapproximate}
@@ -938,6 +973,8 @@ yields $10$.
   \approxexprmax(\tenv, \ve) \typearrow \overname{\max(\vs)}{\vz}
 }
 \end{mathpar}
+} % END_OF_ORIGINAL_RULE_BACKUP
+\RenderRule{approx_expr_max}
 
 \TypingRuleDef{ApproxBottomTop}
 \RenderRelation{approx_bottom_top}
@@ -953,11 +990,14 @@ $\CannotOverapproximate$.
 $\CannotOverapproximate$ if $\vapprox$ is $\Over$.}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \approxbottomtop(\vapprox) \typearrow \overname{\choice{\vapprox = \Under}{\emptyset}{\CannotOverapproximate}}{\vs}
 }
 \end{mathpar}
+} % END_OF_ORIGINAL_RULE_BACKUP
+\RenderRule{approx_bottom_top}
 
 \TypingRuleDef{IntsetToConstraints}
 \RenderRelation{intset_to_constraints}
@@ -977,18 +1017,21 @@ showing how an instance of integer sets transformed to constraint lists.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \intervals \eqdef \{ a..b \;|\; a..b \in \vs \land \forall (c..d) \in \vs.\ a..b \not\subseteq c..d\}\\
   {
   \cs \eqdef \left[a..b \in \intervals:
-  \ifthenelsestmt{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
+  \ifthenelseop[V]{a=b}{\AbbrevConstraintExact{\ELInt{a}}}{\AbbrevConstraintRange{\ELInt{a}}{\ELInt{b}}}
     \right]
   }
 }{
   \intsettoconstraints(\vs) \typearrow \cs
 }
 \end{mathpar}
+} % END_OF_ORIGINAL_RULE_BACKUP
+\RenderRule{intset_to_constraints}
 
 \TypingRuleDef{ApproxExpr}
 \RenderRelation{approx_expr}
@@ -1080,6 +1123,7 @@ needed to annotate the expression \verb|x as bits(N)|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[literal\_int]{}{
   \approxexpr(\tenv, \vapprox, \overname{\ELInt{\vz}}{\ve}) \typearrow \overname{\{\vz\}}{\vs}
@@ -1162,6 +1206,8 @@ types.
   \approxexpr(\tenv, \vapprox, \ve) \typearrow \overname{\approxbottomtop(\vapprox)}{\vs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_expr}
 
 \TypingRuleDef{ApproxConstraintBinop}
 \RenderRelation{approx_constraint_binop}
@@ -1215,6 +1261,7 @@ the dynamic semantics.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[over]{
   {
@@ -1244,6 +1291,8 @@ the dynamic semantics.
   (\overname{\emptylist}{\vs}, \overname{\PrecisionLost}{\plf})
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_constraint_binop}
 
 \TypingRuleDef{ApproxType}
 \RenderRelation{approx_type}
@@ -1278,6 +1327,7 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \isnamed(\vt)\\
@@ -1305,6 +1355,8 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
   \approxtype(\tenv, \vapprox, \vt) \typearrow \vs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{approx_type}
 
 \TypingRuleDef{ConstraintBinop}
 \RenderRelation{constraint_binop}
@@ -1347,6 +1399,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[extremities]{
   \op \in \{\DIV, \DIVRM, \MUL, \ADD, \SUB, \SHR, \SHL\}\\
@@ -1386,6 +1439,8 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
   \constraintbinop(\op, \csone, \cstwo) \typearrow \newcs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{constraint_binop}
 \CodeSubsection{\ConstraintBinopBegin}{\ConstraintBinopEnd}{../Typing.ml}
 
 \TypingRuleDef{ApplyBinopExtremities}
@@ -1495,6 +1550,7 @@ for cases where a binary operation involves two \rangeconstraintsterm.
   \newcs
 }
 \end{mathpar}
+%\RenderRule{apply_binop_extremities}
 
 \TypingRuleDef{PossibleExtremitiesLeft}
 \RenderRelation{possible_extremities_left}
@@ -1523,6 +1579,7 @@ contains an \exactconstraintterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[mul]{}{
   \possibleextremitiesleft(\overname{\MUL}{\op}, \va, \vb) \typearrow \overname{[(\va, \va), (\va, \vb), (\vb, \va), (\vb, \vb)]}{\extpairs}
@@ -1536,6 +1593,8 @@ contains an \exactconstraintterm.
   \possibleextremitiesleft(\op, \va, \vb) \typearrow \overname{[(\va, \vb)]}{\extpairs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{possible_extremities_left}
 
 \TypingRuleDef{PossibleExtremitiesRight}
 \RenderRelation{possible_extremities_right}
@@ -1582,6 +1641,7 @@ contains a \rangeconstraintterm{}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[plus]{}{
   \possibleextremitiesright(\overname{\ADD}{\op}, \vc, \vd) \typearrow \overname{[(\vc, \vd)]}{\extpairs}
@@ -1615,6 +1675,8 @@ contains a \rangeconstraintterm{}.
   \possibleextremitiesright(\op, \vc, \vd) \typearrow \overname{[(\vd, \ELInt{1}), (\ELInt{1}, \vd)]}{\extpairs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{possible_extremities_right}
 
 \TypingRuleDef{ConstraintMod}
 \RenderRelation{constraint_mod}
@@ -1644,6 +1706,7 @@ inferred for \texttt{z} is\\
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -1657,6 +1720,8 @@ inferred for \texttt{z} is\\
   \constraintmod(\vc) \typearrow \overname{\ConstraintRange(\ELInt{0}, \veminusone)}{\newc}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{constraint_mod}
 \CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}
 
 \TypingRuleDef{ConstraintPow}
@@ -1722,6 +1787,7 @@ shows the constraints inferred for the exponentiation expression \verb|x^y|
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact\_exact]{}{
   {
@@ -1782,4 +1848,6 @@ shows the constraints inferred for the exponentiation expression \verb|x^y|
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{constraint_pow}
 \CodeSubsection{\ConstraintPowBegin}{\ConstraintPowEnd}{../Typing.ml}
