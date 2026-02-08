@@ -37,7 +37,6 @@ cli_parser.add_argument(
 )
 
 INTERNAL_DICTIONARY_FILENAME = "dictionary.txt"
-GENERATED_ELEMENTS_FILENAME = "generated_elements.tex"
 
 
 def extract_labels_from_line(line: str, left_delim: str, labels: set[str]):
@@ -93,54 +92,21 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
     labels defined in `\hypertarget` definitions, print the mismatches
     to the console.
     """
-    # Labels to exclude from the check
-    excluded_labels: set[str] = {
-        "type-Strings",
-        "constant-one",
-        "constant-zero",
-        "constant-two",
-        "constant-intlitregex",
-        "type-INTLIT",
-        "constant-returnvarprefix",
-        "constant-labelTBool",
-        "constant-labelTString",
-        "constant-labelTReal",
-        "constant-labelLLabel",
-        "constant-labelLEDestructuring",
-        "constant-labelTRecord",
-        "constant-labelLString",
-        "constant-labelPendingConstrained",
-        "constant-labelTInt",
-        "constant-labelTArray",
-        "constant-labelTBits",
-        "constant-labelTTuple",
-        "constant-labelParameterized",
-        "constant-labelLInt",
-        "constant-labelLBitvector",
-        "constant-labelWellConstrained",
-        "constant-labelUnconstrained",
-        "constant-labelTEnum",
-        "constant-labelECall",
-        "constant-labelTCollection",
-        "constant-labelLReal",
-        "constant-labelArrayLengthExpr",
-        "constant-labelLBool",
-        "constant-labelTNamed",
-        "constant-labelTException",
-    }
-
     hyperlink_labels: set[str] = set()
     hypertarget_labels: set[str] = set()
+    generated_hypertarget_labels: set[str] = set()
     for latex_source in latex_files:
         for line in read_file_lines(latex_source):
+            if is_skipped_line(line):
+                continue
             extract_labels_from_line(line, "\\hyperlink{", hyperlink_labels)
             extract_labels_from_line(line, "\\hypertarget{", hypertarget_labels)
             extract_labels_from_line(line, "\\mathhypertarget{", hypertarget_labels)
             extract_labels_from_line(line, "\\texthypertarget{", hypertarget_labels)
-
-    # Remove excluded labels from both sets
-    hyperlink_labels -= excluded_labels
-    hypertarget_labels -= excluded_labels
+            if latex_source == "generated_macros.tex":
+                extract_labels_from_line(line, "\\hypertarget{", generated_hypertarget_labels)
+                extract_labels_from_line(line, "\\mathhypertarget{", generated_hypertarget_labels)
+                extract_labels_from_line(line, "\\texthypertarget{", generated_hypertarget_labels)
 
     num_errors = 0
     missing_hypertargets = hyperlink_labels.difference(hypertarget_labels)
@@ -155,6 +121,7 @@ def check_hyperlinks_and_hypertargets(latex_files: list[str]):
             print(label, file=sys.stderr)
 
     missing_hyperlinks = hypertarget_labels.difference(hyperlink_labels)
+    missing_hyperlinks -= generated_hypertarget_labels
     if not missing_hyperlinks == set():
         num_missing_hyperlinks = len(missing_hyperlinks)
         num_errors += num_missing_hyperlinks
@@ -783,6 +750,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\RenderType\[.*?\]{.*?}",
         r"\\RenderRelation{.*?}",
         r"\\RenderRelation\[.*?\]{.*?}",
+        r"\\RenderRule{.*?}",
         r"\\TERM{.*?}",
     ]
     extract_patterns = [
