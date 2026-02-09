@@ -1098,7 +1098,7 @@ end
             O.o "/***************************/" ;
             O.o "/* Get instruction opcodes */" ;
             O.o "/***************************/" ;
-            O.o "" ;
+            O.o "" ; (* TODO: at some point, nop is a common instruction, so this should be separated and not declared static *)
             A.V.Instr.Set.iter
               (fun i -> D.dump i ; O.o "")
               is ;
