@@ -13,7 +13,7 @@ cleansource:
 	awk -f show.awk $< > $@
 
 %.elf: LDFLAGS = -nostdlib -pie -n
-%.elf: %.o $(UTILS) $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
+%.elf: %.o $(UTILS) $(UTILS_OBJ) $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(CC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \
@@ -25,3 +25,8 @@ cleansource:
 	$(call arch_elf_check, $^)
 	$(OBJCOPY) -O binary $^ $@
 	@chmod a-x $@
+
+.PRECIOUS: $(UTILS_OBJ)
+
+$(SHARED_SRC_DIR)/%.o: $(SHARED_SRC_DIR)/%.c
+	$(CC) $(GCCOPTS) -c -o $@ $<
