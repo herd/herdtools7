@@ -9,6 +9,8 @@
 (executable
  (public_name aslspec)
  (name main)
+ (modules
+  (:standard \ Extract_tokens))
  (flags
   (:standard -w -40-42-44-48))
  (libraries str)
@@ -21,14 +23,19 @@
  (modules SpecParser)
  (flags --unused-tokens --explain --strict))
 
+(executable
+ (name extract_tokens)
+ (libraries str)
+ (modules extract_tokens))
+
 (rule
  (target TokenStrings.ml)
- (deps SpecLexer.mll extract_tokens.py)
+ (deps SpecLexer.mll extract_tokens.exe)
  (package aslspec)
  (action
   (with-stdout-to
    %{target}
-   (run python3 extract_tokens.py SpecLexer.mll))))
+   (run %{dep:extract_tokens.exe} SpecLexer.mll))))
 
 (rule
  (deps builtins.spec)
