@@ -1,5 +1,5 @@
-AArch64 autda-fpac-success-basic-dep-pointer
-Variant=pauth2,fpac
+AArch64 pauth2+MP+dmb.sy+pacdza-autdza
+Variant=pauth2
 {
     int64_t x=0;
     int64_t y=0;

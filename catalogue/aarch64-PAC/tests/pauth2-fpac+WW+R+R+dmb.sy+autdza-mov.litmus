@@ -1,4 +1,4 @@
-AArch64 autda-fpac-failure-pick-basic-dep-modifier
+AArch64 pauth2-fpac+WW+R+R+dmb.sy+autdza-mov
 Variant=pauth2,fpac
 {
     int64_t x=0;
@@ -9,6 +9,7 @@ Variant=pauth2,fpac
 P0          | P1           | P1.F        ;
 STR X2,[X0] | LDR X2,[X1]  | LDR X3,[X0] ;
 DMB SY      | EOR X3,X2,X2 |             ; (* Write 0 in 1:X3 *)
-STR X2,[X1] | AUTDA X1,X3  |             ; (* Fault *)
-            | MOV X4,#1    |             ; (* Write 1 in 1:X4 if hash collision *)
+STR X2,[X1] | ADD X1,X1,X3 |             ; (* Write y in 1:X1 *)
+            | AUTDZA X1    |             ; (* Fault *)
+            | MOV X4,#1    |             ; (* Write 1:X4 if hash collision *)
 exists ( 1:X2=1 /\ 1:X4=0 /\ 1:X3=0 )

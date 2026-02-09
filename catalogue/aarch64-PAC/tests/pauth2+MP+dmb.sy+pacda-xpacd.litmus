@@ -1,4 +1,4 @@
-AArch64 pacda-basic-dep-modifier
+AArch64 pauth2+MP+dmb.sy+pacda-xpacd
 Variant=pauth2
 {
   int64_t x=0;

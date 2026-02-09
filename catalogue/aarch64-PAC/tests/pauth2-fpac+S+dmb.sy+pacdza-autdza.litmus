@@ -1,4 +1,4 @@
-AArch64 autda-fpac-basic-dep-branch
+AArch64 pauth2-fpac+S+dmb.sy+pacdza-autdza
 Variant=pauth2,fpac
 {
   int64_t x=0;

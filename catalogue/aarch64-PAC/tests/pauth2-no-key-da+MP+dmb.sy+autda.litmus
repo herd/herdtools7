@@ -1,4 +1,4 @@
-AArch64 autda-disable-no-basic-dep-modifier
+AArch64 pauth2-no-key-da+MP+dmb.sy+autda
 Variant=pauth2,no-key-da
 {
   int64_t x=0;
