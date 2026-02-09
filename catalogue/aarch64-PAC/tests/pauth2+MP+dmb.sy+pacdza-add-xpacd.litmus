@@ -1,4 +1,4 @@
-AArch64 xpacd-basic-dep
+AArch64 pauth2+MP+dmb.sy+pacdza-add-xpacd
 Variant=pauth2
 {
   int64_t x=0;
