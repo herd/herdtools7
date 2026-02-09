@@ -167,6 +167,8 @@
 
 \newcommand\BackupOriginalRule[1]{}
 \newcommand\BackupOriginalConstant[1]{}
+\newcommand\BackupProse[1]{}
+\newcommand\BackupProseAndFormally[1]{}
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
@@ -186,6 +188,7 @@
 \newcommand\textastlabel[1]{\textsc{#1}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
 \newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
+\newcommand\RenderProseAndFormally[1]{\ProseParagraph \RenderProse{\detokenize{#1}} \FormallyParagraph \RenderRule{\detokenize{#1}}}
 % Use this macro to highlight notes in prose sections that should be preserved
 % rather than overwritten during automatic prose generation.
 \newcommand\ProseNote[1]{#1}
@@ -193,6 +196,7 @@
 \newcommand\CaseName[1]{case \textsc{#1}}
 \newcommand\AllApply[0]{All of the following apply:}
 \newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
+\newcommand\SingleCase[1]{(\CaseDef{#1}):}
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
@@ -552,6 +556,16 @@
 }
 \newcommand\concat[0]{\hyperlink{relation-concat}{\mathbin{+}}}
 \newcommand\concatlist[1]{\hyperlink{relation-concatlist}{\textfunc{concat\_list}}(#1)}
+\newcommand\numberedidentifierop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    {#2} \concat \stringofint{#3}
+  }{
+    \left(\begin{array}{l}
+    {#2} \concat\\
+    \stringofint{#3}\\
+    \end{array}\right)
+  }
+}
 \newcommand\cons[0]{\hyperlink{relation-cons}{\mathbin{{+}{+}}}}
 \newcommand\listfstname[0]{\hyperlink{relation-listfst}{\textfunc{list\_fst}}}
 \newcommand\listfst[1]{\listfstname(#1)}
@@ -620,8 +634,8 @@
 \newcommand\listset[1]{\hyperlink{def-listset}{\textfunc{list\_set}}\left({#1}\right)}
 \newcommand\bindings[1]{\hyperlink{relation-bindings}{\textfunc{bindings}}\left({#1}\right)}
 \newcommand\bindingstomap[1]{\hyperlink{def-bindingstomap}{\textfunc{bindings\_to\_map}}\left({#1}\right)}
-\newcommand\stringofnatname[0]{\hyperlink{relation-stringofnat}{\texttt{string\_of\_nat}}}
-\newcommand\stringofnat[1]{\stringofnatname(#1)}
+\newcommand\stringofintname[0]{\hyperlink{relation-stringofint}{\texttt{string\_of\_int}}}
+\newcommand\stringofint[1]{\stringofintname(#1)}
 \newcommand\restrictmapop[3][H]{
   {#2}\hyperlink{def-restrictfunc}{|}_{#3}
 }
@@ -1440,6 +1454,8 @@
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 \newcommand\AbbrevEVar[1]{\overbracket{#1}^{\hyperlink{def-abbrevevar}{\abbrevfont{E\_Var}}}}
+
+\newcommand\TIntWellConstrainedInt[1]{\TInt(\WellConstrained(#1))}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros

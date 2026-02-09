@@ -40,9 +40,20 @@ The relation
 \]
 } % EndDefineRelation
 
-\DefineRule{f}{\begin{mathpar}
+\DefineRule{f}{
+\begin{mathpar}
 \inferrule{ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \hva\\
  { { \texttt{d} \eqdef { \ifthenelseop[H]{{ \texttt{a} \member \texttt{S} }}{\texttt{b}}{\texttt{c}} } } } }{
  { \f(\texttt{a}, \texttt{b}, \texttt{c}, \texttt{S}) \typearrow \texttt{d} } 
 }
-\end{mathpar}} % EndDefineRule
+\end{mathpar}
+} % EndDefineRule
+
+\DefineProse{f}{
+\AllApply
+  \begin{itemize}
+    \item equating <empty prose for \texttt{num\_plus}> to \texttt{c} yields {c};
+    \item <empty prose for \texttt{assign}>;
+    \item the result is: \texttt{d}.
+  \end{itemize}
+} % EndDefineProse

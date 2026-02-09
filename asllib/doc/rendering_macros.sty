@@ -131,3 +131,20 @@
   }%
 }
 \makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \DefineProse{name}{content} - Define a macro for later rendering the prose
+%% for the named rule
+%% \RenderProse{name} - Render the defined prose for the rule
+\makeatletter
+\newcommand{\DefineProse}[2]{%
+  \expandafter\newcommand\csname RenderProse@#1\endcsname{#2}%
+}
+\newcommand{\RenderProse}[1]{%
+  \@ifundefined{RenderProse@#1}{%
+    \PackageError{rendering_macros}{RenderProse '#1' is not defined! Check that you have defined render prose '#1' and applied aslspec to generate \string\DefineProse}{}%
+  }{%
+    \csname RenderProse@#1\endcsname%
+  }%
+}
+\makeatother

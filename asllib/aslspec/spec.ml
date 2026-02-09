@@ -3,6 +3,14 @@ open ASTUtils
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
+type type_env = Term.t StringMap.t
+(** A type environment mapping variable names to their inferred types. *)
+
+type term_at_case = string * Term.t
+(** A term associated with a given case element. *)
+
+type type_case_table = term_at_case list StringMap.t
+
 (* A variable for discarding of values. *)
 let ignore_var = "_"
 let is_ignore_var id = String.equal id ignore_var
@@ -728,6 +736,41 @@ module ExpandRules = struct
       elements
       [ { name_opt = None; judgments = [] } ]
 end
+
+let filter_rule_for_path { Relation.name; rule_opt } path_str =
+  let open Rule in
+  let path = Str.split (Str.regexp_string ".") path_str in
+  let rec filter_rule_elements rule_elements path =
+    match (rule_elements, path) with
+    | _, [] -> rule_elements
+    | [], _ ->
+        let msg =
+          Format.asprintf
+            "Case '%s' does not exist in rule for relation '%s' for path '%s'."
+            path_str name path_str
+        in
+        failwith msg
+    | Rule.Judgment judgment :: rest, _ ->
+        Rule.Judgment judgment :: filter_rule_elements rest path
+    | Rule.Cases cases :: rest, case_name :: path_tail -> (
+        match
+          List.find_opt (fun { name } -> String.equal name case_name) cases
+        with
+        | Some { elements = case_elements; _ } ->
+            let filtered_case_elements =
+              filter_rule_elements case_elements path_tail
+            in
+            filtered_case_elements @ filter_rule_elements rest []
+        | None ->
+            let msg =
+              Format.asprintf
+                "Case name '%s' not found in rule for relation '%s' for path \
+                 '%s'."
+                case_name name path_str
+            in
+            failwith msg)
+  in
+  filter_rule_elements (Option.get rule_opt) path
 
 module Check = struct
   (** [check_layout term layout] checks that the given [layout] is structurally
@@ -1637,10 +1680,12 @@ module Check = struct
       rule. The functions in this module assume that use-def correctness was
       already checked. *)
   module TypeInference : sig
-    val check : Relation.t -> spec_type -> ExpandRules.expanded_rule -> unit
-    (** [check relation spec expanded_rule] checks that all expressions in
-        [expanded_rule] are type-correct according to [spec], using [relation]
-        for error messages.
+    val check_and_infer :
+      Relation.t -> spec_type -> ExpandRules.expanded_rule -> type_env
+    (** [check_and_infer relation spec expanded_rule] checks that all
+        expressions in [expanded_rule] are type-correct according to [spec],
+        using [relation] for error messages, and returns the inferred type
+        environment.
 
         @raise [SpecError] if a type error is found. *)
 
@@ -1648,6 +1693,8 @@ module Check = struct
     (** [infer spec expr] infers the type of [expr] according to [spec].
 
         @raise [SpecError] if the type of [expr] cannot be inferred. *)
+
+    val infer_for_relation : spec_type -> Relation.t -> type_case_table
   end = struct
     open Expr
     open UseDef
@@ -1692,9 +1739,6 @@ module Check = struct
       match defining_node_opt_for_id spec id with
       | Some (Node_RecordField { term }) -> term
       | _ -> failwith "Expected a record field definition node."
-
-    type type_env = Term.t StringMap.t
-    (** A type environment mapping variable names to their inferred types. *)
 
     (** Pretty-prints a type environment for debugging. *)
     let pp_type_env fmt type_env =
@@ -2817,7 +2861,7 @@ module Check = struct
       with SpecError err | Failure err ->
         stack_spec_error err (Format.asprintf "In judgment %a" PP.pp_expr expr)
 
-    let check relation spec expanded_rule =
+    let check_and_infer relation spec expanded_rule =
       let () =
         if false then
           Format.eprintf "@.=== Checking types for relation %s case %s ===@."
@@ -2860,9 +2904,53 @@ module Check = struct
           Error.output_type_mismatch output_judgment_type output output_expr
         else ()
       in
-      if false then
-        Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
-      else ()
+      let () =
+        if false then
+          Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
+      in
+      type_env
+
+    let merge_type_case_tables table1 table2 =
+      StringMap.merge
+        (fun _var entry1_opt entry2_opt ->
+          match (entry1_opt, entry2_opt) with
+          | Some entry1, Some entry2 -> Some (entry1 @ entry2)
+          | Some entry, None | None, Some entry -> Some entry
+          | None, None -> None)
+        table1 table2
+
+    let infer_for_relation spec ({ Relation.name; rule_opt } as relation) :
+        type_case_table =
+      let rule =
+        match rule_opt with
+        | Some rule -> rule
+        | None ->
+            let msg = Format.asprintf "Relation %s has no rules." name in
+            failwith msg
+      in
+      let expanded_rules = ExpandRules.expand rule in
+      let type_case_tables =
+        List.map
+          (fun expanded_rule ->
+            let name =
+              Option.value ~default:"" expanded_rule.ExpandRules.name_opt
+            in
+            let type_env = check_and_infer relation spec expanded_rule in
+            let var_to_term = StringMap.bindings type_env in
+            let var_to_case_and_term =
+              List.map (fun (var, term) -> (var, [ (name, term) ])) var_to_term
+            in
+            StringMap.of_list var_to_case_and_term)
+          expanded_rules
+      in
+      try List.fold_left merge_type_case_tables StringMap.empty type_case_tables
+      with Failure err ->
+        let msg =
+          Format.asprintf
+            "Type error when merging type environments for relation %s: %s" name
+            err
+        in
+        failwith msg
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -2999,7 +3087,10 @@ module Check = struct
                   expanded_rule.judgments
               in
               let () = UseDef.check_use_def relation spec expanded_rule in
-              TypeInference.check relation spec expanded_rule
+              let _discarded_type_env =
+                TypeInference.check_and_infer relation spec expanded_rule
+              in
+              ()
             with SpecError err | Failure err ->
               stack_spec_error err
                 (Format.asprintf "In rule for relation %s, case %s"
@@ -3398,6 +3489,12 @@ let make_spec_with_builtins ast =
     cond_operator = get_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
+
+let infer_type_case_table spec relation =
+  Check.TypeInference.infer_for_relation spec relation
+
+let case_table_vars type_case_table =
+  List.map fst (StringMap.bindings type_case_table)
 
 let from_ast ast =
   let spec = make_spec_with_builtins ast in

@@ -1,17 +1,19 @@
-operator cond_case[T](Bool, T) -> T
+operator cond_case[T](c: Bool, r: T) -> T
 {
   math_macro = \condcase,
   custom = true,
+  prose_application = "if {c} holds then {r}",
 };
 
 // TODO: add a custom rendering where all conditions
 // and all values are properly aligned.
 // Perhaps this can be achieved by adding a raw attribute to macros, which doesn't wrap them with braces.
 // TODO: add custom syntac for cases.
-variadic operator cond_op[T](list1(T)) -> T
+variadic operator cond_op[T](cases: list1(T)) -> T
 {
   math_macro = \condop,
   custom = true,
+  prose_application = "{cases}",
 };
 
 // This constant is for internal use only.
@@ -73,47 +75,54 @@ typedef ASTLabels
    math_macro = \ASTLabels,
 };
 
-operator some[T](T) -> option(T)
+operator some[T](v: T) -> option(T)
 {
+  prose_application = "the \optionalterm{} containing {v}",
   math_macro = \some,
 };
 
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
+  prose_application = "define {lhs} as {rhs}",
 };
 
 operator reverse_assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \reverseeqdef,
+  prose_application = "{lhs} is {rhs}",
 };
 
 operator equal[T](a: T, b: T) -> (c: Bool)
 {
   math_macro = \equal,
-  prose_application = "equating {a} to {b} yields {c}",
+  prose_application = "{a} is equal to {b}",
 };
 
-operator not_equal[T](T, T) -> Bool
+operator not_equal[T](a: T, b: T) -> Bool
 {
   math_macro = \notequal,
+  prose_application = "{a} is not equal to {b}",
 };
 
-operator if_then_else[T](Bool, T, T) -> T
+operator if_then_else[T](c: Bool, r_true: T, r_false: T) -> T
 {
   math_macro = \ifthenelseop,
+  prose_application = "if {c} then {r_true} else {r_false}"
 };
 
-variadic operator and(list1(Bool)) -> Bool
+variadic operator and(conjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \land,
+  prose_application = "all of the following hold: {conjuncts}"
 };
 
-variadic operator or(list1(Bool)) -> Bool
+variadic operator or(disjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \lor,
+  prose_application = "one of the following holds: {disjuncts}"
 };
 
 operator list_and(list0(Bool)) -> Bool
@@ -126,16 +135,18 @@ operator list_or(list0(Bool)) -> Bool
   math_macro = \listor,
 };
 
-operator not(Bool) -> Bool
+operator not(b: Bool) -> Bool
 {
   math_macro = \opnot,
+  prose_application = "the logical negation of {b}",
 };
 
 // This is negation, specialized to a single variable to allow
 // the macro to drop the parenthesis around the variable.
-operator not_single(Bool) -> Bool
+operator not_single(b: Bool) -> Bool
 {
   math_macro = \opnotvar,
+  prose_application = "the logical negation of {b}",
 };
 
 operator iff(Bool, Bool) -> Bool
@@ -148,15 +159,17 @@ operator implies(Bool, Bool) -> Bool
   math_macro = \implies,
 };
 
-variadic operator num_plus[NumType](list1(NumType)) -> NumType
+variadic operator num_plus[NumType](addends: list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numplus,
+  prose_application = "the addition of {addends}"
 };
 
-operator num_minus[NumType](NumType, NumType) -> NumType
+operator num_minus[NumType](a: NumType, b: NumType) -> NumType
 {
   math_macro = \numminus,
+  prose_application = "{a} minus {b}",
 };
 
 operator num_negate[NumType](NumType) -> NumType
@@ -165,15 +178,17 @@ operator num_negate[NumType](NumType) -> NumType
 };
 
 // Negation for number types.
-operator negate[NumType](NumType) -> NumType
+operator negate[NumType](n: NumType) -> NumType
 {
   math_macro = \negate,
+  prose_application = "the negation of {n}"
 };
 
-variadic operator num_times[NumType](list1(NumType)) -> NumType
+variadic operator num_times[NumType](numbers: list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
   associative = true,
+  prose_application = "the multiplication of {numbers}",
 };
 
 operator num_divide[NumType](NumType, NumType) -> NumType
@@ -187,24 +202,28 @@ operator num_exponent[NumType](NumType, NumType) -> NumType
   custom = true,
 };
 
-operator less_than[NumType](NumType, NumType) -> Bool
+operator less_than[NumType](a: NumType, b: NumType) -> Bool
 {
   math_macro = \lessthan,
+  prose_application = "{a} is less than {b}",
 };
 
-operator less_or_equal[NumType](NumType, NumType) -> Bool
+operator less_or_equal[NumType](a: NumType, b: NumType) -> Bool
 {
   math_macro = \lessorequal,
+  prose_application = "{a} is less or equal to {b}",
 };
 
-operator greater_than[NumType](NumType, NumType) -> Bool
+operator greater_than[NumType](a: NumType, b: NumType) -> Bool
 {
   math_macro = \greaterthan,
+  prose_application = "{a} is greater than {b}",
 };
 
-operator greater_or_equal[NumType](NumType, NumType) -> Bool
+operator greater_or_equal[NumType](a: NumType, b: NumType) -> Bool
 {
   math_macro = \greaterorequal,
+  prose_application = "{a} is greater or equal {b}",
 };
 
 // Notice that the operator returns True when domain is empty.
