@@ -16,8 +16,9 @@
 /* Authors:                                                                 */
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
+#include <presi-self.h>
 
-static void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end)
+void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end)
 {
   while (vaddr < vaddr_end) {
     selfbar((void *)vaddr);
@@ -25,11 +26,11 @@ static void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end)
   }
 }
 
-static size_t code_size(ins_t *p,int skip) {
+size_t code_size(ins_t *p,int skip) {
   return (find_ins(getret(), p, skip) + 1) * sizeof(ins_t);
 }
 
-static void code_init(void *code, void *src, size_t sz)
+void code_init(void *code, void *src, size_t sz)
 {
   memcpy(code, src, sz);
   litmus_icache_sync((uintptr_t)code, (uintptr_t)code + sz);
