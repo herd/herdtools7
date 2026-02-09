@@ -58,9 +58,13 @@ let string_of_token =
     (Format.pp_print_list ~pp_sep:Format.pp_print_newline pp_token_entry)
     tokens func_epilogue
 
+let print_usage_and_exit () =
+  Printf.eprintf "Usage: %s <lexer_file>\n" Sys.argv.(0);
+  exit 1
+
 let () =
   let lexer_file =
-    if Array.length Sys.argv > 1 then Sys.argv.(1) else "SpecLexer.mll"
+    if Array.length Sys.argv = 2 then Sys.argv.(1) else print_usage_and_exit ()
   in
   let tokens = extract_tokens lexer_file in
   let module_content = generate_module tokens in
