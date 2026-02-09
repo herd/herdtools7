@@ -1,4 +1,4 @@
-AArch64 pauth1-autda-failure-basic-dep-pointer
+AArch64 pauth1+WW+RR+R+dmb.sy+autdza-xpacd+pacdza
 Variant=pauth1
 {
     int64_t x=0;
