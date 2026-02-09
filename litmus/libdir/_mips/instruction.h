@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /****************************************************************************/
 /*                           the diy toolsuite                              */
 /*                                                                          */
@@ -16,6 +17,10 @@
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
 #include <stdint.h>
+=======
+#include <stdint.h>
+#include <stddef.h>
+>>>>>>> d3fbc2813 (squashed all commits to one)
 
 typedef uint32_t ins_t; /* Type of instructions */
 #endif

@@ -1426,6 +1426,8 @@ module Make
           ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
+          (*ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          O.o "" ;*)
           if do_self then begin
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
