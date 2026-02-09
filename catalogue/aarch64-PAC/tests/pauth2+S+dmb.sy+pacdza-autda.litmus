@@ -1,5 +1,5 @@
-AArch64 autda-fpac-success-pick-basic-dep-modifier
-variant=pauth2,fpac
+AArch64 pauth2+S+dmb.sy+pacdza-autda
+variant=pauth2
 {
   int64_t x=0;
   int64_t y=0;
