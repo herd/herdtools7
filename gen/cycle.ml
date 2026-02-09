@@ -869,20 +869,14 @@ let rec group_rec x ns = function
       if Code.loc_compare x y = 0 then group_rec x (n::ns) rem
       else (x,List.rev ns)::group_rec  y [n] rem
 
-  let group = function
-    | [] -> []
-    | (x,n)::rem -> group_rec x [n] rem
+let group = function
+  | [] -> []
+  | (x,n)::rem -> group_rec x [n] rem
 
-  let by_loc xvs =
-    let r = group xvs in
-    let r =  List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y) r in
-    let r =
-      List.map
-        (fun (x,ns) -> match ns with
-        |  [] -> assert false
-        | _::_ -> (x,ns))
-        r in
-    group r
+let by_loc xvs =
+  group xvs
+  |> List.stable_sort (fun (x,_) (y,_) -> Code.loc_compare x y)
+  |> group
 
 let check_cycle c =
   (* Collect all the rmw edges, organise by location
