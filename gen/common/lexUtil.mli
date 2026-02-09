@@ -16,10 +16,6 @@
 
 exception Error of string
 
-type t =
-  | One of string
-  | Seq of string list
-
-val pp : t -> string
-val split : string -> t list
+val pp : Ast.t -> string
+val split : string -> Ast.t list
 val just_split : string -> string list
