@@ -418,19 +418,10 @@ module Make (S : SPEC_VALUE) = struct
           pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
       | Var name -> (
           (* Constants/labels should render via their macros.
-          So do tuples and records with labels, since their label
-          itself may be used as a constant in the spec (configuration domain).
           Plain variables should be rendered as text. *)
           match Spec.defining_node_opt_for_id S.spec name with
-          | Some (Node_Constant _)
-          | Some
-              (Node_TypeVariant
-                 {
-                   term =
-                     ( Label _
-                     | Tuple { label_opt = Some _ }
-                     | Record { label_opt = Some _ } );
-                 }) ->
+          | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ })
+            ->
               pp_id_as_macro fmt name
           | Some (Node_Type _)
           (* type names cannot be used as an expression so this case
@@ -657,16 +648,253 @@ module Make (S : SPEC_VALUE) = struct
       in
       pp_math_expanded_rules fmt expanded_subset
 
+    let prose_list parts =
+      match parts with
+      | [] -> ""
+      | [ part ] -> part
+      | [ first; second ] -> first ^ " and " ^ second
+      | _ ->
+          let prefix, last = Utils.split_last parts in
+          let prefix_str = String.concat ", " prefix in
+          prefix_str ^ ", and " ^ last
+
+    let prose_or_empty_message prose name =
+      if Utils.string_is_empty prose then
+        Format.asprintf "<empty prose for %s>"
+          (Latex.spec_var_to_latex_var ~font_type:TextTT name)
+      else prose
+
+    (* let prose_opt_for_node_id id =
+      match Spec.defining_node_opt_for_id S.spec id with
+      | Some node ->
+          let prose =
+            match node with
+            | Node_Constant def -> Constant.prose_description def
+            | Node_TypeVariant def -> TypeVariant.prose_description def
+            | Node_RecordField def -> Term.record_field_prose_description def
+            | Node_Relation def -> Relation.prose_application def
+            | Node_Type _ -> assert false
+          in
+          Some prose
+      | None -> None *)
+
+    let prose_or_math prose expr =
+      if Utils.string_is_empty prose then
+        Format.asprintf "%a" pp_expr (expr, Unspecified)
+      else prose
+
+    let rec expr_to_prose type_case_table expr =
+      let open Expr in
+      match expr with
+      | NamedExpr (sub_expr, _) -> expr_to_prose type_case_table sub_expr
+      | Tuple { label_opt = None; args = [ arg ] } ->
+          expr_to_prose type_case_table arg
+      | Var name when String.equal name Spec.ignore_var -> "an arbitrary value"
+      | Var name -> (
+          (* Constants/labels should render via their prose description.
+          Plain variables should be rendered as text. *)
+          match Spec.defining_node_opt_for_id S.spec name with
+          | Some (Node_Constant def) ->
+              let prose = Constant.prose_description def in
+              prose_or_math prose expr
+          | Some (Node_TypeVariant def) ->
+              let prose = TypeVariant.prose_description def in
+              prose_or_math prose expr
+          | Some (Node_Type _)
+          (* type names cannot be used as an expression so this case
+          corresponds to a variable that happens to share a name with a type. *)
+          | _ ->
+              spec_var_to_latex_var ~font_type:TextTT name)
+      | ListIndex { list_var; index } ->
+          Format.asprintf "the element of %s at %s"
+            (spec_var_to_latex_var ~font_type:TextTT list_var)
+            (expr_to_prose type_case_table index)
+      | Tuple { label_opt = None; args } ->
+          let args_prose = List.map (expr_to_prose type_case_table) args in
+          Format.asprintf "the tuple consisting of %s" (prose_list args_prose)
+      | Tuple { label_opt = Some name; args } ->
+          let variant, formal_args =
+            match Spec.defining_node_for_id S.spec name with
+            | Node_TypeVariant ({ term = Tuple { args = formal_args } } as def)
+              ->
+                (def, formal_args)
+            | _ -> assert false
+          in
+          let expr_prose = TypeVariant.prose_description variant in
+          let expr_prose = prose_or_empty_message expr_prose name in
+          let args_prose = List.map (expr_to_prose type_case_table) args in
+          let formal_arg_opts =
+            List.map (fun (arg_name_opt, _) -> arg_name_opt) formal_args
+          in
+          let formal_opt_prose_pairs =
+            List.combine formal_arg_opts args_prose
+          in
+          let formal_prose_pairs =
+            List.filter_map
+              (fun (opt_name, prose) ->
+                match opt_name with
+                | None -> None
+                | Some name -> Some (name, prose))
+              formal_opt_prose_pairs
+          in
+          substitute expr_prose formal_prose_pairs
+      | Record { label_opt = None; fields = _ } -> assert false
+      | Record { label_opt = Some name; fields } ->
+          let variant =
+            match Spec.defining_node_for_id S.spec name with
+            | Node_TypeVariant def -> def
+            | _ -> assert false
+          in
+          let expr_prose = TypeVariant.prose_description variant in
+          let expr_prose = prose_or_empty_message expr_prose name in
+          let field_to_prose =
+            List.map
+              (fun (field, field_expr) ->
+                (field, expr_to_prose type_case_table field_expr))
+              fields
+          in
+          substitute expr_prose field_to_prose
+      | RecordUpdate { record_expr; updates } ->
+          let record_prose = expr_to_prose type_case_table record_expr in
+          let updates_prose =
+            List.map
+              (fun (field, update_expr) ->
+                let update_prose = expr_to_prose type_case_table update_expr in
+                Format.asprintf "$%a$ updated to %s" pp_field_name field
+                  update_prose)
+              updates
+          in
+          Format.asprintf "%s with %s" record_prose (prose_list updates_prose)
+      | FieldAccess { base; field } ->
+          let base_prose = expr_to_prose type_case_table base in
+          let field_prose =
+            match Spec.defining_node_opt_for_id S.spec field with
+            | Some (Node_RecordField field_def) ->
+                let prose = Term.record_field_prose_description field_def in
+                prose_or_empty_message prose prose
+            | _ -> assert false
+          in
+          Format.asprintf "%s of %s" field_prose base_prose
+      | Map { lhs; args } ->
+          let lhs_prose = expr_to_prose type_case_table lhs in
+          let args_prose = List.map (expr_to_prose type_case_table) args in
+          Format.asprintf "applying %s to %s" lhs_prose (prose_list args_prose)
+      | Relation { name; args } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let expr_prose = Relation.prose_application relation in
+          let expr_prose = prose_or_empty_message expr_prose name in
+          let formal_args = relation.input in
+          let args_prose = List.map (expr_to_prose type_case_table) args in
+          let args_prose =
+            if is_variadic_operator S.spec name then [ prose_list args_prose ]
+            else args_prose
+          in
+          let formal_arg_opts =
+            List.map (fun (arg_name_opt, _) -> arg_name_opt) formal_args
+          in
+          let formal_opt_prose_pairs =
+            List.combine formal_arg_opts args_prose
+          in
+          let formal_prose_pairs =
+            List.filter_map
+              (fun (opt_name, prose) ->
+                match opt_name with
+                | None -> None
+                | Some name -> Some (name, prose))
+              formal_opt_prose_pairs
+          in
+          substitute expr_prose formal_prose_pairs
+      | Transition { lhs = Relation { name } as lhs; rhs } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let expr_prose = Relation.prose_application relation in
+          let _expr_prose = prose_or_empty_message expr_prose name in
+          let lhs_prose = expr_to_prose type_case_table lhs in
+          let rhs_prose = expr_to_prose type_case_table rhs in
+          lhs_prose ^ " " ^ rhs_prose
+      | Indexed { index; list_var; body } ->
+          let body_prose = expr_to_prose type_case_table body in
+          Format.asprintf "for each %s in %s: %s" index list_var body_prose
+      | Transition _ | UnresolvedApplication _ -> assert false
+
+    let pp_prose_judgment fmt type_case_table { Rule.expr; is_output } =
+      let transition_to_output = function
+        | Expr.Transition { rhs; _ } -> rhs
+        | _ -> assert false
+      in
+      if is_output then
+        let expr = transition_to_output expr in
+        Format.fprintf fmt "the result is %s."
+          (expr_to_prose type_case_table expr)
+      else Format.fprintf fmt "%s;" (expr_to_prose type_case_table expr)
+
+    (** [pp_prose_rule_element fmt element] renders the prose for a single
+        element of a rule with the formatter [fmt]. *)
+    let rec pp_prose_rule_element type_case_table fmt element =
+      let pp_case type_case_table fmt { name; elements } =
+        pp_prose_rule_elements fmt type_case_table ~case_name:name elements
+      in
+      match element with
+      | Judgment judgment -> pp_prose_judgment fmt type_case_table judgment
+      | Cases cases ->
+          fprintf fmt "\\OneApplies@;<0 0>%a"
+            (pp_itemized_list (pp_case type_case_table))
+            cases
+
+    (** [pp_prose_rule_elements fmt ~case_name_opt elements] renders the prose
+        for a list of rule elements [elements] with the formatter [fmt]. If
+        [case_name_opt] is provided, it is used to render an appropriate macro
+        for the case. *)
+    and pp_prose_rule_elements fmt type_case_table ~case_name elements =
+      let pp_apply_macro fmt () =
+        if Utils.string_is_empty case_name then fprintf fmt {|\AllApply|}
+        else
+          fprintf fmt {|\AllApplyCase{%s}|}
+            (StringOps.escape_underscores case_name)
+      in
+      match elements with
+      | [ element ] ->
+          (* A single element does not require a list macro like \AllApply or \AllApplyCase. *)
+          pp_prose_rule_element type_case_table fmt element
+      | _ ->
+          fprintf fmt "%a@;<0 2>%a" pp_apply_macro ()
+            (pp_itemized_list (pp_prose_rule_element type_case_table))
+            elements
+
+    (** [pp_render_rule_prose fmt rule_render] renders the prose description of
+        the rules referenced by [rule_render] with the formatter [fmt]. *)
+    let pp_render_rule_prose fmt { RuleRender.relation_name } =
+      let relation = Spec.relation_for_id S.spec relation_name in
+      let type_case_table = Spec.infer_type_case_table S.spec relation in
+      let rule_elements = Option.get relation.rule_opt in
+      pp_prose_rule_elements fmt type_case_table ~case_name:"" rule_elements
+
     (** [pp_render_rule_macro fmt def] renders the LaTeX wrapper macro
         [\DefineRule{name}{...}] around the rendering of the mathematical
         inference rules referenced by [def] with the formatter [fmt]. *)
     let pp_render_rule_macro fmt def =
-      fprintf fmt {|\DefineRule{%s}{%a} %% EndDefineRule|} def.RuleRender.name
-        pp_render_rule def
+      fprintf fmt {|\DefineRule{%s}{@.%a@.} %% EndDefineRule|}
+        def.RuleRender.name pp_render_rule def
+
+    (** [pp_render_rule_prose_macro fmt def] renders the LaTeX wrapper macro
+        [\DefineProse{name}{...}] around the rendering of the prose description
+        of the rules referenced by [def] with the formatter [fmt]. *)
+    let pp_render_rule_prose_macro fmt def =
+      fprintf fmt {|\DefineProse{%s}{@.%a@.} %% EndDefineProse|}
+        def.RuleRender.name pp_render_rule_prose def
+
+    (** [pp_render_rule_math_and_prose_macros fmt def] renders both LaTeX
+        wrapper macros for the rendering of the mathematical inference rules and
+        the prose description of the rules referenced by [def] with the
+        formatter [fmt]. *)
+    let pp_render_rule_math_and_prose_macros fmt def =
+      pp_render_rule_macro fmt def;
+      fprintf fmt "@.@.";
+      pp_render_rule_prose_macro fmt def
   end
 
-  (** [pp_constant_definition fmt def] renders the definition of the constant
-      given by [def] with the formatter [fmt]. *)
+  (** [pp_constant_definition_macro fmt def] renders the LaTeX wrapper macro
+      [\DefineConstant{name}{...}] around the rendering of a constant definition
+      [def] with the formatter [fmt].*)
   let pp_constant_definition fmt
       ({ Constant.name; opt_value_and_attributes } as def) =
     match opt_value_and_attributes with
@@ -703,7 +931,8 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Type def -> pp_type_definition_macro fmt def
     | Elem_Relation def -> pp_relation_definition_macro fmt def
     | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types_macro fmt def
-    | Elem_RenderRule def -> RenderRule.pp_render_rule_macro fmt def
+    | Elem_RenderRule def ->
+        RenderRule.pp_render_rule_math_and_prose_macros fmt def
 
   (** Renders a LaTeX document containing all of the elements in [S.spec]. A
       header and footer are added to enable compiling the generated file
@@ -713,7 +942,7 @@ module Make (S : SPEC_VALUE) = struct
       fprintf fmt
         {|\documentclass{book}
 \input{ASLmacros.tex}
-\input{rendering_macros.tex}
+\usepackage{rendering_macros}
 \input{generated_macros.tex}
 \begin{document}@.|}
     in
