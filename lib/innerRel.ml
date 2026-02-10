@@ -27,16 +27,29 @@ module type S =  sig
   module M : sig
     module ME : Map.S with type key = elt0
     type map = Elts.t ME.t
+    val empty : map
+    val singleton : (elt0 * elt0) -> map
+    val mem : (elt0 * elt0) -> map -> bool
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
-    val seq : map -> map -> map
     val filter_src : Elts.t -> map -> map
     val filter_tgt : map -> Elts.t -> map
     val exists_path : (elt0 * elt0) -> map -> bool
+    val filter_pairs : ((elt0 * elt0) -> bool) -> map -> map
     val to_map : t -> map
     val of_map : map -> t
     val pair_to_map : elt0 -> elt0 -> map
+    (* Unary relations *)
+    val transitive_closure : map -> map
+    val inverse : map -> map
+    val get_cycle : map ->  elt0 list option
+    (* Binary operations on maps *)
+    val seq : map -> map -> map
+    val union : map -> map -> map
+    val unions : map list -> map
+    val inter : map -> map -> map
+    val diff : map -> map -> map
   end
 
 (* All elements related *)
@@ -292,6 +305,14 @@ and module Elts = MySet.Make(O) =
 
       type map = Elts.t ME.t
 
+      let empty = ME.empty
+
+      let singleton (e1,e2) = ME.add e1 (Elts.singleton e2) empty
+
+      let mem (e1,e2) m =
+        try Elts.mem e2 (ME.find e1 m)
+        with Not_found -> false
+
       let succs e m = try ME.find e m with Not_found -> Elts.empty
       let op_succs m e = succs e m
 
@@ -300,6 +321,13 @@ and module Elts = MySet.Make(O) =
       let exists_path (e1, e2) r =
         try ignore (do_is_reachable op_succs r e1 e2) ; false
         with Found -> true
+
+      let filter_pairs f m =
+        ME.mapi
+          (fun e es ->
+             Elts.filter (fun e' -> f (e,e')) es)
+          m
+        |> ME.filter (fun _ es -> not (Elts.is_empty es))
 
       let to_map_ok p r =
         fold
@@ -321,6 +349,44 @@ and module Elts = MySet.Make(O) =
         unions xs
 
       let pair_to_map e1 e2 = ME.singleton e1 (Elts.singleton e2)
+
+(* Binary relations *)
+
+      let union m1 m2 =
+        ME.union (fun _ s1 s2 -> Some (Elts.union s1 s2)) m1 m2
+
+      let rec union2 k = function
+        | [] -> k
+        | [m] -> m::k
+        | m1::m2::ms -> union2 (union m1 m2::k) ms
+
+      let rec unions = function
+        | [] -> ME.empty
+        | [m] -> m
+        | ms -> unions (union2 [] ms)
+
+      let inter m1 m2 =
+        ME.merge
+          (fun _ s1 s2 ->
+             match s1,s2 with
+             | Some s1,Some s2 ->
+                 let s = Elts.inter s1 s2 in
+                 if Elts.is_empty s then None
+                 else Some s
+             | (None,Some _)|(Some _,None)|(None,None) -> None)
+          m1 m2
+
+      let diff m1 m2 =
+        ME.merge
+          (fun _ s1 s2 ->
+             match s1,s2 with
+             | None,(None|Some _) -> None
+             | Some _,None -> s1
+             | Some s1,Some s2 ->
+                 let s = Elts.diff s1 s2 in
+                 if Elts.is_empty s then None
+                 else Some s)
+          m1 m2
 
 (* sub relation *)
 
@@ -363,7 +429,7 @@ and module Elts = MySet.Make(O) =
            Those functions suffice to compute the transitive closure of
          the input graph. See function "tr" below.
       *)
- 
+
       module FullSCC = struct
 
         module NodeMap = ME
@@ -443,7 +509,7 @@ and module Elts = MySet.Make(O) =
          Helsinki University of technology
          1995.
 *)
-      let tr m =
+      let transitive_closure m =
         let kont n m res =
           ME.update n
             (fun o ->
@@ -467,6 +533,15 @@ and module Elts = MySet.Make(O) =
                 (fun res m -> ME.add m vn res)
                 res ms in
         FullSCC.scan_map kont kont_scc ME.empty m
+
+(* Inverse *)
+      let inverse m =
+        ME.fold
+          (fun e es k ->
+             Elts.fold
+               (fun f k -> add f e k)
+               es k)
+          m ME.empty
 
 (* Acyclicity check *)
       exception Cycle of (Elts.elt list)
@@ -573,7 +648,7 @@ and module Elts = MySet.Make(O) =
 
     end
 
-    let transitive_to_map r = M.to_map r |> M.tr
+    let transitive_to_map r = M.to_map r |> M.transitive_closure
 
     let transitive_closure r = transitive_to_map r |> M.of_map
 
@@ -751,7 +826,7 @@ and module Elts = MySet.Make(O) =
       end ;
       nss
 
-(* Function kont will be called on all SCC, including trivial ones *)    
+(* Function kont will be called on all SCC, including trivial ones *)
     let scc_kont kont res nodes edges =
       let kont _ _ r = r
       and kont_scc _ ns r = kont ns r in

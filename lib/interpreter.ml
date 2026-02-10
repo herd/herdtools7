@@ -103,8 +103,10 @@ module Make
 (* Some constants passed to the interpreter, made open for the
    convenience of building them from outside *)
       type ks =
-          { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
-            evts : S.event_set;  conc : S.concrete; po:S.event_rel;}
+        { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
+          map_id : S.E.EventRel.M.map Lazy.t;
+          map_unv : S.E.EventRel.M.map Lazy.t;
+          evts : S.event_set;  conc : S.concrete; po:S.event_rel;}
 
 
 (* Initial environment, they differ from internal env, so
@@ -201,6 +203,8 @@ module Make
 
     type ks =
         { id : S.event_rel Lazy.t; unv : S.event_rel Lazy.t;
+          map_id : S.E.EventRel.M.map Lazy.t;
+          map_unv : S.E.EventRel.M.map Lazy.t;
           evts : S.event_set; conc : S.concrete; po:S.event_rel; }
 
 (* Internal typing *)
@@ -277,6 +281,8 @@ module Make
         | Pair of (S.event * S.event)
         | Rel of S.event_rel
         | TransRel of S.event_rel (** Implicitly transitive relation *)
+        | MapRel of E.EventRel.M.map
+        | TransMap of E.EventRel.M.map
         | ClassRel of ClassRel.t
         | Event of S.event
         | Set of S.event_set
@@ -311,6 +317,8 @@ module Make
         | Pair of (S.event * S.event)
         | Rel of S.event_rel
         | TransRel of S.event_rel
+        | MapRel of E.EventRel.M.map
+        | TransMap of E.EventRel.M.map
         | ClassRel of ClassRel.t
         | Event of S.event
         | Set of S.event_set
@@ -336,11 +344,12 @@ module Make
           mutable proc_env : env;
           proc_body : AST.ins list; }
 
-      let rec type_val = function
-        | V.Empty -> TEmpty
+      let rec type_val =
+        function
+        | Empty -> TEmpty
         | Unv -> assert false (* Discarded before *)
         | Pair _ -> TPair
-        | Rel _ | TransRel _ -> TRel
+        | Rel _ | TransRel _ | MapRel _ | TransMap _ -> TRel
         | ClassRel _ -> TClassRel
         | Event _ -> TEvent
         | Set _ -> TEvents
@@ -700,13 +709,34 @@ module Make
         if fail then error env.EV.silent loc "unbound var: %s" k
         else raise Not_found
 
-    let as_rel keep_implicit ks = function
+    let as_rel transitive ks = function
       | Rel r -> r
       | TransRel tr ->
-          if keep_implicit then tr
+          if transitive then tr
           else E.EventRel.transitive_closure tr
+      | MapRel m -> E.EventRel.M.of_map m
+      | TransMap m ->
+          (if transitive then m
+           else  E.EventRel.M.transitive_closure m)
+          |> E.EventRel.M.of_map
       | Empty -> E.EventRel.empty
       | Unv -> Lazy.force ks.unv
+      | v ->
+          eprintf "this is not a relation: '%s'" (pp_val v) ;
+          assert false
+
+    let as_map_rel transitive ks = function
+      | Rel r -> E.EventRel.M.to_map r
+      | TransRel tr ->
+          E.EventRel.M.to_map tr
+          |> (if transitive then Misc.identity
+              else E.EventRel.M.transitive_closure)
+      | MapRel m -> m
+      | TransMap m ->
+          if transitive then m
+          else  E.EventRel.M.transitive_closure m
+      | Empty -> E.EventRel.M.empty
+      | Unv -> Lazy.force ks.map_unv
       | v ->
           eprintf "this is not a relation: '%s'" (pp_val v) ;
           assert false
@@ -1234,11 +1264,41 @@ module Make
 (* Interpreter *)
 (***************)
 
+    (* Eval constants *) 
+    let eval_id map ks =
+      if map then MapRel (Lazy.force ks.map_id)
+      else Rel (Lazy.force ks.id)
+
+    (* Force map request *)
+    let force_map map = function
+      | MapRel m when not map -> Rel (E.EventRel.M.of_map m)
+      | TransMap m when not map -> TransRel (E.EventRel.M.of_map m)
+      | Rel r when map -> MapRel (E.EventRel.M.to_map r)
+      | TransRel r when map -> TransMap(E.EventRel.M.to_map r)
+      | v -> v
+
     (* Temporary data for computing sequence arguments *)
     type map_rel =
       | Mid of E.EventSet.t
       | Mrel of E.EventRel.M.map
       | Mclass of ClassRel.t
+
+    (* Temporary data for computing relations arguments *)
+    type relation =
+      | RRel of E.EventRel.t
+      | RMap of E.EventRel.M.map
+
+    let force_rel =  function
+      | RRel r -> r
+      | RMap m -> E.EventRel.M.of_map m
+
+    let relation_mem p = function
+      | RRel r -> E.EventRel.mem p r
+      | RMap m -> E.EventRel.M.mem p m
+
+    let relation_get_cycle = function
+      | RRel r -> E.EventRel.get_cycle r
+      | RMap m -> E.EventRel.M.get_cycle m
 
     let end_profile ~t0 ~loc : unit =
       let t1 = Sys.time () in
@@ -1272,18 +1332,24 @@ module Make
 (* For all success call kont, accumulating results *)
     let interpret test kfail =
 
-      let rec eval_loc accept_implicit env e = get_loc e,eval accept_implicit env e
-      and eval_ord_loc  env e = eval_loc false env e
+      let rec eval_loc transitive map env e =
+        get_loc e,eval transitive map env e
 
-      and eval_ord env e = eval false env e
+      and eval_ord_loc env e = eval_loc false false env e
 
-      (*  The boolean argument `accept_implicit` signals
+      and eval_ord_map_loc map env e = eval_loc false map env e
+
+      and eval_ord env e = eval false false env e
+
+      and eval_ord_map map env e = eval false map env e
+
+      (*  The boolean argument `transitive` signals
        *  that implicitly transitive
        *  relations are accepted as a result
        *  in place of a relation.
       *)
 
-      and eval accept_implicit env = profile_exp @@ function
+      and eval transitive map env = profile_exp @@ function
         | Konst (_,AST.Empty SET) -> V.Empty (* Polymorphic empty *)
         | Konst (_,AST.Empty RLN) -> empty_rel
         | Konst (_,Universe _) -> Unv
@@ -1299,38 +1365,56 @@ module Make
             Clo (eval_fun false env loc xs body name fvs)
 (* Unary operators *)
         | Op1 (_,Plus,e) ->
-            begin match eval true env e with
+            begin match eval true map env e with
             | V.Empty -> V.Empty
             | Unv -> Unv
-            | Rel r when accept_implicit -> TransRel r
+            | Rel r when transitive -> TransRel r
+            | MapRel m when transitive -> TransMap m
+            | Rel r when map -> MapRel (E.EventRel.transitive_to_map r)
             | Rel r -> Rel (E.EventRel.transitive_closure r)
-            | TransRel _ as v -> v
+            | MapRel m -> MapRel (E.EventRel.M.transitive_closure m)
+            | TransRel _|TransMap _ as v -> v
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Star,e) ->
-            begin match eval accept_implicit env e with
-            | V.Empty -> Rel (Lazy.force env.EV.ks.id)
-            | Unv -> Unv
-            | Rel r ->
-                let ids = Lazy.force env.EV.ks.id in
-                if accept_implicit then TransRel (E.EventRel.union r ids)
-                else
-                  let tr = E.EventRel.transitive_closure r in
-                  Rel (E.EventRel.union tr ids)
-            | TransRel r ->
-                TransRel
-                  E.EventRel.(union r (Lazy.force env.EV.ks.id))
-            | v -> error_rel env.EV.silent (get_loc e) v
+            begin match eval transitive map env e with
+              | V.Empty -> eval_id map env.EV.ks
+              | Unv -> Unv
+              | Rel r ->
+                  let ids = Lazy.force env.EV.ks.id in
+                  if transitive then TransRel (E.EventRel.union r ids)
+                  else
+                    let tr = E.EventRel.transitive_closure r in
+                    Rel (E.EventRel.union tr ids)
+              | TransRel r ->
+                  TransRel
+                    E.EventRel.(union r (Lazy.force env.EV.ks.id))
+              | MapRel r ->
+                  let ids = Lazy.force env.EV.ks.map_id in
+                  if transitive then TransMap (E.EventRel.M.union r ids)
+                  else
+                    let tr = E.EventRel.M.transitive_closure r in
+                    MapRel (E.EventRel.M.union tr ids)
+              | TransMap r ->
+                  TransMap
+                    E.EventRel.M.(union r  (Lazy.force env.EV.ks.map_id))
+              | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Opt,e) ->
-            begin match eval accept_implicit env e with
-            | V.Empty -> Rel (Lazy.force env.EV.ks.id)
+            begin match eval transitive map env e with
+              | V.Empty ->
+                  Rel (Lazy.force env.EV.ks.id)
             | Unv -> Unv
             | Rel r ->
                 Rel (E.EventRel.union r (Lazy.force env.EV.ks.id))
             | TransRel r ->
                 TransRel
                   E.EventRel.(union r (Lazy.force env.EV.ks.id))
+            | MapRel r ->
+                MapRel (E.EventRel.M.union r (Lazy.force env.EV.ks.map_id))
+            | TransMap r ->
+                TransMap
+                  E.EventRel.M.(union r (Lazy.force env.EV.ks.map_id))
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Comp,e) -> (* Back to polymorphism *)
@@ -1344,6 +1428,13 @@ module Make
             | TransRel tr ->
                 Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv)
                        (E.EventRel.transitive_closure tr))
+            | MapRel r ->
+                MapRel (E.EventRel.M.diff (Lazy.force env.EV.ks.map_unv) r)
+            | TransMap tr ->
+                MapRel
+                  (E.EventRel.M.diff
+                     (Lazy.force env.EV.ks.map_unv)
+                     (E.EventRel.M.transitive_closure tr))
             | ValSet (TTag ts as t,s) ->
                 ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
             | v ->
@@ -1352,11 +1443,13 @@ module Make
                   (pp_typ (type_val v))
             end
         | Op1 (_,Inv,e) ->
-            begin match eval accept_implicit env e with
+            begin match eval transitive map env e with
             | V.Empty -> V.Empty
             | Unv -> Unv
             | Rel r -> Rel (E.EventRel.inverse r)
             | TransRel r -> TransRel (E.EventRel.inverse r)
+            | MapRel r -> MapRel (E.EventRel.M.inverse r)
+            | TransMap r -> TransMap (E.EventRel.M.inverse r)
             | ClassRel r -> ClassRel (ClassRel.inverse r)
             | Pair (v1,v2) -> Pair (v2,v1)
             | v -> error_rel env.EV.silent (get_loc e) v
@@ -1368,9 +1461,9 @@ module Make
             | Set s -> Rel (E.EventRel.set_to_rln s)
             | v -> error_events env.EV.silent (get_loc e) v
             end
-(* One xplicit N-ary operator *)
+(* One explicit N-ary operator *)
         | ExplicitSet (loc,es) ->
-            let vs = List.map (eval_ord_loc env) es in
+            let vs = List.map (eval_loc transitive map env) es in
             let vs = set_args env.EV.silent vs in
             begin match vs with
             | [] -> V.Empty
@@ -1395,10 +1488,10 @@ module Make
             end
 (* Tuple is an actual N-ary operator *)
         | Op (_loc,AST.Tuple,es) ->
-            V.Tuple (List.map (eval accept_implicit env) es)
+            V.Tuple (List.map (eval transitive map env) es)
 (* N-ary operators, those associative binary operators are optimized *)
         | Op (loc,Union,es) ->
-            let vs = List.map (eval_loc accept_implicit env) es in
+            let vs = List.map (eval_loc transitive map env) es in
             begin try
               let vs = union_args vs in
               match vs with
@@ -1409,9 +1502,14 @@ module Make
                   | TClassRel ->
                       ClassRel(ClassRel.unions (List.map as_classrel vs))
                   | TRel ->
-                      Rel
-                        (E.EventRel.unions
-                           (List.map (as_rel accept_implicit env.EV.ks) vs))
+                      if map then
+                        MapRel
+                          (E.EventRel.M.unions
+                             (List.map (as_map_rel transitive env.EV.ks) vs))
+                      else 
+                        Rel
+                          (E.EventRel.unions
+                             (List.map (as_rel transitive env.EV.ks) vs))
                   | TEvents ->
                       Set (E.EventSet.unions (List.map (as_set env.EV.ks) vs))
                   | TSet telt ->
@@ -1502,21 +1600,26 @@ module Make
 (* Binary operators *)
         | Op (_loc1,Inter,[e1;Op (_loc2,Cartesian,[e2;e3])])
         | Op (_loc1,Inter,[Op (_loc2,Cartesian,[e2;e3]);e1]) ->
-            let r = eval_rel env e1
-            and f1 = eval_events_mem env e2
-            and f2 = eval_events_mem env e3 in
-            let r =
-              E.EventRel.filter
-                (fun (e1,e2) -> f1 e1 && f2 e2)
-                r in
-            Rel r
+            let s1 = eval_events env e2
+            and s2 = eval_events env e3 in
+            begin
+              match eval_rel map env e1 with
+              | RRel r ->
+                  Rel
+                    (E.EventRel.filter
+                       (fun (e1,e2) -> E.EventSet.(mem e1 s1 && mem e2 s2))
+                       r)
+              | RMap m ->
+                  MapRel
+                    E.EventRel.M.(filter_tgt m s2 |> filter_src s1)
+            end
         | Op (loc,Inter,[e1;Op1 (_,Comp,e2)])
         | Op (loc,Inter,[Op1 (_,Comp,e2);e1;])
           ->
-           eval_diff env loc e1 e2
+            eval_diff map env loc e1 e2
         | Op (loc,Inter,[e1;e2;]) -> (* Binary notation kept in parser *)
-            let loc1,v1 = eval_loc true env e1
-            and loc2,v2 = eval_loc true env e2 in
+            let loc1,v1 = eval_loc true map env e1
+            and loc2,v2 = eval_loc true map env e2 in
             begin match tag2set v1,tag2set v2 with
             | (V.Tag _,_)|(_,V.Tag _) -> assert false
             | Rel r1,Rel r2 -> Rel (E.EventRel.inter r1 r2)
@@ -1532,6 +1635,38 @@ module Make
                     (fun p -> E.EventRel.M.exists_path p m)
                     r in
                 Rel r
+            | (Rel r, TransMap m)
+            | (TransMap m, Rel r) ->
+                let r =
+                  E.EventRel.filter
+                    (fun p -> E.EventRel.M.exists_path p m)
+                    r in
+                Rel r
+            | (Rel r, MapRel m)
+            | (MapRel m, Rel r) ->
+                let r =
+                  E.EventRel.filter
+                    (fun p -> E.EventRel.M.mem p m)
+                    r in
+                Rel r
+            | (TransMap m,TransRel r)
+            | (TransRel r,TransMap m) ->
+                let rm = E.EventRel.M.to_map r in
+                MapRel (E.EventRel.M.inter m rm)
+            | (TransRel r,MapRel m)
+            | (MapRel m,TransRel r) ->
+                let rm =  E.EventRel.transitive_to_map r in
+                MapRel (E.EventRel.M.inter m rm)
+            | MapRel m1,MapRel m2 -> MapRel (E.EventRel.M.inter m1 m2)
+            | TransMap m1,TransMap m2 ->
+                let m1 = E.EventRel.M.transitive_closure m1
+                and m2 = E.EventRel.M.transitive_closure m2 in
+                MapRel (E.EventRel.M.inter m1 m2)
+            | (MapRel m,TransMap tm)
+            | (TransMap tm,MapRel m) ->
+                MapRel
+                  E.EventRel.M.
+                    (filter_pairs (fun p -> exists_path p tm) m)
             | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.inter r1 r2)
             | Set s1,Set s2 -> Set (E.EventSet.inter s1 s2)
             | ValSet (t,s1),ValSet (_,s2) ->
@@ -1544,29 +1679,31 @@ module Make
             | _,(Event _|Pair _|Clo _|Prim _|Proc _|V.Tuple _) ->
                 error env.EV.silent loc2
                   "intersection on %s" (pp_typ (type_val v2))
-            | ((Rel _| TransRel _ | ClassRel _),(Set _|ValSet _))
-            | ((Set _|ValSet _),(Rel _|TransRel _ |ClassRel _)) ->
+            | ((Rel _|TransRel _ |ClassRel _|MapRel _|TransMap _),
+               (Set _|ValSet _))
+            | ((Set _|ValSet _),
+               (Rel _|TransRel _ |MapRel _|TransMap _|ClassRel _)) ->
                 error env.EV.silent
                   loc "mixing sets and relations in intersection"
             | (ValSet _,Set _)
             | (Set _,ValSet _) ->
                 error env.EV.silent
                   loc "mixing event sets and sets in intersection"
-            | (ClassRel _,(Rel _ | TransRel _))
-            | ((Rel _ | TransRel _ ),ClassRel _) ->
+            | (ClassRel _,(Rel _ |TransRel _|MapRel _|TransMap _))
+            | ((Rel _|TransRel _|MapRel _|TransMap _),ClassRel _) ->
                 error env.EV.silent
                   loc "mixing event relation and class relation in intersection"
 
             end
         | Op (loc,Diff,[e1;e2;]) ->
-           eval_diff env loc e1 e2
+           eval_diff map env loc e1 e2
         | Op (_,Cartesian,[e1;e2;]) ->
             let s1 = eval_events env e1
             and s2 = eval_events env e2 in
             Rel (E.EventRel.cartesian s1 s2)
         | Op (loc,Add,[e1;e2;]) ->
-            let v1 = eval_ord env e1
-            and v2 = eval_ord env e2 in
+            let v1 = eval_ord_map map env e1
+            and v2 = eval_ord_map map env e2 in
             begin match v1,v2 with
             | V.Unv,_ -> error env.EV.silent loc "universe in set ++"
             | _,V.Unv -> V.Unv
@@ -1580,11 +1717,21 @@ module Make
                 set_op env loc (type_val v1) ValSet.add v1 s2
             | Pair p,Rel r ->
                 Rel (E.EventRel.add p r)
+            | Pair (e1,e2),MapRel m ->
+                MapRel (E.EventRel.M.add e1 e2 m)
+            | Pair p,TransRel r ->
+                Rel (E.EventRel.(add p @@ transitive_closure r))
+            | Pair (e1,e2),TransMap m ->
+                MapRel (E.EventRel.M.(add e1 e2 @@ transitive_closure m))
             | Tuple [Event ev1;Event ev2;],Rel r ->
                 Rel (E.EventRel.add (ev1,ev2) r)
-            | Tuple [ Event ev1; Event ev2 ], TransRel r ->
+            | Tuple [Event ev1;Event ev2;],MapRel m ->
+                MapRel (E.EventRel.M.add ev1 ev2 m)
+            | Tuple [Event ev1; Event ev2;], TransRel r ->
                 Rel (E.EventRel.(add (ev1, ev2) @@ transitive_closure r))
-            | _,(Rel _ | TransRel _) ->
+            | Tuple [Event ev1; Event ev2;], TransMap m ->
+                MapRel (E.EventRel.M.(add ev1 ev2 @@ transitive_closure m))
+            | _,(Rel _|TransRel _|MapRel _|TransMap _) ->
                 error env.EV.silent (get_loc e1)
                   "this expression of type '%s' should be a pair"
                   (pp_typ (type_val v2))
@@ -1608,10 +1755,10 @@ module Make
         | Op (_,(Diff|Inter|Cartesian|Add),_) -> assert false (* By parsing *)
 (* Application/bindings *)
         | App (loc,f,e) ->
-            eval_app loc accept_implicit env (eval_ord env f) (eval_ord env e)
+            eval_app loc transitive map env (eval_ord env f) (eval_ord env e)
         | Bind (_,bds,e) ->
             let m = eval_bds env bds in
-            eval accept_implicit { env with EV.env = m;} e
+            eval transitive map { env with EV.env = m;} e
         | BindRec (loc,bds,e) ->
             let m =
               match env_rec (fun _ -> true)
@@ -1619,7 +1766,7 @@ module Make
               with
               | CheckOk env -> env
               | CheckFailed _ -> assert false (* No check in expr binding *) in
-            eval accept_implicit { env with EV.env=m;} e
+            eval transitive map { env with EV.env=m;} e
         | Match (loc,e,cls,d) ->
             let v = eval_ord env e in
             begin match v with
@@ -1627,13 +1774,13 @@ module Make
                 let rec match_rec = function
                   | [] ->
                       begin match d with
-                      | Some e -> eval accept_implicit env e
+                      | Some e -> eval transitive map env e
                       | None ->
                           error env.EV.silent
                             loc "pattern matching failed on value '%s'" s
                       end
                   | (ps,es)::cls ->
-                      if s = ps then eval accept_implicit env es
+                      if s = ps then eval transitive map env es
                       else match_rec cls in
                 match_rec cls
             | V.Empty ->
@@ -1648,7 +1795,7 @@ module Make
         | MatchSet (loc,e,ife,cl) ->
             let v = eval_ord env e in
             begin match v with
-            | V.Empty -> eval accept_implicit env ife
+            | V.Empty -> eval transitive map env ife
             | V.Unv ->
                 error env.EV.silent loc
                   "%s" "Cannot set-match on universe"
@@ -1680,7 +1827,7 @@ module Make
                     eval_ord { env with EV.env = m; } ex
                 end
             | Rel r ->
-                if E.EventRel.is_empty r then eval accept_implicit env ife
+                if E.EventRel.is_empty r then eval transitive map env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let p =
@@ -1696,7 +1843,7 @@ module Make
                     let m = env.EV.env in
                     let m = add_val x p m in
                     let m = add_val xs s m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval transitive map { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try E.EventRel.split3 r with Not_found -> assert false in
@@ -1704,10 +1851,10 @@ module Make
                     let m = add_val x (lazy (Pair elt)) m in
                     let m = add_val xs1 (lazy (Rel s1)) m in
                     let m = add_val xs2 (lazy (Rel s2)) m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval transitive map { env with EV.env = m; } ex
                 end
             | ValSet (t,s) ->
-                if ValSet.is_empty s then eval accept_implicit env ife
+                if ValSet.is_empty s then eval transitive map env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let elt =
@@ -1724,7 +1871,7 @@ module Make
                     let m = env.EV.env in
                     let m = add_val x elt m in
                     let m = add_val xs s m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval transitive map { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try ValSet.split3 s with Not_found -> assert false in
@@ -1732,7 +1879,7 @@ module Make
                     let m = add_val x (lazy elt) m in
                     let m = add_val xs1 (lazy (ValSet (t,s1))) m in
                     let m = add_val xs2 (lazy (ValSet (t,s2))) m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval transitive map { env with EV.env = m; } ex
                 end
             | _ ->
                 error env.EV.silent
@@ -1741,45 +1888,69 @@ module Make
             end
         | Try (loc,e1,e2) ->
             begin
-              try eval accept_implicit { env with EV.silent = true; } e1
+              try eval transitive map { env with EV.silent = true; } e1
               with Misc.Exit ->
                 if O.debug then warn loc "caught failure" ;
-                eval accept_implicit env e2
+                eval transitive map env e2
             end
         | If (loc,cond,ifso,ifnot) ->
-            if eval_cond loc env cond then eval accept_implicit env ifso
-            else eval accept_implicit env ifnot
+            if eval_cond loc env cond then eval transitive map env ifso
+            else eval transitive map env ifnot
 
-      and eval_diff env loc e1 e2 =
-        let loc1,v1 = eval_ord_loc env e1
-        and loc2,v2 = eval_ord_loc env e2 in
-        match tag2set v1,tag2set v2 with
+      and eval_diff map env loc e1 e2 =
+        let loc1,v1 = eval_ord_map_loc map env e1
+        and loc2,v2 = eval_ord_map_loc map env e2 in
+        match tag2set v1 |> force_map map,tag2set v2 |> force_map map with
         | (V.Tag _,_)|(_,V.Tag _) -> assert false
         | Rel r1,Rel r2 -> Rel (E.EventRel.diff r1 r2)
+        | MapRel m1,MapRel m2 -> MapRel (E.EventRel.M.diff m1 m2)
         | TransRel r1,TransRel r2 ->
             Rel
               E.EventRel.
                 (diff
                    (transitive_closure r1)
                    (transitive_closure r2))
+        | TransMap m1,TransMap m2 ->
+            MapRel
+              E.EventRel.M.
+                (diff
+                   (transitive_closure m1)
+                   (transitive_closure m2))
         | Rel r1,TransRel r2 ->
             let m2 = E.EventRel.M.to_map r2 in
             Rel
               E.EventRel.
                 (filter
                  (fun p -> not (M.exists_path p m2)) r1)
+        | MapRel m1,TransMap m2 ->
+            MapRel
+              E.EventRel.M.
+                (filter_pairs
+                 (fun p -> not (exists_path p m2)) m1)
         | TransRel r1,Rel r2 ->
             Rel E.EventRel.(diff (transitive_closure r1) r2)
+        | TransMap m1,MapRel m2 ->
+            MapRel E.EventRel.M.(diff (transitive_closure m1) m2)
+        | (Rel _|TransRel _),(MapRel _|TransMap _)
+        | (MapRel _|TransMap _),(Rel _|TransRel _) ->
+            assert false (* By application of force_map *)
         | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)
         | Set s1,Set s2 -> Set (E.EventSet.diff s1 s2)
         | ValSet (t,s1),ValSet (_,s2) ->
             set_op env loc t ValSet.diff s1 s2
         | Unv,Rel r -> Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv) r)
+        | Unv,MapRel m ->
+            MapRel (E.EventRel.M.diff (Lazy.force env.EV.ks.map_unv) m)
         | Unv,TransRel r ->
             Rel
               E.EventRel.
                 (diff
                    (Lazy.force env.EV.ks.unv) (transitive_closure r))
+        | Unv,TransMap r ->
+            MapRel
+              E.EventRel.M.
+                (diff
+                   (Lazy.force env.EV.ks.map_unv) (transitive_closure r))
         | Unv,Set s -> Set (E.EventSet.diff env.EV.ks.evts s)
         | Unv,ValSet (TTag ts as t,s) ->
            ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
@@ -1792,23 +1963,30 @@ module Make
              loc1 "cannot build universe for element type %s"
              (pp_typ t)
         | Unv,V.Empty -> Unv
-        | (Rel _|TransRel _|ClassRel _|Set _|V.Empty|Unv|ValSet _),Unv
-        | V.Empty,(Rel _|TransRel _|ClassRel _|Set _|V.Empty|ValSet _)
+        | (Rel _|TransRel _|MapRel _|TransMap _|ClassRel _
+          |Set _|V.Empty|Unv|ValSet _),Unv
+        | V.Empty,(Rel _|TransRel _|MapRel _|TransMap _|ClassRel _
+                  |Set _|V.Empty|ValSet _)
           -> V.Empty
-        | (Rel _|TransRel _|ClassRel _|Set _|ValSet _),V.Empty -> v1
+        | (Rel _|TransRel _|ClassRel _|MapRel _|TransMap _
+          |Set _|ValSet _),V.Empty -> v1
         | (Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _),_ ->
-           error env.EV.silent loc1
-             "difference on %s" (pp_typ (type_val v1))
+            error env.EV.silent loc1
+              "difference on %s" (pp_typ (type_val v1))
         | _,(Event _|Pair _|Clo _|Proc _|Prim _|V.Tuple _) ->
            error env.EV.silent loc2
              "difference on %s" (pp_typ (type_val v2))
-        | ((Set _|ValSet _),(ClassRel _|TransRel _|Rel _))|((ClassRel _|TransRel _|Rel _),(Set _|ValSet _)) ->
+        | ((Set _|ValSet _),
+           (ClassRel _|TransRel _|Rel _|MapRel _|TransMap _))
+        | ((ClassRel _|TransRel _|Rel _|MapRel _|TransMap _),
+           (Set _|ValSet _)) ->
            error env.EV.silent
              loc "mixing set and relation in difference"
         | (Set _,ValSet _)|(ValSet _,Set _) ->
            error env.EV.silent
              loc "mixing event set and set in difference"
-        | ((TransRel _|Rel _),ClassRel _)|(ClassRel _,(TransRel _|Rel _)) ->
+        | ((TransRel _|Rel _|TransMap _|MapRel _),ClassRel _)
+        | (ClassRel _,(TransRel _|Rel _|TransMap _|MapRel _)) ->
            error env.EV.silent
              loc "mixing event relation and class relation in difference"
 
@@ -1819,12 +1997,9 @@ module Make
           | Event e ->
               let v2 = eval_events env e2 in
               E.EventSet.mem e v2
-          | Pair p ->
-              let v2 = eval_rel env e2 in
-              E.EventRel.mem p v2
+          | Pair p -> relation_mem p @@  eval_rel true env e2
           | Tuple [Event ev1;Event ev2;] ->
-              let v2 = eval_rel env e2 in
-              E.EventRel.mem (ev1,ev2) v2
+              relation_mem (ev1,ev2) @@  eval_rel true env e2
           | _ ->
               begin match eval_ord_loc env e2 with
               | _,ValSet (t2,vs) ->
@@ -1847,28 +2022,31 @@ module Make
           let _,a' = v1
           and _,b' = v2 in
           begin match t with
-          | TRel -> E.EventRel.subset (as_rel false env.EV.ks a') (as_rel false env.EV.ks b')
-          | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
+            | TRel ->
+                E.EventRel.subset
+                  (as_rel false env.EV.ks a') (as_rel false env.EV.ks b')
+            | TEvents ->
+                E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
           | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
           | ty ->
               error env.EV.silent loc
                 "cannot perform subset on type '%s'" (pp_typ ty) end
       | VariantCond v -> eval_variant_cond loc v
 
-      and eval_app loc accept_implicit env vf va = match vf with
+      and eval_app loc transitive map env vf va = match vf with
       | Clo f ->
           let env =
             { env with
               EV.env=add_args loc f.clo_args va env f.clo_env;} in
           if O.debug then begin try
-            eval accept_implicit env f.clo_body
+            eval transitive map env f.clo_body
           with
           |  Misc.Exit ->
               error env.EV.silent loc "Calling"
           | e ->
               error env.EV.silent loc "Calling (%s)" (Printexc.to_string e)
           end else
-            eval accept_implicit env f.clo_body
+            eval transitive map env f.clo_body
       | Prim (name,_,f) ->
           begin try f va with
           | PrimError msg ->
@@ -1910,12 +2088,20 @@ module Make
             bds env_clo in
         env_call
 
-      and eval_rel env e =  match eval_ord env e with
-      | Rel v -> v
-      | TransRel v -> E.EventRel.transitive_closure v
-      | Pair p -> E.EventRel.singleton p
-      | V.Empty -> E.EventRel.empty
-      | Unv -> Lazy.force env.EV.ks.unv
+      and eval_rel map env e =  match eval false map env e with
+      | Rel v -> RRel v
+      | TransRel v -> RRel (E.EventRel.transitive_closure v)
+      | MapRel m -> RMap m
+      | TransMap m -> RMap (E.EventRel.M.transitive_closure m)
+      | Pair p ->
+          if map then RMap (E.EventRel.M.singleton p)
+          else RRel (E.EventRel.singleton p)
+      | V.Empty ->
+          if map then RMap (E.EventRel.M.empty)
+          else RRel E.EventRel.empty
+      | Unv ->
+          if map then RMap (Lazy.force env.EV.ks.map_unv)
+          else RRel (Lazy.force env.EV.ks.unv)
       | v -> error_rel env.EV.silent (get_loc e) v
 
       and eval_seq_arg env = function
@@ -1925,13 +2111,15 @@ module Make
             else Mid s
         | e ->
             begin
-              match eval_ord env e with
+              match eval true true env e with
               | Rel r -> Mrel (E.EventRel.M.to_map r)
               | TransRel r -> Mrel (E.EventRel.transitive_to_map r)
+              | MapRel m -> Mrel m
+              | TransMap m -> Mrel (E.EventRel.M.transitive_closure m)
               | ClassRel r -> Mclass r
               | Pair (e1,e2) -> Mrel (E.EventRel.M.pair_to_map e1 e2)
               | V.Empty -> raise Exit
-              | Unv ->  Mrel (Lazy.force env.EV.ks.unv |> E.EventRel.M.to_map)
+              | Unv ->  Mrel (Lazy.force env.EV.ks.map_unv)
               | v ->  error_rel env.EV.silent (get_loc e) v
             end
 
@@ -1942,8 +2130,8 @@ module Make
       | Unv -> env.EV.ks.evts
       | v -> error_events env.EV.silent (get_loc e) v
 
-      and eval_rel_set accept_implicit env e =
-        match eval accept_implicit env e with
+      and eval_rel_set transitive map env e =
+        match eval transitive map env e with
         | Rel _ | TransRel _ | Set _ |ClassRel _ as v ->  v
         | Event e -> Set (E.EventSet.singleton e)
         | Pair p -> Rel (E.EventRel.singleton p)
@@ -1951,19 +2139,15 @@ module Make
         | Unv -> Rel (Lazy.force env.EV.ks.unv)
         | _ -> error env.EV.silent (get_loc e) "relation or set expected"
 
-      and eval_shown env e = match eval_rel_set false env e with
+      and eval_shown env e = match eval_rel_set false false env e with
       | Set v -> Shown.Set v
       | Rel v -> Shown.Rel v
+      | MapRel m -> Shown.Rel (E.EventRel.M.of_map m)
       | TransRel v -> Shown.Rel (E.EventRel.transitive_closure v)
+      | TransMap m ->
+          Shown.Rel E.EventRel.M.(transitive_closure m |> of_map)
       | ClassRel _ ->  Shown.Rel E.EventRel.empty (* Show nothing *)
       | _ -> assert false
-
-      and eval_events_mem env e = match eval_ord env e with
-      | Set s -> fun e -> E.EventSet.mem e s
-      | Event e0 -> fun e -> E.event_compare e0 e = 0
-      | V.Empty -> fun _ -> false
-      | Unv -> fun _ -> true
-      | v -> error_events env.EV.silent (get_loc e) v
 
       and eval_proc loc env x = match find_env_loc loc env x with
       | Proc p -> p
@@ -2199,7 +2383,7 @@ module Make
                 (fun tag order ->
                   let tgt =
                     try
-                      eval_app loc false { env with EV.silent=true;} cat_fun tag
+                      eval_app loc false false { env with EV.silent=true;} cat_fun tag
                     with Misc.Exit -> V.Empty in
                   let tag = as_tag tag in
                   let add tgt order = StringRel.add (tag,as_tag tgt) order in
@@ -2264,11 +2448,13 @@ module Make
 (* Evaluate test -> bool *)
 
       let eval_test check env t e =
-        let accept_implicit =
+        let transitive =
           match t with
           | Yes Acyclic|No Acyclic -> true
           | _ -> false in
-        check (test2pred env t e (eval_rel_set accept_implicit env e)) in
+        check
+          (test2pred env t e
+             (eval_rel_set transitive false env e)) in
 
       let make_eval_test = function
         | None -> fun _env -> true
@@ -2286,8 +2472,8 @@ module Make
           let pp = match pos with
           | Pos _ -> "???"
           | Txt txt -> txt in
-          let v = eval_rel (from_st st) e in
-          let cy = E.EventRel.get_cycle v in
+          let v = eval_rel true (from_st st) e in
+          let cy = relation_get_cycle v in
           U.pp_failure test st.ks.conc
             (sprintf "Failure of '%s'" pp)
             (let k = show_to_vbpp st in
@@ -2298,7 +2484,7 @@ module Make
         let pp = match pos with
         | Pos _ -> "???"
         | Txt txt -> txt in
-        let v = eval_rel (from_st st) e in
+        let v = eval_rel false (from_st st) e |> force_rel in
         let tst = match tst with Yes tst|No tst -> tst in
         let v = match tst with
         | Acyclic -> v

@@ -112,8 +112,10 @@ module Make (C: Config) = struct
     let evts = UnitS.E.EventSet.empty
     and id = lazy UnitS.E.EventRel.empty
     and unv = lazy UnitS.E.EventRel.empty
-    and po = UnitS.E.EventRel.empty in
-    let ks = {I.id; unv; evts; conc; po;} in
+    and po = UnitS.E.EventRel.empty
+    and map_id = lazy  UnitS.E.EventRel.M.empty
+    and map_unv = lazy  UnitS.E.EventRel.M.empty in
+    let ks = {I.id; unv; map_id; map_unv; evts; conc; po;} in
     let vb_pp = lazy [] in
 
     (* Continuation: notice that it should be called once at most *)

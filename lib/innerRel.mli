@@ -29,16 +29,29 @@ module type S =  sig
   module M : sig
     module ME : Map.S with type key = elt0
     type map = Elts.t ME.t
+    val empty : map
+    val singleton : (elt0 * elt0) -> map
+    val mem : (elt0 * elt0) -> map -> bool
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
-    val seq : map -> map -> map
     val filter_src : Elts.t -> map -> map
     val filter_tgt : map -> Elts.t -> map
     val exists_path : (elt0 * elt0) -> map -> bool
+    val filter_pairs : ((elt0 * elt0) -> bool) -> map -> map
     val to_map : t -> map
     val of_map : map -> t
     val pair_to_map : elt0 -> elt0 -> map
+    (* Unary relations *)
+    val transitive_closure : map -> map
+    val inverse : map -> map
+    val get_cycle : map ->  elt0 list option
+    (* Binary operations on maps *)
+    val seq : map -> map -> map
+    val union : map -> map -> map
+    val unions : map list -> map
+    val inter : map -> map -> map
+    val diff : map -> map -> map
   end
 
 (* All elements related *)

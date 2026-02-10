@@ -368,11 +368,13 @@ module Make
             (List.rev_map
                (fun e -> e,e)
                (E.EventSet.elements evts))
-        end in
-      let unv = lazy begin
+        end
+      and unv = lazy begin
           E.EventRel.cartesian evts evts
         end in
-      let ks = { I.id; unv; evts; conc; po;} in
+      let map_id = lazy begin E.EventRel.M.to_map @@ Lazy.force id end
+      and map_unv = lazy begin E.EventRel.M.to_map @@ Lazy.force unv end in
+      let ks = { I.id; unv; map_id; map_unv; evts; conc; po;} in
       let calc_si sca =
         let r =
           E.EventRel.unions
