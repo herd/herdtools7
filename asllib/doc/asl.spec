@@ -2063,19 +2063,19 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
   }
 
   case Bool {
-    l =: L_Bool(_);
+    l = L_Bool(_);
     --
     T_Bool;
   }
 
   case Real {
-    l =: L_Real(_);
+    l = L_Real(_);
     --
     T_Real;
   }
 
   case String {
-    l =: L_String(_);
+    l = L_String(_);
     --
     T_String;
   }
@@ -2939,7 +2939,7 @@ semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
   }
 
   case int_unconstrained {
-    t =: unconstrained_integer;
+    t = unconstrained_integer;
     --
     (True, empty_graph);
   }
@@ -3045,7 +3045,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     prose_application = "annotating {le} with {t_e} in {tenv} yields {new_le} and {ses}\ProseOrTypeError",
 } =
   case LEDiscard {
-    le =: LE_Discard;
+    le = LE_Discard;
     --
     (LE_Discard, empty_set);
   }
@@ -3282,13 +3282,13 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     env =: (tenv, denv);
     m =: (v, g);
     case local {
-      map_apply_opt(denv.dynamic_envs_L, name) =: some(_);
+      map_apply_opt(denv.dynamic_envs_L, name) = some(_);
       updated_local := map_update(denv.dynamic_envs_L, name, v);
       new_denv := denv(dynamic_envs_L: updated_local);
     }
 
     case global {
-      map_apply_opt(denv.dynamic_envs_G.storage, name) =: some(_);
+      map_apply_opt(denv.dynamic_envs_G.storage, name) = some(_);
       updated_storage := map_update(denv.dynamic_envs_G.storage, name, v);
       new_gdenv := denv.dynamic_envs_G(storage: updated_storage);
       new_denv := denv(dynamic_envs_G: new_gdenv);
@@ -3851,7 +3851,7 @@ typing function bitfield_get_nested(bf: bitfield) ->
     nested;
   }
   case other {
-    not(bf =: BitField_Nested(_, _, _));
+    not(bf = BitField_Nested(_, _, _));
     --
     empty_list;
   }
@@ -4469,7 +4469,7 @@ typing relation annotate_ty_opt_initial_value(
 
   case some_none {
     ty_opt' =: some(t);
-    initial_value =: None;
+    initial_value = None;
     annotate_type(False, tenv, t) -> (t', ses_t);
     te_check(not(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
     base_value(tenv, t') -> e';
@@ -4480,7 +4480,7 @@ typing relation annotate_ty_opt_initial_value(
   }
 
   case none_some {
-    ty_opt' =: None;
+    ty_opt' = None;
     initial_value =: some(e);
     annotate_expr(tenv, e) -> (t_e, e', ses_e);
     check_no_precision_loss(t_e) -> True;
@@ -4981,7 +4981,7 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
 
   case PMask {
     case empty {
-      p =: Pattern_Mask(empty_list);
+      p = Pattern_Mask(empty_list);
       v =: nvbitvector(empty_list);
       --
       ResultPattern(nvbool(True), empty_graph);
@@ -5708,7 +5708,7 @@ semantics function eval_unop(op: unop, v: native_value) ->
   }
 
   case non_literal {
-    not(v =: NV_Vector(_));
+    not(v = NV_Vector(_));
     --
     DynamicError(DE_BO);
   }
@@ -5740,7 +5740,7 @@ semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
 
   // I'm not sure this case is possible, even during static evaluation.
   case non_literal {
-    not(v1 =: NV_Literal(_)) || not(v2 =: NV_Literal(_));
+    not(v1 = NV_Literal(_)) || not(v2 = NV_Literal(_));
     --
     DynamicError(DE_BO);
   }
@@ -6248,7 +6248,7 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   case bits_int {
     op in make_set(ADD, SUB);
     t1 =: T_Bits(w, _);
-    t2 =: T_Int(_);
+    t2 = T_Int(_);
     --
     T_Bits(w, empty_list);
   }
@@ -6609,9 +6609,9 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
       (z1_opt =: some(z5a)) && (z2_opt =: some(z6a)) && z5a = z6a: some(AbbrevConstraintExact(ELint(z5a))),
       (z1_opt =: some(z5b)) && (z2_opt =: some(z6b)) && z5b < z6b : some(AbbrevConstraintRange(ELint(z5b), ELint(z6b))),
       (z1_opt =: some(z5c)) && (z2_opt =: some(z6c)) && z5c > z6c : None,
-      (z1_opt =: some(z5d)) && (z2_opt =: None) : some(AbbrevConstraintRange(ELint(z5d), e2)),
-      (z1_opt =: None) && (z2_opt =: some(z6e)) : some(AbbrevConstraintRange(e1, ELint(z6e))),
-      (z1_opt =: None) && (z2_opt =: None) : some(AbbrevConstraintRange(e1, e2))
+      (z1_opt =: some(z5d)) && (z2_opt = None) : some(AbbrevConstraintRange(ELint(z5d), e2)),
+      (z1_opt = None) && (z2_opt =: some(z6e)) : some(AbbrevConstraintRange(e1, ELint(z6e))),
+      (z1_opt = None) && (z2_opt = None) : some(AbbrevConstraintRange(e1, e2))
     )
     { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]], c4[_, [_]], c4[_, [_]],_]) };
     --
@@ -6679,7 +6679,7 @@ typing function explode_constraint(tenv: static_envs, c: int_constraint) ->
   math_layout = [_,_],
 } =
   case exact {
-    c =: Constraint_Exact(_);
+    c = Constraint_Exact(_);
     --
     (make_singleton_list(c), Precision_Full);
   }
@@ -6779,7 +6779,7 @@ typing function mem_bfs(tenv: static_envs, bfs2: list0(bitfield), bf1: bitfield)
     bitfield_get_name(bf1) -> name;
     find_bitfield_opt(name, bfs2) -> some(bf2);
     bf2 =: BitField_Nested(name2, slices2, bfs2');
-    bf1 =: BitField_Simple(_, _);
+    bf1 = BitField_Simple(_, _);
     bitfield_equal(tenv, bf1, bf2) -> b;
     --
     False;
@@ -6810,7 +6810,7 @@ typing function mem_bfs(tenv: static_envs, bfs2: list0(bitfield), bf1: bitfield)
     bitfield_get_name(bf1) -> name;
     find_bitfield_opt(name, bfs2) -> some(bf2);
     bf2 =: BitField_Type(name2, slices2, t_ty2);
-    bf1 =: BitField_Simple(_, _);
+    bf1 = BitField_Simple(_, _);
     bitfield_equal(tenv, bf1, bf2) -> b;
     --
     b;
@@ -7383,7 +7383,7 @@ typing function side_effect_is_readonly(s: TSideEffect) -> (b: Bool)
   }
 
   case immutability {
-    s =: Immutability(_);
+    s = Immutability(_);
     --
     True;
   }
@@ -7594,7 +7594,7 @@ typing function slice_width(slice: slice) ->
   prose_application = "",
 } =
   case single {
-    slice =: Slice_Single(_);
+    slice = Slice_Single(_);
     --
     ELint(one);
   }
@@ -7940,7 +7940,7 @@ typing function override_decls_sort(
     }
 
     case impl {
-      not(d =: D_Func(_)) || (d =: D_Func(f)) && f.override = None;
+      not(d = D_Func(_)) || (d =: D_Func(f)) && f.override = None;
       --
       (impdefs_tail, impls_tail, cons(d, normals_tail));
     }
@@ -8134,7 +8134,7 @@ typing function def_enum_labels(d: decl) ->
   }
 
   case other {
-    not(d =: D_TypeDecl(_, T_Enum(_), _));
+    not(d = D_TypeDecl(_, T_Enum(_), _));
     --
     empty_set;
   }
@@ -8259,7 +8259,7 @@ typing function use_subtypes(fields: option((x: Identifier, subfields: list0(fie
   prose_application = "",
 } =
   case none {
-    fields =: None;
+    fields = None;
     --
     empty_set;
   }
@@ -8282,7 +8282,7 @@ typing function use_expr(e: expr) -> (ids: powerset(def_use_name))
   math_macro = \useexpr
 } =
   case e_literal {
-    e =: E_Literal(_);
+    e = E_Literal(_);
     --
     empty_set;
   }
@@ -8433,7 +8433,7 @@ typing function use_lexpr(le: lexpr) ->
   }
 
   case le_discard {
-    le =: LE_Discard;
+    le = LE_Discard;
     --
     empty_set;
   }
@@ -8481,13 +8481,13 @@ typing function use_pattern(p: pattern) ->
   prose_application = "",
 } =
   case mask_all {
-    (p =: Pattern_Mask(_)) || (p =: Pattern_All);
+    (p = Pattern_Mask(_)) || (p = Pattern_All);
     --
     empty_set;
   }
 
   case mask {
-    p =: Pattern_Mask(_);
+    p = Pattern_Mask(_);
     --
     empty_set;
   }
@@ -8762,7 +8762,7 @@ typing function use_stmt(s: stmt) ->
   }
 
   case s_unreachable {
-    s =: S_Unreachable;
+    s = S_Unreachable;
     --
     empty_set;
   }
@@ -9105,7 +9105,7 @@ typing relation annotate_local_decl_type_annot(
   math_layout = [input[_,_,_,_,_,_], _],
 } =
   case none {
-    ty_opt =: None;
+    ty_opt = None;
     check_no_precision_loss(t_e) -> True;
     annotate_local_decl_item(tenv, t_e, ldk, some(typed_e), ldi) -> new_tenv;
     --
@@ -9142,7 +9142,7 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
   prose_application = "",
 } =
   case int {
-    lhs =: T_Int(PendingConstrained);
+    lhs = T_Int(PendingConstrained);
     check_no_precision_loss(rhs) -> True;
     te_check( is_well_constrained_integer(rhs), TE_UT ) -> True;
     --
@@ -9232,7 +9232,7 @@ typing relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
   math_layout = [_,_],
 } =
   case none {
-    e =: None;
+    e = None;
     --
     (None, empty_set);
   }
@@ -9542,7 +9542,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
 
   case SReturn {
     case none {
-      s =: S_Return(None);
+      s = S_Return(None);
       --
       Returning((empty_list, empty_graph), env);
     }
@@ -9584,7 +9584,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
  }
 
  case SUnreachable {
-   s =: S_Unreachable;
+   s = S_Unreachable;
    --
    DynamicError(DE_UNR);
  }
@@ -9901,7 +9901,7 @@ typing function static_eval(tenv: static_envs, e: expr) -> (v: literal) | type_e
   case normal_non_literal {
     static_env_to_env(tenv) -> env;
     eval_expr(env, e) -> ResultExpr((x, _), _) | ; // No short-circuiting expressions
-    not(x =: NV_Literal(_));
+    not(x = NV_Literal(_));
     --
     TypeError(TE_SEF);
   }
@@ -10895,7 +10895,7 @@ typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
   ) -> (new_tenv, return_type, ses_with_return)
   { [[_], _]};
   ses_list := list_set(ses_with_return);
-  ses_list_no_locals := list_filter(se, ses_list, not(se =: LocalEffect(_)));
+  ses_list_no_locals := list_filter(se, ses_list, not(se = LocalEffect(_)));
   ses' := list_to_set(ses_list_no_locals);
   check_subprogram_purity(func_sig.qualifier, ses') -> True;
   ses_for_subprogram(func_sig.qualifier) -> ses;
@@ -11466,7 +11466,7 @@ typing relation annotate_subprogram(
   check_control_flow(tenv, f, new_body) -> True;
   f' := f(func_body: new_body);
   ses_body_list := list_set(ses_body);
-  ses_body_list_no_locals := list_filter(se, ses_body_list, not(se =: LocalEffect(_)));
+  ses_body_list_no_locals := list_filter(se, ses_body_list, not(se = LocalEffect(_)));
   ses_body_no_locals := list_to_set(ses_body_list_no_locals);
   ses' := union(ses_func_sig, ses_body_no_locals);
   check_subprogram_purity(f.qualifier, ses') -> True;
@@ -11562,13 +11562,13 @@ typing function approx_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case s_return {
-    s =: S_Return(_);
+    s = S_Return(_);
     --
     make_set(Abs_Returning, Abs_Abnormal);
   }
 
   case s_throw {
-    s =: S_Throw(_);
+    s = S_Throw(_);
     --
     make_set(Abs_Abnormal);
   }
@@ -11857,7 +11857,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_shl_non_lint_exponent {
     e =: E_Binop(SHL, _, e2);
-    not(e2 =: ELint(_));
+    not(e2 = ELint(_));
     --
     None;
   }
@@ -11882,7 +11882,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   case ebinop_other_non_literals {
     e =: E_Binop(op, e1, e2);
     op not_in make_set(ADD, SUB, MUL, DIV, SHL);
-    not(e1 =: E_Literal(_)) || not(e2 =: E_Literal(_));
+    not(e1 = E_Literal(_)) || not(e2 = E_Literal(_));
     --
     None;
   }
@@ -11967,7 +11967,7 @@ typing function is_div_binop(e: expr) -> (b: Bool)
   prose_application = "",
 } =
   --
-  (e =: E_Binop(DIV, _, _));
+  (e = E_Binop(DIV, _, _));
 ;
 
 typing function expr_equal(tenv: static_envs, e1: expr, e2: expr) ->
@@ -12155,8 +12155,8 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   }
 
   case e_arbitrary {
-    e1 =: E_Arbitrary(_);
-    e2 =: E_Arbitrary(_);
+    e1 = E_Arbitrary(_);
+    e2 = E_Arbitrary(_);
     --
     False;
   }
@@ -12992,7 +12992,7 @@ typing function symdom_normalize(symdoms: list1(symdom)) ->
 } =
   finite_sets := list_map(sd, symdoms, if sd =: Finite(s) then s else empty_set);
   finite_set := set_as_finite(union_list(finite_sets));
-  others := list_filter(sd, symdoms, not(sd =: Finite(_)));
+  others := list_filter(sd, symdoms, not(sd = Finite(_)));
   has_finite := list_exists(fs, finite_sets, fs != empty_set);
   new_list := if_then_else(
     has_finite,
@@ -13033,7 +13033,7 @@ typing function symdom_of_type(tenv: static_envs, t: ty) ->
   }
 
   case t_named {
-    t =: T_Named(_);
+    t = T_Named(_);
     make_anonymous(tenv, t) -> t1;
     symdom_of_type(tenv, t1) -> d;
     --
@@ -13183,7 +13183,7 @@ typing function symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
 
   case constrained_finite_top {
     cd1 =: ConstrainedDom(c1);
-    cd2 =: Finite(_);
+    cd2 = Finite(_);
     approx_constraints(tenv, Over, make_singleton_list(c1)) -> None;
     --
     False;
@@ -13737,7 +13737,7 @@ typing function is_unconstrained_integer(t: ty) -> Bool
   prose_application = "",
 } =
   --
-  t =: T_Int(Unconstrained);
+  t = T_Int(Unconstrained);
 ;
 
 typing function is_parameterized_integer(t: ty) -> Bool
@@ -13746,7 +13746,7 @@ typing function is_parameterized_integer(t: ty) -> Bool
   prose_application = "",
 } =
   --
-  t =: T_Int(Parameterized(_));
+  t = T_Int(Parameterized(_));
 ;
 
 typing function is_well_constrained_integer(t: ty) -> Bool
@@ -13755,7 +13755,7 @@ typing function is_well_constrained_integer(t: ty) -> Bool
   prose_application = "",
 } =
   --
-  t =: T_Int(WellConstrained(_));
+  t = T_Int(WellConstrained(_));
 ;
 
 typing function is_builtin_singular(ty: ty) -> (b: Bool)
@@ -13894,7 +13894,7 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
   prose_application = "",
 } =
   case well_constrained {
-    t =: T_Int(WellConstrained(_));
+    t = T_Int(WellConstrained(_));
     --
     True;
   }
@@ -14100,19 +14100,19 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   prose_application = "",
 } =
   case t_string {
-    ty =: T_String;
+    ty = T_String;
     --
     (ty, empty_set);
   }
 
   case t_real {
-    ty =: T_Real;
+    ty = T_Real;
     --
     (ty, empty_set);
   }
 
   case t_bool {
-    ty =: T_Bool;
+    ty = T_Bool;
     --
     (ty, empty_set);
   }
@@ -14128,7 +14128,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
 
   case t_int {
     case pending_constrained {
-      ty =: T_Int(PendingConstrained);
+      ty = T_Int(PendingConstrained);
       --
       TypeError(TE_UT); // UNCERTAIN: pending constrained types are rejected here.
     }
@@ -14151,7 +14151,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     }
 
     case unconstrained {
-      ty =: unconstrained_integer;
+      ty = unconstrained_integer;
       --
       (ty, empty_set);
     }
@@ -14438,7 +14438,7 @@ typing function type_of_array_length(size: array_index) ->
   }
 
   case expr {
-    size =: ArrayLength_Expr(_);
+    size = ArrayLength_Expr(_);
     --
     unconstrained_integer;
   }
