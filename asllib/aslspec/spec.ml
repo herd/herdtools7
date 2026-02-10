@@ -245,6 +245,7 @@ type t = {
   assign : Relation.t;
   reverse_assign : Relation.t;
   bottom_constant : Constant.t;
+  bottom_term : Term.t;
   none_constant : Constant.t;
   empty_set : Constant.t;
   empty_list : Constant.t;
@@ -2376,6 +2377,9 @@ module Check = struct
       let open Expr in
       let t, tenv =
         match expr with
+        | Var id when is_ignore_var id ->
+            (* If we type '_' with the bottom type, it will be subsumed by any other type. *)
+            (spec.bottom_term, type_env)
         | Var id ->
             let id_type = type_of_id ~context_expr:expr spec type_env id in
             (id_type, type_env)
@@ -3327,9 +3331,8 @@ let make_spec_with_builtins ast =
   {
     ast;
     id_to_defining_node;
-    (* The following fields are not currently used, but they will be used in a future
-    PR that implements type inference. *)
     bottom_constant = get_constant "bot";
+    bottom_term = Label "bot";
     none_constant = get_constant "None";
     empty_set = get_constant "empty_set";
     empty_list = get_constant "empty_list";
