@@ -289,6 +289,12 @@ operator list_len[T](list0(T)) -> N
   math_macro = \listlen,
 };
 
+operator same_length[A,B](lst_a: list0(A), lst_b: list0(B)) -> Bool
+{
+  math_macro = \samelengthop,
+  custom = true,
+};
+
 // Concatenates a fixed number of lists into a single list.
 variadic operator concat[T](lists: list0(list0(T))) -> list0(T)
 {
@@ -2035,9 +2041,12 @@ semantics function de_check(condition: Bool, code: dynamic_error_code) -> CheckR
 function bool_transition(condition: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {condition} holds and $\False$ otherwise.",
+    "is the identity function for Booleans.",
     prose_application = "testing whether {condition} holds returns {result}",
-};
+} =
+  --
+  condition;
+;
 
 function rexpr(le: lexpr) -> (re: expr)
 {
@@ -2193,7 +2202,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     annotate_expr(tenv, e') -> (t_e', e'', ses1);
     get_structure(tenv, t_e') -> struct_t_e';
     case okay {
-      ast_label(struct_t_e') in make_set(label_T_Int, label_T_Bits);
+      ast_label(struct_t_e') in make_set(label_T_Bits, label_T_Int);
       te_check(slices != empty_list, TE_BS) -> True;
       annotate_slices(tenv, slices) -> (slices', ses2);
       slices_width(tenv, slices) -> w;
@@ -2202,7 +2211,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       (T_Bits(w, empty_list), E_Slice(e'', slices'), ses);
     }
     case error {
-      ast_label(struct_t_e') not_in make_set(label_T_Int, label_T_Bits);
+      ast_label(struct_t_e') not_in make_set(label_T_Bits, label_T_Int);
       --
       TypeError(TE_BS);
     }
@@ -2227,7 +2236,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     case structured {
       t_e2 =: make_structured(L, fields);
       case record_or_exception {
-        L in make_set(label_T_Record, label_T_Exception);
+        L in make_set(label_T_Exception, label_T_Record);
         case okay {
           assoc_opt(fields, field_name) =: some(t);
           --
@@ -2302,7 +2311,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     }
 
     case error {
-      ast_label(t_e2) not_in make_set(label_T_Record, label_T_Exception, label_T_Collection, label_T_Bits, label_T_Tuple)
+      ast_label(t_e2) not_in make_set(label_T_Bits, label_T_Collection, label_T_Exception, label_T_Record, label_T_Tuple)
       { math_layout = (_, [_]) };
       --
       TypeError(TE_UT);
@@ -2340,7 +2349,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     }
     case error {
       make_anonymous(tenv, t_base_annot) -> t_base_annot_anon;
-      ast_label(t_base_annot_anon) not_in make_set(label_T_Bits, label_T_Record, label_T_Collection);
+      ast_label(t_base_annot_anon) not_in make_set(label_T_Bits, label_T_Collection, label_T_Record);
       --
       TypeError(TE_UT);
     }
@@ -2375,9 +2384,9 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     get_structure(tenv, ty1) -> ty2;
     ses := union(ses_ty,
           make_set(
-            LocalEffect(SE_Readonly),
             GlobalEffect(SE_Readonly),
-            Immutability(False)))
+            Immutability(False),
+            LocalEffect(SE_Readonly)))
     { math_layout = (lhs, (_, [_])) };
     --
     (ty1, E_Arbitrary(ty2), ses);
@@ -2594,7 +2603,7 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
   case int_bits {
     type_equal(tenv, t1, t2) -> False;
     ast_label(t1) = ast_label(t2);
-    ast_label(t1) in make_set(label_T_Int, label_T_Bits);
+    ast_label(t1) in make_set(label_T_Bits, label_T_Int);
     --
     True;
   }
@@ -2603,7 +2612,7 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
     type_equal(tenv, t1, t2) -> False;
     t1 =: T_Tuple(l1);
     t2 =: T_Tuple(l2);
-    te_check(list_len(l1) = list_len(l2), TE_TAF) -> True;
+    te_check(same_length(l1, l2), TE_TAF) -> True;
     INDEX(i, l1: check_atc(tenv, l1[i], l2[i]) -> True);
     --
     True;
@@ -2612,7 +2621,7 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
   case other_error {
     type_equal(tenv, t1, t2) -> False;
     ast_label(t1) = ast_label(t2);
-    ast_label(t1) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    ast_label(t1) not_in make_set(label_T_Bits, label_T_Int, label_T_Tuple);
     --
     TypeError(TE_TAF);
   }
@@ -2933,7 +2942,7 @@ semantics relation is_val_of_type(env: envs, v: native_value, t: ty) ->
   prose_application = "\hyperlink{relation-isvaloftype}{testing} if value {v} matches type {t} in {env} yields result {b} and graph {g}",
 } =
   case type_equal {
-    ast_label(t) not_in make_set(label_T_Int, label_T_Bits, label_T_Tuple);
+    ast_label(t) not_in make_set(label_T_Bits, label_T_Int, label_T_Tuple);
     --
     (True, empty_graph);
   }
@@ -3057,7 +3066,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       tenv.static_envs_L.local_storage_types(x) =: (t, k);
       te_check(k = LDK_Var, TE_AIM) -> True;
       check_type_satisfies(tenv, t_e, t) -> True;
-      ses := make_set(LocalEffect(SE_Impure), Immutability(False));
+      ses := make_set(Immutability(False), LocalEffect(SE_Impure));
       --
       (LE_Var(x), ses);
     }
@@ -3084,7 +3093,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     le =: LE_Destructuring(les);
     te_check(ast_label(t_e) = label_T_Tuple, TE_UT) -> True;
     t_e =: T_Tuple(tys);
-    te_check(list_len(les) = list_len(tys), TE_UT) -> True;
+    te_check(same_length(les, tys), TE_UT) -> True;
     (
       INDEX(i, les: annotate_lexpr(tenv, les[i], tys[i]) -> (les'[i], xs[i]))
     );
@@ -3132,7 +3141,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
     case structured {
       t_le1_anon =: make_structured(L, fields);
-      L in make_set(label_T_Record, label_T_Exception);
+      L in make_set(label_T_Exception, label_T_Record);
       assoc_opt(fields, field_name) =: t_opt;
       te_check(t_opt != None, TE_BF) -> True;
       t_opt =: some(t_field);
@@ -3192,7 +3201,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     }
 
     case error {
-      ast_label(t_le1_anon) not_in make_set(label_T_Record, label_T_Exception, label_T_Collection, label_T_Bits)
+      ast_label(t_le1_anon) not_in make_set(label_T_Bits, label_T_Collection, label_T_Exception, label_T_Record)
       { math_layout = (_, [_]) };
       --
       TypeError(TE_UT);
@@ -3237,7 +3246,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
    }
 
    case error {
-     ast_label(t_base_anon) not_in make_set(label_T_Bits, label_T_Record, label_T_Collection);
+     ast_label(t_base_anon) not_in make_set(label_T_Bits, label_T_Collection, label_T_Record);
      --
      TypeError(TE_UT);
    }
@@ -4402,7 +4411,7 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   gsd =: [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt, initial_value: initial_value];
   check_var_not_in_genv(genv, name) -> True;
   with_empty_local(genv) -> tenv;
-  must_be_pure := keyword in make_set(GDK_Constant, GDK_Config);
+  must_be_pure := keyword in make_set(GDK_Config, GDK_Constant);
   annotate_ty_opt_initial_value(tenv, keyword, must_be_pure, ty_opt, initial_value) -> (typed_initial_value, ty_opt', declared_t)
   { [[_], [_]] };
   add_global_storage(genv, name, keyword, declared_t) -> genv1;
@@ -4655,7 +4664,7 @@ typing relation annotate_local_decl_item(
     make_anonymous(tenv, ty) -> t';
     te_check(ast_label(t') = label_T_Tuple, TE_UT) -> True;
     t' =: T_Tuple(tys);
-    te_check(list_len(ids) = list_len(tys), TE_UT) -> True;
+    te_check(same_length(ids, tys), TE_UT) -> True;
     add_local_vars(tenv, ldk, list_combine(ids, tys)) -> new_tenv;
     --
     new_tenv;
@@ -4802,7 +4811,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     make_anonymous(tenv, t_e) -> t_e_struct;
 
     case simple {
-      ast_label(t_struct) in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_String);
+      ast_label(t_struct) in make_set(label_T_Bool, label_T_Int, label_T_Real, label_T_String);
       te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
       --
       (Pattern_Single(e'), ses);
@@ -4829,7 +4838,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
 
     case error {
       te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
-      ast_label(t_struct) not_in make_set(label_T_Bool, label_T_Real, label_T_Int, label_T_Bits, label_T_Enum);
+      ast_label(t_struct) not_in make_set(label_T_Bits, label_T_Bool, label_T_Enum, label_T_Int, label_T_Real);
       --
       TypeError(TE_UT);
     }
@@ -4894,7 +4903,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     get_structure(tenv, t) -> t_struct;
     te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
     t_struct =: T_Tuple(ts);
-    te_check(list_len(li) = list_len(ts), TE_UT) -> True;
+    te_check(same_length(li, ts), TE_UT) -> True;
     INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
     new_li := li';
     ses := union_list(xs);
@@ -5050,125 +5059,119 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 
 constant unop_signatures =
   make_set(
+    (BNOT,  label_L_Bool),
     (NEG,   label_L_Int),
     (NEG,   label_L_Real),
-    (BNOT,  label_L_Bool),
-    (NOT,   label_L_Bitvector)
-  )
+    (NOT,   label_L_Bitvector))
   { math_layout = [_] }
 ;
 
 constant binop_arith_signatures =
   make_set(
     (ADD,    label_L_Int,       label_L_Int),
-    (SUB,    label_L_Int,       label_L_Int),
-    (MUL,    label_L_Int,       label_L_Int),
+    (ADD,    label_L_Real,      label_L_Real),
     (DIV,    label_L_Int,       label_L_Int),
     (DIVRM,  label_L_Int,       label_L_Int),
+    (EQ,     label_L_Label,     label_L_Label),
+    (EQ,     label_L_String,    label_L_String),
     (MOD,    label_L_Int,       label_L_Int),
-    (POW,    label_L_Int,       label_L_Int),
-    (SHL,    label_L_Int,       label_L_Int),
-    (SHR,    label_L_Int,       label_L_Int),
+    (MUL,    label_L_Int,       label_L_Int),
     (MUL,    label_L_Int,       label_L_Real),
     (MUL,    label_L_Real,      label_L_Int),
-    (ADD,    label_L_Real,      label_L_Real),
-    (SUB,    label_L_Real,      label_L_Real),
     (MUL,    label_L_Real,      label_L_Real),
-    (RDIV,   label_L_Real,      label_L_Real),
-    (POW,    label_L_Real,      label_L_Int),
-    (EQ,     label_L_String,    label_L_String),
+    (NE,     label_L_Label,     label_L_Label),
     (NE,     label_L_String,    label_L_String),
-    (EQ,     label_L_Label,     label_L_Label),
-    (NE,     label_L_Label,     label_L_Label)
-  )
+    (POW,    label_L_Int,       label_L_Int),
+    (POW,    label_L_Real,      label_L_Int),
+    (RDIV,   label_L_Real,      label_L_Real),
+    (SHL,    label_L_Int,       label_L_Int),
+    (SHR,    label_L_Int,       label_L_Int),
+    (SUB,    label_L_Int,       label_L_Int),
+    (SUB,    label_L_Real,      label_L_Real))
   { math_layout = [_] }
 ;
 
 constant binop_rel_signatures =
   make_set(
-    (EQ,     label_L_Int,       label_L_Int),
-    (NE,     label_L_Int,       label_L_Int),
-    (LE,     label_L_Int,       label_L_Int),
-    (LT,     label_L_Int,       label_L_Int),
-    (GE,     label_L_Int,       label_L_Int),
-    (GT,     label_L_Int,       label_L_Int),
-    (EQ,     label_L_Bool,      label_L_Bool),
-    (NE,     label_L_Bool,      label_L_Bool),
-    (EQ,     label_L_Real,      label_L_Real),
-    (NE,     label_L_Real,      label_L_Real),
-    (LE,     label_L_Real,      label_L_Real),
-    (LT,     label_L_Real,      label_L_Real),
-    (GE,     label_L_Real,      label_L_Real),
-    (GT,     label_L_Real,      label_L_Real),
     (EQ,     label_L_Bitvector, label_L_Bitvector),
-    (NE,     label_L_Bitvector, label_L_Bitvector)
-  )
+    (EQ,     label_L_Bool,      label_L_Bool),
+    (EQ,     label_L_Int,       label_L_Int),
+    (EQ,     label_L_Real,      label_L_Real),
+    (GE,     label_L_Int,       label_L_Int),
+    (GE,     label_L_Real,      label_L_Real),
+    (GT,     label_L_Int,       label_L_Int),
+    (GT,     label_L_Real,      label_L_Real),
+    (LE,     label_L_Int,       label_L_Int),
+    (LE,     label_L_Real,      label_L_Real),
+    (LT,     label_L_Int,       label_L_Int),
+    (LT,     label_L_Real,      label_L_Real),
+    (NE,     label_L_Bitvector, label_L_Bitvector),
+    (NE,     label_L_Bool,      label_L_Bool),
+    (NE,     label_L_Int,       label_L_Int),
+    (NE,     label_L_Real,      label_L_Real))
   { math_layout = [_] }
 ;
 
 constant binop_bool_signatures =
   make_set(
-    (BEQ,    label_L_Bool,      label_L_Bool),
     (BAND,   label_L_Bool,      label_L_Bool),
+    (BEQ,    label_L_Bool,      label_L_Bool),
     (BOR,    label_L_Bool,      label_L_Bool),
-    (IMPL,   label_L_Bool,      label_L_Bool)
-  )
+    (IMPL,   label_L_Bool,      label_L_Bool))
   { math_layout = [_] }
 ;
 
 constant binop_bits_signatures =
   make_set(
-    (OR,     label_L_Bitvector, label_L_Bitvector),
-    (AND,    label_L_Bitvector, label_L_Bitvector),
-    (XOR,    label_L_Bitvector, label_L_Bitvector),
-    (SUB,    label_L_Bitvector, label_L_Bitvector),
     (ADD,    label_L_Bitvector, label_L_Bitvector),
+    (ADD,    label_L_Bitvector, label_L_Int),
+    (AND,    label_L_Bitvector, label_L_Bitvector),
     (BV_CONCAT, label_L_Bitvector, label_L_Bitvector),
+    (OR,     label_L_Bitvector, label_L_Bitvector),
+    (SUB,    label_L_Bitvector, label_L_Bitvector),
     (SUB,    label_L_Bitvector, label_L_Int),
-    (ADD,    label_L_Bitvector, label_L_Int)
-  )
+    (XOR,    label_L_Bitvector, label_L_Bitvector))
   { math_layout = [_] }
 ;
 
 constant binop_str_signatures =
   make_set(
-    (STR_CONCAT, label_L_Real,   label_L_Real),
-    (STR_CONCAT, label_L_Real,   label_L_String),
-    (STR_CONCAT, label_L_Real,   label_L_Bool),
-    (STR_CONCAT, label_L_Real,   label_L_Bitvector),
-    (STR_CONCAT, label_L_Real,   label_L_Label),
-    (STR_CONCAT, label_L_Real,   label_L_Int),
-    (STR_CONCAT, label_L_String, label_L_Real),
-    (STR_CONCAT, label_L_String, label_L_String),
-    (STR_CONCAT, label_L_String, label_L_Bool),
-    (STR_CONCAT, label_L_String, label_L_Bitvector),
-    (STR_CONCAT, label_L_String, label_L_Label),
-    (STR_CONCAT, label_L_String, label_L_Int),
-    (STR_CONCAT, label_L_Bool,   label_L_Real),
-    (STR_CONCAT, label_L_Bool,   label_L_String),
-    (STR_CONCAT, label_L_Bool,   label_L_Bool),
-    (STR_CONCAT, label_L_Bool,   label_L_Bitvector),
-    (STR_CONCAT, label_L_Bool,   label_L_Label),
-    (STR_CONCAT, label_L_Bool,   label_L_Int),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Bool),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Int),
+    (STR_CONCAT, label_L_Bitvector,   label_L_Label),
     (STR_CONCAT, label_L_Bitvector,   label_L_Real),
     (STR_CONCAT, label_L_Bitvector,   label_L_String),
-    (STR_CONCAT, label_L_Bitvector,   label_L_Bool),
-    (STR_CONCAT, label_L_Bitvector,   label_L_Bitvector),
-    (STR_CONCAT, label_L_Bitvector,   label_L_Label),
-    (STR_CONCAT, label_L_Bitvector,   label_L_Int),
-    (STR_CONCAT, label_L_Label,   label_L_Real),
-    (STR_CONCAT, label_L_Label,   label_L_String),
-    (STR_CONCAT, label_L_Label,   label_L_Bool),
-    (STR_CONCAT, label_L_Label,   label_L_Bitvector),
-    (STR_CONCAT, label_L_Label,   label_L_Label),
-    (STR_CONCAT, label_L_Label,   label_L_Int),
+    (STR_CONCAT, label_L_Bool,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Bool,   label_L_Bool),
+    (STR_CONCAT, label_L_Bool,   label_L_Int),
+    (STR_CONCAT, label_L_Bool,   label_L_Label),
+    (STR_CONCAT, label_L_Bool,   label_L_Real),
+    (STR_CONCAT, label_L_Bool,   label_L_String),
+    (STR_CONCAT, label_L_Int,    label_L_Bitvector),
+    (STR_CONCAT, label_L_Int,    label_L_Bool),
+    (STR_CONCAT, label_L_Int,    label_L_Int),
+    (STR_CONCAT, label_L_Int,    label_L_Label),
     (STR_CONCAT, label_L_Int,    label_L_Real),
     (STR_CONCAT, label_L_Int,    label_L_String),
-    (STR_CONCAT, label_L_Int,    label_L_Bool),
-    (STR_CONCAT, label_L_Int,    label_L_Bitvector),
-    (STR_CONCAT, label_L_Int,    label_L_Label),
-    (STR_CONCAT, label_L_Int,    label_L_Int)
-  )
+    (STR_CONCAT, label_L_Label,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Label,   label_L_Bool),
+    (STR_CONCAT, label_L_Label,   label_L_Int),
+    (STR_CONCAT, label_L_Label,   label_L_Label),
+    (STR_CONCAT, label_L_Label,   label_L_Real),
+    (STR_CONCAT, label_L_Label,   label_L_String),
+    (STR_CONCAT, label_L_Real,   label_L_Bitvector),
+    (STR_CONCAT, label_L_Real,   label_L_Bool),
+    (STR_CONCAT, label_L_Real,   label_L_Int),
+    (STR_CONCAT, label_L_Real,   label_L_Label),
+    (STR_CONCAT, label_L_Real,   label_L_Real),
+    (STR_CONCAT, label_L_Real,   label_L_String),
+    (STR_CONCAT, label_L_String, label_L_Bitvector),
+    (STR_CONCAT, label_L_String, label_L_Bool),
+    (STR_CONCAT, label_L_String, label_L_Int),
+    (STR_CONCAT, label_L_String, label_L_Label),
+    (STR_CONCAT, label_L_String, label_L_Real),
+    (STR_CONCAT, label_L_String, label_L_String))
   { math_layout = [_] }
 ;
 
@@ -5271,10 +5274,10 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     case div_int {
       op = DIV;
       te_check(b > zero, TE_BO) -> True;
-      n := fraction(a, b);
-      te_check(is_integer(n), TE_BO) -> True;
+      n := round_down(fraction(a, b));
+      te_check(a = n * b, TE_BO) -> True;
       --
-      L_Int(a / b);
+      L_Int(n);
     }
 
     case fdiv_int {
@@ -5382,7 +5385,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     }
 
     case eq_bool {
-      op in make_set(EQ, BEQ);
+      op in make_set(BEQ, EQ);
       --
       L_Bool(a = b);
     }
@@ -5507,7 +5510,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     }
 
     case bitwise_empty {
-      op in make_set(OR, AND, XOR, ADD, SUB);
+      op in make_set(ADD, AND, OR, SUB, XOR);
       a = empty_list;
       b = empty_list;
       --
@@ -5516,7 +5519,6 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case eq_bits {
       op = EQ;
-      list_len(a) = list_len(b);
       --
       L_Bool(a = b);
     }
@@ -5530,7 +5532,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case or_bits {
       op = OR;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), or_bit(a[i], b[i]));
       --
       L_Bitvector(c);
@@ -5538,7 +5540,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case and_bits {
       op = AND;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), and_bit(a[i], b[i]));
       --
       L_Bitvector(c);
@@ -5546,7 +5548,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case xor_bits {
       op = XOR;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), if a[i] = b[i] then zero_bit else one_bit);
       --
       L_Bitvector(c);
@@ -5554,7 +5556,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case add_bits {
       op = ADD;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       binary_to_unsigned(a) -> a_val;
       binary_to_unsigned(b) -> b_val;
       int_to_bits(a_val + b_val, list_len(a)) -> c;
@@ -5564,7 +5566,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case sub_bits {
       op = SUB;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       binary_to_unsigned(a) -> a_val;
       binary_to_unsigned(b) -> b_val;
       int_to_bits(a_val - b_val, list_len(a)) -> c;
@@ -5806,7 +5808,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
   case simple {
     make_anonymous(tenv, t) -> t2;
     make_anonymous(tenv, s) -> s2;
-    ast_label(t2) in make_set(label_T_Real, label_T_String, label_T_Bool);
+    ast_label(t2) in make_set(label_T_Bool, label_T_Real, label_T_String);
     --
     ast_label(s2) = ast_label(t2);
   }
@@ -5867,7 +5869,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
   case t_tuple {
     make_anonymous(tenv, s) -> T_Tuple(li_s);
     make_anonymous(tenv, t) -> T_Tuple(li_t);
-    bool_transition(list_len(li_s) = list_len(li_t)) -> True | False;
+    bool_transition(same_length(li_s, li_t)) -> True | False;
     ( INDEX(i, li_s: type_satisfies(tenv, li_t[i], li_s[i]) -> component_type_satisfies[i]) )
     { ([_, [_]]) };
     --
@@ -5880,10 +5882,13 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     s_anon =: make_structured(L_s, fields_s);
     t_anon =: make_structured(L_t, fields_t);
     L_s = L_t;
-    L_s in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+    L_s in make_set(label_T_Collection, label_T_Exception, label_T_Record);
     fields_s =: list_combine(names_s, field_types_s);
     fields_t =: list_combine(names_t, _);
     bool_transition(subseteq(list_to_set(names_s), list_to_set(names_t))) -> True | False;
+    // Notice that the premise above guarantees that the indexed premises in the next judgment
+    // always return `some`.
+    // TODO: add the comment above to a special prose-related attribute.
     INDEX(i, names_s: field_type(fields_t, names_s[i]) -> some(field_types_t[i]))
     { [_] };
     ( INDEX(i, field_types_s: type_equal(tenv, field_types_s[i], field_types_t[i]) -> field_tys_equal[i]) )
@@ -5942,44 +5947,37 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     True;
   }
 
-  case anonymous {
+  case not_subtypes {
     is_subtype(tenv, t, s) -> False;
-    is_anonymous(t) -> b1;
-    is_anonymous(s) -> b2;
-    b1 || b2;
-    subtype_satisfies(tenv, t, s) -> True;
-    --
-    True;
-  }
 
-  case maybe_bitvectors {
-    is_subtype(tenv, t, s) -> False;
-    is_anonymous(t) -> b1;
-    is_anonymous(s) -> b2;
-    subtype_satisfies(tenv, t, s) -> b3;
-    not((b1 || b2) && b3);
-    case t_bits {
-      t =: T_Bits(width_t, empty_list);
-      get_structure(tenv, s) -> T_Bits(width_s, _);
-      bitwidth_equal(tenv, width_t, width_s) -> b;
+    case anonymous_or_subtype_satisfies {
+      is_anonymous(t) || is_anonymous(s);
+      subtype_satisfies(tenv, t, s) -> True;
       --
-      b;
+      True;
     }
 
-    case otherwise1 {
+    case other {
+      subtype_satisfies(tenv, t, s) -> t_subtype_satisfies_s;
+      not((is_anonymous(t) || is_anonymous(s)) && t_subtype_satisfies_s);
       get_structure(tenv, s) -> s_struct;
-      ast_label(t) != label_T_Bits || ast_label(s_struct) != label_T_Bits;
-      --
-      False;
-    }
+      case t_bits {
+        t =: T_Bits(width_t, empty_list);
+        s_struct =: T_Bits(width_s, _);
+        bitwidth_equal(tenv, width_t, width_s) -> b;
+        --
+        b;
+      }
 
-    case otherwise2 {
-      get_structure(tenv, s) -> s_struct;
-      ast_label(t) = label_T_Bits && ast_label(s_struct) = label_T_Bits;
-      t =: T_Bits(width_t, bitfields);
-      bitfields != empty_list;
-      --
-      False;
+      case not_tbits {
+        or(
+          ast_label(t) != label_T_Bits,
+          ast_label(s_struct) != label_T_Bits,
+          (t =: T_Bits(_, t_fields)) && t_fields = empty_list
+        );
+        --
+        False;
+      }
     }
   }
 ;
@@ -6117,7 +6115,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
     t =: T_Tuple(li_t);
     s =: T_Tuple(li_s);
     type_equal(tenv, t, s) -> False;
-    b := list_len(li_t) = list_len(li_s);
+    b := same_length(li_t, li_s);
     te_check(b, TE_LCA) -> True;
     INDEX(i, li_t: lowest_common_ancestor(tenv, li_t[i], li_s[i]) -> li[i]);
     --
@@ -6127,7 +6125,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   case error {
     type_equal(tenv, t, s) -> False;
     (ast_label(t) != ast_label(s)) ||
-    (ast_label(t) in make_set(label_T_Enum, label_T_Record, label_T_Exception, label_T_Collection))
+    (ast_label(t) in make_set(label_T_Collection, label_T_Enum, label_T_Exception, label_T_Record))
     { (lhs, ((_, [_])) ) };
     --
     TypeError(TE_LCA);
@@ -6229,7 +6227,7 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   }
 
   case boolean {
-    op in make_set(BAND, BOR, IMPL, EQ);
+    op in make_set(BAND, BOR, EQ, IMPL);
     t1 = T_Bool;
     t2 = T_Bool;
     --
@@ -6237,7 +6235,7 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   }
 
   case bits_arith {
-    op in make_set(AND, OR, XOR, ADD, SUB);
+    op in make_set(ADD, AND, OR, SUB, XOR);
     t1 =: T_Bits(w1, _);
     t2 =: T_Bits(w2, _);
     check_bits_equal_width(tenv, t1, t2) -> True;
@@ -6277,23 +6275,22 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   case rel {
     (op, ast_label(t1), ast_label(t2)) in
     make_set(
-      (LE, label_T_Int, label_T_Int),
-      (GE, label_T_Int, label_T_Int),
-      (GT, label_T_Int, label_T_Int),
-      (LT, label_T_Int, label_T_Int),
-      (LE, label_T_Real, label_T_Real),
-      (GE, label_T_Real, label_T_Real),
-      (GT, label_T_Real, label_T_Real),
-      (LT, label_T_Real, label_T_Real),
-      (EQ, label_T_Int, label_T_Int),
-      (NE, label_T_Int, label_T_Int),
       (EQ, label_T_Bool, label_T_Bool),
-      (NE, label_T_Bool, label_T_Bool),
+      (EQ, label_T_Int, label_T_Int),
       (EQ, label_T_Real, label_T_Real),
-      (NE, label_T_Real, label_T_Real),
       (EQ, label_T_String, label_T_String),
-      (NE, label_T_String, label_T_String)
-    ) { (_, [_]) };
+      (GE, label_T_Int, label_T_Int),
+      (GE, label_T_Real, label_T_Real),
+      (GT, label_T_Int, label_T_Int),
+      (GT, label_T_Real, label_T_Real),
+      (LE, label_T_Int, label_T_Int),
+      (LE, label_T_Real, label_T_Real),
+      (LT, label_T_Int, label_T_Int),
+      (LT, label_T_Real, label_T_Real),
+      (NE, label_T_Bool, label_T_Bool),
+      (NE, label_T_Int, label_T_Int),
+      (NE, label_T_Real, label_T_Real),
+      (NE, label_T_String, label_T_String)) { (_, [_]) };
     --
     T_Bool;
   }
@@ -6319,14 +6316,14 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   case arith_t_int_unconstrained {
     t1 =: T_Int(c1);
     t2 =: T_Int(c2);
-    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    op in make_set(ADD, DIV, DIVRM, MOD, MUL, POW, SHL, SHR, SUB);
     (c1 = Unconstrained) || (c2 = Unconstrained);
     --
     unconstrained_integer;
   }
 
   case arith_t_int_parameterized {
-    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    op in make_set(ADD, DIV, DIVRM, MOD, MUL, POW, SHL, SHR, SUB);
     t1 =: T_Int(c1);
     t2 =: T_Int(c2);
     (ast_label(c1) = label_Parameterized) || (ast_label(c2) = label_Parameterized);
@@ -6341,7 +6338,7 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
   case arith_t_int_wellconstrained {
     t1 =: T_Int(c1);
     t2 =: T_Int(c2);
-    op in make_set(MUL, DIV, DIVRM, MOD, SHL, SHR, POW, ADD, SUB);
+    op in make_set(ADD, DIV, DIVRM, MOD, MUL, POW, SHL, SHR, SUB);
     c1 =: typed_WellConstrained(cs1, p1);
     c2 =: typed_WellConstrained(cs2, p2);
     // This is somewhat hard to model, as this call is impleemnted by a functor
@@ -6356,11 +6353,10 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
     (op, ast_label(t1), ast_label(t2)) in
     make_set(
       (ADD, label_T_Real, label_T_Real),
-      (SUB, label_T_Real, label_T_Real),
       (MUL, label_T_Real, label_T_Real),
       (POW, label_T_Real, label_T_Int),
-      (RDIV, label_T_Real, label_T_Real)
-    ) { (_, [_]) };
+      (RDIV, label_T_Real, label_T_Real),
+      (SUB, label_T_Real, label_T_Real)) { (_, [_]) };
     --
     T_Real;
   }
@@ -6737,7 +6733,7 @@ typing function binop_is_exploding(op: binop) ->
   prose_application = "",
 } =
   --
-  op in make_set(MUL, SHL, POW, DIV, DIVRM, MOD, SHR);
+  op in make_set(DIV, DIVRM, MOD, MUL, POW, SHL, SHR);
 ;
 
 typing function bitfields_included(tenv: static_envs, bfs1: list0(bitfield), bfs2: list0(bitfield)) -> (b: Bool) | type_error
@@ -7213,7 +7209,7 @@ semantics function write_to_bitvector(slices: list0((native_value, native_value)
   src =: nvbitvector(src_bits);
   dst =: nvbitvector(dst_bits);
   slices_to_positions(slices) -> positions;
-  de_check(list_len(positions) = list_len(src_bits), DE_BI) -> True;
+  de_check(same_length(positions, src_bits), DE_BI) -> True;
   case empty_positions {
     positions = empty_list;
     --
@@ -7359,7 +7355,7 @@ typing function side_effect_is_pure(s: TSideEffect) -> (b: Bool)
     yielding the result in {b}.",
   prose_application = "testing whether {s} is \pureterm{} yields {b}",
 } =
-  b := s in make_set(LocalEffect(SE_Pure), GlobalEffect(SE_Pure), Immutability(True));
+  b := s in make_set(GlobalEffect(SE_Pure), Immutability(True), LocalEffect(SE_Pure));
   --
   b;
 ;
@@ -7424,7 +7420,7 @@ typing function ses_ldk(ldk: local_decl_keyword) ->
 } =
   b := (ldk = LDK_Let);
   --
-  make_set(LocalEffect(SE_Readonly), Immutability(b));
+  make_set(Immutability(b), LocalEffect(SE_Readonly));
 ;
 
 typing function ses_gdk(gdk: global_decl_keyword) ->
@@ -7981,9 +7977,9 @@ typing function signatures_match(func1: func, func2: func) ->
   match := and(
     func1.name = func2.name,
     func1.qualifier = func2.qualifier,
-    list_len(func1.args) = list_len(func2.args),
+    same_length(func1.args, func2.args),
     func1.args = func2.args,
-    list_len(func1.parameters) = list_len(func2.parameters),
+    same_length(func1.parameters, func2.parameters),
     func1.parameters = func2.parameters,
     func1.return_type = func2.return_type
   )
@@ -8186,7 +8182,7 @@ typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
   prose_application = "",
 } =
   case simple {
-    ast_label(t) in make_set(label_T_Enum, label_T_Bool, label_T_Real, label_T_String);
+    ast_label(t) in make_set(label_T_Bool, label_T_Enum, label_T_Real, label_T_String);
     --
     empty_set;
   }
@@ -8199,7 +8195,7 @@ typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
 
   case int_no_constraints {
     t =: T_Int(c);
-    ast_label(c) in make_set(label_Unconstrained, label_Parameterized, label_PendingConstrained);
+    ast_label(c) in make_set(label_Parameterized, label_PendingConstrained, label_Unconstrained);
     --
     empty_set;
   }
@@ -8219,7 +8215,7 @@ typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
   }
 
   case structured {
-    ast_label(t) in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+    ast_label(t) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
     t =: make_structured(L, fields);
     fields =: list_combine(field_names, field_types);
     field_ids := list_map(field_ty, field_types, use_ty(field_ty));
@@ -8983,7 +8979,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     annotate_expr(tenv, e) -> (t_e, e', ses1);
     check_structure_label(tenv, t_e, label_T_Exception) -> True;
     t_e =: T_Named(exn_name);
-    ses := union(ses1, make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)));
+    ses := union(ses1, make_set(GlobalEffect(SE_Impure), LocalEffect(SE_Impure)));
     --
     (typed_S_Throw(e', t_e), tenv, ses);
   }
@@ -9047,7 +9043,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
     INDEX(i, args : is_singular(tenv, tys[i]) -> are_singular_arg_types[i]);
     te_check(list_and(are_singular_arg_types), TE_UT) -> True;
-    ses := union(make_set(LocalEffect(SE_Impure), GlobalEffect(SE_Impure)), union_list(sess));
+    ses := union(make_set(GlobalEffect(SE_Impure), LocalEffect(SE_Impure)), union_list(sess));
     --
     (S_Print(args', newline), tenv, ses);
   }
@@ -9152,7 +9148,7 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
   case tuple {
     lhs =: T_Tuple(lhs_tys);
     rhs =: T_Tuple(rhs_tys);
-    te_check(list_len(lhs_tys) = list_len(rhs_tys), TE_UT) -> True;
+    te_check(same_length(lhs_tys, rhs_tys), TE_UT) -> True;
     ( INDEX(i, lhs_tys: inherit_integer_constraints(lhs_tys[i], rhs_tys[i]) -> lhs_tys'[i]) )
     { ([_]) };
     --
@@ -9631,7 +9627,7 @@ semantics function lexpr_is_var(le: lexpr) -> (res: Bool)
     prose_application = "testsing whether {le} is an assignable variable expression or a discarded \assignableexpression{} yields {res}",
  } =
   --
-  ast_label(le) in make_set(label_LE_Var, label_LE_Discard);
+  ast_label(le) in make_set(label_LE_Discard, label_LE_Var);
 ;
 
 semantics relation eval_for(
@@ -9991,8 +9987,8 @@ typing relation annotate_call_actuals_typed(
   { [_] };
   ses := union(ses_args, ses_call);
   insert_stdlib_param(tenv, func_sig, params, arg_types) -> params1;
-  te_check(list_len(func_sig.parameters) = list_len(params1), TE_BC) -> True;
-  te_check(list_len(func_sig.args) = list_len(args), TE_BC) -> True;
+  te_check(same_length(func_sig.parameters, params1), TE_BC) -> True;
+  te_check(same_length(func_sig.args, args), TE_BC) -> True;
   check_params_typesat(tenv, func_sig.parameters, params1) -> True;
   func_sig.parameters =: list_combine(param_names, _);
   params1 =: list_combine_three(_, param_exprs, _);
@@ -10543,7 +10539,7 @@ typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(f_tys) = list_len(args)) -> True | False;
+  bool_transition(same_length(f_tys, args)) -> True | False;
   args =: list_combine(arg_names, arg_tys);
   INDEX(i, f_tys: type_clashes(tenv, f_tys[i], arg_tys[i]) -> clashes[i]);
   --
@@ -10571,7 +10567,7 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
     get_structure(tenv, s) -> s_struct;
     case simple {
       ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Bool, label_T_Int, label_T_Real, label_T_String, label_T_Bits);
+      ast_label(t_struct) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
       --
       True;
     }
@@ -10594,7 +10590,7 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
     case t_tuple {
       t_struct =: T_Tuple(ts_t);
       s_struct =: T_Tuple(ts_s);
-      bool_transition(list_len(ts_t) = list_len(ts_s)) -> True | False;
+      bool_transition(same_length(ts_t, ts_s)) -> True | False;
       INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
       --
       list_and(clashes);
@@ -10608,7 +10604,7 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
 
     case otherwise_structured {
       ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+      ast_label(t_struct) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
       --
       False;
     }
@@ -11110,7 +11106,7 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
 
   case other {
     or(
-      ast_label(ty) in make_set(label_T_Real, label_T_String, label_T_Bool, label_T_Array, label_T_Named),
+      ast_label(ty) in make_set(label_T_Array, label_T_Bool, label_T_Named, label_T_Real, label_T_String),
       is_unconstrained_integer(ty),
       is_parameterized_integer(ty)
     ) { [_] };
@@ -11176,7 +11172,7 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
   }
 
   case other {
-    ast_label(e) not_in make_set(label_E_Var, label_E_Unop, label_E_Binop, label_E_Tuple);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Tuple, label_E_Unop, label_E_Var);
     --
     TypeError(TE_BSPD);
   }
@@ -11507,14 +11503,14 @@ typing function allowed_abs_configs(f: func) ->
     f.qualifier != some(Noreturn);
     f.return_type = None;
     --
-    make_set(Abs_Continuing, Abs_Returning, Abs_Abnormal);
+    make_set(Abs_Abnormal, Abs_Continuing, Abs_Returning);
   }
 
   case func {
     f.qualifier != some(Noreturn);
     f.return_type != None;
     --
-    make_set(Abs_Returning, Abs_Abnormal);
+    make_set(Abs_Abnormal, Abs_Returning);
   }
 ;
 
@@ -11535,12 +11531,12 @@ typing function approx_stmt(tenv: static_envs, s: stmt) ->
 
   case simple {
     ast_label(s) in make_set(
-      label_S_Decl,
       label_S_Assign,
-      laebl_S_Assert,
-      label_S_Print);
+      label_S_Decl,
+      label_S_Print,
+      laebl_S_Assert);
     --
-    make_set(Abs_Continuing, Abs_Abnormal);
+    make_set(Abs_Abnormal, Abs_Continuing);
   }
 
   case s_unreachable {
@@ -11555,7 +11551,7 @@ typing function approx_stmt(tenv: static_envs, s: stmt) ->
     abs_configs := if_then_else(
       f.qualifier = some(Noreturn),
       make_set(Abs_Abnormal),
-      make_set(Abs_Continuing, Abs_Abnormal)
+      make_set(Abs_Abnormal, Abs_Continuing)
     ) { (_, [_]) };
     --
     abs_configs;
@@ -11564,7 +11560,7 @@ typing function approx_stmt(tenv: static_envs, s: stmt) ->
   case s_return {
     s = S_Return(_);
     --
-    make_set(Abs_Returning, Abs_Abnormal);
+    make_set(Abs_Abnormal, Abs_Returning);
   }
 
   case s_throw {
@@ -11881,7 +11877,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_other_non_literals {
     e =: E_Binop(op, e1, e2);
-    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    op not_in make_set(ADD, DIV, MUL, SHL, SUB);
     not(e1 = E_Literal(_)) || not(e2 = E_Literal(_));
     --
     None;
@@ -11889,7 +11885,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_other_literals_non_int_result {
     e =: E_Binop(op, E_Literal(v1), E_Literal(v2));
-    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    op not_in make_set(ADD, DIV, MUL, SHL, SUB);
     binop_literals(op, v1, v2) -> v;
     ast_label(v) != label_L_Int;
     --
@@ -11898,7 +11894,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_other_literals_int_result {
     e =: E_Binop(op, E_Literal(v1), E_Literal(v2));
-    op not_in make_set(ADD, SUB, MUL, DIV, SHL);
+    op not_in make_set(ADD, DIV, MUL, SHL, SUB);
     binop_literals(op, v1, v2) -> L_Int(k);
     polynomial_of_int(k) -> p;
     --
@@ -11927,7 +11923,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   }
 
   case other {
-    ast_label(e) not_in make_set(label_E_Literal, label_E_Var, label_E_Binop, label_E_Unop, label_E_ATC);
+    ast_label(e) not_in make_set(label_E_ATC, label_E_Binop, label_E_Literal, label_E_Unop, label_E_Var);
     --
     None;
   }
@@ -12054,12 +12050,12 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
     bool_transition(call1.call_name = call2.call_name) -> True | False;
     call_args1 := call1.call_args;
     call_args2 := call2.call_args;
-    bool_transition(list_len(call_args1) = list_len(call_args2)) -> True | False;
+    bool_transition(same_length(call_args1, call_args2)) -> True | False;
     ( INDEX(i, call_args1: expr_equal(tenv, call_args1[i], call_args2[i]) -> args_equal[i]) )
     { ([_]) };
     call_params1 := call1.params;
     call_params2 := call2.params;
-    bool_transition(list_len(call_params1) = list_len(call_params2)) -> True | False;
+    bool_transition(same_length(call_params1, call_params2)) -> True | False;
     ( INDEX(i, call_params1: expr_equal(tenv, call_params1[i], call_params2[i]) -> params_equal[i]) )
     { ([_]) };
     --
@@ -12131,7 +12127,7 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   case e_tuple {
     e1 =: E_Tuple(es1);
     e2 =: E_Tuple(es2);
-    bool_transition(list_len(es1) = list_len(es2)) -> True | False;
+    bool_transition(same_length(es1, es2)) -> True | False;
     INDEX(i, es1: expr_equal(tenv, es1[i], es2[i]) -> component_equal[i]);
     --
     list_and(component_equal);
@@ -12216,7 +12212,7 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
   case any_len {
     p1 =: Pattern_Any(ps1);
     p2 =: Pattern_Any(ps2);
-    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    bool_transition(same_length(ps1, ps2)) -> True | False;
     INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
     --
     list_and(bs);
@@ -12225,7 +12221,7 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
   case tuple_len {
     p1 =: Pattern_Tuple(ps1);
     p2 =: Pattern_Tuple(ps2);
-    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    bool_transition(same_length(ps1, ps2)) -> True | False;
     INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
     --
     list_and(bs);
@@ -12366,7 +12362,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
     t1 =: make_structured(L1, fields1);
     t2 =: make_structured(L2, fields2);
     L1 = L2;
-    ast_label(L1) in make_set(label_T_Record, label_T_Exception);
+    ast_label(L1) in make_set(label_T_Exception, label_T_Record);
     names1 := list_fst(fields1);
     names2 := list_fst(fields2);
     bool_transition(list_to_set(names1) = list_to_set(names2)) -> True | False;
@@ -12380,7 +12376,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
   case ttuple {
     t1 =: T_Tuple(ts1);
     t2 =: T_Tuple(ts2);
-    bool_transition(list_len(ts1) = list_len(ts2)) -> True | False;
+    bool_transition(same_length(ts1, ts2)) -> True | False;
     INDEX(i, ts1: type_equal(tenv, ts1[i], ts2[i]) -> types_equal[i]);
     --
     list_and(types_equal);
@@ -12410,7 +12406,7 @@ typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: li
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(bf1) = list_len(bf2)) -> True | False;
+  bool_transition(same_length(bf1, bf2)) -> True | False;
   INDEX(i, bf1: bitfield_equal(tenv, bf1[i], bf2[i]) -> bf_equal[i]);
   --
   list_and(bf_equal);
@@ -12470,7 +12466,7 @@ typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint),
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(cs1) = list_len(cs2)) -> True | False;
+  bool_transition(same_length(cs1, cs2)) -> True | False;
   INDEX(i, cs1: constraint_equal(tenv, cs1[i], cs2[i]) -> cs_equal[i]);
   --
   list_and(cs_equal);
@@ -12518,7 +12514,7 @@ typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: 
   in {b}.  \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(slices1) = list_len(slices2)) -> True | False;
+  bool_transition(same_length(slices1, slices2)) -> True | False;
   ( INDEX(i, slices1: slice_equal(tenv, slices1[i], slices2[i]) -> equal_at_index[i]) )
   { ([_]) };
   --
@@ -13464,7 +13460,7 @@ typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under)
   }
 
   case other {
-    ast_label(e) not_in make_set(label_E_Literal, label_E_Var, label_E_Unop, label_E_Binop, label_E_Cond);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Cond, label_E_Literal, label_E_Unop, label_E_Var);
     approx_bottom_top(approx) -> s_opt;
     --
     s_opt;
@@ -13555,7 +13551,7 @@ typing function constraint_binop(op: binop, cs1: list0(int_constraint), cs2: lis
                         to constraints {cs1} and {cs2} yields constraints {new_cs}",
 } =
   case extremities {
-    op in make_set(DIV, DIVRM, MUL, ADD, SUB, SHR, SHL);
+    op in make_set(ADD, DIV, DIVRM, MUL, SHL, SHR, SUB);
     cs := list_cross(cs1, cs2);
     cs =: list_combine(cs_fst, cs_snd);
     extremities := list_map(i, indices(cs), apply_binop_extremities(op, cs_fst[i], cs_snd[i]))
@@ -13608,7 +13604,7 @@ typing function possible_extremities_left(op: binop, a: expr, b: expr) ->
   }
 
   case other {
-    op in make_set(DIV, DIVRM, SHR, SHL, ADD, SUB);
+    op in make_set(ADD, DIV, DIVRM, SHL, SHR, SUB);
     --
     make_singleton_list((a, b));
   }
@@ -13763,7 +13759,7 @@ typing function is_builtin_singular(ty: ty) -> (b: Bool)
     "tests whether the type {ty} is a \emph{builtin singular type}, yielding the result in {b}.",
     prose_application = "testing whether {ty} is a builtin singular type yields {b}",
 } =
-  b := (ast_label(ty) in make_set(label_T_Real, label_T_String, label_T_Bool, label_T_Bits, label_T_Enum, label_T_Int));
+  b := (ast_label(ty) in make_set(label_T_Bits, label_T_Bool, label_T_Enum, label_T_Int, label_T_Real, label_T_String));
   --
   b;
 ;
@@ -13805,7 +13801,7 @@ typing function is_structured(ty: ty) -> (b: Bool)
     prose_application = "testing whether {ty} is a \structuredtypeterm{} yields {b}",
 } =
   --
-  ast_label(ty) in make_set(label_T_Record, label_T_Exception, label_T_Collection);
+  ast_label(ty) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
 ;
 
 typing function get_structure(tenv: static_envs, ty: ty) ->
@@ -14007,7 +14003,7 @@ typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: t
     te_check(b, TE_UT) -> True;
     extra_fields' != empty_list;
     tenv.static_envs_G.declared_types(super_name) =: (t_super, _);
-    te_check(ast_label(t_super) in make_set(label_T_Record, label_T_Exception), TE_UT) -> True
+    te_check(ast_label(t_super) in make_set(label_T_Exception, label_T_Record), TE_UT) -> True
     { (((_, [_]), _), _) };
     t_super =: make_structured(L, fields);
     new_ty := make_structured(L, concat(fields, extra_fields'));
@@ -14130,22 +14126,23 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     case pending_constrained {
       ty = T_Int(PendingConstrained);
       --
-      TypeError(TE_UT); // UNCERTAIN: pending constrained types are rejected here.
+      TypeError(TE_UT);
     }
 
+    // The case of an empty list of constraints is rejected by the parser.
     case well_constrained {
       ty =: T_Int(WellConstrained(constraints));
-      ( INDEX(i, constraints: annotate_constraint(tenv, constraints[i]) -> (constraints1[i], sess[i])) )
+      ( INDEX(i, constraints: annotate_constraint(tenv, constraints[i]) -> (new_constraints[i], sess[i])) )
       { ([_]) };
       ses := union_list(sess);
       --
-      (T_Int(typed_WellConstrained(match_non_empty_list(constraints1), Precision_Full)), ses)
+      (T_Int(typed_WellConstrained(match_non_empty_list(new_constraints), Precision_Full)), ses)
       { [_] };
     }
 
     case parameterized {
       is_parameterized_integer(ty);
-      ses := make_set(LocalEffect(SE_Pure), Immutability(True));
+      ses := make_set(Immutability(True), LocalEffect(SE_Pure));
       --
       (ty, ses);
     }
@@ -14165,31 +14162,78 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     case with_bitfields {
       bitfields != empty_list;
       te_check(ses_is_pure(ses_width), TE_SEV) -> True;
-      annotate_bitfields(tenv, e_width', bitfields) -> (bitfields1, ses_bitfields)
+      annotate_bitfields(tenv, e_width', bitfields) -> (bitfields', ses_bitfields)
       { [_] };
       static_eval(tenv, e_width') -> L_Int(width);
-      check_common_bitfields_align(tenv, bitfields1, z_to_n(width)) -> True;
-      ses := union(ses_width, ses_bitfields);
-      --
-      (T_Bits(e_width', bitfields1), ses);
+      check_common_bitfields_align(tenv, bitfields', z_to_n(width)) -> True;
     }
 
     case no_bitfields {
       bitfields = empty_list;
-      --
-      (T_Bits(e_width', empty_list), ses_width);
+      bitfields' := empty_list;
+      ses_bitfields := empty_set;
     }
+    ses := union(ses_width, ses_bitfields);
+    --
+    (T_Bits(e_width', empty_list), ses_width);
   }
 
   case t_tuple {
     ty =: T_Tuple(tys);
-    INDEX(i, tys: annotate_type(decl, tenv, tys[i]) -> (tys'[i], sess[i]));
+    INDEX(i, tys: annotate_type(False, tenv, tys[i]) -> (tys'[i], sess[i]));
     ses := union_list(sess);
     --
     (T_Tuple(tys'), ses);
   }
 
+  case t_array {
+    ty =: T_Array(index, t);
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    index =: ArrayLength_Expr(e);
+    case expr_is_enum {
+      get_variable_enum(tenv, e) -> some((s, labels));
+      index' := ArrayLength_Enum(s, labels);
+      ses_index := empty_set;
+    }
+
+    case expr_not_enum {
+      get_variable_enum(tenv, e) -> None;
+      annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
+      index' := ArrayLength_Expr(e');
+    }
+    ses := union(ses_t, ses_index);
+    --
+    (T_Array(index', t'), ses)
+    { [_] };
+  }
+
+  case tstructureddecl {
+    ty =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    check_no_duplicates(field_names) -> True;
+    ( INDEX(i, field_types: annotate_type(False, tenv, field_types[i]) -> (tys[i], sess[i])) )
+    { ([_]) };
+    ses := union_list(sess);
+    case record_exception {
+      L in make_set(label_T_Exception, label_T_Record);
+      decl = True;
+      fields' := list_combine(field_names, tys);
+      --
+      (make_structured(L, fields'), ses);
+    }
+
+    case collection {
+      L = label_T_Collection;
+      decl = False;
+      INDEX(i, tys: check_structure_label(tenv, tys[i], label_T_Bits) -> True);
+      fields' := list_map(i, indices(fields), (field_names[i], tys[i]));
+      --
+      (T_Collection(fields'), ses);
+    }
+  }
+
   case t_enum_decl {
+    decl = True;
     ty =: T_Enum(li);
     check_no_duplicates(li) -> True;
     INDEX(i, li: check_var_not_in_genv(tenv.static_envs_G, li[i]) -> True);
@@ -14197,58 +14241,9 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     (T_Enum(li), empty_set);
   }
 
-  case t_array {
-    ty =: T_Array(ArrayLength_Expr(e), t);
-    annotate_type(decl, tenv, t) -> (t', ses_t);
-    case expr_is_enum {
-      get_variable_enum(tenv, e) -> some((s, labels));
-      --
-      (T_Array(ArrayLength_Enum(s, labels), t'), ses_t)
-      { [_] };
-    }
-
-    case expr_not_enum {
-      get_variable_enum(tenv, e) -> None;
-      annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
-      ses := union(ses_t, ses_index);
-      --
-      (T_Array(ArrayLength_Expr(e'), t'), ses)
-      { [_] };
-    }
-  }
-
-  case t_record_exception {
-    ty =: make_structured(L, fields);
-    L in make_set(label_T_Record, label_T_Exception);
-    decl = True;
-    fields =: list_combine(field_names, field_types);
-    check_no_duplicates(field_names) -> True;
-    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
-    { ([_]) };
-    ses := union_list(sess);
-    fields' := list_combine(field_names, tys);
-    --
-    (make_structured(L, fields'), ses);
-  }
-
-  case t_collection {
-    ty =: T_Collection(fields);
-    decl = False;
-    fields =: list_combine(field_names, field_types);
-    check_no_duplicates(field_names) -> True;
-    check_no_duplicates(field_names) -> True;
-    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
-    { ([_]) };
-    ses := union_list(sess);
-    INDEX(i, tys: check_structure_label(tenv, tys[i], label_T_Bits) -> True);
-    fields' := list_map(i, indices(fields), (field_names[i], tys[i]));
-    --
-    (T_Collection(fields'), ses);
-  }
-
   case t_non_decl {
     decl = False;
-    ast_label(ty) in make_set(label_T_Enum, label_T_Record, label_T_Exception);
+    ast_label(ty) in make_set(label_T_Enum, label_T_Exception, label_T_Record);
     --
     TypeError(TE_UT);
   }
@@ -14380,7 +14375,7 @@ typing function check_no_duplicates(ids: list0(Identifier)) ->
 } =
   case okay {
     unique_list(ids) -> ids1;
-    list_len(ids1) = list_len(ids);
+    same_length(ids1, ids);
     --
     True;
   }

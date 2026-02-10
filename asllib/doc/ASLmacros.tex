@@ -542,6 +542,18 @@
 
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
 \newcommand\listlen[1]{\hyperlink{relation-listlen}{|}#1\hyperlink{relation-listlen}{|}}
+\newcommand\samelengthname[0]{\hyperlink{relation-samelength}{\textfunc{same\_length}}}
+\newcommand\samelengthop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \samelengthname\left({#2}, {#3}\right)
+  }{
+    \samelengthname
+    \left(\begin{array}{l}
+    {#2},\\
+    {#3}\\
+    \end{array}\right)
+  }
+}
 \newcommand\concat[0]{\hyperlink{relation-concat}{\mathbin{+}}}
 \newcommand\concatlist[1]{\hyperlink{relation-concatlist}{\textfunc{concat\_list}}(#1)}
 \newcommand\cons[0]{\hyperlink{relation-cons}{\mathbin{{+}{+}}}}
@@ -549,26 +561,26 @@
 \newcommand\listfst[1]{\listfstname(#1)}
 \newcommand\listcombine[3][H]{
   \ifthenelse{\equal{#1}{H}}
-    {{#2} \mathbin{\hyperlink{relation-listcombine}{\times}} {#3}}
+    {{#2} \mathbin{\hyperlink{relation-listcombine}{\otimes}} {#3}}
     {
     \left(\begin{array}{l}
-    {#2} \hyperlink{relation-listcombine}{\times}\\
+    {#2} \hyperlink{relation-listcombine}{\otimes}\\
     {#3}\\
     \end{array}\right)}
 }
-\newcommand\listcrossop[0]{\hyperlink{relation-listcross}{\otimes}}
 \newcommand\listcombinethree[4][H]{
   \ifthenelse{\equal{#1}{H}}{
-    {#2} \mathbin{\hyperlink{relation-listcombinethree}{\times_3}} {#3} \mathbin{\hyperlink{relation-listcombinethree}{\times_3}} {#4}
+    {#2} \mathbin{\hyperlink{relation-listcombinethree}{\otimes_3}} {#3} \mathbin{\hyperlink{relation-listcombinethree}{\otimes_3}} {#4}
   }{
     \hyperlink{relation-listcombinethree}{\textfunc{list\_combine\_3}}
     \left(\begin{array}{l}
-    {#2} \hyperlink{relation-listcombinethree}{\times_3}\\
-    {#3} \hyperlink{relation-listcombinethree}{\times_3}\\
+    {#2} \hyperlink{relation-listcombinethree}{\otimes_3}\\
+    {#3} \hyperlink{relation-listcombinethree}{\otimes_3}\\
     {#4}\\
     \end{array}\right)
   }
 }
+\newcommand\listcrossop[0]{\hyperlink{relation-listcross}{\times}}
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
 \newcommand\parallelgraphs[1]{\hyperlink{def-parallellist}{\mathbin{\mathchoice{\Big\|}{\big\|}{\|}{\|}}}{#1}}
