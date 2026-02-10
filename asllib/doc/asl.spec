@@ -4445,7 +4445,7 @@ typing relation annotate_ty_opt_initial_value(
     annotate_type(False, tenv, t) -> (t', ses_t);
     typed_e := (e', t_e, ses_e);
     check_type_satisfies(tenv, t_e, t') -> True;
-    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    te_check(not_single(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
     --
     (typed_e, some(t'), t')
     { ([_], [_]) };
@@ -4461,7 +4461,7 @@ typing relation annotate_ty_opt_initial_value(
     annotate_type(False, tenv, t'') -> (t', ses_t);
     typed_e := (e', t_e, ses_e);
     check_type_satisfies(tenv, t_e, t') -> True;
-    te_check(not(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
+    te_check(not_single(must_be_pure) || ses_is_pure(union(ses_t, ses_e)), TE_SEV) -> True;
     --
     (typed_e, some(t'), t')
     { ([_], [_]) };
@@ -4471,7 +4471,7 @@ typing relation annotate_ty_opt_initial_value(
     ty_opt' =: some(t);
     initial_value = None;
     annotate_type(False, tenv, t) -> (t', ses_t);
-    te_check(not(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
+    te_check(not_single(must_be_pure) || ses_is_pure(ses_t), TE_SEV) -> True;
     base_value(tenv, t') -> e';
     typed_initial_value := (e', t', empty_set);
     --
@@ -4485,7 +4485,7 @@ typing relation annotate_ty_opt_initial_value(
     annotate_expr(tenv, e) -> (t_e, e', ses_e);
     check_no_precision_loss(t_e) -> True;
     typed_e := (e', t_e, ses_e);
-    te_check(not(must_be_pure) || ses_is_pure(ses_e), TE_SEV) -> True;
+    te_check(not_single(must_be_pure) || ses_is_pure(ses_e), TE_SEV) -> True;
     --
     (typed_e, None, t_e)
     { ([_], [_]) };
@@ -5216,7 +5216,7 @@ typing function unop_literals(op: unop, l: literal) ->
     op = BNOT;
     l =: L_Bool(b);
     --
-    L_Bool(not(b));
+    L_Bool(not_single(b));
   }
 
   case not_bits {
@@ -5378,7 +5378,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     case implies_bool {
       op = IMPL;
       --
-      L_Bool(not(a) || b);
+      L_Bool(not_single(a) || b);
     }
 
     case eq_bool {
@@ -5525,7 +5525,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
       op = NE;
       binop_literals(EQ, L_Bitvector(a), L_Bitvector(b)) -> L_Bool(result);
       --
-      L_Bool(not(result));
+      L_Bool(not_single(result));
     }
 
     case or_bits {
@@ -6585,7 +6585,7 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
     c =: Constraint_Exact(e);
     get_literal_div_opt(e) -> some((z1, z2));
     --
-    if z2 > zero && not(is_integer(fraction(z1, z2))) then None else some(c);
+    if z2 > zero && not_single(is_integer(fraction(z1, z2))) then None else some(c);
   }
 
   case exact_not_literal {
@@ -9336,7 +9336,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
       ast_label(le) != label_LE_Destructuring,
       ast_label(re) != label_E_Call,
       (le =: LE_Destructuring(les)) &&
-      list_exists(lexpr, les, not(lexpr_is_var(lexpr)))
+      list_exists(lexpr, les, not_single(lexpr_is_var(lexpr)))
     ))
     { math_layout = ( [_] ) };
     eval_expr(env, re) -> ResultExpr(vm, env1);
@@ -10082,7 +10082,7 @@ typing function can_omit_stdlib_param(func_sig: func) ->
   }
 
   case not_builtin {
-    not(func_sig.builtin);
+    not_single(func_sig.builtin);
     --
     False;
   }
@@ -11771,7 +11771,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
       }
       case not_exact {
         ast_label(t1) = label_T_Int;
-        not(t1 =: T_Int(WellConstrained(make_singleton_list(Constraint_Exact(_)))));
+        not(t1 = T_Int(WellConstrained(make_singleton_list(Constraint_Exact(_)))));
         polynomial_of_var(s) -> p;
         --
         some(p);
@@ -11850,7 +11850,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     e =: E_Binop(DIV, e1, e2);
     to_ir(tenv, e1) -> _;
     to_ir(tenv, e2) -> some(p2) | None;
-    not(bindings(p2) =: match_singleton_list(_));
+    not(bindings(p2) = match_singleton_list(_));
     --
     None;
   }
@@ -12776,8 +12776,8 @@ typing function monomial_to_expr(e: expr, q: Q) ->
   }
 
   case q_positive_fraction {
-    q > rational_zero && not(is_integer(q));
-    and(q =: fraction(d, n), not(is_integer(fraction(d, n))));
+    q > rational_zero && not_single(is_integer(q));
+    and(q =: fraction(d, n), not_single(is_integer(fraction(d, n))));
     sym_mul_expr(ELint(d), e) -> e2;
     new_e := E_Binop(DIV, e2, ELint(n));
     --
@@ -13538,7 +13538,7 @@ typing function approx_type(tenv: static_envs, approx: constants_set(Over,Under)
   }
 
   case other {
-    not(is_named(t)) && not(is_well_constrained_integer(t));
+    not_single(is_named(t)) && not_single(is_well_constrained_integer(t));
     approx_bottom_top(approx) -> s_opt;
     --
     s_opt;
