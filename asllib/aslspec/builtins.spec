@@ -124,6 +124,13 @@ operator not(Bool) -> Bool
   math_macro = \opnot,
 };
 
+// This is negation, specialized to a single variable to allow
+// the macro to drop the parenthesis around the variable.
+operator not_single(Bool) -> Bool
+{
+  math_macro = \opnotvar,
+};
+
 operator iff(Bool, Bool) -> Bool
 {
   math_macro = \IFF,
