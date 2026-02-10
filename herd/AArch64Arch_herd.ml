@@ -91,12 +91,12 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
     | I_LDP _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
     | I_LDRSW _ | I_LDR_SIMD _ | I_LDAPUR_SIMD _
-    | I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _ | I_FMOV_TG _
+    | I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _ | I_LDAP _ | I_MOV _ | I_FMOV_TG _
     | I_ADDV _| I_DUP _ | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
     | I_RET _
     | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_STL1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
-    | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
+    | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _ | I_STLP _ | I_STLRBH _| I_STOP _
     | I_STOPBH _| I_STP _| I_STP_SIMD _| I_STR _ | I_STLUR_SIMD _
     | I_STR_SIMD _| I_STRBH _| I_STUR_SIMD _| I_STXP _| I_STXR _
     | I_STXRBH _| I_STZG _| I_STZ2G _ |I_ST2G _| I_IRG _
@@ -290,6 +290,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
+      | I_LDAP (v,_,_,_) | I_STLP (v,_,_,_) ->
+          Some (tr_variant v)
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET| I_SVC _ | I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
@@ -359,6 +361,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDRSW (r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
       | I_LDRS (_,r1,r2,MemExt.Imm (_,(PreIdx|PostIdx)))
         -> [r1;r2;]
+      | I_LDAP (_, r1, r2, _) -> [r1; r2]
       | I_WHILELT (r,_,_,_) | I_WHILELE (r,_,_,_)
       | I_WHILELO (r,_,_,_) | I_WHILELS (r,_,_,_)
       | I_OP3 (_,(ADDS|SUBS|ANDS),r,_,_)
@@ -405,6 +408,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         -> [r;ResAddr;]
       | I_STXR (_,_,r,_,_) | I_STXP (_,_,r,_,_, _) | I_STXRBH (_,_,r,_,_)
         -> [r;ResAddr;]
+      | I_STLP _ -> []
       | I_MSR (SYS_NZCV,_)
         ->
           nzcv_regs
@@ -461,6 +465,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_ST3M _|I_ST4 _|I_ST4M _
       | I_LDP_SIMD _|I_STP_SIMD _
       | I_LDR_SIMD _|I_STR_SIMD _
+      | I_LDAP _ | I_STLP _ 
       | I_LDUR_SIMD _|I_LDAPUR_SIMD _|I_STUR_SIMD _|I_STLUR_SIMD _
       | I_MOV_VE _
       | I_MOV_V _|I_MOV_TG _|I_MOV_FG _
