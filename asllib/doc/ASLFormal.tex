@@ -249,6 +249,8 @@ We refer to individual elements of a non-empty list $V$ by the index notation $V
 The \emph{length} of a list is the number of elements in that list:
 $\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
 \end{definition}
+\texthypertarget{relation-samelength}
+We write $\samelengthop[H]{a}{b}$ to denote that two lists $a$ and $b$ have the same length.
 
 We use the notation $a..b$, where $a,b\in\Z$ as a shorthand for the interval $[a\ldots b]$
 (counting up when $a \leq b$ and counting down when $a \geq b$).
@@ -1097,17 +1099,33 @@ We define a similar function for dynamic errors.
 \hva\and
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
+} % END_OF_BACKUP_ORIGINAL_RULE
 \RenderRule{de_check}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}
-We define the following rules to allow us to treat Boolean values as transition judgments,
-which in turn allow us to employ \shortcircuitrulemacros{}:
+We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgments,
+which in turn allows us to employ \shortcircuitrulemacros{}:
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
 \hva\and
 \inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
+\end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{bool_transition}
+
+This is useful in defining functions that return a Boolean value, where if a condition does not hold,
+there is no need to consider the rest of the premises, and the function can simply return $\False$:
+\begin{mathpar}
+\inferrule{
+  \booltrans(\vx > \vy) \booltransarrow \True\ \terminateas\ \False\\\\
+  p_2\\\\
+  \ldots\\\\
+  p_k
+}{
+  \textfunc{complex\_condition}(\vx, \vy) \booltransarrow \vb
+}
 \end{mathpar}
 
 \subsection{Judgments Over Optional Data Types}

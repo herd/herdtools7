@@ -289,6 +289,12 @@ operator list_len[T](list0(T)) -> N
   math_macro = \listlen,
 };
 
+operator same_length[A,B](lst_a: list0(A), lst_b: list0(B)) -> Bool
+{
+  math_macro = \samelengthop,
+  custom = true,
+};
+
 // Concatenates a fixed number of lists into a single list.
 variadic operator concat[T](lists: list0(list0(T))) -> list0(T)
 {
@@ -2035,9 +2041,12 @@ semantics function de_check(condition: Bool, code: dynamic_error_code) -> CheckR
 function bool_transition(condition: Bool) -> (result: Bool)
 {
     math_macro = \booltrans,
-    "returns $\True$ if {condition} holds and $\False$ otherwise.",
+    "is the identity function for Booleans.",
     prose_application = "testing whether {condition} holds returns {result}",
-};
+} =
+  --
+  condition;
+;
 
 function rexpr(le: lexpr) -> (re: expr)
 {
@@ -2603,7 +2612,7 @@ typing function check_atc(tenv: static_envs, t1: ty, t2: ty) ->
     type_equal(tenv, t1, t2) -> False;
     t1 =: T_Tuple(l1);
     t2 =: T_Tuple(l2);
-    te_check(list_len(l1) = list_len(l2), TE_TAF) -> True;
+    te_check(same_length(l1, l2), TE_TAF) -> True;
     INDEX(i, l1: check_atc(tenv, l1[i], l2[i]) -> True);
     --
     True;
@@ -3084,7 +3093,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     le =: LE_Destructuring(les);
     te_check(ast_label(t_e) = label_T_Tuple, TE_UT) -> True;
     t_e =: T_Tuple(tys);
-    te_check(list_len(les) = list_len(tys), TE_UT) -> True;
+    te_check(same_length(les, tys), TE_UT) -> True;
     (
       INDEX(i, les: annotate_lexpr(tenv, les[i], tys[i]) -> (les'[i], xs[i]))
     );
@@ -4655,7 +4664,7 @@ typing relation annotate_local_decl_item(
     make_anonymous(tenv, ty) -> t';
     te_check(ast_label(t') = label_T_Tuple, TE_UT) -> True;
     t' =: T_Tuple(tys);
-    te_check(list_len(ids) = list_len(tys), TE_UT) -> True;
+    te_check(same_length(ids, tys), TE_UT) -> True;
     add_local_vars(tenv, ldk, list_combine(ids, tys)) -> new_tenv;
     --
     new_tenv;
@@ -4894,7 +4903,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     get_structure(tenv, t) -> t_struct;
     te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
     t_struct =: T_Tuple(ts);
-    te_check(list_len(li) = list_len(ts), TE_UT) -> True;
+    te_check(same_length(li, ts), TE_UT) -> True;
     INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
     new_li := li';
     ses := union_list(xs);
@@ -5271,10 +5280,10 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     case div_int {
       op = DIV;
       te_check(b > zero, TE_BO) -> True;
-      n := fraction(a, b);
-      te_check(is_integer(n), TE_BO) -> True;
+      n := round_down(fraction(a, b));
+      te_check(a = n * b, TE_BO) -> True;
       --
-      L_Int(a / b);
+      L_Int(n);
     }
 
     case fdiv_int {
@@ -5516,7 +5525,6 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case eq_bits {
       op = EQ;
-      list_len(a) = list_len(b);
       --
       L_Bool(a = b);
     }
@@ -5530,7 +5538,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case or_bits {
       op = OR;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), or_bit(a[i], b[i]));
       --
       L_Bitvector(c);
@@ -5538,7 +5546,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case and_bits {
       op = AND;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), and_bit(a[i], b[i]));
       --
       L_Bitvector(c);
@@ -5546,7 +5554,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case xor_bits {
       op = XOR;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       c := list_map(i, indices(a), if a[i] = b[i] then zero_bit else one_bit);
       --
       L_Bitvector(c);
@@ -5554,7 +5562,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case add_bits {
       op = ADD;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       binary_to_unsigned(a) -> a_val;
       binary_to_unsigned(b) -> b_val;
       int_to_bits(a_val + b_val, list_len(a)) -> c;
@@ -5564,7 +5572,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case sub_bits {
       op = SUB;
-      list_len(a) = list_len(b);
+      same_length(a, b);
       binary_to_unsigned(a) -> a_val;
       binary_to_unsigned(b) -> b_val;
       int_to_bits(a_val - b_val, list_len(a)) -> c;
@@ -5867,7 +5875,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
   case t_tuple {
     make_anonymous(tenv, s) -> T_Tuple(li_s);
     make_anonymous(tenv, t) -> T_Tuple(li_t);
-    bool_transition(list_len(li_s) = list_len(li_t)) -> True | False;
+    bool_transition(same_length(li_s, li_t)) -> True | False;
     ( INDEX(i, li_s: type_satisfies(tenv, li_t[i], li_s[i]) -> component_type_satisfies[i]) )
     { ([_, [_]]) };
     --
@@ -5884,6 +5892,9 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     fields_s =: list_combine(names_s, field_types_s);
     fields_t =: list_combine(names_t, _);
     bool_transition(subseteq(list_to_set(names_s), list_to_set(names_t))) -> True | False;
+    // Notice that the premise above guarantees that the indexed premises in the next judgment
+    // always return `some`.
+    // TODO: add the comment above to a special prose-related attribute.
     INDEX(i, names_s: field_type(fields_t, names_s[i]) -> some(field_types_t[i]))
     { [_] };
     ( INDEX(i, field_types_s: type_equal(tenv, field_types_s[i], field_types_t[i]) -> field_tys_equal[i]) )
@@ -5942,44 +5953,37 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     True;
   }
 
-  case anonymous {
+  case not_subtypes {
     is_subtype(tenv, t, s) -> False;
-    is_anonymous(t) -> b1;
-    is_anonymous(s) -> b2;
-    b1 || b2;
-    subtype_satisfies(tenv, t, s) -> True;
-    --
-    True;
-  }
 
-  case maybe_bitvectors {
-    is_subtype(tenv, t, s) -> False;
-    is_anonymous(t) -> b1;
-    is_anonymous(s) -> b2;
-    subtype_satisfies(tenv, t, s) -> b3;
-    not((b1 || b2) && b3);
-    case t_bits {
-      t =: T_Bits(width_t, empty_list);
-      get_structure(tenv, s) -> T_Bits(width_s, _);
-      bitwidth_equal(tenv, width_t, width_s) -> b;
+    case anonymous_or_subtype_satisfies {
+      is_anonymous(t) || is_anonymous(s);
+      subtype_satisfies(tenv, t, s) -> True;
       --
-      b;
+      True;
     }
 
-    case otherwise1 {
+    case other {
+      subtype_satisfies(tenv, t, s) -> t_subtype_satisfies_s;
+      not((is_anonymous(t) || is_anonymous(s)) && t_subtype_satisfies_s);
       get_structure(tenv, s) -> s_struct;
-      ast_label(t) != label_T_Bits || ast_label(s_struct) != label_T_Bits;
-      --
-      False;
-    }
+      case t_bits {
+        t =: T_Bits(width_t, empty_list);
+        s_struct =: T_Bits(width_s, _);
+        bitwidth_equal(tenv, width_t, width_s) -> b;
+        --
+        b;
+      }
 
-    case otherwise2 {
-      get_structure(tenv, s) -> s_struct;
-      ast_label(t) = label_T_Bits && ast_label(s_struct) = label_T_Bits;
-      t =: T_Bits(width_t, bitfields);
-      bitfields != empty_list;
-      --
-      False;
+      case not_tbits {
+        or(
+          ast_label(t) != label_T_Bits,
+          ast_label(s_struct) != label_T_Bits,
+          (t =: T_Bits(_, t_fields)) && t_fields = empty_list
+        );
+        --
+        False;
+      }
     }
   }
 ;
@@ -6117,7 +6121,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
     t =: T_Tuple(li_t);
     s =: T_Tuple(li_s);
     type_equal(tenv, t, s) -> False;
-    b := list_len(li_t) = list_len(li_s);
+    b := same_length(li_t, li_s);
     te_check(b, TE_LCA) -> True;
     INDEX(i, li_t: lowest_common_ancestor(tenv, li_t[i], li_s[i]) -> li[i]);
     --
@@ -7213,7 +7217,7 @@ semantics function write_to_bitvector(slices: list0((native_value, native_value)
   src =: nvbitvector(src_bits);
   dst =: nvbitvector(dst_bits);
   slices_to_positions(slices) -> positions;
-  de_check(list_len(positions) = list_len(src_bits), DE_BI) -> True;
+  de_check(same_length(positions, src_bits), DE_BI) -> True;
   case empty_positions {
     positions = empty_list;
     --
@@ -7981,9 +7985,9 @@ typing function signatures_match(func1: func, func2: func) ->
   match := and(
     func1.name = func2.name,
     func1.qualifier = func2.qualifier,
-    list_len(func1.args) = list_len(func2.args),
+    same_length(func1.args, func2.args),
     func1.args = func2.args,
-    list_len(func1.parameters) = list_len(func2.parameters),
+    same_length(func1.parameters, func2.parameters),
     func1.parameters = func2.parameters,
     func1.return_type = func2.return_type
   )
@@ -9152,7 +9156,7 @@ typing function inherit_integer_constraints(lhs: ty, rhs: ty) ->
   case tuple {
     lhs =: T_Tuple(lhs_tys);
     rhs =: T_Tuple(rhs_tys);
-    te_check(list_len(lhs_tys) = list_len(rhs_tys), TE_UT) -> True;
+    te_check(same_length(lhs_tys, rhs_tys), TE_UT) -> True;
     ( INDEX(i, lhs_tys: inherit_integer_constraints(lhs_tys[i], rhs_tys[i]) -> lhs_tys'[i]) )
     { ([_]) };
     --
@@ -9991,8 +9995,8 @@ typing relation annotate_call_actuals_typed(
   { [_] };
   ses := union(ses_args, ses_call);
   insert_stdlib_param(tenv, func_sig, params, arg_types) -> params1;
-  te_check(list_len(func_sig.parameters) = list_len(params1), TE_BC) -> True;
-  te_check(list_len(func_sig.args) = list_len(args), TE_BC) -> True;
+  te_check(same_length(func_sig.parameters, params1), TE_BC) -> True;
+  te_check(same_length(func_sig.args, args), TE_BC) -> True;
   check_params_typesat(tenv, func_sig.parameters, params1) -> True;
   func_sig.parameters =: list_combine(param_names, _);
   params1 =: list_combine_three(_, param_exprs, _);
@@ -10543,7 +10547,7 @@ typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(f_tys) = list_len(args)) -> True | False;
+  bool_transition(same_length(f_tys, args)) -> True | False;
   args =: list_combine(arg_names, arg_tys);
   INDEX(i, f_tys: type_clashes(tenv, f_tys[i], arg_tys[i]) -> clashes[i]);
   --
@@ -10594,7 +10598,7 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
     case t_tuple {
       t_struct =: T_Tuple(ts_t);
       s_struct =: T_Tuple(ts_s);
-      bool_transition(list_len(ts_t) = list_len(ts_s)) -> True | False;
+      bool_transition(same_length(ts_t, ts_s)) -> True | False;
       INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
       --
       list_and(clashes);
@@ -12054,12 +12058,12 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
     bool_transition(call1.call_name = call2.call_name) -> True | False;
     call_args1 := call1.call_args;
     call_args2 := call2.call_args;
-    bool_transition(list_len(call_args1) = list_len(call_args2)) -> True | False;
+    bool_transition(same_length(call_args1, call_args2)) -> True | False;
     ( INDEX(i, call_args1: expr_equal(tenv, call_args1[i], call_args2[i]) -> args_equal[i]) )
     { ([_]) };
     call_params1 := call1.params;
     call_params2 := call2.params;
-    bool_transition(list_len(call_params1) = list_len(call_params2)) -> True | False;
+    bool_transition(same_length(call_params1, call_params2)) -> True | False;
     ( INDEX(i, call_params1: expr_equal(tenv, call_params1[i], call_params2[i]) -> params_equal[i]) )
     { ([_]) };
     --
@@ -12131,7 +12135,7 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   case e_tuple {
     e1 =: E_Tuple(es1);
     e2 =: E_Tuple(es2);
-    bool_transition(list_len(es1) = list_len(es2)) -> True | False;
+    bool_transition(same_length(es1, es2)) -> True | False;
     INDEX(i, es1: expr_equal(tenv, es1[i], es2[i]) -> component_equal[i]);
     --
     list_and(component_equal);
@@ -12216,7 +12220,7 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
   case any_len {
     p1 =: Pattern_Any(ps1);
     p2 =: Pattern_Any(ps2);
-    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    bool_transition(same_length(ps1, ps2)) -> True | False;
     INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
     --
     list_and(bs);
@@ -12225,7 +12229,7 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
   case tuple_len {
     p1 =: Pattern_Tuple(ps1);
     p2 =: Pattern_Tuple(ps2);
-    bool_transition(list_len(ps1) = list_len(ps2)) -> True | False;
+    bool_transition(same_length(ps1, ps2)) -> True | False;
     INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
     --
     list_and(bs);
@@ -12380,7 +12384,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
   case ttuple {
     t1 =: T_Tuple(ts1);
     t2 =: T_Tuple(ts2);
-    bool_transition(list_len(ts1) = list_len(ts2)) -> True | False;
+    bool_transition(same_length(ts1, ts2)) -> True | False;
     INDEX(i, ts1: type_equal(tenv, ts1[i], ts2[i]) -> types_equal[i]);
     --
     list_and(types_equal);
@@ -12410,7 +12414,7 @@ typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: li
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(bf1) = list_len(bf2)) -> True | False;
+  bool_transition(same_length(bf1, bf2)) -> True | False;
   INDEX(i, bf1: bitfield_equal(tenv, bf1[i], bf2[i]) -> bf_equal[i]);
   --
   list_and(bf_equal);
@@ -12470,7 +12474,7 @@ typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint),
   \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(cs1) = list_len(cs2)) -> True | False;
+  bool_transition(same_length(cs1, cs2)) -> True | False;
   INDEX(i, cs1: constraint_equal(tenv, cs1[i], cs2[i]) -> cs_equal[i]);
   --
   list_and(cs_equal);
@@ -12518,7 +12522,7 @@ typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: 
   in {b}.  \ProseOtherwiseTypeError",
   prose_application = "",
 } =
-  bool_transition(list_len(slices1) = list_len(slices2)) -> True | False;
+  bool_transition(same_length(slices1, slices2)) -> True | False;
   ( INDEX(i, slices1: slice_equal(tenv, slices1[i], slices2[i]) -> equal_at_index[i]) )
   { ([_]) };
   --
@@ -14130,16 +14134,17 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     case pending_constrained {
       ty = T_Int(PendingConstrained);
       --
-      TypeError(TE_UT); // UNCERTAIN: pending constrained types are rejected here.
+      TypeError(TE_UT);
     }
 
+    // The case of an empty list of constraints is rejected by the parser.
     case well_constrained {
       ty =: T_Int(WellConstrained(constraints));
-      ( INDEX(i, constraints: annotate_constraint(tenv, constraints[i]) -> (constraints1[i], sess[i])) )
+      ( INDEX(i, constraints: annotate_constraint(tenv, constraints[i]) -> (new_constraints[i], sess[i])) )
       { ([_]) };
       ses := union_list(sess);
       --
-      (T_Int(typed_WellConstrained(match_non_empty_list(constraints1), Precision_Full)), ses)
+      (T_Int(typed_WellConstrained(match_non_empty_list(new_constraints), Precision_Full)), ses)
       { [_] };
     }
 
@@ -14165,85 +14170,83 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     case with_bitfields {
       bitfields != empty_list;
       te_check(ses_is_pure(ses_width), TE_SEV) -> True;
-      annotate_bitfields(tenv, e_width', bitfields) -> (bitfields1, ses_bitfields)
+      annotate_bitfields(tenv, e_width', bitfields) -> (bitfields', ses_bitfields)
       { [_] };
       static_eval(tenv, e_width') -> L_Int(width);
-      check_common_bitfields_align(tenv, bitfields1, z_to_n(width)) -> True;
-      ses := union(ses_width, ses_bitfields);
-      --
-      (T_Bits(e_width', bitfields1), ses);
+      check_common_bitfields_align(tenv, bitfields', z_to_n(width)) -> True;
     }
 
     case no_bitfields {
       bitfields = empty_list;
-      --
-      (T_Bits(e_width', empty_list), ses_width);
+      bitfields' := empty_list;
+      ses_bitfields := empty_set;
     }
+    ses := union(ses_width, ses_bitfields);
+    --
+    (T_Bits(e_width', empty_list), ses_width);
   }
 
   case t_tuple {
     ty =: T_Tuple(tys);
-    INDEX(i, tys: annotate_type(decl, tenv, tys[i]) -> (tys'[i], sess[i]));
+    INDEX(i, tys: annotate_type(False, tenv, tys[i]) -> (tys'[i], sess[i]));
     ses := union_list(sess);
     --
     (T_Tuple(tys'), ses);
   }
 
-  case t_enum_decl {
-    ty =: T_Enum(li);
-    check_no_duplicates(li) -> True;
-    INDEX(i, li: check_var_not_in_genv(tenv.static_envs_G, li[i]) -> True);
-    --
-    (T_Enum(li), empty_set);
-  }
-
   case t_array {
-    ty =: T_Array(ArrayLength_Expr(e), t);
-    annotate_type(decl, tenv, t) -> (t', ses_t);
+    ty =: T_Array(index, t);
+    annotate_type(False, tenv, t) -> (t', ses_t);
+    index =: ArrayLength_Expr(e);
     case expr_is_enum {
       get_variable_enum(tenv, e) -> some((s, labels));
-      --
-      (T_Array(ArrayLength_Enum(s, labels), t'), ses_t)
-      { [_] };
+      index' := ArrayLength_Enum(s, labels);
+      ses_index := empty_set;
     }
 
     case expr_not_enum {
       get_variable_enum(tenv, e) -> None;
       annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
-      ses := union(ses_t, ses_index);
+      index' := ArrayLength_Expr(e');
+    }
+    ses := union(ses_t, ses_index);
+    --
+    (T_Array(index', t'), ses)
+    { [_] };
+  }
+
+  case tstructureddecl {
+    ty =: make_structured(L, fields);
+    fields =: list_combine(field_names, field_types);
+    check_no_duplicates(field_names) -> True;
+    ( INDEX(i, field_types: annotate_type(False, tenv, field_types[i]) -> (tys[i], sess[i])) )
+    { ([_]) };
+    ses := union_list(sess);
+    case record_exception {
+      L in make_set(label_T_Record, label_T_Exception);
+      decl = True;
+      fields' := list_combine(field_names, tys);
       --
-      (T_Array(ArrayLength_Expr(e'), t'), ses)
-      { [_] };
+      (make_structured(L, fields'), ses);
+    }
+
+    case collection {
+      L = label_T_Collection;
+      decl = False;
+      INDEX(i, tys: check_structure_label(tenv, tys[i], label_T_Bits) -> True);
+      fields' := list_map(i, indices(fields), (field_names[i], tys[i]));
+      --
+      (T_Collection(fields'), ses);
     }
   }
 
-  case t_record_exception {
-    ty =: make_structured(L, fields);
-    L in make_set(label_T_Record, label_T_Exception);
+  case t_enum_decl {
     decl = True;
-    fields =: list_combine(field_names, field_types);
-    check_no_duplicates(field_names) -> True;
-    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
-    { ([_]) };
-    ses := union_list(sess);
-    fields' := list_combine(field_names, tys);
+    ty =: T_Enum(li);
+    check_no_duplicates(li) -> True;
+    INDEX(i, li: check_var_not_in_genv(tenv.static_envs_G, li[i]) -> True);
     --
-    (make_structured(L, fields'), ses);
-  }
-
-  case t_collection {
-    ty =: T_Collection(fields);
-    decl = False;
-    fields =: list_combine(field_names, field_types);
-    check_no_duplicates(field_names) -> True;
-    check_no_duplicates(field_names) -> True;
-    ( INDEX(i, field_types: annotate_type(decl, tenv, field_types[i]) -> (tys[i], sess[i])) )
-    { ([_]) };
-    ses := union_list(sess);
-    INDEX(i, tys: check_structure_label(tenv, tys[i], label_T_Bits) -> True);
-    fields' := list_map(i, indices(fields), (field_names[i], tys[i]));
-    --
-    (T_Collection(fields'), ses);
+    (T_Enum(li), empty_set);
   }
 
   case t_non_decl {
@@ -14380,7 +14383,7 @@ typing function check_no_duplicates(ids: list0(Identifier)) ->
 } =
   case okay {
     unique_list(ids) -> ids1;
-    list_len(ids1) = list_len(ids);
+    same_length(ids1, ids);
     --
     True;
   }
