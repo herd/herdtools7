@@ -750,6 +750,64 @@ and cons_seqs (fs:exp list) (es:exp list) =
          pp_txt indent s1 txt ;
          pp_txts indent s1 s2 s3 txts
 
+    (* Translate and print a check/test.
+     * For now, only support tests with expression following the pattern:
+     *
+     *     `r1; r2; ...; r`
+     *
+     * where `r` is not an effect expression `[...]`, OR following the pattern:
+     *
+     *     `[e]; r1; r2; ...; r ; [e1]; [e2]; ...; [en]`
+     *
+     * where `r` is again not an effect expression. *)
+    let tr_check =
+      let is_identity (e : AST.exp) =
+        match e with
+        | Op1(_, ToId, _) -> true
+        | _ -> false
+      in
+      let find_first_non_id (l : AST.exp list) =
+        let rec go ix = function
+          | [] -> None
+          | e :: es when is_identity e -> go (ix + 1) es
+          | e :: es -> (Some (ix, e, es))
+        in go 0 l
+      in
+
+      fun loc id exp ->
+        let exp = ASTUtils.flatten exp in
+        let exps =
+          match exp with
+          | Op (loc, Seq, l) -> (
+            match find_first_non_id (List.rev l) with
+            | Some (0, e, es) ->
+                (* No trailing identities. *)
+                Some (Op (loc, Seq, List.rev es), e)
+            | Some (_non_zero, e, es) when is_identity (List.hd l) ->
+                (* Ignore trailing identities, but only if the first component
+                   is also an identity. *)
+                Some (Op (loc, Seq, List.rev es), e)
+            | _ -> None)
+          | _ -> None
+        in
+        match exps with
+        | None ->
+          eprintf "%a: %S: Unsupported test shape\n" TxtLoc.pp loc id
+        | Some (precond_exp, postcond_exp) ->
+          Next.reset ();
+          let e1 = Next.next () in
+          let e2 = Next.next () in
+          let tr_rel e1 e2 exp =
+            if O.flatten then
+              ASTUtils.flatten exp |> tr_rel e1 e2 |> flatten_out |> rm_dups
+            else tr_rel e1 e2 exp
+          in
+          let precond_tr = tr_rel e1 e2 precond_exp in
+          let postcond_tr = tr_rel e2 e1 postcond_exp in
+          let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
+          pp_def pref "" precond_tr;
+          pp_def "then it is not the case that" "." postcond_tr
+
     (* Translate and print a definition *)
     let get_id_e_type id e =
       match get_id_type id with
@@ -770,7 +828,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
               | SET -> "an event set"
               | RLN -> "a relation")
         end ;
-        let es,tr =
+      let es,tr =
         match ty with
         | Some RLN ->
             let e1 = Next.next () in
@@ -833,6 +891,17 @@ and cons_seqs (fs:exp list) (es:exp list) =
                 (function | (_,Pvar (Some _),_) -> true |_ -> false)
                 bds
          then tr_bds as_name bds
+      | Test ((loc, _, test, exp, Some name), _) ->
+         if StringSet.mem name O.names then
+           let is_supported = (
+             match test with
+             | Yes Irreflexive  -> true
+             | _ -> false)
+           in
+           if is_supported then
+             tr_check loc name exp
+           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
+         else ()
       | Include (_,fname) when O.expand -> tr_ast fname
       | _ -> ()
 
