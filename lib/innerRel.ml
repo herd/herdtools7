@@ -30,10 +30,13 @@ module type S =  sig
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
+    val seq : map -> map -> map
+    val filter_src : Elts.t -> map -> map
+    val filter_tgt : map -> Elts.t -> map
     val exists_path : (elt0 * elt0) -> map -> bool
-
     val to_map : t -> map
     val of_map : map -> t
+    val pair_to_map : elt0 -> elt0 -> map
   end
 
 (* All elements related *)
@@ -317,6 +320,8 @@ and module Elts = MySet.Make(O) =
             m [] in
         unions xs
 
+      let pair_to_map e1 e2 = ME.singleton e1 (Elts.singleton e2)
+
 (* sub relation *)
 
       let subrel m1 m2 =
@@ -328,6 +333,24 @@ and module Elts = MySet.Make(O) =
             m1 ;
           true
         with Exit -> false
+
+(* Sequence *)
+
+      let seq m1 m2 =
+        ME.map
+          (fun es ->
+             Elts.fold (fun e k -> succs e m2::k) es [] |> Elts.unions)
+          m1
+
+(* Filters *)
+
+      let filter_src s m =
+        ME.filter (fun e es -> Elts.mem e s && not (Elts.is_empty es)) m
+
+(* Notice: filter_tgt may leave behind empty sets of neihbourgs.
+   This could be corrected by using ME.filter_map, which, unfortunately
+   is not available yet in ocaml 4.08.1 *)
+      and filter_tgt m s = ME.map (fun es -> Elts.inter es s) m
 
       (* Extended Tarjan algorithm for SCC. Adaptation from R. Sedgwick's book "Algorithms".
          Two computing functions are provided:

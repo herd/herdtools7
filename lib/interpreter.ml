@@ -1233,10 +1233,12 @@ module Make
 (***************)
 (* Interpreter *)
 (***************)
-    type rel =
-      | Rid of (E.event -> bool)
-      | Revent of E.EventRel.t
-      | Rclass of ClassRel.t
+
+    (* Temporary data for computing sequence arguments *)
+    type map_rel =
+      | Mid of E.EventSet.t
+      | Mrel of E.EventRel.M.map
+      | Mclass of ClassRel.t
 
     let end_profile ~t0 ~loc : unit =
       let t1 = Sys.time () in
@@ -1272,10 +1274,6 @@ module Make
 
       let rec eval_loc accept_implicit env e = get_loc e,eval accept_implicit env e
       and eval_ord_loc  env e = eval_loc false env e
-
-      and check_id env e = match e with
-      | Op1 (_,ToId,e) -> Some (eval_events_mem env e)
-      | _ -> None
 
       and eval_ord env e = eval false env e
 
@@ -1448,33 +1446,40 @@ module Make
           in
           let r = E.EventRel.transitive_closure_filtered s1 s2 r in
           V.Rel r
-
         | Op (loc,Seq,es) ->
-            begin try
-              let vs = List.map  (eval_rels env) es in
-              let rec do_seq = function
-                | [] -> assert false
-                | [v] -> v
-                | v::vs ->
-                    begin match v,do_seq vs with
-                    | Rid f,Rid fs -> Rid (fun e -> f e && fs e)
-                    | Rid f,Revent vs ->
-                        Revent (E.EventRel.filter (fun (e1,_) -> f e1) vs)
-                    | Revent v,Rid fs  ->
-                        Revent (E.EventRel.filter (fun (_,e2) -> fs e2) v)
-                    | Revent v,Revent vs ->
-                        Revent (E.EventRel.sequence v vs)
-                    | Rclass v,Rclass vs ->
-                        Rclass (ClassRel.sequence v vs)
-                    | _,_ ->
-                        error env.EV.silent loc
-                          "mixing relations in sequence"
-                    end in
-              match do_seq vs with
-              | Rid f -> Rel (E.EventRel.set_to_rln (E.EventSet.filter f env.EV.ks.evts))
-              | Revent r -> Rel r
-              | Rclass r -> ClassRel r
-            with Exit -> V.Empty end
+            begin
+              try
+                let rec seq_rec = function
+                  | [] -> assert false
+                  | [e] -> eval_seq_arg env e
+                  | e::es ->
+                      let v = eval_seq_arg env e
+                      and vs = seq_rec es in
+                      begin
+                        match v,vs with
+                        | Mid v,Mid vs ->
+                          Mid (E.EventSet.inter v vs)
+                        | Mid vs,Mrel m ->
+                            Mrel  (E.EventRel.M.filter_src vs m)
+                        | Mrel m,Mid vs ->
+                            Mrel (E.EventRel.M.filter_tgt m vs)
+                        | Mrel m,Mrel ms ->
+                            Mrel (E.EventRel.M.seq m ms)
+                        | Mclass c,Mclass cs ->
+                            Mclass (ClassRel.sequence c cs)
+                        | _,_ ->
+                            error env.EV.silent loc
+                            "mixing relations in sequence"
+                      end in
+                begin
+                  match seq_rec es with
+                  | Mid v ->  Rel (E.EventRel.set_to_rln v)
+                  | Mrel m ->  Rel (E.EventRel.M.of_map m)
+                  | Mclass c -> ClassRel c
+                end
+              with
+              | Exit -> V.Empty
+            end
 (*
   begin try
   let f1,rs,f2 = eval_seq_args env es in
@@ -1913,16 +1918,22 @@ module Make
       | Unv -> Lazy.force env.EV.ks.unv
       | v -> error_rel env.EV.silent (get_loc e) v
 
-      and eval_rels env e =  match check_id env e with
-      | Some es -> Rid es
-      | None -> match eval_ord env e with
-        | Rel v -> Revent v
-        | TransRel v ->  Revent (E.EventRel.transitive_closure v)
-        | ClassRel v -> Rclass v
-        | Pair p -> Revent (E.EventRel.singleton p)
-        | V.Empty -> raise Exit
-        | Unv -> Revent (Lazy.force env.EV.ks.unv)
-        | v -> error_rel env.EV.silent (get_loc e) v
+      and eval_seq_arg env = function
+        | Op1 (_,ToId,s) ->
+            let s = eval_events env s in
+            if E.EventSet.is_empty s then raise Exit
+            else Mid s
+        | e ->
+            begin
+              match eval_ord env e with
+              | Rel r -> Mrel (E.EventRel.M.to_map r)
+              | TransRel r -> Mrel (E.EventRel.transitive_to_map r)
+              | ClassRel r -> Mclass r
+              | Pair (e1,e2) -> Mrel (E.EventRel.M.pair_to_map e1 e2)
+              | V.Empty -> raise Exit
+              | Unv ->  Mrel (Lazy.force env.EV.ks.unv |> E.EventRel.M.to_map)
+              | v ->  error_rel env.EV.silent (get_loc e) v
+            end
 
       and eval_events env e = match eval_ord env e with
       | Set v -> v

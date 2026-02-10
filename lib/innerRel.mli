@@ -32,9 +32,13 @@ module type S =  sig
     val succs : elt0 -> map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
+    val seq : map -> map -> map
+    val filter_src : Elts.t -> map -> map
+    val filter_tgt : map -> Elts.t -> map
     val exists_path : (elt0 * elt0) -> map -> bool
     val to_map : t -> map
     val of_map : map -> t
+    val pair_to_map : elt0 -> elt0 -> map
   end
 
 (* All elements related *)
