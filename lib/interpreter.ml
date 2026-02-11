@@ -38,6 +38,7 @@ module type Config = sig
   val doshow : StringSet.t
   val showraw : StringSet.t
   val symetric : StringSet.t
+  val show_rt : bool (* Apply transitivity removal to shown relations *)
 (* find files *)
   val libfind : string -> string
 (* check variant *)
@@ -602,6 +603,7 @@ module Make
 (* Remove transitive edges, except if instructed not to *)
     let rt_loc lbl =
       if
+        O.show_rt &&
         O.verbose <= 1 &&
         not (StringSet.mem lbl O.symetric) &&
         not (StringSet.mem lbl O.showraw)

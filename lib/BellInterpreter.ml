@@ -49,6 +49,7 @@ module Make (C: Config) = struct
       let doshow = StringSet.empty
       let showraw = StringSet.empty
       let symetric = StringSet.empty
+      let show_rt = true
       let libfind = C.libfind
 (* Variant, coming from outer world *)
       let variant = C.variant

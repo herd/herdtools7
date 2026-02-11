@@ -69,6 +69,7 @@ module Make
       let doshow = S.O.PC.doshow
       let showraw = S.O.PC.showraw
       let symetric = S.O.PC.symetric
+      let show_rt = not (O.variant Variant.ASL_AArch64)
       let variant =
         let variant =
           if optacetrue then
