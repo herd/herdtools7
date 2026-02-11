@@ -844,10 +844,14 @@ module Make
     let test2pred env t e v = match t,v with
     | (Acyclic,(Rel r|TransRel r))
     | (Irreflexive,TransRel r)  -> E.EventRel.is_acyclic r
+    | (Acyclic,(MapRel m|TransMap m))
+    | (Irreflexive,TransMap m)  -> E.EventRel.M.is_acyclic m
     | Acyclic,ClassRel r -> ClassRel.is_acyclic r
     | Irreflexive,Rel r -> E.EventRel.is_irreflexive r
+    | Irreflexive,MapRel m -> E.EventRel.M.is_irreflexive m
     | Irreflexive,ClassRel r -> ClassRel.is_irreflexive r
     | TestEmpty,(Rel r|TransRel r) -> E.EventRel.is_empty r
+    | TestEmpty,(MapRel m|TransMap m) -> E.EventRel.M.is_empty m
     | TestEmpty,ClassRel r -> ClassRel.is_empty r
     | TestEmpty,Set s -> E.EventSet.is_empty s
     | (Acyclic|Irreflexive),Set _ ->
@@ -1170,12 +1174,14 @@ module Make
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
     | V.Rel r|V.TransRel r -> V.Set (E.EventRel.domain r)
+    | V.MapRel m|V.TransMap m -> V.Set (E.EventRel.M.domain m)
     | _ -> arg_mismatch ()
 
     and range arg = match arg with
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
     | V.Rel r|V.TransRel r -> V.Set (E.EventRel.codomain r)
+    | V.MapRel m|V.TransMap m -> V.Set (E.EventRel.M.codomain m)
     | _ -> arg_mismatch ()
 
     and fail arg =
@@ -1270,12 +1276,18 @@ module Make
       else Rel (Lazy.force ks.id)
 
     (* Force map request *)
-    let force_map map = function
-      | MapRel m when not map -> Rel (E.EventRel.M.of_map m)
-      | TransMap m when not map -> TransRel (E.EventRel.M.of_map m)
-      | Rel r when map -> MapRel (E.EventRel.M.to_map r)
-      | TransRel r when map -> TransMap(E.EventRel.M.to_map r)
+    let force_rel = function
+      | MapRel m  -> Rel (E.EventRel.M.of_map m)
+      | TransMap m -> TransRel (E.EventRel.M.of_map m)
       | v -> v
+
+    let force_maprel = function
+      | Rel r  -> MapRel (E.EventRel.M.to_map r)
+      | TransRel r -> TransMap(E.EventRel.M.to_map r)
+      | v -> v
+
+    let force_map map = if map then force_maprel else force_rel
+
 
     (* Temporary data for computing sequence arguments *)
     type map_rel =
@@ -1517,8 +1529,9 @@ module Make
                   | ty ->
                       error env.EV.silent loc
                         "cannot perform union on type '%s'" (pp_typ ty)
-            with Exit -> Unv end
-
+              with Exit -> Unv
+            end
+(*
         | Op (_,
               Seq,
               [ Op1(l1, ToId, e1); Op1(l2, Plus, e2); Op1 (l3, ToId, e3) ])
@@ -1529,12 +1542,13 @@ module Make
             | v ->
               error env.EV.silent l1 "Typing error: expected a set, got: %s."
                 (pp_type_val v)
-          and r =
-            match eval true env e2 with
-            | V.Rel r | V.TransRel r -> r
+          and m =
+            match eval true true env e2 with
+            | V.Rel r|TransRel r -> E.EventRel.M.to_map r
+            | MapRel m|TransMap m -> m
             | v ->
-              error env.EV.silent l2 "Typing error: expected a rel, got: %s."
-                (pp_type_val v)
+                error env.EV.silent l2 "Typing error: expected a relation, got: %s."
+                  (pp_type_val v)
           and s2 =
             match eval_ord env e3 with
             | V.Set s -> s
@@ -1542,8 +1556,13 @@ module Make
               error env.EV.silent l3 "Typing error: expected a set, got: %s."
                 (pp_type_val v)
           in
-          let r = E.EventRel.transitive_closure_filtered s1 s2 r in
-          V.Rel r
+          let m =
+            let open E.EventRel.M in
+            let m = transitive_closure m in
+            let m = filter_tgt m s2 in
+            filter_src s1 m in
+          V.MapRel m
+*)
         | Op (loc,Seq,es) ->
             begin
               try
@@ -1571,8 +1590,12 @@ module Make
                       end in
                 begin
                   match seq_rec es with
-                  | Mid v ->  Rel (E.EventRel.set_to_rln v)
-                  | Mrel m ->  Rel (E.EventRel.M.of_map m)
+                  | Mid v ->
+                      if map then MapRel (E.EventRel.M.set_to_rln v)
+                      else Rel (E.EventRel.set_to_rln v)
+                  | Mrel m ->
+                      if true then MapRel m
+                      else Rel (E.EventRel.M.of_map m)
                   | Mclass c -> ClassRel c
                 end
               with
@@ -2132,7 +2155,7 @@ module Make
 
       and eval_rel_set transitive map env e =
         match eval transitive map env e with
-        | Rel _ | TransRel _ | Set _ |ClassRel _ as v ->  v
+        | Rel _ |TransRel _|MapRel _|TransMap _|Set _ |ClassRel _ as v ->  v
         | Event e -> Set (E.EventSet.singleton e)
         | Pair p -> Rel (E.EventRel.singleton p)
         | V.Empty -> Rel E.EventRel.empty
@@ -2293,8 +2316,12 @@ module Make
 
         let loc_asrel v = match v with
         | Rel r -> Shown.Rel (rt_loc x r)
+        | MapRel m -> Shown.Rel (rt_loc x @@ E.EventRel.M.of_map m)
         | TransRel tr ->
             Shown.Rel (rt_loc x @@ E.EventRel.transitive_closure tr)
+        | TransMap mr ->
+            let r = E.EventRel.M.(transitive_closure mr |> of_map) in
+            Shown.Rel r
         | Set r ->
             if _dbg then eprintf "Found set %s: %a\n%!" x debug_set r;
             Shown.Set r

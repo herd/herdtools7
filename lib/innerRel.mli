@@ -33,6 +33,8 @@ module type S =  sig
     val singleton : (elt0 * elt0) -> map
     val mem : (elt0 * elt0) -> map -> bool
     val succs : elt0 -> map -> Elts.t
+    val domain : map -> Elts.t
+    val codomain : map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
     val filter_src : Elts.t -> map -> map
@@ -45,6 +47,7 @@ module type S =  sig
     (* Unary relations *)
     val transitive_closure : map -> map
     val inverse : map -> map
+    val set_to_rln : Elts.t -> map
     val get_cycle : map ->  elt0 list option
     (* Binary operations on maps *)
     val seq : map -> map -> map
@@ -52,6 +55,10 @@ module type S =  sig
     val unions : map list -> map
     val inter : map -> map -> map
     val diff : map -> map -> map
+    (* Tests *)
+    val is_acyclic : map -> bool
+    val is_irreflexive : map -> bool
+    val is_empty : map -> bool
   end
 
 (* All elements related *)
@@ -89,7 +96,7 @@ module type S =  sig
   val up_from_set : Elts.t -> t -> Elts.t
 
   (* Transitive closure, the fist function returns Map form *)
-  val transitive_to_map : t -> Elts.t M.ME.t
+  val transitive_to_map : t -> M.map
   val transitive_closure : t -> t
   val transitive_closure_filtered : Elts.t -> Elts.t -> t -> t
 

@@ -31,6 +31,8 @@ module type S =  sig
     val singleton : (elt0 * elt0) -> map
     val mem : (elt0 * elt0) -> map -> bool
     val succs : elt0 -> map -> Elts.t
+    val domain : map -> Elts.t
+    val codomain : map -> Elts.t
     val add : elt0 -> elt0 -> map -> map
     val subrel : map -> map -> bool
     val filter_src : Elts.t -> map -> map
@@ -43,6 +45,7 @@ module type S =  sig
     (* Unary relations *)
     val transitive_closure : map -> map
     val inverse : map -> map
+    val set_to_rln : Elts.t -> map
     val get_cycle : map ->  elt0 list option
     (* Binary operations on maps *)
     val seq : map -> map -> map
@@ -50,6 +53,10 @@ module type S =  sig
     val unions : map list -> map
     val inter : map -> map -> map
     val diff : map -> map -> map
+    (* Tests *)
+    val is_acyclic : map -> bool
+    val is_irreflexive : map -> bool
+    val is_empty : map -> bool
   end
 
 (* All elements related *)
@@ -316,6 +323,12 @@ and module Elts = MySet.Make(O) =
       let succs e m = try ME.find e m with Not_found -> Elts.empty
       let op_succs m e = succs e m
 
+      let domain m =
+        ME.fold (fun e _ k -> e::k) m [] |> Elts.of_list
+
+      let codomain m =
+        ME.fold (fun _ es k -> es::k) m [] |> Elts.unions
+
       let add x y m = ME.add x (Elts.add y (succs x m)) m
 
       let exists_path (e1, e2) r =
@@ -543,6 +556,8 @@ and module Elts = MySet.Make(O) =
                es k)
           m ME.empty
 
+      let set_to_rln s = Elts.fold (fun x k -> add x x k) s empty
+
 (* Acyclicity check *)
       exception Cycle of (Elts.elt list)
 
@@ -569,6 +584,32 @@ and module Elts = MySet.Make(O) =
           None
         with Cycle e -> Some (List.rev e)
 
+      let is_acyclic m =
+        match  get_cycle m with
+        | Some _ -> false | None -> true
+
+      let is_irreflexive m =
+        try
+          ME.iter
+            (fun e1 es ->
+               Elts.iter
+                 (fun e2 ->
+                    match O.compare e1 e2 with
+                    | 0 -> raise Exit
+                    | _ -> ())
+                 es)
+            m ;
+          true
+        with Exit -> false
+
+      let is_empty m =
+        try
+          ME.iter
+            (fun _ es ->
+               if not (Elts.is_empty es) then raise Exit)
+            m ;
+          true
+        with Exit -> false
 
 (***************)
 (* Reachablity *)
