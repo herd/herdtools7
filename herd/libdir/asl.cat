@@ -62,7 +62,7 @@ let aarch64_iico_order = asl_fr
 let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_order
 
 (* Tests *)
-acyclic (aarch64_intrinsic | asl_po) as asl_determinism
+acyclic (aarch64_intrinsic | partial_po) as asl_determinism
 
 
 (**************)
