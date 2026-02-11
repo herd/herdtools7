@@ -167,6 +167,7 @@
 
 \newcommand\BackupOriginalRule[1]{}
 \newcommand\BackupOriginalConstant[1]{}
+\newcommand\BackupProse[1]{}
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
@@ -1444,6 +1445,8 @@
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 \newcommand\AbbrevEVar[1]{\overbracket{#1}^{\hyperlink{def-abbrevevar}{\abbrevfont{E\_Var}}}}
+
+\newcommand\TIntWellConstrainedInt[1]{\TInt(\WellConstrained(#1))}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros

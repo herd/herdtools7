@@ -3,6 +3,8 @@
 
 open AST
 
+val ignore_var : string
+
 (** Wraps AST nodes that define identifiers that may appear in type terms and
     expression terms: types, constants, relations, labels, labelled tuples, and
     labelled records. *)
@@ -63,9 +65,19 @@ val is_variadic_operator : t -> string -> bool
     an operator that can take a variable number of arguments and handle them as
     though they were given in a list. *)
 
+val is_quantifying_operator : t -> string -> bool
+
 val is_cond_operator_name : t -> string -> bool
 (** [is_cond_operator_name spec id] returns [true] if [id] corresponds to the
     match_cases operator in [spec], and [false] otherwise. *)
+
+module StringMap : Map.S with type key = string
+
+type term_at_case = string * Term.t
+type type_case_table = term_at_case list StringMap.t
+
+val infer_type_case_table : t -> Relation.t -> type_case_table
+val case_table_vars : type_case_table -> string list
 
 (** A module for expanding rules with cases into multiple rules without cases.
 *)

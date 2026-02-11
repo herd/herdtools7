@@ -159,19 +159,10 @@ operator indices[T](l: list0(T)) -> (indices: list0(N))
   math_macro = \indicesop,
 };
 
-operator assign[T](lhs: T, rhs: T) -> Bool
-{
-  math_macro = \eqdef,
-};
-
-operator reverse_assign[T](lhs: T, rhs: T) -> Bool
-{
-  math_macro = \reverseeqdef,
-};
-
-operator ast_label[T](T) -> ASTLabels
+operator ast_label[T](node: T) -> ASTLabels
 {
   math_macro = \astlabelop,
+  prose_application = "the AST label for {node}",
 };
 
 typedef TStructured = (T_Record(list0(field))) | (T_Exception(list0(field))) | (T_Collection(list0(field)));
@@ -217,27 +208,6 @@ operator sign(q: Q) -> Sign
   math_macro = \signop,
 };
 
-operator equal[T](a: T, b: T) -> (c: Bool)
-{
-  math_macro = \equal,
-  prose_application = "equating {a} to {b} yields {c}",
-};
-
-operator not_equal[T](T, T) -> Bool
-{
-  math_macro = \notequal,
-};
-
-operator if_then_else[T](Bool, T, T) -> T
-{
-  math_macro = \ifthenelseop,
-};
-
-operator some[T](T) -> option(T)
-{
-  math_macro = \some,
-};
-
 ////////////////////////////////////////
 // Set-related definitions
 
@@ -247,11 +217,12 @@ constant empty_list
     math_macro = \emptylist,
 };
 
-operator list_map[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: list0(B))
+operator list_map[A,B](bound_variable: A, elements: list0(A), body: B) -> (new_elements: list0(B))
 {
   "a list where for each binding of {bound_variable} to an element of {elements} in order of appearance,
-   {new_elements} has the corresponding element {mapped_elem}",
+   {new_elements} has the corresponding element {body}",
   math_macro = \listmap,
+  prose_application = "the list consisting of {body} for each {bound_variable} in {elements}",
 };
 
 operator list_filter[T](bound_variable: T, elements: list0(T), condition: Bool) -> (new_elements: list0(T))
@@ -266,9 +237,10 @@ variadic operator make_list[T](list1(T)) -> list1(T)
   math_macro = \makelist,
 };
 
-operator make_singleton_list[T](T) -> list1(T)
+operator make_singleton_list[T](e: T) -> list1(T)
 {
   math_macro = \makelist,
+  prose_application = "the singleton list for {e}",
 };
 
 operator match_singleton_list[T](T) -> list0(T)
@@ -284,9 +256,10 @@ operator range_list(from: Z, to: Z) -> list1(Z)
   custom = true,
 };
 
-operator list_len[T](list0(T)) -> N
+operator list_len[T](l: list0(T)) -> N
 {
   math_macro = \listlen,
+  prose_application = "the length of {l}"
 };
 
 operator same_length[A,B](lst_a: list0(A), lst_b: list0(B)) -> Bool
@@ -445,11 +418,13 @@ operator cardinality[T](powerset(T)) -> N
 operator member[T](x: T, s: powerset(T)) -> Bool
 {
   math_macro = \member,
+  prose_application = "{x} is in {s}",
 };
 
 operator not_member[T](x: T, s: powerset(T)) -> Bool
 {
   math_macro = \notmember,
+  prose_application = "{x} is not in {s}",
 };
 
 operator subseteq[T](A: powerset(T), B: powerset(T)) -> Bool
@@ -513,14 +488,16 @@ operator as_rational(Z) -> Q
   math_macro = \identityop,
 };
 
-operator round_up(Q) -> N
+operator round_up(q: Q) -> N
 {
   math_macro = \roundup,
+  prose_application = "{q} rounded up",
 };
 
-operator round_down(Q) -> N
+operator round_down(q: Q) -> N
 {
   math_macro = \rounddown,
+  prose_application = "{q} rounded down",
 };
 
 operator fraction(a: Z, b: Z) -> Q
@@ -559,6 +536,7 @@ operator negate_bit(b: Bit) -> Bit
   "negation of {b}",
   math_macro = \negatebit,
   custom = true,
+  prose_application = "the bit-negation of {b}",
 };
 
 operator and_bit(a: Bit, b: Bit) -> Bit
@@ -687,9 +665,10 @@ constant unconstrained_integer : ty
   math_macro = \unconstrainedinteger
 };
 
-operator ELint(Z) -> expr
+operator ELint(n: Z) -> expr
 {
   math_macro = \ELInt,
+  prose_application = "(the literal expression) {n}",
 };
 
 operator AbbrevEBinop(op: binop, lhs: expr, rhs: expr) -> expr
@@ -752,17 +731,17 @@ constant CannotBeTransformed { "cannot be transformed", math_macro = \CannotBeTr
 
 ast literal { "literal" } =
     | L_Int(whole_number: Z)
-    { "integer literal for {whole_number}" }
+    { "the integer literal for {whole_number}" }
     | L_Bool(boolean_value: Bool)
-    { "Boolean literal for {boolean_value}" }
+    { "the Boolean literal for {boolean_value}" }
     | L_Real(rational_number: Q)
-    { "rational literal for {rational_number}" }
+    { "the rational literal for {rational_number}" }
     | L_Bitvector(bits: list0(Bit))
-    { "bitvector literal for {bits}" }
+    { "the bitvector literal for {bits}" }
     | L_String(string: Strings)
-    { "string literal for {string}" }
+    { "the string literal for {string}" }
     | L_Label(enumeration_label: Identifier)
-    { "enumeration label {enumeration_label}" }
+    { "the enumeration label {enumeration_label}" }
 ;
 
 constant label_L_Int : ASTLabels { math_macro = \LInt };
@@ -774,11 +753,11 @@ constant label_L_Label : ASTLabels { math_macro = \LLabel };
 
 ast unop { "unary operator" } =
     | BNOT
-    { "Boolean negation operator" }
+    { "the Boolean negation operator" }
     | NEG
-    { "integer negation operator" }
+    { "the integer negation operator" }
     | NOT
-    { "bitvector negation operator" }
+    { "the bitvector negation operator" }
 ;
 
 ast binop { "binary operator" } =
@@ -1006,15 +985,15 @@ render calls = expr(E_Call), stmt(S_Call);
 
 ast ty { "type" } =
     | T_Int(kind: constraint_kind)
-    { "integer type" }
+    { "the integer type with constraint kind: {kind}" }
     | T_Real
-    { "real type" }
+    { "the real type" }
     | T_String
-    { "string type" }
+    { "the string type" }
     | T_Bool
-    { "Boolean type" }
+    { "the Boolean type" }
     | T_Bits(width: expr, bitfields: list0(bitfield))
-    { "bitvector type of bitwidth {width} and bitfields {bitfields}" }
+    { "the bitvector type with {width} as its bitwidth and {bitfields} as its bitfields" }
     | T_Tuple(component_types: list0(ty))
     { "tuple type with component types {component_types}" }
     | T_Array(index: array_index, element_type: ty)
@@ -1081,6 +1060,12 @@ constant label_PendingConstrained : ASTLabels { math_macro = \PendingConstrained
 
 render typed_constraint_kind { lhs_hypertargets = false } = constraint_kind(typed_WellConstrained), precision_loss_indicator(-);
 
+operator TIntWellConstrainedInt(constraints: list1(int_constraint)) -> T_Int(WellConstrained(list1(int_constraint)))
+{
+  math_macro = \TIntWellConstrainedInt,
+  prose_application = "the \wellconstrainedintegertypeterm{} for {constraints}",
+};
+
 ast precision_loss_indicator { "\Proseprecisionlossindicator{}" } =
     | Precision_Full
     { "no precision loss" }
@@ -1092,7 +1077,7 @@ render ty_int_constraint_and_kind = ty(T_Int), int_constraint(-), constraint_kin
 
 ast int_constraint { "integer constraint" } =
     | Constraint_Exact(subexpression: expr)
-    { "exact constraint for the subexpression {subexpression}" }
+    { "the \exactconstraintterm{} for {subexpression}" }
     | Constraint_Range(start_expression: expr, end_expression: expr)
     { "range constraint from the start expression {start_expression} to the end expression {end_expression}" }
 ;
@@ -1497,9 +1482,15 @@ typedef static_envs
     } =
  [
   static_envs_G: global_static_envs
-  { math_macro = \staticenvsG },
+  {
+    "the global static environment",
+    math_macro = \staticenvsG
+  },
   static_envs_L: local_static_envs
-  { math_macro = \staticenvsL },
+  {
+    "the local static environment",
+    math_macro = \staticenvsL
+  },
  ]
   {
       "static environment with global static environment {G} and local static environment {L}",
@@ -1512,7 +1503,10 @@ typedef global_static_envs
         math_macro = \globalstaticenvs,
     } =
     [
-        declared_types: partial Identifier -> (element_type: ty, element_purity: TPurity),
+        declared_types: partial Identifier -> (element_type: ty, element_purity: TPurity)
+        {
+          "the declared types map"
+        },
         constant_values: partial Identifier -> literal,
         global_storage_types: partial Identifier -> (element_type: ty, declared_keyword: global_decl_keyword),
         global_expr_equiv: partial Identifier -> (initializer: expr) { math_macro = \globalstaticenvsexprequiv },
@@ -1549,7 +1543,7 @@ typedef type_error
     } =
     TypeError(error_code: type_error_code)
     {
-        "\typingerrorterm{} with error code {error_code}",
+        "the \typingerrorterm{} ``{error_code}''",
     }
 ;
 
@@ -2066,9 +2060,9 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 } =
   case Int {
     l =: L_Int(n);
-    cs := make_singleton_list(Constraint_Exact(E_Literal(L_Int(n))));
+    cs := make_singleton_list(Constraint_Exact(ELint(n)));
     --
-    T_Int(WellConstrained(cs));
+    TIntWellConstrainedInt(cs);
   }
 
   case Bool {
@@ -2093,7 +2087,7 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
     l =: L_Bitvector(bits);
     n := list_len(bits);
     --
-    T_Bits(E_Literal(L_Int(n)), empty_list);
+    T_Bits(ELint(n), empty_list);
   }
 
   case Label {
@@ -2110,13 +2104,13 @@ typing function annotate_literal(tenv: static_envs, l: literal) -> (t: ty)
 
 typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: powerset(TSideEffect)) | type_error
 {
-    "annotates the expression {e} in the \staticenvironmentterm{} {tenv},
+  "annotates the expression {e} in the \staticenvironmentterm{} {tenv},
    resulting in the following:
    {t} is the type inferred for {e};
    {new_e} is the \typedast{} for {e}, also known as the \emph{annotated expression};
    and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError",
-    prose_application = "annotating {e} in {tenv} yields
-    {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError",
+  prose_application =
+    "annotating {e} in {tenv} yields | {t}, the annotated expression {new_e} and {ses} | \ProseOrTypeError",
 } =
   case ELit {
     e =: E_Literal(v);
@@ -5651,6 +5645,7 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
   }
 ;
 
+render rule binop_literals = binop_literals(-);
 render rule binop_literals_error = binop_literals(error);
 render rule binop_literals_arithmetic = binop_literals(arithmetic);
 render rule binop_literals_comparison_int = binop_literals(comparison_int);
