@@ -276,7 +276,7 @@ module Expr = struct
   (** A term that can be used to form a rule judgment. *)
   type t =
     | Var of string
-    | FieldAccess of { var : string; fields : string list }
+    | FieldAccess of { base : t; field : string }
     | ListIndex of { list_var : string; index : t }
         (** An expression indexing into the list variable [list_var] at position
             [index]. *)
