@@ -1618,13 +1618,9 @@ module Check = struct
         | Var id ->
             vars_of_identifiers spec.id_to_defining_node [ id ]
             |> check_and_add_for_expr mode use_def
-        | FieldAccess { var } -> (
+        | FieldAccess { base } -> (
             match mode with
-            | Use ->
-                let vars_of_id =
-                  vars_of_identifiers spec.id_to_defining_node [ var ]
-                in
-                check_and_add_for_expr Use use_def vars_of_id
+            | Use -> update_use_def_for_expr Use spec use_def base
             | Def ->
                 failwith
                   "A field access is not expected to be used as a \
@@ -2383,19 +2379,15 @@ module Check = struct
         | Var id ->
             let id_type = type_of_id ~context_expr:expr spec type_env id in
             (id_type, type_env)
-        | FieldAccess { var; fields } ->
-            let base_type = type_of_id ~context_expr:expr spec type_env var in
-            let last_field_type =
-              List.fold_left
-                (fun curr_base_type field_id ->
-                  if is_field_accessible spec curr_base_type field_id then
-                    type_term_for_field spec field_id
-                  else
-                    Error.undefined_field_in_record ~context_expr:expr
-                      curr_base_type field_id)
-                base_type fields
+        | FieldAccess { base; field } ->
+            let base_type, type_env = infer_type_in_env spec type_env base in
+            let () =
+              if not (is_field_accessible spec base_type field) then
+                Error.undefined_field_in_record ~context_expr:expr base_type
+                  field
             in
-            (last_field_type, type_env)
+            let field_type = type_term_for_field spec field in
+            (field_type, type_env)
         | ListIndex { list_var; index } ->
             (* list_var should be a list-typed variable and index must be the
                natural number type. The result type is the type of the list elements.
@@ -3088,10 +3080,8 @@ module Check = struct
       | Indexed { body } -> check_expr_in_context body
       | ListIndex { index } -> check_expr_in_context index
       | Var _ -> ()
-      | FieldAccess { fields } ->
-          List.iter
-            (fun id -> if not (is_field id) then Error.non_field id expr)
-            fields
+      | FieldAccess { field } ->
+          if not (is_field field) then Error.non_field field expr
       | UnresolvedApplication _ ->
           failwith "Unexpected unresolved application expression."
 
