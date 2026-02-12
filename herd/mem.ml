@@ -870,43 +870,48 @@ let get_rf_value test read =
             match (wanted_final_values loc, rf) with
             | Some v_wanted, S.Store store ->
                 let v_stored = get_written store in
-                (* Here we can't use add_eq because it is possible that there
-                   is a contradiction, and in that case we want the solver to
-                   find it. *)
-                VC.Assign (v_stored, VC.Atom v_wanted) :: csn
+                if debug_solver then
+                  (* Delay finding the contradiction to the solver *)
+                  VC.Assign (v_stored, VC.Atom v_wanted) :: csn
+                else add_eq v_stored v_wanted csn
             | _ -> csn)
-      | S.Load load ->
-        let v_loaded = get_read load
-        and v_stored = get_rf_value test load rf in
-        try add_eq v_loaded v_stored csn
-        (* The following shouldn't happen, unless mistake in the semantics. *)
-        with Contradiction ->
-          let loc = Misc.as_some (E.location_of load) in
-          let () =
-            Printf.eprintf "Contradiction on reg %s: loaded %s vs. stored %s\n"
-              (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored)
-          in
-          let module PP = Pretty.Make(S) in
-          let () = PP.show_es_rfm test es rfm in
-          assert false
+      | S.Load load -> (
+          let v_loaded = get_read load
+          and v_stored = get_rf_value test load rf in
+          try add_eq v_loaded v_stored csn
+          with Contradiction ->
+            (* This shouldn't happen, unless mistake in the semantics. *)
+            let loc = Misc.as_some (E.location_of load) in
+            let () =
+              Printf.eprintf
+                "Contradiction on reg %s: loaded %s vs. stored %s\n"
+                (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored)
+            in
+            let module PP = Pretty.Make (S) in
+            let () = PP.show_es_rfm test es rfm in
+            assert false)
 
     let do_solve_regs test es csn =
       let wanted_final_values =
         if speedcheck then wanted_final_value test else Fun.const None
       in
-      let rfm, csn =
-        match_reg_events (add_eq_for_rf_reg test wanted_final_values es) es csn
-      in
-      if  debug_solver then prerr_endline "++ Solve  registers" ;
-      match VC.solve csn with
-      | VC.NoSolns ->
-          if debug_solver then pp_nosol "register" test es rfm;
-          None
-      | VC.Maybe (sol, csn) ->
-          Some
-            ( E.simplify_vars_in_event_structure sol es,
-              S.simplify_vars_in_rfmap sol rfm,
-              csn )
+      try
+        let rfm, csn =
+          match_reg_events
+            (add_eq_for_rf_reg test wanted_final_values es)
+            es csn
+        in
+        if debug_solver then prerr_endline "++ Solve  registers";
+        match VC.solve csn with
+        | VC.NoSolns ->
+            if debug_solver then pp_nosol "register" test es rfm;
+            None
+        | VC.Maybe (sol, csn) ->
+            Some
+              ( E.simplify_vars_in_event_structure sol es,
+                S.simplify_vars_in_rfmap sol rfm,
+                csn )
+      with Contradiction -> None
 
     let solve_regs test es csn =
       match do_solve_regs test es csn with
