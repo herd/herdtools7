@@ -295,6 +295,7 @@ module Make
 
       and env =
           { vals  : v Lazy.t StringMap.t;
+            maps :  v Lazy.t StringMap.t; (* Relations in map form *)
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
       and closure =
@@ -330,7 +331,8 @@ module Make
         | Tuple of v list
 
       and env =
-          { vals  : v  Lazy.t StringMap.t;
+          { vals  : v Lazy.t StringMap.t;
+            maps :  v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
       and  closure =
@@ -489,7 +491,33 @@ module Make
     | Ptuple xs -> StringSet.unions (List.map bdvar xs)
 
 
-(* Add values to env *)
+ (* Add values to env *)
+
+    let do_add_val_strict k env =
+      let v =
+        try StringMap.find k env.vals
+        with Not_found -> assert false in
+      match Lazy.force v with
+      | Rel r ->
+          let w = lazy (MapRel (E.EventRel.M.to_map r)) in
+          let maps = StringMap.add k w env.maps in
+          { env with maps; }
+      | TransRel r ->
+          let w = lazy (TransMap (E.EventRel.M.to_map r)) in
+          let maps = StringMap.add k w env.maps in
+          { env with maps; }
+      | MapRel m ->
+          let w = lazy (Rel (E.EventRel.M.of_map m)) in
+          let vals = StringMap.add k w env.vals
+          and maps = StringMap.add k v env.maps in
+          { env with vals; maps; }
+      | TransMap m ->
+          let w = lazy (TransRel (E.EventRel.M.of_map m)) in
+          let vals = StringMap.add k w env.vals
+          and maps = StringMap.add k v env.maps in
+          { env with vals; maps; }
+      | _ -> env
+
     let do_add_val k v env =
       { env with vals = StringMap.add k v env.vals; }
 
@@ -517,7 +545,7 @@ module Make
         add_rec v_as_vs env ks
 
     let env_empty =
-      {vals=StringMap.empty;
+      {vals=StringMap.empty; maps=StringMap.empty;
        enums=StringMap.empty;
        tags=StringMap.empty; }
 
@@ -558,7 +586,16 @@ module Make
       let vals =
         add_vals_once
           (fun v -> lazy (Rel (Lazy.force v))) rels vals in
-      { env_empty with vals; }
+      let maps =
+        List.fold_right
+          (fun (k,r) m ->
+             let v =
+               lazy begin
+                 MapRel (E.EventRel.M.to_map (Lazy.force r))
+               end in
+             StringMap.add k v m)
+          rels StringMap.empty in
+      { env_empty with vals; maps;}
 
 (* Primitive added internally to actual env *)
     let add_prims env bds =
@@ -691,15 +728,22 @@ module Make
       let tags = ValSet.of_list (List.map (fun s -> V.Tag (t,s)) tags) in
       tags
 
-    let find_env {vals=env; _} k =
+    
+    let do_find_env env k =
       Lazy.force begin
         try StringMap.find k env
         with
         | Not_found -> Warn.user_error "unbound var: %s" k
       end
 
-    let find_env_loc loc env k =
-      try  find_env env.EV.env k
+    let find_env map { vals; maps; _; } k =
+      if map then
+        try Lazy.force @@ StringMap.find k maps
+        with Not_found ->  do_find_env vals k
+      else do_find_env vals k
+
+    let find_env_loc map loc env k =
+      try  find_env map env.EV.env k
       with Misc.UserError msg -> error env.EV.silent loc "%s" msg
 
 (* find without forcing lazy's *)
@@ -1372,7 +1416,7 @@ module Make
               error env.EV.silent loc "tag '%s is undefined" s
             end
         | Var (loc,k) ->
-            find_env_loc loc env k
+            find_env_loc map loc env k
         | Fun (loc,xs,body,name,fvs) ->
             Clo (eval_fun false env loc xs body name fvs)
 (* Unary operators *)
@@ -1514,6 +1558,13 @@ module Make
                   | TClassRel ->
                       ClassRel(ClassRel.unions (List.map as_classrel vs))
                   | TRel ->
+                      if
+                        List.exists
+                          (function
+                            | TransRel _|TransMap _ -> true
+                            | _ -> false)
+                          vs
+                      then eprintf "%a: Bingo!\n%!" TxtLoc.pp loc ;
                       if map then
                         MapRel
                           (E.EventRel.M.unions
@@ -1531,7 +1582,7 @@ module Make
                         "cannot perform union on type '%s'" (pp_typ ty)
               with Exit -> Unv
             end
-(*
+(*           
         | Op (_,
               Seq,
               [ Op1(l1, ToId, e1); Op1(l2, Plus, e2); Op1 (l3, ToId, e3) ])
@@ -1561,7 +1612,8 @@ module Make
             let m = transitive_closure m in
             let m = filter_tgt m s2 in
             filter_src s1 m in
-          V.MapRel m
+          if  map then V.MapRel m
+          else Rel (E.EventRel.M.of_map m)
 *)
         | Op (loc,Seq,es) ->
             begin
@@ -1594,7 +1646,7 @@ module Make
                       if map then MapRel (E.EventRel.M.set_to_rln v)
                       else Rel (E.EventRel.set_to_rln v)
                   | Mrel m ->
-                      if true then MapRel m
+                      if map then MapRel m
                       else Rel (E.EventRel.M.of_map m)
                   | Mclass c -> ClassRel c
                 end
@@ -2172,7 +2224,7 @@ module Make
       | ClassRel _ ->  Shown.Rel E.EventRel.empty (* Show nothing *)
       | _ -> assert false
 
-      and eval_proc loc env x = match find_env_loc loc env x with
+      and eval_proc loc env x = match find_env_loc false loc env x with
       | Proc p -> p
       | _ -> Warn.user_error "procedure expected"
 
@@ -2180,7 +2232,7 @@ module Make
       and eval_bds env_bd  =
         let rec do_rec bds = match bds with
         | [] -> env_bd.EV.env
-        | (loc,p,e)::bds ->
+        | (loc,p,e)::bds ->            
             (*
               begin match v with
               | Rel r -> printf "Defining relation %s = {%a}.\n" k debug_rel r
@@ -2283,7 +2335,7 @@ module Make
                 error env_bd.EV.silent loc "illegal recursion on type '%s'"
                   (pp_typ t)
               end in
-            if over then CheckOk env
+            if over then CheckOk (fix_end env bds)
             else fix (k+1) env ws in
 
         let env0 =
@@ -2302,6 +2354,12 @@ module Make
         if O.debug then warn loc "Fix point over" ;
         env
 
+      and fix_end env bds = match bds with
+        | [] -> env
+        | (_,Pvar None,_)::bds -> fix_end env bds
+        | (_,Pvar Some k,_)::bds -> fix_end (do_add_val_strict k env) bds
+        | (_,Ptuple _,_)::_ -> assert false
+                                    
       and fix_step env_bd env bds = match bds with
       | [] -> env,[]
       | (loc,k,e)::bds ->
@@ -2391,7 +2449,7 @@ module Make
 (* This function evaluate all calls to id_fun on all tags in id_tags *)
             let env = from_st st in
             let cat_fun =
-              try find_env_loc TxtLoc.none env id_fun
+              try find_env_loc false TxtLoc.none env id_fun
               with _ -> assert false in
             let cat_tags =
               let cat_tags =
