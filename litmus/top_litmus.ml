@@ -162,6 +162,17 @@ end = struct
       module R = Run_litmus.Make(O)(Tar)(T.D)
       module H = LitmusUtils.Hash(O)
 
+      module OO = struct
+        include OT
+        let arch = A'.arch
+        let sysarch = Archs.get_sysarch A'.arch OT.carch
+        let cached =
+          match threadstyle with
+          | ThreadStyle.Cached -> true
+          | _ -> false
+        end
+      module Obj = ObjUtil.Make(OO)(Tar)
+
       let get_cycle t =
         let info = t.MiscParser.info in
         List.assoc "Cycle" info
@@ -212,7 +223,7 @@ end = struct
                         | Barrier.TimeBase  -> true
                         | _ -> false
                       end  in
-                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang) in
+                    let module S = PreSi.Make(O)(Pseudo)(A')(T)(Out)(Lang)(OO)(Tar) in
                     S.dump in
               dump doc compiled)
             outname
@@ -272,22 +283,12 @@ end = struct
                   { Flags.pac = O.variant Variant_litmus.Pac;
                     Flags.self = O.variant Variant_litmus.Self;
                     Flags.memtag = O.variant Variant_litmus.MemTag } in
+                let () = Obj.mk_libdir in
                 dump src doc compiled;
                 if not OT.is_out then begin
-                    let _utils =
-                      let module OO = struct
-                        include OT
-                        let arch = A'.arch
-                        let sysarch = Archs.get_sysarch A'.arch OT.carch
-                        let cached =
-                          match threadstyle with
-                          | ThreadStyle.Cached -> true
-                          | _ -> false
-                      end in
-                      let module Obj = ObjUtil.Make(OO)(Tar) in
-                      Obj.dump flags in
-                    ()
-                  end ;
+                  let _utils = Obj.dump flags in
+                  ()
+                end ;
                 R.run name out_chan doc allocated src ;
                 Completed
                   { arch = A'.arch; doc; src; fullhash = hash ;

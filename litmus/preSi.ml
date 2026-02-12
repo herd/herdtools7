@@ -63,9 +63,14 @@ module Make
      and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S with type t = A.Out.t)
+    (OO:ObjUtil.Config)
+    (Tar:Tar.S)
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+
+(* ObjUtil (required for copying and pasting files to the relevant directory) *)
+  module Obj = ObjUtil.Make(OO)(Tar)
 
 (* Non valid mode for presi *)
   let () =
@@ -180,6 +185,17 @@ module Make
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
+
+      let arch_dir = 
+        match UCfg.sysarch with
+        | `AArch64 -> "_aarch64/"
+        | `ARM     -> "_arm/"
+        | `MIPS    -> "_mips/"
+        | `PPC     -> "_ppc/"
+        | `X86     -> "_x86/"
+        | `RISCV   -> "_riscv/"
+        | `X86_64  -> "_x86_64/"
+        | _        -> ""
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
       let see_faults test = Misc.consp (U.get_faults test)
@@ -556,8 +572,12 @@ module Make
       let lab_ext = if Cfg.numeric_labels then "" else "_lab"
 
       let dump_barrier_def () =
-        let fname =  sprintf "barrier%s.c" lab_ext in
-        Insert.insert O.o fname
+        let fname =  sprintf "barrier%s" lab_ext in
+        let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c" in
+        let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+        O.o "#include <barrier.h>" ;
+        O.o ""
+        (*Insert.insert O.o fname*)
 
 (**************)
 (* Topologies *)
@@ -685,8 +705,8 @@ module Make
       let data_zero =  SkelUtil.data_symb_id pp_data_zero
 
       let dump_data_indices test =
-        O.f "#define %-25s 0" data_unknown ;
-        O.f "#define %-25s 1" data_zero ;
+        O.f "#define %-25s  0" data_unknown ;
+        O.f "#define %-25s  1" data_zero ;
         (* Define indices for data *)
         List.iteri
           (fun k (a,_) ->
@@ -1919,10 +1939,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
