@@ -202,3 +202,28 @@ let free_body xs e =
     (fun r p0 -> remove_pat0 p0 r)
     (free e)
     xs
+
+
+let rec as_plus_args saw_seq x = function
+  | [] -> [],saw_seq
+  | e::es ->
+      if StringSet.mem x (free e) then
+        match e with
+        | Op (_,Seq,[Var (_,x1);Var (_,x2)]) ->
+            if String.equal x1 x && String.equal x2 x then
+              as_plus_args true x es
+            else raise Exit
+        | _ -> raise Exit
+      else
+        let es,saw_seq = as_plus_args saw_seq x es in
+        e::es,saw_seq
+        
+let as_plus = function
+  | [_,Pvar (Some x),Op (_,Union,es)] ->
+      begin
+        try
+          let es,saw_seq = as_plus_args false x es in
+          if saw_seq then Some (x,es) else None
+        with Exit -> None
+      end
+  | _ -> None
