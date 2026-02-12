@@ -88,7 +88,7 @@ test:: dune-no-missing-file-in-runt
 dune-no-missing-file-in-runt:
 	asllib/tests/check-no-missing-file-in-run.sh ./
 
-test:: test.aarch64assumptions
+test-all:: test.aarch64assumptions
 test-local:: test.aarch64assumptions
 test.aarch64assumptions:
 	@ echo
