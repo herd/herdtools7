@@ -178,7 +178,7 @@ exn=TRUE
 \BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
-    \env \eqname (\tenv, \denv)\\
+    \env \reverseeqdef (\tenv, \denv)\\
     \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL:\denv.\dynamicenvsL[\name \mapsto \bot]\})
   }
   {
@@ -283,7 +283,7 @@ Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
 \begin{mathpar}
 \inferrule[non\_empty]{
   \vvs = [\vv] \concat \vvs'\\
-  \vv\eqname\nvbitvector(\bv)\\
+  \vv\reverseeqdef\nvbitvector(\bv)\\
   \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
   \vres \eqdef \bv \concat \bv'
 }{
@@ -459,7 +459,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
   \commonprefixline\hva\\\\
-  \bits \eqname \bv[n] ... \bv[0]\\
+  \bits \reverseeqdef \bv[n] ... \bv[0]\\
   \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\hva\\\\
   \commonsuffixline\hva\\\\
   % The following premise is essentially Bitvector.extract_slice
@@ -513,14 +513,14 @@ See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobi
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \src \eqname \nvbitvector(\vs_m \ldots \vs_0)\\
-  \dst \eqname \nvbitvector(\vd_n \ldots \vd_0)\\
+  \src \reverseeqdef \nvbitvector(\vs_m \ldots \vs_0)\\
+  \dst \reverseeqdef \nvbitvector(\vd_n \ldots \vd_0)\\
   \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
   \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
   \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
   \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
   \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
-  \positions \eqname I_m \ldots I_0 \\
+  \positions \reverseeqdef I_m \ldots I_0 \\
   {\bitfunc = \lambda i \in n..0.\left\{ \begin{array}{ll}
     \vs_j & \exists j\in m..0.\ i = I_j\\
     \vd_i & \text{otherwise}
@@ -656,7 +656,7 @@ involves the following premise:
 \begin{mathpar}
 \inferrule[ok]{
   0 \leq \vi < \listlen{\vvec}\\
-  \vvec \eqname \vu_{0..k}\\
+  \vvec \reverseeqdef \vu_{0..k}\\
   \vres = \vw_{0..k}\\
   \vv = \vw_{\vi} \\
   j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
@@ -695,7 +695,7 @@ In \listingref{GetField}, there are the following examples of reading a record f
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \record \eqname \NVRecord(\fieldmap)
+  \record \reverseeqdef \NVRecord(\fieldmap)
 }{
   \getfield(\name, \record) \evalarrow \fieldmap(\name)
 }
@@ -746,7 +746,7 @@ The typechecker ensures that the field $\name$ exists in $\record$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \record \eqname \NVRecord(\fieldmap)\\
+  \record \reverseeqdef \NVRecord(\fieldmap)\\
   \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
 }{
   \setfield(\name, \vv, \record) \evalarrow \NVRecord(\fieldmapp)
@@ -778,7 +778,7 @@ as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 \begin{mathpar}
 \inferrule{
   \vg \eqdef \WriteEffect(\name)\\
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\name\mapsto \vv]\})
 }{
   \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)
@@ -805,7 +805,7 @@ See \ExampleRef{Evaluating Local Declarations}.
 \BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
-    \vm \eqname (\vv, \vg)\\
+    \vm \reverseeqdef (\vv, \vg)\\
     \declarelocalidentifier(\env, \vx, \vv) \evalarrow (\newenv, \vgone)\\
     \newg \eqdef \ordered{\vg}{\asldata}{\vgone}
   }

@@ -215,10 +215,10 @@ That is, no \dynamicerrorterm{} occurs.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\hva\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
+  \findcatcher(\tenv, \vvty, \catchers) \reverseeqdef \some{ (\None, \Ignore, \vs) }\hva\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
@@ -263,10 +263,10 @@ caught MyExceptionType with msg=42
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
+  \findcatcher(\tenv, \vvty, \catchers) \reverseeqdef \some{ (\some{\name}, \Ignore, \vs) }\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\hva\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
   \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
@@ -312,9 +312,9 @@ Otherwise
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
@@ -348,8 +348,8 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None
 }{
   \evalcatchers(\env, \catchers, \None, \sm) \evalarrow \sm
@@ -437,7 +437,7 @@ resulting in a \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule[match]{
   \catchers = [\vc] \concat \catchersone\\
-  \vc \eqname (\nameopt, \ety, \vs) \\
+  \vc \reverseeqdef (\nameopt, \ety, \vs) \\
   \subtypes(\tenv, \vvty, \ety)
 }{
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow \some{\vc}
@@ -447,7 +447,7 @@ resulting in a \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule[no\_match]{
   \catchers = [\vc] \concat \catchersone\\
-  \vc \eqname (\nameopt, \ety, \vs) \\
+  \vc \reverseeqdef (\nameopt, \ety, \vs) \\
   \neg\subtypes(\tenv, \vvty, \ety)\\
   d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
 }{

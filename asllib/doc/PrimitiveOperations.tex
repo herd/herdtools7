@@ -588,14 +588,14 @@ not_bits: NOT '11 01' = 0x2
 }
 \hva\and
 \inferrule[not\_bits.empty]{
-  \bits \eqname \emptylist\\
+  \bits \reverseeqdef \emptylist\\
   c \eqdef \emptylist
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \hva\and
 \inferrule[not\_bits.non\_empty]{
-  \bits \eqname \vb_{k..0}\\
+  \bits \reverseeqdef \vb_{k..0}\\
   c \eqdef [i=k..0: (1-\vb_\vi)]
 }{
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}

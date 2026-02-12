@@ -323,8 +323,8 @@ is defined as follows:
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \\
   \typeequal(\tenv, \vtys, \vtyt) \typearrow \True \terminateas \False\hva\\
   \booltrans(\astlabel(\vlengths) = \astlabel(\vlengtht)) \booltransarrow \True \terminateas \False\\
-  \vlengths \eqname \ArrayLengthExpr(\vlengthexprs)\hva\\
-  \vlengtht \eqname \ArrayLengthExpr(\vlengthexprt)\\
+  \vlengths \reverseeqdef \ArrayLengthExpr(\vlengthexprs)\hva\\
+  \vlengtht \reverseeqdef \ArrayLengthExpr(\vlengthexprt)\\
   \exprequal(\tenv, \vlengthexprs, \vlengthexprt) \typearrow \vb
 }{
   \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb
@@ -337,8 +337,8 @@ is defined as follows:
   \makeanonymous(\tenv, \vt) \typearrow \TArray(\vlengtht,\vtyt) \hva\\
   \typeequal(\tenv, \vtys, \vtyt) \typearrow \True\\
   \booltrans(\astlabel(\vlengths) = \astlabel(\vlengtht)) \typearrow \True \terminateas \False \hva\\
-  \vlengths \eqname \ArrayLengthEnum(\vnames, \Ignore)\\
-  \vlengtht \eqname \ArrayLengthEnum(\vnamet, \Ignore)\\
+  \vlengths \reverseeqdef \ArrayLengthEnum(\vnames, \Ignore)\\
+  \vlengtht \reverseeqdef \ArrayLengthEnum(\vnamet, \Ignore)\\
   \vb \eqdef \vnames = \vnamet
 }{
   \subtypesatisfies(\tenv, \vt, \vs) \typearrow \vb

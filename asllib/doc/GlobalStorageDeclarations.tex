@@ -419,7 +419,7 @@ of an ill-typed global storage declaration due to precision loss.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \gsd \eqname \{
+  \gsd \reverseeqdef \{
     \GDkeyword : \keyword,
     \GDinitialvalue : \initialvalue,
     \GDty : \tyopt,
@@ -455,7 +455,7 @@ of an ill-typed global storage declaration due to precision loss.
 }\hva\\
 \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \genvone \OrTypeError\\\\
 \withemptylocal(\genvone) \typearrow \tenvone\hva\\\\
-\typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\hva\\
+\typedinitialvalue \reverseeqdef (\Ignore, \initialvaluep, \vsesinitialvalue)\hva\\
 {
     \updateglobalstorage\left(
       \begin{array}{l}
@@ -711,7 +711,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[constant]{
-  \typedinitialvalue \eqname (\Ignore, \initialvaluep, \vsesinitialvalue)\\
+  \typedinitialvalue \reverseeqdef (\Ignore, \initialvaluep, \vsesinitialvalue)\\
   \staticeval(\tenv, \initialvaluep) \typearrow \vv\hva\\
   \addglobalconstant(\tenv.\staticenvsG, \name, \vv) \typearrow G'\\
   \newtenv \eqdef \{\staticenvsG: G', \staticenvsL: \tenv.\staticenvsL\}
@@ -767,7 +767,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \begin{mathpar}
 \inferrule[config]{
   {
-  \typedinitialvalue \eqname \left(
+  \typedinitialvalue \reverseeqdef \left(
     \begin{array}{r}
     \initialvaluetype,\\
     \initialvaluep,\\
@@ -917,8 +917,8 @@ before having the chance to evaluate \verb|main|.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \vd \eqname \DGlobalStorage(\{ \GDinitialvalue:\some{\ve}, \GDname:\name, \ldots \})\\
-  \envm \eqname (\env, \vgone)\hva\\
+  \vd \reverseeqdef \DGlobalStorage(\{ \GDinitialvalue:\some{\ve}, \GDname:\name, \ldots \})\\
+  \envm \reverseeqdef (\env, \vgone)\hva\\
   \evalexpr( \env, \ve) \evalarrow \ResultExpr((\vv,\vgtwo), \envtwo) \OrAbnormal\hva\\\\
   \declareglobal(\name, \vv, \envtwo) \evalarrow \envthree\\
   \evalglobals(\vdecls', (\envthree, \ordered{\vgone}{\aslpo}{ \vgtwo })) \evalarrow C
@@ -951,7 +951,7 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG.\storage[\name\mapsto \vv], \dynamicenvsL: \denv.\dynamicenvsL\})
 }{
   \declareglobal(\name, \vv, \env) \evalarrow \newenv

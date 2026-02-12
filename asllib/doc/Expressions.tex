@@ -295,7 +295,7 @@ applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
-  \env \eqname (\Ignore, \denv)\\
+  \env \reverseeqdef (\Ignore, \denv)\\
   \vx \in \dom(\denv.\dynamicenvsL)
 }{
   \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsL(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
@@ -304,7 +304,7 @@ applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 
 \begin{mathpar}
 \inferrule[global]{
-  \env \eqname (\Ignore, \denv)\\
+  \env \reverseeqdef (\Ignore, \denv)\\
   \vx \in \dom(\denv.\dynamicenvsG.\storage)
 }{
   \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsG.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
@@ -770,8 +770,8 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \hva\\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
-  \vmone \eqname (\vvone, \vgone) \\
-  \vmtwo \eqname (\vvtwo, \vgtwo) \\
+  \vmone \reverseeqdef (\vvone, \vgone) \\
+  \vmtwo \reverseeqdef (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -978,7 +978,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
-  \mcond \eqname (\nvbool(\vb), \vgone)\\
+  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
   \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
   \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
@@ -1145,7 +1145,7 @@ and the values they evaluate to, as assertions on the values assigned.
   \end{array}
   }\hva\\\\
   \commonprefixline\hva\\\\
-  \vms \eqname [(\vv, \vg)]
+  \vms \reverseeqdef [(\vv, \vg)]
 }{
   \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
 }
@@ -1159,7 +1159,7 @@ and the values they evaluate to, as assertions on the values assigned.
   \end{array}
   }\hva\\\\
   \commonprefixline\hva\\\\
-  \vms \eqname [i=1..k: (\vv_i, \vg_i)]\\
+  \vms \reverseeqdef [i=1..k: (\vv_i, \vg_i)]\\
   \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
   \vv \eqdef \NVVector(\vv_{1..k})
 }{
@@ -1317,9 +1317,9 @@ resulting bitvector --- and the execution graph $\vgone$;
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\hva\\\\
-  \mbv \eqname (\vbv,\vgone) \\
+  \mbv \reverseeqdef (\vbv,\vgone) \\
   \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
-  \mpositions \eqname (\positions, \vgtwo) \hva\\
+  \mpositions \reverseeqdef (\positions, \vgtwo) \hva\\
   \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -1397,7 +1397,7 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
   \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\hva\\\\
   \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \tanonbase \eqname \TArray(\size, \telem)\\
+  \tanonbase \reverseeqdef \TArray(\size, \telem)\\
   {
     \begin{array}{r}
   \annotategetarray(\tenv, (\size, \telem), (\ebasep, \vsesbase, \eindex)) \typearrow \\ (\vt, \newe, \vses)
@@ -1485,9 +1485,9 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \inferrule{
   \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
   \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
-  \marray \eqname (\varray, \vgone)\\
-  \mindex \eqname (\vindex, \vgtwo)\\
-  \vindex \eqname \nvint(\vi)\\
+  \marray \reverseeqdef (\varray, \vgone)\\
+  \mindex \reverseeqdef (\vindex, \vgtwo)\\
+  \vindex \reverseeqdef \nvint(\vi)\\
   \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
@@ -1526,9 +1526,9 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
   \ve = \EGetEnumArray(\earray, \eindex)\\
   \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\hva\\
   \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
-  \marray \eqname (\varray, \vgone)\\
-  \mindex \eqname (\vindex, \vgtwo)\\
-  \vindex \eqname \nvlabel(\vl)\hva\\
+  \marray \reverseeqdef (\varray, \vgone)\\
+  \mindex \reverseeqdef (\vindex, \vgtwo)\\
+  \vindex \reverseeqdef \nvlabel(\vl)\hva\\
   \getfield(\vl, \varray) \evalarrow \vv\\
   \vg \eqdef \vgone \parallelcomp \vgtwo\\
 }{
@@ -1775,7 +1775,7 @@ which includes the type annotation \verb|bits(4)|.
   }\hva\\\\
   \vethree \eqdef \ESlice(\vetwo, \slices)\\
   \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\hva\\\\
-  \vtefour \eqname \TBits(\vwidth, \Ignore)\\
+  \vtefour \reverseeqdef \TBits(\vwidth, \Ignore)\\
   \vt \eqdef \TBits(\vwidth, \bitfieldsp)
 }{
   \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
@@ -2313,7 +2313,7 @@ All of the collection field expressions in
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \env \eqname (\Ignore, \denv)\\
+  \env \reverseeqdef (\Ignore, \denv)\\
   \vbase \in \dom(\denv.\dynamicenvsG.\storage) \\
   \vv \eqdef \denv.\dynamicenvsG.\storage(\vbase) \\
   \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \hva\\
@@ -2611,7 +2611,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \inferrule[okay]{
   \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
   \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynErrorDiverging\hva\\\\
-  \vb \eqname \nvbool(\True)\\
+  \vb \reverseeqdef \nvbool(\True)\\
   \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
   \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -2620,7 +2620,7 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
 \inferrule[error]{
   \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
   \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
-  \vb \eqname \nvbool(\False)
+  \vb \reverseeqdef \nvbool(\False)
 }{
   \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
 }
@@ -2715,7 +2715,7 @@ of the type \verb|integer{4, 5, 6}| fails.
 
 \begin{mathpar}
 \inferrule[int\_wellconstrained]{
-  \vv \eqname \nvint(n)\\
+  \vv \reverseeqdef \nvint(n)\\
   i=1..k: \isconstraintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \bigvee_{i=1}^k \vb_i\\
   \vg \eqdef \parallel_{i=1}^k \vg_i
@@ -3197,7 +3197,7 @@ and an example (in comment) where the same field is initialized twice, which is 
   \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\hva\\\\
   \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\hva\\\\
-  \ttyanon \eqname L(\fieldtypes)\\
+  \ttyanon \reverseeqdef L(\fieldtypes)\\
   \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
   \names \eqdef \fieldnames(\fieldtypes)\\
   \techeck(\{\names\} = \{\initializedfields\}, \BadField) \typearrow \True \OrTypeError\hva\\\\
@@ -3272,11 +3272,11 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \efields \eqname [i=1..k: (\id_i, \ve_i)]\\
+  \efields \reverseeqdef [i=1..k: (\id_i, \ve_i)]\\
   \names \eqdef \id_{1..k} \\
   \fields \eqdef \ve_{1..k} \hva\\
   \evalexprlist(\env, \fields) \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
-  \vvfields \eqname \vv_{1..k}\\
+  \vvfields \reverseeqdef \vv_{1..k}\\
   \vv \eqdef \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\})
 }{
   \evalexpr(\env, \ERecord(\Ignore, \efields)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
@@ -3458,7 +3458,7 @@ which evaluates to
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\hva\\\\
   \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\hva\\\\
-  \vlength \eqname \nvint(\nlength)\\
+  \vlength \reverseeqdef \nvint(\nlength)\\
   \decheck(\nlength \geq 0, \NegativeArrayLength) \evalarrow \True \OrDynError\hva\\\\
   \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
   \vg \eqdef \vgone \parallelcomp \vgtwo

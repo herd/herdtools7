@@ -639,7 +639,7 @@ since immutable local storage elements require an initializing expression.
 \inferrule[none]{
   \vs = \SDecl(\LDKVar, \ldi, \tyopt, \None)\\
   \techeck(\tyopt \neq \None, \TypeErrorVal{\BadDeclaration}) \typearrow \True \OrTypeError \\
-  \tyopt \eqname \some{\vt} \\
+  \tyopt \reverseeqdef \some{\vt} \\
   \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\hva\\\\
   \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\hva\\\\
   \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
@@ -1046,7 +1046,7 @@ if they can be copied from the type annotation in declaration statements.
 \begin{mathpar}
 \inferrule{
   \becheck(\vt = \TBits(\Ignore, \Ignore), \ParseError) \typearrow \True \;\terminateas \ParseErrorConfig \\
-  \vt \eqname \TBits(\ve, \Ignore) \\
+  \vt \reverseeqdef \TBits(\ve, \Ignore) \\
   \vcallp \eqdef \vcall[\callparams\mapsto [\ve] \concat \vcall.\callparams ]
 }{
   \desugarelidedparameter(\ldk, \ldi, \vt, \vcall)
@@ -1504,7 +1504,7 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\hva\\\\
-  \vv \eqname \nvbool(\vb)\\
+  \vv \reverseeqdef \nvbool(\vb)\\
   \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
   \evalblock(\envone, \vsp) \evalarrow C \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
@@ -1778,7 +1778,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifier \text{ is fresh}\hva\\
-  \vdeclx \eqname \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
+  \vdeclx \reverseeqdef \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
   \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
@@ -1836,7 +1836,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 
 \begin{mathpar}
 \inferrule{
-  \vcase \eqname \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
+  \vcase \reverseeqdef \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
   \vepattern \eqdef \EPattern(\vezero, \vpattern)\hva\\
   {
   \vcond \eqdef \ifthenelseop[V]{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
@@ -1971,7 +1971,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \begin{mathpar}
 \inferrule[okay]{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\hva\\\\
-  \vv \eqname \nvbool(\True)
+  \vv \reverseeqdef \nvbool(\True)
 }{
   \evalstmt(\env, \SAssert(\ve)) \evalarrow \Continuing(\newg, \newenv)
 }
@@ -1980,7 +1980,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \begin{mathpar}
   \inferrule[error]{
   \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
-  \vv \eqname \nvbool(\False)
+  \vv \reverseeqdef \nvbool(\False)
 }{
   \evalstmt(\env, \SAssert(\ve)) \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
 }
@@ -2256,7 +2256,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 \begin{mathpar}
 \inferrule[exit]{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\hva\\\\
-  \condm \eqname (\nvbool(\vb), \newg)\\
+  \condm \reverseeqdef (\nvbool(\vb), \newg)\\
   \vb \neq \iswhile
 }{
   \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
@@ -2266,7 +2266,7 @@ The negation of the condition is used to decide whether to continue the loop ite
 \begin{mathpar}
 \inferrule[continue]{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\hva\\\\
-  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\hva\\\\
   \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\hva\\\\
@@ -3033,7 +3033,7 @@ Advancing the loop counter one step towards the end of its range is achieved via
   \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
   \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
   \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
@@ -3091,7 +3091,7 @@ shows examples of well-typed \throwstatementsterm.
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\hva\\\\
   \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\hva\\\\
-  \vte \eqname \TNamed(\exnname)\\
+  \vte \reverseeqdef \TNamed(\exnname)\\
   \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
 }{
   \annotatestmt(\tenv, \overname{\SThrow(\ve)}{\vs}) \typearrow
@@ -3825,7 +3825,7 @@ $\LLabel(s)$      & $s$. \\
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \env \eqname (\tenv, \denv, \vconsolestream)\\
+  \env \reverseeqdef (\tenv, \denv, \vconsolestream)\\
   \newenv \eqdef (\tenv, \denv, \vconsolestream \concat \literaltostring(\vl))
 }{
   \outputtoconsole(\env, \NVLiteral(\vl)) \evalarrow (\newenv)

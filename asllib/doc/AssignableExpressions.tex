@@ -44,7 +44,7 @@ to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
 \paragraph{A Convention for Assignable Expressions Semantics Rules:}
 In this chapter, variables containing $\vm$ range over $\nativevalue\cartimes\XGraphs$
 while variables in which $\vm$ is replaced with $\vv$ correspond to their value component.
-For example, $\rmarray\eqname(\rvarray,\vgtwo)$ and $\mindex\eqname(\vindex, \vgone)$.
+For example, $\rmarray\reverseeqdef(\rvarray,\vgtwo)$ and $\mindex\reverseeqdef(\vindex, \vgone)$.
 
 \paragraph{Viewing Assignable Expressions as Right-hand-side Expressions:}
 Some of the typing rules and semantics rules require viewing \assignableexpressions\
@@ -698,7 +698,7 @@ In \listingref{semantics-leglobalvar},
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \vx \in \dom(\denv.\dynamicenvsL)\\
   \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vx \mapsto \vv]\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
@@ -709,7 +709,7 @@ In \listingref{semantics-leglobalvar},
 
 \begin{mathpar}
 \inferrule[global]{
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \vx \in \dom(\denv.\dynamicenvsG.\storage)\\
   \newenv \eqdef(\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG.\storage[\vx \mapsto \vv], \dynamicenvsL: \denv.\dynamicenvsL\})\\
   \newg \eqdef \ordered{\vg}{\asldata}{\WriteEffect(\vx)}
@@ -754,14 +754,14 @@ In \listingref{semantics-ledestructuring}, the multi-assignment
 \begin{mathpar}
 \inferrule{
   \vle = \LEDestructuring(\les)\\
-  \les \eqname [\ve_{1..k}]\\
+  \les \reverseeqdef [\ve_{1..k}]\\
   \techeck(\astlabel(\vte) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \vte \eqname \TTuple(\tys)\\
+  \vte \reverseeqdef \TTuple(\tys)\\
   \equallength(\les, \tys) \typearrow \vb\\
   \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \tys \eqname [\vt_{1..k}]\\
+  \tys \reverseeqdef [\vt_{1..k}]\\
   i=1..k: \annotatelexpr(\tenv, \ve_i,\vt_i) \typearrow (\vep_i, \vxs_i) \OrTypeError\hva\\\\
-  \lesp \eqname [i=1..k: \vep_i]\\
+  \lesp \reverseeqdef [i=1..k: \vep_i]\\
   \vses \eqdef \bigcup_{i=1..k}  \vxs_i
 }{
   \annotatelexpr(\tenv, \vle, \vte) \typearrow
@@ -796,7 +796,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \vlelist \eqname [\vle_{1..n}]\\
+  \vlelist \reverseeqdef [\vle_{1..n}]\\
   i=1..n: \getindex(i, \vv) \evalarrow \vv_i\\
   \nmonads \eqdef [i=1..n: (\vv_i, \vg)]\\
   \evalmultiassignment(\env, \vlelist, \nmonads) \evalarrow C
@@ -904,7 +904,7 @@ are well-typed.
   \annotateexpr(\tenv, \torexpr(\ebase)) \typearrow (\tbase, \Ignore, \Ignore) \OrTypeError\hva\\\\
   \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\hva\\\\
   \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \tanonbase \eqname \TArray(\size, \telem)\\
+  \tanonbase \reverseeqdef \TArray(\size, \telem)\\
   \annotatelexpr(\tenv, \ebase, \tbase) \typearrow (\ebasep, \vsesbase) \OrTypeError\hva\\\\
   {
   \begin{array}{r}
@@ -1003,9 +1003,9 @@ of \texttt{my\_array} to the value \texttt{53}.
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
   \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
-  \mindex \eqname (\vindex, \vgone)\\
-  \vindex \eqname \nvint(\vi)\\
-  \rmarray \eqname (\rvarray, \vgtwo)\\
+  \mindex \reverseeqdef (\vindex, \vgone)\\
+  \vindex \reverseeqdef \nvint(\vi)\\
+  \rmarray \reverseeqdef (\rvarray, \vgtwo)\\
   \setindex(\vi, \vv, \rvarray) \evalarrow \vvone \OrDynError\hva\\\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr(\envtwo, \rearray, \vmone) \evalarrow C
@@ -1054,9 +1054,9 @@ cell of
 \inferrule{
   \evalexpr(\env, \torexpr(\rearray)) \evalarrow \ResultExpr(\rmarray, \envone) \OrAbnormal\\
   \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \envtwo) \OrAbnormal\hva\\
-  \mindex \eqname (\vindex, \vgone)\\
-  \vindex \eqname \nvlabel(\vl)\\
-  \rmarray \eqname (\rvarray, \vgtwo)\hva\\
+  \mindex \reverseeqdef (\vindex, \vgone)\\
+  \vindex \reverseeqdef \nvlabel(\vl)\\
+  \rmarray \reverseeqdef (\rvarray, \vgtwo)\hva\\
   \setfield(\vl, \vv, \rvarray) \evalarrow \vvone\\
   \vmone \eqdef (\vvone, \vgone \parallelcomp \vgtwo)\\
   \evallexpr(\envtwo, \rearray, \vmone) \evalarrow C
@@ -1188,8 +1188,8 @@ in the environment where \texttt{x} is bound to $\nvbitvector(11111111)$.
 \inferrule{
   \evalexpr(\env, \torexpr(\ebv)) \evalarrow \ResultExpr(\mbv,\envone) \OrAbnormal\\
   \evalslices(\envone, \slices) \evalarrow \ResultSlices(\msliceranges, \envtwo) \OrAbnormal\hva\\
-  \msliceranges \eqname (\sliceranges, \vgone)\\
-  \mbv \eqname (\vbv, \vgtwo)\hva\\\\
+  \msliceranges \reverseeqdef (\sliceranges, \vgone)\\
+  \mbv \reverseeqdef (\vbv, \vgtwo)\hva\\\\
   \checknonoverlappingslices(\sliceranges) \evalarrow \True \OrDynError\\\\
   \writetobitvector(\sliceranges, \vv, \vbv) \evalarrow \vvone \OrDynError\hva\\\\
   \vgthree \eqdef \vgone \parallelcomp \vgtwo\\
@@ -1315,7 +1315,7 @@ are well-typed.
   L \in \{\TException, \TRecord\}\\
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
-  \tyopt \eqname \some{\vt}\\
+  \tyopt \reverseeqdef \some{\vt}\\
   \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \newle \eqdef \LESetField(\vletwo, \vfield)
 }{
@@ -1362,7 +1362,7 @@ All of the collection field assignable expressions in
   \makeanonymous(\tenv, \vtleone) \typearrow \TCollection(\fields) \OrTypeError\hva\\\\
   \assocopt{\fields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
-  \tyopt \eqname \some{\vt}\\
+  \tyopt \reverseeqdef \some{\vt}\\
   \checktypesatisfies(\tenv, \vte, \vt) \typearrow \True \OrTypeError\hva\\\\
   \newle \eqdef \LESetCollectionFields(\vbase, [\vfield])
 }{
@@ -1476,7 +1476,7 @@ in the environment where \verb|my_record| is bound to \\
 \begin{mathpar}
 \inferrule{
     \evalexpr(\env, \torexpr(\rerecord)) \evalarrow \ResultExpr(\rmrecord, \envone) \OrAbnormal\hva\\
-    \rmrecord \eqname (\rvrecord, \vgone)\\
+    \rmrecord \reverseeqdef (\rvrecord, \vgone)\\
     \setfield(\fieldname, \vv, \rvrecord) \evalarrow \vvone\\
     \vmone \eqdef (\vvone, \vg \parallelcomp \vgone)\\
     \evallexpr(\env1, \rerecord, \vmone) \evalarrow C
@@ -1685,7 +1685,7 @@ and $(\overtext{0}{\start}, \overtext{1}{\vwidth})$ for \verb|status|.
   \foldbitvectorfields(\tenv, \vbasefields, \vlefieldsone) \typearrow (\vstart, \vslicesone)\OrTypeError\hva\\\\
   \assocopt{\vbasefields}{\vfield} \typearrow \tyopt\\
   \techeck(\tyopt \neq \None, \BadField) \typearrow \True \OrTypeError\hva\\\\
-  \tyoptp \eqname \some{\vtfield}\\
+  \tyoptp \reverseeqdef \some{\vtfield}\\
   \getbitvectorconstwidth(\tenv, \vtfield) \typearrow \vfieldwidth \OrTypeError\hva\\\\
 }{
   {
@@ -1838,7 +1838,7 @@ All of the collection field assignable expressions in
 \begin{mathpar}
 \inferrule{
   \vle = \LESetCollectionFields(\vbase, \fieldnames, \vslices)\\
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \vbase \in \dom(\denv.\dynamicenvsG)\hva\\
   \record \eqdef \denv.\dynamicenvsG[\vbase]\\
   \assignbitvectorfields(\vv, \record, \fieldnames, \vslices) \evalarrow \recordone \OrDynError\hva\\\\

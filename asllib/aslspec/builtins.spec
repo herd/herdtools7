@@ -78,7 +78,7 @@ operator assign[T](lhs: T, rhs: T) -> Bool
 
 operator reverse_assign[T](lhs: T, rhs: T) -> Bool
 {
-  math_macro = \eqname,
+  math_macro = \reverseeqdef,
 };
 
 operator equal[T](a: T, b: T) -> (c: Bool)

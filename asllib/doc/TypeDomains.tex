@@ -304,7 +304,7 @@ The notation $\denv.\dynamicenvsL(\id)$ denotes the \nativevalueterm{} associate
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{
-  \env \eqname (\Ignore, \denv)\\
+  \env \reverseeqdef (\Ignore, \denv)\\
   \denv.\dynamicenvsL(\id) = \nvint(n)
 }{
   \dynamicdomain(\env, \overname{\TInt(\Parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
@@ -382,7 +382,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_enum\_array]{
-  \env \eqname (\tenv, \Ignore)\\
+  \env \reverseeqdef (\tenv, \Ignore)\\
   \tenv.\staticenvsG.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
@@ -407,7 +407,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_named]{
-  \env \eqname (\tenv, \Ignore)\\
+  \env \reverseeqdef (\tenv, \Ignore)\\
   \tenv.\staticenvsG.\declaredtypes(\id)=\tty
 }{
   \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}

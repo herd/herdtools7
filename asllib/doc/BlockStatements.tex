@@ -117,11 +117,11 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[returning]{
-  \env \eqname (\tenv,\denv)\\
+  \env \reverseeqdef (\tenv,\denv)\\
   \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
   \commonprefixline \hva\\\\
   \vres = \Returning((\vvs, \newg), \envret) \\
-  \envret \eqname (\tenvone, \denvone) \\
+  \envret \reverseeqdef (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
 }{
   \evalblock(\env, \stm) \evalarrow \Returning((\vvs, \newg), \newenv)
@@ -130,11 +130,11 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 
 \begin{mathpar}
 \inferrule[continuing]{
-  \env \eqname (\tenv,\denv)\\
+  \env \reverseeqdef (\tenv,\denv)\\
   \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
   \commonprefixline \hva\\\\
   \vres = \Continuing(\newg, \envcont) \\
-  \envcont \eqname (\tenvone, \denvone) \\
+  \envcont \reverseeqdef (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
 }{
   \evalblock(\env, \stm) \evalarrow \Continuing(\newg, \newenv)
@@ -143,11 +143,11 @@ The $\poplocalscope$ function is used below to effectively discard the bindings 
 
 \begin{mathpar}
 \inferrule[throwing]{
-  \env \eqname (\tenv,\denv)\\
+  \env \reverseeqdef (\tenv,\denv)\\
   \evalstmt(\env, \stm) \evalarrow \vres \OrDynErrorDiverging\hva\\\\
   \commonprefixline \hva\\\\
   \vres = \Throwing(\vv,\vt,\newg, \envthrow) \\
-  \envthrow \eqname (\tenvone, \denvone) \\
+  \envthrow \reverseeqdef (\tenvone, \denvone) \\
   \newenv \eqdef (\tenv, \poplocalscope(\denv,\denvone))
 }{
   \evalblock(\env, \stm) \evalarrow \Throwing(\vv,\vt,\newg, \newenv)

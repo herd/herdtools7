@@ -214,8 +214,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TEnum\\
   \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
-  \vtstruct \eqname \TEnum(\vlione)\\
-  \vtestruct \eqname \TEnum(\vlitwo)\hva\\
+  \vtstruct \reverseeqdef \TEnum(\vlione)\\
+  \vtestruct \reverseeqdef \TEnum(\vlitwo)\hva\\
   \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
@@ -760,7 +760,7 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
   \vp = \PatternTuple(\vli)\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
   \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \vtstruct \eqname \TTuple(\vts)\\
+  \vtstruct \reverseeqdef \TTuple(\vts)\\
   \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\hva\\\\
   \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
@@ -932,7 +932,7 @@ any pattern in \verb|{3, 4}|.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \vps \eqname \vp_{1..k}\\
+  \vps \reverseeqdef \vp_{1..k}\\
   i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
   \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k

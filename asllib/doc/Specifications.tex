@@ -465,7 +465,7 @@ of the subprogram declarations.
 \hva\and
 \inferrule[non\_empty]{
   \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
-  \tenv \eqname (\genv, \lenv)\\
+  \tenv \reverseeqdef (\genv, \lenv)\\
   \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\hva\\\\
   \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\hva\\\\
   \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
@@ -732,8 +732,8 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
     {
     \begin{array}{r}
       i \in \indices(\vfuncone.\FIELDargs),\;
-        \vfuncone.\FIELDargs[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\FIELDargs[i] \eqname (\idtwo, \ttytwo): \\
+        \vfuncone.\FIELDargs[i] \reverseeqdef (\idone, \ttyone),\;
+        \vfunctwo.\FIELDargs[i] \reverseeqdef (\idtwo, \ttytwo): \\
         \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbone_{i}
     \end{array}
     } \hva\\
@@ -741,8 +741,8 @@ See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
     {
     \begin{array}{l}
       i \in \indices(\vfuncone.\FIELDparameters), \\
-        \vfuncone.\FIELDparameters[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \\
+        \vfuncone.\FIELDparameters[i] \reverseeqdef (\idone, \ttyone),\;
+        \vfunctwo.\FIELDparameters[i] \reverseeqdef (\idtwo, \ttytwo): \\
         \multicolumn{1}{r}{\booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}}
     \end{array}
     } \hva\\

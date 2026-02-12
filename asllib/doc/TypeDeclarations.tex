@@ -60,7 +60,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \begin{mathpar}
 \inferrule[subtype\_decl]{
   \buildsubtype(\vsubtype) \astarrow \vs\\
-  \vs \eqname (\name, \vfields)
+  \vs \reverseeqdef (\name, \vfields)
 }{
   {
     \begin{array}{c}
@@ -385,7 +385,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
     \end{array}
   }\\
-  \vt \eqname L(\fields)\hva\\
+  \vt \reverseeqdef L(\fields)\hva\\
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
@@ -478,7 +478,7 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \ids \eqname \id_{1..k}\\
+  \ids \reverseeqdef \id_{1..k}\\
   \tenv_0 \eqdef \tenv\\
   {
   \begin{array}{r}

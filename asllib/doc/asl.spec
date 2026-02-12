@@ -159,16 +159,6 @@ operator indices[T](l: list0(T)) -> (indices: list0(N))
   math_macro = \indicesop,
 };
 
-operator assign[T](lhs: T, rhs: T) -> Bool
-{
-  math_macro = \eqdef,
-};
-
-operator reverse_assign[T](lhs: T, rhs: T) -> Bool
-{
-  math_macro = \reverseeqdef,
-};
-
 operator ast_label[T](T) -> ASTLabels
 {
   math_macro = \astlabelop,
@@ -4062,7 +4052,8 @@ typing function bitfields_to_absolute(tenv: static_envs, bitfields: list0(bitfie
   abs_field_sets := list_map(i, indices(bitfields), bitfield_to_absolute(tenv, bitfields[i], absolute_parent))
   { math_layout = (_, [_])};
   --
-  union_list(abs_field_sets);
+  union_list(abs_field_sets)
+  { [_] };
 ;
 
 typing function bitfield_to_absolute(tenv: static_envs, bf: bitfield, absolute_parent: TAbsField) ->

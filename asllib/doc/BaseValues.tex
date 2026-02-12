@@ -176,7 +176,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \inferrule[t\_bits\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \vzopt \neq \None\hva\\\\
-    \vzopt \eqname \some{\length}\\
+    \vzopt \reverseeqdef \some{\length}\\
     \techeck(\length \geq 0, \NoBaseValue) \typearrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\LBitvector(i=1..\length: 0))}{\veinit}
@@ -215,7 +215,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_int\_wellconstrained]{
-    \cs \eqname \vc_{1..k}\\
+    \cs \reverseeqdef \vc_{1..k}\\
     \vzminlist \eqdef \constraintabsmin(\tenv, \vc_1) \concat \ldots \concat \constraintabsmin(\tenv, \vc_k)\\
     \techeck(\vzminlist \neq \emptyset, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
@@ -242,7 +242,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \begin{mathpar}
 \inferrule[structured]{
     \isstructured(\vt) \typearrow \True\\
-    \vt \eqname L(\fields)\\
+    \vt \reverseeqdef L(\fields)\\
     (\name, \vtefield) \in \fields: \basevalue(\tenv, \vtefield) \typearrow \ve_\name \OrTypeError
 }{
     \basevalue(\tenv, \vt) \typearrow \overname{\ERecord(\vt, (\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
@@ -339,7 +339,7 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \techeck(\vzopt \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
-    \vzopt \eqname \some{\vz}
+    \vzopt \reverseeqdef \some{\vz}
 }{
     \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
 }
@@ -349,10 +349,10 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \inferrule[range]{
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
     \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
-    \vzoptone \eqname \some{\vvone}\\
+    \vzoptone \reverseeqdef \some{\vvone}\\
     \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\hva\\
     \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
-    \vzopttwo \eqname \some{\vvtwo}\\
+    \vzopttwo \reverseeqdef \some{\vvtwo}\\
     {
     \vzs \eqdef
         \begin{cases}

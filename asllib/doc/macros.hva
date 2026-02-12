@@ -36,7 +36,7 @@
 \ifdisplay\textsf{\hyperlink{def-option}{Option}}\left({#1}\right)
 \else
 \hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)\fi}
-\newcommand\eqname{%
+\newcommand\reverseeqdef{%
 \ifdisplay
   \stackrel{\hyperlink{def-deconstruction}{\mathsf{is}}}{=}\else
 \hyperlink{def-deconstruction}{\stackrel{\mathsf{is}}{=}}\fi}

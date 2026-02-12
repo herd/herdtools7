@@ -752,7 +752,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \inferrule[ebinop\_div\_int\_denominator]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
   \vftwo \eqdef \frac{1}{\vitwo}\\
-  \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+  \irone \reverseeqdef [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
   \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
   \toir(\tenv, \overname{\EBinop(\DIV, \veone, \overname{\ELiteral(\LInt(\vitwo))}{\vetwo})}{\ve}) \typearrow \vp
@@ -799,7 +799,7 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
     \toir(\tenv, \veone) \typearrow \irone \OrTypeError, \CannotBeTransformed\hva\\\\
     \vitwo \geq 0\\
     \vftwo \eqdef 2^{\vitwo}\\
-    \irone \eqname [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
+    \irone \reverseeqdef [i=1..k: \vm_\vi \mapsto \vc_\vi]\\
     \vp \eqdef [i=1..k: \vm_\vi \mapsto \vc_\vi \times \vftwo]\\
 }{
   \toir(\tenv, \overname{\EBinop(\SHL, \veone, \ELiteral(\LInt(\vitwo)))}{\ve}) \typearrow \vp
@@ -2221,7 +2221,7 @@ via the lexicographic ordering.
 \inferrule[different\_monomials]{
   \vmone \neq \vmtwo\\
   \ids \eqdef \sort(\dom(f) \cup \dom(g), \compareidentifier)\\
-  \ids \eqname \idsone \concat \idstwo\hva\\
+  \ids \reverseeqdef \idsone \concat \idstwo\hva\\
   \vi\in\listrange(\idsone): f(\idsone[\vi]) = g(\idsone[\vi])\\
   \vv \eqdef \idstwo[1]\hva\\
   {
@@ -2366,7 +2366,7 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \inferrule[q\_positive\_fraction]{
   q > 0\\
   q \not\in \N\hva\\\\
-  q \eqname \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\hva\\\\
+  q \reverseeqdef \frac{d}{n} \;\;\;\;\text{ is the reduced fraction for }q\hva\\\\
   \symmulexpr(\ELiteral(\LInt(d)), \ve) \typearrow \vetwo\\
   \newe \eqdef \EBinop(\DIV, \vetwo, \ELiteral(\LInt(n)))
 }{

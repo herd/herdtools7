@@ -1315,7 +1315,7 @@ for the expression \verb|A| appearing in the return type.
 \begin{mathpar}
 \inferrule[etuple]{
   \techeck(\es = 1, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\hva\\\\
-  \es \eqname [\ve]\\
+  \es \reverseeqdef [\ve]\\
   \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
 }{
   \paramsofexpr(\tenv, \overname{\ETuple(\es)}{\ve}) \typearrow \ids

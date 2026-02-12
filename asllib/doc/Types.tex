@@ -404,7 +404,7 @@ correspond to \CaseName{pending\_constrained}.
 
 \begin{mathpar}
 \inferrule[well\_constrained]{
-  \constraints \eqname \vc_{1..k}\\
+  \constraints \reverseeqdef \vc_{1..k}\\
   i=1..k: \annotateconstraint(\vc_i) \typearrow (\newc_i, \vxs_i) \OrTypeError\hva\\\\
   \newconstraints \eqdef \newc_{1..k}\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
@@ -420,7 +420,7 @@ correspond to \CaseName{pending\_constrained}.
 
 \begin{mathpar}
 \inferrule[parameterized]{
-  \tty \eqname \TInt(\Parameterized(\name))\\
+  \tty \reverseeqdef \TInt(\Parameterized(\name))\\
   \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \vses)
@@ -429,7 +429,7 @@ correspond to \CaseName{pending\_constrained}.
 
 \begin{mathpar}
 \inferrule[unconstrained]{
-  \tty \eqname \unconstrainedinteger
+  \tty \reverseeqdef \unconstrainedinteger
 }{
   \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
 }
@@ -944,7 +944,7 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \begin{mathpar}
 \inferrule{
   k > 1\\
-  \tys \eqname \tty_{1..k}\\
+  \tys \reverseeqdef \tty_{1..k}\\
   i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\hva\\\\
   \vses \eqdef \bigcup_{i=1..k} \vxs_i
 }{
@@ -1421,7 +1421,7 @@ is ill-typed, since the field \verb|v| repeats.
 \begin{mathpar}
 \inferrule{
   L \in \{\TRecord, \TException\}\\
-  \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
+  \fields \reverseeqdef [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
   i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
@@ -1541,7 +1541,7 @@ collection types in comments.
 \begin{mathpar}
 \inferrule{
   \tty = \TCollection(\fields)\\
-  \fields \eqname [i=1..k: (\vx_i, \vt_i)]\\
+  \fields \reverseeqdef [i=1..k: (\vx_i, \vt_i)]\\
   \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
   i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
   \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\

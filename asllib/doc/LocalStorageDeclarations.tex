@@ -280,7 +280,7 @@ to the evaluation of \texttt{3} in $\env$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \vm \eqname (\vv, \vgone)\\
+  \vm \reverseeqdef (\vv, \vgone)\\
   \declarelocalidentifier(\env, \vx, \vv)\evalarrow(\newenv, \vgtwo)\\
   \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
 }{
@@ -314,7 +314,7 @@ to the evaluation of \texttt{3} in $\env$.
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\hva\\\\
   \techeck(\astlabel(\vtp) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \vtp \eqname \TTuple([\vt_{1..n}])\hva\\\\
+  \vtp \reverseeqdef \TTuple([\vt_{1..n}])\hva\\\\
   \techeck(k = n, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   \newtenv_k \eqdef \tenv\hva\\\\
   {
@@ -389,10 +389,10 @@ evaluation of \texttt{3} in $\env$.
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \vm \eqname (\vv, \vg)\\
-  \ldis \eqname \id_{1..k}\\
+  \vm \reverseeqdef (\vv, \vg)\\
+  \ldis \reverseeqdef \id_{1..k}\\
   i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
-  \liv \eqname [i=1..k: (\vv_i, \vg)]\\
+  \liv \reverseeqdef [i=1..k: (\vv_i, \vg)]\\
   \declareldituple(\env, \vids, \liv) \evalarrow C
 }{
   \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
@@ -441,7 +441,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \inferrule[non\_empty]{
   \vids = [\id] \concat \vids'\\
   \liv = [\vm] \concat \liv'\\
-  \vm \eqname (\vv, \vgone)\hva\\\\
+  \vm \reverseeqdef (\vv, \vgone)\hva\\\\
   \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
   \declareldituple(\envone, \vids', \liv') \evalarrow \ResultLDI(\vgthree, \newenv)\\
   \vg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
