@@ -16,6 +16,8 @@
 
 open AST
 
+let _dbg = false
+
 (* Select "all variables" *)
 let is_var = function
   | Var _ -> true
@@ -202,3 +204,45 @@ let free_body xs e =
     (fun r p0 -> remove_pat0 p0 r)
     (free e)
     xs
+
+
+let rec as_plus_args saw_seq x = function
+  | [] -> [],saw_seq
+  | e::es ->
+      if StringSet.mem x (free e) then
+        match e with
+        | Op (_,Seq,[Var (_,x1);Var (_,x2)]) ->
+            if String.equal x1 x && String.equal x2 x then
+              as_plus_args true x es
+            else raise Exit
+        | _ -> raise Exit
+      else
+        let es,saw_seq = as_plus_args saw_seq x es in
+        e::es,saw_seq
+
+let as_plus = function
+  | [loc_x,(Pvar (Some x) as px),Op (loc_union,Union,es)] ->
+      begin
+        try
+          let es,saw_seq = as_plus_args false x es in
+          if saw_seq then Some ((loc_x,px),(loc_union,es)) else None
+        with Exit -> None
+      end
+  | _ -> None
+
+
+let tr_def d =
+  match d with
+  | Rec (loc,bds,None) ->
+      begin
+        match as_plus bds with
+        | Some ((loc_x,px),(loc_es,es)) ->
+            if _dbg then
+              Printf.eprintf "%a: found implicit transitive closure\n%!"
+                TxtLoc.pp loc ;
+            Let (loc,[loc_x,px,Op1(loc_es,Plus,Op (loc_es,Union,es))])
+        | None -> d
+      end
+  | _ -> d
+
+let rec2plus defs = List.map tr_def defs
