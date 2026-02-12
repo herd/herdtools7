@@ -186,6 +186,7 @@ type instruction =
   | JCONDI of cond * reg * k * lbl
 
 let nop = None
+and mk_imm_branch _ = None
 and is_nop _ = false
 
 type parsedInstruction = instruction

@@ -108,7 +108,8 @@ static const uint64_t msk_af = 0x400UL;
 static const uint64_t msk_dbm = 0x8000000000000UL;
 static const uint64_t msk_db = 0x80UL;
 static const uint64_t msk_el0 = 0x40UL;
-#define  msk_full (msk_valid|msk_af|msk_dbm|msk_db|msk_el0)
+static const uint64_t msk_x = 0x4000000000000UL;
+#define  msk_full (msk_valid|msk_af|msk_dbm|msk_db|msk_el0|msk_x)
 
 static inline void unset_el0(pteval_t *p) {
   *p &= ~msk_el0;
@@ -201,8 +202,9 @@ static inline void litmus_set_pte_attribute(pteval_t *p,pte_attr_key k) {
 #define DB_PACKED 1
 #define DBM_PACKED 2
 #define VALID_PACKED 3
-#define EL0_PACKED 4
-#define OA_PACKED 5
+#define X_PACKED 4
+#define EL0_PACKED 5
+#define OA_PACKED 6
 
 inline static pteval_t pack_flag(pteval_t v,pteval_t mask,int shift) {
   return (v & mask ? 1 : 0) << shift;
@@ -216,6 +218,7 @@ inline static pteval_t pack_pte(int oa,pteval_t v) {
     pack_flag(v ^ msk_db,msk_db,DB_PACKED) |
     pack_flag(v,msk_dbm,DBM_PACKED) |
     pack_flag(v,msk_valid,VALID_PACKED) |
+    pack_flag(v,msk_x,X_PACKED) |
     pack_flag(v,msk_el0,EL0_PACKED) ;
 }
 
@@ -224,14 +227,15 @@ inline static pteval_t pack_pack_flag(int f,int shift) {
 }
 
 inline static pteval_t
-pack_pack(int oa,int af,int db,int dbm,int valid,int el0) {
+pack_pack(int oa,int af,int db,int dbm,int valid,int el0,int x) {
   return
     (((pteval_t)oa) << OA_PACKED) |
     pack_pack_flag(af,AF_PACKED) |
     pack_pack_flag(db,DB_PACKED) |
     pack_pack_flag(dbm,DBM_PACKED) |
     pack_pack_flag(valid,VALID_PACKED) |
-    pack_pack_flag(el0,EL0_PACKED) ;
+    pack_pack_flag(el0,EL0_PACKED) |
+    pack_pack_flag(x,X_PACKED) ;
 }
 
 /*
@@ -240,7 +244,7 @@ pack_pack(int oa,int af,int db,int dbm,int valid,int el0) {
   - db set       -> corresponding bit unset
 */
 
-#define NULL_PACKED (pack_pack(NVARS,0,1,0,0,0))
+#define NULL_PACKED (pack_pack(NVARS,0,1,0,0,0,0))
 
 inline static int unpack_oa(pteval_t v) {
   return v >> OA_PACKED;
@@ -254,6 +258,7 @@ inline static int unpack_af(pteval_t v) { return unpack_flag(v,AF_PACKED); }
 inline static int unpack_db(pteval_t v) { return unpack_flag(v,DB_PACKED); }
 inline static int unpack_dbm(pteval_t v) { return unpack_flag(v,DBM_PACKED); }
 inline static int unpack_valid(pteval_t v) { return unpack_flag(v,VALID_PACKED); }
+inline static int unpack_x(pteval_t v) { return unpack_flag(v,X_PACKED); }
 inline static int unpack_el0(pteval_t v) { return unpack_flag(v,EL0_PACKED); }
 
 /* Hardware managment of access flag and dirty state */
