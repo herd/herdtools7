@@ -700,11 +700,9 @@ module Make
         if fail then error env.EV.silent loc "unbound var: %s" k
         else raise Not_found
 
-    let as_rel keep_implicit ks = function
+    let as_rel ks = function
       | Rel r -> r
-      | TransRel tr ->
-          if keep_implicit then tr
-          else E.EventRel.transitive_closure tr
+      | TransRel tr -> E.EventRel.transitive_closure tr
       | Empty -> E.EventRel.empty
       | Unv -> Lazy.force ks.unv
       | v ->
@@ -1400,7 +1398,7 @@ module Make
             V.Tuple (List.map (eval accept_implicit env) es)
 (* N-ary operators, those associative binary operators are optimized *)
         | Op (loc,Union,es) ->
-            let vs = List.map (eval_loc accept_implicit env) es in
+            let vs = List.map (eval_loc false env) es in
             begin try
               let vs = union_args vs in
               match vs with
@@ -1413,7 +1411,7 @@ module Make
                   | TRel ->
                       Rel
                         (E.EventRel.unions
-                           (List.map (as_rel accept_implicit env.EV.ks) vs))
+                           (List.map (as_rel env.EV.ks) vs))
                   | TEvents ->
                       Set (E.EventSet.unions (List.map (as_set env.EV.ks) vs))
                   | TSet telt ->
@@ -1842,7 +1840,7 @@ module Make
           let _,a' = v1
           and _,b' = v2 in
           begin match t with
-          | TRel -> E.EventRel.subset (as_rel false env.EV.ks a') (as_rel false env.EV.ks b')
+          | TRel -> E.EventRel.subset (as_rel env.EV.ks a') (as_rel env.EV.ks b')
           | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
           | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
           | ty ->
