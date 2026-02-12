@@ -408,6 +408,32 @@ module Make(O:Config)(M:XXXMem.S) =
         AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
         restrict_faults flts in
 
+      let observation =
+        match O.speedcheck with
+        | Speed.False ->
+            fun _test conc ->
+              if conc.pos = 0 then "Never"
+              else if conc.neg = 0 then "Always"
+              else "Sometimes"
+        | Speed.(True | Fast) -> (
+            fun test ->
+              match test.Test_herd.cond with
+              | ForallStates _ ->
+                  fun conc ->
+                    (* we have discarded all possible positive states. *)
+                    assert (conc.pos = 0);
+                    (* This means that we can't answer "Never", as we don't
+                       know about the positive cases. *)
+                    if conc.neg = 0 then "Always" else "Sometimes"
+              | ExistsState _ | NotExistsState _ ->
+                  fun conc ->
+                    (* We have discarded all negative states. *)
+                    assert (conc.neg = 0);
+                    (* This means that we can't answer 'Always', as we dont'
+                       know about the negative cases. *)
+                    if conc.pos = 0 then "Never" else "Sometimes")
+      in
+
 (* Open *)
       let ochan = open_dot test in
 (* So small a race condition... *)
@@ -537,9 +563,7 @@ module Make(O:Config)(M:XXXMem.S) =
         end ;
         printf "Condition %a\n" (C.do_dump_constraints tr_out) cstr ;
         printf "Observation %s %s %i %i\n%!" tname
-          (if c.pos = 0 then "Never"
-          else if c.neg = 0 then "Always"
-          else "Sometimes") c.pos c.neg ;
+          (observation test c) c.pos c.neg ;
         do_show () ;
         printf "Time %s %0.2f\n" tname (Sys.time () -. start_time) ;
         if O.candidates then

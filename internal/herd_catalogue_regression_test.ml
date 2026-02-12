@@ -32,6 +32,7 @@ type flags = {
   index_path : path option ;
   variants   : string list ;
   verbose    : bool ;
+  fast       : bool ;
 }
 
 
@@ -80,6 +81,7 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
       ~conf:(flags.conf_path >>= Option.map prepend p.cfg)
       ~variants:flags.variants
       ~libdir:flags.libdir
+      ~speedcheck:(if flags.fast then `Fast else `False)
       flags.herd ?j ?timeout
   in
   match cmd litmuses with
@@ -114,7 +116,6 @@ let exit_1_if_any_files_missing ~description paths =
       List.iter (Printf.printf "Missing %s: %s\n" description) missing ;
       raise (Error "Some files are missing")
 
-
 (* Commands. *)
 
 let show_tests ?j ?timeout flags =
@@ -131,6 +132,8 @@ let show_tests ?j ?timeout flags =
         ~conf:(flags.conf_path >>= Option.map prepend p.cfg)
         ~variants:flags.variants
         ~libdir:flags.libdir
+        ~checkfilter:true
+        ~speedcheck:(if flags.fast then `Fast else `False)
         flags.herd ?j ?timeout
     in
     cmd tests
@@ -218,6 +221,7 @@ let () =
   let timeout = ref None in
   let anon_args = ref [] in
   let verbose = ref false in
+  let fast = ref false in
 
   let options = [
     Args.verbose verbose ;
@@ -231,6 +235,7 @@ let () =
     Args.is_file ("-index-path",  Arg.String (fun p -> index_path := Some p),
                   "path to index file of tests") ;
     "-variant",  Args.append_string variants, "variant to pass to herd7" ;
+    "-fast", Arg.Set fast, "only check test kinds"
   ] in
   Arg.parse options (fun a -> anon_args := a :: !anon_args) usage ;
 
@@ -258,6 +263,7 @@ let () =
     variants = !variants ;
     index_path = !index_path ;
     verbose = !verbose ;
+    fast = !fast ;
     } in
   try
     let j = !j in

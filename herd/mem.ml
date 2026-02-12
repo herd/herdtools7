@@ -182,6 +182,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | None -> Opts.unroll_default A.arch
       | Some u -> u
 
+    let speedcheck =
+      match C.speedcheck with
+      | Speed.False -> false
+      | Speed.True | Speed.Fast -> true
+
   let _profile = C.debug.Debug_herd.profile_asl
   let start_profile = if _profile then Sys.time else fun () -> 0.
   let end_profile = if _profile then end_profile else fun _ _ -> ()
@@ -868,53 +873,77 @@ let match_reg_events es =
 
     let debug_solver = C.debug.Debug_herd.solver > 0
 
-    let do_solve_regs test es csn =
+    let wanted_final_value test =
+      let map =
+        let rec loop acc =
+          let open ConstrGen in
+          function
+          | Atom (LV (Loc (A.Location_reg _ as loc), v)) -> A.LocMap.add loc v acc
+          | And li -> List.fold_left loop acc li
+          | Or [ x ] -> loop acc x
+          | _ -> acc
+        in
+        match test.Test_herd.cond with
+        | ConstrGen.ExistsState prop -> loop A.LocMap.empty prop
+        | _ -> A.LocMap.empty
+      in
+      fun loc -> A.LocMap.find_opt loc map
 
+    let do_solve_regs test es csn =
+      let wanted_final_values =
+        if speedcheck then wanted_final_value test else Fun.const None
+      in
       let rfm = match_reg_events es in
-      let csn =
-        S.RFMap.fold
-          (fun wt rf csn -> match wt with
-          | S.Final _ -> csn
-          | S.Load load ->
-              let v_loaded = get_read load in
-              let v_stored = get_rf_value test load rf in
-              try add_eq v_loaded v_stored csn
-              with Contradiction ->
-                let loc = Misc.as_some (E.location_of load) in
-                Printf.eprintf
-                  "Contradiction on reg %s: loaded %s vs. stored %s\n"
-                  (A.pp_location loc)
-                  (A.V.pp_v v_loaded)
-                  (A.V.pp_v v_stored) ;
-                let module PP = Pretty.Make(S) in
-                PP.show_es_rfm test es rfm ;
-                assert false)
-          rfm csn in
-      if  debug_solver then
-        prerr_endline "++ Solve  registers" ;
+      let add_equations wt rf csn =
+        match wt with
+        | S.Final loc -> (
+            if not speedcheck then csn
+            else
+              match (wanted_final_values loc, rf) with
+              | Some v_wanted, S.Store store ->
+                  let v_stored = get_written store in
+                  (* Here we can't use add_eq because it is possible that there
+                     is a contradiction, and in that case we want the solver to
+                     find it. *)
+                  VC.Assign (v_stored, VC.Atom v_wanted) :: csn
+              | _ -> csn)
+        | S.Load load -> (
+            let v_loaded = get_read load in
+            let v_stored = get_rf_value test load rf in
+            try add_eq v_loaded v_stored csn
+            with Contradiction ->
+              let loc = Misc.as_some (E.location_of load) in
+              Printf.eprintf
+                "Contradiction on reg %s: loaded %s vs. stored %s\n"
+                (A.pp_location loc) (A.V.pp_v v_loaded) (A.V.pp_v v_stored);
+              let module PP = Pretty.Make (S) in
+              PP.show_es_rfm test es rfm;
+              assert false)
+      in
+      let csn = S.RFMap.fold add_equations rfm csn in
+      if debug_solver then prerr_endline "++ Solve  registers";
       match VC.solve csn with
       | VC.NoSolns ->
-         if debug_solver then
-           pp_nosol "register" test es rfm ;
-         None
-      | VC.Maybe (sol,csn) ->
+          if debug_solver then pp_nosol "register" test es rfm;
+          None
+      | VC.Maybe (sol, csn) ->
           Some
-            (E.simplify_vars_in_event_structure sol es,
-             S.simplify_vars_in_rfmap sol rfm,
-             csn)
+            ( E.simplify_vars_in_event_structure sol es,
+              S.simplify_vars_in_rfmap sol rfm,
+              csn )
 
     let solve_regs test es csn =
       match do_solve_regs test es csn with
-      | Some (es,rfm,cns) as r ->
+      | Some (es, rfm, cns) as r ->
           if debug_solver && C.verbose > 0 then begin
-            let module PP = Pretty.Make(S) in
-            prerr_endline "Reg solved, direct" ;
+            let module PP = Pretty.Make (S) in
+            prerr_endline "Reg solved, direct";
             Printf.eprintf "++++ Remaing equations:\n%s\n++++++\n%!"
-              (VC.pp_cnstrnts cns) ;
+              (VC.pp_cnstrnts cns);
             PP.show_es_rfm test es rfm
-          end ;
+          end;
           r
-      | None ->  None
+      | None -> None
 
 (**************************************)
 (* Step 2. Generate rfmap for memory  *)
@@ -1033,12 +1062,21 @@ let match_reg_events es =
 
     let is_spec es e = E.EventSet.mem e es.E.speculated
 
+    let check_values cns store load =
+      if not speedcheck then true else
+        let v_written = get_written store and v_read = get_read load in
+        if not (V.equalityPossible v_written v_read) then false else
+          let eq = VC.Assign (v_read, VC.Atom v_written) in
+          match VC.solve (eq :: cns) with
+          | VC.NoSolns -> false
+          | VC.Maybe _ -> true
+
 (* Consider all stores that may feed a load
    - Compatible location.
    - Not after in program order
     (suppressed when uniproc is not optmised early) *)
 
-    let map_load_possible_stores test es _rfm loads stores compat_locs =
+    let map_load_possible_stores test es cns loads stores compat_locs =
       let ok = match C.optace with
         | OptAce.False -> fun _ _ -> true
         | OptAce.True ->
@@ -1059,6 +1097,7 @@ let match_reg_events es =
                 if
                   compat_locs store load &&
                   check_speculation es store load &&
+                  check_values cns store load &&
                   ok load store
                 then
                   load,S.Store store::stores
@@ -1080,8 +1119,18 @@ let match_reg_events es =
           m;
         eprintf "%!"
       end ;
-(* Check for loads that cannot feed on some write *)
-      if not do_deps && not asl then begin
+      (* Check for loads that cannot feed on some write.
+
+         In ASL mode, we have not constructed yet the full program, so reads
+         can not have a matching write.
+
+         When speedcheck mode is activated, it is possible to have reads that
+         don't match any write. Indeed, when speedcheck mode is activated, it
+         is possible possible that we know the value that was read at that
+         point, from the final condition of the test. There is then a check
+         when constructing a rfm that the values are compatible.
+      *)
+      if not do_deps && not asl && not speedcheck then begin
         List.iter
           (fun (load,stores) ->
             match stores with
@@ -1149,7 +1198,7 @@ let match_reg_events es =
 
     let solve_mem_or_res test es rfm cns kont res loads stores compat_locs add_eqs =
       let possible =
-        map_load_possible_stores test es rfm loads stores compat_locs in
+        map_load_possible_stores test es cns loads stores compat_locs in
       let possible =
         List.map
           (fun (er,ws) ->
@@ -1453,17 +1502,17 @@ let match_reg_events es =
       ms
 
 (* Non-mixed pairing for tags, if any *)
-    let pair_tags test es rfm =
+    let pair_tags test es cns =
       let tags = E.EventSet.filter E.is_tag es.E.events in
       let loads = E.EventSet.filter E.is_load tags
       and stores = E.EventSet.filter E.is_store tags in
       let m =
-        map_load_possible_stores test es rfm loads stores compatible_locs_mem in
+        map_load_possible_stores test es cns loads stores compatible_locs_mem in
       m
 
     let solve_mem_mixed test es rfm cns kont res =
       let match_tags = if morello then []
-        else pair_tags test es rfm in
+        else pair_tags test es cns in
       let tag_loads,tag_possible_stores = List.split match_tags in
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
