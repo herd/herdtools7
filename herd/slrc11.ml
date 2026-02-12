@@ -811,19 +811,13 @@ module Make (M:Cfg)
       let nadded = E.EventSet.map
                      (fun x -> find x)
                      ex.added in
-      let nrf = E.EventRel.map
-                  (fun (x, y) -> (find x, find y))
-                  ex.rf in
-      let nmo = E.EventRel.map
-                  (fun (x, y) -> (find x, find y))
-                  ex.mo in
-      let npo = E.EventRel.map
-                  (fun (x, y) -> (find x, find y))
-                  ex.po in
-      let ndebugrels = List.map
-                         (fun (str, rel) -> (str, E.EventRel.map
-                                              (fun (x, y) -> (find x, find y)) rel))
-                         ex.debug_rels in
+      let nrf = E.EventRel.map_nodes find ex.rf in
+      let nmo = E.EventRel.map_nodes find ex.mo in
+      let npo = E.EventRel.map_nodes find ex.po in
+      let ndebugrels =
+        List.map
+          (fun (str, rel) -> (str, E.EventRel.map_nodes find rel))
+          ex.debug_rels in
       {ex with added = nadded; rf = nrf; mo = nmo; po = npo; debug_rels = ndebugrels}
 
 

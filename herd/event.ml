@@ -921,10 +921,21 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       Misc.is_none es.ctrl_output
 
 (****************************)
-(* Projection of event set *)
+(* Projection of event set  *)
 (****************************)
 
-    module Proj(S:MySet.S) = struct
+    (* Mimimal set signature sufficient for projection *)
+
+    module type ToProj = sig
+      type elt
+      type t
+
+      val empty : t
+      val add : elt -> t -> t
+      val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    end
+
+    module Proj(S:ToProj) = struct
 
       let rec add_env p e = function
         | [] -> assert false
@@ -954,7 +965,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         | Some p -> [p]
         | None -> []) (procs_of es) es.events
 
-    module ProjRel = Proj(EventRel)
+    module ProjRel =
+      Proj
+        (struct
+          type elt = event * event
+          type t = EventRel.t
+
+          let empty = EventRel.empty
+          let add = EventRel.add
+          let fold = EventRel.fold
+        end)
 
     let proc_of_pair (e1,e2) =
       let p1 = proc_of e1 and p2 = proc_of e2 in

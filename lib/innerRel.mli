@@ -25,18 +25,6 @@ module type S =  sig
   type elt1 = elt0 and type elt2 = elt0
   and module Elts1 = Elts and module Elts2 = Elts
 
-(* Map representation *)
-  module M : sig
-    module ME : Map.S with type key = elt0
-    type map = Elts.t ME.t
-    val succs : elt0 -> map -> Elts.t
-    val add : elt0 -> elt0 -> map -> map
-    val subrel : map -> map -> bool
-    val exists_path : (elt0 * elt0) -> map -> bool
-    val to_map : t -> map
-    val of_map : map -> t
-  end
-
 (* All elements related *)
   val nodes : t -> Elts.t
 
@@ -71,10 +59,8 @@ module type S =  sig
   val up :  elt0 -> t -> Elts.t
   val up_from_set : Elts.t -> t -> Elts.t
 
-  (* Transitive closure, the fist function returns Map form *)
-  val transitive_to_map : t -> Elts.t M.ME.t
+(* Transitive closure, efficient implementation *)
   val transitive_closure : t -> t
-  val transitive_closure_filtered : Elts.t -> Elts.t -> t -> t
 
 (* Direct cycles *)
   val is_reflexive : t -> bool
@@ -135,12 +121,10 @@ module type S =  sig
   val is_hierarchy : Elts.t -> t -> bool
 
 (* Remove any transitivity edges
-   [LUC: set argument. removed, it is useless, since set = nodes rel is ok]
-   remove_transitive_edges [set] rel
-      [assumes rel \in set \times set]
+   remove_transitive_edges rel
       returns rel' \subset rel such that rel'
-        does not have (e1, e2) if it has both (e1, e3) and (e3, e2),
-        but transitive_closure rel' = transitive_closure rel
+      does not have (e1, e2) if it has both (e1, e3) and (e3, e2),
+      but transitive_closure rel' = transitive_closure rel
 *)
   val remove_transitive_edges : t -> t
 
@@ -149,7 +133,12 @@ module type S =  sig
   val transitive3 : t -> t (* returns r;r;r *)
   val sequences : t list -> t
 
-(* Equivalence classes, applies to symetric relations only (unchecked) *)
+  (*
+   * Equivalence classes, applies to any relation.
+   * Behaves as if the argument relation r is first
+   * transformed into `(r | r^-1)*`.
+   *)
+
   val classes : t -> Elts.t list
 
 (* strata ie sets of nodes by increasing distance *)
@@ -167,6 +156,15 @@ module type S =  sig
 
 *)
    val bisimulation : t (* transition *) -> t (* equivalence *)-> t
+
+  (* Second argument is delimiter (as in String.concat) *)
+  val pp :
+    out_channel -> string ->
+    (out_channel -> (elt0 * elt0) -> unit) -> t -> unit
+
+ (* As above, but sprintf style instead of fprintf style *)
+  val pp_str :
+    string -> ((elt0 * elt0) -> string) -> t -> string
 
 end
 

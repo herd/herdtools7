@@ -745,13 +745,13 @@ module Make
 (* Relation *)
         | (V.Empty,Rel w) -> E.EventRel.is_empty w && stabilised vs ws
         | (Rel v,Unv) ->
-            E.EventRel.subset (Lazy.force ks.unv) v && stabilised vs ws
+            E.EventRel.subrel (Lazy.force ks.unv) v && stabilised vs ws
         | Rel v,Rel w ->
-            E.EventRel.subset w v && stabilised vs ws
+            E.EventRel.subrel w v && stabilised vs ws
 (* Class relation *)
         | (V.Empty,ClassRel w) -> ClassRel.is_empty w && stabilised vs ws
         | ClassRel v,ClassRel w ->
-            ClassRel.subset w v && stabilised vs ws
+            ClassRel.subrel w v && stabilised vs ws
 (* Event Set *)
         | (V.Empty,Set w) -> E.EventSet.is_empty w && stabilised vs ws
         | (Set v,Unv) ->
@@ -1174,8 +1174,8 @@ module Make
       | V.Tuple [V.Set ws; (V.Rel _ | V.TransRel _) as prec; ] ->
           let m =
             match prec with
-            | V.Rel r -> E.EventRel.M.to_map r
-            | V.TransRel r -> E.EventRel.transitive_to_map r
+            | V.Rel m -> m
+            | V.TransRel m -> E.EventRel.transitive_closure m
             | _ -> assert false
           in
           let ws =
@@ -1183,7 +1183,7 @@ module Make
               (fun w ->
                 E.is_store w && E.is_pt w &&
                 begin
-                  match E.EventSet.as_singleton (E.EventRel.M.succs w m) with
+                  match E.EventSet.as_singleton (E.EventRel.succs m w) with
                   | Some p -> pred w p
  (* w does not qualify when zero of two or more prec-related events *)
                   | None -> false
@@ -1421,32 +1421,6 @@ module Make
                         "cannot perform union on type '%s'" (pp_typ ty)
             with Exit -> Unv end
 
-        | Op (_,
-              Seq,
-              [ Op1(l1, ToId, e1); Op1(l2, Plus, e2); Op1 (l3, ToId, e3) ])
-          ->
-          let s1 =
-            match eval_ord env e1 with
-            | V.Set s -> s
-            | v ->
-              error env.EV.silent l1 "Typing error: expected a set, got: %s."
-                (pp_type_val v)
-          and r =
-            match eval true env e2 with
-            | V.Rel r | V.TransRel r -> r
-            | v ->
-              error env.EV.silent l2 "Typing error: expected a rel, got: %s."
-                (pp_type_val v)
-          and s2 =
-            match eval_ord env e3 with
-            | V.Set s -> s
-            | v ->
-              error env.EV.silent l3 "Typing error: expected a set, got: %s."
-                (pp_type_val v)
-          in
-          let r = E.EventRel.transitive_closure_filtered s1 s2 r in
-          V.Rel r
-
         | Op (loc,Seq,es) ->
             begin try
               let vs = List.map  (eval_rels env) es in
@@ -1519,10 +1493,9 @@ module Make
                 Rel (E.EventRel.inter r1 r2)
             | (Rel r, TransRel tr)
             | (TransRel tr, Rel r) ->
-                let m = E.EventRel.M.to_map tr in
                 let r =
                   E.EventRel.filter
-                    (fun p -> E.EventRel.M.exists_path p m)
+                    (fun p -> E.EventRel.exists_path p tr)
                     r in
                 Rel r
             | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.inter r1 r2)
@@ -1755,12 +1728,10 @@ module Make
                 (diff
                    (transitive_closure r1)
                    (transitive_closure r2))
-        | Rel r1,TransRel r2 ->
-            let m2 = E.EventRel.M.to_map r2 in
+        | Rel m1,TransRel m2 ->
             Rel
               E.EventRel.
-                (filter
-                 (fun p -> not (M.exists_path p m2)) r1)
+                (filter (fun p -> not (exists_path p m2)) m1)
         | TransRel r1,Rel r2 ->
             Rel E.EventRel.(diff (transitive_closure r1) r2)
         | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)
@@ -1840,8 +1811,10 @@ module Make
           let _,a' = v1
           and _,b' = v2 in
           begin match t with
-          | TRel -> E.EventRel.subset (as_rel env.EV.ks a') (as_rel env.EV.ks b')
-          | TEvents -> E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
+            | TRel ->
+                E.EventRel.subrel (as_rel env.EV.ks a') (as_rel env.EV.ks b')
+            | TEvents ->
+                E.EventSet.subset (as_set env.EV.ks a') (as_set env.EV.ks b')
           | TSet _ -> ValSet.subset (as_valset a') (as_valset b')
           | ty ->
               error env.EV.silent loc
