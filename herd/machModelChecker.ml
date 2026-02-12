@@ -348,19 +348,18 @@ module Make
       let po =
         choose_spec
           Misc.identity
-          (E.EventRel.filter
-             (if O.wide_po then
-                (fun (e1,e2) -> relevant e1 && relevant e2)
-              else
-                (fun (e1,e2) ->
-                  relevant e1 && relevant e2 &&
-                 not (E.same_instance e1 e2))))
+          (if O.wide_po then
+             E.EventRel.filter_nodes relevant
+           else
+             E.EventRel.restrict_rel
+               (fun e1 e2 ->
+                  relevant e1 && relevant e2
+                  && not (E.same_instance e1 e2)))
           conc.S.po in
       let partial_po =
-        lazy (
-          E.EventRel.filter_nodes relevant
-            conc.S.partial_po
-        )
+        lazy begin
+          E.EventRel.filter_nodes relevant conc.S.partial_po
+        end
       in
       let id =
         lazy begin
@@ -431,8 +430,7 @@ module Make
               "rmw",lazy conc.S.atomic_load_store;
               "amo",
               lazy begin
-                E.EventRel.filter
-                  (fun (r,w) -> E.po_eq r w)
+                E.EventRel.restrict_rel E.po_eq
                   conc.S.atomic_load_store
               end;
               "po", lazy po;
@@ -587,9 +585,11 @@ module Make
         I.add_rels m
           (List.map
              (fun (k,p) ->
-               let pred (e1,e2) = p e1.E.action e2.E.action in
+                let pred e1 =
+                  let act1 =  e1.E.action in
+                  fun e2 -> p act1 e2.E.action in
                k,lazy begin
-                 E.EventRel.filter pred (Lazy.force unv)
+                 E.EventRel.restrict_rel pred (Lazy.force unv)
                end)
              E.Act.arch_rels) in
 (* Event sets from proc info *)

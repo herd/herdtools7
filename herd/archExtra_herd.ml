@@ -563,7 +563,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let state_size st = State.fold (fun _ _ k -> 1+k) st 0
 
       let state_fold = State.fold
-      let state_filter = State.filter
+      let state_filter = State.filter_by_key
 
       let pp_nice_state st delim pp_bd =
         let bds =
@@ -910,7 +910,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let rstate_to_list st =
         List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
 
-      let rstate_filter = RState.filter
+      let rstate_filter = RState.filter_by_key
 
       let debug_rstate rs =
         let bds = rstate_to_list rs in

@@ -21,6 +21,9 @@ open Printf
 module type S = sig
   include Map.S
 
+(* Available even when not in stdlib *)
+  val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
+
   val pp : out_channel -> (out_channel -> key -> 'a -> unit) -> 'a t -> unit
   val pp_str_delim :  string -> (key -> 'a -> string) -> 'a t -> string
   val pp_str : (key -> 'a -> string) -> 'a t -> string
@@ -36,8 +39,8 @@ module type S = sig
   val unions : ('a -> 'a -> 'a) -> 'a t list -> 'a t
 
 
-(* filter bindings according to ket predicate *)
-  val filter : (key -> bool) -> 'a t -> 'a t
+(* filter bindings according to key predicate *)
+  val filter_by_key : (key -> bool) -> 'a t -> 'a t
 
 (* List bindings *)
   val add_bindings : (key * 'a) list -> 'a t -> 'a t
@@ -47,11 +50,24 @@ module type S = sig
 
 (* Bind keys to list of values *)
   val accumulate : key -> 'a -> 'a list t -> 'a list t
+
 end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
   struct
-    include Map.Make(O)
+
+    module M = Map.Make(O)
+
+    let filter_map f m =
+      M.fold
+        (fun x y k ->
+           match f x y with
+           | None -> k
+           | Some z -> M.add x z k)
+        m M.empty
+    [@@warning "-32"]
+
+    include M
 
     let pp_str_delim delim pp_bind m =
       let bds = fold (fun k v r -> (k,v)::r) m [] in
@@ -83,10 +99,7 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
     | [] -> empty
     | m::ms -> List.fold_left (union u) m ms
 
-    let filter p m =
-      fold
-        (fun k v r -> if p k then add k v r else r)
-        m empty
+    let filter_by_key p m = filter (fun k _ ->  p k) m
 
     let add_bindings bds m =
       List.fold_left (fun m (k,v) -> add k v m) m bds

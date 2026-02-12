@@ -197,8 +197,8 @@ module Make
       let rt = SE.SplittedRel.remove_transitive_edges in
       if show_reduced then
         let evord =
-          SE.SplittedRel.filter
-            (fun (e1,e2) ->
+          SE.SplittedRel.restrict_rel
+            (fun e1 e2 ->
               let x = e1.SE.event
               and y = e2.SE.event in
               not
@@ -325,8 +325,8 @@ module Make
           SE.SplittedRel.of_list pairs in
         SE.SplittedRel.unions [r1;r2;r3;r4;r5;] in
       let evord0 =
-        SE.SplittedRel.filter
-          (fun (x,y) -> not (is_bad x || is_bad y))
+        SE.SplittedRel.restrict_rel
+          (fun x y -> not (is_bad x || is_bad y))
           evord0 in
 
 (*      eprintf "EVORD0: %s\n" (SE.pp_splitted_rel evord0) ; *)
