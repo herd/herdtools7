@@ -30,3 +30,7 @@ val flatten : AST.exp -> AST.exp
 
 (* Get free variables *)
 val free_body : AST.var option list -> AST.exp -> AST.varset
+
+(* Is a recursive binding equivalent to transitive closure? *)
+val as_plus : AST.binding list -> (AST.var * AST.exp list)  option
+    
