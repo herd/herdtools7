@@ -1558,13 +1558,6 @@ module Make
                   | TClassRel ->
                       ClassRel(ClassRel.unions (List.map as_classrel vs))
                   | TRel ->
-                      if
-                        List.exists
-                          (function
-                            | TransRel _|TransMap _ -> true
-                            | _ -> false)
-                          vs
-                      then eprintf "%a: Bingo!\n%!" TxtLoc.pp loc ;
                       if map then
                         MapRel
                           (E.EventRel.M.unions
@@ -2535,7 +2528,7 @@ module Make
       let eval_test check env t e =
         let transitive =
           match t with
-          | Yes Acyclic|No Acyclic -> true
+          | Yes (Acyclic|Irreflexive)|No (Acyclic|Irreflexive) -> true
           | _ -> false in
         check
           (test2pred env t e
@@ -2660,44 +2653,60 @@ module Make
               let st = check_bell_order bds st in
               kont st res
           | Rec (loc,bds,testo) ->
-              let env =
-                match
-                  env_rec
-                    (make_eval_test testo) (from_st st)
-                    loc (fun pp -> pp@show_to_vbpp st) bds
-                with
-                | CheckOk env -> Some env
-                | CheckFailed env ->
-                    if O.debug then begin
-                      let st = { st with env; } in
-                      let st = doshow bds st in
-                      pp_check_failure st (Misc.as_some testo)
-                    end ;
-                    None in
-              begin match env with
-              | None -> kfail res
-              | Some env ->
-                  let st = { st with env; } in
-                  let st = doshow bds st in
-
-(* Check again for strictskip *)
-                  let st = match testo with
-                  | None -> st
-                  | Some (_,_,t,e,name) ->
-                      if
-                        O.strictskip &&
-                        skip_this_check name &&
-                        not (eval_test Misc.identity (from_st st) t e)
-                      then begin
-                        { st with
-                          skipped =
-                          StringSet.add (Misc.as_some name) st.skipped;}
-                      end else st in
-(* Check bell definitions *)
-                  let st = check_bell_order bds st in
-                  kont st res
+              begin
+                match ASTUtils.as_plus bds with
+                | Some (x,es) ->
+                    let env = from_st st in
+                    let v = eval true true env (Op (loc,Union,es)) in
+                    let v =
+                      match v with
+                      | Rel r -> TransRel r
+                      | MapRel m -> TransMap m
+                      | _ -> v in
+                    let vr = lazy (force_map false v) and vm = lazy (force_map true v) in
+                    let env = env.EV.env in
+                    let vals = StringMap.add x vr env.vals
+                    and maps = StringMap.add x vm env.maps in
+                    let env =  { env with maps;vals; } in
+                    kont { st with env; } res
+                | None ->
+                    let env =
+                      match
+                        env_rec
+                          (make_eval_test testo) (from_st st)
+                          loc (fun pp -> pp@show_to_vbpp st) bds
+                      with
+                      | CheckOk env -> Some env
+                      | CheckFailed env ->
+                          if O.debug then begin
+                            let st = { st with env; } in
+                            let st = doshow bds st in
+                            pp_check_failure st (Misc.as_some testo)
+                          end ;
+                          None in
+                    begin match env with
+                      | None -> kfail res
+                      | Some env ->
+                          let st = { st with env; } in
+                          let st = doshow bds st in
+                          (* Check again for strictskip *)
+                          let st = match testo with
+                            | None -> st
+                            | Some (_,_,t,e,name) ->
+                                if
+                                  O.strictskip &&
+                                  skip_this_check name &&
+                                  not (eval_test Misc.identity (from_st st) t e)
+                                then begin
+                                  { st with
+                                    skipped =
+                                      StringSet.add (Misc.as_some name) st.skipped;}
+                                end else st in
+                          (* Check bell definitions *)
+                          let st = check_bell_order bds st in
+                          kont st res
+                    end
               end
-
           | InsMatch (loc,e,cls,d) ->
               let v = eval_st st e in
               begin match v with
