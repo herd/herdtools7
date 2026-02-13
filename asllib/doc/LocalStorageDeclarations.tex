@@ -228,6 +228,7 @@ In \listingref{checkisnotcollection}, the statement
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[Collection]{
     \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
@@ -255,6 +256,8 @@ In \listingref{checkisnotcollection}, the statement
     \checkisnotcollection(\tenv, \vt) \typearrow \True
   }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_is_not_collection}
 
 \CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
@@ -274,6 +277,7 @@ to the evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vgone)\\
@@ -283,6 +287,8 @@ to the evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDIVar(\vx), \vm) \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
 \section{Typing of Tuple Declarations\label{sec:Typing of Tuple Declarations}}
@@ -298,12 +304,12 @@ to the evaluation of \texttt{3} in $\env$.
   \item determining whether $\vtp$ is a \tupletypeterm{} yields $\True$\ProseOrTypeError;
   \item determining whether the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
   \item declaring the identifiers in $\vids$ in the \staticenvironmentterm{} $\tenv$ from right to left with their corresponding
-        (that is, with the same index) types $t_{1..k}$ in $\tenv$,
-        propagating static environments from one declaration to the next,
-        yields the resulting environment $\newtenv$\ProseOrTypeError.
+        (that is, with the same index) types $t_{1..k}$ in $\tenv$
+        via $\addlocalvars$ yields $\newtenv$\ProseOrTypeError.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\hva\\\\
@@ -328,7 +334,35 @@ to the evaluation of \texttt{3} in $\env$.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_local_decl_item}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
+
+\TypingRuleDef{AddLocalVars}
+\RenderRelation{add_local_vars}
+
+See \ExampleRef{Well-typed Tuple Declarations}.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{empty}
+  \begin{itemize}
+    \item both $\typedids$ is the empty list;;
+    \item \Proseeqdef{$\newtenv$}{$\tenv$}.
+  \end{itemize}
+  \item \AllApplyCase{non\_empty}
+  \begin{itemize}
+    \item $\typedids$ is a list with the prefix $\typedidsprefix$ and last element $(\id, \vt)$;
+    \item applying $\checkvarnotinenv$ to $\id$ in $\tenv$ yields $\True$\ProseOrTypeError;
+    \item applying $\addlocal$ to $\id$ and $\vt$ in $\tenv$ yields $\tenvone$;
+    \item applying $\addlocalvars$ to $\typedidsprefix$ with $\ldk$in $\tenvone$ yields $\newtenv$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\RenderRule{add_local_vars}
+
 
 \section{Semantics of Tuple Declarations\label{sec:Semantics of Tuple Declarations}}
 \SemanticsRuleDef{LDTuple}
@@ -352,6 +386,7 @@ evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \eqname (\vv, \vg)\\
@@ -363,6 +398,8 @@ evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_local_decl_LDI_Tuple}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareLDITuple}
@@ -392,6 +429,7 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -411,3 +449,5 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
   \declareldituple(\env, \vids, \liv) \evalarrow \ResultLDI(\vg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{declare_ldi_tuple}

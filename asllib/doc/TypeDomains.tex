@@ -13,14 +13,8 @@ by choosing a single value from the dynamic domain of $\vt$ (\SemanticsRuleRef{E
 Static domains are used to define subtype satisfaction (\TypingRuleRef{SubtypeSatisfaction})
 via a conservative subsumption test as defined in \chapref{SymbolicDomainSubsetTesting}.
 
-\subsection{Dynamic Domain of a Type\label{sec:DynDomain}}
-\hypertarget{def-dyndomain}{}
-The dynamic domain is defined via the partial function
-\[
-  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\ty}{\vt}
-  \partialto \overname{\pow{\nativevalue}}{\vd}
-\]
-which assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
+\subsection{The Dynamic Domain of a Type\label{sec:DynDomain}}
+\RenderRelation{dynamic_domain}
 %
 We say that $\dynamicdomain(\env, \vt)$ is the \emph{dynamic domain} of $\vt$
 in the environment $\env$.
