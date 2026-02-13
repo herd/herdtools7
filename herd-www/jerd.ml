@@ -64,18 +64,25 @@ let set_defaults ()  =
   show := default.show
 
 (* Configure parser/models/etc. *)
-let run_herd bell cat litmus cfg =
+let run_herd bell cat litmus cfg cat_label =
 
   let bell = Js.to_string bell
   and cat = Js.to_string cat
   and litmus = Js.to_string litmus
-  and cfg = Js.to_string cfg in
+  and cfg = Js.to_string cfg
+  and cat_label = Js.to_string cat_label in
+
+  let cat_env = match String.split_on_char '/' cat_label with
+  | [env; _] -> Some env
+  | _ -> None in
 
   if dbg then begin
-    eprintf "** bell **\n%s" bell ;
-    eprintf "** cat  **\n%s" cat ;
-    eprintf "** cfg  **\n%s" cfg ;
-    eprintf "** lit  **\n%s" litmus ;
+    eprintf "** bell      **\n%s\n" bell ;
+    eprintf "** cat       **\n%s\n" cat ;
+    eprintf "** cfg       **\n%s\n" cfg ;
+    eprintf "** lit       **\n%s\n" litmus ;
+    eprintf "** cat_label **\n%s\n" cat_label ;
+    eprintf "** cat_env   **\n%s\n" (Option.value ~default:"<none>" cat_env) ;
     ()
   end ;
 
@@ -111,11 +118,15 @@ let run_herd bell cat litmus cfg =
   end ;
   let args = ref [Filename.concat WebInput.webpath litmus_fname] in
 
+  let includes = Option.fold ~some:(fun env ->
+    WebInput.get_env_webpath env :: !includes
+  ) ~none:!includes cat_env in
+
   (* Read generic model, if any *)
  let module ML =
     MyLib.Make
       (struct
-        let includes = !includes
+        let includes = includes
         let env = None
         let libdir = Version.libdir
         let debug = false
