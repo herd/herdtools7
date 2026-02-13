@@ -250,6 +250,12 @@ operator list_filter[T](bound_variable: T, elements: list0(T), condition: Bool) 
   math_macro = \listfilter,
 };
 
+operator filter_option_list[T](elements: list0(option(T))) -> (new_elements: list0(T))
+{
+  "the non-$\None$ elements of {elements} in the order of appearance",
+  math_macro = \filteroptionlist,
+};
+
 // Constructs a list out of a finite number of arguments.
 variadic operator make_list[T](list1(T)) -> list1(T)
 {
@@ -3602,9 +3608,7 @@ typing function base_value(tenv: static_envs, t: ty) ->
 
   case t_bits_static {
     t =: T_Bits(e, _);
-    reduce_to_z_opt(tenv, e) -> z_opt;
-    z_opt != None;
-    z_opt =: some(length);
+    reduce_to_z_opt(tenv, e) -> some(length);
     te_check(length >= zero, TE_NBV) -> True;
     --
     E_Literal(L_Bitvector(list_map(i, range_list(one, length), zero_bit)));
@@ -3612,8 +3616,7 @@ typing function base_value(tenv: static_envs, t: ty) ->
 
   case t_bits_non_static {
     t =: T_Bits(e, _);
-    reduce_to_z_opt(tenv, e) -> z_opt;
-    z_opt = None;
+    reduce_to_z_opt(tenv, e) -> None;
     e_init := E_Slice(ELint(zero), make_singleton_list(Slice_Length(ELint(zero), e)));
     --
     e_init;
@@ -6061,8 +6064,8 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   case t_int_parameterized {
     type_equal(tenv, t, s) -> False;
     ast_label(t) = label_T_Int && ast_label(s) = label_T_Int;
-    not(t = unconstrained_integer);
-    not(s = unconstrained_integer);
+    t != unconstrained_integer;
+    s != unconstrained_integer;
     is_parameterized_integer(t) || is_parameterized_integer(s);
     to_well_constrained(t) -> t1;
     to_well_constrained(s) -> s1;
@@ -6332,7 +6335,7 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
     op in make_set(ADD, DIV, DIVRM, MOD, MUL, POW, SHL, SHR, SUB);
     c1 =: typed_WellConstrained(cs1, p1);
     c2 =: typed_WellConstrained(cs2, p2);
-    // This is somewhat hard to model, as this call is impleemnted by a functor
+    // This is somewhat hard to model, as this call is implemented by a functor
     // that fails rather than return CannotOverapproximate/CannotUnderapproximate.
     annotate_constraint_binop(Over, tenv, op, cs1, cs2) -> (cs, p3);
     p := precision_join(p1, precision_join(p2, p3));
@@ -6542,7 +6545,7 @@ typing relation refine_constraints(
 };
 
 typing relation refine_constraint_for_div(approx: constants_set(Over,Under), op: binop, cs: list0(int_constraint)) ->
-         (res: list0(int_constraint)) | constants_set(CannotUnderapproximate,CannotOverapproximate)
+         (res: list0(int_constraint)) | ApproximationFailure
 {
   "filters the list of constraints {cs} for {op},
   removing constraints that represents a division
@@ -6554,7 +6557,32 @@ typing relation refine_constraint_for_div(approx: constants_set(Over,Under), op:
   lists of constraints).",
   prose_application = "",
   math_layout = [_,_],
-};
+} =
+  case div {
+    op = DIV;
+    INDEX(i, cs: filter_reduce_constraint_div(cs[i]) -> c_opts[i]);
+    res := filter_option_list(c_opts);
+
+    case non_empty {
+      res != empty_list;
+      --
+      res;
+    }
+
+    case div_empty {
+      res = empty_list;
+      --
+      if approx = Over then CannotOverapproximate else CannotUnderapproximate
+      { (_, [_]) };
+    }
+  }
+
+  case non_div {
+    op != DIV;
+    --
+    cs;
+  }
+;
 
 typing relation filter_reduce_constraint_div(c: int_constraint) ->
          (c_opt: option(int_constraint))
@@ -6570,9 +6598,10 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
 } =
   case exact_literal {
     c =: Constraint_Exact(e);
-    get_literal_div_opt(e) -> some((z1, z2));
+    get_literal_div_opt(e) -> some((z1, z2)) | None;
+    c_opt := if z2 > zero && is_not_integer(fraction(z1, z2)) then None else some(c);
     --
-    if z2 > zero && not_single(is_integer(fraction(z1, z2))) then None else some(c);
+    c_opt;
   }
 
   case exact_not_literal {
@@ -6593,14 +6622,12 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
     // Build result constraint based on z1_opt and z2_opt
     c_opt :=
     cond(
-      (z1_opt =: some(z5a)) && (z2_opt =: some(z6a)) && z5a = z6a: some(AbbrevConstraintExact(ELint(z5a))),
-      (z1_opt =: some(z5b)) && (z2_opt =: some(z6b)) && z5b < z6b : some(AbbrevConstraintRange(ELint(z5b), ELint(z6b))),
-      (z1_opt =: some(z5c)) && (z2_opt =: some(z6c)) && z5c > z6c : None,
+      (z1_opt =: some(z5a)) && (z2_opt =: some(z6a)) : make_constraint_range_opt(z5a, z6a),
       (z1_opt =: some(z5d)) && (z2_opt = None) : some(AbbrevConstraintRange(ELint(z5d), e2)),
       (z1_opt = None) && (z2_opt =: some(z6e)) : some(AbbrevConstraintRange(e1, ELint(z6e))),
-      (z1_opt = None) && (z2_opt = None) : some(AbbrevConstraintRange(e1, e2))
+      (z1_opt = None) && (z2_opt = None) : some(c)
     )
-    { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]], c4[_, [_]], c4[_, [_]],_]) };
+    { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]],_]) };
     --
     c_opt;
   }
@@ -6621,6 +6648,30 @@ typing function get_literal_div_opt(e: expr) ->
   { (_, [_]) };
   --
   range_opt;
+;
+
+typing function make_constraint_range_opt(z1: Z, z2: Z) -> option(int_constraint)
+{
+  "constructs a constraint for the set of numbers greater or equal to {z1} and less or equal to {z2}",
+  prose_application = "",
+} =
+  case exact {
+    z1 = z2;
+    --
+    some(AbbrevConstraintExact(ELint(z1)));
+  }
+
+  case range {
+    z1 < z2;
+    --
+    some(AbbrevConstraintRange(ELint(z1), ELint(z2)));
+  }
+
+  case invalid {
+    z1 > z2;
+    --
+    None;
+  }
 ;
 
 typing function explode_intervals(tenv: static_envs, cs: list0(int_constraint)) ->
@@ -6777,11 +6828,11 @@ typing function mem_bfs(tenv: static_envs, bfs2: list0(bitfield), bf1: bitfield)
     find_bitfield_opt(name, bfs2) -> some(bf2);
     bf2 =: BitField_Nested(name2, slices2, bfs2');
     bf1 =: BitField_Nested(name1, slices1, bfs1);
-    b1 := name1 = name2;
-    slices_equal(tenv, slices1, slices2) -> b2;
-    bitfields_included(tenv, bfs1, bfs2') -> b3;
+    bool_transition(name1 = name2) -> True | False;
+    slices_equal(tenv, slices1, slices2) -> equal_slices;
+    bitfields_included(tenv, bfs1, bfs2') -> bitfields_included;
     --
-    b1 && b2 && b3;
+    equal_slices && bitfields_included;
   }
 
   case nested_typed {
@@ -12763,8 +12814,8 @@ typing function monomial_to_expr(e: expr, q: Q) ->
   }
 
   case q_positive_fraction {
-    q > rational_zero && not_single(is_integer(q));
-    and(q =: fraction(d, n), not_single(is_integer(fraction(d, n))));
+    q > rational_zero && is_not_integer(q);
+    and(q =: fraction(d, n), is_not_integer(fraction(d, n)));
     sym_mul_expr(ELint(d), e) -> e2;
     new_e := E_Binop(DIV, e2, ELint(n));
     --

@@ -274,8 +274,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Operator macros
-\newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
-\newcommand\reverseeqdef[0]{\hyperlink{def-eqdef}{=:}}
+\newcommand\eqdef[0]{\hyperlink{relation-assign}{:=}}
+\newcommand\reverseeqdef[0]{\hyperlink{relation-reverseassign}{=:}}
 \newcommand\freshidentifier[0]{\text{fresh from }\Identifier}
 \newcommand\astlabelop[1]{\astlabel(#1)}
 \newcommand\makestructured[3][H]{
@@ -378,6 +378,9 @@
     \right]
   }
 }
+
+\newcommand\filteroptionlist[1]{\hyperlink{relation-filteroptionlist}{\textfunc{filter\_option\_list}}\left(#1\right)}
+
 \newcommand\listprefixname[0]{\hyperlink{def-listprefix}{\textfunc{list\_prefix}}}
 \newcommand\listprefix[3][H]{%
   \ifthenelse{\equal{#1}{H}}{
@@ -419,14 +422,15 @@
 }
 \newcommand\AbbrevECond[4][H]{
   \ifthenelse{\equal{#1}{H}}{
-  \overbracket{\texttt{if }#2\texttt{ then }#3\texttt{ else }#4}^{\hyperlink{def-abbrevebcond}{\abbrevfont{E\_Cond}}}
+  \ECond\left(#2, #3, #4\right)
   }{
-  \overbracket{
+    \ECond\left(
     \begin{array}{c}
-      \texttt{if }#2\\
-      \texttt{ then }#3\\
-      \texttt{ else }#4
-    \end{array}}^{\hyperlink{def-abbrevebcond}{\abbrevfont{E\_Cond}}}
+      #2,\\
+      #3,\\
+      #4
+    \end{array}
+    \right)
   }
 }
 
@@ -537,6 +541,7 @@
 \newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor}
 \newcommand\fractionop[3][H]{\frac{#2}{#3}}
 \newcommand\isintegerop[1]{{#1}\in\Z}
+\newcommand\isnotintegerop[1]{{#1}\notin\Z}
 \newcommand\absvalueop[1]{\left| {#1} \right|}
 
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
@@ -1808,8 +1813,6 @@
 \newcommand\Proseslicetoindices[3]{\hyperlink{relation-slicetoindices}{obtaining} the sequence of indices for a slice #1 in the static environment #2 yields #3}
 \newcommand\Proseselectindicesbyslices[3]{\hyperlink{relation-selectindicesbyslices}{selecting}
   the integers from the list #1 specified by the list of indices #2 yields the list #3}
-
-\newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}} % SPECIFICATION_DEFERRED
 
 % Symbolic domain subsumption
 \newcommand\CannotOverapproximate[0]{\hyperlink{type-CannotOverapproximate}{\overline{\textsf{Approx}}}}

@@ -423,76 +423,13 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 
 \begin{mathpar}
 \inferrule{
-  \filteroptionlist(\fieldopts) \aslto \fields\\
+  \fields \eqdef \filteroptionlist{\fieldopts}\\
   \checknoduplicates(\fields) \typearrow \True \OrTypeError \hva\\
   i \in 1..|\fieldopts|: \desugarlhsfieldopt(\id, \fieldopts[i]) \astarrow \vlexpr_i \\
   \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
 }{
   \desugarlhsfieldstuple(\id, \fieldopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
 }
-\end{mathpar}
-
-\ASTRuleDef{FilterOptionList}
-\hypertarget{def-filteroptionlist}{}
-The parametric function
-\[
-  \filteroptionlist(\overname{\KleeneStar{\Option{ T }}}{\vvopts}) \aslto \overname{\KleeneStar{T}}{\vvs}
-\]
-filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$.
-
-\ExampleDef{Filtering a List of Optionals}
-In \listingref{DesugarLHSFieldsTuple},
-the \assignableexpression{} \verb|x.(fld1, -, fld2)|
-requires desugaring into a list of \assignableexpressions{} via \ASTRuleRef{DesugarLHSFieldsTuple}.
-The list of fields is represented in the \untypedast{} as $[\some{\fldone}, \None, \some{\fldtwo}]$.
-Before checking the list \verb|fld1, -, fld2| for absence of duplicates, it is filtered as follows:
-$\filteroptionlist([\some{\fldone}, \None, \some{\fldtwo}]) \aslto [\fldone, \fldtwo]$.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vvopts$ is the empty list;
-    \item $\vvs$ is the empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty\_none}
-  \begin{itemize}
-    \item $\vvopts$ is the non-empty list with head $\None$ and tail $\vvoptsp$;
-    \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvs$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty\_some}
-  \begin{itemize}
-    \item $\vvopts$ is the non-empty list with head $\some{\vv}$ and tail $\vvoptsp$;
-    \item applying $\filteroptionlist$ to $\vvoptsp$ yields $\vvsp$;
-    \item $\vvs$ is the concatenation of $\vv$ and $\vvsp$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule[empty]{}
-  {
-    \filteroptionlist(\overname{\emptylist}{\vvopts}) \typearrow \overname{\emptylist}{\vvs}
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[non\_empty\_none]{
-    \filteroptionlist(\vvoptsp) \typearrow \vvs
-  }{
-    \filteroptionlist(\overname{[\None] \concat \vvoptsp}{\vvopts}) \typearrow \vvs
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[non\_empty\_some]{
-    \filteroptionlist(\vvoptsp) \typearrow \vvsp
-  }{
-    \filteroptionlist(\overname{[\some{\vv}] \concat \vvoptsp}{\vvopts}) \typearrow \overname{[\vv] \concat \vvsp}{\vvs}
-  }
 \end{mathpar}
 
 \ASTRuleDef{DesugarLHSFieldOpt}

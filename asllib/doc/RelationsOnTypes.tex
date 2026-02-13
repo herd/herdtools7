@@ -2075,11 +2075,12 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
-  \vres \eqdef \concatlist{\vi\in\listrange(\cs): \ifthenelseop[H]{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
+  \vres \eqdef \filteroptionlist(\vi\in\listrange(\cs): \vcopt_\vi)\\
   \vres \neq \emptylist
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \vres
@@ -2090,10 +2091,10 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
-  \vres \eqdef \concatlist{\vi\in\listrange(\cs): \ifthenelseop[H]{\vcopt_\vi = \some{\vcp_\vi}}{[\vcp]}{\emptylist}}\\
+  \vres \eqdef \filteroptionlist(\vi\in\listrange(\cs): \vcopt_\vi)\\
   \vres = \emptylist\\
 }{
-  \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \ifthenelseop[H]{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}
+  \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \ifthenelseop[V]{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}
 }
 \end{mathpar}
 
@@ -2104,6 +2105,8 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \overname{\cs}{\vres}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{refine_constraint_for_div}
 \CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
 
 \TypingRuleDef{FilterReduceConstraintDiv}
@@ -2257,6 +2260,42 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
 \end{mathpar}
 } % END_OF_BACKUP_ORIGINAL_RULE
 \RenderRule{get_literal_div_opt}
+
+\TypingRuleDef{MakeConstraintRangeOpt}
+\RenderRelation{make_constraint_range_opt}
+
+\ExampleDef{Constructing Optional Range Constraints}
+The following are examples of $\makeconstraintrangeopt$ applications:
+\[
+\begin{array}{rcl}
+\makeconstraintrangeopt(42, 42) &\typearrow& \some{\AbbrevConstraintExact{\ELInt{42}}}\\
+\makeconstraintrangeopt(0, 42) &\typearrow& \some{\AbbrevConstraintRange{\ELInt{0}}{\ELInt{42}}}\\
+\makeconstraintrangeopt(42, 0) &\typearrow& \None\\
+\end{array}
+\]
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{exact}
+  \begin{itemize}
+    \item $\vza$ and $\vzb$ are the same integer;
+    \item define $\vcopt$ as the optional exact constraint for the literal expression for $\vza$.
+  \end{itemize}
+  \item \AllApplyCase{range}
+  \begin{itemize}
+    \item $\vza$ is less than $\vzb$;
+    \item define $\vcopt$ as the optional range constraint for the literal expressions for $\vza$ and $\vzb$.
+  \end{itemize}
+  \item \AllApplyCase{invalid}
+  \begin{itemize}
+    \item $\vza$ is greater than $\vzb$;
+    \item define $\vcopt$ as $\None$.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\RenderRule{make_constraint_range_opt}
 
 \TypingRuleDef{ExplodeIntervals}
 \RenderRelation{explode_intervals}

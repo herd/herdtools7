@@ -56,6 +56,12 @@ operator is_integer(q: Q) -> Bool
   math_macro = \isintegerop,
 };
 
+operator is_not_integer(q: Q) -> Bool
+{
+  "{q} is not an integer",
+  math_macro = \isnotintegerop,
+};
+
 typedef Q
 { "rational",
    math_macro = \Q,

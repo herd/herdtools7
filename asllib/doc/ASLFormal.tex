@@ -361,6 +361,22 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \]
 \end{definition}
 
+\texthypertarget{relation-filteroptionlist}
+\begin{definition}[Filtering a List of Optional Values]
+The parametric function
+\[
+  \filteroptionlist(\KleeneStar{\Option{ T }}) \aslto \KleeneStar{T}
+\]
+filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$:
+\[
+\filteroptionlist(L) \triangleq \begin{cases}
+  \emptylist & \text{if }L = \emptylist\\
+  \filteroptionlist(L') & \text{if }L = \None \cons L'\\
+  v \cons \filteroptionlist(L') & \text{if }L = \some{v} \cons L' \enspace.
+\end{cases}
+\]
+\end{definition}
+
 \hypertarget{relation-listfst}{}
 \begin{definition}[Extracting the First Components from a List of Pairs]
 The\\ parametric function
@@ -751,7 +767,7 @@ shown here:
   \item[Predicate:] we write $a = b$ as an assertion of the equality of $a$ and $b$.
   For example, the mathematical identity $x \times (y + z) = x \times y + x \times z$.
 
-  \hypertarget{def-deconstruction}{}
+  \hypertarget{relation-reverseassign}{}
   \item[Deconstruction / ``View as'':] some values, such as tuples, are compound. In order to refer to the structure
   of compound values, we write $v \reverseeqdef \textit{f}(u_{1..k})$ where the expression on the right-hand side exposes the internal structure of $v$ by introducing the variables
   $u_{1..k}$, allowing us to alias internal components of $v$.
@@ -767,7 +783,7 @@ shown here:
   Given that a variable $v$ represents a list, we write $v \reverseeqdef v_{1..k}$ to list its elements and allow
   referring to them by index.
 
-\hypertarget{def-eqdef}{}
+\hypertarget{relation-assign}{}
 \item[Definition / ``Define as'':] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
 For example, in the rule \SemanticsRuleRef{ECond}, we use $\vg$ to name the mathematical expression
 $\ordered{\vgone}{\aslctrl}{\vgtwo}$.
