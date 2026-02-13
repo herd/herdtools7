@@ -119,8 +119,7 @@ let rec pp_expr fmt =
       fprintf fmt "%s(%a)" name (pp_comma_list pp_expr) args
   | Map { lhs; args } ->
       fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
-  | FieldAccess { var; fields } ->
-      pp_print_string fmt (String.concat "." (var :: fields))
+  | FieldAccess { base; field } -> fprintf fmt "%a.%s" pp_expr base field
   | ListIndex { list_var; index } -> fprintf fmt "%s[%a]" list_var pp_expr index
   | Record { label_opt; fields } ->
       fprintf fmt "%a[%a]"
