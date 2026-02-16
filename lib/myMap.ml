@@ -21,6 +21,9 @@ open Printf
 module type S = sig
   include Map.S
 
+  (* Stubb for stdlib <4.11 *)
+  val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
+
   val pp : out_channel -> (out_channel -> key -> 'a -> unit) -> 'a t -> unit
   val pp_str_delim :  string -> (key -> 'a -> string) -> 'a t -> string
   val pp_str : (key -> 'a -> string) -> 'a t -> string
@@ -51,7 +54,18 @@ end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
   struct
-    include Map.Make(O)
+    module M = Map.Make(O)
+
+    let filter_map f m =
+      M.fold
+        (fun x y k ->
+           match f x y with
+           | None -> k
+           | Some z -> M.add x z k)
+        m M.empty
+      [@@warning "-32"]
+
+    include M
 
     let pp_str_delim delim pp_bind m =
       let bds = fold (fun k v r -> (k,v)::r) m [] in
