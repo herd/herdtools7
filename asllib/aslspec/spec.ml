@@ -3167,10 +3167,7 @@ module ExtendNames = struct
               (* Fallback to the main output type. *)
               List.hd output_types
         in
-        let extended_rhs =
-          if auto_name_judgment judgment then extend_with_names output_type rhs
-          else rhs
-        in
+        let extended_rhs = extend_with_names output_type rhs in
         let extended_expr =
           Transition { lhs; rhs = extended_rhs; short_circuit }
         in

@@ -3082,7 +3082,7 @@ typing function unop_literals(op: unop, l: literal) ->
   case Error {
     (op, ast_label(l)) not_in unop_signatures;
     --
-    TypeError(TE_BO) { auto_name = false, };
+    TypeError(TE_BO);
   }
 
   case negate_int {
