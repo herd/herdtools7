@@ -654,14 +654,15 @@ module Make(O:MySet.OrderedType) : S
     (* Sequence *)
 
     let sequence m1 m2 =
-      M.fold
-        (fun x ys k ->
-           let zss =
+      M.filter_map
+        (fun _ ys ->
+           let zs =
              Elts.fold
                (fun y k -> succs m2 y::k)
-               ys [] in
-           M.add x (Elts.unions zss) k)
-        m1 empty
+               ys [] |> Elts.unions in
+           if Elts.is_empty zs then None
+           else Some zs)
+        m1
 
     let transitive3 m = sequence m @@ sequence m m
 

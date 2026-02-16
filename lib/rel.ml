@@ -196,33 +196,34 @@ and module Es2 = MySet.Make(O2)
       M.fold (fun _ ys k -> ys::k) m [] |> Elts2.unions
 
 (* Restrictions *)
-    let norm_rel m = M.filter (fun _ ys -> not (Elts2.is_empty ys)) m
-
     let restrict_domain p m =
       M.filter
         (fun x ys -> p x && not (Elts2.is_empty ys))
         m
     and restrict_codomain p m =
-      M.map (fun ys -> Elts2.filter p ys) m
-      |> norm_rel
+      M.filter_map
+        (fun _ ys ->
+           let ys = Elts2.filter p ys in
+           if Elts2.is_empty ys then None else Some ys)
+        m
 
     and restrict_domains p1 p2 m =
-      M.fold
-        (fun x ys k ->
+      M.filter_map
+        (fun x ys ->
            if p1 x then
              let ys = Elts2.filter p2 ys in
-             if Elts2.is_empty ys then k
-             else M.add x ys k
-           else k)
-        m empty
+             if Elts2.is_empty ys then None
+             else Some ys
+           else None)
+        m
 
     and restrict_rel p m =
-      M.fold
-        (fun x ys k ->
+      M.filter_map
+        (fun x ys ->
            let ys = Elts2.filter (p x) ys in
-           if Elts2.is_empty ys then k
-           else M.add x ys k)
-        m empty
+           if Elts2.is_empty ys then None
+           else Some ys)
+        m
 
     (* Set like operations *)
 

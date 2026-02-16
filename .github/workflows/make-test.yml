@@ -24,9 +24,9 @@ jobs:
           - ubuntu-latest
         cfg:
             # Minimal versions: we want to test both ends of the supported space
-          - ocaml-compiler: "ocaml-base-compiler.4.08.1,dune.3.10.0,zarith.1.13,menhir.20220210,logs.0.7.0"
+          - ocaml-compiler: "ocaml-base-compiler.4.11.2,dune.3.10.0,zarith.1.13,menhir.20220210,logs.0.7.0"
             with-type-check-asl: false
-            job-name: "OCaml v4.08"
+            job-name: "OCaml v4.11"
             dune-cache: "enabled"
 
             # Maximal version: this will automatically select the most recent version compatible.
