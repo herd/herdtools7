@@ -118,14 +118,6 @@ and module Es2 = MySet.Make(O2)
         (fun x ys k -> Elts2.fold (fun y k -> f (x,y) k) ys k)
         m k
 
-    let filter p m =
-      M.fold
-        (fun x ys k ->
-           let ys = Elts2.filter (fun y -> p (x,y)) ys in
-           if Elts2.is_empty ys then k
-           else M.add x ys k)
-        m empty
-
     let exists p m =
       try
         iter

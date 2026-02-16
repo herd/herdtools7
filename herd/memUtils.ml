@@ -71,7 +71,7 @@ module Make(S : SemExtra.S) = struct
   | None -> assert false
 
 (* Lift dependance relation to memory *)
-  let restrict p = E.EventRel.filter (fun (e1,e2) -> p e1 && p e2)
+  let restrict p = E.EventRel.filter_nodes p
 
   let trans_close_mem r = restrict E.is_mem (S.tr r)
   let trans_close_mems r_p = List.map trans_close_mem r_p
@@ -200,10 +200,7 @@ let lift_proc_info i evts =
     (match E.proc_of e with Some q -> q = p | None -> false) ||
     E.is_mem_store e
 
-  let proc_view_event2 p (e1,e2) =
-    proc_view_event p e1 && proc_view_event p e2
-
-  let proc_view p vb = E.EventRel.filter (proc_view_event2 p) vb
+  let proc_view p vb = E.EventRel.filter_nodes (proc_view_event p) vb
 
 (* Perform difference, columnwise, ie difference of projected relations *)
   let diff_p = List.map2 E.EventRel.diff
@@ -301,8 +298,8 @@ let lift_proc_info i evts =
     | S.Init,S.Store _
     | S.Store _,S.Init -> false
 
-  let ext r = E.EventRel.filter (fun (e1,e2) -> not (E.same_proc e1 e2)) r
-  let internal r = E.EventRel.filter (fun (e1,e2) -> E.same_proc e1 e2) r
+  let ext r = E.EventRel.restrict_rel (fun e1 e2 -> not (E.same_proc e1 e2)) r
+  let internal r = E.EventRel.restrict_rel E.same_proc r
 
 (**************************************)
 (* Place loads in write_serialization *)
@@ -406,9 +403,7 @@ let lift_proc_info i evts =
 (********************************************)
 
   let restrict_to_mem_stores rel =
-    E.EventRel.filter
-      (fun (e1,e2) -> E.is_mem_store e1 && E.is_mem_store e2)
-      rel
+    E.EventRel.filter_nodes E.is_mem_store rel
 
   let fold_write_serialization_candidates conc vb kont res =
     let vb =

@@ -316,8 +316,9 @@ module Make (M:Cfg)
         true
 
     let check_exec ex =
-      let c1 = E.EventRel.filter
-                 (fun (x, y) -> not (E.EventSet.mem x ex.added) || not (E.EventSet.mem y ex.added))
+      let c1 =
+        E.EventRel.restrict_rel
+          (fun x y -> not (E.EventSet.mem x ex.added) || not (E.EventSet.mem y ex.added))
                  (E.EventRel.union ex.rf ex.mo) in
       if not (E.EventRel.is_empty c1)
       then

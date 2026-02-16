@@ -978,10 +978,10 @@ module Make
     and deliftinter arg = match arg with
     | V.Tuple[Rel m;ClassRel clsr] ->
         let make_rel_from_classpair (cl1,cl2) =
-          E.EventRel.filter
-            (fun (e1,e2) ->
-              E.EventSet.mem e1 cl1 &&
-              E.EventSet.mem e2 cl2) m in
+          E.EventRel.restrict_domains
+            (fun e1 -> E.EventSet.mem e1 cl1)
+            (fun e2 -> E.EventSet.mem e2 cl2)
+            m in
         let r =
           ClassRel.fold
             (fun clp k -> make_rel_from_classpair clp::k)
@@ -994,15 +994,13 @@ module Make
         functor (In : PrimArg) -> struct
           let mem = In.Rel.Elts.mem
           let zyva es r =
+            let mem_es e = mem e es in
             if O.debug && O.verbose > 1 then begin
               eprintf "Linearisations:\n" ;
               eprintf "  %a\n" In.debug_set es ;
               eprintf "  {%a}\n"
                 In.debug_rel
-                (In.Rel.filter
-                   (fun (e1,e2) ->
-                     mem e1 es && mem e2 es)
-                   r)
+                (In.Rel.filter_nodes mem_es r)
             end ;
             let nodes = es in
             if O.debug && O.verbose > 1 then begin
@@ -1012,11 +1010,7 @@ module Make
             let rs =
               In.Rel.all_topos_kont_rel nodes r
                 (fun o ->
-                  let o =
-                    In.Rel.filter
-                      (fun (e1,e2) ->
-                        mem e1 es && mem e2 es)
-                      o in
+                  let o = In.Rel.filter_nodes mem_es o in
                   if O.debug then begin
                     eprintf
                       "Linearisation failed {%a}\n%!" In.debug_rel o ;
@@ -1114,11 +1108,13 @@ module Make
           | V.Empty -> V.Rel E.EventRel.empty
           | V.Unv -> assert false (* jade: we assert false when all the events in the execution bear the tag tag *)
           | V.Set bevts ->
-              let filter (x, y) =
+              let filter x y =
                 E.EventSet.exists
-                  (fun b -> E.EventRel.mem (x,b) po && E.EventRel.mem (b,y) po)
+                  (fun b ->
+                     E.EventRel.mem (x,b) po
+                     && E.EventRel.mem (b,y) po)
                   bevts in
-              V.Rel (E.EventRel.filter filter fromto)
+              V.Rel (E.EventRel.restrict_rel filter fromto)
           | _ -> not_a_set_of_events x v
 
         with Not_found ->
@@ -1152,22 +1148,25 @@ module Make
       raise (PrimError msg)
 
     and different_values arg =
-      let different_val (e1, e2) = not (U.same_value e1 e2) in
+      let different_val e1 e2 = not (U.same_value e1 e2) in
       match arg with
       | V.Rel r ->
-          let r = E.EventRel.filter different_val r in
+          let r = E.EventRel.restrict_rel different_val r in
           V.Rel r
       | V.TransRel tr ->
           let r = E.EventRel.transitive_closure tr in
-          let r = E.EventRel.filter different_val r in
+          let r = E.EventRel.restrict_rel different_val r in
           V.Rel r
       | _ -> arg_mismatch ()
 
     and same_oaRel arg =
-      let same_oa (e1, e2) = U.same_oa e1 e2 in
       match arg with
-      | V.Rel r -> V.Rel (E.EventRel.filter same_oa r)
-      | V.TransRel tr -> V.Rel (E.EventRel.filter same_oa (E.EventRel.transitive_closure tr))
+      | V.Rel r ->
+          V.Rel (E.EventRel.restrict_rel U.same_oa r)
+      | V.TransRel tr ->
+          V.Rel
+            E.EventRel.
+              (restrict_rel U.same_oa @@ transitive_closure tr)
       | _ -> arg_mismatch ()
 
     and check_two pred arg = match arg with
@@ -1431,9 +1430,9 @@ module Make
                     begin match v,do_seq vs with
                     | Rid f,Rid fs -> Rid (fun e -> f e && fs e)
                     | Rid f,Revent vs ->
-                        Revent (E.EventRel.filter (fun (e1,_) -> f e1) vs)
+                        Revent (E.EventRel.restrict_domain f vs)
                     | Revent v,Rid fs  ->
-                        Revent (E.EventRel.filter (fun (_,e2) -> fs e2) v)
+                        Revent (E.EventRel.restrict_codomain fs v)
                     | Revent v,Revent vs ->
                         Revent (E.EventRel.sequence v vs)
                     | Rclass v,Rclass vs ->
@@ -1443,39 +1442,21 @@ module Make
                           "mixing relations in sequence"
                     end in
               match do_seq vs with
-              | Rid f -> Rel (E.EventRel.set_to_rln (E.EventSet.filter f env.EV.ks.evts))
+              | Rid f ->
+                  Rel
+                    (E.EventRel.set_to_rln
+                       (E.EventSet.filter f env.EV.ks.evts))
               | Revent r -> Rel r
               | Rclass r -> ClassRel r
             with Exit -> V.Empty end
-(*
-  begin try
-  let f1,rs,f2 = eval_seq_args env es in
-  let r =
-  List.fold_right
-  E.EventRel.sequence
-  rs (Lazy.force env.EV.ks.id) in
-  let r = match f1,f2 with
-  | None,None -> r
-  | Some f1,None ->
-  E.EventRel.filter (fun (e1,_) -> f1 e1) r
-  | None,Some f2 ->
-  E.EventRel.filter (fun (_,e2) -> f2 e2) r
-  | Some f1,Some f2 ->
-  E.EventRel.filter (fun (e1,e2) -> f1 e1 && f2 e2) r in
-  Rel r
-  with Exit -> empty_rel
-  end
- *)
+
 (* Binary operators *)
         | Op (_loc1,Inter,[e1;Op (_loc2,Cartesian,[e2;e3])])
         | Op (_loc1,Inter,[Op (_loc2,Cartesian,[e2;e3]);e1]) ->
             let r = eval_rel env e1
             and f1 = eval_events_mem env e2
             and f2 = eval_events_mem env e3 in
-            let r =
-              E.EventRel.filter
-                (fun (e1,e2) -> f1 e1 && f2 e2)
-                r in
+            let r =  E.EventRel.restrict_domains f1 f2 r in
             Rel r
         | Op (loc,Inter,[e1;Op1 (_,Comp,e2)])
         | Op (loc,Inter,[Op1 (_,Comp,e2);e1;])
@@ -1494,8 +1475,8 @@ module Make
             | (Rel r, TransRel tr)
             | (TransRel tr, Rel r) ->
                 let r =
-                  E.EventRel.filter
-                    (fun p -> E.EventRel.exists_path p tr)
+                  E.EventRel.restrict_rel
+                    (fun e1 e2 -> E.EventRel.exists_path (e1,e2) tr)
                     r in
                 Rel r
             | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.inter r1 r2)
@@ -1731,7 +1712,8 @@ module Make
         | Rel m1,TransRel m2 ->
             Rel
               E.EventRel.
-                (filter (fun p -> not (exists_path p m2)) m1)
+                (restrict_rel
+                   (fun e1 e2 -> not (exists_path (e1,e2) m2)) m1)
         | TransRel r1,Rel r2 ->
             Rel E.EventRel.(diff (transitive_closure r1) r2)
         | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)

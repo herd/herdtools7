@@ -43,7 +43,6 @@ module type S = sig
 
   val iter : ((elt1 * elt2) -> unit) -> t -> unit
   val fold : ((elt1 * elt2) -> 'a -> 'a) -> t -> 'a -> 'a
-  val filter : ((elt1 * elt2) -> bool) -> t -> t
   val exists :  ((elt1 * elt2) -> bool) -> t -> bool
   val for_all :  ((elt1 * elt2) -> bool) -> t -> bool
   val to_seq : t -> (elt1 * elt2) Seq.t

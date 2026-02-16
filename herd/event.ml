@@ -1047,7 +1047,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
          Printf.eprintf "Minimal avoid, input is none\n%!" ;
          let intra_causality =
            let r = iico es in
-           EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
+           EventRel.restrict_domain
+             (fun e -> not (EventSet.mem e aset)) r in
          min_evts (EventSet.diff es.events aset) intra_causality
       | Some es ->
          Printf.eprintf "Minimal avoid, input is {%a}\n%!" debug_events es;
@@ -1459,9 +1460,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       let r = union es1 es2 in
       { r with
         intra_causality_data =
-        EventRel.filter
+        EventRel.restrict_rel
           (* Found that reviewing code, check by assert... *)
-          (fun (e1,e2) ->
+          (fun e1 e2 ->
             let b = e1 != e2 in
             if not b then
               eprintf "Warning: get rid of event %a\n%!" debug_event e1 ;
