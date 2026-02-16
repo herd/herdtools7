@@ -148,6 +148,10 @@ end = struct
            if flags.Flags.memtag then
              "memtag.c"::utils
            else utils in
+          let utils =
+           if flags.Flags.exs then
+             "exs.o"::utils
+           else utils in
          let utils =
            if flags.Flags.pac then
              "auth.c"::utils
@@ -227,10 +231,11 @@ let collect_flags names =
               let open Flags in
               { pac = flags.pac || some_flags.pac;
                 self = flags.self || some_flags.self;
-                memtag = flags.memtag || some_flags.memtag;}
+                memtag = flags.memtag || some_flags.memtag;
+                exs = flags.exs || some_flags.exs;}
           | _ -> some_flags)
       names
-      {Flags.pac=false; Flags.self=false; Flags.memtag=false}
+      {Flags.pac=false; Flags.self=false; Flags.memtag=false; Flags.exs=false}
 
 let run_tests names flags out_chan =
 
