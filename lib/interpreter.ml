@@ -1426,21 +1426,29 @@ module Make
               let rec do_seq = function
                 | [] -> assert false
                 | [v] -> v
-                | v::vs ->
-                    begin match v,do_seq vs with
-                    | Rid f,Rid fs -> Rid (fun e -> f e && fs e)
-                    | Rid f,Revent vs ->
-                        Revent (E.EventRel.restrict_domain f vs)
-                    | Revent v,Rid fs  ->
-                        Revent (E.EventRel.restrict_codomain fs v)
-                    | Revent v,Revent vs ->
-                        Revent (E.EventRel.sequence v vs)
-                    | Rclass v,Rclass vs ->
-                        Rclass (ClassRel.sequence v vs)
-                    | _,_ ->
-                        error env.EV.silent loc
-                          "mixing relations in sequence"
-                    end in
+                | Rid f1::Revent r::Rid f2::rem ->
+                    let r = E.EventRel.restrict_domains f1 f2 r in
+                    begin
+                      match rem with
+                      | [] -> Revent r
+                      | _ -> do_seq2 (Revent r) rem
+                    end
+                | v::vs -> do_seq2 v vs
+
+              and do_seq2 v vs =
+                match v,do_seq vs with
+                | Rid f,Rid fs -> Rid (fun e -> f e && fs e)
+                | Rid f,Revent vs ->
+                    Revent (E.EventRel.restrict_domain f vs)
+                | Revent v,Rid fs  ->
+                    Revent (E.EventRel.restrict_codomain fs v)
+                | Revent v,Revent vs ->
+                    Revent (E.EventRel.sequence v vs)
+                | Rclass v,Rclass vs ->
+                    Rclass (ClassRel.sequence v vs)
+                | _,_ ->
+                    error env.EV.silent loc
+                      "mixing relations in sequence" in
               match do_seq vs with
               | Rid f ->
                   Rel
