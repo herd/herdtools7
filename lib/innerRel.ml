@@ -15,14 +15,14 @@
 (****************************************************************************)
 
 module type S =  sig
+
   type elt0
 
   module Elts : MySet.S with type elt = elt0
 
-  include Rel.S with
-  type elt1 = elt0 and type elt2 = elt0
-  and module Elts1 = Elts
-  and module Elts2 = Elts
+  include MyRel.S
+    with type elt1 = elt0 and type elt2 = elt0
+     and module Elts1 = Elts and module Elts2 = Elts
 
 (* All elements related *)
   val nodes : t -> Elts.t

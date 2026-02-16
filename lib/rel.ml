@@ -14,91 +14,44 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-
 module type S = sig
 
-  type elt1
-  type elt2
+  type e1
+  type e2
 
-  module Elts1 : MySet.S with type elt = elt1
-  module Elts2 : MySet.S with type elt = elt2
+  module Es1 : MySet.S with type elt = e1
+  module Es2 : MySet.S with type elt = e2
 
-  module M : MyMap.S with type key = elt1
+  module M : MyMap.S with type key = e1
 
-  type t = Elts2.t M.t
-
-  val compare : t -> t -> int
-  val equal : t -> t -> bool
-  val is_empty : t -> bool
-  val mem : (elt1 * elt2) -> t -> bool
-
-  val empty : t
-  val singleton : (elt1 * elt2) -> t
-  val of_list : (elt1 * elt2) list -> t
-
-  val add :(elt1 * elt2) -> t -> t
-  val remove : (elt1 * elt2) -> t -> t
-  val choose : t -> (elt1 * elt2)
-  val cardinal : t -> int
-
-  val iter : ((elt1 * elt2) -> unit) -> t -> unit
-  val fold : ((elt1 * elt2) -> 'a -> 'a) -> t -> 'a -> 'a
-  val filter : ((elt1 * elt2) -> bool) -> t -> t
-  val exists :  ((elt1 * elt2) -> bool) -> t -> bool
-  val for_all : ((elt1 * elt2) -> bool) -> t -> bool
-  val to_seq : t -> (elt1 * elt2) Seq.t
-
-  val split3 : t -> t * (elt1 * elt2) * t
-
-(* Specific *)
-  val exists_succ : t -> elt1 -> bool
-  val exists_pred : t -> elt2 -> bool
-
-  val succs : t -> elt1 -> Elts2.t
-  val preds : t -> elt2 -> Elts1.t
-
-(* Various ways to build a relation *)
-  val cartesian : Elts1.t -> Elts2.t -> t
-  val of_pred : Elts1.t -> Elts2.t -> (elt1 -> elt2 -> bool) -> t
-
-(* Extract domain and codomain *)
-  val domain : t -> Elts1.t
-  val codomain : t -> Elts2.t
-
-(* Restriction of domain/codomain *)
-  val restrict_domain : (elt1 -> bool) -> t -> t
-  val restrict_codomain : (elt2 -> bool) -> t -> t
-  val restrict_domains : (elt1 -> bool) -> (elt2 -> bool) -> t -> t
-  val restrict_rel : (elt1 -> elt2 -> bool) -> t -> t
-
-(* Set like operations *)
-  val subrel : t -> t -> bool
-  val subset : t -> t -> bool
-  val union : t -> t -> t
-  val union3 : t -> t -> t -> t
-  val union4 :  t -> t -> t -> t -> t
-  val union5 :  t -> t -> t -> t -> t -> t
-  val union6 :  t -> t -> t -> t -> t -> t -> t
-  val unions : t list -> t
-  val inter : t -> t -> t
-  val diff : t -> t -> t
+  include MyRel.S
+    with type elt1 = e1 and type elt2 = e2
+    and module Elts1 = Es1 and module Elts2 = Es2
+    and type t = Es2.t M.t
 end
 
 module Make
   (O1:MySet.OrderedType)
   (O2:MySet.OrderedType) : S
 with
-   type elt1 = O1.t and type elt2 = O2.t
-   and module Elts1 = MySet.Make(O1)
-   and module Elts2 = MySet.Make(O2)
+type e1 = O1.t and type e2 = O2.t
+and module Es1 = MySet.Make(O1)
+and module Es2 = MySet.Make(O2)
  =
   struct
 
-    type elt1 = O1.t
-    type elt2 = O2.t
+    type e1 = O1.t
+    type e2 = O2.t
 
-    module Elts1 = MySet.Make(O1)
-    module Elts2 = MySet.Make(O2)
+    module Es1 = MySet.Make(O1)
+    module Es2 = MySet.Make(O2)
+
+    type elt1 = e1
+    and elt2 = e2
+
+    module Elts1 = Es1
+    module Elts2 = Es2
+
 
     module M = MyMap.Make(O1)
 

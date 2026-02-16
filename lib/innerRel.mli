@@ -17,13 +17,14 @@
 (** Operations on relations *)
 
 module type S =  sig
+
   type elt0
 
   module Elts : MySet.S with type elt = elt0
 
-  include Rel.S with
-  type elt1 = elt0 and type elt2 = elt0
-  and module Elts1 = Elts and module Elts2 = Elts
+  include MyRel.S
+    with type elt1 = elt0 and type elt2 = elt0
+     and module Elts1 = Elts and module Elts2 = Elts
 
 (* All elements related *)
   val nodes : t -> Elts.t
@@ -40,7 +41,7 @@ module type S =  sig
 
 (* Are e1 and e2 related by the transitive closure of relation.
    Does not detect cycles *)
-  val exists_path : elt1 * elt2 -> t -> bool
+  val exists_path : elt0 * elt0 -> t -> bool
 
 (* Nodes reachable from node and set of nodes [argument included in result] *)
   val reachable : elt0 -> t -> Elts.t
