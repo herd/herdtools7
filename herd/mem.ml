@@ -1048,7 +1048,7 @@ let get_rf_value test read =
     let check_values solver_state store load =
       if not speedcheck then true else
         let v_written = get_written store and v_read = get_read load in
-        match VC.hint_solve_one solver_state v_read v_written with
+        match VC.Hint.hint_solve_one solver_state v_read v_written with
         | VC.NoSolns -> false
         | VC.Maybe () -> true
 
@@ -1070,7 +1070,7 @@ let get_rf_value test read =
         | OptAce.Iico ->
            let iico = U.iico es in
            fun load store -> not (E.EventRel.mem (load,store) iico) in
-      let solver_state = if speedcheck then VC.make_solver_state cns else VC.make_solver_state [] in
+      let solver_state = if speedcheck then VC.Hint.make_solver_state cns else VC.Hint.make_solver_state [] in
       let m =
         E.EventSet.fold
           (fun store map_load ->

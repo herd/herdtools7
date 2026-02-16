@@ -68,14 +68,54 @@ module type S = sig
 
   val pp_answer : answer -> string
 
-(* Extract delayed exception, if present, or warning, if present. *)
+  (* Extract delayed exception, if present, or warning, if present. *)
   val get_failed :  cnstrnts -> cnstrnt option
 
   val solve : cnstrnt list -> answer
 
-  type solver_state
-  val make_solver_state : cnstrnt list -> solver_state
-  val hint_solve_one : solver_state -> atom -> atom -> unit answer_gen
+  (** The [Hint] module provides a way of getting a fast, conservative but
+      non-complete resolution result for adding a new equation in a system.
+
+      Assumption: The equation system is supposed to have been subjected to a
+      previous round of [solve], and thus is already normalized.
+
+      Guarantee: If [hint_solve_one (make_solver_state cns) x y] is [NoSolns],
+      then [solve (Assign (x, Atom y))] is also [NoSolns].
+
+      Usage:
+      1. Solve your system with [solve] and get some remaining unsolved
+         equations.
+      2. Prepare a [solver_state] on the remaining equations with
+         [make_solver_state].
+      3. Call [hint_solve_one solver_state x y] to get a hint if [solve] would
+         reject the system of equation with the added equation [x = y].
+      4. Repeat step 3.
+
+      Note: These functions have been optimized for use in [mem.ml], more
+      precisely when building rfms, so might not be that useful in other
+      contexts. Build your own if you need to.
+    *)
+  module Hint : sig
+    (** Processed solver state. *)
+    type solver_state
+
+    (** [make_solver_state cns] take the equations out of a previous solving
+        round and returns a solver state for use in [hint_solve_one].
+
+        Assumes that [cns] is already normalized, which is the case for a set
+        of equations coming out of [solve].
+    *)
+    val make_solver_state : cnstrnt list -> solver_state
+
+    (** [hint_solve_one solver_state x y] gives a conservative hint on whether
+        the system of equations formed by [solver_state] and [x = y] has a
+        solution.
+
+        Assumes that [x] and [y] have been normalized by the same solution than
+        [solver_state], which is the case in [Mem] after running [solve_reg].
+    *)
+    val hint_solve_one : solver_state -> atom -> atom -> unit answer_gen
+  end
 end
 
 module type Config = sig
@@ -554,8 +594,8 @@ let get_failed cns =
         | None -> Some [ c ]
         | Some old -> Some (c :: old)
 
+    (** Construct the map from x to all equations of the form [x = <e>] *)
     let var2eq cs =
-      (* Construct the map from x to all equations of the form [x = <e>] *)
       List.fold_left
         (fun m c ->
           match c with
@@ -574,8 +614,15 @@ let get_failed cns =
         ()
         ns r
 
-    (** [eq2g cs] constructs the map from an equation to the equations that use
-        a variable used by [c], from the equations in [cs]. *)
+    (** [eq2g cs] constructs the map from an equation to the equations of the
+        form [x = <e>] where [x] is a variable present in [c].
+
+        Note that if there are multiple equations of the form [x = <e>] for a
+        given [x], then those equations will be in the same strongly connected
+        component. For example for [x=foo] and [x=bar], we would have:
+            x=foo --> { x=foo, x=bar }
+            x=bar --> { x=foo, x=bar }
+    *)
     let eq2g cs: EqRel.t =
       (* [get_succs m c] returns the set of successors in [m] of all the
          variables used by [c]. *)
@@ -589,7 +636,7 @@ let get_failed cns =
      *  from variables to constants) and [eqs] is a list of equations,
      *  evaluates the equation [c] w.r.t. to solution [sol] and returns
      *  [(sol,eqs)] updated, with:
-     *     - [sol] updated to add all the variable affections found;
+     *     - [sol] updated to add all the variable assignments found;
      *     - [eqs] updated to add the unsolved equations.
      *)
     let solve_one c sol eqs =
@@ -699,26 +746,31 @@ let get_failed cns =
       else
         solve_topo cs
 
-    type solver_state = EqRel.t * cnstrnt list
+    module Hint = struct
+      type solver_state = EqRel.t * cnstrnt list
 
-    let make_solver_state csn: solver_state =
-      let _, csn = normalize_vars csn in
-      let ccm = eq2g csn in
-      (ccm, csn)
+      let make_solver_state csn: solver_state =
+        (* No need to normalize, as the equations just come out of [solve_regs],
+           and thus should be already normalized. Because the extra equation
+           arrives from the event-structure, that has also been normalized, the
+           new equation is also normalized. *)
+        let ccm = eq2g csn in
+        (ccm, csn)
 
-    let hint_solve_one ((ccm, old_csn) : solver_state) v1 v2 =
-      if C.old_solver then
-        solve_std (Assign (v1, Atom v2) :: old_csn) |> function
-        | NoSolns -> NoSolns
-        | Maybe _ -> Maybe ()
-      else
-        match (v1, v2) with
-        | V.Val c1, V.Val c2 -> if V.Cst.eq c1 c2 then Maybe () else NoSolns
-        | V.Var _, V.Var _ -> Maybe ()
-        | V.Var csym, V.Val cst | V.Val cst, V.Var csym -> (
-            let sol = V.Solution.singleton csym cst in
-            try
-              let _sol, _cs = EqRel.scc_kont topo_step (sol, []) old_csn ccm in
-              Maybe ()
-            with Contradiction -> NoSolns)
+      let hint_solve_one ((ccm, old_csn) : solver_state) v1 v2 =
+        if C.old_solver then
+          solve_std (Assign (v1, Atom v2) :: old_csn) |> function
+          | NoSolns -> NoSolns
+          | Maybe _ -> Maybe ()
+        else
+          match (v1, v2) with
+          | V.Val c1, V.Val c2 -> if V.Cst.eq c1 c2 then Maybe () else NoSolns
+          | V.Var _, V.Var _ -> Maybe ()
+          | V.Var csym, V.Val cst | V.Val cst, V.Var csym -> (
+              let sol = V.Solution.singleton csym cst in
+              try
+                let _sol, _cs = EqRel.scc_kont topo_step (sol, []) old_csn ccm in
+                Maybe ()
+              with Contradiction -> NoSolns)
+    end
   end
