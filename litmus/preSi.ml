@@ -80,6 +80,11 @@ module Make
     if Cfg.variant Variant_litmus.ConstPacField && not (Cfg.variant Variant_litmus.Pac) then
       Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
 
+  let () =
+    if (Cfg.variant Variant_litmus.EIS || Cfg.variant Variant_litmus.EOS)
+       && not (Cfg.variant Variant_litmus.ExS) then
+      Warn.user_error "\"eis\"/\"eos\" variants require \"exs\" variant"
+
   module Insert =
       ObjUtil.Insert
         (struct
@@ -264,6 +269,9 @@ module Make
         Insert.insert_when_exists O.o "intrinsics.h" ;
         if Cfg.variant Variant_litmus.MemTag then begin
           O.o "#include \"memtag.h\""
+        end;
+        if Cfg.variant Variant_litmus.ExS then begin
+          O.o "#include \"exs.h\""
         end;
         if Cfg.variant Variant_litmus.Pac then begin
           O.o "#include \"auth.h\""
@@ -2161,6 +2169,14 @@ module Make
                 in
                 O.fi "mte_init(%s);" (pp_tag_check Cfg.tagcheck);
               end;
+            if Cfg.variant Variant_litmus.ExS then
+              begin
+                let eis_val =
+                  if Cfg.variant Variant_litmus.EIS then 1 else 0 in
+                let eos_val =
+                  if Cfg.variant Variant_litmus.EOS then 1 else 0 in
+                O.fi "init_exs(%d, %d);" eis_val eos_val;
+              end;
             if Cfg.variant Variant_litmus.Pac then
               O.oi "init_pauth();" ;
             O.oi "int id = smp_processor_id();" ;
@@ -2329,6 +2345,8 @@ module Make
         end ;
         if Cfg.variant Variant_litmus.ConstPacField then
           O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
+        if Cfg.is_kvm && Cfg.variant Variant_litmus.ExS then
+          O.fi "if (!check_exs(%S)) return 0;" doc.Name.name ;
         if Cfg.is_kvm then begin
           match db with
           | None ->
