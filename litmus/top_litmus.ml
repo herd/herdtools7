@@ -271,7 +271,8 @@ end = struct
                 let flags =
                   { Flags.pac = O.variant Variant_litmus.Pac;
                     Flags.self = O.variant Variant_litmus.Self;
-                    Flags.memtag = O.variant Variant_litmus.MemTag } in
+                    Flags.memtag = O.variant Variant_litmus.MemTag;
+                    Flags.exs = O.variant Variant_litmus.ExS } in
                 dump src doc compiled;
                 if not OT.is_out then begin
                     let _utils =
