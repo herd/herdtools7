@@ -371,6 +371,7 @@ val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list
 module List : sig
   include module type of List
 
+  val apply : ('a -> 'b) t -> 'a t -> 'b t
   val empty : 'a t
   val concat_map : ('a -> 'b list) -> 'a list -> 'b list
   val is_empty : 'a list -> bool
@@ -397,5 +398,6 @@ end
 module Option : sig
   include module type of Option
 
+  val apply : ('a -> 'b) t -> 'a t -> 'b t
   val get_or_exn : exn -> 'a option -> 'a
 end
