@@ -1,0 +1,10 @@
+ImpW -> Imp W
+M -> M
+BCC -> BCC
+Exp -> Exp
+ExpM -> Exp M
+ImpR -> Imp R
+Wreg -> Wreg
+NoRet -> NoRet
+Rreg -> Rreg
+DSBFULL -> dsb.full

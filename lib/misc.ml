@@ -832,7 +832,6 @@ module List = struct
 
   let empty = []
   let concat_map f l = concat (map f l)
-  let pure x = [ x ]
   let is_empty = function
     | [] -> true
     | _ -> false
@@ -874,7 +873,6 @@ module Option = struct
     | Some x -> x
     | None -> raise exn
 
-  let pure x = Some x
   let apply f_opt x_opt =
     let (let*) = Option.bind in
     let* f = f_opt in

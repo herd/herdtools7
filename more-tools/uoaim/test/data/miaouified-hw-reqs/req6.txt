@@ -1,0 +1,5 @@
+If all of the following apply:
+* the Implicit Instruction Memory Read Effect (c) appears in program order before the Implicit Instruction Memory Read Effect (d).
+* Effect (d) is IC-before the IC Effect (m).
+* the DSB FULL Effect (n) appears in program order between Effect (m) and the Explicit Memory Write Effect (b).
+then Effect (c) is not architecturally Allowed to Read-from Effect (b).

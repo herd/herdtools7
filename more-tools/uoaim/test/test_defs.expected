@@ -1,0 +1,23 @@
+-------------
+aob.txt
+let aob = [Exp & M]; rmw; [Exp & M] | [Exp & M]; rmw; lrs; [A | Q] | [Imp & TTD & R]; rmw; [HU]
+-------------
+hw_update_proc.txt
+Interpret error: Failed to interpret cat definition ("There is no Memory Write Effect E3 such that E1 is Coherence-before E3 and E3 is Coherence-before E2")
+-------------
+iico_order.txt
+let iico_order = [M]; ~iico_ctrl & ~iico_data & ??? & same-instance; [M]
+-------------
+multiple_outputs.txt
+let ??? = (rf^-1 & (addr; ca)) & (po; po)
+let ??? = (addr & (rf^-1; ca^-1)) & po; po
+let ??? = po; ((addr^-1; rf^-1) & ca) & po
+-------------
+pick_data_dep.txt
+let pick-data-dep = [Exp & R]; ~same-instance & (pick-basic-dep; [DATA]; (iico_data | iico_ctrl | (iico_data | iico_ctrl)+)); [Exp & W]
+-------------
+pick_dtrm.txt
+let rec pick-dtrm = dtrm | iico_ctrl | pick-dtrm; pick-dtrm
+-------------
+same_loc.txt
+let same-loc = [~??? & M]; ???; [~??? & M] | [???]; ???; [???] | [???]; same-low-order-bits | same-low-order-bits; [???] | same-low-order-bits & (???^-1; ???; ???)
