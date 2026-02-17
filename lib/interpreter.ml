@@ -288,9 +288,11 @@ module Make
         | Tuple of  v list
 
       and env =
-          { vals  : v Lazy.t StringMap.t;
-            enums : string list StringMap.t;
-            tags  : string StringMap.t; }
+        { vals  : v Lazy.t StringMap.t; (* Standard bindings *)
+          (* Optionnal bindigs for (implicit) transitive relations *)
+          trans : v Lazy.t StringMap.t;
+          enums : string list StringMap.t;
+          tags  : string StringMap.t; }
       and closure =
           { clo_args : AST.pat ;
             mutable clo_env : env ;
@@ -322,7 +324,8 @@ module Make
         | Tuple of v list
 
       and env =
-          { vals  : v  Lazy.t StringMap.t;
+          { vals  : v Lazy.t StringMap.t;
+            trans : v Lazy.t StringMap.t;
             enums : string list StringMap.t;
             tags  : string StringMap.t; }
       and  closure =
@@ -509,6 +512,7 @@ module Make
 
     let env_empty =
       {vals=StringMap.empty;
+       trans=StringMap.empty;
        enums=StringMap.empty;
        tags=StringMap.empty; }
 
@@ -690,8 +694,15 @@ module Make
       end
 
     let find_env_loc loc env k =
-      try  find_env env.EV.env k
+      try find_env env.EV.env k
       with Misc.UserError msg -> error env.EV.silent loc "%s" msg
+
+    let find_env_loc_trans loc env k =
+      let e = env.EV.env in
+      try Lazy.force @@ StringMap.find k e.trans
+      with Not_found ->
+        try find_env e k
+        with Misc.UserError msg -> error env.EV.silent loc "%s" msg
 
 (* find without forcing lazy's *)
     let just_find_env fail loc env k =
@@ -811,7 +822,8 @@ module Make
 (* Tests are polymorphic, acting on relations, class relations and sets *)
     let test2pred env t e v = match t,v with
     | (Acyclic,(Rel r|TransRel r))
-    | (Irreflexive,TransRel r)  -> E.EventRel.is_acyclic r
+    | (Irreflexive,TransRel r)  ->
+        E.EventRel.is_acyclic r
     | Acyclic,ClassRel r -> ClassRel.is_acyclic r
     | Irreflexive,Rel r -> E.EventRel.is_irreflexive r
     | Irreflexive,ClassRel r -> ClassRel.is_irreflexive r
@@ -1290,10 +1302,20 @@ module Make
               error env.EV.silent loc "tag '%s is undefined" s
             end
         | Var (loc,k) ->
-            find_env_loc loc env k
+            if accept_implicit then
+              find_env_loc_trans loc env k
+            else
+              find_env_loc loc env k
         | Fun (loc,xs,body,name,fvs) ->
             Clo (eval_fun false env loc xs body name fvs)
 (* Unary operators *)
+        | Op1 (_,Plus,Op (_,Union,es)) ->
+            begin
+              match eval_union_plus env es with
+              | TransRel r when not accept_implicit ->
+                  Rel (E.EventRel.transitive_closure r)
+              | v -> v
+            end
         | Op1 (_,Plus,e) ->
             begin match eval true env e with
             | V.Empty -> V.Empty
@@ -1703,6 +1725,28 @@ module Make
             if eval_cond loc env cond then eval accept_implicit env ifso
             else eval accept_implicit env ifnot
 
+(*
+ * Evaluation of `(e1|..|en)+`
+ * Hence, `e1`, ...,`en` must be relations.
+ *)
+      and eval_union_plus env es =
+        try
+          let rs =
+            List.fold_right
+              (fun e k ->
+                 match eval true env e with
+                 | TransRel r (*  `(..|ei+|...)+` = `(...|ei|...)+` *)
+                 | Rel r -> r::k
+                 | V.Empty -> k
+                 | V.Unv -> raise Exit
+                 | v ->
+                     error_rel env.EV.silent (get_loc e) v)
+              es [] in
+          match rs with
+          | [] -> V.Empty
+          | _ -> TransRel (E.EventRel.unions rs)
+        with Exit -> Unv
+
       and eval_diff env loc e1 e2 =
         let loc1,v1 = eval_ord_loc env e1
         and loc2,v2 = eval_ord_loc env e2 in
@@ -2013,7 +2057,7 @@ module Make
           end ;
           let env,ws = fix_step env_bd env bds in
           let env = env_rec_funs { env_bd with EV.env=env;} loc funs in
-          let check_ok = check { env_bd with EV.env=env; } in
+          let check_ok = check {  env_bd with EV.env=env; } in
           if not check_ok then begin
             if O.debug then warn loc "Fix point interrupted" ;
             CheckFailed env
@@ -2214,7 +2258,7 @@ module Make
       let eval_test check env t e =
         let accept_implicit =
           match t with
-          | Yes Acyclic|No Acyclic -> true
+          | Yes (Acyclic|Irreflexive)|No (Acyclic|Irreflexive) -> true
           | _ -> false in
         check (test2pred env t e (eval_rel_set accept_implicit env e)) in
 
@@ -2337,44 +2381,63 @@ module Make
               let st = check_bell_order bds st in
               kont st res
           | Rec (loc,bds,testo) ->
-              let env =
-                match
-                  env_rec
-                    (make_eval_test testo) (from_st st)
-                    loc (fun pp -> pp@show_to_vbpp st) bds
-                with
-                | CheckOk env -> Some env
-                | CheckFailed env ->
-                    if O.debug then begin
+              begin
+                match testo,ASTUtils.as_plus bds with
+                | None,Some (x,es) ->
+                    let env = from_st st in
+                    let v = lazy (eval_union_plus env es) in
+                    let env = env.EV.env in
+                    let trans = StringMap.add x v env.trans
+                    and vals =
+                      let w =
+                        lazy begin
+                          match Lazy.force v with
+                          | TransRel r ->
+                              Rel (E.EventRel.transitive_closure r)
+                          | v -> v
+                        end in
+                      StringMap.add x w env.vals in
+                    let env = { env with vals; trans; } in
+                    kont { st with env; } res
+                | _,_ ->
+                    let env =
+                      match
+                        env_rec
+                          (make_eval_test testo) (from_st st)
+                          loc (fun pp -> pp@show_to_vbpp st) bds
+                      with
+                      | CheckOk env -> Some env
+                      | CheckFailed env ->
+                          if O.debug then begin
                       let st = { st with env; } in
                       let st = doshow bds st in
                       pp_check_failure st (Misc.as_some testo)
                     end ;
-                    None in
-              begin match env with
-              | None -> kfail res
-              | Some env ->
-                  let st = { st with env; } in
-                  let st = doshow bds st in
-
-(* Check again for strictskip *)
-                  let st = match testo with
-                  | None -> st
-                  | Some (_,_,t,e,name) ->
-                      if
-                        O.strictskip &&
-                        skip_this_check name &&
-                        not (eval_test Misc.identity (from_st st) t e)
-                      then begin
-                        { st with
-                          skipped =
-                          StringSet.add (Misc.as_some name) st.skipped;}
+                          None in
+                    begin match env with
+                      | None -> kfail res
+                      | Some env ->
+                          let st = { st with env; } in
+                          let st = doshow bds st in
+                          (* Check again for strictskip *)
+                          let st = match testo with
+                            | None -> st
+                            | Some (_,_,t,e,name) ->
+                                if
+                                  O.strictskip &&
+                                  skip_this_check name &&
+                                  not (eval_test Misc.identity (from_st st) t e)
+                                then begin
+                                  { st with
+                                    skipped =
+                                      StringSet.add
+                                        (Misc.as_some name) st.skipped;}
                       end else st in
-(* Check bell definitions *)
-                  let st = check_bell_order bds st in
-                  kont st res
+                          (* Check bell definitions *)
+                          let st = check_bell_order bds st in
+                          kont st res
+                    end
               end
-
           | InsMatch (loc,e,cls,d) ->
               let v = eval_st st e in
               begin match v with
