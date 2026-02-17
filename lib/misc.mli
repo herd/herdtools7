@@ -361,3 +361,39 @@ val mix : int -> int -> int -> int
 (*********************************)
 
 val group_by_int : ('k -> int option) -> ('k * 'v) list -> ('k * 'v) list list
+
+(************************************)
+(* Stdlib shims and other utilities *)
+(************************************)
+
+module List : sig
+  include module type of List
+
+  val empty : 'a t
+  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+  val is_empty : 'a list -> bool
+  val singleton : 'a -> 'a t
+  (** [singleton x] returns the one-element list [[x]].
+      For compatibility with OCaml < 5.4. *)
+
+  val uniq : eq:('a -> 'a -> bool) -> 'a t -> 'a t
+  (** [uniq ~eq l] removes duplicates in [l] w.r.t the equality predicate [eq].
+      Complexity is quadratic in the length of the list, but the order
+      of elements is preserved. *)
+
+  val fold_left_map :
+    ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
+  (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
+      accumulator through calls to [f].
+      For compatibility with OCaml < 4.11. *)
+
+  module Syntax : sig
+    val (let*) : 'a list -> ('a -> 'b list) -> 'b list
+  end
+end
+
+module Option : sig
+  include module type of Option
+
+  val get_or_exn : exn -> 'a option -> 'a
+end

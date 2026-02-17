@@ -822,3 +822,62 @@ let group_by_int get_key env =
        (IntMap.fold
           (fun _ env_p k -> List.rev env_p::k)
           m []))
+
+(************************************)
+(* Stdlib shims and other utilities *)
+(************************************)
+
+module List = struct
+  include List
+
+  let empty = []
+  let concat_map f l = concat (map f l)
+  let pure x = [ x ]
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+
+  let singleton x = [ x ]
+  let uniq ~eq l =
+    let rec uniq eq acc l =
+      match l with
+      | [] -> List.rev acc
+      | x :: xs when List.exists (eq x) xs -> uniq eq acc xs
+      | x :: xs -> uniq eq (x :: acc) xs
+    in
+    uniq eq [] l
+
+
+  let fold_left_map f accu l =
+    let rec aux accu l_accu = function
+      | [] -> accu, rev l_accu
+      | x :: l ->
+          let accu, x = f accu x in
+          aux accu (x :: l_accu) l in
+    aux accu [] l
+
+  module Syntax = struct
+    let (let*) = fun l f -> concat_map f l
+  end
+
+  let apply (fs : ('a -> 'b) list) (xs : 'a list) : 'b list =
+    let open Syntax in
+    let* f = fs in
+    let* x = xs in
+    [ f x ]
+end
+
+module Option = struct
+  include Option
+
+  let get_or_exn exn = function
+    | Some x -> x
+    | None -> raise exn
+
+  let pure x = Some x
+  let apply f_opt x_opt =
+    let (let*) = Option.bind in
+    let* f = f_opt in
+    let* x = x_opt in
+    Some (f x)
+end
