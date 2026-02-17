@@ -47,7 +47,6 @@ let bool_of_string s =
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token LHS_HYPERTARGETS
-%token AUTO_NAME
 %token OPTION
 %token OPERATOR
 %token PARTIAL
@@ -122,6 +121,7 @@ let bool_of_string s =
 %right EXPONENT
 
 %left LPAR
+%left DOT
 
 %%
 
@@ -401,8 +401,8 @@ let expr :=
       { Expr.make_tuple args }
     | lhs=expr; args=plist0(expr);
       { Expr.make_application lhs args }
-    | var=IDENTIFIER; DOT; ~=field_path;
-      { Expr.FieldAccess { var; fields = field_path} }
+    | base=expr; DOT; field=IDENTIFIER;
+      { Expr.FieldAccess { base; field } }
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
       { Expr.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
@@ -461,10 +461,6 @@ let short_circuit_expr :=
     | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
       { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
 
-let field_path :=
-  | id=IDENTIFIER; { [ id ] }
-  | id1=IDENTIFIER; DOT; fields=field_path; { id1 :: fields }
-
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }
     | EQ_COLON; { "reverse_assign" }
@@ -493,9 +489,6 @@ let judgment_attributes ==
 
 let judgment_attribute :=
     | math_layout_attribute
-    | auto_name_attribute
-
-let auto_name_attribute := AUTO_NAME; EQ; value=IDENTIFIER; { (Auto_Name, BoolAttribute (bool_of_string value)) }
 
 let render_rule :=
   | RENDER; RULE; name=IDENTIFIER; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);

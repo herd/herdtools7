@@ -381,15 +381,6 @@ module Make (S : SPEC_VALUE) = struct
   module RenderRule = struct
     open Rule
 
-    (** Renders the field path [path] with [fmt]. *)
-    let pp_field_path fmt = function
-      | [] -> assert false
-      | var :: [] -> pp_var fmt var
-      | var :: path ->
-          fprintf fmt "%a.%a" pp_var var
-            (PP.pp_sep_list ~sep:"." pp_field_name)
-            path
-
     (** Returns the macro for a given relation category and a default long right
         arrow for [None]. *)
     let arrow_macro_name_for_category_opt =
@@ -495,7 +486,8 @@ module Make (S : SPEC_VALUE) = struct
             (updates, updates_layout)
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
-      | FieldAccess { var; fields } -> pp_field_path fmt (var :: fields)
+      | FieldAccess { base; field } ->
+          fprintf fmt "%a.%a" pp_expr (base, layout) pp_field_name field
       | Indexed { index; list_var; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
             fprintf fmt "%a \\in %a(%a)" pp_var index pp_macro

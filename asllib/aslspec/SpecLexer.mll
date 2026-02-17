@@ -52,7 +52,6 @@ rule token = parse
     | "option"              { OPTION }
     | "operator"            { OPERATOR }
     | "fun"                 { FUN }
-    | "auto_name"           { AUTO_NAME }
     | "partial"             { PARTIAL }
     | "powerset"            { POWERSET }
     | "powerset_finite"     { POWERSET_FINITE }

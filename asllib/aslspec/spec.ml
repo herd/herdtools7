@@ -245,6 +245,7 @@ type t = {
   assign : Relation.t;
   reverse_assign : Relation.t;
   bottom_constant : Constant.t;
+  bottom_term : Term.t;
   none_constant : Constant.t;
   empty_set : Constant.t;
   empty_list : Constant.t;
@@ -629,112 +630,6 @@ module ResolveRules = struct
               in
               Elem_Relation resolved_def
           | Elem_Relation { rule_opt = None } as elem -> elem)
-        ast
-    in
-    update_spec_ast spec ast
-end
-
-(** A module for extending expressions in output configurations of conclusion
-    judgments with names derived from type terms. *)
-module ExtendNames = struct
-  open Expr
-  open Rule
-
-  (** [opt_extend] Wraps [expr] with a name if [opt_name] is [Some]. Avoids
-      naming a variable expression with its own name, as an optimization. *)
-  let opt_extend expr opt_name =
-    match (expr, opt_name) with
-    | _, None -> expr
-    | Var v, Some name when String.equal v name ->
-        expr (* Avoid naming a variable with its own name. *)
-    | _, Some name -> NamedExpr (expr, name)
-
-  (** [extend_with_names type_term expr ] recursively transforms [expr] by
-      adding names from [type_term] to sub-expressions of [expr]. Currently,
-      only tuples (labelled or unlabelled) are supported, which is sufficient
-      for most output configurations. *)
-  let rec extend_with_names type_term expr =
-    match (type_term, expr) with
-    | Term.Tuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
-        (* An unlabelled tuple with a single component serves as a named reference
-           to any type.*)
-        opt_extend expr opt_name
-    | ( Term.Tuple { label_opt = term_label_opt; args = term_components },
-        Expr.Tuple { label_opt = expr_label_opt; args = expr_components } )
-      when Option.equal String.equal term_label_opt expr_label_opt ->
-        let () =
-          if List.compare_lengths term_components expr_components <> 0 then
-            let msg =
-              Format.asprintf
-                "The expression %a cannot be extended with names from the type \
-                 term %a since they have different number of args."
-                PP.pp_expr expr PP.pp_type_term type_term
-            in
-            raise (SpecError msg)
-          else ()
-        in
-        let extended_args =
-          List.map2
-            (fun (opt_name, arg_type) arg ->
-              opt_extend (extend_with_names arg_type arg) opt_name)
-            term_components expr_components
-        in
-        Expr.Tuple { label_opt = expr_label_opt; args = extended_args }
-    | _ -> expr
-
-  (** [extend_rule_element output_type rule_element] extends output judgments in
-      [rule_element] with names from [output_type]. *)
-  let rec extend_rule_element output_type rule_element =
-    match rule_element with
-    | Judgment
-        ({ expr = Transition { lhs; rhs; short_circuit }; is_output = true } as
-         judgment) ->
-        let extended_rhs =
-          if auto_name_judgment judgment then extend_with_names output_type rhs
-          else rhs
-        in
-        let extended_expr =
-          Transition { lhs; rhs = extended_rhs; short_circuit }
-        in
-        Judgment { judgment with expr = extended_expr }
-    | Judgment _ -> rule_element
-    | Cases cases ->
-        let extended_cases =
-          List.map
-            (fun { name; elements } ->
-              let extended_elements =
-                List.map (extend_rule_element output_type) elements
-              in
-              { name; elements = extended_elements })
-            cases
-        in
-        Cases extended_cases
-
-  (** [extend ast] extends [ast] by adding names to expressions in output
-      configurations. It returns the extended AST and an updated symbol table.
-  *)
-  let extend ({ ast } as spec) =
-    let ast =
-      List.map
-        (fun elem ->
-          match elem with
-          | ( Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
-            | Elem_RenderRule _
-            | Elem_Relation { rule_opt = None } ) as elem ->
-              elem
-          | Elem_Relation { output = [] } ->
-              assert false (* The parser ensures that [output] is non-empty. *)
-          | Elem_Relation
-              ({ rule_opt = Some elements; output = first_output_type :: _ } as
-               def) ->
-              (* TODO: we currently use the first type variant in the list of
-               output types for the relation to assign names.
-               A more flexible approach is to find the output type term
-               that rhs corresponds to. *)
-              let extended_elements =
-                List.map (extend_rule_element first_output_type) elements
-              in
-              Elem_Relation { def with rule_opt = Some extended_elements })
         ast
     in
     update_spec_ast spec ast
@@ -1617,13 +1512,9 @@ module Check = struct
         | Var id ->
             vars_of_identifiers spec.id_to_defining_node [ id ]
             |> check_and_add_for_expr mode use_def
-        | FieldAccess { var } -> (
+        | FieldAccess { base } -> (
             match mode with
-            | Use ->
-                let vars_of_id =
-                  vars_of_identifiers spec.id_to_defining_node [ var ]
-                in
-                check_and_add_for_expr Use use_def vars_of_id
+            | Use -> update_use_def_for_expr Use spec use_def base
             | Def ->
                 failwith
                   "A field access is not expected to be used as a \
@@ -2376,22 +2267,21 @@ module Check = struct
       let open Expr in
       let t, tenv =
         match expr with
+        | Var id when is_ignore_var id ->
+            (* If we type '_' with the bottom type, it will be subsumed by any other type. *)
+            (spec.bottom_term, type_env)
         | Var id ->
             let id_type = type_of_id ~context_expr:expr spec type_env id in
             (id_type, type_env)
-        | FieldAccess { var; fields } ->
-            let base_type = type_of_id ~context_expr:expr spec type_env var in
-            let last_field_type =
-              List.fold_left
-                (fun curr_base_type field_id ->
-                  if is_field_accessible spec curr_base_type field_id then
-                    type_term_for_field spec field_id
-                  else
-                    Error.undefined_field_in_record ~context_expr:expr
-                      curr_base_type field_id)
-                base_type fields
+        | FieldAccess { base; field } ->
+            let base_type, type_env = infer_type_in_env spec type_env base in
+            let () =
+              if not (is_field_accessible spec base_type field) then
+                Error.undefined_field_in_record ~context_expr:expr base_type
+                  field
             in
-            (last_field_type, type_env)
+            let field_type = type_term_for_field spec field in
+            (field_type, type_env)
         | ListIndex { list_var; index } ->
             (* list_var should be a list-typed variable and index must be the
                natural number type. The result type is the type of the list elements.
@@ -3084,10 +2974,8 @@ module Check = struct
       | Indexed { body } -> check_expr_in_context body
       | ListIndex { index } -> check_expr_in_context index
       | Var _ -> ()
-      | FieldAccess { fields } ->
-          List.iter
-            (fun id -> if not (is_field id) then Error.non_field id expr)
-            fields
+      | FieldAccess { field } ->
+          if not (is_field field) then Error.non_field field expr
       | UnresolvedApplication _ ->
           failwith "Unexpected unresolved application expression."
 
@@ -3159,6 +3047,166 @@ module Check = struct
           input
     in
     List.iter (function Elem_Relation def -> check_relation def | _ -> ()) ast
+end
+
+(** [match_output_expr_to_term spec expr terms] performs a best-effort matching
+    of an output expression [expr] to any term in [terms], returning the first
+    matching term if any. This function assumes [expr] and all the terms in
+    [terms] are well-formed and well-typed. *)
+let match_output_expr_to_term spec expr terms =
+  let rec expr_matches_term spec expr term =
+    let open Expr in
+    let open Term in
+    let term = Check.CheckTypeInstantiations.reduce_term spec term in
+    match (expr, term) with
+    | NamedExpr (sub_expr, _), _ -> expr_matches_term spec sub_expr term
+    | Var _, _ ->
+        (* A variable does not have any structure and so can match any term. *)
+        true
+    | ( Expr.Tuple { label_opt = expr_label; args },
+        Term.Tuple { label_opt = term_label; args = term_args } ) ->
+        Option.equal String.equal expr_label term_label
+        && List.length args = List.length term_args
+        && List.for_all2 (expr_matches_term spec) args (List.map snd term_args)
+    | Expr.Tuple _, _ -> false
+    | ( Expr.Record { label_opt = expr_label; fields = expr_fields },
+        Term.Record { label_opt = term_label; fields = term_fields } ) ->
+        let expr_fields =
+          List.sort
+            (fun (field_name1, _) (field_name2, _) ->
+              String.compare field_name1 field_name2)
+            expr_fields
+        in
+        let term_fields = sort_record_fields term_fields in
+        Option.equal String.equal expr_label term_label
+        && List.length expr_fields = List.length term_fields
+        && List.for_all2
+             (fun (_, field_expr) { Term.term = field_term } ->
+               expr_matches_term spec field_expr field_term)
+             expr_fields term_fields
+    | Expr.Record _, _ -> false
+    | RecordUpdate { updates }, Term.Record { fields = term_fields } ->
+        let expr_fields = List.map fst updates in
+        let term_fields = List.map (fun { Term.name; _ } -> name) term_fields in
+        List.for_all
+          (fun field -> List.exists (String.equal field) term_fields)
+          expr_fields
+    | Relation _, _
+    | Map _, _
+    | RecordUpdate _, _
+    | ListIndex _, _
+    | FieldAccess _, _ ->
+        (* Give up. *)
+        false
+    | Transition _, _ | Indexed _, _ | UnresolvedApplication _, _ ->
+        Format.eprintf "Unsupported expression for matching output type: %a@."
+          PP.pp_expr expr;
+        assert false
+  in
+  List.find_opt (expr_matches_term spec expr) terms
+
+(** A module for extending expressions in output configurations of conclusion
+    judgments with names derived from type terms. *)
+module ExtendNames = struct
+  open Expr
+  open Rule
+
+  (** [opt_extend] Wraps [expr] with a name if [opt_name] is [Some]. Avoids
+      naming a variable expression with its own name, as an optimization. *)
+  let opt_extend expr opt_name =
+    match (expr, opt_name) with
+    | _, None -> expr
+    | Var v, Some name when String.equal v name ->
+        expr (* Avoid naming a variable with its own name. *)
+    | _, Some name -> NamedExpr (expr, name)
+
+  (** [extend_with_names type_term expr ] recursively transforms [expr] by
+      adding names from [type_term] to sub-expressions of [expr]. Currently,
+      only tuples (labelled or unlabelled) are supported, which is sufficient
+      for most output configurations. *)
+  let rec extend_with_names type_term expr =
+    match (type_term, expr) with
+    | Term.Tuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
+        (* An unlabelled tuple with a single component serves as a named reference
+           to any type.*)
+        opt_extend expr opt_name
+    | ( Term.Tuple { label_opt = term_label_opt; args = term_components },
+        Expr.Tuple { label_opt = expr_label_opt; args = expr_components } )
+      when Option.equal String.equal term_label_opt expr_label_opt ->
+        let () =
+          if List.compare_lengths term_components expr_components <> 0 then
+            let msg =
+              Format.asprintf
+                "The expression %a cannot be extended with names from the type \
+                 term %a since they have different number of args."
+                PP.pp_expr expr PP.pp_type_term type_term
+            in
+            raise (SpecError msg)
+          else ()
+        in
+        let extended_args =
+          List.map2
+            (fun (opt_name, arg_type) arg ->
+              opt_extend (extend_with_names arg_type arg) opt_name)
+            term_components expr_components
+        in
+        Expr.Tuple { label_opt = expr_label_opt; args = extended_args }
+    | _ -> expr
+
+  (** [extend_rule_element output_type rule_element] extends output judgments in
+      [rule_element] with names from [output_type]. *)
+  let rec extend_rule_element spec output_types rule_element =
+    match rule_element with
+    | Judgment
+        ({ expr = Transition { lhs; rhs; short_circuit }; is_output = true } as
+         judgment) ->
+        let output_type =
+          match match_output_expr_to_term spec rhs output_types with
+          | Some output_type -> output_type
+          | _ ->
+              (* Fallback to the main output type. *)
+              List.hd output_types
+        in
+        let extended_rhs = extend_with_names output_type rhs in
+        let extended_expr =
+          Transition { lhs; rhs = extended_rhs; short_circuit }
+        in
+        Judgment { judgment with expr = extended_expr }
+    | Judgment _ -> rule_element
+    | Cases cases ->
+        let extended_cases =
+          List.map
+            (fun { name; elements } ->
+              let extended_elements =
+                List.map (extend_rule_element spec output_types) elements
+              in
+              { name; elements = extended_elements })
+            cases
+        in
+        Cases extended_cases
+
+  (** [extend ast] extends [ast] by adding names to expressions in output
+      configurations. It returns the extended AST and an updated symbol table.
+  *)
+  let extend ({ ast } as spec) =
+    let ast =
+      List.map
+        (fun elem ->
+          match elem with
+          | ( Elem_Type _ | Elem_Constant _ | Elem_RenderTypes _
+            | Elem_RenderRule _
+            | Elem_Relation { rule_opt = None } ) as elem ->
+              elem
+          | Elem_Relation { output = [] } ->
+              assert false (* The parser ensures that [output] is non-empty. *)
+          | Elem_Relation ({ rule_opt = Some elements; output } as def) ->
+              let extended_elements =
+                List.map (extend_rule_element spec output) elements
+              in
+              Elem_Relation { def with rule_opt = Some extended_elements })
+        ast
+    in
+    update_spec_ast spec ast
 end
 
 (** A module to ensure that each constant in the specification has an associated
@@ -3327,9 +3375,8 @@ let make_spec_with_builtins ast =
   {
     ast;
     id_to_defining_node;
-    (* The following fields are not currently used, but they will be used in a future
-    PR that implements type inference. *)
     bottom_constant = get_constant "bot";
+    bottom_term = Label "bot";
     none_constant = get_constant "None";
     empty_set = get_constant "empty_set";
     empty_list = get_constant "empty_list";
