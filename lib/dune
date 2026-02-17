@@ -94,6 +94,7 @@
  (wrapped false)
  (libraries str aslref zarith)
  (modules_without_implementation
+  myRel
   sign
   outTests
   AST

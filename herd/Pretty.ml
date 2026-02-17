@@ -78,8 +78,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
   let _reduces_more r1 r2 =
     let open E.EventRel in
-    filter
-      (fun (e1,_e2) ->
+    restrict_domain
+      (fun e1 ->
         not
           (E.EventSet.is_empty (succs r2 e1)) &&
         not
@@ -552,7 +552,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           )
         (E.EventSet.empty, E.EventSet.empty) by_proc_and_poi in
      let r =
-     E.EventRel.filter (fun (e1,e2) -> E.EventSet.mem e1 maxs && E.EventSet.mem e2 mins) po
+       E.EventRel.restrict_domains
+         (fun e1 -> E.EventSet.mem e1 maxs)
+         (fun e2 -> E.EventSet.mem e2 mins) po
      in
      if dbg then
        eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
@@ -890,8 +892,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           else
             let r =
               if StringSet.mem tag PC.noid then
-                E.EventRel.filter
-                  (fun (e1,e2) -> not (E.event_equal e1 e2))
+                E.EventRel.restrict_rel
+                  (fun e1 e2 -> not (E.event_equal e1 e2))
                   r
               else r in
             (tag,r)::k)
@@ -1525,8 +1527,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let select_event = let open Misc in select_event &&& select_non_init
 
   let select_events = E.EventSet.filter select_event
-  let select_rel =
-    E.EventRel.filter (fun (e1,e2) -> select_event e1 && select_event e2)
+  let select_rel = E.EventRel.restrict_domains select_event select_event
 
   let select_es es =
     { es with

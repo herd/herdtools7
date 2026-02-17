@@ -339,8 +339,7 @@ Monad type:
           (fun (v,cls,es) ->
              let data =
                let data =
-                 E.EventRel.filter
-                   (fun (e1,e2) -> p1 e1 && p2 e2)
+                 E.EventRel.restrict_domains p1 p2
                    (E.EventRel.cartesian es.E.events es.E.events) in
                E.EventRel.union es.E.intra_causality_data data in
             v,cls,{ es with E.intra_causality_data=data; })
