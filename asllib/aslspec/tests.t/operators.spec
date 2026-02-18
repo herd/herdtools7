@@ -14,7 +14,7 @@ operator if_then_else[T](Bool, T, T) -> T
 operator equal[T](a: T, b: T) -> (c: Bool)
 {
   math_macro = \equal,
-  prose_application = "equating {a} to {b} yields {c}",
+  prose_application = "equating {a} to {b} yields | {c}",
 };
 
 operator member[T](x: T, s: powerset(T)) -> Bool

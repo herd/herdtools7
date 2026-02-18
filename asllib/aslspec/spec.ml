@@ -917,17 +917,38 @@ module Check = struct
   (** A module for checking that each prose template string ([prose_description]
       and [prose_application] attributes) to ensure it does not contain a
       [{var}] where [var] does not name any type term. If it does, LaTeX will
-      fail on [{var}], which would require debugging the generated code. This
-      check catches such cases and generates an easy to understand explanation.
-  *)
+      fail on [{var}], which would require debugging the generated code. *)
   module CheckProseTemplates : sig
     val check : t -> unit
     (** [check spec] checks all prose templates defined in [spec]. *)
   end = struct
-    (** [check_prose_template_for_vars template vars] checks that [template]
-        does not contain a [{var}] where [var] is not in [vars]. Otherwise,
-        raises a [SpecError] detailing the unmatched variables. *)
-    let check_prose_template_for_vars template vars =
+    let find_extra_vars_in_template template template_vars =
+      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
+      let reduce_template =
+        Str.global_replace
+          (Str.regexp
+             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
+          "" template
+      in
+      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+      let blocks = Str.full_split template_var_regexp reduce_template in
+      let extra_vars =
+        List.fold_left
+          (fun acc_extra_vars block ->
+            match block with
+            | Str.Text _ -> acc_extra_vars
+            | Str.Delim var -> (
+                match StringSet.find_opt var template_vars with
+                | Some _ -> acc_extra_vars
+                | None -> var :: acc_extra_vars))
+          [] blocks
+      in
+      extra_vars
+
+    (** [check_extra_vars_in_prose_template template vars] checks that
+        [template] does not contain a [{var}] where [var] is not in [vars].
+        @raise [SpecError] if such an unmatched variable is found. *)
+    let check_extra_vars_in_prose_template template vars =
       let open Latex in
       (* Populate with [{var}] for each [var]. *)
       let template_vars =
@@ -937,41 +958,39 @@ module Check = struct
             StringSet.add template_var acc_map)
           StringSet.empty vars
       in
-      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
-      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
-      let reduce_template =
-        Str.global_replace
-          (Str.regexp
-             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
-          "" template
-      in
-      let blocks = Str.full_split template_var_regexp reduce_template in
-      let unmatched_vars =
-        List.fold_left
-          (fun acc block ->
-            match block with
-            | Str.Text _ -> acc
-            | Str.Delim var -> (
-                match StringSet.find_opt var template_vars with
-                | Some _ -> acc
-                | None -> var :: acc))
-          [] blocks
-      in
-      if Utils.list_is_empty unmatched_vars then ()
-      else Error.unmatched_variables_in_template template unmatched_vars
+      let extra_vars = find_extra_vars_in_template template template_vars in
+      if Utils.list_is_empty extra_vars then ()
+      else Error.unmatched_variables_in_template template extra_vars
 
     let check_prose_template_for_definition_node defining_node =
       let prose_description = prose_description_for_node defining_node in
       let vars = vars_of_node defining_node in
-      let () = check_prose_template_for_vars prose_description vars in
+      let () =
+        try check_extra_vars_in_prose_template prose_description vars
+        with SpecError e ->
+          stack_spec_error e
+            (Format.asprintf "While checking: %s"
+               (definition_node_name defining_node))
+      in
       match defining_node with
       | Node_Type _ | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _
         ->
           ()
-      | Node_Relation def ->
+      | Node_Relation ({ Relation.input } as def) -> (
           let prose_application = Relation.prose_application def in
-          let () = check_prose_template_for_vars prose_application vars in
-          ()
+          let input_arg_vars = vars_of_opt_named_type_terms input in
+          try
+            check_extra_vars_in_prose_template prose_application input_arg_vars
+          with SpecError e ->
+            stack_spec_error e
+              (Format.asprintf
+                 "While checking prose_application for: %s. Recall that the \
+                  variables available for use in the prose_application \
+                  template are only those of the input arguments. In this \
+                  case, those variables are: %s.\n\
+                  Hint: to refer to the outcomes you may use `|`"
+                 (definition_node_name defining_node)
+                 (String.concat ", " input_arg_vars)))
 
     let check spec =
       iter_defined_nodes spec check_prose_template_for_definition_node

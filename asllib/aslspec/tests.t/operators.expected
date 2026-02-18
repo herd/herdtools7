@@ -52,8 +52,8 @@ The relation
 \DefineProse{f}{
 \AllApply
   \begin{itemize}
-    \item equating <empty prose for \texttt{num\_plus}> to \texttt{c} yields {c};
+    \item equating <empty prose for \texttt{num\_plus}> to \texttt{c} yields ;
     \item <empty prose for \texttt{assign}>;
-    \item the result is: \texttt{d}.
+    \item \textbf{result}: \texttt{d}.
   \end{itemize}
 } % EndDefineProse

@@ -681,26 +681,11 @@ module Make (S : SPEC_VALUE) = struct
           (Latex.spec_var_to_latex_var ~font_type:TextTT name)
       else prose
 
-    (* let prose_opt_for_node_id id =
-      match Spec.defining_node_opt_for_id S.spec id with
-      | Some node ->
-          let prose =
-            match node with
-            | Node_Constant def -> Constant.prose_description def
-            | Node_TypeVariant def -> TypeVariant.prose_description def
-            | Node_RecordField def -> Term.record_field_prose_description def
-            | Node_Relation def -> Relation.prose_application def
-            | Node_Type _ -> assert false
-          in
-          Some prose
-      | None -> None *)
-
     let prose_or_math prose expr =
       if Utils.string_is_empty prose then
         Format.asprintf "$%a$" pp_expr (expr, Unspecified)
       else prose
 
-    let split_transition_prose prose = String.split_on_char '|' prose
     let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
 
     let rec expr_to_prose type_case_table expr =
@@ -815,17 +800,10 @@ module Make (S : SPEC_VALUE) = struct
           let expr_prose =
             if Utils.string_is_empty expr_prose then
               prose_or_empty_message expr_prose name
-            else expr_prose |> split_transition_prose |> List.hd
+            else expr_prose
           in
           relation_expr_to_prose type_case_table relation args expr_prose
       | Transition { lhs = Relation { name } as lhs; rhs; short_circuit } ->
-          let relation = Spec.relation_for_id S.spec name in
-          let expr_prose = Relation.prose_application relation in
-          let _expr_prose =
-            if Utils.string_is_empty expr_prose then
-              prose_or_empty_message expr_prose name
-            else expr_prose |> split_transition_prose |> List.hd
-          in
           let lhs_prose = expr_to_prose type_case_table lhs in
           let rhs_prose = expr_to_prose type_case_table rhs in
           let short_circuit_prose = short_circuit_to_prose name short_circuit in
@@ -925,7 +903,7 @@ module Make (S : SPEC_VALUE) = struct
       in
       if is_output then
         let expr = transition_to_output expr in
-        Format.fprintf fmt "the result is: %s."
+        Format.fprintf fmt "\\textbf{result}: %s."
           (expr_to_prose type_case_table expr)
       else Format.fprintf fmt "%s;" (expr_to_prose type_case_table expr)
 

@@ -75,9 +75,9 @@ The relation
 \DefineProse{r}{
 \AllApply
   \begin{itemize}
-    \item define \texttt{res} as if \texttt{a} is equal to \texttt{b} holds then \texttt{a}, if \texttt{a} is greater than \texttt{b} holds then the addition of \texttt{a} and \texttt{b}, and if \texttt{a} is less than \texttt{b} holds then \texttt{b};
-    \item define \texttt{r\_f} as the addition of the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r};
+    \item define \texttt{res} as if \texttt{a} is equal to \texttt{b} holds then \texttt{a}, if \texttt{a} is greater than \texttt{b} holds then the sum of all numbers in \texttt{a} and \texttt{b}, and if \texttt{a} is less than \texttt{b} holds then \texttt{b};
+    \item define \texttt{r\_f} as the sum of all numbers in the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r};
     \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res};
-    \item the result is: the tuple consisting of:  (1) \texttt{res} (for \texttt{c}), and  (2) \texttt{r'}.
+    \item \textbf{result}: the tuple consisting of:  (1) \texttt{res} (for \texttt{c}), and  (2) \texttt{r'}.
   \end{itemize}
 } % EndDefineProse
