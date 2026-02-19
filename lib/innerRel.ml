@@ -682,75 +682,70 @@ module Make(O:MySet.OrderedType) : S
     (* Strata *)
 
     let strata es r =
-    let m =
-      restrict_rel
-        (fun e1 e2 -> Elts.mem e1 es && Elts.mem e2 es)
-        r in
-    let nss = M.fold (fun _ ns k -> ns::k) m [] in
-    let st0 = Elts.diff es (Elts.unions nss) in
-    if Elts.is_empty st0 then [es]
-    else
-      let rec do_rec seen st =
-        let stplus =
-          Elts.diff
-            (Elts.unions (Elts.fold (fun e k -> succs m e::k) st []))
-            seen in
-        if Elts.is_empty stplus then []
-        else stplus::do_rec (Elts.union seen stplus) stplus in
-      st0::do_rec st0 st0
+      let m =
+        restrict_rel
+          (fun e1 e2 -> Elts.mem e1 es && Elts.mem e2 es)
+          r in
+      let nss = M.fold (fun _ ns k -> ns::k) m [] in
+      let st0 = Elts.diff es (Elts.unions nss) in
+      if Elts.is_empty st0 then [es]
+      else
+        let rec do_rec seen st =
+          let stplus =
+            Elts.diff
+              (Elts.unions (Elts.fold (fun e k -> succs m e::k) st []))
+              seen in
+          if Elts.is_empty stplus then []
+          else stplus::do_rec (Elts.union seen stplus) stplus in
+        st0::do_rec st0 st0
 
+    (* bisimulation *)
 
+    let ok x y e =  Elts.mem x (succs e y)
 
-  (****************)
-  (* bisimulation *)
-  (****************)
+    let matches xs ys e =
+      Elts.for_all
+        (fun x -> Elts.exists (fun y -> ok x y e) ys)
+        xs
 
-  let ok x y e =  Elts.mem x (succs e y)
-
-  let matches xs ys e =
-    Elts.for_all
-      (fun x -> Elts.exists (fun y -> ok x y e) ys)
-      xs
-
-  let step t e =
-    M.fold
-      (fun x ys k ->
-         let next_x = succs t x in
-         Elts.fold
-           (fun y k ->
-              if O.compare x y = 0 then
-                (* Optimisation, when identical will stay in o forever *)
-                add (x,y) k
-              else
-                let next_y = succs t y in
-                if
-                  matches next_x next_y e &&
-                  matches next_y next_x e
-                then
+    let step t e =
+      M.fold
+        (fun x ys k ->
+           let next_x = succs t x in
+           Elts.fold
+             (fun y k ->
+                if O.compare x y = 0 then
+                  (* Optimisation, when identical will stay in o forever *)
                   add (x,y) k
-                else k)
-           ys k)
-      e M.empty
+                else
+                  let next_y = succs t y in
+                  if
+                    matches next_x next_y e &&
+                    matches next_y next_x e
+                  then
+                    add (x,y) k
+                  else k)
+             ys k)
+        e M.empty
 
-  let rec fix t e =
-    let next = step t e in
-    if subrel e next then e else fix t next
+    let rec fix t e =
+      let next = step t e in
+      if subrel e next then e else fix t next
 
-  let bisimulation t e0 = fix t e0
+    let bisimulation t e0 = fix t e0
 
   (* Pretty print *)
 
-  let pp chan delim pp_elt s =
-    let fst = ref true in
-    iter
-      (fun p ->
-         if not !fst then output_string chan delim ;
-         pp_elt chan p ;
-         fst := false)
-      s
+    let pp chan delim pp_elt s =
+      let fst = ref true in
+      iter
+        (fun p ->
+           if not !fst then output_string chan delim ;
+           pp_elt chan p ;
+           fst := false)
+        s
 
-  and pp_str delim pp_elt m =
-    fold (fun p k -> pp_elt p::k) m []
-    |> String.concat delim
+    and pp_str delim pp_elt m =
+      fold (fun p k -> pp_elt p::k) m [] |> String.concat delim
 
-end
+  end
