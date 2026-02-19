@@ -1971,9 +1971,8 @@ let get_rf_value test read =
             (*jade: looks compatible with speculation, but there might be some
               unforeseen subtlety here so flagging it to be sure*)
              let ppoloc =
-               E.EventRel.restrict_rel
-                 (fun e1 e2 -> E.is_explicit e1 && E.is_explicit e2)
-                 ppoloc in
+               E.EventRel.restrict_domains
+                 E.is_explicit E.is_explicit ppoloc in
                match U.compute_pco rfm ppoloc with
                | None -> raise Exit
                | Some pco -> E.EventRel.union pco0 pco in
