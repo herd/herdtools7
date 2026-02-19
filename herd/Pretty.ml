@@ -74,19 +74,6 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | Graph.Columns -> PC.oneinit
   | Graph.Free|Graph.Cluster -> false
 
-(* Attempt *)
-
-  let _reduces_more r1 r2 =
-    let open E.EventRel in
-    restrict_domain
-      (fun e1 ->
-        not
-          (E.EventSet.is_empty (succs r2 e1)) &&
-        not
-          (E.EventSet.is_empty (preds r2 e1)))
-      r1
-
-
   open PrettyConf
   open PPMode
 
@@ -551,11 +538,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
              E.EventSet.union min min2,E.EventSet.union max max2) p ess
           )
         (E.EventSet.empty, E.EventSet.empty) by_proc_and_poi in
-     let r =
-       E.EventRel.restrict_domains
-         (fun e1 -> E.EventSet.mem e1 maxs)
-         (fun e2 -> E.EventSet.mem e2 mins) po
-     in
+     let r = E.EventRel.restrict_domains_to_sets maxs mins po in
      if dbg then
        eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
      r

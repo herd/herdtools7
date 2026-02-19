@@ -682,10 +682,7 @@ module Make(O:MySet.OrderedType) : S
     (* Strata *)
 
     let strata es r =
-      let m =
-        restrict_rel
-          (fun e1 e2 -> Elts.mem e1 es && Elts.mem e2 es)
-          r in
+      let m = restrict_domains_to_sets es es r in
       let nss = M.fold (fun _ ns k -> ns::k) m [] in
       let st0 = Elts.diff es (Elts.unions nss) in
       if Elts.is_empty st0 then [es]
