@@ -1,3 +1,8 @@
+(executable
+ (name check_no_missing_file_in_run)
+ (modules check_no_missing_file_in_run)
+ (libraries str))
+
 (tests
  (names toposort ConstraintBinops)
  (modes native)
@@ -20,7 +25,13 @@
   (:standard ../libdir/stdlib.asl))
  (libraries asllib zarith testhelpers)
  (modules
-  (:standard \ toposort helpers ConstraintBinops Lexer))
+  (:standard
+   \
+   toposort
+   helpers
+   ConstraintBinops
+   Lexer
+   check_no_missing_file_in_run))
  (flags
   (:standard -w -40-42))
  (action

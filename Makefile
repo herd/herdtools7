@@ -86,11 +86,6 @@ dune-test:
 	@ echo
 	dune runtest --profile=$(DUNE_PROFILE)
 
-.PHONY: dune-no-missing-file-in-runt
-test:: dune-no-missing-file-in-runt
-dune-no-missing-file-in-runt:
-	asllib/tests/check-no-missing-file-in-run.sh ./
-
 test-all:: test.aarch64assumptions
 test-local:: test.aarch64assumptions
 test.aarch64assumptions:
@@ -981,6 +976,13 @@ type-check-asl: Version.ml
 	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
 	@ $(MAKE) $(MFLAGS) -C herd/libdir/asl-pseudocode type-check ASLREF=$(CURDIR)/$(ASLREF)
 	@ echo "ASLRef type-checking of published Arm ASL code: OK"
+
+.PHONY: dune-no-missing-file-in-runt
+test:: dune-no-missing-file-in-runt
+dune-no-missing-file-in-runt:
+	@ echo
+	asllib/tests/check-no-missing-file-in-run.sh ./
+	@ echo "no missing file in run.t"
 
 RUN_TESTS?=false
 $(V).SILENT:
