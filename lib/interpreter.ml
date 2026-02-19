@@ -873,13 +873,13 @@ module Make
 
 (* Union is polymorphic *)
     let union_args =
-      let rec u_rec = function
-        | [] -> []
-        | (_,V.Empty)::xs -> u_rec xs
-        | (_,Unv)::_ -> raise Exit
-        | (loc,v)::xs ->
-            (loc,tag2set v)::u_rec xs in
-      u_rec
+      List.fold_left
+        (fun k p ->
+           match p with
+           | (_,V.Empty) -> k
+           | (_,Unv) -> raise Exit
+           | (loc,v) -> (loc,tag2set v)::k)
+        []
 
 (* Definition of primitives *)
 
@@ -1416,7 +1416,7 @@ module Make
             V.Tuple (List.map (eval accept_implicit env) es)
 (* N-ary operators, those associative binary operators are optimized *)
         | Op (loc,Union,es) ->
-            let vs = List.map (eval_loc false env) es in
+            let vs = List.rev_map (eval_loc false env) es in
             begin try
               let vs = union_args vs in
               match vs with
@@ -1732,8 +1732,9 @@ module Make
       and eval_union_plus env es =
         try
           let rs =
-            List.fold_right
-              (fun e k ->
+            (* Union being commutative, the order of `rs` is irrelevant *)
+            List.fold_left
+              (fun k e ->
                  match eval true env e with
                  | TransRel r (*  `(..|ei+|...)+` = `(...|ei|...)+` *)
                  | Rel r -> r::k
@@ -1741,7 +1742,7 @@ module Make
                  | V.Unv -> raise Exit
                  | v ->
                      error_rel env.EV.silent (get_loc e) v)
-              es [] in
+              [] es in
           match rs with
           | [] -> V.Empty
           | _ -> TransRel (E.EventRel.unions rs)
