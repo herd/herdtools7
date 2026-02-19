@@ -227,3 +227,10 @@ let as_plus = function
         with Exit -> None
       end
   | _ -> None
+
+let rec check_accept_implicit = function
+  | Var _|Op1 (_,(Plus|Star|Opt|Inv),_) -> true
+  | Bind (_,_,e)|BindRec (_,_,e) -> check_accept_implicit e
+  | If (_,_,e1,e2) ->
+      check_accept_implicit e1 || check_accept_implicit e2
+  | _ -> false

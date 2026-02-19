@@ -491,6 +491,19 @@ module Make
     | None -> env
     | Some k -> do_add_val k v env
 
+    let add_trans_val _loc x v env =
+       let trans = StringMap.add x v env.trans
+       and vals =
+         let w =
+           lazy begin
+             match Lazy.force v with
+             | TransRel r ->
+                 Rel (E.EventRel.transitive_closure r)
+             | v -> v
+           end in
+         StringMap.add x w env.vals in
+       { env with vals; trans; }
+
     let add_pat_val silent loc pat v env = match pat with
     | Pvar k -> add_val k v env
     | Ptuple ks ->
@@ -1964,19 +1977,20 @@ module Make
 
 (* For let *)
       and eval_bds env_bd  =
-        let rec do_rec bds = match bds with
-        | [] -> env_bd.EV.env
-        | (loc,p,e)::bds ->
-            (*
-              begin match v with
-              | Rel r -> printf "Defining relation %s = {%a}.\n" k debug_rel r
-              | Set s -> printf "Defining set %s = %a.\n" k debug_set s
-              | Clo _ -> printf "Defining function %s.\n" k
-              end;
-             *)
-            add_pat_val env_bd.EV.silent loc
-              p (lazy (eval_ord env_bd e)) (do_rec bds) in
-        do_rec
+        let rec do_rec env_r bds = match bds with
+          | [] -> env_r
+          | (_,Pvar None,_)::bds -> do_rec env_r bds
+          | (loc,Pvar (Some x),e)::bds
+            when ASTUtils.check_accept_implicit e ->
+              let v = lazy (eval true env_bd e) in
+              do_rec (add_trans_val loc x v env_r) bds
+          | (loc,p,e)::bds ->
+              do_rec
+                (add_pat_val env_bd.EV.silent loc
+                   p (lazy (eval_ord env_bd e))
+                   env_r)
+                bds in
+        do_rec env_bd.EV.env
 
 (* For let rec *)
 
@@ -2387,18 +2401,7 @@ module Make
                 | None,Some (x,es) ->
                     let env = from_st st in
                     let v = lazy (eval_union_plus env es) in
-                    let env = env.EV.env in
-                    let trans = StringMap.add x v env.trans
-                    and vals =
-                      let w =
-                        lazy begin
-                          match Lazy.force v with
-                          | TransRel r ->
-                              Rel (E.EventRel.transitive_closure r)
-                          | v -> v
-                        end in
-                      StringMap.add x w env.vals in
-                    let env = { env with vals; trans; } in
+                    let env = add_trans_val loc x v env.EV.env in
                     kont { st with env; } res
                 | _,_ ->
                     let env =
