@@ -677,7 +677,7 @@ module Make (S : SPEC_VALUE) = struct
 
     let prose_or_empty_message prose name =
       if Utils.string_is_empty prose then
-        Format.asprintf "<empty prose for %s>"
+        Format.asprintf "``empty prose for %s''"
           (Latex.spec_var_to_latex_var ~font_type:TextTT name)
       else prose
 
@@ -687,6 +687,15 @@ module Make (S : SPEC_VALUE) = struct
       else prose
 
     let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
+
+    (** Removes angle brackets from the template and substitutes the
+        placeholders with the provided substitutions. *)
+    let preprocess_template_and_substitute template substitutions =
+      (* Replace text inside angle brackets with the text itself. *)
+      let template =
+        Str.global_replace (Str.regexp "<\\([^>]*\\)>") "\\1" template
+      in
+      substitute template substitutions
 
     let rec expr_to_prose type_case_table expr =
       let open Expr in
@@ -746,7 +755,7 @@ module Make (S : SPEC_VALUE) = struct
                 | Some name -> Some (name, prose))
               formal_opt_prose_pairs
           in
-          substitute expr_prose formal_prose_pairs
+          preprocess_template_and_substitute expr_prose formal_prose_pairs
       | Record { label_opt = None; fields = _ } ->
           (* TODO: to obtain the prose for unlabelled records, we need a map from
                   record fields to the type that contains the record. *)
@@ -765,7 +774,7 @@ module Make (S : SPEC_VALUE) = struct
                 (field, expr_to_prose type_case_table field_expr))
               fields
           in
-          substitute expr_prose field_to_prose
+          preprocess_template_and_substitute expr_prose field_to_prose
       | RecordUpdate { record_expr; updates } ->
           let record_prose = expr_to_prose type_case_table record_expr in
           let updates_prose =
@@ -837,7 +846,7 @@ module Make (S : SPEC_VALUE) = struct
                  msg)
         in
         let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
-        substitute expr_prose formal_prose_pair
+        preprocess_template_and_substitute expr_prose formal_prose_pair
       else
         let formal_arg_pairs = List.combine formal_args args in
         let formal_prose_pairs =
@@ -846,7 +855,7 @@ module Make (S : SPEC_VALUE) = struct
               named_args_for_opt_named_term type_case_table opt_named_term arg)
             formal_arg_pairs
         in
-        substitute expr_prose formal_prose_pairs
+        preprocess_template_and_substitute expr_prose formal_prose_pairs
 
     and short_circuit_to_prose relation_name short_circuit =
       (* TODO: polish the code below. *)

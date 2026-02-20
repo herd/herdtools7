@@ -9,6 +9,12 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  55,56c55,56
+  <     \item equating ``empty prose for \texttt{num\_plus}'' to \texttt{c} yields ;
+  <     \item ``empty prose for \texttt{assign}'';
+  ---
+  >     \item equating <empty prose for \texttt{num\_plus}> to \texttt{c} yields ;
+  >     \item <empty prose for \texttt{assign}>;
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
