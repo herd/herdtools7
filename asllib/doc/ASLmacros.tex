@@ -521,7 +521,6 @@
 \newcommand\numplus[0]{\mathbin{+}}
 \newcommand\numminus[0]{\mathbin{-}}
 \newcommand\numnegate[1]{\mathbin{-}{#1}}
-\newcommand\negate[1]{\mathbin{\smash{-}}{#1}}
 \newcommand\numtimes[0]{\mathbin{\times}}
 \newcommand\numdivide[0]{\mathbin{\div}}
 \newcommand\numexponent[3][H]{
@@ -1233,6 +1232,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\dynamicenvironmentterm[0]{\hyperlink{type-dynamicenvs}{dynamic environment}}
 \newcommand\aslrel[0]{\bigtimes}
 \newcommand\nativevalue[0]{\hyperlink{type-nativevalue}{\mathbb{V}}}
 \newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
@@ -1653,6 +1653,8 @@
 \newcommand\defusedependenciesterm[0]{\hyperlink{relation-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{relation-builddependencies}{def-use dependency graph}}
 
+\newcommand\catcherterm[0]{\hyperlink{def-catcherterm}{catcher}}
+\newcommand\catchersterm[0]{\hyperlink{def-catcherterm}{catchers}}
 \newcommand\casediscriminantterm[0]{\hyperlink{def-casediscriminantterm}{case discriminant}}
 \newcommand\casealternativeterm[0]{\hyperlink{def-casealternativeterm}{case alternative}}
 \newcommand\casealternativesterm[0]{\hyperlink{def-casealternativeterm}{case alternatives}}
@@ -1740,17 +1742,20 @@
 \newcommand\whilestatementterm[0]{\hyperlink{def-whilestatementterm}{while statement}}
 \newcommand\whilestatement[3]{\hyperlink{def-whilestatementterm}
   {while statement} for the condition #1, optional limit expression #2, and body statement #2}
+\newcommand\repeatstatementterm[0]{\hyperlink{def-repeatstatementterm}{repeat statement}}
 \newcommand\repeatstatementsterm[0]{\hyperlink{def-repeatstatementterm}{repeat statements}}
 \newcommand\repeatstatement[3]{\hyperlink{def-repeatstatementterm}
   {repeat statement} for the body statement #1, condition expression #2, and optional limit expression #3}
 \newcommand\forstatementterm[0]{\hyperlink{def-forstatementterm}{for statement}}
 \newcommand\forstatement[6]{\hyperlink{def-forstatementterm}
   {for statement} for the index variable #1, start expression #2, direction #3, end expression #4, body statement #5, and optional limit expression #6}
+\newcommand\throwstatementterm[0]{\hyperlink{def-throwstatementterm}{throw statement}}
 \newcommand\throwstatementsterm[0]{\hyperlink{def-throwstatementterm}{throw statements}}
 \newcommand\throwstatement[1]{\hyperlink{def-throwstatementterm}{throw statement} for the optional exception expression #1}
 \newcommand\trystatementterm[0]{\hyperlink{def-trystatementterm}{try statement}}
 \newcommand\trystatementsterm[0]{\hyperlink{def-trystatementterm}{try statements}}
 \newcommand\trystatement[3]{\hyperlink{def-trystatementterm}{try statement} with body statement #1, list of \texttt{catch} clauses #2, and optional \texttt{otherwise} statement #3}
+\newcommand\returnstatementterm[0]{\hyperlink{def-returnstatementterm}{return statement}}
 \newcommand\returnstatementsterm[0]{\hyperlink{def-returnstatementterm}{return statements}}
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
@@ -1780,6 +1785,9 @@
 \newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
 \newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}
 \newcommand\sideeffectdescriptorsetsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{sets of side effect descriptors}}
+\newcommand\sideeffectfreeterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free}}
+\newcommand\sideeffectfreeexpressionterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expression}}
+\newcommand\sideeffectfreeexpressionsterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expressions}}
 
 \newcommand\approximationdirectionterm[0]{\hyperlink{def-approximationdirectionterm}{approximation direction}}
 

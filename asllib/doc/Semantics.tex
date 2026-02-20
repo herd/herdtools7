@@ -147,10 +147,8 @@ We define the following shorthand notations for \nativevalueterm{} literals:
 We define the following types of \nativevaluesterm{}:
 \RenderTypes{native_types}
 
-
-
 \begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
-A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
+A \emph{sequential dynamic environment}, or \\ \emph{\dynamicenvironmentterm}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
 \hypertarget{def-pending-calls}{}%
@@ -161,7 +159,6 @@ to the number of calls being evaluated for those subprograms via the $\pendingca
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevaluesterm{}:
 
 \RenderTypes{dynamic_envs_and_components}
-
 
 \end{definition}
 
@@ -311,7 +308,7 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
   \Semanticsconfigurationsterm{} consisting of different combinations of values,
   execution graphs, and environments. These represent intermediate results
   generated while evaluating various constructs such as
-  expressions, side-effect-free expressions, \assignableexpressions,
+  expressions, \sideeffectfreeexpressionsterm{}, \assignableexpressions,
   local declaration items, slices, and expression lists
   (which are evaluated in two different ways, by $\ResultExprList$ and $\ResultExprListM$, for the purpose of concurrency):
 \RenderType{TNormal}
@@ -321,7 +318,7 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest catch clause that matches
+  The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest \catcherterm{} that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
   \item[Returned Values.] \Semanticsconfigurationsterm{} in \RenderType{TReturning}
@@ -500,7 +497,7 @@ to an output \semanticsconfigurationterm{} with the value resulting from the cal
 
 We annotate subexpressions to allow referring to them.
 
-\hypertarget{def-emptyenv}{}
+\texthypertarget{def-emptyenv}
 We define the empty environment $\emptyenv$ as $(\emptydenv, \emptytenv)$.
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,

@@ -19,23 +19,26 @@ variadic operator cond_op[T](cases: list1(T)) -> T
 // This constant is for internal use only.
 constant bot { "bottom", math_macro = \bot };
 
-constant None { "the empty \optionalterm{}" };
+constant None {
+  "the  \hyperlink{constant-None}{empty} \optionalterm{}"
+};
 
 constant empty_set
 {
-    "the empty set",
+    "the \hyperlink{constant-emptyset}{empty set}",
     math_macro = \emptyset,
 };
 
 constant empty_list
 {
-    "the empty list",
+    "the \hyperlink{constant-emptylist}{empty list}",
     math_macro = \emptylist,
 };
 
 typedef Bool
-{  "Boolean",
-    math_macro = \Bool,
+{
+  "Boolean",
+  math_macro = \Bool,
 } =
   | True
   { "true", math_macro = \True }
@@ -44,13 +47,15 @@ typedef Bool
 ;
 
 typedef N
-{  "natural number",
-    math_macro = \N,
+{
+  "natural number",
+  math_macro = \N,
 };
 
 typedef Z
-{ "integer",
-    math_macro = \Z,
+{
+  "integer",
+  math_macro = \Z,
 };
 
 operator is_integer(q: Q) -> Bool
@@ -66,13 +71,15 @@ operator is_not_integer(q: Q) -> Bool
 };
 
 typedef Q
-{ "rational",
-   math_macro = \Q,
+{
+  "rational",
+  math_macro = \Q,
 };
 
 typedef ASTLabels
-{ "AST label",
-   math_macro = \ASTLabels,
+{
+  "\hyperlink{ASTLabels}{AST label}",
+  math_macro = \ASTLabels,
 };
 
 operator some[T](v: T) -> option(T)
@@ -115,30 +122,32 @@ variadic operator and(conjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \land,
-  prose_application = "all of the following hold: {conjuncts}"
+  prose_application = "all of the following hold: {conjuncts}",
 };
 
 variadic operator or(disjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \lor,
-  prose_application = "one of the following holds: {disjuncts}"
+  prose_application = "one of the following holds: {disjuncts}",
 };
 
-operator list_and(list0(Bool)) -> Bool
+operator list_and(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listand,
+  prose_application = "the \hyperlink{relation-land}{conjunction} of all Booleans in {conditions}",
 };
 
-operator list_or(list0(Bool)) -> Bool
+operator list_or(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listor,
+  prose_application = "the \hyperlink{relation-lor}{disjunction} of all Booleans in {conditions}",
 };
 
 operator not(b: Bool) -> Bool
 {
   math_macro = \opnot,
-  prose_application = "the logical negation of {b}",
+  prose_application = "the \hyperlink{relation-neg}{logical negation} of {b}",
 };
 
 // This is negation, specialized to a single variable to allow
@@ -146,104 +155,105 @@ operator not(b: Bool) -> Bool
 operator not_single(b: Bool) -> Bool
 {
   math_macro = \opnotvar,
-  prose_application = "the logical negation of {b}",
+  prose_application = "the \hyperlink{relation-neg}{logical negation} of {b}",
 };
 
-operator iff(Bool, Bool) -> Bool
+operator iff(lhs: Bool, rhs: Bool) -> Bool
 {
   math_macro = \IFF,
+  prose_application = "{lhs} \hyperlink{relation-IFF}{if and only if} {rhs}",
 };
 
-operator implies(Bool, Bool) -> Bool
+operator implies(lhs: Bool, rhs: Bool) -> Bool
 {
   math_macro = \implies,
+  prose_application = "{lhs} \hyperlink{relation-implies}{implies} {rhs}",
 };
 
 variadic operator num_plus[NumType](addends: list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numplus,
-  prose_application = "the addition of {addends}"
+  prose_application = "the sum of all numbers in {addends}"
 };
 
-operator num_minus[NumType](a: NumType, b: NumType) -> NumType
+operator num_minus[NumType](lhs: NumType, rhs: NumType) -> NumType
 {
   math_macro = \numminus,
-  prose_application = "{a} minus {b}",
+  prose_application = "{lhs} minus {rhs}",
 };
 
-operator num_negate[NumType](NumType) -> NumType
+operator num_negate[NumType](x: NumType) -> NumType
 {
   math_macro = \numnegate,
-};
-
-// Negation for number types.
-operator negate[NumType](n: NumType) -> NumType
-{
-  math_macro = \negate,
-  prose_application = "the negation of {n}"
+  prose_application = "minus {x}",
 };
 
 variadic operator num_times[NumType](numbers: list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
   associative = true,
-  prose_application = "the multiplication of {numbers}",
+  prose_application = "the multiplication of all numbers in {numbers}",
 };
 
-operator num_divide[NumType](NumType, NumType) -> NumType
+operator num_divide[NumType](lhs: NumType, rhs: NumType) -> NumType
 {
   math_macro = \numdivide,
+  prose_application = "{lhs} divided by {rhs}",
 };
 
-operator num_exponent[NumType](NumType, NumType) -> NumType
+operator num_exponent[NumType](lhs: NumType, rhs: NumType) -> NumType
 {
   math_macro = \numexponent,
   custom = true,
+  prose_application = "{lhs} to the power of {rhs}",
 };
 
-operator less_than[NumType](a: NumType, b: NumType) -> Bool
+operator less_than[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \lessthan,
-  prose_application = "{a} is less than {b}",
+  prose_application = "{lhs} is less than {rhs}",
 };
 
-operator less_or_equal[NumType](a: NumType, b: NumType) -> Bool
+operator less_or_equal[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \lessorequal,
-  prose_application = "{a} is less or equal to {b}",
+  prose_application = "{lhs} is less or equal to {rhs}",
 };
 
-operator greater_than[NumType](a: NumType, b: NumType) -> Bool
+operator greater_than[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \greaterthan,
-  prose_application = "{a} is greater than {b}",
+  prose_application = "{lhs} is greater than {rhs}",
 };
 
-operator greater_or_equal[NumType](a: NumType, b: NumType) -> Bool
+operator greater_or_equal[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \greaterorequal,
-  prose_application = "{a} is greater or equal {b}",
+  prose_application = "{lhs} is greater or equal {rhs}",
 };
 
 // Notice that the operator returns True when domain is empty.
 operator forall[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
-  "true if and only if {condition} holds for all values of {bound_variable} in {domain}",
   math_macro = \forallop,
+  prose_application = "{condition} holds for all bindings of {bound_variable} in {domain}",
 };
 
-operator exists[T](bound_variable: T, domain: powerset(T), Bool) -> Bool
+operator exists[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
   math_macro = \existsop,
+  prose_application = "{condition} holds for some binding of {bound_variable} in {domain}",
 };
 
-operator list_forall[T](bound_variable: T, domain: list0(T), Bool) -> Bool
+operator list_forall[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listforall,
+  prose_application = "{condition} holds for all bindings of {bound_variable} in {domain}",
 };
 
-operator list_exists[T](bound_variable: T, domain: list0(T), Bool) -> Bool
+operator list_exists[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listexists,
+  prose_application = "{condition} holds for some binding of {bound_variable} in {domain}",
 };

@@ -2087,7 +2087,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \end{mathpar}
 } % END_OF_BACKUP_RULE
 
-\RenderRule{annotate_expr_EGetFields}
+\RenderProseAndFormally{annotate_expr_EGetFields}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
 
 \TypingRuleDef{FindBitFieldsSlices}
@@ -2329,7 +2329,7 @@ All of the collection field expressions in
 \RenderRule{eval_expr_EGetCollectionFields}
 \CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../interpreter.ml}
 
-\hypertarget{def-atceexpressionterm}{}
+\texthypertarget{def-atceexpressionterm}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
 \identi{TCST}
 The rule about domains in the definitions of subtype-satisfaction and
@@ -2460,6 +2460,10 @@ as it is applied to unrelated kinds of types.
 }
 
 \TypingRuleDef{CheckATC}
+\texthypertarget{def-compatibletypes}
+Intuitively, two types are \emph{compatible} if they are equal up to any constraints.
+The formal definition is given next.
+
 \RenderRelation{check_atc}
 
 \ExampleDef{Ill-typed ATC Expressions}
@@ -2585,6 +2589,7 @@ which is nested in the \verb|if FALSE then|
 will never occur, but it is still classified as a \dynamicerrorterm{}.
 \ASLListing{Various dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2607,7 +2612,6 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
       \end{itemize}
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
@@ -2626,8 +2630,9 @@ will never occur, but it is still classified as a \dynamicerrorterm{}.
   \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_expr_EATC}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+
+\RenderProseAndFormally{eval_expr_EATC}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{IsValOfType}
@@ -3438,6 +3443,7 @@ which evaluates to
 \NVVector([\nvint(0), \nvint(0), \nvint(0), \nvint(0)]) \enspace.
 \]
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -3454,7 +3460,6 @@ which evaluates to
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\hva\\\\
@@ -3472,8 +3477,8 @@ which evaluates to
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_expr_EArray}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
 
 \SemanticsRuleDef{EEnumArray}
@@ -3519,7 +3524,8 @@ which evaluates to
 
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}
-An expression $\ve$ is considered to be side-effect-free in the \staticenvironmentterm{} $\tenv$
+\texthypertarget{def-sideeffectfreeexpressionterm}
+An expression $\ve$ is considered to be \emph{side-effect-free} in the \staticenvironmentterm{} $\tenv$
 if $\annotateexpr(\tenv, \ve) \typearrow (\Ignore, \Ignore, \vses)$
 and $\vses$ is \readonlyterm{}.
 
@@ -3548,7 +3554,7 @@ which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
 } % END_OF_BACKUP_RULE
 \RenderRule{eval_expr_sef}
 Notice that the output configuration does not contain an environment,
-since side-effect-free expressions do not modify the environment.
+since \sideeffectfreeexpressionsterm{} do not modify the environment.
 
 \section{Evaluating a List of Expressions\label{sec:ExprList}}
 \SemanticsRuleDef{EExprList}

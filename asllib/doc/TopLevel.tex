@@ -622,14 +622,13 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_try}
   \begin{itemize}
-    \item $\vs$ is a \trystatementterm{} with statement $\vsone$, list of catch clauses $\catchers$,
+    \item $\vs$ is a \trystatementterm{} with statement $\vsone$, list of \catchersterm{} $\catchers$,
           and optional \Totherwise{} statement $\otherwiseopt$;
     \item \Proserenamelocalsstmt{$\vsone$}{$\vsonep$};
     \item \Proseeqdef{$\catchersp$}{the list of catchers obtained by applying \\
-          $\renamelocalscatcher$ to each catcher in $\catchers$};
+          $\renamelocalscatcher$ to each \catchersterm{} in $\catchers$};
     \item \Prosemapopt{$\renamelocalsstmt$}{$\otherwiseopt$}{$\otherwiseoptp$};
-    \item \Proseeqdef{$\news$}{\trystatementterm{} with statement $\vsonep$, list of catch clauses \\
-          $\catchersp$, and optional \Totherwise{} statement  $\otherwiseoptp$}.
+    \item \Proseeqdef{$\news$}{\trystatementterm{} with statement $\vsonep$, list of \catchersterm{} $\catchersp$, and optional \Totherwise{} statement  $\otherwiseoptp$}.
   \end{itemize}
 
   \item \AllApplyCase{s\_print}
@@ -1616,14 +1615,14 @@ The function
 \renamelocalscatcher(\overname{\catcher}{\vc}) \aslto \overname{\catcher}{\newc}
 \]
 renames the identifiers corresponding to local storage elements that appear in the
-catcher clause $\vc$, yielding the catcher clause $\newc$.
+\catcherterm{} $\vc$, yielding the \catcherterm{} $\newc$.
 } % END_OF_UNIMPORTED_RELATION
 
 
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vc$ is a catcher clause with optional exception name $\optexnname$, exception type $\exnty$,
+  \item $\vc$ is a \catcherterm{} with optional exception name $\optexnname$, exception type $\exnty$,
         and \Twhen{} statement $\whenstmt$;
   \item \Prosemapopt{$\renamelocalsname$}{$\optexnname$}{$\optexnnamep$};
   \item \Proserenamelocalsty{$\exnty$}{$\exntyp$};
