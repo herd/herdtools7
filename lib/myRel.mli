@@ -37,6 +37,7 @@ module type S = sig
   val of_list : (elt1 * elt2) list -> t
 
   val add : (elt1 * elt2) -> t -> t
+  val add_set : elt1 -> Elts2.t -> t -> t
   val remove : (elt1 * elt2) -> t -> t
   val choose : t -> (elt1 * elt2)
   val cardinal : t -> int
