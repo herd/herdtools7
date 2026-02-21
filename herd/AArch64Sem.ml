@@ -1918,9 +1918,9 @@ Arguments:
               let open AArch64 in
               let open Annot in
               match tnt with
-              | Pa -> N
-              | PaN -> NTA
-              | PaI -> Q in
+              | (`PaIQ) -> Q
+              | (`Pa) -> N
+              | (`PaN) -> NTA in
             let open AArch64 in
             match md with
             | Idx ->
@@ -1956,7 +1956,7 @@ Arguments:
             (struct
               let read_mem = do_read_mem_op sxtw_op
             end) in
-        LDPSW.ldp AArch64.Pa MachSize.Word
+        LDPSW.ldp AArch64.(`Pa) MachSize.Word
 
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -2062,15 +2062,15 @@ Arguments:
           let open AArch64 in
           let open Annot in
           match tnt with
-          | Pa -> N
-          | PaN -> NTA
-          | PaI -> L in
+          | (`PaIL) -> L
+          | (`Pa) -> N
+          | (`PaN) -> NTA in
         match md with
         | AArch64.Idx ->
             let (>>|) =
               match tnt with
-              | AArch64.(Pa|PaN) -> (>>|)
-              | AArch64.PaI -> M.seq_mem in
+              | AArch64.(`Pa|`PaN) -> (>>|)
+              | AArch64.(`PaIL) -> M.seq_mem in
             let (>>>) = M.data_input_next in
             do_str rd
               (fun ac a _ ii ->

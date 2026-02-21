@@ -477,12 +477,21 @@ let is_tthm fields =
      | Some Capability -> "c"
 
    let pp_pair_opt = function
-     | Pa -> ""
-     | PaN -> "N"
-     | PaI -> "I"
+     | `Pa -> ""
+     | `PaN -> "N"
+     | `PaIQ -> "IQ"
+     | `PaIL -> "IL"
 
    and pp_pair_idx = function
      | UnspecLoc -> ""
+
+   let pair_opt_to_ld : pair_opt -> ld_pair_opt = function
+     | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ
+     | `PaIL -> assert false
+
+   let pair_opt_to_st : pair_opt -> st_pair_opt = function
+     | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL
+     | `PaIQ -> assert false
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -575,15 +584,16 @@ let is_tthm fields =
      else
        fun _ r -> r
 
-      let fold_pair f r =
-        if do_mixed then r
-        else
-          let f opt idx r =
-            f (Pair (opt,idx)) r in
-          r |>
-          f Pa UnspecLoc |>
-          f PaN UnspecLoc |>
-          f PaI UnspecLoc
+    let fold_pair f r =
+      if do_mixed then r
+      else
+        let f opt idx r =
+          f (Pair (opt, idx)) r in
+        r |>
+        f `Pa UnspecLoc |>
+        f `PaN UnspecLoc |>
+        f `PaIQ UnspecLoc |>
+        f `PaIL UnspecLoc
 
       let fold_acc_opt o f r =
         let r = f (Acq o) r in
