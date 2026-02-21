@@ -240,7 +240,7 @@ type pair_idx = UnspecLoc
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_opt
-  | Pair of pair_opt * pair_idx | Instr
+  | Ld_Pair of ld_pair_opt * pair_idx | St_Pair of st_pair_opt * pair_idx | Instr
 
 let  plain = Plain None
 
@@ -446,7 +446,7 @@ let applies_atom (a,_) d =
   | Rel _,W
   | Pte (Read|ReadAcq|ReadAcqPc),R
   | Instr, R
-  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
+  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Ld_Pair _|St_Pair _),(R|W)
     -> true
   (* special case for TTHM HA for read *)
   | Pte (Set p),R when WPTESet.mem HA p -> true
@@ -476,10 +476,15 @@ let is_tthm fields =
      | None -> ""
      | Some Capability -> "c"
 
-   let pp_pair_opt = function
-     | Pa -> ""
-     | PaN -> "N"
-     | PaI -> "I"
+   let pp_ld_pair_opt = function
+     | `Pa -> "L"
+     | `PaN -> "LN"
+     | `PaIQ -> "LIQ"
+
+   let pp_st_pair_opt = function
+     | `Pa -> "S"
+     | `PaN -> "SN"
+     | `PaIL -> "SIL"
 
    and pp_pair_idx = function
      | UnspecLoc -> ""
@@ -495,8 +500,10 @@ let is_tthm fields =
      | CapaSeal -> "Cs"
      | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
      | Neon n -> SIMD.pp n
-     | Pair (opt,idx)
-       -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+     | Ld_Pair (opt,idx)
+       -> sprintf "Pa%s%s" (pp_ld_pair_opt opt) (pp_pair_idx idx)
+     | St_Pair (opt,idx)
+       -> sprintf "Pa%s%s" (pp_st_pair_opt opt) (pp_pair_idx idx)
      | Instr -> "I"
 
    let pp_atom (a,m) = match a with
@@ -575,21 +582,31 @@ let is_tthm fields =
      else
        fun _ r -> r
 
-      let fold_pair f r =
-        if do_mixed then r
-        else
-          let f opt idx r =
-            f (Pair (opt,idx)) r in
-          r |>
-          f Pa UnspecLoc |>
-          f PaN UnspecLoc |>
-          f PaI UnspecLoc
+   let fold_ld_pair f r =
+     if do_mixed then r
+     else
+       let f opt idx r =
+         f (Ld_Pair (opt, idx)) r in
+       r |>
+       f `Pa UnspecLoc |>
+       f `PaN UnspecLoc |>
+       f `PaIQ UnspecLoc
 
-      let fold_acc_opt o f r =
-        let r = f (Acq o) r in
-        let r = f (AcqPc o) r in
-        let r = f (Rel o) r in
-        r
+   let fold_st_pair f r =
+     if do_mixed then r
+     else
+       let f opt idx r =
+         f (St_Pair (opt, idx)) r in
+       r |>
+       f `Pa UnspecLoc |>
+       f `PaN UnspecLoc |>
+       f `PaIL UnspecLoc
+
+   let fold_acc_opt o f r =
+     let r = f (Acq o) r in
+     let r = f (AcqPc o) r in
+     let r = f (Rel o) r in
+     r
 
    let fold_self f r = if do_self then f Instr r else r
 
@@ -600,7 +617,8 @@ let is_tthm fields =
      let r = fold_neon f r in
      let r = fold_sve f r in
      let r = fold_sme f r in
-     let r = fold_pair f r in
+     let r = fold_ld_pair f r in
+     let r = fold_st_pair f r in
      let r = fold_acc_opt None f r in
      let r = fold_self f r in
      let r =
@@ -629,7 +647,7 @@ let is_tthm fields =
      | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
      | CapaTag|CapaSeal
      | Pte _|Neon _
-     | Pair _
+     | Ld_Pair _ | St_Pair _
        -> false
 
 
@@ -744,7 +762,8 @@ let is_tthm fields =
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
    | Neon n,None -> Code.VecReg n
-   | Pair (_,UnspecLoc),_ -> Code.Pair
+   | Ld_Pair (_,UnspecLoc),_ -> Code.Pair
+   | St_Pair (_,UnspecLoc),_ -> Code.Pair
    | Instr,_ -> Code.Instr
    | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
    | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
@@ -770,21 +789,21 @@ let overwrite_value v ao w = match ao with
 | None
 | Some
     ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
-    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None)
+    Tag|CapaTag|CapaSeal|Pte _|Neon _|Ld_Pair _|St_Pair _|Instr),None)
   -> w (* total overwrite *)
 | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Instr),Some (sz,o)) ->
    ValsMixed.overwrite_value v sz o w
-| Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
+| Some ((Tag|CapaTag|CapaSeal|Pte _|Ld_Pair _|St_Pair _),Some _) ->
     assert false
 
  let extract_value v ao = match ao with
   | None
   | Some
       ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None) -> v
+        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Ld_Pair _|St_Pair _|Instr),None) -> v
   | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
      ValsMixed.extract_value v sz o
-  | Some ((Pte _|Pair _|Instr),Some _) -> assert false
+  | Some ((Pte _|Ld_Pair _|St_Pair _|Instr),Some _) -> assert false
 
 (* Wide accesses *)
 
@@ -794,13 +813,15 @@ let overwrite_value v ao w = match ao with
         | Neon n,_ -> (match neon_as_integers n with
                        | 1 -> None
                        | n -> Some n)
-        | Pair _,_ -> Some 2
+        | Ld_Pair _,_ -> Some 2
+        | St_Pair _,_ -> Some 2
         | _ -> None)
        a
 
    let is_pair a =
      match a with
-     | Some (Pair _,_) -> true
+     | Some (Ld_Pair _,_) -> true
+     | Some (St_Pair _,_) -> true
      | Some _|None -> false
 
   let get_machine_feature atom =
