@@ -1226,7 +1226,7 @@ let tr_simd_variant = function
 let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 
 type temporal = TT | NT
-type pair_opt = Pa | PaN | PaI
+type pair_opt = Pa | PaN | PaI | PaA | PaL
 
 type ld_type = AA | XX | AX | AQ
 
