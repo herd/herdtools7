@@ -518,7 +518,13 @@ module Make(O:MySet.OrderedType) : S
         (fun n1 n2s ->
            if Elts.mem n1 nodes then
              let count = Elts.inter n2s nodes |> Elts.cardinal in
-             Some count
+             (*
+              * It is important for a node with no successors
+              * to be absent from this mapping of successos counts.
+              * Namely, a empty mapping should mean an empty graph.
+              * See termination case of [do_all_topos] below.
+              *)
+             if count > 0 then Some count else None
            else None) edges
 
     let make_preds nodes edges =
@@ -527,14 +533,14 @@ module Make(O:MySet.OrderedType) : S
             Elts.fold (fun n2 -> add (n2,n1)) (Elts.inter nodes n2s) m
         else m) edges empty
 
-    let do_all_mem_topos set_preds kont =
+    let do_all_topos set_preds kont =
 
       let rec do_aux ws count_succ pref res =
-(* ws is the working set, ie minimal nodes
-   count_succ is a map elt -> count of its succs
-   set_pred is a map elt -> set of its preds
-   pref is the prefix vos being constructed
-   res is the list of vos already constructed *)
+(*  ws is the working set, ie minimal nodes
+ *  count_succ is a map elt -> count of its succs
+ *  set_pred is a map elt -> set of its preds
+ *  pref is the prefix being constructed.
+ *)
         if Elts.is_empty ws then
           if M.is_empty count_succ then kont pref res
           else raise Cyclic
@@ -558,13 +564,20 @@ module Make(O:MySet.OrderedType) : S
               do_aux ws count_succ (n::pref) res) ws res in
       do_aux
 
+(*
+ * [fold_topos_ext kont res nodes edges]
+ *  Computes [kont o1 (kont o2 .... (kont on res))],
+ *  where [o1,o2,...,on] are all the total orders
+ *  of [nodes] that are compatible with the graph [edges].
+ *)
+
     let fold_topos_ext kont res nodes edges =
       let edges = transitive_closure edges in
       let count_succ = make_count nodes edges in
       let set_preds = make_preds nodes edges in
       let ws =
         Elts.filter (fun n -> find_count n count_succ = 0) nodes in
-      do_all_mem_topos set_preds kont ws count_succ [] res
+      do_all_topos set_preds kont ws count_succ [] res
 
     let all_topos_kont nodes edges kont res =
       fold_topos_ext kont res nodes edges
