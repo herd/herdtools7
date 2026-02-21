@@ -1843,7 +1843,8 @@ Arguments:
               match tnt with
               | Pa -> N
               | PaN -> NTA
-              | PaI -> Q in
+              | PaI -> Q
+              | PaA -> A in
             let open AArch64 in
             match md with
             | Idx ->
@@ -1887,7 +1888,7 @@ Arguments:
               do_read_mem sz Annot.A expl ac reg addr ii
           end) in
         fun sz r1 r2 ra ii ->
-          LDAP_Module.ldp AArch64.Pa sz r1 r2 ra (0, AArch64.Idx) ii
+          LDAP_Module.ldp AArch64.PaA sz r1 r2 ra (0, AArch64.Idx) ii
 
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -1995,12 +1996,12 @@ Arguments:
           match tnt with
           | Pa -> N
           | PaN -> NTA
-          | PaI -> L in
+          | PaI | PaL -> L in
         match md with
         | AArch64.Idx ->
             let (>>|) =
               match tnt with
-              | AArch64.(Pa|PaN) -> (>>|)
+              | AArch64.(Pa|PaN|PaL) -> (>>|)
               | AArch64.PaI -> M.seq_mem in
             let (>>>) = M.data_input_next in
             do_str rd
@@ -2073,7 +2074,7 @@ Arguments:
         sz t rr rd ii
 
       let stlp sz r1 r2 ra ii =
-        stp AArch64.PaI sz r1 r2 ra (0, AArch64.Idx) ii
+        stp AArch64.PaL sz r1 r2 ra (0, AArch64.Idx) ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
