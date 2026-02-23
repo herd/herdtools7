@@ -16,9 +16,11 @@
 /* Authors:                                                                 */
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
-
+#ifndef PRESI_SELF_H
+#define PRESI_SELF_H
 void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
 
 size_t code_size(ins_t *p,int skip);
 
 void code_init(void *code, void *src, size_t sz);
+#endif

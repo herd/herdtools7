@@ -17,6 +17,8 @@
 /***********************************/
 /* Support for self-modifying code */
 /***********************************/
+#ifndef SELF_H
+#define SELF_H
 #include <stdint.h>
 
 
@@ -29,3 +31,4 @@ void selfbar(void *p);
 inline static void isync(void);
 
 void check_dic_idc(int need_dic, int need_idc);
+#endif

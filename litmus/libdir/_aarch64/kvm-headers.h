@@ -13,6 +13,8 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifndef KVM_HEADERS_H
+#define KVM_HEADERS_H 1
 
 #include <vmalloc.h>
 #include <alloc_page.h>
@@ -350,3 +352,4 @@ inline static parel1_t pack_par_el1(int pa, parel1_t p) {
     ((parel1_t)pa << OA_PACKED) |
     pack_flag(p, msk_f, 0);
 }
+#endif

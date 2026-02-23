@@ -16,6 +16,9 @@
 /* Authors:                                                                 */
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
+#ifndef KVM_SELF_H
+#define KVM_SELF_H 1
+
 #include <stdint.h>
 
 void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
@@ -25,3 +28,4 @@ size_t code_size(ins_t *p,int skip);
 void litmus_pte_unset_el0(uintptr_t vaddr, uintptr_t vaddr_end);
 
 void code_init(void *code, void *src, size_t sz);
+#endif

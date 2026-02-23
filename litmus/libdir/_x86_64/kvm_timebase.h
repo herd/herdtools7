@@ -13,6 +13,8 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifndef KVM_TIMEBASE_H
+#define KVM_TIMEBASE_H 1
 
 inline static tb_t read_timebase(void) {
   uint32_t a,d; ;
@@ -20,3 +22,4 @@ inline static tb_t read_timebase(void) {
   tb_t r = ((tb_t)a) | (((tb_t)d)<<32);
   return r ;
 }
+#endif

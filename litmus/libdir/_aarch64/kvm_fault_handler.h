@@ -1,6 +1,8 @@
 /*********************/
 /* Handle MMU faults */
 /*********************/
+#ifndef KVM_FAULT_HANDLER_H
+#define KVM_FAULT_HANDLER_H
 
 static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 #ifdef SEE_FAULTS
@@ -79,3 +81,4 @@ static void install_fault_handler(int cpu) {
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_PAC] = fault_handler;
 #endif
 }
+#endif
