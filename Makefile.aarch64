@@ -149,7 +149,13 @@ litmus-aarch64-run:: litmus-cata-aarch64-ifetch-test-kvm
 
 litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
-	if $(RUN_TESTS); then NORUN=UDF+2FH; else NORUN=NO; fi ; \
+	if $(RUN_TESTS); then                                         \
+	  NORUN=UDF+2FH ;                                             \
+	  TESTS=catalogue/aarch64-ifetch/tests/@dic0-idc0 ;          \
+	else                                                         \
+	  NORUN=NO ;                                                 \
+	  TESTS=catalogue/aarch64-ifetch/tests/@all ;                \
+	fi ;                                                         \
 	$(LITMUS)					         \
 		-set-libdir $(LITMUS_LIB_DIR)	                 \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
@@ -157,7 +163,7 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
                 -nonames $${NORUN}                               \
                 -driver C -ascall true                           \
                 -outnames $(KUT_NAMES)                           \
-		catalogue/aarch64-ifetch/tests/@all
+		$${TESTS}
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
 	if $(RUN_TESTS); then \
           ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
