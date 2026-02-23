@@ -1805,7 +1805,7 @@ module Make
                       (fun _ -> false), (fun _ -> false)
                   | Some cache_type ->
                       cache_type.dic, cache_type.idc in
-              O.fi "check_dic_idc(%d, %d);"
+              O.fi "if (!check_dic_idc(%d, %d)) return NULL;"
                 (if needs_dic proc then 1 else 0)
                 (if needs_idc proc then 1 else 0)
             end ;
