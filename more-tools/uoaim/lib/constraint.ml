@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Log = (val Logs.src_log (Logs.Src.create "constraint") : Logs.LOG)
+
 module PreConstraint = struct
   type connective = And | Or
 
@@ -186,7 +188,8 @@ module CatDefinitions (P : NameParser.S) = struct
       Util.find_best ~score ~is_better dict_relations
     in
     if best_d > 2 then begin
-      (* Format.eprintf "Best approximation (%d) for %S: `%s`\n" best_d str name; *)
+      Log.info (fun m -> m "Failed to interpret relation %S" str);
+      Log.debug (fun m -> m "Best approximation: %s (distance %d)" name best_d);
       None
     end
     else
@@ -210,7 +213,9 @@ module CatDefinitions (P : NameParser.S) = struct
     let (name, _), best_d = Util.find_best ~score ~is_better Dict.sets in
     let exp =
       if best_d > 2 then begin
-        (* Format.eprintf "Best approx[%d]: `%s`\n" best_d name; *)
+        Log.info (fun m -> m "Failed to interpret set %S" str);
+        Log.debug (fun m ->
+            m "Best approximation: %s (distance %d)" name best_d);
         None
       end
       else
