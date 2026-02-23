@@ -149,20 +149,30 @@ litmus-aarch64-run:: litmus-cata-aarch64-ifetch-test-kvm
 
 litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
-	if $(RUN_TESTS); then NORUN=UDF+2FH; else NORUN=NO; fi ; \
 	$(LITMUS)					         \
 		-set-libdir $(LITMUS_LIB_DIR)	                 \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
 		-mach kvm-armv8.1 -variant self -a 4 -s 10 -r 10 \
-                -nonames $${NORUN}                               \
                 -driver C -ascall true                           \
                 -outnames $(KUT_NAMES)                           \
 		catalogue/aarch64-ifetch/tests/@all
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
 	if $(RUN_TESTS); then \
-          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
-          $(CHECK_OBS) -verbose $(KUT_NAMES)                      ; \
+	  mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run ; \
+	  NORUN=UDF+2FH ; \
+	  $(LITMUS)					         \
+		-set-libdir $(LITMUS_LIB_DIR)	                 \
+		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run \
+		-mach kvm-armv8.1 -variant self -a 4 -s 10 -r 10 \
+                -nonames $${NORUN}                               \
+                -driver C -ascall true                           \
+                -outnames $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run/names.txt \
+			catalogue/aarch64-ifetch/tests/@dic0-idc0 ; \
+	  ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run && make $(SILENTOPT) -j $(J) ) ; \
+          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t-ifetch-run/run.sh ) | \
+          $(CHECK_OBS) -verbose $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run/names.txt ; \
         fi
+	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t-ifetch-run
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
 
