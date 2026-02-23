@@ -2400,6 +2400,22 @@ module Make
         end ;
         if Cfg.variant Variant_litmus.ConstPacField then
           O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
+        if do_self then begin
+          let cache_type = CacheType.get test.T.info in
+          let needs_dic, needs_idc =
+            let open CacheType in
+            match cache_type with
+            | None -> (fun _ -> false), (fun _ -> false)
+            | Some cache_type -> cache_type.dic, cache_type.idc in
+          (* Arm ARM: CTR_EL0.DIC/IDC are common within an Inner Shareable domain. *)
+          begin match forall_procs test needs_dic, forall_procs test needs_idc with
+          | Some dic, Some idc ->
+              O.fi "if (!check_dic_idc(%d, %d)) return 0;"
+                (if dic then 1 else 0)
+                (if idc then 1 else 0)
+          | _ -> ()
+          end
+        end ;
         if Cfg.is_kvm then begin
           match db with
           | None ->
