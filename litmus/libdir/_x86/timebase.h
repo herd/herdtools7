@@ -13,8 +13,11 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifndef TIMEBASE_H
+#define TIMEBASE_H 1
 inline static tb_t read_timebase(void) {
   uint32_t a,d; ;
   asm __volatile__ ("rdtsc" : "=a" (a), "=d" (d)) ;
   return ((tb_t)a) | (((tb_t)d)<<32);
 }
+#endif

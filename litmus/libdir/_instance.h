@@ -17,6 +17,8 @@
 /************/
 /* Instance */
 /************/
+#ifndef _INSTANCE_H
+#define _INSTANCE_H
 
 typedef struct {
   int id ;
@@ -210,3 +212,4 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
 #endif
   barrier_wait(&g->gb) ;
 }
+#endif

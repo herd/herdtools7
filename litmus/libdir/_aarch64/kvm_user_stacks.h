@@ -2,6 +2,8 @@
 /* Setup user mode stacks */
 /**************************/
 
+#ifndef KVM_USER_STACKS_H
+#define KVM_USER_STACKS_H
 #define USER_MODE 1
 
 static uint64_t user_stack[AVAIL];
@@ -16,3 +18,4 @@ static void set_user_stack(int cpu) {
   ti->pgtable = ti0->pgtable;
   user_stack[cpu] = sp_usr;
 }
+#endif
