@@ -16,7 +16,8 @@
 /**********************/
 /* User level barrier */
 /**********************/
-
+#ifndef BARRIER_H
+#define BARRIER_H 1
 
 typedef struct {
   volatile int c,sense;
@@ -26,3 +27,4 @@ typedef struct {
 void barrier_init (sense_t *p,int n);
 
 void barrier_wait(sense_t *p);
+#endif

@@ -15,7 +15,8 @@
 /****************************************************************************/
 
 /* Notice: this file contains public domain code by Bob Jenkins */
-
+#ifndef _HASH_H
+#define _HASH_H
 typedef struct {
   log_t key ;
 #ifdef STATS
@@ -174,3 +175,4 @@ static int hash_adds(hash_t *t, hash_t *f) {
   }
   return r;
 }
+#endif
