@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Log = (val Logs.src_log (Logs.Src.create "reconstruction") : Logs.LOG)
+
 (** Nondeterminism monad: represents a computation that may produce more than
     one value, or none at all. Lists provide implementations of the
     nondeterministic monad with different representations of a sequence of
@@ -133,7 +135,9 @@ let set_exp_of_conj (e : Eff.t) (conj : C.t Conj.t) : Cat.set_exp =
    The process may fail with return value [None] if the set of constraints is
    incomplete. *)
 let exp_of_conj ~src_eff ~tgt_eff (conj : C.t Conj.t) : Cat.rel_exp option =
-  (* Format.printf "running exp_of_conj on endpoints (%d, %d)@." e1 e2; *)
+  Log.debug (fun m ->
+      m "attempting synthesis of conjunction on endpoints (%a, %a)" Eff.pp
+        src_eff Eff.pp tgt_eff);
   let eff_map, graph =
     conj
     |> Conj.fold_left
@@ -162,7 +166,6 @@ let exp_of_conj ~src_eff ~tgt_eff (conj : C.t Conj.t) : Cat.rel_exp option =
   if EffSet.equal (EffSet.of_list (G.nodes g)) (EffSet.of_list endpoints) then
     match G.edges g with
     | [ (x, lbl, y) ] ->
-        (* Format.printf "exp_of_conj: got this edge: (%d, %a, %d)@." x Cat.pp_exp lbl y; *)
         let x, lbl, y =
           if Misc.pair_eq Eff.equal Eff.equal (x, y) (src_eff, tgt_eff) then
             (x, lbl, y)
@@ -170,11 +173,16 @@ let exp_of_conj ~src_eff ~tgt_eff (conj : C.t Conj.t) : Cat.rel_exp option =
         in
         let from_set i = Option.to_list (from_set i) in
         let series = from_set x @ [ lbl ] @ from_set y in
-        (* let () = series |> List.iter (fun exp -> *)
-        (*   Format.printf "exp_of_conj: emitting (%d, %a, %d)@." x Cat.pp_exp exp y) in *)
         Some (SPGraph.series series)
     | _ -> None
   else None
+
+let invalid_disj stru =
+  let err =
+    Format.asprintf "disjunction shape not supported: %a" (Structure.pp C.pp)
+      stru
+  in
+  raise (Invalid_argument err)
 
 (* Turn a constraint structure into a conjunction of constraints.
    The resulting conjunction is generated non-deterministically to account
@@ -190,12 +198,7 @@ let rec to_conjunction : C.t Structure.t -> C.t Conj.t NonDet.t = function
       let endps = common_conjs_endpoints conjs in
       let* c =
         match EffSet.elements endps with
-        | [] ->
-            let err =
-              Format.asprintf "disjunction shape not supported: %a"
-                (Structure.pp C.pp) stru
-            in
-            raise (Invalid_argument err)
+        | [] -> invalid_disj stru
         | [ e ] ->
             let exps = List.map (set_exp_of_conj e) conjs in
             NonDet.pure (C.Set (e, Cat.SetExp.union exps))
