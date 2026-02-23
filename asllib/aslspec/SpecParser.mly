@@ -20,6 +20,28 @@ let bool_of_string s =
   | _ ->
       let msg = Format.sprintf "expected boolean string (true/false), got: %s" s in
       raise (SpecError msg)
+
+(** Checks that the given string has balanced braces, which avoids LaTeX compilation errors. *)
+let check_balanced_braces s =
+  let rec scan i depth =
+    if i >= String.length s then
+      depth = 0
+    else
+      let c = s.[i] in
+      let new_depth =
+        match c with
+        | '{' -> depth + 1
+        | '}' -> depth - 1
+        | _ -> depth
+      in
+      if new_depth < 0 then
+        false (* More closing braces than opening *)
+      else
+        scan (i + 1) new_depth
+  in
+  if not (scan 0 0) then
+    let msg = Format.sprintf "unbalanced braces in string: %s" s in
+    raise (SpecError msg)
 %}
 
 %type <AST.t> spec
@@ -263,8 +285,12 @@ let type_attribute :=
     | short_circuit_macro_attribute
 
 let prose_description_attribute ==
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
-    | template=STRING; { (Prose_Description, StringAttribute template) }
+    | PROSE_DESCRIPTION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Description, StringAttribute template) }
+    | template=STRING; {
+        check_balanced_braces template;
+        (Prose_Description, StringAttribute template) }
 
 let math_macro_attribute ==
     MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
@@ -298,7 +324,9 @@ let operator_style_attribute ==
     | TYPECAST; EQ; value=IDENTIFIER; { (Typecast, BoolAttribute (bool_of_string value)) }
 
 let prose_application_attribute ==
-    PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
+    PROSE_APPLICATION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Application, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | { [] }
