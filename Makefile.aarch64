@@ -142,7 +142,7 @@ litmus-cata-aarch64-VMSA-test-kvm: litmus-aarch64-dep
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-VMSA tests: OK"
 
-litmus-aarch64-run:: litmus-cata-aarch64-ifetch-test-kvm
+litmus-aarch64-norun:: litmus-cata-aarch64-ifetch-test-kvm
 
 # Test UDF+2H is not terminating, do not execute it.
 # See NORUN below.
