@@ -1058,14 +1058,15 @@ module Make
               check_cond cond)
           end in
         if pte2 then  mvirt
-        else
-          M.op1 Op.IsVirtual a_virt >>= fun cond ->
-          M.choiceT cond mvirt
+        else begin
+          let mdirect =
             (* Non-virtual accesses are disallowed from EL0.
                For instance, user code cannot access the page table. *)
-            (if is_el0 then mk_pte_fault a_virt ma dir an ii
-             else mdirect)
-
+            if is_el0 then mk_pte_fault a_virt ma dir an ii
+            else mdirect in
+          M.op1 Op.IsVirtual a_virt >>= fun cond ->
+          M.choiceT cond mvirt mdirect
+        end
 (* Read memory, return value read *)
       let do_read_mem_ret sz an anexp ac a ii =
         let m a =
@@ -1385,23 +1386,41 @@ module Make
 
       let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
 
-      let fire_spurious_af dir a m =
-        if
+      let can_be_pt v =
+        match V.as_constant v with
+        | None -> true
+        | Some c -> Constant.is_pt c
+
+      let can_af0 v =
+        (match V.as_constant v with
+        | Some (Constant.PteVal p) ->
+           p.AArch64PteVal.valid <> 0 &&  p.AArch64PteVal.af = 0
+        | _ -> true)
+
+      (* Tag ignored, may serve for debug *)
+      let fire_spurious_af _tag v dir a m =
+        let do_fire =
           some_ha &&
-            (let v = C.variant Variant.PhantomOnLoad in
-             match dir with Dir.W -> not v | Dir.R -> v)
+            (let b = C.variant Variant.PhantomOnLoad in
+             match dir with
+             | Dir.W -> not b && can_be_pt a && can_af0 v
+             | Dir.R -> b) in
+        if do_fire
         then
           (m >>|
              M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
             fun (r,_) -> M.unitT r
         else m
 
-      let lift_kvm dir updatedb mop ma an ii mphy =
+      let lift_kvm tag v dir updatedb mop ma an ii mphy =
         let mfault ma a ft = emit_fault a ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
-            ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
+            (let m = mop Access.PTE ma in
+              let m =
+                if pte2 then m
+                else fire_spurious_af (tag^"1") v dir a m in
+              m >>= M.ignore >>= B.next1T)
             mphy
             mfault in
         M.delay_kont "6" ma (
@@ -1415,7 +1434,7 @@ module Make
                  mop ac ma >>= M.ignore >>= B.next1T
         )
 
-      let lift_memtag_phy dir mop ma an ii mphy =
+      let lift_memtag_phy v dir mop ma an ii mphy =
         let checked_op mpte_d a_virt =
           let mok mpte_t =
             let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
@@ -1448,7 +1467,7 @@ module Make
           M.delay_kont "tag_ptw" ma @@ fun a ma ->
           let mdirect =
             let m = mop Access.PTE ma in
-            fire_spurious_af dir a m >>= M.ignore >>= B.next1T in
+            fire_spurious_af "2" v dir a m >>= M.ignore >>= B.next1T in
           check_ptw ii.AArch64.proc Dir.R false true a ma an ii
             mdirect
             cond_check_tag
@@ -1545,36 +1564,42 @@ Arguments:
 - an:         Annotation for the event structure.
 - ii:         Instruction metadata.
 *)
-      let lift_memop rA dir updatedb checked mop perms ma mv an ii =
+      let lift_memop ?(tag="") rA dir updatedb checked mop perms ma mv an ii =
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
-          let mop = apply_mv mop mv in
-          if kvm then
-            let mphy ma a_virt =
-              let ma = get_oa a_virt ma in
-              if pte2 then
-                M.op1 Op.IsVirtual a_virt >>= fun c ->
-                M.choiceT c
-                  (mop Access.PHY ma)
-                  (fire_spurious_af dir a_virt (mop Access.PHY_PTE ma))
-                >>= M.ignore >>= B.next1T
-              else
-                mop Access.PHY ma
-                >>= M.ignore >>= B.next1T in
-            let mphy =
-              if checked then lift_memtag_phy dir mop ma an ii mphy
-              else mphy
-            in
-            let m = lift_kvm dir updatedb mop ma an ii mphy in
+          (match dir with
+           | Dir.W ->
+              M.delay_kont "MV" mv
+           | _ ->
+              fun f -> f V.zero mv)
+            (fun v mv ->
+              let mop = apply_mv mop mv in
+              if kvm then
+                let mphy ma a_virt =
+                  let ma = get_oa a_virt ma in
+                  if pte2 then
+                    M.op1 Op.IsVirtual a_virt >>= fun c ->
+                    M.choiceT c
+                      (mop Access.PHY ma)
+                      (fire_spurious_af "3" v dir a_virt (mop Access.PHY_PTE ma))
+                    >>= M.ignore >>= B.next1T
+                  else
+                    mop Access.PHY ma
+                    >>= M.ignore >>= B.next1T in
+                let mphy =
+                  if checked then lift_memtag_phy v dir mop ma an ii mphy
+                  else mphy
+                in
+                let m = lift_kvm tag v dir updatedb mop ma an ii mphy in
             (* M.short will add an iico_data only if memtag is enabled *)
-            M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
-          else if pac then
-            lift_pac_virt mop ma dir an ii
-          else if checked then
-            lift_memtag_virt mop ma dir an ii
-          else
-            mop Access.VIR ma >>= M.ignore >>= B.next1T
+                M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+              else if pac then
+                lift_pac_virt mop ma dir an ii
+              else if checked then
+                lift_memtag_virt mop ma dir an ii
+              else
+                mop Access.VIR ma >>= M.ignore >>= B.next1T)
 
       (* Address translation instruction *)
       let do_at op rd ii =
@@ -1601,7 +1626,7 @@ Arguments:
         let maccess a ma =
           check_ptw ii.AArch64.proc dir false false a ma Annot.N ii
             ((let m = mop Access.PTE ma in
-              fire_spurious_af dir a m) >>= M.ignore >>= B.next1T)
+              (* fire_spurious_af "4" v dir a *) m) >>= M.ignore >>= B.next1T)
             mphy
             mfault in
         M.delay_kont "at::check_ptw" ma maccess
@@ -1614,7 +1639,7 @@ Arguments:
           if memtag && C.mte_store_only then
             ma >>= fun a -> loc_extract a
           else ma in
-        lift_memop rA Dir.R false checked
+        lift_memop ~tag:"LD" rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
             let open Precision in
             let memtag_sync =
@@ -1629,7 +1654,7 @@ Arguments:
 
 (* Generic store *)
       let do_str rA mop sz an ma mv ii =
-        lift_memop rA Dir.W true memtag
+        lift_memop ~tag:"ST" rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
@@ -1914,12 +1939,12 @@ Arguments:
 
       let str_simple sz rs rd m_ea ii =
         do_str rd
-          (fun ac a _ ii ->
-               M.data_input_next
-                 (read_reg_data_sz sz rs ii)
-                 (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
+          (fun ac a v ii ->
+            M.data_input_next
+              (M.unitT v)
+              (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
           sz Annot.N
-          m_ea  (M.unitT V.zero) ii
+          m_ea (read_reg_data_sz sz rs ii) ii
 
       let str sz rs rd e ii =
         let open AArch64Base in
@@ -1933,14 +1958,14 @@ Arguments:
                (read_reg_addr rd ii)
                (fun a_virt ma ->
                  do_str rd
-                   (fun ac a _ ii ->
+                   (fun ac a v ii ->
                      M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
                      >>|
                      M.data_input_next
-                       (read_reg_data_sz sz rs ii)
+                       (M.unitT v)
                        (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
                    sz Annot.N
-                   ma (M.unitT V.zero) ii) in
+                   ma (read_reg_data_sz sz rs ii) ii) in
            if kvm then M.upOneRW (is_this_reg rd) m
            else m
         | Imm (k,PreIdx) ->
@@ -2037,9 +2062,9 @@ Arguments:
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (mw an ac))
-              (to_perms "w" sz)
-              (read_reg_addr rd ii)
-              ms an ii
+          (to_perms "w" sz)
+          (read_reg_addr rd ii)
+          ms an ii
 
       let stxr sz t rr rs rd ii =
         do_stxr
@@ -2113,7 +2138,7 @@ Arguments:
               (* Dir.W would force check for dbm bit:                  *)
               (* - if set then either update or not db bit per R_TXGHB *)
               (* - if unset raise Permission fault                     *)
-              lift_memop rn Dir.W updatedb checked mop (to_perms "rw" sz) ma mv an ii
+              lift_memop ~tag:"FAIL" rn Dir.W updatedb checked mop (to_perms "rw" sz) ma mv an ii
           in
           if do_wb then
             do_action true checked ma
@@ -2154,7 +2179,7 @@ Arguments:
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift_memop rn Dir.W true memtag mop_success (to_perms "rw" sz) ma mv an ii
+          lift_memop ~tag:"CAS" rn Dir.W true memtag mop_success (to_perms "rw" sz) ma mv an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
