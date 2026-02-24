@@ -1,0 +1,2 @@
+MP+dmb.st+poplv0-pola           Allowed
+S+tlbi-sync.ishptedb1p+popl     Allowed
