@@ -1,0 +1,18 @@
+AArch64 MP+tlbi-sync.ishaptedb1p+poa
+Variant=vmsa
+{
+ [PTE(x)]=(oa:PA(x),db:0);
+ [PTE(y)]=(oa:PA(x));
+ 0:X0=(oa:PA(x),db:1); 0:X1=PTE(x); 
+ 0:X3=y; 1:X3=y;
+ 0:X5=x; 1:X5=x;
+}
+ P0              | P1           ;
+ STR X0,[X1]     | LDR W2,[X3]  ;
+ DSB ISH         |L0:           ;
+ LSR X4,X5,#12   | STR WZR,[X5] ;
+ TLBI VAAE1IS,X4 |              ;
+ DSB ISH         |              ;
+ MOV W2,#1       |              ;
+ STR W2,[X3]     |              ;
+exists (1:X2=1 /\ fault(P1:L0,x,MMU:Permission))
