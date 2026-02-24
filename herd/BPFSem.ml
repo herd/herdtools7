@@ -246,6 +246,7 @@ struct
            >>= fun v -> commit ii >>= fun () -> B.bccT v lbl)
     ;;
 
-    let spurious_setaf _ = assert false
+    include NoAF
+
   end
 end

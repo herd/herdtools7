@@ -29,6 +29,7 @@ module type S = sig
 
   val get_lannot : t -> arch_lannot
   val get_explicit : t ->  arch_explicit
+  val access_of : t -> Access.t option
   val value_of : t -> v option
   val read_of : t -> v option
   val written_of : t -> v option
@@ -64,9 +65,10 @@ module No(C:NoConf) = struct
 
   let get_lannot _ = assert false
   let get_explicit _ = assert false
+  let access_of _ = assert false
+  let value_of _ = assert false
   let read_of _ = assert false
   let written_of _ = assert false
-  let value_of _ = assert false
   let location_of _ = assert false
   let is_store _ = assert false
   let is_load _ = assert false
