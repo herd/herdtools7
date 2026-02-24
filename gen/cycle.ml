@@ -1132,12 +1132,7 @@ let check_cycle c =
                  process the nodes in list `ns` for the location `loc` *)
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
-              (* When in kvm mode, using initial value `1`
-                 avoiding value `0`, which collides with
-                 the default value of register.
-                 This is useful when any previous instruction faults,
-                 a following read never happen and register remains default 0 *)
-              let init_val = if do_kvm then 1 else 0 in
+              let init_val = 0 in
               let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
@@ -1150,8 +1145,6 @@ let check_cycle c =
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
               let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature loc in
-              let init_env = if init_val = 0 then init_env
-                        else (Code.as_data loc,Value.from_int init_val)::init_env in
               (* Add pte initial values when kvm and the value is not default *)
               let init_env = if (not do_kvm) || is_pte_default loc pte_val then init_env
                         else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::init_env in
