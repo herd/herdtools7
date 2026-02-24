@@ -25,6 +25,7 @@ let opts = [Util.arch_opt arch]
 module Make (F:Fence.S)(A:Atom.S) =
     struct
       module E = Edge.Make(Edge.Config)(F)(A)
+      module Relax = Relax.Make(F)(E)
       module Namer = Namer.Make(F)(A)(E)
       module Normer =
         Normaliser.Make(struct let lowercase = false end)(E)
@@ -87,23 +88,22 @@ module Make (F:Fence.S)(A:Atom.S) =
         done with End_of_file -> ()
 
       let zyva_argv es =
-        let es = List.map E.parse_edge es in
-        let es = atomize es in
-        printf "%s\n" (pp_edges es)
+        E.parse_edges es
+        |> atomize
+        |> pp_edges
+        |> printf "%s\n"
 
       let zyva = function
-        | [] -> zyva_stdin ()
+        | "" -> zyva_stdin ()
         | es ->  zyva_argv es
     end
 
-let pp_es = ref []
+let pp_es = ref ""
 
 let () =
   Util.parse_cmdline
     opts
-    (fun x -> pp_es := x :: !pp_es)
-
-let pp_es = List.rev !pp_es
+    (fun x -> pp_es := !pp_es ^ " " ^ x)
 
 let () =
   let (module FenceImpl:Fence.S), (module AtomImpl:Atom.S) =
@@ -135,4 +135,4 @@ let () =
     | `CPP -> Warn.fatal "CPP arch in atomize"
     | `JAVA -> Warn.fatal "JAVA arch in atomize" in
   let module M = Make(FenceImpl)(AtomImpl) in
-  M.zyva pp_es
+  M.zyva !pp_es

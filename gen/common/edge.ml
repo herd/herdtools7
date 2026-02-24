@@ -198,6 +198,16 @@ and module RMW = A.RMW = struct
 
   type value = A.Value.v
 
+  let pre_parse_string s =
+    String.trim s
+    |> (fun s -> Lexing.from_string s)
+    |> Parser.main LexUtil.token
+    |> Ast.flatten
+    |> ( function
+      | [x] -> x
+      | _ ->
+        Warn.user_error "only accepts exactly one input cycle." )
+
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)
 
@@ -560,15 +570,12 @@ let fold_tedges f r =
     with Not_found -> Warn.fatal "Bad atom: %s" s
 
   let parse_atoms xs =
-    try
-      List.fold_left
-        (fun k x ->
-          List.fold_left
-            (fun k s -> parse_atom s::k)
-            k (LexUtil.just_split x))
-        [] xs
-    with LexUtil.Error msg ->
-      Warn.fatal "bad atoms list (%s)" msg
+    List.map
+      ( fun x ->
+        pre_parse_string x
+        |> List.map parse_atom
+      ) xs
+    |> List.flatten
 
   let get_access_atom = A.get_access_atom
 
@@ -664,7 +671,8 @@ let fold_tedges f r =
     try Hashtbl.find t s
     with Not_found -> Warn.fatal "Bad edge: %s" s
 
-  let parse_edges s = List.map parse_edge (LexUtil.just_split s)
+  let parse_edges s =
+    pre_parse_string s |> List.map parse_edge
 
   let pp_edges es = String.concat " " (List.map pp_edge es)
 

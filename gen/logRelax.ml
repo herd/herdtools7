@@ -17,7 +17,7 @@
 
 module type I = sig
   type relax
-  val parse : LexUtil.t -> relax
+  val parse : Ast.t -> relax
 end
 
 module type S = sig
