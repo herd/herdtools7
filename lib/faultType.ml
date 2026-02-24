@@ -31,8 +31,14 @@ module type AArch64Sig = sig
     | Permission
     | Exclusive
 
+  type sme_t =
+    | Streaming
+    | NotStreaming
+    | InactiveZA
+
   type t =
     | MMU of mmu_t
+    | SME of sme_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
@@ -48,14 +54,25 @@ module AArch64 = struct
     | Permission
     | Exclusive
 
+  type sme_t =
+    | Streaming
+    | NotStreaming
+    | InactiveZA
+
   let pp_mmu_t = function
     | Translation -> "Translation"
     | AccessFlag -> "AccessFlag"
     | Permission -> "Permission"
     | Exclusive -> "Exclusive"
 
+  let pp_sme_t = function
+    | Streaming -> "Streaming"
+    | NotStreaming -> "NotStreaming"
+    | InactiveZA -> "InactiveZA"
+
   type t =
     | MMU of mmu_t
+    | SME of sme_t
     | TagCheck
     | UndefinedInstruction
     | SupervisorCall
@@ -66,6 +83,9 @@ module AArch64 = struct
               MMU AccessFlag;
               MMU Permission;
               MMU Exclusive;];
+      "SME", [SME Streaming;
+              SME NotStreaming;
+              SME InactiveZA];
       "Translation", [MMU Translation];
       "AccessFlag", [MMU AccessFlag];
       "Permission", [MMU Permission];
@@ -81,6 +101,7 @@ module AArch64 = struct
 
   let pp = function
     | MMU m -> Printf.sprintf "MMU:%s" (pp_mmu_t m)
+    | SME m -> Printf.sprintf "SME:%s" (pp_sme_t m)
     | TagCheck -> "TagCheck"
     | UndefinedInstruction -> "UndefinedInstruction"
     | SupervisorCall -> "SupervisorCall"
@@ -91,6 +112,9 @@ module AArch64 = struct
     | "MMU:AccessFlag" -> MMU AccessFlag
     | "MMU:Permission" -> MMU Permission
     | "MMU:Exclusive" -> MMU Exclusive
+    | "SME:Streaming" -> SME Streaming
+    | "SME:NotStreaming" -> SME NotStreaming
+    | "SME:InactiveZA" -> SME InactiveZA
     | "TagCheck" -> TagCheck
     | "PacCheck:DA" -> PacCheck PAC.DA
     | "PacCheck:DB" -> PacCheck PAC.DB
