@@ -1,0 +1,10 @@
+Test PC005 Required
+States 1
+0:PC=label:"P0:L_loop"; 0:X0=1;
+Loop Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:PC=label:"P0:L_loop" /\ 0:X0=1)
+Observation PC005 Always 1 0
+Hash=bed32fafa84d89f4bcf004b42b5cc3a8
+

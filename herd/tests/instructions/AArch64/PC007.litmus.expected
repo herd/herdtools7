@@ -1,0 +1,10 @@
+Test PC007 Required
+States 1
+0:PC=10004;
+Loop Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:PC=10004)
+Observation PC007 Always 1 0
+Hash=3c49dded75ddec00fb76bca6e2526e3f
+
