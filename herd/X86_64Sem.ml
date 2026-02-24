@@ -431,7 +431,7 @@ module
           (A.next_po_index ii.A.program_order_index)
           (build_semantics_inner plain ii)
 
-    let spurious_setaf _ = assert false
+    include NoAF
 
     end
 
