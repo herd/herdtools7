@@ -1,0 +1,5 @@
+MP+popl+amo.swpazrp-po    Allowed
+MP+popl+amo.swpzr-dmb.ld  Allowed
+MP+popl+amo.swpzr-dsb.ld  Allowed
+MP+popptev1l+zr-acq       Forbidden
+MP+popptev1l+zr-dmb.ld    Forbidden
