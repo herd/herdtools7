@@ -69,6 +69,7 @@ val same_instance : event -> event -> bool
   val same_proc     : event -> event -> bool
   val same_proc_not_init : event -> event -> bool
   val progorder_of  : event -> A.program_order_index option
+  val static_poi  : event -> A.program_order_index option
 
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and e2 *)
   val po_strict : event -> event -> bool
@@ -643,6 +644,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | IdSome i -> Some i.A.program_order_index
     | IdInit|IdSpurious -> None
 
+    let static_poi e =
+      match e.iiid with
+      | IdSome i -> Some i.A.static_poi
+      | IdInit | IdSpurious -> None
 
 (************************)
 (* Predicates on events *)

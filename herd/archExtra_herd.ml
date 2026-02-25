@@ -74,8 +74,12 @@ module type S = sig
    the test, such as its name (cf. Test.mli) *)
 
 
+  module CodeInstr : sig
+    type t = { instr: instr; static_poi: int }
+  end
+
   (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type code = (int * instr) list
+  type code = (int * CodeInstr.t) list
 
   val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
 
@@ -107,6 +111,7 @@ module type S = sig
       fetch_proc : proc; (* Fetching source *)
       proc       : proc; (* Current thread *)
       program_order_index   : program_order_index;
+      static_poi : program_order_index;
       inst : instr;
       labels : Label.Set.t; lbl2addr:program;
       addr : int;
@@ -336,8 +341,12 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Components of test structures *)
       (*********************************)
 
+      module CodeInstr = struct
+        type t = { instr: instr; static_poi: int }
+      end
+
       (* Code memory is a mapping from globals locs, to instructions *)
-      type code = (int * instr) list
+      type code = (int * CodeInstr.t) list
 
       (* This function is a default behaviour for all architectures.
          When variant -self is enabled, it fails trying to convert a branch
@@ -374,6 +383,7 @@ module Make(C:Config) (I:I) : S with module I = I
           fetch_proc : proc;
           proc       : proc;
           program_order_index   : program_order_index;
+          static_poi : program_order_index;
           inst : instr;
           labels : Label.Set.t; lbl2addr : program;
           addr : int ;
