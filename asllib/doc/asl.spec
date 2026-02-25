@@ -182,12 +182,6 @@ operator dom[K,V](partial K -> V) -> powerset(K)
   math_macro = \domop,
 };
 
-operator map_apply_opt[K,V](partial K -> V, K) -> option(V)
-{
-  custom = true,
-  math_macro = \mapapplyoptop,
-};
-
 operator map_apply[K,V](partial K -> V, K) -> V
 {
   custom = true,
@@ -2652,11 +2646,13 @@ semantics relation eval_expr(env: envs, e: expr) ->
     e =: E_Var(name);
     env =: (_, denv);
     case local {
-      map_apply_opt(denv.dynamic_envs_L, name) =: some(v);
+      name in dom(denv.dynamic_envs_L);
+      denv.dynamic_envs_L(name) =: v;
     }
 
     case global {
-      map_apply_opt(denv.dynamic_envs_G.storage, name) =: some(v);
+      name in dom(denv.dynamic_envs_G.storage);
+      denv.dynamic_envs_G.storage(name) =: v;
     }
     read_identifier(name, v) -> g;
     --
@@ -2866,7 +2862,7 @@ semantics relation eval_expr(env: envs, e: expr) ->
   case EGetCollectionFields {
     e =: E_GetCollectionFields(base, field_names);
     env =: (_, denv);
-    map_apply_opt(denv.dynamic_envs_G.storage, base) =: some(record);
+    denv.dynamic_envs_G.storage(base) =: record;
     record =: NV_Record(field_map);
     ( INDEX(i, field_names: get_field(field_names[i], record) -> NV_Literal(L_Bitvector(bits[i]))) )
     { ([_, [_]]) };
@@ -3293,13 +3289,13 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     env =: (tenv, denv);
     m =: (v, g);
     case local {
-      map_apply_opt(denv.dynamic_envs_L, name) = some(_);
+      name in dom(denv.dynamic_envs_L);
       updated_local := map_update(denv.dynamic_envs_L, name, v);
       new_denv := denv(dynamic_envs_L: updated_local);
     }
 
     case global {
-      map_apply_opt(denv.dynamic_envs_G.storage, name) = some(_);
+      name in dom(denv.dynamic_envs_G.storage);
       updated_storage := map_update(denv.dynamic_envs_G.storage, name, v);
       new_gdenv := denv.dynamic_envs_G(storage: updated_storage);
       new_denv := denv(dynamic_envs_G: new_gdenv);
@@ -3393,7 +3389,7 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     le =: LE_SetCollectionFields(base, field_names, slices);
     m =: (v, g);
     env =: (tenv, denv);
-    map_apply_opt(denv.dynamic_envs_G.storage, base) =: some(record);
+    denv.dynamic_envs_G.storage(base) =: record;
     assign_bitvector_fields(v, record, field_names, slices) -> record1;
     field_ids := list_map(f, field_names, concat(base, dot_str, f));
     INDEX(i, field_ids: write_identifier(field_ids[i], v) -> gs[i]);
@@ -7029,9 +7025,18 @@ semantics function get_pending_calls(denv: dynamic_envs, name: Identifier) ->
   with it.",
   prose_application = "\hyperlink{relation-getpendingcalls}{retrieving} pending calls count for {name} in {denv} yields {s}",
 } =
-  s := if map_apply_opt(denv.dynamic_envs_G.pending_calls, name) =: some(s') then s' else zero;
-  --
-  s;
+  case found {
+    name in dom(denv.dynamic_envs_G.pending_calls);
+    denv.dynamic_envs_G.pending_calls(name) =: s';
+    --
+    s';
+  }
+
+  case not_found {
+    name not_in dom(denv.dynamic_envs_G.pending_calls);
+    --
+    zero;
+  }
 ;
 
 semantics function set_pending_calls(genv: global_dynamic_envs, name: Identifier, v: N) ->
@@ -7269,7 +7274,7 @@ semantics function write_to_bitvector(slices: list0((native_value, native_value)
     pos_map := bindings_to_map(list_combine(positions, src_bits));
     new_bits :=
       list_map(j, indices(dst_bits),
-        if map_apply_opt(pos_map, j) =: some(b) then b else dst_bits[j])
+        if (j in dom(pos_map) && (map_apply(pos_map, j) =: b)) then b else dst_bits[j])
     { (_, (_, _, [_])) };
     --
     nvbitvector(new_bits);
@@ -14622,20 +14627,23 @@ typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
   prose_application = "",
 } =
   case local {
-    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) =: some(e);
+    x in dom(tenv.static_envs_L.local_expr_equiv);
+    tenv.static_envs_L.local_expr_equiv(x) =: e;
     --
     some(e);
   }
 
   case global {
-    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) =: some(e);
+    x not_in dom(tenv.static_envs_L.local_expr_equiv);
+    x in dom(tenv.static_envs_G.global_expr_equiv);
+    tenv.static_envs_G.global_expr_equiv(x) =: e;
     --
     some(e);
   }
 
   case none {
-    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) = None;
-    map_apply_opt(tenv.static_envs_L.local_expr_equiv, x) = None;
+    x not_in dom(tenv.static_envs_L.local_expr_equiv);
+    x not_in dom(tenv.static_envs_G.global_expr_equiv);
     --
     None;
   }

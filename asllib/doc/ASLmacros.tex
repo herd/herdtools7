@@ -286,14 +286,6 @@
 \newcommand\mapapplyop[3][H]{
     {#2}\left({#3}\right)
 }
-\newcommand\mapapplyoptname[0]{\hyperlink{relation-map_apply_opt}{\textfunc{map\_apply\_opt}}}
-\newcommand\mapapplyoptop[3][H]{
-  \ifthenelse{\equal{#1}{H}}{
-    \mapapplyoptname\left({#2}, {#3}\right)
-  }{
-    \mapapplyoptname\left(\begin{array}{l}{#2},\\ {#3}\end{array}\right)
-  }
-}
 
 \newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}} % SPECIFICATION_DEFERRED
 \newcommand\sortop[3][H]{

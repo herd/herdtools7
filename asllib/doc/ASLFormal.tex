@@ -97,12 +97,12 @@ We write ``$\ifthenelseop[H]{c}{v}{w}$'' to denote the value of $v$ if the condi
 \hypertarget{constant-equalsign}{}
 \RenderType{Sign}
 
-The function $\sign : \overname{\Q}{q} \rightarrow \Sign$ returns the sign of $\vq$:
+The function $\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}$ returns the sign of $\vq$:
 \[
-\sign(q) \triangleq \begin{cases}
-  \positivesign & \text{if }q > 0\\
-  \equalsign & \text{if }q = 0\\
-  \negativesign & \text{if }q < 0
+\sign(\vq) \triangleq \begin{cases}
+  \positivesign & \text{if }\vq > 0\\
+  \equalsign & \text{if }\vq = 0\\
+  \negativesign & \text{if }\vq < 0
 \end{cases}
 \]
 \end{definition}
@@ -161,24 +161,8 @@ Notice that the domain of a partial function need not be finite, which is what t
 
 \paragraph{Parametric Functions and Relations}
 A \emph{parametric function} is a function whose domain is not a priori fixed but rather
-parameterized by the type of its arguments. An example is the $\mapapplyoptname$ function where the
-types $A$ and $B$ are not explicitly specified, but rather inferred from the context where the function is used.
-
-\texthypertarget{relation-map_apply_opt}
-\begin{definition}[Safe Function Application]
-The parametric function
-\[
-  \mapapplyoptop{\overname{A \partialto B}{\vf}}{\overname{A}{\va}} \aslto \Option{\overname{B}{\vb}}
-\]
-safely applies a partial function $\vf$ to an argument $\va$:
-\[
-  \mapapplyoptop{\vf}{\va} \triangleq
-  \begin{cases}
-    \some{\vb} & \text{if }\va \in \dom(\vf) \text{ and } \vf(\va) = \vb\\
-    \None       & \text{if }\vf(\va) = \bot
-  \end{cases}
-\]
-\end{definition}
+parameterized by the type of its arguments. An example is the $\equallength$ function where the
+types $A$ and $B$ (of the list elements) are not explicitly specified, but rather inferred from the context where the function is used.
 
 \hypertarget{def-finfunction}{}
 \begin{definition}[Finite-domain Function]
@@ -224,10 +208,10 @@ This makes it convenient to refer to arguments by referring to the corresponding
 the expressions corresponding to the arguments.
 For example,
 \[
-  \mapapplyoptop{\overname{A \partialto B}{\vf}}{\overname{A}{\va}} \aslto \Option{\overname{B}{\vb}}
+\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}
 \]
-defines a function type and lets us refer to the first argument as $\vf$, the second argument as $\va$,
-and to the result as $\vb$.
+defines a function type and lets us refer to its argument as $\vq$
+and to the result as $\vs$.
 
 \subsection{Lists}
 In the remainder of this document, we use the term \emph{list} and \emph{sequence} interchangeably.
@@ -333,7 +317,7 @@ denotes $[h] \concat t$, that is, the list formed by prepending the element $h$ 
 \begin{definition}[Equating List Lengths]
 The parametric function
 \[
-  \equallength : \overname{L}{a} \cartimes \overname{L}{b} \rightarrow \Bool
+  \equallength : \overname{\KleeneStar{A}}{a} \cartimes \overname{\KleeneStar{B}}{b} \rightarrow \Bool
 \]
 compares the length of two lists:
 \[

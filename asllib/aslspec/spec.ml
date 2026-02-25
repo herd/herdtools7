@@ -1840,6 +1840,17 @@ module Check = struct
         use_def_mode * Term.t list ->
         context_expr:Expr.t ->
         Term.t list * Term.t
+      (** [instantiate_operator_types_from_inferred_types spec relation_name
+           num_actual_args (mode, inferred_types) ~context_expr] instantiates
+          the types of the arguments and output of the operator [relation_name]
+          given the number of actual arguments [num_actual_args] and the
+          [inferred_types] for either its arguments or its output depending on
+          [mode]. The [context_expr] is used for error reporting. When mode is
+          [Use], the [inferred_types] correspond to the argument types. When
+          mode is [Def], the [inferred_types] correspond to the output type. By
+          instantiating we mean substituting type parameters in the operator
+          definition with concrete types inferred for a given operator
+          invocation expression. *)
     end = struct
       (** [unify_parameter_type spec ~relation_name parameter_name
            parameter_type type_env] attempts to unify [parameter_type] with any
@@ -2076,17 +2087,6 @@ module Check = struct
           in
           (instantiated_arg_types, instantiated_output_type)
 
-      (** [instantiate_operator_types_from_inferred_types spec relation_name
-           num_actual_args (mode, inferred_types) ~context_expr] instantiates
-          the types of the arguments and output of the operator [relation_name]
-          given the number of actual arguments [num_actual_args] and the
-          [inferred_types] for either its arguments or its output depending on
-          [mode]. The [context_expr] is used for error reporting. When mode is
-          [Use], the [inferred_types] correspond to the argument types. When
-          mode is [Def], the [inferred_types] correspond to the output type. By
-          instantiating we mean substituting type parameters in the operator
-          definition with concrete types inferred for a given operator
-          invocation expression. *)
       let instantiate_operator_types_from_inferred_types spec relation_name
           num_actual_args (mode, inferred_types) ~context_expr =
         let formal_arg_types =
@@ -2509,7 +2509,7 @@ module Check = struct
                and return the function's output type. *)
             let lhs_type, type_env = infer_type_in_env spec type_env lhs in
             let from_term, to_term =
-              match lhs_type with
+              match CheckTypeInstantiations.reduce_term spec lhs_type with
               | Function { from_type = _, from_term; to_type = _, to_term } ->
                   (from_term, to_term)
               | _ -> Error.invalid_map_lhs_type lhs_type ~context_expr:expr
