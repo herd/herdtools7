@@ -2080,7 +2080,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
-  \vres \eqdef \filteroptionlist(\vi\in\listrange(\cs): \vcopt_\vi)\\
+  \vres \eqdef \filteroptionlist{\vi\in\listrange(\cs): \vcopt_\vi}\\
   \vres \neq \emptylist
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \vres
@@ -2091,7 +2091,7 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \inferrule[div\_empty]{
   \op = \DIV\\
   \vi\in\listrange(\cs): \filterreduceconstraintdiv(\cs[\vi]) \typearrow \vcopt_\vi \OrTypeError\hva\\\\
-  \vres \eqdef \filteroptionlist(\vi\in\listrange(\cs): \vcopt_\vi)\\
+  \vres \eqdef \filteroptionlist{\vi\in\listrange(\cs): \vcopt_\vi}\\
   \vres = \emptylist\\
 }{
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \ifthenelseop[V]{\vapprox=\Over}{\CannotOverapproximate}{\CannotUnderapproximate}

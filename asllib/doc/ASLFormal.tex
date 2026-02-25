@@ -365,14 +365,14 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \begin{definition}[Filtering a List of Optional Values]
 The parametric function
 \[
-  \filteroptionlist(\KleeneStar{\Option{ T }}) \aslto \KleeneStar{T}
+  \filteroptionlist{\KleeneStar{\Option{ T }}} \aslto \KleeneStar{T}
 \]
 filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$:
 \[
-\filteroptionlist(L) \triangleq \begin{cases}
+\filteroptionlist{L} \triangleq \begin{cases}
   \emptylist & \text{if }L = \emptylist\\
-  \filteroptionlist(L') & \text{if }L = \None \cons L'\\
-  v \cons \filteroptionlist(L') & \text{if }L = \some{v} \cons L' \enspace.
+  \filteroptionlist{L'} & \text{if }L = \None \cons L'\\
+  v \cons \filteroptionlist{L'} & \text{if }L = \some{v} \cons L' \enspace.
 \end{cases}
 \]
 \end{definition}
