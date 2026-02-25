@@ -1,0 +1,5 @@
+If all of the following apply:
+* the Explicit Memory Read Effect (b) appears in program order before the Explicit Memory Read Effect (c).
+* Effect (c) Reads-from the Memory Write Effect (d).
+* Effect (d) is Coherence-before the Explicit Memory Write Effect (a).
+then Effect (b) is not architecturally Allowed to Read-from Effect (a).

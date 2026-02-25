@@ -1,0 +1,22 @@
+An Effect E1 and an Effect E2 are to the Same Location if one of the following applies:
+* All of the following apply:
+** E1 is a Memory Effect.
+** It is not the case that E1 is a Tag Memory Effect.
+** E2 is a Memory Effect.
+** It is not the case that E2 is a Tag Memory Effect.
+** E1 and E2 are to the same Physical Address.
+* All of the following apply:
+** E1 is a Tag Memory Effect.
+** E2 is a Tag Memory Effect.
+** E1 and E2 are to the same Physical Address.
+* All of the following apply:
+** E1 is an MMU Translation Fault Effect.
+** E1 and E2 have the Same Low-order Bits.
+* All of the following apply:
+** E1 and E2 have the Same Low-order Bits.
+** E2 is an MMU Translation Fault Effect.
+* All of the following apply:
+** An Implicit TTD Memory Read Effect E3 is Translation-intrinsically-before E1.
+** The output address of the TTD read by E3 is the same as the output address of the TTD read by an Implicit TTD Memory Read Effect E4.
+** An Implicit TTD Memory Read Effect E4 is Translation-intrinsically-before E2.
+** E1 and E2 have the Same Low-order Bits.

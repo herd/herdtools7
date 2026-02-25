@@ -1,0 +1,4 @@
+An Effect E1 is Hardware-Update-Predecessor of another Effect E2 if all of the following apply:
+o E2 is a Hardware Update Effect.
+o E1 is Coherence-before E2.
+o There is no Memory Write Effect E3 such that E1 is Coherence-before E3 and E3 is Coherence-before E2.
