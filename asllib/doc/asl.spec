@@ -4999,31 +4999,31 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
     case non_empty {
       p =: Pattern_Mask(mask);
       v =: nvbitvector(bits);
-      b := list_and(list_map(i, indices(mask), mask_match(mask[i], bits[i])));
+      all_bits_match := list_and(list_map(i, indices(mask), mask_match(mask[i], bits[i])));
       --
-      ResultPattern(nvbool(b), empty_graph);
+      ResultPattern(nvbool(all_bits_match), empty_graph);
     }
   }
 
   case PTuple {
     p =: Pattern_Tuple(ps);
     INDEX(i, ps: get_index(i, v) -> values[i]);
-    INDEX(i, ps: eval_pattern(env, values[i], ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i]))
-    { [_] };
-    b := list_and(bs);
+    ( INDEX(i, ps: eval_pattern(env, values[i], ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i])) )
+    { ([_]) };
+    all_patterns_match := list_and(bs);
     g := parallel_graphs(gs);
     --
-    ResultPattern(nvbool(b), g);
+    ResultPattern(nvbool(all_patterns_match), g);
   }
 
   case PAny {
     p =: Pattern_Any(ps);
     INDEX(i, ps: eval_pattern(env, v, ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i]))
     { [_] };
-    b := list_or(bs);
+    any_pattern_matches := list_or(bs);
     g := parallel_graphs(gs);
     --
-    ResultPattern(nvbool(b), g);
+    ResultPattern(nvbool(any_pattern_matches), g);
   }
 
   case PNot {
@@ -5049,10 +5049,7 @@ semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bi
 {
   "tests whether the bit {b} matches the mask value {mv}, yielding the result in {res}.",
   prose_application = "testing whether the bit {b} matches the mask value {mv} yields {res}",
-} =
-  --
-  bot; // This rule is defined by a LaTeX table.
-;
+};
 
 //////////////////////////////////////////////////
 // Relations for Primitive Operations
@@ -11094,10 +11091,10 @@ typing function unique_list_acc(ids: list0(Identifier), seen: powerset(Identifie
   }
 
   case non_empty {
-    ids =: match_cons(id, ids1);
-    already_seen := member(id, seen);
-    unique_list_acc(ids1, if_then_else(already_seen, seen, union(seen, make_set(id)))) -> rest;
-    unique_ids := if_then_else(already_seen, rest, concat(match_singleton_list(id), rest));
+    ids =: match_cons(id_head, ids_tail);
+    head_seen := member(id_head, seen);
+    unique_list_acc(ids_tail, union(seen, make_set(id_head))) -> unique_tail;
+    unique_ids := if head_seen then unique_tail else concat(match_singleton_list(id_head), unique_tail);
     --
     unique_ids;
   }

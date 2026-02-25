@@ -359,6 +359,7 @@ collections
 collectively
 colloquially
 column
+columns
 combination
 combinations
 combine
