@@ -1207,6 +1207,7 @@
 \newcommand\staticenvironmentterm[0]{\hyperlink{type-staticenvs}{static environment}}
 \newcommand\localstaticenvs[0]{\hyperlink{type-localstaticenvs}{\mathbb{LSE}}}
 \newcommand\localstaticenvironmentterm[0]{\hyperlink{type-localstaticenvs}{local static environment}}
+\newcommand\localstaticenvironmentsterm[0]{\hyperlink{type-localstaticenvs}{local static environments}}
 \newcommand\globalstaticenvs[0]{\hyperlink{type-globalstaticenvs}{\mathbb{GSE}}}
 \newcommand\globalstaticenvironmentterm[0]{\hyperlink{type-globalstaticenvs}{global static environment}}
 \newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\OldEmptyset_{\mathbb{SE}}}}
@@ -1233,6 +1234,9 @@
 %% Semantics macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\dynamicenvironmentterm[0]{\hyperlink{type-dynamicenvs}{dynamic environment}}
+\newcommand\globaldynamicenvironmentterm[0]{\hyperlink{type-globaldynamicenvs}{global dynamic environment}} % DO NOT LINT
+\newcommand\localdynamicenvironmentterm[0]{\hyperlink{type-localdynamicenvs}{local dynamic environment}} % DO NOT LINT
+\newcommand\environmentterm[0]{\hyperlink{type-envs}{environment}}
 \newcommand\aslrel[0]{\bigtimes}
 \newcommand\nativevalue[0]{\hyperlink{type-nativevalue}{\mathbb{V}}}
 \newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
@@ -1507,6 +1511,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\ContinuingTerm[0]{\hyperlink{type-Continuing}{continuing result configuration}}
 \newcommand\ProseMSB[0]{MSB}
 \newcommand\ProseLSB[0]{LSB}
 \newcommand\configurationterm[0]{\hyperlink{def-configuration}{configuration}}
@@ -1530,6 +1535,7 @@
 \newcommand\Builderrorsterm[0]{\hyperlink{def-builderrorterm}{Build errors}}
 \newcommand\dynamicerrorterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic error}}
 \newcommand\dynamicerrorsterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic errors}}
+\newcommand\astlabelterm[0]{\hyperlink{type-ASTLabels}{AST label}}
 
 \newcommand\listprefixterm[0]{\hyperlink{def-listprefix}{prefix}}
 
@@ -1624,6 +1630,7 @@
 \newcommand\namedlowestcommonancestorterm[0]{\hyperlink{relation-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccessterm[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifiesterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
+\newcommand\symbolicallysimplifyingterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifying}}
 \newcommand\singulartypeterm[0]{\hyperlink{relation-issingular}{singular type}}
 \newcommand\singulartypesterm[0]{\hyperlink{relation-issingular}{singular types}}
 
@@ -1786,7 +1793,7 @@
 \newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}
 \newcommand\sideeffectdescriptorsetsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{sets of side effect descriptors}}
 \newcommand\sideeffectfreeterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free}}
-\newcommand\sideeffectfreeexpressionterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expression}}
+\newcommand\sideeffectfreeexpressionterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expression}} % DO NOT LINT
 \newcommand\sideeffectfreeexpressionsterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expressions}}
 
 \newcommand\approximationdirectionterm[0]{\hyperlink{def-approximationdirectionterm}{approximation direction}}
