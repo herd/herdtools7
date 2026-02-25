@@ -1,0 +1,13 @@
+Test A032 Allowed
+States 3
+[x]=0; [y]=1; [PTE(x)]=(oa:PA(z), dbm:1); [PTE(y)]=(oa:PA(y), db:0, dbm:1);
+[x]=0; [y]=1; [PTE(x)]=(oa:PA(z), dbm:1); [PTE(y)]=(oa:PA(y), dbm:1);
+[x]=1; [y]=1; [PTE(x)]=(oa:PA(z), db:0, dbm:1); [PTE(y)]=(oa:PA(y), db:0, dbm:1);
+No
+Witnesses
+Positive: 0 Negative: 3
+Flag requires-BBM
+Condition exists ([x]=1 /\ [y]=1 /\ [PTE(x)]=(oa:PA(z), db:0, dbm:1) /\ [PTE(y)]=(oa:PA(y), dbm:1))
+Observation A032 Never 0 3
+Hash=d694f75f56ab43084d9ae56df6567efb
+
