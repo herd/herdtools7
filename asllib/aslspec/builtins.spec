@@ -14,6 +14,7 @@ variadic operator cond_op[T](list1(T)) -> T
   custom = true,
 };
 
+// This constant is for internal use only.
 constant bot { "bottom", math_macro = \bot };
 
 constant None { "the empty \optionalterm{}" };

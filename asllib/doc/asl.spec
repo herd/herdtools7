@@ -123,8 +123,6 @@ typedef ASTLabels
    math_macro = \ASTLabels,
 };
 
-constant bot { "bottom", math_macro = \bot };
-
 // Note: This is a simplification of the data type used
 // by the implementation. Specifically, the scope field
 // in the implementation can be derived from the name,
@@ -2131,7 +2129,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     }
 
     case global {
-      tenv.static_envs_L.local_storage_types(x) = bot;
+      x not_in dom(tenv.static_envs_L.local_storage_types);
       tenv.static_envs_G.global_storage_types(x) =: (ty, k);
       case const {
         k = GDK_Constant;
@@ -2141,7 +2139,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       }
 
       case non_const {
-        k != GDK_Constant || tenv.static_envs_G.constant_values(x) = bot;
+        k != GDK_Constant || x not_in dom(tenv.static_envs_G.constant_values);
         ses_gdk(k) -> ses;
         --
         (ty, E_Var(x), ses);
@@ -2149,8 +2147,8 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     }
 
     case error_undefined {
-      tenv.static_envs_L.local_storage_types(x) = bot;
-      tenv.static_envs_G.global_storage_types(x) = bot;
+      x not_in dom(tenv.static_envs_L.local_storage_types);
+      x not_in dom(tenv.static_envs_G.global_storage_types);
       --
       TypeError(TE_UI);
     }
@@ -3070,7 +3068,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     }
 
     case global {
-      tenv.static_envs_L.local_storage_types(x) = bot;
+      x not_in dom(tenv.static_envs_L.local_storage_types);
       tenv.static_envs_G.global_storage_types(x) =: (t, k);
       te_check(k = GDK_Var, TE_AIM) -> True;
       check_type_satisfies(tenv, t_e, t) -> True;
@@ -3080,8 +3078,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     }
 
     case error_undefined {
-      tenv.static_envs_L.local_storage_types(x) = bot;
-      tenv.static_envs_G.global_storage_types(x) = bot;
+      x not_in dom(tenv.static_envs_L.local_storage_types);
+      x not_in dom(tenv.static_envs_G.global_storage_types);
       --
       TypeError(TE_UI);
     }
@@ -5675,10 +5673,7 @@ typing function int_to_bits(val: Z, width: Z) -> (bits: list0(Bit))
 {
   "converts the integer {val} to its two's complement representation with {width} bits, yielding the result in {bits}.",
   prose_application = "converting the integer {val} to its two's complement representation of {width} bits yields {bits}",
-} =
-  --
-  bot; // This is a well-defined mathematical opeation. No rule needed.
-;
+}; // This is a well-defined mathematical opeation. No rule needed.
 
 semantics function eval_unop(op: unop, v: native_value) ->
          (w: native_value) | TDynError
@@ -5772,7 +5767,7 @@ typing function is_subtype(tenv: static_envs, t1: ty, t2: ty) -> (b: Bool)
     t1 =: T_Named(id1);
     t2 =: T_Named(id2);
     id1 != id2;
-    tenv.static_envs_G.subtypes(id1) = bot;
+    id1 not_in dom(tenv.static_envs_G.subtypes);
     --
     False;
   }
@@ -6391,7 +6386,7 @@ typing function named_lowest_common_ancestor(tenv: static_envs, t: Identifier, s
   case none {
     supers(tenv, t) -> t_supers;
     s not_in t_supers;
-    tenv.static_envs_G.subtypes(s) = bot;
+    s not_in dom(tenv.static_envs_G.subtypes);
     --
     None;
   }
@@ -6404,10 +6399,7 @@ typing function supers(tenv: static_envs, t: Identifier) ->
   {t} in the $\subtypes$ function of a
   \globalstaticenvironmentterm{} {tenv}.",
   prose_application = "",
-} =
-    --
-    bot; // Using direct definition in LaTeX.
-;
+}; // Using direct definition in LaTeX; no rule needed.
 
 constant max_constraint_size : N { math_macro = \maxconstraintsize };
 constant max_exploded_interal_size : N { math_macro = \maxexplodedintervalsize };
@@ -7092,7 +7084,9 @@ semantics function remove_local(env: envs, name: Identifier) -> (new_env: envs)
  prose_application = ""
 } =
   env =: (tenv, denv);
-  updated_local := map_update(denv.dynamic_envs_L, name, bot);
+  local_bindings := bindings(denv.dynamic_envs_L);
+  local_bindings_without_name := list_filter(x, local_bindings, (x =: (id, _)) && id != name);
+  updated_local := bindings_to_map(local_bindings_without_name);
   new_denv := denv(dynamic_envs_L: updated_local);
   --
   (tenv, new_denv);
@@ -9657,19 +9651,13 @@ semantics function output_to_console(env: envs, v: native_value) -> (new_env: en
 {
   "communicates {v} to a console, where one exists, possibly updating the environment {env}, yielding {new_env}.",
   prose_application = "communicating {v} to the console in the context of {env} yields {new_env}",
-} =
-  --
-  bot; // This rule is expressed directly in LaTeX as it needs to re-define environments.
-;
+}; // This rule is expressed directly in LaTeX as it needs to re-define environments.
 
 semantics function literal_to_string(l: literal) -> (s: Strings)
 {
   "converts a literal {l} to a printable string {s}",
   prose_application = "converting {l} to a printable string yields {s}",
-} =
-  --
-  bot; // This function is defined by a table in LaTeX.
-;
+}; // This function is defined by a table in LaTeX; no rule needed.
 
 semantics function lexpr_is_var(le: lexpr) -> (res: Bool)
  {
@@ -10499,7 +10487,7 @@ typing function subprogram_for_signature(tenv: static_envs, name: Strings, calle
   math_layout = [_,_],
 } =
   case undefined {
-    tenv.static_envs_G.overloaded_subprograms(name) = bot;
+    name not_in dom(tenv.static_envs_G.overloaded_subprograms);
     --
     TypeError(TE_UI)
     { [_] };
@@ -11392,7 +11380,7 @@ typing relation declare_one_func(tenv: static_envs, func_sig: func, ses_func_sig
   func_sig =: [name: name, qualifier: qualifier, args: args, func_subprogram_type: subprogram_type];
   add_new_func(tenv, name, qualifier, args, subprogram_type) -> (tenv1, name')
   { [_] };
-  te_check(tenv1.static_envs_G.subprogram(name') = bot, TE_IAD) -> True;
+  te_check(name' not_in dom(tenv1.static_envs_G.subprogram), TE_IAD) -> True;
   new_func_sig := func_sig(name: name');
   add_subprogram(tenv1, name', new_func_sig, ses_func_sig) -> new_tenv;
   --
@@ -11461,7 +11449,7 @@ typing relation add_new_func(
   math_layout = ([_,_,_,_,_],_),
 } =
   case first_name {
-    tenv.static_envs_G.overloaded_subprograms(name) = bot;
+    name not_in dom(tenv.static_envs_G.overloaded_subprograms);
     updated_map := map_update(tenv.static_envs_G.overloaded_subprograms, name, make_set(name));
     new_genv := tenv.static_envs_G(overloaded_subprograms : updated_map);
     new_tenv := tenv(static_envs_G : new_genv);
@@ -11990,9 +11978,9 @@ typing function polynomial_of_var(s: Identifier) -> (p: polynomial)
   "builds a polynomial for the variable {s}.",
   prose_application = "",
 } =
-  m := map_update(bot, s, n_to_n_pos(one));
+  m := bindings_to_map(make_singleton_list((s, n_to_n_pos(one))));
   --
-  map_update(bot, m, as_rational(one));
+  bindings_to_map(make_singleton_list((m, as_rational(one))));
 ;
 
 typing function scale_polynomial(p1: polynomial, f: Q) -> (p: polynomial)
@@ -12657,10 +12645,7 @@ typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m:
   yielding the unitary monomial {m}.",
   prose_application = "multiplying the unitary monomial {m1} with unitary monomial {m2}
                       yields the unitary monomial {m}",
-} =
-  --
-  bot; // This function is expressed directly in LaTeX.
-;
+}; // This function is expressed directly in LaTeX; no rule needed.
 
 typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
@@ -12668,20 +12653,14 @@ typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomia
   yielding the polynomial {p}",
   prose_application = "adding the polynomial {p1} with polynomial {p2}
                       yields the polynomial {p}",
-} =
-  --
-  bot; // We express this function directly in lates, without inference rules.
-;
+}; // This function is expressed directly in LaTeX; no rule needed.
 
 typing function mul_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
   "multiplies the polynomial {p1} with the polynomial {p2}, yielding the polynomial {p}.",
   prose_application = "multiplying the polynomial {p1} with polynomial {p2}
                       yields the polynomial {p}"
-} =
-  --
-  bot; // We express this function directly in lates, without inference rules.
-;
+}; // This function is expressed directly in LaTeX; no rule needed.
 
 typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f: Q) ->
   (p_opt: option(polynomial))
@@ -12690,10 +12669,7 @@ typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f
   If the division can be performed, the result is a polynomial, and otherwise it is $\None$..",
   prose_application = "",
   math_layout = ([_,_,_], _),
-} =
-  --
-  bot; // This function is expressed directly in LaTeX.
-;
+}; // This function is expressed directly in LaTeX; no rule needed.
 
 // TODO: define this operator in terms of sort and then remove it.
 operator sort_monomial_bindings(monoms: list0((unitary_monomial, Q))) -> list0((unitary_monomial, Q))
@@ -12760,9 +12736,12 @@ typing function compare_monomial_bindings(
     differences := list_filter(id, ids, map_apply(m1, id) = map_apply(m2, id));
     differences =: match_cons(k, _);
     s := cond(
-      map_apply(m1, k) = bot && map_apply(m1, k) != bot : positive_sign,
-      map_apply(m1, k) != bot && map_apply(m1, k) = bot : negative_sign,
-      and((map_apply(m1, k) =: n1) && (n1 != bot) && (map_apply(m1, k) =: n2) && (n2 != bot)) : if n1 > n2 then positive_sign else negative_sign,
+      k not_in dom(m1) && k in dom(m1) : positive_sign,
+      k in dom(m1) && k not_in dom(m1) : negative_sign,
+      and(
+        k in dom(m1) &&
+        (map_apply(m1, k) =: n1) &&
+        (map_apply(m1, k) =: n2) ) : if n1 > n2 then positive_sign else negative_sign,
     ) { (_, [_,_,([_], [_])]) };
     --
     s;
@@ -12956,15 +12935,15 @@ typing function type_of(tenv: static_envs, s: Identifier) ->
   }
 
   case global {
-    tenv.static_envs_L.local_storage_types(s) = bot;
+    s not_in dom(tenv.static_envs_L.local_storage_types);
     tenv.static_envs_G.global_storage_types(s) =: (ty, _);
     --
     ty;
   }
 
   case error {
-    tenv.static_envs_L.local_storage_types(s) = bot;
-    tenv.static_envs_G.global_storage_types(s) = bot;
+    s not_in dom(tenv.static_envs_L.local_storage_types);
+    s not_in dom(tenv.static_envs_G.global_storage_types);
     --
     TypeError(TE_UI);
   }
@@ -14042,7 +14021,7 @@ typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: t
     subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
     te_check(b, TE_UT) -> True;
     extra_fields' != empty_list;
-    tenv.static_envs_G.declared_types(super_name) = bot;
+    super_name not_in dom(tenv.static_envs_G.declared_types);
     --
     TypeError(TE_UI);
   }
@@ -14082,7 +14061,7 @@ typing relation declared_type(tenv: static_envs, id: Identifier) ->
   }
 
   case type_not_declared {
-    tenv.static_envs_G.declared_types(id) = bot;
+    id not_in dom(tenv.static_envs_G.declared_types);
     --
     TypeError(TE_UI);
   }
@@ -14165,7 +14144,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
 
   case t_named {
     ty =: T_Named(x);
-    te_check(tenv.static_envs_G.declared_types(x) != bot, TE_UI) -> True;
+    te_check(x in dom(tenv.static_envs_G.declared_types), TE_UI) -> True;
     tenv.static_envs_G.declared_types(x) =: (_, purity);
     ses := make_set(GlobalEffect(purity), Immutability(True));
     --
@@ -14357,7 +14336,7 @@ typing function get_variable_enum(tenv: static_envs, e: expr) ->
 
   case undeclared {
     e =: E_Var(x);
-    tenv.static_envs_G.declared_types(x) = bot;
+    x not_in dom(tenv.static_envs_G.declared_types);
     --
     None;
   }
@@ -14566,7 +14545,7 @@ typing function is_global_undefined(genv: global_static_envs, x: Identifier) ->
   in {b}.",
   prose_application = "",
 } =
-  b := (genv.global_storage_types(x) = bot) && (genv.declared_types(x) = bot);
+  b := (x not_in dom(genv.global_storage_types)) && (x not_in dom(genv.declared_types));
   --
   b;
 ;
@@ -14580,7 +14559,7 @@ typing function is_local_undefined(lenv: local_static_envs, x: Identifier) ->
   prose_application = "",
 } =
   --
-  lenv.local_storage_types(x) = bot;
+  x not_in dom(lenv.local_storage_types);
 ;
 
 typing function lookup_constant(tenv: static_envs, s: Identifier) ->
@@ -14591,15 +14570,15 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
   $\None$ if {s} is not associated with any constant.",
   prose_application = "",
 } =
-  tenv.static_envs_G.constant_values(s) =: c;
   case exists {
-    c != bot;
+    s in dom(tenv.static_envs_G.constant_values);
+    map_apply(tenv.static_envs_G.constant_values, s) =: c;
     --
     some(c);
   }
 
   case does_not_exist {
-    c = bot;
+    s not_in dom(tenv.static_envs_G.constant_values);
     --
     None;
   }
@@ -14623,7 +14602,7 @@ typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
 {
   "looks up the \staticenvironmentterm{} {tenv} for an
   immutable expression associated with the identifier
-  {x}, returning $\bot$ if there is none.",
+  {x}, returning $\None$ if there is none.",
   prose_application = "",
 } =
   case local {
