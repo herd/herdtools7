@@ -40,6 +40,7 @@ module AttributeKey = struct
     | Custom
         (** Whether an operator over a list of arguments should be rendered by a
             custom multi-argument macro. *)
+    | Typecast  (** Whether an operator serves only to perform a typecast. *)
     | Short_Circuit_Macro
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation
@@ -60,6 +61,7 @@ module AttributeKey = struct
       | LHS_Hypertargets -> 5
       | Associative -> 6
       | Custom -> 7
+      | Typecast -> 8
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -76,6 +78,7 @@ module AttributeKey = struct
     | LHS_Hypertargets -> "lhs_hypertargets"
     | Associative -> "associative"
     | Custom -> "custom"
+    | Typecast -> "typecast"
 end
 
 (** A value associated with an attribute key. *)
@@ -582,6 +585,10 @@ module Relation : sig
   (** [is_custom_operator t] tests whether the operator represented by [t] has
       the [custom] attributes set to [true]. *)
 
+  val is_typecast_operator : t -> bool
+  (** [is_typecast_operator t] tests whether the operator represented by [t] has
+      the [typecast] attributes set to [true]. *)
+
   val math_layout : t -> layout option
   (** The layout used when rendered as a stand-alone relation definition. *)
 end = struct
@@ -655,6 +662,9 @@ end = struct
 
   let is_custom_operator self =
     Attributes.get_bool AttributeKey.Custom ~default:false self.att
+
+  let is_typecast_operator self =
+    Attributes.get_bool AttributeKey.Typecast ~default:false self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)

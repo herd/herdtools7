@@ -3111,25 +3111,34 @@ module ExtendNames = struct
   open Expr
   open Rule
 
-  (** [opt_extend] Wraps [expr] with a name if [opt_name] is [Some]. Avoids
-      naming a variable expression with its own name, as an optimization. *)
-  let opt_extend expr opt_name =
-    match (expr, opt_name) with
+  (** [opt_extend] Wraps [expr] with a name if [opt_param_name] is [Some].
+      Avoids naming a variable expression with its own name. *)
+  let opt_extend spec expr opt_param_name =
+    match (expr, opt_param_name) with
     | _, None -> expr
     | Var v, Some name when String.equal v name ->
         expr (* Avoid naming a variable with its own name. *)
+    | ( Expr.Relation
+          { name = operator_name; is_operator = true; args = [ Var v ] },
+        Some name ) ->
+        let relation = relation_for_id spec operator_name in
+        if Relation.is_typecast_operator relation && String.equal v name then
+          (* Typecasts render the input variable. If the input variable has the same name
+             as the parameter, avoid naming it. *)
+          expr
+        else NamedExpr (expr, name)
     | _, Some name -> NamedExpr (expr, name)
 
   (** [extend_with_names type_term expr ] recursively transforms [expr] by
       adding names from [type_term] to sub-expressions of [expr]. Currently,
       only tuples (labelled or unlabelled) are supported, which is sufficient
       for most output configurations. *)
-  let rec extend_with_names type_term expr =
+  let rec extend_with_names spec type_term expr =
     match (type_term, expr) with
     | Term.Tuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
         (* An unlabelled tuple with a single component serves as a named reference
            to any type.*)
-        opt_extend expr opt_name
+        opt_extend spec expr opt_name
     | ( Term.Tuple { label_opt = term_label_opt; args = term_components },
         Expr.Tuple { label_opt = expr_label_opt; args = expr_components } )
       when Option.equal String.equal term_label_opt expr_label_opt ->
@@ -3147,7 +3156,7 @@ module ExtendNames = struct
         let extended_args =
           List.map2
             (fun (opt_name, arg_type) arg ->
-              opt_extend (extend_with_names arg_type arg) opt_name)
+              opt_extend spec (extend_with_names spec arg_type arg) opt_name)
             term_components expr_components
         in
         Expr.Tuple { label_opt = expr_label_opt; args = extended_args }
@@ -3167,7 +3176,7 @@ module ExtendNames = struct
               (* Fallback to the main output type. *)
               List.hd output_types
         in
-        let extended_rhs = extend_with_names output_type rhs in
+        let extended_rhs = extend_with_names spec output_type rhs in
         let extended_expr =
           Transition { lhs; rhs = extended_rhs; short_circuit }
         in

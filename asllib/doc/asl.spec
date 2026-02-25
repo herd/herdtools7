@@ -376,6 +376,7 @@ operator listprefix[T](l1: list0(T), l2: list0(T)) -> Bool
 operator match_non_empty_list[T](list0(T)) -> list1(T)
 {
   math_macro = \identityop,
+  typecast = true,
 };
 
 // Constructs a set out of a fixed list of expressions.
@@ -416,6 +417,7 @@ operator set_as_finite[T](s: powerset(T)) -> powerset_finite(T)
 {
   "{s}",
   math_macro = \identityop,
+  typecast = true,
 };
 
 operator set_from_list[A,B](bound_variable: A, elements: list0(A), mapped_elem: B) -> (new_elements: powerset(B))
@@ -507,6 +509,7 @@ operator set_max[T](powerset(T)) -> N
 operator as_rational(Z) -> Q
 {
   math_macro = \identityop,
+  typecast = true,
 };
 
 operator round_up(Q) -> N
@@ -530,12 +533,14 @@ operator n_to_n_pos(n: N) -> N_pos
 {
   "casts {n} to a positive natural number",
   math_macro = \identityop,
+  typecast = true,
 };
 
 operator z_to_n(z: Z) -> N
 {
   "{z}",
-  math_macro = \identityop
+  math_macro = \identityop,
+  typecast = true,
 };
 
 operator abs_value(Z) -> N
@@ -1910,11 +1915,12 @@ typedef TNormal
     { "call result with value-read effects {values}, a global dynamic environment {gdenv}, and a an \executiongraphterm{} {g}" }
 ;
 
-// Cases a native value into a Boolean native value.
+// Casts a native value into a Boolean native value.
 operator native_value_as_tbool(v: native_value) -> tbool
 {
   "{v}",
   math_macro = \identityop,
+  typecast = true,
 };
 
 typedef TThrowing
