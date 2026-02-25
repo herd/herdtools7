@@ -72,14 +72,20 @@ and module Es2 = MySet.Make(O2)
 
     let add (x,y) m =
       M.update x
-        (fun ys ->
-           (match ys with
-            | None -> Elts2.singleton y
-            | Some ys -> Elts2.add y ys)
-           |> Option.some)
+        (function
+          | None -> Some (Elts2.singleton y)
+          | Some ys -> Some (Elts2.add y ys))
         m
 
-    let of_list ps =  List.fold_left (fun k p -> add p k) empty ps
+    let add_set x ys m =
+      if Elts2.is_empty ys then m else
+        M.update x
+          (function
+            | None -> Some ys
+            | Some zs -> Some (Elts2.union ys zs))
+          m
+
+    let of_list ps = List.fold_left (fun k p -> add p k) empty ps
 
     let set_opt ys = if Elts2.is_empty ys then None else Some ys
 
@@ -116,27 +122,17 @@ and module Es2 = MySet.Make(O2)
         (fun x ys -> Elts2.for_all (fun y -> p (x,y)) ys)
         m
 
-    let to_seq =
-      let open! Seq in
-      let rec seq_pairs m () =
-        match m () with
-        | Nil -> Nil
-        | Cons ((x,ys),m) ->
-            let rec do_rec ys () = match ys () with
-              | Nil -> seq_pairs m ()
-              | Cons (y,ys) -> Cons ((x,y),do_rec ys) in
-            do_rec (Elts2.to_seq ys) () in
-      fun m -> seq_pairs (M.to_seq m)
+    let to_seq m =
+      Seq.flat_map (fun (x, ys) -> Seq.map (fun y -> (x, y)) (Elts2.to_seq ys))
+        (M.to_seq m)
 
     let split3 t =
-      let (x,y as p) = choose t in
-      let l,ys,h = M.split x t in
-      match ys with
-      | None -> assert false (* Since choose succeeded *)
-      | Some ys ->
-          let ys = Elts2.remove y ys in
-          if Elts2.is_empty ys then l,p,h
-          else M.add x ys l,p,h
+      let (x, y) as p = choose t in
+      let l, ys, h = M.split x t in
+      let ys = match ys with Some ys -> ys | None -> assert false in
+      let yl, present, yh = Elts2.split y ys in
+      assert present;
+      (add_set x yl l, p, add_set x yh h)
 
     let exists_succ m x =
       try not (Elts2.is_empty @@ M.find x m)
@@ -158,15 +154,12 @@ and module Es2 = MySet.Make(O2)
         Elts1.fold (fun x k -> M.add x ys k) xs empty
 
     let of_pred set1 set2 pred =
-      Elts1.fold
-        (fun e1 k ->
-           let set2 = Elts2.filter (pred e1) set2 in
-           if Elts2.is_empty set2 then k else M.add e1 set2 k)
-        set1 empty
+      Elts1.fold (fun e1 -> add_set e1 (Elts2.filter (pred e1) set2)) set1 empty
 
 (* Domains and Codomains *)
     let domain m =
-      M.fold (fun x _ k -> x::k) m [] |> Elts1.of_list
+      M.fold (fun x ys k -> if Elts2.is_empty ys then k else x::k) m []
+      |> Elts1.of_list
 
     let codomain m =
       M.fold (fun _ ys k -> ys::k) m [] |> Elts2.unions
@@ -211,7 +204,7 @@ and module Es2 = MySet.Make(O2)
 
     let union m1 m2 =
       M.union_std
-        (fun _ ys1 ys2 ->  Some (Elts2.union ys1 ys2)) m1 m2
+        (fun _ ys1 ys2 -> Some (Elts2.union ys1 ys2)) m1 m2
 
     let union3 m1 m2 m3 = union m1 @@ union m2 m3
     and union4 m1 m2 m3 m4 = union (union m1 m2) (union m3 m4)

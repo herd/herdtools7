@@ -256,34 +256,22 @@ module Make(O:MySet.OrderedType) : S
   (* Nodes operations *)
 
   let nodes t =
-    M.fold (fun x ys k -> Elts.add x ys::k) t [] |> Elts.unions
+    M.fold (fun x ys k -> if Elts.is_empty ys then k else Elts.add x ys::k) t []
+    |> Elts.unions
 
   let filter_nodes p t = restrict_domains p p t
 
-  let add_set x ys m =
-    M.update x
-      (fun zs ->
-        (match zs with
-        | None -> ys
-        | Some zs -> Elts.union ys zs)
-      |> Option.some)
-      m
+  let set_opt ys = if Elts2.is_empty ys then None else Some ys
 
   let map_nodes f m =
-    M.fold
-      (fun e es k ->
-         let e = f e and es = Elts.map f es in
-         add_set e es k)
-      m empty
+    M.fold (fun e es -> add_set (f e) (Elts.map f es)) m empty
 
   (* Inverse *)
   let inverse t = fold (fun (x,y) k -> add (y,x) k) t empty
 
   (* Set to relation *)
   let set_to_rln s =
-    Elts.fold
-      (fun x k -> M.add x (Elts.singleton x) k)
-      s empty
+    Elts.fold (fun x k -> M.add x (Elts.singleton x) k) s empty
 
   (* Various path functions *)
 
@@ -336,8 +324,7 @@ module Make(O:MySet.OrderedType) : S
 
   let leaves t =
     let all_nodes = nodes t in
-    let non_leaves =
-      Elts.of_list (fold (fun (e,_) k -> e::k) t []) in
+    let non_leaves = domain t in
     Elts.diff all_nodes non_leaves
 
   let leaves_from e t =
@@ -353,8 +340,7 @@ module Make(O:MySet.OrderedType) : S
 
   let roots t =
     let all_nodes = nodes t in
-    let non_roots =
-      Elts.of_list (fold (fun (_,e) k -> e::k) t []) in
+    let non_roots = codomain t in
     Elts.diff all_nodes non_roots
 
 
@@ -380,14 +366,8 @@ module Make(O:MySet.OrderedType) : S
 
   let transitive_closure (m:t) =
     let kont n m res =
-      M.update n
-        (fun o ->
-           (let vr = succs res m in
-           match o with
-           | None -> Elts.add m vr
-           | Some vn -> Elts.add m (Elts.union vr vn))
-           |> Option.some)
-        res
+      let vr = succs res m |> Elts.add m in
+      add_set n vr res
 
     and kont_scc n scc res =
       match scc with
@@ -395,9 +375,10 @@ module Make(O:MySet.OrderedType) : S
       | [_] -> res
       | ms ->
           let vn = try M.find n res with Not_found -> assert false in
-          List.fold_left
-            (fun res m -> M.add m vn res)
-            res ms in
+          if Elts.is_empty vn then res
+          else List.fold_left (fun res m -> add_set m vn res) res ms
+    in
+
     FullSCC.scan_map kont kont_scc M.empty m
 
   (* Reflexivity check *)
@@ -449,7 +430,7 @@ module Make(O:MySet.OrderedType) : S
 
   let order_to_rel evts =
     List.fold_right
-      (fun e (k, s) -> (M.add e s k, Elts.add e s))
+      (fun e (k, s) -> (add_set e s k, Elts.add e s))
       evts (M.empty, Elts.empty)
     |> fst
 
@@ -650,12 +631,7 @@ module Make(O:MySet.OrderedType) : S
     let sequence m1 m2 =
       M.filter_map
         (fun _ ys ->
-           let zs =
-             Elts.fold
-               (fun y k -> succs m2 y::k)
-               ys [] |> Elts.unions in
-           if Elts.is_empty zs then None
-           else Some zs)
+           Elts.fold (fun y k -> succs m2 y::k) ys [] |> Elts.unions |> set_opt)
         m1
 
     let transitive3 m = sequence m @@ sequence m m
