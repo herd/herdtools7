@@ -88,7 +88,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let relax_list = C.R.expand_relax_macros parsed_list in
     match C.A.bellatom, O.varatom with
     | true, _
-    | false, [] -> Fun.id relax_list
+    | false, [] -> relax_list
     | false, ["all"] ->
         let module Fold = struct
           type atom = C.E.atom
@@ -325,7 +325,7 @@ let () =
             ) lhs_unfold
             |> List.flatten
             |> List.iter ( fun (l, r, result) ->
-              eprintf "`%s` followed by `%s` is %s in filter mode `%s`\n"
+              printf "`%s` followed by `%s` is %s in filter mode `%s`\n"
                 (Builder.R.pp_relax l) (Builder.R.pp_relax r)
                 ( if result then "allowed" else "forbidden" )
                 ( Code.pp_check Co.choice )
