@@ -75,6 +75,12 @@ let autoloader ~prefix ~path =
     try pp path (CatIncludes.autoloader ~prefix:prefix ~path:path)
     with Not_found ->  None
 
+let get_env_webpath path =
+  Filename.concat webpath path
+
 let register_autoloader () =
-  Js_of_ocaml.Sys_js.unmount ~path:webpath ;
-  Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+  let paths = webpath :: List.map get_env_webpath CatIncludes.envs in
+  List.iter (fun webpath ->
+    Js_of_ocaml.Sys_js.unmount ~path:webpath ;
+    Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+  ) paths
