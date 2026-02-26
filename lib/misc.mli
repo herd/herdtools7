@@ -161,10 +161,10 @@ val nsplit : int -> 'a list -> 'a list list
    WARNING, correct only when duplicates are in sequence *)
 val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 
-(* group elements, quadratic *)
-val group : ('a -> 'a -> bool) -> 'a list -> 'a list list
-val group_iter : ('a -> 'a -> bool) -> ('a -> 'a list -> unit) -> 'a list -> unit
-val group_iteri : ('a -> 'a -> bool) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit
+(* group elements, efficient*)
+val group : ('a -> 'a -> int) -> 'a list -> 'a list list
+val group_iter : ('a -> 'a -> int) -> ('a -> 'a list -> unit) -> 'a list -> unit
+val group_iteri : ('a -> 'a -> int) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit
 
 (* Check that f yields the same result on all list elements *)
 val check_same : ('a -> 'a -> bool) -> ('b -> 'a) -> 'b list -> 'a option
@@ -284,6 +284,13 @@ val fold_cross :  'a list list ->  ('a list -> 'b -> 'b) -> 'b -> 'b
    fold_cross_gen (fun y ys -> y::ys) [] *)
 val fold_cross_gen :
     ('a -> 'b -> 'b) -> 'b -> 'a list list -> ('b -> 'c -> 'c) -> 'c -> 'c
+
+(* Similar, except that suffixes are selected *)
+
+val fold_suffix_cross : 'a list list -> ('a list list -> 'b -> 'b) -> 'b -> 'b
+
+val fold_suffix_cross_gen :
+  ('a list -> 'c -> 'c) -> 'c -> 'a list list -> ('c -> 'b -> 'b) -> 'b -> 'b
 
 (*******************)
 (* Simple bindings *)
