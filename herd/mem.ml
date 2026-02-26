@@ -707,6 +707,23 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               List.fold_left add_setaf0 [] env0
         end else [] in
 
+      let show_af = function
+        | (_,es) ->
+            let locs =
+              E.EventSet.fold
+                (fun e k ->
+                   match SM.can_unset_af_loc e with
+                   | None -> k
+                   | Some loc -> loc::k)
+                es.E.events [] in
+            begin
+              match locs with
+              | [] -> ()
+              | _ ->
+                  Printf.eprintf "locs: %s\n%!"
+                    (List.map A.V.pp_v locs |> String.concat ",")
+            end in
+                
       let rec index xs i = match xs with
       | [] ->
           W.warn "%i abstract event structures\n%!" i ;
@@ -721,9 +738,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let r =
         Misc.fold_subsets_gen
           (fun vloc -> EM.(|||) (SM.spurious_setaf vloc))
-          (EM.unitT ()) af0
+          (EM.unitT ()) (ignore af0; [])
           (fun maf0 ->
-            EM.get_output (set_of_all_instr_events (EM.(|||) maf0)))
+            EM.get_output show_af (set_of_all_instr_events (EM.(|||) maf0)))
           [] in
       let r = match C.maxphantom with
         | None -> r

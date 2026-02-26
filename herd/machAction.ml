@@ -184,6 +184,13 @@ end = struct
   | Arch a -> A.ArchAction.pp a
 
 (* Utility functions to pick out components *)
+  let access_of = function
+    | Access (_,_,_,_,_,_,ac) -> Some ac
+    | Barrier _|Commit _|Amo _|Fault _
+    | CutOff _|Inv _|CMO _|NoAction
+      -> None
+    | Arch a -> A.ArchAction.access_of a
+
   let value_of a = match a with
   | Access (_,_ , v,_,_,_,_)
     -> Some v

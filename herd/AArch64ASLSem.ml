@@ -87,6 +87,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
+    val can_unset_af_loc : event -> V.v option
     val spurious_setaf : V.v -> unit M.t
   end = struct
     module AArch64Mixed = AArch64S.Mixed (SZ)
@@ -1783,6 +1784,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           AArch64Mixed.build_semantics test ii
       | _ -> asl_build_semantics test ii
 
+    let can_unset_af_loc e = AArch64Mixed.can_unset_af_loc e
     let spurious_setaf v = AArch64Mixed.spurious_setaf v
   end
 end
