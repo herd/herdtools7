@@ -250,7 +250,7 @@ module Make(C:Builder.S)
     (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
     sig
       val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
-      val filter_check: C.E.edge list -> C.E.edge list -> bool
+      val filter_check: ?relax:C.R.relax list -> ?safe:C.R.relax list -> C.E.edge list -> C.E.edge list -> bool
     end
 
     =
@@ -716,7 +716,7 @@ module Make(C:Builder.S)
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
-    let secret_gen relax safe reject n =
+    let parse_input ~relax ~safe ~reject =
       let r_nempty = Misc.consp relax in
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe
@@ -741,6 +741,10 @@ module Make(C:Builder.S)
         eprintf "** Safe **\n" ;
         debug_rs stderr safe
       end ;
+      relax, safe, reject
+
+    let secret_gen relax safe reject n =
+      let relax,safe,reject = parse_input ~relax ~safe ~reject in
       do_gen relax safe reject n
 
 (**********************)
@@ -790,8 +794,11 @@ module Make(C:Builder.S)
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e
 
-    let filter_check lhs rhs =
+    let filter_check ?(relax=relax) ?(safe=safe) lhs rhs =
+      let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
+      let safe_set = C.R.Set.of_list safe in
+      let po_safe = edges_ofs safe |> extract_po in
       let last = Misc.last lhs in
       let first = List.hd rhs in
-      FilterImpl.pair_ok RelaxSet.empty (fun _ _ _ -> true) lhs rhs last first
+      FilterImpl.pair_ok safe_set po_safe lhs rhs last first
   end

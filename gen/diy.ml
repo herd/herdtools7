@@ -318,9 +318,11 @@ let () =
         | [lhs;rhs] ->
             let lhs_unfold = Builder.R.expand_relaxs Builder.ppo [lhs] in
             let rhs_unfold = Builder.R.expand_relaxs Builder.ppo [rhs] in
+            let relax = Option.value ~default:[] relax_list |> M.to_relax_list in
+            let safe = Option.value ~default:[] safe_list |> M.to_relax_list in
             List.map ( fun l ->
               List.map ( fun r ->
-                l,r,M.M.filter_check (Builder.R.edges_of l) (Builder.R.edges_of r)
+                l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
               ) rhs_unfold
             ) lhs_unfold
             |> List.flatten
