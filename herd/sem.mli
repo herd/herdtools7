@@ -31,6 +31,7 @@ module type Semantics =
     module Mixed(SZ:ByteSize.S) : sig
       val build_semantics :
         test -> A.inst_instance_id -> (A.program_order_index * branch) M.t
+      val can_unset_af_loc : event -> A.V.v option
       val spurious_setaf : A.V.v -> unit M.t
     end
   end

@@ -133,6 +133,8 @@ end = struct
     -> true
   | _ -> false
 
+  let access_of _ = None
+
   let value_of a = match a with
   | Access (_,_,v,_,_) -> Some v
   | _ -> None

@@ -105,6 +105,7 @@ module Make
     (* Semantics proper *)
     module Mixed(SZ:ByteSize.S) : sig
       val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
+      val can_unset_af_loc : event -> V.v option
       val spurious_setaf : V.v -> unit M.t
     end = struct
 
@@ -1400,6 +1401,7 @@ module Make
       (* Tag ignored, may serve for debug *)
       let fire_spurious_af _tag v dir a m =
         let do_fire =
+          false &&
           some_ha &&
             (let b = C.variant Variant.PhantomOnLoad in
              match dir with
@@ -4762,6 +4764,20 @@ Arguments:
             if self then check_self test ii
             else do_build_semantics test ii.A.inst ii
           end
+
+
+      let can_unset_af_loc e =
+        match E.access_of e with
+        | Some Access.(PTE|PHY_PTE)
+          ->
+            begin
+              match E.location_of e,E.written_of e with
+              | Some (A.Location_global loc),Some v ->
+                  if E.is_explicit e && can_be_pt loc && can_af0 v then Some loc
+                  else None
+              | _ -> None
+            end
+        | _ -> None
 
       let spurious_setaf v = test_and_set_af_succeeds v E.IdSpurious
 

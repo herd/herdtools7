@@ -384,7 +384,7 @@ module
           | ins -> Warn.fatal "RISCV, instruction '%s' not handled" (RISCV.dump_instruction ins)
           end
 
-      let spurious_setaf _ = assert false
+      include NoAF
 
     end
 

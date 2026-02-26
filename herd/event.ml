@@ -278,6 +278,7 @@ val same_instance : event -> event -> bool
 (*************************************)
 (* Access to sub_components of events *)
 (*************************************)
+  val access_of : event -> Access.t option
   val value_of : event -> A.V.v option (* Warning: fails on RMW actions *)
   val read_of : event -> A.V.v option
   val written_of : event -> A.V.v option
@@ -577,6 +578,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
 
 (* Utility functions to pick out components *)
+    let access_of e = Act.access_of e.action
     let value_of e = Act.value_of e.action
     let read_of e = Act.read_of e.action
     let written_of e = Act.written_of e.action

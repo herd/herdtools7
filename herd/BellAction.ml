@@ -81,6 +81,9 @@ end = struct
   | CutOff msg -> "CutOff:" ^ msg
 
 (* Utility functions to pick out components *)
+
+  let access_of _ = None
+
   let value_of a = match a with
   | Access (_,_ ,v,_,_,_) -> Some v
   | _ -> None

@@ -265,7 +265,7 @@ module
               create_barrier MIPS.Sync ii >>= B.next1T
           end
 
-      let spurious_setaf _ = assert false
+      include NoAF
 
     end
   end

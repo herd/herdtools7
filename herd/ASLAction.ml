@@ -112,6 +112,10 @@ module Make (C: Config) (A : S) = struct
   (**************************************)
   (* Access to sub_components of events *)
   (**************************************)
+  let access_of = function
+    | Access (_,_,_,_,(_,_,a)) -> Some a
+    | Fault _|Barrier _|Branching _|CutOff _|NoAction
+      -> None
 
   let value_of =
     function

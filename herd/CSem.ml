@@ -510,7 +510,7 @@ module
           build_semantics test ii >>> fun (prog_order, _branch) ->
             build_semantics_list test insts {ii with  A.program_order_index = prog_order;}
 
-      let spurious_setaf _ = assert false
+      include NoAF
 
     end
   end

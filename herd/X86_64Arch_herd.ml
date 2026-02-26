@@ -142,6 +142,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
       let get_lannot _ = Plain
       let get_explicit _ = exp_annot
+      let access_of _ = None
       let value_of _ = None
       let read_of _ = None
       let written_of _ = None

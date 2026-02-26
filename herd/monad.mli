@@ -52,7 +52,7 @@ module type S =
     val unitcodeT        : 'a -> 'a code
     val failcodeT        : exn -> 'a -> 'a code
     val warncodeT        : string -> 'a -> 'a code
-    val delay_kont : string -> 'a t -> ('a ->  'a t -> 'b t) -> 'b t
+    val delay_kont : string -> 'a t -> ('a -> 'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 
     val set_standard_input_output : 'a t -> 'a t
@@ -372,7 +372,7 @@ module type S =
     type evt_struct
     type output = VC.cnstrnts * evt_struct
 
-    val get_output  : 'a code -> output list -> output list
+    val get_output  : (output -> unit) -> 'a code -> output list -> output list
 
     (* Force executed only once. *)
     val force_once : 'a t -> 'a t
