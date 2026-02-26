@@ -205,7 +205,7 @@ let () =
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
   and reject_list = split !Config.rejects
-  and filter_list = split_cands !Config.filter in
+  and filter_list = split !Config.filter_check in
 
   let () =
     if !Config.verbose > 0 then begin
@@ -325,7 +325,7 @@ let () =
             ) lhs_unfold
             |> List.flatten
             |> List.iter ( fun (l, r, result) ->
-              printf "`%s` followed by `%s` is %s in filter mode `%s`\n"
+              printf "`%s` followed by `%s` is %s in the interel filter in mode `%s`\n"
                 (Builder.R.pp_relax l) (Builder.R.pp_relax r)
                 ( if result then "allowed" else "forbidden" )
                 ( Code.pp_check Co.choice )
