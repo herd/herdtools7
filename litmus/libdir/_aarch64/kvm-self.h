@@ -5,7 +5,6 @@
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
 /* Copyright 2026-present Institut National de Recherche en Informatique et */
-/* Copyright 2019-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
