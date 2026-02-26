@@ -1,0 +1,18 @@
+AArch64 coRR+posw0w4+BBM 
+Variant=vmsa
+{
+ int x[2]={0,0};
+ int y[2]={1,1};
+ [PTE(x)]=(oa:PA(x));
+ 0:X1=x; 1:X1=x;
+ 1:X4=(valid:0); 1:X5=PTE(x);
+ 1:X6=(oa:PA(y));
+}
+ P0               | P1              ;
+ L1:              | STR X4,[X5]     ;
+  LDR W0,[X1]     | DSB ISH         ;
+ L2:              | LSR X9,X1,#12   ;
+  LDR W2,[X1,#4]  | TLBI VAAE1IS,X9 ;
+                  | DSB ISH         ;
+                  | STR X6,[X5]     ;
+exists (0:X0=1 /\ 0:X2=0 /\ not (fault(P0:L2)))

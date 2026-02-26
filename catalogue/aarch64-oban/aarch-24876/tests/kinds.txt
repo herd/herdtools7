@@ -1,0 +1,4 @@
+coRR+BBM                Forbidden
+coRR+alias-2BBM-alias   Forbidden
+coRR+posw0h2+BBM        Forbidden
+coRR+posw0w4+BBM        Allowed

@@ -45,8 +45,6 @@
  *)
 
 let iico_data = iico_data+
-let iico_ctrl = iico_ctrl+
-let iico_order = iico_order+
 let ii_addr = [ADDR]; iico_data
 let ii_data = [DATA]; (iico_data|iico_ctrl)+
 
