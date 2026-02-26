@@ -34,35 +34,20 @@ module type AltConfig = sig
   val wildcard : bool
 end
 
-module Make(C:Builder.S)
-    (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
-    sig
-      val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
-    end
+module Filter
+    (C : Builder.S)
+    (O : sig
+      val cumul : C.A.fence list Config.cumul
+      val choice : check
+    end) =
+struct
+  let dbg = false
 
-    =
-  struct
-    let mixed = Variant_gen.is_mixed O.variant
-    let do_kvm = Variant_gen.is_kvm  O.variant
-    module D = DumpAll.Make(O) (C)
-    open C.E
-    open C.R
-
-    let dbg = false
-
-    module RelaxSet = C.R.Set
-
-    let is_int e = match get_ie e with
-    | Int -> true
-    | Ext -> false
-    | UnspecCom -> assert false
-
-    let is_ext e = not (is_int e)
-
-    let equal_fence f1 f2 = C.A.compare_fence f1 f2 = 0
+  open C.E
 
     let is_cumul =
       let open Config in
+      let equal_fence f1 f2 = C.A.compare_fence f1 f2 = 0 in
       match O.cumul with
       | Empty -> (fun _ -> false)
       | All -> (fun _ -> true)
@@ -210,25 +195,18 @@ module Make(C:Builder.S)
       begin match  C.E.get_ie e1, C.E.get_ie e2 with
       | Int,Int ->
           let cs = C.E.compact_sequence xs ys e1 e2 in
-          if O.verbose > 0 then eprintf "COMPACT %s,%s -> [%s] -> "
-            (C.E.pp_edge e1) (C.E.pp_edge e2)
-            (String.concat ","
-               (List.map (fun es -> C.R.pp_relax (C.R.ERS es)) cs)) ;
           let r =
             not
               (List.exists
                  (fun es -> C.R.Set.mem (C.R.ERS es) safes)
                  cs) in
-          if O.verbose > 0 then eprintf "%b\n" r ;
           r
       | _,_ -> true
       end
 
-
-
-    let iarg f = fun _ _ _ _ -> f
-
-    let choose c = match c with
+    let choose c =
+    let iarg f = fun _ _ _ _ -> f in
+    match c with
     | Sc -> fun _safes po_safe _xs _ys -> choice_sc po_safe
     | Default -> iarg choice_default
     | MixedCheck -> iarg choice_mixed
@@ -266,6 +244,31 @@ module Make(C:Builder.S)
     | Fenced (f,_,_,_),Rf _ ->
         is_cumul f && choose O.choice safes po_safe xs ys e1 e2
     | _,_ -> choose O.choice safes po_safe xs ys e1 e2
+end
+
+module Make(C:Builder.S)
+    (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
+    sig
+      val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
+      val filter_check: ?relax:C.R.relax list -> ?safe:C.R.relax list -> C.E.edge list -> C.E.edge list -> bool
+    end
+
+    =
+  struct
+    let mixed = Variant_gen.is_mixed O.variant
+    let do_kvm = Variant_gen.is_kvm  O.variant
+    module D = DumpAll.Make(O) (C)
+    module FilterImpl = Filter(C)(O)
+    module RelaxSet = C.R.Set
+    open C.E
+    open C.R
+
+    let dbg = false
+
+    let is_int e = match get_ie e with
+    | Int -> true
+    | Ext -> false
+    | UnspecCom -> assert false
 
     let check_mixed =
       if mixed then
@@ -288,7 +291,7 @@ module Make(C:Builder.S)
       let r =
         C.E.can_precede x y
         && check_mixed x y
-        && pair_ok safes po_safe xs ys x y
+        && FilterImpl.pair_ok safes po_safe xs ys x y
         &&
           begin
             if do_kvm then
@@ -713,7 +716,7 @@ module Make(C:Builder.S)
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
-    let secret_gen relax safe reject n =
+    let parse_input ~relax ~safe ~reject =
       let r_nempty = Misc.consp relax in
       let relax = expand_relaxs C.ppo relax
       and safe = expand_relaxs C.ppo safe
@@ -738,6 +741,10 @@ module Make(C:Builder.S)
         eprintf "** Safe **\n" ;
         debug_rs stderr safe
       end ;
+      relax, safe, reject
+
+    let secret_gen relax safe reject n =
+      let relax,safe,reject = parse_input ~relax ~safe ~reject in
       do_gen relax safe reject n
 
 (**********************)
@@ -786,4 +793,12 @@ module Make(C:Builder.S)
       with e ->
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e
+
+    let filter_check ?(relax=relax) ?(safe=safe) lhs rhs =
+      let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
+      let safe_set = C.R.Set.of_list safe in
+      let po_safe = edges_ofs safe |> extract_po in
+      let last = Misc.last lhs in
+      let first = List.hd rhs in
+      FilterImpl.pair_ok safe_set po_safe lhs rhs last first
   end

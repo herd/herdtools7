@@ -58,6 +58,7 @@ let numeric = ref true
 let varatom = ref ([] : string list)
 let use_eieio = ref true
 let norm = ref false
+let filter_check = ref None
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -350,6 +351,11 @@ let diy_spec () =
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    stdout_spec false ::
    varatomspec ::
+     ("-filter-check", Arg.String
+     (fun s -> match !filter_check with
+              | None -> filter_check := Some s
+              | Some _ -> Warn.user_error "-filter-check ONLY accepts one argument `<lhs> <rhs>`."),
+   "<lhs> <rhs> show whether the two relaxations will pass the internal filter in the mode specified by `-mode` argument, i.e. sequence `<lhs> <rhs>` is allowed in the generated tests. All other constraints between <lhs> and <rhs>, such as edge compatibility, are ignored. This argument overrides other arguments but is overrided by `-show`.")::
    []
 
 let valid_stdout_flag is_diyone =
