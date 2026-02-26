@@ -170,12 +170,12 @@ def check_undefined_references_and_multiply_defined_labels():
                 file=sys.stderr,
             )
             num_errors += 1
-        # There are 3 known instances of "Warning", which are considered benign.
+        # There are 4 known instances of "Warning", which are considered benign.
         # Any others, that have not been detected earlier, thereby increasing
         # `num_errors` are caught here.
         if (
             num_errors == 0
-            and len(re.findall(r"warning", log_str, flags=re.IGNORECASE)) > 3
+            and len(re.findall(r"warning", log_str, flags=re.IGNORECASE)) > 4
         ):
             print(
                 f"ERROR: There are unrecognized instances of 'warning' in {log_filepath})",

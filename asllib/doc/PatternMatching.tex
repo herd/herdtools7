@@ -79,6 +79,7 @@ The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
   \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow (\overname{\PatternAll}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+\RenderRule{annotate_pattern_all}
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -96,12 +97,15 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\newg$ is the empty graph.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \evalpattern(\env, \Ignore, \PatternAll) \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PAll}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
 \section{Matching a Single Value\label{sec:MatchingASingleValue}}
@@ -170,6 +174,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -209,8 +214,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \commonprefixline\hva\\\\
   \astlabel(\vtstruct) = \TEnum\\
   \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\hva\\
-  \vtstruct \eqname \TEnum(\vlione)\\
-  \vtestruct \eqname \TEnum(\vlitwo)\hva\\
+  \vtstruct \reverseeqdef \TEnum(\vlione)\\
+  \vtestruct \reverseeqdef \TEnum(\vlitwo)\hva\\
   \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
 }{
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
@@ -230,6 +235,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_single}
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -250,6 +257,7 @@ In \listingref{semantics-psingle},
     is equal to $\vvone$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -258,6 +266,8 @@ In \listingref{semantics-psingle},
   \evalpattern(\env, \vv, \overname{\PatternSingle(\ve)}{\vp}) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PSingle}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
 \section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
@@ -308,6 +318,7 @@ In \listingref{semantics-psingle},
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$ ($\PatternRange(\veonep, \vetwop)$).
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternRange(\veone, \vetwo)\\
@@ -328,6 +339,8 @@ In \listingref{semantics-psingle},
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_range}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -357,6 +370,7 @@ range given by \texttt{3..42}.
   \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\hva\\\\
@@ -369,6 +383,8 @@ range given by \texttt{3..42}.
   \evalpattern(\env, \vv, \PatternRange(\veone, \vetwo)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PRange}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
 \section{Matching an Upper Bounded Range of Integers\label{sec:MatchingAnUpperBoundedRangeOfIntegers}}
@@ -414,6 +430,7 @@ that is, $\PatternLeq(\ve)$;
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -431,6 +448,8 @@ that is, $\PatternLeq(\ve)$;
   \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_leq}
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -453,6 +472,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -461,6 +481,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
   \evalpattern(\env, \vv, \PatternLeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PLeq}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
 \section{Matching a Lower Bounded Range of Integers\label{sec:MatchingALowerBoundedRangeOfIntegers}}
@@ -505,6 +527,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item $\newp$ is the pattern that matches anything greater than or equal to $\vep$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -522,6 +545,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
   \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_geq}
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -544,6 +569,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -552,6 +578,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
   \evalpattern(\env, \vv, \PatternGeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PGeq}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
 \section{Matching a Bitmask\label{sec:MatchingABitmask}}
@@ -595,6 +623,7 @@ and bit sequences in parentheses represent, don't-care values.
   \item define $\vses$ as the empty set.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\hva\\\\
@@ -604,6 +633,8 @@ and bit sequences in parentheses represent, don't-care values.
   \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow (\overname{\PatternMask(\vm)}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_mask}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 \identi{VMKF}
 
@@ -640,11 +671,11 @@ whereas \texttt{match\_false} evaluates to \False, since
 
 \FormallyParagraph
 \RenderRelation{mask_match}
-It is defined by the following table:
+It is defined by the following table where the rows correspond to values of the bit and the columns correspond to mask values:
 \[
 \begin{array}{|c|c|c|c|}
   \hline
-  \maskmatch & 0 & 1 & \vx\\
+  \maskmatch & \zerobit & \onebit & \xbit\\
   \hline
   0 & \True & \False & \True\\
   \hline
@@ -653,6 +684,7 @@ It is defined by the following table:
 \end{array}
 \]
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \evalpattern(\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)) \evalarrow \ResultPattern(\True, \emptygraph)
@@ -668,6 +700,8 @@ It is defined by the following table:
   \evalpattern(\env, \vv, \PatternMask(\vm)) \evalarrow \ResultPattern(\vb, \emptygraph)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PMask}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
 \section{Matching a Tuple of Patterns\label{sec:MatchingATupleOfPatterns}}
@@ -719,12 +753,13 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternTuple(\vli)\\
   \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
   \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \vtstruct \eqname \TTuple(\vts)\\
+  \vtstruct \reverseeqdef \TTuple(\vts)\\
   \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
   i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\hva\\\\
   \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
@@ -733,6 +768,8 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_tuple}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -759,6 +796,7 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   i=1..k: \getindex(i, \vv) \evalarrow \vvs[i]\OrDynError\\
@@ -769,6 +807,8 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
   \evalpattern(\env, \vv, \overname{\PatternTuple(\vps)}{\vp}) \evalarrow \ResultPattern(\vb, \overname{\emptygraph}{\newg})
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PTuple}
 \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
 
 \section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
@@ -888,9 +928,10 @@ any pattern in \verb|{3, 4}|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \vps \eqname \vp_{1..k}\\
+  \vps \reverseeqdef \vp_{1..k}\\
   i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\hva\\\\
   \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
   \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
@@ -898,6 +939,8 @@ any pattern in \verb|{3, 4}|.
   \evalpattern(\env, \vv, \PatternAny(\vps)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PAny}
 \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
 
 \section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
@@ -925,6 +968,7 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \item $\newp$ is pattern which matches the negation of $\newq$ ($\PatternNot(\newq)$).
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
@@ -932,6 +976,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow (\overname{\PatternNot(\newq)}{\newp}, \vses)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_pattern_neg}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -951,6 +997,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \item $\vb$ is the Boolean negation of $\vbone$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -959,6 +1006,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
   \evalpattern(\env, \vv, \PatternNot(\vpone)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_pattern_PNot}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
 
 \section{Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}

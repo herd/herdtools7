@@ -165,6 +165,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bool]{}{
     \basevalue(\tenv, \overname{\TBool}{\vt}) \typearrow \overname{\ELiteral(\LBool(\False))}{\veinit}
@@ -175,7 +176,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \inferrule[t\_bits\_static]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \vzopt \neq \None\hva\\\\
-    \vzopt \eqname \some{\length}\\
+    \vzopt \reverseeqdef \some{\length}\\
     \techeck(\length \geq 0, \NoBaseValue) \typearrow \True\OrTypeError
 }{
     \basevalue(\tenv, \overname{\TBits(\ve, \Ignore)}{\vt}) \typearrow \overname{\ELiteral(\LBitvector(i=1..\length: 0))}{\veinit}
@@ -214,7 +215,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 
 \begin{mathpar}
 \inferrule[t\_int\_wellconstrained]{
-    \cs \eqname \vc_{1..k}\\
+    \cs \reverseeqdef \vc_{1..k}\\
     \vzminlist \eqdef \constraintabsmin(\tenv, \vc_1) \concat \ldots \concat \constraintabsmin(\tenv, \vc_k)\\
     \techeck(\vzminlist \neq \emptyset, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
     \listminabs(\vzminlist) \typearrow \vzmin
@@ -241,10 +242,10 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
 \begin{mathpar}
 \inferrule[structured]{
     \isstructured(\vt) \typearrow \True\\
-    \vt \eqname L(\fields)\\
+    \vt \reverseeqdef L(\fields)\\
     (\name, \vtefield) \in \fields: \basevalue(\tenv, \vtefield) \typearrow \ve_\name \OrTypeError
 }{
-    \basevalue(\tenv, \vt) \typearrow \overname{\ERecord((\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
+    \basevalue(\tenv, \vt) \typearrow \overname{\ERecord(\vt, (\name, \vtefield) \in \fields: (\name, \ve_\name))}{\veinit}
 }
 \end{mathpar}
 
@@ -269,7 +270,7 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     {
         \begin{array}{r}
             \basevalue(\tenv, \overname{\TArray(\ArrayLengthEnum(\venum, \vlabels), \tty)}{\vt}) \typearrow \\
-            \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \vvalue\}}{\veinit}
+            \overname{\EEnumArray\{\FIELDenum: \venum, \FIELDlabels: \vlabels, \enumarrayvalue: \vvalue\}}{\veinit}
         \end{array}
     }
 }
@@ -287,6 +288,8 @@ See \ExampleRef{Base Values} and \ExampleRef{Types Without Base Value}.
     }
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{base_value}
 
 \TypingRuleDef{ConstraintAbsMin}
 \RenderRelation{constraint_abs_min}
@@ -331,11 +334,12 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
     \reducetozopt(\tenv, \ve) \typearrow \vzopt\\
     \techeck(\vzopt \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
-    \vzopt \eqname \some{\vz}
+    \vzopt \reverseeqdef \some{\vz}
 }{
     \constraintabsmin(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{[\vz]}{\vzs}
 }
@@ -345,10 +349,10 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
 \inferrule[range]{
     \reducetozopt(\tenv, \veone) \typearrow \vzoptone\\
     \techeck(\vzoptone \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\hva\\\\
-    \vzoptone \eqname \some{\vvone}\\
+    \vzoptone \reverseeqdef \some{\vvone}\\
     \reducetozopt(\tenv, \vetwo) \typearrow \vzopttwo\hva\\
     \techeck(\vzopttwo \neq \None, \NoBaseValue) \typearrow \True \OrTypeError\\\\
-    \vzopttwo \eqname \some{\vvtwo}\\
+    \vzopttwo \reverseeqdef \some{\vvtwo}\\
     {
     \vzs \eqdef
         \begin{cases}
@@ -362,6 +366,8 @@ The minimal absolute value of \verb|{-2..2, 5}| is \verb|0|.
     \constraintabsmin(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \vzs
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{constraint_abs_min}
 
 \TypingRuleDef{ListMinAbs}
 \RenderRelation{list_min_abs}
@@ -395,6 +401,7 @@ and the minimal absolute value of $[2, -2]$ is $2$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[one]{}{
     \listminabs(\overname{[\vz]}{\vl}) \typearrow \vz
@@ -407,13 +414,15 @@ and the minimal absolute value of $[2, -2]$ is $2$.
     \listminabs(\vltwo) = \vztwo\\
     {
         \vz \eqdef \begin{cases}
-            \vzone & |\vzone| < |\vztwo|\\
-            \vztwo & |\vzone| > |\vztwo|\\
+            \vzone & \absvalueop{\vzone} < \absvalueop{\vztwo}\\
+            \vztwo & \absvalueop{\vzone} > \absvalueop{\vztwo}\\
             \vzone & \vzone = \vztwo\\
-            |\vzone| & |\vzone| = |\vztwo| \land \vzone \neq \vztwo
+            \absvalueop{\vzone} & \absvalueop{\vzone} = \absvalueop{\vztwo} \land \vzone \neq \vztwo
         \end{cases}
     }
 }{
     \listminabs(\overname{[\vzone] \concat \vltwo}{\vl}) \typearrow \vz
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{list_min_abs}

@@ -279,7 +279,7 @@ The intention for each AST node type above is as follows:
   \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to
     construct an integer-indexed array value in order to initialize an
     array-typed variable;
-  \item $\EEnumArray\{\EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used
+  \item $\EEnumArray\{\EArrayEnum: \name, \EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used
     to construct an enumeration-indexed array value in order to initialize an
     array-typed variable;
   \item $\EGetEnumArray(\ebase, \ekey)$ is used for accessing an enumerated
@@ -291,6 +291,9 @@ The intention for each AST node type above is as follows:
     collection given by $\ebase$ at the entry given by $\ekey$;
   \item $\LESetCollectionFields(\ebase, \ekey)$ is used for updating a
     collection given by $\ebase$ at the entry given by $\ekey$.
+  \item $\typedLESetFields(\vbase, \fieldnames, \vslices)$ is used for simultaneously updating
+     the \bitvectortypeterm{}-typed bitfields listed in $\fieldnames$ whose inferred slices
+     are given by $\vslices$.
 \end{itemize}
 
 The rules for statements exclude \texttt{pragma} statements, since those are transformed into
@@ -618,7 +621,7 @@ $\AbbrevEVar{\vx}$ & $\EVar(\vx)$
 $\AbbrevConstraintExact{\ve}$ & $\ConstraintExact(\ve)$
 \hypertarget{def-abbrevconstraintrange}{}\\
 $\AbbrevConstraintRange{\veone}{\vetwo}$ & $\ConstraintRange(\veone, \vetwo)$ \hypertarget{def-abbrevebinop}{}\\
-$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$ \hypertarget{def-abbrevtarray}{}\\
+$\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$\hypertarget{def-abbrevtarray}{}\\
 $\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
 $\AbbrevTArrayLengthExpr{\ve}{\vt}$ & $\TArray(\ArrayLengthExpr(\ve), \vt)$ \hypertarget{def-abbrevtarraylengthenum}{}\\
 $\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), \vt)$\\

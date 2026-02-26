@@ -247,7 +247,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 \begin{mathpar}
 \inferrule[tuple]{
-  \tys \eqname \vt_{1..k}\\
+  \tys \reverseeqdef \vt_{1..k}\\
   i=1..k: \tstruct(\tenv, \vt_i) \typearrow \vtp_i \OrTypeError
 }{
   \tstruct(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow  \TTuple(i=1..k: \vtp_i)
@@ -315,7 +315,7 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
-  \tty \eqname \TNamed(\vx) \\
+  \tty \reverseeqdef \TNamed(\vx) \\
   \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError \hva\\\\
   \makeanonymous(\tenv, \vtone) \typearrow \vt
 }{

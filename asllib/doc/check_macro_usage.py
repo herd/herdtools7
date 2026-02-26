@@ -182,6 +182,24 @@ def check_macro_arity(latex_files: list[str]) -> int:
                         )
                         num_errors += 1
 
+        # Also detect macros invoked with parentheses instead of braced args, e.g. \m(arg)
+        # This catches cases that the brace-based parser won't see.
+        lines = read_file_lines(filename)
+        paren_call_pattern = re.compile(r"\\([a-zA-Z]+)\s*\(")
+        for line_number, line in enumerate(lines, start=1):
+            if is_skipped_line(line):
+                continue
+            for match in paren_call_pattern.finditer(line):
+                macro_name = match.group(1)
+                if macro_name in macro_arities:
+                    required_arity, _has_optional = macro_arities[macro_name]
+                    if required_arity > 0:
+                        print(
+                            f"{filename}:{line_number}: Macro \\{macro_name} expects {required_arity} argument(s) "
+                            f"but is used with parentheses: \\{macro_name}("
+                        )
+                        num_errors += 1
+
     return num_errors
 
 

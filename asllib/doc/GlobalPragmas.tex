@@ -91,7 +91,8 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
   \item $\vargsp$ is ignored.
 \end{itemize}
 
-\FormallyParagraph
+\FormallyParagraph\
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv \\
@@ -100,4 +101,6 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
   \checkglobalpragma(\genv, \overname{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{check_global_pragma}
 \CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}

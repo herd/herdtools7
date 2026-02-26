@@ -516,7 +516,7 @@ module Make (S : SPEC_VALUE) = struct
       let op_macro = get_or_gen_math_macro op_name in
       let layout =
         if Spec.is_cond_operator_name S.spec op_name then
-          (* Special case for the match_cases operator, which is always vertical. *)
+          (* Special case for the 'cond' operator, which is always vertical. *)
           vertical_if_unspecified layout args
         else horizontal_if_unspecified layout args
       in
@@ -623,7 +623,7 @@ module Make (S : SPEC_VALUE) = struct
         pp_case_name_opt name_opt
         (pp_print_list
          (* The quadruple backslash means the next premise definitely starts on a new line. *)
-           ~pp_sep:(fun fmt () -> fprintf fmt {|\hva\\\\@.|})
+           ~pp_sep:(fun fmt () -> fprintf fmt {|\hva\\@.|})
            pp_premise)
         premises pp_conclusion conclusion
 

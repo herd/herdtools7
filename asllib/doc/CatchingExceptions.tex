@@ -57,7 +57,6 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
 
-
 \begin{mathpar}
 \inferrule[named]{}{
   {
@@ -120,6 +119,7 @@ and a catch clause for the named exception value for the exception type \verb|Ex
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \vc = (\overname{\None}{\nameopt}, \tty, \vstmt)\\
@@ -133,8 +133,6 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
-\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
-\identr{SDJK}
 
 \begin{mathpar}
 \inferrule[some]{
@@ -151,7 +149,9 @@ and a catch clause for the named exception value for the exception type \verb|Ex
   \annotatecatcher(\tenv, \vsesin, \vc) \typearrow (\vsesin, \newcatcher, \vses)
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_RULE
+\RenderRule{annotate_catcher}
+\CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
 \CodeSubsection{\CatcherBegin}{\CatcherEnd}{../Typing.ml}
 \identr{SDJK} \identr{WVXS} \identi{FCGK}
 
@@ -212,18 +212,21 @@ That is, no \dynamicerrorterm{} occurs.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\None, \Ignore, \vs) }\hva\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
+  \findcatcher(\tenv, \vvty, \catchers) \reverseeqdef \some{ (\None, \Ignore, \vs) }\hva\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\\\\
   \newg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
 }{
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_catchers_catch}
 \CodeSubsection{\EvalCatchBegin}{\EvalCatchEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNamed}
@@ -257,12 +260,13 @@ caught MyExceptionType with msg=42
   \item the result of the entire evaluation is $D$ with its graph substituted with $\newg$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
-  \findcatcher(\tenv, \vvty, \catchers) \eqname \some{ (\some{\name}, \Ignore, \vs) }\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
+  \findcatcher(\tenv, \vvty, \catchers) \reverseeqdef \some{ (\some{\name}, \Ignore, \vs) }\\
   \readvaluefrom(\vv) \evalarrow (\vv, \vgone)\hva\\
   \declarelocalidentifierm(\envthrow, \name, (\vv, \vgone)) \evalarrow (\envtwo, \vgtwo)\\
   \evalblock(\envtwo, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
@@ -274,6 +278,8 @@ caught MyExceptionType with msg=42
   \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow \withgraph{D}{\newg}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_catchers_catch_named}
 \CodeSubsection{\EvalCatchNamedBegin}{\EvalCatchNamedEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchOtherwise}
@@ -303,11 +309,12 @@ Otherwise
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
-  \envthrow \eqname (\tenv, \denvthrow)\hva\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
+  \envthrow \reverseeqdef (\tenv, \denvthrow)\hva\\
   \findcatcher(\tenv, \vvty, \catchers) = \None\\
   \evalblock(\envthrow, \vs) \evalarrow C \OrDynErrorDiverging\hva\\\\
   \vg \eqdef \ordered{\sg}{\aslpo}{\graphof{C}}
@@ -315,6 +322,8 @@ Otherwise
   \evalcatchers(\env, \catchers, \some{\vs}, \sm) \evalarrow \withgraph{C}{\vg}
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_catchers_catch_otherwise}
 \CodeSubsection{\EvalCatchOtherwiseBegin}{\EvalCatchOtherwiseEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNone}
@@ -336,15 +345,18 @@ that matches the exception type (\texttt{MyExceptionType1}).
   \item since there is no \texttt{otherwise} clause, the result is $\sm$.
 \end{itemize}
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \sm \eqname \Throwing(\vv, \vvty, \sg, \envthrow)\\
-  \env \eqname (\tenv, \denv)\\
+  \sm \reverseeqdef \Throwing(\vv, \vvty, \sg, \envthrow)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \findcatcher(\tenv, \vvty, \catchers) = \None
 }{
   \evalcatchers(\env, \catchers, \None, \sm) \evalarrow \sm
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_catchers_catch_none}
 \CodeSubsection{\EvalCatchNoneBegin}{\EvalCatchNoneEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{CatchNoThrow}
@@ -365,6 +377,7 @@ No exception raised
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \sm \in \TNormal
@@ -372,6 +385,8 @@ No exception raised
   \evalcatchers(\env, \catchers, \Ignore, \sm) \evalarrow \sm
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{eval_catchers_no_throw}
 \CodeSubsection{\EvalCatchNoThrowBegin}{\EvalCatchNoThrowEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{FindCatcher}
@@ -414,6 +429,7 @@ resulting in a \dynamicerrorterm{}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{\findcatcher(\tenv, \vvty, \overname{\emptylist}{\catchers}) \evalarrow \None}
 \end{mathpar}
@@ -421,7 +437,7 @@ resulting in a \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule[match]{
   \catchers = [\vc] \concat \catchersone\\
-  \vc \eqname (\nameopt, \ety, \vs) \\
+  \vc \reverseeqdef (\nameopt, \ety, \vs) \\
   \subtypes(\tenv, \vvty, \ety)
 }{
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow \some{\vc}
@@ -431,13 +447,15 @@ resulting in a \dynamicerrorterm{}.
 \begin{mathpar}
 \inferrule[no\_match]{
   \catchers = [\vc] \concat \catchersone\\
-  \vc \eqname (\nameopt, \ety, \vs) \\
+  \vc \reverseeqdef (\nameopt, \ety, \vs) \\
   \neg\subtypes(\tenv, \vvty, \ety)\\
   d \eqdef \findcatcher(\tenv, \vvty, \catchersone)
 }{
   \findcatcher(\tenv, \vvty, \catchers) \evalarrow d
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{find_catcher}
 \CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}

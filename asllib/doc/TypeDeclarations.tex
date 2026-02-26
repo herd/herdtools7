@@ -60,7 +60,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \begin{mathpar}
 \inferrule[subtype\_decl]{
   \buildsubtype(\vsubtype) \astarrow \vs\\
-  \vs \eqname (\name, \vfields)
+  \vs \reverseeqdef (\name, \vfields)
 }{
   {
     \begin{array}{c}
@@ -162,8 +162,6 @@ The main rule for annotating type declarations is \TypingRuleRef{AnnotateTypeDec
 We also define the following helper rules:
 \begin{itemize}
   \item \TypingRuleRef{DeclareType}
-  \item \TypingRuleRef{AnnotateTypeOpt}
-  \item \TypingRuleRef{AnnotateExprOpt}
   \item \TypingRuleRef{AddGlobalStorage}
   \item \TypingRuleRef{DeclareType}
   \item \TypingRuleRef{AnnotateExtraFields}
@@ -187,6 +185,7 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vd = \DTypeDecl(\vx, \tty, \vs)\\
@@ -196,6 +195,8 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
   \typecheckdecl(\genv, \vd) \typearrow (\newd, \newgenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{typecheck_decl_type_decl}
 
 \TypingRuleDef{DeclareType}
 \RenderRelation{declare_type}
@@ -238,6 +239,7 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[enum]{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
@@ -270,6 +272,8 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
   \declaretype(\genv, \name, \tty, \vs) \typearrow (\overname{\tenvtwo}{\newgenv}, \vttwo, \vsp)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_type}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 \identr{DHRC} \identd{YZBQ} \identr{DWSP} \identi{MZXL} \identr{MDZD} \identr{CHKR}
 
@@ -336,6 +340,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty}, \overname{\None}{\vsp})
@@ -380,7 +385,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
     \end{array}
   }\\
-  \vt \eqname L(\fields)\hva\\
+  \vt \reverseeqdef L(\fields)\hva\\
   \newty \eqdef L(\fields \concat \extrafields)\\
   \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
   \vsp \eqdef \some{(\vsuper, \emptylist)}
@@ -388,93 +393,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \newty, \vsp)
 }
 \end{mathpar}
-
-\TypingRuleDef{AnnotateTypeOpt}
-\RenderRelation{annotate_type_opt}
-
-\ExampleDef{Annotating Optional Types}
-The following are examples of annotating a type inside an \optionalterm{} with the empty \staticenvironmentterm{}:
-\begin{mathpar}
-\annotatetypeopt(\emptytenv, \None) \typearrow \None
-\hva\and
-\annotatetypeopt(\emptytenv, \some{\unconstrainedinteger}) \typearrow \some{\unconstrainedinteger}
-\end{mathpar}
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\tyopt$ is $\None$;
-    \item $\tyoptp$ is $\tyopt$.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\tyopt$ contains the type $\vt$;
-    \item annotating $\vt$ in $\tenv$ yields $\vtone$\ProseOrTypeError;
-    \item $\tyoptp$ is $\some{\vtone}$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \annotatetypeopt(\tenv, \overname{\None}{\tyopt}) \typearrow \overname{\tyopt}{\tyoptp}
-}
-\hva\and
-\inferrule[some]{
-  \annotatetype(\tenv, \vt) \typearrow \vtone \OrTypeError
-}{
-  \annotatetypeopt(\tenv, \overname{\some{\vt}}{\tyopt}) \typearrow\overname{\some{\vtone}}{\tyoptp}
-}
-\end{mathpar}
-
-\TypingRuleDef{AnnotateExprOpt}
-\RenderRelation{annotate_expr_opt}
-
-\ExampleDef{Annotating Optional Expressions}
-The following are examples of annotating an expression inside an \optionalterm{} with the empty \staticenvironmentterm{}:
-\[
-\annotateexpropt(\emptytenv, \None) \typearrow (\None, \None)
-\]
-
-\[
-\begin{array}{r}
-\annotateexpropt(\emptytenv, \some{\LInt(5)}) \typearrow\\
-\left(\some{\LInt(5)}, \some{\TInt(\WellConstrained([\AbbrevConstraintExact{\LInt(5)}]))}\right)
-\end{array}
-\]
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\expropt$ is $\None$;
-    \item $\vres$ is $(\None, \None)$.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\expropt$ contains the expression $\ve$;
-    \item annotating $\ve$ in $\tenv$ yields $(\vt, \vep)$\ProseOrTypeError;
-    \item $\vres$ is $(\some{\vt}, \some{\vep})$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \annotateexpropt(\tenv, \overname{\None}{\expropt}) \typearrow (\None, \None)
-}
-\hva\and
-\inferrule[some]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep)\OrTypeError
-}{
-  \annotateexpropt(\tenv, \overname{\some{\ve}}{\expropt}) \typearrow \overname{(\some{\vt}, \some{\vep})}{\vres}
-}
-\end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_extra_fields}
 
 \TypingRuleDef{DeclaredType}
 \RenderRelation{declared_type}
@@ -506,6 +426,7 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exists]{
   \tenv.\staticenvsG.\declaredtypes(\id) = (\vt, \Ignore)
@@ -521,6 +442,8 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
   \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declared_type}
 
 \TypingRuleDef{DeclareEnumLabels}
 \RenderRelation{declare_enum_labels}
@@ -552,9 +475,10 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \ids \eqname \id_{1..k}\\
+  \ids \reverseeqdef \id_{1..k}\\
   \tenv_0 \eqdef \tenv\\
   {
   \begin{array}{r}
@@ -566,6 +490,8 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
   \declareenumlabels(\tenv, \name, \ids) \typearrow \overname{\tenv_k}{\newtenv}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_enum_labels}
 
 \TypingRuleDef{DeclareConst}
 \RenderRelation{declare_const}
@@ -597,6 +523,7 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\hva\\\\
@@ -605,3 +532,5 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
   \declareconst(\genv, \name, \tty, \vv) \typearrow \newgenv
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{declare_const}

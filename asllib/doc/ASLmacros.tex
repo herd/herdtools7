@@ -166,8 +166,9 @@
 \setlist[itemize,20]{label=\textendash}
 
 \newcommand\BackupOriginalRule[1]{}
-% Ignored here means, it is not yet considered for auto-generation.
-\newcommand\NotImportedToASLSpecYet[1]{#1} % DO NOT LINT
+\newcommand\BackupOriginalConstant[1]{}
+% Not imported here means, it is not yet considered for auto-generation.
+\newcommand\NotImportedToASLSpecYet[1]{#1}
 
 \newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
 \newcommand\FormalRelationsDef[1]{\section{Formal Relations for #1\label{sec:Formal Relations for #1}}}
@@ -195,8 +196,8 @@
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
-\newcommand\ExampleDef[1]{\hypertarget{example-#1}{}\subsubsection{Example: #1}} % DO NOT LINT
-\newcommand\ExampleRef[1]{\hyperlink{example-#1}{Example: #1}} % DO NOT LINT
+\newcommand\ExampleDef[1]{\hypertarget{example-#1}{}\subsubsection{Example: #1}}
+\newcommand\ExampleRef[1]{\hyperlink{example-#1}{Example: #1}}
 
 \ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
@@ -273,20 +274,50 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Operator macros
-\newcommand\eqname[0]{\hyperlink{def-deconstruction}{\stackrel{\mathsmaller{\mathsf{is}}}{=}}}
-\newcommand\eqdef[0]{\hyperlink{def-eqdef}{:=}}
-\newcommand\reverseeqdef[0]{\hyperlink{def-eqdef}{=:}}
+\newcommand\eqdef[0]{\hyperlink{relation-assign}{:=}}
+\newcommand\reverseeqdef[0]{\hyperlink{relation-reverseassign}{=:}}
 \newcommand\freshidentifier[0]{\text{fresh from }\Identifier}
-\newcommand\astlabelop[1]{\astlabel(#1)} % DO NOT LINT
-\newcommand\makestructured[3][H]{ % DO NOT LINT
+\newcommand\astlabelop[1]{\astlabel(#1)}
+\newcommand\makestructured[3][H]{
     {#2}\left({#3}\right)
 }
-\newcommand\updateop[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] } % DO NOT LINT
+\newcommand\mapupdate[4][H]{ {#2}\left[{#3} \mapsto {#4}\right] }
+
+\newcommand\mapapplyop[3][H]{
+    {#2}\left({#3}\right)
+}
+
+\newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}} % SPECIFICATION_DEFERRED
+\newcommand\sortop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \sort\left({#2}, {#3}\right)
+  }{
+    \sort\left(
+    \begin{array}{l}
+    {#2},\\
+    {#3}\\
+    \end{array}
+    \right)
+  }
+}
+\newcommand\sortmonomialbindings[1]{\hyperlink{relation-sortmonomialbindings}{\textfunc{sort\_monomial\_bindings}}\left(#1\right)} % SPECIFICATION_DEFERRED
 
 \newcommand\equal[0]{\mathrel{=}}
-\newcommand\notequal[0]{\mathrel{\neq}} % DO NOT LINT
+\newcommand\notequal[0]{\mathrel{\neq}}
 
-\newcommand\forallop[4][H]{% DO NOT LINT
+\newcommand\condcase[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \textbf{if }{#2}\textbf{ then }{#3}
+  }{
+    \begin{array}{ll}
+    \textbf{if }{#2}\\
+    \textbf{ then }{#3}\\
+    \end{array}
+  }
+}
+\newcommand\condop[1]{\left\{{#1}\right.} % A list of cases
+
+\newcommand\forallop[4][H]{
   \ifthenelse{\equal{#1}{H}}
     {\forall {#2} \in {#3} : {#4}}
     {\forall
@@ -296,54 +327,66 @@
     \end{array}}
 }
 
-\newcommand\listforall[4][H]{% DO NOT LINT
+\newcommand\listforall[4][H]{
   \ifthenelse{\equal{#1}{H}}
     {\forall {#2} \in \listrange({#3}) : {#4}}
     {\forall
     \begin{array}{ll}
-    {#2} \in \listrange({#3}):\\
+    \forall {#2} \in \listrange({#3}):\\
     {#4}\\
     \end{array}}
 }
 
-\newcommand\listexists[4][H]{% DO NOT LINT
+\newcommand\listexists[4][H]{
   \ifthenelse{\equal{#1}{H}}
     {\exists {#2} \in \listrange({#3}) : {#4}}
-    {\exists
-    \begin{array}{ll}
-    {#2} \in \listrange({#3}):\\
+    {\begin{array}{ll}
+    \exists {#2} \in \listrange({#3}):\\
     {#4}\\
     \end{array}}
-}
-
-\newcommand\listfromindices[4][H]{% DO NOT LINT
-  \ifthenelse{\equal{#1}{H}}
-    {\left[#2 \in \listrange(#3) : #4\right]}
-    {\left[\begin{array}{ll}
-    #2 \in \listrange(#3):\\
-    #4\\
-    \end{array}\right]}
 }
 
 \newcommand\listmap[4][H]{%
-  \ifthenelse{\equal{#1}{H}}
-    {\left[#2 \in #3 : #4\right]}
-    {\left[
+  \ifthenelse{\equal{#1}{H}}{
+    \left[#2 \in #3 : #4\right]
+  }{
+    \left[
+    \begin{array}{ll}
+    #2 \in #3\\
+    #4: \\
+    \end{array}
+    \right]
+  }
+}
+\newcommand\listfilter[4][H]{%
+  \ifthenelse{\equal{#1}{H}}{
+    \left[#2 \in #3 : #4\right]
+  }{
+    \left[
     \begin{array}{ll}
     #2 \in #3:\\
     #4\\
     \end{array}
-    \right]}
+    \right]
+  }
 }
 
-% Old macro, still used but soon to be deprecated.
-\newcommand\ifthenelsestmt[3]{
-  \left\{\begin{array}{ll}
-  \hyperlink{def-choice}{\textbf{if}} & #1\\
-  \hyperlink{def-choice}{\textbf{then}} & #2\\
-  \hyperlink{def-choice}{\textbf{else}} & #3\\
-  \end{array}\right.
+\newcommand\filteroptionlist[1]{\hyperlink{relation-filteroptionlist}{\textfunc{filter\_option\_list}}\left(#1\right)}
+
+\newcommand\listprefixname[0]{\hyperlink{def-listprefix}{\textfunc{list\_prefix}}}
+\newcommand\listprefix[3][H]{%
+  \ifthenelse{\equal{#1}{H}}{
+    \listprefixname(#2, #3)
+  }{
+    \listprefixname\left(
+    \begin{array}{ll}
+    #2,\\
+    #3\\
+    \end{array}
+    \right)
+  }
 }
+
 % An if-then-else macro with optional layout parameter.
 % Usage:
 % \ifthenelseop[H]{condition}{then-clause}{else-clause}  % Horizontal layout
@@ -360,137 +403,197 @@
     \hyperlink{def-choice}{\textbf{else}} & #4\\
     \end{array}\right.}
 }
-\newcommand\condcase[3][H]{% DO NOT LINT
-  \textbf{if }{#2}\textbf{ then }{#3}
-}
-% A list of cases
-\newcommand\condop[1]{\left\{{#1}\right.} % DO NOT LINT
 
 \newcommand\ELInt[1]{\hyperlink{def-elint}{\textsf{ELint}}(#1)}
 \newcommand\AbbrevEBinop[4][H]{
-  \ifthenelse{\equal{#1}{H}}
-  {\overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
-  {\overbracket{\begin{array}{c}#3\\#2\\#4\end{array}}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}}
+  \ifthenelse{\equal{#1}{H}}{
+  \overbracket{#3\ #2\ #4}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
+  }{
+  \overbracket{\begin{array}{c}#3\\#2\\#4\end{array}}^{\hyperlink{def-abbrevebinop}{\abbrevfont{E\_Binop}}}
+  }
+}
+\newcommand\AbbrevECond[4][H]{
+  \ifthenelse{\equal{#1}{H}}{
+  \ECond\left(#2, #3, #4\right)
+  }{
+    \ECond\left(
+    \begin{array}{c}
+      #2,\\
+      #3,\\
+      #4
+    \end{array}
+    \right)
+  }
 }
 
 \let\OldLand\land
-\renewcommand\land[0]{\hyperlink{operator-land}{\OldLand}}
+\renewcommand\land[0]{\hyperlink{relation-land}{\OldLand}}
 \let\OldLor\lor
-\renewcommand\lor[0]{\hyperlink{operator-lor}{\OldLor}}
+\renewcommand\lor[0]{\hyperlink{relation-lor}{\OldLor}}
 \let\OldNeg\neg
-\renewcommand\neg[0]{\hyperlink{operator-neg}{\OldNeg}}
-\newcommand\opnot[1]{\hyperlink{operator-neg}{\neg}{#1}} % DO NOT LINT
-\newcommand\IFF[0]{\hyperlink{operator-IFF}{\Leftrightarrow}}
-\renewcommand\implies[0]{\hyperlink{operator-implies}{\Rightarrow}}
+\newcommand\listand[0]{\hyperlink{relation-land}{\bigwedge}}
+\newcommand\listor[0]{\hyperlink{relation-lor}{\bigvee}}
+\renewcommand\neg[0]{\hyperlink{relation-neg}{\OldNeg}}
+\newcommand\opnot[1]{\hyperlink{relation-neg}{\neg}{\left(#1\right)}}
+\newcommand\opnotvar[1]{\hyperlink{relation-neg}{\neg}{#1}}
+\newcommand\IFF[0]{\hyperlink{relation-IFF}{\Leftrightarrow}}
+\renewcommand\implies[0]{\hyperlink{relation-implies}{\Rightarrow}}
 
-\newcommand\some[1]{\hyperlink{operator-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
+\newcommand\some[1]{\hyperlink{relation-some}{\textsf{Some}}\left({#1}\right)} % The optional expression with one element
 \newcommand\makeset[1]{\left\{{#1}\right\}} % A set of expressions
-\newcommand\cardinality[1]{\hyperlink{operator-cardinality}{|}#1\hyperlink{operator-cardinality}{|}}
-\newcommand\rangeop[3][H]{ % DO NOT LINT
-  \ifthenelse{\equal{#1}{H}}
-    {\left[{#2} \ldots {#3}\right]}
-    {\left[
-    \begin{array}{l}
-    {#2} \ldots\\
-    {#3}\\
+\newcommand\setfromlist[4][H]{%
+  \ifthenelse{\equal{#1}{H}}{
+    \left\{#2 \in #3 : #4\right\}
+  }{
+    \left\{
+    \begin{array}{ll}
+    #2 \in #3\\
+    #4 :\\
     \end{array}
-    \right]}
+    \right\}
+  }
 }
-\newcommand\rangesetop[3][H]{ % DO NOT LINT
-   \ifthenelse{\equal{#1}{H}}
-    {\left\{ {#2} \ldots {#3} \right\}}
-    {\left\{
+\newcommand\listassetop[1]{\left\{{#1}\right\}}
+\newcommand\cardinality[1]{\hyperlink{relation-cardinality}{|}#1\hyperlink{relation-cardinality}{|}}
+\newcommand\rangeop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \left[{#2} \ldots {#3}\right]
+  }{
+    \left[
     \begin{array}{l}
     {#2} \ldots\\
     {#3}\\
     \end{array}
-    \right\}}
+    \right]
+  }
 }
-\newcommand\rangelistop[3][H]{ % DO NOT LINT
-  \ifthenelse{\equal{#1}{H}}
-    {\left[ {#2} \ldots {#3} \right]}
-    {\left[
+\newcommand\rangesetop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \left\{ {#2} \ldots {#3} \right\}
+  }{
+    \left\{
     \begin{array}{l}
     {#2} \ldots\\
     {#3}\\
     \end{array}
-    \right]}}
-\newcommand\listmin[1]{\min(#1)} % DO NOT LINT
-\newcommand\listmax[1]{\max(#1)} % DO NOT LINT
-\newcommand\setmin[1]{\min(#1)} % DO NOT LINT
-\newcommand\setmax[1]{\max(#1)} % DO NOT LINT
-\newcommand\member[0]{\mathrel{\in}} % DO NOT LINT
-\newcommand\notmember[0]{\mathrel{\not\in}} % DO NOT LINT
+    \right\}
+  }
+}
+\newcommand\rangelistop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \left[ {#2} \ldots {#3} \right]
+  }{
+    \left[
+    \begin{array}{l}
+    {#2} \ldots\\
+    {#3}\\
+    \end{array}
+    \right]
+  }
+}
+
+\newcommand\listmax[1]{\max(#1)}
+\newcommand\setmin[1]{\min(#1)}
+\newcommand\setmax[1]{\max(#1)}
+\newcommand\member[0]{\mathrel{\in}}
+\newcommand\notmember[0]{\mathrel{\not\in}}
+\newcommand\disjointunion[0]{\hyperlink{def-disjointunion}{\mathbin{\mathaccent\cdot\cup}}}
 \newcommand\unionlist[0]{\hyperlink{def-unionlist}{\textfunc{union\_list}}}
-\newcommand\UNIONLIST[1]{\unionlist\left({#1}\right)} % A union of a list of sets
-\newcommand\assocopt[3][H]{% DO NOT LINT
+\newcommand\unionlistop[1]{\unionlist\left({#1}\right)} % A union of a list of sets
+\newcommand\intersectionlist[0]{\hyperlink{def-intersectionlist}{\textfunc{intersection\_list}}}
+\newcommand\intersectionlistop[1]{\intersectionlist\left({#1}\right)} % An intersection of a list of sets
+\newcommand\assocopt[3][H]{
   \ifthenelse{\equal{#1}{H}}
-    {\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}({#2}, {#3})}
-    {\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}
+    {\hyperlink{relation-assocopt}{\textfunc{assoc\_opt}}({#2}, {#3})}
+    {\hyperlink{relation-assocopt}{\textfunc{assoc\_opt}}
     \left(\begin{array}{l}
     ({#2},\\
     {#3})\\
     \end{array}\right)}
 }
-\newcommand\assocoptname[0]{\hyperlink{operator-assocopt}{\textfunc{assoc\_opt}}} % DO NOT LINT
+\newcommand\assocoptname[0]{\hyperlink{relation-assocopt}{\textfunc{assoc\_opt}}}
 
-\newcommand\identityop[1]{#1} % DO NOT LINT
-\newcommand\numplus[0]{\mathbin{+}} % DO NOT LINT
-\newcommand\numminus[0]{\mathbin{-}} % DO NOT LINT
-\newcommand\negate[1]{\mathbin{\smash{-}}{#1}} % DO NOT LINT
-\newcommand\numtimes[0]{\mathbin{\times}} % DO NOT LINT
-\newcommand\numdivide[0]{\mathbin{\div}} % DO NOT LINT
-\newcommand\numexponent[0]{\mathbin{{^}}} % DO NOT LINT
-\newcommand\lessthan[0]{\mathbin{<}} % DO NOT LINT
-\newcommand\lessorequal[0]{\mathbin{\leq}} % DO NOT LINT
-\newcommand\greaterthan[0]{\mathbin{>}} % DO NOT LINT
-\newcommand\greaterorequal[0]{\mathbin{\geq}} % DO NOT LINT
+\newcommand\identityop[1]{#1}
+\newcommand\numplus[0]{\mathbin{+}}
+\newcommand\numminus[0]{\mathbin{-}}
+\newcommand\numnegate[1]{\mathbin{-}{#1}}
+\newcommand\negate[1]{\mathbin{\smash{-}}{#1}}
+\newcommand\numtimes[0]{\mathbin{\times}}
+\newcommand\numdivide[0]{\mathbin{\div}}
+\newcommand\numexponent[3][H]{
+    {#2}^{#3}
+}
 
-\newcommand\roundup[1]{\left\lceil {#1} \right\rceil} % DO NOT LINT
-\newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor} % DO NOT LINT
+\newcommand\lessthan[0]{\mathbin{<}}
+\newcommand\lessorequal[0]{\mathbin{\leq}}
+\newcommand\greaterthan[0]{\mathbin{>}}
+\newcommand\greaterorequal[0]{\mathbin{\geq}}
+
+\newcommand\roundup[1]{\left\lceil {#1} \right\rceil}
+\newcommand\rounddown[1]{\left\lfloor {#1} \right\rfloor}
+\newcommand\fractionop[3][H]{\frac{#2}{#3}}
+\newcommand\isintegerop[1]{{#1}\in\Z}
+\newcommand\isnotintegerop[1]{{#1}\notin\Z}
+\newcommand\absvalueop[1]{\left| {#1} \right|}
 
 \newcommand\makelist[1]{\left[{#1}\right]} % A list of expressions
-\newcommand\listlen[1]{\hyperlink{operator-listlen}{|}#1\hyperlink{operator-listlen}{|}}
-\newcommand\concat[0]{\hyperlink{operator-concat}{\mathbin{+}}}
-\newcommand\concatlist[1]{\hyperlink{operator-concatlist}{\textfunc{concat\_list}}(#1)}
-\newcommand\cons[0]{\hyperlink{operator-cons}{\mathbin{{+}{+}}}}
-\newcommand\listfstname[0]{\hyperlink{operator-listfst}{\textfunc{list\_fst}}}
-\newcommand\listfst[1]{\listfstname(#1)}
-\newcommand\listcombine[3][H]{ % DO NOT LINT
-  \ifthenelse{\equal{#1}{H}}
-    {{#2} \mathbin{\hyperlink{operator-listcombine}{\times}} {#3}} % DO NOT LINT
-    {\hyperlink{operator-listcombine}{\textfunc{list\_combine}} % DO NOT LINT
+\newcommand\listlen[1]{\hyperlink{relation-listlen}{|}#1\hyperlink{relation-listlen}{|}}
+\newcommand\samelengthname[0]{\hyperlink{relation-samelength}{\textfunc{same\_length}}}
+\newcommand\samelengthop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \samelengthname\left({#2}, {#3}\right)
+  }{
+    \samelengthname
     \left(\begin{array}{l}
-    {#2} \hyperlink{operator-listcombine}{\times}\\ % DO NOT LINT
+    {#2},\\
+    {#3}\\
+    \end{array}\right)
+  }
+}
+\newcommand\concat[0]{\hyperlink{relation-concat}{\mathbin{+}}}
+\newcommand\concatlist[1]{\hyperlink{relation-concatlist}{\textfunc{concat\_list}}(#1)}
+\newcommand\cons[0]{\hyperlink{relation-cons}{\mathbin{{+}{+}}}}
+\newcommand\listfstname[0]{\hyperlink{relation-listfst}{\textfunc{list\_fst}}}
+\newcommand\listfst[1]{\listfstname(#1)}
+\newcommand\listcombine[3][H]{
+  \ifthenelse{\equal{#1}{H}}
+    {{#2} \mathbin{\hyperlink{relation-listcombine}{\otimes}} {#3}}
+    {
+    \left(\begin{array}{l}
+    {#2} \hyperlink{relation-listcombine}{\otimes}\\
     {#3}\\
     \end{array}\right)}
 }
-\newcommand\listcombinethree[4][H]{ % DO NOT LINT
-  \ifthenelse{\equal{#1}{H}}
-    {{#2} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#3} \mathbin{\hyperlink{operator-listcombinethree}{\times_3}} {#4}} % DO NOT LINT
-    {\hyperlink{operator-listcombinethree}{\textfunc{list\_combine\_3}} % DO NOT LINT
+\newcommand\listcombinethree[4][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    {#2} \mathbin{\hyperlink{relation-listcombinethree}{\otimes_3}} {#3} \mathbin{\hyperlink{relation-listcombinethree}{\otimes_3}} {#4}
+  }{
+    \hyperlink{relation-listcombinethree}{\textfunc{list\_combine\_3}}
     \left(\begin{array}{l}
-    {#2} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
-    {#3} \hyperlink{operator-listcombinethree}{\times_3}\\ % DO NOT LINT
+    {#2} \hyperlink{relation-listcombinethree}{\otimes_3}\\
+    {#3} \hyperlink{relation-listcombinethree}{\otimes_3}\\
     {#4}\\
-    \end{array}\right)}
+    \end{array}\right)
+  }
 }
+\newcommand\listcrossop[0]{\hyperlink{relation-listcross}{\times}}
 
 \newcommand\parallelcomp[0]{\hyperlink{def-parallel}{\mathbin{\parallel}}}
+\newcommand\parallelgraphs[1]{\hyperlink{def-parallellist}{\mathbin{\mathchoice{\Big\|}{\big\|}{\|}{\|}}}{#1}}
 \newcommand\ordered[3]{{#1}\hyperlink{def-ordered}{\xrightarrow{#2}}{#3}}
-\newcommand\orderedctrl[0]{\hyperlink{def-ordered}{\xrightarrow{\aslctrl}}} % DO NOT LINT
-\newcommand\ordereddata[0]{\hyperlink{def-ordered}{\xrightarrow{\asldata}}} % DO NOT LINT
-\newcommand\orderedpo[0]{\hyperlink{def-ordered}{\xrightarrow{\aslpo}}} % DO NOT LINT
-\newcommand\graphof[1]{\hyperlink{operator-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
-\newcommand\environof[1]{\hyperlink{operator-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
-\newcommand\WriteEffectop[1]{\WriteEffect\langle{#1}\rangle} % DO NOT LINT
-\newcommand\ReadEffectop[1]{\ReadEffect\langle{#1}\rangle} % DO NOT LINT
+\newcommand\orderedctrl[0]{\hyperlink{def-ordered}{\xrightarrow{\aslctrl}}}
+\newcommand\ordereddata[0]{\hyperlink{def-ordered}{\xrightarrow{\asldata}}}
+\newcommand\orderedpo[0]{\hyperlink{def-ordered}{\xrightarrow{\aslpo}}}
+\newcommand\graphof[1]{\hyperlink{relation-graphof}{\textfunc{graph}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\environof[1]{\hyperlink{relation-environof}{\textfunc{environ}}({#1})} % NO_SPECIFICATION_REQUIRED
+\newcommand\WriteEffectop[1]{\WriteEffect\langle{#1}\rangle}
+\newcommand\ReadEffectop[1]{\ReadEffect\langle{#1}\rangle}
 
-\newcommand\withgraph[3][H]{ {#2}(\hyperlink{operator-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
+\newcommand\withgraph[3][H]{ {#2}(\hyperlink{relation-withgraph}{\textfunc{graph}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
 \newcommand\withenviron[3][H]{ {#2}(\hyperlink{def-withenviron}{\textfunc{environ}}\mapsto{#3}) } % NO_SPECIFICATION_REQUIRED
 
-\newcommand\concatstrings[0]{\hyperlink{operator-stringconcat}{\mathbin{+}}}
-\newcommand\decimaltolitname[0]{\hyperlink{operator-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\concatstrings[0]{\hyperlink{relation-stringconcat}{\mathbin{+}}}
+\newcommand\decimaltolitname[0]{\hyperlink{relation-decimaltolit}{\textfunc{dec\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\decimaltolit[1]{\decimaltolitname\left(#1\right)} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\nvintop[1]{\nvint\left(#1\right)}
@@ -502,14 +605,11 @@
 \newcommand\overname[2]{\overbracket{#1}^{#2}}
 \newcommand\overtext[2]{\overbracket{#1}^{#2}}
 \newcommand\emptyfunc[0]{\hyperlink{def-emptyfunc}{{\OldEmptyset}_\lambda}}
-\newcommand\restrictfunc[2]{{#1}\hyperlink{def-restrictfunc}{|}_{#2}}
 \newcommand\COLON[0]{:}
 \newcommand\PIPE[0]{|}
 
 \newcommand\emptylist[0]{\hyperlink{constant-emptylist}{[\ ]}}
 \newcommand\Proseemptylist[1]{#1 is the empty list}
-\newcommand\choice[3]{\hyperlink{def-choice}{\textsf{choice}}(#1,#2,#3)}
-\newcommand\choicename[0]{\hyperlink{def-choice}{\textfunc{choice}}}
 \newcommand\equallength[0]{\hyperlink{def-equallength}{\textfunc{equal\_length}}}
 \newcommand\listrange[0]{\hyperlink{def-listrange}{\textfunc{indices}}}
 \newcommand\indicesop[1]{\hyperlink{def-listrange}{\textfunc{indices}}(#1)}
@@ -517,12 +617,17 @@
 \newcommand\unziplist[0]{\hyperlink{def-unziplist}{\textfunc{unzip}}}
 \newcommand\unziplistthree[0]{\hyperlink{def-unziplistthree}{\textfunc{unzip3}}}
 \newcommand\inlist[0]{\hyperlink{def-inlist}{\in}}
-\newcommand\uniquep[0]{\hyperlink{def-uniquep}{\textfunc{unique'}}}
-\newcommand\uniquelist[0]{\hyperlink{def-uniquelist}{\textfunc{unique}}}
-\newcommand\listset[0]{\hyperlink{def-listset}{\textfunc{list\_set}}}
-\newcommand\listprefix[0]{\hyperlink{def-listprefix}{\textfunc{prefix}}}
-\newcommand\stringofnatname[0]{\hyperlink{operator-stringofnat}{\texttt{string\_of\_nat}}}
+\newcommand\listset[1]{\hyperlink{def-listset}{\textfunc{list\_set}}\left({#1}\right)}
+\newcommand\bindings[1]{\hyperlink{relation-bindings}{\textfunc{bindings}}\left({#1}\right)}
+\newcommand\bindingstomap[1]{\hyperlink{def-bindingstomap}{\textfunc{bindings\_to\_map}}\left({#1}\right)}
+\newcommand\stringofnatname[0]{\hyperlink{relation-stringofnat}{\texttt{string\_of\_nat}}}
 \newcommand\stringofnat[1]{\stringofnatname(#1)}
+\newcommand\restrictmapop[3][H]{
+  {#2}\hyperlink{def-restrictfunc}{|}_{#3}
+}
+\newcommand\restrictfunc[2]{
+  {#1}\hyperlink{def-restrictfunc}{|}_{#2}
+}
 
 \newcommand\Ignore[0]{\hyperlink{def-ignore}{\underline{\;\;}}}
 \newcommand\Option[1]{\hyperlink{def-Option}{\textsf{Option}}\left({#1}\right)} % The optional type term
@@ -548,7 +653,9 @@
 \newcommand\partialto[0]{\hyperlink{def-partialfunc}{\rightharpoonup}}
 \newcommand\rightarrowfin[0]{\hyperlink{def-finfunction}{\rightarrow_{\text{fin}}}}
 \DeclareMathOperator{\dom}{\hyperlink{def-dom}{dom}}
+\newcommand\domop[1]{\dom\left({#1}\right)}
 \newcommand\sign[0]{\hyperlink{def-sign}{\texttt{sign}}}
+\newcommand\signop[1]{\sign\left({#1}\right)}
 \newcommand\positivesign[0]{\hyperlink{constant-positivesign}{\texttt{1}}}
 \newcommand\negativesign[0]{\hyperlink{constant-negativesign}{\texttt{-1}}}
 \newcommand\equalsign[0]{\hyperlink{constant-equalsign}{\texttt{0}}}
@@ -826,6 +933,7 @@
 \newcommand\typedSThrow[0]{\hyperlink{ast-typedSThrow}{\SThrow}}
 \newcommand\typedSliceLength[0]{\hyperlink{ast-typedSliceLength}{\SliceLength}}
 \newcommand\typedWellConstrained[0]{\hyperlink{ast-typedWellConstrained}{\WellConstrained}}
+\newcommand\typedLESetFields[0]{\hyperlink{ast-typedLESetFields}{\textsc{LE\_Set\_Fields}}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newcommand\precisionlossindicatorterm[0]{\hyperlink{ast-precisionlossindicator}{precision loss indicator}}
@@ -1051,6 +1159,7 @@
 \newcommand\Forbody[0]{\textsf{body}}
 \newcommand\Forlimit[0]{\textsf{limit}}
 \newcommand\EArrayLength[0]{\textsf{length}}
+\newcommand\EArrayEnum[0]{\textsf{enum}}
 \newcommand\EArrayLabels[0]{\textsf{labels}}
 \newcommand\EArrayValue[0]{\textsf{value}}
 \newcommand\callname[0]{\hyperlink{recordfield-callname}{\textsf{name}}}
@@ -1067,6 +1176,7 @@
 
 \newcommand\True[0]{\hyperlink{type-True}{\texttt{TRUE}}}
 \newcommand\False[0]{\hyperlink{type-False}{\texttt{FALSE}}}
+\newcommand\CheckResult[0]{\{\True\}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1117,6 +1227,7 @@
 \newcommand\nvstring[0]{\hyperlink{def-nvstring}{\texttt{String}}}
 \newcommand\nvlabel[0]{\hyperlink{def-nvlabel}{\texttt{Label}}}
 \newcommand\nvbitvector[0]{\hyperlink{def-nvbitvector}{\texttt{Bitvector}}}
+\newcommand\nvbitvectorop[1]{\nvbitvector\left(#1\right)}
 \newcommand\tint[0]{\hyperlink{type-tint}{\mathcal{Z}}}
 \newcommand\tbool[0]{\hyperlink{type-tbool}{\mathcal{B}}}
 \newcommand\treal[0]{\hyperlink{type-treal}{\mathcal{R}}}
@@ -1147,9 +1258,10 @@
 \newcommand\Write[0]{\hyperlink{type-Write}{\text{Write}}}
 \newcommand\Labels[0]{\hyperlink{type-Labels}{\mathcal{L}}}
 \newcommand\XGraphs[0]{\hyperlink{type-XGraphs}{\mathcal{G}}}
-\newcommand\WriteEffect[0]{\hyperlink{operator-writeeffect}{\textsf{WriteEffect}}}
-\newcommand\ReadEffect[0]{\hyperlink{operator-readeffect}{\textsf{ReadEffect}}}
-\newcommand\returnvarprefix[0]{\texttt{"return-"}} % DO NOT LINT
+\newcommand\WriteEffect[0]{\hyperlink{relation-writeeffect}{\textsf{WriteEffect}}}
+\newcommand\ReadEffect[0]{\hyperlink{relation-readeffect}{\textsf{ReadEffect}}}
+\newcommand\returnvarprefix[0]{\texttt{"return-"}}
+\newcommand\dotstr[0]{\texttt{"."}}
 \newcommand\emptyenv[0]{\hyperlink{def-emptyenv}{\OldEmptyset_{\mathbb{E}}}}
 
 \newcommand\ReturningConfig[0]{\hyperlink{def-returningconfig}{\texttt{\#R}}}
@@ -1200,11 +1312,6 @@
 \newcommand\annotaterel[0]{\hyperlink{def-annotaterel}{\textsf{type}}}
 \newcommand\typearrow[0]{\xrightarrow{\annotaterel}}
 
-\newcommand\dynamicdomain[0]{\hyperlink{def-dyndomain}{\textsf{dyn\_dom}}}
-
-\newcommand\isunconstrainedinteger[0]{\hyperlink{def-isunconstrainedinteger}{\textsf{is\_unconstrained\_integer}}}
-\newcommand\isparameterizedinteger[0]{\hyperlink{def-isparameterizedinteger}{\textsf{is\_parameterized\_integer}}}
-\newcommand\iswellconstrainedinteger[0]{\hyperlink{def-iswellconstrainedinteger}{\textsf{is\_well\_constrained\_integer}}}
 \newcommand\unconstrainedinteger[0]{\hyperlink{def-unconstrainedinteger}{\textsf{unconstrained\_integer}}}
 
 \newcommand\Prosecheckconstrainedinteger[2]{\hyperlink{relation-checkconstrainedinteger}{checking} that the type #2 is a \constrainedintegerterm\ in
@@ -1234,7 +1341,6 @@
 \newcommand\paramsofexpr[0]{\hyperlink{relation-paramsofexpr}{\textfunc{parameters\_of\_expr}}} % SPECIFIED
 \newcommand\paramsofconstraint[0]{\hyperlink{relation-paramsofconstraint}{\textfunc{parameters\_of\_constraint}}} % SPECIFIED
 \newcommand\addimmutableexpression[0]{\hyperlink{relation-addimmutableexpression}{\textfunc{add\_immutable\_expr}}} % SPECIFIED
-\newcommand\sort[0]{\hyperlink{def-sort}{\textfunc{sort}}} % SPECIFICATION_DEFERRED
 \newcommand\useexpr[0]{\hyperlink{relation-useexpr}{\textfunc{use\_e}}} % SPECIFICATION_DEFERRED
 \newcommand\uselexpr[0]{\hyperlink{relation-uselexpr}{\textfunc{use\_le}}} % SPECIFICATION_DEFERRED
 \newcommand\usestmt[0]{\hyperlink{relation-usestmt}{\textfunc{use\_s}}} % SPECIFICATION_DEFERRED
@@ -1248,9 +1354,6 @@
 \newcommand\puritygeq[0]{\hyperlink{def-puritygeq}{\geq_{\text{pure}}}}
 
 % Symbolic equivalence testing macros
-\newcommand\symmulexpr[0]{\hyperlink{def-symmulexpr}{\textfunc{sym\_mul\_expr}}}
-\newcommand\compareidentifier[0]{\hyperlink{def-compareidentifier}{\textfunc{compare\_identifier}}}
-
 \newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}} % NO_SPECIFICATION_REQUIRED
 
 \newcommand\ProseOrTypeErrorOrCannotBeTransformed[0]{\ProseTerminateAs{\CannotBeTransformed,\TypeErrorConfig}}
@@ -1265,12 +1368,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Primitive Operations macros
-\newcommand\binopsignatures[0]{\hyperlink{def-binopsignatures}{\textsf{binop\_signatures}}}
-\newcommand\binoparithsignatures[0]{\hyperlink{def-binoparithsignatures}{\textsf{arith\_signatures}}}
-\newcommand\binoprelsignatures[0]{\hyperlink{def-binoprelsignatures}{\textsf{rel\_signatures}}}
-\newcommand\binopboolsignatures[0]{\hyperlink{def-binopboolsignatures}{\textsf{bool\_signatures}}}
-\newcommand\binopstrsignatures[0]{\hyperlink{def-binopstrsignatures}{\textsf{str\_signatures}}}
-\newcommand\binopbitssignatures[0]{\hyperlink{def-binopbitssignatures}{\textsf{bits\_signatures}}}
 
 \newcommand\aslnotbool[0]{\hyperlink{def-notbool}{\text{not\_bool}}}
 \newcommand\andbool[0]{\hyperlink{def-andbool}{\text{and\_bool}}}
@@ -1337,6 +1434,8 @@
 \newcommand\elint[1]{\ELiteral(\LInt(#1))}
 \newcommand\AbbrevConstraintExact[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevConstraintRange[2]{\overbracket{#1..#2}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
+\newcommand\AbbrevConstraintRangeOp[3][H]{\overbracket{#2..#3}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
+\newcommand\AbbrevConstraintExactOp[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
 \newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
@@ -1707,11 +1806,10 @@
 \newcommand\Proseselectindicesbyslices[3]{\hyperlink{relation-selectindicesbyslices}{selecting}
   the integers from the list #1 specified by the list of indices #2 yields the list #3}
 
-\newcommand\filteroptionlist[0]{\hyperlink{def-filteroptionlist}{\textfunc{filter\_option\_list}}} % SPECIFICATION_DEFERRED
-
 % Symbolic domain subsumption
-\newcommand\CannotOverapproximate[0]{\hyperlink{constant-CannotOverapproximate}{\overline{\textsf{Approx}}}}
-\newcommand\CannotUnderapproximate[0]{\hyperlink{constant-CannotUnderapproximate}{\underline{\textsf{Approx}}}}
+\newcommand\CannotOverapproximate[0]{\hyperlink{type-CannotOverapproximate}{\overline{\textsf{Approx}}}}
+\newcommand\CannotUnderapproximate[0]{\hyperlink{type-CannotUnderapproximate}{\underline{\textsf{Approx}}}}
+% TODO: define a nicer approximation with a hashtag-style notation.
 \newcommand\symdomsubsettest[0]{\hyperlink{def-symdomsubsettest}{\textfunc{symdom\_subset\_test}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\Proseapproxconstraints[4]{\hyperlink{relation-approxconstraints}
   {Overapproximating} the list of constraints #3 in the static environment #1 with the \approximationdirectionterm\ #2
