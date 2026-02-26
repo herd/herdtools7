@@ -1128,7 +1128,7 @@ end
             is ;
             let lbl2instrs =
               Misc.group
-                (fun ((p1,_),_) ((p2,_),_) -> Proc.equal p1 p2)
+                (fun ((p1,_),_) ((p2,_),_) -> Proc.compare p1 p2)
                 lbl2instr in
             let open OutUtils in
             List.iter
