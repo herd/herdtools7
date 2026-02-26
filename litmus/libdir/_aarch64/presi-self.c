@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2019-present Institut National de Recherche en Informatique et */
+/* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -16,6 +16,7 @@
 /* Authors:                                                                 */
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
+#include <self.h>
 #include <presi-self.h>
 #include <find_ins.h>
 #include <string.h>

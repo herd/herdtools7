@@ -698,19 +698,10 @@ module Make
         end ;
         if do_self then begin
           let fname = "self" in
-<<<<<<< HEAD
           ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
           ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
-=======
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
-          O.o ("#include <" ^ fname  ^ ".h>") ;
-          O.o "" ;
-          (* Insert.insert O.o "self.c" ;
-          O.o "" *)
->>>>>>> 5935ed78c (squashed all commits to one)
         end
 
 
@@ -1430,15 +1421,9 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self || CfgLoc.need_prelude || U.label_in_outs env test then begin
-<<<<<<< HEAD
           let fname = "find_ins" in
           ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
           ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
-=======
-          let fname = "_find_ins" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
->>>>>>> 5935ed78c (squashed all commits to one)
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
           (*ObjUtil.insert_lib_file O.o "_find_ins.c" ;

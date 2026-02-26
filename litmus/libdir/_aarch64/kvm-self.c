@@ -16,6 +16,7 @@
 /* Authors:                                                                 */
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
+#include <self.h>
 #include <kvm-self.h>
 #include <find_ins.h>
 #include <../kvm-headers.h>
