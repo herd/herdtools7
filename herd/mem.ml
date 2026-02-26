@@ -187,7 +187,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | Speed.False -> false
       | Speed.True | Speed.Fast -> true
 
-  let _profile = C.debug.Debug_herd.profile_asl
+  let _profile = C.debug.Debug_herd.profile_mem
   let start_profile = if _profile then Sys.time else fun () -> 0.
   let end_profile = if _profile then end_profile else fun _ _ -> ()
 
@@ -892,6 +892,7 @@ let get_rf_value test read =
             assert false)
 
     let do_solve_regs test es csn =
+      profile "do_solve_regs" @@ fun () ->
       let wanted_final_values =
         if speedcheck then wanted_final_value test else Fun.const None
       in
@@ -914,6 +915,7 @@ let get_rf_value test read =
       with Contradiction -> None
 
     let solve_regs test es csn =
+      profile "solve_regs" @@ fun () ->
       match do_solve_regs test es csn with
       | Some (es, rfm, cns) as r ->
           if debug_solver && C.verbose > 0 then begin
@@ -1043,14 +1045,12 @@ let get_rf_value test read =
 
     let is_spec es e = E.EventSet.mem e es.E.speculated
 
-    let check_values cns store load =
+    let check_values solver_state store load =
       if not speedcheck then true else
         let v_written = get_written store and v_read = get_read load in
-        if not (V.equalityPossible v_written v_read) then false else
-          let eq = VC.Assign (v_read, VC.Atom v_written) in
-          match VC.solve (eq :: cns) with
-          | VC.NoSolns -> false
-          | VC.Maybe _ -> true
+        match VC.Hint.hint_solve_one solver_state v_read v_written with
+        | VC.NoSolns -> false
+        | VC.Maybe () -> true
 
 (* Consider all stores that may feed a load
    - Compatible location.
@@ -1070,6 +1070,7 @@ let get_rf_value test read =
         | OptAce.Iico ->
            let iico = U.iico es in
            fun load store -> not (E.EventRel.mem (load,store) iico) in
+      let solver_state = if speedcheck then VC.Hint.make_solver_state cns else VC.Hint.make_solver_state [] in
       let m =
         E.EventSet.fold
           (fun store map_load ->
@@ -1078,8 +1079,8 @@ let get_rf_value test read =
                 if
                   compat_locs store load &&
                   check_speculation es store load &&
-                  check_values cns store load &&
-                  ok load store
+                  ok load store &&
+                  check_values solver_state store load
                 then
                   load,S.Store store::stores
                 else c)

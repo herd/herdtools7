@@ -105,7 +105,7 @@ module type S =  sig
   val all_topos : bool (* verbose *)-> Elts.t -> t -> elt0 list list
 
 (* Strongly connected compoments, processed in inverse dependency order. *)
-  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> Elts.t -> t -> 'a
+  val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> elt0 list -> t -> 'a
 
 
 (* Is the parent relation of a hierarchy *)
@@ -245,10 +245,11 @@ module Make(O:MySet.OrderedType) : S
     let scan_nodes_rel kont kont_scc res nodes m =
       let dfs = dfs kont kont_scc m in
       let (res,_) =
-        Elts.fold
-          (fun n r -> let _,r = dfs n r in r)
+        List.fold_left
+          (fun r n -> let _,r = dfs n r in r)
+          (res,{id=0; visit=M.empty; stack=[];} )
           nodes
-          (res,{id=0; visit=M.empty; stack=[];} ) in
+      in
       res
   end
 
