@@ -297,6 +297,21 @@ module Make
         O.o "" ;
         ()
 
+(********************)
+(* Get Instructions *)
+(********************)
+
+
+      let dump_getinstrs test =
+        if has_instruction_ptr then begin
+          let fname = "instruction" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
+        end ;
+        UD.dump_getinstrs test
+
+
 (**********)
 (* Delays *)
 (**********)
@@ -2378,7 +2393,7 @@ module Make
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
         dump_header test ;
-        UD.dump_getinstrs test ;
+        dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
         let find_ins_inserted = dump_mbar_def () in

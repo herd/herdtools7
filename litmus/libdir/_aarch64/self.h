@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2019-present Institut National de Recherche en Informatique et */
+/* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -28,7 +28,7 @@ uint32_t cache_line_size;
 
 void selfbar(void *p);
 
-inline static void isync(void);
+void isync(void);
 
 void check_dic_idc(int need_dic, int need_idc);
 #endif
