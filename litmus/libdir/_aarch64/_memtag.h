@@ -13,6 +13,8 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifndef _MEMTAG_H
+#define _MEMTAG_H
 
 typedef enum
 { tag_check_Off = 0b0000,
@@ -22,3 +24,4 @@ typedef enum
 } tag_check_key;
 
 void mte_init(tag_check_key tag_check);
+#endif

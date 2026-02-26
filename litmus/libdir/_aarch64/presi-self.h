@@ -13,45 +13,14 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+/* Authors:                                                                 */
+/* Nikos Nikoleris, Arm Limited.                                            */
+/****************************************************************************/
+#ifndef PRESI_SELF_H
+#define PRESI_SELF_H
+void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
 
-/***********************************/
-/* Support for self-modifying code */
-/***********************************/
-#include <self.h>
+size_t code_size(ins_t *p,int skip);
 
-
-uint32_t getcachelinesize(void) {
-  uint64_t csz;
-  asm __volatile__ (
-                    "mrs %[r],CTR_EL0"
-                    :[r] "=&r" (csz)
-                    :
-                    :"cc","memory"
-                    );
-  uint64_t sz1 = csz & 0xf;
-  uint64_t sz2 = (csz >> 16 ) & 0xf;
-  uint32_t x = (uint32_t) (sz1 >= sz2 ? sz1 : sz2);
-  return (1 << x) * 4 ;
-}
-
-void selfbar(void *p) {
-  asm __volatile__
-    ("dc cvau,%[p]\n\t" "dsb ish\n\t" "ic ivau,%[p]\n\t" "dsb ish\n\t" "isb"
-     ::[p]"r"(p): "memory");
-}
-
-void isync(void) {
-  asm __volatile__ ("isb" ::: "memory");
-}
-
-void check_dic_idc(int need_dic, int need_idc) {
-  uint64_t ctr_el0;
-  asm volatile ("mrs %0, ctr_el0" : "=r" (ctr_el0));
-  int idc = (ctr_el0 >> 28) & 1;
-  int dic = (ctr_el0 >> 29) & 1;
-  if ((need_dic && !dic) || (need_idc && !idc)) {
-    fprintf(stderr, "Fatal error: hardware does not support the CacheType "
-            "feature IDC=%d, DIC=%d\n", need_idc, need_dic);
-    exit(0);
-  }
-}
+void code_init(void *code, void *src, size_t sz);
+#endif

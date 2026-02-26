@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2019-present Institut National de Recherche en Informatique et */
+/* Copyright 2015-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,7 +13,18 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#include <asm/processor.h>
-inline static tb_t read_timebase(void) {
-  return read_sysreg(cntpct_el0) ;
-}
+/**********************/
+/* User level barrier */
+/**********************/
+#ifndef BARRIER_H
+#define BARRIER_H 1
+
+typedef struct {
+  volatile int c,sense;
+  int n ;
+} sense_t;
+
+void barrier_init (sense_t *p,int n);
+
+void barrier_wait(sense_t *p);
+#endif

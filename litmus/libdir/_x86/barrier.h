@@ -13,8 +13,19 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-inline static tb_t read_timebase(void) {
-  uint32_t a,d; ;
-  asm __volatile__ ("rdtsc" : "=a" (a), "=d" (d)) ;
-  return ((tb_t)a) | (((tb_t)d)<<32);
-}
+/**********************/
+/* User level barrier */
+/**********************/
+#ifndef BARRIER_H
+#define BARRIER_H 1
+
+typedef struct {
+  volatile int c,sense ;
+  int n ;
+} sense_t ;
+
+
+void barrier_init(sense_t *p, int n);
+
+void barrier_wait(sense_t *p);
+#endif

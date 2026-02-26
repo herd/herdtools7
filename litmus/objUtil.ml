@@ -158,6 +158,9 @@ module Make(O:Config)(Tar:Tar.S) =
       close_in in_chan ;
       fnames
 
+(* Reference to the shared library *)
+    let libdir = "lib/"
+
 (* Copy lib file *)
     let cpy ?sub ?prf fnames name ext =
       do_cpy ?sub ?prf fnames ("_" ^ name) name ext
@@ -181,6 +184,9 @@ module Make(O:Config)(Tar:Tar.S) =
     | Android8 -> "_android8_affinity"
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
+
+(* Create shared library directory *)
+    let mk_libdir = MySys.mkdirp (Tar.outname libdir)
 
     let dump flags =
       let fnames = [] in
@@ -245,7 +251,7 @@ module Make(O:Config)(Tar:Tar.S) =
           let fnames = cpy fnames "kvm_timeofday" ".h" in
           let module I = Insert(O) in
           I.copy "kvm_timeofday.c" Tar.outname ;
-          I.copy "kvm-headers.h" Tar.outname ;
+          I.copy "kvm-headers.h" Tar.outname;
           fnames in
       let fnames =
         match O.mode with

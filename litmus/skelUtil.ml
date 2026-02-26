@@ -778,7 +778,7 @@ end
           end
 
         let dump_label_defs lbls =
-          O.f "#define %-25s 0" (instr_symb_id "UNKNOWN") ;
+          O.f "#define %-25s  0" (instr_symb_id "UNKNOWN") ;
           (* Define indices for labels *)
           List.iteri
             (fun i (p,lbl) ->
@@ -1098,7 +1098,7 @@ end
             O.o "/***************************/" ;
             O.o "/* Get instruction opcodes */" ;
             O.o "/***************************/" ;
-            O.o "" ;
+            O.o "" ; (* TODO: at some point, nop is a common instruction, so this should be separated and not declared static *)
             A.V.Instr.Set.iter
               (fun i -> D.dump i ; O.o "")
               is ;

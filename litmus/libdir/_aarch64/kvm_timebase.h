@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2015-present Institut National de Recherche en Informatique et */
+/* Copyright 2019-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,10 +13,10 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-
+#ifndef KVM_TIMEBASE_H
+#define KVM_TIMEBASE_H
+#include <asm/processor.h>
 inline static tb_t read_timebase(void) {
-  uint32_t a,d; ;
-  asm __volatile__ ("rdtsc" : "=a" (a), "=d" (d)) ;
-  tb_t r = ((tb_t)a) | (((tb_t)d)<<32);
-  return r ;
+  return read_sysreg(cntpct_el0) ;
 }
+#endif
