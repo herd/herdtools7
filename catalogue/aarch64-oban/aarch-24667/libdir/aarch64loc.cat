@@ -1,0 +1,39 @@
+(* Same General Purpose Register *)
+let same-gpr = [Rreg|Wreg]; loc; [Rreg|Wreg]
+
+(* Translation-intrinsically-before *)
+let tr-ib =
+  [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
+
+(* Notions of Same Location - PA, VA, and including Fault Effects *)
+let TTD-same-oa =  same-oa(TTD*TTD) 
+let MMU-Fault-valid-PA = MMU & AccessFlag & FAULT | MMU & Permission & FAULT
+let MMU-Fault-invalid-PA = MMU & Translation & FAULT
+let TTD-valid-OA = TTDV
+
+(* same Physical Address *)
+let same-pa =
+  loc
+  | [MMU-Fault-valid-PA]; (tr-ib^-1; TTD-same-oa; tr-ib) & same-low-order-bits
+  | (tr-ib^-1; TTD-same-oa; tr-ib) & same-low-order-bits; [MMU-Fault-valid-PA]
+
+(* Effect with valid PA *)
+let E-valid-PA = if "vmsa" then (range([TTD-valid-OA]; tr-ib) | TTD & M) else (M | DC.CVAU | IC)
+
+(* Same Location *)
+let same-loc =
+  [E-valid-PA & ~(Tag & M)]; same-pa; [E-valid-PA & ~(Tag & M)]
+  | [(Tag & M) | MMU-Fault-valid-PA]; same-pa; [(Tag & M) | MMU-Fault-valid-PA]
+  | [MMU-Fault-invalid-PA]; same-low-order-bits
+  | same-low-order-bits; [MMU-Fault-invalid-PA]
+let po-loc = po & same-loc
+
+(* Same-cache-line relation *)
+(* NOTE : currently assumes all locations are on different cache lines *)
+(*        also extends to IC without a location specified              *)
+let scl = loc
+  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
+  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
+ 
+let va-loc = ([Imp & TTD & R]; tr-ib; same-low-order-bits; tr-ib^-1; [Imp & TTD & R]) & loc
+let po-va-loc = po & va-loc

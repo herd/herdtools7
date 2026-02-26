@@ -1,0 +1,12 @@
+AArch64 coRR-PTE+AF
+Variant=vmsa
+TTHM=P1:HA
+{
+ [PTE(x)]=(oa:PA(x),valid:1,af:0);
+ 0:X1=PTE(x);
+ 1:X3=x;
+}
+ P0          | P1          ;
+ LDR X0,[X1] | LDR W4,[X3] ;
+ LDR X2,[X1] |             ;
+exists(0:X0=(oa:PA(x),valid:1,af:1) /\ 0:X2=(oa:PA(x),valid:1,af:0))
