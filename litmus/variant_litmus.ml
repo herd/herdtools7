@@ -20,6 +20,9 @@ type t =
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
+  | ExS  (* Enhanced Exception Synchronization *)
+  | EIS  (* Set SCTLR_EL1.EIS=1 when variant present *)
+  | EOS  (* Set SCTLR_EL1.EOS=1 when variant present *)
   | Telechat (* Telechat idiosyncrasies *)
   | SVE (* Do nothing *)
   | SME (* Do nothing *)
@@ -37,6 +40,9 @@ let (mode_variants, arch_variants) : t list * t list =
   | S128 -> S128
   | Mixed -> Mixed
   | Vmsa -> Vmsa
+  | ExS -> ExS
+  | EIS -> EIS
+  | EOS -> EOS
   | Telechat -> Telechat
   | SVE -> SVE
   | SME -> SME
@@ -50,7 +56,9 @@ let (mode_variants, arch_variants) : t list * t list =
   let base_modes =
     List.map f [NoInit; S128; Telechat]
   and archs =
-    List.map f [SVE; SME; Self; Mixed; Vmsa; Pac; FPac; ConstPacField; MemTag;]
+    List.map f
+      [SVE; SME; Self; Mixed; Vmsa; ExS; EIS; EOS; Pac; FPac; ConstPacField;
+       MemTag;]
   and mte_precisions =
     List.map (fun precision -> f (MTEPrecision precision)) Precision.all
   and fault_modes =
@@ -71,6 +79,9 @@ let parse s = match Misc.lowercase s with
 | "self" -> Some Self
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
+| "exs" -> Some ExS
+| "eis" -> Some EIS
+| "eos" -> Some EOS
 | "telechat" -> Some Telechat
 | "sve" -> Some SVE
 | "sme" -> Some SME
@@ -104,6 +115,9 @@ let pp = function
   | Mixed -> "mixed"
   | S128 -> "s128"
   | Vmsa -> "vmsa"
+  | ExS -> "exs"
+  | EIS -> "eis"
+  | EOS -> "eos"
   | Telechat -> "telechat"
   | FaultHandling p -> Fault.Handling.pp p
   | SVE -> "sve"
