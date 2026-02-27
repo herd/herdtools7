@@ -959,7 +959,7 @@ let max_set = IntSet.max_elt
       Name.name = t.name;
       Name.file = "";
       Name.texname = "";
-      Name.doc = t.com;
+      Name.doc = if O.metadata then t.com else "";
     } in
     let extra_data = match t.scopes with
       | None -> []
@@ -970,7 +970,7 @@ let max_set = IntSet.max_elt
           BellInfo.levels = None;
         })] in
     let core_dumper_t = {
-      MiscParser.info = t.info ;
+      MiscParser.info = if O.metadata then t.info else [] ;
       MiscParser.init = State.init_type_env_to_states t.init t.env ;
       MiscParser.prog = add_proc_to_prog t.prog ;
       filter = None ;
@@ -1017,20 +1017,25 @@ let tr_labs m init =
     init
 
 let basic_info scope prefetch com_edges cycle_description =
+  let append_key_string key value list =
+    match value with "" -> list | _ -> list @ [(key,value)] in
+  (* extract all the unique variants *)
   let variants =
     List.filter_map
     ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
-    Variant_gen.all_t in
-  List.filter_map Fun.id
-  ( ( if O.generator = "" then None else Some ("Generator", O.generator) )
-  :: Option.map ( fun st -> ("Scopes", BellInfo.pp_scopes st) ) scope
-  :: ( if variants = [] then None else Some ("Variant", String.concat " " variants) )
-  :: ( if O.variant Variant_gen.Self || prefetch = ""
-        then None else Some ("Prefetch", prefetch) )
-  :: Some ("Com", com_edges)
-  :: Some ("Orig", cycle_description)
-  :: [] )
+    Variant_gen.all_t
+    |> StringSet.of_list
+    |> StringSet.pp_id " " in
+  append_key_string "Generator" O.generator []
+  |> append_key_string "Scopes" (Option.map BellInfo.pp_scopes scope |> Option.value ~default:"")
+  |> append_key_string "Variant" variants
+  |> append_key_string "Prefetch" (if O.variant Variant_gen.Self then "" else prefetch)
+  |> append_key_string "Com" com_edges
+  |> append_key_string "Orig" cycle_description
 
+(* Merge user specified `info` with internal defined `info`.
+  The key is case inssensitive. Yet the final output result will
+  capitalise the first letter.*)
 let merge_info lhs rhs =
   let mk_map info =
     List.map ( fun (k,v) -> String.capitalize_ascii k,v ) info
