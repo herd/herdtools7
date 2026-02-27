@@ -818,17 +818,18 @@ module Make(O:Config) : Builder.S
                   obsc@cs,(m,f@fs),ios
                 else Warn.fatal "Last minute check"
               else  Warn.fatal "Too many procs" in
-            let f =
+            let empty_faults = (F.FaultAtomSet.empty,F.FaultAtomSet.empty) in
+            let fc flts =
               match O.cond with
               | Unicond ->
                   let evts =
                     List.map
                       (List.map (fun n -> n.C.evt))
                       splitted in
-                  F.run evts m
-              | Cycle -> F.check f
-              | Observe -> F.observe f in
-            (add_args env c,f (F.FaultSet.empty,F.FaultSet.empty)),
+                  F.run evts m flts
+              | Cycle -> F.check ~is_pos:true f flts
+              | Observe -> F.exist_true in
+            (add_args env c,fc empty_faults),
             (U.compile_prefetch_ios (List.length obsc) ios,
              U.compile_coms splitted),
             env
@@ -1006,7 +1007,6 @@ module Make(O:Config) : Builder.S
       let get_name t = t.name
       let set_name t n = { t with name=n; }
       let set_scope _t _sc = Warn.fatal "No scope for C"
-      let add_info t k i = { t with info = (k,i)::t.info; }
       let extract_edges t = t.edges
 
       let dump_c_test_channel chan t =
@@ -1019,7 +1019,7 @@ module Make(O:Config) : Builder.S
         (* Empty init *)
         dump_init chan t.prog ;
         dump_code chan t.prog ;
-        F.dump_final chan t.final ;
+        fprintf chan "%s" (ConstrGen.constraints_to_string F.pp_prop_atom t.final);
         ()
 
 (*

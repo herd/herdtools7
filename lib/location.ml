@@ -123,8 +123,8 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
         | r -> r
         end
     | Location_global a1, Location_global a2 -> A.global_compare a1 a2
-    | Location_reg _, (Location_global _) -> -1
-    | (Location_global _), Location_reg _ -> 1
+    | Location_reg _, (Location_global _) -> 1
+    | (Location_global _), Location_reg _ -> -1
 
     module OL = struct
       type t = location

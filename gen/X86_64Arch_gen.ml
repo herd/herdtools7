@@ -252,7 +252,6 @@ module Make
               | Symbolic_reg _ -> true
               | _ -> false
             let pp_reg = pp_reg
-            let pp_i _ = assert false
             let free_registers = allowed_for_symb
             type special = xmm
             type special2
