@@ -62,7 +62,7 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
 
   let add_init_check chk p o init =
     match chk,o with
-    | true,Some r -> (A.Reg (p,r),Some (A.S "-1"))::init
+    | true,Some r -> (A.Location.Location_reg (p,r),Some (A.S "-1"))::init
     | _,_ -> init
 
   type typ = Typ of TypBase.t | Array of TypBase.t * int
@@ -379,7 +379,7 @@ let max_set = IntSet.max_elt
                   | Some _ -> true | None -> false)
                 vs then
               let ws,w = split_last vs in
-              (match ws with [_] -> [] | _ -> ws),[A.Loc x, w]
+              (match ws with [_] -> [] | _ -> ws),[A.Location.Location_global x, w]
             else
               min_max vs,[]
       else
@@ -432,13 +432,13 @@ let max_set = IntSet.max_elt
         build_observers p i x vs in
 
     let cons_one x v fs =
-      let loc = A.Loc x in
+      let loc = A.Location.Location_global x in
       if StringMap.mem x env_wide then
         F.cons_vec loc v fs
       else if Array.length v > 0 then
         (* For MTE locations, we may have only a tag write and not an *)
         (* Ord write. We therefore need a length check here. *)
-        F.cons_int (A.Loc x) v.(0) fs
+        F.cons_int (A.Location.Location_global x) v.(0) fs
       else fs in
 
     (* add the value `v` of `loc` into the accumulator `k` *)
@@ -625,7 +625,7 @@ let max_set = IntSet.max_elt
               with Not_found -> C.evt_null in
             if C.OrderedEvent.compare all_lst lst.C.next.C.evt = 0
             then
-              i,code,F.cons_int_set (A.Loc x,IntSet.singleton v) f,st
+              i,code,F.cons_int_set (A.Location.Location_global x,IntSet.singleton v) f,st
             else
               let bank =
                 match bank with
@@ -668,7 +668,7 @@ let max_set = IntSet.max_elt
   let gather_final_oks p st =
     let npairs = A.get_noks st in
     if npairs > 0 then
-      [A.Loc (as_data (Code.myok_proc p)),IntSet.singleton npairs]
+      [A.Location.Location_global (as_data (Code.myok_proc p)),IntSet.singleton npairs]
     else []
 
   let do_memtag = O.variant Variant_gen.MemTag
@@ -770,7 +770,7 @@ let max_set = IntSet.max_elt
         let env =
           StringMap.fold
             (fun loc sz k ->
-              let aloc = A.Loc loc in
+              let aloc = A.Location.Location_global loc in
               assert (not (A.LocMap.mem aloc k)) ;
               let ty =
                 if StringSet.mem loc env_pair then O.typ
@@ -798,7 +798,7 @@ let max_set = IntSet.max_elt
         let typ = Typ typ in
           List.fold_left
             (fun m loc ->
-              let loc = A.Loc loc in
+              let loc = A.Location.Location_global loc in
               if A.LocMap.mem loc m then m
               else A.LocMap.add loc typ m)
             env globals in
@@ -834,7 +834,7 @@ let max_set = IntSet.max_elt
           get_faults (List.flatten splitted) in
         (* Add the all the pair in `last_ptes` into the post-condition `final_env` *)
         let f =
-          List.fold_left (fun f (x,p) -> F.cons_pteval (A.Loc x) p f) f last_ptes in
+          List.fold_left (fun f (x,p) -> F.cons_pteval (A.Location.Location_global x) p f) f last_ptes in
         (* `fc` converts faults `flts` and final values of registers `final_env` to final *)
         let fc flts =
           match O.cond with
@@ -876,7 +876,7 @@ let max_set = IntSet.max_elt
       List.fold_left
         ( fun (acc, prev_loc) (loc,v) ->
           let new_acc = match prev_loc,loc with
-            | Some (A.Reg(p1,_)),A.Reg(p2,_) when p1 = p2 ->
+            | Some (A.Location.Location_reg (p1,_)),A.Location.Location_reg (p2,_) when p1 = p2 ->
               begin match acc with
                 | [] -> assert false
                 | hd :: tail -> ((loc,v) :: hd) :: tail
@@ -898,7 +898,7 @@ let max_set = IntSet.max_elt
       let type_inits = List.map ( fun (loc, init_opt) ->
           let typing = match loc with
             (* NOT add typing information of `pte` to loc *)
-            | A.Loc l when Misc.is_pte l -> TestType.TyDef
+            | A.Location.Location_global l when Misc.is_pte l -> TestType.TyDef
             | _ -> A.LocMap.find_opt loc env
                     |> Option.map typ_to_testtype
                     |> Option.value ~default:TestType.TyDef in
