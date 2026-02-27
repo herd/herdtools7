@@ -130,7 +130,7 @@ module Make(V:Constant.S) = struct
       match p with
       | [] -> "void"
       | _::_ -> String.concat "," p in
-    LangUtils.dump_code_def chan false Mode.Std proc params ;
+    LangUtils.dump_code_def chan false false Mode.Std proc params ;
     do_dump
       (checkVal compile_val_fun)
       compile_addr_fun

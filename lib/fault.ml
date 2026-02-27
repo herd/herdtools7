@@ -26,6 +26,7 @@ module type I = sig
   type fault_type
   val pp_fault_type : fault_type -> string
   val fault_type_compare : fault_type -> fault_type -> int
+  val fault_type_matches : fault_type -> fault_type -> bool
 end
 
 type ('loc, 'ftype) atom =
@@ -142,7 +143,7 @@ module Make(A:I) =
       end &&
       begin match ftype0, ftype with
       | _, None -> true
-      | Some ft0, Some ft when ft0 = ft -> true
+      | Some ft0, Some ft when A.fault_type_matches ft0 ft -> true
       | _, _ -> false
       end &&
       begin match x0,x with

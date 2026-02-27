@@ -1,7 +1,7 @@
 Test R019 Allowed
 States 2
-[x]=42; [PTE(x)]=(oa:PA(x), af:0, db:0, dbm:1); Fault(P0,x,MMU:Permission);
-[x]=42; [PTE(x)]=(oa:PA(x), db:0, dbm:1); Fault(P0,x,MMU:Permission);
+[x]=42; [PTE(x)]=(oa:PA(x), af:0, db:0, dbm:1); Fault(P0,x,D-MMU:Permission);
+[x]=42; [PTE(x)]=(oa:PA(x), db:0, dbm:1); Fault(P0,x,D-MMU:Permission);
 Ok
 Witnesses
 Positive: 3 Negative: 6

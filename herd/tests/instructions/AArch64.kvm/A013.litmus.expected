@@ -1,6 +1,6 @@
 Test A013 Required
 States 1
- Fault(P0:L0,UndefinedInstruction); Fault(P0:L1,x,MMU:Translation); Fault(P0:L2,y,MMU:AccessFlag);
+ Fault(P0:L0,UndefinedInstruction); Fault(P0:L1,x,D-MMU:Translation); Fault(P0:L2,y,D-MMU:AccessFlag);
 Ok
 Witnesses
 Positive: 1 Negative: 0

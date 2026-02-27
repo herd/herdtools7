@@ -1487,19 +1487,30 @@ module Make(V:Constant.S)(C:Config) =
 
 (* Arithmetic *)
     let mov_const v r k =
-      let memo =
-        sprintf
-          (match v with
-            | V32 ->  "mov ^wo0,#%i"
-            | V64 ->  "mov ^o0,#%i"
-            | V128 -> assert false)
-          k in
-      { empty_ins with memo; outputs=[r;];
-        reg_env = ((match v with
-          | V32 -> add_w
-          | V64 -> add_q
-          | V128 -> assert false)
-        [r;])}
+      match r with
+      | ZR ->
+         let memo =
+           sprintf
+             (match v with
+             | V32 ->  "mov wzr,#%i"
+             | V64 ->  "mov xzr,#%i"
+             | V128 -> assert false)
+             k in
+         { empty_ins with memo};
+      | _ ->
+         let memo =
+           sprintf
+             (match v with
+             | V32 ->  "mov ^wo0,#%i"
+             | V64 ->  "mov ^o0,#%i"
+             | V128 -> assert false)
+             k in
+         { empty_ins with memo; outputs=[r;];
+           reg_env = ((match v with
+           | V32 -> add_w
+           | V64 -> add_q
+           | V128 -> assert false)
+           [r;])}
 
     let adr tr_lab r lbl =
       let _,lbl = dump_tgt tr_lab lbl in

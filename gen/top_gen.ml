@@ -940,6 +940,8 @@ let rec dump_pseudo = function
         (String.concat ","
            (List.map A.pp_reg args))::
       dump_pseudo rem
+  | A.Pagealign::_ -> assert false (* support for .pagealign not implemented yet*)
+  | A.Skip _::_ -> assert false (* used internally in herd7 only *)
 
 let fmt_cols =
   let rec fmt_col p k = function

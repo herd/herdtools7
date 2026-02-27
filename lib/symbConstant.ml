@@ -85,7 +85,7 @@ module Make
     | Symbolic (Virtual _) -> Access.VIR
     | Symbolic (Physical _) -> Access.PHY
     | Symbolic (TagAddr _) -> Access.TAG
-    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE
+    | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE DISide.Data
     | Symbolic (System (TLB,_)) -> Access.TLB
     | Tag _
     | ConcreteVector _|Concrete _|ConcreteRecord _

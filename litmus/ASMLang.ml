@@ -48,6 +48,12 @@ module RegMap = A.RegMap)
 
       let do_self = O.variant Variant_litmus.Self
 
+      let is_pte =
+        let open Mode in
+        match O.mode with
+        | Std|PreSi -> false
+        | Kvm -> true
+
       type arch_reg = Tmpl.arch_reg
       type t = Tmpl.t
 
@@ -401,7 +407,11 @@ module RegMap = A.RegMap)
              fprintf chan "\"%s_litmus_P%i%s_%i\\n%s\"\n" Tmpl.comment proc func k
                (if ins.Tmpl.comment then "" else "\\t")
           end;
-          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          if ins.Tmpl.align then
+            fprintf chan "\".align \" %s \"\\n\"\n" ins.Tmpl.memo
+          else
+            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins)
+          ;
           k + 1 in
         fprintf chan "\"%s%s\\n\"\n" (LangUtils.start_comment Tmpl.comment proc) func ;
         let _ = List.fold_left dump_ins 0 code in
@@ -409,7 +419,11 @@ module RegMap = A.RegMap)
 
       let dump_code_labels chan proc func code =
         let dump_ins k ins =
-          fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) ;
+          if ins.Tmpl.align then
+            fprintf chan "\".align \" %s \"\\n\"\n" ins.Tmpl.memo
+          else
+            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins)
+          ;
           k + 1 in
         fprintf chan "\"%s%s:\\n\"\n" (LangUtils.start_label proc) func ;
         let _ = List.fold_left dump_ins 0 code in
@@ -647,7 +661,8 @@ module RegMap = A.RegMap)
         let params =
           String.concat ","
             (params0@labels@instrs@addrs@ptes@phys@ptevals@parel1s@cpys@outs) in
-        LangUtils.dump_code_def chan O.noinline O.mode proc params ;
+        let pagealign = do_self && is_pte in
+        LangUtils.dump_code_def chan O.noinline pagealign O.mode proc params ;
         do_dump
           args0
           (compile_init_val_fun globEnv ptevalEnv parel1Env)
