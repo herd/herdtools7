@@ -1089,7 +1089,6 @@ include
         | _ -> false
 
       let pp_reg = pp_reg
-      let pp_i = pp_i
       let free_registers = allowed_for_symb
 
       type special = reg

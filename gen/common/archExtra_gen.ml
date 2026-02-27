@@ -31,7 +31,6 @@ module type I = sig
   val specials : special list
   val specials2 : special2 list
   val specials3 : special3 list
-  val pp_i : int -> string
   module Value:Value_gen.S with type atom = arch_atom
 end
 
@@ -41,16 +40,14 @@ module type S = sig
   type arch_reg
 
   module Value : Value_gen.S with type atom = arch_atom
+  module Location : Location.S with type loc_reg = arch_reg and type loc_global = string
 
 (* Locations *)
-  type location =
-    | Reg of Code.proc * arch_reg
-    | Loc of string
+  type location = Location.location
 
   val of_loc : Code.loc -> location
   val of_reg : Code.proc -> arch_reg -> location
 
-  val pp_i : int -> string
   val pp_location : location -> string
   val pp_location_brk : location -> string
   val location_compare : location -> location -> int
@@ -124,50 +121,42 @@ and module Value := I.Value
   type arch_reg = I.arch_reg
   type arch_atom = I.arch_atom
 
-  type location =
-    | Reg of int * arch_reg
-    | Loc of string
-
   let pp_symbol loc =
     match Misc.tr_pte loc with
     | Some s -> Misc.pp_pte s
     | None -> loc
 
-  let pp_location = function
-    | Reg (i,r) ->
-        if I.is_symbolic r then I.pp_reg r
-        else sprintf "%i:%s" i (I.pp_reg r)
-    | Loc loc when Misc.tr_pte loc <> None
-      -> sprintf "[%s]" (pp_symbol loc)
-    | Loc loc -> pp_symbol loc
+  module Location = Location.Make(
+    struct
+      type arch_reg = I.arch_reg
+      let pp_reg = I.pp_reg
+      let reg_compare = compare
 
-  let pp_location_brk = function
-    | Reg (i,r) ->
-        if I.is_symbolic r then I.pp_reg r
-        else sprintf "%i:%s" i (I.pp_reg r)
-    | Loc loc -> sprintf "[%s]" (pp_symbol loc)
+      type arch_global = string
+      let pp_global loc =
+        if Misc.tr_pte loc <> None then
+          sprintf "[%s]" (pp_symbol loc)
+        else loc
+      let global_compare loc1 loc2 =
+        (* order `x` before `pte(x)` before `y` *)
+        match Misc.tr_pte loc1, Misc.tr_pte loc2 with
+        | None, None -> compare loc1 loc2
+        | Some pte1, Some pte2 -> compare pte1 pte2
+        | Some pte1, None ->
+          let result = compare pte1 loc2 in
+          if result = 0 then 1 else result
+        | None, Some pte2 ->
+          let result = compare loc1 pte2 in
+          if result = 0 then -1 else result
+    end)
 
-  let pp_i = I.pp_i
+  type location = Location.location
 
-  let location_compare loc1 loc2 = match loc1,loc2 with
-  | Reg _,Loc _ -> 1
-  | Loc _,Reg _ -> -1
-  | Reg (p1,r1),Reg (p2,r2) ->
-    begin match Misc.int_compare p1 p2 with
-    | 0 -> compare (I.pp_reg r1) (I.pp_reg r2)
-    | r -> r
-    end
-  | Loc loc1, Loc loc2 ->
-    (* order `x` before `pte(x)` before `y` *)
-    match Misc.tr_pte loc1, Misc.tr_pte loc2 with
-    | None, None -> compare loc1 loc2
-    | Some pte1, Some pte2 -> compare pte1 pte2
-    | Some pte1, None ->
-      let result = compare pte1 loc2 in
-      if result = 0 then 1 else result
-    | None, Some pte2 ->
-      let result = compare loc1 pte2 in
-      if result = 0 then -1 else result
+  let pp_location = Location.pp_location
+
+  let pp_location_brk = Location.pp_location_brk
+
+  let location_compare = Location.location_compare
 
   module Value = I.Value
 
@@ -179,8 +168,8 @@ and module Value := I.Value
   module LocSet = MySet.Make(LocOrd)
   module LocMap = MyMap.Make(LocOrd)
 
-  let of_loc loc = Loc (Code.as_data loc)
-  let of_reg p r = Reg (p,r)
+  let of_loc loc = Location.Location_global (Code.as_data loc)
+  let of_reg p r = Location.Location_reg (p,r)
 
   (* - S of a plain value, a pte_* address or a phy_* address
      - P of a PteVal *)
@@ -228,19 +217,19 @@ and module Value := I.Value
       (* Add the locs `loc` and values `v` inside `iv` to `i` *)
       List.fold_left
         (fun env (loc,v) ->
-          if Misc.is_pte loc then (Loc loc,Some (P (Value.to_pte v)))::env
+          if Misc.is_pte loc then (Location.Location_global loc,Some (P (Value.to_pte v)))::env
           (* Do not include if the value is default zero *)
           else if Value.to_int v = 0 then env
-          else (Loc loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
+          else (Location.Location_global loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
         ) i iv in
     let already_here =
       List.fold_left
         (fun k (loc,v) ->
           let k = match loc with
           (* Add Loc `s` into `k` if `s` is not a pte address nor a number *)
-          | Loc s -> add_some (as_virtual s) k
+          | Location.Location_global s -> add_some (as_virtual s) k
           (* No process on register *)
-          | Reg _  -> k in
+          | Location.Location_reg _  -> k in
           let k = match v with
           (* Add value `s` into `k` if `s` is not a pte nor a number *)
           | Some (S s) -> add_some (as_virtual s) k
@@ -252,9 +241,9 @@ and module Value := I.Value
         (fun k (loc,v) ->
           let k = match loc with
           (* Add Loc `s` into `k` if `s` is a pte or physical address *)
-          | Loc s -> add_some (refers_virtual s) k
+          | Location.Location_global s -> add_some (refers_virtual s) k
           (* No process on register *)
-          | Reg _ -> k in
+          | Location.Location_reg _ -> k in
           let k = match v with
           (* Add value `s` into `k` if `s` is a pte or physical address *)
           | Some (S s) -> add_some (refers_virtual s) k
@@ -267,7 +256,7 @@ and module Value := I.Value
        then add it into init state `i` *)
     let i =
       StringSet.fold
-        (fun x i -> (Loc x,None)::i)
+        (fun x i -> (Location.Location_global x,None)::i)
         (StringSet.diff refer already_here)
         i in
     i
@@ -310,7 +299,7 @@ and module Value := I.Value
 
   let used_register init =
     List.filter_map ( function
-      | (Reg (_,r),Some _) -> Some r
+      | (Location.Location_reg (_,r),Some _) -> Some r
       | _ -> None ) init
 
   let remove_reg_allocator st remove =
