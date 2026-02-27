@@ -680,49 +680,40 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let r,e = es.E.po in
         (r,E.EventRel.transitive_closure e) in
 
-      let af0 = (* locations with initial spurious update *)
+      let add_setaf =
         if
           match C.dirty with
           | None -> false
           | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
-        then begin (* One spurious update per observed pte (final load) *)
-            if C.variant Variant.PhantomOnLoad then
-              let look_pt rloc k = match rloc with
-                | ConstrGen.Loc (A.Location_global (V.Val c as vloc))
-                when Constant.is_pt c -> vloc::k
-                | _ -> k in
-              A.RLocSet.fold look_pt test.Test_herd.observed []
-            else (* One spurious update per variable not accessed initially *)
-              let add_setaf0 k (loc,v) =
-                match loc with
-                | A.Location_global (V.Val c as vloc) ->
-                   if Constant.is_pt c then
-                     match v with
-                     | V.Val (Constant.PteVal p)
-                           when not (V.Cst.PteVal.is_af p) ->
-                        vloc::k
-                     | _ -> k
-                   else k
-                | _ -> k in
-              List.fold_left add_setaf0 [] env0
-        end else [] in
-
-      let show_af = function
-        | (_,es) ->
+        then
+          fun (_,es) ->
             let locs =
               E.EventSet.fold
                 (fun e k ->
                    match SM.can_unset_af_loc e with
                    | None -> k
                    | Some loc -> loc::k)
-                es.E.events [] in
-            begin
-              match locs with
-              | [] -> ()
-              | _ ->
-                  Printf.eprintf "locs: %s\n%!"
-                    (List.map A.V.pp_v locs |> String.concat ",")
-            end in
+                es.E.events []
+              |> Misc.group V.compare in
+            let om =
+              Misc.fold_suffix_cross_gen
+                (fun xs m ->
+                   List.fold_left
+                     (fun m x -> EM.(|||) (SM.spurious_setaf x) m)
+                     m xs)
+                (EM.unitT ())
+                locs
+                (fun m1 o2 ->
+                   (* Without this trick, the execution with
+                      no spurious update will present twice. *)
+                   match o2 with
+                   | None -> Some m1
+                   | Some m2 -> Some (EM.altT m1 m2))
+                None in
+            match om with
+            | None -> EM.unitT ()
+            | Some m -> m
+        else fun _ -> EM.unitT () in
                 
       let rec index xs i = match xs with
       | [] ->
@@ -736,11 +727,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
       let r =
-        Misc.fold_subsets_gen
-          (fun vloc -> EM.(|||) (SM.spurious_setaf vloc))
-          (EM.unitT ()) (ignore af0; [])
-          (fun maf0 ->
-            EM.get_output show_af (set_of_all_instr_events (EM.(|||) maf0)))
+        EM.get_output_check
+          add_setaf
+          (set_of_all_instr_events (EM.(|||) (EM.unitT ())))
           [] in
       let r = match C.maxphantom with
         | None -> r

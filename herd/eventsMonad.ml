@@ -1733,14 +1733,25 @@ Monad type:
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-    let get_output check et k =
+    let get_output_check check et k =
       let ((_,eiid),(es,_)) = et (0,0) in
-      Printf.eprintf "Final: %i\n%!" eiid ;
       List.fold_left
-        (fun k (_,vcl,evts) ->
-           check (vcl,evts) ;
-          (vcl,evts)::k)
-        k (Evt.elements es)
+        (fun (eiid,k) (_,vcl,evts) ->
+           let m = check (vcl,evts) in
+           let eiid,(acts,_) = m eiid in
+           let k =
+             Evt.fold
+               (fun (_,cls0,es0) k ->
+                  let evts = E.union_comp es0 evts
+                  and vcl = cls0@vcl in
+                  (vcl,evts)::k)
+               acts k in
+           eiid,k)
+        ({ id=eiid; sub=0; },k)
+        (Evt.elements es)
+      |> snd
+
+    let get_output et k = get_output_check (fun _ -> unitT ()) et k
 
     let force_once (m : 'a t) : 'a t =
       let res = ref None in
