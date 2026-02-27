@@ -2171,6 +2171,20 @@ module Make
             O.oi "zyva_t *a = (zyva_t*)_a;" ;
             O.oi "int id = a->id;" ;
           end;
+        if do_self then begin
+          let cache_type = CacheType.get test.T.info in
+          let needs_dic, needs_idc =
+            let open CacheType in
+            match cache_type with
+            | None -> (fun _ -> false), (fun _ -> false)
+            | Some cache_type -> cache_type.dic, cache_type.idc in
+          begin match forall_procs test needs_dic, forall_procs test needs_idc with
+          | Some dic, Some idc ->
+              O.fi "check_dic_idc(%d, %d);" (if dic then 1 else 0)
+                (if idc then 1 else 0)
+          | _ -> ()
+          end
+        end ;
         O.oi "global_t *g = a->g;" ;
         if Cfg.is_kvm then begin
           begin
