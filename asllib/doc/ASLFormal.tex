@@ -111,7 +111,7 @@ The function $\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}$ retu
   The \emph{empty set} --- the set that does not contain any element --- is denoted as \RenderConstant{empty_set}.
 \end{definition}
 
-\hypertarget{relation-cardinality}{}
+\texthypertarget{relation-cardinality}
 \begin{definition}[Set Cardinality]
   For a set $S$, the notation $\cardinality{S}$ stands for the number of elements in $S$.
 \end{definition}
@@ -149,8 +149,8 @@ and the reflexive-transitive closure of $E$ by $\graphtransitivereflexive{E}$.
 We use the symbol \RenderConstant{bot} to denote an undefined, or missing, value.
 \end{definition}
 
-\hypertarget{def-partialfunc}{}
-\hypertarget{def-dom}{}
+\texthypertarget{def-partialfunc}
+\texthypertarget{def-dom}
 \begin{definition}[Partial Function\label{def:PartialFunction}]
   A \emph{partial function}, denoted $f : A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
   The \emph{domain} of a partial function $f$, denoted $\dom(f)$, is the subset of $A$ for which it is defined.
@@ -175,6 +175,7 @@ The notation $\rightarrowfin$ stands for a function whose domain is finite.
 The function with an empty domain is denoted as $\emptyfunc$.
 \end{definition}
 
+\texthypertarget{def-mapupdate}
 \begin{definition}[Function Update\label{def:FunctionUpdate}]
   The function denoted as $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
   to $v$. That is, if  $g = f[x \mapsto v]$ then
@@ -293,8 +294,8 @@ The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \righ
 \]
 \end{definition}
 
-\hypertarget{relation-concatlist}{}
-\begin{definition}[Concatenation of a List of Lists]
+\begin{definition}[Flattening a List of Lists]
+\texthypertarget{relation-concatlist}
 The parametric function
 \[
 \concatlist{\KleeneStar{\left(\KleeneStar{T}\right)}} \rightarrow \KleeneStar{T}
@@ -478,8 +479,8 @@ concatenates two strings. %
 We slightly abuse notation by using the same symbol $\concat$ for concatenating
 a string $S$ and an integer $n$, separated by a hyphen, for example, \verb|return-42|.
 
-\hypertarget{relation-stringofnat}{}
-The function $\stringofnatname : \N \rightarrow \Strings$ converts a natural number
+\hypertarget{relation-stringofint}{}
+The function $\stringofintname : \Z \rightarrow \Strings$ converts an integer number
 to the corresponding decimal string.
 
 \subsection{OCaml-style Notations}

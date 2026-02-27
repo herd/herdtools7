@@ -3,6 +3,7 @@
 open Format
 open AST
 open LayoutUtils
+module StringMap = Map.Make (String)
 
 let regex_underscore = Str.regexp_string "_"
 let regexp_spaces_segment = Str.regexp "[ \t]+"
@@ -72,12 +73,27 @@ let elem_name_to_math_macro elem_name =
 let pp_comma = fun fmt () -> fprintf fmt ", "
 let pp_noop = fun _fmt () -> ()
 
+let substitute template bindings =
+  let substitutions_map =
+    List.fold_left
+      (fun acc_map (var_str, replacement) ->
+        let template_var = spec_var_to_template_var var_str in
+        StringMap.add template_var replacement acc_map)
+      StringMap.empty bindings
+  in
+  let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+  Utils.string_replace_all template_var_regexp
+    (fun var ->
+      match StringMap.find_opt var substitutions_map with
+      | Some replacement -> replacement
+      | None -> var)
+    template
+
 (** [substitute_spec_vars_by_latex_vars math_mode s vars] returns a string [s]
     with every instance of [{my_var}] substituted by [\texttt{my\_var}]. If
     [math_mode] is true [{my_var}] is substituted by [$\texttt{my\_var}$]. This
     makes the returned string suitable to typesetting with LaTeX. *)
 let substitute_spec_vars_by_latex_vars ~math_mode str vars =
-  let module StringMap = Map.Make (String) in
   (* Create a map from template variables to LaTeX variables
     to make replacement efficient. *)
   let substitutions_map =
@@ -282,3 +298,13 @@ let pp_fields pp_field_name pp_field_value fmt (fields, layout) =
         (PP.pp_sep_list ~sep:", " pp_field)
         fmt fields_values_with_layouts
   | Unspecified -> assert false
+
+(** [pp_itemized_list pp_elem fmt elements] formats a LaTeX itemized list of
+    [elements], where each element is formatted using [pp_elem]. *)
+let pp_itemized_list pp_elem fmt elements =
+  let pp_item pp_elem fmt element = fprintf fmt "\\item %a" pp_elem element in
+  fprintf fmt "@[<v>\\begin{itemize}@;<0 2>%a@;<0 0>\\end{itemize}@]"
+    (pp_print_list
+       ~pp_sep:(fun fmt () -> fprintf fmt "@;<0 2>")
+       (pp_item pp_elem))
+    elements

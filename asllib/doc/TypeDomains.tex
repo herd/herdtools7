@@ -36,7 +36,7 @@ Expressions appearing in types are guaranteed to be side-effect-free by the
 function $\annotatetype$.
 %
 Evaluation is defined by the relation $\evalexprsef\empty$,
-which evaluates side-effect-free expressions and either returns
+which evaluates \sideeffectfreeexpressionsterm{} and either returns
 a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
@@ -45,7 +45,7 @@ In the latter case (which can occur if, for example, an expression attempts to d
 \texttt{8} by \texttt{0}), a \DynamicErrorConfigurationTerm{}, for which we use the notation
 $\DynErrorConfig$, is returned.
 %
-The dynamic domain is empty in cases where evaluating side-effect-free expressions
+The dynamic domain is empty in cases where evaluating \sideeffectfreeexpressionsterm{}
 results in a \DynamicErrorConfigurationTerm{}.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.

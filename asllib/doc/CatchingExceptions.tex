@@ -1,14 +1,15 @@
 \chapter{Catching Exceptions\label{chap:CatchingExceptions}}
 
+\texthypertarget{def-catcherterm}
 Catchers can be used to process thrown exceptions.
-ASL allows specifying a list of \emph{catch clauses}.
-Each catch clause starts with the \Twhen{} keyword,
+ASL allows specifying a list of \emph{\catchersterm{}}.
+Each \catcherterm{} starts with the \Twhen{} keyword,
 and specifies when an exception
 should be caught (based on its type), and a statement to be executed
 when an exception has been caught.
-A final optional \Totherwise{} clause
+A final optional \Totherwise{} \catcherterm{}
 catches all exceptions that have not been caught
-by a preceding catch clause.
+by a preceding \catcherterm{}.
 
 \ExampleDef{Exception Catchers}
 \listingref{CatchingExceptions} shows examples of catching exceptions.
@@ -86,11 +87,11 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \RenderRelation{annotate_catcher}
 
 \TypingRuleDef{Catcher}
-\ExampleDef{Annotating Catch Clauses}
+\ExampleDef{Annotating Catchers}
 \listingref{annotate-catcher} shows a \trystatementterm{}
-with catch clauses for unnamed exception values for the exception types \verb|ExceptionType1| and \verb|ExceptionType3|,
-and a catch clause for the named exception value for the exception type \verb|ExceptionType2|.
-\ASLListing{Annotating catch clauses}{annotate-catcher}{\typingtests/TypingRule.Catcher.asl}
+with \catchersterm{} for unnamed exception values for the exception types \verb|ExceptionType1| and \verb|ExceptionType3|,
+and a \catcherterm{} for the named exception value for the exception type \verb|ExceptionType2|.
+\ASLListing{Annotating catcher}{annotate-catcher}{\typingtests/TypingRule.Catcher.asl}
 
 \ProseParagraph
 \OneApplies
@@ -168,9 +169,9 @@ We refer to the block statement in a
 \trystatementterm{} as the \emph{try-block statement}.
 When the try-block statement is evaluated, it may call a function that updates
 the global environment. If evaluation of the \texttt{try} block raises an exception that is caught,
-either by a \texttt{catch} clause or an \texttt{otherwise} clause,
-the statement associated with that clause, which we will refer to as the clause statement, is evaluated.
-It is important to evaluate the clause statement in an environment that includes any updates
+either by a \catcherterm{} specified via \texttt{catch} or a \catcherterm{} specified via \texttt{otherwise},
+the statement associated with that \catcherterm{}, which we will refer to as the \catcherterm{} statement, is evaluated.
+It is important to evaluate the \catcherterm{} statement in an environment that includes any updates
 to the global environment made by evaluating the try-block statement.
 %
 We demonstrate this with the following example.
@@ -184,7 +185,7 @@ Notice that the call to \verb|update_and_throw| binds \texttt{g} to $1$ before r
 Therefore, evaluating the call to \verb|update_and_throw| returns a configuration
 of the form
 $\Throwing(\Ignore, \Ignore, \Ignore, \envthrow)$ where $\envthrow$ binds \texttt{g} to $1$.
-When the catch clause is evaluated, the semantics takes the global environment from $\envthrow$
+When the \catcherterm{} is evaluated, the semantics takes the global environment from $\envthrow$
 to account for the update to \texttt{g} and the local environment from $\env$ to account for the
 updates to the local environment in \texttt{main}, which binds \texttt{x} to $2$.
 The evaluation uses this environment to evaluate \texttt{print(x, g)}, resulting in the output \texttt{2 1}.
@@ -300,7 +301,7 @@ Otherwise
     \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
         and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
-        (that is, neither of the \texttt{catch} clauses matches the raised exception);
+        (that is, neither of the \catchersterm{} matches the raised exception);
   \item evaluating the \texttt{otherwise} statement $\vs$ in $\envtwo$ as a block (\SemanticsRuleRef{Block})
         does not yield an error configuration $C$\ProseOrDynErrorDiverging;
   \item $\newg$ is the ordered composition of $\sg$ and the graph of $C$,
@@ -329,9 +330,9 @@ Otherwise
 \SemanticsRuleDef{CatchNone}
 \ExampleDef{Evaluation of an Uncaught Exception}
 The specification in \listingref{semantics-catchnone} does not print anything.
-It shows how a \texttt{try} statement (the inner one) may not have a \texttt{catch} clause
+It shows how a \texttt{try} statement (the inner one) may not have a \catcherterm{}
 that matches the exception type (\texttt{MyExceptionType1}).
-\ASLListing{A catch clause that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
+\ASLListing{A catcher that does not match a thrown exception type}{semantics-catchnone}{\semanticstests/SemanticsRule.CatchNone.asl}
 
 \ProseParagraph
 \AllApply
@@ -341,8 +342,8 @@ that matches the exception type (\texttt{MyExceptionType1}).
   \item $\envthrow$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denvthrow$;
   \item finding the first catcher with the \staticenvironmentterm{} $\tenv$, the exception type $\vvty$,
   and the list of catchers $\catchers$ gives a catcher that declares the name $\name$ and gives $\None$
-  (that is, neither of the \texttt{catch} clauses matches the raised exception);
-  \item since there is no \texttt{otherwise} clause, the result is $\sm$.
+  (that is, neither of the \catchersterm{} matches the raised exception);
+  \item since there is no \texttt{otherwise} \catcherterm{}, the result is $\sm$.
 \end{itemize}
 \FormallyParagraph
 \BackupOriginalRule{
@@ -392,13 +393,13 @@ No exception raised
 \SemanticsRuleDef{FindCatcher}
 \RenderRelation{find_catcher}
 
-\ExampleDef{Finding a Catch Clause}
-In \listingref{annotate-catcher}, the second catch clause --- for the exception type ExceptionType2
+\ExampleDef{Finding a Catcher}
+In \listingref{annotate-catcher}, the second \catcherterm{} --- for the exception type ExceptionType2
 is matched for the type of the exception value thrown by \verb|update_and_throw|.
 
-In \listingref{catcher-not-found}, no catch clause is matched for the type of the exception value thrown by \verb|update_and_throw|,
+In \listingref{catcher-not-found}, no \catcherterm{} is matched for the type of the exception value thrown by \verb|update_and_throw|,
 resulting in a \dynamicerrorterm{}.
-\ASLListing{Looking for a catch clause and failing to find one}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
+\ASLListing{Looking for a catcher and failing to find one}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
 
 \ProseParagraph
 \OneApplies

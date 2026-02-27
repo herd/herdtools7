@@ -9,6 +9,12 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  55,56c55,56
+  <     \item equating ``empty prose for \texttt{num\_plus}'' to \texttt{c} yields ;
+  <     \item ``empty prose for \texttt{assign}'';
+  ---
+  >     \item equating <empty prose for \texttt{num\_plus}> to \texttt{c} yields ;
+  >     \item <empty prose for \texttt{assign}>;
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
@@ -24,6 +30,7 @@
 
   $ aslspec unmatched_prose_var.spec
   Specification Error: The prose template 'transforms {a} to {b}' contains the following unmatched variables: {b}
+  While checking: transform_description_unmatched_b
   [1]
 
 # Check that all type terms are well-formed
@@ -57,6 +64,6 @@
   While checking: B
   [1]
   $ aslspec relation_unnamed_arguments.bad
-  Specification Error: The term Num in relation 'unnamed_arg_has_rule' is either not named or names provides names in at different sub-term levels.
+  Specification Error: The term Num in relation 'unnamed_arg_has_rule' does not provide a name for at least one of its sub-terms.
   [1]
   $ aslspec constants.spec

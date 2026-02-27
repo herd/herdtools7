@@ -3,6 +3,14 @@ open ASTUtils
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
+type type_env = Term.t StringMap.t
+(** A type environment mapping variable names to their inferred types. *)
+
+type term_at_case = string * Term.t
+(** A term associated with a given case element. *)
+
+type type_case_table = term_at_case list StringMap.t
+
 (* A variable for discarding of values. *)
 let ignore_var = "_"
 let is_ignore_var id = String.equal id ignore_var
@@ -729,6 +737,41 @@ module ExpandRules = struct
       [ { name_opt = None; judgments = [] } ]
 end
 
+let filter_rule_for_path { Relation.name; rule_opt } path_str =
+  let open Rule in
+  let path = Str.split (Str.regexp_string ".") path_str in
+  let rec filter_rule_elements rule_elements path =
+    match (rule_elements, path) with
+    | _, [] -> rule_elements
+    | [], _ ->
+        let msg =
+          Format.asprintf
+            "Case '%s' does not exist in rule for relation '%s' for path '%s'."
+            path_str name path_str
+        in
+        failwith msg
+    | Rule.Judgment judgment :: rest, _ ->
+        Rule.Judgment judgment :: filter_rule_elements rest path
+    | Rule.Cases cases :: rest, case_name :: path_tail -> (
+        match
+          List.find_opt (fun { name } -> String.equal name case_name) cases
+        with
+        | Some { elements = case_elements; _ } ->
+            let filtered_case_elements =
+              filter_rule_elements case_elements path_tail
+            in
+            filtered_case_elements @ filter_rule_elements rest []
+        | None ->
+            let msg =
+              Format.asprintf
+                "Case name '%s' not found in rule for relation '%s' for path \
+                 '%s'."
+                case_name name path_str
+            in
+            failwith msg)
+  in
+  filter_rule_elements (Option.get rule_opt) path
+
 module Check = struct
   (** [check_layout term layout] checks that the given [layout] is structurally
       consistent with the given [term]. If not, raises a [SpecError] describing
@@ -874,17 +917,38 @@ module Check = struct
   (** A module for checking that each prose template string ([prose_description]
       and [prose_application] attributes) to ensure it does not contain a
       [{var}] where [var] does not name any type term. If it does, LaTeX will
-      fail on [{var}], which would require debugging the generated code. This
-      check catches such cases and generates an easy to understand explanation.
-  *)
+      fail on [{var}], which would require debugging the generated code. *)
   module CheckProseTemplates : sig
     val check : t -> unit
     (** [check spec] checks all prose templates defined in [spec]. *)
   end = struct
-    (** [check_prose_template_for_vars template vars] checks that [template]
-        does not contain a [{var}] where [var] is not in [vars]. Otherwise,
-        raises a [SpecError] detailing the unmatched variables. *)
-    let check_prose_template_for_vars template vars =
+    let find_extra_vars_in_template template template_vars =
+      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
+      let reduce_template =
+        Str.global_replace
+          (Str.regexp
+             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
+          "" template
+      in
+      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+      let blocks = Str.full_split template_var_regexp reduce_template in
+      let extra_vars =
+        List.fold_left
+          (fun acc_extra_vars block ->
+            match block with
+            | Str.Text _ -> acc_extra_vars
+            | Str.Delim var -> (
+                match StringSet.find_opt var template_vars with
+                | Some _ -> acc_extra_vars
+                | None -> var :: acc_extra_vars))
+          [] blocks
+      in
+      extra_vars
+
+    (** [check_extra_vars_in_prose_template template vars] checks that
+        [template] does not contain a [{var}] where [var] is not in [vars].
+        @raise [SpecError] if such an unmatched variable is found. *)
+    let check_extra_vars_in_prose_template template vars =
       let open Latex in
       (* Populate with [{var}] for each [var]. *)
       let template_vars =
@@ -894,41 +958,39 @@ module Check = struct
             StringSet.add template_var acc_map)
           StringSet.empty vars
       in
-      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
-      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
-      let reduce_template =
-        Str.global_replace
-          (Str.regexp
-             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
-          "" template
-      in
-      let blocks = Str.full_split template_var_regexp reduce_template in
-      let unmatched_vars =
-        List.fold_left
-          (fun acc block ->
-            match block with
-            | Str.Text _ -> acc
-            | Str.Delim var -> (
-                match StringSet.find_opt var template_vars with
-                | Some _ -> acc
-                | None -> var :: acc))
-          [] blocks
-      in
-      if Utils.list_is_empty unmatched_vars then ()
-      else Error.unmatched_variables_in_template template unmatched_vars
+      let extra_vars = find_extra_vars_in_template template template_vars in
+      if Utils.list_is_empty extra_vars then ()
+      else Error.unmatched_variables_in_template template extra_vars
 
     let check_prose_template_for_definition_node defining_node =
       let prose_description = prose_description_for_node defining_node in
       let vars = vars_of_node defining_node in
-      let () = check_prose_template_for_vars prose_description vars in
+      let () =
+        try check_extra_vars_in_prose_template prose_description vars
+        with SpecError e ->
+          stack_spec_error e
+            (Format.asprintf "While checking: %s"
+               (definition_node_name defining_node))
+      in
       match defining_node with
       | Node_Type _ | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _
         ->
           ()
-      | Node_Relation def ->
+      | Node_Relation ({ Relation.input } as def) -> (
           let prose_application = Relation.prose_application def in
-          let () = check_prose_template_for_vars prose_application vars in
-          ()
+          let input_arg_vars = vars_of_opt_named_type_terms input in
+          try
+            check_extra_vars_in_prose_template prose_application input_arg_vars
+          with SpecError e ->
+            stack_spec_error e
+              (Format.asprintf
+                 "While checking prose_application for: %s. Recall that the \
+                  variables available for use in the prose_application \
+                  template are only those of the input arguments. In this \
+                  case, those variables are: %s.\n\
+                  Hint: to refer to the outcomes you may use `|`"
+                 (definition_node_name defining_node)
+                 (String.concat ", " input_arg_vars)))
 
     let check spec =
       iter_defined_nodes spec check_prose_template_for_definition_node
@@ -1637,10 +1699,12 @@ module Check = struct
       rule. The functions in this module assume that use-def correctness was
       already checked. *)
   module TypeInference : sig
-    val check : Relation.t -> spec_type -> ExpandRules.expanded_rule -> unit
-    (** [check relation spec expanded_rule] checks that all expressions in
-        [expanded_rule] are type-correct according to [spec], using [relation]
-        for error messages.
+    val check_and_infer :
+      Relation.t -> spec_type -> ExpandRules.expanded_rule -> type_env
+    (** [check_and_infer relation spec expanded_rule] checks that all
+        expressions in [expanded_rule] are type-correct according to [spec],
+        using [relation] for error messages, and returns the inferred type
+        environment.
 
         @raise [SpecError] if a type error is found. *)
 
@@ -1648,6 +1712,8 @@ module Check = struct
     (** [infer spec expr] infers the type of [expr] according to [spec].
 
         @raise [SpecError] if the type of [expr] cannot be inferred. *)
+
+    val infer_for_relation : spec_type -> Relation.t -> type_case_table
   end = struct
     open Expr
     open UseDef
@@ -1692,9 +1758,6 @@ module Check = struct
       match defining_node_opt_for_id spec id with
       | Some (Node_RecordField { term }) -> term
       | _ -> failwith "Expected a record field definition node."
-
-    type type_env = Term.t StringMap.t
-    (** A type environment mapping variable names to their inferred types. *)
 
     (** Pretty-prints a type environment for debugging. *)
     let pp_type_env fmt type_env =
@@ -2817,7 +2880,7 @@ module Check = struct
       with SpecError err | Failure err ->
         stack_spec_error err (Format.asprintf "In judgment %a" PP.pp_expr expr)
 
-    let check relation spec expanded_rule =
+    let check_and_infer relation spec expanded_rule =
       let () =
         if false then
           Format.eprintf "@.=== Checking types for relation %s case %s ===@."
@@ -2860,9 +2923,53 @@ module Check = struct
           Error.output_type_mismatch output_judgment_type output output_expr
         else ()
       in
-      if false then
-        Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
-      else ()
+      let () =
+        if false then
+          Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
+      in
+      type_env
+
+    let merge_type_case_tables table1 table2 =
+      StringMap.merge
+        (fun _var entry1_opt entry2_opt ->
+          match (entry1_opt, entry2_opt) with
+          | Some entry1, Some entry2 -> Some (entry1 @ entry2)
+          | Some entry, None | None, Some entry -> Some entry
+          | None, None -> None)
+        table1 table2
+
+    let infer_for_relation spec ({ Relation.name; rule_opt } as relation) :
+        type_case_table =
+      let rule =
+        match rule_opt with
+        | Some rule -> rule
+        | None ->
+            let msg = Format.asprintf "Relation %s has no rules." name in
+            failwith msg
+      in
+      let expanded_rules = ExpandRules.expand rule in
+      let type_case_tables =
+        List.map
+          (fun expanded_rule ->
+            let name =
+              Option.value ~default:"" expanded_rule.ExpandRules.name_opt
+            in
+            let type_env = check_and_infer relation spec expanded_rule in
+            let var_to_term = StringMap.bindings type_env in
+            let var_to_case_and_term =
+              List.map (fun (var, term) -> (var, [ (name, term) ])) var_to_term
+            in
+            StringMap.of_list var_to_case_and_term)
+          expanded_rules
+      in
+      try List.fold_left merge_type_case_tables StringMap.empty type_case_tables
+      with Failure err ->
+        let msg =
+          Format.asprintf
+            "Type error when merging type environments for relation %s: %s" name
+            err
+        in
+        failwith msg
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -2999,7 +3106,10 @@ module Check = struct
                   expanded_rule.judgments
               in
               let () = UseDef.check_use_def relation spec expanded_rule in
-              TypeInference.check relation spec expanded_rule
+              let _discarded_type_env =
+                TypeInference.check_and_infer relation spec expanded_rule
+              in
+              ()
             with SpecError err | Failure err ->
               stack_spec_error err
                 (Format.asprintf "In rule for relation %s, case %s"
@@ -3398,6 +3508,12 @@ let make_spec_with_builtins ast =
     cond_operator = get_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
   }
+
+let infer_type_case_table spec relation =
+  Check.TypeInference.infer_for_relation spec relation
+
+let case_table_vars type_case_table =
+  List.map fst (StringMap.bindings type_case_table)
 
 let from_ast ast =
   let spec = make_spec_with_builtins ast in

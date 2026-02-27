@@ -167,6 +167,8 @@
 
 \newcommand\BackupOriginalRule[1]{}
 \newcommand\BackupOriginalConstant[1]{}
+\newcommand\BackupProse[1]{}
+\newcommand\BackupProseAndFormally[1]{}
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
@@ -186,6 +188,7 @@
 \newcommand\textastlabel[1]{\textsc{#1}}
 \newcommand\ProseParagraph[0]{\subsubsection{Prose}}
 \newcommand\FormallyParagraph[0]{\subsubsection{Formally}}
+\newcommand\RenderProseAndFormally[1]{\ProseParagraph \RenderProse{\detokenize{#1}} \FormallyParagraph \RenderRule{\detokenize{#1}}}
 % Use this macro to highlight notes in prose sections that should be preserved
 % rather than overwritten during automatic prose generation.
 \newcommand\ProseNote[1]{#1}
@@ -193,6 +196,7 @@
 \newcommand\CaseName[1]{case \textsc{#1}}
 \newcommand\AllApply[0]{All of the following apply:}
 \newcommand\AllApplyCase[1]{All of the following apply (\CaseDef{#1}):}
+\newcommand\SingleCase[1]{(\CaseDef{#1}):}
 \newcommand\OneApplies[0]{One of the following applies:}
 \newcommand\Proseeqdef[2]{define #1 as #2}
 \newcommand\ProseEqdef[2]{Define #1 as #2}
@@ -517,7 +521,6 @@
 \newcommand\numplus[0]{\mathbin{+}}
 \newcommand\numminus[0]{\mathbin{-}}
 \newcommand\numnegate[1]{\mathbin{-}{#1}}
-\newcommand\negate[1]{\mathbin{\smash{-}}{#1}}
 \newcommand\numtimes[0]{\mathbin{\times}}
 \newcommand\numdivide[0]{\mathbin{\div}}
 \newcommand\numexponent[3][H]{
@@ -552,6 +555,16 @@
 }
 \newcommand\concat[0]{\hyperlink{relation-concat}{\mathbin{+}}}
 \newcommand\concatlist[1]{\hyperlink{relation-concatlist}{\textfunc{concat\_list}}(#1)}
+\newcommand\numberedidentifierop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    {#2} \concat \stringofint{#3}
+  }{
+    \left(\begin{array}{l}
+    {#2} \concat\\
+    \stringofint{#3}\\
+    \end{array}\right)
+  }
+}
 \newcommand\cons[0]{\hyperlink{relation-cons}{\mathbin{{+}{+}}}}
 \newcommand\listfstname[0]{\hyperlink{relation-listfst}{\textfunc{list\_fst}}}
 \newcommand\listfst[1]{\listfstname(#1)}
@@ -620,8 +633,8 @@
 \newcommand\listset[1]{\hyperlink{def-listset}{\textfunc{list\_set}}\left({#1}\right)}
 \newcommand\bindings[1]{\hyperlink{relation-bindings}{\textfunc{bindings}}\left({#1}\right)}
 \newcommand\bindingstomap[1]{\hyperlink{def-bindingstomap}{\textfunc{bindings\_to\_map}}\left({#1}\right)}
-\newcommand\stringofnatname[0]{\hyperlink{relation-stringofnat}{\texttt{string\_of\_nat}}}
-\newcommand\stringofnat[1]{\stringofnatname(#1)}
+\newcommand\stringofintname[0]{\hyperlink{relation-stringofint}{\texttt{string\_of\_int}}}
+\newcommand\stringofint[1]{\stringofintname(#1)}
 \newcommand\restrictmapop[3][H]{
   {#2}\hyperlink{def-restrictfunc}{|}_{#3}
 }
@@ -1194,6 +1207,7 @@
 \newcommand\staticenvironmentterm[0]{\hyperlink{type-staticenvs}{static environment}}
 \newcommand\localstaticenvs[0]{\hyperlink{type-localstaticenvs}{\mathbb{LSE}}}
 \newcommand\localstaticenvironmentterm[0]{\hyperlink{type-localstaticenvs}{local static environment}}
+\newcommand\localstaticenvironmentsterm[0]{\hyperlink{type-localstaticenvs}{local static environments}}
 \newcommand\globalstaticenvs[0]{\hyperlink{type-globalstaticenvs}{\mathbb{GSE}}}
 \newcommand\globalstaticenvironmentterm[0]{\hyperlink{type-globalstaticenvs}{global static environment}}
 \newcommand\emptytenv[0]{\hyperlink{constant-emptytenv}{\OldEmptyset_{\mathbb{SE}}}}
@@ -1219,6 +1233,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Semantics macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\dynamicenvironmentterm[0]{\hyperlink{type-dynamicenvs}{dynamic environment}}
+\newcommand\globaldynamicenvironmentterm[0]{\hyperlink{type-globaldynamicenvs}{global dynamic environment}} % DO NOT LINT
+\newcommand\localdynamicenvironmentterm[0]{\hyperlink{type-localdynamicenvs}{local dynamic environment}} % DO NOT LINT
+\newcommand\environmentterm[0]{\hyperlink{type-envs}{environment}}
 \newcommand\aslrel[0]{\bigtimes}
 \newcommand\nativevalue[0]{\hyperlink{type-nativevalue}{\mathbb{V}}}
 \newcommand\nvint[0]{\hyperlink{def-nvint}{\texttt{Int}}}
@@ -1441,6 +1459,8 @@
 \newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 \newcommand\AbbrevEVar[1]{\overbracket{#1}^{\hyperlink{def-abbrevevar}{\abbrevfont{E\_Var}}}}
 
+\newcommand\TIntWellConstrainedInt[1]{\TInt(\WellConstrained(#1))}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Top level macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1491,6 +1511,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\ContinuingTerm[0]{\hyperlink{type-Continuing}{continuing result configuration}}
 \newcommand\ProseMSB[0]{MSB}
 \newcommand\ProseLSB[0]{LSB}
 \newcommand\configurationterm[0]{\hyperlink{def-configuration}{configuration}}
@@ -1514,6 +1535,7 @@
 \newcommand\Builderrorsterm[0]{\hyperlink{def-builderrorterm}{Build errors}}
 \newcommand\dynamicerrorterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic error}}
 \newcommand\dynamicerrorsterm[0]{\hyperlink{def-dynamicerrorterm}{dynamic errors}}
+\newcommand\astlabelterm[0]{\hyperlink{type-ASTLabels}{AST label}}
 
 \newcommand\listprefixterm[0]{\hyperlink{def-listprefix}{prefix}}
 
@@ -1608,6 +1630,7 @@
 \newcommand\namedlowestcommonancestorterm[0]{\hyperlink{relation-namedlowestcommonancestor}{named lowest common ancestor}}
 \newcommand\arrayaccessterm[0]{\hyperlink{def-arrayaccess}{array access}}
 \newcommand\symbolicallysimplifiesterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifies}}
+\newcommand\symbolicallysimplifyingterm[0]{\hyperlink{def-symbolicallysimplifies}{symbolically simplifying}}
 \newcommand\singulartypeterm[0]{\hyperlink{relation-issingular}{singular type}}
 \newcommand\singulartypesterm[0]{\hyperlink{relation-issingular}{singular types}}
 
@@ -1637,6 +1660,8 @@
 \newcommand\defusedependenciesterm[0]{\hyperlink{relation-builddependencies}{def-use dependencies}}
 \newcommand\dependencygraphterm[0]{\hyperlink{relation-builddependencies}{def-use dependency graph}}
 
+\newcommand\catcherterm[0]{\hyperlink{def-catcherterm}{catcher}}
+\newcommand\catchersterm[0]{\hyperlink{def-catcherterm}{catchers}}
 \newcommand\casediscriminantterm[0]{\hyperlink{def-casediscriminantterm}{case discriminant}}
 \newcommand\casealternativeterm[0]{\hyperlink{def-casealternativeterm}{case alternative}}
 \newcommand\casealternativesterm[0]{\hyperlink{def-casealternativeterm}{case alternatives}}
@@ -1724,17 +1749,20 @@
 \newcommand\whilestatementterm[0]{\hyperlink{def-whilestatementterm}{while statement}}
 \newcommand\whilestatement[3]{\hyperlink{def-whilestatementterm}
   {while statement} for the condition #1, optional limit expression #2, and body statement #2}
+\newcommand\repeatstatementterm[0]{\hyperlink{def-repeatstatementterm}{repeat statement}}
 \newcommand\repeatstatementsterm[0]{\hyperlink{def-repeatstatementterm}{repeat statements}}
 \newcommand\repeatstatement[3]{\hyperlink{def-repeatstatementterm}
   {repeat statement} for the body statement #1, condition expression #2, and optional limit expression #3}
 \newcommand\forstatementterm[0]{\hyperlink{def-forstatementterm}{for statement}}
 \newcommand\forstatement[6]{\hyperlink{def-forstatementterm}
   {for statement} for the index variable #1, start expression #2, direction #3, end expression #4, body statement #5, and optional limit expression #6}
+\newcommand\throwstatementterm[0]{\hyperlink{def-throwstatementterm}{throw statement}}
 \newcommand\throwstatementsterm[0]{\hyperlink{def-throwstatementterm}{throw statements}}
 \newcommand\throwstatement[1]{\hyperlink{def-throwstatementterm}{throw statement} for the optional exception expression #1}
 \newcommand\trystatementterm[0]{\hyperlink{def-trystatementterm}{try statement}}
 \newcommand\trystatementsterm[0]{\hyperlink{def-trystatementterm}{try statements}}
 \newcommand\trystatement[3]{\hyperlink{def-trystatementterm}{try statement} with body statement #1, list of \texttt{catch} clauses #2, and optional \texttt{otherwise} statement #3}
+\newcommand\returnstatementterm[0]{\hyperlink{def-returnstatementterm}{return statement}}
 \newcommand\returnstatementsterm[0]{\hyperlink{def-returnstatementterm}{return statements}}
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
@@ -1764,6 +1792,9 @@
 \newcommand\sideeffectdescriptorsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{side effect descriptors}}
 \newcommand\sideeffectsetterm[0]{\hyperlink{def-sideeffectdescriptorterm}{set of side effect descriptors}}
 \newcommand\sideeffectdescriptorsetsterm[0]{\hyperlink{def-sideeffectdescriptorterm}{sets of side effect descriptors}}
+\newcommand\sideeffectfreeterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free}}
+\newcommand\sideeffectfreeexpressionterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expression}} % DO NOT LINT
+\newcommand\sideeffectfreeexpressionsterm[0]{\hyperlink{def-sideeffectfreeexpressionterm}{side-effect-free expressions}}
 
 \newcommand\approximationdirectionterm[0]{\hyperlink{def-approximationdirectionterm}{approximation direction}}
 
