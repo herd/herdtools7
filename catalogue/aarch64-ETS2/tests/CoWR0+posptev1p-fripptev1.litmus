@@ -1,0 +1,11 @@
+AArch64 CoWR0+posptev1p-fripptev1
+Variant=vmsa,ets2
+{ 
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X0=PTE(x); pteval_t 0:X1=(oa:PA(x)); 0:X2=x;
+}
+ P0          ;
+ STR X1,[X0] ;
+L0:          ;
+ LDR W3,[X2] ;
+exists (fault(P0:L0,x,MMU:Translation))

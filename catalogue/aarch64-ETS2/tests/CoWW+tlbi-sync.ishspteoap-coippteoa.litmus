@@ -1,0 +1,15 @@
+AArch64 CoWW+tlbi-sync.ishspteoap-coippteoa
+Variant=vmsa,ets2
+{
+ [PTE(x)]=(oa:PA(x));
+ 0:X0=PTE(x); 0:X1=(oa:PA(y)); 0:X3=x;
+}
+ P0              ;
+ STR X1,[X0]     ;
+ DSB ISH         ;
+ LSR X4,X3,#12   ;
+ TLBI VAAE1IS,X4 ;
+ DSB ISH         ;
+ MOV W2,#1       ;
+ STR W2,[X3]     ;
+exists([x]=1)
