@@ -372,8 +372,14 @@ module type S =
     type evt_struct
     type output = VC.cnstrnts * evt_struct
 
-    val get_output  : (output -> unit) -> 'a code -> output list -> output list
+    (* Generic, i.e. apply transformation to output *)
+    val get_output_check :
+      (output -> unit t)
+      -> 'a code -> output list -> output list
 
+    val get_output :
+      'a code -> output list -> output list
     (* Force executed only once. *)
+
     val force_once : 'a t -> 'a t
   end

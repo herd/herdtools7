@@ -314,6 +314,10 @@ val same_instance : event -> event -> bool
   val inst_code_comp_spec :
      event_structure -> event_structure -> event_structure -> event_structure
 
+(******************)
+(* Standard union *)
+(******************)
+  val union_comp : event_structure -> event_structure -> event_structure
 
 (************************)
 (* Parallel composition *)
@@ -1317,6 +1321,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         fun es _ -> es.speculated
 
 (* Standard union of two structures, specific fields to be completed *)
+
     let union es1 es2 =
       { procs = [];
         events = EventSet.union es1.events es2.events ;
@@ -1347,6 +1352,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses ;
        aligned = es1.aligned @ es2.aligned ;
       }
+
+    let union_comp es1 es2 = union es1 es2
 
 (* Parallel composition *)
 
