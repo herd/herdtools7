@@ -460,26 +460,21 @@ let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
 module Env = Map.Make(String)
 
-let locs,next_x =
-  let t = Array.make 26 "" in
-  t.(0) <- "x" ;
-  t.(1) <- "y" ;
-  t.(2) <- "z" ;
-  for k=0 to (26-3)-1 do
-    t.(k+3) <- String.make 1 (Char.chr (Char.code 'a' + k))
-  done ;
-  t,t.(1)
+let variable_counter = ref 0
+let make_variable =
+  fun () ->
+    let new_loc = match !variable_counter with
+    | n when n <= 2 -> String.make 1 (Char.chr (Char.code 'x' + n))
+    | n when n <= 26 -> String.make 1 (Char.chr (Char.code 'a' + n - 3))
+    | n -> sprintf "x%02i" (n - 26) in
+    incr variable_counter;
+    new_loc
+let reset_variable_counter () = variable_counter := 0
 
-let locs_len = Array.length locs
-
-let make_loc n =
-  if n < locs_len then locs.(n)
-  else Printf.sprintf "x%02i" (n-locs_len)
-
-let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
-| true -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
+let next_loc e (lab0,vs) = match E.is_fetch e with
+| true -> Code (sprintf "Lself%02i" lab0),(lab0+1,vs)
 | _ ->
-  Code.Data (make_loc loc0),((loc0+1,lab0),vs)
+  Code.Data (make_variable ()),(lab0,vs)
 
 let same_loc e = Code.is_same_loc @@ E.loc_sd e
 
@@ -501,7 +496,8 @@ module CoSt = struct
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
   type t = { map : int M.t;
-             co_cell : Value.v array;
+             (* Tracking possible physical address change and their values *)
+             env : (Value.v array) Code.LocMap.t;
              pte_value : Value.pte;
              (* - Irr, checks both
                 - Dir R, only checks read
@@ -509,13 +505,15 @@ module CoSt = struct
                 - NoDir, no need to check *)
              check_fault : Code.extr;
              check_value : bool;
-             machine_feature: StringSet.t }
+             machine_feature: StringSet.t;
+             physical_address : Code.loc }
 
-  let create init_value sz pte_value check_value check_fault machine_feature =
+  let create init_value sz pte_value check_value check_fault machine_feature physical_address =
     let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
-                  [Tag; CapaTag; CapaSeal; Ord; ]
-    and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
+                  [Tag; CapaTag; CapaSeal; Ord; ] in
+    let env = Code.LocMap.singleton physical_address
+      (Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value)) in
+    { map; env; pte_value; check_fault; check_value ; machine_feature; physical_address}
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -526,16 +524,29 @@ module CoSt = struct
     let b = match bank with VecReg _ -> Ord | _ -> bank in
     { st with map=M.add b v st.map; }
 
-  let get_cell st = st.co_cell
-  let set_cell st co_cell = {st with co_cell; }
+  (* get and set the current value to the current physical address *)
+  let get_cell st = Array.copy (Code.LocMap.find st.physical_address st.env)
+  let set_cell st co_cell =
+    let env = Code.LocMap.add st.physical_address co_cell st.env in
+    { st with env; }
+
+  let update_physical_address st physical_address n=
+    let st = {st with physical_address; check_value = true} in
+    let cell = get_cell st in
+    n.evt <- {n.evt with cell; v = cell.(0)};
+    st
+  let add_physical_address st physical_address init_value n =
+    let co_cell = get_cell st |> Array.map ( fun _ -> Value.from_int init_value ) in
+    let env = Code.LocMap.add physical_address co_cell st.env in
+    update_physical_address {st with env} physical_address n
 
   (* Assume node `n` is a memory store event,
      assign a written value to `n`*)
   let update_cell_on_write st n =
+    let co_cell = get_cell st in
     let e = n.evt in match e.bank with
     | Ord|Pair -> begin
-       let old = st.co_cell.(0) in
-       let co_cell = Array.copy st.co_cell in
+       let old = co_cell.(0) in
        let cell2 =
          match n.prev.edge.E.edge with
          | E.Rmw rmw ->
@@ -549,11 +560,11 @@ module CoSt = struct
          | Pair -> (* No Rmw for pairs *)
             let width = Value.from_int ((Value.to_int e.v) - 1) in
             co_cell.(0) <- E.overwrite_value old e.atom width;
-            let old = st.co_cell.(0) in
+            let old = co_cell.(0) in
             co_cell.(1) <- E.overwrite_value old e.atom e.v
          | _ -> assert false
        end ;
-       {e with cell=co_cell;},{ st with co_cell; }
+       {e with cell=co_cell;},set_cell st co_cell
     end
     | _ -> e,st
 
@@ -614,10 +625,11 @@ module CoSt = struct
   let step_simd st n =
     let fst = find_no_fail Ord st.map in
     let lst = fst+E.SIMD.nregs n in
-    let new_co_cell = st.co_cell |> Array.map Value.to_int
-                      |> E.SIMD.step n fst
-                      |> Array.map Value.from_int in
-    { st with co_cell=new_co_cell; map=M.add Ord lst st.map; }
+    let co_cell = get_cell st
+                  |> Array.map Value.to_int
+                  |> E.SIMD.step n fst
+                  |> Array.map Value.from_int in
+    set_cell { st with map=M.add Ord lst st.map; } co_cell
 end
 
 (* Decide the initial pte value. *)
@@ -932,7 +944,9 @@ let check_cycle c =
       List.exists
       ( fun n -> match n.evt.bank,n.evt.dir with
       |(Ord|Tag|CapaTag|CapaSeal|VecReg _|Pair|Instr),Some W -> true
-      |_ -> false ) ns
+      |Pte,Some W -> Value.need_check_value_on_pte n.evt.atom
+      | _ -> false
+      ) ns
 
   let exist_fault_related_write ns =
     List.fold_left ( fun acc n ->
@@ -965,8 +979,8 @@ let check_cycle c =
 
   (* `do_set_write_val` returns true when variable next_x has been used
      and should thus be initialised *)
-  let do_set_write_val next_x_ok st nss =
-    List.fold_left ( fun (next_x_ok, st) n ->
+  let do_set_write_val st nss env =
+    let new_physical_address,_ = List.fold_left ( fun (new_physical_address, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
       let st = if n.store == nil then st else set_write_val_ord st n.store in
       (* Update tag and instruction value in `st` no matter `W`, `R` etc. *)
@@ -1009,7 +1023,7 @@ let check_cycle c =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
+              (new_physical_address, st)
             | Pair ->
               (* Same code as for Ord, however notice that
                  CoSet.set_cell has a case for pairs.
@@ -1020,14 +1034,14 @@ let check_cycle c =
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
+              (new_physical_address, st)
             | Tag ->
               let st = CoSt.next_co st bank |> CoSt.set_check_fault in
               let v = CoSt.get_co st bank in
               n.evt <- { n.evt with v = v; check_value; } ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
-              (next_x_ok, st)
+              (new_physical_address, st)
             | CapaTag|CapaSeal ->
               (* in Morello, check fault on CapaTag or CapaSeal access
                  if it is followed by a depend address edge *)
@@ -1040,7 +1054,7 @@ let check_cycle c =
               n.evt <- { n.evt with v = v; check_value; check_fault} ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
-              (next_x_ok, st)
+              (new_physical_address, st)
             | VecReg a ->
               let st = CoSt.step_simd st a in
               let cell = CoSt.get_cell st
@@ -1053,63 +1067,72 @@ let check_cycle c =
                   | (v::_)::_ -> v
                   | _ -> assert false in
               n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
-              (next_x_ok, st)
+              (new_physical_address, st)
             | Pte ->
-            (* TODO Rework here, esp the function `next_loc` and ref value `next_x_pred`.
-              They are all difficult to understand. *)
-              let next_x_pred = ref false in
+              (* Wrap the `new_physical_address`, `st`, `env` which might
+                 be updated in the `next_loc` function call. *)
+              let wrapped_new_pa = ref new_physical_address in
+              let wrapped_st = ref st in
               (* get the previous `pte_value` *)
               let pte_val = CoSt.get_pte_value st in
               (* update the pte value in kvm variant *)
               let pte_val =
                 if do_kvm then begin
-                    let next_loc () =
-                      match n.evt.loc with
-                      | Code.Data x ->
-                         begin try
-                             let m =
-                               find_node
-                                 (fun m ->
-                                   match m.evt.loc with
-                                   | Code.Data y ->
-                                      not (Misc.string_eq x y)
-                                   | _-> false) n in
-                             Code.as_data m.evt.loc
-                           with Not_found ->
-                             next_x_pred := true ; next_x end
-                      | Code.Code _ -> Warn.fatal "Code location has no pte value." in
-                    E.set_pteval n.evt.atom pte_val next_loc
-                  end else pte_val in
+                  let next_loc () =
+                    let open CoSt in
+                    match n.evt.loc,!wrapped_new_pa with
+                    (* Pick a new variable for physical address change *)
+                    | Code.Data _,None ->
+                      let new_address = make_variable () in
+                      let physical_address = Code.Data new_address in
+                      wrapped_new_pa := Some (physical_address);
+                      wrapped_st := CoSt.add_physical_address !wrapped_st physical_address 5 n;
+                      new_address
+                    | (Code.Data _ as virtual_address),Some new_address ->
+                      (* if the address has changed previously, we toggle the address *)
+                        let physical_address =
+                          if new_address = !wrapped_st.physical_address then
+                            virtual_address else new_address in
+                          wrapped_st := CoSt.update_physical_address !wrapped_st physical_address n;
+                          Code.as_data physical_address
+                    | Code.Code _,_ -> Warn.fatal "Code location has no pte value." in
+                  E.set_pteval n.evt.atom pte_val next_loc
+                end else pte_val in
               let check_fault = Value.need_check_fault n.evt.atom in
-              let st = CoSt.set_pte_value st check_fault pte_val in
+              let st = CoSt.set_pte_value !wrapped_st check_fault pte_val in
               let v = Value.from_pte pte_val in
               n.evt <- { n.evt with v; check_value } ;
-              ((!next_x_pred || next_x_ok), st)
+              (!wrapped_new_pa, st)
             end (* END of match bank *)
           | Code _ ->
             n.evt <- { n.evt with check_value; } ;
             let bank = n.evt.bank in
             match bank with
             | Instr -> Warn.fatal "not letting instr write happen"
-            | _ -> (next_x_ok, st)
+            | _ -> (new_physical_address, st)
           end (* END of `Some W` *)
-      | Some R |None -> (next_x_ok, st)
-    ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss
+      | Some R |None -> (new_physical_address, st)
+    ) (* END of the function applying to `fold_left` *) (None, st) nss in
+    match new_physical_address with
+    | None -> env
+    (* the value `5` here must match the initial value picked in
+      `next_loc` function *)
+    | Some Code.Data variable -> (variable,Value.from_int 5)::env
+    | Some _ -> env
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
     (* `initptes` contains the initial pte values, if they are non-default *)
-    let _,initvals =
       List.fold_left
-        (fun (k,env as r) ns ->
+        (fun init_env ns ->
           match ns with
-          | [] -> r
+          | [] -> init_env
           | n::_ ->
               (* Assume all node in `ns` is the same location as `n`,
                  process the nodes in list `ns` for the location `loc` *)
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
-              let init_val = if do_kvm then k else 0 in
+              let init_val = 0 in
               let pte_val = pte_val_init ns loc in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
@@ -1121,22 +1144,12 @@ let check_cycle c =
                   ( fun acc n ->
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
-              let next_x_ok,_st = do_set_write_val false init_st ns in
-              let env = if init_val = 0 then env
-                        else (Code.as_data loc,Value.from_int init_val)::env in
+              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature loc in
               (* Add pte initial values when kvm and the value is not default *)
-              let env = if (not do_kvm) || is_pte_default loc pte_val then env
-                        else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::env in
-              if next_x_ok then
-                k+8,(next_x,Value.from_int (k+4))::env
-              else
-                k+4,env )
-        (* When in kvm mode, using initial value `1, 5, 9, ...,`
-           avoiding value `0`, which collides with
-           the default value of register. *)
-        (1,[]) nss in
-    initvals
+              let init_env = if (not do_kvm) || is_pte_default loc pte_val then init_env
+                        else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::init_env in
+              do_set_write_val init_st ns init_env )
+        [] nss
 
   (* TODO carry back the pte init value *)
   let set_write_v n =
@@ -1288,9 +1301,13 @@ let do_set_read_v init =
           |Pte ->
             (* Record the pte value in `st` in
               memory access to a non-instruction pte value *)
-            if Code.is_data n.evt.loc then
+            let st = if Code.is_data n.evt.loc then
               let check_fault = Value.need_check_fault n.evt.atom in
               CoSt.set_pte_value st check_fault @@ Value.to_pte n.evt.v
+              else st in
+            (* Update the cell for physical address change *)
+            if Value.need_check_value_on_pte n.evt.atom then
+              CoSt.set_cell st n.evt.cell
             else st in
         st
       | None ->
@@ -1308,7 +1325,7 @@ let do_set_read_v init =
         ( fun acc n ->
           StringSet.union acc (E.get_machine_feature n.edge)
         ) StringSet.empty ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
+    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature n.evt.loc in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
 
@@ -1372,8 +1389,8 @@ let do_set_read_v init =
 (* zyva... *)
 
 let finish n =
-  let st = (0,0),Env.empty in
 (* Set locations *)
+  reset_variable_counter ();
   let sd,n =
     let no =
       try begin
@@ -1396,6 +1413,7 @@ let finish n =
     | None -> Same,n in
 
   let _nv,_st =
+    let st = 0,Env.empty in
     match sd with
     | Diff -> set_diff_loc st n
     | Same -> set_same_loc st n

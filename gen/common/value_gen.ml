@@ -34,6 +34,8 @@ module type PteType = sig
      Dir W and Dir R for write and read, respectively.
      and Irr for both, NoDir for none *)
   val need_check_fault : atom option -> Code.extr
+  (* check if the `pte_atom` trigger value for further access *)
+  val need_check_value_on_pte : atom option -> bool
 end
 
 module type S = sig
@@ -99,6 +101,7 @@ module NoPte(A:sig type arch_atom end) = struct
     let can_fault _dir _t = false
     let refers_virtual _ = None
     let need_check_fault _ = Code.NoDir
+    let need_check_value_on_pte _ = false
   end)
 
   let from_pte _ = Warn.user_error "Cannot convert from pte"
