@@ -137,17 +137,18 @@ and module Value := I.Value
         if Misc.tr_pte loc <> None then
           sprintf "[%s]" (pp_symbol loc)
         else loc
-      let global_compare loc1 loc2 =
-        (* order `x` before `pte(x)` before `y` *)
-        match Misc.tr_pte loc1, Misc.tr_pte loc2 with
-        | None, None -> compare loc1 loc2
-        | Some pte1, Some pte2 -> compare pte1 pte2
-        | Some pte1, None ->
-          let result = compare pte1 loc2 in
-          if result = 0 then 1 else result
-        | None, Some pte2 ->
-          let result = compare loc1 pte2 in
-          if result = 0 then -1 else result
+      let global_compare lhs rhs =
+        (* Order `x` > `tag(x)` > `pte(x)` > `y`.
+         The helper function extract the actual location, and
+         the bank of the location, i.e. Tag, Pte or Ord. The bank
+         is used to order when actual location is the same. *)
+        let get_actual_location_bank loc =
+          match Misc.tr_atag loc with
+          | Some x -> x,Code.Tag
+          | None -> match Misc.tr_pte loc with
+              | Some x -> x,Code.Pte
+              | None -> loc,Code.Ord in
+        compare (get_actual_location_bank lhs) (get_actual_location_bank rhs)
     end)
 
   type location = Location.location
