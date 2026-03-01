@@ -109,6 +109,7 @@ match name with
 | "ldaxrh"|"LDAXRH" -> LDAXRH
 | "ldxp"|"LDXP" -> LDXP
 | "ldaxp"|"LDAXP" -> LDAXP
+| "ldap"|"LDAP" -> LDAP
 | "str"|"STR" -> STR
 | "stlr"|"STLR" -> STLR
 | "stxr"|"STXR" -> STXR
@@ -123,6 +124,7 @@ match name with
 | "stlxrh"|"STLXRH" -> STLXRH
 | "stxp"| "STXP" -> STXP
 | "stlxp"| "STLXP" -> STLXP
+| "stlp" | "STLP" -> STLP
 (* Neon Extension Memory *)
 | "ld1" | "LD1" -> LD1
 | "ldap1" | "LDAP1" -> LDAP1

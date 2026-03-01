@@ -1794,10 +1794,14 @@ module Make(V:Constant.S)(C:Config) =
        ldpsw r1 r2 r3 idx::k
     | I_LDXP (v,t,r1,r2,r3) ->
        loadx_pair (ldxp_memo t) v r1 r2 r3::k
+    | I_LDAP (v, r1, r2, r3) ->
+        load_pair "ldap" v r1 r2 r3 (0, AArch64Base.Idx)::k
     | I_STP (t,v,r1,r2,r3,idx) ->
         store_pair (stp_memo t) v r1 r2 r3 idx::k
     | I_STXP (v,t,r1,r2,r3,r4) ->
         storex_pair (stxp_memo t) v r1 r2 r3 r4::k
+    | I_STLP (v, r1, r2, r3) ->
+        store_pair "stlp" v r1 r2 r3 (0, AArch64Base.Idx)::k
     | I_LDRBH (B,r1,r2,idx) -> load "ldrb" V32 r1 r2 idx::k
     | I_LDRBH (H,r1,r2,idx) -> load "ldrh" V32 r1 r2 idx::k
     | I_LDRS ((var,bh),r1,r2,idx) ->
