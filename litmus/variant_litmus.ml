@@ -68,7 +68,7 @@ let compare = compare
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
 | "s128" -> Some S128
-| "self" -> Some Self
+| "ifetch"|"self" -> Some Self
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
 | "telechat" -> Some Telechat

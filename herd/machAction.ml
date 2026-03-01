@@ -101,7 +101,7 @@ end = struct
       -> Access.VIR
     | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
         ->
-          if kvm then Access.PTE
+          if kvm then Access.PTE DISide.Data
           else Warn.fatal "PTE %s while -variant kvm is not active"
                  (A.pp_location loc)
     | A.Location_global v ->
@@ -144,13 +144,14 @@ end = struct
 
   let pp_action a = match a with
   | Access (d,l,v,an,exp_an,sz,_) ->
-      Printf.sprintf "%s%s%s%s%s=%s"
+      Printf.sprintf "%s%s%s%s%s=%s%s"
         (pp_dirn d)
         (A.pp_location l)
         (A.pp_annot an)
         (A.pp_explicit exp_an)
         (if sz = MachSize.Word then "" else MachSize.pp_short sz)
         (V.pp C.hexa v)
+        ""
   | Barrier b -> A.pp_barrier_short b
   | Commit (b,m) ->
       Printf.sprintf "%s%s"
@@ -269,6 +270,12 @@ end = struct
        | _ -> false
      end
   | _ -> false
+  let is_pt_data = function
+    | Access (_,A.Location_global (A.V.Val c),_,_,_,_,Access.PTE DISide.Data) ->
+        Constant.is_pt c
+    | Amo (A.Location_global (A.V.Val c),_,_,_,_,_,Access.PTE DISide.Data) ->
+        Constant.is_pt c
+    | _ -> false
 
   let is_additional_mem _ = false
 
@@ -358,7 +365,7 @@ end = struct
         end
 
   let is_pte_access = function
-  | Access (_,_,_,_,_,_,Access.PTE) -> true
+  | Access (_,_,_,_,_,_,Access.PTE _) -> true
   | _ -> false
 
   let lift_explicit_predicate p act = match act with
@@ -550,6 +557,7 @@ end = struct
       fun k ->
         ("PA",is_PA_access)::
         ("PTE",is_pt)::
+        ("D-PTE",is_pt_data)::
         List.fold_right
           (fun (key,p) k -> (key,on_pteval p)::k) A.pteval_sets k
     else

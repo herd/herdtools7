@@ -45,11 +45,10 @@ static void litmus_pte_unset_el0(uintptr_t vaddr, uintptr_t vaddr_end)
 
 static void code_init(void *code, void *src, size_t sz)
 {
-  size_t sz_pages = (sz - 1) / LITMUS_PAGE_SIZE + 1;
   memcpy(code, src, sz);
   litmus_icache_sync((uintptr_t)code, (uintptr_t)code + sz);
   /* Armv8 requires that code shared between EL1 and EL0 is read-only.
    * We need write access and therefore, we have to ensure that the
    * the memory we use for code won't be accessible from EL0 */
-  litmus_pte_unset_el0((uintptr_t)code, (uintptr_t)code + sz_pages);
+  litmus_pte_unset_el0((uintptr_t)code, (uintptr_t)code + sz);
 }

@@ -325,11 +325,13 @@ module A.FaultType = A.FaultType)
     open A.Out
 
     let rec do_extract_pseudo nop f ins = match ins with
+    | A.Pagealign
     | A.Nop -> nop
     | A.Label (_,ins) -> do_extract_pseudo nop f ins
     | A.Instruction ins -> f ins
     | A.Symbolic _ (*no symbolic in litmus *)
-    | A.Macro (_,_) -> assert false
+    | A.Macro (_,_) -> assert false 
+    | A.Skip _ -> assert false (* used internally in herd7 only *)
 
     let extract_pseudo = do_extract_pseudo G.Set.empty C.extract_addrs
 
@@ -357,7 +359,9 @@ module A.FaultType = A.FaultType)
       | A.Nop
       | A.Instruction _
       | A.Symbolic _
-      | A.Macro _ -> k
+      | A.Macro _
+      | A.Pagealign -> k
+      | A.Skip _ -> k
       | A.Label (lbl,i) ->
           ins_labels (lbl::k) i
 
@@ -399,7 +403,7 @@ module A.FaultType = A.FaultType)
 
 (* Translate labls to integers (local labels), when possible *)
     let rec lblmap_pseudo cm i = match i with
-    | A.Nop|A.Instruction _ -> cm
+    | A.Nop|A.Instruction _|A.Pagealign|A.Skip _ -> cm
     | A.Label(lbl,i) ->
        let cm  =
          let c,m = cm in
@@ -457,6 +461,11 @@ module A.FaultType = A.FaultType)
         memo=sprintf "%s:" (A.Out.dump_label (tr_label m lbl)) ;
         label = Some lbl ; branch=[Next] ; }
 
+    let emit_pagealign =
+      { empty_ins with
+        memo="xstr(PAGE_SHIFT)";
+        align=true;}
+
     let compile_pseudo_code code fhandler =
       let m =
         if O.numeric_labels then lblmap_code code fhandler
@@ -475,9 +484,11 @@ module A.FaultType = A.FaultType)
           let ilab = emit_label m lbl in
           let seen,k = compile_pseudo seen ins  in
           seen,ilab::k
+      | A.Pagealign -> seen,[emit_pagealign]
       | A.Instruction ins ->
           seen,C.compile_ins (tr_lab seen) ins []
       | A.Symbolic _ (*no symbolic in litmus *)
+      | A.Skip _
       | A.Macro (_,_) -> assert false in
 
       let rec do_rec seen = function
@@ -503,6 +514,7 @@ module A.FaultType = A.FaultType)
          A.dump_instruction ins::k
       | A.Macro _|A.Symbolic _
         -> assert false
+      | A.Pagealign| A.Skip _ -> assert false (* support for .pagealign not implemented yet*)
 
     let pp_code code =
       let k = List.fold_right pp_pseudo code [] in
@@ -866,12 +878,24 @@ module A.FaultType = A.FaultType)
                       "Architecture %s has no NOP instruction, compilation is impossible"
                       (Archs.pp A.arch)
                 | Some nop ->
-                    A.Instruction nop in
-              (* Except in user mode, where it will be added later *)
-              let c = if not is_user then nop::c else c in
-              let c = (* Append nop for faukt handler to return at end of code *)
-                if do_append_nop then c@[nop] else c in
-              p,(c,f)) prog
+                   A.Instruction nop in
+              if do_self && is_pte then
+                begin
+                  (* Add start marker and align the rest to the page boundary *)
+                  let c = [nop;A.Pagealign]@c in
+                  (* Align the rest to the page boundary and add marker *)
+                  let c = if do_append_nop then c@[A.Pagealign;nop] else c in
+                  p,(c,f)
+                end
+              else
+                begin
+                  (* Except in user mode, where it will be added later *)
+                  let c = if not is_user then nop::c else c in
+                  let c = (* Append nop for faukt handler to return at end of code *)
+                    if do_append_nop then c@[nop] else c in
+                  p,(c,f)
+                end
+            ) prog
         else prog in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty

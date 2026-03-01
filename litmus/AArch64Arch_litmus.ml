@@ -149,12 +149,13 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
     let active = true
 
-    let self_instrs = [I_NOP; I_RET None; ]
+    let self_instrs = [I_MOV(V32,ZR,K 0); I_RET None; ]
 
     let lower_instr i = Misc.lowercase (dump_instruction i)
 
-    let instr_name i =
-      MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+    let instr_name i = match i with
+      | I_MOV(V32,ZR,K 0) -> "nop"
+      | _ -> MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
 
     let fun_name i = sprintf "get%s" (instr_name i)
 

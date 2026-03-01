@@ -62,6 +62,8 @@ module Pseudo(A:Arch_litmus.S) = struct
         "%s(%s)"
         f
         (String.concat "," (List.map A.pp_reg regs))
+  | A.Pagealign -> ".pagealign"
+  | A.Skip _ -> assert false
 
   let dump_prog _ (p,is) = MiscParser.pp_proc  p::List.map fmt_io is
 

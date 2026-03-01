@@ -381,6 +381,7 @@ type instruction =
   | I_CLFLUSH of opt * effaddr
 
 let nop = Some I_NOP
+and mk_imm_branch _ = None
 and is_nop = function
   | I_NOP -> true
   | _ -> false

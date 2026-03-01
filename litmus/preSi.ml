@@ -156,6 +156,12 @@ module Make
 
       let do_self = Cfg.variant Variant_litmus.Self
 
+      let is_pte =
+        let open Mode in
+        match Cfg.mode with
+        | Std|PreSi -> false
+        | Kvm -> true
+
 (*************)
 (* Utilities *)
 (*************)
@@ -718,8 +724,12 @@ module Make
           O.o "typedef struct {" ;
           List.iter
             (fun (p,lbl) ->
-              O.fi "ins_t *%s;"
-                (OutUtils.fmt_lbl_var p lbl)) CfgLoc.all_labels ;
+              let lbl_var = OutUtils.fmt_lbl_var p lbl in
+              O.fi "ins_t *%s;" lbl_var;
+              if Cfg.is_kvm then begin
+                O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
+                O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
+              end;) CfgLoc.all_labels ;
           if do_precise then O.fi "ins_t *ret[N];" ;
           O.o "} labels_t;" ;
           O.o ""
@@ -1447,8 +1457,13 @@ module Make
                 (fun (n,(t,_)) ->
                   O.fi "_vars->%s = code_size((ins_t *)%s,%i);"
                     (fmt_code_size n) (fmt_code n) (A.Out.get_nrets t) ;
-                  O.fi "_vars->%s = prelude_size((ins_t *)%s);"
-                    (fmt_prelude n) (fmt_code n);
+                  let prelude_size =
+                    if do_self && is_pte then
+                      sprintf "ALIGN(prelude_size((ins_t *)%s),PAGE_SIZE)/sizeof(ins_t)-1" (fmt_code n)
+                    else
+                      sprintf "prelude_size((ins_t *)%s)" (fmt_code n)
+                  in
+                  O.fi "_vars->%s = %s;" (fmt_prelude n) prelude_size;
                   if Cfg.is_kvm then
                     O.fi "_vars->%s = memalign_pages(LINE, _vars->%s);"
                       (fmt_code n) (fmt_code_size n)
@@ -1477,17 +1492,30 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise then
             O.fi "labels_t *lbls = &_vars->labels;" ;
+          if Cfg.is_kvm && Misc.consp CfgLoc.all_labels then
+            O.oi "pteval_t *_p;" ;
+          O.o "";
           List.iter (fun (p,lbl) ->
+              let lbl_var = OutUtils.fmt_lbl_var p lbl in
               let off = U.find_label_offset p lbl test in
-              let lhs = sprintf "lbls->%s" (OutUtils.fmt_lbl_var p lbl) in
+              let lhs = sprintf "lbls->%s" lbl_var in
               let proc = if do_self then
                   sprintf "_vars->%s" (LangUtils.code_fun p)
                 else
                   LangUtils.code_fun p in
+              let prelude =
+                if do_self then
+                  sprintf "_vars->%s" (OutUtils.fmt_prelude p)
+                else
+                  sprintf "prelude_size((ins_t *)%s)" (LangUtils.code_fun p) in
               let rhs =
-                sprintf "((ins_t *)%s)+prelude_size((ins_t *)%s)+%d"
-                  proc (LangUtils.code_fun p) off in
-              O.fi "%s = %s;" lhs rhs)
+                sprintf "((ins_t *)%s)+%s+%d"
+                  proc prelude off in
+              O.fi "%s = %s;" lhs rhs;
+              if Cfg.is_kvm then begin
+                O.fi "lbls->%s = _p = litmus_tr_pte((void *)%s);" (OutUtils.fmt_pte_tag lbl_var) lhs;
+                O.fi "lbls->%s = *_p;" (OutUtils.fmt_phy_tag lbl_var);
+              end;)
             CfgLoc.all_labels ;
           if do_precise then begin
             List.iter
@@ -1735,7 +1763,41 @@ module Make
                 with Not_found ->
                   ()
               )
-              inits
+              inits;
+            List.iter
+              (fun (p,lbl) ->
+                let x = sprintf "%d:%s" p lbl in
+                let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                try
+                  begin match Misc.Simple.assoc x bds with
+                  | P phy ->
+                      O.fii
+                        "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
+                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                  | Z ->
+                      O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
+                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                  | V (o,pteval) ->
+                      let is_default = A.V.PteVal.is_default pteval in
+                      if not (o = None && is_default) then begin
+                        let arg = match o with
+                          | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
+                          | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
+                        O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
+                        List.iter
+                          (fun attr ->
+                             O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
+                          (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                        O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
+                        O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                      end
+                  end
+                with Not_found ->
+                  ()
+              )
+              CfgLoc.all_labels;
         end ;
         (* Synchronise *)
         if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
@@ -1792,7 +1854,16 @@ module Make
             (i_ptes@i_non_ptes) ;
           List.iter
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
-            inits
+            inits;
+          List.iter
+            (fun (p,lbl) ->
+              let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+              let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+              let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+              let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
+              O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte;
+              O.fii "litmus_flush_tlb((void *)%s);" lbl_loc;)
+            CfgLoc.all_labels
         end ;
 (* Save/Restore memtags *)
         O.oii "barrier_wait(_b);" ;

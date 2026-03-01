@@ -27,6 +27,7 @@ module type I = sig
   type fault_type
   val pp_fault_type : fault_type -> string
   val fault_type_compare : fault_type -> fault_type -> int
+  val fault_type_matches : fault_type -> fault_type -> bool
 end
 
 type ('loc, 'ftype) atom =

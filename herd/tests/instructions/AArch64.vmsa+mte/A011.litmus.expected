@@ -1,7 +1,7 @@
 Test A011 Allowed
 States 3
 [x]=0; Fault(P0:L0,x:red,TagCheck);
-[x]=0; Fault(P0:L0,x:red,MMU:Permission);
+[x]=0; Fault(P0:L0,x:red,D-MMU:Permission);
 [x]=1;  ~Fault(P0:L0,x);
 Ok
 Witnesses

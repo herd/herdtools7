@@ -45,6 +45,7 @@ module type S = sig
   type instruction
 
   val nop : instruction option
+  val mk_imm_branch : int -> instruction option
   val is_nop : instruction -> bool
 
   (* Print instruction with formatting mode *)

@@ -112,7 +112,7 @@ module Make(C:Config)(E:Extra) = struct
            (fun (ty,v) -> sprintf "%s %s" ty v)
            defs) in
     (* Function prototype  *)
-    LangUtils.dump_code_def chan E.noinline C.mode proc params ;
+    LangUtils.dump_code_def chan E.noinline false C.mode proc params ;
     (* body *)
     dump_start chan "  " proc ;
     CTarget.out_code chan t.CTarget.code ;

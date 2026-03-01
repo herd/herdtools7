@@ -1,6 +1,6 @@
 Test MP-I2V+rel+dmb.ld Allowed
 States 2
-1:X0=0; Fault(P1:L0,y,MMU:Translation);
+1:X0=0; Fault(P1:L0,y,D-MMU:Translation);
 1:X0=1;  ~Fault(P1:L0,y);
 No
 Witnesses
