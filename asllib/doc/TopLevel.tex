@@ -226,7 +226,7 @@ yielding the subprogram description $\vnewf$.
 \begin{mathpar}
 \inferrule{
   {
-  \vf \eqname
+  \vf \reverseeqdef
   {
   \left\{
     \begin{array}{rcl}
@@ -362,7 +362,7 @@ yielding the list of parameters $\newparams$.
 
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \params \eqname (\name,\tyopt) \cons \vargsone\\
+  \params \reverseeqdef (\name,\tyopt) \cons \vargsone\\
   \renamelocalsname(\name) \astarrow \namep\hva\\
   \mapopt{\renamelocalsty}(\tyopt) \astarrow \tyoptp\\
   \renamelocalsnamedargs(\paramsone) \astarrow \paramsonep
@@ -1679,7 +1679,7 @@ It produces a build error when $\decl$ is not a function.
 \begin{mathpar}
 \inferrule{
   \becheck(\astlabel(\vdecl) = \DFunc, \BuildBadDeclaration) \typearrow \True \OrBuildError\hva\\\\
-  \vdecl \eqname \DFunc(\funcsig)\\
+  \vdecl \reverseeqdef \DFunc(\funcsig)\\
   \funcsigp \eqdef \funcsig[\funcbuiltin \mapsto \True]
 }{
   \setbuiltin(\vdecl) \astarrow \DFunc(\funcsigp)

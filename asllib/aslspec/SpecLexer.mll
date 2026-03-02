@@ -63,6 +63,7 @@ rule token = parse
     | "semantics"           { SEMANTICS }
     | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
     | "then"                { THEN }
+    | "typecast"            { TYPECAST }
     | "typedef"             { TYPEDEF }
     | "typing"              { TYPING }
     | "variadic"            { VARIADIC }

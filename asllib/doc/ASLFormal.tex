@@ -25,41 +25,39 @@ We use $\triangleq$ to define mathematical concepts.
 
 We define the following sets:
 \begin{itemize}
-\item \RenderType{N} is the set of natural numbers, including $0$.
+\item \texthypertarget{type-N}$\N$ is the set of natural numbers, including $0$.
 
 \item \RenderType{N_pos} is the set of positive natural numbers (that is, excluding $0$).
 
-\item \RenderType{Z}
-is the set of integers.
+\item \texthypertarget{type-Z}$\Z$ is the set of integers.
 
-\item \RenderType{Q}
-is the set of rational numbers.
+\item \texthypertarget{type-Q}$\Q$ is the set of rational numbers.
 
 \item The set of ASL Boolean literals is defined as follows:
 \RenderType{Bool}
 We employ these literals to represent the corresponding mathematical truth values,
 which are used to denote whether logical assertions hold or not.
-\hypertarget{operator-land}{}\hypertarget{operator-lor}{}%
+\texthypertarget{relation-land}\texthypertarget{relation-lor}%
 We also employ the mathematical meaning of logical conjunction $\land$, logical disjunction $\lor$,
 and logical negation $\neg$, given next.
 For a set of Boolean values $A$:
 \[
   \begin{array}{rcl}
-  \land A &\triangleq&
+  \listand A &\triangleq&
   \begin{cases}
     \True & \text{if all values in A are }\True\\
     \False & \text{otherwise}
   \end{cases}\\
-  \lor A &\triangleq&
+  \listor A &\triangleq&
   \begin{cases}
     \False & \text{if all values in A are }\False\\
     \True & \text{otherwise}
   \end{cases}
 \end{array}
 \]
-\hypertarget{operator-neg}{}
-\hypertarget{operator-IFF}{}
-\hypertarget{operator-implies}{}
+\texthypertarget{relation-neg}%
+\texthypertarget{relation-IFF}%
+\texthypertarget{relation-implies}%
 For a pair of Boolean values $a,b\in\Bool$, we define $a \land b \triangleq \land\{a, b\}$
 and $a \lor b \triangleq \lor\{a, b\}$.
 We define implication as $a \implies b \triangleq \neg{}a \lor b$, and
@@ -67,12 +65,11 @@ bi-implication as $a \IFF b \triangleq (a \implies b) \land (b \implies a)$.
 Finally, $\neg\True\triangleq\False$ and $\neg\False\triangleq\True$.
 
 \item \RenderType{Bit}
-is the set $\{0,1\}$. That is, a single bit.
+is the set $\{\zerobit,\onebit\}$. That is, a single bit.
 
-\item \RenderType{Identifier}
-is the set of all ASL identifiers.
+\item \texthypertarget{type-Strings}$\Strings$ is the set of all ASCII strings.
 
-\item $\Strings$ is the set of all ASCII strings.
+\item the set of all ASL identifiers is defined as \RenderType{Identifier}
 
 \item \RenderType{ASTLabels}
 is the set of all labels of Abstract Syntax Tree (AST) nodes.
@@ -90,6 +87,9 @@ we can refer to it in text. We especially use this to name the input arguments a
 output results of functions and relations. For example, the input argument of $\sign$,
 defined next, is named $q$.
 
+\texthypertarget{def-choice}
+We write ``$\ifthenelseop[H]{c}{v}{w}$'' to denote the value of $v$ if the condition $c$ holds, and $w$ otherwise.
+
 \hypertarget{def-sign}{}
 \begin{definition}[Sign of a Rational Number]
 \hypertarget{constant-positivesign}{}
@@ -97,12 +97,12 @@ defined next, is named $q$.
 \hypertarget{constant-equalsign}{}
 \RenderType{Sign}
 
-The function $\sign : \overname{\Q}{q} \rightarrow \Sign$ returns the sign of $\vq$:
+The function $\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}$ returns the sign of $\vq$:
 \[
-\sign(q) \triangleq \begin{cases}
-  \positivesign & \text{if }q > 0\\
-  \equalsign & \text{if }q = 0\\
-  \negativesign & \text{if }q < 0
+\sign(\vq) \triangleq \begin{cases}
+  \positivesign & \text{if }\vq > 0\\
+  \equalsign & \text{if }\vq = 0\\
+  \negativesign & \text{if }\vq < 0
 \end{cases}
 \]
 \end{definition}
@@ -111,7 +111,7 @@ The function $\sign : \overname{\Q}{q} \rightarrow \Sign$ returns the sign of $\
   The \emph{empty set} --- the set that does not contain any element --- is denoted as \RenderConstant{empty_set}.
 \end{definition}
 
-\hypertarget{operator-cardinality}{}
+\hypertarget{relation-cardinality}{}
 \begin{definition}[Set Cardinality]
   For a set $S$, the notation $\cardinality{S}$ stands for the number of elements in $S$.
 \end{definition}
@@ -154,10 +154,16 @@ We use the symbol \RenderConstant{bot} to denote an undefined, or missing, value
 \begin{definition}[Partial Function\label{def:PartialFunction}]
   A \emph{partial function}, denoted $f : A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
   The \emph{domain} of a partial function $f$, denoted $\dom(f)$, is the subset of $A$ for which it is defined.
-  We write $f(x) = \bot$ to denote that $x$ is not in the domain of $f$, that is, $x \not\in \dom(f)$.
+  We use expressions like $x \in \dom(f)$ and $x \not\in \dom(f)$ to check whether $x$ is in the domain of $f$
+  or not in the domain of $f$, respectively.
 \end{definition}
 
 Notice that the domain of a partial function need not be finite, which is what the following definition covers.
+
+\paragraph{Parametric Functions and Relations}
+A \emph{parametric function} is a function whose domain is not a priori fixed but rather
+parameterized by the type of its arguments. An example is the $\equallength$ function where the
+types $A$ and $B$ (of the list elements) are not explicitly specified, but rather inferred from the context where the function is used.
 
 \hypertarget{def-finfunction}{}
 \begin{definition}[Finite-domain Function]
@@ -181,7 +187,9 @@ The function with an empty domain is denoted as $\emptyfunc$.
   \]
 
   The notation $\{i=1..k: a_i\mapsto b_i\}$ stands for the function formed from the corresponding input-output pairs:
-  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$.
+  $\emptyfunc[a_1\mapsto b_1]\ldots[a_k\mapsto b_k]$ (alternatively, \\
+  \texthypertarget{def-bindingstomap}
+  $\bindingstomap{[i=1..k: a_i\mapsto b_i]}$)
 \end{definition}
 
 \begin{definition}[Function Restriction]
@@ -201,28 +209,10 @@ This makes it convenient to refer to arguments by referring to the corresponding
 the expressions corresponding to the arguments.
 For example,
 \[
-    \choicename : \overname{\Bool}{b} \cartimes \overname{T}{x} \cartimes \overname{T}{y} \rightarrow \overname{T}{z}
+\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}
 \]
-defines a function type and lets us refer to the first argument as $b$, the second argument as $x$,
-the third argument as $y$, and to the result as $z$.
-
-\paragraph{Parametric Functions and Relations}
-A \emph{parametric function} is a function whose domain is not a priori fixed but rather
-parameterized by the type of its arguments. An example is the $\choicename$ function where the type $T$ of
-$x$, $y$, and $z$ is unspecified and inferred from the context where the function is used.
-
-\hypertarget{def-choice}{}
-\begin{definition}[Choice]
-The parametric function $\choicename : \overname{\Bool}{b} \cartimes \overname{T}{x} \cartimes \overname{T}{y} \rightarrow \overname{T}{z}$,
-is defined as follows:
-\[
-  \choice{\vb}{x}{y} \triangleq
-  \begin{cases}
-    x & \text{ if }\vb \text{ is }\True\\
-    y & \text{ otherwise}\\
-  \end{cases}
-\]
-\end{definition}
+defines a function type and lets us refer to its argument as $\vq$
+and to the result as $\vs$.
 
 \subsection{Lists}
 In the remainder of this document, we use the term \emph{list} and \emph{sequence} interchangeably.
@@ -240,10 +230,12 @@ and the \emph{\tail} of the list is the suffix obtained by removing $v_1$ from t
 We refer to individual elements of a non-empty list $V$ by the index notation $V[i]$ where $i\in\Npos$.
 
 \begin{definition}[List Length]
-\hypertarget{operator-listlen}{}
+\hypertarget{relation-listlen}{}
 The \emph{length} of a list is the number of elements in that list:
 $\listlen{\emptylist} \triangleq 0$ and $\listlen{v_1,\ldots,v_k}=k$.
 \end{definition}
+\texthypertarget{relation-samelength}
+We write $\samelengthop[H]{a}{b}$ to denote that two lists $a$ and $b$ have the same length.
 
 We use the notation $a..b$, where $a,b\in\Z$ as a shorthand for the interval $[a\ldots b]$
 (counting up when $a \leq b$ and counting down when $a \geq b$).
@@ -265,18 +257,30 @@ Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ 
 
 \hypertarget{def-listset}{}
 \begin{definition}[Listing a Set]
-The parametric relation $\listset : \pow{T} \cartimes \KleeneStar{T}$
+The parametric relation $\listset{\pow{T}} \cartimes \KleeneStar{T}$
 lists the elements of a set in an arbitrary order:
 
 \[
-\listset(X) \triangleq \begin{cases}
+\listset{X} \triangleq \begin{cases}
   \emptylist & \text{if }X = \emptyset\\
   x_{1..k}\text{ such that }|X| = k\text{ and }\forall x\in X.\ \exists 1 \leq i \leq k.\ x = x_i & \text{otherwise } \enspace.
 \end{cases}
 \]
 \end{definition}
 
-\hypertarget{operator-concat}{}
+\hypertarget{relation-bindings}{}
+\begin{definition}[Listing the Bindings of a Function]
+The parametric relation
+\[
+\bindings{\overtext{A \partialto B}{\vf}} \cartimes (\KleeneStar{A \times B})
+\]
+lists the pairs of input-output values for a given partial function $f$ in arbitrary order:
+\[
+\bindings{f} = [ (a,b) \;|\; a \in \dom(f) \wedge f(a) = b] \enspace.
+\]
+\end{definition}
+
+\hypertarget{relation-concat}{}
 \begin{definition}[List Concatenation]
 The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \rightarrow \KleeneStar{T}$ concatenates two lists:
 \[
@@ -289,7 +293,7 @@ The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \righ
 \]
 \end{definition}
 
-\hypertarget{operator-concatlist}{}
+\hypertarget{relation-concatlist}{}
 \begin{definition}[Concatenation of a List of Lists]
 The parametric function
 \[
@@ -305,7 +309,7 @@ concatenates a list of lists:
 \end{definition}
 
 \begin{definition}[List Consing]
-\hypertarget{operator-cons}{}
+\hypertarget{relation-cons}{}
 The notation $h \cons t$, where $h \in T$ and $t \in \KleeneStar{T}$,
 denotes $[h] \concat t$, that is, the list formed by prepending the element $h$ to the front of the list $t$.
 \end{definition}
@@ -314,7 +318,7 @@ denotes $[h] \concat t$, that is, the list formed by prepending the element $h$ 
 \begin{definition}[Equating List Lengths]
 The parametric function
 \[
-  \equallength : \overname{L}{a} \cartimes \overname{L}{b} \rightarrow \Bool
+  \equallength : \overname{\KleeneStar{A}}{a} \cartimes \overname{\KleeneStar{B}}{b} \rightarrow \Bool
 \]
 compares the length of two lists:
 \[
@@ -324,10 +328,10 @@ compares the length of two lists:
 
 \hypertarget{def-listprefix}{}
 \begin{definition}[List Prefix]
-The parametric function $\listprefix : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
+The parametric function $\listprefixname : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
 the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 \[
-\listprefix(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
+\listprefixname(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
 \]
 \end{definition}
 
@@ -342,7 +346,23 @@ The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}
 \]
 \end{definition}
 
-\hypertarget{operator-listfst}{}
+\texthypertarget{relation-filteroptionlist}
+\begin{definition}[Filtering a List of Optional Values]
+The parametric function
+\[
+  \filteroptionlist{\KleeneStar{\Option{ T }}} \aslto \KleeneStar{T}
+\]
+filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$:
+\[
+\filteroptionlist{L} \triangleq \begin{cases}
+  \emptylist & \text{if }L = \emptylist\\
+  \filteroptionlist{L'} & \text{if }L = \None \cons L'\\
+  v \cons \filteroptionlist{L'} & \text{if }L = \some{v} \cons L' \enspace.
+\end{cases}
+\]
+\end{definition}
+
+\hypertarget{relation-listfst}{}
 \begin{definition}[Extracting the First Components from a List of Pairs]
 The\\ parametric function
 \[
@@ -371,7 +391,7 @@ transforms a list of pairs into the corresponding pair of lists:
   \end{cases}
 \]
 \end{definition}
-\hypertarget{operator-listcombine}{} % DO NOT LINT
+\texthypertarget{relation-listcombine}
 As a shorthand, we use the notation $\listcombine{a}{b} = c$ for $\unziplist(c) = (a, b)$.
 
 \hypertarget{def-unziplistthree}{}
@@ -388,33 +408,34 @@ transforms a list of triples into the corresponding triple of lists:
   \end{cases}
 \]
 \end{definition}
-\hypertarget{operator-listcombinethree}{} % DO NOT LINT
+\texthypertarget{relation-listcombinethree}
 As a shorthand, we use the notation $\listcombinethree{a}{b}{c} = d$ for $\unziplistthree(d) = (a, b, c)$.
 
-\hypertarget{def-uniquelist}{}
-\hypertarget{def-uniquep}{}
-\begin{definition}[Finding unique elements of a list]
+\begin{definition}[Lists Cross-product]
+\texthypertarget{relation-listcross}
 The parametric function
 \[
-\uniquelist : \overname{\KleeneStar{T}}{l} \rightarrow \KleeneStar{T}
+\listcrossop : \KleeneStar{T_1} \cartimes \KleeneStar{T_2} \aslto \KleeneStar{(T_1 \cartimes T_2)}
 \]
-retains a single copy of each element of the list $l$.
-It relies on the helper function $\uniquep$:
+computes the cross-product of two lists:
 \[
-\begin{array}{rcl}
-\uniquelist(l) &\triangleq& \uniquep(l, \emptylist)\\ \\
-\uniquep(l, \acc) &\triangleq&
-  \begin{cases}
-    \acc & \text{if }l = \emptylist\\
-    \uniquep(t, \acc)& \text{if }l = h \cons{} t \text{ and } h \inlist \acc\\
-    \uniquep(t, \acc \concat [h]) & \text{if }l = h \cons{} t \text{ and } h \not\inlist \acc\\
-  \end{cases}
-\end{array}
+  \vsone{} \listcrossop{} \vstwo \triangleq [(a,b) \;|\; a \in \vsone, b \in \vstwo] \enspace.
 \]
 \end{definition}
 
+\begin{definition}[Finding unique elements of a list]
+% TODO: Move this to the Type System Utilities chapter
+\RenderRelation{unique_list}
+\RenderRule{unique_list}
+
+It relies on the following helper function.
+\RenderRelation{unique_list_acc}
+which is defined as followg:
+\RenderRule{unique_list_acc}
+\end{definition}
+
 \begin{definition}[Finding a Value in a List of Pairs]
-\hypertarget{operator-assocopt}{}
+\hypertarget{relation-assocopt}{}
 The function
 \[
   \assocopt{\overname{\KleeneStar{(\Identifier\cartimes T)}}{\vli}}{\overname{\Identifier}{\id}} \aslto \Option{\overname{T}{\vv}}
@@ -435,14 +456,29 @@ takes the union of a list of sets:
 \]
 \end{definition}
 
+\begin{definition}[Taking the intersection of a list of sets]
+The parametric function
+\hypertarget{def-intersectionlist}{}
+\[
+\intersectionlist : \KleeneStar{\pow{T}} \rightarrow \pow{T}
+\]
+takes the intersection of a list of sets:
+\[
+  \intersectionlistop{S_{1..k}} \triangleq \bigcap_{i=1}^{k} S_i \enspace.
+\]
+\end{definition}
+
+\texthypertarget{def-disjointunion}
+We write $\disjointunion$ to denote a union of pairwise disjoint sets.
+
 \subsection{Strings}
-\hypertarget{operator-stringconcat}{}
+\hypertarget{relation-stringconcat}{}
 The function $\concatstrings : \Strings \cartimes \Strings \rightarrow \Strings$
 concatenates two strings. %
 We slightly abuse notation by using the same symbol $\concat$ for concatenating
 a string $S$ and an integer $n$, separated by a hyphen, for example, \verb|return-42|.
 
-\hypertarget{operator-stringofnat}{}
+\hypertarget{relation-stringofnat}{}
 The function $\stringofnatname : \N \rightarrow \Strings$ converts a natural number
 to the corresponding decimal string.
 
@@ -457,7 +493,7 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 
 \hypertarget{def-Option}{}
 \begin{definition}[Optional Data Type]
-\hypertarget{operator-some}{}
+\hypertarget{relation-some}{}
 The notation $\some{x} \triangleq \{x\}$ stands for a singleton
 set containing $x$.
 %
@@ -663,7 +699,7 @@ Our rules always define relations whose sets of input \configurationsterm{} and 
 
 \hypertarget{def-freshvariables}{}
 \begin{definition}[Fresh Element]
-  Premises of the form ``\texttt{$x\in T$ is fresh}'' mean that in any
+  Premises of the form ``$\freshidentifier$'' mean that in any
   instantiation in a derivation tree, the value of $x$ is unique.
   That is, different from all other values instantiated for any other variable.
 \end{definition}
@@ -687,8 +723,8 @@ shown here:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
-  \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
+  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \vep \eqdef \ifthenelseop[H]{\vb}{\veone}{\vetwo}\hva\\\\
   \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
@@ -716,23 +752,23 @@ shown here:
   \item[Predicate:] we write $a = b$ as an assertion of the equality of $a$ and $b$.
   For example, the mathematical identity $x \times (y + z) = x \times y + x \times z$.
 
-  \hypertarget{def-deconstruction}{}
+  \hypertarget{relation-reverseassign}{}
   \item[Deconstruction / ``View as'':] some values, such as tuples, are compound. In order to refer to the structure
-  of compound values, we write $v \eqname \textit{f}(u_{1..k})$ where the expression on the right-hand side exposes the internal structure of $v$ by introducing the variables
+  of compound values, we write $v \reverseeqdef \textit{f}(u_{1..k})$ where the expression on the right-hand side exposes the internal structure of $v$ by introducing the variables
   $u_{1..k}$, allowing us to alias internal components of $v$.
   Intuitively, $v$ is reinterpreted as $\textit{f}(u_{1..k})$.
   For example, suppose we know that $v$ is a pair of values.
-  Then, $v \eqname (a, b)$ allows us to alias $a$ and $b$.
+  Then, $v \reverseeqdef (a, b)$ allows us to alias $a$ and $b$.
   In \SemanticsRuleRef{ECond}, we know from the definition of $\evalexpr$ that
   $\mcond$ is a pair datatype.
-  Therefore, writing $\mcond \eqname (\nvbool(\vb), \vgone)$ allows us to name each component of this pair
+  Therefore, writing $\mcond \reverseeqdef (\nvbool(\vb), \vgone)$ allows us to name each component of this pair
   and then refer to it, while \hyperlink{def-ignore}{ignoring} the \staticenvironmentterm{} component.
-  Similarly, if $v$ is a non-empty list, then $v \eqname [h] + t$ deconstructs the list into the
+  Similarly, if $v$ is a non-empty list, then $v \reverseeqdef h \cons{} t$ deconstructs the list into the
   head of the list $h$ and its tail $t$.
-  Given that a variable $v$ represents a list, we write $v \eqname v_{1..k}$ to list its elements and allow
+  Given that a variable $v$ represents a list, we write $v \reverseeqdef v_{1..k}$ to list its elements and allow
   referring to them by index.
 
-\hypertarget{def-eqdef}{}
+\hypertarget{relation-assign}{}
 \item[Definition / ``Define as'':] the notation $\vx \eqdef \ve$ denotes that $\vx$ is a new name serving as an alias for the expression $\ve$.
 For example, in the rule \SemanticsRuleRef{ECond}, we use $\vg$ to name the mathematical expression
 $\ordered{\vgone}{\aslctrl}{\vgtwo}$.
@@ -741,8 +777,8 @@ by inlining their right-hand sides:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
-  \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \evalexpr(\envone, \choice{\vb}{\veone}{\vetwo}) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv) \OrAbnormal
+  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \evalexpr(\envone, \ifthenelseop[H]{\vb}{\veone}{\vetwo}) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv) \OrAbnormal
 }{
   {
   \begin{array}{r}
@@ -779,8 +815,8 @@ Consider the following examples, which is a simplified version of \SemanticsRule
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
-  \vmone \eqname (\vvone, \vgone) \\
-  \vmtwo \eqname (\vvtwo, \vgtwo) \\
+  \vmone \reverseeqdef (\vvone, \vgone) \\
+  \vmtwo \reverseeqdef (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -919,8 +955,8 @@ This time, not simplified:
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
-  \vmone \eqname (\vvone, \vgone) \\
-  \vmtwo \eqname (\vvtwo, \vgtwo) \\
+  \vmone \reverseeqdef (\vvone, \vgone) \\
+  \vmtwo \reverseeqdef (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv\; \terminateas\; \DynErrorConfig\hva\\\\
   \vg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -1015,8 +1051,8 @@ Expanding the last transition judgment, gives us the case:
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
   \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \hva\\\\
-  \vmone \eqname (\vvone, \vgone) \\
-  \vmtwo \eqname (\vvtwo, \vgtwo) \\
+  \vmone \reverseeqdef (\vvone, \vgone) \\
+  \vmtwo \reverseeqdef (\vvtwo, \vgtwo) \\
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynErrorConfig
 }{
   \evalexpr( \env, \EBinop(\op, \veone, \vetwo) ) \evalarrow
@@ -1047,28 +1083,50 @@ and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{}
 
 We define a similar function for type errors.
 \RenderRelation{te_check}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
 \hva\and
 \inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{te_check}
 
 We define a similar function for dynamic errors.
 \RenderRelation{de_check}
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
 \hva\and
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{de_check}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}
-We define the following rules to allow us to treat Boolean values as transition judgments,
-which in turn allow us to employ \shortcircuitrulemacros{}:
+We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgments,
+which in turn allows us to employ \shortcircuitrulemacros{}:
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
 \hva\and
 \inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
+\end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{bool_transition}
+
+This is useful in defining functions that return a Boolean value, where if a condition does not hold,
+there is no need to consider the rest of the premises, and the function can simply return $\False$:
+\begin{mathpar}
+\inferrule{
+  \booltrans(\vx > \vy) \booltransarrow \True\ \terminateas\ \False\\\\
+  p_2\\\\
+  \ldots\\\\
+  p_k
+}{
+  \textfunc{complex\_condition}(\vx, \vy) \booltransarrow \vb
+}
 \end{mathpar}
 
 \subsection{Judgments Over Optional Data Types}

@@ -109,6 +109,7 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\hva\\\\
@@ -124,6 +125,8 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
   (\vcallp, \retty)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_call}
 \CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
 \identi{VFDP} \identd{TRFW} \identr{KMDB}
 \identi{YMHX} \identr{CCVD} \identr{QYBH} \identr{PFWQ} \identr{ZLWD}
@@ -183,6 +186,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
@@ -220,6 +224,8 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_call_actuals_typed}
 \CodeSubsection{\AnnotateCallActualsTypedBegin}{\AnnotateCallActualsTypedEnd}{../Typing.ml}
 
 \TypingRuleDef{InsertStdlibParam}
@@ -270,6 +276,7 @@ parameters elided, and the equivalent calls with all parameters included.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[can\_insert]{
   {
@@ -280,7 +287,7 @@ parameters elided, and the equivalent calls with all parameters included.
     \end{array}\right)
   }\\
   \caninsertstdlibparam = \True\hva\\\\
-  \argtypes \eqname [\vt] \concat \Ignore\\
+  \argtypes \reverseeqdef [\vt] \concat \Ignore\\
   \getbitvectorwidth(\tenv, \vt) \typearrow \vwidth \OrTypeError\hva\\\\
   \paramtype \eqdef \TInt(\WellConstrained([\AbbrevConstraintExact{\vwidth}]))\\
   \paramsone \eqdef \params \concat [(\paramtype, \vwidth, \emptyset)]
@@ -303,6 +310,8 @@ parameters elided, and the equivalent calls with all parameters included.
   \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \overname{\params}{\paramsone}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{insert_stdlib_param}
 
 \TypingRuleDef{CanOmmitStdlibParam}
 \RenderRelation{can_omit_stdlib_param}
@@ -413,6 +422,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \checkparamstypesat(\tenv, \overname{\emptylist}{\funcsigparams}, \Ignore) \typearrow \True
@@ -436,7 +446,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
   \checksymbolicallyevaluable(\vsesactual) \typearrow \True\OrTypeError\hva\\\\
   \checkconstrainedinteger(\tenv, \tyactual) \typearrow \True\OrTypeError\hva\\\\
   \commonprefixline\hva\\\\
-  \tydeclopt \eqname \some{\tydecl}\\
+  \tydeclopt \reverseeqdef \some{\tydecl}\\
   \tydecl \neq \TInt(\Parameterized(\vx))\hva\\
   \checktypesatisfies(\tenv, \tyactual, \tydecl) \typearrow \True \OrTypeError\hva\\\\
   \checkparamstypesat(\tenv, \funcsigparamsone, \paramsone) \typearrow \True \OrTypeError
@@ -444,6 +454,8 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_params_typesat}
 
 \TypingRuleDef{RenameTyEqs}
 \RenderRelation{rename_ty_eqs}
@@ -502,6 +514,7 @@ requires substituting \verb|8| for \verb|N| in the types
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bits]{
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
@@ -539,6 +552,8 @@ requires substituting \verb|8| for \verb|N| in the types
   \renametyeqs(\tenv, \eqs, \tty) \typearrow \overname{\tty}{\newty}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{rename_ty_eqs}
 
 \TypingRuleDef{SubstExprNormalize}
 \RenderRelation{subst_expr_normalize}
@@ -560,6 +575,7 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \substexpr(\tenv, \ve) \typearrow \veone\\
@@ -568,6 +584,8 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{subst_expr_normalize}
 
 \TypingRuleDef{SubstExpr}
 \RenderRelation{subst_expr}
@@ -748,6 +766,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[e\_var\_in\_substs]{
   \assocopt{\vs}{\substs} \typearrow \some{\newe}
@@ -924,7 +943,8 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
   \substexpr(\tenv, \substs, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
-
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{subst_expr}
 \CodeSubsection{\SubstExprBegin}{\SubstExprEnd}{../ASTUtils.ml}
 
 \TypingRuleDef{SubstConstraint}
@@ -959,6 +979,7 @@ resulting in the type \verb|integer{0..64}|.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \vc = \ConstraintExact(\ve)\\
@@ -975,6 +996,8 @@ resulting in the type \verb|integer{0..64}|.
   \substconstraint(\tenv, \eqs, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{subst_constraint}
 
 \TypingRuleDef{CheckArgsTypeSat}
 \RenderRelation{check_args_typesat}
@@ -1019,6 +1042,7 @@ In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
 We note that \TypingRuleRef{AnnotateCallActualsTyped} guarantees
 that $\funcsigargs$ and $\argtypes$ have the same length.
 
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \checkargstypesat(\tenv, \overname{\emptylist}{\funcsigargs}, \overname{\emptylist}{\argtypes}, \eqs)
@@ -1035,6 +1059,8 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
   \checkargstypesat(\tenv, \funcsigargs, \argtypes, \eqs) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_args_typesat}
 
 \TypingRuleDef{AnnotateRetTy}
 \RenderRelation{annotate_ret_ty}
@@ -1079,6 +1105,7 @@ and functions can only be used in call expressions.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[function\_or\_getter]{
   \calltype \in \{\STFunction, \STGetter\}\\
@@ -1112,9 +1139,24 @@ and functions can only be used in call expressions.
   \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_ret_ty}
 
 \TypingRuleDef{SubprogramForSignature}
 \RenderRelation{subprogram_for_signature}
+
+This function determines which one of
+the following cases holds:
+\begin{enumerate}
+\item there is no declared subprogram that matches $\name$, $\callerargtypes$, \\ and $\calltype$; or
+\item there is exactly one subprogram that matches $\name$, $\callerargtypes$, \\ and $\calltype$;
+\end{enumerate}
+If more than one subprogram that matches $\name$ and
+$\callerargtypes$, this is detected by the rule
+\TypingRuleRef{DeclareSubprograms}, which invokes the
+rule \\ \TypingRuleRef{DeclareOneFunc}, which invokes
+the rule \TypingRuleRef{AddNewFunc}, which results in
+a \typingerrorterm{}.
 
 The first case results in a \typingerrorterm{}.
 If the second case holds, the function returns a tuple which comprises:
@@ -1172,6 +1214,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[undefined]{
   \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot
@@ -1212,6 +1255,8 @@ the \integertypeterm{} rather than the \realtypeterm).
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{subprogram_for_signature}
 \CodeSubsection{\SubprogramForSignatureBegin}{\SubprogramForSignatureEnd}{../Typing.ml}
 
 \TypingRuleDef{FilterCallCandidates}
@@ -1251,6 +1296,7 @@ yields an empty list.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[no\_candidates]
 {}{
@@ -1278,6 +1324,8 @@ yields an empty list.
   }
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{filter_call_candidates}
 
 \TypingRuleDef{CallTypeMatches}
 \RenderRelation{call_type_matches}
@@ -1313,6 +1361,7 @@ The table below shows keywords used to define functions, and their possible comp
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[getter\_func]{
   \funcdef.\funcsubprogramtype = \STGetter \\
@@ -1330,6 +1379,8 @@ The table below shows keywords used to define functions, and their possible comp
   \calltypematches(\func, \calltype) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{call_type_matches}
 
 \CodeSubsection{\CallTypeMatchesBegin}{\CallTypeMatchesEnd}{../Typing.ml}
 
@@ -1354,6 +1405,7 @@ the arguments of procedures -- that do not clash and types that do clash
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\hva\\\\
@@ -1363,6 +1415,8 @@ the arguments of procedures -- that do not clash and types that do clash
   \hasargclash(\tenv, \formaltys, \vargs) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{has_arg_clash}
 \CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
 
 \TypingRuleDef{TypeClash}
@@ -1446,6 +1500,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[subtype]{
   (\issubtype(\tenv, \vs, \vt) \typearrow \True) \lor (\issubtype(\tenv, \vt, \vs) \typearrow \True)
@@ -1528,6 +1583,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{type_clashes}
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
 \subsubsection{Comment}
@@ -1571,6 +1628,7 @@ is annotated as
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1586,6 +1644,8 @@ is annotated as
   \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\vtypedexpr] \concat \typedexprsone}{\typedexprs}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{annotate_exprs}
 
 \subsection{Parameter Elision\label{sec:ParameterElision}}
 
@@ -1688,11 +1748,12 @@ while calling \\
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normal]{
   \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\hva\\\\
   \evalexprlistm(\envone, \args) \evalarrow \ResultExprListM(\vvargs, \envtwo)\OrAbnormal\hva\\\\
-  \envtwo \eqname (\tenv, \denvtwo)\\
+  \envtwo \reverseeqdef (\tenv, \denvtwo)\\
   \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\hva\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\hva\\\\
   \commonprefixline\hva\\\\
@@ -1709,18 +1770,20 @@ while calling \\
 \inferrule[throwing]{
   \evalexprlistm(\env, \args) \evalarrow \ResultExprListM(\vvargs, \envone)\OrAbnormal\hva\\\\
   \evalexprlistm(\envone, \params) \evalarrow \ResultExprListM(\vvparams, \envtwo)\OrAbnormal\hva\\\\
-  \envtwo \eqname (\tenv, \denvtwo)\\
+  \envtwo \reverseeqdef (\tenv, \denvtwo)\\
   \incrpendingcalls(\denvtwo.\dynamicenvsG, \name) \evalarrow \genv\hva\\\\
   \envtwo' \eqdef (\tenv, (\genv, \emptyfunc))\hva\\\\
   \commonprefixline\hva\\\\
   {\begin{array}{r}\evalsubprogram(\envtwo', \name, \vvparams, \vvargs) \evalarrow \\ \Throwing(\vv, \vt, \vg, \envthrow) \OrDynErrorDiverging\end{array}}\hva\\\\
-  \envthrow \eqname (\tenv, (\vglobal, \Ignore))\\
+  \envthrow \reverseeqdef (\tenv, (\vglobal, \Ignore))\\
   \decrpendingcalls(\vglobal, \name) \evalarrow \genvtwo\\
   \newenv \eqdef (\tenv, \{ \dynamicenvsG: \genvtwo, \dynamicenvsL: \denvtwo.\dynamicenvsL\})
 }{
   \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_call}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalSubprogram}
@@ -1762,11 +1825,12 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   {
-    \tenv.\staticenvsG.\subprograms(\name) \eqname \left\{
+    \tenv.\staticenvsG.\subprograms(\name) \reverseeqdef \left\{
       \begin{array}{rcl}
       \funcbody &:& \vbody,\\
       \FIELDargs &:& \argdecls,\\
@@ -1789,6 +1853,8 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   \evalsubprogram(\env, \name, \actualargs, \params) \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{eval_subprogram}
 \CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -1840,6 +1906,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynErrorDiverging
@@ -1851,7 +1918,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \begin{mathpar}
 \inferrule[some\_ok]{
   \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\hva\\\\
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls < \vlimit
 }{
@@ -1862,13 +1929,15 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \begin{mathpar}
 \inferrule[limit\_exceeded]{
   \evallimit(\env, \velimitopt) \evalarrow (\some{\vlimit}, \vg) \OrDynErrorDiverging\hva\\\\
-  \env \eqname (\tenv, \denv)\\
+  \env \reverseeqdef (\tenv, \denv)\\
   \getpendingcalls(\denv, \name) \evalarrow \vpendingcalls\\
   \vpendingcalls \geq \vlimit
 }{
   \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_recurse_limit}
 
 \SemanticsRuleDef{ReadValueFrom}
 \RenderRelation{read_value_from}
@@ -1883,6 +1952,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \readidentifier(\vv, \id) \evalarrow \newg
@@ -1890,6 +1960,8 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
   \readvaluefrom(\vv, \id) \evalarrow (\vv, \newg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{read_value_from}
 \CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{AssignArgs}
@@ -1925,6 +1997,7 @@ these variable values and evaluates to $\nvint(15)$.
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1940,6 +2013,8 @@ these variable values and evaluates to $\nvint(15)$.
   \assignargs((\env, \vgone), \overname{[\vx] \concat \vidsone}{\vids}, \overname{[\vm] \concat \actualsone}{\actuals}) \evalarrow (\newenv, \vg)
 }
 \end{mathpar}
+} % END_OF_BACKUP_RULE
+\RenderRule{assign_args}
 
 \SemanticsRuleDef{MatchFuncRes}
 Using the type \RenderType{TContinuingOrReturning} we define the following relation.
@@ -1986,7 +2061,7 @@ with the same value and a fresh identifier for it.
   }
   \hva\and
   \inferrule[returning]{
-    \xs \eqname [i=1..k: \vv_i]\\
+    \xs \reverseeqdef [i=1..k: \vv_i]\\
     i \in \listrange(\xs): \ids[i] = \returnvarprefix \concatstrings \stringofnat{i-1}\\
     \vvs \eqdef [i=1..k: (\vv_i, \id_i)]
   }
@@ -1994,5 +2069,5 @@ with the same value and a fresh identifier for it.
     \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultCall((\vvs, \emptygraph), \retenv)
   }
 \end{mathpar}
-} % END_OF_BACKUP
+} % END_OF_BACKUP_RULE
 \RenderRule{match_func_res}

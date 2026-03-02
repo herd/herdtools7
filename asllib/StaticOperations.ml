@@ -141,6 +141,11 @@ let filter_reduce_constraint_div =
         | _ -> None)
     | _ -> None
   in
+  let make_constraint_range_opt z1 z2 =
+    if Z.equal z1 z2 then Some (exact (expr_of_z z1))
+    else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
+    else None
+  in
   function
   | Constraint_Exact e as c -> (
       match get_literal_div_opt e with
@@ -167,9 +172,7 @@ let filter_reduce_constraint_div =
               Format.eprintf "Reducing %a DIV %a@ got z1=%a and z2=%a@."
                 PP.pp_expr e1 PP.pp_expr e2 Z.pp_print z1 Z.pp_print z2
           in
-          if Z.equal z1 z2 then Some (exact (expr_of_z z1))
-          else if Z.leq z1 z2 then Some (range (expr_of_z z1) (expr_of_z z2))
-          else None
+          make_constraint_range_opt z1 z2
       | Some z1, None -> Some (range (expr_of_z z1) e2)
       | None, Some z2 -> Some (range e1 (expr_of_z z2))
       | None, None -> Some c)

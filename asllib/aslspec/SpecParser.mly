@@ -59,6 +59,7 @@ let bool_of_string s =
 %token RULE
 %token SEMANTICS
 %token SHORT_CIRCUIT_MACRO
+%token TYPECAST
 %token TYPEDEF
 %token TYPING
 %token VARIADIC
@@ -294,6 +295,7 @@ let operator_attribute :=
 let operator_style_attribute ==
     | ASSOCIATIVE; EQ; value=IDENTIFIER; { (Associative, BoolAttribute (bool_of_string value)) }
     | CUSTOM; EQ; value=IDENTIFIER; { (Custom, BoolAttribute (bool_of_string value)) }
+    | TYPECAST; EQ; value=IDENTIFIER; { (Typecast, BoolAttribute (bool_of_string value)) }
 
 let prose_application_attribute ==
     PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }

@@ -105,6 +105,7 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
     or an \ImmutabilityTerm{} with immutability $\True$.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \vb \eqdef \vs \in \{\LocalEffect(\SEPure), \GlobalEffect(\SEPure), \Immutability(\True)\}
@@ -112,6 +113,8 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
     \sideeffectispure(\vs) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{side_effect_is_pure}
 
 \TypingRuleDef{SideEffectIsReadonly}
 \RenderRelation{side_effect_is_readonly}
@@ -127,6 +130,7 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
     or an \ImmutabilityTerm.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     {
@@ -140,6 +144,8 @@ Define $\vb$ as $\True$ if and only if $\vs$ is either
     \sideeffectisreadonly(\vs) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{side_effect_is_readonly}
 
 \TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
 \RenderRelation{side_effect_is_symbolically_evaluable}
@@ -159,6 +165,7 @@ See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descript
 }
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     {
@@ -172,6 +179,8 @@ See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descript
     \sideeffectissymbolicallyevaluable(\vs) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{side_effect_is_symbolically_evaluable}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Side Effect Sets\label{sec:SideEffectSets}}
@@ -200,6 +209,7 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef (\ldk = \LDKLet)
@@ -207,6 +217,8 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
   \sesldk(\ldk) \typearrow \{ \LocalEffect(\SEReadonly), \Immutability(\vb) \}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{ses_ldk}
 
 \TypingRuleDef{SideEffectsGDK}
 \RenderRelation{ses_gdk}
@@ -225,6 +237,7 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vpurity \eqdef \choice{\gdk = \GDKConstant}{\SEPure}{\SEReadonly} \\
@@ -233,6 +246,8 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
   \sesgdk(\gdk) \typearrow \{ \GlobalEffect(\vpurity), \Immutability(\vb) \}
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{ses_gdk}
 
 \TypingRuleDef{SESIsSymbolicallyEvaluable}
 \RenderRelation{is_symbolically_evaluable}
@@ -250,6 +265,7 @@ Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in
 is \symbolicallyevaluableterm.
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectissymbolicallyevaluable(\vs)
@@ -257,6 +273,8 @@ is \symbolicallyevaluableterm.
   \issymbolicallyevaluable(\vses) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{is_symbolically_evaluable}
 
 \TypingRuleDef{CheckSymbolicallyEvaluable}
 \RenderRelation{check_symbolically_evaluable}
@@ -283,6 +301,7 @@ This is checked in the following constructs:
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses) \typearrow \vb\\
@@ -291,6 +310,8 @@ This is checked in the following constructs:
   \checksymbolicallyevaluable(\vses) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{check_symbolically_evaluable}
 \CodeSubsection{\CheckSymbolicallyEvaluableBegin}{\CheckSymbolicallyEvaluableEnd}{../Typing.ml}
 
 \TypingRuleDef{SESIsReadonly}
@@ -320,6 +341,7 @@ where read-only expressions are expected (as explained in the comments).
 \ASLListing{Non-read-only expression in for loop bounds}{SESIsReadonly-bad2}{\typingtests/TypingRule.SESIsReadonly.bad2.asl}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \bigwedge_{\vs\in\vses} \sideeffectisreadonly(\vs)
@@ -327,6 +349,8 @@ where read-only expressions are expected (as explained in the comments).
     \sesisreadonly(\vses) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{ses_is_readonly}
 
 \TypingRuleDef{SESIsPure}
 \RenderRelation{ses_is_pure}
@@ -345,6 +369,7 @@ appearing in bitvector widths for bitvector types with bitfields must be pure.
 \ASLListing{Purity violation}{SESIsPure-bad}{\typingtests/TypingRule.SESIsPure.bad.asl}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \bigwedge_{\vs\in\vses} \sideeffectispure(\vs)
@@ -352,6 +377,8 @@ appearing in bitvector widths for bitvector types with bitfields must be pure.
     \sesispure(\vses) \typearrow \True
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{ses_is_pure}
 
 \TypingRuleDef{SESForSubprogram}
 \RenderRelation{ses_for_subprogram}
@@ -385,6 +412,7 @@ Note that each subprogram shares the same body, the side effects are given by th
 \end{itemize}
 
 \FormallyParagraph
+\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none\_or\_noreturn]{
   \vqualifier = \None \lor \vqualifier = \some{\Noreturn}\\
@@ -409,3 +437,5 @@ Note that each subprogram shares the same body, the side effects are given by th
   \sesforsubprogram(\overname{\some{\Pure}}{\vqualifier}) \typearrow \vs
 }
 \end{mathpar}
+} % END_OF_BACKUP_ORIGINAL_RULE
+\RenderRule{ses_for_subprogram}

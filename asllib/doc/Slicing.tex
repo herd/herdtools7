@@ -457,9 +457,9 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \inferrule[range]{
   \vs = \SliceRange(\etop, \estart)\\
   \evalexpr(\env, \etop) \evalarrow \ResultExpr(\mtop, \envone) \OrAbnormal\hva\\\\
-  \mtop \eqname (\vvsubtop, \vgone)\\
+  \mtop \reverseeqdef (\vvsubtop, \vgone)\\
   \evalexpr(\envone, \estart) \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\hva\\\\
-  \mstart \eqname (\vstart, \vgtwo)\\
+  \mstart \reverseeqdef (\vstart, \vgtwo)\\
   \evalbinop(\SUB, \vvsubtop, \vstart) \evalarrow \vdiff\\
   \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
@@ -473,8 +473,8 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
   \vs = \SliceLength(\estart, \elength)\\
   \evalexpr(\env, \estart) \evalarrow \ResultExpr(\mstart, \envone) \OrAbnormal\\
   \evalexpr(\envone, \elength) \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
-  \mstart \eqname (\vstart, \vgone)\\
-  \mlength \eqname (\vlength, \vgtwo)\\
+  \mstart \reverseeqdef (\vstart, \vgone)\\
+  \mlength \reverseeqdef (\vlength, \vgtwo)\\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
   \evalslice(\env, \vs) \evalarrow (((\vstart, \vlength), \newg), \newenv)
@@ -485,9 +485,9 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \inferrule[scaled]{
   \vs = \SliceStar(\efactor, \elength)\\
   \evalexpr(\env, \efactor) \evalarrow \ResultExpr(\mfactor, \envone) \OrAbnormal\\
-  \mfactor \eqname (\vfactor, \vgone)\\
+  \mfactor \reverseeqdef (\vfactor, \vgone)\\
   \evalexpr(\envone, \elength) \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
-  \mlength \eqname (\vlength, \vgtwo)\\
+  \mlength \reverseeqdef (\vlength, \vgtwo)\\
   \evalbinop(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
   \newg \eqdef \vgone \parallelcomp \vgtwo
 }{
@@ -617,7 +617,7 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 \end{mathpar}
 \begin{mathpar}
 \inferrule[non\_empty]{
-  \slices \eqname [\vslice] \concat \slicesone\\
+  \slices \reverseeqdef [\vslice] \concat \slicesone\\
   \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\hva\\\\
   \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\hva\\\\
   \ranges \eqdef [\range] \concat \rangesone\\

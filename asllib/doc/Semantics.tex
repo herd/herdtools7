@@ -247,8 +247,8 @@ and the output nodes are contained in the set of nodes:
 We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
 %
 We define the following functions, which return an execution graph that represents a single Read/Write Effect to a variable \texttt{x}.
-\hypertarget{operator-writeeffect}{}
-\hypertarget{operator-readeffect}{}
+\hypertarget{relation-writeeffect}{}
+\hypertarget{relation-readeffect}{}
 \begin{definition}[Read/Write Effects]
 \[
   \begin{array}{rclll}
@@ -281,6 +281,9 @@ the ordered composition $\ordered{S_1}{l}{S_2}$ is defined as follows:
 \]
 Intuitively, this composition constrains the output effects of $S_1$ to appear before any effect of $S_2$ with respect
 to the given ordering label.
+
+\texthypertarget{def-parallellist}
+We write $\parallelgraphs{L}$ for the parallel composition of all execution graphs in the list $L$.
 \end{definition}
 
 \subsection{Concurrent Values\label{sec:ConcurrentValues}}
@@ -372,8 +375,8 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 
 \subsection{Extracting and Substituting Elements of Semantics Configurations}
 
-\hypertarget{operator-graphof}{}
-\hypertarget{operator-environof}{}
+\hypertarget{relation-graphof}{}
+\hypertarget{relation-environof}{}
 Given a \semanticsconfigurationterm{} $C$, we define the graph component of the \semanticsconfigurationterm{},
 $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\environof{C}$, as follows:
 \[
@@ -388,7 +391,7 @@ $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\envir
   \ResultExprList((\Ignore, \vg), \env) & \vg & \env \\
   \ResultExprListM(\Ignore, \env) & \text{undefined} & \env\\
   \ResultPattern(\Ignore, \Ignore) & \vg & \text{undefined}\\
-  \ResultCall(\Ignore, \env) & \text{undefined} & \env\\
+  \ResultCall(\Ignore, \vg) & \vg & \text{undefined}\\
   \Throwing(\Ignore, \Ignore,\vg, \env) & \vg & \env\\
   \Returning((\Ignore,\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
@@ -397,7 +400,7 @@ $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\envir
 \end{array}
 \]
 
-\hypertarget{operator-withgraph}{}
+\hypertarget{relation-withgraph}{}
 Given a \semanticsconfigurationterm{} $C$, we define $\withgraph{C}{\vgp}$ to be a \semanticsconfigurationterm{}
 like $C$ where the graph component is substituted with $\vgp$:
 \begin{small}
@@ -413,7 +416,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
   \ResultPattern(\vb, \vg) & \ResultPattern(\vb, \vgp)\\
-  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
+  \ResultCall((\vvs, \gdenv), \vg) & \ResultCall((\vvs, \gdenv), \vgp)\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vgp, \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
@@ -432,18 +435,18 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \textbf{\Semanticsconfigurationterm{}} & \withenviron{C}{\envp}\\
   \hline
   \ResultExpr((\vv, \vg), \env) & \ResultExpr((\vv, \vg), \envp)\\
-  \ResultExprSEF(\vv, \vg) & \text{undefined}\\
+  \ResultExprSEF(\Ignore, \Ignore) & \text{undefined}\\
   \ResultLexpr(\vg, \env) & \ResultLexpr(\vg, \envp)\\
   \ResultLDI(\vg, \env) & \ResultLDI(\vg, \envp)\\
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
-  \ResultPattern(\vb, \vg) & \text{undefined}\\
-  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \ResultCall([i=1..k: (\vv_i,\vg_i)], \envp)\\
+  \ResultPattern(\Ignore, \Ignore) & \text{undefined}\\
+  \ResultCall(\Ignore, \Ignore) & \text{undefined}\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
-  \DynamicError(\vs) & \text{undefined}\\
+  \DynamicError(\Ignore) & \text{undefined}\\
   \Diverging & \text{undefined} \\
 \end{array}
 \]
@@ -554,8 +557,8 @@ For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
-  \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
+  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \vep \eqdef \ifthenelseop[H]{\vb}{\veone}{\vetwo}\hva\\\\
   \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
@@ -653,7 +656,7 @@ obtained by expanding the macro rule for \SemanticsRuleRef{Loop}.CONTINUE:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
-  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
   \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
@@ -669,7 +672,7 @@ for the same macro rule:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
-  \condm \eqname (\nvbool(\vb), \vgone)\\
+  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
   \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
   \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
