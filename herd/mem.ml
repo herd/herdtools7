@@ -687,13 +687,51 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
         then
           fun (_,es) ->
+            let evts = E.EventSet.filter E.is_mem es.E.events in
+            let inv_iico_data_atomics =
+              lazy begin
+                  let atms =
+                    E.EventSet.filter E.is_atomic evts in
+                  E.EventRel.restrict_domains_to_sets
+                    atms atms es.E.intra_causality_data
+                  |> E.EventRel.inverse
+              end in
             let locs =
               E.EventSet.fold
                 (fun e k ->
                    match SM.can_unset_af_loc e with
                    | None -> k
-                   | Some loc -> loc::k)
-                es.E.events []
+                   | Some loc ->
+                       let v = Misc.as_some @@ E.written_of e in
+                       if dbg then
+                         Printf.eprintf
+                           "loc=%s,v=%s\n%!" (V.pp_v loc) (V.pp_v v) ;
+                       let write_loaded =
+                         (* Special case where the value stored
+                          * has just been read. In such a case,
+                          * no supplementary HW update is necessary.
+                          *)
+                         E.is_atomic e &&
+                           begin
+                             try
+                               E.EventRel.succs
+                                 (Lazy.force inv_iico_data_atomics) e
+                               |>
+                               E.EventSet.exists
+                                 (fun er ->
+                                   assert (E.is_load er);
+                                   match
+                                     E.global_loc_of er,
+                                     E.read_of er
+                                   with
+                                   | Some loc_r,Some v_r
+                                     ->
+                                      V.equal loc loc_r && V.equal v v_r
+                                   | _,_ -> false)
+                             with Not_found -> false
+                           end in
+                       if write_loaded then k else loc::k)
+                evts []
               |> Misc.group V.compare in
             let om =
               Misc.fold_suffix_cross_gen
@@ -714,7 +752,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | None -> EM.unitT ()
             | Some m -> m
         else fun _ -> EM.unitT () in
-                
+
       let rec index xs i = match xs with
       | [] ->
           W.warn "%i abstract event structures\n%!" i ;
