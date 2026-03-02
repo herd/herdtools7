@@ -325,11 +325,24 @@ let nsplit n xs =
   let yss = do_rec xs (replicate n []) in
   List.map List.rev yss
 
-let rec group same xs = match xs with
-| [] -> []
-| x::xs ->
-    let xx,xs = List.partition (same x) xs in
-    (x::xx)::group same xs
+let group_sorted eq =
+  let rec do_rec x0 xs = match xs with
+    | [] -> [x0],[]
+    | x::xs ->
+        if eq x0 x then
+          let xs,xss = do_rec x xs in
+          x0::xs,xss
+        else
+          let xs,xss = do_rec x xs in
+          [x0],xs::xss in
+  function
+  | [] -> []
+  | x::xs ->
+      let xs,xss = do_rec x xs in
+      xs::xss
+
+let group cmp xs =
+  List.sort cmp xs |> group_sorted (fun x y -> cmp x y = 0)
 
 let group_iter same do_it xs =
   let xss = group same xs in
@@ -618,6 +631,16 @@ and go dir line (chans,ns as st) =
     | None -> next_iter st
   else Some (fconcat dir line,st)
 
+(*******************)
+(* Suffix genrator *)
+(*******************)
+
+let fold_suffix xs kont r =
+  let rec fold_rec r = function
+    | [] -> kont [] r
+    | _::ys as xs -> fold_rec (kont xs r) ys in
+  fold_rec r xs
+
 (********************)
 (* Subset generator *)
 (********************)
@@ -642,17 +665,26 @@ let fold_subsets xs kont r =
 (* cross product iteration *)
 (***************************)
 
-let fold_cross_gen add start xss kont r =
+(* Uttra generic, internal use *)
+let fold_cross_gen2 fold add start xss kont r =
  let rec fold_rec r ys xss = match xss with
   | [] -> kont ys r
   | xs::xss ->
-      List.fold_left
+      fold
         (fun r x -> fold_rec r (add x ys) xss)
         r xs in
  fold_rec r start (List.rev xss)
 
+let fold_cross_gen add start xss kont r =
+  fold_cross_gen2 List.fold_left  add start xss kont r
 
 let fold_cross xss = fold_cross_gen cons [] xss
+
+let fold_suffix_cross_gen madd start xss kont r =
+  let fold f r xs = fold_suffix xs (fun xs r -> f r xs) r in
+  fold_cross_gen2 fold madd start xss kont r
+
+let fold_suffix_cross xss = fold_suffix_cross_gen cons [] xss
 
 (*******************)
 (* Simple bindings *)
