@@ -770,24 +770,36 @@ let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
+(* Event set ordered by to (generalised) program order *)
+
+module
+  EvtSetByPo
+    (I:sig val es : S.event_structure end) =
+struct
+
+  let is_before_strict = U.is_before_strict I.es
+
+  include Set.Make
+      (struct
+
+        type t = E.event
+
+        let compare e1 e2 =
+          if is_before_strict e1 e2 then -1
+          else if is_before_strict e2 e1 then 1
+          else
+            let () =
+              Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
+                E.debug_event e2
+            in
+            assert false
+
+      end)
+end
+
 let match_reg_events add_eq es csn =
   let loc_loads_stores = U.collect_reg_loads_stores es in
-  let is_before_strict = U.is_before_strict es in
-  let compare e1 e2 =
-    if is_before_strict e1 e2 then -1
-    else if is_before_strict e2 e1 then 1
-    else
-      let () =
-        Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
-          E.debug_event e2
-      in
-      assert false
-  in
-  let module StoreSet = Set.Make (struct
-    type t = E.event
-
-    let compare = compare
-  end) in
+  let module StoreSet = EvtSetByPo(struct let es = es end) in
   let add wt rf (rfm, csn) = (S.RFMap.add wt rf rfm, add_eq rfm wt rf csn) in
   (* For all loads find the right store, the one "just before" the load *)
   U.LocEnv.fold
@@ -803,7 +815,7 @@ let match_reg_events add_eq es csn =
       (* Add the corresponding store for each load *)
       List.fold_left
         (fun k load ->
-          let f e = is_before_strict e load in
+          let f e = StoreSet.is_before_strict e load in
           let rf =
             match StoreSet.find_last_opt f stores with
             | Some store -> S.Store store
@@ -1672,37 +1684,43 @@ let get_rf_value test read =
 (* Reconstruct load/store atomic pairs *)
 
     let make_atomic_load_store es =
-      let all = E.atomics_of es.E.events in
-      let atms = U.collect_atomics es in
-      U.LocEnv.fold
-        (fun _loc atms k ->
-          let atms =
-            List.filter
-              (fun e -> not (E.is_load e && E.is_store e))
-              atms in (* get rid of C RMW *)
-          let rs,ws = List.partition E.is_load atms in
-          List.fold_left
-            (fun k r ->
-              let exp = E.is_explicit r in
-              List.fold_left
-                (fun k w ->
-                  if
-                    S.atomic_pair_allowed r w &&
-                    U.is_before_strict es r w &&
-                    E.is_explicit w = exp &&
-                    not
-                      (E.EventSet.exists
-                         (fun e ->
-                           E.is_explicit e = exp &&
-                           U.is_before_strict es r e &&
-                           U.is_before_strict es e w)
-                         all)
-                  then E.EventRel.add (r,w) k
-                  else k)
-                k ws)
-            k rs)
-        atms E.EventRel.empty
-
+      let atms,spurious = U.collect_atomics es in
+      let module StoreSet = EvtSetByPo(struct let es = es end) in
+      let make_atomic_pairs es k =
+        let rs,ws = List.partition E.is_load es in
+        let stores = StoreSet.of_list ws in
+        List.fold_left
+          (fun k load ->
+             let f e = StoreSet.is_before_strict load e in
+             match StoreSet.find_first_opt f stores with
+             | None -> k (* No matching store (e.g. final load reserve) *)
+             | Some store ->
+                 if S.atomic_pair_allowed load store then
+                   E.EventRel.add (load,store) k
+                 else k)
+          k rs in
+      let r1 =
+        List.map
+          (fun (_,m) ->
+           U.LocEnv.fold
+             (fun _loc es k ->
+                let exps,nexps = List.partition E.is_explicit es in
+                make_atomic_pairs exps @@ make_atomic_pairs nexps k)
+             m E.EventRel.empty)
+        atms |> E.EventRel.unions
+      and r2 =
+        let iico = es.E. intra_causality_data in
+        List.map
+          (fun e ->
+             if E.is_load e then
+               match
+                 E.EventRel.succs iico e |> E.EventSet.as_singleton
+               with
+               | None -> assert false (* spurious updates are by pairs *)
+               | Some w -> E.EventRel.singleton (e,w)
+             else E.EventRel.empty)
+          spurious |> E.EventRel.unions in
+      E.EventRel.union r1 r2
 
 (* Retrieve last store from rfmap *)
     let get_max_store _test _es rfm loc =

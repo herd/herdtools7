@@ -387,8 +387,30 @@ let lift_proc_info i evts =
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
   and collect_stores_non_spec es = collect_by_loc es (fun e -> E.is_store e && not_speculated es e)
-  and collect_atomics es = collect_by_loc es E.is_atomic
   and collect_reg_loads_stores es = collect_by_loc2 es E.is_reg_load_any E.is_reg_store_any
+
+  let collect_atomics es =
+    let m,sp =
+      E.EventSet.fold
+        (fun e (m,sp as k) ->
+           if E.is_atomic e then
+             match E.proc_of e with
+             | None ->
+                 if E.is_spurious e then (m,e::sp)
+                 else k
+             | Some proc ->
+                 IntMap.update proc
+                   (fun old ->
+                      let m =
+                        match old with
+                        | None -> LocEnv.empty
+                        | Some m -> m in
+                      Some (LocEnv.accumulate (get_loc e) e m))
+                   m,sp
+           else k)
+        es.E.events (IntMap.empty,[]) in
+    IntMap.bindings m,sp
+
 
   let partition_events es =
     let env =
