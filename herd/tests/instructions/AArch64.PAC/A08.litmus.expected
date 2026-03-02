@@ -1,0 +1,11 @@
+Test A08 Allowed
+States 2
+0:X1=42;  ~Fault(P0);
+0:X1=53; Fault(P0,x,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X1=42 /\ not (fault(P0)))
+Observation A08 Sometimes 1 1
+Hash=ce52805d351dd3f29fcc570b90f37db2
+

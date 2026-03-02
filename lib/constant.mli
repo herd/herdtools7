@@ -128,6 +128,9 @@ val collision :
     ('scalar, 'pte, 'addrreg, 'instr) t ->
       (PAC.t * PAC.t) option
 
+val normalize : ('scalar, 'pte, 'addrreg, 'instr) t ->
+  PAC.solver_state -> ('scalar, 'pte, 'addrreg, 'instr) t
+
 (* New style: PTE(s), PHY(s), etc. *)
 val pp :
   ('scalar -> string) -> ('pte -> string) -> ('addrreg -> string) -> ('instr -> string) ->

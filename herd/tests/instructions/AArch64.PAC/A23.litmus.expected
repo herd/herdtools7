@@ -1,0 +1,11 @@
+Test A23 Allowed
+States 2
+0:X1=0; Fault(P0,x,MMU:Translation);
+0:X1=42;  ~Fault(P0,MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X1=42 /\ not (fault(P0,MMU:Translation)))
+Observation A23 Sometimes 1 1
+Hash=57b48dbf935cd8f1f1dcd3db21293a4b
+
