@@ -58,6 +58,7 @@ let numeric = ref true
 let varatom = ref ([] : string list)
 let use_eieio = ref true
 let norm = ref false
+let filter = ref []
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -350,6 +351,8 @@ let diy_spec () =
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    stdout_spec false ::
    varatomspec ::
+   ("-filter", Arg.String (fun s -> filter := !filter @ [s]),
+   "shows whether two relaxations are filtered OUT in diy7.")::
    []
 
 let valid_stdout_flag is_diyone =
