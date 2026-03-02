@@ -733,6 +733,7 @@ module ExpandRules = struct
 end
 
 let filter_rule_for_path { Relation.name; rule_opt } path_str =
+  assert (Option.is_some rule_opt);
   let open Rule in
   let path = Str.split (Str.regexp_string ".") path_str in
   let rec filter_rule_elements rule_elements path =
