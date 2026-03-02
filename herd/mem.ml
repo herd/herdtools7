@@ -692,7 +692,30 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 (fun e k ->
                    match SM.can_unset_af_loc e with
                    | None -> k
-                   | Some loc -> loc::k)
+                   | Some loc ->
+                       let v = Misc.as_some @@ E.written_of e in
+                       Printf.eprintf
+                         "loc=%s,v=%s\n%!" (V.pp_v loc) (V.pp_v v) ;
+                       let write_loaded =
+                         try
+                           E.is_atomic e
+                           && (match v with V.Var _ -> true | V.Val _ -> false)
+                           && E.EventSet.exists
+                             (fun er ->
+                                E.po_eq e er && E.is_mem_load er &&
+                                begin
+                                  match
+                                    E.global_loc_of er,
+                                    E.read_of er
+                                  with
+                                  | Some loc_r,Some v_r
+                                    ->
+                                      V.equal loc loc_r && V.equal v v_r
+                                  | _,_ -> false
+                                end)
+                             es.E.events
+                         with Not_found -> false in
+                       if write_loaded then k else loc::k)
                 es.E.events []
               |> Misc.group V.compare in
             let om =
