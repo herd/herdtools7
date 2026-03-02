@@ -979,7 +979,7 @@ let check_cycle c =
 
   (* `do_set_write_val` returns the updated initial environment `env`. *)
   let do_set_write_val st nss env =
-    let new_physical_address,_ = List.fold_left ( fun (new_physical_address, st) n ->
+    let env,_,_ = List.fold_left ( fun (env, new_variable_value, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
       let st = if n.store == nil then st else set_write_val_ord st n.store in
       (* Update tag and instruction value in `st` no matter `W`, `R` etc. *)
@@ -1022,7 +1022,7 @@ let check_cycle c =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
-              (new_physical_address, st)
+              (env, new_variable_value, st)
             | Pair ->
               (* Same code as for Ord, however notice that
                  CoSet.set_cell has a case for pairs.
@@ -1033,14 +1033,14 @@ let check_cycle c =
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
-              (new_physical_address, st)
+              (env, new_variable_value, st)
             | Tag ->
               let st = CoSt.next_co st bank |> CoSt.set_check_fault in
               let v = CoSt.get_co st bank in
               n.evt <- { n.evt with v = v; check_value; } ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
-              (new_physical_address, st)
+              (env, new_variable_value, st)
             | CapaTag|CapaSeal ->
               (* in Morello, check fault on CapaTag or CapaSeal access
                  if it is followed by a depend address edge *)
@@ -1053,7 +1053,7 @@ let check_cycle c =
               n.evt <- { n.evt with v = v; check_value; check_fault} ;
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
-              (new_physical_address, st)
+              (env, new_variable_value, st)
             | VecReg a ->
               let st = CoSt.step_simd st a in
               let cell = CoSt.get_cell st
@@ -1066,11 +1066,12 @@ let check_cycle c =
                   | (v::_)::_ -> v
                   | _ -> assert false in
               n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
-              (new_physical_address, st)
+              (env, new_variable_value, st)
             | Pte ->
-              (* Wrap the `new_physical_address`, `st`, `env` which might
+              (* Wrap the environment which might
                  be updated in the `next_loc` function call. *)
-              let wrapped_new_pa = ref new_physical_address in
+              let wrapped_env = ref env in
+              let wrapped_new_value = ref new_variable_value in
               let wrapped_st = ref st in
               (* get the previous `pte_value` *)
               let pte_val = CoSt.get_pte_value st in
@@ -1078,44 +1079,38 @@ let check_cycle c =
               let pte_val =
                 let next_loc () =
                   let open CoSt in
-                  match n.evt.loc,!wrapped_new_pa with
+                  match n.evt.loc with
                   (* Pick a new variable for physical address change *)
-                  | Code.Data _,None ->
+                  | Code.Data _ ->
                     let new_address = make_variable () in
                     let physical_address = Code.Data new_address in
-                    wrapped_new_pa := Some (physical_address);
-                    wrapped_st := CoSt.add_physical_address !wrapped_st physical_address 4 n;
+                    (* We always pick a value with `+4` gap for the new physical address,
+                       because it reduces the chance of value collision.
+                       That is, the value being read can distinguish the new physical address
+                       from the original one, taking into account that the values
+                       in both new and original address might change by +1 several times. *)
+                    wrapped_new_value := (!wrapped_new_value + 4);
+                    wrapped_env := ((new_address,Value.from_int !wrapped_new_value)::!wrapped_env);
+                    wrapped_st := CoSt.add_physical_address !wrapped_st physical_address !wrapped_new_value n;
                     new_address
-                  | (Code.Data _ as virtual_address),Some new_address ->
-                    (* if the address has changed previously, we toggle the address *)
-                      let physical_address =
-                        if new_address = !wrapped_st.physical_address then
-                          virtual_address else new_address in
-                        wrapped_st := CoSt.update_physical_address !wrapped_st physical_address n;
-                        Code.as_data physical_address
-                  | Code.Code _,_ -> Warn.fatal "Code location has no pte value." in
+                  | Code.Code _ -> Warn.fatal "Code location has no pte value." in
                 E.set_pteval n.evt.atom pte_val next_loc in
               let check_fault = Value.need_check_fault n.evt.atom in
               let st = CoSt.set_pte_value !wrapped_st check_fault pte_val in
               let v = Value.from_pte pte_val in
               n.evt <- { n.evt with v; check_value } ;
-              (!wrapped_new_pa, st)
+              (!wrapped_env, !wrapped_new_value, st)
             end (* END of match bank *)
           | Code _ ->
             n.evt <- { n.evt with check_value; } ;
             let bank = n.evt.bank in
             match bank with
             | Instr -> Warn.fatal "not letting instr write happen"
-            | _ -> (new_physical_address, st)
+            | _ -> (env, new_variable_value, st)
           end (* END of `Some W` *)
-      | Some R |None -> (new_physical_address, st)
-    ) (* END of the function applying to `fold_left` *) (None, st) nss in
-    match new_physical_address with
-    | None -> env
-    (* the value `4` here must match the initial value picked in
-      `next_loc` function *)
-    | Some Code.Data variable -> (variable,Value.from_int 4)::env
-    | Some _ -> env
+      | Some R |None -> (env, new_variable_value, st)
+    ) (* END of the function applying to `fold_left` *) (env, 0, st) nss in
+    env
     (* END of do_set_write_val *)
 
   let set_all_write_val nss =
