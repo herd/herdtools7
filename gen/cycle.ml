@@ -977,8 +977,7 @@ let check_cycle c =
     n.evt <- e ;
     st
 
-  (* `do_set_write_val` returns true when variable next_x has been used
-     and should thus be initialised *)
+  (* `do_set_write_val` returns the updated initial environment `env`. *)
   let do_set_write_val st nss env =
     let new_physical_address,_ = List.fold_left ( fun (new_physical_address, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
@@ -1077,27 +1076,25 @@ let check_cycle c =
               let pte_val = CoSt.get_pte_value st in
               (* update the pte value in kvm variant *)
               let pte_val =
-                if do_kvm then begin
-                  let next_loc () =
-                    let open CoSt in
-                    match n.evt.loc,!wrapped_new_pa with
-                    (* Pick a new variable for physical address change *)
-                    | Code.Data _,None ->
-                      let new_address = make_variable () in
-                      let physical_address = Code.Data new_address in
-                      wrapped_new_pa := Some (physical_address);
-                      wrapped_st := CoSt.add_physical_address !wrapped_st physical_address 5 n;
-                      new_address
-                    | (Code.Data _ as virtual_address),Some new_address ->
-                      (* if the address has changed previously, we toggle the address *)
-                        let physical_address =
-                          if new_address = !wrapped_st.physical_address then
-                            virtual_address else new_address in
-                          wrapped_st := CoSt.update_physical_address !wrapped_st physical_address n;
-                          Code.as_data physical_address
-                    | Code.Code _,_ -> Warn.fatal "Code location has no pte value." in
-                  E.set_pteval n.evt.atom pte_val next_loc
-                end else pte_val in
+                let next_loc () =
+                  let open CoSt in
+                  match n.evt.loc,!wrapped_new_pa with
+                  (* Pick a new variable for physical address change *)
+                  | Code.Data _,None ->
+                    let new_address = make_variable () in
+                    let physical_address = Code.Data new_address in
+                    wrapped_new_pa := Some (physical_address);
+                    wrapped_st := CoSt.add_physical_address !wrapped_st physical_address 4 n;
+                    new_address
+                  | (Code.Data _ as virtual_address),Some new_address ->
+                    (* if the address has changed previously, we toggle the address *)
+                      let physical_address =
+                        if new_address = !wrapped_st.physical_address then
+                          virtual_address else new_address in
+                        wrapped_st := CoSt.update_physical_address !wrapped_st physical_address n;
+                        Code.as_data physical_address
+                  | Code.Code _,_ -> Warn.fatal "Code location has no pte value." in
+                E.set_pteval n.evt.atom pte_val next_loc in
               let check_fault = Value.need_check_fault n.evt.atom in
               let st = CoSt.set_pte_value !wrapped_st check_fault pte_val in
               let v = Value.from_pte pte_val in
@@ -1115,9 +1112,9 @@ let check_cycle c =
     ) (* END of the function applying to `fold_left` *) (None, st) nss in
     match new_physical_address with
     | None -> env
-    (* the value `5` here must match the initial value picked in
+    (* the value `4` here must match the initial value picked in
       `next_loc` function *)
-    | Some Code.Data variable -> (variable,Value.from_int 5)::env
+    | Some Code.Data variable -> (variable,Value.from_int 4)::env
     | Some _ -> env
     (* END of do_set_write_val *)
 
