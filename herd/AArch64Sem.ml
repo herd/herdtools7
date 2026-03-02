@@ -1385,8 +1385,6 @@ module Make
 
 (* KVM mode *)
 
-      let some_ha = dirty.DirtyBit.some_ha || dirty.DirtyBit.some_hd
-
       let can_be_pt v =
         match V.as_constant v with
         | None -> true
@@ -1398,31 +1396,12 @@ module Make
            p.AArch64PteVal.valid <> 0 &&  p.AArch64PteVal.af = 0
         | _ -> true)
 
-      (* Tag ignored, may serve for debug *)
-      let fire_spurious_af _tag v dir a m =
-        let do_fire =
-          false &&
-          some_ha &&
-            (let b = C.variant Variant.PhantomOnLoad in
-             match dir with
-             | Dir.W -> not b && can_be_pt a && can_af0 v
-             | Dir.R -> b) in
-        if do_fire
-        then
-          (m >>|
-             M.altT (test_and_set_af_succeeds a E.IdSpurious) (M.unitT ())) >>=
-            fun (r,_) -> M.unitT r
-        else m
-
-      let lift_kvm tag v dir updatedb mop ma an ii mphy =
+      let lift_kvm _tag dir updatedb mop ma an ii mphy =
         let mfault ma a ft = emit_fault a ma dir an ft None ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir updatedb false a ma an ii
             (let m = mop Access.PTE ma in
-              let m =
-                if pte2 then m
-                else fire_spurious_af (tag^"1") v dir a m in
-              m >>= M.ignore >>= B.next1T)
+             m >>= M.ignore >>= B.next1T)
             mphy
             mfault in
         M.delay_kont "6" ma (
@@ -1436,7 +1415,7 @@ module Make
                  mop ac ma >>= M.ignore >>= B.next1T
         )
 
-      let lift_memtag_phy v dir mop ma an ii mphy =
+      let lift_memtag_phy dir mop ma an ii mphy =
         let checked_op mpte_d a_virt =
           let mok mpte_t =
             let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
@@ -1469,7 +1448,7 @@ module Make
           M.delay_kont "tag_ptw" ma @@ fun a ma ->
           let mdirect =
             let m = mop Access.PTE ma in
-            fire_spurious_af "2" v dir a m >>= M.ignore >>= B.next1T in
+            m >>= M.ignore >>= B.next1T in
           check_ptw ii.AArch64.proc Dir.R false true a ma an ii
             mdirect
             cond_check_tag
@@ -1570,38 +1549,32 @@ Arguments:
         if morello then
           lift_morello mop perms ma mv dir an ii
         else
-          (match dir with
-           | Dir.W ->
-              M.delay_kont "MV" mv
-           | _ ->
-              fun f -> f V.zero mv)
-            (fun v mv ->
-              let mop = apply_mv mop mv in
-              if kvm then
-                let mphy ma a_virt =
-                  let ma = get_oa a_virt ma in
-                  if pte2 then
-                    M.op1 Op.IsVirtual a_virt >>= fun c ->
-                    M.choiceT c
-                      (mop Access.PHY ma)
-                      (fire_spurious_af "3" v dir a_virt (mop Access.PHY_PTE ma))
-                    >>= M.ignore >>= B.next1T
-                  else
-                    mop Access.PHY ma
-                    >>= M.ignore >>= B.next1T in
-                let mphy =
-                  if checked then lift_memtag_phy v dir mop ma an ii mphy
-                  else mphy
-                in
-                let m = lift_kvm tag v dir updatedb mop ma an ii mphy in
-            (* M.short will add an iico_data only if memtag is enabled *)
-                M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
-              else if pac then
-                lift_pac_virt mop ma dir an ii
-              else if checked then
-                lift_memtag_virt mop ma dir an ii
+          let mop = apply_mv mop mv in
+          if kvm then
+            let mphy ma a_virt =
+              let ma = get_oa a_virt ma in
+              if pte2 then
+                M.op1 Op.IsVirtual a_virt >>= fun c ->
+                M.choiceT c
+                  (mop Access.PHY ma)
+                  (mop Access.PHY_PTE ma)
+                >>= M.ignore >>= B.next1T
               else
-                mop Access.VIR ma >>= M.ignore >>= B.next1T)
+                mop Access.PHY ma
+                >>= M.ignore >>= B.next1T in
+            let mphy =
+              if checked then lift_memtag_phy dir mop ma an ii mphy
+              else mphy
+            in
+            let m = lift_kvm tag dir updatedb mop ma an ii mphy in
+            (* M.short will add an iico_data only if memtag is enabled *)
+            M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+          else if pac then
+            lift_pac_virt mop ma dir an ii
+          else if checked then
+            lift_memtag_virt mop ma dir an ii
+          else
+            mop Access.VIR ma >>= M.ignore >>= B.next1T
 
       (* Address translation instruction *)
       let do_at op rd ii =
@@ -1627,8 +1600,8 @@ Arguments:
         let ma = read_reg_ord rd ii in
         let maccess a ma =
           check_ptw ii.AArch64.proc dir false false a ma Annot.N ii
-            ((let m = mop Access.PTE ma in
-              (* fire_spurious_af "4" v dir a *) m) >>= M.ignore >>= B.next1T)
+            (let m = mop Access.PTE ma in
+             m >>= M.ignore >>= B.next1T)
             mphy
             mfault in
         M.delay_kont "at::check_ptw" ma maccess

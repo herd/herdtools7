@@ -1387,33 +1387,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
 
-      let dirty =
+      let _dirty =
         match TopConf.dirty with
         | None -> DirtyBit.soft
         | Some d -> d
 
-      let check_spurious ii =
-        (*
-         * Explicit loads or stores yield a potential spurious update of
-         * the AF flag. When the hardware feature is active, of course.
-         *)
-        if dirty.DirtyBit.ha ii.A.proc then
-          let dir_ok =
-            let open Dir in
-            if TopConf.C.variant Variant.PhantomOnLoad then
-              (function R -> true | W -> false)
-            else
-              (function W -> true | R -> false) in
-          fun act ->
-            match act with
-            | Act.Access
-                (dir,A.Location_global loc,_,_,
-                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE))
-              when dir_ok dir
-              ->
-                Some loc
-            | _ -> None
-        else  fun _ -> None
+      let check_spurious _ii = fun _ -> None
 
       let event_to_monad ii check_spurious is_bcc get_port event =
         let { ASLE.action; ASLE.iiid; _ } = event in
