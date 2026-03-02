@@ -103,8 +103,8 @@ let empty_rule relation_name =
 let relation_argument_incorrect_naming relation_name term =
   spec_error
   @@ Format.asprintf
-       "The term %a in relation '%s' is either not named or names provides \
-        names in at different sub-term levels."
+       "The term %a in relation '%s' does not provide a name for at least one \
+        of its sub-terms."
        PP.pp_opt_named_type_term term relation_name
 
 let multiple_output_judgments relation_name rule_name_opt =
@@ -314,3 +314,9 @@ let invalid_record_update_base_type base_type ~context_expr =
 
 let missing_type_for_constant id =
   spec_error @@ Format.asprintf "Missing type for constant '%s'" id
+
+let missing_case_in_rule case_name relation_name case_path =
+  spec_error
+  @@ Format.asprintf
+       "Case '%s' does not exist in rule for relation '%s' for path '%s'."
+       case_name relation_name case_path
