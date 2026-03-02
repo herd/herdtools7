@@ -877,8 +877,8 @@ module Make
        * check perfomed early in standard
        * (ie non-pte2) mode.
        *)
-       
-           
+
+
       let get_instr_label ii =
         match Label.norm ii.A.labels with
         | Some hd -> ii.A.addr2v hd
@@ -1843,7 +1843,8 @@ Arguments:
               match tnt with
               | Pa -> N
               | PaN -> NTA
-              | PaI -> Q in
+              | PaI -> Q
+              | PaA -> A in
             let open AArch64 in
             match md with
             | Idx ->
@@ -1880,6 +1881,14 @@ Arguments:
               let read_mem = do_read_mem_op sxtw_op
             end) in
         LDPSW.ldp AArch64.Pa MachSize.Word
+
+      let ldap =
+        let module LDAP_Module = LoadPair(struct
+            let read_mem sz _ expl ac reg addr ii =
+              do_read_mem sz Annot.A expl ac reg addr ii
+          end) in
+        fun sz r1 r2 ra ii ->
+          LDAP_Module.ldp AArch64.PaA sz r1 r2 ra (0, AArch64.Idx) ii
 
       let ldxp sz t rd1 rd2 rs ii =
         let open AArch64 in
@@ -1987,12 +1996,12 @@ Arguments:
           match tnt with
           | Pa -> N
           | PaN -> NTA
-          | PaI -> L in
+          | PaI | PaL -> L in
         match md with
         | AArch64.Idx ->
             let (>>|) =
               match tnt with
-              | AArch64.(Pa|PaN) -> (>>|)
+              | AArch64.(Pa|PaN|PaL) -> (>>|)
               | AArch64.PaI -> M.seq_mem in
             let (>>>) = M.data_input_next in
             do_str rd
@@ -2063,6 +2072,9 @@ Arguments:
                      check_mixed_write_mem sz an aexp ac a v ii) a v ii)
             end >>!  ())
         sz t rr rd ii
+
+      let stlp sz r1 r2 ra ii =
+        stp AArch64.PaL sz r1 r2 ra (0, AArch64.Idx) ii
 
 (* AMO instructions *)
       let rmw_amo_read sz rmw =
@@ -2677,7 +2689,7 @@ Arguments:
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let>= n = last 0 
+            let>= n = last 0
             and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
@@ -4593,6 +4605,10 @@ Arguments:
             ldxp (tr_variant v) t r1 r2 r3 ii
         | I_STXP (v,t,r1,r2,r3,r4) ->
             stxp (tr_variant v) t r1 r2 r3 r4 ii
+        | I_LDAP (v, r1, r2, ra) ->
+            ldap (tr_variant v) r1 r2 ra ii
+        | I_STLP (v, r1, r2, ra) ->
+            stlp (tr_variant v) r1 r2 ra ii
 (*
  * Read/Write system registers.
  * Notice thar NZCV is special:
