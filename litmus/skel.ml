@@ -305,6 +305,17 @@ module Make
 
       module Insert = ObjUtil.Insert(Cfg)
 
+      let arch_dir = 
+        match UCfg.sysarch with
+        | `AArch64 -> "_aarch64/"
+        | `ARM     -> "_arm/"
+        | `MIPS    -> "_mips/"
+        | `PPC     -> "_ppc/"
+        | `X86     -> "_x86/"
+        | `RISCV   -> "_riscv/"
+        | `X86_64  -> "_x86_64/"
+        | _        -> ""
+
       let have_timebase = Insert.exists "timebase.h"
 
       (* Location utilities *)
@@ -561,7 +572,7 @@ module Make
       let dump_getinstrs test = 
         if Insert.exists "instruction.h" then begin
           let fname = "instruction" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
         end ;
