@@ -967,6 +967,14 @@ module Make (S : SPEC_VALUE) = struct
         "one of the following applies". *)
       pp_prose_rule_elements fmt ~case_name:"" rule_elements
 
+    (** [pp_render_rule_math_and_prose fmt def] renders both the mathematical
+        inference rules and the prose description of the rules referenced by
+        [def] with the formatter [fmt]. *)
+    let pp_render_rule_math_and_prose fmt def =
+      pp_render_rule fmt def;
+      fprintf fmt "@.@.";
+      pp_render_rule_prose fmt def
+
     (** [pp_render_rule_macro fmt def] renders the LaTeX wrapper macro
         [\DefineRule{name}{...}] around the rendering of the mathematical
         inference rules referenced by [def] with the formatter [fmt]. *)
@@ -1021,7 +1029,7 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Type def -> pp_type_definition fmt def
     | Elem_Relation def -> pp_relation_definition fmt def
     | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types fmt def
-    | Elem_RenderRule def -> RenderRule.pp_render_rule fmt def
+    | Elem_RenderRule def -> RenderRule.pp_render_rule_math_and_prose fmt def
 
   (** [pp_elem_definition_macro fmt elem] renders a macro definition for an
       element of the specification. *)
@@ -1053,28 +1061,9 @@ module Make (S : SPEC_VALUE) = struct
             Latex.spec_var_to_latex_var ~font_type:Latex.Text name
           in
           match elem with
-          | Elem_Constant _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Relation _ ->
-              if is_operator elem then ()
-              else fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Type _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderTypes _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderRule _ ->
+          | Elem_Relation _ when is_operator elem -> ()
+          | Elem_Constant _ | Elem_Type _ | Elem_RenderTypes _
+          | Elem_RenderRule _ | Elem_Relation _ ->
               fprintf fmt {|
 \section*{%s}
 %a
