@@ -63,6 +63,10 @@ The relation
                                               { \condcase[H]{{ \texttt{a} \greaterthan \texttt{b} }}{{ \texttt{a}\numplus\texttt{b} }} }, \\
                                               { \condcase[H]{{ \texttt{a} \lessthan \texttt{b} }}{\texttt{b}} }
                                               \end{array}} } } } \hva\\
+ { { \texttt{y} \eqdef \left\{\begin{array}{lcl}
+                              \FIELDf & : & \texttt{a}\\
+                              \FIELDg & : & \texttt{b}
+                              \end{array}\right\} } } \hva\\
  { { \texttt{r\_f} \eqdef { \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg } } } \hva\\
  { { \texttt{r'} \eqdef \texttt{r}\left\{\begin{array}{lcl}
                                          \FIELDf & : & \texttt{res}
@@ -76,6 +80,7 @@ The relation
 \AllApply
   \begin{itemize}
     \item define \texttt{res} as: if \texttt{a} is equal to \texttt{b} holds then \texttt{a}, if \texttt{a} is greater than \texttt{b} holds then the sum of all numbers in \texttt{a} and \texttt{b}, and if \texttt{a} is less than \texttt{b} holds then \texttt{b};
+    \item define \texttt{y} as: the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b};
     \item define \texttt{r\_f} as: the sum of all numbers in the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r};
     \item define \texttt{r'} as: \texttt{r} with $\FIELDf$ updated to \texttt{res};
     \item \textbf{the result is:} the tuple consisting of:  (1) \texttt{res} (for \texttt{c}), and  (2) \texttt{r'}.

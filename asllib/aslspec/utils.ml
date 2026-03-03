@@ -1,5 +1,7 @@
 (** Utility functions for functions that are not available in 4.08. *)
 
+module StringSet = Set.Make (String)
+
 (***************************************
  List-related utilities.
 ***************************************)
@@ -59,6 +61,11 @@ let rec list_iter3 f lst1 lst2 lst3 =
       f x1 x2 x3;
       list_iter3 f t1 t2 t3
   | _ -> invalid_arg "list_iter3: lists have different lengths"
+
+let string_list_is_subset lst1 lst2 =
+  let set1 = StringSet.of_list lst1 in
+  let set2 = StringSet.of_list lst2 in
+  StringSet.subset set1 set2
 
 (***************************************
  String-related utilities.
