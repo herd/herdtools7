@@ -771,13 +771,7 @@ let remove_store n0 =
       m.evt <- { m.evt with dir=Some d; atom=a; rmw=rmw}
     end else
     begin
-      let p = find_non_pseudo_prev m.prev
-      and n = find_non_pseudo m.next in
-(*      eprintf "[%a] in [%a]..[%a]\n" debug_node m debug_node p debug_node n ; *)
-      if not (E.is_ext p.edge || E.is_ext n.edge) then begin
-        Warn.fatal "Insert pseudo edge %s appears in-between  %s..%s (at least one neighbour must be an external edge)"
-          (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
-      end;
+      let p = find_non_pseudo_prev m.prev in
       match p.edge.E.edge with
       | (E.Rf Ext | E.Fr Ext) ->
         Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
