@@ -774,12 +774,34 @@ module Make (S : SPEC_VALUE) = struct
             TypeVariant.prose_description variant
             |> prose_or_empty_message ~name
           in
+          let declared_fields =
+            match variant.term with
+            | Record { fields } -> fields
+            | _ -> assert false
+          in
+          (* A record expression is allowed to specify only a subset of the declared fields.
+             We figure those out, associate them with _, and append them to the explicitly
+             specified fields.
+          *)
+          let unspecified_defaults =
+            let declared_field_names =
+              List.map (fun field -> field.Term.name) declared_fields
+            in
+            let unspecified_fields =
+              Utils.string_list_difference declared_field_names
+                (List.map fst fields)
+            in
+            List.map
+              (fun field -> (field, Expr.Var Spec.ignore_var))
+              unspecified_fields
+          in
           let field_to_prose =
             List.map
               (fun (field, field_expr) -> (field, expr_to_prose field_expr))
-              fields
+              (fields @ unspecified_defaults)
           in
-          substitute expr_prose field_to_prose
+          let result = substitute expr_prose field_to_prose in
+          result
       | RecordUpdate { record_expr; updates } ->
           let record_prose = expr_to_prose record_expr in
           let updates_prose =

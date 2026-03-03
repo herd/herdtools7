@@ -62,10 +62,19 @@ let rec list_iter3 f lst1 lst2 lst3 =
       list_iter3 f t1 t2 t3
   | _ -> invalid_arg "list_iter3: lists have different lengths"
 
+(** [string_list_is_subset lst1 lst2] checks if all elements of [lst1] are
+    contained in [lst2]. *)
 let string_list_is_subset lst1 lst2 =
   let set1 = StringSet.of_list lst1 in
   let set2 = StringSet.of_list lst2 in
   StringSet.subset set1 set2
+
+(** [string_list_difference lst1 lst2] returns the list of elements that are in
+    [lst1] but not in [lst2]. *)
+let string_list_difference lst1 lst2 =
+  let set1 = StringSet.of_list lst1 in
+  let set2 = StringSet.of_list lst2 in
+  StringSet.elements (StringSet.diff set1 set2)
 
 (***************************************
  String-related utilities.
