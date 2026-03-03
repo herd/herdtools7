@@ -896,7 +896,7 @@ struct
       else ambiguous_po e1 e2
   end)
 
-  let find_last_before e set =
+  let find_last_before set e =
     find_last_opt (fun e' -> is_before_strict e' e) set
 
   let find_first_after e set =
@@ -927,7 +927,7 @@ let match_reg_events add_eq es csn =
       List.fold_left
         (fun k load ->
           let rf =
-            match StoreSet.find_last_before load stores with
+            match StoreSet.find_last_before stores load with
             | Some store -> S.Store store
             | None -> S.Init
           in
@@ -1988,7 +1988,7 @@ let get_rf_value test read =
             eprintf "Observed locs: {%s}\n" (pp_locations observed_locs)
           end ;
           U.LocEnv.filter
-            (fun loc _ ->  keep_observed_loc loc observed_locs)
+            (fun loc _ -> keep_observed_loc loc observed_locs)
             loc_stores
         else loc_stores in
 
