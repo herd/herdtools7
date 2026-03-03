@@ -150,11 +150,11 @@ let invalid_number_of_components label expr ~expected ~actual =
 let invalid_record_field_names expr expr_field_names record_type_field_names =
   spec_error
   @@ Format.asprintf
-       "The record expression %a has invalid field names: expected %s but \
-        found %s"
+       "The record expression %a has missing or invalid field names: expected \
+        %s but found %s"
        PP.pp_expr expr
-       (String.concat ", " expr_field_names)
        (String.concat ", " record_type_field_names)
+       (String.concat ", " expr_field_names)
 
 let non_field id expr =
   spec_error

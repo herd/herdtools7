@@ -238,6 +238,25 @@ let make_variant_id_to_containing_type ast =
         acc_map variants)
     StringMap.empty typedefs
 
+let make_field_to_containing_variant ast =
+  let typedefs =
+    List.filter_map (function Elem_Type def -> Some def | _ -> None) ast
+  in
+  List.fold_left
+    (fun acc_map { Type.variants } ->
+      List.fold_left
+        (fun acc_map ({ TypeVariant.term } as variant) ->
+          match term with
+          | Term.Record { fields } ->
+              let field_names = List.map (fun { Term.name } -> name) fields in
+              List.fold_left
+                (fun acc_map field_name ->
+                  StringMap.add field_name variant acc_map)
+                acc_map field_names
+          | _ -> acc_map)
+        acc_map variants)
+    StringMap.empty typedefs
+
 type t = {
   ast : AST.t;  (** The AST, added with builtin definitions, transformed. *)
   id_to_defining_node : definition_node StringMap.t;
@@ -245,6 +264,10 @@ type t = {
   variant_id_to_containing_type : string StringMap.t;
       (** Associates variant labels with the name of the type that contains
           them. *)
+  field_to_containing_variant : TypeVariant.t StringMap.t;
+      (** Associates field names with the variant containing them. Since field
+          names are unique, there is only one variant containing a given field.
+      *)
   assign : Relation.t;
   reverse_assign : Relation.t;
   bottom_constant : Constant.t;
@@ -282,6 +305,7 @@ let update_spec_ast spec ast =
     ast;
     id_to_defining_node = make_symbol_table ast;
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
+    field_to_containing_variant = make_field_to_containing_variant ast;
   }
 
 let defined_ids self =
@@ -300,12 +324,25 @@ let defining_node_for_id self id =
   | Some def -> def
   | None -> Error.undefined_element id
 
-(** [relation_for_id self id] returns the relation definition node for the given
-    identifier [id], which is assumed to correspond to a relation definition. *)
 let relation_for_id self id =
   match defining_node_for_id self id with
   | Node_Relation def -> def
   | _ -> assert false
+
+let record_variant_for_expr spec expr =
+  match expr with
+  | Expr.Record { fields } ->
+      let first_field_name =
+        match fields with
+        | (field_name, _) :: _ -> field_name
+        | _ -> failwith "Record expression must have a non-empty list of fields"
+      in
+      StringMap.find first_field_name spec.field_to_containing_variant
+  | _ ->
+      let msg =
+        Format.asprintf "Expected record expression, found %a" PP.pp_expr expr
+      in
+      failwith msg
 
 let is_defined_id self id = StringMap.mem id self.id_to_defining_node
 let elements self = self.ast
@@ -2367,9 +2404,15 @@ module Check = struct
               in
               Term.Record { label_opt; fields = record_fields }
             in
+            let { TypeVariant.term = declared_type } =
+              record_variant_for_expr spec expr
+            in
             let () =
-              check_subsumed_by_opt_labelled_type spec inferred_type label_opt
-                ~context_expr:expr
+              if
+                not
+                  (CheckTypeInstantiations.subsumed spec inferred_type
+                     declared_type)
+              then Error.type_subsumption_failure inferred_type declared_type
             in
             (inferred_type, type_env)
         | RecordUpdate { record_expr; updates } -> (
@@ -2419,8 +2462,19 @@ module Check = struct
               Term.Tuple { label_opt; args = anonymous_typed_args }
             in
             let () =
-              check_subsumed_by_opt_labelled_type spec inferred_type label_opt
-                ~context_expr:expr
+              match label_opt with
+              | Some label -> (
+                  match StringMap.find label spec.id_to_defining_node with
+                  | Node_TypeVariant { TypeVariant.term = declared_type } ->
+                      if
+                        not
+                          (CheckTypeInstantiations.subsumed spec inferred_type
+                             declared_type)
+                      then
+                        Error.type_subsumption_failure inferred_type
+                          declared_type
+                  | _ -> Error.invalid_labelled_type label ~context_expr:expr)
+              | None -> ()
             in
             (inferred_type, type_env)
         | Relation { is_operator = true; name; args = [ lhs; rhs ] }
@@ -2603,24 +2657,6 @@ module Check = struct
           ([], type_env) exprs
       in
       (List.rev types, type_env)
-
-    (** [check_subsumed_by_opt_labelled_type spec actual_type label_opt
-         ~context_expr] checks that [actual_type] is subsumed by the labelled
-        type indicated by [label_opt], if any. The [context_expr] is used for
-        error reporting. *)
-    and check_subsumed_by_opt_labelled_type spec actual_type label_opt
-        ~context_expr =
-      match label_opt with
-      | Some label -> (
-          match StringMap.find label spec.id_to_defining_node with
-          | Node_TypeVariant { TypeVariant.term = declared_type } ->
-              if
-                not
-                  (CheckTypeInstantiations.subsumed spec actual_type
-                     declared_type)
-              then Error.type_subsumption_failure actual_type declared_type
-          | _ -> Error.invalid_labelled_type label ~context_expr)
-      | None -> ()
 
     and check_arg_types spec arg_exprs arg_types arg_formal_types ~context_expr
         =
@@ -2982,29 +3018,31 @@ module Check = struct
                   ~expected:(List.length type_components)
                   ~actual:(List.length args)
           | None -> ())
-      | Record { label_opt; fields } -> (
+      | Record { fields } ->
           let expr_field_names, expr_field_inits = List.split fields in
           let () = check_expr_list_in_context expr_field_inits in
-          match label_opt with
-          | Some label ->
-              let record_type_fields =
-                match StringMap.find label id_to_defining_node with
-                | Node_TypeVariant { TypeVariant.term = Record { fields } } ->
-                    fields
-                | _ -> Error.illegal_lhs_application expr
-              in
-              let record_type_field_names =
-                List.map (fun { Term.name } -> name) record_type_fields
-              in
-              if
-                not
-                  (Utils.list_is_equal String.equal expr_field_names
-                     record_type_field_names)
-              then
-                Error.invalid_record_field_names expr expr_field_names
-                  record_type_field_names
-              else ()
-          | None -> ())
+          let { TypeVariant.term = record_term } =
+            record_variant_for_expr spec expr
+          in
+          let record_type_field_names =
+            match record_term with
+            | Term.Record { fields = record_fields } ->
+                List.map (fun { Term.name } -> name) record_fields
+            | _ -> failwith "Expected record term."
+          in
+          let expr_field_names_sorted =
+            List.sort String.compare expr_field_names
+          in
+          let record_type_field_names_sorted =
+            List.sort String.compare record_type_field_names
+          in
+          if
+            not
+              (Utils.string_list_is_subset expr_field_names
+                 record_type_field_names)
+          then
+            Error.invalid_record_field_names expr expr_field_names_sorted
+              record_type_field_names_sorted
       | RecordUpdate { record_expr; updates } ->
           let () = check_expr_in_context record_expr in
           let update_field_names, update_field_inits = List.split updates in
@@ -3446,6 +3484,7 @@ let make_spec_with_builtins ast =
     some_operator = get_relation "some";
     cond_operator = get_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
+    field_to_containing_variant = make_field_to_containing_variant ast;
   }
 
 let from_ast ast =
