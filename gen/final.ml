@@ -250,6 +250,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       type fault_type = FaultType.t
       let pp_fault_type = FaultType.pp
       let fault_type_compare = FaultType.compare
+      let fault_type_matches = FaultType.matches
     end
 
     include Fault.Make(FaultArg)

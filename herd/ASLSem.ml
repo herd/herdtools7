@@ -166,7 +166,7 @@ module Make (Conf : Config) = struct
     and aexp = AArch64Explicit.Exp
     and areg = Access.REG
     and avir = Access.VIR
-    and apte = Access.PTE
+    and apte = Access.PTE DISide.Data
     let areg_std = (aneutral,aexp,Access.REG)
 
     (**************************************************************************)
@@ -332,7 +332,7 @@ module Make (Conf : Config) = struct
       | "REG" -> REG
       | "VIR" -> VIR
       | "PHY" -> PHY
-      | "PTE" -> PTE
+      | "PTE" -> PTE DISide.Data
       | "TLB" -> TLB
       | "TAG" -> TAG
       | "PHY_PTE" -> PHY_PTE
@@ -738,12 +738,12 @@ module Make (Conf : Config) = struct
       and ft =
         let open FaultType.AArch64 in
         match  Option.bind (V.as_scalar statuscode) ASLScalar.as_label with
-        | Some "Fault_AccessFlag" -> MMU AccessFlag
-        | Some "Fault_Translation" -> MMU Translation
-        | Some "Fault_Permission" -> MMU Permission
+        | Some "Fault_AccessFlag" -> MMU (DISide.Data, AccessFlag)
+        | Some "Fault_Translation" -> MMU (DISide.Data, Translation)
+        | Some "Fault_Permission" -> MMU (DISide.Data, Permission)
 (* NB: this fault should not occur, meaning that the current execution
    will be discarderd later. *)
-        | Some "Fault_Exclusive" -> MMU Exclusive
+        | Some "Fault_Exclusive" -> MMU (DISide.Data, Exclusive)
         | _ ->
           Warn.warn_always
             "data_abort, fault expected, found %s\n"

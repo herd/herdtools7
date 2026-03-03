@@ -1,0 +1,5 @@
+AArch64 A001
+Variant=vmsa,ifetch
+{}
+P0          ;
+.pagealign  ;

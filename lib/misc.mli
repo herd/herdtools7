@@ -350,6 +350,8 @@ val pp_tagged : string -> int -> string
 val pp_tag : string -> string
 val add_tag : string -> string
 
+val is_labelstr : string -> bool
+val str_as_label : string -> (int * string) option
 (******************)
 (* Hash utilities *)
 (******************)
