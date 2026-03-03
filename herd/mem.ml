@@ -766,9 +766,7 @@ and get_written e = match E.written_of e with
 (* Compute rfmap for registers *)
 (*******************************)
 
-let map_loc_find loc m =
-  try U.LocEnv.find loc m
-  with Not_found -> []
+let map_loc_find loc m = U.LocEnv.safe_find [] loc m
 
 (* Event set ordered by to (generalised) program order *)
 
@@ -795,6 +793,13 @@ struct
             assert false
 
       end)
+
+  let find_last_before set e =
+    find_last_opt (fun e' -> is_before_strict e' e) set
+
+  let find_first_after e set =
+    find_first_opt (fun e' -> is_before_strict e e') set
+
 end
 
 let match_reg_events add_eq es csn =
@@ -815,9 +820,7 @@ let match_reg_events add_eq es csn =
       (* Add the corresponding store for each load *)
       List.fold_left
         (fun k load ->
-          let f e = StoreSet.is_before_strict e load in
-          let rf =
-            match StoreSet.find_last_opt f stores with
+          let rf = match StoreSet.find_last_before stores load with
             | Some store -> S.Store store
             | None -> S.Init
           in
@@ -1691,8 +1694,7 @@ let get_rf_value test read =
         let stores = StoreSet.of_list ws in
         List.fold_left
           (fun k load ->
-             let f e = StoreSet.is_before_strict load e in
-             match StoreSet.find_first_opt f stores with
+             match StoreSet.find_first_after load stores with
              | None -> k (* No matching store (e.g. final load reserve) *)
              | Some store ->
                  if S.atomic_pair_allowed load store then
@@ -1815,12 +1817,12 @@ let get_rf_value test read =
           if C.debug.Debug_herd.mem then begin
             eprintf "Observed locs: {%s}\n" (pp_locations observed_locs)
           end ;
-          U.LocEnv.fold
-            (fun loc ws k ->
+          U.LocEnv.filter_map
+            (fun loc ws ->
               if keep_observed_loc loc observed_locs then
-                U.LocEnv.add loc ws k
-              else k)
-            loc_stores U.LocEnv.empty
+                Some ws
+              else None)
+            loc_stores
         else loc_stores in
 
       let possible_finals =
