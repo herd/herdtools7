@@ -1,6 +1,24 @@
+/****************************************************************************/
+/*                           the diy toolsuite                              */
+/*                                                                          */
+/* Jade Alglave, University College London, UK.                             */
+/* Luc Maranget, INRIA Paris, France.                                       */
+/* Rémy Citérin, ARM Ltd, Cambridge, UK                                     */
+/*                                                                          */
+/* Copyright 2025-present Institut National de Recherche en Informatique et */
+/* en Automatique and the authors. All rights reserved.                     */
+/*                                                                          */
+/* This software is governed by the CeCILL-B license under French law and   */
+/* abiding by the rules of distribution of free software. You can use,      */
+/* modify and/ or redistribute the software under the terms of the CeCILL-B */
+/* license as circulated by CEA, CNRS and INRIA at the following URL        */
+/* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
+/****************************************************************************/
 /*********************/
 /* Handle MMU faults */
 /*********************/
+#ifndef KVM_FAULT_HANDLER_H
+#define KVM_FAULT_HANDLER_H
 
 static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 #ifdef SEE_FAULTS
@@ -79,3 +97,4 @@ static void install_fault_handler(int cpu) {
   ti->exception_handlers[EL0_SYNC_64][ESR_EL1_EC_PAC] = fault_handler;
 #endif
 }
+#endif

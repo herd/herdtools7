@@ -126,6 +126,15 @@ end = struct
       fprintf chan "\n"
     end ;
     begin
+      begin match Cfg.mode with
+        | Mode.Kvm -> ()
+        | Mode.Std | Mode.PreSi ->
+           fprintf chan "SRCDIR = $(CURDIR)\n"
+      end ;
+      fprintf chan "SHARED_SRC_DIR = $(CURDIR)/lib\n" ;
+      fprintf chan "GCCOPTS += -I $(SHARED_SRC_DIR)\n\n"
+    end ;
+    begin
       match Cfg.mode with
       | Mode.Std|Mode.PreSi -> ()
       | Mode.Kvm ->
@@ -143,8 +152,16 @@ end = struct
            if flags.Flags.pac then
              "auth.o"::utils
            else utils in
-         fprintf chan "UTILS=%s\n"
+         fprintf chan "UTILS = %s\n\n"
            (String.concat " " utils)
+    end ;
+    begin
+      fprintf chan "UTILS_SRC = $(wildcard $(SHARED_SRC_DIR)/*.c)\n\n"
+    end ;
+    begin
+      fprintf chan "UTILS_OBJ = $(UTILS_SRC:.c=.o)\n\n"
+           (*(String.concat " " shared_utils) ;
+         fprintf chan "UTILS_OBJ = $(UTILS_SRC:.c=.o)\n\n"*)
     end ;
     ()
 
@@ -167,10 +184,10 @@ end = struct
             b :: k
           else k) utils [] in
     List.iter
-      (fun u ->
+      (fun u -> 
         let src = u ^ ".c" and obj = u ^ ".o" in
         fprintf chan "%s: %s\n" obj src ;
-        fprintf chan "\t$(GCC) $(GCCOPTS) %s-O2 -c %s\n"
+        fprintf chan "\t$(GCC) $(GCCOPTS) %s-O2 -c -o $@ %s\n"
           (if
             TargetOS.is_freebsd Cfg.targetos &&
             u = "affinity"
@@ -180,9 +197,11 @@ end = struct
         fprintf chan "\n")
       utils ;
 (* UTIL objs *)
+    fprintf chan "$(SHARED_SRC_DIR)/%%.o: $(SHARED_SRC_DIR)/%%.c\n";
+    fprintf chan "\t$(GCC) $(GCCOPTS) -O2 -c -o $@ $<\n\n" ;
     let utils_objs =
       String.concat " " (List.map (fun s -> s ^ ".o") utils) in
-    fprintf chan "UTILS=%s\n\n" utils_objs ;
+    fprintf chan "UTILS = %s\n\n" utils_objs ;
     ()
 ;;
 
@@ -477,9 +496,9 @@ let dump_shell_cont arch flags sources utils =
           | TargetOS.Linux|TargetOS.AIX
           | TargetOS.FreeBsd|TargetOS.Android8
             -> 's' in
-          fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
+          fprintf chan "%%.exe:%%.%c $(UTILS) $(UTILS_OBJ)\n" src_ext ;
           fprintf chan
-            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;
+            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $(UTILS_OBJ) $<\n" ;
           fprintf chan "\n" ;
 (* .s pattern rule *)
           fprintf chan "%%.s:%%.c\n" ;
@@ -668,12 +687,12 @@ let dump_c_cont xcode arch flags sources utils nts =
             fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
           end ;
           let o1 =
-            if infile then "$(UTILS) obj run.o"
-            else "$(UTILS) $(OBJ) run.o" in
+            if infile then "$(UTILS) $(UTILS_OBJ) obj run.o"
+            else "$(UTILS) $(UTILS_OBJ) $(OBJ) run.o" in
           let o2 =
-            if infile then "$(UTILS) @obj run.o"
+            if infile then "$(UTILS) $(UTILS_OBJ) @obj run.o"
             else o1 in
-          fprintf chan "$(EXE): %s\n" o1 ;
+          fprintf chan "$(EXE): %s\n" o1;
           fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;
           fprintf chan "\n" ;
           (* .o pattern rule *)
