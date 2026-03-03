@@ -815,7 +815,12 @@ module Make
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
         if see_faults test then
+          let fname = "kvm_fault_define" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o "static bool fault_reported[NTHREADS][MAX_FAULTS_PER_THREAD];" ;
           let fname = "kvm_fault_type" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c" in
           let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
           O.o ("#include <" ^ fname ^ ".h>") ;
           O.o ""
@@ -1095,7 +1100,7 @@ module Make
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
         if List.length faults > 0 then
-          O.fi "pp_log_faults_init();";
+          O.fi "pp_log_faults_init(NTHREADS, fault_reported);";
         List.iter (fun f ->
             let ((p, lbl), loc, ft) = f in
             let lbl = match lbl with
@@ -1108,9 +1113,10 @@ module Make
               | None -> "Unknown"
               | Some ft -> A.FaultType.pp ft
             in
-            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
-              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
-          ) faults;
+            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s, %s, %s, %s);" p p
+              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) 
+              "fault_reported" "instr_symb_name" "data_symb_name"
+          ) faults ;
         O.o "}" ;
         O.o "" ;
         let locs = A.RLocSet.elements rlocs in (* Now use lists *)
@@ -1133,7 +1139,7 @@ module Make
         | _ -> do_eq rloc suf in
         let do_eq_faults = function
           | [] -> O.oii "1;"
-          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults);"
+          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults, NTHREADS);"
         in
         let rec do_rec = function
           | [] -> do_eq_faults faults
@@ -1421,6 +1427,9 @@ module Make
         let fname = "_hash" in
         let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
         O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.o "static entry_t main_hash[HASHSZ];" ;
+        O.o "static entry_t instance_hash[NEXE][HASHSZ];" ;
         O.o "" ;
         (*ObjUtil.insert_lib_file O.o "_hash.c" ;
         O.o "" ;*)
@@ -2015,10 +2024,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-          List.iter
-            (dump_thread_code procs_user env)
-            test.T.code
-        end
+            List.iter
+              (dump_thread_code procs_user env)
+              test.T.code
+          end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in

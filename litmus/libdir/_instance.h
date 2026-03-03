@@ -44,7 +44,7 @@ typedef struct {
 static void instance_init(ctx_t *p, int id, intmax_t *mem) {
   p->id = id;
   p->mem = mem;
-  hash_init(&p->t);
+  hash_init(&p->t, HASHSZ, instance_hash[id]);
   log_init(&p->out);
   barrier_init(&p->b,N);
   interval_init((int *)&p->ind,N);
