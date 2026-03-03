@@ -15,7 +15,8 @@
 /****************************************************************************/
 
 /* Notice: this file contains public domain code by Bob Jenkins */
-
+#ifndef _HASH_H
+#define _HASH_H
 typedef struct {
   log_t key ;
 #ifdef STATS
@@ -29,11 +30,12 @@ static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) ;
 
 typedef struct {
   int nhash ;
-  entry_t t[HASHSZ] ;
+  int hashsz ;
+  entry_t *t ;
 } hash_t ;
 
 static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = t->t+k ;
     if (p->c > 0) {
       pp_entry(fp,p,verbose,group) ;
@@ -43,7 +45,7 @@ static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
 
 #if 0
 static void pp_hash_ok(FILE *fp,hash_t *t,char **group) {
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = t->t+k ;
     if (p->c > 0 && p->ok) pp_entry(fp,p,1,group) ;
   }
@@ -57,9 +59,11 @@ static void log_init(log_t *p) {
     *q++ = -1 ;
 }
 
-static void hash_init(hash_t *t) {
+static void hash_init(hash_t *t, int hashsz, entry_t *hash) {
   t->nhash = 0 ;
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  t->hashsz = hashsz ;
+  t->t = hash;
+  for (int k = 0 ; k < hashsz ; k++) {
     t->t[k].c = 0 ;
     log_init(&t->t[k].key) ;
   }
@@ -137,8 +141,8 @@ static int hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
 static int hash_add(hash_t *t,log_t *key, count_t c,int ok) {
 #endif
   uint32_t h = hash_log(key) ;
-  h = h % HASHSZ ;
-  for (int k = 0 ; k < HASHSZ ;  k++) {
+  h = h % t->hashsz ;
+  for (int k = 0 ; k < t->hashsz ;  k++) {
     entry_t *p = t->t + h ;
     if (p->c == 0) { /* New entry */
       p->key = *key ;
@@ -154,14 +158,14 @@ static int hash_add(hash_t *t,log_t *key, count_t c,int ok) {
       return 1;
     }
     h++ ;
-    h %= HASHSZ ;
+    h %= t->hashsz ;
   }
   return 0;
 }
 
 static int hash_adds(hash_t *t, hash_t *f) {
   int r = 1;
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = f->t+k ;
     if (p->c > 0) {
 #ifdef STATS
@@ -174,3 +178,4 @@ static int hash_adds(hash_t *t, hash_t *f) {
   }
   return r;
 }
+#endif

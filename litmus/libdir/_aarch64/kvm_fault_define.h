@@ -1,0 +1,4 @@
+#ifndef KVM_FAULT_DEFINE_H
+#define KVM_FAULT_DEFINE_H 1
+#define MAX_FAULTS_PER_THREAD 8
+#endif
