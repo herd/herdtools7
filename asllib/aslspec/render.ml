@@ -760,15 +760,15 @@ module Make (S : SPEC_VALUE) = struct
               formal_opt_prose_pairs
           in
           substitute expr_prose formal_prose_pairs
-      | Record { label_opt = None; fields = _ } ->
-          (* TODO: to obtain the prose for unlabelled records, we need a map from
-                  record fields to the type that contains the record. *)
-          "<missing prose for unlabelled record>"
-      | Record { label_opt = Some name; fields } ->
-          let variant =
-            match Spec.defining_node_for_id S.spec name with
-            | Node_TypeVariant def -> def
-            | _ -> assert false
+      | Record { label_opt; fields } ->
+          let variant = Spec.record_variant_for_expr S.spec expr in
+          let name =
+            match label_opt with
+            | Some name -> name
+            | None ->
+                Format.asprintf "unlabelled record with fields [%a]"
+                  (PP.pp_sep_list ~sep:", " pp_print_string)
+                  (List.map fst fields)
           in
           let expr_prose =
             TypeVariant.prose_description variant
