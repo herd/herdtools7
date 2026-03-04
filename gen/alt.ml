@@ -223,7 +223,18 @@ struct
     | (None,_)|(_,(Irr|NoDir)) -> true
     | Some a,(Dir d) -> C.A.applies_atom a d
 
-    let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with
+    let rec hd_non_insert = function
+      | [] -> assert false
+      | [x] -> x
+      | x::xs ->
+          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          else x
+    let last_non_insert xs = hd_non_insert (List.rev xs)
+
+    let pair_ok safes po_safe xs ys =
+      let e1 = last_non_insert xs in
+      let e2 = hd_non_insert ys in
+      match e1.edge,e2.edge with
 (*
   First reject some of hb' ; hb'
  *)
@@ -278,24 +289,16 @@ module Make(C:Builder.S)
         | _,_ -> false
       else fun _ _ -> true
 
-    let rec hd_non_insert = function
-      | [] -> assert false
-      | [x] -> x
-      | x::xs ->
-          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
-          else x
-    let last_non_insert xs = hd_non_insert (List.rev xs)
-
     let do_compat safes po_safe xs ys =
       let x = Misc.last xs and y = List.hd ys in
       let r =
         C.E.can_precede x y
         && check_mixed x y
-        && FilterImpl.pair_ok safes po_safe xs ys x y
+        && FilterImpl.pair_ok safes po_safe xs ys
         &&
           begin
             if do_kvm then
-              C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
+              C.E.can_precede (FilterImpl.hd_non_insert xs) (FilterImpl.last_non_insert ys)
             else true
           end in
       if O.verbose > 2 then begin
@@ -798,7 +801,5 @@ module Make(C:Builder.S)
       let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
       let safe_set = C.R.Set.of_list safe in
       let po_safe = edges_ofs safe |> extract_po in
-      let last = Misc.last lhs in
-      let first = List.hd rhs in
-      FilterImpl.pair_ok safe_set po_safe lhs rhs last first
+      FilterImpl.pair_ok safe_set po_safe lhs rhs
   end
