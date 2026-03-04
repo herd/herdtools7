@@ -70,8 +70,6 @@ type t =
   | NoPteBranch
 (* Pte-Squared: all accesses through page table, including PT accesses *)
   | PTE2
-(* Count maximal number of phantom updates by looking at loads *)
-  | PhantomOnLoad
 (* Optimise Rf enumeration leading to rmw *)
   | OptRfRMW
 (* Allow some constrained unpredictable, behaviours.
@@ -162,7 +160,6 @@ let (mode_variants, arch_variants) : t list * t list =
   | EOS -> EOS
   | NoPteBranch -> NoPteBranch
   | PTE2 -> PTE2
-  | PhantomOnLoad -> PhantomOnLoad
   | OptRfRMW -> OptRfRMW
   | ConstrainedUnpredictable -> ConstrainedUnpredictable
   | Exp -> Exp
@@ -200,7 +197,7 @@ let (mode_variants, arch_variants) : t list * t list =
         NotWeakPredicated;
         LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
         CutOff; Morello; Deps; Instances;
-        PhantomOnLoad; OptRfRMW; ConstrainedUnpredictable;
+        OptRfRMW; ConstrainedUnpredictable;
         Exp; CosOpt; Test; T 0;
         ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
         S128; Strict; Warn;
@@ -265,7 +262,6 @@ let parse s = match Misc.lowercase s with
 | "eos" -> Some EOS
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
-| "phantomonload" -> Some PhantomOnLoad
 | "optrfrmw" -> Some OptRfRMW
 | "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
@@ -370,7 +366,6 @@ let pp = function
   | EOS -> "eos"
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
-  | PhantomOnLoad -> "PhantomOnLoad"
   | OptRfRMW -> "OptRfRMW"
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
@@ -449,7 +444,6 @@ let pp = function
   | EOS -> "If FEAT_ExS is enabled, configure the effect of an Exception return, see SCTLR_ELx.EOS (AArch64 only)"
   | NoPteBranch -> "Disable branching events between PTE reads and accesses"
   | PTE2 -> "Perform a table walk for each memory access, including page tables"
-  | PhantomOnLoad -> ""
   | OptRfRMW -> ""
   | ConstrainedUnpredictable -> ""
   | Exp -> ""

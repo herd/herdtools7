@@ -1386,15 +1386,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
       let tr_cnstrnts cs = List.fold_left tr_cnstrnt [] cs
 
-
-      let _dirty =
-        match TopConf.dirty with
-        | None -> DirtyBit.soft
-        | Some d -> d
-
-      let check_spurious _ii = fun _ -> None
-
-      let event_to_monad ii check_spurious is_bcc get_port event =
+      let event_to_monad ii is_bcc get_port event =
         let { ASLE.action; ASLE.iiid; _ } = event in
         let () =
           if _dbg then
@@ -1419,8 +1411,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               |> M.as_port (get_port event)
               |> M.force_once
             in
-            let check_af = check_spurious action' in
-            Some (event, (check_af,m))
+            Some (event,m)
 
       let rel_to_monad event_to_monad_map comb rel =
         let one_pair (e1, e2) =
@@ -1470,17 +1461,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           fun e -> ASLE.EventSet.mem e bcc in
         let () = if _dbg then Printf.eprintf "\t- events: " in
         let event_list = List.of_seq events in
-        let check_spurious = check_spurious ii in
-        let spurious_locs,event_to_monad_map =
+        let event_to_monad_map =
           let seq =
-            Seq.filter_map (event_to_monad ii check_spurious is_bcc get_port) events in
-          let locs =
-            Seq.filter_map (fun (_,(loc,_))  -> loc) seq
-            |> List.of_seq
-          and map =
-            Seq.map (fun (e,(_,m)) -> (e,m)) seq
-            |> EMap.of_seq in
-          locs,map
+            Seq.filter_map (event_to_monad ii is_bcc get_port) events in
+          EMap.of_seq seq
         in
         let events_m =
           let folder _e1 m1 acc = m1 ||| acc in
@@ -1590,18 +1574,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           M.restrict (tr_cnstrnts cs)
         in
         let () = if _dbg then Printf.eprintf "\n" in
-        let m_spurious =
-          (*
-           * At most one spurious setaf operation per relevant location
-           * is probably sufficient. Anyway, it is unlikely that a given
-           * value appears more than once in the spurious_locs list.
-           *)
-          List.fold_left
-            (fun m loc ->
-               M.altT (AArch64Mixed.spurious_setaf loc) (M.unitT ()) ||| m)
-            (M.unitT ()) @@ List.sort_uniq A.V.compare spurious_locs in
         let* () =
-          m_spurious ||| events_m ||| iico_data ||| iico_ctrl
+          events_m ||| iico_data ||| iico_ctrl
           ||| iico_order ||| constraints ||| M.restrict eqs_test
         in
         M.addT (A.next_po_index ii.A.program_order_index) (return branch)
