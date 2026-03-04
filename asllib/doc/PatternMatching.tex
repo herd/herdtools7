@@ -65,6 +65,7 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \TypingRuleDef{PAll}
 The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -79,7 +80,8 @@ The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
   \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow (\overname{\PatternAll}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
-\RenderRule{annotate_pattern_all}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_all}
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -88,6 +90,8 @@ The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -97,15 +101,14 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\newg$ is the empty graph.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}
 {
   \evalpattern(\env, \Ignore, \PatternAll) \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PAll}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PAll}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
 \section{Matching a Single Value\label{sec:MatchingASingleValue}}
@@ -134,6 +137,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \listingref{typing-psingle-bad} shows an ill-typed single-expression pattern.
 \ASLListing{Ill-typed single-expression pattern}{typing-psingle-bad}{\typingtests/TypingRule.PSingle.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -174,7 +179,6 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bool, t\_real, t\_int, t\_string]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -235,8 +239,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
   \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_single}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_single}
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -246,6 +250,8 @@ In \listingref{semantics-psingle},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|, whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match \verb|{3}|.
 \ASLListing{Matching against a single value}{semantics-psingle}{\semanticstests/SemanticsRule.PSingle.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -257,7 +263,6 @@ In \listingref{semantics-psingle},
     is equal to $\vvone$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -266,8 +271,8 @@ In \listingref{semantics-psingle},
   \evalpattern(\env, \vv, \overname{\PatternSingle(\ve)}{\vp}) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PSingle}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PSingle}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
 \section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
@@ -300,6 +305,8 @@ In \listingref{semantics-psingle},
 \listingref{typing-prange-bad} shows ill-typed range patterns.
 \ASLListing{Ill-typed range patterns}{typing-prange-bad}{\typingtests/TypingRule.PRange.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -318,7 +325,6 @@ In \listingref{semantics-psingle},
   \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$ ($\PatternRange(\veonep, \vetwop)$).
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternRange(\veone, \vetwo)\\
@@ -339,8 +345,8 @@ In \listingref{semantics-psingle},
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_range}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_range}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -353,6 +359,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{1} is outside t
 range given by \texttt{3..42}.
 \ASLListing{Matching against a range of values}{semantics-prange}{\semanticstests/SemanticsRule.PRange.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -370,7 +378,6 @@ range given by \texttt{3..42}.
   \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\hva\\\\
@@ -383,8 +390,8 @@ range given by \texttt{3..42}.
   \evalpattern(\env, \vv, \PatternRange(\veone, \vetwo)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PRange}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PRange}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
 \section{Matching an Upper Bounded Range of Integers\label{sec:MatchingAnUpperBoundedRangeOfIntegers}}
@@ -413,6 +420,8 @@ range given by \texttt{3..42}.
 \listingref{typing-pleq-bad} shows examples of ill-typed less-or-equal patterns.
 \ASLListing{Ill-typed less-or-equal patterns}{typing-pleq-bad}{\typingtests/TypingRule.PLeq.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -430,7 +439,6 @@ that is, $\PatternLeq(\ve)$;
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -448,8 +456,8 @@ that is, $\PatternLeq(\ve)$;
   \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_leq}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_leq}
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -460,6 +468,8 @@ In \listingref{semantics-pleq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
 \ASLListing{Matching against an upper bound value}{semantics-pleq}{\semanticstests/SemanticsRule.PLeq.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -472,7 +482,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -481,8 +490,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
   \evalpattern(\env, \vv, \PatternLeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PLeq}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PLeq}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
 \section{Matching a Lower Bounded Range of Integers\label{sec:MatchingALowerBoundedRangeOfIntegers}}
@@ -511,6 +520,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \listingref{typing-pgeq-bad} shows examples of ill-typed greater-or-equal patterns.
 \ASLListing{Ill-typed greater-or-equal patterns}{typing-pgeq-bad}{\typingtests/TypingRule.PGeq.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -527,7 +538,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \item $\newp$ is the pattern that matches anything greater than or equal to $\vep$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\hva\\\\
@@ -545,8 +555,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
   \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_geq}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_geq}
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -557,6 +567,8 @@ In \listingref{semantics-pgeq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater than or equal to \texttt{42}.
 \ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -569,7 +581,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -578,8 +589,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
   \evalpattern(\env, \vv, \PatternGeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PGeq}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PGeq}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
 \section{Matching a Bitmask\label{sec:MatchingABitmask}}
@@ -611,6 +622,8 @@ and bit sequences in parentheses represent, don't-care values.
 \listingref{typing-pmask-bad} shows examples of ill-typed mask patterns.
 \ASLListing{An Ill-typed mask pattern}{typing-pmask-bad}{\typingtests/TypingRule.PMask.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
   \begin{itemize}
@@ -623,7 +636,6 @@ and bit sequences in parentheses represent, don't-care values.
   \item define $\vses$ as the empty set.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\hva\\\\
@@ -633,8 +645,8 @@ and bit sequences in parentheses represent, don't-care values.
   \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow (\overname{\PatternMask(\vm)}{\newp}, \overname{\emptyset}{\vses})
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_mask}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_mask}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
 \identi{VMKF}
 
@@ -647,6 +659,21 @@ whereas \texttt{match\_false} evaluates to \False, since
 \texttt{101010} does not match the bitmask \texttt{0x1010}.
 \ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
+\RenderRelation{mask_match}
+It is defined by the following table where the rows correspond to values of the bit and the columns correspond to mask values:
+\[
+\begin{array}{|c|c|c|c|}
+  \hline
+  \maskmatch & \zerobit & \onebit & \xbit\\
+  \hline
+  0 & \True & \False & \True\\
+  \hline
+  1 & \False & \True & \True\\
+  \hline
+\end{array}
+\]
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -670,21 +697,6 @@ whereas \texttt{match\_false} evaluates to \False, since
 \end{itemize}
 
 \FormallyParagraph
-\RenderRelation{mask_match}
-It is defined by the following table where the rows correspond to values of the bit and the columns correspond to mask values:
-\[
-\begin{array}{|c|c|c|c|}
-  \hline
-  \maskmatch & \zerobit & \onebit & \xbit\\
-  \hline
-  0 & \True & \False & \True\\
-  \hline
-  1 & \False & \True & \True\\
-  \hline
-\end{array}
-\]
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \evalpattern(\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)) \evalarrow \ResultPattern(\True, \emptygraph)
@@ -700,8 +712,8 @@ It is defined by the following table where the rows correspond to values of the 
   \evalpattern(\env, \vv, \PatternMask(\vm)) \evalarrow \ResultPattern(\vb, \emptygraph)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PMask}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PMask}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
 \section{Matching a Tuple of Patterns\label{sec:MatchingATupleOfPatterns}}
@@ -737,6 +749,8 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \ASLListing{Ill-typed tuple pattern due to order of elements}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
 \ASLListing{Ill-typed tuple pattern due to number of elements}{typing-ptuple-bad2}{\typingtests/TypingRule.PTuple.bad2.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -753,7 +767,6 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vp = \PatternTuple(\vli)\\
@@ -768,8 +781,8 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
   \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_tuple}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_tuple}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -784,6 +797,8 @@ whereas \\
 the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patterns \texttt{(>= 42, 'xx101010')}.
 \ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -796,7 +811,6 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   i=1..k: \getindex(i, \vv) \evalarrow \vvs[i]\OrDynError\\
@@ -807,8 +821,8 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
   \evalpattern(\env, \vv, \overname{\PatternTuple(\vps)}{\vp}) \evalarrow \ResultPattern(\vb, \overname{\emptygraph}{\newg})
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PTuple}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PTuple}
 \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
 
 \section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
@@ -917,6 +931,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not ma
 any pattern in \verb|{3, 4}|.
 \ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -928,7 +944,6 @@ any pattern in \verb|{3, 4}|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vps \reverseeqdef \vp_{1..k}\\
@@ -939,8 +954,8 @@ any pattern in \verb|{3, 4}|.
   \evalpattern(\env, \vv, \PatternAny(\vps)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PAny}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PAny}
 \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
 
 \section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
@@ -960,6 +975,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 \TypingRuleDef{PNot}
 \listingref{semantics-pnot} shows an example of a well-typed Negated pattern.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -968,7 +985,6 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \item $\newp$ is pattern which matches the negation of $\newq$ ($\PatternNot(\newq)$).
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
@@ -976,8 +992,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
   \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow (\overname{\PatternNot(\newq)}{\newp}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_pattern_neg}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_pattern_neg}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -988,6 +1004,8 @@ In \listingref{semantics-pnot},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
 \ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -997,7 +1015,6 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
 \item $\vb$ is the Boolean negation of $\vbone$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\hva\\\\
@@ -1006,8 +1023,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match 
   \evalpattern(\env, \vv, \PatternNot(\vpone)) \evalarrow \ResultPattern(\vb, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_pattern_PNot}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_pattern_PNot}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
 
 \section{Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
@@ -1028,7 +1045,7 @@ we list them below.
 The type rules and dynamic semantics rules for both sets of expressions is the same,
 as the same AST is generated for both.
 
-Pattern expressions are side-effect-free, as guaranteed by the checks to \\
+Pattern expressions are \sideeffectfreeterm{}, as guaranteed by the checks to \\
 $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 
