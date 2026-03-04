@@ -44,6 +44,8 @@ In contrast, annotating the record type \verb|MyRecord| in \listingref{typing-tr
 involves checking that the list of fields \verb|v, b, v| does not contain duplicates, which is not the case,
 thus resulting in a \typingerrorterm.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -61,7 +63,6 @@ thus resulting in a \typingerrorterm.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \forall{i,j \in \listrange(\ids)}{i \neq j \implies \id_i \neq \id_j}
@@ -77,8 +78,8 @@ thus resulting in a \typingerrorterm.
   \checknoduplicates(\ids) \typearrow \TypeErrorVal{\IdentifierAlreadyDeclared}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_no_duplicates}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_no_duplicates}
 
 \TypingRuleDef{Sort}
 \hypertarget{def-sort}{}
@@ -149,6 +150,8 @@ In contrast, in \listingref{eget-bad-bitfield}, annotating the expression \verb|
 requires finding the bitfield \verb|undeclared_identifier| in the \verb|Packet| \bitvectortypeterm,
 which does not exist.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -174,7 +177,6 @@ which does not exist.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[match]{
   \bitfieldgetname(\vbf) \typearrow \name
@@ -194,8 +196,8 @@ which does not exist.
   \findbitfieldopt(\name, \overname{\emptylist}{\bitfields}) \typearrow \None
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{find_bitfield_opt}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{find_bitfield_opt}
 
 \TypingRuleDef{TypeOfArrayLength}
 \RenderRelation{type_of_array_length}
@@ -221,6 +223,8 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \end{array}
 \]
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -238,7 +242,6 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[enum]{}
 {
@@ -249,8 +252,8 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
   \typeofarraylength(\overname{\ArrayLengthExpr(\Ignore)}{\size}) \typearrow \TInt(\Unconstrained)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{type_of_array_length}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{type_of_array_length}
 \CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
 
 \section{Static Environment Utilities}
@@ -262,18 +265,18 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 In \listingref{CheckVarNotInGEnv}, the typechecker constructs a \staticenvironmentterm{}
 with an empty local environment to annotate the \verb|Color| type declaration.
 
+\BackupProseAndFormally{
 \ProseParagraph
 The result is a \staticenvironmentterm{} where the global component is $\genv$ and the local component
 is the \localstaticenvironmentterm{} of $\emptytenv$.
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \withemptylocal(\genv) \typearrow \{ \staticenvsG: \genv, \staticenvsL: \emptytenv \}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{with_empty_local}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{with_empty_local}
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInEnv}
@@ -291,6 +294,8 @@ The specification in \listingref{CheckVarNotInEnv-bad2} is ill-typed since the v
 is repeated.
 \ASLListing{A repeating local variable}{CheckVarNotInEnv-bad2}{\typingtests/TypingRule.CheckVarNotInEnv.bad2.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -298,7 +303,6 @@ is repeated.
   \item checking whether $\vb$ is $\True$ yields $\True$\ProseTerminateAs{\IdentifierAlreadyDeclared}.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \isundefined(\tenv, \id) \typearrow \vb\\
@@ -307,8 +311,8 @@ is repeated.
   \checkvarnotinenv(\tenv, \id) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_var_not_in_env}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_var_not_in_env}
 \CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInGEnv}
@@ -330,6 +334,8 @@ The specification in \listingref{CheckVarNotInGEnv-bad} is ill-typed, since \ver
 is declared both as a global variable and as an enumeration label.
 \ASLListing{A name clash}{CheckVarNotInGEnv-bad}{\typingtests/TypingRule.CheckVarNotInGEnv.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -338,7 +344,6 @@ is declared both as a global variable and as an enumeration label.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \isglobalundefined(\genv, \id) \typearrow \vb\\
@@ -347,8 +352,8 @@ is declared both as a global variable and as an enumeration label.
   \checkvarnotingenv(\genv, \id) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_var_not_in_genv}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_var_not_in_genv}
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \TypingRuleDef{AddLocal}
@@ -366,6 +371,8 @@ the following local storage elements are added:
 \end{itemize}
 \ASLListing{Adding a local storage element}{AddLocal}{\typingtests/TypingRule.AddLocal.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -377,7 +384,6 @@ the following local storage elements are added:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \newlocalstoragetypes \eqdef \tenv.\staticenvsL.\localstoragetypes[\id \mapsto (\tty, \ldk)]\\
@@ -386,8 +392,8 @@ the following local storage elements are added:
   \addlocal(\tenv, \id, \tty, \ldk) \typearrow \newtenv
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_local}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_local}
 
 \TypingRuleDef{IsUndefined}
 \RenderRelation{is_undefined}
@@ -395,12 +401,12 @@ the following local storage elements are added:
 See \ExampleRef{Checking Whether an Identifier is Associated with a Global Storage Element} and
 \ExampleRef{Checking Whether an Identifier is Associated with a Local Storage Element}.
 
+\BackupProseAndFormally{
 \ProseParagraph
 $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvironmentterm{} of $\tenv$
 (see $\isglobalundefined$) and undefined in the \localstaticenvironmentterm{} of $\tenv$ (see $\islocalundefined$).
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \isglobalundefined(\tenv.\staticenvsG, \vx) \typearrow \vbone\\
@@ -409,8 +415,8 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvi
   \isundefined(\tenv, \vx) \typearrow \overname{\vbone \land \vbtwo}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_undefined}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_undefined}
 \CodeSubsection{\IsUndefinedBegin}{\IsUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsGlobalUndefined}
@@ -421,11 +427,11 @@ $\vb$ is $\True$ if and only if $\vx$ is both undefined in the \globalstaticenvi
 In the typing environment obtained by typechecking this specification, $\isglobalundefined$ will yield $\False$ for \verb|X| and $\True$ for \verb|Y|.
 \ASLListing{Checking whether an identifier is defined in the global static environment}{isglobalundefined}{\typingtests/TypingRule.IsGlobalUndefined.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is not bound in any of the following maps of $\genv$:
 $\globalstoragetypes$, and $\declaredtypes$.
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   {
@@ -438,8 +444,8 @@ $\globalstoragetypes$, and $\declaredtypes$.
   \isglobalundefined(\genv, \vx) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_global_undefined}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_global_undefined}
 \CodeSubsection{\IsGlobalUndefinedBegin}{\IsGlobalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsLocalUndefined}
@@ -457,17 +463,17 @@ of the \verb|main| function:
 
 In \listingref{expressions-evar-undefined}, the identifier \verb|t| is undefined in the \verb|main| function.
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if $\vx$ is not bound in the $\localstoragetypes$ of the static local environment $\lenv$.
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \islocalundefined(\lenv, \vx) \typearrow \overname{\tenv.\staticenvsL.\localstoragetypes(\vx) = \bot}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_local_undefined}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_local_undefined}
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupConstant}
@@ -480,19 +486,19 @@ which are also bound to identifiers as constants, are looked up
 in annotating statements.
 \ASLListing{Looking up constants}{LookupConstant}{\typingtests/TypingRule.LookupConstant.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \ProseEqdef{$\vv$}{the value to which $\vs$ is bound in the $\constantvalues$ map
 of the \globalstaticenvironmentterm{} and $\bot$ if it is unbound.}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \lookupconstant(\tenv, \vs) \typearrow \overname{\tenv.\staticenvsG.\constantvalues(\vs)}{\vv}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{lookup_constant}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{lookup_constant}
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalConstant}
@@ -505,17 +511,17 @@ binds \verb|FOUR| to \verb|4|, which allows the type system
 to infer that the statement \verb|var bv: bits(2^FOUR) = Zeros{FOUR*FOUR};| is well-typed.
 \ASLListing{Binding global storage elements to constants}{AddGlobalConstant}{\typingtests/TypingRule.AddGlobalConstant.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\name$ to $\vv$.
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \addglobalconstant(\genv, \name, \vv) \typearrow \overname{\genv.\constantvalues[\name\mapsto\vv]}{\newgenv}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_global_constant}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_global_constant}
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupImmutableExpr}
@@ -524,6 +530,8 @@ Define $\newgenv$ as $\genv$ with the $\constantvalues$ map updated to bind $\na
 See \ExampleRef{Remembering Global Immutable Expressions}
 and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -546,7 +554,6 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \tenv.\staticenvsL.\exprequiv(\vx) = \ve
@@ -572,8 +579,8 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
   \lookupimmutableexpr(\tenv, \vx) \typearrow \bot
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{lookup_immutable_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{lookup_immutable_expr}
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalImmutableExpr}
@@ -587,12 +594,12 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 \verb|bits(2)|.
 \ASLListing{Remembering global immutable expressions}{AddGlobalImmutableExpr}{\typingtests/TypingRule.AddGlobalImmutableExpr.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \ProseEqdef{$\newtenv$}{the \staticenvironmentterm{} with the same local environment as $\tenv$ and a global environment
   where $\exprequiv$ binds $\vx$ to $\ve$.}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   {
@@ -603,8 +610,8 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_global_immutable_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_global_immutable_expr}
 \CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddLocalImmutableExpr}
@@ -612,12 +619,12 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 
 See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \ProseEqdef{$\newtenv$}{the \staticenvironmentterm{} with the same global environment as $\tenv$ and a local environment
 where $\exprequiv$ binds $\vx$ to $\ve$.}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   {
@@ -628,8 +635,8 @@ where $\exprequiv$ binds $\vx$ to $\ve$.}
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_local_immutable_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_local_immutable_expr}
 \CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{ShouldRememberImmutableExpression}
@@ -645,13 +652,13 @@ not bound to \verb|x| after its declaration, which is why the type satisfaction
 test for \verb|t| fails.
 \ASLListing{Remembering vs. not remembering immutable expressions}{ShouldRememberImmutableExpression}{\typingtests/TypingRule.ShouldRememberImmutableExpression.bad.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\vb$ as $\True$ if and only if
 applying $\issymbolicallyevaluable$ to $\vses$
 yields $\True$.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \issymbolicallyevaluable(\vses) \typearrow \vb
@@ -659,8 +666,8 @@ yields $\True$.
   \shouldrememberimmutableexpression(\vses) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{should_remember_immutable_expression}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{should_remember_immutable_expression}
 
 \TypingRuleDef{AddImmutableExpr}
 \RenderRelation{add_immutable_expression}
@@ -676,6 +683,8 @@ and \verb|sub_k| to \verb|64|.
 See also \ExampleRef{Remembering vs. not Remembering Immutable Expressions} for an ill-typed
 specification.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -702,7 +711,6 @@ specification.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[add]{
   \shouldrememberimmutableexpression(\vsese) \typearrow \True\\
@@ -730,8 +738,8 @@ specification.
   \addimmutableexpression(\tenv, \ldk, \veopt, \vx) \typearrow \overname{\tenv}{\newtenv}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_immutable_expression}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_immutable_expression}
 
 \TypingRuleDef{AddSubprogram}
 \RenderRelation{add_subprogram}
@@ -783,12 +791,12 @@ the subprogram definition node
 \]
 and the empty set of \sideeffectdescriptorsterm.
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\newtenv$ as $\tenv$ with the $\subprograms$ map in the global component is updated by
 binding $\name$ to $\funcdef$.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subprograms[\name\mapsto(\funcdef, \vs)], \staticenvsL: \tenv.\staticenvsL\}
@@ -796,8 +804,8 @@ binding $\name$ to $\funcdef$.
   \addsubprogram(\tenv, \name, \funcdef, \vs) \typearrow \newtenv
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_subprogram}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_subprogram}
 \CodeSubsection{\AddSubprogramBegin}{\AddSubprogramEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddType}
@@ -817,18 +825,18 @@ $\addtype$ is applied to the environment where \verb|num_bits| has been added to
 $\TRecord([(\texttt{data},\TBits(\texttt{num\_bits}, \emptylist))])$ as the type,
 and $\SEReadonly$ as the \purity{} (since \verb|num_bits| is not a constant).
 
+\BackupProseAndFormally{
 \ProseParagraph
 Define $\newtenv$ as $\tenv$ where the $\declaredtypes$ map of the global component is updated
 by binding $\name$ to $\tty$ and $\vf$.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \addtype(\tenv, \name, \tty, \vf) \typearrow
   \overname{\{\staticenvsG: \tenv.\staticenvsG.\declaredtypes[\name\mapsto(\tty, \vf)] , \staticenvsL: \tenv.\staticenvsL\}}{\newtenv}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_type}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_type}
 \CodeSubsection{\AddTypeBegin}{\AddTypeEnd}{../StaticEnv.ml}

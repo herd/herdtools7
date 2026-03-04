@@ -196,6 +196,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The bitfields declared in \listingref{bitfields1} are well-typed and their total width
 is $16$.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -208,7 +209,6 @@ is $16$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \names \eqdef [\vfield\in\fields: \bitfieldgetname(\vfield)]\\
@@ -221,8 +221,8 @@ is $16$.
   \annotatebitfields(\tenv, \ewidth, \fields) \typearrow (\newfields, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_bitfields}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_bitfields}
 \CodeSubsection{\TBitFieldsBegin}{\TBitFieldsEnd}{../Typing.ml}
 
 \TypingRuleDef{BitFieldGetName}
@@ -233,6 +233,7 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 \verb|fmt|, \verb|common|, \verb|layer1|, \verb|remainder|, \verb|moving|,
 \verb|extra|, and \verb|fmt1|.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -246,7 +247,6 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[simple]{}{
     \bitfieldgetname(\overname{\BitFieldSimple(\name, \Ignore)}{\vbf}) \typearrow \name
@@ -260,8 +260,8 @@ In \listingref{nestedbitfields}, the names of bitfields are:
     \bitfieldgetname(\overname{\BitFieldType(\name, \Ignore, \Ignore)}{\vbf}) \typearrow \name
   }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfield_get_name}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfield_get_name}
 
 \TypingRuleDef{BitFieldGetSlices}
 \RenderRelation{bitfield_get_slices}
@@ -270,6 +270,8 @@ In \listingref{nestedbitfields}, the names of bitfields are:
 In \listingref{nestedbitfields},
 the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0|.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -283,7 +285,6 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[simple]{}{
   \bitfieldgetslices(\overname{\BitFieldSimple(\Ignore, \vslices)}{\vbf}) \typearrow \vslices
@@ -297,8 +298,8 @@ the slices associated with the bitfield \verb|layer1| are \verb|4:13, 12:2, 1, 0
   \bitfieldgetslices(\overname{\BitFieldType(\Ignore, \vslices, \Ignore)}{\vbf}) \typearrow \vslices
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfield_get_slices}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfield_get_slices}
 
 \TypingRuleDef{BitFieldGetNested}
 \RenderRelation{bitfield_get_nested}
@@ -309,11 +310,11 @@ the bitfields nested in the bitfield \verb|layer1| consist in the singleton list
 which does not include \verb|moving| and \verb|extra| -- those are nested in \verb|remainder|.
 The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \ProseEqdef{$\vnested$}{the bitfields nested within the bitfield $\vbf$, if there are any, and the empty list otherwise.}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[simple\_type]{
   \astlabel(\vbf) \neq \BitFieldNested
@@ -325,8 +326,8 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
   \bitfieldgetname(\overname{\BitFieldNested(\Ignore, \Ignore, \vnested)}{\vbf}) \typearrow \vnested
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfield_get_nested}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfield_get_nested}
 
 \TypingRuleDef{TBitField}
 \RenderRelation{annotate_bitfield}
@@ -335,6 +336,8 @@ The bitfields nested in the bitfield \verb|fmt| make up an empty list.
 In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bitfields are well-typed.
 \ASLListing{Well-typed bitfields}{welltypedbitvectortypes}{\typingtests/TypingRule.TBitField.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \begin{itemize}
   \item $\vfield$ is a bitfield with list of slices $\vslices$;
@@ -372,7 +375,6 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[simple]{
   \annotateslices(\tenv, \vslices) \typearrow (\slicesone, \vsesslices) \OrTypeError\hva\\\\
@@ -419,8 +421,8 @@ In \listingref{welltypedbitvectortypes}, all the uses of bitvector types with bi
   (\overname{\BitFieldType(\name, \slicesone, \vtp)}{\newfield}, \vses)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_bitfield}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_bitfield}
 \CodeSubsection{\TBitFieldBegin}{\TBitFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckSlicesInWidth}
@@ -430,6 +432,8 @@ See
 \ExampleRef{Converting Disjoint Slices to Positions} and
 \ExampleRef{Checking Whether Slice Positions Fit in a Bitvector Width}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -441,7 +445,6 @@ See
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \disjointslicestopositions(\tenv, \True, \vslices) \typearrow \positions \OrTypeError\hva\\\\
@@ -450,8 +453,8 @@ See
     \checkslicesinwidth(\tenv, \vwidth, \vslices) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_slices_in_width}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_slices_in_width}
 \CodeSubsection{\CheckSlicesInWidthBegin}{\CheckSlicesInWidthEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckPositionsInWidth}
@@ -464,6 +467,8 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 
 \ASLListing{An Out of Width Slice}{checkpositionsinwidth}{\typingtests/TypingRule.CheckPositionsInWidth.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -475,7 +480,6 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
     \minpos \eqdef \min(\positions)\\
@@ -485,8 +489,8 @@ fit in the bitvector width $16$, whereas the positions defined for the bitfield
     \checkpositionsinwidth(\vwidth, \positions) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_positions_in_width}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_positions_in_width}
 
 \TypingRuleDef{DisjointSlicesToPositions}
 \RenderRelation{disjoint_slices_to_positions}
@@ -501,6 +505,8 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 
 \ASLListing{Overlapping Slices}{disjointslicestopositions}{\typingtests/TypingRule.DisjointSlicesToPositions.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -523,7 +529,6 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \disjointslicestopositions(\tenv, \isstatic, \overname{\emptylist}{\vslices}) \typearrow \overname{\emptyset}{\positions}
@@ -542,8 +547,8 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
   \disjointslicestopositions(\tenv, \isstatic, \vslices) \typearrow \overname{\positionsone \cup \positionstwo}{\positions}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{disjoint_slices_to_positions}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{disjoint_slices_to_positions}
 
 \TypingRuleDef{BitfieldSliceToPositions}
 \RenderRelation{bitfield_slice_to_positions}
@@ -575,6 +580,8 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 
 \ASLListing{Converting bitfield slices to positions}{bitfieldslicetopositions}{\typingtests/TypingRule.BitfieldSliceToPositions.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -587,7 +594,6 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \evalsliceexpr(\tenv, \isstatic, \veone) \typearrow \some{\offset} \terminateas\TypeErrorConfig, \None\hva\\\\
@@ -602,8 +608,8 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfield_slice_to_positions}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfield_slice_to_positions}
 
 \TypingRuleDef{EvalSliceExpr}
 \RenderRelation{eval_slice_expr}
@@ -617,6 +623,8 @@ whereas the slice \verb|N DIV 2:0| is used in an \assignableexpression, which me
 it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
 \ASLListing{Expressions in slices}{EvalSliceExpr}{\typingtests/TypingRule.EvalSliceExpr.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -635,7 +643,6 @@ it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[static]{
   \staticeval(\tenv, \ve) \typearrow \vz \OrTypeError
@@ -651,8 +658,8 @@ it need not be \staticallyevaluableterm{} (it is indeed not, in this example).
   \evalsliceexpr(\tenv, \overname{\False}{\isstatic}, \ve) \typearrow \vzopt
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_slice_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_slice_expr}
 
 \TypingRuleDef{CheckCommonBitfieldsAlign}
 \RenderRelation{check_common_bitfields_align}
@@ -675,6 +682,8 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
 
 \ASLListing{An example where two bitfields of the same name (\texttt{common}) exist in the same scope but have different absolute slices}{CommonBitfieldsAlignError}{\typingtests/TypingRule.CheckCommonBitfieldsAlign.Error.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -691,7 +700,6 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{
   \vbitfields = \emptylist
@@ -711,14 +719,16 @@ Typechecking this example results in the \typingerrorterm{} \BadSlices.
   \checkcommonbitfieldsalign(\tenv, \vbitfields, \vwidth) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_common_bitfields_align}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_common_bitfields_align}
 
 \TypingRuleDef{BitfieldsToAbsolute}
 \RenderRelation{bitfields_to_absolute}
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -728,7 +738,6 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vf\in\vbitfields: \bitfieldtoabsolute(\tenv, \vf, \vabsoluteparent) \typearrow \va_\vf\\
@@ -737,14 +746,16 @@ See \ExampleRef{A bitvector type with nested bitfields}.
   \bitfieldstoabsolute(\tenv, \vbitfields, \vabsoluteparent) \typearrow \vabsbitfields
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfields_to_absolute}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfields_to_absolute}
 
 \TypingRuleDef{BitfieldToAbsolute}
 \RenderRelation{bitfield_to_absolute}
 
 See \ExampleRef{A bitvector type with nested bitfields}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -764,7 +775,6 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \bitfieldgetname(\vbf) \typearrow \name\\
@@ -785,8 +795,8 @@ See \ExampleRef{A bitvector type with nested bitfields}.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{bitfield_to_absolute}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfield_to_absolute}
 
 \TypingRuleDef{SelectIndicesBySlices}
 \RenderRelation{select_indices_by_slices}
@@ -826,6 +836,8 @@ The following are some examples of selecting indices:
 See \ExampleRef{A bitvector type with nested bitfields} where all \absolutebitfields{} align
 and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -841,7 +853,6 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \nameone \eqdef \vf_k\\
@@ -855,8 +866,8 @@ and \ExampleRef{Ill-typed Bitfields} where not all \absolutebitfields{} align.
   \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{absolute_bitfields_align}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{absolute_bitfields_align}
 
 \TypingRuleDef{SliceToIndices}
 \RenderRelation{slice_to_indices}
@@ -866,6 +877,8 @@ The list of indices for the slice \\
 $\SliceLength(\AbbrevEBinop{\ADD}{\ELInt{1}}{\ELInt{4}}, \ELInt{3})$ is
 $[7, 6, 5]$.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -878,7 +891,6 @@ $[7, 6, 5]$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
   \inferrule{
   \staticeval(\tenv, \vi) \typearrow \LInt(\vz_\vi)\\
@@ -889,8 +901,8 @@ $[7, 6, 5]$.
   \slicetoindices(\tenv, \overname{\SliceLength(\vi, \vw)}{\vs}) \typearrow \overname{\vend..\vstart}{\indices}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{slice_to_indices}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{slice_to_indices}
 
 \SemanticsRulesDef{Bitfields}
 The type system annotates expressions that read from a bitfield into corresponding slicing \rhsexpressions{}.

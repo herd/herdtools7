@@ -1279,7 +1279,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 \RenderProseAndFormally{binop_literals}
 
 \subsubsection{Arithmetic Operators Over Integer Values \label{sec:AthimeticOverInt}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[add\_int]{}{
   \binopliterals(\overname{\ADD}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LInt(a + b)}{\vr}
@@ -1350,11 +1350,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\SHR}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \vr
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_arithmetic}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_arithmetic}
 
 \subsubsection{Comparison Operators Over Integer Values \label{sec:ComparisonOverInt}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[eq\_int]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1390,11 +1390,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\GT}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBool(a > b)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_comparison_int}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_comparison_int}
 
 \subsubsection{Boolean Operators Over Boolean Values \label{sec:BooleanOverBoolean}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[and\_bool]{}{
   \binopliterals(\overname{\BAND}{\op}, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a \land b)}{\vr}
@@ -1426,11 +1426,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\NE}{\op}, \overname{\LBool(a)}{\vvone}, \overname{\LBool(b)}{\vvtwo}) \typearrow \overname{\LBool(a \neq b)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_boolean}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_boolean}
 
 \subsubsection{Arithmetic Operators Over Real Values \label{sec:AthimeticOverReal}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[mul\_int\_real]{}{
   \binopliterals(\overname{\MUL}{\op}, \overname{\LInt(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LReal(a\times b)}{\vr}
@@ -1476,11 +1476,11 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\POW}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LReal(a^b)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_arithmetic_real}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_arithmetic_real}
 
 \subsubsection{Comparison Operators Over Real Values \label{sec:ComparisonOverReal}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[eq\_real]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1516,8 +1516,8 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\overname{\GT}{\op}, \overname{\LReal(a)}{\vvone}, \overname{\LReal(b)}{\vvtwo}) \typearrow \overname{\LBool(a > b)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_comparison_real}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_comparison_real}
 
 \subsubsection{Operators Over Bitvectors \label{sec:BitvectorOperations}}
 \RenderRelation{binary_to_unsigned}
@@ -1530,10 +1530,9 @@ and as $0$ for an empty bit sequence:
 \[
   \binarytounsigned(\emptylist) \triangleq 0 \enspace.
 \]
-%\RenderRule{binary_to_unsigned} % The is more verbose than necessary here.
 
 \RenderRelation{int_to_bits}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[bitwise\_different\_bitwidths]{
   \listlen{a} \neq \listlen{b}
@@ -1649,10 +1648,10 @@ and as $0$ for an empty bit sequence:
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_bitvector}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_bitvector}
 
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[add\_bits\_int]{
   y \eqdef \binarytounsigned(a)\\
@@ -1670,11 +1669,11 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\overname{\SUB}{\op}, \overname{\LBitvector(a)}{\vvone}, \overname{\LInt(b)}{\vvtwo}) \typearrow \overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_bits_int}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_bits_int}
 
 \subsubsection{Operators Over String Values \label{sec:StringOperations}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[eq\_string]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LString(a)}{\vvone}, \overname{\LString(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1701,12 +1700,11 @@ and as $0$ for an empty bit sequence:
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_string}
-\RenderRule{binop_literals_concat_strings}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_string}
 
 \subsubsection{Operators Over Label Values \label{sec:LabelOperations}}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[eq\_label]{}{
   \binopliterals(\overname{\EQ}{\op}, \overname{\LLabel(a)}{\vvone}, \overname{\LLabel(b)}{\vvtwo}) \typearrow \overname{\LBool(a = b)}{\vr}
@@ -1718,8 +1716,8 @@ and as $0$ for an empty bit sequence:
   \binopliterals(\overname{\NE}{\op}, \overname{\LLabel(a)}{\vvone}, \overname{\LLabel(b)}{\vvtwo}) \typearrow \overname{\LBool(a \neq b)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_literals_label}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals_label}
 
 \SemanticsRulesDef{Primitive Operations}
 
@@ -1749,7 +1747,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalunop(\NEG, \nvint(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
-
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1775,7 +1773,6 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   \unopliterals(\op, l) \typearrow l' \\
@@ -1800,8 +1797,8 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalunop(\op, \vv) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{eval_unop}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_unop}
 
 \SemanticsRuleDef{BinopValues}
 \RenderRelation{eval_binop}
@@ -1830,7 +1827,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalbinop(\ADD, \nvint(2), \nvreal(1/2)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
-
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1858,7 +1855,6 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[ok]{
   \binopliterals(\op, l_1, l_2) \typearrow l' \\
@@ -1883,5 +1879,5 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
   \evalbinop(\op, \vvone, \vvtwo) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{eval_binop}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_binop}

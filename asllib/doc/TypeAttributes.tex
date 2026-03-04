@@ -18,18 +18,6 @@ functions that inspect the structure of types:
 \TypingRuleDef{BuiltinSingularType}
 \RenderRelation{is_builtin_singular}
 
-
-\ProseParagraph
-The \emph{builtin singular types} are:
-\begin{itemize}
-\item the \integertypesterm{};
-\item the \realtypeterm{};
-\item the \stringtypeterm{};
-\item the \booleantypeterm{};
-\item the \bitvectortypeterm{} (which includes \texttt{bit}, as a special case);
-\item the \enumerationtypeterm{}.
-\end{itemize}
-
 \ExampleDef{Builtin singular types}
 \listingref{typing-builtinsingulartype} defines variables of builtin singular types
 \texttt{integer}, \texttt{real},
@@ -42,8 +30,19 @@ the builtin singular type \texttt{Color} consists of two constants:
 \texttt{RED} and~\texttt{BLACK}.
 \ASLListing{An enumeration type}{typing-builtinenumerationtype}{\typingtests/TypingRule.EnumerationType.asl}
 
+\BackupProseAndFormally{
+\ProseParagraph
+The \emph{builtin singular types} are:
+\begin{itemize}
+\item the \integertypesterm{};
+\item the \realtypeterm{};
+\item the \stringtypeterm{};
+\item the \booleantypeterm{};
+\item the \bitvectortypeterm{} (which includes \texttt{bit}, as a special case);
+\item the \enumerationtypeterm{}.
+\end{itemize}
+
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
@@ -51,8 +50,8 @@ the builtin singular type \texttt{Color} consists of two constants:
   \isbuiltinsingular(\tty) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_builtin_singular}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_builtin_singular}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 \identd{PQCK} \identd{NZWT}
 
@@ -69,11 +68,11 @@ type ticks of integer;
 \end{lstlisting}
 \texttt{ticks} is a named type.
 
+\BackupProseAndFormally{
 \ProseParagraph
 A named type is a type that is declared by using the \texttt{type ... of ...} syntax.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) = \TNamed
@@ -81,8 +80,8 @@ A named type is a type that is declared by using the \texttt{type ... of ...} sy
   \isnamed(\tty) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_named}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_named}
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 \identd{vmzx}
 
@@ -95,13 +94,13 @@ The well-typed specification in \listingref{AnonymousType} illustrates the use
 of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \ASLListing{Well-typed anonymous types}{AnonymousType}{\typingtests/TypingRule.AnonymousType.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \Anonymoustypes\ are types that are not declared using the \texttt{type ... of ...} syntax:
 \integertypesterm{}, the \realtypeterm{}, the \stringtypeterm{}, the \booleantypeterm{},
 \bitvectortypesterm{}, \tupletypesterm{}, and \arraytypesterm{}.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vb \eqdef \astlabel(\tty) \neq \TNamed
@@ -109,8 +108,8 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
   \isanonymous(\tty) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_anonymous}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_anonymous}
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
@@ -125,6 +124,7 @@ type B of A;
 type C of B;
 \end{lstlisting}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -133,7 +133,6 @@ type C of B;
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\hva\\\\
@@ -142,8 +141,8 @@ type C of B;
   \issingular(\tenv, \tty) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_singular}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_singular}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
@@ -163,20 +162,20 @@ type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
 
+\BackupProseAndFormally{
 \ProseParagraph
 The result $\vb$ is $\True$ if and only if $\tty$ is either a record type, a
 collection type or an exception type, which is determined via the AST label of
 $\tty$.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException, \TCollection\}}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{is_structured}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_structured}
 \identd{WGQS} \identd{QXYC}
 
 \TypingRuleDef{Structure}
@@ -190,6 +189,8 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \listingref{Structure} shows examples of types and their structures.
 \ASLListing{Types and their structure}{Structure}{\typingtests/TypingRule.Structure.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -227,7 +228,6 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\hva\\\\
@@ -271,8 +271,8 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
  L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{get_structure}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{get_structure}
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 \identd{FXQV}
 
@@ -294,6 +294,8 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2} with its own \underlyingtypeterm, in contrast to the \structureterm{} of
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -312,7 +314,6 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \tty \reverseeqdef \TNamed(\vx) \\
@@ -328,8 +329,8 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
   \makeanonymous(\tenv, \tty) \typearrow \tty
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{make_anonymous}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{make_anonymous}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
 \TypingRuleDef{CheckConstrainedInteger}
@@ -344,6 +345,8 @@ shows examples of checking whether a type (used for the width of a bitvector typ
 is a \constrainedintegerterm{} type.
 \ASLListing{Checking for constrained integers}{check-constrained-integer}{\typingtests/TypingRule.CheckConstrainedInteger.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -373,7 +376,6 @@ is a \constrainedintegerterm{} type.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[well-constrained]{}
 {
@@ -397,6 +399,6 @@ is a \constrainedintegerterm{} type.
   \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_constrained_integer}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_constrained_integer}
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}

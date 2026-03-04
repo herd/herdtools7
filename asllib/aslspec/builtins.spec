@@ -20,19 +20,19 @@ variadic operator cond_op[T](cases: list1(T)) -> T
 constant bot { "bottom", math_macro = \bot };
 
 constant None {
-  "the \hyperlink{constant-None}{empty} \optionalterm{}"
+  "the  \hyperlink{constant-None}{empty} \optionalterm{}"
 };
 
 constant empty_set
 {
-  "the \hyperlink{constant-emptyset}{empty set}",
-  math_macro = \emptyset,
+    "the \hyperlink{constant-emptyset}{empty set}",
+    math_macro = \emptyset,
 };
 
 constant empty_list
 {
-  "the \hyperlink{constant-emptylist}{empty list}",
-  math_macro = \emptylist,
+    "the \hyperlink{constant-emptylist}{empty list}",
+    math_macro = \emptylist,
 };
 
 typedef Bool
@@ -91,7 +91,7 @@ operator some[T](v: T) -> option(T)
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
-  prose_application = "define {lhs} as: {rhs}",
+  prose_application = "define {lhs} as {rhs}",
 };
 
 operator reverse_assign[T](lhs: T, rhs: T) -> Bool

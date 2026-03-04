@@ -203,6 +203,8 @@ In \listingref{checkisnotcollection}, the statement
 \TypingRuleRef{LDVar} calls \TypingRuleRef{CheckIsNotCollection}.
 \ASLListing{Declaring a local variable with a collection type}{checkisnotcollection}{\typingtests/TypingRule.CheckIsNotCollection.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -228,7 +230,6 @@ In \listingref{checkisnotcollection}, the statement
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[Collection]{
     \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
@@ -256,8 +257,8 @@ In \listingref{checkisnotcollection}, the statement
     \checkisnotcollection(\tenv, \vt) \typearrow \True
   }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_is_not_collection}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_is_not_collection}
 
 \CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
@@ -267,6 +268,8 @@ In \listingref{checkisnotcollection}, the statement
 The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
 to the evaluation of \texttt{3} in $\env$.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -277,7 +280,6 @@ to the evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \reverseeqdef (\vv, \vgone)\\
@@ -287,8 +289,8 @@ to the evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDIVar(\vx), \vm) \evalarrow \ResultLDI(\newg, \newenv)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_local_decl_LDI_Var}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
 \section{Typing of Tuple Declarations\label{sec:Typing of Tuple Declarations}}
@@ -296,6 +298,8 @@ to the evaluation of \texttt{3} in $\env$.
 \ExampleDef{Well-typed Tuple Declarations}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -309,7 +313,6 @@ to the evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\hva\\\\
@@ -334,8 +337,8 @@ to the evaluation of \texttt{3} in $\env$.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_local_decl_item}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_local_decl_item}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \TypingRuleDef{AddLocalVars}
@@ -343,6 +346,7 @@ to the evaluation of \texttt{3} in $\env$.
 
 See \ExampleRef{Well-typed Tuple Declarations}.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -361,8 +365,8 @@ See \ExampleRef{Well-typed Tuple Declarations}.
 \end{itemize}
 
 \FormallyParagraph
-\RenderRule{add_local_vars}
-
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_local_vars}
 
 \section{Semantics of Tuple Declarations\label{sec:Semantics of Tuple Declarations}}
 \SemanticsRuleDef{LDTuple}
@@ -373,6 +377,8 @@ In \listingref{semantics-ldtuple},
 evaluation of \texttt{3} in $\env$.
 \ASLListing{Evaluating a tuple declaration in the local storage}{semantics-ldtuple}{\semanticstests/SemanticsRule.LDTuple.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -386,7 +392,6 @@ evaluation of \texttt{3} in $\env$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vm \reverseeqdef (\vv, \vg)\\
@@ -398,8 +403,8 @@ evaluation of \texttt{3} in $\env$.
   \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_local_decl_LDI_Tuple}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_local_decl_LDI_Tuple}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareLDITuple}
@@ -407,6 +412,8 @@ evaluation of \texttt{3} in $\env$.
 
 See \ExampleRef{Evaluation of Tuple Declarations}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -429,7 +436,6 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -449,5 +455,5 @@ See \ExampleRef{Evaluation of Tuple Declarations}.
   \declareldituple(\env, \vids, \liv) \evalarrow \ResultLDI(\vg, \newenv)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{declare_ldi_tuple}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_ldi_tuple}
