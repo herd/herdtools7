@@ -1,0 +1,14 @@
+AArch64 A033
+Variant=vmsa
+TTHM=HA
+(* Only 4 executions, tests the "write_loaded" optimisation in herd/mem.ml *)
+{
+  [x]=1;
+  [PTE(x)]=(oa:PA(x),af:0);
+  0:X4=(oa:PA(x),af:0); 0:X5=PTE(x);
+  0:X6=(oa:PA(y));
+}
+ P0              ;
+ CAS X4,X6,[X5]  ;
+locations [PTE(x)]
+exists [PTE(x)]=(oa:PA(x));

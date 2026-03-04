@@ -1,0 +1,13 @@
+Test A032 Allowed
+States 4
+0:X3=(oa:PA(x), af:0); [PTE(x)]=(oa:PA(y), af:0);
+0:X3=(oa:PA(x), af:0); [PTE(x)]=(oa:PA(y));
+0:X3=(oa:PA(x)); [PTE(x)]=(oa:PA(y), af:0);
+0:X3=(oa:PA(x)); [PTE(x)]=(oa:PA(y));
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Condition exists (0:X3=(oa:PA(x)) /\ [PTE(x)]=(oa:PA(y)))
+Observation A032 Sometimes 2 6
+Hash=4d4ebbbbd741d64b8bb4bcece91ef26d
+

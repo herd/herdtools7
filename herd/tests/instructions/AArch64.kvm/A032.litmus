@@ -1,0 +1,14 @@
+AArch64 A032
+Variant=vmsa
+TTHM=HA
+(* Allowed, by two spurious HW updates *)
+{
+int x=1;
+int y=2;
+[PTE(x)]=(oa:PA(x),af:0);
+0:X0=PTE(x); 0:X1=(oa:PA(y),af:0);
+}
+  P0         ;
+ LDR X3,[X0] ;
+ STR X1,[X0] ;
+exists 0:X3=(oa:PA(x)) /\ [PTE(x)]=(oa:PA(y))
