@@ -746,7 +746,7 @@ $\nvint(42)$ in the environment where \texttt{x} is bound to $\nvint(42)$ and
 \CodeSubsection{\EvalLEDestructuringBegin}{\EvalLEDestructuringEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{LEMultiAssign}
-\RenderRelation{eval_multi_assignment}
+\RenderRelation{multi_assign}
 See \ExampleRef{Multi-assignments}.
 
 \ProseParagraph
@@ -763,7 +763,7 @@ See \ExampleRef{Multi-assignments}.
     \item $\vle$ is a \Proselist{$\vle$}{$\vlelistone$};
     \item $\vmlist$ is a \Proselist{$\vm$}{$\vmlistone$};
     \item \Proseevallexpr{$\env$}{$\vle$}{$\vm$}{$\ResultLexpr(\vgone, \envone)$}\ProseOrAbnormal;
-    \item applying $\evalmultiassignment$ to $\envone$, $\vlelistone$, and $\vmlistone$
+    \item applying $\multiassign$ to $\envone$, $\vlelistone$, and $\vmlistone$
           yields\\
           $\ResultLexpr(\vgtwo, \newenv)$\ProseOrAbnormal;
     \item \Proseeqdef{$\newg$}{the ordered composition of $\vgone$ and $\vgtwo$
@@ -793,14 +793,45 @@ See \ExampleRef{Multi-assignments}.
 }
 \end{mathpar}
 } % END_OF_BACKUP_RULE
-\RenderRule{eval_multi_assignment}
+\RenderRule{multi_assign}
 
 Notice that this rule is only defined when the lists $\vlelist$ and $\vmlist$ have the same length.
 To see this, notice that
 to form a derivation tree, we must employ the \textsc{non\_empty} case, which ensures both lists
 have at least one element and shortens the lengths of both lists by one,
-until both lists become empty
+until both lists become empty,
 which is when the \textsc{empty} axiom case is used.
+
+\SemanticsRuleDef{ProtectedLEMultiAssign}
+\RenderRelation{protected_multi_assign}
+See \ExampleRef{Evaluation of Multi-variable Assignment from Subprogram Calls}
+and \ExampleRef{Multi-assignments}.
+
+\ProseParagraph
+\OneApplies
+\begin{itemize}
+  \item \AllApplyCase{same\_length}
+  \begin{itemize}
+    \item $\vlelist$ and $\vmlist$ have the same length;
+    \item applying $\multiassign$ to $\env$, $\vlelist$, and $\vmlist$ yields\\
+          $\ResultLexpr(\vg, \newenv)$\ProseOrAbnormal;
+    \item \Proseeqdef{$\newg$}{$\vg$}.
+  \end{itemize}
+
+  \item \AllApplyCase{different\_length}
+  \begin{itemize}
+    \item $\vlelist$ and $\vmlist$ have different lengths;
+    \item $\vmlist$ is a singleton list containing the value $(\vtuplevalue, \vg)$;
+    \item applying $\getindex$ to $\vi$, and $\vtuplevalue$ for each index
+          $\vi$ in the list of indices for $\vlelist$ yields $\vtupleelements[\vi]$\ProseOrError;
+    \item \Proseeqdef{$\nmlist$}{the pair $\vtupleelements[\vi]$ and $\vg$ for each index $\vi$ in the list of indices for $\vlelist$};
+    \item applying $\multiassign$ to $\env$, $\vlelist$, and $\nmlist$ yields\\
+          $\ResultLexpr(\newg, \newenv)$\ProseOrAbnormal.
+  \end{itemize}
+\end{itemize}
+
+\FormallyParagraph
+\RenderRule{protected_multi_assign}
 
 \hypertarget{def-setarraylexprterm}{}
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
