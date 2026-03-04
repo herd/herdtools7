@@ -674,7 +674,7 @@ module Make (S : SPEC_VALUE) = struct
         missing prose templates. *)
     let prose_or_empty_message ~name prose =
       if Utils.string_is_empty prose then
-        Format.asprintf "<empty prose for %s>"
+        Format.asprintf "``empty prose for %s''"
           (Latex.spec_var_to_latex_var ~font_type:TextTT name)
       else prose
 
@@ -688,6 +688,15 @@ module Make (S : SPEC_VALUE) = struct
     (** [var_to_prose id] converts a variable [id] to its prose representation.
     *)
     let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
+
+    (** Removes angle brackets from the template and substitutes the
+        placeholders with the provided substitutions. *)
+    let preprocess_template_and_substitute template substitutions =
+      (* Replace text inside angle brackets with the text itself. *)
+      let template =
+        Str.global_replace (Str.regexp "<\\([^>]*\\)>") "\\1" template
+      in
+      substitute template substitutions
 
     (** [expr_to_prose expr] converts an expression [expr] to its prose
         representation. *)
@@ -749,7 +758,7 @@ module Make (S : SPEC_VALUE) = struct
                 | Some name -> Some (name, prose))
               formal_opt_prose_pairs
           in
-          substitute expr_prose formal_prose_pairs
+          preprocess_template_and_substitute expr_prose formal_prose_pairs
       | Record { label_opt; fields } ->
           let variant = Spec.record_variant_for_expr S.spec expr in
           let name =
@@ -790,8 +799,7 @@ module Make (S : SPEC_VALUE) = struct
               (fun (field, field_expr) -> (field, expr_to_prose field_expr))
               (fields @ unspecified_defaults)
           in
-          let result = substitute expr_prose field_to_prose in
-          result
+          preprocess_template_and_substitute expr_prose field_to_prose
       | RecordUpdate { record_expr; updates } ->
           let record_prose = expr_to_prose record_expr in
           let updates_prose =
@@ -859,7 +867,7 @@ module Make (S : SPEC_VALUE) = struct
                 relation.name
         in
         let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
-        substitute expr_prose formal_prose_pair
+        preprocess_template_and_substitute expr_prose formal_prose_pair
       else
         let formal_arg_pairs = List.combine formal_args args in
         let formal_prose_pairs =
@@ -868,7 +876,7 @@ module Make (S : SPEC_VALUE) = struct
               named_args_for_opt_named_term opt_named_term arg)
             formal_arg_pairs
         in
-        substitute expr_prose formal_prose_pairs
+        preprocess_template_and_substitute expr_prose formal_prose_pairs
 
     (** [short_circuit_to_prose relation_name short_circuit] returns the prose
         for the short-circuit expressions added as superscripts. *)
