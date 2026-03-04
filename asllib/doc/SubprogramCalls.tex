@@ -97,6 +97,8 @@ the type of \verb|N| --- \verb|integer{N}| --- does not \typesatisfyterm{} \verb
 
 For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Typed Arguments}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -109,7 +111,6 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \annotateexprlist(\tenv, \vcall.\callargs) \typearrow \args \OrTypeError\hva\\\\
@@ -125,8 +126,8 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
   (\vcallp, \retty)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_call}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_call}
 \CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
 \identi{VFDP} \identd{TRFW} \identr{KMDB}
 \identi{YMHX} \identr{CCVD} \identr{QYBH} \identr{PFWQ} \identr{ZLWD}
@@ -159,6 +160,8 @@ In \listingref{AnnotateCallActualsTyped-bad4}, the call expression \verb|ones{my
 is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \ASLListing{An ill-typed call expression}{AnnotateCallActualsTyped-bad4}{\typingtests/TypingRule.AnnotateCallActualsTyped.bad4.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -186,7 +189,6 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \unziplistthree(\typedargs) = (\argtypes, \args, \vsessargs)\\
@@ -224,8 +226,8 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_call_actuals_typed}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_call_actuals_typed}
 \CodeSubsection{\AnnotateCallActualsTypedBegin}{\AnnotateCallActualsTypedEnd}{../Typing.ml}
 
 \TypingRuleDef{InsertStdlibParam}
@@ -243,6 +245,8 @@ shows examples of calls to standard library functions with some or all of their
 parameters elided, and the equivalent calls with all parameters included.
 \ASLListing{Inserting parameters in calls to standard library subprograms}{InsertStdlibParam}{\typingtests/TypingRule.InsertStdlibParam.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -276,7 +280,6 @@ parameters elided, and the equivalent calls with all parameters included.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[can\_insert]{
   {
@@ -310,8 +313,8 @@ parameters elided, and the equivalent calls with all parameters included.
   \insertstdlibparam(\funcsig, \params, \argtypes) \aslto \overname{\params}{\paramsone}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{insert_stdlib_param}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{insert_stdlib_param}
 
 \TypingRuleDef{CanOmmitStdlibParam}
 \RenderRelation{can_omit_stdlib_param}
@@ -383,6 +386,8 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 
 \ASLListing{Checking that expression types type-satisfy parameters}{CheckParamsTypeSat}{\typingtests/TypingRule.CheckParamsTypeSat.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -422,7 +427,6 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \checkparamstypesat(\tenv, \overname{\emptylist}{\funcsigparams}, \Ignore) \typearrow \True
@@ -454,8 +458,8 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
   \checkparamstypesat(\tenv, \funcsigparams, \params) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_params_typesat}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_params_typesat}
 
 \TypingRuleDef{RenameTyEqs}
 \RenderRelation{rename_ty_eqs}
@@ -467,6 +471,8 @@ requires substituting \verb|8| for \verb|N| in the types
 \verb|bits(8)| and \verb|integer{0..8}|.
 \ASLListing{Transforming parameterized types based on actual arguments}{RenameTyEqs}{\typingtests/TypingRule.RenameTyEqs.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -514,7 +520,6 @@ requires substituting \verb|8| for \verb|N| in the types
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_bits]{
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
@@ -552,8 +557,8 @@ requires substituting \verb|8| for \verb|N| in the types
   \renametyeqs(\tenv, \eqs, \tty) \typearrow \overname{\tty}{\newty}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{rename_ty_eqs}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{rename_ty_eqs}
 
 \TypingRuleDef{SubstExprNormalize}
 \RenderRelation{subst_expr_normalize}
@@ -566,6 +571,8 @@ the expression \verb|z + 22| is substituted for the parameter \verb|N| in the ty
 resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into \verb|64|.
 \ASLListing{Substituting Parameter Expressions}{SubstExpr}{\typingtests/TypingRule.SubstExpr.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -575,7 +582,6 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \substexpr(\tenv, \ve) \typearrow \veone\\
@@ -584,8 +590,8 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
   \substexprnormalize(\tenv, \eqs, \ve) \typearrow \newe
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subst_expr_normalize}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{subst_expr_normalize}
 
 \TypingRuleDef{SubstExpr}
 \RenderRelation{subst_expr}
@@ -595,6 +601,8 @@ which means it is in the subset allowed by $\extractparameters$.
 
 See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -766,7 +774,6 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[e\_var\_in\_substs]{
   \assocopt{\vs}{\substs} \typearrow \some{\newe}
@@ -943,8 +950,8 @@ See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
   \substexpr(\tenv, \substs, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subst_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{subst_expr}
 \CodeSubsection{\SubstExprBegin}{\SubstExprEnd}{../ASTUtils.ml}
 
 \TypingRuleDef{SubstConstraint}
@@ -957,6 +964,8 @@ the expression \verb|z + 22| is substituted for the parameter \verb|N| in the ty
 \verb|integer{0..N}| used for the argument \verb|z|,
 resulting in the type \verb|integer{0..64}|.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -979,7 +988,6 @@ resulting in the type \verb|integer{0..64}|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \vc = \ConstraintExact(\ve)\\
@@ -996,8 +1004,8 @@ resulting in the type \verb|integer{0..64}|.
   \substconstraint(\tenv, \eqs, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subst_constraint}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{subst_constraint}
 
 \TypingRuleDef{CheckArgsTypeSat}
 \RenderRelation{check_args_typesat}
@@ -1014,6 +1022,10 @@ Since both these checks hold, the call is indeed well-typed.
 In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
 \verb|integer{9}| does not \typesatisfyterm{} \verb|integer{0..8}|.
 
+We note that in the following, \TypingRuleRef{AnnotateCallActualsTyped} guarantees
+that $\funcsigargs$ and $\argtypes$ have the same length.
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1039,10 +1051,6 @@ In contrast, a call \verb|FlipPrefix{8}(bv, 9)| is ill-typed since
 \end{itemize}
 
 \FormallyParagraph
-We note that \TypingRuleRef{AnnotateCallActualsTyped} guarantees
-that $\funcsigargs$ and $\argtypes$ have the same length.
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \checkargstypesat(\tenv, \overname{\emptylist}{\funcsigargs}, \overname{\emptylist}{\argtypes}, \eqs)
@@ -1059,8 +1067,8 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
   \checkargstypesat(\tenv, \funcsigargs, \argtypes, \eqs) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_args_typesat}
+} % END_OF_BACKUP_ORIGINAL_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_args_typesat}
 
 \TypingRuleDef{AnnotateRetTy}
 \RenderRelation{annotate_ret_ty}
@@ -1078,6 +1086,8 @@ and an ill-typed call expression \verb|proc()|, since procedures can only be use
 and functions can only be used in call expressions.
 \ASLListing{Ill-typed Subprogram Calls}{AnnotateRetTy-bad}{\typingtests/TypingRule.AnnotateRetTy.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1105,7 +1115,6 @@ and functions can only be used in call expressions.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[function\_or\_getter]{
   \calltype \in \{\STFunction, \STGetter\}\\
@@ -1139,8 +1148,8 @@ and functions can only be used in call expressions.
   \TypeErrorVal{\BadCall}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_ret_ty}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_ret_ty}
 
 \TypingRuleDef{SubprogramForSignature}
 \RenderRelation{subprogram_for_signature}
@@ -1184,6 +1193,8 @@ is declared, it does not match the required signature (the type of the first arg
 the \integertypeterm{} rather than the \realtypeterm).
 \ASLListing{Subprogram name does not match signature}{SubprogramForSignature-no-candidates}{\typingtests/TypingRule.SubprogramForSignature.bad.no_candidates.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1214,7 +1225,6 @@ the \integertypeterm{} rather than the \realtypeterm).
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[undefined]{
   \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot
@@ -1255,8 +1265,8 @@ the \integertypeterm{} rather than the \realtypeterm).
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subprogram_for_signature}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{subprogram_for_signature}
 \CodeSubsection{\SubprogramForSignatureBegin}{\SubprogramForSignatureEnd}{../Typing.ml}
 
 \TypingRuleDef{FilterCallCandidates}
@@ -1273,6 +1283,8 @@ In contrast, filtering the set of declared subprograms for the call expression
 \verb|add_10(5.0)| in \listingref{SubprogramForSignature-no-candidates},
 yields an empty list.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1296,7 +1308,6 @@ yields an empty list.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[no\_candidates]
 {}{
@@ -1324,8 +1335,8 @@ yields an empty list.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{filter_call_candidates}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{filter_call_candidates}
 
 \TypingRuleDef{CallTypeMatches}
 \RenderRelation{call_type_matches}
@@ -1343,6 +1354,8 @@ The table below shows keywords used to define functions, and their possible comp
 \end{tabular}
 \end{center}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1361,7 +1374,6 @@ The table below shows keywords used to define functions, and their possible comp
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[getter\_func]{
   \funcdef.\funcsubprogramtype = \STGetter \\
@@ -1379,8 +1391,8 @@ The table below shows keywords used to define functions, and their possible comp
   \calltypematches(\func, \calltype) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{call_type_matches}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{call_type_matches}
 
 \CodeSubsection{\CallTypeMatchesBegin}{\CallTypeMatchesEnd}{../Typing.ml}
 
@@ -1393,6 +1405,8 @@ the arguments of procedures -- that do not clash and types that do clash
 (shown in comments).
 \ASLListing{Examples of Argument clashing}{type-clashes}{\typingtests/TypingRule.TypeClashes.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1405,7 +1419,6 @@ the arguments of procedures -- that do not clash and types that do clash
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \equallength(\formaltypes, \vargs) \typearrow \True \terminateas \False\hva\\\\
@@ -1415,8 +1428,8 @@ the arguments of procedures -- that do not clash and types that do clash
   \hasargclash(\tenv, \formaltys, \vargs) \typearrow \overname{\True}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{has_arg_clash}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{has_arg_clash}
 \CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
 
 \TypingRuleDef{TypeClash}
@@ -1435,6 +1448,8 @@ in the \staticenvironmentterm{} where both types have been annotated,
 which is why both declarations of \verb|structured_procedure| clash and thus they are ill-typed.
 \ASLListing{Ill-typed Subprogram Declarations}{TypeClash-bad}{\typingtests/TypingRule.TypeClashes.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1500,7 +1515,6 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[subtype]{
   (\issubtype(\tenv, \vs, \vt) \typearrow \True) \lor (\issubtype(\tenv, \vt, \vs) \typearrow \True)
@@ -1583,8 +1597,8 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
   \typeclashes(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{type_clashes}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{type_clashes}
 \CodeSubsection{\TypeClashBegin}{\TypeClashEnd}{../types.ml}
 
 \subsubsection{Comment}
@@ -1607,6 +1621,8 @@ is annotated as
 \]
 \ASLListing{Annotating a list of expressions}{ExpressionList}{\typingtests/TypingRule.ExpressionList.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1628,7 +1644,6 @@ is annotated as
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -1644,8 +1659,8 @@ is annotated as
   \annotateexprlist(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \overname{[\vtypedexpr] \concat \typedexprsone}{\typedexprs}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_exprs}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_exprs}
 
 \subsection{Parameter Elision\label{sec:ParameterElision}}
 
@@ -1703,6 +1718,8 @@ while calling \\
 \verb|throwing_func| terminates by throwing an exception.
 \ASLListing{Calling subprograms}{Call}{\semanticstests/SemanticsRule.Call.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1748,7 +1765,6 @@ while calling \\
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normal]{
   \evalexprlistm(\env, \params) \evalarrow \ResultExprListM(\vvparams, \envone)\OrAbnormal\hva\\\\
@@ -1782,8 +1798,8 @@ while calling \\
   \evalcall(\env, \name, \params, \args) \evalarrow \Throwing(\vv, \vt, \vg, \newenv)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{eval_call}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_call}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EvalSubprogram}
@@ -1794,6 +1810,8 @@ In \listingref{semantics-fcall},
 the function \texttt{main} calls the function \texttt{foo} and the procedure \texttt{bar}.
 \ASLListing{Evaluating subprogram calls}{semantics-fcall}{\semanticstests/SemanticsRule.FCall.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1825,7 +1843,6 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \env \reverseeqdef (\tenv, \denv)\\
@@ -1853,8 +1870,8 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
   \evalsubprogram(\env, \name, \actualargs, \params) \evalarrow \withgraph{C}{\newg}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{eval_subprogram}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_subprogram}
 \CodeSubsection{\EvalFCallBegin}{\EvalFCallEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
@@ -1878,6 +1895,8 @@ In \listingref{CheckRecurseLimit-limitreached}, the function \verb|factorial| sp
 and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded), since the limit is exceeded.
 \ASLListing{A recursive call exceeding the specified limit}{CheckRecurseLimit-limitreached}{\semanticstests/SemanticsRule.CheckRecurseLimit.limit_reached.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1906,7 +1925,6 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \evallimit(\env, \velimitopt) \evalarrow (\None, \vg) \OrDynErrorDiverging
@@ -1936,14 +1954,16 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
   \checkrecurselimit(\env, \name, \velimitopt) \evalarrow \DynamicErrorVal{\LimitExceeded}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_recurse_limit}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_recurse_limit}
 
 \SemanticsRuleDef{ReadValueFrom}
 \RenderRelation{read_value_from}
 
 % NO_EXAMPLE
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1952,7 +1972,6 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \readidentifier(\vv, \id) \evalarrow \newg
@@ -1960,8 +1979,8 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
   \readvaluefrom(\vv, \id) \evalarrow (\vv, \newg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{read_value_from}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{read_value_from}
 \CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{AssignArgs}
@@ -1973,6 +1992,8 @@ and $\verb|y|$ to $\nvint(5)$. The expression \verb|x + y| then accesses
 these variable values and evaluates to $\nvint(15)$.
 \ASLListing{Assigning arguments}{AssignArgs}{\semanticstests/SemanticsRule.AssignArgs.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1997,7 +2018,6 @@ these variable values and evaluates to $\nvint(15)$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2013,8 +2033,8 @@ these variable values and evaluates to $\nvint(15)$.
   \assignargs((\env, \vgone), \overname{[\vx] \concat \vidsone}{\vids}, \overname{[\vm] \concat \actualsone}{\actuals}) \evalarrow (\newenv, \vg)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{assign_args}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{assign_args}
 
 \SemanticsRuleDef{MatchFuncRes}
 Using the type \RenderType{TContinuingOrReturning} we define the following relation.
@@ -2032,6 +2052,8 @@ with the same value and a fresh identifier for it.
 
 \ASLListing{Converting configurations upon subprogram return}{MatchFuncRes}{\semanticstests/SemanticsRule.MatchFuncRes.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2053,7 +2075,6 @@ with the same value and a fresh identifier for it.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[continuing]{}
   {
@@ -2069,5 +2090,5 @@ with the same value and a fresh identifier for it.
     \matchfuncres(\Returning(\xs, \retenv)) \evalarrow \ResultCall((\vvs, \emptygraph), \retenv)
   }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{match_func_res}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{match_func_res}

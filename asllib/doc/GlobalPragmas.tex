@@ -82,6 +82,7 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
 \ASLListing{A well-typed global pragma}{CheckGlobalPragma}{\typingtests/TypingRule.CheckGlobalPragma.asl}
 \ASLListing{An ill-typed global pragma}{CheckGlobalPragma-bad}{\typingtests/TypingRule.CheckGlobalPragma.bad.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -92,7 +93,6 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
 \end{itemize}
 
 \FormallyParagraph\
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \withemptylocal(\genv) \typearrow \tenv \\
@@ -101,6 +101,6 @@ without matching any operation (see \secref{PrimitiveOperationSignatures}) due t
   \checkglobalpragma(\genv, \overname{\DPragma(\Ignore, \vargs)}{\vd}) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{check_global_pragma}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_global_pragma}
 \CodeSubsection{\CheckGlobalPragmaBegin}{\CheckGlobalPragmaEnd}{../Typing.ml}

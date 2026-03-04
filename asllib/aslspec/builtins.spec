@@ -8,7 +8,7 @@ operator cond_case[T](c: Bool, r: T) -> T
 // TODO: add a custom rendering where all conditions
 // and all values are properly aligned.
 // Perhaps this can be achieved by adding a raw attribute to macros, which doesn't wrap them with braces.
-// TODO: add custom syntac for cases.
+// TODO: add custom syntax for cases.
 variadic operator cond_op[T](cases: list1(T)) -> T
 {
   math_macro = \condop,
@@ -20,19 +20,19 @@ variadic operator cond_op[T](cases: list1(T)) -> T
 constant bot { "bottom", math_macro = \bot };
 
 constant None {
-  "the \hyperlink{constant-None}{empty} \optionalterm{}"
+  "the  \hyperlink{constant-None}{empty} \optionalterm{}"
 };
 
 constant empty_set
 {
-  "the \hyperlink{constant-emptyset}{empty set}",
-  math_macro = \emptyset,
+    "the \hyperlink{constant-emptyset}{empty set}",
+    math_macro = \emptyset,
 };
 
 constant empty_list
 {
-  "the \hyperlink{constant-emptylist}{empty list}",
-  math_macro = \emptylist,
+    "the \hyperlink{constant-emptylist}{empty list}",
+    math_macro = \emptylist,
 };
 
 typedef Bool
@@ -62,12 +62,14 @@ operator is_integer(q: Q) -> Bool
 {
   "{q} is an integer",
   math_macro = \isintegerop,
+  prose_application = "{q} is an integer",
 };
 
 operator is_not_integer(q: Q) -> Bool
 {
   "{q} is not an integer",
   math_macro = \isnotintegerop,
+  prose_application = "{q} is not an integer",
 };
 
 typedef Q
@@ -91,7 +93,7 @@ operator some[T](v: T) -> option(T)
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
-  prose_application = "define {lhs} as: {rhs}",
+  prose_application = "define {lhs} as {rhs}",
 };
 
 operator reverse_assign[T](lhs: T, rhs: T) -> Bool
@@ -122,32 +124,32 @@ variadic operator and(conjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \land,
-  prose_application = "all of the following hold: {conjuncts}",
+  prose_application = "the \hyperlink{relation-land}{conjunction} of: {conjuncts}",
 };
 
 variadic operator or(disjuncts: list1(Bool)) -> Bool
 {
   associative = true,
   math_macro = \lor,
-  prose_application = "one of the following holds: {disjuncts}",
+  prose_application = "the \hyperlink{relation-lor}{disjunction} of: {disjuncts}",
 };
 
 operator list_and(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listand,
-  prose_application = "the \hyperlink{relation-land}{conjunction} of all Booleans in {conditions}",
+  prose_application = "the \hyperlink{relation-land}{conjunction} of {conditions}",
 };
 
 operator list_or(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listor,
-  prose_application = "the \hyperlink{relation-lor}{disjunction} of all Booleans in {conditions}",
+  prose_application = "the \hyperlink{relation-lor}{disjunction} of {conditions}",
 };
 
 operator not(b: Bool) -> Bool
 {
   math_macro = \opnot,
-  prose_application = "the \hyperlink{relation-neg}{logical negation} of {b}",
+  prose_application = "the \hyperlink{relation-neg}{logical negation} of: {b}",
 };
 
 // This is negation, specialized to a single variable to allow
@@ -174,7 +176,7 @@ variadic operator num_plus[NumType](addends: list1(NumType)) -> NumType
 {
   associative = true,
   math_macro = \numplus,
-  prose_application = "the sum of all numbers in {addends}"
+  prose_application = "the sum of {addends}"
 };
 
 operator num_minus[NumType](lhs: NumType, rhs: NumType) -> NumType
@@ -193,7 +195,7 @@ variadic operator num_times[NumType](numbers: list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
   associative = true,
-  prose_application = "the multiplication of all numbers in {numbers}",
+  prose_application = "the multiplication of {numbers}",
 };
 
 operator num_divide[NumType](lhs: NumType, rhs: NumType) -> NumType
@@ -218,7 +220,7 @@ operator less_than[NumType](lhs: NumType, rhs: NumType) -> Bool
 operator less_or_equal[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \lessorequal,
-  prose_application = "{lhs} is less or equal to {rhs}",
+  prose_application = "{lhs} is less than or equal to {rhs}",
 };
 
 operator greater_than[NumType](lhs: NumType, rhs: NumType) -> Bool
@@ -230,30 +232,30 @@ operator greater_than[NumType](lhs: NumType, rhs: NumType) -> Bool
 operator greater_or_equal[NumType](lhs: NumType, rhs: NumType) -> Bool
 {
   math_macro = \greaterorequal,
-  prose_application = "{lhs} is greater or equal {rhs}",
+  prose_application = "{lhs} is greater than or equal to {rhs}",
 };
 
 // Notice that the operator returns True when domain is empty.
 operator forall[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
   math_macro = \forallop,
-  prose_application = "{condition} holds for all bindings of {bound_variable} in {domain}",
+  prose_application = "for all bindings of {bound_variable} in {domain}: {condition}",
 };
 
 operator exists[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
   math_macro = \existsop,
-  prose_application = "{condition} holds for some binding of {bound_variable} in {domain}",
+  prose_application = "for some binding of {bound_variable} in {domain}: {condition}",
 };
 
 operator list_forall[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listforall,
-  prose_application = "{condition} holds for all bindings of {bound_variable} in {domain}",
+  prose_application = "for all bindings of {bound_variable} in {domain}: {condition}",
 };
 
 operator list_exists[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listexists,
-  prose_application = "{condition} holds for some binding of {bound_variable} in {domain}",
+  prose_application = "for some binding of {bound_variable} in {domain}: {condition}",
 };
