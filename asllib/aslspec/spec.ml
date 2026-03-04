@@ -1478,9 +1478,10 @@ module Check = struct
       (* Filters out identifiers that are definitely not variables. *)
       let is_non_var id =
         match StringMap.find_opt id id_to_defining_node with
-        | Some (Node_Constant _) | Some (Node_TypeVariant _) ->
-            (* Constants and variant labels are not variables. *)
+        | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ }) ->
+            (* Constants and label variant are not variables. *)
             true
+        | Some (Node_TypeVariant _)
         | Some (Node_Type _)
         | Some (Node_RecordField _)
         | Some (Node_Relation _)
