@@ -6933,7 +6933,7 @@ typing function to_well_constrained(t: ty) ->
 
   case t_int_other {
     t =: T_Int(i);
-    i != Parameterized;
+    i != Parameterized(_);
     --
     t;
   }
