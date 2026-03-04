@@ -164,6 +164,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     module VC = EM.VC
     module U = MemUtils.Make(S)
     module W = Warn.Make(C)
+    module I = A.CodeInstr
 
     let dbg = C.debug.Debug_herd.mem
     let morello = C.variant Variant.Morello
@@ -302,14 +303,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
               | Some fh_code -> code@fh_code
               | None -> code in
             List.fold_left
-              (fun locs (_,ins) ->
+              (fun locs (_, (i : I.t)) ->
                 A.fold_addrs
                   (fun x ->
                     let loc = A.maybev_to_location x in
                     match loc with
                     | A.Location_global _ -> A.LocSet.add loc
                     | _ -> fun locs -> locs)
-                  locs ins)
+                  locs i.I.instr)
               locs code)
           locs
           test.Test_herd.start_points in
@@ -353,7 +354,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 
       (* Creates a mapping:
        * - from an integer of a herd7-internal representation for an address,
-       * - to a VA page_label+offset, where page_label is the label at the 
+       * - to a VA page_label+offset, where page_label is the label at the
        *   beginning of page the address is on
        *)
       let a2ra =
@@ -513,7 +514,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                     match addr2va addr with
                     | Some va when (is_on_exported_page (addr2va addr)) -> begin
                         let loc = A.Location_global va in
-                        let v = A.V.instructionToV i in
+                        let v = A.V.instructionToV i.I.instr in
                         A.state_add env loc v
                       end
                     | Some _ | None -> env
@@ -533,7 +534,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | Some lbl ->
                     let symb = Constant.mk_sym_virtual_label proc lbl in
                     let loc = A.Location_global (A.V.cstToV symb)
-                    and v = A.V.instructionToV i in
+                    and v = A.V.instructionToV i.I.instr in
                     A.state_add env loc v)
               init_state lbls2i in
         { test with init_state; } in
@@ -615,10 +616,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 | e -> raise e in
 
 (* Call instruction semantics proper *)
-        let wrap re_exec fetch_proc proc inst addr env m poi =
+        let wrap re_exec fetch_proc proc (code_instr : I.t) addr env m poi =
           profile "build semantics" @@ fun () ->
+        let static_poi = code_instr.I.static_poi in
+        let inst = code_instr.I.instr in
         let ii =
            { A.program_order_index = poi;
+             static_poi;
              proc = proc; fetch_proc; inst = inst;
              labels = labels_of_instr addr;
              lbl2addr = prog;
@@ -639,8 +643,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         m ii in
 
       let  sem_instr =  SM.build_semantics test in
-      let rec add_next_instr re_exec fetch_proc proc env seen addr inst nexts =
-        wrap re_exec fetch_proc proc inst addr env sem_instr >>> fun branch ->
+      let rec add_next_instr re_exec fetch_proc proc env seen addr (code_instr : I.t) nexts =
+        wrap re_exec fetch_proc proc code_instr addr env sem_instr >>> fun branch ->
+          let inst = code_instr.I.instr in
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env = A.kill_regs (A.killed inst) env
           and szo =
@@ -658,7 +663,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   bds env
             | _ -> env in
           next_instr
-            re_exec inst fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
+            re_exec code_instr fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
             seen addr nexts branch
 
       and add_code re_exec fetch_proc proc env seen nexts = match nexts with
@@ -712,7 +717,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                else (* execute  again the same instruction *)
                  add_next_instr true fetch_proc proc env seen addr inst nexts
 
-      and next_instr re_exec inst fetch_proc proc env seen addr nexts b =
+      and next_instr re_exec (code_instr : I.t) fetch_proc proc env seen addr nexts b =
         match b with
       | S.B.Exit -> EM.unitcodeT true
       | S.B.Next _ ->
@@ -720,7 +725,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Jump (tgt,_) ->
           add_tgt re_exec true proc env seen addr tgt
       | S.B.Fault (syscall,_) ->
-          add_fault re_exec inst fetch_proc proc env seen addr syscall nexts
+          add_fault re_exec code_instr fetch_proc proc env seen addr syscall nexts
       | S.B.FaultRet tgt ->
           add_tgt false true proc env seen addr tgt
       | S.B.CondJump (v,tgt) ->
@@ -2305,7 +2310,7 @@ let get_rf_value test read =
                    Warn.user_error
                      "Instruction %s:%s cannot be overwritten"
                      (Label.pp lbl)
-                     (A.dump_instruction i)
+                     (A.dump_instruction i.I.instr)
               with
               | Not_found ->
                  Warn.user_error

@@ -827,7 +827,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | E.IdSome ii ->
       fprintf chan "proc:%s poi:%i\\l"
         (Proc.pp ii.A.proc)
-        ii.A.program_order_index
+        ii.A.static_poi
 
 (*
   This complex function is not meant to be used directly,
