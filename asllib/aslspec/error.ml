@@ -103,8 +103,8 @@ let empty_rule relation_name =
 let relation_argument_incorrect_naming relation_name term =
   spec_error
   @@ Format.asprintf
-       "The term %a in relation '%s' is either not named or names provides \
-        names in at different sub-term levels."
+       "The term %a in relation '%s' does not provide a name for at least one \
+        of its sub-terms."
        PP.pp_opt_named_type_term term relation_name
 
 let multiple_output_judgments relation_name rule_name_opt =

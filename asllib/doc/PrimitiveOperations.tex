@@ -530,6 +530,7 @@ not_bits: NOT '11 01' = 0x2
 % CONSOLE_END
 
 \ProseParagraph
+\BackupProse{
 \OneApplies
 \begin{itemize}
   \item \AllApplyCase{error}
@@ -565,6 +566,8 @@ not_bits: NOT '11 01' = 0x2
     \item define $\vr$ as the bitvector literal for $\vc$.
   \end{itemize}
 \end{itemize}
+} % END_OF_BACKUP_PROSE
+\RenderProse{unop_literals}
 
 \FormallyParagraph
 \BackupOriginalRule{
@@ -1265,6 +1268,10 @@ The set of valid signatures for string concatenation operations is defined as fo
   \end{itemize}
 
 \end{itemize}
+
+======================
+
+\RenderProse{binop_literals}
 
 \FormallyParagraph
 \BackupOriginalRule{
