@@ -273,6 +273,15 @@ module Make(O:Config)(Tar:Tar.S) =
           end
         else fnames in
       let fnames =
+        if flags.Flags.exs then
+          begin
+            let sub = dir_of_sysarch O.sysarch in
+            let fnames = cpy ~sub:sub fnames "exs" ".c" in
+            let fnames = cpy ~sub:sub fnames "exs" ".h" in
+            fnames
+          end
+        else fnames in
+      let fnames =
         if flags.Flags.pac then
           let sub = dir_of_sysarch O.sysarch in
           let fnames = cpy ~sub:sub fnames "auth" ".c" in

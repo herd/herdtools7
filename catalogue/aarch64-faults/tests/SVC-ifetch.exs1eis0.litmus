@@ -1,11 +1,13 @@
 AArch64 SVC-ifetch.exs1eis0
 variant=ifetch,exs
-CacheType=DIC
 {
   0:X0=instr:"NOP"; 0:X1=P0:L2;
 }
  P0          | P0.F       ;
  STR W0,[X1] | ERET       ;
+ DC CVAU, X1 |;
+ DSB ISH     |;
+ IC IVAU, X1 |;
  DSB ISH     |;
  SVC #0      |;
 L2:          |;
