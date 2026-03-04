@@ -666,8 +666,17 @@ def check_rules(filename: str) -> int:
             print(f"{filename} {rule_block.str()}: unable to determine rule type")
             num_errors += 1
             continue
+        has_render_call = any(
+            re.search(r"\\Render[A-Za-z]+", rule_block.file_lines[line_number])
+            for line_number in range(rule_block.begin, rule_block.end + 1)
+        )
         error_messages: List[str] = []
         for check in checks:
+            if has_render_call and check in [
+                check_rule_prose_formally_structure,
+                check_rule_case_consistency,
+            ]:
+                continue
             error_messages.extend(check(rule_block))
         if error_messages:
             error_messages_str = ", ".join(error_messages)

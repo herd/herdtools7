@@ -1849,7 +1849,7 @@ are ill-typed due to subprogram declaration clashes.
 \inferrule[name\_exists]{
   \tenv.\staticenvsG.\overloadedsubprograms(\name) = \othernames\\
   k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \concatstrings\ \discardvarstr\ \concatstrings\ \stringofnat{k}\hva\\
+  \newname \eqdef \name\ \concatstrings\ \discardvarstr\ \concatstrings\ \stringofint{k}\hva\\
   \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
   {
   \namep \in \othernames:

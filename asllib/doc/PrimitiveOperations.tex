@@ -529,6 +529,7 @@ not_bits: NOT '11 01' = 0x2
 \end{Verbatim}
 % CONSOLE_END
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -567,7 +568,6 @@ not_bits: NOT '11 01' = 0x2
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error]{
   (\op, \astlabel(\vl)) \not\in \unopsignatures
@@ -601,8 +601,8 @@ not_bits: NOT '11 01' = 0x2
   \unopliterals(\overname{\NOT}{\op}, \overname{\LBitvector(\bits)}{\vl}) \typearrow\overname{\LBitvector(c)}{\vr}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{unop_literals}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{unop_literals}
 
 \TypingRuleDef{BinopLiterals}
 \RenderRelation{binop_literals}
@@ -888,6 +888,7 @@ The set of valid signatures for string concatenation operations is defined as fo
 } % END_OF_BACKUP_CONSTANT
 \RenderConstant{binop_str_signatures}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1267,7 +1268,6 @@ The set of valid signatures for string concatenation operations is defined as fo
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error]{
   (\op, \astlabel(\vvone), \astlabel(\vvtwo)) \not\in \binopsignatures
@@ -1275,7 +1275,8 @@ The set of valid signatures for string concatenation operations is defined as fo
   \binopliterals(\op, \vvone, \vvtwo) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{binop_literals}
 
 \subsubsection{Arithmetic Operators Over Integer Values \label{sec:AthimeticOverInt}}
 \BackupOriginalRule{

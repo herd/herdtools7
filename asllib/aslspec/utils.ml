@@ -90,3 +90,5 @@ let string_replace_all regexp f s =
     | Str.Text txt -> txt
     | Str.Delim match_str -> f match_str)
   |> String.concat ""
+
+let string_is_empty s = String.length s = 0
