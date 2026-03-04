@@ -1,0 +1,11 @@
+Test A033 Allowed
+States 2
+[PTE(x)]=(oa:PA(x));
+[PTE(x)]=(oa:PA(y));
+Ok
+Witnesses
+Positive: 2 Negative: 2
+Condition exists ([PTE(x)]=(oa:PA(x)))
+Observation A033 Sometimes 2 2
+Hash=3ed88fecb82a1a11276fc0a9dff5afa6
+

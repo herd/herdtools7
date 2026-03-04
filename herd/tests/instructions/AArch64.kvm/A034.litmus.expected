@@ -1,0 +1,12 @@
+Test A034 Allowed
+States 3
+0:X0=1; 0:X2=1;
+0:X0=1; 0:X2=2;
+0:X0=2; 0:X2=2;
+No
+Witnesses
+Positive: 0 Negative: 70
+Condition exists (0:X0=2 /\ 0:X2=1)
+Observation A034 Never 0 70
+Hash=0a5d5dfceba07390c6252921dbe58a4f
+
