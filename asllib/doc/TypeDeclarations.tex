@@ -172,6 +172,8 @@ We also define the following helper rules:
 \TypingRuleDef{AnnotateTypeDecl}
 See \ExampleRef{Types} for examples of well-typed type declarations.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -185,7 +187,6 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vd = \DTypeDecl(\vx, \tty, \vs)\\
@@ -195,8 +196,8 @@ See \ExampleRef{Types} for examples of well-typed type declarations.
   \typecheckdecl(\genv, \vd) \typearrow (\newd, \newgenv)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{typecheck_decl_type_decl}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{typecheck_decl_type_decl}
 
 \TypingRuleDef{DeclareType}
 \RenderRelation{declare_type}
@@ -209,6 +210,8 @@ The \sideeffectdescriptorsterm{} for \verb|Record| are
 $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \ASLListing{Type declarations}{DeclareType}{\typingtests/TypingRule.DeclareType.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -239,7 +242,6 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[enum]{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
@@ -272,8 +274,8 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
   \declaretype(\genv, \name, \tty, \vs) \typearrow (\overname{\tenvtwo}{\newgenv}, \vttwo, \vsp)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_type}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_type}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 \identr{DHRC} \identd{YZBQ} \identr{DWSP} \identi{MZXL} \identr{MDZD} \identr{CHKR}
 
@@ -291,6 +293,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \verb|SubRecord| is ill-typed, since \verb|SubRecord| is not defined as a type.
 \ASLListing{Subtyping an undefined typed}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -340,7 +344,6 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{}{
   \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty}, \overname{\None}{\vsp})
@@ -393,8 +396,8 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
   \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \newty, \vsp)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_extra_fields}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_extra_fields}
 
 \TypingRuleDef{DeclaredType}
 \RenderRelation{declared_type}
@@ -410,6 +413,8 @@ The specification in \listingref{DeclaredType} is ill-typed,
 since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyInt|.
 \ASLListing{Referring to an undeclared type}{DeclaredType-bad}{\typingtests/TypingRule.DeclaredType.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -426,7 +431,6 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exists]{
   \tenv.\staticenvsG.\declaredtypes(\id) = (\vt, \Ignore)
@@ -442,8 +446,8 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
   \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declared_type}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declared_type}
 
 \TypingRuleDef{DeclareEnumLabels}
 \RenderRelation{declare_enum_labels}
@@ -463,6 +467,8 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{tabular}
 \end{center}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -475,7 +481,6 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \ids \reverseeqdef \id_{1..k}\\
@@ -490,8 +495,8 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
   \declareenumlabels(\tenv, \name, \ids) \typearrow \overname{\tenv_k}{\newtenv}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_enum_labels}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_enum_labels}
 
 \TypingRuleDef{DeclareConst}
 \RenderRelation{declare_const}
@@ -514,6 +519,8 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 
 \ASLListing{Declaring a global constant}{DeclareConst}{\typingtests/TypingRule.DeclareConst.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -523,7 +530,6 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\hva\\\\
@@ -532,5 +538,5 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
   \declareconst(\genv, \name, \tty, \vv) \typearrow \newgenv
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_const}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_const}

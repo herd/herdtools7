@@ -34,6 +34,8 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 (as \verb|64| is not divisible by \verb|3|), which results in a \typingerrorterm.
 \ASLListing{Static evaluation of expressions}{static-eval-bad}{\typingtests/TypingRule.StaticEval.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -61,7 +63,6 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normal\_literal]{
   \staticenvtoenv(\tenv) \typearrow \env\\
@@ -90,8 +91,8 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
   \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{static_eval}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{static_eval}
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
 
 \TypingRuleDef{StaticEnvToEnv}
@@ -130,4 +131,4 @@ is transformed into the dynamic environment $\env$, defined as follows:
 }
 \end{mathpar}
 % TODO: re-translate once empty_func has been introduced.
-% \RenderRule{static_env_to_env}
+% \RenderProseAndFormally{static_env_to_env}

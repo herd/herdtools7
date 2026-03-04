@@ -331,6 +331,7 @@ We also define the following helper rules:
 \TypingRuleDef{AnnotateGlobalStorage}
 See \ExampleRef{Declaring Global Storage}.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -341,7 +342,6 @@ See \ExampleRef{Declaring Global Storage}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \declareglobalstorage(\genv, \gsd) \typearrow (\newgenv, \gsdp) \OrTypeError
@@ -354,8 +354,8 @@ See \ExampleRef{Declaring Global Storage}.
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{typecheck_decl_global_storage}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{typecheck_decl_global_storage}
 
 \TypingRuleDef{DeclareGlobalStorage}
 \RenderRelation{declare_global_storage}
@@ -393,6 +393,7 @@ whereas \verb|x| has the \purity{} $\SEReadonly$.
 See \ExampleRef{Rejected Declaration Because of Precision Loss} for an example
 of an ill-typed global storage declaration due to precision loss.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -416,7 +417,6 @@ of an ill-typed global storage declaration due to precision loss.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \gsd \reverseeqdef \{
@@ -482,8 +482,8 @@ of an ill-typed global storage declaration due to precision loss.
   \declareglobalstorage(\genv, \gsd) \typearrow (\overname{\tenvtwo.\staticenvsG}{\newgenv}, \newgsd)
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{declare_global_storage}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_global_storage}
 
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 \identr{YSPM} \identr{FWQM}
@@ -493,6 +493,9 @@ of an ill-typed global storage declaration due to precision loss.
 
 See \ExampleRef{Declaring Global Storage}.
 
+The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -553,10 +556,8 @@ See \ExampleRef{Declaring Global Storage}.
     \item define $\declaredt$ as $\vte$;
   \end{itemize}
 \end{itemize}
-The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[some\_some\_config]{
   \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\hva\\\\
@@ -641,9 +642,8 @@ The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syn
   }
 }
 \end{mathpar}
-} % END_OF_RULE_BACKUP
-
-\RenderRule{annotate_ty_opt_initial_value}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_ty_opt_initial_value}
 
 \TypingRuleDef{UpdateGlobalStorage}
 \RenderRelation{update_global_storage}
@@ -665,6 +665,7 @@ The specification in \listingref{UpdateGlobalStorage-config-bad}
 is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} storage elements.
 \ASLListing{An ill-typed configuration storage element}{UpdateGlobalStorage-config-bad}{\typingtests/TypingRule.UpdateGlobalStorage.config.bad.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -708,7 +709,6 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[constant]{
   \typedinitialvalue \reverseeqdef (\Ignore, \initialvaluep, \vsesinitialvalue)\\
@@ -804,8 +804,8 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
   }
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{update_global_storage}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{update_global_storage}
 
 \TypingRuleDef{AddGlobalStorage}
 \RenderRelation{add_global_storage}
@@ -829,6 +829,7 @@ static environment:
 \end{array}
 \]
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -837,7 +838,6 @@ static environment:
         $(\declaredt, \keyword)$.
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
@@ -846,8 +846,8 @@ static environment:
   \addglobalstorage(\genv, \name, \keyword, \declaredt) \typearrow \newgenv
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{add_global_storage}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{add_global_storage}
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -884,6 +884,7 @@ global storage declaration for \verb|x|, which results in a thrown exception,
 before having the chance to evaluate \verb|main|.
 \ASLListing{Evaluating a global storage declaration resulting in a thrown exception}{EvalGlobals-bad1}{\semanticstests/SemanticsRule.EvalGlobals.bad1.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -908,7 +909,6 @@ before having the chance to evaluate \verb|main|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \evalglobals(\overname{\emptylist}{\vdecls}, \envm) \evalarrow \overname{\envm}{C}
@@ -926,8 +926,8 @@ before having the chance to evaluate \verb|main|.
   \evalglobals(\overname{[\vd] \concat \vdecls'}{\vdecls}, \envm) \evalarrow C
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_globals}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{eval_globals}
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareGlobal}
@@ -938,6 +938,7 @@ Evaluating the specification in \listingref{DeclareGlobal} results in updating t
 of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \ASLListing{Declaring a global storage element}{DeclareGlobal}{\semanticstests/SemanticsRule.DeclareGlobal.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -948,7 +949,6 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \env \reverseeqdef (\tenv, \denv)\\
@@ -957,5 +957,5 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
   \declareglobal(\name, \vv, \env) \evalarrow \newenv
 }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{declare_global}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{declare_global}
