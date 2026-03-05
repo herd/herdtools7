@@ -3310,7 +3310,7 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     m =: (v, g);
     INDEX(i, le_list: get_index(i, v) -> r_vals[i]);
     vmlist := list_map(r_val, r_vals, (r_val, g));
-    eval_multi_assignment(env, le_list, vmlist) -> ResultLexpr(new_g, new_env);
+    multi_assign(env, le_list, vmlist) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -3412,7 +3412,7 @@ render rule eval_lexpr_LESetField = eval_lexpr(LESetField);
 render rule eval_lexpr_LESetFields = eval_lexpr(LESetFields);
 render rule eval_lexpr_LESetCollectionFields = eval_lexpr(LESetCollectionFields);
 
-semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist: list0((native_value, XGraphs))) ->
+semantics relation multi_assign(env: envs, lelist: list0(lexpr), vmlist: list0((native_value, XGraphs))) ->
         | ResultLexpr(new_g: XGraphs, new_env: envs)
         | TThrowing
         | TDynError
@@ -3420,9 +3420,9 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist
 {
     "evaluates multi-assignments. That is, the simultaneous assignment of the list of value-\executiongraphterm{} pairs {vmlist}
     to the corresponding list of \assignableexpressions{} {lelist}, in the environment {env}.
-    The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration",
-    prose_application = "evaluating multi-assignment of {vmlist} to {lelist} in {env} yields $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
-    math_macro = \evalmultiassignment,
+    The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration.
+    \ProseOtherwiseAbnormal",
+    prose_application = "evaluating the multi-assignment of {vmlist} to {lelist} in {env} yields | $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
     math_layout = (_, [_,_,_,_]),
 } =
   case empty {
@@ -3438,8 +3438,38 @@ semantics relation eval_multi_assignment(env: envs, lelist: list0(lexpr), vmlist
     lelist =: match_cons(le, lelist1);
     vmlist =: match_cons(vm, vmlist1);
     eval_lexpr(env, le, vm) -> ResultLexpr(g1, env1);
-    eval_multi_assignment(env1, lelist1, vmlist1) -> ResultLexpr(g2, new_env);
+    multi_assign(env1, lelist1, vmlist1) -> ResultLexpr(g2, new_env);
     new_g := ordered_po(g1, g2);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+;
+
+semantics relation protected_multi_assign(env: envs, lelist: list0(lexpr), vmlist: list0((native_value, XGraphs))) ->
+        | ResultLexpr(new_g: XGraphs, new_env: envs)
+        | TThrowing
+        | TDynError
+        | TDiverging
+{
+    "evaluates multi-assignments. This is the same as \multiassign{} when {lelist} and {vmlist} have the same length.
+    Otherwise, if {vmlist} is a singleton, it performs tuple reads to access the elements corresponding to {lelist}.
+    \ProseOtherwiseAbnormal",
+    prose_application = "evaluating the multi-assignment of {vmlist} to {lelist} in {env} yields | $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
+    math_layout = (_, [_,_,_,_]),
+} =
+  case same_length {
+    same_length(lelist, vmlist);
+    multi_assign(env, lelist, vmlist) -> ResultLexpr(new_g, new_env);
+    --
+    ResultLexpr(new_g, new_env);
+  }
+
+  case different_lengths {
+    not(same_length(lelist, vmlist));
+    vmlist =: match_singleton_list((tuple_value, g));
+    INDEX(i, lelist: get_index(i, tuple_value) -> tuple_elements[i]);
+    nmlist := list_map(i, indices(lelist), (tuple_elements[i], g));
+    multi_assign(env, lelist, nmlist) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -9365,7 +9395,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     list_forall(arg, les, lexpr_is_var(arg));
     eval_call(env, call.call_name, call.params, call.call_args) -> (ms, env1)
     { math_layout = [_] };
-    eval_multi_assignment(env1, les, ms) -> ResultLexpr(new_g, new_env);
+    protected_multi_assign(env1, les, ms) -> ResultLexpr(new_g, new_env);
     --
     Continuing(new_g, new_env);
   }
