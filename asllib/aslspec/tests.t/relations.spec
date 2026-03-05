@@ -23,17 +23,17 @@ typedef type_error
 typing relation annotate_expr(input: expr) -> (inferred_type: type) | type_error
 {
     "infers the type {inferred_type} for the expression {input}",
-    prose_application = "annotating the expression {input} yields | the type {inferred_type}",
+    prose_transition = "annotating the expression {input} yields | the type {inferred_type}",
 };
 
 typing function annotate_plus(input: Plus(lhs: expr, rhs: expr)) -> (inferred_type: type)
 {
     "infers the type {inferred_type} for the plus expression {input}",
-    prose_application = "annotating the plus expression {input} yields | the type {inferred_type}",
+    prose_transition = "annotating the plus expression {input} yields | the type {inferred_type}",
 };
 
 semantics relation eval_plus(input: Plus(lhs: expr, rhs: expr)) -> (output_val: Num)
 {
     prose_description = "evaluates the expression {input} and returns {output_val}",
-    prose_application = "",
+    prose_transition = "",
 };

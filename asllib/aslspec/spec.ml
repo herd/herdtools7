@@ -991,20 +991,29 @@ module Check = struct
         ->
           ()
       | Node_Relation ({ Relation.input } as def) -> (
-          let prose_application = Relation.prose_application def in
+          let prose_transition = Relation.prose_transition def in
           let input_arg_vars = vars_of_opt_named_type_terms input in
+          let () =
+            try
+              check_extra_vars_in_prose_template prose_transition input_arg_vars
+            with SpecError e ->
+              stack_spec_error e
+                (Format.asprintf
+                   "While checking prose_transition for: %s. Recall that the \
+                    variables available for use in the prose_transition \
+                    template are only those of the input arguments. In this \
+                    case, those variables are: %s.\n\
+                    Hint: to refer to the outcomes you may use `|`"
+                   (definition_node_name defining_node)
+                   (String.concat ", " input_arg_vars))
+          in
+          let prose_application = Relation.prose_application def in
           try
             check_extra_vars_in_prose_template prose_application input_arg_vars
           with SpecError e ->
             stack_spec_error e
-              (Format.asprintf
-                 "While checking prose_application for: %s. Recall that the \
-                  variables available for use in the prose_application \
-                  template are only those of the input arguments. In this \
-                  case, those variables are: %s.\n\
-                  Hint: to refer to the outcomes you may use `|`"
-                 (definition_node_name defining_node)
-                 (String.concat ", " input_arg_vars)))
+              (Format.asprintf "While checking prose_application for: %s."
+                 (definition_node_name defining_node)))
 
     let check spec =
       iter_defined_nodes spec check_prose_template_for_definition_node

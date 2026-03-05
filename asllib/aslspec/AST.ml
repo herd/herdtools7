@@ -29,7 +29,11 @@ module AttributeKey = struct
         (** A description of the element in prose with template variables in the
             format [{var}]. *)
     | Prose_Application
-        (** A description of the element in prose, describing its application in
+        (** A description of the element in prose, describing the value produced
+            by applying the relation to argument expressions. Can contain
+            template variables in the format [{var}]. *)
+    | Prose_Transition
+        (** A description of the element in prose, describing its transition in
             an inference rule premise. Can contain template variables in the
             format [{var}]. *)
     | Math_Macro  (** A LaTeX macro name for the element. *)
@@ -55,13 +59,14 @@ module AttributeKey = struct
     let key_to_int = function
       | Prose_Description -> 0
       | Prose_Application -> 1
-      | Math_Macro -> 2
-      | Math_Layout -> 3
-      | Short_Circuit_Macro -> 4
-      | LHS_Hypertargets -> 5
-      | Associative -> 6
-      | Custom -> 7
-      | Typecast -> 8
+      | Prose_Transition -> 2
+      | Math_Macro -> 3
+      | Math_Layout -> 4
+      | Short_Circuit_Macro -> 5
+      | LHS_Hypertargets -> 6
+      | Associative -> 7
+      | Custom -> 8
+      | Typecast -> 9
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -72,6 +77,7 @@ module AttributeKey = struct
   let to_str = function
     | Prose_Description -> "prose_description"
     | Prose_Application -> "prose_application"
+    | Prose_Transition -> "prose_transition"
     | Math_Macro -> "math_macro"
     | Math_Layout -> "math_layout"
     | Short_Circuit_Macro -> "short_circuit_macro"
@@ -576,6 +582,7 @@ module Relation : sig
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
+  val prose_transition : t -> string
 
   val is_associative_operator : t -> bool
   (** [is_associative_operator t] tests whether the operator represented by [t]
@@ -651,9 +658,9 @@ end = struct
   let math_macro self =
     Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
-  let prose_application self =
+  let prose_transition self =
     let template =
-      Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
+      Attributes.get_string_or_empty AttributeKey.Prose_Transition self.att
     in
     (* For now, the template must only relate to the input portion
        in the style of "operating on {arg1}...{argn} yields".
@@ -665,6 +672,9 @@ end = struct
        output based on the type of the output.
     *)
     String.split_on_char '|' template |> List.hd
+
+  let prose_application self =
+    Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
 
   let math_layout self =
     Attributes.find_layout AttributeKey.Math_Layout self.att
