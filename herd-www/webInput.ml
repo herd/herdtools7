@@ -15,10 +15,13 @@
 (****************************************************************************)
 
 open Printf
+open Js_of_ocaml
 
 let dbg = false
 
 let webpath = "/jherd"
+let webpath_basename = Filename.basename webpath
+let fetch_dir = "/weblib"
 let bell_fname = ref "error"
 let cat_fname = ref "error"
 let cfg_fname = ref "error"
@@ -72,9 +75,32 @@ let autoloader ~prefix ~path =
     (!litmus_fname, !litmus_str)] in
   try Some (List.assoc path fname_to_str)
   with Not_found ->
-    try pp path (CatIncludes.autoloader ~prefix:prefix ~path:path)
-    with Not_found ->  None
+    let dir = Filename.basename prefix in
+    let fname = if dir = webpath_basename then path
+    else Filename.concat dir path in
+    let fetch_file fname =
+      try
+        let url = Filename.concat fetch_dir fname in
+        let req = XmlHttpRequest.create () in
+        req##_open (Js.string "GET") (Js.string url) (Js.bool false);
+        req##send Js.null;
+        if req##.status = 200 then
+          let txt =
+            Js.Opt.get req##.responseText (fun () -> Js.string "") in
+          Some (Js.to_string txt)
+        else
+          None
+      with _ -> None in
+    pp path (fetch_file fname)
 
-let register_autoloader () =
-  Js_of_ocaml.Sys_js.unmount ~path:webpath ;
-  Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+let get_env_webpath path =
+  Filename.concat webpath path
+
+let register_autoloader env =
+  let paths = webpath :: Option.fold ~some:(fun env ->
+    [get_env_webpath env]
+  ) ~none:[] env in
+  List.iter (fun webpath ->
+    Js_of_ocaml.Sys_js.unmount ~path:webpath ;
+    Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+  ) paths

@@ -73,12 +73,11 @@ module Make(O:Config) = struct
     (opts,txt,set_text pp code)
 
   let find_parse fname =
-    try Hashtbl.find t fname
+    let fname = O.libfind fname in
+    try fname, Hashtbl.find t fname
     with Not_found ->
-      let key = fname in
-      let fname = O.libfind fname in
       let r = Misc.input_protect (do_parse fname) fname in
-      Hashtbl.add t key (fname,r) ;
+      Hashtbl.add t fname r ;
       fname,r
 
   let parse fname = let _,r = find_parse fname in r
