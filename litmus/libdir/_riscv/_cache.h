@@ -18,17 +18,21 @@
 #define _CACHE_H_ 1
 
 inline static void cache_flush(void *p) {
+  asm __volatile__ ("cbo.flush 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 
 inline static void cache_clean(void *p) {
+  asm __volatile__ ("cbo.clean 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 inline static void cache_touch(void *p) {
+  asm __volatile__ ("prefetch.r 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 
 inline static void cache_touch_store(void *p) {
+  asm __volatile__ ("prefetch.w 0(%[p])" :: [p] "r" (p) : "memory");
 }
 
 
