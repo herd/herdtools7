@@ -837,8 +837,14 @@ module Make (S : SPEC_VALUE) = struct
             Relation.prose_application relation |> prose_or_empty_message ~name
           in
           relation_expr_to_prose relation args expr_prose
-      | Transition { lhs = Relation { name } as lhs; rhs; short_circuit } ->
-          let lhs_prose = expr_to_prose lhs in
+      | Transition { lhs = Relation { name; args }; rhs; short_circuit } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let transition_prose =
+            Relation.prose_transition relation |> prose_or_empty_message ~name
+          in
+          let lhs_prose =
+            relation_expr_to_prose relation args transition_prose
+          in
           let rhs_prose = expr_to_prose rhs in
           let short_circuit_prose = short_circuit_to_prose name short_circuit in
           Format.asprintf "%s %s%s" lhs_prose rhs_prose short_circuit_prose
