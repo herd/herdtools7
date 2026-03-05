@@ -990,9 +990,8 @@ module Make (S : SPEC_VALUE) = struct
         inference rules and the prose description of the rules referenced by
         [def] with the formatter [fmt]. *)
     let pp_render_rule_math_and_prose fmt def =
-      pp_render_rule fmt def;
-      fprintf fmt "@.@.";
-      pp_render_rule_prose fmt def
+      fprintf fmt "@.\\paragraph{Formally}@.%a@.@.\\paragraph{Prose}@.%a@.@."
+        pp_render_rule def pp_render_rule_prose def
 
     (** [pp_render_rule_macro fmt def] renders the LaTeX wrapper macro
         [\DefineRule{name}{...}] around the rendering of the mathematical
