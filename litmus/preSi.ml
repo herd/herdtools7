@@ -286,7 +286,11 @@ module Make
         end;
         O.o "#include \"cache.h\"" ;
         O.o "" ;
-        O.o "typedef uint32_t count_t;" ;
+        let fname = "count" in
+        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        (*O.o "typedef uint32_t count_t;" ;*)
         O.o "#define PCTR PRIu32" ;
         O.o "" ;
         begin match Cfg.timelimit with
@@ -881,7 +885,11 @@ module Make
         O.o "" ;
         UD.dump_vars_types false test ;
         UD.dump_array_typedefs test ;
-        O.o "typedef struct {" ;
+        let fname = "log" in
+        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.o "struct log_t {" ;
         let fields =
           A.RLocSet.fold
             (fun loc k -> (U.find_rloc_type loc env,loc)::k)
@@ -916,7 +924,7 @@ module Make
            O.fi "th_faults_info_t th_faults[NTHREADS];"
         end ;
         if pad  then O.oi "uint32_t _pad;" ;
-        O.o "} log_t;" ;
+        O.o "};" ;
         O.o "" ;
 (* There are some pointers in log *)
         let some_ptr_pte =  U.ptr_pte_in_outs env test in
@@ -1314,7 +1322,9 @@ module Make
         let v_tags = get_tag_vars test
         and d_tags = get_tag_delays test
         and c_tags = get_tag_caches test in
-        let all_tags = "part"::v_tags@d_tags@c_tags in
+        let all_tags_except_part = v_tags@d_tags@c_tags in
+        let all_tags = "part"::all_tags_except_part in
+        let all_tags_macro = List.map (fun tag -> "TAG_" ^ String.uppercase tag) all_tags_except_part in
 
         O.o "/**************/" ;
         O.o "/* Parameters */" ;
@@ -1323,19 +1333,32 @@ module Make
 (* Define *)
         O.o "typedef enum { cignore, cflush, ctouch, cmax, } dir_t;" ;
         O.o "" ;
-        O.o "typedef struct {" ;
+        let fname = "param" in
+        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.f "#define TAG_LENGTH %d" (List.length all_tags_except_part) ;
+        List.iteri (fun i t ->
+          O.f "#define %s %d" t i) all_tags_macro ;
+        O.o "" ;
+        (*O.o "typedef struct {" ;
         O.oi "int part;" ;
-        let pp_tags t = function
+        O.oi "int *tags;" ;
+        (*let pp_tags t = function
           | [] -> ()
           | tags -> O.fi "%s %s;" t (String.concat "," tags) in
         pp_tags "int" v_tags ;
         pp_tags "int" d_tags ;
-        pp_tags "int" c_tags ;
+        pp_tags "int" c_tags ;*)
         O.o "} param_t;" ;
-        O.o "" ;
-        O.f "static param_t param = {%s};"
+        O.o "" ;*)
+        O.f "static int param_tags[] = {%s};" 
+          (String.concat " " 
+             (List.map (fun _ -> "-1,") all_tags_except_part)) ;
+        O.o "static param_t param = {-1, param_tags};" ;
+        (*O.f "static param_t param = {-1, param_tags};"
           (String.concat " "
-             (List.map (fun _ -> "-1,") all_tags)) ;
+             (List.map (fun _ -> "-1,") all_tags_except_part)) ;*)
         O.o "" ;
         O.o "static int id(int x) { return x; }" ;
         if have_timebase && T.get_nprocs test > 1 then
@@ -1346,16 +1369,16 @@ module Make
         let pp_tags f =
           List.iter (fun tag -> O.fi "%s," (f tag)) in
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,id,NVARS}" tag tag)
-          v_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],id,NVARS}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) v_tags) ;
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,addnsteps,NSTEPS}" tag tag)
-          d_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],addnsteps,NSTEPS}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) d_tags) ;
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,id,cmax}" tag tag)
-          c_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],id,cmax}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) c_tags) ;
         O.o "};" ;
-        O.o "";
+        O.o "" ;
         O.o "#define PARSESZ (sizeof(parse)/sizeof(parse[0]))" ;
         O.o "";
 (* Print *)
@@ -1372,9 +1395,18 @@ module Make
             List.map
               (fun tag ->
                 sprintf
-                  (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
+                  (if is_delay tag then
+                     (if tag = "part" then 
+                       "p->%s-NSTEPS2"
+                     else 
+                       "p->tags[%s]-NSTEPS2")
+                   else 
+                     (if tag = "part" then
+                       "p->%s"
+                     else
+                       "p->tags[%s]"))
                   tag)
-              all_tags  in
+              ("part"::all_tags_macro)  in
           EPF.fi fmt params ;
           O.o "}" ;
           O.o "" ;
@@ -1425,18 +1457,26 @@ module Make
         O.f "#define HASHSZ %i" hashsz ;
         O.o "" ;
         let fname = "_hash" in
+        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
         let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
         O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         O.o "static entry_t main_hash[HASHSZ];" ;
+        O.o "static log_t main_hash_log[HASHSZ];" ;
         O.o "static entry_t instance_hash[NEXE][HASHSZ];" ;
+        O.o "static log_t instance_hash_log[NEXE][HASHSZ];" ;
+        if do_stats then begin
+          O.o "static int hash_main_tags[HASHSZ][TAG_LENGTH];" ;
+          O.o "static int hash_instance_tags[NEXE][HASHSZ][TAG_LENGTH];" ;
+        end ;
+        O.o "static int instance_tags[NEXE][TAG_LENGTH];" ;
         O.o "" ;
         (*ObjUtil.insert_lib_file O.o "_hash.c" ;
         O.o "" ;*)
         O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
-        O.oi "pp_log(out,&p->key);" ;
+        O.oi "pp_log(out,p->key);" ;
         if do_stats then begin
           O.oi "if (verbose) {" ;
           EPF.fii " # " [] ;
@@ -1790,10 +1830,10 @@ module Make
         O.oii "barrier_wait(_b);" ;
         List.iter
           (fun addr ->
-             O.fii "if (_p->%s == ctouch) cache_touch((void *)%s);"
-               (pctag (proc,addr)) addr ;
-             O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
-               (pctag (proc,addr)) addr)
+             O.fii "if (_p->tags[%s] == ctouch) cache_touch((void *)%s);"
+               ("TAG_" ^ String.uppercase (pctag (proc,addr))) addr ;
+             O.fii "else if (_p->tags[%s] == cflush) cache_flush((void *)%s);"
+               ("TAG_" ^ String.uppercase (pctag (proc,addr))) addr)
           addrs ;
         begin match tag_init with
         | [] -> ()
@@ -1991,8 +2031,8 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond);"
-            (if do_stats then ",_p" else "") ;
+          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond, eq_log, sizeof(log_t));" ",_p" ;
+            (*(if do_stats then ",_p" else "") ;*)
           O.ox id "if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much." ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
@@ -2151,11 +2191,11 @@ module Make
                   try
                     let pos = get_param_pos a in
                     (* Must come first [raises Not_found] *)
-                    let tag = pvtag a in
+                    let tag = "TAG_" ^ String.uppercase (pvtag a) in
                     O.fiii
-                      "ctx->p.%s = comp_param(&c->seed,&q->%s,NVARS,0);"
+                      "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],NVARS,0);"
                       tag tag ;
-                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFFSZ;"
+                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.tags[%s] + %i*VOFFSZ;"
                       a tag pos
                   with Not_found ->
                     O.fiii "_vars->%s = _mem;" a)
@@ -2167,8 +2207,9 @@ module Make
 (* Standard parameters *)
             List.iter
               (fun (tag,max) ->
+                let macro_tag = "TAG_" ^ String.uppercase tag in 
                 O.fiii
-                  "ctx->p.%s = comp_param(&c->seed,&q->%s,%s,0);" tag tag max ;)
+                  "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],%s,0);" macro_tag macro_tag max ;)
               ps ;
 (* Cache parameters*)
             List.iter
@@ -2178,25 +2219,25 @@ module Make
                     try
                       let prx = get_param_prefix v in
                       let tsts =
-                        sprintf " && ctx->p.%s != 0" (pvtag v)::
+                        sprintf " && ctx->p.tags[%s] != 0" ("TAG_" ^ String.uppercase (pvtag v))::
                         List.map
                           (fun w ->
-                            sprintf " && ctx->p.%s != ctx->p.%s"
-                              (pvtag v) (pvtag w))
+                            sprintf " && ctx->p.tags[%s] != ctx->p.tags[%s]"
+                              ("TAG_" ^ String.uppercase (pvtag v)) ("TAG_" ^ String.uppercase (pvtag w)))
                           prx in
                       String.concat "" tsts
                     with Not_found -> "" in
                   O.fiii "if (c->act->%s%s) {"
                     (Topology.active_tag p) more_test ;
-                  let tag = pctag p in
-                  O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                  let tag = "TAG_" ^ String.uppercase (pctag p) in
+                  O.fiv "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],cmax,1);"
                     tag tag ;
                   O.oiii "} else {" ;
-                  O.fiv "ctx->p.%s = cignore;" tag ;
+                  O.fiv "ctx->p.tags[%s] = cignore;" tag ;
                   O.oiii "}"
                 end else begin
-                  let tag = pctag p in
-                  O.fiii "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                  let tag = "TAG_" ^ String.uppercase (pctag p) in
+                  O.fiii "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],cmax,1);"
                     tag tag
                 end)
               cs ;

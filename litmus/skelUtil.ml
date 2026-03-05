@@ -905,7 +905,7 @@ end
               O.oi "just_dump_outcomes(out,hist);"
           | Mode.PreSi|Mode.Kvm ->
               pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(out,hash,g->verbose > 1,g->group);" ;
+              O.oi "pp_hash(out,hash,g->verbose > 1,g->group, pp_entry);" ;
               ()
           end ;
 (* Print condition and witnesses *)
