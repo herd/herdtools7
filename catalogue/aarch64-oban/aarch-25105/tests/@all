@@ -1,0 +1,6 @@
+LB+cachesync-tagcheck+dsb.ish-isb-1.litmus
+LB+cachesync-tagcheck+dsb.ish-isb-2.litmus
+LB+cachesync-ttdcheck+dsb.ish-isb-1.litmus
+LB+cachesync-ttdcheck+shoot-1.litmus
+LB+shoot-tagcheck+dmb.sttp-1.litmus
+LB+shoot-tagcheck+dmb.sttp-2.litmus
