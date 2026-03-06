@@ -58,7 +58,41 @@ module Make(S : SemExtra.S) = struct
        else (* e1 and e2 are from the same instruction *)
        E.EventRel.exists_path (e1,e2) iico)
 
-(* Fence *)
+(* Event set ordered by to (generalised) program order *)
+
+  module
+    EvtSetByPo
+      (I:sig val es : S.event_structure end) =
+  struct
+
+    let is_before_strict = is_before_strict I.es
+
+    include Set.Make
+        (struct
+
+          type t = E.event
+
+          let compare e1 e2 =
+            if is_before_strict e1 e2 then -1
+            else if is_before_strict e2 e1 then 1
+            else
+              let () =
+                Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
+                  E.debug_event e2 ;
+              in
+              assert false
+
+        end)
+
+    let find_last_before set e =
+      find_last_opt (fun e' -> is_before_strict e' e) set
+
+    let find_first_after e set =
+      find_first_opt (fun e' -> is_before_strict e e') set
+
+  end
+
+  (* Fence *)
   let po_fence_po po pred =
     let r1 =
       E.EventRel.restrict_domains E.is_mem pred po
@@ -387,8 +421,24 @@ let lift_proc_info i evts =
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
   and collect_stores_non_spec es = collect_by_loc es (fun e -> E.is_store e && not_speculated es e)
-  and collect_atomics es = collect_by_loc es E.is_atomic
   and collect_reg_loads_stores es = collect_by_loc2 es E.is_reg_load_any E.is_reg_store_any
+
+  let accumulate_loc_proc proc loc e =
+  IntMap.update proc @@ function
+  | None -> Some (LocEnv.singleton loc [e])
+  | Some m -> Some (LocEnv.accumulate loc e m)
+
+  let collect_atomics es =
+    let m,sp =
+      E.EventSet.fold
+        (fun e (m,sp as k) ->
+           if E.is_atomic e then
+             match E.proc_of e with
+             | None -> if E.is_spurious e then (m, e::sp) else k
+             | Some proc -> accumulate_loc_proc proc (get_loc e) e m, sp
+           else k)
+        es.E.events (IntMap.empty,[]) in
+    IntMap.bindings m,sp
 
   let partition_events es =
     let env =
