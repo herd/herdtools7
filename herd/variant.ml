@@ -84,6 +84,9 @@ type t =
 (* CacheType features *)
   | DIC
   | IDC
+(* Shadow stack
+   AArch64: Guarded Control Stack *)
+  | ShadowStack
 (* Have cat interpreter to optimise generation of co's *)
   | CosOpt
 (* Test something *)
@@ -146,6 +149,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | FaultHandling p -> FaultHandling p
   | CutOff -> CutOff
   | Morello -> Morello
+  | ShadowStack -> ShadowStack
   | Neon -> Neon
   | SVE -> SVE
   | SVELength k -> SVELength k
@@ -224,7 +228,7 @@ let (mode_variants, arch_variants) : t list * t list =
         VMSA; NoPteBranch; PTE2; D128;
         Neon; SVE; SVELength 128; SME; SMELength 128;
         Pac; ConstPacField; FPac;
-        MemTag; MTEStoreOnly; ]
+        MemTag; MTEStoreOnly; ShadowStack]
   in
   (base_modes, arch_feat @ precision_variants @ fault_variants)
 
@@ -272,6 +276,7 @@ let parse s = match Misc.lowercase s with
 | "ifetch"|"self" -> Some Ifetch
 | "dic" -> None
 | "idc" -> None
+| "shadowstack" -> Some ShadowStack
 | "cos-opt" -> Some CosOpt
 | "test" -> Some Test
 | "asl" -> Some ASL
@@ -377,6 +382,7 @@ let pp = function
   | Ifetch -> "ifetch"
   | DIC -> "dic"
   | IDC -> "idc"
+  | ShadowStack -> "shadowstack"
   | CosOpt -> "cos-opt"
   | Test -> "test"
   | T n -> Printf.sprintf "T%02i" n
@@ -433,6 +439,7 @@ let pp = function
             opt
   | CutOff -> "Check for cutoff in executions (AArch64+ASL only)"
   | Morello -> ""
+  | ShadowStack -> "Enable support for shadow stack (FEAT_GCS for AArch64)"
   | Neon -> "Enable Advanced SIMD instructions (AArch64 only)"
   | SVE -> "Enable FEAT_SVE, Scalable Vector Extension (AArch64 only)"
   | SVELength _ -> "Configure SVE vector length (AArch64 only)"
