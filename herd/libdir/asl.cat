@@ -42,7 +42,7 @@ let asl_po = as_transitive (partial_po)
 (*********************)
 
 let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = [AArch64]; asl_data+; [AArch64 | ADDR]
+let asl_deps = [AArch64]; asl_iico_data; asl_data*; [AArch64 | ADDR]
 let asl_ctrl_deps = [B]; (asl_data | asl_iico_ctrl)+; [AArch64]
 
 (**********************************)
@@ -57,7 +57,7 @@ let aarch64_iico_ctrl = [B]; asl_ctrl_deps; [AArch64]
 
 (* Intra-instruction Order dependencies *)
 let asl_fr = asl_po & ([R] ; loc ; [W])
-let aarch64_iico_order = asl_fr
+let aarch64_iico_order = asl_fr|([AArch64];asl_rf_reg;asl_data*;[AArch64])
 
 let aarch64_intrinsic = aarch64_iico_ctrl | aarch64_iico_data | aarch64_iico_order
 
