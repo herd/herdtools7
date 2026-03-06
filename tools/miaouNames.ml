@@ -27,6 +27,27 @@ let toalpha s =
   done ;
   Buffer.contents buff
 
+let to_variant_csname s =
+  let add = Buffer.add_string in
+  let buff = Buffer.create (String.length s) in
+  for k = 0 to String.length s - 1 do
+    match s.[k] with
+    | 'a'..'z' | 'A'..'Z' as c ->
+        Buffer.add_char buff c
+    | '0' -> add buff "Zero"
+    | '1' -> add buff "One"
+    | '2' -> add buff "Two"
+    | '3' -> add buff "Three"
+    | '4' -> add buff "Four"
+    | '5' -> add buff "Five"
+    | '6' -> add buff "Six"
+    | '7' -> add buff "Seven"
+    | '8' -> add buff "Eight"
+    | '9' -> add buff "Nine"
+    | _ -> ()
+  done ;
+  Buffer.contents buff
+
 let vocabulary =
   StringMap.empty
   |> StringMap.add "dmb.full" "DMBFULL"

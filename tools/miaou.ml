@@ -290,24 +290,30 @@ and cons_seqs (fs:exp list) (es:exp list) =
          variant_dnf neg vc1 @ variant_dnf neg vc2
       | OpAnd (vc1,vc2) ->
          let d1 = variant_dnf neg vc1
-         and d2  =variant_dnf neg vc2 in
+         and d2 = variant_dnf neg vc2 in
          List.fold_right
            (fun a1 k ->
              List.fold_right
                (fun a2 k -> (a1@a2)::k) d2 k)
            d1 []
 
+    let pp_atom = function
+    | Pos s -> sprintf "\\%s{}" (MiaouNames.to_variant_csname s)
+    | Neg s -> sprintf "\\Not%s{}" (MiaouNames.to_variant_csname s)
+
     let pp_dnf d =
       List.map
         (fun a ->
-          List.map
-            (function
-             | Pos s -> sprintf "\\Variant{%s}" s
-             | Neg s -> sprintf "\\NotVariant{%s}" s)
-            a |> String.concat " and ")
+          List.map pp_atom a |> String.concat " and ")
         d |> String.concat " or "
 
     let pp_vc vc = variant_dnf false vc |> pp_dnf
+
+    let vc_to_items vc =
+      match variant_dnf false vc with
+      | [conjs] -> List.map (fun a -> Item (pp_atom a)) conjs
+      | [] -> Warn.fatal "variant_dnf returned empty list"
+      | d -> [Item (pp_dnf d)]
 
     let do_pp_rel_id  e1 e2 id =
       sprintf "\\%s{%s}{%s}" id (pp_evt e1) (pp_evt e2)
@@ -375,11 +381,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
          let op = Inter in
          mk_list op
-           [Item (pp_vc (OpNot vc)); tr_rel e1 e2 e;]
+           (vc_to_items (OpNot vc) @ [tr_rel e1 e2 e;])
       | If (_,VariantCond vc,e,Konst (_,Empty _)) ->
          let op = Inter in
          mk_list op
-           [Item (pp_vc vc); tr_rel e1 e2 e;]
+           (vc_to_items vc @ [tr_rel e1 e2 e;])
       | If (_,VariantCond vc,a,b) ->
          let c = pp_vc vc
          and a = tr_rel e1 e2 a
@@ -539,11 +545,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
          let op = Inter in
          mk_list op
-           [Item (pp_vc (OpNot vc)); tr_evts e1 e;]
+           (vc_to_items (OpNot vc) @ [tr_evts e1 e;])
       | If (_,VariantCond vc,e,Konst (_,Empty _)) ->
          let op = Inter in
          mk_list op
-           [Item (pp_vc vc); tr_evts e1 e;]
+           (vc_to_items vc @ [tr_evts e1 e;])
       | If (_,VariantCond vc,a,b) ->
          let c = pp_vc vc
          and a = tr_evts e1 a

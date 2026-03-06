@@ -18,3 +18,7 @@
 
 (* Translate name to a valid LaTeX command name *)
 val to_csname : string -> string
+
+(* Translate variant name to a valid LaTeX command name.
+   Keeps letters, maps digits to words. *)
+val to_variant_csname : string -> string
