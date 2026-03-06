@@ -25,6 +25,32 @@ module Make : functor (S: SemExtra.S) -> sig
   val po_iico :  S.event_structure -> S.event_rel
 (* po union iico_data union iico_control *)
   val is_before_strict : S.event_structure -> S.event -> S.event -> bool
+
+(*
+ * Set of events ordered by  is_before_strict.
+ * Notice it is an error to add unrelated events
+ *  to this set.
+ *)
+  module
+    EvtSetByPo :
+    functor
+      (I:sig val es : S.event_structure end) ->
+    sig
+
+      (* Strict ordering, taking iico into account for effects
+         from the same instruction. *)
+      val is_before_strict : S.event -> S.event -> bool
+
+      include Set.S with type elt = S.event
+
+      (* [find_last_before set e] find maximal effect in [set] before [e] *)
+      val find_last_before : t -> S.event -> S.event option
+
+      (* [find_last_before set e] find minimal effect in [set] after [e] *)
+      val find_first_after : S.event -> t -> S.event option
+
+    end
+
 (* Fence like relations *)
   val po_fence_po : S.event_rel (* po *) -> (S.event -> bool) -> S.event_rel
 

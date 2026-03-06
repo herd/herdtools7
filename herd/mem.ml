@@ -866,43 +866,10 @@ and get_written e = match E.written_of e with
 
 let map_loc_find loc m = U.LocEnv.safe_find [] loc m
 
-(* Event set ordered by to (generalised) program order *)
-
-module
-  EvtSetByPo
-    (I:sig val es : S.event_structure end) =
-struct
-
-  let is_before_strict = U.is_before_strict I.es
-
-  include Set.Make
-      (struct
-
-        type t = E.event
-
-        let compare e1 e2 =
-          if is_before_strict e1 e2 then -1
-          else if is_before_strict e2 e1 then 1
-          else
-            let () =
-              Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
-                E.debug_event e2
-            in
-            assert false
-
-      end)
-
-  let find_last_before set e =
-    find_last_opt (fun e' -> is_before_strict e' e) set
-
-  let find_first_after e set =
-    find_first_opt (fun e' -> is_before_strict e e') set
-
-end
 
 let match_reg_events add_eq es csn =
   let loc_loads_stores = U.collect_reg_loads_stores es in
-  let module StoreSet = EvtSetByPo(struct let es = es end) in
+  let module StoreSet = U.EvtSetByPo(struct let es = es end) in
   let add wt rf (rfm, csn) = (S.RFMap.add wt rf rfm, add_eq rfm wt rf csn) in
   (* For all loads find the right store, the one "just before" the load *)
   U.LocEnv.fold
@@ -1840,7 +1807,7 @@ let get_rf_value test read =
 
     let make_atomic_load_store es =
       let atms,spurious = U.collect_atomics es in
-      let module StoreSet = EvtSetByPo(struct let es = es end) in
+      let module StoreSet = U.EvtSetByPo(struct let es = es end) in
       let make_atomic_pairs es k =
         let rs,ws = List.partition E.is_load es in
         let ws = StoreSet.of_list ws

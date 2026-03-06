@@ -58,7 +58,41 @@ module Make(S : SemExtra.S) = struct
        else (* e1 and e2 are from the same instruction *)
        E.EventRel.exists_path (e1,e2) iico)
 
-(* Fence *)
+(* Event set ordered by to (generalised) program order *)
+
+  module
+    EvtSetByPo
+      (I:sig val es : S.event_structure end) =
+  struct
+
+    let is_before_strict = is_before_strict I.es
+
+    include Set.Make
+        (struct
+
+          type t = E.event
+
+          let compare e1 e2 =
+            if is_before_strict e1 e2 then -1
+            else if is_before_strict e2 e1 then 1
+            else
+              let () =
+                Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
+                  E.debug_event e2 ;
+              in
+              assert false
+
+        end)
+
+    let find_last_before set e =
+      find_last_opt (fun e' -> is_before_strict e' e) set
+
+    let find_first_after e set =
+      find_first_opt (fun e' -> is_before_strict e e') set
+
+  end
+
+  (* Fence *)
   let po_fence_po po pred =
     let r1 =
       E.EventRel.restrict_domains E.is_mem pred po
