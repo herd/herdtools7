@@ -3520,7 +3520,7 @@ semantics relation protected_multi_assign(env: envs, lelist: list0(lexpr), vmlis
     "evaluates multi-assignments. This is the same as \multiassign{} when {lelist} and {vmlist} have the same length.
     Otherwise, if {vmlist} is a singleton, it performs tuple reads to access the elements corresponding to {lelist}.
     \ProseOtherwiseAbnormal",
-    prose_application = "evaluating the multi-assignment of {vmlist} to {lelist} in {env} yields | $\ResultLexpr({new_g}, {new_env})$ or abnormal configuration",
+    prose_transition = "evaluating the multi-assignment of {vmlist} to {lelist} in {env} yields",
     math_layout = (_, [_,_,_,_]),
 } =
   case same_length {

@@ -52,7 +52,7 @@ The relation
 \DefineProse{f}{
 \AllApply
   \begin{itemize}
-    \item the sum of all numbers in \texttt{a} and \texttt{b} is equal to \texttt{c};
+    \item the sum of all numbers in  (1) \texttt{a}, and  (2) \texttt{b} is equal to \texttt{c};
     \item define \texttt{d} as: if \texttt{a} is in \texttt{S} then \texttt{b} else \texttt{c};
     \item \textbf{the result is:} \texttt{d}.
   \end{itemize}

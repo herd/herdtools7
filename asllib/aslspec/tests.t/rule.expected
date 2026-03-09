@@ -79,10 +79,10 @@ The relation
 \DefineProse{r}{
 \AllApply
   \begin{itemize}
-    \item define \texttt{res} as if \texttt{a} is equal to \texttt{b} holds then \texttt{a}, if \texttt{a} is greater than \texttt{b} holds then the sum of all numbers in \texttt{a} and \texttt{b}, and if \texttt{a} is less than \texttt{b} holds then \texttt{b};
+    \item define \texttt{res} as  (1) if \texttt{a} is equal to \texttt{b} holds then \texttt{a},  (2) if \texttt{a} is greater than \texttt{b} holds then the sum of  (1) \texttt{a}, and  (2) \texttt{b}, and  (3) if \texttt{a} is less than \texttt{b} holds then \texttt{b};
     \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b};
-    \item define \texttt{r\_f} as the sum of all numbers in the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r};
+    \item define \texttt{r\_f} as the sum of  (1) the field $\FIELDf$ of \texttt{r}, and  (2) the field $\FIELDg$ of \texttt{r};
     \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res};
-    \item \textbf{the result is:} the tuple consisting of:  (1) \texttt{res} (for \texttt{c}), and  (2) \texttt{r'}.
+    \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
   \end{itemize}
 } % EndDefineProse
