@@ -314,10 +314,13 @@ module Make (Conf : Config) = struct
           | _ -> false
       in
       let an =
-        if (not is_read) && is_release then is_ax XL L
+        if (not is_read) && is_release && is_exclusive then EXL
+        else if (not is_read) && is_release then is_ax XL L
         else if is_noret then NoRet
+        else if is_read && is_acquiresc && is_exclusive then EXA
         else if is_read && is_acquiresc then is_ax XA A
         else if is_read && is_acquirepc then is_ax XQ Q
+        else if is_exclusive then EX
         else is_ax X N
       in
       let () =
