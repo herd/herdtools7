@@ -1,5 +1,9 @@
 #! /bin/sh
-TMP=/tmp/build.$$
+TMP=$(mktemp -d 2>/dev/null || mktemp -d -t build.XXXXXX)
+if [ ! -d "$TMP" ] ; then
+    echo "Failed to create temp directory" >&2
+    exit 1
+fi
 trap "/bin/rm -rf $TMP ; exit 2"  INT QUIT
 if [ $# -ne 1 ] ; then
     echo "Usage: $0 <defs-path>" >&2
