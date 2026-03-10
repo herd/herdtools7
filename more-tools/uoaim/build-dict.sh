@@ -32,7 +32,7 @@ grep -e \\[1\\] "$DEFS" | grep -v emph | grep newcommand |\
 \\par
 EOF
     done  > $TMP/U.tex
-grep -e  '\{.*name\}' "$DEFS" | grep -v emph | grep newcommand |\
+grep -e '{[^}]*name}' "$DEFS" | grep -v emph | grep newcommand |\
     sed -e 's/\\.*command{\([^}]*\)}.*/\1/g' |\
     while read command
     do
