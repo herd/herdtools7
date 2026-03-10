@@ -347,11 +347,8 @@ module Make (S : SPEC_VALUE) = struct
               match Spec.defining_node_for_id S.spec variant_name with
               | Node_TypeVariant def -> def
               | _ ->
-                  let msg =
-                    Format.asprintf "Can't find variant %s in %a" variant_name
-                      PP.pp_type_subset_pointer pointer
-                  in
-                  failwith msg)
+                  Format.kasprintf failwith "Can't find variant %s in %a"
+                    variant_name PP.pp_type_subset_pointer pointer)
             variant_names
       in
       pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
@@ -462,14 +459,10 @@ module Make (S : SPEC_VALUE) = struct
             | Vertical [ record_layout; updates_layout ] ->
                 (record_layout, updates_layout)
             | _ ->
-                failwith
-                  (let msg =
-                     Format.asprintf
-                       "the layout for record update expression %a has an \
-                        invalid layout (%a)"
-                       PP.pp_expr expr PP.pp_layout layout
-                   in
-                   failwith msg)
+                Format.kasprintf failwith
+                  "the layout for record update expression %a has an invalid \
+                   layout (%a)"
+                  PP.pp_expr expr PP.pp_layout layout
           in
           fprintf fmt "%a%a" pp_expr
             (record_expr, record_layout)
@@ -540,12 +533,9 @@ module Make (S : SPEC_VALUE) = struct
             match args with
             | [ lhs; rhs ] -> (lhs, rhs)
             | _ ->
-                let msg =
-                  Format.asprintf
-                    "Expected exactly two arguments for binary operator %s"
-                    op_name
-                in
-                failwith msg
+                Format.kasprintf failwith
+                  "Expected exactly two arguments for binary operator %s"
+                  op_name
           in
           pp_connect_pair ~alignment:"c" fmt pp_expr lhs_arg op_macro pp_expr
             rhs_arg layout
@@ -793,14 +783,17 @@ module Make (S : SPEC_VALUE) = struct
           Format.asprintf "%s with %s" record_prose (prose_list updates_prose)
       | FieldAccess { base; field } ->
           let base_prose = expr_to_prose base in
-          let field_prose =
+          let field_def =
             match Spec.defining_node_opt_for_id S.spec field with
-            | Some (Node_RecordField field_def) ->
-                let prose = Term.record_field_prose_description field_def in
-                if Utils.string_is_empty prose then
-                  Format.asprintf "the field $%a$" pp_field_name field_def.name
-                else prose
+            | Some (Node_RecordField d) -> d
             | _ -> assert false
+          in
+          let prose_template = Term.record_field_prose_description field_def in
+          let field_prose =
+            if Utils.string_is_empty prose_template then
+              (* Default prose. *)
+              Format.asprintf "the field $%a$" pp_field_name field_def.name
+            else prose_template
           in
           Format.asprintf "%s of %s" field_prose base_prose
       | Map { lhs; args } ->
@@ -838,14 +831,10 @@ module Make (S : SPEC_VALUE) = struct
           match formal_arg_opt_name with
           | Some name -> name
           | None ->
-              failwith
-                (let msg =
-                   Format.asprintf
-                     "Expected the variadic operator %s to have a formal \
-                      argument with a name, but it doesn't."
-                     relation.name
-                 in
-                 msg)
+              Format.kasprintf failwith
+                "Expected the variadic operator %s to have a formal argument \
+                 with a name, but it doesn't."
+                relation.name
         in
         let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
         substitute expr_prose formal_prose_pair

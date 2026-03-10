@@ -50,12 +50,9 @@ let args_of_tuple id_to_defining_node label =
   match StringMap.find label id_to_defining_node with
   | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
   | node ->
-      let msg =
-        Format.asprintf
-          "Expected labelled tuple type variant for label %s, found %a." label
-          pp_definition_node node
-      in
-      failwith msg
+      Format.kasprintf failwith
+        "Expected labelled tuple type variant for label %s, found %a." label
+        pp_definition_node node
 
 (** [math_macro_opt_for_node node] returns the optional math macro associated
     with the definition node [node]. *)
@@ -414,10 +411,8 @@ module ResolveApplicationExpr = struct
         let resolved_sub_expr = resolve_in_context sub_expr in
         NamedExpr (resolved_sub_expr, name)
     | Relation _ | Map _ ->
-        let msg =
-          Format.asprintf "unexpected resolved expression: %a" PP.pp_expr expr
-        in
-        failwith msg
+        Format.kasprintf failwith "unexpected resolved expression: %a"
+          PP.pp_expr expr
 
   let rec resolve_rule_element id_to_defining_node rule_element =
     let open Rule in
@@ -550,11 +545,8 @@ module ResolveRules = struct
       | ( None,
           ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
           | Term.ConstantsSet _ ) ) ->
-          let msg =
-            Format.asprintf "Unexpected un-named argument term: %a"
-              PP.pp_type_term (snd opt_named_term)
-          in
-          failwith msg
+          Format.kasprintf failwith "Unexpected un-named argument term: %a"
+            PP.pp_type_term (snd opt_named_term)
     in
     let named_args = List.map arg_of input in
     Expr.Relation { name; is_operator; args = named_args }
@@ -735,6 +727,7 @@ end
 let filter_rule_for_path { Relation.name; rule_opt } path_str =
   assert (Option.is_some rule_opt);
   let open Rule in
+  (* If path_str is empty, path should be empty as well. *)
   let path = Str.split (Str.regexp_string ".") path_str in
   let rec filter_rule_elements rule_elements path =
     match (rule_elements, path) with
@@ -742,16 +735,17 @@ let filter_rule_for_path { Relation.name; rule_opt } path_str =
     | [], _ -> Error.missing_case_in_rule path_str name path_str
     | Rule.Judgment judgment :: rest, _ ->
         Rule.Judgment judgment :: filter_rule_elements rest path
-    | Rule.Cases cases :: rest, case_name :: path_tail -> (
-        match
-          List.find_opt (fun { name } -> String.equal name case_name) cases
-        with
-        | Some { elements = case_elements; _ } ->
-            let filtered_case_elements =
-              filter_rule_elements case_elements path_tail
-            in
-            filtered_case_elements @ filter_rule_elements rest []
-        | None -> Error.missing_case_in_rule case_name name path_str)
+    | Rule.Cases cases :: rest, case_name :: path_tail ->
+        let case_elements =
+          let find_case { name } = String.equal name case_name in
+          match List.find_opt find_case cases with
+          | Some { elements } -> elements
+          | None -> Error.missing_case_in_rule case_name name path_str
+        in
+        let filtered_case_elements =
+          filter_rule_elements case_elements path_tail
+        in
+        filtered_case_elements @ filter_rule_elements rest []
   in
   filter_rule_elements (Option.get rule_opt) path
 
@@ -1617,13 +1611,10 @@ module Check = struct
             update_use_def_with_bound_variable mode spec use_def [ body ]
               ~context_expr:expr ~bound_var:index
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unresolved application found when checking use-def in \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unresolved application found when checking use-def in \
+               expression: %a."
+              PP.pp_expr expr
       in
       let () =
         if false then Format.eprintf "Updated use-def: %a@." pp_use_def use_def
@@ -1727,11 +1718,9 @@ module Check = struct
           match StringMap.find_opt id type_env with
           | Some id_type -> id_type
           | None ->
-              let msg =
-                Format.asprintf "Encountered an untyped variable '%s' in %a." id
-                  PP.pp_expr context_expr
-              in
-              failwith msg)
+              Format.kasprintf failwith
+                "Encountered an untyped variable '%s' in %a." id PP.pp_expr
+                context_expr)
 
     (** [type_term_for_field spec id] returns the type term associated with the
         record field with identifier [id]. *)
@@ -2063,11 +2052,9 @@ module Check = struct
             (not is_variadic)
             && List.compare_length_with input actual_num_of_args <> 0
           then
-            let msg =
-              Format.asprintf "operator %s expects %d arguments but received %d"
-                operator_name (List.length input) actual_num_of_args
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "operator %s expects %d arguments but received %d" operator_name
+              (List.length input) actual_num_of_args
         in
         (* For a variadic operator we want n copies of its element type,
          where n is the number of actual arguments. *)
@@ -2217,13 +2204,10 @@ module Check = struct
         | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
         | FieldAccess _ | Map _ | Transition _ | Indexed _
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unexpected expression when checking for structured assignable \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unexpected expression when checking for structured assignable \
+               expression: %a."
+              PP.pp_expr expr
 
       (** [match_structured_assignable_expr spec expr terms] attempts to find a
           type term in [terms] that matches [expr]. That is, a term that is a
@@ -2574,13 +2558,10 @@ module Check = struct
                 ~actual_type:arg_type ~formal_type:from_term ~context_expr:expr
             else (to_term, type_env)
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unresolved application found when inferring type for \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unresolved application found when inferring type for \
+               expression: %a."
+              PP.pp_expr expr
       in
       let () =
         if false then
@@ -2677,12 +2658,9 @@ module Check = struct
             in
             (Some bound_variable_name, new_env)
         | _ ->
-            let msg =
-              Format.asprintf
-                "Unexpected domain type for quantifying operator: %a."
-                PP.pp_type_term domain_term
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unexpected domain type for quantifying operator: %a."
+              PP.pp_type_term domain_term
       else (None, type_env)
 
     (** [apply_type spec type_env expr target_type] deconstructs [expr] and
@@ -2777,11 +2755,8 @@ module Check = struct
       | Transition _, _
       | Indexed _, _
       | NamedExpr _, _ ->
-          let msg =
-            Format.asprintf "unexpected expression in apply_type: %a."
-              PP.pp_expr expr
-          in
-          failwith msg
+          Format.kasprintf failwith "unexpected expression in apply_type: %a."
+            PP.pp_expr expr
       | (Expr.Tuple _ | Expr.Record _), _ ->
           let matched_term =
             MatchAssignableExprToTerms.match_refined_type spec expr target_type
