@@ -56,6 +56,10 @@ val relation_for_id : t -> string -> Relation.t
 (** [relation_for_id spec id] returns the relation definition for [id] in
     [spec], assuming it is defined as a relation. *)
 
+val record_variant_for_expr : t -> Expr.t -> TypeVariant.t
+(** [record_variant_for_expr spec expr] returns the record type variant
+    corresponding to [expr], assuming [expr] is a record expression. *)
+
 val is_defined_id : t -> string -> bool
 (** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
     [false] otherwise. *)
