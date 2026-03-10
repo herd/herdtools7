@@ -674,7 +674,7 @@ module Make (S : SPEC_VALUE) = struct
         missing prose templates. *)
     let prose_or_empty_message ~name prose =
       if Utils.string_is_empty prose then
-        Format.asprintf "<empty prose for %s>"
+        Format.asprintf "``empty prose for %s''"
           (Latex.spec_var_to_latex_var ~font_type:TextTT name)
       else prose
 
@@ -688,6 +688,15 @@ module Make (S : SPEC_VALUE) = struct
     (** [var_to_prose id] converts a variable [id] to its prose representation.
     *)
     let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
+
+    (** Removes angle brackets from the template and substitutes the
+        placeholders with the provided substitutions. *)
+    let preprocess_template_and_substitute template substitutions =
+      (* Replace text inside angle brackets with the text itself. *)
+      let template =
+        Str.global_replace (Str.regexp "<\\([^>]*\\)>") "\\1" template
+      in
+      substitute template substitutions
 
     (** [expr_to_prose expr] converts an expression [expr] to its prose
         representation. *)
@@ -749,7 +758,7 @@ module Make (S : SPEC_VALUE) = struct
                 | Some name -> Some (name, prose))
               formal_opt_prose_pairs
           in
-          substitute expr_prose formal_prose_pairs
+          preprocess_template_and_substitute expr_prose formal_prose_pairs
       | Record { label_opt; fields } ->
           let variant = Spec.record_variant_for_expr S.spec expr in
           let name =
@@ -764,12 +773,33 @@ module Make (S : SPEC_VALUE) = struct
             TypeVariant.prose_description variant
             |> prose_or_empty_message ~name
           in
+          let declared_fields =
+            match variant.term with
+            | Record { fields } -> fields
+            | _ -> assert false
+          in
+          (* A record expression is allowed to specify only a subset of the declared fields.
+             We figure those out, associate them with _, and append them to the explicitly
+             specified fields.
+          *)
+          let unspecified_defaults =
+            let declared_field_names =
+              List.map (fun field -> field.Term.name) declared_fields
+            in
+            let unspecified_fields =
+              Utils.string_list_difference declared_field_names
+                (List.map fst fields)
+            in
+            List.map
+              (fun field -> (field, Expr.Var Spec.ignore_var))
+              unspecified_fields
+          in
           let field_to_prose =
             List.map
               (fun (field, field_expr) -> (field, expr_to_prose field_expr))
-              fields
+              (fields @ unspecified_defaults)
           in
-          substitute expr_prose field_to_prose
+          preprocess_template_and_substitute expr_prose field_to_prose
       | RecordUpdate { record_expr; updates } ->
           let record_prose = expr_to_prose record_expr in
           let updates_prose =
@@ -837,7 +867,7 @@ module Make (S : SPEC_VALUE) = struct
                 relation.name
         in
         let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
-        substitute expr_prose formal_prose_pair
+        preprocess_template_and_substitute expr_prose formal_prose_pair
       else
         let formal_arg_pairs = List.combine formal_args args in
         let formal_prose_pairs =
@@ -846,7 +876,7 @@ module Make (S : SPEC_VALUE) = struct
               named_args_for_opt_named_term opt_named_term arg)
             formal_arg_pairs
         in
-        substitute expr_prose formal_prose_pairs
+        preprocess_template_and_substitute expr_prose formal_prose_pairs
 
     (** [short_circuit_to_prose relation_name short_circuit] returns the prose
         for the short-circuit expressions added as superscripts. *)
@@ -956,6 +986,14 @@ module Make (S : SPEC_VALUE) = struct
         "one of the following applies". *)
       pp_prose_rule_elements fmt ~case_name:"" rule_elements
 
+    (** [pp_render_rule_math_and_prose fmt def] renders both the mathematical
+        inference rules and the prose description of the rules referenced by
+        [def] with the formatter [fmt]. *)
+    let pp_render_rule_math_and_prose fmt def =
+      pp_render_rule fmt def;
+      fprintf fmt "@.@.";
+      pp_render_rule_prose fmt def
+
     (** [pp_render_rule_macro fmt def] renders the LaTeX wrapper macro
         [\DefineRule{name}{...}] around the rendering of the mathematical
         inference rules referenced by [def] with the formatter [fmt]. *)
@@ -1010,7 +1048,7 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Type def -> pp_type_definition fmt def
     | Elem_Relation def -> pp_relation_definition fmt def
     | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types fmt def
-    | Elem_RenderRule def -> RenderRule.pp_render_rule fmt def
+    | Elem_RenderRule def -> RenderRule.pp_render_rule_math_and_prose fmt def
 
   (** [pp_elem_definition_macro fmt elem] renders a macro definition for an
       element of the specification. *)
@@ -1042,28 +1080,9 @@ module Make (S : SPEC_VALUE) = struct
             Latex.spec_var_to_latex_var ~font_type:Latex.Text name
           in
           match elem with
-          | Elem_Constant _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Relation _ ->
-              if is_operator elem then ()
-              else fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Type _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderTypes _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderRule _ ->
+          | Elem_Relation _ when is_operator elem -> ()
+          | Elem_Constant _ | Elem_Type _ | Elem_RenderTypes _
+          | Elem_RenderRule _ | Elem_Relation _ ->
               fprintf fmt {|
 \section*{%s}
 %a
