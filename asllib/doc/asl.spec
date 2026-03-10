@@ -3445,7 +3445,6 @@ semantics relation multi_assign(env: envs, lelist: list0(lexpr), vmlist: list0((
     to the corresponding list of \assignableexpressions{} {lelist}, in the environment {env}.
     The result is either the \executiongraphterm{} {new_g} and new environment {new_env} or an abnormal configuration",
     prose_application = "evaluating the multi-assignment of {vmlist} to {lelist} in {env} yields",
-    math_macro = \evalmultiassignment,
     math_layout = (_, [_,_,_,_]),
 } =
   case empty {
