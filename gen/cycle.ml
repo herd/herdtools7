@@ -465,7 +465,7 @@ let make_variable =
   fun () ->
     let new_loc = match !variable_counter with
     | n when n <= 2 -> String.make 1 (Char.chr (Char.code 'x' + n))
-    | n when n <= 26 -> String.make 1 (Char.chr (Char.code 'a' + n - 3))
+    | n when n < 26 -> String.make 1 (Char.chr (Char.code 'a' + n - 3))
     | n -> sprintf "x%02i" (n - 26) in
     incr variable_counter;
     new_loc

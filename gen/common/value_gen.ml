@@ -34,7 +34,9 @@ module type PteType = sig
      Dir W and Dir R for write and read, respectively.
      and Irr for both, NoDir for none *)
   val need_check_fault : atom option -> Code.extr
-  (* check if the `pte_atom` trigger value for further access *)
+  (* check if the pte change by `pte_atom` triggers
+     a value check for further memory access,
+     for example input `PteOA` returns `true`. *)
   val need_check_value_on_pte : atom option -> bool
 end
 
