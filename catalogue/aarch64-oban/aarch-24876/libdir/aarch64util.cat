@@ -45,8 +45,6 @@
  *)
 
 let iico_data = iico_data+
-let iico_ctrl = iico_ctrl+
-let iico_order = iico_order+
 let ii_addr = [ADDR]; iico_data
 let ii_data = [DATA]; (iico_data|iico_ctrl)+
 
@@ -59,13 +57,9 @@ let PTE = if "vmsa" then PTE else emptyset
 let PTEV = if "vmsa" then PTEV else emptyset
 let PTEINV = if "vmsa" then PTEINV else emptyset
 let inv-domain = if "vmsa" then inv-domain else 0
-let D-PTE = if "vmsa" then D-PTE else emptyset
-let I-PTE = if "vmsa" && "ifetch" then PTE \ D-PTE else emptyset
 let AF = if "vmsa" then AF else emptyset
 let DB = if "vmsa" then DB else emptyset
 let MMU = if "vmsa" then MMU else emptyset
-let D-MMU = if "vmsa" then D-MMU else emptyset
-let I-MMU = if "vmsa" && "ifetch" then MMU \ D-MMU else emptyset
 let Translation = if "vmsa" then Translation else emptyset
 let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
@@ -98,8 +92,6 @@ let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
 let TTD = PTE
-let D-TTD = if "vmsa" then D-PTE else emptyset
-let I-TTD = if "vmsa" then I-PTE else emptyset
 let Tag = T
 (* In herd, all translations are in the same context *)
 let same-translation-context = (Imp & TTD) * (Imp & TTD)
@@ -140,7 +132,7 @@ let sca-class = [M & Exp]; sm; [M & Exp]
 
 (* Flag any occurrence of writes to two different locations that might be on
  * the same cache line. *)
-flag ~empty (((W \ IW) & Instr) * ((W \ IW) & Instr) \ loc)
+flag ~empty ((W & Instr)*(W & Instr) \ loc)
   as Assuming-no-two-modified-instructions-are-on-the-same-cache-line
 
 (* Flag the runs of herd7 with unsupported combinations of variants *)
