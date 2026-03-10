@@ -689,15 +689,6 @@ module Make (S : SPEC_VALUE) = struct
     *)
     let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
 
-    (** Removes angle brackets from the template and substitutes the
-        placeholders with the provided substitutions. *)
-    let preprocess_template_and_substitute template substitutions =
-      (* Replace text inside angle brackets with the text itself. *)
-      let template =
-        Str.global_replace (Str.regexp "<\\([^>]*\\)>") "\\1" template
-      in
-      substitute template substitutions
-
     (** [strip_names_from_expr expr] removes names from the expression [expr].
     *)
     let rec strip_names_from_expr expr =
@@ -841,7 +832,7 @@ module Make (S : SPEC_VALUE) = struct
                 | Some name -> Some (name, prose))
               formal_opt_prose_pairs
           in
-          preprocess_template_and_substitute expr_prose formal_prose_pairs
+          substitute expr_prose formal_prose_pairs
       | Record { label_opt; fields } ->
           let variant = Spec.record_variant_for_expr S.spec expr in
           let name =
@@ -882,7 +873,7 @@ module Make (S : SPEC_VALUE) = struct
               (fun (field, field_expr) -> (field, expr_to_prose field_expr))
               (fields @ unspecified_defaults)
           in
-          preprocess_template_and_substitute expr_prose field_to_prose
+          substitute expr_prose field_to_prose
       | RecordUpdate { record_expr; updates } ->
           let record_prose = expr_to_prose record_expr in
           let updates_prose =
@@ -964,7 +955,7 @@ module Make (S : SPEC_VALUE) = struct
                 relation.name
         in
         let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
-        preprocess_template_and_substitute expr_prose formal_prose_pair
+        substitute expr_prose formal_prose_pair
       else
         let formal_arg_pairs = List.combine formal_args args in
         let formal_prose_pairs =
@@ -973,7 +964,7 @@ module Make (S : SPEC_VALUE) = struct
               named_args_for_opt_named_term opt_named_term arg)
             formal_arg_pairs
         in
-        preprocess_template_and_substitute expr_prose formal_prose_pairs
+        substitute expr_prose formal_prose_pairs
 
     (** [short_circuit_to_prose relation_name short_circuit] returns the prose
         for the short-circuit expressions added as superscripts. *)
