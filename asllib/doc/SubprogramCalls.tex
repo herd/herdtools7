@@ -2062,7 +2062,7 @@ with the same value and a fresh identifier for it.
   \hva\and
   \inferrule[returning]{
     \xs \reverseeqdef [i=1..k: \vv_i]\\
-    i \in \listrange(\xs): \ids[i] = \returnvarprefix \concatstrings \stringofnat{i-1}\\
+    i \in \listrange(\xs): \ids[i] = \returnvarprefix \concatstrings \stringofint{i-1}\\
     \vvs \eqdef [i=1..k: (\vv_i, \id_i)]
   }
   {

@@ -652,7 +652,19 @@ end = struct
     Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
   let prose_application self =
-    Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
+    let template =
+      Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
+    in
+    (* For now, the template must only relate to the input portion
+       in the style of "operating on {arg1}...{argn} yields".
+       We allow relating prose to each outcome by separating them with a "|" in the template,
+       but we only use the first portion of the template.
+       That is, given "operating on {arg1}...{argn} yields | ...",
+       we only use "operating on {arg1}...{argn} yields" as the template.
+       In the future, we may use the portions after the first "|" by matching them to the
+       output based on the type of the output.
+    *)
+    String.split_on_char '|' template |> List.hd
 
   let math_layout self =
     Attributes.find_layout AttributeKey.Math_Layout self.att

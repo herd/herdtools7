@@ -3,6 +3,9 @@ open ASTUtils
 module StringMap = Map.Make (String)
 module StringSet = Set.Make (String)
 
+type type_env = Term.t StringMap.t
+(** A type environment mapping variable names to their inferred types. *)
+
 (* A variable for discarding of values. *)
 let ignore_var = "_"
 let is_ignore_var id = String.equal id ignore_var
@@ -47,12 +50,9 @@ let args_of_tuple id_to_defining_node label =
   match StringMap.find label id_to_defining_node with
   | Node_TypeVariant { TypeVariant.term = Tuple { args } } -> args
   | node ->
-      let msg =
-        Format.asprintf
-          "Expected labelled tuple type variant for label %s, found %a." label
-          pp_definition_node node
-      in
-      failwith msg
+      Format.kasprintf failwith
+        "Expected labelled tuple type variant for label %s, found %a." label
+        pp_definition_node node
 
 (** [math_macro_opt_for_node node] returns the optional math macro associated
     with the definition node [node]. *)
@@ -411,10 +411,8 @@ module ResolveApplicationExpr = struct
         let resolved_sub_expr = resolve_in_context sub_expr in
         NamedExpr (resolved_sub_expr, name)
     | Relation _ | Map _ ->
-        let msg =
-          Format.asprintf "unexpected resolved expression: %a" PP.pp_expr expr
-        in
-        failwith msg
+        Format.kasprintf failwith "unexpected resolved expression: %a"
+          PP.pp_expr expr
 
   let rec resolve_rule_element id_to_defining_node rule_element =
     let open Rule in
@@ -547,11 +545,8 @@ module ResolveRules = struct
       | ( None,
           ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
           | Term.ConstantsSet _ ) ) ->
-          let msg =
-            Format.asprintf "Unexpected un-named argument term: %a"
-              PP.pp_type_term (snd opt_named_term)
-          in
-          failwith msg
+          Format.kasprintf failwith "Unexpected un-named argument term: %a"
+            PP.pp_type_term (snd opt_named_term)
     in
     let named_args = List.map arg_of input in
     Expr.Relation { name; is_operator; args = named_args }
@@ -729,6 +724,31 @@ module ExpandRules = struct
       [ { name_opt = None; judgments = [] } ]
 end
 
+let filter_rule_for_path { Relation.name; rule_opt } path_str =
+  assert (Option.is_some rule_opt);
+  let open Rule in
+  (* If path_str is empty, path should be empty as well. *)
+  let path = Str.split (Str.regexp_string ".") path_str in
+  let rec filter_rule_elements rule_elements path =
+    match (rule_elements, path) with
+    | _, [] -> rule_elements
+    | [], _ -> Error.missing_case_in_rule path_str name path_str
+    | Rule.Judgment judgment :: rest, _ ->
+        Rule.Judgment judgment :: filter_rule_elements rest path
+    | Rule.Cases cases :: rest, case_name :: path_tail ->
+        let case_elements =
+          let find_case { name } = String.equal name case_name in
+          match List.find_opt find_case cases with
+          | Some { elements } -> elements
+          | None -> Error.missing_case_in_rule case_name name path_str
+        in
+        let filtered_case_elements =
+          filter_rule_elements case_elements path_tail
+        in
+        filtered_case_elements @ filter_rule_elements rest []
+  in
+  filter_rule_elements (Option.get rule_opt) path
+
 module Check = struct
   (** [check_layout term layout] checks that the given [layout] is structurally
       consistent with the given [term]. If not, raises a [SpecError] describing
@@ -874,17 +894,38 @@ module Check = struct
   (** A module for checking that each prose template string ([prose_description]
       and [prose_application] attributes) to ensure it does not contain a
       [{var}] where [var] does not name any type term. If it does, LaTeX will
-      fail on [{var}], which would require debugging the generated code. This
-      check catches such cases and generates an easy to understand explanation.
-  *)
+      fail on [{var}], which would require debugging the generated code. *)
   module CheckProseTemplates : sig
     val check : t -> unit
     (** [check spec] checks all prose templates defined in [spec]. *)
   end = struct
-    (** [check_prose_template_for_vars template vars] checks that [template]
-        does not contain a [{var}] where [var] is not in [vars]. Otherwise,
-        raises a [SpecError] detailing the unmatched variables. *)
-    let check_prose_template_for_vars template vars =
+    let find_extra_vars_in_template template template_vars =
+      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
+      let reduce_template =
+        Str.global_replace
+          (Str.regexp
+             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
+          "" template
+      in
+      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
+      let blocks = Str.full_split template_var_regexp reduce_template in
+      let extra_vars =
+        List.fold_left
+          (fun acc_extra_vars block ->
+            match block with
+            | Str.Text _ -> acc_extra_vars
+            | Str.Delim var -> (
+                match StringSet.find_opt var template_vars with
+                | Some _ -> acc_extra_vars
+                | None -> var :: acc_extra_vars))
+          [] blocks
+      in
+      extra_vars
+
+    (** [check_extra_vars_in_prose_template template vars] checks that
+        [template] does not contain a [{var}] where [var] is not in [vars].
+        @raise [SpecError] if such an unmatched variable is found. *)
+    let check_extra_vars_in_prose_template template vars =
       let open Latex in
       (* Populate with [{var}] for each [var]. *)
       let template_vars =
@@ -894,41 +935,39 @@ module Check = struct
             StringSet.add template_var acc_map)
           StringSet.empty vars
       in
-      let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
-      (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
-      let reduce_template =
-        Str.global_replace
-          (Str.regexp
-             {|\\\([a-zA-Z]+\){[a-zA-Z0-9_']+}\|\(\\hyperlink{[a-zA-Z_\-]*}{[a-zA-Z_\-]*}\)|})
-          "" template
-      in
-      let blocks = Str.full_split template_var_regexp reduce_template in
-      let unmatched_vars =
-        List.fold_left
-          (fun acc block ->
-            match block with
-            | Str.Text _ -> acc
-            | Str.Delim var -> (
-                match StringSet.find_opt var template_vars with
-                | Some _ -> acc
-                | None -> var :: acc))
-          [] blocks
-      in
-      if Utils.list_is_empty unmatched_vars then ()
-      else Error.unmatched_variables_in_template template unmatched_vars
+      let extra_vars = find_extra_vars_in_template template template_vars in
+      if Utils.list_is_empty extra_vars then ()
+      else Error.unmatched_variables_in_template template extra_vars
 
     let check_prose_template_for_definition_node defining_node =
       let prose_description = prose_description_for_node defining_node in
       let vars = vars_of_node defining_node in
-      let () = check_prose_template_for_vars prose_description vars in
+      let () =
+        try check_extra_vars_in_prose_template prose_description vars
+        with SpecError e ->
+          stack_spec_error e
+            (Format.asprintf "While checking: %s"
+               (definition_node_name defining_node))
+      in
       match defining_node with
       | Node_Type _ | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _
         ->
           ()
-      | Node_Relation def ->
+      | Node_Relation ({ Relation.input } as def) -> (
           let prose_application = Relation.prose_application def in
-          let () = check_prose_template_for_vars prose_application vars in
-          ()
+          let input_arg_vars = vars_of_opt_named_type_terms input in
+          try
+            check_extra_vars_in_prose_template prose_application input_arg_vars
+          with SpecError e ->
+            stack_spec_error e
+              (Format.asprintf
+                 "While checking prose_application for: %s. Recall that the \
+                  variables available for use in the prose_application \
+                  template are only those of the input arguments. In this \
+                  case, those variables are: %s.\n\
+                  Hint: to refer to the outcomes you may use `|`"
+                 (definition_node_name defining_node)
+                 (String.concat ", " input_arg_vars)))
 
     let check spec =
       iter_defined_nodes spec check_prose_template_for_definition_node
@@ -1572,13 +1611,10 @@ module Check = struct
             update_use_def_with_bound_variable mode spec use_def [ body ]
               ~context_expr:expr ~bound_var:index
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unresolved application found when checking use-def in \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unresolved application found when checking use-def in \
+               expression: %a."
+              PP.pp_expr expr
       in
       let () =
         if false then Format.eprintf "Updated use-def: %a@." pp_use_def use_def
@@ -1637,10 +1673,12 @@ module Check = struct
       rule. The functions in this module assume that use-def correctness was
       already checked. *)
   module TypeInference : sig
-    val check : Relation.t -> spec_type -> ExpandRules.expanded_rule -> unit
-    (** [check relation spec expanded_rule] checks that all expressions in
-        [expanded_rule] are type-correct according to [spec], using [relation]
-        for error messages.
+    val check_and_infer :
+      Relation.t -> spec_type -> ExpandRules.expanded_rule -> type_env
+    (** [check_and_infer relation spec expanded_rule] checks that all
+        expressions in [expanded_rule] are type-correct according to [spec],
+        using [relation] for error messages, and returns the inferred type
+        environment.
 
         @raise [SpecError] if a type error is found. *)
 
@@ -1680,11 +1718,9 @@ module Check = struct
           match StringMap.find_opt id type_env with
           | Some id_type -> id_type
           | None ->
-              let msg =
-                Format.asprintf "Encountered an untyped variable '%s' in %a." id
-                  PP.pp_expr context_expr
-              in
-              failwith msg)
+              Format.kasprintf failwith
+                "Encountered an untyped variable '%s' in %a." id PP.pp_expr
+                context_expr)
 
     (** [type_term_for_field spec id] returns the type term associated with the
         record field with identifier [id]. *)
@@ -1692,9 +1728,6 @@ module Check = struct
       match defining_node_opt_for_id spec id with
       | Some (Node_RecordField { term }) -> term
       | _ -> failwith "Expected a record field definition node."
-
-    type type_env = Term.t StringMap.t
-    (** A type environment mapping variable names to their inferred types. *)
 
     (** Pretty-prints a type environment for debugging. *)
     let pp_type_env fmt type_env =
@@ -2019,11 +2052,9 @@ module Check = struct
             (not is_variadic)
             && List.compare_length_with input actual_num_of_args <> 0
           then
-            let msg =
-              Format.asprintf "operator %s expects %d arguments but received %d"
-                operator_name (List.length input) actual_num_of_args
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "operator %s expects %d arguments but received %d" operator_name
+              (List.length input) actual_num_of_args
         in
         (* For a variadic operator we want n copies of its element type,
          where n is the number of actual arguments. *)
@@ -2173,13 +2204,10 @@ module Check = struct
         | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
         | FieldAccess _ | Map _ | Transition _ | Indexed _
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unexpected expression when checking for structured assignable \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unexpected expression when checking for structured assignable \
+               expression: %a."
+              PP.pp_expr expr
 
       (** [match_structured_assignable_expr spec expr terms] attempts to find a
           type term in [terms] that matches [expr]. That is, a term that is a
@@ -2530,13 +2558,10 @@ module Check = struct
                 ~actual_type:arg_type ~formal_type:from_term ~context_expr:expr
             else (to_term, type_env)
         | UnresolvedApplication _ ->
-            let msg =
-              Format.asprintf
-                "Unresolved application found when inferring type for \
-                 expression: %a."
-                PP.pp_expr expr
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unresolved application found when inferring type for \
+               expression: %a."
+              PP.pp_expr expr
       in
       let () =
         if false then
@@ -2633,12 +2658,9 @@ module Check = struct
             in
             (Some bound_variable_name, new_env)
         | _ ->
-            let msg =
-              Format.asprintf
-                "Unexpected domain type for quantifying operator: %a."
-                PP.pp_type_term domain_term
-            in
-            failwith msg
+            Format.kasprintf failwith
+              "Unexpected domain type for quantifying operator: %a."
+              PP.pp_type_term domain_term
       else (None, type_env)
 
     (** [apply_type spec type_env expr target_type] deconstructs [expr] and
@@ -2733,11 +2755,8 @@ module Check = struct
       | Transition _, _
       | Indexed _, _
       | NamedExpr _, _ ->
-          let msg =
-            Format.asprintf "unexpected expression in apply_type: %a."
-              PP.pp_expr expr
-          in
-          failwith msg
+          Format.kasprintf failwith "unexpected expression in apply_type: %a."
+            PP.pp_expr expr
       | (Expr.Tuple _ | Expr.Record _), _ ->
           let matched_term =
             MatchAssignableExprToTerms.match_refined_type spec expr target_type
@@ -2817,7 +2836,7 @@ module Check = struct
       with SpecError err | Failure err ->
         stack_spec_error err (Format.asprintf "In judgment %a" PP.pp_expr expr)
 
-    let check relation spec expanded_rule =
+    let check_and_infer relation spec expanded_rule =
       let () =
         if false then
           Format.eprintf "@.=== Checking types for relation %s case %s ===@."
@@ -2860,9 +2879,11 @@ module Check = struct
           Error.output_type_mismatch output_judgment_type output output_expr
         else ()
       in
-      if false then
-        Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
-      else ()
+      let () =
+        if false then
+          Format.eprintf "Inferred variable types: %a@." pp_type_env type_env
+      in
+      type_env
   end
 
   (** A module for checking the correctness of the rules in all relations. The
@@ -2999,7 +3020,10 @@ module Check = struct
                   expanded_rule.judgments
               in
               let () = UseDef.check_use_def relation spec expanded_rule in
-              TypeInference.check relation spec expanded_rule
+              let _discarded_type_env =
+                TypeInference.check_and_infer relation spec expanded_rule
+              in
+              ()
             with SpecError err | Failure err ->
               stack_spec_error err
                 (Format.asprintf "In rule for relation %s, case %s"
