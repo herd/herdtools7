@@ -25,6 +25,32 @@ module Make : functor (S: SemExtra.S) -> sig
   val po_iico :  S.event_structure -> S.event_rel
 (* po union iico_data union iico_control *)
   val is_before_strict : S.event_structure -> S.event -> S.event -> bool
+
+(*
+ * Set of events ordered by  is_before_strict.
+ * Notice it is an error to add unrelated events
+ *  to this set.
+ *)
+  module
+    EvtSetByPo :
+    functor
+      (I:sig val es : S.event_structure end) ->
+    sig
+
+      (* Strict ordering, taking iico into account for effects
+         from the same instruction. *)
+      val is_before_strict : S.event -> S.event -> bool
+
+      include Set.S with type elt = S.event
+
+      (* [find_last_before set e] find maximal effect in [set] before [e] *)
+      val find_last_before : t -> S.event -> S.event option
+
+      (* [find_last_before set e] find minimal effect in [set] after [e] *)
+      val find_first_after : S.event -> t -> S.event option
+
+    end
+
 (* Fence like relations *)
   val po_fence_po : S.event_rel (* po *) -> (S.event -> bool) -> S.event_rel
 
@@ -70,7 +96,7 @@ module Make : functor (S: SemExtra.S) -> sig
    relation *)
   val make_fr : S.concrete -> S.event_rel -> S.event_rel
 
-(* Mapping from locations *)
+(* Mapping from locations, a.k.a. location maps *)
   module LocEnv : MyMap.S with type key = S.location
 
 (* Collect various events, indexed by location *)
@@ -85,7 +111,19 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_stores : S.event_structure -> S.event list LocEnv.t
   val collect_stores_non_spec : S.event_structure -> S.event list LocEnv.t
   val collect_loads_non_spec : S.event_structure -> S.event list LocEnv.t
-  val collect_atomics : S.event_structure -> S.event list LocEnv.t
+
+  (*
+   * Collect atomic effects indexed by threads and by locations.
+   * When given an event structure as argument, the function
+   * returns a pair [(maps,evts)], where:
+   *  + [maps] is a list of location maps, one per thread.
+   *    The values of this map are the atomic effects
+        of the given thread.
+   *  + [evts] is the list of spurious (atomic) effects.
+   *)
+
+  val collect_atomics :
+    S.event_structure -> (Proc.t * S.event list LocEnv.t) list * S.event list
 
 (* Partition by location *)
   val partition_events : S.event_set -> S.event_set list
