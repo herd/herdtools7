@@ -866,25 +866,16 @@ let max_set = IntSet.max_elt
   type t = state_atom list
 
   let dump_state_atom state =
-    let is_global = ( fun _ -> false ) in
+    let is_global = ( function A.Location.Location_global _ -> true | _ -> false ) in
     MiscParser.dump_state_atom
       is_global A.pp_location A.pp_initval state
 
     (* split the `state_atom list` to `state_atom list list`
        by grouping location for the same procedure *)
     let states_list states =
-      List.fold_left
-        ( fun (acc, prev_loc) (loc,v) ->
-          let new_acc = match prev_loc,loc with
-            | Some (A.Location.Location_reg (p1,_)),A.Location.Location_reg (p2,_) when p1 = p2 ->
-              begin match acc with
-                | [] -> assert false
-                | hd :: tail -> ((loc,v) :: hd) :: tail
-              end
-            | _ -> [(loc,v)] :: acc in
-          (new_acc, Some loc)
-        ) ([],None) states
-      |> fst
+      Misc.group_by_int
+      (function A.Location.Location_global _ -> None | A.Location.Location_reg (i,_) -> Some i)
+      states
 
     let dump_state states = DumpUtils.dump_state dump_state_atom (states_list states)
 
@@ -913,7 +904,7 @@ let max_set = IntSet.max_elt
           |> A.LocMap.to_seq |> List.of_seq
           (* give default 0 value *)
           |> List.map ( fun (loc, t) -> (loc, (typ_to_testtype t, A.S "0")) ) in
-      List.sort (fun (l, _) (r, _) -> A.location_compare r l) (type_inits @ extra_type_declaration)
+      List.sort (fun (l, _) (r, _) -> A.location_compare l r) (type_inits @ extra_type_declaration)
           |> List.filter_map ( fun (loc, (typ, value)) ->
               match typ,value with
               (* fix the array value from `v` -> `{v, v, ..}` *)
