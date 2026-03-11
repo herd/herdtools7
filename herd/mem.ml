@@ -2195,11 +2195,9 @@ let get_rf_value test read =
         (fun wt rf -> match wt with
         | S.Load er when E.is_mem_load er && E.is_explicit er ->
             begin match rf with
-            | S.Store ew ->
-                not (E.is_explicit ew) ||
-                begin
-                  assert (not (po_iico er ew)) ;
-                (* ok by construction, in theory *)
+            | S.Store ew when E.is_explicit ew ->
+                  not (po_iico er ew) &&
+                (* ok by construction, in theory, except for mixed mode *)
                   not
                     (E.EventSet.exists
                        (fun e ->
@@ -2207,7 +2205,7 @@ let get_rf_value test read =
                          E.is_explicit e && po_iico ew e &&
                          po_iico e er)
                        es.E.events)
-                end
+            | S.Store _ -> true
             | S.Init ->
                 not
                   (E.EventSet.exists
