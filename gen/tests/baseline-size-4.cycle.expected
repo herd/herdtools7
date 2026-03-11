@@ -7888,6 +7888,30 @@ DpAddrsW PodWWPL PosWRLA HatAP DpAddrdW Rfe
 DpAddrsW PodWWPL PosWRLA HatAP DpCtrldW Rfe
 DpAddrsW PodWWPL PosWRLA HatAP DpDatadW Rfe
 DpAddrsW PodWWPL PosWRLA HatAQ PodRWQP Rfe
+DpCtrlCseldR ISB Hat Amo.Cas DMB.STdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Cas DMB.SYdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Cas DSB.STdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Cas DSB.SYdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Cas PodWR Amo.CasPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Cas PodWR Amo.SwpPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Cas PodWR LxSxPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Cas PodWWPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Swp DMB.STdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Swp DMB.SYdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Swp DSB.STdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Swp DSB.SYdWW Rfe
+DpCtrlCseldR ISB Hat Amo.Swp PodWR Amo.CasPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Swp PodWR Amo.SwpPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Swp PodWR LxSxPL RfeLP
+DpCtrlCseldR ISB Hat Amo.Swp PodWWPL RfeLP
+DpCtrlCseldR ISB Hat LxSx DMB.STdWW Rfe
+DpCtrlCseldR ISB Hat LxSx DMB.SYdWW Rfe
+DpCtrlCseldR ISB Hat LxSx DSB.STdWW Rfe
+DpCtrlCseldR ISB Hat LxSx DSB.SYdWW Rfe
+DpCtrlCseldR ISB Hat LxSx PodWR Amo.CasPL RfeLP
+DpCtrlCseldR ISB Hat LxSx PodWR Amo.SwpPL RfeLP
+DpCtrlCseldR ISB Hat LxSx PodWR LxSxPL RfeLP
+DpCtrlCseldR ISB Hat LxSx PodWWPL RfeLP
 DpCtrlCseldW ISB Rfe DpCtrlCseldW ISB Rfe
 DpCtrlCseldW ISB Rfe DpCtrldW ISB Rfe
 DpCtrlCseldW ISB Rfe PodRR Amo.CasPL RfeLP
@@ -7936,6 +7960,15 @@ DpCtrlCseldW RfePA LxSxAL PodWWLP Rfe
 DpCtrlCseldW RfePA LxSxAP PodWW Rfe
 DpCtrlCseldW RfePA PodRWAP Rfe
 DpCtrlCseldW RfePQ PodRWQP Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAA PodRWAP Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DMB.LDdRW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DMB.SYdRW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DSB.LDdRW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DSB.SYdRW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DpAddrdW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DpCtrldW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAP DpDatadW Rfe
+DpCtrlCseldWPL ISB PosWRLA HatAQ PodRWQP Rfe
 DpCtrlCseldWPL PosWRLA HatAA PodRWAP Rfe
 DpCtrlCseldWPL PosWRLA HatAP DMB.LDdRW Rfe
 DpCtrlCseldWPL PosWRLA HatAP DMB.SYdRW Rfe
@@ -7945,6 +7978,30 @@ DpCtrlCseldWPL PosWRLA HatAP DpAddrdW Rfe
 DpCtrlCseldWPL PosWRLA HatAP DpCtrldW Rfe
 DpCtrlCseldWPL PosWRLA HatAP DpDatadW Rfe
 DpCtrlCseldWPL PosWRLA HatAQ PodRWQP Rfe
+DpCtrldR ISB Hat Amo.Cas DMB.STdWW Rfe
+DpCtrldR ISB Hat Amo.Cas DMB.SYdWW Rfe
+DpCtrldR ISB Hat Amo.Cas DSB.STdWW Rfe
+DpCtrldR ISB Hat Amo.Cas DSB.SYdWW Rfe
+DpCtrldR ISB Hat Amo.Cas PodWR Amo.CasPL RfeLP
+DpCtrldR ISB Hat Amo.Cas PodWR Amo.SwpPL RfeLP
+DpCtrldR ISB Hat Amo.Cas PodWR LxSxPL RfeLP
+DpCtrldR ISB Hat Amo.Cas PodWWPL RfeLP
+DpCtrldR ISB Hat Amo.Swp DMB.STdWW Rfe
+DpCtrldR ISB Hat Amo.Swp DMB.SYdWW Rfe
+DpCtrldR ISB Hat Amo.Swp DSB.STdWW Rfe
+DpCtrldR ISB Hat Amo.Swp DSB.SYdWW Rfe
+DpCtrldR ISB Hat Amo.Swp PodWR Amo.CasPL RfeLP
+DpCtrldR ISB Hat Amo.Swp PodWR Amo.SwpPL RfeLP
+DpCtrldR ISB Hat Amo.Swp PodWR LxSxPL RfeLP
+DpCtrldR ISB Hat Amo.Swp PodWWPL RfeLP
+DpCtrldR ISB Hat LxSx DMB.STdWW Rfe
+DpCtrldR ISB Hat LxSx DMB.SYdWW Rfe
+DpCtrldR ISB Hat LxSx DSB.STdWW Rfe
+DpCtrldR ISB Hat LxSx DSB.SYdWW Rfe
+DpCtrldR ISB Hat LxSx PodWR Amo.CasPL RfeLP
+DpCtrldR ISB Hat LxSx PodWR Amo.SwpPL RfeLP
+DpCtrldR ISB Hat LxSx PodWR LxSxPL RfeLP
+DpCtrldR ISB Hat LxSx PodWWPL RfeLP
 DpCtrldW Coe DMB.STdWWPL PosWRLA HatAP
 DpCtrldW Coe DMB.SYdWR Amo.Cas PosWRPA HatAP
 DpCtrldW Coe DMB.SYdWR Amo.Cas PosWRPQ HatQP
@@ -8068,6 +8125,15 @@ DpCtrldW RfePA LxSxAL PodWWLP Rfe
 DpCtrldW RfePA LxSxAP PodWW Rfe
 DpCtrldW RfePA PodRWAP Rfe
 DpCtrldW RfePQ PodRWQP Rfe
+DpCtrldWPL ISB PosWRLA HatAA PodRWAP Rfe
+DpCtrldWPL ISB PosWRLA HatAP DMB.LDdRW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DMB.SYdRW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DSB.LDdRW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DSB.SYdRW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DpAddrdW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DpCtrldW Rfe
+DpCtrldWPL ISB PosWRLA HatAP DpDatadW Rfe
+DpCtrldWPL ISB PosWRLA HatAQ PodRWQP Rfe
 DpCtrldWPL PodWRLA FreAP PodWRPA Amo.CasAL PosWRLP Hat
 DpCtrldWPL PodWRLA FreAP PodWRPA Amo.SwpAL PosWRLP Hat
 DpCtrldWPL PodWRLA PosRRAP Fre PodWRPA Amo.CasAL PosWRLP Hat
