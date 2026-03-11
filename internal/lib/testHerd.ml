@@ -23,6 +23,7 @@ type path = string
 type stdout_lines = string list
 type stderr_lines = string list
 type speedcheck = [`True | `False | `Fast]
+type optace = [`True | `Iico | `False]
 
 let outname l = l ^ ".out"
 and errname l = l ^ ".err"
@@ -155,7 +156,7 @@ let checkerrlog = function
     | ([],_::_)|(_::_,[]) -> true
 
 let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
-    ~checkfilter =
+    ~checkfilter ~optace =
   let timeout =
     match timeout with
     | None -> []
@@ -184,13 +185,19 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
     match checkfilter with
     | None -> []
     | Some b -> ["-checkfilter"; string_of_bool b]
+  and optaces =
+    match optace with
+    | None -> []
+    | Some `True -> ["-optace"; "true"]
+    | Some `Iico -> ["-optace"; "iico"]
+    | Some `False -> ["-optace"; "false"]
   and libdirs = ["-set-libdir"; libdir]
   and exits = ["-exit"; "true"]
   in
   List.concat
     [
       exits; libdirs; timeout; bells; cats; confs; variants; speedchecks;
-      checkfilters
+      checkfilters; optaces
     ]
 
 let apply_args herd j herd_args =
@@ -209,10 +216,10 @@ let apply_redirect_args ?(verbose=false) herd j herd_args =
   ["-com"; redirect; "-j"; Printf.sprintf "%i" j; "-comargs"; redirect_args;]
 
 let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout
-    ?speedcheck ?checkfilter litmuses =
+    ?speedcheck ?checkfilter ?optace litmuses =
   let args =
     herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
-      ~checkfilter
+      ~checkfilter ~optace
   in
   match j with
   | None ->
@@ -266,17 +273,17 @@ let run_herd_args ?(verbose=false) herd args litmus =
   do_run_herd_args verbose herd args [litmus]
 
 let run_herd ?(verbose=false) ~bell ~cat ~conf ~variants ~libdir herd ?j
-    ?timeout ?speedcheck ?checkfilter litmuses =
+    ?timeout ?speedcheck ?checkfilter ?optace litmuses =
   let args =
     herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
-      ~checkfilter
+      ~checkfilter ~optace
   in
   do_run_herd_args verbose herd args ?j litmuses
 
 let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litmuses =
   let args =
     herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
-      ~timeout:None ~checkfilter:None ~speedcheck:None
+      ~timeout:None ~checkfilter:None ~speedcheck:None ~optace:None
   in
   let litmuses = Base.Iter.of_list litmuses in
   let j = max 2 j in

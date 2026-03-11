@@ -82,6 +82,7 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
       ~variants:flags.variants
       ~libdir:flags.libdir
       ~speedcheck:(if flags.fast then `Fast else `False)
+      ~optace:(if flags.fast then `True else `False)
       flags.herd ?j ?timeout
   in
   match cmd litmuses with

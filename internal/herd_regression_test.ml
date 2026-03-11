@@ -118,7 +118,7 @@ let show_tests_par j flags =
       ~conf:flags.conf
       ~variants:flags.variants
       ~libdir:flags.libdir
-      ~timeout:None ~checkfilter:None ~speedcheck:None in
+      ~timeout:None ~checkfilter:None ~speedcheck:None ~optace:None in
   let herd_test =
     Filename.concat (Filename.dirname Sys.argv.(0)) "herd_test.exe" in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
@@ -162,7 +162,7 @@ let do_run_test_par wrapper j flags =
   and args =
     TestHerd.herd_args ~bell:None ~cat:None ~conf:flags.conf
       ~variants:flags.variants ~libdir:flags.libdir ~timeout:None
-      ~speedcheck:None ~checkfilter:None
+      ~speedcheck:None ~checkfilter:None ~optace:None
   in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
   let args =

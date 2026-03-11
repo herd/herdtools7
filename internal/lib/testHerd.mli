@@ -24,6 +24,8 @@ type stderr_lines = string list
 (** Type for speedcheck argument *)
 type speedcheck = [`True | `False | `Fast]
 
+type optace = [`True | `Iico | `False]
+
 (** Systematic file names for standard output and standard error , from test file name *)
 val outname : string -> string
 val errname : string -> string
@@ -45,6 +47,7 @@ val herd_args :
   timeout  : float option ->
   speedcheck : speedcheck option ->
   checkfilter : bool option ->
+  optace   : optace option ->
   string list
 
 (** [apply_args herd j args] Format mapply command-line options as a list,
@@ -65,7 +68,11 @@ val herd_command :
   variants : string list ->
   libdir   : path ->
   path ->
-  ?j:int -> ?timeout:float -> ?speedcheck:speedcheck -> ?checkfilter:bool ->
+  ?j       : int ->
+  ?timeout : float ->
+  ?speedcheck : speedcheck ->
+  ?checkfilter : bool ->
+  ?optace  : optace ->
   path list -> string
 
 (** [check_tags line] Checks that a line is a verbose diagnostic. *)
@@ -85,7 +92,11 @@ val run_herd :
   variants : string list ->
   libdir   : path ->
   path ->
-  ?j:int -> ?timeout:float -> ?speedcheck:speedcheck -> ?checkfilter:bool ->
+  ?j       : int ->
+  ?timeout : float ->
+  ?speedcheck : speedcheck ->
+  ?checkfilter : bool ->
+  ?optace  : optace ->
   path list -> int * string list * string list
 
 (** [run_herd_args herd args litmus] similar in functionality  to
