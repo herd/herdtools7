@@ -6,11 +6,10 @@
  * If you have comments on the content of this file, please send an email to
  * memory-model@arm.com
  * For a textual version of the model, see section B2.3 of the Armv8 ARM:
- *   https://developer.arm.com/docs/ddi0487/
+ * https://developer.arm.com/documentation/ddi0487/
  *
  * Authors:
- * Jade Alglave <jade.alglave@arm.com>
- * Artem Khyzha <artem.khyzha@arm.com>
+ * Nikos Nikoleris <nikos.nikoleris@arm.com>
  *
  * Copyright (C) 2016-present, Arm Ltd.
  * All rights reserved.
@@ -41,57 +40,40 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
-catdep (* This option tells that the cat file computes dependencies *)
 
-include "aarch64util.cat"
+let TTD = PTE
 
-(* Local register read successor *)
-let lrrs =
-  [Wreg]; (po & same-gpr & ~(intervening(Wreg,(po & same-gpr)))); [Rreg]
+(*** Device Memory ***)
 
-(* Local memory write successor *)
-let lmws =
- [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
- | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
+(* Device Memory Types *)
+let Device-GRE = try PTEDevice-GRE with emptyset
+let Device-nGRE = try PTEDevice-nGRE with emptyset
+let Device-nGnRE = try PTEDevice-nGnRE with emptyset
+let Device-nGnRnE = try PTEDevice-nGnRnE with emptyset
+let Device = Device-GRE | Device-nGRE | Device-nGnRE | Device-nGnRnE
 
-(* Local memory read successor *)
-let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
+(* Device memory cannot have more than one Device subtypes *)
+assert empty Device-GRE & Device-nGRE & Device-nGnRE & Device-nGnRnE as Conflicting-Device-types
 
-(* Dependency through registers and memory *)
-let rec dtrm =
-  [~range(lxsx)]; lrrs
-  | lmrs
-  | iico_data
-  | dtrm; dtrm
+(*** Normal Memory ***)
 
-(** Data, Address and Control dependencies *)
+let NSH = try PTENSH with emptyset
+let ISH = try PTEISH with emptyset
+let OSH = try PTEOSH with emptyset
+let Shareability = NSH | ISH | OSH
 
-let data = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
-let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
-let ctrl = [Exp & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
+let iWB = try PTEiWB with emptyset
+let iWT = try PTEiWT with emptyset
+let iNC = try PTEiNC with emptyset
+let InnerCacheability = iWB | iWT | iNC
 
-(** Pick dependencies *)
-let rec pick-dtrm =
-  dtrm
-  | iico_ctrl
-  | pick-dtrm; pick-dtrm
+let oWB = try PTEoWB with emptyset
+let oWT = try PTEoWT with emptyset
+let oNC = try PTEoNC with emptyset
+let OuterCacheability = oWB | oWT | oNC
 
-let pick-basic-dep =
-   [Exp & R | Rreg];  pick-dtrm?
+let TaggedNormal = try PTETaggedNormal with emptyset
+let Normal = try PTENormal with emptyset
 
-let pick-addr-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
-let pick-data-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
-let pick-ctrl-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data; [BCC]; po
-
-let pick-dep =
-   ( pick-basic-dep
-   | pick-addr-dep
-   | pick-data-dep
-   | pick-ctrl-dep
-   ) & ~same-instance
-
-include "aarch64show.cat"
-
+(*** Common attributes ***)
+let PTEXS = try PTEXS with emptyset
