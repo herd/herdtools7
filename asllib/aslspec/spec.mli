@@ -7,8 +7,8 @@ open AST
 val ignore_var : string
 
 (** Wraps AST nodes that define identifiers that may appear in type terms and
-    expression terms: types, constants, relations, labels, labelled tuples, and
-    labelled records. *)
+    expression terms: types, constants, relations, type variants, and record
+    fields. *)
 type definition_node =
   | Node_Type of Type.t
   | Node_Relation of Relation.t
@@ -23,8 +23,9 @@ val math_macro_opt_for_node : definition_node -> string option
 (** Utility functions for handling layouts. *)
 module Layout : sig
   val math_layout_for_node : definition_node -> layout
-  (** [math_layout_for_node node] returns the math layout for [node], or a
-      default layout based on its type term if no math layout is defined. *)
+  (** [math_layout_for_node node] returns the math layout for [node]. If none is
+      defined, a default layout is inferred for relation nodes, type variants,
+      and record fields; otherwise [Unspecified] is returned. *)
 
   val for_type_term : Term.t -> layout
   (** [for_type_term term] returns a full default layout for [term]. That is, a
@@ -46,7 +47,7 @@ val elements : t -> elem list
 
 val defining_node_for_id : t -> string -> definition_node
 (** [defining_node_for_id spec id] returns the defining node for [id] in [spec].
-    Raises [SpecError] if [id] is not defined. *)
+    Assumes that [id] is defined in [spec]. *)
 
 val defining_node_opt_for_id : t -> string -> definition_node option
 (** [defining_node_opt_for_id spec id] returns [Some node] if [id] is defined in
@@ -99,9 +100,8 @@ val filter_rule_for_path : Relation.t -> string -> Rule.t
 (** [filter_rule_for_path relation path_str] filters the rule given for
     [relation] to only include the cases along the path specified by [path_str].
     The path is a dot-separated, where each name corresponds to the name of the
-    case to take at each level of nesting. For example, "name1.name2" means ---
-    take the first case at the top level, and then the second case within that
-    case.
+    case to take at each level of nesting. For example, "name1.name2" means:
+    take case [name1] at the top level, and then case [name2] within it.
 
     @raise [SpecError]
       if [path_str] is not a valid path through the cases of the rule for

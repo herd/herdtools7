@@ -1,4 +1,4 @@
-exception ParseError of string
+exception ParseError of { loc : AST.source_location; msg : string }
 
 (** [pp_position] pretty-prints the position of the lexeme in the source file.
 *)
@@ -17,17 +17,27 @@ let parse_spec_from_lexbuf lexbuf filename =
       { pos_fname = filename; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 }
   in
   try SpecParser.spec SpecLexer.token lexbuf with
-  | AST.SpecError msg ->
-      let msg = Format.asprintf "%s around %a" msg pp_position lexbuf in
-      raise (ParseError msg)
+  | AST.SpecError { loc; msg } -> raise (ParseError { loc; msg })
   | SpecParser.Error ->
       let msg = Format.asprintf "Syntax error at %a" pp_position lexbuf in
-      raise (ParseError msg)
+      let loc =
+        {
+          AST.start_pos = lexbuf.Lexing.lex_start_p;
+          end_pos = lexbuf.Lexing.lex_curr_p;
+        }
+      in
+      raise (ParseError { loc; msg })
   | SpecLexer.Error msg ->
       let msg =
         Format.asprintf "Lexical error at %a: %s" pp_position lexbuf msg
       in
-      raise (ParseError msg)
+      let loc =
+        {
+          AST.start_pos = lexbuf.Lexing.lex_start_p;
+          end_pos = lexbuf.Lexing.lex_curr_p;
+        }
+      in
+      raise (ParseError { loc; msg })
 
 let parse_spec_from_file filename =
   let file_channel = open_in_bin filename in
