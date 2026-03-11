@@ -41,7 +41,7 @@
   $ aslspec relations.spec --pp > tmp1.spec; aslspec tmp1.spec --pp > tmp2.spec; diff --ignore-all-space tmp1.spec tmp2.spec
 
   $ aslspec unmatched_prose_var.spec
-  Specification Error: The prose template 'transforms {a} to {b}' contains the following unmatched variables: {b}
+  Specification Error: The prose template "transforms {a} to {b}" contains the following unmatched variables: {b}
   While checking: relation transform_description_unmatched_b(a: A) -> A
                   {
                      prose_description = "transforms {a} to {b}",
@@ -52,34 +52,33 @@
 # Check that all type terms are well-formed
   $ aslspec instantiation_expansion.spec
   $ aslspec instantiation_labelled_tuple2.bad
-  Specification Error: The type term `L(O, A, B)` cannot be instantiated since it has 3 type terms and `L` requires 2 type terms
-  While checking: B
+  Specification Error: Undefined reference to xL in B
   [1]
   $ aslspec instantiation_labelled_tuple.bad
-  Specification Error: The type term `A(Int)` cannot be instantiated since 'A' is not a labelled tuple type
+  Specification Error: instantiation_labelled_tuple.bad:6:17: The type term `A(Int)` cannot be instantiated since A is not a labelled tuple type
   While checking: A
   [1]
   $ aslspec instantiation_function.bad
-  Specification Error: Unable to determine that `fun O -> P` is subsumed by `fun P -> P`
+  Specification Error: instantiation_function.bad:9:25: Unable to determine that `fun O -> P` is subsumed by `fun P -> P`
   While checking: Incorrect
   [1]
   $ aslspec instantiation_constant.bad
-  Specification Error: Int is used as a constant even though it is not defined as one
+  Specification Error: instantiation_constant.bad:3:18: Int is used as a constant even though it is not defined as one
   While checking: B
   [1]
   $ aslspec instantiation_record.bad
-  Specification Error: The type term `A[f: Int]` cannot be instantiated since 'A' is not a labelled record type
+  Specification Error: instantiation_record.bad:6:17: The type term `A[f: Int]` cannot be instantiated since A is not a labelled record type
   While checking: A
   [1]
   $ aslspec instantiation_label.bad
-  Specification Error: The type term `B` cannot be instantiated since 'B' is not a type
+  Specification Error: instantiation_label.bad:7:8: The type term `B` cannot be instantiated since B is not a type
   While checking: A
   [1]
   $ aslspec instantiation_recursion.bad
-  Specification Error: Unable to determine that `B` is subsumed by `A`
+  Specification Error: instantiation_recursion.bad:9:11: Unable to determine that `B` is subsumed by `A`
   While checking: B
   [1]
   $ aslspec relation_unnamed_arguments.bad
-  Specification Error: The term Num in relation 'unnamed_arg_has_rule' does not provide a name for at least one of its sub-terms.
+  Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.
   [1]
   $ aslspec constants.spec

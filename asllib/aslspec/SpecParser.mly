@@ -42,6 +42,9 @@ let check_balanced_braces s =
   if not (scan 0 0) then
     let msg = Format.sprintf "unbalanced braces in string: %s" s in
     raise (SpecError msg)
+
+(** Converts Menhir's [$sloc] pair into a [source_location] record. *)
+let loc (start_pos, end_pos) = { AST.start_pos; end_pos }
 %}
 
 %type <AST.t> spec
@@ -167,7 +170,7 @@ let some(x) == ~ = x ; <Some>
 let terminated_by(x, y) == terminated(y, x)
 
 (* Position annotation *)
-let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos } }
+let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos; version } }
 
 (* ------------------------------------------------------------------------- *)
 (* Parameterized lists *)
@@ -225,7 +228,7 @@ let type_kind := TYPEDEF; { Term.TypeKind_Generic }
 let type_definition :=
     | ~=type_kind; type_name=IDENTIFIER; ~=type_attributes; ~=type_variants_with_attributes;
     {   check_definition_name type_name;
-        Elem_Type (Type.make type_kind type_name type_variants_with_attributes type_attributes) }
+        Elem_Type (Type.make (loc $loc) type_kind type_name type_variants_with_attributes type_attributes) }
     | type_kind; type_name=IDENTIFIER; type_attributes; list1(type_variant_with_attributes);
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError msg) }
@@ -234,13 +237,13 @@ let relation_definition :=
     ~=relation_category; ~=relation_property; name=IDENTIFIER; input=plist0(opt_named_type_term); ARROW; output=type_variants;
     ~=relation_attributes; ~=opt_relation_rule;
     {   check_definition_name name;
-        Elem_Relation (Relation.make name relation_property relation_category input output relation_attributes opt_relation_rule) }
+        Elem_Relation (Relation.make (loc $loc) name relation_property relation_category input output relation_attributes opt_relation_rule) }
 
 let operator_definition :=
     ~=is_variadic; OPERATOR; name=IDENTIFIER; ~=parameters; input=plist0(opt_named_type_term); ARROW; output=type_term;
     ~=operator_attributes;
     {   check_definition_name name;
-        Elem_Relation (Relation.make_operator name parameters input output is_variadic operator_attributes) }
+        Elem_Relation (Relation.make_operator (loc $loc) name parameters input output is_variadic operator_attributes) }
 
 let is_variadic :=
     | VARIADIC; { true }
@@ -252,7 +255,7 @@ let parameters :=
 
 let constant_definition := CONSTANT; name=IDENTIFIER; ~=opt_type; att=type_attributes; ~=opt_value_and_attributes;
     {   check_definition_name name;
-        Elem_Constant (Constant.make name opt_type opt_value_and_attributes att) }
+        Elem_Constant (Constant.make (loc $loc) name opt_type opt_value_and_attributes att) }
 
 let opt_type :=
     | { None }
@@ -347,22 +350,22 @@ let type_variants :=
 let type_variant := VDASH; term=type_term; { term }
 
 let type_term_with_attributes := ~=type_term; ~=type_attributes;
-    { TypeVariant.make TypeKind_Generic type_term type_attributes }
+    { TypeVariant.make (loc $sloc) TypeKind_Generic type_term type_attributes }
 
 let type_term :=
-    | name=IDENTIFIER; { check_definition_name name; Label name }
-    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { Term.make_type_operation op opt_named_type_term }
-    | LPAR; args=tclist1(opt_named_type_term); RPAR; { Tuple {label_opt = None; args} }
+    | name=IDENTIFIER; { check_definition_name name; Term.make_label (loc $sloc) name }
+    | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { Term.make_type_operation (loc $sloc) op opt_named_type_term }
+    | LPAR; args=tclist1(opt_named_type_term); RPAR; { Term.make_tuple (loc $sloc) args }
     | label=IDENTIFIER; LPAR; args=tclist1(opt_named_type_term); RPAR;
     {   check_definition_name label;
-        Tuple {label_opt = Some label; args} }
-    | LBRACKET; fields=tclist1(record_field); RBRACKET; { Term.make_record fields }
+        Term.make_labelled_tuple (loc $sloc) label args }
+    | LBRACKET; fields=tclist1(record_field); RBRACKET; { Term.make_record (loc $sloc) fields }
     | label=IDENTIFIER; LBRACKET; fields=tclist1(record_field); RBRACKET;
     {   check_definition_name label;
-        Term.make_labelled_record label fields }
-    | CONSTANTS_SET; LPAR; constants=tclist1(IDENTIFIER); RPAR; { ConstantsSet constants }
-    | FUN; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = true}}
-    | PARTIAL; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {from_type; to_type; total = false}}
+        Term.make_labelled_record (loc $sloc) label fields }
+    | CONSTANTS_SET; LPAR; labels=tclist1(IDENTIFIER); RPAR; { ConstantsSet {loc=(loc $sloc); labels} }
+    | FUN; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {loc=(loc $sloc); from_type; to_type; total = true}}
+    | PARTIAL; from_type=opt_named_type_term; ARROW; to_type=opt_named_type_term; { Function {loc=(loc $sloc); from_type; to_type; total = false}}
 
 let type_operator :=
     | POWERSET; { Powerset }
@@ -379,7 +382,7 @@ let opt_named_type_term ==
     | ~=type_term; { (None, type_term) }
 
 let record_field := ~=named_type_term; ~=type_attributes;
-    { Term.make_record_field named_type_term type_attributes }
+    { Term.make_record_field (loc $sloc) named_type_term type_attributes }
 
 let math_layout :=
     | IDENTIFIER; { Unspecified }
@@ -391,7 +394,7 @@ let math_layout :=
 let render_types :=
     RENDER; name=IDENTIFIER; ~=render_types_attributes; EQ; pointers=clist1(type_subset_pointer);
     {   check_definition_name name;
-        Elem_RenderTypes (TypesRender.make name pointers render_types_attributes) }
+        Elem_RenderTypes (TypesRender.make (loc $sloc) name pointers render_types_attributes) }
 
 let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; MINUS; RPAR; { (type_name, []) }
@@ -427,35 +430,35 @@ let judgment :=
 
 let index_judgement :=
     | INDEX; LPAR; index=IDENTIFIER; COMMA; list_var=IDENTIFIER; COLON; body=transition_expr; RPAR;
-      { Expr.Indexed { index; list_var; body } }
+      { Expr.Indexed { loc=(loc $sloc); index; list_var; body } }
 
-let var_expr := id=IDENTIFIER; { Expr.make_var id }
+let var_expr := id=IDENTIFIER; { Expr.make_var (loc $sloc) id }
 
 let expr :=
     | var_expr
     | args=plist1(expr);
-      { Expr.make_tuple args }
+      { Expr.make_tuple (loc $sloc) args }
     | lhs=expr; args=plist0(expr);
-      { Expr.make_application lhs args }
+      { Expr.make_application (loc $sloc) lhs args }
     | base=expr; DOT; field=IDENTIFIER;
-      { Expr.FieldAccess { base; field } }
+      { Expr.FieldAccess { loc=(loc $sloc); base; field } }
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
-      { Expr.make_list_index list_var index }
+      { Expr.make_list_index (loc $sloc) list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
-      { Expr.make_record label_opt fields }
+      { Expr.make_record (loc $sloc) label_opt fields }
     | base=expr; LPAR; fields=tclist1(field_and_value); RPAR;
-      { Expr.make_record_update base fields }
+      { Expr.make_record_update (loc $sloc) base fields }
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
-      { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
+      { Expr.make_operator_application (loc $sloc) infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
-      { Expr.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
+      { Expr.make_operator_application (loc $sloc) "if_then_else" [cond; then_branch; else_branch] }
     | cond_expr
 
 let cond_expr :=
     | COND; LPAR; cases=tclist1(cond_case); RPAR;
-      { Expr.make_operator_application "cond_op" cases }
+      { Expr.make_operator_application (loc $sloc) "cond_op" cases }
 let cond_case :=
-    | condition=expr; COLON; result=expr; { Expr.make_operator_application "cond_case" [condition; result] }
+    | condition=expr; COLON; result=expr; { Expr.make_operator_application (loc $sloc) "cond_case" [condition; result] }
 
 let maybe_output_expr ==
     | { false }
@@ -464,25 +467,25 @@ let maybe_output_expr ==
 let judgment_expr :=
     | transition_expr
     | LPAR; ~=transition_expr; RPAR;
-      { Expr.make_tuple [ transition_expr ] }
+      { Expr.make_tuple (loc $sloc) [ transition_expr ] }
     | index_judgement
     | LPAR; ~=index_judgement; RPAR;
-      { Expr.make_tuple [ index_judgement ] }
+      { Expr.make_tuple (loc $sloc) [ index_judgement ] }
 
 let transition_expr :=
     | lhs=expr; ARROW; rhs=transition_output_expr; ~=short_circuit;
-      { Expr.Transition { lhs; rhs; short_circuit } }
+      { Expr.Transition { loc=(loc $sloc); lhs; rhs; short_circuit } }
 
 let transition_output_expr :=
     | var_expr
     | args=plist1(transition_output_expr);
-      { Expr.make_tuple args }
-    | label=IDENTIFIER; args=plist1(transition_output_expr);
-      { Expr.make_application (Expr.make_var label) args }
+      { Expr.make_tuple (loc $sloc) args }
+    | label_as_var=var_expr; args=plist1(transition_output_expr);
+      { Expr.make_application (loc $sloc) label_as_var args }
     | list_var=IDENTIFIER; LBRACKET; index=transition_output_expr; RBRACKET;
-      { Expr.make_list_index list_var index }
+      { Expr.make_list_index (loc $sloc) list_var index }
     | lhs=transition_output_expr; ~=infix_expr_operator; rhs=transition_output_expr;
-      { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
+      { Expr.make_operator_application (loc $sloc) infix_expr_operator [lhs; rhs] }
 
 let short_circuit :=
     | { None } (* Short-circuiting expressions will be inserted automatically. *)
@@ -492,10 +495,9 @@ let short_circuit :=
       { Some alternatives }
 
 let short_circuit_expr :=
-    | id=IDENTIFIER;
-      { Expr.make_var id }
-    | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
-      { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
+    | var_expr
+    | lhs=var_expr; args=plist0(var_expr);
+      { Expr.make_application (loc $sloc) lhs args }
 
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }
@@ -528,9 +530,9 @@ let judgment_attribute :=
 
 let render_rule :=
   | RENDER; RULE; name=IDENTIFIER; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);
-    { check_definition_name name; Elem_RenderRule (RuleRender.make ~name ~relation_name rule_name) }
+    { check_definition_name name; Elem_RenderRule (RuleRender.make (loc $sloc) ~name ~relation_name rule_name) }
   | RENDER; RULE; name=IDENTIFIER;
-    { check_definition_name name; Elem_RenderRule (RuleRender.make ~name ~relation_name:name []) }
+    { check_definition_name name; Elem_RenderRule (RuleRender.make (loc $sloc) ~name ~relation_name:name []) }
     (** Stands for the entire rule for the given relation. *)
 
 let rule_name :=

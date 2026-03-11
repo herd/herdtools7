@@ -22,3 +22,9 @@ val is_operator : elem -> bool
 
 val sort_record_fields : Term.record_field list -> Term.record_field list
 (** [sort_record_fields fields] returns [fields] sorted by field name. *)
+
+val loc_of_expr : Expr.t -> source_location
+(** [loc_of_expr expr] returns the source location of [expr]. *)
+
+val loc_of_term : Term.t -> source_location
+(** [loc_of_term term] returns the source location of [term]. *)
