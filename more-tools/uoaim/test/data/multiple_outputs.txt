@@ -1,0 +1,8 @@
+There is a relation from an Effect E1 to an Effect E2 if and only if all of the following apply:
+* E1 appears in program order before E3.
+* E3 appears in program order before E2.
+* One of the following applies:
+** All of the following apply:
+*** There is an address dependency from E1 to E3.
+*** E3 is Coherence-before E2.
+*** E1 Reads-from E2.
