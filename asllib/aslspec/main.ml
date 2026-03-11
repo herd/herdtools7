@@ -112,6 +112,16 @@ let execute config =
   in
   ()
 
+let loc_to_gnu_error_format loc =
+  let open Lexing in
+  if loc == AST.missing_location then "Unknown location"
+  else
+    let start_pos = loc.AST.start_pos in
+    let filename = start_pos.pos_fname in
+    let line = start_pos.pos_lnum in
+    let column = start_pos.pos_cnum - start_pos.pos_bol + 1 in
+    Format.sprintf "%s:%d:%d" filename line column
+
 (** Main entry point. Runs aslspec for the command-line options. *)
 let () =
   let config = CLI.parse_args () in
@@ -127,8 +137,16 @@ let () =
       let error_type, msg =
         match error with
         | CLI.CLIError msg -> ("Usage Error", msg)
-        | Parsing.ParseError msg -> ("Syntax Error", msg)
-        | AST.SpecError msg -> ("Specification Error", msg)
+        | Parsing.ParseError { loc; msg } ->
+            let msg =
+              Format.sprintf "%s: %s" (loc_to_gnu_error_format loc) msg
+            in
+            ("Syntax Error", msg)
+        | AST.SpecError { loc; msg } ->
+            let msg =
+              Format.sprintf "%s: %s" (loc_to_gnu_error_format loc) msg
+            in
+            ("Specification Error", msg)
         | _ -> raise error
       in
       Format.eprintf "%s%s: %s%s\n" TextColor.red error_type msg
