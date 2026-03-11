@@ -1,0 +1,16 @@
+AArch64 LB+cachesync-ttdcheck+dsb.ish-isb-1
+Variant=ifetch
+{
+0:X0=NOP; 0:X1=P1:Lself00;
+0:X9=y; 1:X6=(oa:PA(x),valid:1); 1:X7=PTE(x);
+PTE(x)=(oa:PA(x),valid:0);
+}
+ P0          | P1           ;
+ STR W0,[X1] |  STR X6,[X7] ;
+ DC CVAU,X1  |  DSB ISH     ;
+ DSB ISH     |  ISB         ;
+ IC IVAU,X1  | Lself00:     ;
+ DSB ISH     |  B L01       ;
+ L0:         |  MOV W2,#1   ;
+ STR WZR,[X9]| L01:         ;
+exists (Fault(P0:L0) /\ 1:X2=0)
