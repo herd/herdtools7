@@ -988,8 +988,15 @@ let pp_rmw compat = function
   | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
   | StOp op -> sprintf "Amo.St%s" (pp_aop op)
   | AllAmo -> sprintf "Amo"
-  (* `Amo` that gives distinct values,
-     therefore safe to generate tests.*)
+  (* Unfold to `Amo.*` that gives distinct values.
+     That is, (1) given an initial value `a`, (2) given the current
+     operand `b` via the picking strategy, i.e., a linear counter
+     from 1,2 and so on, the result value of `a Amo.* b` should be
+     distinct from the initial value `a`. Hence we can distinct
+     if `Amo.*` takes effects by checking the value, therefore safe
+     to be used to generate tests.
+     An counter example here is `LdOp A_CLR`, or `Amo.LdClr`, where
+     `0 Amo.LdClr 1` = `0`. *)
   | SafeAmo -> sprintf "Amo.Safe"
 
 let is_one_instruction = function
