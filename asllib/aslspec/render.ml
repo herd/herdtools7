@@ -795,8 +795,7 @@ module Make (S : SPEC_VALUE) = struct
               (* The following is a small optimization to compound tuples,
                  aiming to avoid nested "the pair consisting of: ..."
                  as much as possible. *)
-              let exists_compound_arg = List.exists is_compound_expr args in
-              if exists_compound_arg then
+              if is_compound_expr elem1 || is_compound_expr elem2 then
                 Format.asprintf "the pair consisting of: %s"
                   (prose_numbered_list args_prose)
               else
@@ -924,7 +923,7 @@ module Make (S : SPEC_VALUE) = struct
           Format.asprintf "%s %s%s" lhs_prose rhs_prose short_circuit_prose
       | Indexed { index; list_var; body } ->
           let body_prose = expr_to_prose body in
-          Format.asprintf "for each %s in %s: %s" (var_to_prose index)
+          Format.asprintf "for each index %s into %s: %s" (var_to_prose index)
             (var_to_prose list_var) body_prose
       | Transition _ | UnresolvedApplication _ -> assert false
 
@@ -1057,7 +1056,7 @@ module Make (S : SPEC_VALUE) = struct
       match elements with
       | [ (Judgment _ as element) ] when Utils.string_is_empty case_name ->
           (* An optimization for axioms. *)
-          fprintf fmt {|%a|} pp_prose_rule_element element
+          pp_prose_rule_element fmt element
       | [ (Judgment _ as element) ] ->
           (* An optimization for cases with a single judgment. *)
           fprintf fmt {|\SingleCase{%s} %a|} case_name_for_latex

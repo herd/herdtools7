@@ -60,14 +60,12 @@ typedef Z
 
 operator is_integer(q: Q) -> Bool
 {
-  "{q} is an integer",
   math_macro = \isintegerop,
   prose_application = "{q} is an integer",
 };
 
 operator is_not_integer(q: Q) -> Bool
 {
-  "{q} is not an integer",
   math_macro = \isnotintegerop,
   prose_application = "{q} is not an integer",
 };
@@ -117,7 +115,7 @@ operator not_equal[T](a: T, b: T) -> Bool
 operator if_then_else[T](c: Bool, r_true: T, r_false: T) -> T
 {
   math_macro = \ifthenelseop,
-  prose_application = "if {c} then {r_true} else {r_false}"
+  prose_application = "{r_true} if {c}, otherwise {r_false}"
 };
 
 variadic operator and(conjuncts: list1(Bool)) -> Bool

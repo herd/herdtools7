@@ -33,7 +33,6 @@ operator bindings_to_map[A,B](bindings: list0((A,B))) -> (partial A -> B)
 
 operator restrict_map[A,B](f: partial A -> B, dom: powerset(A)) -> (partial A -> B)
 {
-  "the restriction of {f} to {dom}",
   math_macro = \restrictmapop,
   custom = true,
   prose_application = "the \hyperlink{def-restrictfunc}{restriction} of {f} to {dom}",
@@ -265,8 +264,7 @@ operator range_list(from: Z, to: Z) -> list1(Z)
 {
   math_macro = \rangelistop,
   custom = true,
-  prose_application = "the list of values from {from} up to {to}, inclusive, if {from} is less than {to},
-   and the list of values from {to} down to {from}, inclusive, otherwise",
+  prose_application = "the \hyperlink{def-range}{range} of integers from {from} to {to}",
 };
 
 operator list_len[T](l: list0(T)) -> N
@@ -540,9 +538,9 @@ operator fraction(a: Z, b: Z) -> Q
   prose_application = "the fraction for {a}/{b}",
 };
 
+// Casts the argument to a positive natural number.
 operator n_to_n_pos(n: N) -> N_pos
 {
-  "casts {n} to a positive natural number",
   math_macro = \identityop,
   typecast = true,
   prose_application = "{n}",
@@ -563,16 +561,14 @@ operator abs_value(z: Z) -> N
 
 operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
 {
-  "concatenates {prefix} and the string for {n} to yield {result}",
   math_macro = \numberedidentifierop,
   associative = true,
   custom = true,
-  prose_application = "the identifier ``{prefix}[{n}]'' where [{n}] is the string representation of the number given by {n}",
+  prose_application = "the identifier obtained by appending to {prefix} the string representation of the number given by {n}",
 };
 
 operator negate_bit(b: Bit) -> Bit
 {
-  "negation of {b}",
   math_macro = \negatebit,
   custom = true,
   prose_application = "the bit-negation of {b}",
@@ -588,6 +584,14 @@ operator or_bit(a: Bit, b: Bit) -> Bit
 {
   math_macro = \lor,
   prose_application = "the bit-level disjunction of {a} and {b}",
+};
+
+// Same as num_negate, except for the prose, which is intended
+// for compound sub-expressions.
+operator num_negate_compound[NumType](x: NumType) -> NumType
+{
+  math_macro = \numnegate,
+  prose_application = "the negation of the value given by {x}",
 };
 
 ////////////////////////////////////////
@@ -1623,7 +1627,6 @@ typedef type_error
 
 operator TypeErrorConfig() -> TypeError(type_error_code)
 {
-  "a \typingerrorterm{} configuration",
   math_macro = \TypeErrorConfig,
 };
 
@@ -1655,9 +1658,9 @@ render type_error_and_codes = type_error(-), type_error_code(-);
 // Side Effects Types
 
 typedef TPurity { "\purity" } =
-    | SE_Pure { "the purity descriptor for the evaluation of a \pureterm{} construct" }
-    | SE_Readonly { "the purity descriptor for the evaluation of a \readonlyterm{} construct" }
-    | SE_Impure { "the purity descriptor for the evaluation of a construct that is neither \pureterm{} nor \readonlyterm{}" }
+    | SE_Pure { "the \purity{} descriptor for evaluating a \pureterm{} construct" }
+    | SE_Readonly { "the \purity{} descriptor for evaluating a \readonlyterm{} construct" }
+    | SE_Impure { "the \purity{} descriptor for evaluating a construct that is neither \pureterm{} nor \readonlyterm{}" }
 ;
 
 operator ge_pure(a: TPurity, b: TPurity) -> Bool
@@ -1668,9 +1671,9 @@ operator ge_pure(a: TPurity, b: TPurity) -> Bool
 
 typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
     | LocalEffect(purity: TPurity)
-    { "the local \sideeffectdescriptorterm{} with \purity{} {purity}" }
+    { "the \LocalEffectTerm{} with {purity}" }
     | GlobalEffect(purity: TPurity)
-    { "the global \sideeffectdescriptorterm{} with \purity{} {purity}" }
+    { "the \GlobalEffectTerm{} with {purity}" }
     | Immutability(immutable: Bool)
     { "the \sideeffectdescriptorterm{} for a construct that accesses storage elements whose immutability is given by {immutable}" }
 ;
@@ -1943,23 +1946,23 @@ typedef TNormal
     "normal execution result",
 } =
     | ResultExpr(value_and_graph: (native_value, XGraphs), environment: envs)
-    { "the \hyperlink{type-ResultExpr}{result configuration} for {value_and_graph}, and the \environmentterm{} {environment}" }
+    { "the \hyperlink{type-ResultExpr}{result configuration} for {value_and_graph} and {environment}" }
     | ResultExprSEF(value: native_value, graph: XGraphs)
-    { "the \hyperlink{type-ResultExprSEF}{side-effect-free expression result configuration} with {value} and {graph}" }
+    { "the \hyperlink{type-ResultExprSEF}{side-effect-free expression result configuration} for {value} and {graph}" }
     | ResultLexpr(graph: XGraphs, environment: envs)
-    { "the \hyperlink{type-ResultLexpr}{assignable expression result configuration} with {graph} and {environment}" }
+    { "the \hyperlink{type-ResultLexpr}{assignable expression result configuration} for {graph} and {environment}" }
     | ResultLDI(graph: XGraphs, environment: envs)
-    { "the \hyperlink{type-ResultLDI}{local declaration item result configuration} with {graph} and {environment}" }
+    { "the \hyperlink{type-ResultLDI}{local declaration item result configuration} for {graph} and {environment}" }
     | ResultSlices(slices_and_graph: (list0((native_value, native_value)), XGraphs), environment: envs)
-    { "the \hyperlink{type-ResultSlices}{slices result configuration} with list of slices and \executiongraphterm{} given by {slices_and_graph}, and {environment}" }
+    { "the \hyperlink{type-ResultSlices}{slices result configuration} for {slices_and_graph} and {environment}" }
     | ResultExprList(values_and_graph: (list0(native_value), XGraphs), environment: envs)
-    { "the \hyperlink{type-ResultExprList}{expression list result configuration} with values and \executiongraphterm{} given by {values_and_graph} and {environment}" }
+    { "the \hyperlink{type-ResultExprList}{expression list result configuration} for {values_and_graph} and {environment}" }
     | ResultExprListM(value_graph_pairs: list0((native_value, XGraphs)), environment: envs)
-    { "the \hyperlink{type-ResultExprListM}{expression list result configuration} with value-\executiongraphterm{} pairs given by {value_graph_pairs} and {environment}" }
+    { "the \hyperlink{type-ResultExprListM}{expression list result configuration}for {value_graph_pairs} and {environment}" }
     | ResultPattern(boolean_value: tbool, graph: XGraphs)
-    { "the \hyperlink{type-ResultPattern}{pattern result configuration} with {boolean_value} and {graph}" }
+    { "the \hyperlink{type-ResultPattern}{pattern result configuration} for {boolean_value} and {graph}" }
     | ResultCall(values_and_genv: (values: list0(value_read_from), gdenv: global_dynamic_envs), g: XGraphs)
-    { "the \hyperlink{type-ResultCall}{call result configuration} with value-read effects and \globaldynamicenvironmentterm{} given by {values_and_genv} and \executiongraphterm{} {g}" }
+    { "the \hyperlink{type-ResultCall}{call result configuration} for {values_and_genv} and \executiongraphterm{} {g}" }
 ;
 
 // Casts a native value into a Boolean native value.
@@ -2421,7 +2424,9 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     check_atc(tenv, t_struct, ty_struct) -> True;
     ses' := union(ses_ty, ses_e);
     subtype_satisfies(tenv, t_struct, ty_struct) -> always_succeeds;
-    (new_e, ses) := if always_succeeds then (e'', ses_e) else (E_ATC(e'', ty'), ses');
+    static_atc := (e'', ses_e);
+    dynamic_atc := (E_ATC(e'', ty'), ses');
+    (new_e, ses) := if always_succeeds then static_atc else dynamic_atc;
     --
     (ty', new_e, ses);
   }
@@ -2511,7 +2516,7 @@ typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfiel
 {
   "returns the slices associated with the bitfield named {name} among the list of bitfields {bitfields}
   in {slices}. \ProseOtherwiseTypeError",
-  prose_transition = "finding the slices associated with the bitfield named {name} among {bitfields}
+  prose_transition = "finding the slices associated with the bitfield named by {name} among {bitfields}
   yields",
 } =
   case non_empty {
@@ -2878,10 +2883,11 @@ semantics relation eval_expr(env: envs, e: expr) ->
     eval_expr_sef(env, e_length) -> ResultExprSEF(v_length, g2);
     v_length =: nvint(n_length);
     de_check(n_length >= zero, DE_NAL) -> True;
+    non_empty_initializer := list_map(i, range_list(one, n_length), value);
     values := if_then_else(
       n_length = zero,
       empty_list,
-      list_map(i, range_list(one, n_length), value)
+      non_empty_initializer
     );
     v := NV_Vector(values);
     g := parallel(g1, g2);
@@ -3068,7 +3074,7 @@ semantics relation is_constraint_sat(env: envs, c: int_constraint, n: Z) ->
     eval_expr_sef(env, e2) -> ResultExprSEF(nvint(b), g2);
     g := parallel(g1, g2);
     --
-    (and(a <= n && n <= b), g);
+    (a <= n && n <= b, g);
   }
 ;
 
@@ -4399,7 +4405,7 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
     env3 := environ_of(C);
     remove_local(env3, name) -> env4;
     D := with_environ(C, env4);
-    new_g := ordered_po(sg, ordered_po(ordered_po(g1, g2), graph_of(D)));
+    new_g := ordered_po(sg, g1, g2, graph_of(D));
     --
     with_graph(D, new_g);
   }
@@ -5411,7 +5417,9 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     case fdiv_int {
       op = DIVRM;
       te_check(b > zero, TE_BO) -> True;
-      n := if a >= zero then round_down(as_rational(a) / as_rational(b)) else num_negate(round_up((num_negate(as_rational(a))) / as_rational(b)));
+      n :=  if a >= zero
+            then round_down(as_rational(a) / as_rational(b))
+            else num_negate_compound(round_up((num_negate(as_rational(a))) / as_rational(b)));
       --
       L_Int(n);
     }
@@ -7987,7 +7995,6 @@ render rule typecheck_decl_func = typecheck_decl(func);
 
 operator scc[T](nodes: list0(T), edges: list0((T, T))) -> powerset(powerset(T))
 {
-  "the strongly connected components of the graph given by {nodes} and {edges}",
   prose_application = "the strongly-connected components for the graph made of nodes given by {nodes} and edges given by {edges}",
   math_macro = \sccop,
   custom = true,
@@ -7995,7 +8002,6 @@ operator scc[T](nodes: list0(T), edges: list0((T, T))) -> powerset(powerset(T))
 
 operator topological_ordering_comps[T](comps: powerset(powerset(T)), edges: list0((T, T))) -> list0(powerset(T))
 {
-  "a topological ordering of components {comps} according to dependency edges {edges}",
   prose_application = "the topological ordering of the sets of nodes given by {comps} relative to the edges given by {edges}",
   math_macro = \topologicalorderingcomps,
   custom = true,
@@ -8018,6 +8024,9 @@ typing relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
   dependencies =: list_combine(from_deps, to_deps);
   rev_deps := list_combine(to_deps, from_deps);
   comps := scc(defs, rev_deps);
+  // Ideally the := below would be "in" but this conflicts with the current
+  // use-def analysis. TODO: find a way to facilitate this, perhaps by an
+  // attribute for muting use-def analysis errors for a given prmise.
   ordered_comps := topological_ordering_comps(comps, rev_deps);
   comp_decls := list_map(
     comp,
@@ -8793,12 +8802,6 @@ typing function use_pattern(p: pattern) ->
 } =
   case mask_all {
     (p = Pattern_Mask(_)) || (p = Pattern_All);
-    --
-    empty_set;
-  }
-
-  case mask {
-    p = Pattern_Mask(_);
     --
     empty_set;
   }
@@ -12324,10 +12327,8 @@ typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
   to_ir(tenv, e1) -> ir1_opt;
   to_ir(tenv, e2) -> ir2_opt;
   case all_supported {
-    and(
-      ir1_opt =: some(ir1),
-      ir1_opt =: some(ir2)
-    );
+    ir1_opt =: some(ir1);
+    ir2_opt =: some(ir2);
     --
     ir1 = ir2;
   }
@@ -13109,12 +13110,12 @@ typing function sym_mul_expr(e1: expr, e2: expr) -> (e: expr)
   "symbolically multiplies expressions {e1} and {e2},
   simplifying away a literal \texttt{1} operand when present.",
   prose_application = "the symbolic product of {e1} and {e2}",
-  prose_transition = "symbolically multiplies {e1} by {e2} yields",
+  prose_transition = "symbolically multiplying {e1} by {e2} yields",
 } =
   case one_operand {
     e1 = ELint(one) || e2 = ELint(one);
     --
-    if e1 = ELint(one) then e1 else e1;
+    if e1 = ELint(one) then e2 else e1;
   }
 
   case no_one_operand {
@@ -14728,7 +14729,7 @@ typing function check_no_duplicates(ids: list0(Identifier)) ->
   contains a duplicate identifier. If it does not, the
   result is $\True$ and otherwise the result is a
   \typingerrorterm{}.",
-  prose_transition = "checking whether {ids} contains a duplicate identifier yields",
+  prose_transition = "checking that {ids} contains no duplicate identifiers yields",
 } =
   case okay {
     unique_list(ids) -> ids1;
