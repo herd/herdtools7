@@ -28,3 +28,16 @@ STRgreen-TaggedNormalXorV0      Forbidden
 cLDRnToD+BBM                    Allowed
 cSTRnToD+BBM                    Forbidden
 cSTRoTnD+BBM                    Allowed
+
+coRR+cLDRnT-cLDRoT+BBM          Forbidden
+coRR+cLDRnD-cLDRoD+BBM          Forbidden
+coRR+cLDRoToD-cLDRoToD+BBM      Allowed
+coRR+cLDRoToD-cLDRoTnD+BBM      Allowed
+coRR+cLDRoToD-cLDRnToD+BBM      Allowed
+coRR+cLDRoToD-cLDRnTnD+BBM      Allowed
+coRR+cLDRoTnD-cLDRoTnD+BBM      Allowed
+coRR+cLDRoTnD-cLDRnTnD+BBM      Allowed
+coRR+cLDRnToD-cLDRnToD+BBM      Allowed
+coRR+cLDRnTnD-cLDRnTnD+BBM      Allowed
+
+coRR+LDG-LDG+BBM                Forbidden
