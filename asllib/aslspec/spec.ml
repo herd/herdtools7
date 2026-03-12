@@ -75,12 +75,8 @@ let prose_description_for_node = function
 (** [vars_of_node node] returns the list of term-naming variables that occur at
     any depth inside the definition node [node]. *)
 let vars_of_node = function
-  | Node_Type { Type.variants; _ } ->
-      Utils.list_concat_map
-        (fun { TypeVariant.term } -> vars_of_type_term term)
-        variants
+  | Node_Type _ | Node_Constant _ -> []
   | Node_TypeVariant { TypeVariant.term } -> vars_of_type_term term
-  | Node_Constant _ -> []
   | Node_Relation { Relation.input; output; _ } ->
       vars_of_opt_named_type_terms input
       @ Utils.list_concat_map vars_of_type_term output
@@ -976,35 +972,50 @@ module Check = struct
       if Utils.list_is_empty extra_vars then ()
       else Error.unmatched_variables_in_template template extra_vars
 
-    let check_prose_template_for_definition_node defining_node =
+    let rec check_prose_template_for_definition_node defining_node =
       let prose_description = prose_description_for_node defining_node in
       let vars = vars_of_node defining_node in
       let () =
         try check_extra_vars_in_prose_template prose_description vars
         with SpecError e ->
           stack_spec_error e
-            (Format.asprintf "While checking: %s"
-               (definition_node_name defining_node))
+            (Format.asprintf "While checking: %a" pp_definition_node
+               defining_node)
       in
       match defining_node with
-      | Node_Type _ | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _
-        ->
-          ()
+      | Node_TypeVariant _ | Node_Constant _ | Node_RecordField _ -> ()
+      | Node_Type { variants } ->
+          (* Variants like unlabelled records do not appear in the list
+             of definition nodes and thus we check them here. *)
+          List.iter
+            (fun variant ->
+              let variant_as_node = Node_TypeVariant variant in
+              check_prose_template_for_definition_node variant_as_node)
+            variants
       | Node_Relation ({ Relation.input } as def) -> (
-          let prose_application = Relation.prose_application def in
+          let prose_transition = Relation.prose_transition def in
           let input_arg_vars = vars_of_opt_named_type_terms input in
+          let () =
+            try
+              check_extra_vars_in_prose_template prose_transition input_arg_vars
+            with SpecError e ->
+              stack_spec_error e
+                (Format.asprintf
+                   "While checking prose_transition for: %s. Recall that the \
+                    variables available for use in the prose_transition \
+                    template are only those of the input arguments. In this \
+                    case, those variables are: %s.\n\
+                    Hint: to refer to the outcomes you may use `|`"
+                   (definition_node_name defining_node)
+                   (String.concat ", " input_arg_vars))
+          in
+          let prose_application = Relation.prose_application def in
           try
             check_extra_vars_in_prose_template prose_application input_arg_vars
           with SpecError e ->
             stack_spec_error e
-              (Format.asprintf
-                 "While checking prose_application for: %s. Recall that the \
-                  variables available for use in the prose_application \
-                  template are only those of the input arguments. In this \
-                  case, those variables are: %s.\n\
-                  Hint: to refer to the outcomes you may use `|`"
-                 (definition_node_name defining_node)
-                 (String.concat ", " input_arg_vars)))
+              (Format.asprintf "While checking prose_application for: %s."
+                 (definition_node_name defining_node)))
 
     let check spec =
       iter_defined_nodes spec check_prose_template_for_definition_node
@@ -3097,7 +3108,7 @@ module Check = struct
     let rec is_correctly_named_argument =
       let open Term in
       function
-      | Some _, sub_term -> not (is_correctly_named_argument (None, sub_term))
+      | Some _, _ -> true
       | None, Tuple { args } -> List.for_all is_correctly_named_argument args
       | None, _ -> false
     in

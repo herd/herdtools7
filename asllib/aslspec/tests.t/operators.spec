@@ -29,7 +29,7 @@ variadic operator num_plus(addends: list1(N)) -> N
 {
   associative = true,
   math_macro = \intplus,
-  prose_application = "the sum of all numbers in {addends}"
+  prose_application = "the sum of {addends}"
 };
 
 typing relation f(a: N, b: N, c: N, S: powerset(N)) -> N {

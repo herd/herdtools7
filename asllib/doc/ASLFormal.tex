@@ -165,16 +165,17 @@ A \emph{parametric function} is a function whose domain is not a priori fixed bu
 parameterized by the type of its arguments. An example is the $\equallength$ function where the
 types $A$ and $B$ (of the list elements) are not explicitly specified, but rather inferred from the context where the function is used.
 
-\hypertarget{def-finfunction}{}
+\texthypertarget{def-finfunction}
 \begin{definition}[Finite-domain Function]
 The notation $\rightarrowfin$ stands for a function whose domain is finite.
 \end{definition}
 
-\hypertarget{def-emptyfunc}{}
+\texthypertarget{def-emptyfunc}
 \begin{definition}[Empty Function\label{def:EmptyFunction}]
 The function with an empty domain is denoted as $\emptyfunc$.
 \end{definition}
 
+\texthypertarget{def-mapupdate}
 \begin{definition}[Function Update\label{def:FunctionUpdate}]
   The function denoted as $f[x \mapsto v]$ is a function identical to $f$, except that $x$ is bound
   to $v$. That is, if  $g = f[x \mapsto v]$ then
@@ -424,14 +425,7 @@ computes the cross-product of two lists:
 \end{definition}
 
 \begin{definition}[Finding unique elements of a list]
-% TODO: Move this to the Type System Utilities chapter
 \RenderRelation{unique_list}
-\RenderRule{unique_list}
-
-It relies on the following helper function.
-\RenderRelation{unique_list_acc}
-which is defined as followg:
-\RenderRule{unique_list_acc}
 \end{definition}
 
 \begin{definition}[Finding a Value in a List of Pairs]
@@ -1083,38 +1077,38 @@ and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{}
 
 We define a similar function for type errors.
 \RenderRelation{te_check}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
 \hva\and
 \inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
 \end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{te_check}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{te_check}
 
 We define a similar function for dynamic errors.
 \RenderRelation{de_check}
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
 \hva\and
 \inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{de_check}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{de_check}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}
 We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgments,
 which in turn allows us to employ \shortcircuitrulemacros{}:
-\BackupOriginalRule{
+\BackupProseAndFormally{
 \begin{mathpar}
 \inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
 \hva\and
 \inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{bool_transition}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bool_transition}
 
 This is useful in defining functions that return a Boolean value, where if a condition does not hold,
 there is no need to consider the rest of the premises, and the function can simply return $\False$:

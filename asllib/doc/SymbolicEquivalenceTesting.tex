@@ -20,7 +20,7 @@ In proof-theoretic terms, we say that our equivalence test is \emph{sound} but \
 
 Notice that for a conservative test, it is always correct to return $\False$.
 
-In this chapter, we use the special value \RenderConstant{CannotBeTransformed}
+In this chapter, we use the special constant value \RenderConstant{CannotBeTransformed}
 to represent a failure in transforming an expression into a desired form (the specific
 desired form varies according to the functions utilizing this value).
 
@@ -146,15 +146,22 @@ For example,
     -1\cdot x^3 \cdot y \cdot z^2 + \frac{3}{4} \cdot \vx^2\cdot \vy \enspace.
 \]
 
-\RenderRelation{polynomial_of_int} returns the polynomial representation of an integer literal:
+\RenderRelation{polynomial_of_int}
+It is defined as follows:
 \[
 \polynomialofint(\vi) \typearrow \overname{\{\emptyfunc \mapsto \vi\}}{\vp} \enspace.
 \]
 
-\RenderRelation{polynomial_of_var} returns the polynomial representation of a variable:
-\RenderRule{polynomial_of_var}
+\TypingRuleDef{PolynomialOfVar}
+\RenderRelation{polynomial_of_var}
+% NO_EXAMPLE
+\RenderProseAndFormally{polynomial_of_var}
 
+\TypingRuleDef{AddPolynomials}
 \RenderRelation{add_polynomials}
+
+See \ExampleRef{Adding a List of Polynomials}
+
 \begin{mathpar}
 \inferrule{
   {
@@ -175,11 +182,19 @@ For example,
 }
 \end{mathpar}
 
+\TypingRuleDef{AddPolynomialList}
 The overloaded function
 \[
   \addpolynomials : \KleeneStar{\polynomial} \rightarrow \polynomial
 \]
-adds a list of polynomials:
+adds a list of polynomials.
+
+\ExampleDef{Adding a List of Polynomials}
+For example, if $\alpha(\vpone) = 3\cdot{}x^2\cdot{}y$,
+$\alpha(\vptwo) = 4\cdot{}x^2\cdot{}y$, and
+$\alpha(\vpthree) = x\cdot{}y^2$,
+then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
+
 \begin{mathpar}
 \inferrule[empty]{}{ \addpolynomials(\emptylist) \typearrow \emptyfunc }
 \hva\and
@@ -192,11 +207,6 @@ adds a list of polynomials:
   \addpolynomials(\vp_{1..k}) \typearrow \vp
 }
 \end{mathpar}
-
-For example, if $\alpha(\vpone) = 3\cdot{}x^2\cdot{}y$,
-$\alpha(\vptwo) = 4\cdot{}x^2\cdot{}y$, and
-$\alpha(\vpthree) = x\cdot{}y^2$,
-then $\alpha(\addpolynomials([\vpone, \vptwo, \vpthree])) = 7\cdot{}x^2\cdot{}y + x\cdot{}y^2$.
 
 \RenderRelation{mul_polynomials}
 
@@ -286,6 +296,8 @@ The specification in \listingref{Normalize} shows examples of expressions (on th
 and their corresponding normalized expressions.
 \ASLListing{Normalizing expressions}{Normalize}{\typingtests/TypingRule.Normalize.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -303,7 +315,6 @@ and their corresponding normalized expressions.
   \end{itemize}
 \end{itemize}
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
@@ -319,8 +330,8 @@ and their corresponding normalized expressions.
   \normalize(\tenv, \ve) \typearrow \overname{\ve}{\newe}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{normalize}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{normalize}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
 \TypingRuleDef{ReduceConstraint}
@@ -331,6 +342,8 @@ The specification in \listingref{ReduceConstraint} shows examples of constraints
 and their simplified counterparts.
 \ASLListing{Symbolically simplifying constraints}{ReduceConstraint}{\typingtests/TypingRule.ReduceConstraint.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -351,7 +364,6 @@ and their simplified counterparts.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \normalize(\tenv, \ve) \typearrow \vep
@@ -369,8 +381,8 @@ and their simplified counterparts.
   \reduceconstraint(\tenv, \vc) \typearrow \overname{\ConstraintRange(\veonep, \vetwop)}{\newc}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{reduce_constraint}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{reduce_constraint}
 \CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ReduceConstraints}
@@ -378,6 +390,8 @@ and their simplified counterparts.
 
 See \ExampleRef{Symbolically Simplifying Constraints}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -387,7 +401,6 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vi\in\listrange(\cs): \reduceconstraint(\tenv, \cs[\vi]) \typearrow \vc_\vi\\
@@ -396,8 +409,8 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
   \reduceconstraints(\tenv, \cs) \typearrow \newcs
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{reduce_constraints}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{reduce_constraints}
 \CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{ToIR}
@@ -408,6 +421,8 @@ The specification in \listingref{ToIR} shows examples of expressions (on the rig
 and their corresponding symbolic representations (in comments, as ASL expressions).
 \ASLListing{Transforming expressions into symbolic expressions}{ToIR}{\typingtests/TypingRule.ToIR.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expression corresponds to a polynomial.
 
@@ -626,7 +641,6 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[literal\_int]{}
 {
@@ -862,16 +876,16 @@ Intuitively, $\toir$ conducts a case analysis to determine whether the ASL expre
   \toir(\tenv, \ve) \typearrow \CannotBeTransformed
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-We make use of the helper relations:
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+We make use of the following helper relations:
 \RenderRelation{is_div_binop}
 It defined as follows:
-\RenderRule{is_div_binop}
+\RenderProseAndFormally{is_div_binop}
 \RenderRelation{scale_polynomial}
 It is defined as follows:
-\RenderRule{scale_polynomial}
+\RenderProseAndFormally{scale_polynomial}
 
-\RenderRule{to_ir}
+\RenderProseAndFormally{to_ir}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
 \TypingRuleDef{ExprEqual}
@@ -882,6 +896,8 @@ The specification in \listingref{ExprEqual} is well-typed as the expressions
 comprising the array lengths are equivalent, as detailed in comments.
 \ASLListing{Equivalent expressions}{ExprEqual}{\typingtests/TypingRule.ExprEqual.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -899,7 +915,6 @@ comprising the array lengths are equivalent, as detailed in comments.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[norm\_true]{
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \True \OrTypeError
@@ -914,14 +929,16 @@ comprising the array lengths are equivalent, as detailed in comments.
   \exprequal(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{expr_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{expr_equal}
 
 \TypingRuleDef{ExprEqualNorm}
 \RenderRelation{expr_equal_norm}
 
 See \ExampleRef{Expression Equivalence}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -947,7 +964,6 @@ See \ExampleRef{Expression Equivalence}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[all\_supported]{
   \toir(\tenv, \veone) \typearrow \irone \OrTypeError\hva\\\\
@@ -969,14 +985,16 @@ See \ExampleRef{Expression Equivalence}.
   \exprequalnorm(\tenv, \veone, \vetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{expr_equal_norm}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{expr_equal_norm}
 
 \TypingRuleDef{ExprEqualCase}
 \RenderRelation{expr_equal_case}
 
 See \ExampleRef{Expression Equivalence}.
+In the following definition recall that a conjunction over an empty set equals $\True$.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1157,9 +1175,6 @@ See \ExampleRef{Expression Equivalence}.
 \end{itemize}
 
 \FormallyParagraph
-Recall that a conjunction over an empty set equals $\True$.
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\veone) \neq \astlabel(\vetwo)
@@ -1356,8 +1371,8 @@ Recall that a conjunction over an empty set equals $\True$.
   \exprequalcase(\tenv, \veone, \vetwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{expr_equal_case}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{expr_equal_case}
 
 \TypingRuleDef{TypeEqual}
 \RenderRelation{type_equal}
@@ -1369,6 +1384,8 @@ of \verb|Foo| match types of the corresponding arguments for the overridden decl
 of \verb|Foo|.
 \ASLListing{Equivalent Types}{TypeEqual}{\typingtests/TypingRule.TypeEqual.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1462,7 +1479,6 @@ of \verb|Foo|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vtone) \neq \astlabel(\vttwo)
@@ -1566,14 +1582,15 @@ of \verb|Foo|.
   \typeequal(\tenv, \overname{\TTuple(\vtsone)}{\vtone}, \overname{\TTuple(\vtstwo)}{\vttwo}) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{type_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{type_equal}
 
 \TypingRuleDef{PatternEqual}
 \RenderRelation{pattern_equal}
 
 See \ExampleRef{Expression Equivalence}.
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1635,7 +1652,8 @@ See \ExampleRef{Expression Equivalence}.
 \end{itemize}
 
 \FormallyParagraph
-\RenderRule{pattern_equal}
+} % BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{pattern_equal}
 
 \TypingRuleDef{BitwidthEqual}
 \RenderRelation{bitwidth_equal}
@@ -1645,11 +1663,11 @@ See \ExampleRef{Expression Equivalence}.
 of the respective local declaration statements.
 \ASLListing{Equivalence of bitwidth expressions}{BitwidthEqual}{\typingtests/TypingRule.BitwidthEqual.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ yields $\vb$\ProseOrTypeError.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \exprequal(\tenv, \vwone, \vwtwo) \typearrow \vb \OrTypeError
@@ -1657,8 +1675,8 @@ Testing whether the expressions $\vwone$ and $\vwtwo$ are equivalent in $\tenv$ 
   \bitwidthequal(\tenv, \vwone, \vwtwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{bitwidth_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitwidth_equal}
 
 \TypingRuleDef{BitFieldsEqual}
 \RenderRelation{bitfields_equal}
@@ -1675,6 +1693,8 @@ the lists of bitfields for the \verb|bv| argument in both signatures
 of \verb|Foo| are not equivalent.
 \ASLListing{Non-equivalent lists of bitfields}{BitFieldsEqual-bad}{\typingtests/TypingRule.BitFieldsEqual.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1694,7 +1714,6 @@ of \verb|Foo| are not equivalent.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\bfone, \bftwo) \typearrow \False
@@ -1710,8 +1729,8 @@ of \verb|Foo| are not equivalent.
   \bitfieldsequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{bitfields_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfields_equal}
 
 \TypingRuleDef{BitFieldEqual}
 \RenderRelation{bitfield_equal}
@@ -1729,6 +1748,8 @@ or different nested bitfields.
 \ASLListing{Bitfields with differing slices}{BitFieldEqual-bad1}{\typingtests/TypingRule.BitFieldEqual.bad1.asl}
 \ASLListing{Bitfields with differing nested bitfields}{BitFieldEqual-bad2}{\typingtests/TypingRule.BitFieldEqual.bad2.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1773,7 +1794,6 @@ or different nested bitfields.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\bfone) \neq \astlabel(\bftwo)
@@ -1813,7 +1833,7 @@ or different nested bitfields.
 }
 \end{mathpar}
 } % BACKUP_ORIGINAL_RULE
-\RenderRule{bitfield_equal}
+\RenderProseAndFormally{bitfield_equal}
 
 \TypingRuleDef{ConstraintsEqual}
 \RenderRelation{constraints_equal}
@@ -1831,6 +1851,8 @@ are not considered equivalent. This is still considered well-typed (see \TypingR
 and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 \ASLListing{Equivalent lists of constraints}{ConstraintsEqual}{\typingtests/TypingRule.ConstraintsEqual.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1842,7 +1864,6 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \equallength(\csone, \cstwo) \typearrow \True \terminateas \False\\
@@ -1852,8 +1873,8 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
   \constraintsequal(\tenv, \csone, \cstwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{constraints_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{constraints_equal}
 
 \TypingRuleDef{ConstraintEqual}
 \RenderRelation{constraint_equal}
@@ -1864,6 +1885,8 @@ since each constraint on a right-hand-side of an assignment is equivalent to the
 corresponding constraint on the left-hand-side of that assignment.
 \ASLListing{Equivalent constraints}{ConstraintEqual}{\typingtests/TypingRule.ConstraintEqual.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1891,7 +1914,6 @@ corresponding constraint on the left-hand-side of that assignment.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vcone) \neq \astlabel(\vctwo)
@@ -1917,8 +1939,8 @@ corresponding constraint on the left-hand-side of that assignment.
   \constraintequal(\tenv, \bfone, \bftwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{constraint_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{constraint_equal}
 
 \TypingRuleDef{SlicesEqual}
 \RenderRelation{slices_equal}
@@ -1927,6 +1949,8 @@ corresponding constraint on the left-hand-side of that assignment.
 \listingref{SlicesEqual} shows an example of two equivalent lists of slices.
 \ASLListing{Equivalent lists of slices}{SlicesEqual}{\typingtests/TypingRule.SlicesEqual.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1946,7 +1970,6 @@ corresponding constraint on the left-hand-side of that assignment.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_lengths]{
   \equallength(\slicesone, \slicestwo) \typearrow \False
@@ -1962,8 +1985,8 @@ corresponding constraint on the left-hand-side of that assignment.
   \slicesequal(\tenv, \slicesone, \slicestwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{slices_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{slices_equal}
 
 \TypingRuleDef{SliceEqual}
 \RenderRelation{slice_equal}
@@ -1979,6 +2002,8 @@ The specification in \listingref{SliceEqual} shows examples of equivalent slices
 In \listingref{overriding}, the slice for the bitfield \verb|lsb| in both the \texttt{impdef} version
 of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2009,7 +2034,6 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[single\_expr]{
   \exprequal(\tenv, \veone, \vetwo) \typearrow \vb \OrTypeError
@@ -2037,8 +2061,8 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
   \slicesequal(\tenv, \sliceone, \slicetwo) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{slice_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{slice_equal}
 
 \TypingRuleDef{ArrayLengthEqual}
 \RenderRelation{array_length_equal}
@@ -2051,6 +2075,8 @@ expressions are of different kinds (\integertypeterm{} and \enumerationtypeterm)
 even though they both contain three elements each.
 \ASLListing{Non-equivalent array length expressions}{ArrayLengthEqual-bad}{\typingtests/TypingRule.ArrayLengthEqual.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2078,7 +2104,6 @@ even though they both contain three elements each.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[different\_labels]{
   \astlabel(\vlone) \neq \astlabel(\vltwo)
@@ -2106,14 +2131,19 @@ even though they both contain three elements each.
   \arraylengthequal(\vlone, \vltwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{array_length_equal}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{array_length_equal}
 
 \TypingRuleDef{PolynomialToExpr}
 \RenderRelation{polynomial_to_expr}
 
 See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 
+\texthypertarget{relation-sortmonomialbindings}
+The helper function $\sortmonomialbindings{f}$ sorts the list of monomial-to-factor bindings in $f$
+using the relation $\comparemonomialbindings$.
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2141,11 +2171,6 @@ See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
 \end{itemize}
 
 \FormallyParagraph
-\texthypertarget{relation-sortmonomialbindings}
-The function $\sortmonomialbindings{f}$ sorts the list of monomial-to-factor bindings in $f$
-using the relation $\comparemonomialbindings$.
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2168,8 +2193,8 @@ using the relation $\comparemonomialbindings$.
   \polynomialtoexpr(\overname{f}{\vp}) \typearrow \ve
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{polynomial_to_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{polynomial_to_expr}
 
 \TypingRuleDef{CompareMonomialBindings}
 \RenderRelation{compare_monomial_bindings}
@@ -2180,6 +2205,10 @@ Comparing $(\vx, -1)$ to $(\vx, -1)$ yields $0$.
 Comparing $(\vx, 1)$ to $(\vy, 1)$ yields $-1$ as $\vx$ comes before $\vy$ and $\vx$ is the
 first identifier for which the two monomials differ.
 
+The function \RenderConstant{compare_identifier} compares two identifiers, which are lists of ASCII characters,
+via the lexicographic ordering.
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2206,10 +2235,6 @@ first identifier for which the two monomials differ.
 \end{itemize}
 
 \FormallyParagraph
-The function \RenderConstant{compare_identifier} compares two identifiers, which are lists of ASCII characters,
-via the lexicographic ordering.
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[equal\_monomials]{
   \vmone = \vmtwo\\
@@ -2236,8 +2261,8 @@ via the lexicographic ordering.
   \comparemonomialbindings((\vmone, \vqone), (\vmtwo, \vqtwo)) \typearrow \vs
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{compare_monomial_bindings}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{compare_monomial_bindings}
 
 \TypingRuleDef{MonomialsToExpr}
 \RenderRelation{monomials_to_expr}
@@ -2248,6 +2273,8 @@ $(\vx \times \vy^2, 2)$,
 $(\vx \times \vy^2, 3)$ and $(\vx \times \vy, -5)$
 yields the expression \verb|5 * x * y * y - 5 * x * y|.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2268,7 +2295,6 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2284,8 +2310,8 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
   \monomialstoexpr(\overname{[(\vm,q)] \concat \monomsone}{\monoms}) \typearrow (\ve, \vs)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{monomials_to_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{monomials_to_expr}
 
 \TypingRuleDef{MonomialToExpr}
 \RenderRelation{monomial_to_expr}
@@ -2312,6 +2338,8 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \]
 
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2347,7 +2375,6 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[q\_zero]{
   q = 0\\
@@ -2380,8 +2407,8 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
   \monomialtoexpr(\ve, q) \typearrow (\newe, \overname{-1}{\vs})
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{monomial_to_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{monomial_to_expr}
 
 \TypingRuleDef{SymAddExpr}
 \RenderRelation{sym_add_expr}
@@ -2416,6 +2443,8 @@ The following are some examples of inputs and outputs for symbolic addition:
 \end{tabular}
 \end{center}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2445,7 +2474,6 @@ The following are some examples of inputs and outputs for symbolic addition:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[zero]{
   (\vsone = 0 \lor \vstwo = 0)\\
@@ -2468,8 +2496,8 @@ The following are some examples of inputs and outputs for symbolic addition:
   \symaddexpr(\veone, \vsone, \vetwo, \vstwo) \typearrow (\overname{\EBinop(\SUB, \veone, \vetwo)}{\ve}, \overname{\vsone}{\vs})
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{sym_add_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{sym_add_expr}
 
 \TypingRuleDef{UnitaryMonomialsToExpr}
 \RenderRelation{unitary_monomials_to_expr}
@@ -2480,6 +2508,8 @@ shows examples of unitary monomials (as right-hand-side of assignments)
 and the corresponding expressions, in comments.
 \ASLListing{Transforming unitary monomials to expressions}{UnitaryMonomialsToExpr}{\typingtests/TypingRule.UnitaryMonomialsToExpr.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2524,7 +2554,6 @@ and the corresponding expressions, in comments.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}
 {
@@ -2570,8 +2599,8 @@ and the corresponding expressions, in comments.
   \unitarymonomialstoexpr(\overname{[(\vv, n)] \concat \monomsone}{\monoms}) \typearrow \ve
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{unitary_monomials_to_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{unitary_monomials_to_expr}
 
 \TypingRuleDef{SymMulExpr}
 \RenderRelation{sym_mul_expr}
@@ -2589,6 +2618,8 @@ yielding the result in $\ve$:
 \end{tabular}
 \end{center}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2606,7 +2637,6 @@ yielding the result in $\ve$:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[one\_operand]{
   (\veone = \ELiteral(\LInt(1)) \lor \vetwo = \ELiteral(\LInt(1)))\\
@@ -2623,8 +2653,8 @@ yielding the result in $\ve$:
   \symmulexpr(\veone, \vetwo) \typearrow \overname{\EBinop(\MUL, \veone, \vetwo)}{\ve}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{sym_mul_expr}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{sym_mul_expr}
 
 \TypingRuleDef{TypeOf}
 \RenderRelation{type_of}
@@ -2640,6 +2670,8 @@ after annotating the local declaration \verb|var var_x = LOCAL_CONSTANT;| is \ve
 Invoking $\typeof$ for the \staticenvironmentterm{} just before annotating the local
 declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields a \typingerrorterm.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2664,7 +2696,6 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[local]{
   \tenv.\staticenvsL.\localstoragetypes(\vs) = \tty
@@ -2686,8 +2717,8 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
   \typeof(\tenv, \vs) \typearrow \TypeErrorVal{\UndefinedIdentifier}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{type_of}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{type_of}
 \CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}
 
 \TypingRuleDef{NormalizeOpt}
@@ -2695,6 +2726,8 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 
 See \ExampleRef{Normalize}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2714,7 +2747,6 @@ See \ExampleRef{Normalize}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normalizable]{
   \toir(\tenv, \ve) \typearrow \vpone \OrTypeError\hva\\\\
@@ -2730,5 +2762,5 @@ See \ExampleRef{Normalize}.
   \normalize(\tenv, \ve) \typearrow \overname{\None}{\neweopt}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{normalize_opt}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{normalize_opt}

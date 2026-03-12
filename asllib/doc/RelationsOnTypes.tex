@@ -36,6 +36,7 @@ declared in \listingref{subtype}:\\
 
 \RenderRelation{is_subtype}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -70,7 +71,6 @@ declared in \listingref{subtype}:\\
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[reflexive]{}{
   \issubtype(\tenv, \overname{\TNamed(\id)}{\vtone}, \overname{\TNamed(\id)}{\vttwo}) \typearrow \True
@@ -97,8 +97,8 @@ declared in \listingref{subtype}:\\
   \issubtype(\tenv, \vtone, \vttwo) \typearrow \False
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{is_subtype}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{is_subtype}
 \CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
 
 \identr{NXRX} \identi{KGKS} \identi{MTML} \identi{JVRM} \identi{CHMP}
@@ -130,6 +130,18 @@ subtyping.
 subtyping.
 \ASLListing{Even more examples of subtype satisfaction}{subtypesat3}{\typingtests/TypingRule.SubtypeSatisfaction3.asl}
 
+We employ the following helper function.
+\RenderRelation{field_type}
+This helper function is defined as follows:
+\[
+  \fieldtype(\fields, \id) \triangleq
+  \begin{cases}
+  \some{\vt}  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
+  \None & \text{ otherwise}
+  \end{cases}
+\]
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -231,18 +243,6 @@ subtyping.
 \end{itemize}
 
 \FormallyParagraph
-
-\RenderRelation{field_type}
-is defined as follows:
-\[
-  \fieldtype(\fields, \id) \triangleq
-  \begin{cases}
-  \some{\vt}  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
-  \None & \text{ otherwise}
-  \end{cases}
-\]
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[error1]{
   \makeanonymous(\tenv, \vt) \typearrow \TypeErrorConfig
@@ -371,8 +371,9 @@ is defined as follows:
   \subtypesatisfies(\tenv, \vs, \vt) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subtype_satisfies}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+
+\RenderProseAndFormally{subtype_satisfies}
 \identd{TRVR} \identi{SJDC} \identi{MHYB} \identi{TWTZ} \identi{GYSK} \identi{KXSD} \identi{KNXJ}
 \CodeSubsection{\SubtypeSatisfactionBegin}{\SubtypeSatisfactionEnd}{../types.ml}
 
@@ -405,6 +406,7 @@ The specification in \listingref{typing-typesat-bad1} is ill-typed,
 since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \ASLListing{Failing type satisfaction example}{typing-typesat-bad1}{\typingtests/TypingRule.TypeSatisfaction.bad1.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
  \begin{itemize}
@@ -461,7 +463,6 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[subtypes]{
   \issubtype(\tenv, \vt, \vs) \typearrow \True
@@ -526,8 +527,8 @@ since \verb|integer{0..N}| does not \typesatisfyterm{} \verb|integer{0..M}|.
   \typesatisfies(\tenv, \vt, \vs) \typearrow \overname{\False}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{type_satisfies}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{type_satisfies}
 \CodeSubsection{\TypeSatisfactionBegin}{\TypeSatisfactionEnd}{../types.ml}
 
 \TypingRuleDef{CheckTypeSatisfaction}
@@ -544,6 +545,8 @@ In \listingref{typing-typesat3}, checking whether \verb|(intege, T2)|
 \typesatisfiesterm{} \verb|pairT| for the assignment \verb|pair = (1, dataT2);|
 yields a \typingerrorterm.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -561,7 +564,6 @@ yields a \typingerrorterm.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \typesatisfies(\tenv, \vt, \vs) \typearrow \True
@@ -577,8 +579,8 @@ yields a \typingerrorterm.
   \checktypesatisfies(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_type_satisfies}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_type_satisfies}
 
 \TypingRuleDef{LowestCommonAncestor}
 Annotating a conditional expression (see \TypingRuleRef{ECond}),
@@ -597,6 +599,12 @@ We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it 
 of different widths.
 \ASLListing{Lowest common ancestor of two bitvectors}{example-lca2}{\typingtests/TypingRule.LowestCommonAncestor2.asl}
 
+Note that, since we do not impose a canonical representation on types
+(e.g., \verb|integer {1, 2}| is \typeequivalentterm{} to \verb|integer {1..2}|),
+the lowest common ancestor is not unique.
+We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentterm{} to the lowest common ancestor of $\vt$ and $\vs$.
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -717,11 +725,6 @@ of different widths.
 \CodeSubsection{\LowestCommonAncestorBegin}{\LowestCommonAncestorEnd}{../types.ml}
 
 \FormallyParagraph
-Since we do not impose a canonical representation on types (e.g., \verb|integer {1, 2}| is \typeequivalentterm{} to \verb|integer {1..2}|),
-the lowest common ancestor is not unique.
-We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentterm\ to the lowest common ancestor of $\vt$ and $\vs$.
-
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[type\_equal]{
   \typeequal(\tenv, \vt, \vs) \typearrow \True
@@ -878,8 +881,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \lca(\tenv, \vt, \vs) \typearrow \TypeErrorVal{\NoLCA}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{lowest_common_ancestor}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{lowest_common_ancestor}
 \identr{YZHM}
 
 \TypingRuleDef{ApplyUnopType}
@@ -889,6 +892,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \listingref{apply-unop-type} shows examples of typing applications of unary operations.
 \ASLListing{Applying unary operations to types}{apply-unop-type}{\typingtests/TypingRule.ApplyUnopType.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -939,7 +944,6 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[bnot\_t\_bool]{
   \checktypesatisfies(\tenv, \vtone, \TBool) \typearrow \True \OrTypeError\\
@@ -991,8 +995,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
   \applyunoptype(\tenv, \overname{\NOT}{\op}, \vt) \typearrow \vt
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{apply_unop_type}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{apply_unop_type}
 
 \TypingRuleDef{NegateConstraint}
 \RenderRelation{negate_constraint}
@@ -1000,6 +1004,8 @@ We define $\lca(\tenv, \vt, \vs)$ to be any type $\vtp$ that is \typeequivalentt
 \ExampleRef{Applying Unary Operations to Types} shows examples of negating single expression
 constraints and range constraints.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1018,7 +1024,6 @@ constraints and range constraints.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \vc = \ConstraintExact(\ve)
@@ -1036,8 +1041,8 @@ constraints and range constraints.
   \overname{\ConstraintRange(\EUnop(\SUB, \vend), \EUnop(\SUB, \vstart))}{\newc}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{negate_constraint}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{negate_constraint}
 
 \TypingRuleDef{ApplyBinopTypes}
 \RenderRelation{apply_binop_types}
@@ -1075,6 +1080,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \ASLListing{Applying binary operations to constrained integers}{apply-binop-constraints}
           {\typingtests/TypingRule.ApplyBinopTypes.constraints.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1291,7 +1298,6 @@ range constraints. More precisely, they are a superset of the values for \verb|(
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[named]{
   \astlabel(\vtone) = \TNamed \lor \astlabel(\vttwo) = \TNamed\\
@@ -1468,8 +1474,8 @@ range constraints. More precisely, they are a superset of the values for \verb|(
   \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \TypeErrorVal{\BadOperands}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{apply_binop_types}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{apply_binop_types}
 
 \CodeSubsection{\applybinoptypesBegin}{\applybinoptypesEnd}{../Typing.ml}
 
@@ -1499,6 +1505,8 @@ named lowest common ancestor.
 
 \ASLListing{Finding named lowest common ancestors}{find-named-lca}{\typingtests/TypingRule.FindNamedLCA.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1525,7 +1533,6 @@ named lowest common ancestor.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[found]{
   \supers(\tenv, \vt) \typearrow \vtsupers\\
@@ -1551,8 +1558,8 @@ named lowest common ancestor.
   \namedlca(\tenv, \vt, \vs) \typearrow \None
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{named_lowest_common_ancestor}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{named_lowest_common_ancestor}
 
 \TypingRuleDef{AnnotateConstraintBinop}
 \RenderRelation{annotate_constraint_binop}
@@ -1577,6 +1584,8 @@ will definitely result in a \dynamicerrorterm{}.
 
 Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -1613,7 +1622,6 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exploding]{
   \binopfilterrhs(\vapprox, \tenv, \op, \cstwo) \typearrow \cstwof \terminateas \CannotUnderapproximate, \CannotOverapproximate\hva\\\\
@@ -1651,8 +1659,8 @@ Also see \ExampleRef{Applying Binary Operations to Constrained Integers}.
   \annotateconstraintbinop(\vapprox, \tenv, \op, \csone, \cstwo) \typearrow \annotatedcs
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_constraint_binop}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{annotate_constraint_binop}
 \CodeSubsection{\AnnotateConstraintBinopBegin}{\AnnotateConstraintBinopEnd}{../StaticOperations.ml}
 
 \TypingRuleDef{BinopFilterRhs}
@@ -1915,6 +1923,8 @@ where one can be reduced into an integer constant, which is then returned in an 
 and one that cannot be reduced into an integer constant, which yields $\None$.
 \ASLListing{Reducing expressions to optional integers}{ReduceToZOpt}{\typingtests/TypingRule.ReduceToZOpt.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -1932,7 +1942,6 @@ and one that cannot be reduced into an integer constant, which yields $\None$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[normalizes\_to\_z]{
   \normalize(\tenv, \ve) \typearrow \ELInt{\vz}
@@ -1949,8 +1958,8 @@ and one that cannot be reduced into an integer constant, which yields $\None$.
   \reducetozopt(\tenv, \ve) \typearrow \overname{\None}{\vzopt}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{reduce_to_z_opt}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{reduce_to_z_opt}
 
 \TypingRuleDef{RefineConstraints}
 \RenderRelation{refine_constraints}
@@ -2042,6 +2051,8 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 
 See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2075,7 +2086,6 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[div\_non\_empty]{
   \op = \DIV\\
@@ -2105,8 +2115,8 @@ See \ExampleRef{Filtering and Reducing Division-based Constraints}.
   \refineconstraintfordiv(\vapprox, \op, \cs) \typearrow \overname{\cs}{\vres}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{refine_constraint_for_div}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{refine_constraint_for_div}
 \CodeSubsection{\RefineConstraintForDIVBegin}{\RefineConstraintForDIVEnd}{../types.ml}
 
 \TypingRuleDef{FilterReduceConstraintDiv}
@@ -2130,6 +2140,8 @@ Specifically, notice the following:
 \end{itemize}
 \ASLListing{Filtering and Reducing Division-based Constraints}{FilterReduceConstraintDiv}{\typingtests/TypingRule.FilterReduceConstraintDiv.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2172,7 +2184,6 @@ Specifically, notice the following:
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \getliteraldivopt(\ve) \typearrow \some{(\vzone, \vztwo)} \terminateas \None\hva\\\\
@@ -2226,8 +2237,8 @@ Specifically, notice the following:
   \filterreduceconstraintdiv(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\some{\vc}}{\vcopt}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{filter_reduce_constraint_div}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{filter_reduce_constraint_div}
 
 \TypingRuleDef{GetLiteralDivOpt}
 \RenderRelation{get_literal_div_opt}
@@ -2244,12 +2255,12 @@ for generating the constraints for \verb|z|:
 \end{array}
 \]
 
+\BackupProseAndFormally{
 \ProseParagraph
 The value $\rangeopt$ is $\some{(\vzone, \vztwo)}$ if $\ve$ is a binary operation expression over the division operation
 and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $\None$ otherwise.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \zoneDIVztwo \eqdef \AbbrevEBinop{\DIV}{\ELInt{\vzone}}{\ELInt{\vztwo}}\\
@@ -2258,8 +2269,8 @@ and two literal integer expressions for the integers $\vzone$ and $\vztwo$ and $
   \getliteraldivopt(\ve) \typearrow \rangeopt
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_literal_div_opt}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{get_literal_div_opt}
 
 \TypingRuleDef{MakeConstraintRangeOpt}
 \RenderRelation{make_constraint_range_opt}
@@ -2274,6 +2285,7 @@ The following are examples of $\makeconstraintrangeopt$ applications:
 \end{array}
 \]
 
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2295,7 +2307,8 @@ The following are examples of $\makeconstraintrangeopt$ applications:
 \end{itemize}
 
 \FormallyParagraph
-\RenderRule{make_constraint_range_opt}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{make_constraint_range_opt}
 
 \TypingRuleDef{ExplodeIntervals}
 \RenderRelation{explode_intervals}
@@ -2311,6 +2324,8 @@ but exploding the second constraint \verb|0..B| does incur precision loss,
 and so overall the result is that there is precision loss.
 \ASLListing{Exploding intervals}{ExplodeIntervals}{\typingtests/TypingRule.ExplodeIntervals.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2331,7 +2346,6 @@ and so overall the result is that there is precision loss.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[empty]{}{
   \explodeintervals(\tenv, \overname{\emptylist}{\cs}) \typearrow \left( \overname{\emptylist}{\newcs} \aslsep \overname{\PrecisionFull}{\vp} \right)
@@ -2348,14 +2362,16 @@ and so overall the result is that there is precision loss.
   \explodeintervals(\tenv, \overname{[\vc] \concat \csone}{\cs}) \typearrow (\newcs, \vp)
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{explode_intervals}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{explode_intervals}
 
 \TypingRuleDef{ExplodeConstraint}
 \RenderRelation{explode_constraint}
 
 See \ExampleRef{Intervals too Large to Enumerate}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2392,7 +2408,6 @@ See \ExampleRef{Intervals too Large to Enumerate}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[exact]{
   \astlabel(\vc) = \ConstraintExact
@@ -2432,8 +2447,8 @@ See \ExampleRef{Intervals too Large to Enumerate}.
   (\overname{[\vc]}{\vcs}, \overname{\PrecisionFull}{\newprec})
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{explode_constraint}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{explode_constraint}
 
 \TypingRuleDef{IntervalTooLarge}
 \RenderRelation{interval_too_large}
@@ -2449,18 +2464,18 @@ used to annotate \verb|z| is equal to $\maxexplodedintervalsize$, which is too
 large to be enumerated.
 \ASLListing{An interval too large to enumerate}{IntervalTooLarge-bad}{\typingtests/TypingRule.IntervalTooLarge.bad.asl}
 
+\BackupProseAndFormally{
 \ProseParagraph
 The value $\vb$ is $\True$ if and only if the absolute value of $\vzone-\vztwo$ is greater than $\maxexplodedintervalsize$.
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{}{
   \intervaltoolarge(\vzone, \vztwo) \typearrow \overname{\vztwo-\vzone > \maxexplodedintervalsize}{\vb}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{interval_too_large}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{interval_too_large}
 
 \TypingRuleDef{BinopIsExploding}
 \RenderRelation{binop_is_exploding}
@@ -2478,7 +2493,7 @@ The value $\vb$ is $\True$ if and only if $\op$ is one of $\MUL$, $\SHL$, and $\
 }
 \end{mathpar}
 } % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{binop_is_exploding}
+\RenderProseAndFormally{binop_is_exploding}
 
 \TypingRuleDef{BitFieldsIncluded}
 \RenderRelation{bitfields_included}
@@ -2494,6 +2509,8 @@ In \listingref{MemBfs-bad}, not all bitfields of the type \verb|bits(8) {[0] fla
 are included in the type \verb|FlaggedPacket|. Specifically, the bitfield \verb|lsb| is
 not included in \verb|FlaggedPacket|.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2502,7 +2519,6 @@ not included in \verb|FlaggedPacket|.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \vbf \in \bfsone: \membfs(\bfstwo, \vbf) \typearrow \vb_\vbf \OrTypeError\hva\\\\
@@ -2511,8 +2527,8 @@ not included in \verb|FlaggedPacket|.
   \bitfieldsincluded(\tenv, \bfsone, \bfstwo) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{bitfields_included}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{bitfields_included}
 
 \TypingRuleDef{MemBfs}
 \RenderRelation{mem_bfs}
@@ -2529,6 +2545,8 @@ the set of bitfields in the type \\ \verb|FlaggedPacket|, which is why the speci
 is ill-typed.
 \ASLListing{A missing bitfield}{MemBfs-bad}{\typingtests/TypingRule.MemBfs.bad.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2609,7 +2627,6 @@ is ill-typed.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[none]{
   \bitfieldgetname(\vbfone) \typearrow \name\\
@@ -2695,14 +2712,16 @@ is ill-typed.
   \membfs(\tenv, \bfstwo, \vbfone) \typearrow \vb
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{mem_bfs}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{mem_bfs}
 
 \TypingRuleDef{CheckStructure}
 \RenderRelation{check_structure_label}
 
 See \ExampleRef{The Structure of a Type}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2722,7 +2741,6 @@ See \ExampleRef{The Structure of a Type}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \tstruct(\vt) \typearrow \vtp \OrTypeError\hva\\\\
@@ -2740,8 +2758,8 @@ See \ExampleRef{The Structure of a Type}.
   \checkstructurelabel(\tenv, \vt, \vl) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_structure_label}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_structure_label}
 
 \TypingRuleDef{ToWellConstrained}
 \RenderRelation{to_well_constrained}
@@ -2768,6 +2786,8 @@ The following are two examples of applying $\towellconstrained$ to various types
 }
 \end{mathpar}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2786,7 +2806,6 @@ The following are two examples of applying $\towellconstrained$ to various types
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{}
 {
@@ -2805,8 +2824,8 @@ The following are two examples of applying $\towellconstrained$ to various types
   \towellconstrained(\vt) \typearrow \vt
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{to_well_constrained}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{to_well_constrained}
 
 \TypingRuleDef{GetWellConstrainedStructure}
 \RenderRelation{get_well_constrained_structure}
@@ -2821,6 +2840,8 @@ obtaining the well-constrained structure of the type for $\vx$ yields \\
 $\unconstrainedinteger$.
 \ASLListing{Obtaining the well constrained structure of a type}{GetWellConstrainedStructure}{\typingtests/TypingRule.GetWellConstrainedStructure.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2829,7 +2850,6 @@ $\unconstrainedinteger$.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError\hva\\\\
@@ -2838,14 +2858,16 @@ $\unconstrainedinteger$.
   \getwellconstrainedstructure(\tenv, \vt) \typearrow \vtp
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_well_constrained_structure}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{get_well_constrained_structure}
 
 \TypingRuleDef{GetBitvectorWidth}
 \RenderRelation{get_bitvector_width}
 
 See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2864,7 +2886,6 @@ See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule[okay]{
   \tstruct(\tenv, \vt) \typearrow \TBits(\ve, \Ignore) \OrTypeError
@@ -2879,8 +2900,8 @@ See \ExampleRef{Obtaining the Integer Corresponding to a Bitvector Width}.
   \getbitvectorwidth(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_bitvector_width}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{get_bitvector_width}
 
 \CodeSubsection{\GetBitvectorWidthBegin}{\GetBitvectorWidthEnd}{../Typing.ml}
 
@@ -2893,6 +2914,8 @@ requires obtaining the widths of the fields \verb|status|, \verb|time|, and \ver
 whose corresponding types are \verb|bit|, \verb|bits(16)|, and \verb|bits(8)|,
 which yield $1$, $16$, and $8$, respectively.
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2901,7 +2924,6 @@ which yield $1$, $16$, and $8$, respectively.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError\hva\\\\
@@ -2910,8 +2932,8 @@ which yield $1$, $16$, and $8$, respectively.
   \getbitvectorconstwidth(\tenv, \vt) \typearrow \vw
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_bitvector_const_width}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{get_bitvector_const_width}
 
 \CodeSubsection{\GetBitvectorConstWidthBegin}{\GetBitvectorConstWidthEnd}{../Typing.ml}
 
@@ -2934,6 +2956,8 @@ is ill-typed, since \verb|M| and \verb|N| are not necessarily equal, even though
 The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a similar reason.
 \ASLListing{Two bitvectors of possibly different widths}{CheckBitsEqualWidth-bad2}{\typingtests/TypingRule.CheckBitsEqualWidth.bad2.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -2945,7 +2969,6 @@ The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a si
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
 \inferrule{
   \getbitvectorwidth(\tenv, \vtone) \typearrow \vn \OrTypeError\hva\\\\
@@ -2956,8 +2979,8 @@ The specification in \listingref{CheckBitsEqualWidth-bad2} is ill-typed for a si
   \checkbitsequalwidth(\tenv, \vtone, \vttwo) \typearrow \True
 }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_bits_equal_width}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{check_bits_equal_width}
 
 \TypingRuleDef{PrecisionJoin}
 \RenderRelation{precision_join}
@@ -2974,6 +2997,8 @@ expression \verb|(a * a) + 2|. Because the type of \verb|(a * a)| denotes a
 precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
 \ASLListing{Precision join}{precisionjoin}{\typingtests/TypingRule.PrecisionJoin.asl}
 
+
+\BackupProseAndFormally{
 \ProseParagraph
 \OneApplies
 \begin{itemize}
@@ -2990,7 +3015,6 @@ precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
 \end{itemize}
 
 \FormallyParagraph
-\BackupOriginalRule{
 \begin{mathpar}
   \inferrule[Loss]{
     \vpone = \PrecisionLost \lor
@@ -3006,5 +3030,5 @@ precision lost, the type of \verb|(a * a) + 2| also denotes a precision lost.
     \precisionjoin(\vpone, \vptwo) \typearrow \PrecisionFull
   }
 \end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{precision_join}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{precision_join}
