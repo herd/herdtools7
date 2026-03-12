@@ -15,10 +15,13 @@
 (****************************************************************************)
 
 open Printf
+open Js_of_ocaml
 
 let dbg = false
 
 let webpath = "/jherd"
+let webpath_basename = Filename.basename webpath
+let fetch_dir = "weblib"
 let bell_fname = ref "error"
 let cat_fname = ref "error"
 let cfg_fname = ref "error"
@@ -55,14 +58,16 @@ let set_litmus_str contents =
   litmus_str := contents ;
   set_str ".litmus" litmus_fname contents
 
-let pp path cts =
-  if dbg then begin match cts with
-  | Some cts ->
-      Printf.eprintf "** Found %s in pseudo file system\n" path ;
-      Printf.eprintf "%s\n"  cts
-  | None -> ()
-  end ;
-  cts
+let log_js_error e =
+  try
+    Js.Unsafe.fun_call
+      (Js.Unsafe.variable "console.error")
+      [| Js.Unsafe.inject e |]
+  with
+  | Js.Error _ -> ()
+
+let log_error s =
+ log_js_error (Js.string s)
 
 let autoloader ~prefix ~path =
   let fname_to_str = [
@@ -72,9 +77,51 @@ let autoloader ~prefix ~path =
     (!litmus_fname, !litmus_str)] in
   try Some (List.assoc path fname_to_str)
   with Not_found ->
-    try pp path (CatIncludes.autoloader ~prefix:prefix ~path:path)
-    with Not_found ->  None
+    let dir = Filename.basename prefix in
+    let fname = if dir = webpath_basename then path
+    else Filename.concat dir path in
+    let result =
+      try
+        let url = Filename.concat fetch_dir fname in
+        let req = XmlHttpRequest.create () in
+        (* The false argument causes the request to be made synchronously.
+          Required since herd has no way to delay resolving dependencies. *)
+        req##_open (Js.string "GET") (Js.string url) (Js.bool false);
+        req##send Js.null;
+        if req##.status = 200 then
+          match Js.Opt.to_option req##.responseText with
+          | Some txt -> Some (Js.to_string txt)
+          | None ->
+              log_error
+                (Printf.sprintf "autoloader: GET %s succeeded but returned \
+                  empty response text (status=%d)" url req##.status);
+              None
+        else begin
+          let status_text = Js.to_string req##.statusText in
+          log_error
+            (Printf.sprintf "autoloader: GET %s returned status %d (%s)"
+              url req##.status status_text);
+          None
+        end
+      with
+      | Js.Error e ->
+          log_js_error e;
+          None in
+    if dbg then
+      Option.iter (fun cts ->
+        Printf.eprintf "** Found %s in pseudo file system\n" path ;
+        Printf.eprintf "%s\n" cts
+      ) result;
+    result
 
-let register_autoloader () =
-  Js_of_ocaml.Sys_js.unmount ~path:webpath ;
-  Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+let get_env_webpath path =
+  Filename.concat webpath path
+
+let register_autoloader env =
+  let paths = webpath :: Option.fold ~some:(fun env ->
+    [get_env_webpath env]
+  ) ~none:[] env in
+  List.iter (fun webpath ->
+    Js_of_ocaml.Sys_js.unmount ~path:webpath ;
+    Js_of_ocaml.Sys_js.mount ~path:webpath autoloader
+  ) paths

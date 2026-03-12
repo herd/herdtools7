@@ -21,6 +21,7 @@ function initCurrentState() {
         'shelf' : null,
         'compatNum' : null,
         'campaignCode' : [],
+        'catLabelPrefix' : '',
         'bell' : { 'origText' : null, 'origUrl' : null, 'pos' : null },
         'cat' : { 'origText' : null, 'origUrl' : null, 'pos' : null },
         'cfg' : { 'origText' : null, 'origUrl' : null, 'pos' : null },
@@ -40,6 +41,45 @@ function error(s) {
 
 function basename(path) {
     return path.split('/').pop()
+}
+
+function dirname(path) {
+    if (path === null) return '';
+    var parts = path.split('/');
+    if (parts.length <= 1) return '';
+    parts.pop();
+    return parts.join('/');
+}
+
+// Longest common directory prefix among a list of URLs/paths.
+// Example:
+//   ["catalogue/aarch64/cats/aarch64.cat",
+//    "catalogue/aarch64/cats/ArmARM-L.b/aarch64.cat"]
+// -> "catalogue/aarch64/cats/"
+function commonDirPrefix(urls) {
+    if (!urls || urls.length === 0) return '';
+    var prefix = urls[0];
+    for (var i = 1; i < urls.length; i++) {
+        var u = urls[i];
+        var j = 0;
+        while (j < prefix.length && j < u.length && prefix[j] === u[j]) j++;
+        prefix = prefix.substring(0, j);
+        if (prefix === '') break;
+    }
+    // Only keep whole-directory prefix
+    var slash = prefix.lastIndexOf('/');
+    return slash >= 0 ? prefix.substring(0, slash + 1) : '';
+}
+
+// Label cats by stripping the common prefix (computed per-record).
+// Falls back to basename if the prefix isn't known or doesn't match.
+function catLabel(url) {
+    var prefix = currentState['catLabelPrefix'] || '';
+    if (url === null) return '';
+    if (prefix && url.indexOf(prefix) === 0) {
+        return url.substring(prefix.length);
+    }
+    return basename(url);
 }
 
 function shortname(path) {
@@ -258,8 +298,9 @@ function populateEditorPanelHeader(id, elems) {
 }
 
 function prepareEditorFile(editorName, key, val, callback) {
-    var baseVal = basename(val);
-    var itemId = 'file-' + baseVal.replace(/\+/g, '.');
+    var baseVal = (editorName === 'cat') ? catLabel(val) : basename(val);
+    // baseVal may contain '/', so sanitize for HTML id usage.
+    var itemId = 'file-' + baseVal.replace(/\+/g, '.').replace(/\//g, '__');
 
     return $('<li/>')
         .append($('<a/>', {
@@ -333,14 +374,18 @@ function doDownloadAndSetEditorValue(url, name, pos) {
                 currentState[name]['pos'] = pos;
                 updateLinkToExample();
 
-                $(selectMenuIdOfEditorName(name)).html(basename(url));
+                if (name === 'cat') {
+                    $(selectMenuIdOfEditorName(name)).html(catLabel(url));
+                } else {
+                    $(selectMenuIdOfEditorName(name)).html(basename(url));
+                }
 
                 editors[name].setValue(data, -1);
                 if (name === 'litmus') {
                     setLitmusSyntaxHighlighting();
                 }
                 if (name == 'cat') {
-                    var nhref = 'weblib/' + basename(url) + '.html' ;
+                    var nhref = 'weblib/' + catLabel(url) + '.html' ;
                     document.getElementById('show-cat').href = nhref ;
                 }
             }
@@ -815,6 +860,10 @@ function readRecord(record, displayName, compatNum, bellKey, catKey, cfgKey, lit
                 currentState['displayName'] = displayName;
                 currentState['shelf'] = resolveUrlsInShelf(result, record);
 
+                // Precompute the common prefix used to label cats uniquely.
+                // resolveUrlsInShelf has expanded entries to full URLs like "catalogue/<record>/<...>".
+                currentState['catLabelPrefix'] = commonDirPrefix(currentState['shelf']['cats'] || []);
+
                 updateAllEditors(compatNum, bellKey, catKey, cfgKey, litmusKey, false);
 
                 if (currentState['shelf']['compatibilities'] === null) {
@@ -960,11 +1009,16 @@ function jerdIt() {
     var catStr = editors['cat'].getValue();
     var cfgStr = editors['cfg'].getValue();
     var litmusStr = editors['litmus'].getValue();
+    var catSelectedLabel = '';
+    if (currentState['cat'] && currentState['cat']['origUrl'] !== null) {
+        catSelectedLabel = catLabel(currentState['cat']['origUrl']);
+    }
     runHerd(
         bellStr,
         catStr,
         litmusStr,
         cfgStr,
+        catSelectedLabel,
     );
     displayDotOutputs();
 }
@@ -980,12 +1034,17 @@ function jerdAll() {
                 var cfgStr = editors['cfg'].getValue();
                 var catStr = editors['cat'].getValue();
                 var litmusStr = data;
+                var catSelectedLabel = '';
+                if (currentState['cat'] && currentState['cat']['origUrl'] !== null) {
+                    catSelectedLabel = catLabel(currentState['cat']['origUrl']);
+                }
 
                 runHerd(
                     bellStr,
                     catStr,
                     litmusStr,
                     cfgStr,
+                    catSelectedLabel,
                 );
 
                 var herdOutput = editors['herdoutput'].getValue();
@@ -1129,10 +1188,20 @@ $(function () {
     });
     editors['cat'].on("linkClick",function(data){
         if (debug) console.log("CLICK", data); // Just for testing so you can see what classes things are...
-  if(data && data.token && data.token.type == "string"){
-      window.open("weblib/" + data.token.value.replace(/^"/,'').replace(/"$/,''), "_blank");
-  }
- });
+        if (data && data.token && data.token.type == "string") {
+            var clicked = data.token.value.replace(/^"/,'').replace(/"$/,'');
+
+            if (currentState['cat'] && currentState['cat']['origUrl'] !== null) {
+                var curLabel = catLabel(currentState['cat']['origUrl']);
+                var curDir = dirname(curLabel);
+                if (curDir !== '') {
+                    clicked = curDir + '/' + clicked;
+                }
+            }
+
+            window.open("weblib/" + clicked, "_blank");
+        }
+    });
     initEditor("cfg", "ace/theme/chrome", "ace/mode/plain_text", false, true, selectMenuIdOfEditorName("cfg"));
     initEditor("herdoutput", "ace/theme/chrome", "ace/mode/plain_text", true, false);
     editors['herdoutput'].setOptions({readOnly: true, highlightActiveLine: false, highlightGutterLine: false});
