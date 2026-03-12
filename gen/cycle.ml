@@ -28,7 +28,7 @@ module type S = sig
 
   (* TODO can be parametric by dir *)
   type event =
-      { loc : loc ; ord : int;
+        { loc : loc ; pa : loc; ord : int;
         (* TODO morello related value, fold into value *)
         tag : int ;
         (* morello *)
@@ -166,7 +166,7 @@ module Make (O:Config) (E:Edge.S) :
   module RMW = E.RMW
 
   type event =
-      { loc : loc ; ord : int; tag : int;
+      { loc : loc ;  pa : loc; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
         v   : Value.v ;
         vecreg: Value.v list list ;
@@ -190,7 +190,7 @@ module Make (O:Config) (E:Edge.S) :
     Value.pte_compare pte rhs = 0
 
   let evt_null =
-    { loc=Code.loc_none ; ord=0; tag=0;
+    { loc=Code.loc_none ; pa=Code.loc_none; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
       v=Value.no_value; dir=None; proc=(-1); atom=None; rmw=false;
@@ -251,11 +251,12 @@ module Make (O:Config) (E:Edge.S) :
     String.concat ", " @@ List.map debug_val @@ Array.to_list v
 
   let debug_evt e =
-    sprintf "#[%d] %s%s %s %s %s%s%s%s%s fault_check:%s value_check:%s"
+    sprintf "#[%d] %s%s %s(%s) %s %s%s%s%s%s fault_check:%s value_check:%s"
       e.idx
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
+      (Code.pp_loc e.pa)
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
@@ -285,12 +286,6 @@ module Make (O:Config) (E:Edge.S) :
 
   let str_node n = sprintf "%s -%s->" (debug_evt n.evt) (debug_edge n.edge)
 
-  let debug_nodes chan ns =
-    let rec iter chan = function
-      | [] -> ()
-      | [n] -> debug_node chan n
-      | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
-    iter chan ns
   let debug_cycle chan n =
     let rec do_rec m =
       fprintf chan "%a\n" debug_node m ;
@@ -530,6 +525,8 @@ module CoSt = struct
     let env = Code.LocMap.add st.physical_address co_cell st.env in
     { st with env; }
 
+  let get_physical_address st = Code.Data (Value.get_physical_address st.pte_value)
+
   let update_physical_address st physical_address n=
     let st = {st with physical_address; check_value = true} in
     let cell = get_cell st in
@@ -538,7 +535,9 @@ module CoSt = struct
   let add_physical_address st physical_address init_value n =
     let co_cell = get_cell st |> Array.map ( fun _ -> Value.from_int init_value ) in
     let env = Code.LocMap.add physical_address co_cell st.env in
-    update_physical_address {st with env} physical_address n
+    let st = update_physical_address {st with env} physical_address n in
+    (* TODO *)
+    set_co st Ord init_value
 
   (* Assume node `n` is a memory store event,
      assign a written value to `n`*)
@@ -635,7 +634,7 @@ end
 (* Decide the initial pte value. *)
 let pte_val_init ns loc =
   match loc with
-    | Code.Data loc when do_kvm ->
+    | Code.Data loc ->
       let atom_list = List.filter_map
         ( fun node -> node.evt.atom ) ns in
       Value.init_pte loc atom_list
@@ -799,11 +798,11 @@ let set_diff_loc st n0 =
             (fun n -> (if not (same_loc n.edge) then raise Not_found); E.is_ifetch n.edge.E.a2 ) m.prev
         with Not_found ->  m in
       next_loc n1.edge st in
-    m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
+    m.evt <- { m.evt with loc=loc ; pa=loc ; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin
       m.store.evt <-
-        { m.store.evt with loc=loc ; bank=Ord; }
+        { m.store.evt with loc=loc ; pa=loc; bank=Ord; }
     end ;
     if m.next != n0 then do_rec st p.next m.next
     else begin
@@ -823,10 +822,10 @@ let set_same_loc st n0 =
     with Not_found -> n0 in
   let loc,st = next_loc n1.edge st in
   let rec do_rec m =
-    m.evt <- { m.evt with loc=loc; bank=E.atom_to_bank m.evt.atom; } ;
+    m.evt <- { m.evt with loc=loc; pa=loc; bank=E.atom_to_bank m.evt.atom; } ;
     if m.store != nil then begin
       m.store.evt <-
-        { m.store.evt with loc=loc; bank=Ord; }
+        { m.store.evt with loc=loc; pa=loc; bank=Ord; }
     end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
@@ -981,6 +980,7 @@ let check_cycle c =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
+              if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
               (env, new_variable_value, st)
             | Pair ->
               (* Same code as for Ord, however notice that
@@ -991,6 +991,7 @@ let check_cycle c =
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
+              if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
               n.evt <- { n.evt with check_fault; check_value; };
               (env, new_variable_value, st)
             | Tag ->
@@ -1057,7 +1058,7 @@ let check_cycle c =
               let check_fault = Value.need_check_fault n.evt.atom in
               let st = CoSt.set_pte_value !wrapped_st check_fault pte_val in
               let v = Value.from_pte pte_val in
-              n.evt <- { n.evt with v; check_value } ;
+              n.evt <- { n.evt with v;  pa=CoSt.get_physical_address st; check_value } ;
               (!wrapped_env, !wrapped_new_value, st)
             end (* END of match bank *)
           | Code _ ->
@@ -1200,12 +1201,14 @@ let do_set_read_v init =
             else if n.evt.rmw then CoSt.fault_update st W
             else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
+          if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
           st
         | Pair ->
           let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
           let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
+          if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
           st
         | VecReg a ->
           let st = CoSt.implicit_pte_update st R in
@@ -1397,7 +1400,7 @@ let finish n =
   if O.verbose > 1 then begin
     eprintf "READ VALUES\n" ;
     debug_cycle stderr start_node ;
-    eprintf "FINAL VALUES [%s]\n"
+    eprintf "FINAL VALUES (debug only print from virtual locations to values) [%s]\n"
       (vs |> List.map
         ( fun (loc,(v,_pte)) -> sprintf "%s -> %s"
           (Code.pp_loc loc) (Value.pp_v v) )
@@ -1578,8 +1581,9 @@ let merge_changes n nss =
       else do_rec m.next in
     do_rec n
 
-
-  let do_get_writes pbank n =
+  (* Helper function that extracts all write nodes
+     satisfying `filter_predicate`. *)
+  let do_get_writes filter_predicate n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -1588,32 +1592,41 @@ let merge_changes n nss =
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
-          then k else (e.loc,m)::k
+            E.is_node m.edge.E.edge || not (filter_predicate m.evt)
+          then k else m::k
       | None| Some R -> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in
-        if pbank e.bank then
-          (e.loc,m.store)::k
+        if filter_predicate e then
+          m.store::k
         else k
       end in
     do_rec n
 
   let get_ord_writes =
     let open Code in
-    do_get_writes (* Not so sure about capacity here... *)
-      (function Ord|Tag|VecReg _|Pair|Instr -> true | CapaTag|CapaSeal|Pte -> false)
+    do_get_writes
+      (fun e -> match e.bank with
+        | Ord|Tag|VecReg _|Pair|Instr -> true
+        (* Not so sure about capacity here... *)
+        | CapaTag|CapaSeal -> false
+        (* Treat physical address change also an ordinary (value) write
+           to the new physical address. This is a technical choice to
+           allow the `coherence` function to add proper to further
+           written value check. *)
+        | Pte -> Value.need_check_value_on_pte e.atom)
 
   let get_pte_writes =
-    do_get_writes (function Code.Pte -> true | _ -> false)
+    do_get_writes
+      (fun e -> match e.bank with Code.Pte -> true | _ -> false)
 
   let to_tagloc = function
     | Data s -> Data (Misc.add_atag s)
     | Code s -> Code (Misc.add_atag s)
 
-  let get_tag_locs (loc,n) =
-    (to_tagloc loc,n)
+  let get_tag_locs n =
+    (to_tagloc n.evt.loc,n)
 
   let get_observers n =
     let e = n.evt in
@@ -1625,64 +1638,58 @@ let merge_changes n nss =
     | _ -> k in
     k
 
+  let coherence_by_physical_address nodes =
+    List.map (fun node -> (node.evt.pa,node)) nodes
+    |> by_loc
+    (* Adjust the coherence list:
+       for a physical adress, if the observable value list starts
+       from a physical adress change, we inject a dummy
+       write-zero event for the purpose of trigger value
+       check, especially in the case where no more write to the
+       physical adress. *)
+    |> List.map ( fun (pa,node_list) ->
+        let node_list = List.flatten node_list in
+        if Value.need_check_value_on_pte (List.hd node_list).evt.atom then
+          let zero_write = {nil with evt = {evt_null with pa; v=Value.no_value; dir = Some W}} in
+          (pa, [zero_write::node_list])
+        else (pa,[node_list])
+      )
+
+  (* Extract all the events that affect the coherence check,
+     for example, ordinary write, and physical address change,
+     then group them by _physical address_. *)
   let coherence n =
-    let r = match find_change n with
-    | Some n ->
-        let ord_ws = get_ord_writes n in
-        (* MTE locations shadow normal locations, so we need
-         * to track them separately. As we may be interested
-         * in the same graph nodes, lets just duplicate and
-         * label accordingly. *)
-        let tag_ws = if do_memtag then
-          List.map get_tag_locs (get_ord_writes n) else [] in
-        let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then
-          List.iter
-            (fun (loc,n) ->
-              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-            ws ;
-        let r = by_loc ws in
-        List.fold_right
-          (fun (loc,ws) k -> match ws with
-          | [] -> k
-          | [ns] ->
-             if O.verbose > 1 then
-               Printf.eprintf "Standard write sequence on %s: %s\n"
-                 (Code.pp_loc loc)
-                 (String.concat " "
-                    (List.map str_node ns)) ;
-             (loc,ws)::k
-          | _ ->
-              (* Assume there is no consecutive writes to the same location *)
-              List.iter
-                (fun ns -> eprintf "[%a]\n" debug_nodes ns)
-                ws ;
-              assert false)
-          r []
-    | None ->
-        if O.same_loc then
-          match get_ord_writes n with
-          | [] -> []
-          | (loc,_)::_ as xs ->
-              [loc,[List.map snd xs]]
-        else
-          Warn.fatal "Unique location" in
-    List.fold_right
-      (fun (loc,ns) k ->
+    let start_node =
+      match find_change n,O.same_loc with
+      | Some start_node, _ -> start_node
+      | None, true -> n
+      | None, false -> Warn.fatal "Unique location" in
+    let ordinary_writes = get_ord_writes start_node in
+    let write_set =
+      let ord_ws_by_pa = coherence_by_physical_address ordinary_writes in
+      (* MTE locations shadow normal locations, so we need
+       * to track them separately. As we may be interested
+       * in the same graph nodes, lets just duplicate and
+       * label accordingly. *)
+      let tag_ws = if do_memtag then
+        List.map get_tag_locs ordinary_writes |> by_loc else [] in
+      tag_ws @ ord_ws_by_pa in
+    List.filter_map
+      (fun (loc,ns) ->
         match loc with
         | Data loc ->
-            (loc,
+            Some (loc,
             List.map
               (List.map (fun n -> n,get_observers n))
-              ns)::k
-        | Code _ ->  k)
-      r []
+              ns)
+        | Code _ -> None )
+      write_set
 
   let last_ptes n =
     match find_change n with
     | Some n ->
         let ws = get_pte_writes n in
-        let r = by_loc ws in
+        let r = List.map (fun n -> (n.evt.loc,n)) ws |> by_loc in
         List.fold_right
           (fun (loc,ns) k -> match List.flatten ns with
           | []|[_]|_::_::_::_ -> k
