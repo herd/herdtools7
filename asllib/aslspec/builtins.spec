@@ -60,14 +60,12 @@ typedef Z
 
 operator is_integer(q: Q) -> Bool
 {
-  "{q} is an integer",
   math_macro = \isintegerop,
   prose_application = "{q} is an integer",
 };
 
 operator is_not_integer(q: Q) -> Bool
 {
-  "{q} is not an integer",
   math_macro = \isnotintegerop,
   prose_application = "{q} is not an integer",
 };

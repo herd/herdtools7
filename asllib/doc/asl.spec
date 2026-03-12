@@ -33,7 +33,6 @@ operator bindings_to_map[A,B](bindings: list0((A,B))) -> (partial A -> B)
 
 operator restrict_map[A,B](f: partial A -> B, dom: powerset(A)) -> (partial A -> B)
 {
-  "the restriction of {f} to {dom}",
   math_macro = \restrictmapop,
   custom = true,
   prose_application = "the \hyperlink{def-restrictfunc}{restriction} of {f} to {dom}",
@@ -540,9 +539,9 @@ operator fraction(a: Z, b: Z) -> Q
   prose_application = "the fraction for {a}/{b}",
 };
 
+// Casts the argument to a positive natural number.
 operator n_to_n_pos(n: N) -> N_pos
 {
-  "casts {n} to a positive natural number",
   math_macro = \identityop,
   typecast = true,
   prose_application = "{n}",
@@ -563,7 +562,6 @@ operator abs_value(z: Z) -> N
 
 operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
 {
-  "concatenates {prefix} and the string for {n} to yield {result}",
   math_macro = \numberedidentifierop,
   associative = true,
   custom = true,
@@ -572,7 +570,6 @@ operator numbered_identifier(prefix: Identifier, n: N) -> (result: Identifier)
 
 operator negate_bit(b: Bit) -> Bit
 {
-  "negation of {b}",
   math_macro = \negatebit,
   custom = true,
   prose_application = "the bit-negation of {b}",
@@ -1623,7 +1620,6 @@ typedef type_error
 
 operator TypeErrorConfig() -> TypeError(type_error_code)
 {
-  "a \typingerrorterm{} configuration",
   math_macro = \TypeErrorConfig,
 };
 
@@ -4399,7 +4395,7 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
     env3 := environ_of(C);
     remove_local(env3, name) -> env4;
     D := with_environ(C, env4);
-    new_g := ordered_po(sg, ordered_po(ordered_po(g1, g2), graph_of(D)));
+    new_g := ordered_po(sg, g1, g2, graph_of(D));
     --
     with_graph(D, new_g);
   }
@@ -5411,7 +5407,9 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
     case fdiv_int {
       op = DIVRM;
       te_check(b > zero, TE_BO) -> True;
-      n := if a >= zero then round_down(as_rational(a) / as_rational(b)) else num_negate(round_up((num_negate(as_rational(a))) / as_rational(b)));
+      n :=  if a >= zero
+            then round_down(as_rational(a) / as_rational(b))
+            else num_negate(round_up((num_negate(as_rational(a))) / as_rational(b)));
       --
       L_Int(n);
     }
@@ -7987,7 +7985,6 @@ render rule typecheck_decl_func = typecheck_decl(func);
 
 operator scc[T](nodes: list0(T), edges: list0((T, T))) -> powerset(powerset(T))
 {
-  "the strongly connected components of the graph given by {nodes} and {edges}",
   prose_application = "the strongly-connected components for the graph made of nodes given by {nodes} and edges given by {edges}",
   math_macro = \sccop,
   custom = true,
@@ -7995,7 +7992,6 @@ operator scc[T](nodes: list0(T), edges: list0((T, T))) -> powerset(powerset(T))
 
 operator topological_ordering_comps[T](comps: powerset(powerset(T)), edges: list0((T, T))) -> list0(powerset(T))
 {
-  "a topological ordering of components {comps} according to dependency edges {edges}",
   prose_application = "the topological ordering of the sets of nodes given by {comps} relative to the edges given by {edges}",
   math_macro = \topologicalorderingcomps,
   custom = true,
@@ -8018,6 +8014,9 @@ typing relation type_check_ast(genv: global_static_envs, decls: list0(decl)) ->
   dependencies =: list_combine(from_deps, to_deps);
   rev_deps := list_combine(to_deps, from_deps);
   comps := scc(defs, rev_deps);
+  // Ideally the := below would be "in" but this conflicts with the current
+  // use-def analysis. TODO: find a way to facilitate this, perhaps by an
+  // attribute for muting use-def analysis errors for a given prmise.
   ordered_comps := topological_ordering_comps(comps, rev_deps);
   comp_decls := list_map(
     comp,
@@ -14728,7 +14727,7 @@ typing function check_no_duplicates(ids: list0(Identifier)) ->
   contains a duplicate identifier. If it does not, the
   result is $\True$ and otherwise the result is a
   \typingerrorterm{}.",
-  prose_transition = "checking whether {ids} contains a duplicate identifier yields",
+  prose_transition = "checking that {ids} contains no duplicate identifiers yields",
 } =
   case okay {
     unique_list(ids) -> ids1;
