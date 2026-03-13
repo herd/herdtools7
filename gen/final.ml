@@ -329,7 +329,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let value_prop = Run.run evts m
       |> run_cond_to_constr_gen_cond in
       let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
-      ForallStates (Or [fault_prop; value_prop])
+      ForallStates (And [fault_prop; value_prop])
 
 (* Extract ptes *)
     let extract_ptes =
