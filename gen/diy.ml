@@ -135,10 +135,10 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
 
 
+  let parse_argument_opt argument =
+    Option.map parse_argument argument |> Option.value ~default:[]
+
   let gen lr ls rl n =
-    let parse_argument_opt argument =
-      Option.map parse_argument argument
-      |> Option.value ~default:[] in
     let lr = parse_argument_opt lr
     and ls = parse_argument_opt ls
     and rl = parse_argument_opt rl in
@@ -218,7 +218,8 @@ let () =
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
   and reject_list = !Config.rejects
-  and filter_list = !Config.filter_check in
+  and filter_list = !Config.filter_check
+  and unfold_only = !Config.unfold_only in
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
@@ -321,8 +322,8 @@ let () =
     | [lhs;rhs] ->
         let lhs_unfold = M.parse_argument lhs in
         let rhs_unfold = M.parse_argument rhs in
-        let relax = Option.map M.parse_argument relax_list |> Option.value ~default:[] in
-        let safe = Option.map M.parse_argument safe_list |> Option.value ~default:[] in
+        let relax = M.parse_argument_opt relax_list in
+        let safe = M.parse_argument_opt safe_list in
         List.map ( fun l ->
           List.map ( fun r ->
             l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
@@ -336,6 +337,13 @@ let () =
             ( Code.pp_check Co.choice )
         )
     | _ -> (* The common path to generate tests *)
+      if unfold_only then
+        let relax = M.parse_argument_opt relax_list in
+        let safe = M.parse_argument_opt safe_list in
+        let reject = M.parse_argument_opt reject_list in
+        eprintf "***relax***\n%s\n***safe***\n%s\n***reject***\n%s\n"
+        (Builder.R.pp_relax_list relax) (Builder.R.pp_relax_list safe) (Builder.R.pp_relax_list reject)
+      else
       M.go !Config.size reject_list relax_list safe_list;
     exit 0
   with
