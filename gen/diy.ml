@@ -315,7 +315,11 @@ let () =
             ( Code.pp_check Co.choice )
         )
     | _ -> (* The common path to generate tests *)
-      M.go !Config.size reject relax safe;
+      if !Config.unfold_only then
+        printf "***relax***\n%s\n***safe***\n%s\n***reject***\n%s\n"
+        (Builder.R.pp_relax_list relax) (Builder.R.pp_relax_list safe) (Builder.R.pp_relax_list reject)
+      else
+        M.go !Config.size reject relax safe;
     exit 0
   with
   | Misc.Fatal msg ->
