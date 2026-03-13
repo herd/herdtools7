@@ -80,7 +80,7 @@ S with
     | "" -> ()
     | doc -> fprintf chan "\"%s\"\n" doc
     end ;
-    fprintf chan "\n{\n%s}\n"
+    fprintf chan "{\n%s}\n"
       (String.concat ""
          (List.map (sprintf " %s\n") (dump_state  t.init))) ;
     I.print_prog chan t.prog ;
@@ -95,8 +95,6 @@ S with
 
   let dump = do_dump false
   let dump_info = do_dump true
-
-  let (@@) f k = f k
 
   let lines doc t =
     begin fun k -> sprintf "%s %s" (Archs.pp I.arch) doc.Name.name :: k

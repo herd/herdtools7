@@ -26,5 +26,4 @@ module type S = sig
   val location_compare : location -> location -> int
   val pp_location : location -> string
   val pp_location_brk : location -> string
-  val pp_i : int -> string
 end

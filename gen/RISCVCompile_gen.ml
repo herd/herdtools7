@@ -124,7 +124,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     | 0 -> zero,init,st
     | _ ->
         let r,st = next_reg st in
-        r,(Reg (p,r),Some (A.S (Printf.sprintf "0x%x" v)))::init,st
+        r,((of_reg p r),Some (A.S (Printf.sprintf "0x%x" v)))::init,st
 
 
 
