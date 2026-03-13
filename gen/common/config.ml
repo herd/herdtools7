@@ -53,6 +53,7 @@ let variant = ref (fun (_:Variant_gen.t) -> false)
 let rejects = ref None
 let stdout = ref false
 let cycleonly = ref false
+let unfold_only = ref false
 let metadata = ref true
 let numeric = ref true
 let varatom = ref ([] : string list)
@@ -356,6 +357,7 @@ let diy_spec () =
           Arg.String (fun s -> filter_check := !filter_check @ [s]);
         ],
    "<lhs> <rhs> show whether the internal filter prohibits the two relaxations in the mode specified by `-mode` argument, however, all other constraints between <lhs> and <rhs>, such as edge compatibility, are ignored. Passing the internal filter is a necessary but not sufficient condition when sequence `<lhs> <rhs>` appears in the generated tests. This argument overrides other arguments but is overrided by `-show`.")::
+     ("-unfold-only", Arg.Set unfold_only, "unfold the wildcard.")::
    []
 
 let valid_stdout_flag is_diyone =
