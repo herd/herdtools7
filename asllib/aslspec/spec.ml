@@ -440,9 +440,9 @@ module ResolveApplicationExpr = struct
     | Indexed ({ body : Expr.t } as indexed_expr) ->
         let resolved_body = resolve_in_context body in
         Indexed { indexed_expr with body = resolved_body }
-    | NamedExpr (sub_expr, name) ->
-        let resolved_sub_expr = resolve_in_context sub_expr in
-        NamedExpr (resolved_sub_expr, name)
+    | NamedExpr ({ expr } as named_expr) ->
+        let resolved_expr = resolve_in_context expr in
+        NamedExpr { named_expr with expr = resolved_expr }
     | Relation _ | Map _ ->
         Format.kasprintf failwith "unexpected resolved expression: %a"
           PP.pp_expr expr
@@ -1632,8 +1632,7 @@ module Check = struct
             in
             let update_exprs = List.map snd updates in
             update_use_def_for_expr_list Use spec use_def update_exprs
-        | NamedExpr (sub_expr, _) ->
-            update_use_def_for_expr mode spec use_def sub_expr
+        | NamedExpr { expr } -> update_use_def_for_expr mode spec use_def expr
         | Tuple { args } -> update_use_def_for_expr_list mode spec use_def args
         | Map { lhs; args } ->
             update_use_def_for_expr_list mode spec use_def (lhs :: args)
@@ -2250,7 +2249,7 @@ module Check = struct
           ->
             false
         | Tuple _ | Record _ | RecordUpdate _ | Relation _ -> true
-        | NamedExpr (sub_expr, _) -> is_structured_assignable_expr sub_expr
+        | NamedExpr { expr } -> is_structured_assignable_expr expr
         | FieldAccess _ | Map _ | Transition _ | Indexed _
         | UnresolvedApplication _ ->
             Format.kasprintf failwith
@@ -2446,7 +2445,8 @@ module Check = struct
             | _ ->
                 Error.invalid_record_update_base_type record_type
                   ~context_expr:expr)
-        | NamedExpr (sub_expr, _) -> infer_type_in_env spec type_env sub_expr
+        | NamedExpr { expr = sub_expr } ->
+            infer_type_in_env spec type_env sub_expr
         | Tuple { label_opt; args } ->
             (* All arguments must typecheck, and if the tuple is labelled,
                the inferred tuple type must be subsumed by the labelled tuple type. *)
@@ -2723,7 +2723,7 @@ module Check = struct
       in
       let target_type = CheckTypeInstantiations.reduce_term spec target_type in
       let expr =
-        match expr with NamedExpr (sub_expr, _) -> sub_expr | _ -> expr
+        match expr with NamedExpr { expr = sub_expr } -> sub_expr | _ -> expr
       in
       match (expr, target_type) with
       | Var id, _ when is_ignore_var id -> type_env
@@ -2983,7 +2983,7 @@ module Check = struct
       let check_expr_list_in_context = List.iter check_expr_in_context in
       let open Rule in
       match expr with
-      | NamedExpr (sub_expr, _) -> check_expr_in_context sub_expr
+      | NamedExpr { expr = sub_expr } -> check_expr_in_context sub_expr
       | Relation { name; args } ->
           let () = check_expr_list_in_context args in
           let formal_args = formals_of_relation id_to_defining_node name in
@@ -3133,7 +3133,7 @@ let match_output_expr_to_term spec expr terms =
     let open Term in
     let term = Check.CheckTypeInstantiations.reduce_term spec term in
     match (expr, term) with
-    | NamedExpr (sub_expr, _), _ -> expr_matches_term spec sub_expr term
+    | NamedExpr { expr = sub_expr }, _ -> expr_matches_term spec sub_expr term
     | Var _, _ ->
         (* A variable does not have any structure and so can match any term. *)
         true
@@ -3191,7 +3191,8 @@ module ExtendNames = struct
     match (expr, opt_param_name) with
     | _, None -> expr
     | Var v, Some name when String.equal v name ->
-        expr (* Avoid naming a variable with its own name. *)
+        NamedExpr { expr; name; same_name = true }
+        (* Avoid naming a variable with its own name. *)
     | ( Expr.Relation
           { name = operator_name; is_operator = true; args = [ Var v ] },
         Some name ) ->
@@ -3199,9 +3200,9 @@ module ExtendNames = struct
         if Relation.is_typecast_operator relation && String.equal v name then
           (* Typecasts render the input variable. If the input variable has the same name
              as the parameter, avoid naming it. *)
-          expr
-        else NamedExpr (expr, name)
-    | _, Some name -> NamedExpr (expr, name)
+          NamedExpr { expr; name; same_name = true }
+        else NamedExpr { expr; name; same_name = false }
+    | _, Some name -> NamedExpr { expr; name; same_name = false }
 
   (** [extend_with_names type_term expr ] recursively transforms [expr] by
       adding names from [type_term] to sub-expressions of [expr]. Currently,

@@ -15,6 +15,10 @@
   <     \item define \texttt{r\_f} as the sum of the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r};
   ---
   >     \item define \texttt{r\_f} as the sum of  (1) the field $\FIELDf$ of \texttt{r}, and  (2) the field $\FIELDg$ of \texttt{r};
+  86c86
+  <     \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'} (for the output variable \texttt{r'}).
+  ---
+  >     \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
   55c55

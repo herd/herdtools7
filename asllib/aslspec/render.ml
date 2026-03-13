@@ -411,8 +411,9 @@ module Make (S : SPEC_VALUE) = struct
     let rec pp_expr fmt (expr, layout) =
       let open Expr in
       match expr with
-      | NamedExpr (sub_expr, name) ->
-          pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
+      | NamedExpr { expr = sub_expr; name; same_name } ->
+          if same_name then pp_expr fmt (sub_expr, layout)
+          else pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
       | Var name -> (
           (* Constants/labels should render via their macros.
           Plain variables should be rendered as text. *)
@@ -694,7 +695,7 @@ module Make (S : SPEC_VALUE) = struct
     let rec strip_names_from_expr expr =
       let open Expr in
       match expr with
-      | NamedExpr (sub_expr, _) -> strip_names_from_expr sub_expr
+      | NamedExpr { expr = sub_expr } -> strip_names_from_expr sub_expr
       | Var name -> Var name
       | ListIndex { list_var; index } ->
           ListIndex { list_var; index = strip_names_from_expr index }
@@ -758,12 +759,12 @@ module Make (S : SPEC_VALUE) = struct
     let rec expr_to_prose expr =
       let open Expr in
       match expr with
-      | NamedExpr (sub_expr, name) ->
+      | NamedExpr { expr = sub_expr; name } ->
           (* We strip names from the sub-expression to avoid prose like
             "... (for the output variable a) (for the output variable b)". *)
           let stripped_sub_expr = strip_names_from_expr sub_expr in
-          Format.asprintf "%s (for the output variable %s)"
-            (expr_to_prose stripped_sub_expr)
+          let expr_prose = expr_to_prose stripped_sub_expr in
+          Format.asprintf "%s (for the output variable %s)" expr_prose
             (var_to_prose name)
       | Var name when String.equal name Spec.ignore_var ->
           "some arbitrary value"

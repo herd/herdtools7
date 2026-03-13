@@ -308,11 +308,13 @@ module Expr = struct
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
     | Indexed of { index : string; list_var : string; body : t }
-    | NamedExpr of t * string
+    | NamedExpr of { expr : t; name : string; same_name : bool }
         (** An (internally-)named expression. Used for giving names to
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
-            during rule resolution. *)
+            during rule resolution. [same_name] indicates whether the name of
+            this expression is the same as the name of its sub-expression, which
+            is used to determine whether to render the name in the output. *)
 
   (** [make_var id] constructs a variable expression with identifier [id]. *)
   let make_var id = Var id
