@@ -630,3 +630,116 @@ Alignment filter behaviour between local `Pos**` and internal communication in `
   Sequence `DpAddrdW` `Coi` passes the internal filter in mode `sc`
   $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdW PosWW
   Sequence `DpAddrdW` `PosWW` passes the internal filter in mode `sc`
+
+`diy7 -unfold-only` unfolds relaxations and drops invalid composites
+  $ diy7 -arch AArch64 -relax '[Po,DpAddr?]' -unfold-only 2>&1
+  ***relax***
+  PosWW PosWR [PosWR,DpAddrsW] [PosWR,DpAddrsR] [PosWR,DpAddrdW] [PosWR,DpAddrdR] PosRW PosRR [PosRR,DpAddrsW] [PosRR,DpAddrsR] [PosRR,DpAddrdW] [PosRR,DpAddrdR] PodWW PodWR [PodWR,DpAddrsW] [PodWR,DpAddrsR] [PodWR,DpAddrdW] [PodWR,DpAddrdR] PodRW PodRR [PodRR,DpAddrsW] [PodRR,DpAddrsR] [PodRR,DpAddrdW] [PodRR,DpAddrdR]
+  ***safe***
+  
+  ***reject***
+  
+`diy7 -unfold-only` expands choice, optional, and grouped syntax
+  $ diy7 -arch AArch64 -relax 'PodWR|Fre' -unfold-only 2>&1
+  ***relax***
+  Fre PodWR
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax 'PodWR?' -unfold-only 2>&1
+  ***relax***
+  [] PodWR
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax '[PodWR Fre]' -unfold-only 2>&1
+  ***relax***
+  [PodWR,Fre]
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax 'PodWR Fre' -unfold-only 2>&1
+  ***relax***
+  Fre PodWR
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax '@after(PodWR|Fre)' -unfold-only 2>&1
+  ***relax***
+  @after(Fre) @after(PodWR)
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax '@before(PodWR?)' -unfold-only 2>&1
+  ***relax***
+  [] @before(PodWR)
+  ***safe***
+  
+  ***reject***
+  
+
+`diy7 -unfold-only` removes duplicate relaxes after unfolding
+  $ diy7 -arch AArch64 -relax 'PodWR|PodWR' -unfold-only 2>&1
+  ***relax***
+  PodWR
+  ***safe***
+  
+  ***reject***
+  
+`diy7 -unfold-only` also unfolds `-safe`
+  $ diy7 -arch AArch64 -safe 'Fre|Coe' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  Fre Coe
+  ***reject***
+  
+  $ diy7 -arch AArch64 -safe 'Fre?' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  [] Fre
+  ***reject***
+  
+  $ diy7 -arch AArch64 -safe '[PodWR Fre]' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  [PodWR,Fre]
+  ***reject***
+  
+  $ diy7 -arch AArch64 -safe 'Fre Coe' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  Fre Coe
+  ***reject***
+  
+  $ diy7 -arch AArch64 -safe '@after(PodWR|Fre)' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  @after(Fre) @after(PodWR)
+  ***reject***
+  
+  $ diy7 -arch AArch64 -safe '@before(PodWR?)' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  [] @before(PodWR)
+  ***reject***
+  
+
+`diy7 -unfold-only` removes duplicate safe edges after unfolding
+  $ diy7 -arch AArch64 -safe 'Fre|Fre' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  Fre
+  ***reject***
+  
