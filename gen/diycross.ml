@@ -28,22 +28,14 @@ module Make (Config:Config) (M:Builder.S) =
     open M.E
 
     let gen ess kont r =
-      Misc.fold_cross ess
-        (fun es r ->
-          let es = List.flatten es in
+      List.fold_left
+        (fun r es ->
           kont es D.no_info D.no_name D.no_scope r)
-        r
+        r ess
 
     open Code
 
 (* ALL *)
-    let parse_edges s =
-(*      let rs = parse_relaxs s in *)
-      let rs = M.R.expand_relax_macros (LexUtil.split s) in
-      List.fold_right (fun r k -> M.R.edges_of r :: k) rs []
-
-
-
     let varatom_ess =
       if M.A.bellatom then Misc.identity
       else match Config.varatom with
@@ -54,7 +46,7 @@ module Make (Config:Config) (M:Builder.S) =
             let fold = M.E.fold_atomo
           end in
           let module V = VarAtomic.Make(M.E)(Fold)  in
-          List.map V.varatom_es
+          V.varatom_es
       | atoms ->
           let atoms = M.E.parse_atoms atoms in
           let module Fold = struct
@@ -62,17 +54,32 @@ module Make (Config:Config) (M:Builder.S) =
             let fold f k = M.E.fold_atomo_list atoms f k
           end in
           let module V = VarAtomic.Make(M.E)(Fold)  in
-          List.map V.varatom_es
+          V.varatom_es
 
-    let expand_edge es = M.E.expand_edges es Misc.cons
-    let expand_edges ess =
-      List.flatten (List.map (fun e -> expand_edge e []) ess)
+    let parse_edges input =
+      List.map ( fun segment ->
+        String.trim segment
+        |> (fun s -> Lexing.from_string s)
+        |> Parser.main LexUtil.token
+        (* for backward compatibility,
+           convert each segment of `Seq` to `Choice`,
+           this means input segment `Po,DpAddr` is converted
+           to new syntax `Po|DpAddr` *)
+        |> ( function
+            | Ast.Seq seq -> Ast.Choice seq
+            | s -> s )
+      ) input
+      (* Add the top level Seq so to call Ast.flatten *)
+      |> fun e -> Ast.Seq e
+      |> Ast.flatten
+      |> List.map (M.R.parse_expand_relaxs ~ppo:M.ppo)
+      |> List.flatten
+      |> List.map M.R.edges_of
+      |> varatom_ess
 
     let zyva pp_rs =
       try
-        let ess = List.map parse_edges pp_rs in
-        let ess = List.map expand_edges ess in
-        let ess = varatom_ess ess in
+        let ess = parse_edges pp_rs in
         D.all (gen ess)
       with Fatal msg ->
         eprintf "Fatal error: %s\n" msg ;
