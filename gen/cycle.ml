@@ -1636,7 +1636,11 @@ let merge_changes n nss =
     find_change (fun m -> m.evt.pa <> m.next.evt.pa) n
 
 
-  let do_get_writes field pbank n =
+  (* Helper function extracts all the write events that
+     satisfies `filter_predicate`. The resulting events
+     are indexed by input `field` function,
+     e.g. indexed by physical address or virtual address. *)
+  let do_get_writes field filter_predicate n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -1645,13 +1649,13 @@ let merge_changes n nss =
       let k =  match e.dir with
       | Some W ->
           if
-            E.is_node m.edge.E.edge || not (pbank m.evt.bank)
+            E.is_node m.edge.E.edge || not (filter_predicate m.evt)
           then k else (field e,m)::k
       | None| Some R -> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in
-        if pbank e.bank then
+        if filter_predicate e then
           (field e,m.store)::k
         else k
       end in
@@ -1661,10 +1665,19 @@ let merge_changes n nss =
     let open Code in
     do_get_writes (* Not so sure about capacity here... *)
       (fun e -> e.pa)
-      (function Ord|Tag|VecReg _|Pair|Instr -> true | CapaTag|CapaSeal|Pte -> false)
+      (fun e -> match e.bank with
+        | Ord|Tag|VecReg _|Pair|Instr -> true
+        | CapaTag|CapaSeal -> false
+        (* Treat physical address change also an ordinary (value) write
+           to the new physical address. This is a technical choice to
+           allow the `coherence` function to add proper to further
+           written value check. *)
+        | Pte -> Value.need_check_value_on_pte e.atom)
 
   let get_pte_writes =
-    do_get_writes (fun e -> e.loc) (function Code.Pte -> true | _ -> false)
+    do_get_writes
+      (fun e -> e.loc)
+      (fun e -> match e.bank with Code.Pte -> true | _ -> false)
 
   let to_tagloc = function
     | Data s -> Data (Misc.add_atag s)
