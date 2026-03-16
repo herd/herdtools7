@@ -1447,7 +1447,7 @@ let finish n =
   if O.verbose > 1 then begin
     eprintf "READ VALUES\n" ;
     debug_cycle stderr start_node ;
-    eprintf "FINAL VALUES [%s]\n"
+    eprintf "FINAL VALUES (debug only print from virtual locations to values) [%s]\n"
       (vs |> List.map
         ( fun (loc,(v,_pte)) -> sprintf "%s -> %s"
           (Code.pp_loc loc) (Value.pp_v v) )
