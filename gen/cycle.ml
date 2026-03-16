@@ -286,12 +286,6 @@ module Make (O:Config) (E:Edge.S) :
 
   let str_node n = sprintf "%s -%s->" (debug_evt n.evt) (debug_edge n.edge)
 
-  let debug_nodes chan ns =
-    let rec iter chan = function
-      | [] -> ()
-      | [n] -> debug_node chan n
-      | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
-    iter chan ns
   let debug_cycle chan n =
     let rec do_rec m =
       fprintf chan "%a\n" debug_node m ;
@@ -1621,26 +1615,19 @@ let merge_changes n nss =
 
 
 (* find changing location *)
-  let find_change predicate n =
+  let find_change n =
     let rec do_rec m =
-      if (predicate m) then Some m.next
+      if m.evt.loc <> m.next.evt.loc then Some m.next
       else if m.next == n then
         None
       else do_rec m.next in
     do_rec n
 
-  let find_change_virtual_address n =
-    find_change (fun m -> m.evt.loc <> m.next.evt.loc) n
-
-  let find_change_physical_address n =
-    find_change (fun m -> m.evt.pa <> m.next.evt.pa) n
-
-
   (* Helper function extracts all the write events that
      satisfies `filter_predicate`. The resulting events
      are indexed by input `field` function,
      e.g. indexed by physical address or virtual address. *)
-  let do_get_writes field filter_predicate n =
+  let do_get_writes filter_predicate n =
     let rec do_rec m =
       let k =
         if m.next == n then []
@@ -1650,23 +1637,23 @@ let merge_changes n nss =
       | Some W ->
           if
             E.is_node m.edge.E.edge || not (filter_predicate m.evt)
-          then k else (field e,m)::k
+          then k else (e.loc,m)::k
       | None| Some R -> k in
       if m.store == nil then k
       else begin
         let e = m.store.evt in
         if filter_predicate e then
-          (field e,m.store)::k
+          (e.loc,m.store)::k
         else k
       end in
     do_rec n
 
   let get_ord_writes =
     let open Code in
-    do_get_writes (* Not so sure about capacity here... *)
-      (fun e -> e.pa)
+    do_get_writes
       (fun e -> match e.bank with
         | Ord|Tag|VecReg _|Pair|Instr -> true
+        (* Not so sure about capacity here... *)
         | CapaTag|CapaSeal -> false
         (* Treat physical address change also an ordinary (value) write
            to the new physical address. This is a technical choice to
@@ -1676,7 +1663,6 @@ let merge_changes n nss =
 
   let get_pte_writes =
     do_get_writes
-      (fun e -> e.loc)
       (fun e -> match e.bank with Code.Pte -> true | _ -> false)
 
   let to_tagloc = function
@@ -1696,61 +1682,58 @@ let merge_changes n nss =
     | _ -> k in
     k
 
+  let coherence_by_physical_address nodes =
+    List.map (fun node -> (node.evt.pa,node)) nodes
+    |> by_loc
+    (* Adjust the coherence list:
+       for a physical adress, if the observable value list starts
+       from a physical adress change, we inject a dummy
+       write-zero event for the purpose of trigger value
+       check, especially in the case where no more write to the
+       physical adress. *)
+    |> List.map ( fun (pa,node_list) ->
+        let node_list = List.flatten node_list in
+        if Value.need_check_value_on_pte (List.hd node_list).evt.atom then
+          let zero_write = {nil with evt = {evt_null with pa; v=Value.no_value; dir = Some W}} in
+          (pa, [zero_write::node_list])
+        else (pa,[node_list])
+      )
+
+  (* Extract all the events that affect the coherence check,
+     for example, ordinary write, and physical address change,
+     then group them by _physical address_. *)
   let coherence n =
-    let r = match find_change_physical_address n with
-    | Some n ->
-        let ord_ws = get_ord_writes n in
-        (* MTE locations shadow normal locations, so we need
-         * to track them separately. As we may be interested
-         * in the same graph nodes, lets just duplicate and
-         * label accordingly. *)
-        let tag_ws = if do_memtag then
-          List.map get_tag_locs (get_ord_writes n) else [] in
-        let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then
-          List.iter
-            (fun (loc,n) ->
-              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-            ws ;
-        let r = by_loc ws in
-        List.fold_right
-          (fun (loc,ws) k -> match ws with
-          | [] -> k
-          | [ns] ->
-             if O.verbose > 1 then
-               Printf.eprintf "Standard write sequence on %s: %s\n"
-                 (Code.pp_loc loc)
-                 (String.concat " "
-                    (List.map str_node ns)) ;
-             (loc,ws)::k
-          | _ ->
-              (* Assume there is no consecutive writes to the same location *)
-              List.iter
-                (fun ns -> eprintf "[%a]\n" debug_nodes ns)
-                ws ;
-              assert false)
-          r []
-    | None ->
-        if O.same_loc then
-          match get_ord_writes n with
-          | [] -> []
-          | (loc,_)::_ as xs ->
-              [loc,[List.map snd xs]]
-        else
-          Warn.fatal "Unique location" in
-    List.fold_right
-      (fun (loc,ns) k ->
+    let start_node =
+      match find_change n,O.same_loc with
+      | Some start_node, _ -> start_node
+      | None, true -> n
+      | None, false -> Warn.fatal "Unique location" in
+    let ordinary_write_set = get_ord_writes start_node in
+    let write_set =
+      let ord_ws_by_pa = by_loc ordinary_write_set
+      |> List.map
+        ( fun (_,ws) -> List.map coherence_by_physical_address ws |> List.flatten )
+      |> List.flatten in
+      (* MTE locations shadow normal locations, so we need
+       * to track them separately. As we may be interested
+       * in the same graph nodes, lets just duplicate and
+       * label accordingly. *)
+      let tag_ws = if do_memtag then
+        List.map get_tag_locs ordinary_write_set |> by_loc else [] in
+      tag_ws @ ord_ws_by_pa in
+    List.filter_map
+      (fun (loc,ns) ->
         match loc with
         | Data loc ->
-            (loc,
+            Some (loc,
             List.map
               (List.map (fun n -> n,get_observers n))
-              ns)::k
-        | Code _ ->  k)
-      r []
+              ns)
+        | Code _ -> None )
+      write_set
 
   let last_ptes n =
-    match find_change_virtual_address n with
+    match find_change n with
     | Some n ->
         let ws = get_pte_writes n in
         let r = by_loc ws in
