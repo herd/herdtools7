@@ -864,27 +864,71 @@ and get_written e = match E.written_of e with
 (* Compute rfmap for registers *)
 (*******************************)
 
+module EvtSetByPo (I : sig
+  val es : S.event_structure
+end) =
+struct
+  let is_before_strict = U.is_before_strict I.es
+
+  let ambiguous_po e1 e2 =
+    Warn.fatal "Ambiguous po for register %s: %s and %s are not ordered.\n%!"
+      (A.pp_location (get_loc e1))
+      (E.debug_event_str e1) (E.debug_event_str e2)
+
+  include Set.Make (struct
+    type t = E.event
+
+    let compare e1 e2 =
+      if is_before_strict e1 e2 then -1
+      else if is_before_strict e2 e1 then 1
+      else ambiguous_po e1 e2
+  end)
+
+  let find_last_before e set =
+    find_last_opt (fun e' -> is_before_strict e' e) set
+
+  let find_first_after e set =
+    find_first_opt (fun e' -> is_before_strict e e') set
+  [@@warning "-32"]
+
+  (* We have to check that the order is total because none of the set
+     construction methods perform enough comparison to ensure that all
+     consecutive elements will be compared.
+
+     Checking that all consecutive elements are comparable is enough to prove
+     totality if the relation is transitive. Here, we believe that
+     [is_before_strict] is transitive by construction.
+
+     See this gist:
+       https://gist.github.com/HadrienRenaud/245295e0950fb3b58c23e43937248c9c
+  *)
+
+  let check_total set =
+    if not (is_empty set) then
+      fold
+        (fun e pred_opt ->
+          match pred_opt with
+          | Some pred ->
+              if not (is_before_strict pred e) then ambiguous_po e pred;
+              Some e
+          | None -> Some e)
+        set None
+      |> ignore
+
+  let of_list li =
+    let set = of_list li in
+    let () = check_total set in
+    set
+end
+
 let map_loc_find loc m =
   try U.LocEnv.find loc m
   with Not_found -> []
 
 let match_reg_events add_eq es csn =
   let loc_loads_stores = U.collect_reg_loads_stores es in
-  let is_before_strict = U.is_before_strict es in
-  let compare e1 e2 =
-    if is_before_strict e1 e2 then -1
-    else if is_before_strict e2 e1 then 1
-    else
-      let () =
-        Printf.eprintf "Not ordered stores %a and %a\n" E.debug_event e1
-          E.debug_event e2
-      in
-      assert false
-  in
-  let module StoreSet = Set.Make (struct
-    type t = E.event
-
-    let compare = compare
+  let module StoreSet = EvtSetByPo (struct
+    let es = es
   end) in
   let add wt rf (rfm, csn) = (S.RFMap.add wt rf rfm, add_eq rfm wt rf csn) in
   (* For all loads find the right store, the one "just before" the load *)
@@ -901,9 +945,8 @@ let match_reg_events add_eq es csn =
       (* Add the corresponding store for each load *)
       List.fold_left
         (fun k load ->
-          let f e = is_before_strict e load in
           let rf =
-            match StoreSet.find_last_opt f stores with
+            match StoreSet.find_last_before load stores with
             | Some store -> S.Store store
             | None -> S.Init
           in

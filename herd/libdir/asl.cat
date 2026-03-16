@@ -50,7 +50,7 @@ let asl_ctrl_deps = [B]; (asl_data | asl_iico_ctrl)+; [AArch64]
 (**********************************)
 
 (* Intra-instruction Data dependencies *)
-let aarch64_iico_data = [AArch64 \ B]; asl_deps; [AArch64]
+let aarch64_iico_data = [AArch64 & (R | Rreg)]; asl_deps; [AArch64]
 
 (* Intra-instruction Control dependencies *)
 let aarch64_iico_ctrl = [B]; asl_ctrl_deps; [AArch64]
