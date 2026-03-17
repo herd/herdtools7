@@ -98,7 +98,8 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
   let to_relax_list parsed_list =
     eprintf "%s\n" (String.concat ";" parsed_list);
-    let relax_list = C.R.expand_relax_macros parsed_list in
+    let relax_list = C.R.expand_relax_macros parsed_list
+                     |> C.R.remove_invalid_relaxes in
     match C.A.bellatom, O.varatom with
     | true, _
     | false, [] -> relax_list
