@@ -783,6 +783,9 @@ module Make (S : SPEC_VALUE) = struct
           corresponds to a variable that happens to share a name with a type. *)
           | _ ->
               var_to_prose name)
+      | ListIndex { list_var; index = Var _ as index } ->
+          (* An optimization of the prose for variable indices. *)
+          Format.asprintf "%s[%s]" (var_to_prose list_var) (expr_to_prose index)
       | ListIndex { list_var; index } ->
           Format.asprintf "the element of %s at %s" (var_to_prose list_var)
             (expr_to_prose index)
@@ -903,8 +906,8 @@ module Make (S : SPEC_VALUE) = struct
       | Map { lhs; args } ->
           let lhs_prose = expr_to_prose lhs in
           let args_prose = List.map expr_to_prose args in
-          Format.asprintf "applying the function given by %s to %s" lhs_prose
-            (prose_list args_prose)
+          Format.asprintf "the application of the function given by %s to %s"
+            lhs_prose (prose_list args_prose)
       | Relation { name; args } ->
           let relation = Spec.relation_for_id S.spec name in
           let expr_prose =
@@ -1031,7 +1034,7 @@ module Make (S : SPEC_VALUE) = struct
       if is_output then
         let expr = transition_to_output expr in
         Format.fprintf fmt "\\textbf{the result is:} %s." (expr_to_prose expr)
-      else Format.fprintf fmt "%s;" (expr_to_prose expr)
+      else Format.fprintf fmt "%s" (expr_to_prose expr)
 
     (** [pp_prose_rule_element fmt element] renders the prose for a single
         element of a rule with the formatter [fmt]. *)

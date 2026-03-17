@@ -362,6 +362,9 @@
     \right]
   }
 }
+\newcommand\listmapunion[4][H]{%
+  \bigcup_{#2 \in #3} #4
+}
 \newcommand\listfilter[4][H]{%
   \ifthenelse{\equal{#1}{H}}{
     \left[#2 \in #3 : #4\right]
@@ -1391,7 +1394,7 @@
 \newcommand\purity[0]{\hyperlink{type-TPurity}{purity}}
 \newcommand\purities[0]{\hyperlink{type-TPurity}{purities}}
 \newcommand\purityless[0]{\hyperlink{def-purityless}{<_{\text{pure}}}}
-\newcommand\puritygeq[0]{\hyperlink{def-puritygeq}{\geq_{\text{pure}}}}
+\newcommand\puritygeq[0]{\hyperlink{relation-gepure}{\geq_{\text{pure}}}}
 
 % Symbolic equivalence testing macros
 \newcommand\domainsubset[0]{\hyperlink{def-domainsubset}{\textfunc{domain\_subset}}} % NO_SPECIFICATION_REQUIRED

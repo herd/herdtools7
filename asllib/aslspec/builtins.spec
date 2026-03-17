@@ -2,7 +2,7 @@ operator cond_case[T](c: Bool, r: T) -> T
 {
   math_macro = \condcase,
   custom = true,
-  prose_application = "if {c} holds then {r}",
+  prose_application = "\item {r} if {c}",
 };
 
 // TODO: add a custom rendering where all conditions
@@ -13,7 +13,7 @@ variadic operator cond_op[T](cases: list1(T)) -> T
 {
   math_macro = \condop,
   custom = true,
-  prose_application = "{cases}",
+  prose_application = "\begin{itemize}{cases}\end{itemize}",
 };
 
 // This constant is for internal use only.
@@ -41,9 +41,9 @@ typedef Bool
   math_macro = \Bool,
 } =
   | True
-  { "true", math_macro = \True }
+  { "\True{}", math_macro = \True }
   | False
-  { "false", math_macro = \False }
+  { "\False{}", math_macro = \False }
 ;
 
 typedef N
@@ -132,16 +132,30 @@ variadic operator or(disjuncts: list1(Bool)) -> Bool
   prose_application = "the \hyperlink{relation-lor}{disjunction} of: {disjuncts}",
 };
 
+operator binary_or(d1: Bool, d2: Bool) -> Bool
+{
+  associative = true,
+  math_macro = \lor,
+  prose_application = "{d1} or {d2}",
+};
+
+operator binary_and(d1: Bool, d2: Bool) -> Bool
+{
+  associative = true,
+  math_macro = \land,
+  prose_application = "{d1} and {d2}",
+};
+
 operator list_and(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listand,
-  prose_application = "the \hyperlink{relation-land}{conjunction} of {conditions}",
+  prose_application = "the \hyperlink{relation-land}{conjunction} of all Boolean values in {conditions}",
 };
 
 operator list_or(conditions: list0(Bool)) -> Bool
 {
   math_macro = \listor,
-  prose_application = "the \hyperlink{relation-lor}{disjunction} of {conditions}",
+  prose_application = "the \hyperlink{relation-lor}{disjunction} of all Boolean values in {conditions}",
 };
 
 operator not(b: Bool) -> Bool
