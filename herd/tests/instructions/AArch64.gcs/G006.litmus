@@ -1,0 +1,16 @@
+AArch64 G006
+variant=shadowstack
+{
+  SS(x,2);
+  SS(y,2) = ssval_t: {0, SSCap(y,1)};
+  0:GCSPR_EL1=&x[1];
+  0:X0=&y[1];
+}
+
+P0               ;
+GCSSS1 X0        ; (* GCSPR = y[1], y[1] = SSCap(x[1],5)  *)
+GCSSS2 X0        ; (* GCSPR = y[2], x = SSCap(x,1)  *)
+
+(* Must not fault *)
+
+forall ~fault(P0)

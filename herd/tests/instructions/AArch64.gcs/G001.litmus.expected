@@ -1,0 +1,12 @@
+Test G001 Required
+States 2
+  ~Fault(P0:L0,GCS:POPM);
+ Fault(P0:L0,GCS:POPM);
+No
+Witnesses
+Positive: 1 Negative: 1
+Flag Guarded-Control-Stack-is-work-in-progress
+Condition forall (fault(P0:L0,GCS:POPM))
+Observation G001 Sometimes 1 1
+Hash=00c4e739f54e67ec1b5fa068a62f1df0
+

@@ -1,0 +1,21 @@
+AArch64 MP+dmb.st-gcsb-bl+dmb.ld
+variant=shadowstack
+{
+SS(x,1);
+
+0:X2=y;
+0:GCSPR_EL1=&x[1];
+
+1:X2=x;
+1:X4=y;
+}
+
+P0                                       | P1          ;
+MOV W1,#1                                | LDR X1,[X2] ;
+STR W1,[X2]  (* Memory (Write) Effect *) | DMB LD      ;
+DMB ST                                   | LDR W3,[X4] ;
+GCSB DSYNC   (* GCSB Effect           *) |             ;
+BL L0        (* GCS (Write) Effect    *) |             ;
+L0:                                      |             ;
+
+exists 1:X1=label:"P0:L0" /\ 1:X3=0
