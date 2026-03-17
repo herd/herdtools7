@@ -57,6 +57,9 @@ module type S = sig
  (* NB use for set of relaxations only *)
   val expand_relax_macros : string list -> relax list
 
+  (* Remove invalid relax from the list *)
+  val remove_invalid_relaxes : relax list -> relax list
+
 (* Sets *)
   module Set : MySet.S with type elt = relax
   val pp_set : out_channel -> Set.t -> unit
@@ -345,6 +348,18 @@ and type edge = E.edge
             with _ -> None
           else None
 
+        let remove_invalid_relaxes relaxes =
+          let rec for_all_adjacent predicate = function
+            | [] | [_] -> true
+            | lhs :: rhs :: list ->
+                predicate lhs rhs && for_all_adjacent predicate (rhs :: list) in
+          List.filter_map
+          ( fun relax ->
+              let is_valid = edges_of relax
+                  |> for_all_adjacent E.can_precede in
+              if is_valid then Some relax else None
+          ) relaxes
+
         let expand_relax_macro = function
           | "allRR" -> allR Diff R
           | "allRW" -> allR Diff W
@@ -357,9 +372,8 @@ and type edge = E.edge
           | s ->  [do_parse_relax s]
 
         let expand_relax_macros lus =
-          let rs = List.map expand_relax_macro lus in
-          let rs = List.flatten rs in
-          rs
+          List.map expand_relax_macro lus
+          |> List.flatten
 
 
 (********)
