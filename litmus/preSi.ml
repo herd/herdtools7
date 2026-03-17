@@ -277,10 +277,16 @@ module Make
             end
           end
         end ;
-        Insert.insert_when_exists O.o "intrinsics.h" ;
+        if Insert.exists "intrinsics.h" then begin
+          let fname = "intrinsics" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
+        end ;
+        (* Insert.insert_when_exists O.o "intrinsics.h" ; *)
         if Cfg.variant Variant_litmus.MemTag then begin
           O.o "#include \"memtag.h\""
-        end;
+        end ;
         if Cfg.variant Variant_litmus.Pac then begin
           O.o "#include \"auth.h\""
         end;
@@ -388,14 +394,13 @@ module Make
             Insert.insert O.o "presi-self.c" ;
           O.o "" ; *)
         end ;
-        (* TODO: modularise _prelude_size.c once it becomes clear nop becomes a common opcode *)
         if CfgLoc.need_prelude then begin
-          (* let fname = "_prelude_size" in
+          let fname = "_prelude_size" in
           let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
           let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
           O.o ("#include <" ^ fname ^ ".h>") ;
-          O.o "" ; *)
-          ObjUtil.insert_lib_file O.o "_prelude_size.c"
+          O.o "" 
+          (*ObjUtil.insert_lib_file O.o "_prelude_size.c"*)
         end ;
         dump_find_ins
 

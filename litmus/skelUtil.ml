@@ -1099,12 +1099,12 @@ end
             O.o "/***************************/" ;
             O.o "/* Get instruction opcodes */" ;
             O.o "/***************************/" ;
-            O.o "" ; (* TODO: at some point, nop is a common instruction, so this should be separated and not declared static *)
+            O.o "" ;
             A.V.Instr.Set.iter
               (fun i -> D.dump i ; O.o "")
               is ;
             A.V.Instr.Set.iter
-              (fun i -> O.f "static ins_t %s;" (A.GetInstr.instr_name i))
+              (fun i -> (O.f "static ins_t %s;" (A.GetInstr.instr_name i)))
               is ;
             List.iter
               (fun ((p,lab as lbl),_) ->
