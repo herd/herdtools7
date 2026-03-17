@@ -307,6 +307,18 @@ and type edge = E.edge
             with _ -> None
           else None
 
+        let remove_invalid_relaxes relaxes =
+          let rec for_all_adjacent predicate = function
+            | [] | [_] -> true
+            | lhs :: rhs :: list ->
+                predicate lhs rhs && for_all_adjacent predicate (rhs :: list) in
+          List.filter_map
+          ( fun relax ->
+              let is_valid = edges_of relax
+                  |> for_all_adjacent E.can_precede in
+              if is_valid then Some relax else None
+          ) relaxes
+
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           match str with
           (* Backward compatibility:
@@ -328,10 +340,15 @@ and type edge = E.edge
             [relax]
           (* expand the wildcard edges and annotations *)
           |> expand_relaxs ppo
+          (* remove invalid composite relax, this increases
+           the performance because search algorithm in `alt.ml`
+           does not check validity in composite relax. *)
+          |> remove_invalid_relaxes
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) str_list =
             let xss = List.map (parse_expand_relax ~ppo) str_list in
             Misc.fold_cross xss ( fun xs acc -> ERS (edges_ofs xs) :: acc ) []
+            |> remove_invalid_relaxes
 
 
 (********)
