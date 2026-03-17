@@ -53,6 +53,11 @@ module type S = sig
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
         -> string list -> relax list
 
+  (* Remove invalid relax from the list *)
+  val remove_invalid_relaxes : relax list -> relax list
+
+
+
 (* Sets *)
   module Set : MySet.S with type elt = relax
   val pp_set : out_channel -> Set.t -> unit
@@ -306,6 +311,18 @@ and type edge = E.edge
             try Some (E.parse_edge suf)
             with _ -> None
           else None
+
+        let remove_invalid_relaxes relaxes =
+          let rec for_all_adjacent predicate = function
+            | [] | [_] -> true
+            | lhs :: rhs :: list ->
+                predicate lhs rhs && for_all_adjacent predicate (rhs :: list) in
+          List.filter_map
+          ( fun relax ->
+              let is_valid = edges_of relax
+                  |> for_all_adjacent E.can_precede in
+              if is_valid then Some relax else None
+          ) relaxes
 
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           match str with

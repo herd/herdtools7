@@ -91,6 +91,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     |> List.map edges_of
     |> varatom_ess
     |> List.map ( fun edges -> ERS edges )
+    |> remove_invalid_relaxes
 
   module AltConfig = struct
     include O
