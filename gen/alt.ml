@@ -68,8 +68,8 @@ struct
   Also notice that we are more tolerant for Rfi.
  *)
 (* Assuming Dp is safe *)
-    | Rf Int,Dp _ | Dp _,Rf Int -> true
-    | Dp (_,sd,_),Ws Int | Dp (_,sd,_),Fr Int ->
+    | (Rf Int|Po(Same,Dir W,Dir R)), Dp _ | Dp _, (Rf Int|Po(Same,Dir W,Dir R)) -> true
+    | Dp (_, sd, _), (Ws Int|Po(Same,Dir W,Dir W)|Fr Int|Po(Same,Dir R,Dir W)) ->
         not (po_safe sd (dir_src e1) (dir_tgt e2))
     | Po (sd1,_,_), Dp (_,sd2,_) ->
         not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
@@ -77,15 +77,15 @@ struct
     | Dp (_,sd1,_),Po (sd2,_,_) ->
         not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
         not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-(* Check Po is safe *)
-    | Po (sd1,_,_),Po (sd2,_,_) ->
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-    | Rf Int,Po (sd,_,_) ->
+    | (Rf Int|Po(Same,Dir W,Dir R)), Po (sd, _, _) ->
         po_safe sd (dir_src e2) (dir_tgt e2) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
-    | Po (sd,_,_),Rf Int ->
+    | Po (sd, _, _), (Rf Int|Po(Same,Dir W,Dir R)) ->
         po_safe sd (dir_src e1) (dir_tgt e1) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
+    (* Check Po is safe *)
+    | Po (sd1, _, _), Po (sd2, _, _) ->
+        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
     | (Rmw _,_)|(_,Rmw _) -> true
 (* Added *)
@@ -103,12 +103,18 @@ struct
 (*
   Now accept some internal with internal composition
  *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
+      | (Ws Int | Po(Same,Dir W,Dir W)
+        | Rf Int | Po(Same,Dir W,Dir R)
+        | Fr Int | Po(Same,Dir R,Dir W) | Insert _)
+        , (Dp (_, _, _) | Po (Diff, _, _))
+      | (Dp (_, _, _) | Po (Diff, _, _))
+        , (Ws Int | Po(Same,Dir W,Dir W)
+          | Rf Int | Po(Same,Dir W,Dir R)
+          | Fr Int | Po(Same,Dir R,Dir W) | Insert _)
       | Dp (_,Diff,_),Po (Diff,_,_)
       | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
+      | (Rf Int|Po(Same,Dir W,Dir R)), Po (Same, _, _)
+      | Po (Same, _, _), (Rf Int|Po(Same,Dir W,Dir R))
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
@@ -373,18 +379,16 @@ module Make(C:Builder.S)
     let minint suff = c_minint 0 suff
 
 (* Prefix *)
-    let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
-
     let () =
       if O.verbose > 0 && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
         List.iter
           (fun rs ->
             eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
+          O.prefix
       end
 
-    let prefixes = List.map edges_ofs prefix_expanded
+    let prefixes = List.map edges_ofs O.prefix
 
     let rec mk_can_prefix = function
       | [] -> (fun _ _ -> true)
@@ -718,9 +722,6 @@ module Make(C:Builder.S)
 
     let parse_input ~relax ~safe ~reject =
       let r_nempty = Misc.consp relax in
-      let relax = expand_relaxs C.ppo relax
-      and safe = expand_relaxs C.ppo safe
-      and reject = expand_relaxs C.ppo reject in
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
