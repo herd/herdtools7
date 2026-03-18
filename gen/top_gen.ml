@@ -900,8 +900,7 @@ let max_set = IntSet.max_elt
       let locs = List.split inits |> fst |> A.LocSet.of_list in
       let extra_type_declaration =
         A.LocMap.filter ( fun k _ -> not @@ A.LocSet.mem k locs ) env
-        (* to_list only exists after ocaml 5 *)
-          |> A.LocMap.to_seq |> List.of_seq
+          |> A.LocMap.to_list
           (* give default 0 value *)
           |> List.map ( fun (loc, t) -> (loc, (typ_to_testtype t, A.S "0")) ) in
       List.sort (fun (l, _) (r, _) -> A.location_compare l r) (type_inits @ extra_type_declaration)
@@ -1032,11 +1031,10 @@ let basic_info scope prefetch com_edges cycle_description =
 let merge_info lhs rhs =
   let mk_map info =
     List.map ( fun (k,v) -> String.capitalize_ascii k,v ) info
-      |> List.to_seq |> StringMap.of_seq in
+      |> StringMap.of_list in
   StringMap.union
     ( fun v1 v2 -> v1 ^ " " ^ v2 ) (mk_map lhs) (mk_map rhs)
-  |> StringMap.to_seq
-  |> List.of_seq
+  |> StringMap.to_list
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
