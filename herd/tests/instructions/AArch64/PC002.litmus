@@ -1,0 +1,11 @@
+AArch64 PC002
+variant=fatal
+{
+0:X0=0;
+}
+  P0          ;
+ MOV W0,#1    ;
+ SVC #0       ;
+
+locations [0:PC;]
+forall (0:PC=END_P0)
