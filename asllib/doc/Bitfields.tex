@@ -808,12 +808,13 @@ See \ExampleRef{A bitvector type with nested bitfields}.
 The following are some examples of selecting indices:
 \[
 \begin{array}{lcl}
-\selectindicesbyslices([9,4,6,1,13], [4,3,2,1,0]) &\typearrow& [9,4,6,1,13]\\
-\selectindicesbyslices([9,4,6,1,13], [0,1,2,3,4]) &\typearrow& [13,1,6,4,9]\\
-\selectindicesbyslices([9,4,6,1,13], [3,2,4,0])   &\typearrow& [4,6,9,13]\\
+\selectindicesbyslices([13,1,6,4,9], [0,1,2,3,4]) &\typearrow& [13,1,6,4,9]\\
+\selectindicesbyslices([13,1,6,4,9], [4,3,2,1,0]) &\typearrow& [9,4,6,1,13]\\
+\selectindicesbyslices([13,1,6,4,9], [0,4,2,3])   &\typearrow& [13,9,6,4]\\
 \end{array}
 \]
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -829,6 +830,8 @@ The following are some examples of selecting indices:
     \overname{I[S_m] \ldots I[S_0]}{\vabsslice}
 }
 \end{mathpar}
+} % BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{select_indices_by_slices}
 
 \TypingRuleDef{AbsoluteBitfieldsAlign}
 \RenderRelation{absolute_bitfields_align}

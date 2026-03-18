@@ -335,6 +335,7 @@ func ReplicateBit{N}(isZero: boolean) => bits(N)
 func Ones{N}() => bits(N)
 \end{lstlisting}
 
+\BackupProseAndFormally{
 \ProseParagraph
 \AllApply
 \begin{itemize}
@@ -366,6 +367,8 @@ func Ones{N}() => bits(N)
   \canomitstdlibparam(\funcsig) \typearrow \vb
 }
 \end{mathpar}
+} % END_OF_BACKUP_PROSE_AND_FORMALLY
+\RenderProseAndFormally{can_omit_stdlib_param}
 
 \TypingRuleDef{CheckParamsTypeSat}
 \RenderRelation{check_params_typesat}

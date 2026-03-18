@@ -243,6 +243,12 @@ variadic operator make_list[T](elements: list1(T)) -> list1(T)
   prose_application = "the list consisting of {elements}",
 };
 
+variadic operator match_list[T](elements: list0(T)) -> list0(T)
+{
+  math_macro = \makelist,
+  prose_application = "the list consisting of {elements}",
+};
+
 operator make_singleton_list[T](e: T) -> list1(T)
 {
   math_macro = \makelist,
@@ -4218,7 +4224,7 @@ typing function select_indices_by_slices(indices: list0(Z), slice_indices: list0
     v := indices[idx];
     select_indices_by_slices(indices, rest) -> rest_vals;
     --
-    concat(make_singleton_list(v), rest_vals);
+    cons(v, rest_vals);
   }
 ;
 
@@ -8063,7 +8069,7 @@ typing relation annotate_decl_comps(genv: global_static_envs, comps: list0((list
     comp =: match_singleton_list(d);
     typecheck_decl(genv, d) -> (d1, genv1);
     annotate_decl_comps(genv1, comps1) -> (new_genv, decls1);
-    new_decls := concat(make_singleton_list(d1), decls1);
+    new_decls := cons(d1, decls1);
     --
     (new_genv, new_decls);
   }
@@ -8359,7 +8365,7 @@ typing relation rename_subprograms(discarded: list0(func)) ->
     name := fresh_identifier();
     h' := h(name: name);
     --
-    concat(make_singleton_list(h'), t');
+    cons(h', t');
   }
 ;
 
@@ -10386,35 +10392,22 @@ typing function can_omit_stdlib_param(func_sig: func) ->
   prose_application = "{func_sig} allows omitting its first parameter",
   prose_transition = "checking whether {func_sig} allows omitting its first parameter yields",
 } =
-  case builtin_one_param {
-    func_sig.builtin;
-    func_sig.parameters =: match_singleton_list((n_param, _));
-    func_sig.args =: match_cons((_, T_Bits(E_Var(n_arg), _)), _);
-    bool_transition(n_param = n_arg) -> True;
-    --
-    True;
+  bool_transition(func_sig.builtin) -> True | False;
+  case builtin_one_or_two_params {
+    case one_param {
+      func_sig.parameters =: match_singleton_list((n, _));
+    }
+    case two_params {
+      func_sig.parameters =: match_list(_, (n, _));
+    }
+    b := func_sig.args = match_cons((_, T_Bits(E_Var(n), _)), _);
   }
-
-  case builtin_two_params {
-    func_sig.builtin;
-    func_sig.parameters =: match_cons(_, match_cons((n_param, _), empty_list));
-    func_sig.args =: match_cons((_, T_Bits(E_Var(n_arg), _)), _);
-    bool_transition(n_param = n_arg) -> True;
-    --
-    True;
+  case three_or_more_params {
+    list_len(func_sig.parameters) > two;
+    b := False;
   }
-
-  case builtin_other {
-    func_sig.builtin;
-    --
-    False;
-  }
-
-  case not_builtin {
-    not_single(func_sig.builtin);
-    --
-    False;
-  }
+  --
+  b;
 ;
 
 typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((Identifier, option(ty))), params: list0((ty, expr, powerset(TSideEffect)))) ->
@@ -10837,7 +10830,7 @@ typing function filter_call_candidates(tenv: static_envs, formal_types: list0(ty
     call_type_matches(func_def, call_type) -> b2;
     filter_call_candidates(tenv, formal_types, call_type, remaining_candidates) -> matches1
     { ([_], _) };
-    matches := if_then_else(b1 && b2, concat(make_singleton_list((name, func_def)), matches1), matches1);
+    matches := if b1 && b2 then cons((name, func_def), matches1) else matches1;
     --
     matches;
   }
