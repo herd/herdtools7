@@ -241,7 +241,7 @@ module Make
         val dump_getinstrs : T.t -> unit
 
         (* Initialise relevant opcode glogal variables *)
-        val dump_init_getinstrs : T.t -> unit
+        val dump_init_getinstrs : T.t -> string -> unit
 
         (* Dump function to translate back opcodes into instructions *)
         val dump_opcode : env -> T.t -> unit
@@ -1116,7 +1116,7 @@ end
             O.o ""
           end
 
-        let dump_init_getinstrs t =
+        let dump_init_getinstrs t tname =
           O.o "static void init_getinstrs(void) {" ;
           if A.GetInstr.active then begin
             let lbl2instr,is = all_instrs t in
@@ -1137,8 +1137,9 @@ end
                  | [] -> assert false
                  | ((p,_),_)::_ ->
                      check_ascall () ;
-                     O.fi "size_t %s = prelude_size((ins_t *)code%i);"
-                       (fmt_prelude p) p ;
+                     O.fi "size_t %s = (ins_t *)%s - (ins_t *)%s;"
+                        (fmt_prelude p) (LangUtils.start_label tname p)
+                        (LangUtils.code_fun p) ;
                      List.iter
                        (fun ((p,_ as lbl),_) ->
                           O.fi

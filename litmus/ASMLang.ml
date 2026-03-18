@@ -417,41 +417,53 @@ module RegMap = A.RegMap)
         let _ = List.fold_left dump_ins 0 code in
         fprintf chan "\"%s%s\\n\"\n" (LangUtils.end_comment Tmpl.comment proc) func
 
-      let dump_code_labels chan proc func code =
-        let dump_ins k ins =
+      let dump_code_labels chan code =
+        let dump_ins ins =
           if ins.Tmpl.align then
             fprintf chan "\".align \" %s \"\\n\"\n" ins.Tmpl.memo
           else
-            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins)
-          ;
-          k + 1 in
-        fprintf chan "\"%s%s:\\n\"\n" (LangUtils.start_label proc) func ;
-        let _ = List.fold_left dump_ins 0 code in
-        fprintf chan "\"%s%s:\\n\"\n" (LangUtils.end_label proc) func
+            fprintf chan "\"%s\\n\"\n" (Tmpl.to_string ins) in
+        List.iter dump_ins code
 
-      let dump_main chan proc code =
+      let dump_main chan tname proc code =
+        fprintf chan "\"#if !defined(__APPLE__)\"\n" ;
+        fprintf chan "\".global %s\\n\"\n" (LangUtils.start_label tname proc) ;
+        fprintf chan "\"#else\"\n" ;
+        fprintf chan "\".alt_entry %s\\n\"\n" (LangUtils.start_label tname proc) ;
+        fprintf chan "\"#endif\"\n" ;
+        fprintf chan "\"%s:\\n\"\n" (LangUtils.start_label tname proc) ;
         if O.asmcommentaslabel then
-          dump_code_labels chan proc "" code
+          dump_code_labels chan code
         else
-          dump_code chan proc "" code
+          dump_code chan proc "" code ;
+        fprintf chan "\"#if !defined(__APPLE__)\"\n" ;
+        fprintf chan "\".global %s\\n\"\n" (LangUtils.end_label tname proc) ;
+        fprintf chan "\"#else\"\n" ;
+        fprintf chan "\".alt_entry %s\\n\"\n" (LangUtils.end_label tname proc) ;
+        fprintf chan "\"#endif\"\n" ;
+        fprintf chan "\"%s:\\n\"\n" (LangUtils.end_label tname proc)
 
-      let dump_fh chan proc code =
+      let dump_fh chan tname proc code =
+        fprintf chan "\".global %s_F\\n\"\n" (LangUtils.start_label tname proc) ;
+        fprintf chan "\"%s_F:\\n\"\n" (LangUtils.start_label tname proc) ;
         if O.asmcommentaslabel then
-          dump_code_labels chan proc ".F" code
+          dump_code_labels chan code
         else
-          dump_code chan proc ".F" code
+          dump_code chan proc ".F" code ;
+        fprintf chan "\".global %s\\n\"\n" (LangUtils.end_label tname proc) ;
+        fprintf chan "\"%s_F:\\n\"\n" (LangUtils.end_label tname proc)
 
       let do_dump args0 compile_val compile_addr compile_cpy compile_out_reg
-          chan indent proc t =
+          chan indent tname proc t =
         let trashed = Tmpl.trashed_regs t in
         before_dump args0
          compile_out_reg compile_val compile_cpy
          chan indent proc t trashed;
         fprintf chan "asm __volatile__ (\n" ;
         fprintf chan "\"\\n\"\n" ;
-        dump_main chan proc t.Tmpl.code ;
+        dump_main chan tname proc t.Tmpl.code ;
         if t.Tmpl.fhandler <> [] then
-          dump_fh chan proc t.Tmpl.fhandler ;
+          dump_fh chan tname proc t.Tmpl.fhandler ;
         dump_outputs args0 compile_addr compile_out_reg chan proc t trashed ;
         dump_inputs args0 compile_val chan t trashed ;
         dump_clobbers chan args0.Template.clobbers t  ;
@@ -473,7 +485,7 @@ module RegMap = A.RegMap)
           (String.concat " " pp)
 
 
-      let dump chan indent (globEnv,_) _volatileEnv proc t =
+      let dump chan indent (globEnv,_) _volatileEnv tname proc t =
 
         if debug then debug_globEnv globEnv ;
 
@@ -494,7 +506,7 @@ module RegMap = A.RegMap)
           Template.no_extra_args compile_val_inline compile_addr_inline
           (fun x -> sprintf "_a->%s[_i]" (Tmpl.addr_cpy_name (Constant.as_address x) proc))
           compile_out_reg
-          chan indent proc t
+          chan indent tname proc t
 
       let add_pteval k = sprintf "_pteval%d" k
 
@@ -585,7 +597,7 @@ module RegMap = A.RegMap)
 
       let nop_init t = List.exists (fun (_,v) -> is_nop_v v) t.Tmpl.init
 
-      let dump_fun  chan args0 globEnv _volatileEnv proc t =
+      let dump_fun  chan args0 globEnv _volatileEnv tname proc t =
         if debug then debug_globEnv globEnv ;
         let ptevalEnv = extract_ptevals t in
         let parel1Env = extract_parel1s t in
@@ -661,15 +673,14 @@ module RegMap = A.RegMap)
         let params =
           String.concat ","
             (params0@labels@instrs@addrs@ptes@phys@ptevals@parel1s@cpys@outs) in
-        let pagealign = do_self && is_pte in
-        LangUtils.dump_code_def chan O.noinline pagealign O.mode proc params ;
+        LangUtils.dump_code_def chan O.noinline O.mode tname proc params ;
         do_dump
           args0
           (compile_init_val_fun globEnv ptevalEnv parel1Env)
           compile_addr_fun
           (fun sym -> compile_cpy_fun proc (Constant.as_address sym))
           (fun p r  -> sprintf "*%s" (Tmpl.dump_out_reg p r))
-          chan "  " proc t ;
+          chan "  " tname proc t ;
         fprintf chan "}\n\n" ;
         ()
 
@@ -731,7 +742,7 @@ module RegMap = A.RegMap)
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
 
       let dump_call f_id args0
-            _tr_idx chan indent (_,alignedEnv) _volatileEnv proc t =
+            _tr_idx chan indent (_,alignedEnv) _volatileEnv _tname proc t =
         let env = t.Tmpl.ty_env in
         let labels = List.map compile_label_call (Tmpl.get_labels t) in
         let instrs = List.map compile_instr_call (Tmpl.get_instructions t) in

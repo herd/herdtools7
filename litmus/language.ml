@@ -23,6 +23,7 @@ module type S = sig
     Template.extra_args ->
     (string * CType.t) list ->
     string list ->
+    string ->
     Proc.t ->
     t ->
     unit
@@ -35,6 +36,7 @@ module type S = sig
     string ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
+    string ->
     Proc.t ->
     t ->
     unit
@@ -45,6 +47,7 @@ module type S = sig
     string ->
     ((string * CType.t) list * (string * CType.t) list) ->
     string list ->
+    string ->
     Proc.t ->
     t ->
     unit
