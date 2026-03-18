@@ -1009,8 +1009,8 @@ let tr_labs m init =
     init
 
 let basic_info scope prefetch com_edges cycle_description =
-  let append_key_string key value list =
-    match value with "" -> list | _ -> list @ [(key,value)] in
+  let convert_to_option_pair key value =
+    match key,value with "",_ | _,"" -> None | _ -> Some(key, value) in
   (* extract all the unique variants *)
   let variants =
     List.filter_map
@@ -1018,23 +1018,35 @@ let basic_info scope prefetch com_edges cycle_description =
     Variant_gen.all_t
     |> StringSet.of_list
     |> StringSet.pp_id " " in
-  append_key_string "Generator" O.generator []
-  |> append_key_string "Scopes" (Option.map BellInfo.pp_scopes scope |> Option.value ~default:"")
-  |> append_key_string "Variant" variants
-  |> append_key_string "Prefetch" (if O.variant Variant_gen.Self then "" else prefetch)
-  |> append_key_string "Com" com_edges
-  |> append_key_string "Orig" cycle_description
+  (* Some internal metadata might be empty, if the string value is "".
+     We covert to option type then filter_map *)
+  List.filter_map Fun.id
+    ( ( convert_to_option_pair "Variant" variants )
+    :: ( convert_to_option_pair "Generator" O.generator )
+    :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
+    (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
+    :: ( if O.variant Variant_gen.Self then None else Some("Prefetch",prefetch) )
+    :: ( convert_to_option_pair "Com" com_edges )
+    :: ( convert_to_option_pair "Orig" cycle_description )
+    :: [] )
 
 (* Merge user specified `info` with internal defined `info`.
   The key is case inssensitive. Yet the final output result will
-  capitalise the first letter.*)
-let merge_info lhs rhs =
-  let mk_map info =
-    List.map ( fun (k,v) -> String.capitalize_ascii k,v ) info
-      |> StringMap.of_list in
-  StringMap.union
-    ( fun v1 v2 -> v1 ^ " " ^ v2 ) (mk_map lhs) (mk_map rhs)
-  |> StringMap.to_list
+  capitalise the first letter. If there is overlap between `lhs`
+  and `rhs`. The value in the `rhs` will be concatenated to the one
+  in the `lhs` *)
+let merge_to_left lhs rhs =
+  let rec update_if_match list key value =
+    let key = String.capitalize_ascii key in
+    match list with
+    (* do not find, so append *)
+    | [] -> [(key,value)]
+    | (k,v) :: tail when String.capitalize_ascii k = key ->
+        (key, v ^ " " ^ value) :: tail
+    | kv :: tail -> kv :: update_if_match tail key value in
+  List.fold_left
+    ( fun lhs (k,v) -> update_if_match lhs k v )
+    lhs rhs
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
@@ -1044,7 +1056,7 @@ let test_of_cycle name
   let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
   let info =
-    merge_info info ((basic_info scope prf coms com) @ Comp.get_archinfo c) in
+    merge_to_left ((basic_info scope prf coms com) @ Comp.get_archinfo c) info in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; obs=obs}
