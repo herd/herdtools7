@@ -827,7 +827,7 @@ module Make(O:Config) : Builder.S
                       (List.map (fun n -> n.C.evt))
                       splitted in
                   F.forall_condition evts m flts
-              | Cycle -> F.exists_condition ~is_pos:true f flts
+              | Cycle -> F.exists_condition ~is_pos:(not O.neg) f flts
               | Observe -> F.observe_condition in
             (add_args env c,fc empty_faults),
             (U.compile_prefetch_ios (List.length obsc) ios,
