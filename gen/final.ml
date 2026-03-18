@@ -102,7 +102,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       MySet.Make
         (struct
           type t = v
-          let compare = compare
+          let compare = Stdlib.compare
         end)
     type vset = VSet.t
     type fenv = (C.A.location * vset) list
@@ -229,7 +229,6 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         else finals
     | None -> finals
 
-    open Printf
     let dump_val = function
       | I i -> C.C.Value.pp_v ~hexa:O.hexa i
       | S s -> s
@@ -258,6 +257,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let pp_prop_atom atom =
       let open ConstrGen in
+      let open Printf in
       match atom with
       | LV (Loc loc, value)
       | LV (Deref (loc,_), value) ->
@@ -287,9 +287,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let fault_atoms_to_prop pos_flts neg_flts =
       let pos = FaultAtomSet.elements pos_flts
-      |> List.map (fault_atom_to_prop true) in
+          |> List.map (fault_atom_to_prop true) in
       let neg = FaultAtomSet.elements neg_flts
-      |> List.map (fault_atom_to_prop false) in
+          |> List.map (fault_atom_to_prop false) in
       And(pos @ neg)
 
     let fenv_to_prop f =
@@ -304,11 +304,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       let value_prop = fenv_to_prop f in
       let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
       let prop = match value_prop, fault_prop with
-      | (Atom _ as l), (Atom _ as r) -> And [l; r;]
-      | (Atom _ as l), And r -> And (l :: r)
-      | And l, (Atom _ as r) -> And (l @ [r])
-      | And l, And r -> And (l @ r)
-      | _,_ -> Warn.fatal "error in connect fault and value propositions" in
+        | (Atom _ as l), (Atom _ as r) -> And [l; r;]
+        | (Atom _ as l), And r -> And (l :: r)
+        | And l, (Atom _ as r) -> And (l @ [r])
+        | And l, And r -> And (l @ r)
+        | _,_ -> Warn.fatal "error in connect fault and value propositions" in
       if is_pos then ExistsState ( prop ) else NotExistsState ( prop )
 
     let exist_true = ExistsState (And [])
@@ -327,7 +327,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     let run evts m (pos_flts,neg_flts) =
       let value_prop = Run.run evts m
-      |> run_cond_to_constr_gen_cond in
+        |> run_cond_to_constr_gen_cond in
       let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
       ForallStates (And [fault_prop; value_prop])
 

@@ -907,10 +907,12 @@ let max_set = IntSet.max_elt
       List.sort (fun (l, _) (r, _) -> A.location_compare l r) (type_inits @ extra_type_declaration)
           |> List.filter_map ( fun (loc, (typ, value)) ->
               match typ,value with
-              (* fix the array value from `v` -> `{v, v, ..}` *)
+              (* expand the array initial value from a single value `v` to
+                 a list initial value for elements `{v, v, ..}` *)
               | TestType.TyArray (_,size), A.S v ->
                 Some (loc, (typ, A.S ( sprintf "{%s}" ( List.init size ( fun _ -> v ) |> String.concat "," ) ) ) )
-              (* fix the array only support basic value *)
+                (* rule out the initial array value if the `value` is not
+                 a basic value `A.S v` *)
               | TestType.TyArray (_), _ -> assert false
               (* remove if value and type is default *)
               | TestType.TyDef, A.S "0" -> None
