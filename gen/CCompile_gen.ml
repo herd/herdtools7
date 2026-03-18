@@ -1019,7 +1019,7 @@ module Make(O:Config) : Builder.S
         (* Empty init *)
         dump_init chan t.prog ;
         dump_code chan t.prog ;
-        fprintf chan "%s" (ConstrGen.constraints_to_string F.pp_prop_atom t.final);
+        fprintf chan "%s" (F.dump_constr t.final);
         ()
 
 (*

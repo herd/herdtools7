@@ -74,9 +74,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     type faults = FaultAtomSet.t
 
-    type prop = (C.A.location, v, FaultType.No.t) ConstrGen.prop
+    type prop
+    val dump_prop : prop -> string
+    val dump_constr : prop ConstrGen.constr -> string
+
     type final = prop ConstrGen.constr
-    val pp_prop_atom : (C.A.location, v, FaultType.No.t) ConstrGen.atom -> string
 
     type locations = (C.A.location, v, FaultType.No.t) LocationsItem.t
 
@@ -272,6 +274,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         end
       | LL (loc, value_loc) -> sprintf "%s=%s" (C.A.pp_location_brk loc) (C.A.pp_location_brk value_loc)
       | FF fault -> pp_fatom fault
+
+    let dump_prop = ConstrGen.prop_to_string pp_prop_atom
+    let dump_constr = ConstrGen.constraints_to_string pp_prop_atom
 
     open ConstrGen
 

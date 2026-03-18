@@ -931,8 +931,8 @@ let max_set = IntSet.max_elt
     let dump_state = State.dump_state
 
     type prop = F.prop
-    let dump_prop = ConstrGen.prop_to_string F.pp_prop_atom
-    let dump_constr = ConstrGen.constraints_to_string F.pp_prop_atom
+    let dump_prop = F.dump_prop
+    let dump_constr = F.dump_constr
 
     type location = A.location
     let dump_location = A.pp_location
