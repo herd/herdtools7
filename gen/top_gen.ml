@@ -843,13 +843,13 @@ let max_set = IntSet.max_elt
                 List.map
                   (List.map (fun n -> n.C.evt))
                   splitted in
-              F.run evts m flts
-          | Cycle -> F.check ~is_pos:(not O.neg) f flts
-          | Observe -> F.exist_true in
+              F.forall_condition evts m flts
+          | Cycle -> F.exists_condition ~is_pos:(not O.neg) f flts
+          | Observe -> F.observe_condition in
         let obs =
           match O.cond with
           | Unicond | Cycle -> []
-          | Observe -> F.observe f flts in
+          | Observe -> F.location_list f flts in
         let i = if do_kvm then A.complete_init O.hexa initvals i else i in
         (i,c,fc flts,env,obs),
         (U.compile_prefetch_ios (List.length obsc) ios,

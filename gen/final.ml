@@ -80,10 +80,11 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
 
     type locations = (C.A.location, v, FaultType.No.t) LocationsItem.t
 
-    val check : is_pos:bool -> fenv -> faults * faults -> final
-    val exist_true : final
-    val observe : fenv -> faults * faults -> locations list
-    val run : C.C.event list list -> C.A.location C.C.EventMap.t -> faults * faults -> final
+    val exists_condition : is_pos:bool -> fenv -> faults * faults -> final
+    val forall_condition : C.C.event list list -> C.A.location C.C.EventMap.t -> faults * faults -> final
+    val observe_condition : final
+
+    val location_list : fenv -> faults * faults -> locations list
 
 (* Complement init environemt *)
     val extract_ptes : fenv -> C.A.location list
@@ -300,7 +301,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       ) f
       |> fun prop -> And( prop )
 
-    let check ~is_pos f (pos_flts,neg_flts) =
+    let exists_condition ~is_pos f (pos_flts,neg_flts) =
       let value_prop = fenv_to_prop f in
       let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
       let prop = match value_prop, fault_prop with
@@ -311,9 +312,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         | _,_ -> Warn.fatal "error in connect fault and value propositions" in
       if is_pos then ExistsState ( prop ) else NotExistsState ( prop )
 
-    let exist_true = ExistsState (And [])
+    let observe_condition = ForallStates (And [])
 
-    let observe f (pos_flts,neg_flts) =
+    let location_list f (pos_flts,neg_flts) =
       let value_location = List.map ( fun (loc, _) -> LocationsItem.Loc ((Loc loc),TestType.TyDef)) f in
       let fault_location = FaultAtomSet.union pos_flts neg_flts
         |> FaultAtomSet.elements
@@ -325,7 +326,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | Run.Or (cond) -> Or (List.map run_cond_to_constr_gen_cond cond)
       | Run.And (cond) -> And (List.map run_cond_to_constr_gen_cond cond)
 
-    let run evts m (pos_flts,neg_flts) =
+    let forall_condition evts m (pos_flts,neg_flts) =
       let value_prop = Run.run evts m
         |> run_cond_to_constr_gen_cond in
       let fault_prop = fault_atoms_to_prop pos_flts neg_flts in
