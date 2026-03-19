@@ -519,6 +519,7 @@ corresponds
 could
 counter
 counting
+counts
 coupled
 cover
 covered

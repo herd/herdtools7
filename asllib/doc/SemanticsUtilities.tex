@@ -37,21 +37,7 @@ In \listingref{CheckRecurseLimit}, the number of pending calls upon the call to 
 with the environment $\env_0 \eqdef (\tenv_0, \denv_0)$ is $0$.\\
 That is, $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
-\ProseParagraph
-define $\vs$ as $0$ if no value is associated with $\name$ in $\denv.\pendingcalls$ and the value bound to
-$\name$ in $\denv.\pendingcalls$ otherwise.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \vs \eqdef \choice{\name \in \dom(\denv.\pendingcalls)}{\denv.\pendingcalls(\name)}{0}
-}{
-  \getpendingcalls(\denv, \name) \evalarrow \vs
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_pending_calls}
+\RenderProseAndFormally{get_pending_calls}
 
 \SemanticsRuleDef{SetPendingCalls}
 \RenderRelation{set_pending_calls}
@@ -64,18 +50,7 @@ $\setpendingcalls(\denv_0, \factorial, 1) \evalarrow \denv_1$
 and\\
 $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
-\ProseParagraph
-define $\newdenv$ as $\genv$ updated to bind $\name$ to $\vv$ in $\genv.\pendingcalls$.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{}{
-  \setpendingcalls(\genv, \name, \vv) \evalarrow \overname{\genv.\pendingcalls[\name\mapsto\vv]}{\newgenv}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{set_pending_calls}
+\RenderProseAndFormally{set_pending_calls}
 
 \SemanticsRuleDef{IncrPendingCalls}
 \RenderRelation{incr_pending_calls}
@@ -88,25 +63,7 @@ $\incrpendingcalls(\denv_0, \factorial) \evalarrow \denv_1$
 and\\
 $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\getpendingcalls$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
-  \item applying $\setpendingcalls$ to $\name$ and $\vprev + 1$ in $\genv$ yields $\newgenv$.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
-  \setpendingcalls(\genv, \name, \vprev + 1) \evalarrow \newgenv
-}{
-  \incrpendingcalls(\genv, \name) \evalarrow \newgenv
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{incr_pending_calls}
+\RenderProseAndFormally{incr_pending_calls}
 
 \SemanticsRuleDef{DecrPendingCalls}
 \RenderRelation{decr_pending_calls}
@@ -119,25 +76,7 @@ $\decrpendingcalls(\denv_1, \factorial) \evalarrow \denv_0$
 and\\
 $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\getpendingcalls$ to $\name$ in $(\genv, \emptyfunc)$ yields $\vprev$;
-  \item applying $\setpendingcalls$ to $\name$ and $\vprev - 1$ in $\genv$ yields $\newgenv$.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \getpendingcalls((\genv, \emptyfunc), \name) \evalarrow \vprev\\
-  \setpendingcalls(\genv, \name, \vprev - 1) \evalarrow \newgenv
-}{
-  \decrpendingcalls(\genv, \name) \evalarrow \newgenv
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{decr_pending_calls}
+\RenderProseAndFormally{decr_pending_calls}
 
 \SemanticsRuleDef{RemoveLocal}
 \RenderRelation{remove_local}
@@ -164,29 +103,7 @@ exn=TRUE
 \end{Verbatim}
 % CONSOLE_END
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\env$ consists of the \staticenvironmentterm{} $\tenv$ and dynamic environment $\denv$;
-  \item $\newenv$ consists of the \staticenvironmentterm{} $\tenv$ and the dynamic environment
-  with the same global component as $\denv$ --- $\denv.\dynamicenvsG$, and local component $\denv.\dynamicenvsL$,
-  with the identifier $\name$ removed from its domain.
-\end{itemize}
-
-\FormallyParagraph
-(Recall that $[\name\mapsto\bot]$ means that $\name$ is not in the domain of the resulting function.)
-\BackupOriginalRule{
-\begin{mathpar}
-  \inferrule{
-    \env \reverseeqdef (\tenv, \denv)\\
-    \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL:\denv.\dynamicenvsL[\name \mapsto \bot]\})
-  }
-  {
-    \removelocal(\env, \name) \evalarrow \newenv
-  }
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{remove_local}
+\RenderProseAndFormally{remove_local}
 
 \SemanticsRuleDef{ReadIdentifier}
 \RenderRelation{read_identifier}
@@ -200,20 +117,7 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 
 \ASLListing{A simple for loop}{ReadIdentifier}{\semanticstests/SemanticsRule.ReadIdentifier.asl}
 
-\ProseParagraph
-\ProseEqdef{the result \executiongraphterm{}}{a Read Effect on $\name$}.
-\ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{}
-{
-  \readidentifier(\name, \vv) \evalarrow ( \overtext{\{\ReadEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\ReadEffect(\name)\}}{\voutputnodes} )
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{read_identifier}
+\RenderProseAndFormally{read_identifier}
 
 \SemanticsRuleDef{WriteIdentifier}
 \RenderRelation{write_identifier}
@@ -226,20 +130,7 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 \writeidentifier(\vi, \nvint(1)) \evalarrow ( \overtext{\{\WriteEffect(\vi)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\WriteEffect(\vi)\}}{\voutputnodes} ) \enspace.
 \]
 
-\ProseParagraph
-\ProseEqdef{the result \executiongraphterm{}}{a Write Effect on $\name$}.
-\ProseNote{The value $\vv$ is ignored, as execution graphs do not contain values.}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{}
-{
-  \writeidentifier(\name, \vv) \evalarrow ( \overtext{\{\WriteEffect(\name)\}}{\vnodes}, \overtext{\emptyset}{\vedges}, \overtext{\{\WriteEffect(\name)\}}{\voutputnodes} )
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{write_identifier}
+\RenderProseAndFormally{write_identifier}
 
 \SemanticsRuleDef{ConcatBitvectors}
 \RenderRelation{concat_bitvectors}
@@ -249,49 +140,7 @@ The specification in \listingref{ConcatBitvectors} shows examples of concatenati
 the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypeterm.
 \ASLListing{Concatenating bitvectors}{ConcatBitvectors}{\semanticstests/SemanticsRule.ConcatBitvectors.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item \Proseemptylist{$\vvs$};
-    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for the empty sequence of bits}.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vvs$ is a \Proselist{$\vv$}{$\vvs'$};
-    \item view $\vv$ as the \nativevalueterm{} bitvector for the sequence of bits $\bv$;
-    \item applying $\concatbitvectors$ to $\vvs'$ yields the
-          \nativevalueterm{} bitvector for the sequence of bits $\bv$;
-    \item \Proseeqdef{$\vres$}{the concatenation of $\bv$ and $\bv'$};
-    \item \Proseeqdef{$\newvs$}{the \nativevalueterm{} bitvector for the sequence of bits $\vres$}.
-  \end{itemize}
-\end{itemize}
-
-Define $\newvs$ as the concatenation of bitvectors listed in $\vvs$.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \concatbitvectors(\overname{\emptylist}{\vvs}) \evalarrow \overname{\nvbitvector(\emptylist)}{\newvs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vvs = [\vv] \concat \vvs'\\
-  \vv\reverseeqdef\nvbitvector(\bv)\\
-  \concatbitvectors(\vvs') \evalarrow \nvbitvector(\bv')\\
-  \vres \eqdef \bv \concat \bv'
-}{
-  \concatbitvectors(\vvs) \evalarrow \nvbitvector(\vres)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{concat_bitvectors}
+\RenderProseAndFormally{concat_bitvectors}
 
 \SemanticsRuleDef{SlicesToPositions}
 \RenderRelation{slices_to_positions}
@@ -310,46 +159,7 @@ is illegal for a slice.
 % the one in Native.ml, which calls the one in ASTUtils.ml.
 % This rule transliterates the version in Native.ml, inlining the version
 % in ASTUtils.ml.
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\slices$ is empty;
-    \item \Proseeqdef{$\positions$}{the empty list}.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\slices$ is the \Proselist{the range starting at $\vs$ of length $\vl$}{$\slicestwo$};
-    \item checking that both $\vs$ and $\vl$ are non-negative yields $\True$\ProseTerminateAs{\BadIndex};
-    \item \Proseeqdef{$\positionsone$}{the range of indices starting at $\vs + \vl - 1$ and going down to $\vs$};
-    \item applying $\slicestopositions$ to $\slicestwo$ yields $\positionstwo$\ProseOrError;
-    \item \Proseeqdef{$\positions$}{the concatenation of $\slicesone$ and $\slicestwo$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}{
-  \slicestopositions(\overname{\emptylist}{\slices}) \evalarrow \overname{\emptylist}{\positions}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \decheck(\vs \geq 0 \land \vl \geq 0, \BadIndex) \evalarrow \DynErrorConfig\\
-  \positionsone \eqdef (\vs + \vl - 1)..\vs\\
-  \slicestopositions(\slicestwo) \evalarrow \positionstwo \OrDynError
-}{
-  \slicestopositions(\overname{[(\nvint(\vs), \nvint(\vl))] \concat \slicestwo}{\slices}) \evalarrow
-  \overname{\positionsone \concat \positionstwo}{\positions}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{slices_to_positions}
+\RenderProseAndFormally{slices_to_positions}
 
 \SemanticsRuleDef{MaxPosOfSlice}
 \RenderRelation{max_pos_of_slice}
@@ -358,41 +168,7 @@ is illegal for a slice.
 The slice \verb|1+:3| has maximum position 3.
 The slice \verb|42+:0| has maximum position 42.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{zero\_width}
-  \begin{itemize}
-    \item $\vl$ is zero;
-    \item \Proseeqdef{$\maxpos$}{$\vs$}.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_zero\_width}
-  \begin{itemize}
-    \item $\vl$ is not zero;
-    \item \Proseeqdef{$\maxpos$}{$\vs + \vl - 1$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[zero\_width]{
-  \vl = 0
-}{
-  \maxposofslice(\vs, \vl) \evalarrow \vs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_zero\_width]{
-  \vl \neq 0
-}{
-  \maxposofslice(\vs, \vl) \evalarrow \vs + \vl - 1
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{max_pos_of_slice}
+\RenderProseAndFormally{max_pos_of_slice}
 
 \SemanticsRuleDef{ReadFromBitvector}
 \RenderRelation{read_from_bitvector}
@@ -426,112 +202,14 @@ bv = 0xfdf0, bv_i = 0xfdf0
 \end{Verbatim}
 % CONSOLE_END
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{bitvector}
-  \begin{itemize}
-    \item $\vv$ is a native bitvector for the list of bits $\bv$;
-    \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
-    \item let $\bits$ be the sequence of bits $\bv[n] ... \bv[1]$;
-    \item checking that $\maxpos$ is less than $n$ yields $\True$\ProseTerminateAs{\BadIndex};
-    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
-    \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
-  \end{itemize}
-
-  \item \AllApplyCase{integer}
-  \begin{itemize}
-    \item $\vv$ is a native integer for the integer $\vi$;
-    \item applying $\slicestopositions$ to $\slices$ yields the list $\positions$\ProseOrError;
-    \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
-    \item \Proseeqdef{$\bits$}{$\vi$  given as two's complement form of $\maxpos + 1$ bits};
-    \item \Proseeqdef{$\newbits$}{the list of bits $\bits[j]$ for every \Proselistrange{$j$}{$\bits$}};
-    \item \Proseeqdef{$\vv$}{the native bitvector for the list of bits $\newbits$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[bitvector]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
-  \commonprefixline\hva\\\\
-  \bits \reverseeqdef \bv[n] ... \bv[0]\\
-  \decheck(\maxpos \leq n, \BadIndex) \evalarrow \OrDynError\hva\\\\
-  \commonsuffixline\hva\\\\
-  % The following premise is essentially Bitvector.extract_slice
-  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
-}{
-  \readfrombitvector(\overname{\nvbitvector(\bv)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[integer]{
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
-  \commonprefixline\hva\\\\
-  \bits \eqdef \vi\text{ given as two's complement form of }(\maxpos + 1)\text{ bits}\\
-  \commonsuffixline\hva\\\\
-  % The following premise is essentially Bitvector.extract_slice
-  \newbits \eqdef [\ \vj \in \listrange(\positions): \bits[\vj]\ ]
-}{
-  \readfrombitvector(\overname{\nvint(\vi)}{\vv}, \slices) \evalarrow \overname{\nvbitvector(\newbits)}{\newv}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{read_from_bitvector}
+\RenderProseAndFormally{read_from_bitvector}
 
 \SemanticsRuleDef{WriteToBitvector}
 \RenderRelation{write_to_bitvector}
 
 See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobitvector$.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\src$ is a native bitvector consisting of bits $\vs_m \ldots \vs_0$;
-  \item $\dst$ is a native bitvector consisting of bits $\vd_n \ldots \vd_0$;
-  \item applying $\slicestopositions$ to $\slices$ yields the list of indices $\positions$;
-  \item checking that the length of $\positions$ is equal to the length of $\src$ yields $\True$\ProseTerminateAs{\BadIndex};
-  \item \Proseeqdef{$\maxpos$}{the maximum position in $\slices$};
-  \item checking that $\maxpos$ is less than the length of $\dst$ yields $\True$\ProseTerminateAs{\BadIndex};
-  \item view $\positions$ as the list $I_m \ldots I_0$;
-  \item define the function $\bitfunc$ as mapping an index $i$ in $0$ to $n$ to
-        $\vs_j$, if there exists an index $I_j$ in $\positions$ such that $I_j$ is equal to $i$,
-        and $\vd_i$, otherwise.
-  \item \Proseeqdef{$\vbits$}{the list of bits defined as
-        $\bitfunc(n)\ldots\bitfunc(0)$};
-  \item \Proseeqdef{$\vv$}{the native bitvector for $\vbits$}.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \src \reverseeqdef \nvbitvector(\vs_m \ldots \vs_0)\\
-  \dst \reverseeqdef \nvbitvector(\vd_n \ldots \vd_0)\\
-  \slicestopositions(\slices) \evalarrow \positions \OrDynError\hva\\\\
-  \decheck(\listlen{\positions} = m + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
-  \vi \in \listrange(\slices): \maxposofslice(\slice[\vi]) \evalarrow \vp_\vi\hva\\\\
-  \maxpos \eqdef \max(\ \{ \vi\in\listrange(\slices) : \vp_\vi \}\ )\hva\\\\
-  \decheck(\maxpos < n + 1, \BadIndex) \evalarrow \OrDynError\hva\\\\
-  \positions \reverseeqdef I_m \ldots I_0 \\
-  {\bitfunc = \lambda i \in n..0.\left\{ \begin{array}{ll}
-    \vs_j & \exists j\in m..0.\ i = I_j\\
-    \vd_i & \text{otherwise}
-  \end{array} \right.}\hva\\\\
-  \vbits\eqdef [i=n..0: \bitfunc(i)]\\
-}{
-  \writetobitvector(\slices, \src, \dst) \evalarrow \overname{\nvbitvector(\vbits)}{\vv}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{write_to_bitvector}
+\RenderProseAndFormally{write_to_bitvector}
 
 \ExampleDef{Writing to a Bitvector}
 In reference to \listingref{semantics-leslice}, we have the following application of the current rule:
@@ -584,41 +262,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 \end{itemize}
 \ASLListing{Reading a vector at an index}{GetIndex}{\semanticstests/SemanticsRule.GetIndex.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{ok}
-  \begin{itemize}
-    \item $\vi$ is greater than or equal to zero and less than the number of elements in $\vvec$;
-    \item \Proseeqdef{$\vr$}{the element of $\vvec$ at index $\vi$}.
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item $\vi$ is less than zero or greater than or equal to the number of elements in $\vvec$;
-    \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[ok]{
-  0 \leq \vi < \listlen{\vvec}\\
-}{
-  \getindex(\vi, \vvec) \evalarrow \overname{\vv[\vi]}{\vr}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \vi < 0 \lor \vi \geq \listlen{\vvec}\\
-}{
-  \getindex(\vi, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_index}
+\RenderProseAndFormally{get_index}
 
 \SemanticsRuleDef{SetIndex}
 \RenderRelation{set_index}
@@ -633,47 +277,7 @@ involves the following premise:
 \end{array}
 \]
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{ok}
-  \begin{itemize}
-    \item $\vi$ is greater than or equal to zero and less than the number of elements in $\vvec$;
-    \item $\vvec$ is the sequence $\vu_{0..k}$;
-    \item $\vres$ is the sequence of values identical to $\vvec$,
-          except that at index $\vi$ the value is $\vv$.
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item $\vi$ is less than zero or greater than or equal to the number of elements in $\vvec$;
-    \item the result is the \dynamicerrorterm{} for an out of bounds index (\BadIndex).
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[ok]{
-  0 \leq \vi < \listlen{\vvec}\\
-  \vvec \reverseeqdef \vu_{0..k}\\
-  \vres = \vw_{0..k}\\
-  \vv = \vw_{\vi} \\
-  j \in \{0..k\} \setminus \{\vi\}.\ \vw_{j} = \vu_j\\
-}{
-  \setindex(\vi, \vv, \vvec) \evalarrow \vres
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \vi < 0 \lor \vi \geq \listlen{\vvec}
-}{
-  \setindex(\vi, \vv, \vvec) \evalarrow \DynamicErrorVal{\BadIndex}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{set_index}
+\RenderProseAndFormally{set_index}
 
 \SemanticsRuleDef{GetField}
 \RenderRelation{get_field}
@@ -688,20 +292,7 @@ In \listingref{GetField}, there are the following examples of reading a record f
 \end{itemize}
 \ASLListing{Reading a record field}{GetField}{\semanticstests/SemanticsRule.GetField.asl}
 
-\ProseParagraph
-\ProseEqdef{$\vv$}{the value of field $\name$ in record $\record$}.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \record \reverseeqdef \NVRecord(\fieldmap)
-}{
-  \getfield(\name, \record) \evalarrow \fieldmap(\name)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{get_field}
+\RenderProseAndFormally{get_field}
 The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
 \SemanticsRuleDef{SetField}
@@ -738,22 +329,9 @@ In \listingref{GetField}, there are the following examples of writing to a recor
         $
 \end{itemize}
 
-\ProseParagraph
-\ProseEqdef{$\fieldmapp$}{the record value with the field map of $\record$ updated to bind $\name$ to $\vv$}.
-
-\FormallyParagraph
 The typechecker ensures that the field $\name$ exists in $\record$.
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \record \reverseeqdef \NVRecord(\fieldmap)\\
-  \fieldmapp \eqdef \fieldmap[\name\mapsto\vv]
-}{
-  \setfield(\name, \vv, \record) \evalarrow \NVRecord(\fieldmapp)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{set_field}
+
+\RenderProseAndFormally{set_field}
 
 \SemanticsRuleDef{DeclareLocalIdentifier}
 \RenderRelation{declare_local_identifier}
@@ -763,82 +341,18 @@ In \listingref{semantics-levar}, evaluating \verb|var x: integer = 3;|
 binds \verb|x| to $\nvint(3)$ in the environment where \verb|x| is unbound
 as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseeqdef{\vg}{the execution graph consisting of a Write Effect on $\name$};
-  \item $\env$ is the environment consisting of the static environment $\tenv$
-        and the dynamic environment $\denv$;
-  \item \Proseeqdef{\newenv}{the environment $\env$ modified to declare the variable $\name$
-        as a local storage element bound to the value $\vv$}.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \vg \eqdef \WriteEffect(\name)\\
-  \env \reverseeqdef (\tenv, \denv)\\
-  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\name\mapsto \vv]\})
-}{
-  \declarelocalidentifier(\env, \name, \vv) \evalarrow (\newenv, \vg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_local_identifier}
+\RenderProseAndFormally{declare_local_identifier}
 
 \SemanticsRuleDef{DeclareLocalIdentifierM}
 \RenderRelation{declare_local_identifier_m}
 
 See \ExampleRef{Evaluating Local Declarations}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
-  \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
-  \item \Proseeqdef{$\newg$}{\executiongraphterm{} resulting from the ordered composition
-        of $\vg$ and $\vgone$ with the $\asldata$ edge}.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-  \inferrule{
-    \vm \reverseeqdef (\vv, \vg)\\
-    \declarelocalidentifier(\env, \vx, \vv) \evalarrow (\newenv, \vgone)\\
-    \newg \eqdef \ordered{\vg}{\asldata}{\vgone}
-  }
-  {
-    \declarelocalidentifierm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
-  }
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_local_identifier_m}
+\RenderProseAndFormally{declare_local_identifier_m}
 
 \SemanticsRuleDef{DeclareLocalIdentifierMM}
 \RenderRelation{declare_local_identifier_mm}
 
 See \ExampleRef{Evaluating Local Declarations}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \newenv\ is the environment $\env$ modified to declare the variable $\vx$ as a local storage element;
-  \item $\vgone$ is the execution graph resulting from the declaration of $\vx$;
-  \item \Proseeqdef{$\newg$}{the execution graph resulting from the ordered composition
-        of $\vg$ and $\vgone$ with the $\aslpo$ edge.}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \declarelocalidentifierm(\env, \vm) \evalarrow (\newenv, \vgone)\\
-  \newg \eqdef \ordered{\vg}{\aslpo}{\vgone}
-}{
-  \declarelocalidentifiermm(\env, \vx, \vm) \evalarrow (\newenv, \newg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_local_identifier_mm}
+\RenderProseAndFormally{declare_local_identifier_mm}

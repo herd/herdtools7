@@ -44,7 +44,7 @@ Formally, \purities{} are totally ordered via $\purityless$ as follows:
 \SEImpure \purityless \SEReadonly \purityless \SEPure
 \]
 Additionally, we define the greater-than-or-equal ordering as follows:
-\hypertarget{def-puritygeq}{}
+\hypertarget{relation-gepure}{}
 \[
 f \puritygeq f' \triangleq \lnot(f \purityless f')
 \]
@@ -98,23 +98,7 @@ Notice that the call to \verb|factorial(10)| is \readonlyterm, even though it is
 
 \ASLListing{Side effect descriptors and whether they are pure and read-only and symbolically evaluable}{SideEffectIsPure}{\typingtests/TypingRule.SideEffectIsPure.asl}
 
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vs$ is either
-    a \LocalEffectTerm{} with \purity{} $\SEPure$,
-    a \GlobalEffectTerm{} with \purity{} $\SEPure$,
-    or an \ImmutabilityTerm{} with immutability $\True$.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-    \vb \eqdef \vs \in \{\LocalEffect(\SEPure), \GlobalEffect(\SEPure), \Immutability(\True)\}
-}{
-    \sideeffectispure(\vs) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{side_effect_is_pure}
+\RenderProseAndFormally{side_effect_is_pure}
 
 \TypingRuleDef{SideEffectIsReadonly}
 \RenderRelation{side_effect_is_readonly}
@@ -123,29 +107,7 @@ an expression evaluates without modifying values of storage elements.
 
 See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
 
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\vs$ is either
-    a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    or an \ImmutabilityTerm.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-    {
-        \vb \eqdef \begin{cases}
-            \vp \puritygeq \SEReadonly & \vs = \LocalEffect(\vp) \\
-            \vp \puritygeq \SEReadonly & \vs = \GlobalEffect(\vp) \\
-            \True                      & \vs = \Immutability(\Ignore)
-        \end{cases}
-    }
-}{
-    \sideeffectisreadonly(\vs) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{side_effect_is_readonly}
+\RenderProseAndFormally{side_effect_is_readonly}
 
 \TypingRuleDef{SideEffectIsSymbolicallyEvaluable}
 \RenderRelation{side_effect_is_symbolically_evaluable}
@@ -155,32 +117,7 @@ and always yielding the same result, that is, deterministically.
 
 See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}.
 
-\ProseParagraph
-\ProseEqdef{$\vb$}{$\True$ if and only if one of the following conditions holds:
-  \begin{itemize}
-    \item $\vs$ is a \LocalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    \item $\vs$ is a \GlobalEffectTerm{} with \purity{} greater than or equal to $\SEReadonly$,
-    \item $\vs$ is an \ImmutabilityTerm{} with immutability equal to $\True$.
-  \end{itemize}
-}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-    {
-        \vb \eqdef \begin{cases}
-            \vp \puritygeq \SEReadonly & \vs = \LocalEffect(\vp) \\
-            \vp \puritygeq \SEReadonly & \vs = \GlobalEffect(\vp) \\
-            \vbone                     & \vs = \Immutability(\vbone)
-        \end{cases}
-    }
-}{
-    \sideeffectissymbolicallyevaluable(\vs) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{side_effect_is_symbolically_evaluable}
+\RenderProseAndFormally{side_effect_is_symbolically_evaluable}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Side Effect Sets\label{sec:SideEffectSets}}
@@ -201,24 +138,8 @@ The specification in \listingref{SideEffectsLDK} shows examples of local storage
 and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \ASLListing{The side effects of local storage declarations}{SideEffectsLDK}{\typingtests/TypingRule.SideEffectsLDK.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseeqdef{$\vb$}{$\True$ if and only if $\ldk$ is $\LDKLet$};
-  \item the result is a set containing a \LocalEffectTerm{} with \purity{} $\SEReadonly$, and an \ImmutabilityTerm{} with immutability $\vb$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef (\ldk = \LDKLet)
-}{
-  \sesldk(\ldk) \typearrow \{ \LocalEffect(\SEReadonly), \Immutability(\vb) \}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{ses_ldk}
+\RenderProseAndFormally{ses_ldk}
 
 \TypingRuleDef{SideEffectsGDK}
 \RenderRelation{ses_gdk}
@@ -228,26 +149,8 @@ The specification in \listingref{SideEffectsGDK} shows examples of global storag
 and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 \ASLListing{The side effects of global storage declarations}{SideEffectsGDK}{\typingtests/TypingRule.SideEffectsGDK.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseeqdef{$\vpurity$}{$\SEPure$ if $\gdk$ is $\GDKConstant$, and $\SEReadonly$ otherwise};
-  \item \Proseeqdef{$\vb$}{$\False$ if and only if $\gdk$ is $\GDKVar$};
-  \item the result is a set containing a \GlobalEffectTerm{} with \purity{} $\vpurity$ and \ImmutabilityTerm{} with immutability $\vb$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \vpurity \eqdef \choice{\gdk = \GDKConstant}{\SEPure}{\SEReadonly} \\
-  \vb \eqdef (\gdk \neq \GDKVar)
-}{
-  \sesgdk(\gdk) \typearrow \{ \GlobalEffect(\vpurity), \Immutability(\vb) \}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{ses_gdk}
+\RenderProseAndFormally{ses_gdk}
 
 \TypingRuleDef{SESIsSymbolicallyEvaluable}
 \RenderRelation{is_symbolically_evaluable}
@@ -260,21 +163,7 @@ Specifically, it shows how the fact that an expression is \symbolicallyevaluable
 is used to reason about the equivalence of bitwidth expressions.
 \ASLListing{Why symbolic evaluability matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
 
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if every \sideeffectdescriptorterm\ $\vs$ in $\vses$
-is \symbolicallyevaluableterm.
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef \bigwedge_{\vs\in\vses} \sideeffectissymbolicallyevaluable(\vs)
-}{
-  \issymbolicallyevaluable(\vses) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{is_symbolically_evaluable}
+\RenderProseAndFormally{is_symbolically_evaluable}
 
 \TypingRuleDef{CheckSymbolicallyEvaluable}
 \RenderRelation{check_symbolically_evaluable}
@@ -292,34 +181,12 @@ This is checked in the following constructs:
 \end{itemize}
 \ASLListing{Symbolically evaluable expressions}{CheckSymbolicallyEvaluable}{\typingtests/TypingRule.CheckSymbolicallyEvaluable.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\issymbolicallyevaluable$ to $\vses$ yields $\vb$;
-  \item the result is $\True$ if $\vb$ is $\True$, otherwise it is a \typingerrorterm{} indicating that the expression
-  is not \symbolicallyevaluableterm.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \issymbolicallyevaluable(\vses) \typearrow \vb\\
-  \techeck(\vb, \SideEffectViolation) \typearrow \True \OrTypeError
-}{
-  \checksymbolicallyevaluable(\vses) \typearrow \True
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_symbolically_evaluable}
+\RenderProseAndFormally{check_symbolically_evaluable}
 \CodeSubsection{\CheckSymbolicallyEvaluableBegin}{\CheckSymbolicallyEvaluableEnd}{../Typing.ml}
 
 \TypingRuleDef{SESIsReadonly}
 \RenderRelation{ses_is_readonly}
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\sideeffectisreadonly$ holds for
-every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 
 \ExampleDef{Checking whether expressions are read-only}
 The specification in \listingref{SESIsReadonly} checks whether the following expressions are \readonlyterm{}:
@@ -340,24 +207,10 @@ where read-only expressions are expected (as explained in the comments).
 \ASLListing{Non-read-only expression in assertion}{SESIsReadonly-bad1}{\typingtests/TypingRule.SESIsReadonly.bad1.asl}
 \ASLListing{Non-read-only expression in for loop bounds}{SESIsReadonly-bad2}{\typingtests/TypingRule.SESIsReadonly.bad2.asl}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-    \bigwedge_{\vs\in\vses} \sideeffectisreadonly(\vs)
-}{
-    \sesisreadonly(\vses) \typearrow \True
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{ses_is_readonly}
+\RenderProseAndFormally{ses_is_readonly}
 
 \TypingRuleDef{SESIsPure}
 \RenderRelation{ses_is_pure}
-
-\ProseParagraph
-Define $\vb$ as $\True$ if and only if $\sideeffectispure$ holds for
-every \sideeffectdescriptorterm\ $\vs$ in $\vses$.
 
 \ExampleDef{Checking Whether Expressions are Pure}
 The specification in \listingref{SESIsPure} is well-typed.
@@ -368,17 +221,7 @@ The specification in \listingref{SESIsPure-bad} is ill-typed, since expressions
 appearing in bitvector widths for bitvector types with bitfields must be pure.
 \ASLListing{Purity violation}{SESIsPure-bad}{\typingtests/TypingRule.SESIsPure.bad.asl}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-    \bigwedge_{\vs\in\vses} \sideeffectispure(\vs)
-}{
-    \sesispure(\vses) \typearrow \True
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{ses_is_pure}
+\RenderProseAndFormally{ses_is_pure}
 
 \TypingRuleDef{SESForSubprogram}
 \RenderRelation{ses_for_subprogram}
@@ -388,54 +231,5 @@ The specification in \listingref{SESForSubprogram} shows example subprogram decl
 Note that each subprogram shares the same body, the side effects are given by the qualifier keyword.
 \ASLListing{Side effects for subprograms}{SESForSubprogram}{\typingtests/TypingRule.SESForSubprogram.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none\_or\_noreturn}
-  \begin{itemize}
-    \item $\vqualifier$ is either $\None$ or $\some{\Noreturn}$;
-    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEImpure$, and an \ImmutabilityTerm{}
-          with immutability \\ $\False$.
-  \end{itemize}
 
-  \item \AllApplyCase{some\_readonly}
-  \begin{itemize}
-    \item $\vqualifier$ is $\some{\Readonly}$;
-    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} \\ $\SEReadonly$, and an \ImmutabilityTerm{} with immutability $\False$.
-  \end{itemize}
-
-  \item \AllApplyCase{some\_pure}
-  \begin{itemize}
-    \item $\vqualifier$ is $\some{\Pure}$;
-    \item the result is a set containing a \GlobalEffectTerm{} with \purity{} $\SEPure$, and an \ImmutabilityTerm{} with immutability $\True$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[none\_or\_noreturn]{
-  \vqualifier = \None \lor \vqualifier = \some{\Noreturn}\\
-  \vs \eqdef \{ \GlobalEffect(\SEImpure), \Immutability(\False) \}
-}{
-  \sesforsubprogram(\vqualifier) \typearrow \vs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_readonly]{
-  \vs \eqdef \{ \GlobalEffect(\SEReadonly), \Immutability(\False) \}
-}{
-  \sesforsubprogram(\overname{\some{\Readonly}}{\vqualifier}) \typearrow \vs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_pure]{
-  \vs \eqdef \{ \GlobalEffect(\SEPure), \Immutability(\True) \}
-}{
-  \sesforsubprogram(\overname{\some{\Pure}}{\vqualifier}) \typearrow \vs
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{ses_for_subprogram}
+\RenderProseAndFormally{ses_for_subprogram}

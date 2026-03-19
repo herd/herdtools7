@@ -32,11 +32,11 @@ In those cases, we simply refer to their \emph{domain}.
 Associating a set of values to a type is done by evaluating any expression appearing
 in the type definitions.
 %
-Expressions appearing in types are guaranteed to be side-effect-free by the
+Expressions appearing in types are guaranteed to be \sideeffectfreeterm{} by the
 function $\annotatetype$.
 %
 Evaluation is defined by the relation $\evalexprsef\empty$,
-which evaluates side-effect-free expressions and either returns
+which evaluates \sideeffectfreeexpressionsterm{} and either returns
 a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
@@ -45,7 +45,7 @@ In the latter case (which can occur if, for example, an expression attempts to d
 \texttt{8} by \texttt{0}), a \DynamicErrorConfigurationTerm{}, for which we use the notation
 $\DynErrorConfig$, is returned.
 %
-The dynamic domain is empty in cases where evaluating side-effect-free expressions
+The dynamic domain is empty in cases where evaluating \sideeffectfreeexpressionsterm{}
 results in a \DynamicErrorConfigurationTerm{}.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
@@ -442,7 +442,4 @@ the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
 
-\identd{BMGM} \identr{PHRL} \identr{PZNR}
-\identr{RLQP} \identr{LYDS} \identr{SVDJ} \identi{WLPJ} \identr{FWMM}
-\identi{WPWL} \identi{CDVY} \identi{KFCR} \identi{BBQR} \identr{ZWGH}
-\identr{DKGQ} \identr{DHZT} \identi{HSWR} \identd{YZBQ}
+

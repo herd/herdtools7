@@ -76,6 +76,7 @@ let check_balanced_braces s =
 %token POWERSET_FINITE
 %token PROSE_APPLICATION
 %token PROSE_DESCRIPTION
+%token PROSE_TRANSITION
 %token RENDER
 %token RELATION
 %token RULE
@@ -307,13 +308,13 @@ let relation_attributes ==
 
 let relation_attribute :=
     | prose_application_attribute
+    | prose_transition_attribute
     | type_attribute
 
 let operator_attributes ==
     LBRACE; pairs=tclist0(operator_attribute); RBRACE; { pairs }
 
 let operator_attribute :=
-    | prose_description_attribute
     | math_macro_attribute
     | operator_style_attribute
     | prose_application_attribute
@@ -327,6 +328,11 @@ let prose_application_attribute ==
     PROSE_APPLICATION; EQ; template=STRING; {
         check_balanced_braces template;
         (Prose_Application, StringAttribute template) }
+
+let prose_transition_attribute ==
+    PROSE_TRANSITION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Transition, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | { [] }

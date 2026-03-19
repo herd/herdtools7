@@ -1,7 +1,7 @@
 \chapter{Subprogram Declarations\label{chap:SubprogramDeclarations}}
 
 The \Tfunc{} keyword declares a subprogram. If a return type is included, it is a \emph{function declaration}.
-Otherwise, it is a \emph{procedure declaration}. \identr{RXHX}
+Otherwise, it is a \emph{procedure declaration}.
 
 \ExampleDef{Subprogram Declarations}
 In \listingref{SubprogramDeclarations}, \verb|Add| is a function whereas \verb|IncrementCounter| is a procedure.
@@ -656,35 +656,8 @@ We also define the following helper rules:
 See \ExampleRef{Annotating Subprogram Signatures} and
 \ExampleRef{Updating the Static Environment for a Subprogram}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vd$ is a subprogram AST node with a subprogram definition $\vf$, that is, $\DFunc(\vf)$;
-  \item annotating and declaring the subprogram for $\vf$ in $\genv$ as per \\
-        \TypingRuleRef{AnnotateAndDeclareFunc}
-        yields the environment $\tenvone$, a subprogram definition $\vfone$,
-        and a \sideeffectdescriptorsetsterm{} $\vsesfuncsig$\ProseOrTypeError;
-  \item \Proseannotatesubprogram{$\tenv$}{$\vfone$}{\vsesfuncsig}{$\newf$}{$\vsesf$}\ProseOrTypeError;
-  \item applying $\addsubprogram$ to $\tenvone$, $\newf.\FIELDname$, $\newf$, and $\vsesf$ yields \\
-        $\newtenv$;
-  \item define $\newd$ as the subprogram AST node with $\newf$, that is, $\DFunc(\newf)$;
-  \item define $\newgenv$ as the global component of $\newtenv$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \annotateanddeclarefunc(\genv, \vf) \typearrow (\tenvone, \vfone, \vsesfuncsig) \OrTypeError\hva\\\\
-  \annotatesubprogram(\tenvone, \vfone, \vsesfuncsig) \typearrow (\newf,\vsesf) \OrTypeError\hva\\\\
-  \addsubprogram(\tenvone, \newf.\FIELDname, \newf, \vsesf) \typearrow \newtenv
-}{
-  \typecheckdecl(\genv, \overname{\DFunc(\vf)}{\vd})
-  \typearrow (\overname{\DFunc(\newf)}{\newd}, \overname{\newtenv.\staticenvsG}{\newgenv})
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{typecheck_decl_func}
+\RenderProseAndFormally{typecheck_decl_func}
 
 \TypingRuleDef{AnnotateAndDeclareFunc}
 \RenderRelation{annotate_and_declare_func}
@@ -692,30 +665,8 @@ See \ExampleRef{Annotating Subprogram Signatures} and
 See \ExampleRef{Annotating Subprogram Signatures} and
 \ExampleRef{Updating the Static Environment for a Subprogram}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item annotating the signature of $\funcsig$ in $\genv$ as per
-        \TypingRuleRef{AnnotateFuncSig} yields
-        $(\tenvone, \funcsigfone, \vsesone)$\ProseOrTypeError;
-  \item declaring the subprogram defined by $\funcsigfone$ in $\tenvone$ with $\vsesfone$
-        as per \TypingRuleRef{DeclareOneFunc} yields the environment $\newtenv$
-        and new $\func$ node $\newfuncsig$\ProseOrTypeError;
-  \item \Proseeqdef{$\vses$}{$\vsesfone$}.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \annotatefuncsig(\genv, \funcsig) \typearrow (\tenvone, \funcsigfone, \vsesfone) \OrTypeError\hva\\\\
-  \declareonefunc(\tenvone, \funcsigfone, \vsesfone) \typearrow (\newtenv, \newfuncsig) \OrTypeError
-}{
-  \annotateanddeclarefunc(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \overname{\vsesfone}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_and_declare_func}
+\RenderProseAndFormally{annotate_and_declare_func}
 \CodeSubsection{\AnnotateAndDeclareFuncBegin}{\AnnotateAndDeclareFuncEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateFuncSig}
@@ -737,90 +688,8 @@ The specification in \listingref{AnnotateFuncSig-bad} is ill-typed, since the re
 is not a constrained expression.
 \ASLListing{An ill-typed subprogram signature}{AnnotateFuncSig-bad}{\typingtests/TypingRule.AnnotateFuncSig.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tenv$ is the \staticenvironmentterm{} which comprises of the \globalstaticenvironmentterm{} $\genv$ and an empty local environment;
-  \item applying $\annotatelimitexpr$ to $\funcsig.\FIELDrecurselimit$ in $\tenvone$ yields \\
-        $(\vrecurselimit, \vsesrecurselimit)$\ProseOrTypeError;
-  \item annotating and declaring the parameters $\funcsig.\FIELDparameters$ in $\tenv$ using \\
-        $\annotateparams$ yields $(\tenvwithparams, \vseswithparams, \params)$\ProseOrTypeError;
-  \item checking that the parameters $\funcsig.\FIELDparameters$ are declared correctly, using $\checkparamdecls$, yields $\True$\ProseOrTypeError;
-  \item annotating and declaring the arguments $\funcsig.\FIELDargs$ in $\tenvwithparams$ using $\annotateargs$
-        and $\vseswithparams$ yields\\
-        $(\tenvwithargs, \vseswithargs, \vargs)$\ProseOrTypeError;
-  \item annotating the return type of $\funcsig$ in $\tenvwithparams$ using \\ $\annotatereturntype$ and $\vseswithargs$ yields\\
-        $(\newtenv, \vreturntype, \vseswithreturn)$\ProseOrTypeError;
-  \item \Proseeqdef{$\vsesp$}{$\vseswithreturn$ with every \LocalEffectTerm\ removed};
-  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\funcsig.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
-  \item the \sideeffectsetterm{} corresponding to $\funcsig.\funcqualifierfield$\\(via $\sesforsubprogram$) is $\vses$;
-  \item $\newfuncsig$ is $\funcsig$ with the annotated parameters $\vparams$, annotated arguments $\vargs$, annotated return type $\vreturntype$,
-        and $\vrecurselimit$ as its recursion limit.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \withemptylocal(\genv) \typearrow \tenv\\
-  {
-    \begin{array}{r}
-    \annotatelimitexpr(\tenvone, \funcsig.\FIELDrecurselimit) \typearrow \\
-    (\vrecurselimit, \vsesrecurselimit) \OrTypeError
-    \end{array}
-  }\hva\\\\
-  {
-    \begin{array}{r}
-    \annotateparams(\tenv, \funcsig.\FIELDparameters, (\tenv, \emptylist)) \typearrow \\
-    (\tenvwithparams, \vseswithparams, \params) \OrTypeError
-    \end{array}
-  }\\
-  \checkparamdecls(\tenv, \funcsig) \typearrow \True \OrTypeError \hva\\
-  {
-    \begin{array}{r}
-    \annotateargs\left(
-      \begin{array}{l}
-        \tenvwithparams, \funcsig.\FIELDargs,\\
-        (\tenvwithparams, \emptylist), \vseswithparams
-      \end{array}
-      \right) \typearrow \\
-    (\tenvwithargs, \vseswithargs, \vargs) \OrTypeError
-      \end{array}
-  }\\\\
-  {
-    \begin{array}{r}
-    \annotatereturntype\left(
-      \begin{array}{l}
-        \tenvwithargs, \tenvwithparams, \\
-        \funcsig.\FIELDreturntype, \vseswithargs
-      \end{array}
-      \right) \typearrow \\
-    (\newtenv, \vreturntype, \vseswithreturn) \OrTypeError
-    \end{array}
-  }\hva\\\\
-  \vsesp \eqdef \vseswithreturn \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}\\
-  \checksubprogrampurity(\funcsig.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \hva\\
-  \sesforsubprogram(\funcsig.\funcqualifierfield) \typearrow \vses\\
-{
-\newfuncsig \eqdef
-\left\{
-\begin{array}{rcl}
- \FIELDname            &:& \funcsig.\FIELDname,\\
- \FIELDparameters      &:& \vparameters,\\
- \FIELDargs            &:& \vargs,\\
- \funcbody            &:& \funcsig.\funcbody,\\
- \FIELDreturntype      &:& \vreturntype,\\
- \funcsubprogramtype  &:& \funcsig.\funcsubprogramtype,\\
- \FIELDrecurselimit    &:& \vrecurselimit\\
- \funcbuiltin         &:& \funcsig.\funcbuiltin
-\end{array}
-\right\}
-}}{
-  \annotatefuncsig(\genv, \funcsig) \typearrow (\newtenv, \newfuncsig, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_func_sig}
+\RenderProseAndFormally{annotate_func_sig}
 \CodeSubsection{\AnnotateFuncSigBegin}{\AnnotateFuncSigEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateParams}
@@ -833,44 +702,8 @@ of the function \\
 Therefore, $\tenvwithparams$ effectively reflects the added declarations \\
 \verb|let A: integer{A}| and \verb|let B: integer{B}|.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\params$ is the empty list;
-    \item $\tenvwithparams$ is $\newtenv$;
-    \item $\paramsone$ is $\acc$.
-  \end{itemize}
 
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\params$ is a list with $(\vx, \tyopt)$ as its \head\ and $\paramsp$ as its \tail;
-    \item applying $\annotateoneparam$ to the parameter $(\vx, \tyopt)$ with $\tenv$ and $\newtenv$ yields the pair $\newtenvp$ and $\tty$\ProseOrTypeError;
-    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \tty)$;
-    \item applying $\annotateparams$ to $\paramsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields $\tenvwithparams$ and $\paramsone$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}{
-  \annotateparams(\tenv, \overname{\emptylist}{\params}, (\newtenv, \acc)) \typearrow
-  (\overname{\newtenv}{\tenvwithparams}, \overname{\acc}{\paramsone})
-}
-\hva\and
-\inferrule[non\_empty]{
-  \params = [(\vx,\tyopt)] \concat \paramsp\hva\\\\
-  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty) \OrTypeError \hva\\\\
-  \accp \eqdef \acc \concat [(\vx, \tty)] \hva\\\\
-  {\begin{array}{r}\annotateparams(\tenv, \paramsp, (\newtenvp, \accp)) \typearrow \\(\tenvwithparams, \paramsone) \OrTypeError\end{array}}
-}{
-  \annotateparams(\tenv, \params, (\newtenv, \acc)) \typearrow (\tenvwithparams, \paramsone)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_params}
+\RenderProseAndFormally{annotate_params}
 
 \TypingRuleDef{AnnotateOneParam}
 \RenderRelation{annotate_one_param}
@@ -887,57 +720,8 @@ In \listingref{AnnotateOneParam-bad1}, the declaration of the parameter \verb|A|
 since \verb|A| is also declared as a global storage element.
 \ASLListing{An ill-typed subprogram parameter}{AnnotateOneParam-bad1}{\typingtests/TypingRule.AnnotateOneParam.bad1.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{type\_parameterized}
-    \begin{itemize}
-      \item $\tyopt$ is either $\None$ or an \unconstrainedintegertypeterm{};
-      \item $\tty$ is defined as the \parameterizedintegertypeterm\ for the identifier $\vx$.
-    \end{itemize}
 
-    \item \AllApplyCase{type\_annotated}
-    \begin{itemize}
-      \item $\tyopt$ is the type $\some{\ttyp}$, which is not the unconstrained integer type;
-      \item annotating $\ttyp$ in $\tenv$ yields $\tty$\ProseOrTypeError.
-    \end{itemize}
-  \end{itemize}
-  \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
-  \item checking that $\tty$ is a constrained integer in $\newtenv$ via $\checkconstrainedinteger$
-        yields $\True$\ProseOrTypeError;
-  \item adding the local storage element given by the identifier $\vx$, type $\tty$, and local declaration keyword
-        $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[type\_parameterized]{
-  (\tyopt = \None \lor \tyopt = \some{ \unconstrainedinteger}) \\
-  \tty \eqdef \TInt(\Parameterized(\vx))\hva\\\\
-  \commonsuffixline\hva\\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\hva\\\\
-  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
-}{
-  \annotateoneparam(\tenv, \newtenv, (\vx, \tyopt)) \typearrow (\newtenvp, \tty)
-}
-\hva\and
-\inferrule[type\_annotated]{
-  \ttyp \neq \unconstrainedinteger\\
-  \annotatetype(\False, \tenv, \ttyp) \typearrow \tty \OrTypeError\hva\\\\
-  \commonsuffixline\hva\\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
-  \checkconstrainedinteger(\newtenv, \tty) \typearrow \True \OrTypeError\hva\\\\
-  \addlocal(\newtenv, \vx, \tty, \LDKLet) \typearrow \newtenvp
-}{
-  \annotateoneparam(\tenv, \newtenv, (\vx, \some{\ttyp})) \typearrow (\newtenvp, \tty)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_one_param}
+\RenderProseAndFormally{annotate_one_param}
 
 \TypingRuleDef{CheckParamDecls}
 \RenderRelation{check_param_decls}
@@ -955,29 +739,8 @@ The specification in \listingref{CheckParamDecls-bad} is ill-typed, since the li
 \verb|D, A, B, C|, while the list of declared parameters is \verb|A, B, C, D|.
 \ASLListing{Incorrectly declaring subprogram parameters}{CheckParamDecls-bad}{\typingtests/TypingRule.CheckParamDecls.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\extractparameters$ to $\tenv$ and $\funcsig$ yields\\
-        $\inferredparameters$\ProseOrTypeError;
-  \item \Proseeqdef{$\declaredparameters$}{the list of parameter names in the order they are listed in $\funcsig.\FIELDparameters$};
-  \item checking that $\inferredparameters$ is equal to $\declaredparameters$ yields \\
-        $\True$\ProseOrTypeError.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \extractparameters(\tenv, \funcsig) \typearrow \inferredparameters \OrTypeError\hva\\\\
-  \declaredparameters \eqdef [(\vp, \Ignore) \in \funcsig.\FIELDparameters: \vp]\hva\\
-  \techeck(\inferredparameters = \declaredparameters, \BadSubprogramDeclaration) \typearrow \True \OrTypeError
-}{
-  \checkparamdecls(\tenv, \funcsig) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_param_decls}
+\RenderProseAndFormally{check_param_decls}
 
 \TypingRuleDef{ExtractParameters}
 \RenderRelation{extract_parameters}
@@ -1014,46 +777,8 @@ expressions \\
 are unsupported inside\\ \bitvectortypesterm{} of arguments.
 \ASLListing{An ill-typed subprogram signature}{ExtractParameters-bad1}{\typingtests/TypingRule.ExtractParameters-bad1.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item applying $\funcsigtypes$ to $\funcsig$ yields the empty list;
-    \item \Proseeqdef{$\uniqueparameters$}{the empty list}.
-  \end{itemize}
 
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item applying $\funcsigtypes$ to $\funcsig$ yields the list of types $\vt_{1..k}$;
-    \item applying $\paramsofty$ to $\tenv$ and $\vtypes[\vi]$, for every $\vi=1..k$, yields the list of parameter names $\vparams_\vi$\ProseOrTypeError;
-    \item \Proseeqdef{$\allparameters$}{the concatenation of lists $\vparams_\vi$, for every $\vi=1..k$};
-    \item \Proseeqdef{$\uniqueparameters$}{the list of parameters in $\allparameters$, with repeating parameters removed}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{
-  \funcsigtypes(\funcsig) \typearrow \emptylist
-}{
-  \extractparameters(\tenv, \funcsig) \typearrow \overname{\emptylist}{\uniqueparameters}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \funcsigtypes(\funcsig) \typearrow \vt_{1..k}\\
-  \vi=1..k: \paramsofty(\tenv, \vtypes[\vi]) \typearrow \vparams_\vi \OrTypeError\hva\\\\
-  \allparameters \eqdef \vparams_1 \concat \ldots \concat \vparams_k\\
-  \uniqueparameters \eqdef \uniquelist(\allparameters)
-}{
-  \extractparameters(\tenv, \funcsig) \typearrow \uniqueparameters
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{extract_parameters}
+\RenderProseAndFormally{extract_parameters}
 
 \TypingRuleDef{FuncSigTypes}
 \RenderRelation{func_sig_types}
@@ -1063,34 +788,8 @@ are unsupported inside\\ \bitvectortypesterm{} of arguments.
 in comments above their declarations.
 \ASLListing{Listing signature types}{FuncSigTypes}{\typingtests/TypingRule.FuncSigTypes.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseeqdef{$\vreturntype$}{the singleton list for $\ttyp$ if
-        $\funcsig.\FIELDreturntype$ if the singleton set for $\ttyp$,
-        and the empty list, otherwise.}
-  \item \Proseeqdef{$\argtypes$}{the types of arguments in $\funcsig.\FIELDargs$};
-  \item \Proseeqdef{$\tys$}{the \Proselist{$\vreturntype$}{$\argtypes$}}.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  {
-    \vreturntype \eqdef
-    \begin{cases}
-      [\ttyp] & \text{if }\funcsig.\FIELDreturntype = \some{\ttyp}\\
-      \emptylist & \text{if }\funcsig.\FIELDreturntype = \None
-    \end{cases}
-  } \hva\\\\
-  \argtypes \eqdef [(\Ignore, \ttyp)\in\funcsig.\FIELDargs: \ttyp]
-}{
-  \funcsigtypes(\funcsig) \typearrow \overname{\vreturntype \concat \argtypes}{\tys}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{func_sig_types}
+\RenderProseAndFormally{func_sig_types}
 
 \TypingRuleDef{ParametersOfTy}
 \RenderRelation{paramsofty}
@@ -1115,100 +814,8 @@ in \listingref{ParametersOfTy} are as follows:
 
 \ExampleRef{Ill-typed Type Declarations} shows an ill-typed argument type.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{tbits}
-    \begin{itemize}
-      \item $\tty$ is a bitvector type, that is, $\TBits(\ve, \Ignore)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$\ProseOrTypeError.
-    \end{itemize}
 
-  \item \AllApplyCase{ttuple}
-    \begin{itemize}
-      \item $\tty$ is a tuple over a list of types $\tys$, that is, $\TTuple(\tys)$;
-      \item applying $\paramsofty$ to each type $\tty_i$ in $\tys$ yields $\ids_i$\ProseOrTypeError;
-      \item $\ids$ is the concatenation of all the $\ids_i$.
-    \end{itemize}
-
-  \item \AllApplyCase{tint\_constrained\_precise}
-    \begin{itemize}
-      \item $\tty$ is a \wellconstrainedintegertypeterm{} ($\TInt(\WellConstrained(\cs))$);
-      \item applying $\paramsofconstraint$ to each constraint $\vc_i$ in $\cs$ yields $\ids_i$\ProseOrTypeError;
-      \item $\ids$ is the concatenation of all the $\ids_i$.
-    \end{itemize}
-
-  \item \AllApplyCase{other}
-    \begin{itemize}
-      \item $\tty$ meets one of the following conditions:
-      \begin{itemize}
-        \item $\tty$ is one of the following types: \realtypeterm, \stringtypeterm, \booleantypeterm, \arraytypeterm, \namedtypeterm;
-        \item $\tty$ is an \unconstrainedintegertypeterm;
-        \item $\tty$ is a \wellconstrainedintegertypeterm{} with a $\False$ precision flag, that is, $\TInt(\WellConstrained(\Ignore, \False))$;
-        \item $\tty$ is a \parameterizedintegertypeterm;
-      \end{itemize}
-      \item $\ids$ is the empty list.
-    \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item $\tty$ either a \structuredtypeterm{} or an \enumerationtypeterm;
-    \item the result is a \typingerrorterm{} ($\BadSubprogramDeclaration$).
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[tbits]{
-  \paramsofexpr(\tenv, \ve) \typearrow \ids
-}{
-  \paramsofty(\tenv, \overname{\TBits(\ve, \Ignore)}{\tty}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[ttuple]{
-  \tty_i \in \tys: \paramsofty(\tenv, \tty_i) \typearrow \ids_i \OrTypeError\hva\\\\
-  \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
-}{
-  \paramsofty(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tint\_constrained\_precise]{
-  \vc_i \in \cs: \paramsofconstraint(\tenv, \vc_i) \typearrow \ids_i \OrTypeError\hva\\\\
-  \ids \eqdef \ids_1 \concat \ldots \concat \ids_{\listlen{\tys}}
-}{
-  \paramsofty(\tenv, \overname{\TInt(\WellConstrained(\cs, \True))}{\tty}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
-  {
-  \begin{array}{ll}
-  \astlabel(\tty) \in \{ \TReal, \TString, \TBool, \TArray, \TNamed \}  & \lor\\
-  \tty = \unconstrainedinteger                                          &\lor\\
-  \tty = \TInt(\WellConstrained(\Ignore, \False))                       & \lor\\
-  \tty = \TInt(\Parameterized(\Ignore))                                 &
-  \end{array}
-  }
-}{
-  \paramsofty(\tenv, \tty) \typearrow \overname{\emptylist}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \isstructured(\tty) \lor \astlabel(\tty) = \TEnum
-}{
-  \paramsofty(\tenv, \tty) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{paramsofty}
+\RenderProseAndFormally{paramsofty}
 
 \TypingRuleDef{ParametersOfExpr}
 \RenderRelation{params_of_expr}
@@ -1237,110 +844,8 @@ for the expression \verb|A| appearing in the return type.
 \listingref{ParametersOfExpr-bad} shows examples of expressions that are illegal in types of arguments.
 \ASLListing{Ill-typed expressions in signature types}{ParametersOfExpr-bad}{\typingtests/TypingRule.ParametersOfExpr.bad.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{eval}
-    \begin{itemize}
-      \item $\ve$ is a variable, that is, $\EVar(\vx)$;
-      \item if $\vx$ is undefined in $\tenv$ then $\ids$ is $[\vx]$, otherwise $\ids$ is $\emptylist$.
-    \end{itemize}
 
-  \item \AllApplyCase{eunop}
-    \begin{itemize}
-      \item $\ve$ is a unary operation, that is, $\EUnop(\Ignore, \ve)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\ids$\ProseOrTypeError.
-    \end{itemize}
-
-  \item \AllApplyCase{ebinop}
-    \begin{itemize}
-      \item $\ve$ is a binary operation, that is, $\EBinop(\Ignore, \veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$\ProseOrTypeError;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$\ProseOrTypeError;
-      \item define $\ids$ as the concatenation of $\idsone$ and $\idstwo$.
-    \end{itemize}
-
-  \item \AllApplyCase{etuple}
-    \begin{itemize}
-      \item $\ve$ is a tuple over the list of expressions $\es$, that is, $\ETuple(\es)$;
-      \item checking that $\es$ is a singleton list yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration};
-      \item view $\es$ as the singleton list for the expression $\ve$;
-      \item applying $\paramsofexpr$ to $\ve$ $\ids$\ProseOrTypeError.
-    \end{itemize}
-
-  \item \AllApplyCase{econd}
-    \begin{itemize}
-      \item $\ve$ is a conditional expression, that is, $\ECond(\ve, \veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\idsp$\ProseOrTypeError;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$\ProseOrTypeError;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$\ProseOrTypeError;
-      \item define $\ids$ as the concatenation of $\idsp$, $\idsone$, and $\idstwo$.
-    \end{itemize}
-
-  \item \AllApplyCase{other}
-    \begin{itemize}
-      \item $\ve$ is not a variable, unary operation, binary operation, or tuple;
-      \item the result is a \typingerrorterm{} ($\BadSubprogramDeclaration$).
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[eval]{
-  \isundefined(\tenv, \vx) \typearrow \vb\\
-  \ids \eqdef \ifthenelseop[H]{\vb}{[\vx]}{\emptylist}
-}{
-  \paramsofexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[eunop]{
-  \paramsofexpr(\tenv, \veone) \typearrow \ids \OrTypeError
-}{
-  \paramsofexpr(\tenv, \overname{\EUnop(\Ignore, \veone)}{\ve}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[ebinop]{
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\hva\\\\
-  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
-}{
-  \paramsofexpr(\tenv, \overname{\EBinop(\Ignore, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[etuple]{
-  \techeck(\es = 1, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\hva\\\\
-  \es \reverseeqdef [\ve]\\
-  \paramsofexpr(\tenv, \ve) \typearrow \ids \OrTypeError\
-}{
-  \paramsofexpr(\tenv, \overname{\ETuple(\es)}{\ve}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[econd]{
-  \paramsofexpr(\tenv, \ve) \typearrow \idsp \OrTypeError\hva\\\\
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \OrTypeError\hva\\\\
-  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \OrTypeError
-}{
-  \paramsofexpr(\tenv, \overname{\ECond(\ve, \veone, \vetwo)}{\ve}) \typearrow \overname{\idsp \concat \idsone \concat \idstwo}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
-  \astlabel(\ve) \notin \{ \EVar, \EUnop, \EBinop, \ETuple \}
-}{
-  \paramsofexpr(\tenv, \ve) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{params_of_expr}
+\RenderProseAndFormally{params_of_expr}
 
 \TypingRuleDef{ParametersOfConstraint}
 \RenderRelation{params_of_constraint}
@@ -1351,44 +856,8 @@ In \listingref{ParametersOfTy}, the list of parameters extracted from the constr
 
 See also \ExampleRef{Extracting the Parameters from Expressions}.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{exact}
-    \begin{itemize}
-      \item $\vc$ is an exact constraint, that is, $\ConstraintExact(\ve)$;
-      \item applying $\paramsofexpr$ to $\ve$ in $\tenv$ yields $\ids$.
-    \end{itemize}
 
-  \item \AllApplyCase{range}
-    \begin{itemize}
-      \item $\vc$ is an range constraint, that is, $\ConstraintRange(\veone, \vetwo)$;
-      \item applying $\paramsofexpr$ to $\veone$ in $\tenv$ yields $\idsone$;
-      \item applying $\paramsofexpr$ to $\vetwo$ in $\tenv$ yields $\idstwo$;
-      \item $\ids$ is the concatenation of $\idsone$ and $\idstwo$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[exact]{
-  \paramsofexpr(\tenv, \ve) \typearrow \ids
-}{
-  \paramsofconstraint(\tenv, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \paramsofexpr(\tenv, \veone) \typearrow \idsone \\
-  \paramsofexpr(\tenv, \vetwo) \typearrow \idstwo \\
-}{
-  \paramsofconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\idsone \concat \idstwo}{\ids}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{params_of_constraint}
+\RenderProseAndFormally{params_of_constraint}
 
 \TypingRuleDef{AnnotateArgs}
 \RenderRelation{annotate_args}
@@ -1397,49 +866,8 @@ See also \ExampleRef{Extracting the Parameters from Expressions}.
 In \listingref{AnnotateFuncSig}, the annotated arguments are
 \texttt{bv}, \texttt{bv2}, \texttt{bv3}, and \texttt{C}.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\args$ is the empty list;
-    \item $\tenvwithargs$ is $\newtenv$;
-    \item $\newargs$ is $\acc$;
-    \item \Proseeqdef{$\vses$}{$\vsesin$}
-  \end{itemize}
 
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\args$ is a list with $(\vx, \tty)$ as its \head\ and $\vargsp$ as its \tail;
-    \item applying $\annotateonearg$ to the argument $(\vx, \tty)$ with $\tenv$ and $\newtenv$ yields
-          $(\newtenvp, \ttyp, \vsesty)$\ProseOrTypeError;
-    \item define $\accp$ as the concatenation of $\acc$ and the pair $(\vx, \ttyp)$;
-    \item applying $\annotateargs$ to $\vargsp$ with $\tenv$, $\newtenvp$, and $\accp$ yields\\
-          $(\tenvwithargs, \newargs, \newses)$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsesty$ and $\newses$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}{
-  \annotateargs(\tenv, \overname{\emptylist}{\args}, (\newtenv, \acc), \vsesin) \typearrow
-  (\overname{\newtenv}{\tenvwithargs}, \overname{\acc}{\newargs}, \overname{\vsesin}{\vses})
-}
-\hva\and
-\inferrule[non\_empty]{
-  \vargs = [(\vx,\tty)] \concat \vargsp\hva\\\\
-  \annotateonearg(\tenv, \newtenv, (\vx, \tty)) \typearrow (\newtenvp, \ttyp, \vsesty) \OrTypeError \hva\\\\
-  \accp \eqdef \acc \concat [(\vx, \ttyp)] \hva\\\\
-  {\begin{array}{r}\annotateargs(\tenv, \vargsp, (\newtenvp, \accp), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \newses) \OrTypeError\end{array}}\hva\\\\
-  \vses \eqdef \vsesty \cup\ \newses
-}{
-  {\begin{array}{r}\annotateargs(\tenv, \args, (\newtenv, \acc), \vsesin) \typearrow \\(\tenvwithargs, \newargs, \vses)\end{array}}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_args}
+\RenderProseAndFormally{annotate_args}
 
 \TypingRuleDef{AnnotateOneArg}
 \RenderRelation{annotate_one_arg}
@@ -1457,29 +885,8 @@ The specification in \listingref{AnnotateOneArg-bad2} is illegal, since argument
 as \collectiontypesterm.
 \ASLListing{An ill-typed subprogram argument}{AnnotateOneArg-bad2}{\typingtests/TypingRule.AnnotateOneArg.bad2.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item annotating the type $\tty$ in $\tenv$ yields $(\ttyp, \vses)$\ProseOrTypeError;
-  \item checking that $\vx$ is not defined in $\newtenv$ yields $\True$\ProseOrTypeError;
-  \item adding the local storage element given by the identifier $\vx$, type $\ttyp$, and local declaration keyword
-        $\LDKLet$ in $\newtenv$ yields $\newtenvp$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vses) \OrTypeError \hva\\\\
-  \checkvarnotinenv(\newtenv, \vx) \typearrow \True \OrTypeError\hva\\\\
-  \addlocal(\newtenv, \vx, \ttyp, \LDKLet) \typearrow \newtenvp
-}{
-  \annotateonearg(\tenv, \newtenv, (\vx, \tty))
-  \typearrow (\newtenvp, \ttyp, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_one_arg}
+\RenderProseAndFormally{annotate_one_arg}
 
 \TypingRuleDef{AnnotateReturnType}
 \RenderRelation{annotate_return_type}
@@ -1495,66 +902,8 @@ The specification in \listingref{AnnotateReturnType-bad} is ill-typed, since \co
 as return types.
 \ASLListing{An ill-typed return type}{AnnotateReturnType-bad}{\typingtests/TypingRule.AnnotateReturnType.bad.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{no\_return\_type}
-  \begin{itemize}
-    \item $\vreturntype$ is $\None$;
-    \item $\newtenv$ is $\tenvwithargs$;
-    \item $\newreturntype$ is $\None$;
-    \item \Proseeqdef{$\vses$}{$\vsesin$}.
-  \end{itemize}
 
-  \item \AllApplyCase{has\_return\_type}
-  \begin{itemize}
-    \item $\vreturntype$ is $\some{\tty}$;
-    \item annotating $\tty$ in $\tenvwithparams$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-    \item $\newreturntype$ is $\some{\ttyp}$;
-    \item $\newtenv$ is $\tenvwithargs$ with its local environment updated by binding its \\ $\FIELDreturntype$ field
-          to $\newreturntype$;
-    \item \Proseeqdef{$\vses$}{the union of $\vsesin$ and $\vsesty$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[no\_return\_type]{}
-{
-  {
-  \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\None}{\vreturntype}, \vsesin) \typearrow \\
-  (\overname{\tenvwithargs}{\newtenv}, \overname{\None}{\newreturntype}, \overname{\vsesin}{\vses})
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[has\_return\_type]{
-  \annotatetype(\tenvwithparams, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\\\\
-  \newreturntype \eqdef \some{\ttyp}\hva\\
-  {
-  \newtenv \eqdef \left\{
-  \begin{array}{rl}
-  \staticenvsG: & \tenvwithargs.\staticenvsG,\\
-  \staticenvsL: & \tenvwithargs.\staticenvsL[\FIELDreturntype\mapsto\newreturntype]
-  \end{array}
-  \right\}
-  }\\
-  \vses \eqdef \vsesin \cup\ \vsesty
-}{
-  {
-  \begin{array}{r}
-  \annotatereturntype(\tenvwithparams, \tenvwithargs, \overname{\some{\tty}}{\returntype}, \vsesin) \typearrow \\
-  (\newtenv, \newreturntype, \vses)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_return_type}
+\RenderProseAndFormally{annotate_return_type}
 
 \TypingRuleDef{CheckSubprogramPurity}
 \RenderRelation{check_subprogram_purity}
@@ -1568,122 +917,18 @@ In \listingref{SESForSubprogram}, the bodies of each subprogram are checked as f
   \item the side effects of the body of \verb|baz| are not checked.
 \end{itemize}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none\_or\_noreturn}
-  \begin{itemize}
-    \item $\vqualifier$ is either $\None$ or $\some{\Noreturn}$;
-    \item $\vb$ is $\True$.
-  \end{itemize}
 
-  \item \AllApplyCase{some\_readonly}
-  \begin{itemize}
-    \item $\vqualifier$ is $\some{\Readonly}$;
-    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \readonlyterm{} yields $\True$\ProseOrTypeError;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{some\_pure}
-  \begin{itemize}
-    \item $\vqualifier$ is $\some{\Pure}$;
-    \item checking that all \sideeffectdescriptorsterm{} in $\vses$ are \pureterm{} yields $\True$\ProseOrTypeError;
-    \item $\vb$ is $\True$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[none\_or\_noreturn]{
-  \vqualifier = \None \lor \vqualifier = \some{\Noreturn}
-}{
-  \checksubprogrampurity(\vqualifier) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_readonly]{
-  \sesisreadonly(\vses) \typearrow \True \OrTypeError
-}{
-  \checksubprogrampurity(\overname{\some{\Readonly}}{\vqualifier}) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_pure]{
-  \sesispure(\vses) \typearrow \True \OrTypeError
-}{
-  \checksubprogrampurity(\overname{\some{\Pure}}{\vqualifier}) \typearrow \overname{\True}{\vb}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_subprogram_purity}
+\RenderProseAndFormally{check_subprogram_purity}
 
 \TypingRuleDef{DeclareOneFunc}
 \RenderRelation{declare_one_func}
 
 See \ExampleRef{Updating the Static Environment for a Subprogram}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\funcsig$ has name $\name$, arguments $\vargs$, and type $\subprogramtype$, that is,
-  \[
-    \begin{array}{rrcl}
-      \funcsig \eqdef \{
-                      & \FIELDname            &:& \name,\\
-                      & \FIELDparameters      &:& \vp,\\
-                      & \FIELDargs            &:& \vargs,\\
-                      & \funcbody            &:& \bd,\\
-                      & \FIELDreturntype      &:& \vt,\\
-                      & \funcsubprogramtype  &:& \subprogramtype, \\
-                      & \funcbuiltin         &:& \vb \\
-                      & \funcqualifierfield       &:& \vqualifier \\
-                  \}  & ; &&
-        \end{array}
-  \]
-  \item adding a new subprogram with $\name$, $\vqualifier$, $\vargs$, and $\subprogramtype$ to $\tenv$ yields the new
-        environment $\tenvone$ and new name $\namep$\ProseOrTypeError;
-  \item checking that $\namep$ is not already declared in the global environment of $\tenvone$
-        yields $\True$\ProseOrTypeError;
-  \item $\funcsigone$ is $\funcsig$ with $\name$ substituted by $\namep$;
-  \item adding a subprogram with name $\namep$, definition $\funcsigone$,
-        and \sideeffectsetterm\ $\vsesfuncsig$ to $\tenvone$ yields $\newtenv$\ProseOrTypeError.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  {
-  \begin{array}{rrcl}
-    \funcsig \eqdef \{
-                    & \FIELDname            &:& \name,\\
-                    & \FIELDparameters      &:& \vp,\\
-                    & \FIELDargs            &:& \vargs,\\
-                    & \funcbody            &:& \bd,\\
-                    & \FIELDreturntype      &:& \vt,\\
-                    & \funcsubprogramtype  &:& \subprogramtype, \\
-                    & \funcbuiltin         &:& \vb \\
-                    & \funcqualifierfield       &:& \vqualifier \\
-                    & \funcoverride        &:& \voverride \\
-                \} &&&
-      \end{array}
-    }\hva\\
-  {\begin{array}{r}\addnewfunc(\tenv, \vqualifier, \name, \vargs, \subprogramtype) \typearrow \\(\tenvone, \namep) \OrTypeError\end{array}}
-  \hva\\\\
-  \techeck(\tenvone.\staticenvsG.\subprograms(\namep) = \bot, \IdentifierAlreadyDeclared) \typearrow \True \terminateas \IdentifierAlreadyDeclared \hva\\\\
-  \newfuncsig \eqdef \funcsig[\FIELDname \mapsto \namep] \hva\\\\
-  \addsubprogram(\tenvone, \namep, \funcsigone, \vsesfuncsig) \typearrow \newtenv \OrTypeError
-}{
-  \declareonefunc(\tenv, \funcsig, \vsesfuncsig) \typearrow (\newtenv, \newfuncsig)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{declare_one_func}
+\RenderProseAndFormally{declare_one_func}
 \CodeSubsection{\DeclareOneFuncBegin}{\DeclareOneFuncEnd}{../Typing.ml}
-\identi{HJRD} \identd{BTBR} \identi{FSFQ} \identi{PFGQ} \identr{PGFC}
+
 
 \TypingRuleDef{SubprogramClash}
 \RenderRelation{subprogram_clash}
@@ -1704,36 +949,9 @@ since their subprogram types clash and their signatures clash.
 In \listingref{SubprogramClash-bad1}, the function \verb|X| and the procedure \verb|X| clash since subprogram types clash and their qualifiers differ.
 \ASLListing{Clashing subprogram qualifiers}{SubprogramClash-bad1}{\typingtests/TypingRule.SubprogramClash.bad1.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item the identifier $\name$ is bound to the $\func$ AST node $\otherfuncsig$ in the \\
-        $\subprograms$ map
-        of the static global environment of $\tenv$ (ignoring the associated \sideeffectdescriptorsterm);
-  \item applying $\subprogramtypesclash$ to the subprogram type of $\otherfuncsig$ \\
-        ($\otherfuncsig.\subprogramtype$) and $\subpgmtype$ yields \\
-        $\vbone$;
-  \item determining whether the qualifier of $\otherfuncsig$ is not equal to $\vqualifier$ yields $\vbtwo$;
-  \item determining whether there is an argument clash between $\formaltypes$ and \\
-        the formal arguments of $\otherfuncsig$ ($\otherfuncsig.\FIELDargs$) in $\tenv$ yields $\vbthree$\ProseOrTypeError.
-  \item \Proseeqdef{$\vb$}{$\vbone \land (\vbtwo \lor \vbthree)$}.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \tenv.\staticenvsG.\subprograms(\name) = (\otherfuncsig, \Ignore)\\
-  \subprogramtypesclash(\otherfuncsig.\subprogramtype, \subpgmtype) \typearrow \vbone\hva\\
-  \vbtwo \eqdef \otherfuncsig.\funcqualifierfield \neq \vqualifier \\
-  \hasargclash(\formaltypes, \otherfuncsig.\FIELDargs) \typearrow \vbthree
-}{
-  {\begin{array}{r}\subprogramclash(\tenv, \name, \subpgmtype, \vqualifier, \formaltypes) \typearrow \\ \overname{\vbone \land (\vbtwo \lor \vbthree)}{\vb}\end{array}}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{subprogram_clash}
-\identd{BTBR} \identi{FSFQ} \identi{PFGQ}
+\RenderProseAndFormally{subprogram_clash}
+
 
 \TypingRuleDef{SubprogramTypesClash}
 \RenderRelation{subprogram_types_clash}
@@ -1807,73 +1025,9 @@ are ill-typed due to subprogram declaration clashes.
 \ASLListing{Subprogram clashes}{AddNewFunc-bad2}{\typingtests/TypingRule.AddNewFunc.bad2.asl}
 \ASLListing{Subprogram clashes}{AddNewFunc-bad3}{\typingtests/TypingRule.AddNewFunc.bad3.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{first\_name}
-  \begin{itemize}
-    \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ does not have a binding for $\name$;
-    \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the singleton set containing
-          $\name$.
-  \end{itemize}
 
-  \item \AllApplyCase{name\_exists}
-  \begin{itemize}
-    \item the $\overloadedsubprograms$ map in the global environment of $\tenv$ binds $\name$ to the set of strings $\othernames$;
-    \item $\newname$ is the unique name that will be associated with the subprogram given by the identifier $\name$, list of formals $\formals$,
-          and subprogram type $\subpgmtype$. It is constructed by concatenating a hyphen (\texttt{-}) to $\name$, followed
-          by a string corresponding to the number of strings in $\othernames$.
-          Notice that this is not an ASL identifier, as ASL identifiers do not contain hyphens, which ensures that this string
-          does not occur in any specification;
-    \item $\formaltypes$ is the list of types that appear in $\formals$ in the same order;
-    \item checking for each $\namep$ in $\othernames$ whether the subprogram associated with $\namep$ clashes
-          with the subprogram type $\subpgmtype$ and list of types $\formaltypes$ yields $\False$
-          or a \typingerrorterm{} that indicates there are multiply defined subprograms, which short-circuits the entire rule;
-    \item $\newtenv$ is $\tenv$ with the $\overloadedsubprograms$ updated by binding $\name$ to the union of $\othernames$ and
-          $\{\newname\}$.
-  \end{itemize}
-\end{itemize}
+\RenderProseAndFormally{add_new_func}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[first\_name]{
-  \tenv.\staticenvsG.\overloadedsubprograms(\name) = \bot\\
-  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\overloadedsubprograms[\name\mapsto\{\name\}],  \staticenvsL: \tenv.\staticenvsL\}
-}{
-  {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \overname{\name}{\newname})\end{array}}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[name\_exists]{
-  \tenv.\staticenvsG.\overloadedsubprograms(\name) = \othernames\\
-  k \eqdef \cardinality{\othernames}\\
-  \newname \eqdef \name\ \concatstrings\ \discardvarstr\ \concatstrings\ \stringofint{k}\hva\\
-  \formaltypes \eqdef [(\id,\vt) \in \formals : \vt]\\
-  {
-  \namep \in \othernames:
-  \subprogramclash\left(
-    \begin{array}{c}
-    \tenv,\\
-    \namep,\\
-    \subpgmtype,\\
-    \vqualifier,\\
-    \formaltypes
-    \end{array}
-    \right) \typearrow
-  \vb_{\namep} \OrTypeError
-  }\hva\\\\
-  \namep \in \othernames: \techeck(\neg\vb_{\namep}, \BadSubprogramDeclaration) \typearrow \True \OrTypeError\hva\\\\
-  \newgenv \eqdef \tenv.\staticenvsG.\overloadedsubprograms[\name \mapsto \othernames \cup\ \{\newname\}]\\
-  \newtenv \eqdef \{\staticenvsG: \newgenv,  \staticenvsL: \tenv.\staticenvsL\}
-}{
-  {\begin{array}{r}\addnewfunc(\tenv, \name, \vqualifier, \formals, \subpgmtype) \typearrow \\(\newtenv, \newname)\end{array}}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{add_new_func}
-\identr{PGFC}
 \CodeSubsection{\AddNewFuncBegin}{\AddNewFuncEnd}{../Typing.ml}
 
 \TypingRuleDef{Subprogram}
@@ -1886,37 +1040,10 @@ Note that the return type in $\vf$ has already been annotated by $\annotatefuncs
 and an example of a well-typed function --- \verb|flip_bits|.
 \ASLListing{Typing subprograms}{typing-subprogram}{\typingtests/TypingRule.Subprogram.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item annotating $\vf.\funcbody$ in $\tenv$ as per \TypingRuleRef{Block} yields \\
-        $(\newbody, \vsesbody)$\ProseOrTypeError;
-  \item applying $\checkcontrolflow$ to $\tenv$, $\vf$, and $\newbody$ yields $\True$\ProseOrTypeError;
-  \item $\vfp$ is $\vf$ with the subprogram body substituted with $\newbody$;
-  \item \Proseeqdef{$\vsesp$}{the union of $\vsesfuncsig$ and $\vsesbody$ with every \LocalEffectTerm{} removed};
-  \item checking that the \sideeffectsetterm{} $\vsesp$ adheres to the subprogram's \purity{} qualifier $\vf.\funcqualifierfield$ yields $\True$\ProseOrTypeError;
-  \item the \sideeffectsetterm{} corresponding to $\vf.\funcqualifierfield$ (via \\
-        $\sesforsubprogram$) is $\vses$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \annotateblock(\tenv, \vf.\funcbody) \typearrow (\newbody, \vsesbody) \OrTypeError\\\\
-  \checkcontrolflow(\tenv, \vf, \newbody) \typearrow \True \OrTypeError\hva\\\\
-  \vfp \eqdef \substrecordfield(\vf, \funcbody, \newbody)\\
-  \vsesp \eqdef \vsesfuncsig \cup (\vsesbody \setminus \{ \vs \;|\; \configdomain{\vs} = \LocalEffect \}) \hva\\
-  \checksubprogrampurity(\vf.\funcqualifierfield, \vsesp) \typearrow \True \OrTypeError \\
-  \sesforsubprogram(\vf.\funcqualifierfield) \typearrow \vses
-}{
-  \annotatesubprogram(\tenv, \vf, \vsesfuncsig) \typearrow (\vfp, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{annotate_subprogram}
-\identi{GHGK} \identr{HWTV} \identr{SCHV} \identr{VDPC}
-\identr{TJKQ} \identi{LFJZ} \identi{BZVB} \identi{RQQB}
+\RenderProseAndFormally{annotate_subprogram}
+
+
 \CodeSubsection{\SubprogramBegin}{\SubprogramEnd}{../Typing.ml}
 
 \TypingRuleDef{CheckControlFlow}
@@ -1942,27 +1069,8 @@ is ill-typed as \verb|returning| is declared with the \verb|noreturn|
 qualifier, yet it returns via a \passstatementterm.
 \ASLListing{Illegally returning from a \texttt{noreturn} subprogram}{CheckControlFlow-bad3}{\typingtests/TypingRule.CheckControlFlow.bad3.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\absconfigs$;
-  \item checking that $\absconfigs$ is a subset of the set of \Proseabstractconfigurations{}
-        allowed for $\vf$, as determined by $\allowedabsconfigs$ yields $\True$\ProseTerminateAs{\BadSubprogramDeclaration}.
-  \item the result is $\True$.
-\end{itemize}
 
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \approxstmt(\tenv, \vbody) \typearrow \absconfigs\\
-  \techeck(\absconfigs \subseteq \allowedabsconfigs(\vf), \BadSubprogramDeclaration) \typearrow \True \OrTypeError
-}{
-  \checkcontrolflow(\tenv, \vf, \vbody) \typearrow \True
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{check_control_flow}
+\RenderProseAndFormally{check_control_flow}
 
 \TypingRuleDef{AllowedAbsConfigs}
 \RenderRelation{allowed_abs_configs}
@@ -1977,65 +1085,8 @@ The set of \Proseabstractconfigurations{} allowed for the subprogram \verb|retur
 in \listingref{CheckControlFlow-bad3} is $\{\AbsAbnormal\}$, since it is qualified
 by \verb|noreturn|.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{noreturn}
-  \begin{itemize}
-    \item $\vf$ is qualified by \verb|noreturn|;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsAbnormal$}.
-  \end{itemize}
 
-  \item \AllApply
-  \begin{itemize}
-    \item $\vf$ is not qualified by \verb|noreturn|;
-    \OneApplies
-    \begin{itemize}
-      \item \AllApplyCase{returning\_proc}
-      \begin{itemize}
-        \item $\vf$ is a procedure;
-        \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$, \\
-              $\AbsReturning$, and $\AbsAbnormal$}.
-      \end{itemize}
-
-      \item \AllApplyCase{func}
-      \begin{itemize}
-        \item $\vf$ is as function;
-        \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$, \\
-              $\AbsAbnormal$}.
-      \end{itemize}
-    \end{itemize}
-  \end{itemize}
-
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[noreturn]{
-  \vf.\funcqualifierfield = \some{\Noreturn}
-}{
-  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsAbnormal\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[returning\_proc]{
-  \vf.\funcqualifierfield \neq \some{\Noreturn} \land \vf.\FIELDreturntype = \None
-}{
-  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsContinuing, \AbsReturning, \AbsAbnormal\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[func]{
-  \vf.\funcqualifierfield \neq \some{\Noreturn} \land \vf.\FIELDreturntype \neq \None
-}{
-  \allowedabsconfigs(\vf) \typearrow \overname{\{\AbsReturning, \AbsAbnormal\}}{\absconfigs}
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{allowed_abs_configs}
+\RenderProseAndFormally{allowed_abs_configs}
 
 \TypingRuleDef{ApproxStmt}
 \RenderRelation{approx_stmt}
@@ -2063,211 +1114,4 @@ To make the function body well-typed, another statement following the loop
 can be added, for example, an \unreachablestatementterm.
 \ASLListing{An ill-typed function body}{ApproxStmt-bad1}{\typingtests/TypingRule.ApproxStmt.bad1.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{s\_pass}
-  \begin{itemize}
-    \item $\vs$ is a \passstatementterm;
-    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsContinuing$}.
-  \end{itemize}
-
-  \item \AllApplyCase{simple}
-  \begin{itemize}
-    \item $\vs$ is either a \declarationstatementterm, an \assignmentstatementterm,
-          an \assertionstatementterm, or a \printstatementsterm;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsContinuing$ and \\
-          $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_unreachable}
-  \begin{itemize}
-    \item $\vs$ is the \unreachablestatementterm;
-    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_call}
-  \begin{itemize}
-    \item $\vs$ is a \callstatementterm{} consisting of the call record $\call$, that is, $\SCall(\call)$;
-    \item \Proseeqdef{$\vf$}{the $\func$ AST node bound to $\call.\callname$ in the \globalstaticenvironmentterm
-          map $\subprograms$};
-    \item \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$, if $\vf$ has the\\
-          \texttt{noreturn} qualifier, and the set consisting of $\AbsContinuing$ and \\
-          $\AbsAbnormal$ otherwise}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_return}
-  \begin{itemize}
-    \item $\vs$ is a \returnstatementsterm;
-    \item \Proseeqdef{$\absconfigs$}{the set consisting of $\AbsReturning$ and $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_throw}
-  \begin{itemize}
-    \item $\vs$ is a \throwstatementsterm;
-    \item  \Proseeqdef{$\absconfigs$}{the singleton set for $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_seq}
-  \begin{itemize}
-    \item $\vs$ is the \sequencingstatement{$\vsone$}{$\vstwo$};
-    \item applying $\approxstmt$ to $\tenv$ and $\vsone$ yields $\configsone$;
-    \item applying $\approxstmt$ to $\tenv$ and $\vstwo$ yields $\configstwo$;
-    \item for each \Proseabstractconfiguration{} $\vc$ in $\configsone$ \Proseeqdef{$\vs_\vc$}{
-      $\configstwo$ if $\vc$ is $\AbsContinuing$ and the singleton set for $\vc$ otherwise};
-    \item \Proseeqdef{$\absconfigs$}{the union of the sets $\vs_\vc$ for each \Proseabstractconfiguration{} $\vc$ in $\configsone$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_repeat}
-  \begin{itemize}
-    \item $\vs$ is a \repeatstatementsterm{} with body statement $\vbody$;
-    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
-    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$ and $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_while\_for}
-  \begin{itemize}
-    \item $\vs$ matches one of the following statements:
-          a \forstatementterm{} with body statement $\vbody$, or a \whilestatementterm{} with body statement $\vbody$;
-    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
-    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$, $\AbsAbnormal$, and \\ $\AbsContinuing$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_cond}
-  \begin{itemize}
-    \item $\vs$ is a \conditionalstatement{$\Ignore$}{$\vsone$}{$\vstwo$};
-    \item applying $\approxstmt$ to $\tenv$ and $\vsone$ yields $\configsone$;
-    \item applying $\approxstmt$ to $\tenv$ and $\vstwo$ yields $\configstwo$;
-    \item \Proseeqdef{$\absconfigs$}{the union of $\configsone$, $\configstwo$, and $\AbsAbnormal$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_try}
-  \begin{itemize}
-    \item $\vs$ is the \trystatement{$\vbody$}{\\
-          $\catchers$}{$\otherwise$};
-    \item applying $\approxstmt$ to $\tenv$ and $\vbody$ yields $\bodyconfigs$;
-    \item \Proseeqdef{$\otherwiseconfigs$}{the application of $\approxstmt$ to $\tenv$ and $\votherwise$,
-          if $\votherwise$ is the optional containing $\otherwises$ and the empty set otherwise};
-    \item for every statement $\vc$ appearing in a catcher in the list $\catchers$, applying $\approxstmt$ to $\tenv$ and $\vc$
-          yields $\catchconfigs_\vc$;
-    \item \Proseeqdef{$\absconfigs$}{the union of $\bodyconfigs$, $\otherwiseconfigs$,
-          and  $\catchconfigs_\vc$, for every statement $\vc$ appearing in a catcher in the list $\catchers$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[s\_pass]{}{
-  \approxstmt(\tenv, \overname{\SPass}{\vs}) \typearrow \overname{\{\AbsContinuing\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[simple]{
-  \configdomain{\vs} \in \{\SDecl, \SAssign, \SAssert, \SPrint\}
-}{
-  \approxstmt(\tenv, \vs) \typearrow \overname{\{\AbsContinuing, \AbsAbnormal\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_unreachable]{}{
-  \approxstmt(\tenv, \overname{\SUnreachable}{\vs}) \typearrow \overname{\{\AbsAbnormal \}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_call]{
-  \tenv.\staticenvsG.\subprograms(\call.\callname) = (\vf, \Ignore)\\
-  {
-  \absconfigs \eqdef
-  \ifthenelseop[V]{\vf.\funcqualifierfield = \some{\Noreturn}}{\{\AbsAbnormal\}}{\{\AbsContinuing, \AbsAbnormal\}}
-  }
-}{
-  \approxstmt(\tenv, \overname{\SCall(\call)}{\vs}) \typearrow \absconfigs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_return]{}{
-  \approxstmt(\tenv, \overname{\SReturn(\Ignore)}{\vs}) \typearrow \overname{\{\AbsReturning, \AbsAbnormal \}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_throw]{}{
-  \approxstmt(\tenv, \overname{\SThrow(\Ignore)}{\vs}) \typearrow \overname{\{\AbsAbnormal \}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_seq]{
-  \approxstmt(\tenv, \vsone) \typearrow \configsone\\
-  \approxstmt(\tenv, \vstwo) \typearrow \configstwo\hva\\
-  \vc\in\configsone: \vs_\vc \eqdef \choice{\vc = \AbsContinuing}{\configstwo}{\{\vc\}}\\
-  \absconfigs \eqdef \bigcup_{\vc\in\configsone} \vs_\vc
-}{
-  \approxstmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \absconfigs
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_repeat]{
-  \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs
-}{
-  \approxstmt(\tenv, \overname{\SRepeat(\vbody, \Ignore, \Ignore)}{\vs}) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_while\_for]{
-  {
-  \left(
-  \begin{array}{rcll}
-    \vs &=& \SFor \{ \Forbody : \vbody, \ldots \} &\lor\\
-    \vs &=& \SWhile(\Ignore, \Ignore, \vbody) &
-  \end{array}
-  \right)
-  }\\
-  \approxstmt(\tenv, \vbody) \typearrow \bodyconfigs\\
-}{
-  \approxstmt(\tenv, \vs) \typearrow \overname{\bodyconfigs \cup \{\AbsAbnormal, \AbsContinuing\}}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_cond]{
-  \approxstmt(\tenv, \vsone) \typearrow \configsone\\
-  \approxstmt(\tenv, \vstwo) \typearrow \configstwo
-}{
-  \approxstmt(\tenv, \overname{\SCond(\Ignore, \vsone, \vstwo)}{\vs}) \typearrow \overname{\{\AbsAbnormal\} \cup \vsone \cup \vstwo}{\absconfigs}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_try]{
-  \approxstmt(\vbody, \vsone) \typearrow \bodyconfigs\\
-{
- \otherwiseconfigs \eqdef \left\{
- \begin{array}{ll}
- \textbf{if}   & \votherwise=\some{\otherwises}\textbf{ then}\\
-               & \approxstmt(\tenv, \otherwises)\\
- \textbf{else} & \emptyset
- \end{array}\right.
-}\hva\\
-  (\Ignore,\Ignore,\vc)\in\catchers: \approxstmt(\tenv, \vc) \typearrow \catchconfigs_\vc\\
-  {
-  \absconfigs \eqdef \left\{
-  \begin{array}{ll}
-  \bodyconfigs & \cup\\
-  \otherwiseconfigs & \cup\\
-  \bigcup_{(\Ignore,\Ignore,\vc)\in\catchers} \catchconfigs_\vc &
-  \end{array}\right.
-  }
-}{
-  \approxstmt(\tenv, \overname{\STry(\vbody, \catchers, \votherwise)}{\vs}) \typearrow \absconfigs
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
-\RenderRule{approx_stmt}
+\RenderProseAndFormally{approx_stmt}

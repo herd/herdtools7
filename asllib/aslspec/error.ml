@@ -231,7 +231,7 @@ let type_operator_instantiation_failure ~relation_name formal_type arg_type =
   spec_error
   @@ Format.asprintf
        "The type term `%a` cannot be instantiated with `%a` for operator `%s` \
-        since they have incompatible type operators"
+        since there are incompatible argument types for it"
        PP.pp_type_term formal_type PP.pp_type_term arg_type relation_name
 
 let uninstantiated_parameter_in_relation param relation_name ~context_expr =
