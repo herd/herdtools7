@@ -293,7 +293,11 @@ end = struct
                   { arch = A'.arch; doc; src; fullhash = hash ;
                     nprocs; flags; }
               end else begin
-                let cause = if limit_ok then "" else " (too many threads)" in
+                let cause =
+                  match limit_ok, hash_ok with
+                  | true, _ -> " (too many threads)"
+                  | _, true -> " (duplicate test)"
+                  | _, _ -> "" in
                 Warn.warn_always "%s test not compiled%s"
                   (Pos.str_pos0 doc.Name.file) cause ;
                 Absent
