@@ -17,6 +17,8 @@
 #define KVM_SELF_H 1
 
 #include <stdint.h>
+#include <stddef.h>
+#include <instruction.h>
 
 void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
 
