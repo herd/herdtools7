@@ -864,6 +864,8 @@ and get_written e = match E.written_of e with
 (* Compute rfmap for registers *)
 (*******************************)
 
+(* Produce a set of event, structured by [U.is_before_strict], i.e. [po] and
+   [iico]. *)
 module EvtSetByPo (I : sig
   val es : S.event_structure
 end) =
@@ -875,6 +877,16 @@ struct
       (A.pp_location (get_loc e1))
       (E.debug_event_str e1) (E.debug_event_str e2)
 
+  (* A note about ordering guarantees:
+     It is enough to have the check in [compare] to guarantee that if the order
+     is not total, i.e, if there are two or more elements that are
+     non-comparable, then [ambiguous_po] will be called.
+     Indeed, if two elements [a] and [b] are non comparable, then there is no
+     element [c] such that [a < c && c < b] (resp [b < c && c < a)], otherwise
+     by transitivity [a < b] (resp [b < a]). Then [a] and [b] must be stored
+     next to each other in a resulting set, and thus must have been compared to
+     produce the tree representation of that set.
+   *)
   include Set.Make (struct
     type t = E.event
 
@@ -890,35 +902,6 @@ struct
   let find_first_after e set =
     find_first_opt (fun e' -> is_before_strict e e') set
   [@@warning "-32"]
-
-  (* We have to check that the order is total because none of the set
-     construction methods perform enough comparison to ensure that all
-     consecutive elements will be compared.
-
-     Checking that all consecutive elements are comparable is enough to prove
-     totality if the relation is transitive. Here, we believe that
-     [is_before_strict] is transitive by construction.
-
-     See this gist:
-       https://gist.github.com/HadrienRenaud/245295e0950fb3b58c23e43937248c9c
-  *)
-
-  let check_total set =
-    if not (is_empty set) then
-      fold
-        (fun e pred_opt ->
-          match pred_opt with
-          | Some pred ->
-              if not (is_before_strict pred e) then ambiguous_po e pred;
-              Some e
-          | None -> Some e)
-        set None
-      |> ignore
-
-  let of_list li =
-    let set = of_list li in
-    let () = check_total set in
-    set
 end
 
 let map_loc_find loc m =
