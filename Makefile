@@ -695,10 +695,16 @@ test.vmsa+ifetch:
 	@ echo "herd7 AArch64 VMSA+ifetch instructions tests: OK"
 
 ### Diy tests, includes
+### - A `diyone7` generated syntax check
 ### - A `diy7` with `cycleonly` instance checks the cycle generations
 ### - Several `diycross7` + `herd7` instances, check if the generated litmus tests
 ###   are equivalent based on `herd7` result.
 diy-test:: | build
+diy-test:: diyone-basic-test
+diyone-basic-test:
+	@ echo
+	dune test gen/tests
+	@ echo "diyone7 basic test: OK"
 diy-test:: diy-baseline-cycleonly
 diy-baseline-cycleonly::
 	@ echo
