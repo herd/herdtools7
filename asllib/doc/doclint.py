@@ -715,7 +715,6 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\begin{tabular}.*?\\end{tabular}",
         r"subsubsection",
         r"\\verb\|.*?\|",
-        r"\\lrmcomment{.*?}",
         r"\\stdlibfunc{.*?}",
         r"\\defref{.*?}",
         r"\\LexicalRuleDef{.*?}",

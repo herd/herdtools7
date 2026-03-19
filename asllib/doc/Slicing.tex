@@ -127,9 +127,6 @@ The slices in
 are all well-typed.
 
 \RenderProseAndFormally{annotate_slice}
-\lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}
-\lrmcomment{\identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.}
-\lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
 
 \TypingRuleDef{SlicesWidth}
 \RenderRelation{slices_width}

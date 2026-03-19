@@ -3,8 +3,7 @@
 Primitive operations allow transforming single \nativevaluesterm{} (unary operations)
 and pairs of \nativevaluesterm{} (binary operations) into other \nativevaluesterm{}.
 
-\identd{KXWT}
-\identi{HSQL}
+
 The term \emph{Primitive Operations} denotes the set of operations available
 in the expression syntax that use an \emph{Operator} derived from either
 $\unop$ or $\binop$.
@@ -265,7 +264,7 @@ to refer to one of several different operations.
 for each primitive operation, the kinds of input literals and the kind of output literals,
 as well as assigning each primitive operation a unique name.
 
-\identr{BKNT}
+
 \RequirementDef{PrimitiveOperatorImplements}
 An operation implements an operator if it appears in the same row as the operator in one
 of the tables in this section.
@@ -273,7 +272,7 @@ of the tables in this section.
 For example, the operation $\aslnotbool$ implements the operator $\Tbnot$
 as it appears on the first row of \taref{BooleanOperators}.
 
-\identr{JGWF}
+
 \RequirementDef{PrimitiveOperatorMatches}
 An expression which invokes a primitive operator \emph{matches} an operation
 if the operation implements the operator and the operands of the expression
@@ -284,7 +283,7 @@ For example, the expression \verb|!TRUE|, which invokes the primitive operator
 $\Tbnot$, matches the primitive operation $\aslnotbool$, since the operand $\True$
 \typesatisfiesterm{} the \booleantypeterm{}.
 
-\identr{TTGQ}
+
 \RequirementDef{PrimitiveOperationError}
 It is a \typingerrorterm{} if an expression which invokes a
 primitive operator does not match exactly one primitive operation

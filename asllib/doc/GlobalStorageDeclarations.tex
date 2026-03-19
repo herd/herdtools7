@@ -310,7 +310,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \TypeRulesDef{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\RequirementDef{GlobalStorageCycles} \identr{TTMQ}
+\RequirementDef{GlobalStorageCycles}
 The declarations, and any associated initialization expressions, for global storage elements, must not include cycles.
 
 The specifications in \listingref{GlobalStorageCycles-bad1} and \listingref{GlobalStorageCycles-bad2}
@@ -372,7 +372,7 @@ of an ill-typed global storage declaration due to precision loss.
 \RenderProseAndFormally{declare_global_storage}
 
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
-\identr{YSPM} \identr{FWQM}
+
 
 \TypingRuleDef{AnnotateTyOptInitialValue}
 \RenderRelation{annotate_ty_opt_initial_value}

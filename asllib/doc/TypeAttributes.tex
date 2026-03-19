@@ -32,7 +32,7 @@ the builtin singular type \texttt{Color} consists of two constants:
 
 \RenderProseAndFormally{is_builtin_singular}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
-\identd{PQCK} \identd{NZWT}
+
 
 \TypingRuleDef{NamedType}
 \RenderRelation{is_named}
@@ -49,10 +49,10 @@ type ticks of integer;
 
 \RenderProseAndFormally{is_named}
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
-\identd{vmzx}
+
 
 \TypingRuleDef{AnonymousType}
-\identd{VMZX} \identi{SBCK}%
+ %
 \RenderRelation{is_anonymous}
 
 \ExampleDef{Anonymous Types}
@@ -64,7 +64,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
-\identr{GVZK}%
+%
 \RenderRelation{is_singular}
 
 \ExampleDef{Singular types}
@@ -96,7 +96,7 @@ type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
 
 \RenderProseAndFormally{is_structured}
-\identd{WGQS} \identd{QXYC}
+
 
 \TypingRuleDef{Structure}
 \RenderRelation{get_structure}
@@ -112,7 +112,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 \RenderProseAndFormally{get_structure}
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
-\identd{FXQV}
+
 
 \TypingRuleDef{MakeAnonymous}
 \RenderRelation{make_anonymous}

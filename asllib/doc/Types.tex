@@ -1,6 +1,6 @@
 \chapter{Types\label{chap:Types}}
 
-\identi{BYVL}
+
 ASL allows specifying types for storage elements such as variables, constants, function arguments,
 and they are used to define the set of their allowed values.
 %
@@ -137,7 +137,7 @@ and \emph{\parameterizedintegertypesterm}.
 \subsection{Unconstrained Integer Types}
 \hypertarget{def-unconstrainedintegertype}{}
 The type \verb|integer| represents all integer values.
-\identi{HJBH}%
+%
 There is no bound on the minimum and maximum integer value that can be represented.
 
 \ExampleDef{Unconstrained Integer Types}
@@ -145,7 +145,7 @@ There is no bound on the minimum and maximum integer value that can be represent
 \ASLListing{Well-typed unconstrained integer types}{typing-unconstrained}{\typingtests/TypingRule.TIntUnconstrained.asl}
 
 \subsection{Well-constrained Integer Types}
-\identr{GWCP}%
+%
 The type \texttt{integer\{$c_1,\ldots,c_n$\}} represents the
 union of sets of integers represented by the \emph{integer constraints} $c_1,\ldots,c_n$.
 \hypertarget{def-exactconstraintterm}{}
@@ -328,7 +328,7 @@ It is defined by the following rule:
 \RenderRelation{is_well_constrained_integer}
 It is defined by the following rule:
 \RenderProseAndFormally{is_well_constrained_integer}
-\identd{ZTPP} \identr{WJYH} \identr{HJPN} \identr{CZTX} \identr{TPHR}
+
 
 \hypertarget{def-unconstrainedinteger}{}
 We use the shorthand notation $\unconstrainedinteger \triangleq \TInt(\Unconstrained)$
@@ -491,14 +491,14 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 The \texttt{bits(N)} type represents a bitvector of width \texttt{N},
 where \texttt{N} may specify a fixed width or a constrained width.
 
-\identr{RXYN}%
+%
 Bitvectors can be converted to unsigned integers and signed integer
 via the standard library functions
 \verb|UInt| and \verb|SInt|, respectively.
 Converting integers into bitvectors can be done via slicing
 (see \ExampleRef{Evaluation of Slicing Expressions}).
 
-\identi{KGMC}%
+%
 The syntax for \bitvectortypesterm{} has an optional $\Nbitfields$,
 which allows specifying \emph{\bitfieldsterm} ---
 \bitslicesterm{} of bitvectors --- to be treated as named
@@ -714,9 +714,9 @@ as indices in enumeration-indexed arrays.
 %
 The type of an enumeration literal is the anonymous \enumerationtypeterm{}
 that defined the literal.
-\identd{YZBQ} \identr{HJYJ}
 
-\identi{PRPY}%
+
+%
 Unlike many languages, there is no ordering defined for enumeration literals
 and therefore enumeration types do not support ordering comparisons such as \verb|<=|.
 
@@ -727,7 +727,7 @@ enumeration type declarations.
 \ASLListing{Well-typed enumeration type}{typing-tenum-subtypes}{\typingtests/TypingRule.TEnumDecl.subtypes.asl}
 \ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
 
-\identr{DWSP} \identr{QMWT} \identi{MZXL}%
+  %
 \RequirementDef{LabelNamespace}
 Enumeration literals exist in the same namespace as all other declared identifiers except subprograms (see \RequirementRef{GlobalNamespace}),
 including storage elements and named types, so no other declared identifier
@@ -789,12 +789,11 @@ show examples of ill-typed enumeration type declarations.
 
 \section{Array Types\label{sec:ArrayTypes}}
 \hypertarget{arraytypeterm}{}
-\identr{DFXJ}%
+%
 Arrays are sequences of values of a single given type.
 The syntax \verb|array [[expr]] of ty| declares a single-dimensional array of type \texttt{ty}
 with an index type derived from the expression \texttt{expr}.
 %
-\identr{YHNV}%
 ASL offers two kinds of arrays:
 \hypertarget{intarraytypeterm}{}
 \hypertarget{enumarraytypeterm}{}
@@ -869,7 +868,7 @@ enumeration labels from variable expressions.
 
 \RenderProseAndFormally{get_variable_enum}
 
-\identi{PKXK} \identd{YYDW}%
+ %
 \RequirementDef{SymbolicallyEvaluable}
 An expression is \symbolicallyevaluableterm{} if its evaluation only involves
 the use of immutable values.
@@ -905,9 +904,9 @@ of \verb|i| is the \unconstrainedintegertypeterm.
 
 \section{Record Types\label{sec:RecordTypes}}
 \hypertarget{recordtypeterm}{}
-\identd{WGQS}%
+%
 A record is a \structuredtypeterm{} consisting of a list of field identifiers which denote individual storage elements.
-\identr{DXWN}%
+%
 A record type is described by specifying for each field identifier its type.
 
 \ExampleDef{Well-typed Record Types}
@@ -1106,7 +1105,7 @@ A declared type can be an \enumerationtypeterm{}, a \recordtypeterm, an \excepti
 \end{mathpar}
 
 \subsection{Typing Declared Types}
-\identr{RGRVJ}%
+%
 \RequirementDef{RestrictionsOnAnonymousTypes}
 A declared type for an enumeration, a record type, or an exception type
 is only permitted in named type declarations. This is enforced by \TypingRuleRef{TNonDecl}.

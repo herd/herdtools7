@@ -82,7 +82,6 @@ Annotating the \passstatementterm{} in \listingref{semantics-spass} does
 not modify the \staticenvironmentterm{}.
 
 
-
 \RenderProseAndFormally{annotate_stmt_SPass}
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
 
@@ -194,7 +193,7 @@ and \verb|-| is a discarded \assignableexpression{}.
 \end{flalign*}
 
 \SyntacticSugarDef{SetterFieldAssignment}
-\identr{WHRS}
+
 If a setter is followed by a slice or field access, then the assignment to that bitslice is
 implemented using the following Read-Modify-Write (RMW) behaviour:
 \begin{itemize}
@@ -512,7 +511,7 @@ See \ExampleRef{Type-satisfaction Examples}.
 
 
 \RenderProseAndFormally{check_can_be_initialized_with}
-\identr{ZCVD}  \identr{LXQZ}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SDecl}
@@ -838,7 +837,7 @@ since call statements are only allowed for procedures, not functions.
 
 \RenderProseAndFormally{annotate_stmt_SCall}
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
-\identd{VXKM}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCall}
@@ -849,7 +848,7 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 \RenderProseAndFormally{eval_stmt_SCall}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
-\identd{KCYT}
+
 
 \hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
@@ -929,7 +928,7 @@ an \atcexpressionterm{}.
 
 \RenderProseAndFormally{annotate_stmt_SCond}
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
-\identr{NBDJ}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SCond}
@@ -1285,7 +1284,7 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 \subsection{Typing}
 Since case statements are transformed into other statements,
 they do not require type system rules.
-\identr{WGSY}
+
 
 \subsection{Semantics}
 Since case statements are transformed into other statements,
@@ -1342,7 +1341,7 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 
 \RenderProseAndFormally{annotate_stmt_SAssert}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
-\identr{JQYF}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SAssert}
@@ -1359,7 +1358,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 
 \RenderProseAndFormally{eval_stmt_SAssert}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
-\identd{QJYV} \identr{WZSL} \identr{WQRN}
+
 
 \section{While Statements\label{sec:WhileStatements}}
 \hypertarget{def-whilestatementterm}{}
@@ -1444,7 +1443,7 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 
 \RenderProseAndFormally{annotate_stmt_SWhile}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
-\identr{FTVN}
+
 
 \TypingRuleDef{AnnotateLimitExpr}
 \RenderRelation{annotate_limit_expr}
@@ -1577,7 +1576,7 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 
 \RenderProseAndFormally{annotate_stmt_SRepeat}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
-\identr{FTVN}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SRepeat}
@@ -1696,7 +1695,7 @@ show examples of ill-typed \texttt{for} loops.
 
 \RenderProseAndFormally{annotate_stmt_SFor}
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
-\identr{SSBD} \identr{ZSND} \identr{VTJW}
+
 
 \TypingRuleDef{SForConstraints}
 \RenderRelation{get_for_constraints}
@@ -1805,7 +1804,7 @@ shows examples of well-typed \throwstatementsterm.
 
 
 \RenderProseAndFormally{annotate_stmt_SThrow}
-\identr{NXRC}
+
 \CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -1972,7 +1971,7 @@ the \trystatementsterm{} are all well-typed.
 \end{mathpar}
 %\RenderProseAndFormally{annotate_stmt_STry}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
-\identr{WVXS}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
@@ -2024,7 +2023,7 @@ since \verb|proc| is not a function but a procedure.
 
 \RenderProseAndFormally{annotate_stmt_SReturn}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
-\identr{FTPK}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{SReturn}

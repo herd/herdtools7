@@ -416,13 +416,13 @@ the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}.
 The evaluation via the rule above ensures that $\veone$ is evaluated first and
 only if it evaluates to $\True$ is $\vetwo$ evaluated.
 
-\identr{BKNT} % TODO: add table
+ % TODO: add table
 
-\identi{QRXP}
+
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{==>} provide a short-circuit evaluation mechanism:
 
-% This is related to the note under \identr{LRHD}
+% This is related to the note under
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
 remaining operands is evaluated;
@@ -448,13 +448,13 @@ The evaluation via the rule above ensures that $\veone$ is evaluated first and o
 it evaluates to $\False$, is $\vetwo$ evaluated.
 
 \subsubsection{Comments}
-\identr{BKNT} % TODO: add table
+ % TODO: add table
 
-\identi{QRXP}
+
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{==>} provide a short-circuit evaluation mechanism:
 
-% This is related to the note under \identr{LRHD}
+% This is related to the note under
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
 remaining operands is evaluated;
@@ -479,13 +479,10 @@ the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, acco
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
 it evaluates to \True, is $\vetwo$ evaluated.
 
-\lrmcomment{This is related to \identr{BKNT}: add table}
 
-\identi{QRXP}
 Conditional expressions and the operations \texttt{\&\&}, \texttt{||},
 \texttt{==>} provide a short-circuit evaluation mechanism:
 
-\lrmcomment{This is related to the note under \identr{LRHD}:}
 \begin{itemize}
 \item the first operand of \texttt{if} is always evaluated but only one of the
 remaining operands is evaluated;
@@ -510,9 +507,6 @@ the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 
 The rule above applies to many binary operators, including $\EQ$ (which is used for \texttt{<=>}
 as well as \texttt{==}).
-
-\subsubsection{Comments}
-\lrmcomment{This is related to \identr{BKNT}: add table}
 
 \hypertarget{def-unopexpressionterm}{}
 \section{Unary Expressions\label{sec:UnaryExpressions}}
@@ -596,7 +590,7 @@ an example of typing a conditional expression.
 
 \RenderProseAndFormally{annotate_expr_ECond}
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
-\identr{XZVT}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{ECond}
@@ -620,7 +614,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
-\identr{YCDB}
+
 
 A conditional expression evaluates to its \texttt{then} expression if the
 condition expression evaluates to $\True$. If the condition expression
@@ -712,7 +706,7 @@ and the inferred types of the expressions, as type annotations on the left-hand-
 
 \RenderProseAndFormally{annotate_expr_ECall}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
-\identd{CFYP} \identr{BQJG}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{ECall}
@@ -777,7 +771,7 @@ show examples of ill-typed slicing expressions.
 The width of \slices\ might be a symbolic expression if one of the
 widths references a \texttt{let} identifier with a non-compile-time-constant
 initializer expression.
-\identi{MJWM}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{ESlice}
@@ -1091,19 +1085,19 @@ All of the collection field expressions in
 
 \hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
-\identi{TCST}
+
 The rule about domains in the definitions of subtype-satisfaction and
 type-satisfaction means that it is illegal to use the unconstrained integer
 where a constrained integer is expected.
 An asserting type conversion, ATC for short, can be used to overcome this.
 
-\identi{CGRH}
+
 An ATC allows code to explicitly mark places where uses of constrained types
 would otherwise be a static typechecking error. The intent is to reduce the
 incidence of unintended errors by making such uses fail typechecking unless
 the asserting type conversion is provided.
 
-\identr{WZVX}
+
 Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
 initializer expression or subprogram. If the condition evaluates to $\False$ it
@@ -1177,11 +1171,6 @@ as it is applied to unrelated kinds of types.
 
 \RenderProseAndFormally{annotate_expr_EATC}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
-\lrmcomment{
-  This is related to \identr{VBLL} \identi{KRLL} \identg{PFRQ} \identi{XVBG},
-  \identr{GYJZ} \identi{SZVF} \identr{PZZJ} \identr{YCPX} \identi{ZLBW},
-  \identi{TCST} \identi{CGRH} \identi{YJBB}.
-}
 
 \TypingRuleDef{CheckATC}
 \texthypertarget{def-compatibletypes}
@@ -1204,7 +1193,7 @@ In \listingref{semantics-atcvalue}, both type assertions ---
 \ASLListing{Evaluating a successful type assertion expression}{semantics-atcvalue}{\semanticstests/SemanticsRule.ATCValue.asl}
 
 \ExampleDef{An Unevaluated Asserting Type Conversion}
-\identr{YCPX}
+
 In \listingref{semantics-atcnotevaluated}, the asserting type conversion on \texttt{y}
 does not yield a \DynamicErrorConfigurationTerm{}, since the invocation of \texttt{f1} returns $\False$ when
 evaluated:
@@ -1420,7 +1409,7 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 
 \subsubsection{Comments}
 Notice that this rule introduces non-determinism.
-\identr{WLCH}
+
 
 \section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
 \hypertarget{def-recordexpressionterm}{}
@@ -1497,7 +1486,7 @@ and an example (in comment) where the same field is initialized twice, which is 
 
 \RenderProseAndFormally{annotate_expr_ERecord}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
-\identr{WBCQ}
+
 
 \TypingRuleDef{AnnotateFieldInit}
 \RenderRelation{annotate_field_init}
