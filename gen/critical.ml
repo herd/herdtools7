@@ -20,7 +20,6 @@
   "./critical n" outputs critical tests on n procs.
 *)
 
-open Misc
 open Printf
 open Archs
 

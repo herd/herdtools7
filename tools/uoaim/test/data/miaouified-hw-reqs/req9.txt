@@ -1,0 +1,6 @@
+If all of the following apply:
+* the Memory Read Effect (b) Reads-from the Memory Write Effect (a).
+* the Memory Read Effect (f) and Effect (b) are to the same location.
+* Effect (f) is Ordered-after Effect (b).
+* the Memory Write Effect (h) is Coherence-before Effect (a).
+then Effect (f) is not architecturally Allowed to Read-from Effect (h).
