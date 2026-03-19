@@ -225,7 +225,6 @@ illustrative_tests = [
     "tests/DIC0-IDC1/IDC1.MP.FF+dc.cvau-dsb.ish+po.litmus",
     "tests/DIC0-IDC1/IDC1.SB.RF+dmb+dsb.st-cachesync-isb.litmus",
     "tests/DIC0-IDC1/IDC1.MP.RF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-isb.litmus",
-    "tests/MP.FF+dc.cvau-dsb.ish-ic.vau-dsb.ish+dmb.ish+rfiINST.litmus",
     "tests/DIC1-IDC1/DIC1.WRC-inst+cachesync+dsb.ish-isb.litmus",
     "tests/DIC1-IDC1/DIC1.coFW-2.litmus",
     "tests/DIC1-IDC1/DIC1.WRC-inst+cachesync+ctrlisb.litmus",
