@@ -1,4 +1,5 @@
 AArch64 MP.FF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-rfiINSTNOP
+Hash=58da9b974ae2e2e32ccbed9878bf3693
 (* jit_example2 *)
 {
  0:X1=NOP; 0:X3=P1:m1;
@@ -17,9 +18,9 @@ AArch64 MP.FF+dc.cvau-dmb.ish+dsb.ish-ic.ivau-dsb.ish-rfiINSTNOP
                 |  NOP           ;
                 |  B end         ;
                 |l0:             ;
-                |  MOV X9,#1     ;
+                |  MOV W9,#1     ;
                 |m1:             ;
                 | B end          ;
-                |  MOV X9,#2     ;
+                |  MOV W9,#2     ;
                 |end:            ;
 exists(1:X9=1 /\ 1:X11=1)
